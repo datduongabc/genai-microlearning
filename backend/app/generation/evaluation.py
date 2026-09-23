@@ -14,7 +14,7 @@ into this shape (see gd2_evaluation/TEMPLATE_packet.json).
 
 from pydantic import BaseModel, Field
 
-from app.services.llm import complete_structured
+from app.llm.gateway import complete_structured
 
 
 class QuizQuestionInput(BaseModel):

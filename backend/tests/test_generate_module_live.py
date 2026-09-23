@@ -25,9 +25,9 @@ from fastapi.testclient import TestClient
 
 from app.db import SessionLocal
 from app.ingestion.embeddings import embed_text
+from app.jobs.queue import claim_next_job, execute_job_step, handle_job_error
 from app.main import app
 from app.models.models import Chunk, ComponentType, Document, DocumentStatus, JobStatus
-from app.services.job_queue import claim_next_job, execute_job_step, handle_job_error
 from tests.auth_helpers import STRONG_PASSWORD
 
 client = TestClient(app)

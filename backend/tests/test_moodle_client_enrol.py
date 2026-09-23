@@ -1,4 +1,4 @@
-from app.services import moodle_client
+from app.moodle import client as moodle_client
 
 EDITING_TEACHER_ROLE_ID = 3  # Moodle's built-in "Teacher" (editingteacher) role
 

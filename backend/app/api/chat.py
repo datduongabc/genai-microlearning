@@ -6,10 +6,10 @@ from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user, require_course_owner
 from app.auth.rate_limit import limiter, user_or_address
+from app.chat.service import HISTORY_TURNS, answer_question, condense_query
 from app.db import get_db
 from app.models import ChatMessage, ChatRole, ChatSession, Course, User
 from app.retrieval.search import retrieve
-from app.services.chat import HISTORY_TURNS, answer_question, condense_query
 
 router = APIRouter(prefix="/courses/{course_id}/chat", tags=["chat"], dependencies=[Depends(get_current_user)])
 

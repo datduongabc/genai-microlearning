@@ -18,7 +18,7 @@ from app.auth.security import create_access_token
 from app.db import SessionLocal
 from app.main import app
 from app.models import Course, MoodleCourseClaim, User, UserRole
-from app.services import moodle_client
+from app.moodle import client as moodle_client
 
 client = TestClient(app)
 

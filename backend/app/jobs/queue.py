@@ -26,8 +26,8 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.db import WorkerSessionLocal
+from app.jobs.maintenance import purge_old_records
 from app.models import Job, JobStatus, JobType
-from app.services.maintenance import purge_old_records
 
 logger = logging.getLogger(__name__)
 

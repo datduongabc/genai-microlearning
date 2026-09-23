@@ -8,9 +8,9 @@ from slowapi.errors import RateLimitExceeded
 from app.api import auth, chat, courses, documents, jobs, modules, moodle
 from app.auth.rate_limit import limiter, user_or_address
 from app.config import Settings, settings
+from app.jobs.queue import start_worker, stop_worker
 from app.logging_config import configure_app_logging
 from app.middleware import BodySizeLimitMiddleware, SecurityHeadersMiddleware
-from app.services.job_queue import start_worker, stop_worker
 
 configure_app_logging()
 logger = logging.getLogger("app.rate_limit")

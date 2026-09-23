@@ -3,7 +3,7 @@
 from pydantic import BaseModel, Field
 
 from app.generation.common import IGNORE_EMBEDDED_INSTRUCTIONS
-from app.services.llm import complete_structured
+from app.llm.gateway import complete_structured
 
 # ---------------------------------------------------------------------------
 # 1. Planner — 1 lệnh gọi/tài liệu, trích xuất + ưu tiên hóa khái niệm cốt lõi

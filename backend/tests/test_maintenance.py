@@ -10,9 +10,9 @@ import pytest
 
 from app.config import settings
 from app.db import SessionLocal
+from app.jobs import queue as job_queue
+from app.jobs.maintenance import purge_old_records
 from app.models import Job, JobStatus, JobType, RefreshToken, User, UserRole
-from app.services import job_queue
-from app.services.maintenance import purge_old_records
 
 
 def _now() -> datetime:

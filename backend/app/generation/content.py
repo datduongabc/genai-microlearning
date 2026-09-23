@@ -7,8 +7,8 @@ from app.generation.common import (
     format_source_chunks,
 )
 from app.generation.objective import LearningObjective
+from app.llm.gateway import complete_structured
 from app.models import Chunk
-from app.services.llm import complete_structured
 
 # ---------------------------------------------------------------------------
 # 3. Content — grounded qua retrieval pipeline (mục 5.2). CRAG relevance-check

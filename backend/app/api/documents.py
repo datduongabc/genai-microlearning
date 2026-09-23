@@ -10,6 +10,7 @@ from app.auth.rate_limit import limiter, user_or_address
 from app.config import settings
 from app.db import get_db
 from app.ingestion.document_readers import SUPPORTED_EXTENSIONS
+from app.jobs.queue import enqueue_job
 from app.models import (
     Course,
     Document,
@@ -22,7 +23,6 @@ from app.models import (
     Module,
     User,
 )
-from app.services.job_queue import enqueue_job
 
 router = APIRouter(prefix="/documents", tags=["documents"], dependencies=[Depends(get_current_user)])
 

@@ -11,8 +11,8 @@ from app.api.deps import get_current_user
 from app.auth.rate_limit import limiter, user_or_address
 from app.db import get_db
 from app.models import ComponentType, Course, Module, ModuleComponent, User
-from app.services import moodle_client
-from app.services.moodle_client import MoodleError
+from app.moodle import client as moodle_client
+from app.moodle.client import MoodleError
 
 router = APIRouter(prefix="/modules", tags=["moodle"], dependencies=[Depends(get_current_user)])
 
