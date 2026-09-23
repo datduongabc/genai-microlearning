@@ -26,8 +26,9 @@ EMBEDDING_DIM = 768
 
 
 class UserRole(str, enum.Enum):
+    # Chỉ có giảng viên đăng nhập ứng dụng này; học viên học trên Moodle sau khi
+    # giảng viên xuất bản, nên không có tài khoản nào ở đây.
     teacher = "teacher"
-    student = "student"
 
 
 class DocumentStatus(str, enum.Enum):

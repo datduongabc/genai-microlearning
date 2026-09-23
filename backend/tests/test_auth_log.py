@@ -68,7 +68,9 @@ def test_a_failed_login_is_logged_with_why_but_the_client_is_not_told(email, cap
 
 def test_a_refused_sign_up_is_logged_with_the_reason(email, caplog):
     caplog.set_level(logging.INFO, logger="app.audit")
-    _sign_up(email, password="password123")
+    # Quá ngắn: đó là lý do từ chối duy nhất còn lại sau khi bỏ các quy tắc đoán
+    # mật khẩu yếu, xem app/auth/password_policy.py.
+    _sign_up(email, password="ngan")
     _sign_up(email)
     _sign_up(email)
 
