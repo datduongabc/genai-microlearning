@@ -25,6 +25,16 @@ model_list:
       model: gemini/gemini-embedding-001
       api_key: os.environ/GEMINI_API_KEY
 
+  # Duong nhung du phong khi han muc mien phi cua Gemini het (1000 luot moi ngay,
+  # tinh theo tung chunk). Doi bang cach dat EMBEDDING_MODEL=embed-openai.
+  # Model nay tra ve 1536 chieu nhung nhan tham so `dimensions`, nen cat con 768
+  # dung bang so chieu cua cot chunks.embedding, giong cach lam voi Gemini.
+  # Groq khong co model embedding nao, nen khong the dung cho viec nay.
+  - model_name: embed-openai
+    litellm_params:
+      model: openai/text-embedding-3-small
+      api_key: os.environ/OPENAI_API_KEY
+
   - model_name: openai-fast
     litellm_params:
       model: openai/gpt-4o-mini
@@ -42,6 +52,18 @@ model_list:
     litellm_params:
       model: anthropic/claude-sonnet-5
       api_key: os.environ/ANTHROPIC_API_KEY
+
+  # Groq: han muc mien phi rong rai hon Gemini cho viec SINH van ban, huu ich khi
+  # Gemini het quota giua chung mot lan chay thi nghiem. Chi sinh van ban, khong
+  # nhung duoc: bang model cua litellm khong co model groq nao o che do embedding.
+  - model_name: groq-fast
+    litellm_params:
+      model: groq/openai/gpt-oss-20b
+      api_key: os.environ/GROQ_API_KEY
+  - model_name: groq-pro
+    litellm_params:
+      model: groq/openai/gpt-oss-120b
+      api_key: os.environ/GROQ_API_KEY
 
 general_settings:
   master_key: os.environ/LLM_GATEWAY_KEY
