@@ -23,9 +23,9 @@ from app.generation.common import (
 )
 from app.generation.objective import LearningObjective
 from app.generation.relevance import MAX_RELEVANCE_RETRY, check_relevance
+from app.llm.gateway import complete_structured
 from app.models import Chunk
 from app.retrieval.search import ChunkScope, retrieve
-from app.services.llm import complete_structured
 
 MAX_CORRECTION_RETRY = 1
 

@@ -10,8 +10,8 @@ from app.generation.common import (
     format_source_chunks,
 )
 from app.generation.planner import Concept
+from app.llm.gateway import complete_structured
 from app.models import Chunk
-from app.services.llm import complete_structured
 
 # ---------------------------------------------------------------------------
 # 2. Learning Objective — Verb analysis CoT, 1 lệnh gọi duy nhất (mục 5.1)

@@ -16,7 +16,7 @@ from PIL import Image
 from pptx import Presentation
 from pptx.enum.shapes import MSO_SHAPE_TYPE
 
-from app.services.llm import transcribe_audio
+from app.llm.gateway import transcribe_audio
 
 logger = logging.getLogger(__name__)
 
@@ -368,7 +368,7 @@ def _transcode_to_mp3(input_path: str, out_dir: str) -> str:
 def read_audio_video(path: str) -> list[DocumentUnit]:
     """Audio/video CHUA co transcript (khac read_transcript_file() -- doc
     file .srt/.vtt/.txt giang vien da co san, khong ASR). Chuyen sang mp3
-    chuan hoa qua ffmpeg roi goi Gemini phien am (app.services.llm.
+    chuan hoa qua ffmpeg roi goi Gemini phien am (app.llm.gateway.
     transcribe_audio) -- khong dung dich vu ASR rieng (vd Speechmatics) de
     giu dung triet ly "moi lenh goi LLM qua litellm, free-tier" da ap dung
     xuyen suot pipeline. Khong co timestamp cap tu/cau chinh xac nhu ASR

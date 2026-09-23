@@ -4,7 +4,7 @@ from pydantic import BaseModel, Field
 
 from app.generation.common import IGNORE_EMBEDDED_INSTRUCTIONS
 from app.generation.objective import LearningObjective
-from app.services.llm import complete_structured
+from app.llm.gateway import complete_structured
 
 # ---------------------------------------------------------------------------
 # 4. Slides — nhận trực tiếp Markdown từ Content, Backward Design bám Learning

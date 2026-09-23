@@ -13,6 +13,7 @@ import pytest
 
 from app.db import SessionLocal
 from app.ingestion.document_pipeline import run_document_pipeline_step
+from app.jobs.queue import enqueue_job
 from app.models import (
     Chunk,
     Course,
@@ -24,7 +25,6 @@ from app.models import (
     User,
     UserRole,
 )
-from app.services.job_queue import enqueue_job
 
 SAMPLE_TEXT = (
     "Doan mot noi ve khai niem A voi nhieu chi tiet quan trong can duoc giu "

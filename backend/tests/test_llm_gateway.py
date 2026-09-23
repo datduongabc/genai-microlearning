@@ -9,7 +9,7 @@ import pytest
 from pydantic import BaseModel
 
 from app.config import settings
-from app.services import llm
+from app.llm import gateway as llm
 
 
 @pytest.fixture

@@ -3,8 +3,8 @@
 
 from pydantic import BaseModel, Field
 
+from app.llm.gateway import complete, complete_structured
 from app.models import Chunk
-from app.services.llm import complete, complete_structured
 
 HISTORY_TURNS = 4
 

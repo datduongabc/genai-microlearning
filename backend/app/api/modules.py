@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session, joinedload, selectinload
 from app.api.deps import get_current_user
 from app.auth.rate_limit import limiter, user_or_address
 from app.db import get_db
+from app.jobs.queue import enqueue_job
 from app.models import (
     ComponentType,
     Document,
@@ -19,7 +20,6 @@ from app.models import (
     ModuleComponent,
     User,
 )
-from app.services.job_queue import enqueue_job
 
 router = APIRouter(prefix="/modules", tags=["modules"], dependencies=[Depends(get_current_user)])
 

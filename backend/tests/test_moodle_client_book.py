@@ -5,7 +5,7 @@ PHP style form fields (chapters[0][title]) that its web service parses."""
 import httpx
 import pytest
 
-from app.services import moodle_client
+from app.moodle import client as moodle_client
 
 CHAPTERS = [
     {"title": "Mục tiêu học tập", "content": "<p>Goal</p>", "subchapter": 0},

@@ -9,8 +9,8 @@ from litellm.exceptions import AuthenticationError, RateLimitError
 
 from app.config import settings
 from app.ingestion import embeddings
+from app.jobs.queue import is_terminal_error
 from app.models.models import EMBEDDING_DIM
-from app.services.job_queue import is_terminal_error
 
 
 class Provider:

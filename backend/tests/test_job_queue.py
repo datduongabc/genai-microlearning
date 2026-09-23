@@ -16,14 +16,14 @@ import pytest
 from litellm.exceptions import RateLimitError
 
 from app.db import SessionLocal
-from app.models import Course, Document, DocumentStatus, Job, JobStatus, JobType, User, UserRole
-from app.services.job_queue import (
+from app.jobs.queue import (
     claim_next_job,
     enqueue_job,
     handle_job_error,
     is_terminal_error,
     sweep_stuck_jobs,
 )
+from app.models import Course, Document, DocumentStatus, Job, JobStatus, JobType, User, UserRole
 
 
 @pytest.fixture

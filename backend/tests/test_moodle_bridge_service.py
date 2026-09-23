@@ -13,7 +13,7 @@ from pathlib import Path
 import yaml
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-CLIENT = REPO_ROOT / "backend" / "app" / "services" / "moodle_client.py"
+CLIENT = REPO_ROOT / "backend" / "app" / "moodle" / "client.py"
 PLUGIN = REPO_ROOT / "moodle-plugin" / "local_lms_bridge"
 MOODLE_IMAGE = REPO_ROOT / "devops" / "moodle"
 COMPOSE = REPO_ROOT / "devops" / "docker-compose.yml"

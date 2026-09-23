@@ -9,8 +9,8 @@ from typing import Literal
 from pydantic import BaseModel, Field
 
 from app.generation.common import IGNORE_EMBEDDED_INSTRUCTIONS, format_source_chunks
+from app.llm.gateway import complete_structured
 from app.models import Chunk
-from app.services.llm import complete_structured
 
 MAX_RELEVANCE_RETRY = 1
 

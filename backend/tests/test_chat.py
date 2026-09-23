@@ -1,4 +1,4 @@
-from app.services.chat import answer_question, condense_query
+from app.chat.service import answer_question, condense_query
 
 
 def test_condense_query_no_history_returns_message_unchanged():

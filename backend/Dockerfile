@@ -1,13 +1,7 @@
 # syntax=docker/dockerfile:1
 
-# Comments are provided throughout this file to help you get started.
-# If you need more help, visit the Dockerfile reference guide at
-# https://docs.docker.com/go/dockerfile-reference/
-
-# Want to help us make this template better? Share your feedback here: https://forms.gle/ybq9Krt8jtBL3iCk7
-
 ARG PYTHON_VERSION=3.12
-FROM python:${PYTHON_VERSION}-slim as base
+FROM python:${PYTHON_VERSION}-slim AS base
 
 # Prevents Python from writing pyc files.
 ENV PYTHONDONTWRITEBYTECODE=1
@@ -18,9 +12,17 @@ ENV PYTHONUNBUFFERED=1
 
 WORKDIR /app
 
-# Nguoi dung thuong de chay ung dung, khong phai root.
-# Co thu muc nha that chu khong phai /nonexistent: uv ghi cache vao do, va
-# khong ghi duoc thi moi lenh `uv run` deu that bai ngay khi container khoi dong.
+# Tesseract doc tai lieu quet, ffmpeg tach tieng khoi video truoc khi phien am.
+# Cai khi con la root, truoc khi doi sang nguoi dung thuong.
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    tesseract-ocr tesseract-ocr-vie ffmpeg \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN pip install --no-cache-dir uv
+
+# Nguoi dung thuong de chay ung dung, khong phai root. Co thu muc nha that chu
+# khong phai /nonexistent: uv ghi cache vao do, va khong ghi duoc thi moi lenh
+# `uv run` deu that bai ngay khi container khoi dong.
 ARG UID=10001
 RUN adduser \
     --disabled-password \
@@ -28,33 +30,27 @@ RUN adduser \
     --home "/home/appuser" \
     --shell "/bin/bash" \
     --uid "${UID}" \
-    appuser
+    appuser \
+    && chown appuser:appuser /app
 
-# Tesseract doc tai lieu quet, ffmpeg tach tieng khoi video truoc khi phien am.
-# Phai cai khi con la root, truoc khi chuyen sang nguoi dung thuong o duoi.
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    tesseract-ocr tesseract-ocr-vie ffmpeg \
-    && rm -rf /var/lib/apt/lists/*
+# Doi sang nguoi dung thuong TRUOC khi cai dat, khong phai sau. Hai ly do:
+# moi thu tao ra da thuoc dung chu so huu nen khong can `chown -R` o cuoi, ma
+# lenh do buoc Docker chep lai ca thu muc .venv 1,5 GB sang mot lop moi chi de
+# doi quyen; va mo hinh tai ve nam trong cache cua chinh nguoi dung se chay ung
+# dung, thay vi nam trong /root/.cache ma nguoi dung do khong doc duoc va phai
+# tai lai luc chay.
+USER appuser
 
-RUN pip install --no-cache-dir uv
+COPY --chown=appuser:appuser pyproject.toml uv.lock ./
 
-COPY pyproject.toml uv.lock ./
-
-RUN --mount=type=cache,target=/root/.cache/uv \
+RUN --mount=type=cache,target=/home/appuser/.cache/uv,uid=10001,gid=10001 \
     uv sync --frozen --no-dev
 
 # Tai san mo hinh rerank vao anh, de lan chay dau tien khong phai cho tai ve.
 # Khong con nap all-MiniLM-L6-v2: tu khi nhung qua gateway thi khong ai dung no nua.
 RUN uv run python -c "from sentence_transformers import CrossEncoder; CrossEncoder('BAAI/bge-reranker-base')"
 
-COPY . .
-
-# uv can ghi vao .venv va vao cache khi chay, nen quyen phai thuoc ve nguoi dung
-# se chay ung dung chu khong phai root.
-RUN chown -R appuser:appuser /app /home/appuser
-
-# Chuyen sang nguoi dung thuong sau khi da cai dat xong moi thu.
-USER appuser
+COPY --chown=appuser:appuser . .
 
 EXPOSE 8000
 
