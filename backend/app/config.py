@@ -1,5 +1,6 @@
 import logging
 import secrets
+from pathlib import Path
 from typing import Literal
 
 from pydantic import Field, model_validator
@@ -7,6 +8,17 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 from sqlalchemy.engine import make_url
 
 logger = logging.getLogger(__name__)
+
+# Một tệp .env duy nhất cho cả container lẫn các lệnh chạy trên máy thật, và đó là
+# chính tệp mà docker-compose.yml đọc. Trước đây có thêm backend/.env chép lại 23
+# biến giống hệt, và hai bản đã lệch nhau hai lần, lần nào cũng chỉ lộ ra khi một
+# trong hai đường chạy hỏng.
+#
+# Đường dẫn tuyệt đối tính từ chính tệp này chứ không phải từ thư mục đang đứng, để
+# chạy alembic hay script từ đâu cũng ra cùng một tệp. Trong container đường dẫn này
+# không tồn tại, pydantic bỏ qua tệp thiếu và mọi giá trị đến từ biến môi trường mà
+# compose truyền vào.
+_ENV_FILE = Path(__file__).resolve().parents[2] / "devops" / ".env"
 
 MIN_PRODUCTION_SECRET_LENGTH = 32
 # Passwords that are published in this repository or in every tutorial.
@@ -16,7 +28,7 @@ PUBLIC_DEFAULT_PASSWORDS = {
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+    model_config = SettingsConfigDict(env_file=_ENV_FILE, extra="ignore")
 
     # "production" makes the service refuse to start on a configuration that would leave
     # authentication weak (see _production_problems), hides the API description and adds
