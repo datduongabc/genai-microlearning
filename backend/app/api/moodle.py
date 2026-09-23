@@ -1,0 +1,178 @@
+import html
+import uuid
+
+import bleach
+import markdown
+from fastapi import APIRouter, Depends, HTTPException, Request
+from pydantic import BaseModel, Field
+from sqlalchemy.orm import Session
+
+from app.api.deps import get_current_user
+from app.auth.rate_limit import limiter, user_or_address
+from app.db import get_db
+from app.models import ComponentType, Course, Module, ModuleComponent, User
+from app.services import moodle_client
+from app.services.moodle_client import MoodleError
+
+router = APIRouter(prefix="/modules", tags=["moodle"], dependencies=[Depends(get_current_user)])
+
+# LLM output is untrusted content (a source document could carry a prompt
+# injection payload trying to get a <script>/onerror= into generated text) --
+# strip anything outside this allowlist before it's stored as raw HTML in
+# Moodle (a Book chapter is FORMAT_HTML and quiz text is PARAM_RAW, both rendered unescaped).
+_ALLOWED_TAGS = ["h1", "h2", "h3", "p", "ul", "ol", "li", "strong", "em", "b", "i", "br", "code", "pre", "blockquote"]
+
+# The learner reads the Book in Vietnamese, so the level is named the way the interface names it.
+_BLOOM_LABEL = {
+    "remember": "Nhớ",
+    "understand": "Hiểu",
+    "apply": "Áp dụng",
+    "analyze": "Phân tích",
+    "evaluate": "Đánh giá",
+    "create": "Sáng tạo",
+}
+
+
+def _clean_html(html_text: str) -> str:
+    return bleach.clean(html_text, tags=_ALLOWED_TAGS, attributes={}, strip=True)
+
+
+def _plain(text: str) -> str:
+    """Text for a name or a chapter title, which Moodle shows as plain text: no tag survives."""
+    return " ".join(bleach.clean(text or "", tags=[], strip=True).split())
+
+
+def _component(module: Module, component_type: ComponentType) -> ModuleComponent | None:
+    return next((c for c in module.components if c.type == component_type), None)
+
+
+def _list(items: list[str], *, ordered: bool = False) -> str:
+    tag = "ol" if ordered else "ul"
+    return f"<{tag}>" + "".join(f"<li>{html.escape(item)}</li>" for item in items) + f"</{tag}>"
+
+
+def _objective_html(module: Module) -> str:
+    parts = [f"<p>{html.escape(module.learning_objective or '')}</p>"]
+    if module.bloom_level:
+        level = _BLOOM_LABEL.get(module.bloom_level, module.bloom_level)
+        parts.append(f"<p><strong>Cấp độ Bloom:</strong> {html.escape(level)}</p>")
+    if module.sub_objectives:
+        parts.append("<p><strong>Sau bài này bạn sẽ:</strong></p>")
+        parts.append(_list([str(s) for s in module.sub_objectives]))
+    return "".join(parts)
+
+
+def _build_book_chapters(module: Module) -> list[dict]:
+    """The module as short Book chapters: objective, content, one sub-chapter per slide under a
+    "Slide" chapter, example. The explanation is left out on purpose: it explains the answer of
+    the quiz, so it belongs to the question's feedback, not to the reading before it."""
+    chapters: list[dict] = []
+
+    def add(title: str, body: str, fallback_title: str, subchapter: int = 0) -> None:
+        chapters.append(
+            {"title": _plain(title) or fallback_title, "content": _clean_html(body), "subchapter": subchapter}
+        )
+
+    if module.learning_objective:
+        add("Mục tiêu học tập", _objective_html(module), "Mục tiêu học tập")
+
+    content = _component(module, ComponentType.content)
+    text = (content.content.get("markdown") or "") if content else ""
+    if text.strip():
+        add("Nội dung", markdown.markdown(text), "Nội dung")
+
+    slides_component = _component(module, ComponentType.slides)
+    slides = (slides_component.content.get("slides") or []) if slides_component else []
+    if slides:
+        titles = [_plain(s.get("title", "")) or f"Slide {n}" for n, s in enumerate(slides, start=1)]
+        add("Slide", _list(titles, ordered=True), "Slide")
+        for n, (title, slide) in enumerate(zip(titles, slides, strict=True), start=1):
+            add(title, _list([str(b) for b in slide.get("bullets", []) if str(b).strip()]), f"Slide {n}", 1)
+
+    example = _component(module, ComponentType.example)
+    if example:
+        add(
+            "Ví dụ",
+            f"<p><strong>Bối cảnh:</strong> {html.escape(str(example.content.get('context', '')))}</p>"
+            f"<p><strong>Phân tích:</strong> {html.escape(str(example.content.get('analysis', '')))}</p>",
+            "Ví dụ",
+        )
+    return chapters
+
+
+def _build_questions(component: ModuleComponent, explanation: str | None = None) -> list[dict]:
+    """The questions as Moodle wants them. `explanation`, when given, replaces the one the first
+    question came with (the explanation is written for that question): it is what the learner
+    sees after answering."""
+    return [
+        {
+            "stem": _clean_html(q.stem),
+            "choices": [_clean_html(c) for c in q.choices.get("options", [])],
+            "correct_index": int(q.answer_key),
+            "explanation": _clean_html((explanation if n == 0 else None) or q.explanation or ""),
+        }
+        for n, q in enumerate(component.questions)
+    ]
+
+
+class PublishRequest(BaseModel):
+    # Which existing Moodle section to add the Book/Quiz into (0 = the
+    # course's general/top section) -- see /courses/{id}/moodle-sections for
+    # the list a teacher picks from. Defaults to 0 for backwards
+    # compatibility with older frontend builds that don't send it yet.
+    section_num: int = Field(default=0, ge=0, le=1000)
+
+
+@router.post("/{module_id}/publish-to-moodle")
+@limiter.limit("20/minute", key_func=user_or_address)
+def publish_to_moodle(
+    request: Request,
+    module_id: uuid.UUID,
+    payload: PublishRequest = PublishRequest(),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    module = db.get(Module, module_id)
+    if module is None or module.course.owner_id != current_user.id:
+        raise HTTPException(status_code=404, detail="Module not found")
+
+    course = db.get(Course, module.course_id)
+    if course.moodle_course_id is None:
+        raise HTTPException(
+            status_code=400,
+            detail="Course is not linked to a Moodle course yet -- link or create one first "
+            "(POST /courses/{id}/link-moodle or /courses/{id}/create-moodle)",
+        )
+
+    chapters = _build_book_chapters(module)
+    if not chapters:
+        raise HTTPException(status_code=422, detail="Mô-đun chưa có nội dung nào để đẩy lên Moodle.")
+
+    try:
+        result = {
+            "moodle_course_id": course.moodle_course_id,
+            "book_cmid": moodle_client.create_book(
+                course.moodle_course_id, _plain(module.title) or "Mô-đun", chapters, payload.section_num
+            ),
+        }
+
+        # Practice comes before the quiz: it is the rehearsal.
+        practice = _component(module, ComponentType.practice)
+        if practice and practice.questions:
+            result["practice_cmid"] = moodle_client.create_quiz(
+                course.moodle_course_id, f"{_plain(module.title)} - Practice", _build_questions(practice),
+                payload.section_num,
+            )
+
+        quiz = _component(module, ComponentType.quiz)
+        if quiz and quiz.questions:
+            explanation = _component(module, ComponentType.explanation)
+            explained = ((explanation.content.get("explanation_text") or "") if explanation else "").strip()
+            result["quiz_cmid"] = moodle_client.create_quiz(
+                course.moodle_course_id, f"{_plain(module.title)} - Quiz", _build_questions(quiz, explained or None),
+                payload.section_num,
+            )
+    except MoodleError as e:
+        raise HTTPException(status_code=502, detail=f"Moodle push failed: {e}") from e
+
+    return result

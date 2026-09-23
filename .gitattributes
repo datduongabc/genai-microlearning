@@ -1,0 +1,14 @@
+# Kho ma duoc phat trien tren Windows nhung chay trong container Linux.
+# Chuan hoa ve LF khi luu de script shell va tep PHP khong bi CRLF lam hong.
+* text=auto eol=lf
+
+*.sh text eol=lf
+*.php text eol=lf
+*.py text eol=lf
+
+*.png binary
+*.jpg binary
+*.pdf binary
+*.pptx binary
+*.mp3 binary
+*.mp4 binary

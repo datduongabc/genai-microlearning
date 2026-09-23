@@ -1,0 +1,35 @@
+# Bi mat. devops/.env chua khoa that cua Gemini, Anthropic, OpenAI, SECRET_KEY,
+# mat khau co so du lieu va MOODLE_TOKEN, nen phai chan o day truoc khi git init.
+.env
+*.env
+!*.env.example
+
+# Ma nguon Moodle la san pham ben thu ba, 61.556 tep va 1,42 GB.
+# README huong dan tai ve va giai nen vao thu muc nay.
+/moodle/
+
+# Tai lieu mon hoc dung de thu nghiem, 151 MB ke ca video.
+/documents/
+
+# Phu thuoc va ket qua build
+.venv/
+node_modules/
+dist/
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# Cache cong cu
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# Du lieu chay
+/backend/uploads/
+*.log
+
+# Trinh soan thao va he dieu hanh
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db

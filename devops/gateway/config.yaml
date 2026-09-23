@@ -1,0 +1,47 @@
+# LLM gateway routing (LiteLLM Proxy). The backend asks for an alias
+# (LLM_MODEL_DEV / LLM_MODEL_DEMO, see backend/app/config.py); this file is the
+# only place that says which provider and model an alias means, and the only
+# place that reads the provider API keys, from the environment (never write a
+# key here). A provider whose key is empty simply cannot be used.
+#
+# Model ids: Gemini uses the "-latest" aliases because Google deprecated dated
+# names for new API keys mid-project. Check the OpenAI ids when you first enable
+# that provider, model names change over time.
+model_list:
+  - model_name: gemini-fast
+    litellm_params:
+      model: gemini/gemini-flash-lite-latest
+      api_key: os.environ/GEMINI_API_KEY
+  - model_name: gemini-pro
+    litellm_params:
+      model: gemini/gemini-pro-latest
+      api_key: os.environ/GEMINI_API_KEY
+
+  # Embeddings for retrieval (backend/app/ingestion/embeddings.py). Multilingual, so Vietnamese
+  # documents are searched properly, and served by the provider so the backend image does not
+  # have to carry an embedding model.
+  - model_name: embed-default
+    litellm_params:
+      model: gemini/gemini-embedding-001
+      api_key: os.environ/GEMINI_API_KEY
+
+  - model_name: openai-fast
+    litellm_params:
+      model: openai/gpt-4o-mini
+      api_key: os.environ/OPENAI_API_KEY
+  - model_name: openai-pro
+    litellm_params:
+      model: openai/gpt-4o
+      api_key: os.environ/OPENAI_API_KEY
+
+  - model_name: claude-fast
+    litellm_params:
+      model: anthropic/claude-haiku-4-5-20251001
+      api_key: os.environ/ANTHROPIC_API_KEY
+  - model_name: claude-pro
+    litellm_params:
+      model: anthropic/claude-sonnet-5
+      api_key: os.environ/ANTHROPIC_API_KEY
+
+general_settings:
+  master_key: os.environ/LLM_GATEWAY_KEY

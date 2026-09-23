@@ -1,0 +1,67 @@
+[project]
+name = "backend"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = [
+    "alembic>=1.20.0",
+    "bcrypt>=5.0.0",
+    "beautifulsoup4>=4.12",
+    "email-validator>=2.3.0",
+    "fastapi>=0.141.1",
+    "httpx>=0.28.1",
+    "langchain>=1.4.0",
+    "langchain-core>=1.6.3",
+    "langchain-text-splitters>=0.3.0",
+    "langgraph>=1.2.11",
+    "litellm>=1.100.1",
+    "lxml>=5.0",
+    "pgvector>=0.5.0",
+    "pillow>=10.0",
+    "psycopg[binary]>=3.3.5",
+    "pydantic-settings>=2.15.0",
+    "pymupdf>=1.24",
+    "pyjwt>=2.14.0",
+    "python-docx>=1.1",
+    "python-multipart>=0.0.32",
+    "python-pptx>=1.0",
+    "pytesseract>=0.3.13",
+    "rank-bm25>=0.2.2",
+    "sentence-transformers>=6.0.1",
+    "sqlalchemy>=2.0.52",
+    "torch>=2.2,<3.0",
+    "uvicorn[standard]>=0.52.4",
+    "slowapi>=0.1.10",
+    "markdown>=3.10.3",
+    "bleach>=6.2.0",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+    "pytest-asyncio>=1.4.0",
+    "ruff>=0.16.7",
+]
+
+[tool.pytest.ini_options]
+markers = [
+    "live_llm: calls real LLM APIs end-to-end through the actual HTTP API",
+    "rate_limits: runs with the per-client rate limits switched on (they are off in every other test)",
+]
+addopts = "-m 'not live_llm'"
+
+[tool.ruff]
+line-length = 100
+
+[tool.ruff.lint]
+# B008: FastAPI's Depends() is meant to be used as an argument default.
+# B023: flake8-bugbear's loop-closure check false-positives on `flush()` helpers that are called synchronously inside the same loop iteration.
+# BLE001: OCR fallback in document_readers.py deliberately catches broad
+ignore = ["B008", "B023", "BLE001"]
+
+[tool.uv.sources]
+torch = [{ index = "pytorch-cpu" }]
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true

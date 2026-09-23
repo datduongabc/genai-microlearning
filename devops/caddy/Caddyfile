@@ -1,0 +1,27 @@
+{
+	# Redirecting HTTP to HTTPS is what a public site wants (CADDY_AUTO_HTTPS=on), but
+	# locally the redirect would point at port 443 while the proxy is published on another.
+	auto_https {$CADDY_AUTO_HTTPS:disable_redirects}
+}
+
+{$SITE_ADDRESS:localhost} {
+	encode zstd gzip
+
+	header {
+		# 0 tells a browser to forget any earlier HSTS for the name, which is what
+		# "localhost" must get: pinning it would also break Moodle's plain http port.
+		# A public site sets HSTS_MAX_AGE=31536000.
+		Strict-Transport-Security "max-age={$HSTS_MAX_AGE:0}"
+		-Server
+	}
+
+	# The API, under the prefix the frontend already calls it by. The proxy overwrites
+	# X-Forwarded-For with the address it saw, so a client cannot pick its own.
+	handle_path /api/* {
+		reverse_proxy backend:8000
+	}
+
+	handle {
+		reverse_proxy frontend:5173
+	}
+}

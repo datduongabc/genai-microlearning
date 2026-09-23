@@ -1,0 +1,657 @@
+import { useCallback, useEffect, useState } from 'react'
+import { Link, useParams } from 'react-router-dom'
+import { AppShell } from '../components/AppShell'
+import {
+  apiErrorMessage,
+  getMoodleSections,
+  getModule,
+  publishToMoodle,
+  updateComponentContent,
+  updateModuleTitle,
+  type ModuleComponentInfo,
+  type ModuleDetail,
+  type MoodleSection,
+  type PublishToMoodleResult,
+} from '../api'
+
+const BLOOM_LABEL: Record<string, string> = {
+  remember: 'Nhớ',
+  understand: 'Hiểu',
+  apply: 'Áp dụng',
+  analyze: 'Phân tích',
+  evaluate: 'Đánh giá',
+  create: 'Sáng tạo',
+}
+
+const COMPONENT_LABEL: Record<string, string> = {
+  content: 'Nội dung',
+  slides: 'Slide bài giảng',
+  example: 'Ví dụ minh họa',
+  quiz: 'Câu hỏi kiểm tra (Quiz)',
+  practice: 'Câu hỏi luyện tập (Practice)',
+  explanation: 'Giải thích đáp án',
+}
+
+export function ModulePreviewPage() {
+  const { moduleId } = useParams<{ moduleId: string }>()
+  const [module, setModule] = useState<ModuleDetail | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  const refresh = useCallback(async () => {
+    if (!moduleId) return
+    setModule(await getModule(moduleId))
+  }, [moduleId])
+
+  // The first load sets state from promise callbacks, and drops a result that
+  // arrives after the page has gone; refresh() is for reloading after an edit.
+  useEffect(() => {
+    let cancelled = false
+    const first = moduleId
+      ? getModule(moduleId).then((loaded) => {
+          if (!cancelled) setModule(loaded)
+        })
+      : Promise.resolve()
+    first.finally(() => {
+      if (!cancelled) setLoading(false)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [moduleId])
+
+  if (loading) {
+    return (
+      <AppShell title="Mô-đun">
+        <p className="text-sm text-gray-500">Đang tải...</p>
+      </AppShell>
+    )
+  }
+
+  if (!module) {
+    return (
+      <AppShell title="Mô-đun">
+        <p className="text-sm text-red-700">Không tìm thấy mô-đun.</p>
+      </AppShell>
+    )
+  }
+
+  return (
+    <AppShell title="Xem trước mô-đun">
+      <ModuleHeader module={module} onSaved={refresh} />
+      <div className="mt-8 flex flex-col gap-6">
+        {module.components.map((c) => (
+          <ComponentCard key={c.id} moduleId={module.id} component={c} onSaved={refresh} />
+        ))}
+      </div>
+      <PublishToMoodleSection
+        moduleId={module.id}
+        courseId={module.course_id}
+        moodleCourseId={module.moodle_course_id}
+      />
+    </AppShell>
+  )
+}
+
+function PublishToMoodleSection({
+  moduleId,
+  courseId,
+  moodleCourseId,
+}: {
+  moduleId: string
+  courseId: string
+  moodleCourseId: number | null
+}) {
+  const [publishing, setPublishing] = useState(false)
+  const [result, setResult] = useState<PublishToMoodleResult | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [sections, setSections] = useState<MoodleSection[]>([])
+  const [sectionNum, setSectionNum] = useState(0)
+  const [addNewSection, setAddNewSection] = useState(false)
+
+  useEffect(() => {
+    if (moodleCourseId === null) return
+    getMoodleSections(courseId)
+      .then(setSections)
+      .catch(() => setSections([]))
+  }, [courseId, moodleCourseId])
+
+  async function handlePublish() {
+    setPublishing(true)
+    setError(null)
+    setResult(null)
+    try {
+      // "Thêm section mới" gửi 1 số section chưa tồn tại (tổng số section
+      // hiện có) -- plugin tự tạo mới đúng section đó khi push.
+      const target = addNewSection ? sections.length : sectionNum
+      setResult(await publishToMoodle(moduleId, target))
+    } catch (err) {
+      setError(apiErrorMessage(err, 'Push to Moodle thất bại'))
+    } finally {
+      setPublishing(false)
+    }
+  }
+
+  if (moodleCourseId === null) {
+    return (
+      <div className="mt-8 border-t border-gray-200 pt-6">
+        <p className="text-sm text-gray-600">
+          Course của mô-đun này chưa được liên kết với Moodle.{' '}
+          <Link to={`/courses/${courseId}`} className="font-semibold text-terracotta hover:underline">
+            Vào trang course để liên kết trước
+          </Link>
+          .
+        </p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="mt-8 border-t border-gray-200 pt-6">
+      {!addNewSection && sections.length > 0 && (
+        <div className="mb-3">
+          <label className="mr-2 text-sm text-gray-600">Section:</label>
+          <select
+            value={sectionNum}
+            onChange={(e) => setSectionNum(Number(e.target.value))}
+            disabled={result !== null}
+            className="rounded-[3px] border border-gray-300 px-2 py-1 text-sm"
+          >
+            {sections.map((s) => (
+              <option key={s.sectionnum} value={s.sectionnum}>
+                {s.name || `Section ${s.sectionnum}`}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+      <label className="mb-3 flex items-center gap-2 text-sm text-gray-600">
+        <input
+          type="checkbox"
+          checked={addNewSection}
+          onChange={(e) => setAddNewSection(e.target.checked)}
+          disabled={result !== null}
+        />
+        Thêm vào 1 section mới
+      </label>
+
+      <button
+        onClick={handlePublish}
+        disabled={publishing || result !== null}
+        className="rounded-[3px] bg-navy px-5 py-2.5 text-sm font-semibold text-[#f3f1ea] hover:bg-[#28394b] disabled:opacity-60"
+      >
+        {publishing ? 'Đang đẩy lên Moodle...' : result !== null ? 'Đã đẩy lên Moodle' : 'Push to Moodle'}
+      </button>
+
+      {result && (
+        <p className="mt-3 text-sm text-green-700">
+          Đã đẩy lên Moodle (course id {result.moodle_course_id}): sách nội dung
+          {result.practice_cmid ? ', practice' : ''}
+          {result.quiz_cmid ? ', quiz' : ''} đã tạo thành công.
+        </p>
+      )}
+      {error && <p className="mt-3 text-sm text-red-700">{error}</p>}
+    </div>
+  )
+}
+
+function ModuleHeader({ module, onSaved }: { module: ModuleDetail; onSaved: () => Promise<void> }) {
+  const [editing, setEditing] = useState(false)
+  const [title, setTitle] = useState(module.title)
+  const [saving, setSaving] = useState(false)
+
+  async function handleSave() {
+    setSaving(true)
+    try {
+      await updateModuleTitle(module.id, title)
+      await onSaved()
+      setEditing(false)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div className="border-b border-gray-200 pb-6">
+      {editing ? (
+        <div className="flex items-center gap-3">
+          <input
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            className="flex-1 border-0 border-b-[1.5px] border-terracotta bg-transparent font-serif text-xl font-semibold outline-none"
+          />
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="rounded-[3px] bg-terracotta px-4 py-1.5 text-xs font-semibold text-white hover:bg-terracotta-dark disabled:opacity-60"
+          >
+            {saving ? 'Đang lưu...' : 'Lưu'}
+          </button>
+          <button
+            onClick={() => {
+              setTitle(module.title)
+              setEditing(false)
+            }}
+            className="text-xs font-semibold text-gray-500 hover:text-gray-700"
+          >
+            Hủy
+          </button>
+        </div>
+      ) : (
+        <button onClick={() => setEditing(true)} className="text-left hover:text-terracotta">
+          <h2 className="font-serif text-xl font-semibold">{module.title}</h2>
+        </button>
+      )}
+
+      {module.learning_objective && (
+        <p className="mt-3 text-sm text-gray-600">
+          <span className="font-semibold text-gray-800">Learning Objective: </span>
+          {module.learning_objective}
+        </p>
+      )}
+      {module.bloom_level && (
+        <span className="mt-2 inline-block rounded-[3px] bg-navy px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-[#f3f1ea]">
+          Bloom: {BLOOM_LABEL[module.bloom_level] ?? module.bloom_level}
+        </span>
+      )}
+    </div>
+  )
+}
+
+function ComponentCard({
+  moduleId,
+  component,
+  onSaved,
+}: {
+  moduleId: string
+  component: ModuleComponentInfo
+  onSaved: () => Promise<void>
+}) {
+  return (
+    <section className="rounded-[3px] border border-gray-200 bg-white p-6">
+      <h3 className="mb-4 text-xs font-semibold uppercase tracking-wider text-terracotta">
+        {COMPONENT_LABEL[component.type] ?? component.type}
+      </h3>
+      {component.type === 'content' && (
+        <MarkdownFieldEditor moduleId={moduleId} component={component} onSaved={onSaved} />
+      )}
+      {component.type === 'slides' && (
+        <SlidesEditor moduleId={moduleId} component={component} onSaved={onSaved} />
+      )}
+      {component.type === 'example' && (
+        <ExampleEditor moduleId={moduleId} component={component} onSaved={onSaved} />
+      )}
+      {component.type === 'explanation' && (
+        <ExplanationEditor moduleId={moduleId} component={component} onSaved={onSaved} />
+      )}
+      {(component.type === 'quiz' || component.type === 'practice') && (
+        <QuizDisplay component={component} />
+      )}
+    </section>
+  )
+}
+
+function SaveCancelRow({
+  editing,
+  saving,
+  onEdit,
+  onSave,
+  onCancel,
+}: {
+  editing: boolean
+  saving: boolean
+  onEdit: () => void
+  onSave: () => void
+  onCancel: () => void
+}) {
+  if (!editing) {
+    return (
+      <button onClick={onEdit} className="text-xs font-semibold text-terracotta hover:underline">
+        Sửa
+      </button>
+    )
+  }
+  return (
+    <div className="flex gap-3">
+      <button
+        onClick={onSave}
+        disabled={saving}
+        className="rounded-[3px] bg-terracotta px-4 py-1.5 text-xs font-semibold text-white hover:bg-terracotta-dark disabled:opacity-60"
+      >
+        {saving ? 'Đang lưu...' : 'Lưu'}
+      </button>
+      <button onClick={onCancel} className="text-xs font-semibold text-gray-500 hover:text-gray-700">
+        Hủy
+      </button>
+    </div>
+  )
+}
+
+function MarkdownFieldEditor({
+  moduleId,
+  component,
+  onSaved,
+}: {
+  moduleId: string
+  component: ModuleComponentInfo
+  onSaved: () => Promise<void>
+}) {
+  const original = (component.content.markdown as string) ?? ''
+  const [editing, setEditing] = useState(false)
+  const [value, setValue] = useState(original)
+  const [saving, setSaving] = useState(false)
+
+  async function handleSave() {
+    setSaving(true)
+    try {
+      await updateComponentContent(moduleId, component.id, { ...component.content, markdown: value })
+      await onSaved()
+      setEditing(false)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div className="flex flex-col gap-3">
+      {editing ? (
+        <textarea
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          rows={10}
+          className="w-full rounded border border-gray-300 p-3 font-mono text-sm outline-none focus:border-terracotta"
+        />
+      ) : (
+        <pre className="whitespace-pre-wrap font-sans text-[15px] leading-relaxed">{original}</pre>
+      )}
+      <SaveCancelRow
+        editing={editing}
+        saving={saving}
+        onEdit={() => setEditing(true)}
+        onSave={handleSave}
+        onCancel={() => {
+          setValue(original)
+          setEditing(false)
+        }}
+      />
+    </div>
+  )
+}
+
+interface Slide {
+  title: string
+  bullets: string[]
+}
+
+function SlidesEditor({
+  moduleId,
+  component,
+  onSaved,
+}: {
+  moduleId: string
+  component: ModuleComponentInfo
+  onSaved: () => Promise<void>
+}) {
+  const originalSlides = ((component.content.slides as Slide[]) ?? []).map((s) => ({ ...s }))
+  const [editing, setEditing] = useState(false)
+  const [slides, setSlides] = useState<Slide[]>(originalSlides)
+  const [saving, setSaving] = useState(false)
+
+  async function handleSave() {
+    setSaving(true)
+    try {
+      await updateComponentContent(moduleId, component.id, { ...component.content, slides })
+      await onSaved()
+      setEditing(false)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div className="flex flex-col gap-4">
+      {(editing ? slides : originalSlides).map((slide, i) => (
+        <div key={i} className="border-l-2 border-gray-200 pl-4">
+          {editing ? (
+            <>
+              <input
+                value={slide.title}
+                onChange={(e) =>
+                  setSlides((prev) => prev.map((s, j) => (j === i ? { ...s, title: e.target.value } : s)))
+                }
+                className="w-full border-0 border-b border-gray-300 bg-transparent pb-1 font-semibold outline-none focus:border-terracotta"
+              />
+              <textarea
+                value={slide.bullets.join('\n')}
+                onChange={(e) =>
+                  setSlides((prev) =>
+                    prev.map((s, j) => (j === i ? { ...s, bullets: e.target.value.split('\n') } : s)),
+                  )
+                }
+                rows={Math.max(2, slide.bullets.length)}
+                className="mt-2 w-full rounded border border-gray-300 p-2 text-sm outline-none focus:border-terracotta"
+              />
+            </>
+          ) : (
+            <>
+              <div className="font-semibold">{slide.title}</div>
+              <ul className="mt-1 list-disc pl-5 text-sm text-gray-700">
+                {slide.bullets.filter(Boolean).map((b, j) => (
+                  <li key={j}>{b}</li>
+                ))}
+              </ul>
+            </>
+          )}
+        </div>
+      ))}
+      <SaveCancelRow
+        editing={editing}
+        saving={saving}
+        onEdit={() => setEditing(true)}
+        onSave={handleSave}
+        onCancel={() => {
+          setSlides(originalSlides)
+          setEditing(false)
+        }}
+      />
+    </div>
+  )
+}
+
+function ExampleEditor({
+  moduleId,
+  component,
+  onSaved,
+}: {
+  moduleId: string
+  component: ModuleComponentInfo
+  onSaved: () => Promise<void>
+}) {
+  const originalContext = (component.content.context as string) ?? ''
+  const originalAnalysis = (component.content.analysis as string) ?? ''
+  const [editing, setEditing] = useState(false)
+  const [context, setContext] = useState(originalContext)
+  const [analysis, setAnalysis] = useState(originalAnalysis)
+  const [saving, setSaving] = useState(false)
+
+  async function handleSave() {
+    setSaving(true)
+    try {
+      await updateComponentContent(moduleId, component.id, { context, analysis })
+      await onSaved()
+      setEditing(false)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div className="flex flex-col gap-4">
+      <div>
+        <div className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-gray-500">
+          Bối cảnh
+        </div>
+        {editing ? (
+          <textarea
+            value={context}
+            onChange={(e) => setContext(e.target.value)}
+            rows={4}
+            className="w-full rounded border border-gray-300 p-3 text-sm outline-none focus:border-terracotta"
+          />
+        ) : (
+          <p className="whitespace-pre-wrap text-[15px] leading-relaxed">{originalContext}</p>
+        )}
+      </div>
+      <div>
+        <div className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-gray-500">
+          Phân tích
+        </div>
+        {editing ? (
+          <textarea
+            value={analysis}
+            onChange={(e) => setAnalysis(e.target.value)}
+            rows={4}
+            className="w-full rounded border border-gray-300 p-3 text-sm outline-none focus:border-terracotta"
+          />
+        ) : (
+          <p className="whitespace-pre-wrap text-[15px] leading-relaxed">{originalAnalysis}</p>
+        )}
+      </div>
+      <SaveCancelRow
+        editing={editing}
+        saving={saving}
+        onEdit={() => setEditing(true)}
+        onSave={handleSave}
+        onCancel={() => {
+          setContext(originalContext)
+          setAnalysis(originalAnalysis)
+          setEditing(false)
+        }}
+      />
+    </div>
+  )
+}
+
+function ExplanationEditor({
+  moduleId,
+  component,
+  onSaved,
+}: {
+  moduleId: string
+  component: ModuleComponentInfo
+  onSaved: () => Promise<void>
+}) {
+  const originalReasoning = (component.content.reasoning as string) ?? ''
+  const originalText = (component.content.explanation_text as string) ?? ''
+  const [editing, setEditing] = useState(false)
+  const [reasoning, setReasoning] = useState(originalReasoning)
+  const [text, setText] = useState(originalText)
+  const [saving, setSaving] = useState(false)
+
+  async function handleSave() {
+    setSaving(true)
+    try {
+      await updateComponentContent(moduleId, component.id, { reasoning, explanation_text: text })
+      await onSaved()
+      setEditing(false)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div className="flex flex-col gap-4">
+      <div>
+        <div className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-gray-500">
+          Lập luận (reasoning)
+        </div>
+        {editing ? (
+          <textarea
+            value={reasoning}
+            onChange={(e) => setReasoning(e.target.value)}
+            rows={4}
+            className="w-full rounded border border-gray-300 p-3 text-sm outline-none focus:border-terracotta"
+          />
+        ) : (
+          <p className="whitespace-pre-wrap text-sm text-gray-600">{originalReasoning}</p>
+        )}
+      </div>
+      <div>
+        <div className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-gray-500">
+          Giải thích
+        </div>
+        {editing ? (
+          <textarea
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            rows={4}
+            className="w-full rounded border border-gray-300 p-3 text-sm outline-none focus:border-terracotta"
+          />
+        ) : (
+          <p className="whitespace-pre-wrap text-[15px] leading-relaxed">{originalText}</p>
+        )}
+      </div>
+      <SaveCancelRow
+        editing={editing}
+        saving={saving}
+        onEdit={() => setEditing(true)}
+        onSave={handleSave}
+        onCancel={() => {
+          setReasoning(originalReasoning)
+          setText(originalText)
+          setEditing(false)
+        }}
+      />
+    </div>
+  )
+}
+
+function QuizDisplay({ component }: { component: ModuleComponentInfo }) {
+  const passed = component.content.passed as boolean | undefined
+  const question = component.questions[0]
+
+  return (
+    <div className="flex flex-col gap-3">
+      <span
+        className={`inline-block w-fit rounded-[3px] px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide ${
+          passed ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+        }`}
+      >
+        {passed ? 'Đạt CRAG groundedness/answerability' : 'Không đạt CRAG check'}
+      </span>
+
+      {question ? (
+        <div className="flex flex-col gap-2">
+          <p className="font-medium">{question.stem}</p>
+          <ul className="flex flex-col gap-1 text-sm">
+            {question.choices.options.map((opt, i) => (
+              <li
+                key={i}
+                className={
+                  String(i) === question.answer_key ? 'font-semibold text-green-700' : 'text-gray-700'
+                }
+              >
+                {String.fromCharCode(65 + i)}. {opt}
+                {String(i) === question.answer_key ? ' ✓' : ''}
+              </li>
+            ))}
+          </ul>
+          {question.explanation && (
+            <p className="mt-1 text-sm text-gray-500">
+              <span className="font-semibold">Giải thích: </span>
+              {question.explanation}
+            </p>
+          )}
+        </div>
+      ) : (
+        <p className="text-sm text-gray-500">
+          Không sinh được câu hỏi hợp lệ
+          {component.content.fail_reason ? ` (${component.content.fail_reason as string})` : ''}.
+        </p>
+      )}
+      <p className="text-xs text-gray-400">
+        Nội dung câu hỏi do pipeline CRAG sinh ra, không chỉnh sửa trực tiếp ở đây — nội dung này
+        chỉ đọc.
+      </p>
+    </div>
+  )
+}

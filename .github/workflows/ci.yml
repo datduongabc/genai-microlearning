@@ -1,0 +1,60 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    services:
+      db:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: microlearning
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgresql+psycopg://postgres:postgres@localhost:5432/microlearning
+      # Role riêng cho get_db() (RLS, migration 881bca16e9bc tự tạo role này
+      # lúc `alembic upgrade head` chạy) -- mật khẩu khớp mặc định của
+      # migration vì APP_RUNTIME_DB_PASSWORD không set trong CI.
+      APP_RUNTIME_DATABASE_URL: postgresql+psycopg://app_runtime:app_runtime_dev_password@localhost:5432/microlearning
+      # Role of the background worker (migration a4d7e2c9b6f1), same default password.
+      APP_WORKER_DATABASE_URL: postgresql+psycopg://app_worker:app_worker_dev_password@localhost:5432/microlearning
+      SECRET_KEY: ci-test-secret-not-for-production
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v3
+      - run: uv sync
+      # docker-compose's db service creates the vector extension via
+      # docker/init-pgvector.sql on first boot -- the CI service container
+      # has no such init hook, so it's created explicitly here instead.
+      - run: PGPASSWORD=postgres psql -h localhost -U postgres -d microlearning -c "CREATE EXTENSION IF NOT EXISTS vector;"
+      - run: uv run alembic upgrade head
+      - run: uv run ruff check .
+      - run: uv run pytest
+
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm ci
+      - run: npm run test
+      - run: npm run build

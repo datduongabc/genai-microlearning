@@ -1,0 +1,91 @@
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    container_name: do-an-db
+    environment:
+      POSTGRES_USER: ${DATABASE_USER}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
+      POSTGRES_DB: ${DATABASE_NAME}
+    volumes:
+      - db_data:/var/lib/postgresql/data
+      - ./backend/docker/pgvector.sql:/docker-entrypoint-initdb.d/pgvector.sql
+  moodle:
+    build: ./devops/moodle
+    container_name: do-an-moodle
+    environment:
+      MOODLE_TOKEN: ${MOODLE_TOKEN}
+      MOODLE_WWWROOT: ${MOODLE_WWWROOT}
+      MOODLE_DB_TYPE: ${MOODLE_DB_TYPE}
+      MOODLE_DB_HOST: ${MOODLE_DB_HOST}
+      MOODLE_DB_PORT: ${MOODLE_DB_PORT}
+      MOODLE_DB_USER: ${MOODLE_DB_USER}
+      MOODLE_DB_NAME: ${MOODLE_DB_NAME}
+      MOODLE_DB_PASSWORD: ${MOODLE_DB_PASSWORD}
+      MOODLE_SITE_NAME: ${MOODLE_SITE_NAME}
+      MOODLE_ADMIN_USER: ${MOODLE_ADMIN_USER}
+      MOODLE_ADMIN_PASSWORD: ${MOODLE_ADMIN_PASSWORD}
+      MOODLE_ADMIN_EMAIL: ${MOODLE_ADMIN_EMAIL}
+    ports:
+      - 8081:8081
+    volumes:
+      - ./moodle-src-523:/var/www/html
+      - moodle_data:/var/www/moodledata
+  gateway:
+    build: ./devops/gateway
+    container_name: do-an-llm-gateway
+    environment:
+      LLM_GATEWAY_KEY: ${LLM_GATEWAY_KEY}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+    ports:
+      - 4000:4000
+    volumes:
+      - ./devops/gateway/config.yaml:/app/config.yaml:ro
+  backend:
+    build: ./backend
+    container_name: do-an-backend
+    environment:
+      APP_RUNTIME_DATABASE_URL: ${APP_RUNTIME_DATABASE_URL_DOCKER}
+      APP_WORKER_DATABASE_URL: ${APP_WORKER_DATABASE_URL_DOCKER}
+      MOODLE_BASE_URL: http://localhost:8081
+      MOODLE_TOKEN: ${MOODLE_TOKEN}
+      MOODLE_WWWROOT: ${MOODLE_WWWROOT}
+      LLM_GATEWAY_URL: http://localhost:4000
+      LLM_GATEWAY_KEY: ${LLM_GATEWAY_KEY}
+      FORWARDED_ALLOW_IPS: 172.16.0.0/12,192.168.0.0/16,10.0.0.0/8
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+      - /app/.venv
+  frontend:
+    build: ./frontend
+    container_name: do-an-frontend
+    environment:
+      BACKEND_URL: http://localhost:8000
+    ports:
+      - 5173:5173
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+  proxy:
+    image: caddy:2-alpine
+    container_name: do-an-proxy
+    environment:
+      SITE_ADDRESS: ${SITE_ADDRESS:-localhost}
+      HSTS_MAX_AGE: ${HSTS_MAX_AGE:-0}
+      CADDY_AUTO_HTTPS: ${CADDY_AUTO_HTTPS:-disable_redirects}
+    ports:
+      - "${PROXY_BIND:-127.0.0.1}:${PROXY_HTTPS_PORT:-8443}:443"
+      - "${PROXY_BIND:-127.0.0.1}:${PROXY_HTTP_PORT:-8088}:80"
+    volumes:
+      - ./devops/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+
+volumes:
+  caddy_data:
+  caddy_config:
+  db_data:
+  moodle_data:

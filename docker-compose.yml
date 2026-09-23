@@ -1,0 +1,7 @@
+# Toan bo stack dinh nghia o devops/docker-compose.yml. Tep nay chi include lai,
+# de thu muc goc van la thu muc du an: duong dan tuong doi, tep .env va ten
+# project (do do ca ten volume) khong doi khi chay `docker compose up -d` tu goc.
+include:
+  - path: devops/docker-compose.yml
+    project_directory: .
+    env_file: devops/.env
