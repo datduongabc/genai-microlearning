@@ -42,9 +42,22 @@ Docker Desktop, và mã nguồn Moodle 5.2 tải riêng (xem bước 2).
 cp devops/.env.example devops/.env
 ```
 
-2. Tải mã nguồn Moodle 5.2 và giải nén vào thư mục `moodle/` ở gốc kho mã.
+2. Tải mã nguồn Moodle và giải nén vào thư mục `moodle/` ở gốc kho mã.
    Thư mục này không nằm trong kho vì nặng 1,42 GB và là sản phẩm của bên thứ ba.
    Sau khi giải nén, tệp `moodle/public/version.php` phải tồn tại.
+
+   Phiên bản phải **bằng hoặc mới hơn** phiên bản đã ghi trong cơ sở dữ liệu, hiện là
+   `5.2.3+ (Build: 20260916)`, tức `$version = 2026042003.01`.
+   Moodle từ chối khởi động với mã nguồn cũ hơn database và báo
+   "The code you are using is older than the version recorded in the database".
+   Kiểm tra phiên bản database bằng:
+
+   ```bash
+   docker compose exec db psql -U "$DATABASE_USER" -d microlearning \
+     -c "select value from mdl_config where name = 'release'"
+   ```
+
+   Nếu dựng mới hoàn toàn (chưa có dữ liệu Moodle) thì bản 5.2 bất kỳ đều dùng được.
 
 3. Dựng toàn bộ stack:
 
