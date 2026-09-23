@@ -62,7 +62,9 @@ services:
       MOODLE_ADMIN_PASSWORD: ${MOODLE_ADMIN_PASSWORD}
       MOODLE_ADMIN_EMAIL: ${MOODLE_ADMIN_EMAIL}
     ports:
-      - 127.0.0.1:8081:8081
+      # Apache trong container nghe cong 80; 8081 chi la cong tren may that,
+      # khop voi MOODLE_WWWROOT de duong dan Moodle tu sinh ra van dung.
+      - 127.0.0.1:8081:80
     volumes:
       # Ma nguon Moodle nam ngoai kho ma, xem README. Apache lay
       # /var/www/html/public lam document root, xem devops/moodle/Dockerfile.
@@ -113,7 +115,7 @@ services:
       SECRET_KEY: ${SECRET_KEY}
       # Ten service chu khong phai localhost: trong container, localhost la chinh
       # container backend, nen localhost o day nghia la khong goi duoc ai ca.
-      MOODLE_BASE_URL: http://moodle:8081
+      MOODLE_BASE_URL: http://moodle:80
       MOODLE_TOKEN: ${MOODLE_TOKEN}
       MOODLE_WWWROOT: ${MOODLE_WWWROOT}
       LLM_GATEWAY_URL: http://gateway:4000

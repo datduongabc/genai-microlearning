@@ -71,17 +71,26 @@ class create_quiz extends external_api {
         $data->grade = 10;
         $data->questionsperpage = 1;
         $data->preferredbehaviour = 'deferredfeedback';
+        // Cot password cua mdl_quiz khong cho phep null, va mod_quiz lay gia tri
+        // tu truong bieu mau ten quizpassword roi moi gan sang cot password
+        // (mod/quiz/lib.php). Dat thang $data->password se bi ghi de bang null.
+        $data->quizpassword = '';
 
         $moduleinfo = add_moduleinfo($data, $course);
         $quiz = $DB->get_record('quiz', ['id' => $moduleinfo->instance], '*', MUST_EXIST);
 
-        $category = question_get_default_category($context->id, true);
+        // Moodle 5.x chuyen ngan hang cau hoi thanh mot mo-dun rieng (mod_qbank):
+        // cau hoi khong con nam trong context cua khoa hoc ma nam trong context
+        // cua mo-dun ngan hang. Lay mo-dun mac dinh cua khoa hoc, tao neu chua co.
+        $bank = \core_question\local\bank\question_bank_helper::get_default_open_instance_system_type($course, true);
+        $bankcontext = \context_module::instance($bank->id);
+        $category = question_get_default_category($bankcontext->id, true);
         $qtypeobj = \question_bank::get_qtype('multichoice');
 
         foreach ($params['questions'] as $index => $question) {
             $form = new \stdClass();
             // Moodle doi dang "idcategory,idcontext" chu khong phai mot so.
-            $form->category = $category->id . ',' . $context->id;
+            $form->category = $category->id . ',' . $bankcontext->id;
             $form->name = $params['name'] . ' Q' . ($index + 1);
             $form->questiontext = ['text' => $question['stem'], 'format' => FORMAT_HTML];
             $form->generalfeedback = ['text' => $question['explanation'], 'format' => FORMAT_HTML];
@@ -91,7 +100,14 @@ class create_quiz extends external_api {
             $form->single = 1;
             $form->shuffleanswers = 1;
             $form->answernumbering = 'abc';
+            $form->showstandardinstruction = 0;
             $form->qtype = 'multichoice';
+            // Ba truong phan hoi nay bat buoc phai co: cac cot *format tuong ung
+            // trong mdl_qtype_multichoice_options khong cho phep null. De rong vi
+            // loi giai thich da nam o generalfeedback.
+            foreach (['correctfeedback', 'partiallycorrectfeedback', 'incorrectfeedback'] as $truong) {
+                $form->{$truong} = ['text' => '', 'format' => FORMAT_HTML];
+            }
 
             foreach ($question['choices'] as $i => $choice) {
                 $form->answer[$i] = ['text' => $choice, 'format' => FORMAT_HTML];
