@@ -5,13 +5,49 @@ services:
     environment:
       POSTGRES_USER: ${DATABASE_USER}
       POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
-      POSTGRES_DB: ${DATABASE_NAME}
+      # Co gia tri mac dinh: neu de trong, Postgres se dat ten database bang ten
+      # user, va healthcheck ben duoi se hoi mot database khong ton tai.
+      POSTGRES_DB: ${DATABASE_NAME:-microlearning}
+    # Migration tao extension vector, nen khong can script khoi tao rieng: mot
+    # cho duy nhat chiu trach nhiem dung schema.
     volumes:
       - db_data:/var/lib/postgresql/data
-      - ./backend/docker/pgvector.sql:/docker-entrypoint-initdb.d/pgvector.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  # Buoc rieng, chay mot lan roi dung. Day la noi duy nhat cam URL cua vai tro
+  # chu so huu; tien trinh chay that khong bao gio can quyen do.
+  migrate:
+    build: ./backend
+    container_name: do-an-migrate
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: ${DATABASE_URL_DOCKER}
+      # Migration doc mat khau vai tro tu chinh hai URL nay, xem
+      # backend/alembic/versions/0001_initial_schema.py.
+      APP_RUNTIME_DATABASE_URL: ${APP_RUNTIME_DATABASE_URL_DOCKER}
+      APP_WORKER_DATABASE_URL: ${APP_WORKER_DATABASE_URL_DOCKER}
+    command: ["uv", "run", "alembic", "upgrade", "head"]
+    restart: "no"
+    volumes:
+      - ./backend:/app
+      - /app/.venv
+
   moodle:
-    build: ./devops/moodle
+    # Context la thu muc goc chu khong phai devops/moodle, vi Dockerfile chep
+    # cac tep bang duong dan devops/moodle/... tinh tu goc kho ma.
+    build:
+      context: .
+      dockerfile: devops/moodle/Dockerfile
     container_name: do-an-moodle
+    depends_on:
+      db:
+        condition: service_healthy
     environment:
       MOODLE_TOKEN: ${MOODLE_TOKEN}
       MOODLE_WWWROOT: ${MOODLE_WWWROOT}
@@ -26,10 +62,16 @@ services:
       MOODLE_ADMIN_PASSWORD: ${MOODLE_ADMIN_PASSWORD}
       MOODLE_ADMIN_EMAIL: ${MOODLE_ADMIN_EMAIL}
     ports:
-      - 8081:8081
+      - 127.0.0.1:8081:8081
     volumes:
-      - ./moodle-src-523:/var/www/html
+      # Ma nguon Moodle nam ngoai kho ma, xem README. Apache lay
+      # /var/www/html/public lam document root, xem devops/moodle/Dockerfile.
+      - ./moodle:/var/www/html
+      # Gan thang plugin tu kho ma vao, thay vi chep tay: ban trong kho luon la
+      # ban dang chay, va plugin khong the bien mat cung voi thu muc moodle.
+      - ./moodle-plugin/local_lms_bridge:/var/www/html/public/local/lms_bridge
       - moodle_data:/var/www/moodledata
+
   gateway:
     build: ./devops/gateway
     container_name: do-an-llm-gateway
@@ -39,39 +81,69 @@ services:
       GEMINI_API_KEY: ${GEMINI_API_KEY}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
     ports:
-      - 4000:4000
+      - 127.0.0.1:4000:4000
     volumes:
       - ./devops/gateway/config.yaml:/app/config.yaml:ro
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:4000/health/liveliness')"
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+
   backend:
     build: ./backend
     container_name: do-an-backend
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      gateway:
+        condition: service_healthy
     environment:
+      # Khong co URL cua vai tro chu so huu: tien trinh nay chay bang hai vai tro
+      # bi Row Level Security rang buoc.
       APP_RUNTIME_DATABASE_URL: ${APP_RUNTIME_DATABASE_URL_DOCKER}
       APP_WORKER_DATABASE_URL: ${APP_WORKER_DATABASE_URL_DOCKER}
-      MOODLE_BASE_URL: http://localhost:8081
+      # Khong co gia tri du phong: moi container sinh mot khoa rieng thi moi lan
+      # khoi dong lai se dang xuat tat ca moi nguoi.
+      SECRET_KEY: ${SECRET_KEY}
+      # Ten service chu khong phai localhost: trong container, localhost la chinh
+      # container backend, nen localhost o day nghia la khong goi duoc ai ca.
+      MOODLE_BASE_URL: http://moodle:8081
       MOODLE_TOKEN: ${MOODLE_TOKEN}
       MOODLE_WWWROOT: ${MOODLE_WWWROOT}
-      LLM_GATEWAY_URL: http://localhost:4000
+      LLM_GATEWAY_URL: http://gateway:4000
       LLM_GATEWAY_KEY: ${LLM_GATEWAY_KEY}
       FORWARDED_ALLOW_IPS: 172.16.0.0/12,192.168.0.0/16,10.0.0.0/8
     ports:
-      - "8000:8000"
+      - 127.0.0.1:8000:8000
     volumes:
       - ./backend:/app
       - /app/.venv
+
   frontend:
     build: ./frontend
     container_name: do-an-frontend
+    depends_on:
+      - backend
     environment:
-      BACKEND_URL: http://localhost:8000
+      BACKEND_URL: http://backend:8000
     ports:
-      - 5173:5173
+      - 127.0.0.1:5173:5173
     volumes:
       - ./frontend:/app
       - /app/node_modules
+
   proxy:
     image: caddy:2-alpine
     container_name: do-an-proxy
+    depends_on:
+      - backend
+      - frontend
     environment:
       SITE_ADDRESS: ${SITE_ADDRESS:-localhost}
       HSTS_MAX_AGE: ${HSTS_MAX_AGE:-0}
@@ -85,7 +157,7 @@ services:
       - caddy_config:/config
 
 volumes:
-  caddy_data:
-  caddy_config:
   db_data:
   moodle_data:
+  caddy_data:
+  caddy_config:

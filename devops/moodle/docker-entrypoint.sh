@@ -1,7 +1,11 @@
 #!/bin/bash
 set -e
 
-# config.php nam tren bind mount ./moodle-src-523 (host) -- song sot qua
+# Moodle 5.x: config.php THAT nam o goc, con public/config.php chi la stub do
+# Moodle phat hanh san de nap no. Phai kiem tra ban o goc; kiem tra ban stub thi
+# lan nao cung thay co va khong bao gio cai dat duoc.
+#
+# config.php nam tren bind mount ./moodle (host) -- song sot qua
 # restart/rebuild container. Nhung config.php ton tai KHONG dong nghia da
 # cai xong: admin/cli/install.php ghi config.php truoc khi kiem tra moi
 # truong/cai bang, nen 1 lan chay bi loi giua chung (vd thieu php.ini
@@ -11,6 +15,18 @@ set -e
 #   1) Chua co config.php            -> cai day du (install.php)
 #   2) Co config.php, chua co bang   -> chi hoan tat phan DB (install_database.php)
 #   3) Co config.php VA da co bang   -> khong lam gi, start Apache luon
+if [ ! -f /var/www/html/config.php ]; then
+    # Truoc khi ket luan la "chua cai", hoi co so du lieu da. Co truong hop
+    # config.php mat nhung DB van con nguyen bang, luc do cai moi se that bai.
+    set +e
+    php /usr/local/bin/restore-config.php
+    restore_exit=$?
+    set -e
+    if [ $restore_exit -eq 2 ]; then
+        exit 1
+    fi
+fi
+
 if [ ! -f /var/www/html/config.php ]; then
     echo "[moodle-entrypoint] Chua co config.php, chay CLI installer day du..."
     php /var/www/html/admin/cli/install.php \

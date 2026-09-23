@@ -103,14 +103,17 @@ def test_the_proxy_does_not_pin_a_local_name_to_https():
 def test_the_compose_file_at_the_root_only_includes_the_one_in_devops():
     """`docker compose up -d` keeps working from the repository root: the file there
     includes devops/docker-compose.yml and keeps the root as the project directory, so
-    relative paths, the .env file and the project (and so volume) names are unchanged."""
+    relative paths and the project (and so volume) names are unchanged.
+
+    The environment file lives next to the compose file it configures, in devops/, so that
+    every piece of deployment configuration sits in one directory."""
     root = yaml.safe_load(ROOT_COMPOSE.read_text(encoding="utf-8"))
 
     assert set(root) == {"include"}
     (included,) = root["include"]
     assert included["path"] == "devops/docker-compose.yml"
     assert included["project_directory"] == "."
-    assert included["env_file"] == ".env"
+    assert included["env_file"] == "devops/.env"
 
 
 def test_every_path_the_compose_file_builds_or_mounts_exists():
