@@ -2,7 +2,8 @@
 
 Everything here is about running the system, not about what it does.
 Only the CI workflow stays where GitHub expects it (`.github/`), and a root `docker-compose.yml` that does nothing but include `devops/docker-compose.yml`, so `docker compose up -d` works from the repository root.
-That root file keeps the repository root as the project directory, so relative paths, `.env` and the volume names are the same as before the move.
+That root file keeps the repository root as the project directory, so the relative paths and the volume names are the same as before the move,
+and it points `env_file` at `devops/.env`, the single env file the compose stack and the backend both read.
 
 ## What is here
 
@@ -15,7 +16,7 @@ That root file keeps the repository root as the project directory, so relative p
 
 ## Running it
 
-Copy `.env.example` to `.env` at the repository root, then run `python devops/scripts/rotate_secrets.py` once to give the three database roles and the Moodle admin random passwords.
+Copy `devops/.env.example` to `devops/.env`, then run `python devops/scripts/rotate_secrets.py` once to give the three database roles and the Moodle admin random passwords.
 Start the stack with `docker compose up -d`.
 The site is then at `https://localhost:8443`.
 Caddy signs the local certificate with its own CA, so trust it once with `docker exec do-an-proxy caddy trust`.
