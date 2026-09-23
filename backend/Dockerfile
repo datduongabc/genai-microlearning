@@ -18,29 +18,20 @@ ENV PYTHONUNBUFFERED=1
 
 WORKDIR /app
 
-# Create a non-privileged user that the app will run under.
-# See https://docs.docker.com/go/dockerfile-user-best-practices/
+# Nguoi dung thuong de chay ung dung, khong phai root.
+# Co thu muc nha that chu khong phai /nonexistent: uv ghi cache vao do, va
+# khong ghi duoc thi moi lenh `uv run` deu that bai ngay khi container khoi dong.
 ARG UID=10001
 RUN adduser \
     --disabled-password \
     --gecos "" \
-    --home "/nonexistent" \
-    --shell "/sbin/nologin" \
-    --no-create-home \
+    --home "/home/appuser" \
+    --shell "/bin/bash" \
     --uid "${UID}" \
     appuser
 
-# Download dependencies as a separate step to take advantage of Docker's caching.
-# Leverage a cache mount to /root/.cache/pip to speed up subsequent builds.
-# Leverage a bind mount to requirements.txt to avoid having to copy them into
-# into this layer.
-RUN --mount=type=cache,target=/root/.cache/pip \
-    --mount=type=bind,source=requirements.txt,target=requirements.txt \
-    python -m pip install -r requirements.txt
-
-# Switch to the non-privileged user to run the application.
-USER appuser
-
+# Tesseract doc tai lieu quet, ffmpeg tach tieng khoi video truoc khi phien am.
+# Phai cai khi con la root, truoc khi chuyen sang nguoi dung thuong o duoi.
 RUN apt-get update && apt-get install -y --no-install-recommends \
     tesseract-ocr tesseract-ocr-vie ffmpeg \
     && rm -rf /var/lib/apt/lists/*
@@ -52,9 +43,18 @@ COPY pyproject.toml uv.lock ./
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen --no-dev
 
-RUN uv run python -c "from sentence_transformers import SentenceTransformer, CrossEncoder; SentenceTransformer('all-MiniLM-L6-v2'); CrossEncoder('BAAI/bge-reranker-base')"
+# Tai san mo hinh rerank vao anh, de lan chay dau tien khong phai cho tai ve.
+# Khong con nap all-MiniLM-L6-v2: tu khi nhung qua gateway thi khong ai dung no nua.
+RUN uv run python -c "from sentence_transformers import CrossEncoder; CrossEncoder('BAAI/bge-reranker-base')"
 
 COPY . .
+
+# uv can ghi vao .venv va vao cache khi chay, nen quyen phai thuoc ve nguoi dung
+# se chay ung dung chu khong phai root.
+RUN chown -R appuser:appuser /app /home/appuser
+
+# Chuyen sang nguoi dung thuong sau khi da cai dat xong moi thu.
+USER appuser
 
 EXPOSE 8000
 

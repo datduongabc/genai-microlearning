@@ -95,29 +95,15 @@ def test_a_vietnamese_passphrase_within_72_bytes_is_accepted():
 
 @pytest.mark.parametrize(
     "password",
-    ["password123", "12345678", "qwertyuiop", "iloveyou1", "PASSWORD123", "Password123", "matkhau123"],
+    ["password123", "aaaaaaaaaa", "matkhau123", "nguyenvananh"],
 )
-def test_a_common_password_is_refused(password):
+def test_a_long_enough_password_is_accepted_however_simple_it_looks(password):
+    # Chính sách giờ chỉ còn độ dài. Các quy tắc đoán "mật khẩu yếu" đã bị bỏ vì
+    # chúng đẩy người dùng tới những mật khẩu kiểu Password1!, vốn nằm trong mọi
+    # danh sách của kẻ tấn công, trong khi một câu dài bình thường lại khó đoán hơn.
     response, _ = _register(password=password)
 
-    assert response.status_code == 422
-    assert isinstance(response.json()["detail"], str)
-
-
-@pytest.mark.parametrize("password", ["aaaaaaaa", "abababab", "11111111", "12121212"])
-def test_a_password_with_almost_no_variety_is_refused(password):
-    response, _ = _register(password=password)
-
-    assert response.status_code == 422
-
-
-def test_a_password_equal_to_the_email_the_local_part_or_the_name_is_refused():
-    email = _email()
-
-    assert _register(email=email, password=email)[0].status_code == 422
-    assert _register(email=email, password=email.split("@")[0].upper())[0].status_code == 422
-    assert _register(password="Nguyen Van Anh", name="nguyen van anh")[0].status_code == 422
-    assert _register(password="nguyenvananh", name="Nguyen Van Anh")[0].status_code == 422
+    assert response.status_code == 201
 
 
 def test_a_blank_or_oversized_name_is_refused_and_a_messy_one_is_cleaned():

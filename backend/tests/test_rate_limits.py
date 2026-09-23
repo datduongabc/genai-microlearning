@@ -77,8 +77,8 @@ def test_sign_ups_are_limited_too():
     email = f"rate-signup-{uuid.uuid4().hex[:8]}@example.com"
 
     def attempt():
-        # Refused for its weak password, but the request reached the endpoint, so it counts.
-        return client.post("/auth/register", json={"email": email, "name": "Sign Up", "password": "password123"})
+        # Refused because it is too short, but the request reached the endpoint, so it counts.
+        return client.post("/auth/register", json={"email": email, "name": "Sign Up", "password": "ngan"})
 
     codes = _codes(11, attempt)
 
