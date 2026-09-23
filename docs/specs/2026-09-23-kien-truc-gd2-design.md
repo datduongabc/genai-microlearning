@@ -354,8 +354,6 @@ Khóa API trong `devops/.env` hiện không được `.gitignore` nào che.
 Nếu khởi tạo kho và thêm tất cả tệp thì commit đầu tiên sẽ khoảng 106.000 tệp, 2,8 GB, kèm khóa thật.
 Việc đầu tiên của `chore/git-init` vì vậy là tạo `.gitignore` rồi kiểm tra `git status` trước khi commit.
 
-Cần xoay vòng mật khẩu Postgres và khóa Google API của container `basic-rag`, vì cả hai đã bị in ra màn hình trong phiên làm việc ngày 2026-09-23.
-
 Hạn mức gói miễn phí của Gemini là 1.000 yêu cầu nhúng mỗi ngày tính theo từng chunk, và 20 yêu cầu sinh mỗi ngày với các mô hình thế hệ mới.
 Hạn mức này đủ cho phát triển hằng ngày nhưng không đủ để nạp một giáo trình lớn hoặc chạy nhiều nhánh thí nghiệm trong cùng một ngày.
 Nếu cần chạy nghiên cứu quy mô lớn thì phải bật thanh toán.

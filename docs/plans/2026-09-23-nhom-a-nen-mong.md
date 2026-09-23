@@ -1210,4 +1210,6 @@ cd /d/do-an/frontend && npm run test && npm run build
 
 Cả hai phải xanh, vì đó là đúng những gì CI sẽ chạy.
 
-Sau đó xoay vòng mật khẩu Postgres và khóa Google API của container `basic-rag`, theo mục 10 của spec.
+Bộ test chạy trên máy cần container `ci_test_db` (ảnh pgvector, cổng 55432, user postgres, database `microlearning`, đã bật extension `vector`).
+Container này từng bị xóa nên bộ test treo khi cố kết nối.
+Luôn dùng `127.0.0.1` chứ không phải `localhost` trong các biến `DATABASE_URL`, vì Docker Desktop nuốt `::1` và mỗi kết nối treo hàng phút.
