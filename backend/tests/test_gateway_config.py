@@ -17,8 +17,8 @@ GATEWAY_DOCKERFILE = REPO_ROOT / "devops" / "gateway" / "Dockerfile"
 COMPOSE = REPO_ROOT / "devops" / "docker-compose.yml"
 BACKEND_LOCK = REPO_ROOT / "backend" / "uv.lock"
 
-SUPPORTED_PROVIDERS = {"gemini", "openai", "anthropic"}
-PROVIDER_KEY_VARIABLES = ("GEMINI_API_KEY", "OPENAI_API_KEY", "ANTHROPIC_API_KEY")
+SUPPORTED_PROVIDERS = {"gemini", "openai", "anthropic", "groq"}
+PROVIDER_KEY_VARIABLES = ("GEMINI_API_KEY", "OPENAI_API_KEY", "ANTHROPIC_API_KEY", "GROQ_API_KEY")
 
 
 @pytest.fixture(scope="module")
