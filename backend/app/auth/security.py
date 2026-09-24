@@ -37,7 +37,7 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 def create_access_token(subject: Any) -> str:
     expire = datetime.now(UTC) + timedelta(minutes=settings.access_token_expire_minutes)
     payload = {"sub": str(subject), "exp": expire}
-    return jwt.encode(payload, settings.secret_key, algorithm=settings.jwt_algorithm)
+    return jwt.encode(payload, settings.signing_key(), algorithm=settings.jwt_algorithm)
 
 
 def decode_token(token: str) -> dict | None:
@@ -46,7 +46,7 @@ def decode_token(token: str) -> dict | None:
         # and a token without one would never stop working.
         return jwt.decode(
             token,
-            settings.secret_key,
+            settings.signing_key(),
             algorithms=[settings.jwt_algorithm],
             options={"require": ["exp", "sub"]},
         )

@@ -48,7 +48,7 @@ def _status(token: str) -> int:
 
 
 def _sign(claims: dict, key: str | None = None, algorithm: str | None = None) -> str:
-    return jwt.encode(claims, key or settings.secret_key, algorithm=algorithm or settings.jwt_algorithm)
+    return jwt.encode(claims, key or settings.signing_key(), algorithm=algorithm or settings.jwt_algorithm)
 
 
 def _in_an_hour() -> datetime:
