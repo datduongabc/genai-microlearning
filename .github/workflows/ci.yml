@@ -34,8 +34,10 @@ jobs:
       APP_WORKER_DATABASE_URL: postgresql+psycopg://app_worker:app_worker_dev_password@localhost:5432/microlearning
       SECRET_KEY: ci-test-secret-not-for-production
     steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v3
+      - uses: actions/checkout@v7
+      # Ghim dung phien ban chu khong dung tag major nhu hai action kia: astral-sh chi
+      # duy tri tag major di dong den v7, con v8 tro len khong co, nen @v10 se khong ton tai.
+      - uses: astral-sh/setup-uv@v10.2.0
       - run: uv sync
       # docker-compose's db service creates the vector extension via
       # docker/init-pgvector.sql on first boot -- the CI service container
@@ -51,8 +53,8 @@ jobs:
       run:
         working-directory: frontend
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
       - run: npm ci
