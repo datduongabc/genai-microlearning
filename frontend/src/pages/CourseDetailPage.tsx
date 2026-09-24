@@ -436,26 +436,28 @@ function MoodleLinkSection({ course, onLinked }: { course: Course; onLinked: () 
   return (
     <div className="mb-6 rounded-[3px] border border-gray-200 p-4">
       <p className="mb-2 text-sm font-medium">Course này chưa liên kết với Moodle.</p>
-      <div className="flex gap-2">
+      {/* Trên điện thoại ô tìm kiếm chiếm trọn một hàng và hai nút xuống hàng dưới: ép cả ba vào
+          một hàng 390px thì nút "Tạo course Moodle mới" gãy thành bốn dòng. */}
+      <div className="flex flex-wrap gap-2">
         <input
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && handleSearch()}
           placeholder="Tìm course Moodle có sẵn (vd: CO3061)"
-          className="flex-1 rounded-[3px] border border-gray-300 px-3 py-1.5 text-sm"
+          className="min-w-0 flex-1 basis-full rounded-[3px] border border-gray-300 px-3 py-1.5 text-sm sm:basis-auto"
         />
         <button
           onClick={handleSearch}
           disabled={searching}
-          className="rounded-[3px] border border-gray-300 px-3 py-1.5 text-sm hover:bg-gray-50 disabled:opacity-60"
+          className="whitespace-nowrap rounded-[3px] border border-gray-300 px-3 py-1.5 text-sm hover:bg-gray-50 disabled:opacity-60"
         >
           {searching ? "Đang tìm..." : "Tìm"}
         </button>
         <button
           onClick={handleCreateNew}
           disabled={busy}
-          className="rounded-[3px] bg-navy px-3 py-1.5 text-sm font-semibold text-[#f3f1ea] hover:bg-[#28394b] disabled:opacity-60"
+          className="whitespace-nowrap rounded-[3px] bg-navy px-3 py-1.5 text-sm font-semibold text-[#f3f1ea] hover:bg-[#28394b] disabled:opacity-60"
         >
           Tạo course Moodle mới
         </button>
