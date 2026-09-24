@@ -9,7 +9,7 @@ from app.api.deps import get_current_user, require_course_owner
 from app.auth.rate_limit import limiter, user_or_address
 from app.config import settings
 from app.db import get_db
-from app.ingestion.document_readers import SUPPORTED_EXTENSIONS
+from app.ingestion.document_readers import LEGACY_EXTENSIONS, SUPPORTED_EXTENSIONS
 from app.jobs.queue import enqueue_job
 from app.models import (
     Course,
@@ -66,8 +66,18 @@ def upload_document(
         )
 
     suffix = Path(file.filename).suffix.lower()
+    if suffix in LEGACY_EXTENSIONS:
+        raise HTTPException(
+            status_code=422,
+            detail=f"Định dạng {suffix} đã cũ và không được hỗ trợ. "
+                   f"Hãy mở tệp rồi lưu lại thành {LEGACY_EXTENSIONS[suffix]} (Save As) trước khi tải lên.",
+        )
     if suffix not in SUPPORTED_EXTENSIONS:
-        raise HTTPException(status_code=422, detail=f"Định dạng không hỗ trợ: {suffix}")
+        raise HTTPException(
+            status_code=422,
+            detail=f"Định dạng {suffix or '(không có đuôi)'} không được hỗ trợ. "
+                   f"Các định dạng được nhận: {', '.join(sorted(SUPPORTED_EXTENSIONS))}.",
+        )
 
     size_limit = (
         MAX_UPLOAD_SIZE_BYTES_AUDIO_VIDEO if suffix in _AUDIO_VIDEO_EXTENSIONS else MAX_UPLOAD_SIZE_BYTES
