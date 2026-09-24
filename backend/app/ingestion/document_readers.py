@@ -16,7 +16,7 @@ from PIL import Image
 from pptx import Presentation
 from pptx.enum.shapes import MSO_SHAPE_TYPE
 
-from app.ingestion.pdf_layout import page_lines
+from app.ingestion.pdf_layout import page_lines, title_candidates
 from app.llm.gateway import transcribe_audio
 
 logger = logging.getLogger(__name__)
@@ -34,20 +34,13 @@ MIN_TEXT_LEN_PER_PAGE = 20
 HEADING_RE = re.compile(r"^\s*(\d+(\.\d+)*)\.?\s+\S")
 
 
-def _guess_title_from_lines(lines, skip=frozenset()):
-    for line in lines:
-        line = line.strip()
-        if line and not line.isdigit() and line not in skip:
-            return line
-    return None
-
-
 def read_pdf(path: str) -> list[DocumentUnit]:
     doc = pymupdf.open(path)
     try:
         raw_units = []
         for page_index, page in enumerate(doc):
             page_text = "\n".join(page_lines(page))
+            titles = title_candidates(page)
             extraction_method = "text_layer"
             if len(page_text.strip()) < MIN_TEXT_LEN_PER_PAGE:
                 try:
@@ -70,10 +63,10 @@ def read_pdf(path: str) -> list[DocumentUnit]:
             def flush():
                 if current_lines and "".join(current_lines).strip():
                     stripped = [line.strip() for line in current_lines if line.strip()]
-                    raw_heading = current_heading or _guess_title_from_lines(stripped)
                     raw_units.append({
-                        "page": page_index + 1, "lines": stripped,
-                        "raw_heading": raw_heading, "extraction_method": extraction_method,
+                        "page": page_index + 1, "lines": stripped, "numbered": current_heading,
+                        "titles": titles,
+                        "extraction_method": extraction_method,
                     })
 
             for line in lines_all:
@@ -89,17 +82,22 @@ def read_pdf(path: str) -> list[DocumentUnit]:
     total = len(raw_units)
     if total == 0:
         return []
-    counts: dict[str, int] = {}
-    for u in raw_units:
-        if u["raw_heading"]:
-            counts[u["raw_heading"]] = counts.get(u["raw_heading"], 0) + 1
-    boilerplate = {h for h, c in counts.items() if c >= 3 and c / total > 0.05}
+    pages = {u["page"] for u in raw_units}
+    page_counts: dict[str, int] = {}
+    for page in pages:
+        titles = next((u["titles"] for u in raw_units if u["page"] == page and u["titles"]), [])
+        for title in set(titles):
+            page_counts[title] = page_counts.get(title, 0) + 1
+    # Dòng to lặp lại trên nhiều trang là tiêu đề chung của cả bộ slide hay chân trang in to:
+    # tiêu đề riêng của trang, nếu có, là dòng to kế tiếp.
+    deck_titles = {t for t, c in page_counts.items() if c >= 3 and c / len(pages) > 0.2}
 
     units = []
     for u in raw_units:
-        heading = u["raw_heading"]
-        if heading in boilerplate:
-            heading = _guess_title_from_lines(u["lines"], skip=boilerplate) or heading
+        # Trang không có dòng nào đủ làm tiêu đề thì không có tiêu đề: dòng đầu tiên của trang có
+        # thể là chân trang, số trang hay một gạch đầu dòng, và một nhãn sai làm truy hồi lệch hơn
+        # là không có nhãn.
+        heading = u["numbered"] or next((t for t in u["titles"] if t not in deck_titles), None)
         units.append(DocumentUnit(
             text="\n".join(u["lines"]),
             locator={"page": u["page"], "heading": heading, "extraction_method": u["extraction_method"]},

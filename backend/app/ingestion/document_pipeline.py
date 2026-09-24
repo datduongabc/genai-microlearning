@@ -11,7 +11,7 @@ from dataclasses import asdict
 
 from app.db import WorkerSessionLocal
 from app.ingestion.chunker import Chunk as ChunkerChunk
-from app.ingestion.chunker import chunk_units
+from app.ingestion.chunker import chunk_units, document_title
 from app.ingestion.document_readers import DocumentUnit, read_document
 from app.ingestion.embeddings import embed_texts
 from app.ingestion.outline import OutlineEntry, extract_outline
@@ -70,7 +70,8 @@ def _run_chunk(job) -> None:
         if not raw_units:
             raise ValueError(f"chunk: no units in payload for document {current_job.document_id}")
         units = [DocumentUnit(**u) for u in raw_units]
-        chunks = chunk_units(units)
+        doc = db.get(Document, current_job.document_id)
+        chunks = chunk_units(units, title=document_title(doc.filename) if doc is not None else None)
 
         next_payload = {**current_job.payload, "chunks": [asdict(c) for c in chunks]}
         del next_payload["units"]

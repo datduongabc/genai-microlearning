@@ -1,5 +1,6 @@
 import bisect
 import math
+import re
 from dataclasses import dataclass
 from typing import Any
 
@@ -43,7 +44,33 @@ def _classify(unit: DocumentUnit) -> str:
     return "recursive"
 
 
-def chunk_units(units: list[DocumentUnit]) -> list[Chunk]:
+def document_title(filename: str) -> str:
+    """Tên tài liệu đọc được từ tên tệp: bỏ đuôi và dấu gạch dưới. Giảng viên đặt tên tệp theo
+    bài ("Chương 4a - Tích phân bất định"), nên đây là nhãn ngữ cảnh rẻ và đúng nhất có sẵn."""
+    stem = filename.replace("\\", "/").rsplit("/", 1)[-1]
+    if "." in stem:
+        stem = stem.rsplit(".", 1)[0]
+    return re.sub(r"\s+", " ", stem.replace("_", " ")).strip()
+
+
+def _locator_heading(locator: dict) -> str | None:
+    first = locator["spans"][0] if locator.get("spans") else locator
+    return first.get("heading") or first.get("slide_title") or None
+
+
+def context_line(title: str | None, heading: str | None, content: str) -> str:
+    """Dòng ngữ cảnh đặt đầu chunk: "tài liệu › mục". Một chunk giữa bài chỉ còn lại vài công
+    thức hay vài gạch đầu dòng, không có chữ nào nói nó thuộc bài nào, trong khi truy hồi tìm
+    trên cả môn học gồm nhiều bài. Tiêu đề mục bị bỏ khi chunk đã mở đầu bằng chính nó."""
+    parts = [title] if title else []
+    heading = heading.strip() if heading else ""
+    redundant = bool(title) and heading.casefold() in title.casefold()
+    if heading and not redundant and not content.lstrip().startswith(heading):
+        parts.append(heading)
+    return " › ".join(parts)
+
+
+def chunk_units(units: list[DocumentUnit], title: str | None = None) -> list[Chunk]:
     """Dispatch each contiguous run of same-strategy units (per mục 1 kiến
     trúc: recursive cho text/markdown, page-level cho PDF/PPTX, sentence-based
     cho transcript) to its chunking function. A single `read_document()` call
@@ -75,6 +102,11 @@ def chunk_units(units: list[DocumentUnit]) -> list[Chunk]:
         current_strategy = strategy
         current_group.append(unit)
     flush_group()
+    for chunk in chunks:
+        line = context_line(title, _locator_heading(chunk.locator), chunk.content)
+        if line:
+            chunk.content = f"{line}\n{chunk.content}"
+            chunk.token_count = math.ceil(len(chunk.content) / 4)
     return chunks
 
 
@@ -111,7 +143,7 @@ def _chunk_recursive(units: list[DocumentUnit], chunks: list[Chunk], first_unit_
         unit_starts.append(position)
         position += len(u.text) + len("\n\n")
     course_id = units[0].course_id
-    heading = next((u.locator.get("heading") for u in units if u.locator.get("heading")), None)
+    by_position = dict(kept)
     cursor = 0
     unit_index = kept[0][0]
     for piece in splitter.split_text(text):
@@ -122,6 +154,9 @@ def _chunk_recursive(units: list[DocumentUnit], chunks: list[Chunk], first_unit_
         if found != -1:
             cursor = found
             unit_index = kept[bisect.bisect_right(unit_starts, found) - 1][0]
+        # Tiêu đề của mục chứa đoạn này, không phải của mục đầu tài liệu: trước đây mọi chunk của
+        # một giáo trình DOCX đều mang tiêu đề chương 1.
+        heading = by_position[unit_index].locator.get("heading")
         _make_chunk(
             chunks, piece, {"heading": heading, "unit_index": unit_index}, course_id, "text_layer", "recursive"
         )

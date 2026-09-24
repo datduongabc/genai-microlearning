@@ -229,3 +229,49 @@ def test_read_document_uses_the_rebuilt_lines_for_pdf_pages(tmp_path):
     units = read_document(str(path), course_id=str(uuid.uuid4()), source_id=None)
 
     assert "x = 1" in "\n".join(u.text for u in units)
+
+
+# --- tiêu đề trang -------------------------------------------------------------
+
+
+def _deck(tmp_path, pages):
+    """pages: danh sách các trang, mỗi trang là danh sách (y, chữ, cỡ chữ) theo đúng thứ tự ghi."""
+    doc = pymupdf.open()
+    for lines in pages:
+        page = doc.new_page()
+        for y, text, size in lines:
+            page.insert_text((50, y), text, fontname="helv", fontsize=size)
+    path = tmp_path / "deck.pdf"
+    doc.save(path)
+    doc.close()
+    return [u.locator["heading"] for u in read_document(str(path), course_id=str(uuid.uuid4()), source_id=None)]
+
+
+def test_the_page_heading_is_the_largest_line_even_when_a_footer_is_written_first(tmp_path):
+    headings = _deck(tmp_path, [[
+        (780, "Silberschatz, Galvin and Gagne 2018", 9),
+        (80, "Process Scheduling", 28),
+        (130, "The scheduler selects a process to run next.", 14),
+        (160, "Queues hold processes waiting for the CPU.", 14),
+    ]])
+
+    assert headings == ["Process Scheduling"]
+
+
+def test_a_title_repeated_on_every_slide_gives_way_to_the_slide_own_title(tmp_path):
+    pages = [
+        [(60, "Indefinite integrals", 30), (110, f"Substitution rule {i}", 22), (160, "Body text of the slide", 14),
+         (190, "More body text here", 14)]
+        for i in range(1, 6)
+    ]
+
+    assert _deck(tmp_path, pages) == [f"Substitution rule {i}" for i in range(1, 6)]
+
+
+def test_a_page_whose_lines_are_all_the_same_size_has_no_heading_rather_than_a_wrong_one(tmp_path):
+    headings = _deck(tmp_path, [[
+        (80, "- first bullet of the slide", 14),
+        (110, "- second bullet of the slide", 14),
+    ]])
+
+    assert headings == [None]

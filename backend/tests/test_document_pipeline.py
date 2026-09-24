@@ -124,6 +124,9 @@ def test_document_pipeline_extract_chunk_embed_end_to_end(seed_document_with_fil
         assert job.status == JobStatus.queued
         assert "chunks" in job.payload
         assert "units" not in job.payload
+        # Tên tài liệu đi vào dòng ngữ cảnh của mọi chunk, để truy hồi trên cả môn học biết
+        # đoạn nào thuộc bài nào.
+        assert all(c["content"].startswith("sample") for c in job.payload["chunks"])
     finally:
         db.close()
 
