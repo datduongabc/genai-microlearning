@@ -14,6 +14,9 @@ import time
 from dataclasses import dataclass
 
 import httpx
+import litellm
+import openai
+from litellm.exceptions import AuthenticationError, RateLimitError
 
 from app.config import settings
 
@@ -27,6 +30,17 @@ class GatewayUnavailable(Exception):
     """Gateway không trả lời được danh sách model. Là ngoại lệ riêng chứ không để lỗi httpx
     lọt ra ngoài: tầng API đổi nó thành 503 ở một chỗ duy nhất (app/main.py), vì 500 kèm
     traceback đọc như lỗi của backend trong khi thực ra chỉ là gateway chưa lên."""
+
+
+class ModelUnusable(Exception):
+    """Gateway trả lời được, nhưng model này không phục vụ được: khóa của nhà cung cấp
+    trống hoặc sai, hết số dư, hết hạn mức ngày. Khác với GatewayUnavailable ở chỗ đổi
+    sang model khác thì có thể được, nên thông báo phải bảo giảng viên làm đúng điều đó."""
+
+    def __init__(self, alias: str, ly_do: str):
+        super().__init__(f"{alias}: {ly_do}")
+        self.alias = alias
+        self.ly_do = ly_do
 
 
 @dataclass(frozen=True)
@@ -100,3 +114,58 @@ def available_models() -> list[ModelChoice]:
 
 def is_available(alias: str) -> bool:
     return any(c.alias == alias for c in available_models())
+
+
+def probe(alias: str) -> None:
+    """Thử một lệnh một token tới đúng model đã chọn, ngay lúc bấm sinh.
+
+    Có trong danh sách chưa chắc đã dùng được, vì gateway liệt kê mọi alias dù khóa của
+    nhà cung cấp đang trống. Không thử thì lượt sinh chạy mười phút rồi mới hỏng; thử thì
+    giảng viên biết ngay và chọn model khác. Một token là đủ để biết khóa và số dư còn
+    dùng được, mà không tốn hạn mức đáng kể.
+
+    Bắt theo lớp cha của openai chứ không phải của litellm, và đó không phải tuỳ tiện:
+    litellm.Timeout KHÔNG kế thừa litellm.APIConnectionError, và litellm.AuthenticationError
+    KHÔNG kế thừa litellm.APIError. Bắt theo litellm thì quá hạn chờ bị xếp nhầm thành
+    "model hỏng", còn lỗi khóa lọt qua câu bắt tổng quát.
+    """
+    try:
+        litellm.completion(
+            model=f"openai/{alias}",
+            api_base=settings.llm_gateway_url,
+            api_key=settings.llm_gateway_key,
+            messages=[{"role": "user", "content": "ping"}],
+            max_tokens=1,
+        )
+    # Trước tiên: gateway không với tới được thì mọi model đều hỏng như nhau, nên đổi model
+    # không giúp gì. Phải đứng trước câu bắt tổng quát vì nó cũng là một openai.APIError.
+    except openai.APIConnectionError as loi:
+        raise GatewayUnavailable(str(loi)) from loi
+    except openai.APIError as loi:
+        raise ModelUnusable(alias, _ly_do(loi)) from loi
+
+
+# Từ khoá lấy từ thông báo lỗi thật của gateway, đo trên chính stack này: khóa OpenAI
+# trống thì gateway trả 500 mang "api_key" và "credential" (nó hỏng ngay lúc dựng request,
+# nên KHÔNG ra 401 như người ta hay tưởng); khóa Anthropic chưa nạp tiền thì trả 400 mang
+# "credit", "balance", "billing".
+_TU_KHOA_KHOA = ("api_key", "api key", "credential", "unauthorized", "authentication")
+_TU_KHOA_HAN_MUC = ("rate limit", "quota", "resource_exhausted")
+_TU_KHOA_SO_DU = ("credit", "balance", "billing")
+
+
+def _ly_do(loi: openai.APIError) -> str:
+    """Câu giải thích cho giảng viên. Chỉ quyết định lời văn, không quyết định mã trả về:
+    phân loại 422 hay 503 đã xong ở trên theo loại ngoại lệ, không theo chuỗi, vì chuỗi
+    của nhà cung cấp có thể đổi bất cứ lúc nào.
+
+    Không khớp từ khoá nào thì trả một câu không đoán nguyên nhân. Đoán sai còn tệ hơn
+    không nói: bảo "hết số dư" khi thực ra là thiếu khóa sẽ khiến người ta đi nạp tiền."""
+    van_ban = str(loi).lower()
+    if isinstance(loi, AuthenticationError) or any(k in van_ban for k in _TU_KHOA_KHOA):
+        return "chưa có API key hợp lệ cho nhà cung cấp của model này"
+    if isinstance(loi, RateLimitError) or any(k in van_ban for k in _TU_KHOA_HAN_MUC):
+        return "đã hết hạn mức hoặc đang bị giới hạn tốc độ, thử lại sau"
+    if any(k in van_ban for k in _TU_KHOA_SO_DU):
+        return "tài khoản của nhà cung cấp đã hết số dư"
+    return "nhà cung cấp chưa phục vụ được model này"

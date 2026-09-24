@@ -46,11 +46,24 @@ def _alias_da_chon(body: GenerateRequest | None, current_user: User) -> str | No
     mười phút rồi mới hỏng ở lệnh gọi LLM, và lỗi chẳng nói gì về việc chọn model.
     """
     alias = (body.model_alias if body is not None else None) or current_user.default_model_alias
-    if alias is not None and not catalog.is_available(alias):
+    if alias is None:
+        # Đường mặc định: không có gì để kiểm hay thử, nên không gọi gateway lúc bấm nút.
+        return None
+    if not catalog.is_available(alias):
         raise HTTPException(
             status_code=422,
             detail=f"Gateway không phục vụ model sinh văn bản nào tên '{alias}'.",
         )
+    # Có trong danh sách chưa chắc đã dùng được: khóa của nhà cung cấp có thể trống, hết số
+    # dư, hoặc hết hạn mức ngày. Thử ngay bây giờ để báo trong một giây thay vì mười phút.
+    # GatewayUnavailable thì để lọt ra, app/main.py đổi nó thành 503.
+    try:
+        catalog.probe(alias)
+    except catalog.ModelUnusable as loi:
+        raise HTTPException(
+            status_code=422,
+            detail=f"Model '{loi.alias}' chưa dùng được: {loi.ly_do}. Hãy chọn model khác.",
+        ) from loi
     return alias
 
 

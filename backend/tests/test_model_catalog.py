@@ -6,6 +6,8 @@ trên dữ liệu tổng hợp phủ đủ các trường hợp, thay vì chỉ 
 tại tình cờ trả về.
 """
 
+import litellm
+import litellm.exceptions as loi_litellm
 import pytest
 
 from app.llm import catalog
@@ -138,3 +140,126 @@ def _khong_de_cache_ro_ri_sang_test_khac():
     catalog.clear_cache()
     yield
     catalog.clear_cache()
+
+
+# --- thử nhanh model trước khi xếp hàng lượt sinh ----------------------------
+# Model có trong danh sách chưa chắc đã dùng được: khóa của nhà cung cấp có thể trống,
+# hết số dư, hoặc hết hạn mức ngày. Thử một lệnh rất nhỏ lúc bấm sinh để báo ngay, thay
+# vì để lượt sinh chạy mười phút rồi mới hỏng.
+
+@pytest.fixture
+def ghi_lai_lenh_thu(monkeypatch):
+    goi = {}
+
+    def gia_lap(**kwargs):
+        goi.update(kwargs)
+
+    monkeypatch.setattr(litellm, "completion", gia_lap)
+    return goi
+
+
+def _nem(ngoai_le):
+    def gia_lap(**kwargs):
+        raise ngoai_le
+
+    return gia_lap
+
+
+def test_thu_thanh_cong_thi_khong_bao_gi(ghi_lai_lenh_thu):
+    catalog.probe("groq-pro")
+
+
+def test_thu_dung_model_da_chon_va_chi_xin_mot_token(ghi_lai_lenh_thu):
+    """Một token là đủ để biết khóa và số dư còn dùng được, mà không tốn hạn mức đáng kể."""
+    catalog.probe("groq-pro")
+
+    assert ghi_lai_lenh_thu["model"] == "openai/groq-pro"
+    assert ghi_lai_lenh_thu["max_tokens"] == 1
+
+
+def test_khoa_trong_hoac_sai_thi_bao_chua_co_khoa(monkeypatch):
+    monkeypatch.setattr(litellm, "completion", _nem(
+        loi_litellm.AuthenticationError(message="401", llm_provider="openai", model="gpt-4o")
+    ))
+
+    with pytest.raises(catalog.ModelUnusable) as bat:
+        catalog.probe("openai-pro")
+
+    assert bat.value.alias == "openai-pro"
+    assert "api key" in bat.value.ly_do.lower()
+
+
+def test_het_han_muc_thi_bao_het_han_muc(monkeypatch):
+    """Đúng lỗi đã gặp: hạn mức ngày của Gemini cạn giữa chừng một lượt chạy."""
+    monkeypatch.setattr(litellm, "completion", _nem(
+        loi_litellm.RateLimitError(message="429", llm_provider="gemini", model="gemini-pro")
+    ))
+
+    with pytest.raises(catalog.ModelUnusable) as bat:
+        catalog.probe("gemini-pro")
+
+    assert "hạn mức" in bat.value.ly_do
+
+
+def test_khoa_trong_that_ra_500_chu_khong_phai_401_van_bao_dung_la_thieu_khoa(monkeypatch):
+    """Hình dạng lỗi đo trên gateway thật của stack này, không phải hình dạng người ta hay
+    tưởng: khóa OpenAI trống thì gateway hỏng ngay lúc dựng request và trả 500 mang
+    "api_key" và "credential", chứ không trả 401. Test ban đầu chỉ kiểm 401 nên đã xanh
+    trong khi giảng viên thật nhận câu "hết số dư" cho một khóa trống."""
+    monkeypatch.setattr(litellm, "completion", _nem(loi_litellm.InternalServerError(
+        message="OpenAIException - The api_key client option must be set; missing credential",
+        llm_provider="openai", model="gpt-4o-mini",
+    )))
+
+    with pytest.raises(catalog.ModelUnusable) as bat:
+        catalog.probe("openai-fast")
+
+    assert "api key" in bat.value.ly_do.lower()
+
+
+def test_khoa_co_nhung_chua_nap_tien_thi_bao_het_so_du(monkeypatch):
+    """Cũng đo trên gateway thật: khóa Anthropic có giá trị nhưng chưa nạp tiền thì ra 400
+    mang "credit", "balance", "billing"."""
+    monkeypatch.setattr(litellm, "completion", _nem(loi_litellm.BadRequestError(
+        message="Your credit balance is too low. Please go to Plans & Billing",
+        model="claude-haiku-4-5", llm_provider="anthropic",
+    )))
+
+    with pytest.raises(catalog.ModelUnusable) as bat:
+        catalog.probe("claude-fast")
+
+    assert "số dư" in bat.value.ly_do
+
+
+def test_loi_khong_ro_nguyen_nhan_thi_khong_doan_bua(monkeypatch):
+    """Đoán sai còn tệ hơn không nói: bảo "hết số dư" khi thực ra là thiếu khóa thì người ta
+    đi nạp tiền. Không nhận ra nguyên nhân thì câu thông báo không được nêu nguyên nhân."""
+    monkeypatch.setattr(litellm, "completion", _nem(loi_litellm.BadRequestError(
+        message="something unexpected happened", model="x", llm_provider="openai",
+    )))
+
+    with pytest.raises(catalog.ModelUnusable) as bat:
+        catalog.probe("openai-pro")
+
+    ly_do = bat.value.ly_do.lower()
+    assert "api key" not in ly_do and "số dư" not in ly_do and "hạn mức" not in ly_do
+
+
+def test_gateway_khong_voi_toi_duoc_thi_la_gateway_sap_chu_khong_phai_model_hong(monkeypatch):
+    """Phân biệt quan trọng: gateway sập thì mọi model đều hỏng và đổi model không giúp gì,
+    nên phải báo 503 chứ không bảo giảng viên chọn model khác."""
+    monkeypatch.setattr(litellm, "completion", _nem(
+        loi_litellm.APIConnectionError(message="refused", llm_provider="openai", model="x")
+    ))
+
+    with pytest.raises(catalog.GatewayUnavailable):
+        catalog.probe("groq-pro")
+
+
+def test_gateway_qua_han_cho_cung_la_gateway_sap(monkeypatch):
+    monkeypatch.setattr(litellm, "completion", _nem(
+        loi_litellm.Timeout(message="timeout", model="x", llm_provider="openai")
+    ))
+
+    with pytest.raises(catalog.GatewayUnavailable):
+        catalog.probe("groq-pro")
