@@ -208,12 +208,22 @@ def _wait_for_backend(seconds: int = 180) -> bool:
     return False
 
 
-def main(argv: list[str] | None = None) -> int:
+def build_parser() -> argparse.ArgumentParser:
+    """Tách khỏi main() để test đọc được giá trị mặc định mà không phải dò văn bản --help."""
     parser = argparse.ArgumentParser(description="Rotate the database and Moodle admin passwords.")
     parser.add_argument("--dry-run", action="store_true", help="say what would change and touch nothing")
     parser.add_argument("--only", default=",".join(KINDS), help=f"comma separated subset of: {', '.join(KINDS)}")
-    parser.add_argument("--env-file", default=str(ROOT / ".env"))
-    parser.add_argument("--moodle-config", default=str(ROOT / "moodle-src-523" / "config.php"))
+    # Hai mặc định này phải trỏ đúng chỗ tệp thật đang nằm, vì người chạy script để rotate
+    # mật khẩu sẽ không kiểm lại từng đường dẫn. Trước đây chúng còn trỏ vào ".env" ở gốc
+    # kho (từ trước khi hai tệp .env được gộp làm một) và "moodle-src-523" (tên cũ của cây
+    # mã Moodle), cả hai đều không tồn tại nữa.
+    parser.add_argument("--env-file", default=str(ROOT / "devops" / ".env"))
+    parser.add_argument("--moodle-config", default=str(ROOT / "moodle" / "config.php"))
+    return parser
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = build_parser()
     args = parser.parse_args(argv)
 
     chosen = [name.strip() for name in args.only.split(",") if name.strip()]
