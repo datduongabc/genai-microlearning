@@ -95,3 +95,64 @@ def test_read_docx_records_the_heading_level_of_each_heading_unit(tmp_path):
         ("Chapter", 1),
         ("Section", 2),
     ]
+
+
+# --- OCR và bảng --------------------------------------------------------------
+
+
+def _pdf(tmp_path, pages):
+    import pymupdf
+
+    doc = pymupdf.open()
+    for text in pages:
+        page = doc.new_page()
+        if text:
+            page.insert_text((50, 80), text, fontname="helv", fontsize=12)
+        else:
+            page.draw_rect(pymupdf.Rect(40, 40, 200, 200))  # trang quét: có hình, không có lớp chữ
+    path = tmp_path / "scan.pdf"
+    doc.save(path)
+    doc.close()
+    return str(path)
+
+
+def test_a_page_without_a_text_layer_is_read_by_ocr(tmp_path, monkeypatch):
+    from app.ingestion import document_readers
+
+    monkeypatch.setattr(document_readers.pytesseract, "image_to_string", lambda img, lang: "Noi dung trang quet")
+
+    units = document_readers.read_pdf(_pdf(tmp_path, ["A page that has plenty of real text on it.", ""]))
+
+    scanned = [u for u in units if u.locator["page"] == 2]
+    assert scanned and scanned[0].text == "Noi dung trang quet"
+    assert scanned[0].locator["extraction_method"] == "ocr"
+
+
+def test_an_ocr_failure_on_one_page_keeps_the_text_of_the_other_pages(tmp_path, monkeypatch):
+    from app.ingestion import document_readers
+
+    def broken(img, lang):
+        raise RuntimeError("tesseract is not installed")
+
+    monkeypatch.setattr(document_readers.pytesseract, "image_to_string", broken)
+
+    units = document_readers.read_pdf(_pdf(tmp_path, ["A page that has plenty of real text on it.", ""]))
+
+    assert [u.locator["page"] for u in units] == [1]
+    assert "plenty of real text" in units[0].text
+
+
+def test_a_docx_table_is_read_row_by_row_under_its_header_skipping_a_merged_banner(tmp_path):
+    doc = DocxDocument()
+    table = doc.add_table(rows=4, cols=2)
+    banner = table.rows[0].cells[0].merge(table.rows[0].cells[1])
+    banner.text = "Bảng 1. Độ phức tạp"
+    table.rows[1].cells[0].text, table.rows[1].cells[1].text = "Thuật toán", "Độ phức tạp"
+    table.rows[2].cells[0].text, table.rows[2].cells[1].text = "Heap sort", "O(n log n)"
+    table.rows[3].cells[0].text, table.rows[3].cells[1].text = "", ""
+    path = tmp_path / "bang.docx"
+    doc.save(str(path))
+
+    rows = [u.text for u in read_docx(str(path)) if "table_index" in u.locator]
+
+    assert rows == ["Thuật toán: Heap sort\nĐộ phức tạp: O(n log n)"]
