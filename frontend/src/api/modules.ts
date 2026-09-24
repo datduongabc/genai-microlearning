@@ -48,15 +48,28 @@ export async function listModules(documentId: string) {
   return data
 }
 
-export async function generateModule(documentId: string) {
-  const { data } = await api.post('/modules/generate', null, { params: { document_id: documentId } })
+// modelAlias bỏ trống thì KHÔNG gửi khóa model_alias, để backend tự lấy mặc định của giảng
+// viên rồi tới cấu hình hệ thống. Gửi null tường minh cũng được, nhưng bỏ hẳn giữ đúng
+// nghĩa "chưa chọn gì" và không phụ thuộc vào việc backend coi null với vắng mặt là một.
+function modelBody(modelAlias?: string | null) {
+  return modelAlias ? { model_alias: modelAlias } : {}
+}
+
+export async function generateModule(documentId: string, modelAlias?: string | null) {
+  const { data } = await api.post('/modules/generate', modelBody(modelAlias), {
+    params: { document_id: documentId },
+  })
   return data as { job_id: string; status: string }
 }
 
-export async function generateModulesFromSections(documentId: string, sectionIds: string[]) {
+export async function generateModulesFromSections(
+  documentId: string,
+  sectionIds: string[],
+  modelAlias?: string | null,
+) {
   const { data } = await api.post(
     '/modules/generate',
-    { section_ids: sectionIds },
+    { section_ids: sectionIds, ...modelBody(modelAlias) },
     { params: { document_id: documentId } },
   )
   return data as { jobs: { section_id: string; job_id: string }[] }

@@ -111,6 +111,19 @@ describe('SectionTree', () => {
     expect(screen.getByText(/tối đa 5 mục/i)).toBeInTheDocument()
   })
 
+  it('sends the model the teacher picked along with the sections', async () => {
+    vi.mocked(api.generateModulesFromSections).mockResolvedValue({ jobs: [] })
+    renderTree({ modelAlias: 'groq-pro' })
+    await screen.findByText(/Chapter 1/)
+
+    await userEvent.click(checkbox(/Chapter 1/))
+    await userEvent.click(generateButton())
+
+    await waitFor(() =>
+      expect(api.generateModulesFromSections).toHaveBeenCalledWith('doc-1', ['s1'], 'groq-pro'),
+    )
+  })
+
   it('sends the picked sections in document order and reports back', async () => {
     vi.mocked(api.generateModulesFromSections).mockResolvedValue({ jobs: [] })
     const { onGenerated } = renderTree()
@@ -120,7 +133,8 @@ describe('SectionTree', () => {
     await userEvent.click(checkbox(/Chapter 1/))
     await userEvent.click(generateButton())
 
-    await waitFor(() => expect(api.generateModulesFromSections).toHaveBeenCalledWith('doc-1', ['s1', 's3']))
+    // Chưa chọn model thì gửi chuỗi rỗng, và lớp api bỏ hẳn khóa model_alias đi.
+    await waitFor(() => expect(api.generateModulesFromSections).toHaveBeenCalledWith('doc-1', ['s1', 's3'], ''))
     await waitFor(() => expect(onGenerated).toHaveBeenCalled())
     expect(generateButton()).toBeDisabled() // the selection was cleared
   })
