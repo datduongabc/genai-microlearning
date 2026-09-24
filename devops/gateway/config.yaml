@@ -12,10 +12,16 @@ model_list:
     litellm_params:
       model: gemini/gemini-flash-lite-latest
       api_key: os.environ/GEMINI_API_KEY
+    model_info:
+      display_name: Gemini Flash Lite
+      note: nhanh, có hạn mức miễn phí
   - model_name: gemini-pro
     litellm_params:
       model: gemini/gemini-pro-latest
       api_key: os.environ/GEMINI_API_KEY
+    model_info:
+      display_name: Gemini Pro
+      note: chất lượng cao hơn, hạn mức miễn phí thấp
 
   # Embeddings for retrieval (backend/app/ingestion/embeddings.py). Multilingual, so Vietnamese
   # documents are searched properly, and served by the provider so the backend image does not
@@ -24,6 +30,8 @@ model_list:
     litellm_params:
       model: gemini/gemini-embedding-001
       api_key: os.environ/GEMINI_API_KEY
+    model_info:
+      display_name: Gemini Embedding
 
   # Duong nhung du phong khi han muc mien phi cua Gemini het (1000 luot moi ngay,
   # tinh theo tung chunk). Doi bang cach dat EMBEDDING_MODEL=embed-openai.
@@ -34,24 +42,38 @@ model_list:
     litellm_params:
       model: openai/text-embedding-3-small
       api_key: os.environ/OPENAI_API_KEY
+    model_info:
+      display_name: OpenAI Embedding 3 Small
 
   - model_name: openai-fast
     litellm_params:
       model: openai/gpt-4o-mini
       api_key: os.environ/OPENAI_API_KEY
+    model_info:
+      display_name: GPT-4o mini
+      note: nhanh
   - model_name: openai-pro
     litellm_params:
       model: openai/gpt-4o
       api_key: os.environ/OPENAI_API_KEY
+    model_info:
+      display_name: GPT-4o
+      note: chất lượng cao hơn, chậm hơn
 
   - model_name: claude-fast
     litellm_params:
       model: anthropic/claude-haiku-4-5-20251001
       api_key: os.environ/ANTHROPIC_API_KEY
+    model_info:
+      display_name: Claude Haiku 4.5
+      note: nhanh
   - model_name: claude-pro
     litellm_params:
       model: anthropic/claude-sonnet-5
       api_key: os.environ/ANTHROPIC_API_KEY
+    model_info:
+      display_name: Claude Sonnet 5
+      note: chất lượng cao hơn, chậm hơn
 
   # Groq: han muc mien phi rong rai hon Gemini cho viec SINH van ban, huu ich khi
   # Gemini het quota giua chung mot lan chay thi nghiem. Chi sinh van ban, khong
@@ -60,10 +82,16 @@ model_list:
     litellm_params:
       model: groq/openai/gpt-oss-20b
       api_key: os.environ/GROQ_API_KEY
+    model_info:
+      display_name: GPT-OSS 20B qua Groq
+      note: nhanh, hạn mức miễn phí rộng
   - model_name: groq-pro
     litellm_params:
       model: groq/openai/gpt-oss-120b
       api_key: os.environ/GROQ_API_KEY
+    model_info:
+      display_name: GPT-OSS 120B qua Groq
+      note: hạn mức miễn phí rộng
 
 general_settings:
   master_key: os.environ/LLM_GATEWAY_KEY

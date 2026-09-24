@@ -4,13 +4,39 @@ maps a model alias to a real provider/model, so swapping models or providers is
 a configuration change, not a code change.
 """
 
+import contextlib
+import contextvars
+
 import litellm
 from pydantic import BaseModel
 
 from app.config import settings
 
+# Model do giảng viên chọn cho riêng một lượt sinh. Để trong ContextVar chứ không truyền
+# qua tham số: một lượt sinh đi qua mười chỗ gọi rải khắp generation, chat và ingestion,
+# nên truyền tay sẽ phải thêm một tham số vào chữ ký của cả pipeline chỉ để chuyển tiếp.
+# ContextVar cũng là thứ duy nhất an toàn ở đây: worker chạy nhiều lượt sinh đồng thời,
+# mà một biến toàn cục thì lượt này sẽ đổi model của lượt kia.
+_model_da_chon: contextvars.ContextVar[str | None] = contextvars.ContextVar("_model_da_chon", default=None)
+
+
+@contextlib.contextmanager
+def using_model(alias: str | None):
+    """Mọi lệnh gọi LLM bên trong khối này dùng `alias`. Truyền None nghĩa là giữ nguyên
+    cấu hình, để chỗ gọi không phải tự phân nhánh khi giảng viên chưa chọn gì."""
+    token = _model_da_chon.set(alias)
+    try:
+        yield
+    finally:
+        # reset trong finally: một lượt sinh ném ngoại lệ không được để lượt kế tiếp
+        # chạy trên model của người khác.
+        _model_da_chon.reset(token)
+
 
 def _active_model() -> str:
+    da_chon = _model_da_chon.get()
+    if da_chon:
+        return da_chon
     return settings.llm_model_demo if settings.llm_use_demo_model else settings.llm_model_dev
 
 

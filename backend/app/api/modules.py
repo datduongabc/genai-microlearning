@@ -9,6 +9,7 @@ from app.api.deps import get_current_user
 from app.auth.rate_limit import limiter, user_or_address
 from app.db import get_db
 from app.jobs.queue import enqueue_job
+from app.llm import catalog
 from app.models import (
     ComponentType,
     Document,
@@ -33,6 +34,30 @@ class GenerateRequest(BaseModel):
     # Far more than anyone can pick (see MAX_SECTIONS_PER_REQUEST): the cap only keeps a
     # huge list away from the queries that check it.
     section_ids: list[uuid.UUID] | None = Field(default=None, max_length=50)
+    # Model cho riêng lượt sinh này, ghi đè mặc định của giảng viên. Bỏ trống thì dùng
+    # mặc định của họ, không có mặc định thì dùng cấu hình hệ thống.
+    model_alias: str | None = None
+
+
+def _alias_da_chon(body: GenerateRequest | None, current_user: User) -> str | None:
+    """Alias sẽ dùng cho lượt sinh này, hoặc None nghĩa là để cấu hình hệ thống quyết định.
+
+    Kiểm ở đây chứ không tin client: một alias lạ lọt xuống hàng đợi thì lượt sinh chạy
+    mười phút rồi mới hỏng ở lệnh gọi LLM, và lỗi chẳng nói gì về việc chọn model.
+    """
+    alias = (body.model_alias if body is not None else None) or current_user.default_model_alias
+    if alias is not None and not catalog.is_available(alias):
+        raise HTTPException(
+            status_code=422,
+            detail=f"Gateway không phục vụ model sinh văn bản nào tên '{alias}'.",
+        )
+    return alias
+
+
+def _payload_model(alias: str | None) -> dict:
+    """Không ghi khóa nào khi chưa chọn, thay vì ghi sẵn giá trị từ cấu hình: ghi sẵn thì
+    đổi cấu hình hệ thống sẽ không tác dụng với các job đã nằm trong hàng đợi."""
+    return {"model_alias": alias} if alias else {}
 
 
 def _owned_document(
@@ -51,7 +76,9 @@ def _owned_module(db: Session, module_id: uuid.UUID, current_user: User) -> Modu
     return module
 
 
-def _generate_for_sections(db: Session, doc: Document, section_ids: list[uuid.UUID] | None):
+def _generate_for_sections(
+    db: Session, doc: Document, section_ids: list[uuid.UUID] | None, model_alias: str | None = None
+):
     if not section_ids:
         raise HTTPException(status_code=422, detail="Chọn ít nhất 1 mục để sinh mô-đun.")
     unique_ids = list(dict.fromkeys(section_ids))
@@ -89,7 +116,8 @@ def _generate_for_sections(db: Session, doc: Document, section_ids: list[uuid.UU
 
     jobs = [
         enqueue_job(
-            db, job_type=JobType.module_generation, step="generate", document_id=doc.id, section_id=section_id
+            db, job_type=JobType.module_generation, step="generate", document_id=doc.id,
+            section_id=section_id, payload=_payload_model(model_alias),
         )
         for section_id in unique_ids
     ]
@@ -110,10 +138,12 @@ def generate_module(
     if not doc.raw_text:
         raise HTTPException(status_code=422, detail="Document chưa được parse (raw_text rỗng)")
 
+    alias = _alias_da_chon(body, current_user)
+
     section_ids = body.section_ids if body is not None else None
     has_outline = db.query(DocumentSection.id).filter(DocumentSection.document_id == doc.id).first() is not None
     if has_outline:
-        return _generate_for_sections(db, doc, section_ids)
+        return _generate_for_sections(db, doc, section_ids, alias)
     if section_ids:
         raise HTTPException(status_code=422, detail="Tài liệu này không có mục lục để chọn mục.")
 
@@ -142,7 +172,10 @@ def generate_module(
     # generate_module() thật đo được mất 10+ phút (17 lệnh gọi LLM tuần tự) --
     # chạy nền qua job queue thay vì giữ request HTTP chờ suốt, xem
     # app/services/module_generation_pipeline.py + job_queue.py.
-    job = enqueue_job(db, job_type=JobType.module_generation, step="generate", document_id=document_id)
+    job = enqueue_job(
+        db, job_type=JobType.module_generation, step="generate", document_id=document_id,
+        payload=_payload_model(alias),
+    )
     db.commit()
     return {"job_id": job.id, "status": job.status}
 

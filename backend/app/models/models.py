@@ -88,6 +88,12 @@ class User(Base):
     name: Mapped[str]
     hashed_password: Mapped[str]
     role: Mapped[UserRole] = mapped_column(Enum(UserRole))
+    # Model giảng viên chọn sẵn cho các lượt sinh của mình. NULL nghĩa là chưa chọn, khi đó
+    # dùng model trong cấu hình. Chỉ lưu alias của gateway, không lưu tên model thật: đổi
+    # alias trỏ sang model khác là việc của devops/gateway/config.yaml, không phải của bảng
+    # này. Không có khóa ngoại nào ràng buộc được nó, nên giá trị được kiểm ở biên API dựa
+    # vào danh sách gateway đang phục vụ (app/llm/catalog.py).
+    default_model_alias: Mapped[str | None] = mapped_column(nullable=True)
     created_at: Mapped[datetime] = created_at_column()
 
 
