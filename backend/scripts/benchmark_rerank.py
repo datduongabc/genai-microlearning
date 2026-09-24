@@ -55,9 +55,14 @@ GOC = Path(__file__).resolve().parents[2]
 GOC_TAI_LIEU = Path(os.environ.get("BENCHMARK_DOCUMENTS") or GOC / "docs" / "documents")
 THU_MUC_KET_QUA = Path(os.environ.get("BENCHMARK_KET_QUA") or GOC / "docs" / "measurements")
 
-# Số tệp đầu tiên theo thứ tự bảng chữ cái của mỗi môn. Cắt bớt để tổng số chunk
-# vừa hạn mức nhúng một ngày, và lấy theo thứ tự cố định để lặp lại được.
-MON = {"dsa": 5, "operating-system": 7, "advanced-programming": 11}
+# Số tệp đầu tiên theo thứ tự bảng chữ cái của mỗi môn, lấy theo thứ tự cố định để lặp lại
+# được. Ba môn tiếng Anh cắt bớt cho vừa hạn mức nhúng một ngày. Hai môn tiếng Việt thêm sau
+# (nạp riêng bằng --mon) vì bge-reranker-base thiên về tiếng Anh, mà hệ thống dành cho giảng
+# viên Việt Nam: đo trên tiếng Anh thì chưa đủ để quyết giữ hay đổi reranker.
+MON = {
+    "dsa": 5, "operating-system": 7, "advanced-programming": 11,
+    "calculus1": 8, "chemistry1": 9,
+}
 
 TRUY_VAN_MOI_MON = 50
 # Chunk quá ngắn không đủ chi tiết để đặt một câu hỏi chỉ nó trả lời được, nên
