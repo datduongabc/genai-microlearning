@@ -285,8 +285,11 @@ def read_docx(path: str) -> list[DocumentUnit]:
     return units
 
 
-_CONVERTIBLE_TO_DOCX = {".doc", ".odt", ".rtf"}
-_CONVERTIBLE_TO_PPTX = {".ppt", ".odp"}
+# Định dạng cũ không được nhận, kèm định dạng nên lưu lại thành. Đọc chúng cần LibreOffice,
+# mà ảnh backend không cài: chúng từng được nhận lúc upload rồi hỏng trong job nền, và giảng
+# viên chỉ biết khi vào trang theo dõi lỗi. Mọi phần mềm soạn thảo hiện nay đều lưu được
+# sang định dạng mới, nên từ chối kèm cách sửa rẻ hơn nhiều so với mang LibreOffice vào ảnh.
+LEGACY_EXTENSIONS = {".ppt": ".pptx", ".odp": ".pptx", ".doc": ".docx", ".odt": ".docx", ".rtf": ".docx"}
 _AUDIO_VIDEO_EXTENSIONS = {
     ".mp3", ".wav", ".m4a", ".flac", ".ogg", ".aac",
     ".mp4", ".mkv", ".webm", ".mov", ".avi",
@@ -297,8 +300,6 @@ _AUDIO_VIDEO_EXTENSIONS = {
 # vào bộ nhớ), tránh 2 danh sách lệch nhau.
 SUPPORTED_EXTENSIONS = (
     {".pdf", ".docx", ".pptx", ".html", ".htm", ".srt", ".vtt", ".txt"}
-    | _CONVERTIBLE_TO_DOCX
-    | _CONVERTIBLE_TO_PPTX
     | _AUDIO_VIDEO_EXTENSIONS
 )
 
@@ -386,18 +387,6 @@ def read_audio_video(path: str) -> list[DocumentUnit]:
     return [DocumentUnit(text=p, locator={"paragraph_index": i}) for i, p in enumerate(paragraphs)]
 
 
-def _convert_with_libreoffice(input_path: str, target_ext: str, out_dir: str) -> str:
-    # Requires the `soffice` binary (LibreOffice) on PATH -- not installed by
-    # default in this project (no .doc/.ppt/.odt/.rtf files in the GD1 sample
-    # corpus). Add `libreoffice` to the Docker image if one shows up.
-    subprocess.run(
-        ["soffice", "--headless", "--convert-to", target_ext, "--outdir", out_dir, input_path],
-        check=True, timeout=120, capture_output=True,
-    )
-    base = os.path.splitext(os.path.basename(input_path))[0]
-    return os.path.join(out_dir, f"{base}.{target_ext}")
-
-
 def read_document(path: str, *, course_id: str, source_id: str | None = None) -> list[DocumentUnit]:
     if source_id is None:
         source_id = os.path.basename(path)
@@ -415,14 +404,6 @@ def read_document(path: str, *, course_id: str, source_id: str | None = None) ->
         units = read_transcript_file(path)
     elif ext in _AUDIO_VIDEO_EXTENSIONS:
         units = read_audio_video(path)
-    elif ext in _CONVERTIBLE_TO_DOCX:
-        with tempfile.TemporaryDirectory() as tmp:
-            converted = _convert_with_libreoffice(path, "docx", tmp)
-            units = read_docx(converted)
-    elif ext in _CONVERTIBLE_TO_PPTX:
-        with tempfile.TemporaryDirectory() as tmp:
-            converted = _convert_with_libreoffice(path, "pptx", tmp)
-            units = read_pptx(converted)
     else:
         raise ValueError(f"Dinh dang khong ho tro: {ext}")
 
