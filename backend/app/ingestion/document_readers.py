@@ -16,6 +16,7 @@ from PIL import Image
 from pptx import Presentation
 from pptx.enum.shapes import MSO_SHAPE_TYPE
 
+from app.ingestion.pdf_layout import page_lines
 from app.llm.gateway import transcribe_audio
 
 logger = logging.getLogger(__name__)
@@ -46,7 +47,7 @@ def read_pdf(path: str) -> list[DocumentUnit]:
     try:
         raw_units = []
         for page_index, page in enumerate(doc):
-            page_text = page.get_text()
+            page_text = "\n".join(page_lines(page))
             extraction_method = "text_layer"
             if len(page_text.strip()) < MIN_TEXT_LEN_PER_PAGE:
                 try:
