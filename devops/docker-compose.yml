@@ -76,7 +76,7 @@ services:
 
   gateway:
     build: ./devops/gateway
-    container_name: do-an-llm-gateway
+    container_name: do-an-gateway
     environment:
       LLM_GATEWAY_KEY: ${LLM_GATEWAY_KEY}
       OPENAI_API_KEY: ${OPENAI_API_KEY}
