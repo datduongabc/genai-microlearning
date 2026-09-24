@@ -30,3 +30,16 @@ def test_tu_nap_lai_chi_theo_doi_ma_ung_dung():
     thu_muc = [lenh[i + 1] for i, tham_so in enumerate(lenh[:-1]) if tham_so == "--reload-dir"]
     assert thu_muc, "có --reload thì phải giới hạn bằng --reload-dir"
     assert all(d.strip("./") == "app" for d in thu_muc), f"chỉ được theo dõi thư mục app/, đang theo dõi {thu_muc}"
+
+
+def test_tu_nap_lai_do_dinh_ky_chu_khong_cho_su_kien_tu_he_dieu_hanh():
+    """Mã được gắn vào container qua bind mount từ ổ đĩa Windows, và sự kiện "tệp bị sửa" không
+    đi qua được lớp đó; chỉ sự kiện tạo và xoá tệp là đi qua. Bộ tự nạp lại chờ sự kiện thì
+    thấy tệp mới nhưng không thấy tệp vừa sửa, tức backend vẫn chạy mã cũ sau mỗi lần sửa."""
+    if "--reload" not in _lenh_khoi_dong():
+        return
+
+    env = re.findall(r"^ENV\s+(.+)$", DOCKERFILE.read_text(encoding="utf-8"), re.MULTILINE)
+    gia_tri = {k: v for dong in env for k, _, v in [dong.strip().partition("=")]}
+
+    assert gia_tri.get("WATCHFILES_FORCE_POLLING", "").lower() == "true"

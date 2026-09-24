@@ -56,6 +56,11 @@ EXPOSE 8000
 
 ENTRYPOINT ["bash", "docker-entrypoint.sh"]
 
+# Dò định kỳ thay vì chờ sự kiện từ hệ điều hành: mã được gắn vào qua bind mount từ ổ đĩa
+# Windows, và sự kiện "tệp bị sửa" không đi qua được lớp đó, chỉ tạo và xoá tệp là đi qua.
+# Chờ sự kiện thì sửa tệp xong backend vẫn chạy mã cũ. Chỉ dò 116 tệp trong app/ nên rẻ.
+ENV WATCHFILES_FORCE_POLLING=true
+
 # --reload-dir app: không giới hạn thì bộ tự nạp lại theo dõi cả /app, gồm .venv với khoảng
 # 34 nghìn tệp thư viện so với 116 tệp mã. Nó đã chết vì hết chỗ theo dõi (os error 12) trong
 # khi tiến trình phục vụ vẫn trả lời, tức backend âm thầm chạy mã cũ mà không có gì báo.
