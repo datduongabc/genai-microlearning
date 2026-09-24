@@ -41,6 +41,16 @@ if (!preg_match('/^[A-Za-z0-9]{32}$/', $wanted)) {
     fwrite(STDERR, "MOODLE_TOKEN must be 32 letters or digits, as Moodle's own tokens are\n");
     exit(1);
 }
+// MOODLE_TOKEN in .env is the only credential the backend uses on this service, so any other
+// token on it is revoked. Rotating the token used to mean editing .env AND deleting the old
+// token by hand in Moodle; forget the second step and a leaked token kept working.
+$revoked = $DB->count_records_select(
+    'external_tokens', 'externalserviceid = ? AND token <> ?', [$service->id, $wanted]
+);
+if ($revoked > 0) {
+    $DB->delete_records_select('external_tokens', 'externalserviceid = ? AND token <> ?', [$service->id, $wanted]);
+    echo "revoked {$revoked} old web service token(s)\n";
+}
 if ($DB->record_exists('external_tokens', ['token' => $wanted])) {
     echo "web service token already present\n";
     exit(0);

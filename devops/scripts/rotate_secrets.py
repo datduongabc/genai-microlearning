@@ -35,13 +35,16 @@ import time
 import urllib.request
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
-DB_CONTAINER = "moodle_postgres"
-MOODLE_CONTAINER = "moodle_app"
+# Tên service trong devops/docker-compose.yml, không phải tên container. Script từng gọi
+# thẳng "moodle_postgres" và "moodle_app" rất lâu sau khi container đã đổi tên; ID container
+# được hỏi từ compose lúc chạy (_container), nên đổi tên container không làm hỏng gì nữa.
+DB_SERVICE = "db"
+MOODLE_SERVICE = "moodle"
 BACKEND_HEALTH = "http://127.0.0.1:8000/health"
 
 # What each --only name changes.
 KINDS = {
-    "db": "DB_PASSWORD",
+    "db": "DATABASE_PASSWORD",
     "runtime": "APP_RUNTIME_DB_PASSWORD",
     "worker": "APP_WORKER_DB_PASSWORD",
     "moodle-admin": "MOODLE_ADMIN_PASSWORD",
@@ -82,6 +85,11 @@ def update_env(text: str, passwords: dict[str, str]) -> str:
     passwords inside every ...DATABASE_URL... variable following them, and URLs for the
     worker role added (derived from the runtime ones) when they are not there yet. Every
     other line is left exactly as it was."""
+    if "DATABASE_PASSWORD" in passwords and moodle_uses_owner_role(parse_env(text)):
+        # Moodle đăng nhập database bằng chính vai trò chủ sở hữu, nên MOODLE_DB_PASSWORD là
+        # bản sao thứ hai của cùng bí mật. Bỏ sót nó thì lần kế tiếp config.php được tạo lại
+        # từ .env sẽ mang mật khẩu cũ, và Moodle không kết nối được database nữa.
+        passwords = {**passwords, "MOODLE_DB_PASSWORD": passwords["DATABASE_PASSWORD"]}
     for name, value in passwords.items():
         if not SAFE.fullmatch(value):
             raise ValueError(f"the new value of {name} contains characters that need quoting")
@@ -95,10 +103,10 @@ def update_env(text: str, passwords: dict[str, str]) -> str:
                 return _strip_quotes(match.group(1))[1]
         return None
 
-    owner = value_of("DB_USER")
+    owner = value_of("DATABASE_USER")
     by_user = {"app_runtime": passwords.get("APP_RUNTIME_DB_PASSWORD"), "app_worker": passwords.get("APP_WORKER_DB_PASSWORD")}
     if owner:
-        by_user[owner] = passwords.get("DB_PASSWORD")
+        by_user[owner] = passwords.get("DATABASE_PASSWORD")
 
     out, seen, runtime_urls = [], set(), {}
     for line in lines:
@@ -145,6 +153,12 @@ def update_moodle_config(text: str, password: str) -> str:
     return pattern.sub(lambda m: f"{m.group(1)}'{password}'", text)
 
 
+def moodle_uses_owner_role(env: dict[str, str]) -> bool:
+    """Moodle đăng nhập database bằng vai trò chủ sở hữu chứ không bằng vai trò riêng. Khi đó
+    mật khẩu của nó, trong .env và trong config.php, phải đổi cùng lúc với mật khẩu chủ."""
+    return bool(env.get("DATABASE_USER")) and env.get("MOODLE_DB_USER") == env.get("DATABASE_USER")
+
+
 def parse_env(text: str) -> dict[str, str]:
     values = {}
     for line in text.splitlines():
@@ -167,10 +181,18 @@ def _docker(args: list[str], *, stdin: str | None = None, extra_env: dict[str, s
     return result
 
 
+def _container(service: str) -> str:
+    result = _docker(["compose", "ps", "-q", service])
+    container = result.stdout.strip()
+    if not container:
+        raise RuntimeError(f"service '{service}' is not running; start the stack with `docker compose up -d` first")
+    return container
+
+
 def _set_database_passwords(env: dict[str, str], new: dict[str, str]) -> None:
     statements = []
-    if "DB_PASSWORD" in new:
-        statements.append(f'ALTER ROLE "{env["DB_USER"]}" PASSWORD \'{new["DB_PASSWORD"]}\';')
+    if "DATABASE_PASSWORD" in new:
+        statements.append(f'ALTER ROLE "{env["DATABASE_USER"]}" PASSWORD \'{new["DATABASE_PASSWORD"]}\';')
     for variable, role in (("APP_RUNTIME_DB_PASSWORD", "app_runtime"), ("APP_WORKER_DB_PASSWORD", "app_worker")):
         if variable in new:
             # A role that does not exist yet is created by its migration with the password
@@ -180,7 +202,7 @@ def _set_database_passwords(env: dict[str, str], new: dict[str, str]) -> None:
                 f"ALTER ROLE {role} PASSWORD '{new[variable]}'; END IF; END $$;"
             )
     if statements:
-        _docker(["exec", "-i", DB_CONTAINER, "psql", "-U", env["DB_USER"], "-d", env["DB_NAME"],
+        _docker(["exec", "-i", _container(DB_SERVICE), "psql", "-U", env["DATABASE_USER"], "-d", env["DATABASE_NAME"],
                  "-v", "ON_ERROR_STOP=1"], stdin="\n".join(statements) + "\n")
 
 
@@ -188,8 +210,8 @@ def _accepted(env: dict[str, str], role: str, password: str) -> bool:
     """Whether the database accepts `password` for `role` over the network (the local
     socket and loopback are trusted, so this connects to the container's own address)."""
     result = _docker(
-        ["exec", "-i", "-e", "CHECK_PASSWORD", DB_CONTAINER, "sh", "-c",
-         'PGPASSWORD="$CHECK_PASSWORD" psql -h "$(hostname -i)" -U "$1" -d "$2" -Atc "select 1"', "sh", role, env["DB_NAME"]],
+        ["exec", "-i", "-e", "CHECK_PASSWORD", _container(DB_SERVICE), "sh", "-c",
+         'PGPASSWORD="$CHECK_PASSWORD" psql -h "$(hostname -i)" -U "$1" -d "$2" -Atc "select 1"', "sh", role, env["DATABASE_NAME"]],
         extra_env={"CHECK_PASSWORD": password}, check=False,
     )
     return result.returncode == 0
@@ -234,7 +256,7 @@ def main(argv: list[str] | None = None) -> int:
     env_path, config_path = pathlib.Path(args.env_file), pathlib.Path(args.moodle_config)
     env_text = env_path.read_text(encoding="utf-8")
     env = parse_env(env_text)
-    for required in ("DB_USER", "DB_NAME"):
+    for required in ("DATABASE_USER", "DATABASE_NAME"):
         if required not in env:
             parser.error(f"{required} is not set in {env_path}")
 
@@ -244,6 +266,9 @@ def main(argv: list[str] | None = None) -> int:
     print("Passwords to change:")
     for name, value in new.items():
         print(f"  {name}: {'set' if name in env else 'not set yet'} -> new value of {len(value)} characters")
+    if "DATABASE_PASSWORD" in new and moodle_uses_owner_role(env):
+        print("  MOODLE_DB_PASSWORD: follows DATABASE_PASSWORD, because Moodle signs in as the owner role"
+              " (config.php is updated too)")
     if args.dry_run:
         print("Dry run: nothing was changed.")
         return 0
@@ -260,22 +285,24 @@ def main(argv: list[str] | None = None) -> int:
     os.replace(staged, env_path)
     print(f"{env_path.name} updated.")
 
-    if "DB_PASSWORD" in new and config_path.exists():
-        config_path.write_text(update_moodle_config(config_path.read_text(encoding="utf-8"), new["DB_PASSWORD"]),
+    # Chỉ khi Moodle dùng chung vai trò chủ sở hữu. Trước đây dòng này luôn ghi mật khẩu chủ
+    # vào config.php, nên một Moodle có vai trò riêng sẽ bị hỏng đúng lúc nó đang chạy đúng.
+    if "DATABASE_PASSWORD" in new and moodle_uses_owner_role(env) and config_path.exists():
+        config_path.write_text(update_moodle_config(config_path.read_text(encoding="utf-8"), new["DATABASE_PASSWORD"]),
                                encoding="utf-8", newline="")
         print("Moodle config.php updated.")
 
     print("Recreating the services with the new environment...")
     _docker(["compose", "up", "-d", "--remove-orphans"])
     # Moodle keeps config.php in OPcache and never re-reads it.
-    _docker(["restart", MOODLE_CONTAINER])
+    _docker(["restart", _container(MOODLE_SERVICE)])
 
     if "MOODLE_ADMIN_PASSWORD" in new:
         print("Setting the Moodle admin password...")
         deadline = time.monotonic() + 120
         while True:
             result = _docker(
-                ["exec", "-i", "-e", "NEW_MOODLE_PASSWORD", MOODLE_CONTAINER, "sh", "-c",
+                ["exec", "-i", "-e", "NEW_MOODLE_PASSWORD", _container(MOODLE_SERVICE), "sh", "-c",
                  'php admin/cli/reset_password.php --username="$MOODLE_ADMIN_USER" --password="$NEW_MOODLE_PASSWORD"'],
                 extra_env={"NEW_MOODLE_PASSWORD": new["MOODLE_ADMIN_PASSWORD"]}, check=False,
             )
@@ -289,7 +316,7 @@ def main(argv: list[str] | None = None) -> int:
     problems = []
     if not _wait_for_backend():
         problems.append("the backend did not come back healthy")
-    roles = {"DB_PASSWORD": env["DB_USER"], "APP_RUNTIME_DB_PASSWORD": "app_runtime", "APP_WORKER_DB_PASSWORD": "app_worker"}
+    roles = {"DATABASE_PASSWORD": env["DATABASE_USER"], "APP_RUNTIME_DB_PASSWORD": "app_runtime", "APP_WORKER_DB_PASSWORD": "app_worker"}
     for name, role in roles.items():
         if name not in new:
             continue

@@ -49,6 +49,13 @@ if [ ! -f /var/www/html/config.php ]; then
         --adminemail="${MOODLE_ADMIN_EMAIL}"
     echo "[moodle-entrypoint] Cai dat xong."
 else
+    # Kiem ket noi truoc bang chinh thong tin trong config.php. Khong co buoc nay thi mat
+    # khau sai, database khong ton tai hay may chu chua len deu chi hien ra thanh cau
+    # "Database connection failed" cua Moodle, roi bi ket luan la "ly do khac".
+    if ! php /usr/local/bin/check-database.php /var/www/html/config.php; then
+        echo "[moodle-entrypoint] Dung lai: khong ket noi duoc database, xem ly do o tren." >&2
+        exit 1
+    fi
     echo "[moodle-entrypoint] config.php da ton tai, kiem tra xem bang DB da co chua..."
     set +e
     php /var/www/html/admin/cli/install_database.php \
