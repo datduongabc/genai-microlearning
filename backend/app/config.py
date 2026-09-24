@@ -1,5 +1,6 @@
 import logging
 import secrets
+import threading
 from pathlib import Path
 from typing import Literal
 
@@ -8,6 +9,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 from sqlalchemy.engine import make_url
 
 logger = logging.getLogger(__name__)
+_signing_key_lock = threading.Lock()
 
 # Một tệp .env duy nhất cho cả container lẫn các lệnh chạy trên máy thật, và đó là
 # chính tệp mà docker-compose.yml đọc. Trước đây có thêm backend/.env chép lại 23
@@ -120,13 +122,29 @@ class Settings(BaseSettings):
             problems = self._production_problems()
             if problems:
                 raise ValueError("Refusing to start with ENVIRONMENT=production: " + "; ".join(problems))
-        elif not self.secret_key:
-            logger.warning(
-                "SECRET_KEY not set — generating a random ephemeral secret for this "
-                "process. Set SECRET_KEY in .env so tokens survive a restart."
-            )
-            self.secret_key = secrets.token_urlsafe(48)
         return self
+
+    def signing_key(self) -> str:
+        """The key tokens are signed and checked with.
+
+        Without SECRET_KEY outside production, a random one is made the first time a token
+        is signed or checked, not when the configuration is loaded: the migrate service
+        loads this configuration only to list the tables, never signs anything, and is
+        deliberately not given SECRET_KEY, so warning at load time printed a meaningless
+        warning on every migration.
+        """
+        if self.secret_key:
+            return self.secret_key
+        with _signing_key_lock:
+            # Checked again under the lock: two requests arriving together would otherwise
+            # each make a key, and a token signed with one would fail against the other.
+            if not self.secret_key:
+                logger.warning(
+                    "SECRET_KEY not set — generating a random ephemeral secret for this "
+                    "process. Set SECRET_KEY in .env so tokens survive a restart."
+                )
+                self.secret_key = secrets.token_urlsafe(48)
+        return self.secret_key
 
     def _production_problems(self) -> list[str]:
         """Everything that must not be true of a production configuration, all at once so

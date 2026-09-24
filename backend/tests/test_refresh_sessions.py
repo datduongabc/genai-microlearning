@@ -155,7 +155,7 @@ def test_the_access_token_lives_fifteen_minutes(account):
     access = _login(account)["access_token"]
 
     expires = datetime.fromtimestamp(
-        jwt.decode(access, settings.secret_key, algorithms=[settings.jwt_algorithm])["exp"], UTC
+        jwt.decode(access, settings.signing_key(), algorithms=[settings.jwt_algorithm])["exp"], UTC
     )
 
     assert timedelta(minutes=14) < expires - datetime.now(UTC) <= timedelta(minutes=15)
