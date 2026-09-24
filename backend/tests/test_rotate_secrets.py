@@ -11,6 +11,7 @@ import subprocess
 import sys
 
 import pytest
+import yaml
 
 SCRIPT = pathlib.Path(__file__).resolve().parents[2] / "devops" / "scripts" / "rotate_secrets.py"
 spec = importlib.util.spec_from_file_location("rotate_secrets", SCRIPT)
@@ -169,3 +170,44 @@ def test_a_dry_run_says_what_would_change_without_showing_or_touching_anything(t
     assert OLD not in everything
     assert "DB_PASSWORD" in everything and "MOODLE_ADMIN_PASSWORD" in everything
     assert env.read_text(encoding="utf-8") == ENV
+
+
+REPO_ROOT = SCRIPT.resolve().parents[2]
+
+
+def _mac_dinh(ten_tham_so: str) -> pathlib.Path:
+    defaults = rotate.build_parser().parse_args([])
+    return pathlib.Path(getattr(defaults, ten_tham_so))
+
+
+def test_mac_dinh_env_file_la_devops_env_o_goc_kho():
+    """Neo vào đường dẫn cụ thể chứ không chỉ so với app.config: so hai chỗ với nhau thì cả
+    hai cùng sai vẫn xanh. Mặc định này từng trỏ vào ".env" ở gốc kho, từ trước khi hai tệp
+    .env được gộp làm một."""
+    assert _mac_dinh("env_file") == REPO_ROOT / "devops" / ".env"
+
+
+def test_mac_dinh_env_file_dung_tep_ma_backend_doc():
+    """Rotate ghi mật khẩu mới vào một tệp mà ứng dụng không đọc thì ứng dụng vẫn dùng mật
+    khẩu cũ và không kết nối được, mà không có gì báo sai ở đâu."""
+    from app.config import _ENV_FILE
+
+    assert _mac_dinh("env_file").resolve() == pathlib.Path(_ENV_FILE).resolve()
+
+
+def test_mac_dinh_moodle_config_la_config_php_trong_cay_ma_moodle():
+    """Mặc định này từng trỏ vào "moodle-src-523", tên cũ của cây mã Moodle, nên rotate sẽ
+    lặng lẽ không đổi mật khẩu trong config.php của Moodle."""
+    assert _mac_dinh("moodle_config") == REPO_ROOT / "moodle" / "config.php"
+
+
+def test_mac_dinh_moodle_config_nam_trong_dung_thu_muc_compose_gan_lam_document_root():
+    compose = yaml.safe_load((REPO_ROOT / "devops" / "docker-compose.yml").read_text(encoding="utf-8"))
+    nguon = [
+        str(v).split(":", 1)[0]
+        for v in compose["services"]["moodle"]["volumes"]
+        if str(v).split(":", 1)[1:2] == ["/var/www/html"]
+    ]
+
+    assert len(nguon) == 1, f"mong đợi đúng một mount làm document root của Moodle: {nguon}"
+    assert _mac_dinh("moodle_config") == REPO_ROOT / nguon[0].removeprefix("./") / "config.php"
