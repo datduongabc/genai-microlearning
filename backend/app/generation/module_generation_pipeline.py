@@ -20,6 +20,7 @@ from app.generation.quiz_graph import generate_explanation, generate_quiz_questi
 from app.generation.relevance import corrective_retrieve
 from app.generation.scope_digest import build_scope_digest
 from app.generation.slides import generate_slides
+from app.llm.gateway import using_model
 from app.models import (
     Chunk,
     ComponentType,
@@ -237,7 +238,11 @@ def run_module_generation_step(job: Job) -> None:
             if section is None:
                 raise ValueError(f"Section {current_job.section_id} not found")
 
-        module = run_module_generation(db, doc, section)
+        # Model giảng viên đã chọn nằm trong payload, vì request đã trả về từ lâu trước
+        # khi worker bắt đầu. Bọc cả lượt sinh một lần ở đây thay vì truyền alias xuống
+        # từng hàm: một lượt đi qua mười chỗ gọi LLM rải khắp generation và retrieval.
+        with using_model(current_job.payload.get("model_alias")):
+            module = run_module_generation(db, doc, section)
 
         current_job.module_id = module.id
         current_job.status = JobStatus.done

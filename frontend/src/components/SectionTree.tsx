@@ -21,6 +21,8 @@ interface SectionTreeProps {
   documentGenerating: boolean;
   modules: ModuleSummary[];
   onGenerated: () => void;
+  // Model giảng viên chọn ở đầu trang; chuỗi rỗng nghĩa là chưa chọn gì.
+  modelAlias?: string;
 }
 
 // A picked section already contains its sub-sections and sits inside its
@@ -57,7 +59,13 @@ function pageRange(section: SectionInfo): string {
     : ` (trang ${section.page_start})`;
 }
 
-export function SectionTree({ documentId, documentGenerating, modules, onGenerated }: SectionTreeProps) {
+export function SectionTree({
+  documentId,
+  documentGenerating,
+  modules,
+  onGenerated,
+  modelAlias = "",
+}: SectionTreeProps) {
   const [sections, setSections] = useState<SectionInfo[] | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [busy, setBusy] = useState(false);
@@ -110,7 +118,7 @@ export function SectionTree({ documentId, documentGenerating, modules, onGenerat
     setBusy(true);
     setError(null);
     try {
-      await generateModulesFromSections(documentId, ids);
+      await generateModulesFromSections(documentId, ids, modelAlias);
       setSelected(new Set());
       onGenerated();
       setSections(await listSections(documentId));

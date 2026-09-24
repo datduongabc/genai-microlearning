@@ -56,6 +56,8 @@ beforeEach(() => {
   vi.clearAllMocks()
   vi.mocked(api.listDocuments).mockResolvedValue([])
   vi.mocked(api.listSections).mockResolvedValue([])
+  // Ô chọn model gọi API này ngay khi trang mở, như listDocuments ở trên.
+  vi.mocked(api.listModels).mockResolvedValue({ models: [], default: null })
 })
 
 describe('CourseDetailPage - Moodle linking', () => {
@@ -347,6 +349,43 @@ describe('CourseDetailPage - module generation availability', () => {
     expect(await screen.findByText(/Intro to search/)).toBeInTheDocument()
   })
 
+  it('generates with the teacher saved default model preselected', async () => {
+    vi.mocked(api.listDocuments).mockResolvedValue([sampleDocument])
+    vi.mocked(api.listModels).mockResolvedValue({
+      models: [{ alias: 'groq-pro', label: 'GPT-OSS 120B qua Groq', provider: 'groq', note: null }],
+      default: 'groq-pro',
+    })
+    vi.mocked(api.generateModule).mockResolvedValue({ job_id: 'job-1', status: 'queued' })
+    vi.mocked(api.pollJobStatus).mockReturnValue(new Promise(() => {}))
+
+    renderPage()
+    await waitFor(() =>
+      expect((screen.getByRole('combobox', { name: /model sinh/i }) as HTMLSelectElement).value).toBe('groq-pro'),
+    )
+    await userEvent.click(await screen.findByRole('button', { name: /\+ sinh mô-đun/i }))
+
+    expect(api.generateModule).toHaveBeenCalledWith('doc-1', 'groq-pro')
+  })
+
+  it('shows why a chosen model cannot be used instead of a generic failure', async () => {
+    // Backend thử model trước khi xếp hàng và trả 422 kèm lý do, ví dụ khóa trống.
+    // Giảng viên phải đọc được đúng lý do đó để biết mà chọn model khác.
+    vi.mocked(api.listDocuments).mockResolvedValue([sampleDocument])
+    const config = { headers: {} } as InternalAxiosRequestConfig
+    const response = {
+      status: 422,
+      data: { detail: "Model 'openai-fast' chưa dùng được: chưa có API key hợp lệ. Hãy chọn model khác." },
+    }
+    vi.mocked(api.generateModule).mockRejectedValue(
+      new AxiosError('failed', 'ERR_BAD_REQUEST', config, null, response as AxiosResponse),
+    )
+
+    renderPage()
+    await userEvent.click(await screen.findByRole('button', { name: /\+ sinh mô-đun/i }))
+
+    expect(await screen.findByText(/chưa có API key hợp lệ/)).toBeInTheDocument()
+  })
+
   it('starts a generation and shows it as busy while the job runs', async () => {
     vi.mocked(api.listDocuments).mockResolvedValue([sampleDocument])
     vi.mocked(api.generateModule).mockResolvedValue({ job_id: 'job-1', status: 'queued' })
@@ -355,7 +394,7 @@ describe('CourseDetailPage - module generation availability', () => {
     renderPage()
     await userEvent.click(await screen.findByRole('button', { name: /\+ sinh mô-đun/i }))
 
-    expect(api.generateModule).toHaveBeenCalledWith('doc-1')
+    expect(api.generateModule).toHaveBeenCalledWith('doc-1', '')
     expect(await screen.findByRole('button', { name: /đang sinh mô-đun/i })).toBeDisabled()
   })
 })

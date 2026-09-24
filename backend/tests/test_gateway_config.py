@@ -108,3 +108,19 @@ def test_the_gateway_runs_the_same_litellm_version_as_the_backend():
     pinned = re.search(r"ARG LITELLM_VERSION=(\S+)", GATEWAY_DOCKERFILE.read_text(encoding="utf-8")).group(1)
 
     assert pinned == locked
+
+
+def test_every_alias_has_a_label_for_the_teacher(gateway):
+    """The model picker shows this label; without one the teacher reads a raw alias like
+    "groq-pro" and cannot tell a fast model from a strong one.
+
+    Required on every alias, embedding ones included, although those never reach the
+    picker: the gateway decides which aliases are chat models at runtime, and this test
+    runs without a gateway, so the only rule it can check without guessing from alias
+    names is "every alias is labelled"."""
+    unlabelled = [
+        d["model_name"] for d in _deployments(gateway)
+        if not (d.get("model_info") or {}).get("display_name")
+    ]
+
+    assert unlabelled == []

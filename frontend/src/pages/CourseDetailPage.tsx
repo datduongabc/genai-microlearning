@@ -22,6 +22,7 @@ import {
   type MoodleCourseSearchResult,
 } from "../api";
 import { AppShell } from "../components/AppShell";
+import { ModelPicker } from "../components/ModelPicker";
 import { SectionTree } from "../components/SectionTree";
 
 const STATUS_LABEL: Record<string, string> = {
@@ -71,6 +72,9 @@ export function CourseDetailPage() {
   const { courseId } = useParams<{ courseId: string }>();
   const [course, setCourse] = useState<Course | null>(null);
   const [documents, setDocuments] = useState<DocumentInfo[]>([]);
+  // Model cho các lượt sinh bấm từ trang này, dùng chung cho cả tài liệu lẫn từng mục;
+  // chuỗi rỗng nghĩa là chưa chọn gì. ModelPicker điền sẵn mặc định đã lưu của giảng viên.
+  const [modelAlias, setModelAlias] = useState("");
   const [modulesByDoc, setModulesByDoc] = useState<
     Record<string, ModuleSummary[]>
   >({});
@@ -186,7 +190,7 @@ export function CourseDetailPage() {
     setStartingIds((ids) => new Set(ids).add(documentId));
     setError(null);
     try {
-      const { job_id } = await generateModule(documentId);
+      const { job_id } = await generateModule(documentId, modelAlias);
       const finalStatus = await pollJobStatus(() => getModuleJobStatus(job_id));
       if (finalStatus.status === "failed") {
         setError(finalStatus.last_error ?? "Sinh mô-đun thất bại");
@@ -255,6 +259,12 @@ export function CourseDetailPage() {
           />
         </label>
       </div>
+      {/* Hàng riêng chứ không chung hàng với nút tải lên: đây là thiết lập cho các nút
+          "+ Sinh mô-đun" bên dưới, không liên quan tới việc tải tài liệu. Chung hàng thì
+          dòng ghi chú dưới ô chọn còn đẩy ô chọn lệch lên so với các nút bên cạnh. */}
+      <div className="mt-4">
+        <ModelPicker value={modelAlias} onChange={setModelAlias} />
+      </div>
       {uploadBusy && (
         <p className="mt-2 text-xs text-gray-500">
           Xử lý chạy nền (đọc tài liệu → chia đoạn → embedding; audio/video
@@ -319,6 +329,7 @@ export function CourseDetailPage() {
                   documentGenerating={d.generating}
                   modules={modulesByDoc[d.id] ?? []}
                   onGenerated={refresh}
+                  modelAlias={modelAlias}
                 />
               )}
               {listedModules(d).length > 0 && (

@@ -95,3 +95,50 @@ def test_audio_transcription_also_goes_through_the_gateway(captured):
     assert captured["api_base"] == "http://gateway.test:4000"
     parts = captured["messages"][0]["content"]
     assert {"type": "input_audio", "input_audio": {"data": "AAAA", "format": "mp3"}} in parts
+
+
+# --- choosing the model for one run ------------------------------------------
+# A teacher picks the model per generation, so the choice travels with the run rather
+# than through the signature of every function in the pipeline: ten call sites across
+# generation, chat and ingestion would otherwise each grow a parameter.
+
+
+def test_a_chosen_alias_overrides_the_configured_one(captured):
+    with llm.using_model("groq-pro"):
+        llm.complete("hello")
+
+    assert captured["model"] == "openai/groq-pro"
+
+
+def test_choosing_nothing_leaves_the_configured_alias_alone(captured):
+    with llm.using_model(None):
+        llm.complete("hello")
+
+    assert captured["model"] == "openai/dev-alias"
+
+
+def test_the_choice_does_not_outlive_the_block(captured):
+    with llm.using_model("groq-pro"):
+        pass
+    llm.complete("hello")
+
+    assert captured["model"] == "openai/dev-alias"
+
+
+def test_the_choice_does_not_leak_out_of_a_block_that_raises(captured):
+    """A generation run that fails must not leave the next one on someone else's model."""
+    with pytest.raises(RuntimeError), llm.using_model("groq-pro"):
+        raise RuntimeError("sinh that bai")
+    llm.complete("hello")
+
+    assert captured["model"] == "openai/dev-alias"
+
+
+def test_a_nested_choice_restores_the_outer_one(captured):
+    with llm.using_model("groq-pro"):
+        with llm.using_model("claude-fast"):
+            llm.complete("inner")
+            assert captured["model"] == "openai/claude-fast"
+        llm.complete("outer")
+
+    assert captured["model"] == "openai/groq-pro"
