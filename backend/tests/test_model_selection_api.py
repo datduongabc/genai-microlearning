@@ -34,9 +34,16 @@ GATEWAY_GIA_LAP = [
 ]
 
 
+da_thu: list[str] = []
+
+
 @pytest.fixture(autouse=True)
 def gateway_gia_lap(monkeypatch):
     monkeypatch.setattr(catalog, "fetch_model_info", lambda: GATEWAY_GIA_LAP)
+    # Phép thử thật sẽ gọi gateway đang chạy trên máy và tốn hạn mức. Mặc định là thử được;
+    # test nào cần model hỏng thì tự đặt lại. Ghi lại alias đã thử để kiểm được khi nào có thử.
+    da_thu.clear()
+    monkeypatch.setattr(catalog, "probe", lambda alias: da_thu.append(alias))
     catalog.clear_cache()
     yield
     catalog.clear_cache()
@@ -149,3 +156,32 @@ def test_gateway_tra_ma_loi_thi_cung_bao_503(monkeypatch):
     catalog.clear_cache()
 
     assert client.get("/models", headers=_dang_nhap()).status_code == 503
+
+
+def test_luu_mac_dinh_thi_model_duoc_thu_truoc():
+    """Mặc định được dùng cho mọi lượt sinh về sau, nên lưu một model chưa dùng được làm mặc
+    định là để dành một lỗi cho mọi lần bấm sinh tiếp theo. Báo ngay lúc lưu thì hơn."""
+    client.put("/models/default", json={"alias": "groq-pro"}, headers=_dang_nhap())
+
+    assert da_thu == ["groq-pro"]
+
+
+def test_model_chua_dung_duoc_thi_khong_luu_lam_mac_dinh(monkeypatch):
+    def model_hong(alias):
+        raise catalog.ModelUnusable(alias, "chưa có API key hợp lệ cho nhà cung cấp của model này")
+
+    monkeypatch.setattr(catalog, "probe", model_hong)
+    headers = _dang_nhap()
+
+    phan_hoi = client.put("/models/default", json={"alias": "groq-pro"}, headers=headers)
+
+    assert phan_hoi.status_code == 422
+    assert "api key" in phan_hoi.json()["detail"].lower()
+    assert client.get("/models", headers=headers).json()["default"] is None
+
+
+def test_xoa_mac_dinh_thi_khong_thu_gi():
+    """Xoá mặc định là quay về cấu hình hệ thống, không có model nào để thử."""
+    client.put("/models/default", json={"alias": None}, headers=_dang_nhap())
+
+    assert da_thu == []

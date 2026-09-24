@@ -59,6 +59,17 @@ def set_default_model(
             status_code=422,
             detail=f"Gateway không phục vụ model sinh văn bản nào tên '{body.alias}'.",
         )
+    if body.alias is not None:
+        # Mặc định được dùng cho mọi lượt sinh về sau, nên lưu một model chưa dùng được là để
+        # dành một lỗi cho mọi lần bấm sinh tiếp theo. Thử ngay lúc lưu để báo ở đây.
+        # GatewayUnavailable thì để lọt ra, app/main.py đổi nó thành 503.
+        try:
+            catalog.probe(body.alias)
+        except catalog.ModelUnusable as loi:
+            raise HTTPException(
+                status_code=422,
+                detail=f"Model '{loi.alias}' chưa dùng được: {loi.ly_do}. Hãy chọn model khác.",
+            ) from loi
 
     user = db.get(User, current_user.id)
     user.default_model_alias = body.alias
