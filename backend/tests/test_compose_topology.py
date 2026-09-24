@@ -7,6 +7,7 @@ not the database owner's URL (only the migration step has it), not the Moodle ad
 password, not the provider keys. The
 proxy that terminates HTTPS is what the outside world talks to."""
 
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -129,9 +130,58 @@ def test_every_path_the_compose_file_builds_or_mounts_exists():
             missing.append((name, "dockerfile"))
         for volume in service.get("volumes", []):
             source = str(volume).split(":", 1)[0]
-            # Moodle's own source is a separate checkout that is not part of this repository.
-            if source.startswith("./") and not source.startswith("./moodle-src") and not (REPO_ROOT / source).exists():
+            if source.startswith("./") and source not in NGUON_NGOAI_KHO and not (REPO_ROOT / source).exists():
                 missing.append((name, source))
 
     assert missing == []
+
+
+# Nguồn mount cố tình nằm ngoài kho mã, nên vắng mặt trong một bản clone mới và không
+# được đòi phải tồn tại. Danh sách tường minh chứ không phải "cứ gitignore là bỏ qua":
+# miễn trừ theo gitignore sẽ im lặng tha cho một đường dẫn thật sự cần, chỉ vì ai đó
+# thêm nó vào .gitignore.
+NGUON_NGOAI_KHO = frozenset({"./moodle"})
+
+
+def _git_bo_qua(path: str) -> bool:
+    """Hỏi với dấu gạch chéo cuối, và đó là điểm mấu chốt: mẫu trong .gitignore là `/moodle/`,
+    có gạch cuối nên chỉ khớp thư mục. Hỏi `./moodle` thì git phải tự đoán đây có phải thư mục
+    không, và nó đoán theo đĩa: trên máy đã chạy stack thì thư mục có thật nên khớp, còn trong
+    một bản clone mới thì không có gì ở đó nên KHÔNG khớp. Bỏ dấu gạch cuối là dựng lại đúng
+    cái bẫy "xanh ở máy mình, đỏ ở CI" mà hàm này sinh ra để chặn."""
+    try:
+        # check=False: mã thoát 1 chỉ có nghĩa "không bị bỏ qua", không phải lỗi.
+        result = subprocess.run(
+            ["git", "check-ignore", "-q", path.rstrip("/") + "/"],
+            cwd=REPO_ROOT, capture_output=True, timeout=30, check=False,
+        )
+    except FileNotFoundError:
+        pytest.skip("cần git để biết đường dẫn nào bị cố tình bỏ qua")
+    return result.returncode == 0
+
+
+def test_moi_nguon_duoc_mien_tru_deu_thuc_su_nam_ngoai_kho_ma():
+    """Chặn việc dùng danh sách miễn trừ để che một đường dẫn đáng ra phải có trong kho.
+
+    Đây cũng là chỗ bắt tên thư mục bị đổi: miễn trừ này từng ghi `./moodle-src`, cây mã
+    Moodle sau đó đổi tên thành `./moodle`, tên ở đây không đổi theo, và CI đỏ ở mọi nhánh
+    trong khi máy của người phát triển vẫn xanh vì thư mục có sẵn ở đó."""
+    khong_bi_bo_qua = sorted(nguon for nguon in NGUON_NGOAI_KHO if not _git_bo_qua(nguon))
+
+    assert khong_bi_bo_qua == [], (
+        f"được miễn trừ nhưng git không bỏ qua, nên đáng ra phải có trong kho: {khong_bi_bo_qua}"
+    )
+
+
+def test_danh_sach_mien_tru_khong_con_muc_chet():
+    """Một mục miễn trừ không còn được compose mount nữa thì chỉ là chỗ để lần sau ai đó vô
+    tình dựa vào, nên phải bị gỡ cùng lúc với cái mount đã bỏ."""
+    services = yaml.safe_load(COMPOSE.read_text(encoding="utf-8"))["services"]
+    dang_mount = {
+        str(volume).split(":", 1)[0]
+        for service in services.values()
+        for volume in service.get("volumes", [])
+    }
+
+    assert NGUON_NGOAI_KHO <= dang_mount, f"miễn trừ không còn được mount: {sorted(NGUON_NGOAI_KHO - dang_mount)}"
 
