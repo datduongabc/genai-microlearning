@@ -22,6 +22,9 @@ services:
   # chu so huu; tien trinh chay that khong bao gio can quyen do.
   migrate:
     build: ./backend
+    # Chung image voi backend: thieu dong nay Compose dung mot ban sao rieng nang
+    # ca chuc GB, va ban sao do co the cu hon, nen migration chay tren code khac.
+    image: do-an-backend
     container_name: do-an-migrate
     depends_on:
       db:
@@ -100,6 +103,7 @@ services:
 
   backend:
     build: ./backend
+    image: do-an-backend
     container_name: do-an-backend
     depends_on:
       migrate:
