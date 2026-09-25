@@ -1,5 +1,5 @@
-"""Embeds again the chunks that have no vector: after the embedding provider or the size of the
-vectors changed (migration d1f6a3c8e5b2 clears the old ones), or after a job stopped half way.
+"""Embeds again the chunks that have no vector: after the embedding model or the size of the
+vectors changed (a migration clears the old ones, as 0005 did), or after a job stopped half way.
 It works in batches and commits each one, and leaves a chunk that has a vector alone, so it can be
 stopped and started again."""
 

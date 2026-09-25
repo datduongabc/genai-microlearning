@@ -23,27 +23,42 @@ model_list:
       display_name: Gemini Pro
       note: chất lượng cao hơn, hạn mức miễn phí thấp
 
-  # Embeddings for retrieval (backend/app/ingestion/embeddings.py). Multilingual, so Vietnamese
-  # documents are searched properly, and served by the provider so the backend image does not
-  # have to carry an embedding model.
+  # Embeddings for retrieval (backend/app/ingestion/embeddings.py), served by the `embedder`
+  # service of docker-compose.yml rather than a provider: the free Gemini tier embeds only 1000
+  # chunks a day, so a course's documents took days, and it retrieved no better, see
+  # docs/measurements/2026-09-25-model-nhung.md. Multilingual, so Vietnamese documents are
+  # searched properly, and in a container of its own so the backend image stays light.
+  # "openai/" only names the protocol the embedder speaks. It returns 1024 numbers but was
+  # trained to be cut shorter, so the backend's `dimensions` gives the 768 of chunks.embedding.
   - model_name: embed-default
+    litellm_params:
+      model: openai/Qwen3-Embedding-0.6B
+      api_base: http://embedder:80/v1
+      api_key: os.environ/EMBEDDER_API_KEY
+      # litellm only lets `dimensions` through for OpenAI models it knows can take it.
+      allowed_openai_params: ["dimensions"]
+    model_info:
+      display_name: Qwen3 Embedding 0.6B (chạy tại chỗ)
+      mode: embedding
+
+  # Other embedding models, chosen with EMBEDDING_MODEL. Vectors of two models cannot be
+  # compared, so switching means clearing chunks.embedding and running scripts/reembed_chunks.py.
+  # The providers cut their vectors to 768 through the same `dimensions` argument. Groq has no
+  # embedding model, so it cannot serve here.
+  - model_name: embed-gemini
     litellm_params:
       model: gemini/gemini-embedding-001
       api_key: os.environ/GEMINI_API_KEY
     model_info:
       display_name: Gemini Embedding
-
-  # Duong nhung du phong khi han muc mien phi cua Gemini het (1000 luot moi ngay,
-  # tinh theo tung chunk). Doi bang cach dat EMBEDDING_MODEL=embed-openai.
-  # Model nay tra ve 1536 chieu nhung nhan tham so `dimensions`, nen cat con 768
-  # dung bang so chieu cua cot chunks.embedding, giong cach lam voi Gemini.
-  # Groq khong co model embedding nao, nen khong the dung cho viec nay.
+      mode: embedding
   - model_name: embed-openai
     litellm_params:
       model: openai/text-embedding-3-small
       api_key: os.environ/OPENAI_API_KEY
     model_info:
       display_name: OpenAI Embedding 3 Small
+      mode: embedding
 
   - model_name: openai-fast
     litellm_params:

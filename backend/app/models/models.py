@@ -19,7 +19,7 @@ from sqlalchemy.sql import func
 
 from app.db import Base
 
-# Size of the vectors the embedding provider is asked for (app/services/embeddings.py). A vector of
+# Size of the vectors the embedding model is asked for (app/ingestion/embeddings.py). A vector of
 # one size cannot be compared with one of another, so changing it needs a migration and a new vector
 # for every chunk (scripts/reembed_chunks.py).
 EMBEDDING_DIM = 768
