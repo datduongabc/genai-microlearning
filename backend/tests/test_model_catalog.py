@@ -23,7 +23,7 @@ def test_chi_moi_model_sinh_van_ban_duoc_dem_ra_chon():
     """Alias nhúng lọt vào danh sách thì giảng viên chọn nó và cả pipeline sinh nội dung
     chết giữa đường bằng một lỗi không liên quan gì tới việc chọn model."""
     chon = catalog.to_choices([
-        _muc("gemini-fast", "gemini/gemini-flash-lite-latest"),
+        _muc("gemini-fast", "gemini/gemini-3.5-flash-lite"),
         _muc("embed-default", "gemini/gemini-embedding-001", mode="embedding"),
     ])
 
@@ -40,7 +40,7 @@ def test_model_khong_ro_che_do_thi_khong_dem_ra_chon():
 
 def test_nhan_hien_thi_lay_tu_cau_hinh_gateway():
     chon = catalog.to_choices([
-        _muc("gemini-fast", "gemini/gemini-flash-lite-latest", display_name="Gemini Flash Lite")
+        _muc("gemini-fast", "gemini/gemini-3.5-flash-lite", display_name="Gemini Flash Lite")
     ])
 
     assert chon[0].label == "Gemini Flash Lite"
@@ -55,7 +55,7 @@ def test_thieu_nhan_thi_dung_chinh_alias_lam_nhan():
 
 def test_ghi_chu_duoc_chuyen_tiep_de_giang_vien_biet_nen_chon_cai_nao():
     chon = catalog.to_choices([
-        _muc("gemini-fast", "gemini/gemini-flash-lite-latest", note="nhanh, miễn phí")
+        _muc("gemini-fast", "gemini/gemini-3.5-flash-lite", note="nhanh, miễn phí")
     ])
 
     assert chon[0].note == "nhanh, miễn phí"
@@ -75,12 +75,12 @@ def test_nha_cung_cap_suy_ra_tu_ten_model_chu_khong_phai_khai_them():
 def test_thu_tu_on_dinh_de_danh_sach_tren_giao_dien_khong_nhay():
     xuoi = catalog.to_choices([
         _muc("openai-fast", "openai/gpt-4o-mini"),
-        _muc("gemini-pro", "gemini/gemini-pro-latest"),
-        _muc("gemini-fast", "gemini/gemini-flash-lite-latest"),
+        _muc("gemini-flash", "gemini/gemini-3.5-flash"),
+        _muc("gemini-fast", "gemini/gemini-3.5-flash-lite"),
     ])
     nguoc = catalog.to_choices([
-        _muc("gemini-fast", "gemini/gemini-flash-lite-latest"),
-        _muc("gemini-pro", "gemini/gemini-pro-latest"),
+        _muc("gemini-fast", "gemini/gemini-3.5-flash-lite"),
+        _muc("gemini-flash", "gemini/gemini-3.5-flash"),
         _muc("openai-fast", "openai/gpt-4o-mini"),
     ])
 
@@ -92,7 +92,7 @@ def test_mot_alias_gateway_khong_phuc_vu_thi_khong_hop_le(monkeypatch):
     đi tới lệnh gọi LLM rồi hỏng ở đó."""
     monkeypatch.setattr(
         catalog, "available_models",
-        lambda: catalog.to_choices([_muc("gemini-fast", "gemini/gemini-flash-lite-latest")]),
+        lambda: catalog.to_choices([_muc("gemini-fast", "gemini/gemini-3.5-flash-lite")]),
     )
 
     assert catalog.is_available("gemini-fast")
@@ -105,7 +105,7 @@ def test_danh_sach_duoc_ghi_dem_de_moi_lan_mo_trang_khong_goi_lai_gateway(monkey
 
     def dem():
         so_lan["n"] += 1
-        return [_muc("gemini-fast", "gemini/gemini-flash-lite-latest")]
+        return [_muc("gemini-fast", "gemini/gemini-3.5-flash-lite")]
 
     monkeypatch.setattr(catalog, "fetch_model_info", dem)
     catalog.clear_cache()
@@ -123,7 +123,7 @@ def test_ghi_dem_het_han_thi_hoi_lai_gateway(monkeypatch):
 
     def dem():
         so_lan["n"] += 1
-        return [_muc("gemini-fast", "gemini/gemini-flash-lite-latest")]
+        return [_muc("gemini-fast", "gemini/gemini-3.5-flash-lite")]
 
     monkeypatch.setattr(catalog, "fetch_model_info", dem)
     monkeypatch.setattr(catalog, "CACHE_SECONDS", 0)
@@ -192,11 +192,11 @@ def test_khoa_trong_hoac_sai_thi_bao_chua_co_khoa(monkeypatch):
 def test_het_han_muc_thi_bao_het_han_muc(monkeypatch):
     """Đúng lỗi đã gặp: hạn mức ngày của Gemini cạn giữa chừng một lượt chạy."""
     monkeypatch.setattr(litellm, "completion", _nem(
-        loi_litellm.RateLimitError(message="429", llm_provider="gemini", model="gemini-pro")
+        loi_litellm.RateLimitError(message="429", llm_provider="gemini", model="gemini-flash")
     ))
 
     with pytest.raises(catalog.ModelUnusable) as bat:
-        catalog.probe("gemini-pro")
+        catalog.probe("gemini-flash")
 
     assert "hạn mức" in bat.value.ly_do
 

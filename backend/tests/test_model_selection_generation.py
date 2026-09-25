@@ -11,6 +11,7 @@ from fastapi.testclient import TestClient
 
 from app.auth.rate_limit import limiter
 from app.auth.security import create_access_token
+from app.config import settings
 from app.db import SessionLocal
 from app.llm import catalog
 from app.llm import gateway as llm
@@ -32,7 +33,7 @@ client = TestClient(app)
 GATEWAY_GIA_LAP = [
     {
         "model_name": "gemini-fast",
-        "litellm_params": {"model": "gemini/gemini-flash-lite-latest"},
+        "litellm_params": {"model": "gemini/gemini-3.5-flash-lite"},
         "model_info": {"mode": "chat"},
     },
     {
@@ -123,6 +124,26 @@ def test_khong_chon_gi_thi_dung_mac_dinh_cua_giang_vien():
     client.post(f"/modules/generate?document_id={doc_id}", headers={"Authorization": f"Bearer {token}"})
 
     assert _payload_cua_job(doc_id)["model_alias"] == "groq-pro"
+
+
+def test_mac_dinh_da_luu_ma_gateway_da_bo_thi_sinh_bang_cau_hinh_he_thong():
+    """gemini-pro đã đổi tên thành gemini-flash, nhưng database có thể vẫn lưu tên cũ."""
+    token, doc_id = _tai_lieu_cua_giang_vien(mac_dinh="gemini-pro")
+
+    phan_hoi = client.post(f"/modules/generate?document_id={doc_id}", headers={"Authorization": f"Bearer {token}"})
+
+    assert phan_hoi.status_code == 200, phan_hoi.text
+    assert "model_alias" not in _payload_cua_job(doc_id)
+    assert da_thu == []
+
+
+def test_mac_dinh_da_luu_ma_gateway_da_bo_thi_danh_sach_bao_mac_dinh_he_thong():
+    token, _ = _tai_lieu_cua_giang_vien(mac_dinh="gemini-pro")
+
+    body = client.get("/models", headers={"Authorization": f"Bearer {token}"}).json()
+
+    assert body["default"] == settings.llm_model
+    assert body["default"] in [m["alias"] for m in body["models"]]
 
 
 def test_chon_luc_bam_sinh_thang_mac_dinh_cua_giang_vien():
