@@ -34,7 +34,7 @@ __pycache__/
 .DS_Store
 Thumbs.db
 
-docs/
+/docs/documents/
 Applying AI Tools to Design Microlearning Materials.md
 Bloom Taxonomy.md
 The MIND Model A Microlearning AI Integrated Instructional Design for Enhanced Learning Outcomes.md
