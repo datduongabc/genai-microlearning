@@ -52,6 +52,8 @@ def _alias_da_chon(body: GenerateRequest | None, current_user: User) -> str | No
             # Đường mặc định: không có gì để kiểm hay thử, nên không gọi gateway lúc bấm nút.
             return None
         if not catalog.is_available(alias):
+            # Mặc định đã lưu có thể trỏ tới alias gateway đã bỏ (gemini-pro đổi thành
+            # gemini-flash): lùi về cấu hình hệ thống, đừng chặn mọi lượt sinh bằng 422.
             return None
     elif not catalog.is_available(alias):
         raise HTTPException(
