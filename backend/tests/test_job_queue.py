@@ -234,3 +234,31 @@ def test_sweep_stuck_jobs_ignores_recently_locked_jobs(seed_document):
         assert job.attempts == 0
     finally:
         db.close()
+
+
+def test_sweep_stuck_jobs_fails_a_job_with_no_attempts_left_and_marks_its_document_failed(seed_document):
+    """Một job kẹt mãi thì tài liệu của nó không bao giờ xong: đánh dấu thất bại để giao diện
+    thôi hiện "đang xử lý" và giảng viên biết phải tải lại."""
+    db = SessionLocal()
+    try:
+        doc = seed_document(db)
+        job = enqueue_job(db, job_type=JobType.document_pipeline, step="embed", document_id=doc.id, max_attempts=2)
+        job.status = JobStatus.running
+        job.attempts = 1
+        job.locked_at = datetime.now(UTC) - timedelta(minutes=20)
+        job.locked_by = "dead-worker"
+        db.commit()
+        job_id, doc_id = job.id, doc.id
+    finally:
+        db.close()
+
+    sweep_stuck_jobs()
+
+    db = SessionLocal()
+    try:
+        job = db.get(Job, job_id)
+        assert job.status == JobStatus.failed
+        assert job.locked_at is None
+        assert db.get(Document, doc_id).status == DocumentStatus.failed
+    finally:
+        db.close()
