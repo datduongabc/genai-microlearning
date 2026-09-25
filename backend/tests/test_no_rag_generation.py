@@ -47,7 +47,7 @@ def llm(monkeypatch):
 
     def fake(prompt, response_model, system_instruction=None, **kwargs):
         calls.append({"model": response_model, "prompt": prompt, "system": system_instruction or "",
-                      "alias": gateway._active_model()})
+                      "alias": gateway.active_model()})
         queued = fail.get(response_model)
         if queued:
             return queued.pop(0)

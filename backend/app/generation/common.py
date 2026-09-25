@@ -22,7 +22,7 @@ BLOOM_VERB_TABLE = """
 # trôi lên cấp cao hơn yêu cầu dù đã ràng buộc) theo Wang et al., "From
 # Memorization to Creation: Evaluating the Cognitive Depth of LLM-Generated
 # Educational Questions" (arXiv:2606.18257). Cùng bảng neo với
-# AI_Microlearning_LMS_Rubric_GD2.md mục A (dùng chung sinh + chấm điểm).
+# docs/rubric.md tiêu chí bloom_fidelity (dùng chung sinh + chấm điểm).
 BLOOM_LEVEL_ANCHORS: dict[BloomLevel, str] = {
     "remember": "Chỉ yêu cầu nhớ lại sự kiện/định nghĩa/thuật ngữ đã nêu trong nguồn, KHÔNG đòi hỏi giải thích lý do hay áp dụng.",
     "understand": "Yêu cầu diễn giải lại bằng lời riêng hoặc nêu quan hệ giữa các khái niệm đã học, không chỉ lặp lại nguyên văn nguồn.",

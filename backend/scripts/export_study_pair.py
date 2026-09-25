@@ -3,8 +3,9 @@
     uv run python scripts/export_study_pair.py <module_id> --out <thư mục> [--model <alias>]
 
 Bản không RAG được sinh bằng đúng model đã sinh module RAG (đọc từ job sinh module), để khác biệt
-điểm chấm chỉ còn là RAG; --model chỉ dùng khi muốn ghi đè có chủ ý. Phân hệ nghiên cứu nạp hai tệp
-này và gán mã ẩn danh; tên tệp mang tên nhóm để người nghiên cứu biết, còn nội dung gói thì không.
+điểm chấm chỉ còn là RAG; --model chỉ dùng khi muốn ghi đè có chủ ý. Mỗi tệp là một StudyFile: gói
+nội dung (khóa "packet", không lộ nhóm hay nguồn) bọc trong mã cặp, tên nhóm và model đã sinh. Phần
+bọc ngoài chỉ dành cho người nghiên cứu và scripts/run_judge.py, không đưa cho người chấm.
 
 Tốn lượt gọi LLM thật (khoảng 25-30 lượt cho bản không RAG), và một lượt nhúng câu truy vấn.
 """
@@ -16,7 +17,8 @@ import uuid
 from pathlib import Path
 
 from app.db import SessionLocal
-from app.generation.study_packets import study_pair
+from app.generation.study_packets import StudyFile, study_pair
+from app.llm import gateway
 from app.models import Job, JobType, Module
 
 
@@ -49,10 +51,13 @@ def main() -> None:
     finally:
         db.close()
 
+    # Ghi tên alias thật chứ không để trống: bước chấm cần biết hãng của model đã sinh.
+    generator = alias or gateway.active_model()
     args.out.mkdir(parents=True, exist_ok=True)
     for group, packet in (("rag_llm", rag), ("llm_no_rag", no_rag)):
+        study = StudyFile(pair_id=str(args.module_id), group=group, generator_model=generator, packet=packet)
         path = args.out / f"{args.module_id}-{group}.json"
-        path.write_text(json.dumps(packet.model_dump(), ensure_ascii=False, indent=2), encoding="utf-8")
+        path.write_text(json.dumps(study.model_dump(), ensure_ascii=False, indent=2), encoding="utf-8")
         print(path)
 
 
