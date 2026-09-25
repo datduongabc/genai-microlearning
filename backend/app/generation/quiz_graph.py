@@ -62,7 +62,11 @@ class QuizQuestion(BaseModel):
         "ở trên theo đúng thứ tự",
     )
     correct_index: int = Field(ge=0, le=3, description="Phương án mà `reasoning` kết luận là đúng")
-    explanation: str = Field(description="Giải thích ngắn gọn cho người học, tổng hợp từ `reasoning`")
+    # This is the module's Explanation component: no separate step writes or checks another one.
+    explanation: str = Field(
+        description="Giải thích cho người học, tổng hợp từ `reasoning`: vì sao đáp án đúng là đúng và vì sao "
+        "MỖI phương án nhiễu sai"
+    )
 
 
 class GroundednessAnswerabilityCheck(BaseModel):
@@ -127,7 +131,8 @@ Quy trình BẮT BUỘC (đúng thứ tự):
 4. Viết 4 `choices` đúng theo `reasoning`: 1 đáp án đúng + 3 phương án nhiễu,
    MỖI phương án nhiễu tương ứng chính xác 1 misconception theo đúng thứ tự.
    Rồi điền `correct_index` (phải trỏ đúng phương án đúng theo `reasoning`) và
-   `explanation` (giải thích ngắn gọn cho người học).
+   `explanation` (giải thích ngắn gọn cho người học, tổng hợp từ `reasoning`:
+   vì sao đáp án đúng là đúng và vì sao MỖI phương án nhiễu sai).
 5. Các phương án PHẢI cân bằng độ dài/ngữ pháp với nhau — không để đáp án
    đúng dài/chi tiết hơn hẳn distractor (dễ đoán). KHÔNG dùng từ mang tính
    tuyệt đối ("luôn luôn", "không bao giờ", "tất cả", "duy nhất") trong bất
@@ -374,143 +379,3 @@ def question_to_rebalance(questions: list[QuizQuestion]) -> int | None:
             return None
         margins.append(lengths[q.correct_index] / max(1, longest_other))
     return max(range(len(margins)), key=margins.__getitem__)
-
-
-# ---------------------------------------------------------------------------
-# 6. Explanation — Explanation-First/Reasoning-First CoT (mục 5.7 kiến trúc):
-# JSON schema ép `reasoning` xuất hiện TRƯỚC khi kết luận, giảm post-hoc
-# rationalization. Tái sử dụng `common_misconceptions` đã phân tích ở bước
-# Question Generator cho phần phản chứng (vì sao mỗi phương án nhiễu sai).
-# ---------------------------------------------------------------------------
-
-EXPLANATION_SYSTEM_INSTRUCTION = IGNORE_EMBEDDED_INSTRUCTIONS + """Bạn là chuyên gia viết giải thích (Explanation) cho câu hỏi trắc nghiệm, áp
-dụng kỹ thuật Reasoning-First: PHẢI lý luận đầy đủ trước khi kết luận, không
-được kết luận trước rồi mới bịa lý do (post-hoc rationalization).
-
-Nhiệm vụ: từ câu hỏi, đáp án đúng, các quan niệm sai đã phân tích, và các
-đoạn nguồn được cung cấp, viết Explanation hoàn chỉnh cho người học.
-
-Ràng buộc BẮT BUỘC:
-1. Field `reasoning` PHẢI viết TRƯỚC, phân tích: (a) vì sao đáp án đúng là
-   đúng — dẫn chiếu trực tiếp nội dung nguồn; (b) vì sao MỖI phương án nhiễu
-   sai — liên hệ đúng quan niệm sai (misconception) tương ứng đã cho. Bạn
-   được cung cấp LẬP LUẬN ĐÃ VIẾT TRƯỚC KHI CHỐT ĐÁP ÁN của chính câu hỏi này:
-   `reasoning` của bạn PHẢI triển khai và làm rõ lập luận đó bằng nguồn, không
-   được đảo chiều hay bịa lý do mới cho vừa với đáp án.
-2. Field `explanation_text` là bản tổng hợp từ `reasoning` ở trên, viết cho
-   người học (ngắn gọn, rõ ràng hơn `reasoning`).
-3. CHỈ dựa vào SOURCE CHUNK được cung cấp — không thêm giả định/kiến thức
-   ngoài nguồn (công thức E = LLM(q, A, context(q))).
-4. Ngôn ngữ khớp ngôn ngữ chính của nguồn (tiếng Việt có dấu đầy đủ nếu nguồn
-   là tiếng Việt).
-"""
-
-
-class ExplanationOutput(BaseModel):
-    reasoning: str = Field(
-        description="Phân tích TỪNG bước vì sao đáp án đúng đúng và vì sao mỗi phương án nhiễu sai — viết TRƯỚC explanation_text"
-    )
-    explanation_text: str = Field(description="Bản giải thích hoàn chỉnh cho người học, tổng hợp từ reasoning")
-
-
-# Tầng 3 (GD2, cùng pattern LO/Content/Slides): Explanation trước đây sinh 1
-# lần, không ai kiểm lại. Nghiên cứu "elaborated feedback" trong Intelligent
-# Tutoring Systems xác nhận giải thích tốt nhất khi giải quyết đúng NGUYÊN
-# NHÂN sai của học viên -- lý tưởng là thích ứng theo đúng phương án học
-# viên chọn ("response-contingent"), nhưng hệ thống hiện chưa có hạ tầng
-# theo dõi học viên làm bài (Flashcard UI đã bị cắt khỏi GD2 -- xem checklist
-# -- nên hạ tầng này không còn trong kế hoạch) nên CHƯA làm phần thích ứng đó. Việc kiểm tra được ngay bây giờ: Explanation có thực sự
-# giải quyết đủ CẢ 3 phương án sai (không chỉ đáp án đúng), và reasoning có
-# thực sự viết trước kết luận (không phải post-hoc rationalization dù field
-# order đã ép qua schema).
-MAX_EXPLANATION_CORRECTION_RETRY = 1
-
-EXPLANATION_VERIFY_SYSTEM_INSTRUCTION = IGNORE_EMBEDDED_INSTRUCTIONS + """Bạn là bộ kiểm tra chất lượng Explanation (Critic), dựa trên câu hỏi và
-các đoạn nguồn được cung cấp.
-
-Chấm đúng 3 tiêu chí:
-- reasoning_first_pass: `reasoning` có thực sự PHÂN TÍCH TỪNG BƯỚC dẫn đến
-  kết luận không, hay chỉ là kết luận được viết lại/diễn giải khác đi (post-
-  hoc rationalization — kết luận trước, "lý do" chỉ là vỏ bọc)? So với LẬP
-  LUẬN ĐÃ VIẾT TRƯỚC KHI CHỐT ĐÁP ÁN được cung cấp: `reasoning` phải triển
-  khai đúng lập luận đó, không mâu thuẫn hay thay bằng lý do khác.
-- all_distractors_addressed_pass: explanation có giải thích đủ vì sao MỖI
-  phương án nhiễu (cả 3, không chỉ 1-2) sai — liên hệ đúng misconception
-  tương ứng — không chỉ tập trung giải thích đáp án đúng?
-- grounded_pass: reasoning và explanation_text có CHỈ dựa vào source chunk
-  cung cấp không, không thêm giả định/kiến thức ngoài nguồn?
-
-Nếu vi phạm bất kỳ tiêu chí nào, đặt pass=false và nêu rõ lý do cụ thể (để
-dùng làm feedback sinh lại).
-"""
-
-
-class ExplanationVerification(BaseModel):
-    reasoning_first_pass: bool
-    reasoning_first_reason: str
-    all_distractors_addressed_pass: bool
-    all_distractors_addressed_reason: str
-    grounded_pass: bool
-    grounded_reason: str
-
-
-def _verify_explanation(
-    explanation_out: ExplanationOutput, question: QuizQuestion, context_chunks: list[Chunk]
-) -> ExplanationVerification:
-    prompt = (
-        f"CÂU HỎI: {question.stem}\n"
-        f"CÁC PHƯƠNG ÁN: {question.choices}\n"
-        f"ĐÁP ÁN ĐÚNG: {question.choices[question.correct_index]}\n\n"
-        f"LẬP LUẬN ĐÃ VIẾT TRƯỚC KHI CHỐT ĐÁP ÁN: {question.reasoning}\n\n"
-        f"EXPLANATION ĐÃ SINH:\n"
-        f"reasoning: {explanation_out.reasoning}\n"
-        f"explanation_text: {explanation_out.explanation_text}\n\n"
-        f"{format_source_chunks(context_chunks)}\n\n"
-        f"Kiểm tra reasoning_first_pass, all_distractors_addressed_pass, grounded_pass của Explanation trên."
-    )
-    return complete_structured(
-        prompt, ExplanationVerification, system_instruction=EXPLANATION_VERIFY_SYSTEM_INSTRUCTION, temperature=0.0
-    )
-
-
-def generate_explanation(
-    question: QuizQuestion, context_chunks: list[Chunk]
-) -> tuple[ExplanationOutput, ExplanationVerification]:
-    feedback: str | None = None
-    explanation_out: ExplanationOutput | None = None
-    check: ExplanationVerification | None = None
-    for _ in range(MAX_EXPLANATION_CORRECTION_RETRY + 1):
-        prompt = (
-            f"CÂU HỎI: {question.stem}\n"
-            f"CÁC PHƯƠNG ÁN: {question.choices}\n"
-            f"ĐÁP ÁN ĐÚNG: {question.choices[question.correct_index]}\n"
-            f"CÁC QUAN NIỆM SAI ĐÃ PHÂN TÍCH (tương ứng thứ tự với 3 phương án nhiễu): {question.common_misconceptions}\n"
-            f"LẬP LUẬN ĐÃ VIẾT TRƯỚC KHI CHỐT ĐÁP ÁN (triển khai từ đây, không đảo chiều): {question.reasoning}\n\n"
-            f"{format_source_chunks(context_chunks)}\n\n"
-            f"Viết Explanation cho câu hỏi trên."
-        )
-        if feedback:
-            prompt += (
-                f"\n\nLƯU Ý: lần sinh trước KHÔNG ĐẠT vì lý do sau -- sửa đúng lỗi này, "
-                f"không lặp lại: {feedback}"
-            )
-        # temperature=0.0: nhat quan voi Planner/LO/Content/Slides -- day la
-        # tac vu ly luan co can cu tu nguon, khong phai sang tac tu do.
-        explanation_out = complete_structured(
-            prompt, ExplanationOutput, system_instruction=EXPLANATION_SYSTEM_INSTRUCTION, temperature=0.0
-        )
-
-        check = _verify_explanation(explanation_out, question, context_chunks)
-        if check.reasoning_first_pass and check.all_distractors_addressed_pass and check.grounded_pass:
-            return explanation_out, check
-
-        reasons = []
-        if not check.reasoning_first_pass:
-            reasons.append(f"Reasoning-first fail: {check.reasoning_first_reason}")
-        if not check.all_distractors_addressed_pass:
-            reasons.append(f"Distractors fail: {check.all_distractors_addressed_reason}")
-        if not check.grounded_pass:
-            reasons.append(f"Grounded fail: {check.grounded_reason}")
-        feedback = "; ".join(reasons)
-
-    return explanation_out, check  # best-effort sau khi hết retry budget, giống pattern LO/Content/Slides
