@@ -1,9 +1,11 @@
 """Cấu trúc của một module: mỗi sub-objective một câu quiz (tối đa ba câu), một câu practice, các
-ví dụ tối đa một cho mỗi phần, mỗi câu hỏi một lời giải thích dựng từ chính các đoạn nguồn của nó,
-và đáp án đúng không được là phương án dài nhất ở mọi câu của bài.
+ví dụ tối đa một cho mỗi phần, mỗi câu hỏi một lời giải thích là chính lời giải nó sinh kèm (không
+tốn thêm lệnh gọi mô hình nào), và đáp án đúng không được là phương án dài nhất ở mọi câu của bài.
 
 Mọi lệnh gọi mô hình được thay bằng hàm giả, nên không tốn hạn mức nào."""
 
+import importlib
+import pkgutil
 import types
 import uuid
 
@@ -11,6 +13,7 @@ import pytest
 from fastapi.testclient import TestClient
 from pydantic import ValidationError
 
+from app import generation
 from app.auth.security import create_access_token
 from app.db import SessionLocal
 from app.generation import module_generation_pipeline as pipeline
@@ -112,8 +115,18 @@ def _chunk(text):
 @pytest.fixture
 def run(document, monkeypatch):
     """Chạy pipeline với các bước sinh giả. `questions` quyết định từng lượt sinh câu hỏi trả gì
-    (theo thứ tự gọi); mọi lượt được ghi lại để kiểm."""
-    calls = {"quiz": [], "explanation": []}
+    (theo thứ tự gọi); mọi lượt được ghi lại để kiểm. Mọi bước sinh đều được thay bằng hàm giả,
+    nên lệnh gọi mô hình nào còn lọt tới `complete_structured` đều bị đếm vào `calls["llm"]`."""
+    calls = {"quiz": [], "llm": []}
+
+    def counting_llm(prompt, response_model, system_instruction=None, **kwargs):
+        calls["llm"].append(response_model.__name__)
+        raise AssertionError(f"unexpected model call for {response_model.__name__}")
+
+    for info in pkgutil.iter_modules(generation.__path__):
+        module = importlib.import_module(f"app.generation.{info.name}")
+        if hasattr(module, "complete_structured"):
+            monkeypatch.setattr(module, "complete_structured", counting_llm)
 
     def install(sub_objectives, questions):
         answers = iter(questions)
@@ -142,13 +155,7 @@ def run(document, monkeypatch):
             passages = [_chunk(f"PASSAGE-OF-{query}")]
             return {"passed": question is not None, "question": question, "chunks": passages}
 
-        def fake_explanation(question, chunks):
-            calls["explanation"].append((question.stem, [c.content for c in chunks]))
-            return (types.SimpleNamespace(reasoning=f"R-{question.stem}", explanation_text=f"E-{question.stem}"),
-                    types.SimpleNamespace(grounded_pass=True))
-
         monkeypatch.setattr(pipeline, "generate_quiz_question", fake_quiz)
-        monkeypatch.setattr(pipeline, "generate_explanation", fake_explanation)
 
         db = SessionLocal()
         try:
@@ -175,17 +182,22 @@ def test_one_quiz_question_per_sub_objective_in_order_then_one_practice_question
     assert [s for _, s, _ in parts[ComponentType.practice][1]] == ["Q3"]
 
 
-def test_every_question_is_explained_from_its_own_passages_and_keeps_that_explanation(run):
+def test_every_question_keeps_the_explanation_it_was_generated_with_at_no_extra_model_call(run):
     install, calls, _ = run
-    _, parts = install(["s1", "s2"], [_question(stem=f"Q{i}") for i in range(3)])
-
-    assert calls["explanation"] == [
-        ("Q0", ["PASSAGE-OF-s1"]), ("Q1", ["PASSAGE-OF-s2"]), ("Q2", ["PASSAGE-OF-C: s"]),
+    questions = [
+        _question(stem=f"Q{i}").model_copy(update={"reasoning": f"R-Q{i}", "explanation": f"E-Q{i}"})
+        for i in range(3)
     ]
+    _, parts = install(["s1", "s2"], questions)
+
+    assert calls["llm"] == []
     assert [e for _, _, e in parts[ComponentType.quiz][1]] == ["E-Q0", "E-Q1"]
+    assert [e for _, _, e in parts[ComponentType.practice][1]] == ["E-Q2"]
     items = parts[ComponentType.explanation][0]["items"]
-    assert [(i["component"], i["position"], i["explanation_text"]) for i in items] == [
-        ("quiz", 0, "E-Q0"), ("quiz", 1, "E-Q1"), ("practice", 0, "E-Q2"),
+    assert items == [
+        {"component": "quiz", "position": 0, "reasoning": "R-Q0", "explanation_text": "E-Q0"},
+        {"component": "quiz", "position": 1, "reasoning": "R-Q1", "explanation_text": "E-Q1"},
+        {"component": "practice", "position": 0, "reasoning": "R-Q2", "explanation_text": "E-Q2"},
     ]
 
 

@@ -6,8 +6,8 @@ Learning Objective (do bản RAG đi cặp truyền vào), cùng cấu trúc mod
 cùng model, và cùng các bước tự kiểm trừ những kiểm cần tài liệu để đối chiếu (groundedness,
 văn phong theo nguồn), vì ở đây không có tài liệu nào.
 
-Bước sau trong module đọc bước trước như pipeline RAG: slide và ví dụ đọc Content; câu hỏi và
-lời giải đọc Content thay cho đoạn truy hồi, vì đó là thứ duy nhất bài học đã dạy.
+Bước sau trong module đọc bước trước như pipeline RAG: slide và ví dụ đọc Content; câu hỏi (kèm
+lời giải) đọc Content thay cho đoạn truy hồi, vì đó là thứ duy nhất bài học đã dạy.
 
 Prompt ở đây chỉ mô tả cấu trúc và cách làm, không có ví dụ lấy từ tài liệu hay môn học nào.
 """
@@ -23,7 +23,6 @@ from app.generation.example import ExampleOutput
 from app.generation.objective import LearningObjective
 from app.generation.quiz_graph import (
     LENGTH_TELL_FEEDBACK,
-    ExplanationOutput,
     QuizQuestion,
     _syntax_iwf_check,
     question_to_rebalance,
@@ -191,7 +190,8 @@ Quy trình BẮT BUỘC (đúng thứ tự):
 3. Viết `reasoning` TRƯỚC các phương án: đáp án đúng là gì và vì sao (dựa vào nội dung bài học),
    và mỗi misconception dẫn tới kiểu phương án nhiễu nào.
 4. Viết 4 `choices` theo `reasoning`: 1 đáp án đúng + 3 phương án nhiễu, mỗi nhiễu ứng với đúng 1
-   misconception theo thứ tự; rồi điền `correct_index` và `explanation` ngắn.
+   misconception theo thứ tự; rồi điền `correct_index` và `explanation` ngắn, tổng hợp từ `reasoning`:
+   vì sao đáp án đúng là đúng và vì sao MỖI phương án nhiễu sai.
 5. Các phương án cân bằng độ dài/ngữ pháp, không để đáp án đúng dài/chi tiết hơn hẳn; không dùng từ
    tuyệt đối ("luôn luôn", "không bao giờ", "tất cả", "duy nhất").
 6. Câu hỏi chỉ kiểm điều ĐÃ ĐƯỢC DẠY trong nội dung bài học. Nếu mode="practice", câu hỏi dùng để
@@ -267,68 +267,6 @@ def generate_question(
     return AskedQuestion(mode, target, question, check.answerability_pass and check.bloom_level_pass)
 
 
-# --- Explanation ----------------------------------------------------------------------------------
-
-EXPLANATION_SYSTEM_INSTRUCTION = """Bạn là chuyên gia viết giải thích (Explanation) cho câu hỏi trắc nghiệm, áp
-dụng kỹ thuật Reasoning-First: lý luận đầy đủ TRƯỚC khi kết luận, không kết luận trước rồi mới tìm lý do.
-
-Ràng buộc BẮT BUỘC:
-1. `reasoning` viết TRƯỚC: (a) vì sao đáp án đúng là đúng, dựa vào nội dung bài học; (b) vì sao MỖI
-   phương án nhiễu sai, liên hệ đúng quan niệm sai tương ứng đã cho. Triển khai LẬP LUẬN ĐÃ VIẾT
-   TRƯỚC KHI CHỐT ĐÁP ÁN được cung cấp, không đảo chiều hay bịa lý do mới cho vừa đáp án.
-2. `explanation_text` là bản tổng hợp từ `reasoning`, viết cho người học, ngắn gọn và rõ ràng.
-3. Ngôn ngữ khớp ngôn ngữ chính của nội dung bài học.
-"""
-
-EXPLANATION_VERIFY_SYSTEM_INSTRUCTION = """Bạn là bộ kiểm tra chất lượng Explanation (Critic).
-
-Chấm đúng 2 tiêu chí:
-- reasoning_first_pass: `reasoning` có thực sự phân tích từng bước dẫn tới kết luận, và triển khai
-  đúng LẬP LUẬN ĐÃ VIẾT TRƯỚC KHI CHỐT ĐÁP ÁN, không phải kết luận viết lại?
-- all_distractors_addressed_pass: explanation có giải thích đủ vì sao CẢ 3 phương án nhiễu sai không?
-
-Nếu vi phạm tiêu chí nào, đặt pass=false và nêu rõ lý do cụ thể (để dùng làm feedback sinh lại).
-"""
-
-
-class NoRagExplanationVerification(BaseModel):
-    reasoning_first_pass: bool
-    reasoning_first_reason: str
-    all_distractors_addressed_pass: bool
-    all_distractors_addressed_reason: str
-
-
-def generate_explanation(question: QuizQuestion, content: str) -> tuple[ExplanationOutput, NoRagExplanationVerification]:
-    facts = (
-        f"CÂU HỎI: {question.stem}\nCÁC PHƯƠNG ÁN: {question.choices}\n"
-        f"ĐÁP ÁN ĐÚNG: {question.choices[question.correct_index]}\n"
-        f"CÁC QUAN NIỆM SAI ĐÃ PHÂN TÍCH (theo thứ tự 3 phương án nhiễu): {question.common_misconceptions}\n"
-        f"LẬP LUẬN ĐÃ VIẾT TRƯỚC KHI CHỐT ĐÁP ÁN: {question.reasoning}"
-    )
-
-    def generate(feedback):
-        prompt = f"{facts}\n\nNỘI DUNG BÀI HỌC:\n{content}\n\nViết Explanation cho câu hỏi trên."
-        if feedback:
-            prompt += _RETRY_SUFFIX.format(feedback=feedback)
-        return complete_structured(
-            prompt, ExplanationOutput, system_instruction=EXPLANATION_SYSTEM_INSTRUCTION, temperature=0.0
-        )
-
-    def verify(out):
-        prompt = (
-            f"{facts}\n\nEXPLANATION ĐÃ SINH:\nreasoning: {out.reasoning}\nexplanation_text: {out.explanation_text}\n\n"
-            f"Kiểm tra reasoning_first_pass, all_distractors_addressed_pass."
-        )
-        return complete_structured(
-            prompt, NoRagExplanationVerification, system_instruction=EXPLANATION_VERIFY_SYSTEM_INSTRUCTION,
-            temperature=0.0,
-        )
-
-    return _checked(
-        generate, verify, [("reasoning_first", "Reasoning-first"), ("all_distractors_addressed", "Distractors")]
-    )
-
-
 # --- Module ---------------------------------------------------------------------------------------
 
 
@@ -337,16 +275,16 @@ class NoRagModule:
     content: str
     slides: SlidesOutput
     examples: ExampleOutput
+    # Mỗi câu mang lời giải của chính nó (QuizQuestion.explanation), như pipeline RAG.
     questions: list[AskedQuestion]
-    explanations: list[str]
     # Kết quả các bước tự kiểm, để biết phần nào của bản đối chứng không đạt.
     checks: dict[str, bool] = field(default_factory=dict)
 
 
 def generate_module(lo: LearningObjective, practice_target: str) -> NoRagModule:
     """Cùng chuỗi và cùng cấu trúc với pipeline RAG, trên cùng Learning Objective: Content, Slides,
-    tối đa một Example mỗi phần, một câu quiz mỗi sub-objective (tối đa ba), một câu practice, và
-    một lời giải cho mỗi câu."""
+    tối đa một Example mỗi phần, một câu quiz mỗi sub-objective (tối đa ba), một câu practice; lời giải
+    của mỗi câu sinh cùng câu đó."""
     content, content_check = generate_content(lo)
     slides, slides_check = generate_slides(lo, content.content)
     examples, example_check = generate_examples(lo, content.content)
@@ -358,19 +296,16 @@ def generate_module(lo: LearningObjective, practice_target: str) -> NoRagModule:
         stale = questions[index]
         questions[index] = generate_question(lo, content.content, stale.target, stale.mode, LENGTH_TELL_FEEDBACK)
 
-    explanations = [generate_explanation(q.question, content.content) for q in questions]
     return NoRagModule(
         content=content.content,
         slides=slides,
         examples=examples,
         questions=questions,
-        explanations=[e.explanation_text for e, _ in explanations],
         checks={
             "content_pass": content_check.completeness_pass and content_check.scope_pass,
             "slides_pass": slides_check.no_new_info_pass and slides_check.conciseness_pass
             and slides_check.cognitive_load_pass,
             "example_pass": example_check.consistency_pass and example_check.no_overreach_pass,
             "questions_pass": all(q.passed for q in questions),
-            "explanations_pass": all(c.reasoning_first_pass and c.all_distractors_addressed_pass for _, c in explanations),
         },
     )

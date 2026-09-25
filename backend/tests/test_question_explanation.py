@@ -1,7 +1,8 @@
 """The reasoning of a question is written before its answer is chosen, and the explanation is
-built from it and from the very passages the question was made from.
+drawn from it in the same model call: the module's Explanation component is those two fields of
+each question, not a separate step.
 
-Every model call is replaced by a fake that records what it was asked for."""
+Every model call is replaced by a fake."""
 
 import types
 import uuid
@@ -10,17 +11,9 @@ import pytest
 
 from app.db import SessionLocal
 from app.generation import module_generation_pipeline as pipeline
-from app.generation import quiz_graph, relevance
 from app.generation.example import Example, ExampleOutput
 from app.generation.planner import Concept, PlannerOutput
-from app.generation.quiz_graph import (
-    ExplanationOutput,
-    ExplanationVerification,
-    GroundednessAnswerabilityCheck,
-    QuizQuestion,
-    generate_explanation,
-    generate_quiz_question,
-)
+from app.generation.quiz_graph import QuizQuestion
 from app.generation.relevance import CorrectiveResult
 from app.models import Chunk, ComponentType, Course, Document, DocumentStatus, User, UserRole
 
@@ -37,10 +30,6 @@ def _question(**overrides) -> QuizQuestion:
         "explanation": "short explanation",
     }
     return QuizQuestion(**{**fields, **overrides})
-
-
-def _chunk(text: str) -> types.SimpleNamespace:
-    return types.SimpleNamespace(id=uuid.uuid4(), content=text, source_ref="{}")
 
 
 # --- the question schema -------------------------------------------------------------------------
@@ -65,79 +54,6 @@ def test_a_question_without_a_reasoning_is_not_valid():
 
     with pytest.raises(ValueError):
         QuizQuestion(**fields)
-
-
-# --- the explanation step ------------------------------------------------------------------------
-
-
-@pytest.fixture
-def prompts(monkeypatch):
-    """Runs generate_explanation with a fake model that passes its own checks, and returns
-    every (response model, prompt) it was asked."""
-    asked: list[tuple[type, str]] = []
-
-    def fake(prompt, response_model, system_instruction=None, **kwargs):
-        asked.append((response_model, prompt))
-        if response_model is ExplanationOutput:
-            return ExplanationOutput(reasoning="r", explanation_text="t")
-        return ExplanationVerification(
-            reasoning_first_pass=True, reasoning_first_reason="",
-            all_distractors_addressed_pass=True, all_distractors_addressed_reason="",
-            grounded_pass=True, grounded_reason="",
-        )
-
-    monkeypatch.setattr(quiz_graph, "complete_structured", fake)
-    return asked
-
-
-def test_the_explanation_is_asked_to_build_on_the_reasoning_written_before_the_answer(prompts):
-    generate_explanation(_question(), [_chunk("some passage")])
-
-    generation = next(p for model, p in prompts if model is ExplanationOutput)
-    assert "REASONING-MARKER" in generation
-
-
-def test_the_explanation_check_sees_that_reasoning_too(prompts):
-    generate_explanation(_question(), [_chunk("some passage")])
-
-    verification = next(p for model, p in prompts if model is ExplanationVerification)
-    assert "REASONING-MARKER" in verification
-
-
-def test_the_explanation_and_its_check_read_only_the_passages_they_are_given(prompts):
-    given = [_chunk("PASSAGE-ONE about the question"), _chunk("PASSAGE-TWO about the question")]
-
-    generate_explanation(_question(), given)
-
-    for _model, prompt in prompts:
-        assert "PASSAGE-ONE" in prompt and "PASSAGE-TWO" in prompt
-
-
-# --- the quiz graph hands its passages on --------------------------------------------------------
-
-
-def test_the_finished_quiz_state_carries_the_passages_the_question_was_made_from(monkeypatch):
-    used = [_chunk("QUESTION-PASSAGE-1"), _chunk("QUESTION-PASSAGE-2")]
-    monkeypatch.setattr(quiz_graph, "retrieve", lambda *args, **kwargs: used)
-
-    def fake(prompt, response_model, system_instruction=None, **kwargs):
-        if response_model is relevance.RelevanceCheck:
-            return relevance.RelevanceCheck(confidence="high", reason="")
-        if response_model is QuizQuestion:
-            return _question()
-        return GroundednessAnswerabilityCheck(
-            groundedness_pass=True, groundedness_reason="", answerability_pass=True, answerability_reason="",
-            bloom_level_pass=True, bloom_level_reason="",
-        )
-
-    monkeypatch.setattr(quiz_graph, "complete_structured", fake)
-    monkeypatch.setattr(relevance, "complete_structured", fake)
-    lo = types.SimpleNamespace(objective_text="objective", bloom_level="understand", sub_objectives=["a", "b"])
-
-    state = generate_quiz_question(None, uuid.uuid4(), "query", lo, mode="quiz")
-
-    assert state["passed"] is True
-    assert [c.content for c in state["chunks"]] == ["QUESTION-PASSAGE-1", "QUESTION-PASSAGE-2"]
 
 
 # --- the pipeline --------------------------------------------------------------------------------
@@ -175,11 +91,9 @@ def document():
         db.close()
 
 
-def test_the_explanation_is_made_from_the_passages_of_the_question_and_not_those_of_the_objective(
+def test_the_explanation_component_is_the_reasoning_and_explanation_the_question_was_written_with(
     document, monkeypatch
 ):
-    question_chunks = [_chunk("QUESTION-PASSAGE-A"), _chunk("QUESTION-PASSAGE-B")]
-    seen: dict = {}
     objective = types.SimpleNamespace(objective_text="o", bloom_level="understand", sub_objectives=["first", "second"])
 
     monkeypatch.setattr(
@@ -218,27 +132,23 @@ def test_the_explanation_is_made_from_the_passages_of_the_question_and_not_those
     monkeypatch.setattr(
         pipeline, "generate_quiz_question",
         lambda db, course_id, query, lo, mode="quiz", scope=None, **kwargs: {
-            "passed": True, "question": _question(), "chunks": question_chunks,
+            "passed": True, "question": _question(), "chunks": [],
         },
     )
-
-    def fake_explanation(question, chunks):
-        seen["chunks"] = chunks
-        return (
-            types.SimpleNamespace(reasoning="r", explanation_text="t"),
-            types.SimpleNamespace(grounded_pass=True),
-        )
-
-    monkeypatch.setattr(pipeline, "generate_explanation", fake_explanation)
 
     db = SessionLocal()
     try:
         module = pipeline.run_module_generation(db, db.get(Document, document["doc"]))
         quiz = next(c for c in module.components if c.type == ComponentType.quiz)
         stored_reasoning = [q["reasoning"] for q in quiz.content["questions"]]
+        explanation = next(c for c in module.components if c.type == ComponentType.explanation)
+        items = explanation.content["items"]
+        question_explanations = [q.explanation for q in quiz.questions]
     finally:
         db.close()
 
-    assert [c.content for c in seen["chunks"]] == ["QUESTION-PASSAGE-A", "QUESTION-PASSAGE-B"]
+    assert {i["reasoning"] for i in items} == {REASONING}
+    assert {i["explanation_text"] for i in items} == {"short explanation"}
+    assert question_explanations and set(question_explanations) == {"short explanation"}
     # Kept with the quiz, so the teacher (and anyone auditing the answer) can read it.
     assert stored_reasoning and all(r == REASONING for r in stored_reasoning)

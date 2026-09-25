@@ -15,7 +15,7 @@ import pytest
 from app.db import SessionLocal
 from app.generation import no_rag, slides, study_packets
 from app.generation.example import Example, ExampleOutput
-from app.generation.quiz_graph import ExplanationOutput, QuizQuestion
+from app.generation.quiz_graph import QuizQuestion
 from app.generation.slides import Slide, SlidesOutput, SlidesVerification
 from app.llm import gateway
 from app.models import (
@@ -61,9 +61,7 @@ def llm(monkeypatch):
             target = re.search(r"ĐIỀU CẦN KIỂM: (.*)", prompt).group(1)
             return QuizQuestion(common_misconceptions=["m1", "m2", "m3"], stem=f"Hỏi về {target}",
                                 reasoning="r", choices=["pa một", "pa hai", "pa ba", "pa bốn"], correct_index=1,
-                                explanation="e")
-        if response_model is ExplanationOutput:
-            return ExplanationOutput(reasoning="lập luận", explanation_text="lời giải")
+                                explanation="lời giải")
         # Mọi bản kiểm (Verification/Check): đạt hết.
         values = {}
         for name in response_model.model_fields:
@@ -182,6 +180,8 @@ def test_the_control_has_the_same_structure_one_question_per_sub_objective_and_a
     assert [q.stem for q in control.quiz] == ["Hỏi về mục tiêu con một", "Hỏi về mục tiêu con hai"]
     assert control.practice.stem.startswith("Hỏi về")
     assert all(q.explanation == "lời giải" for q in [*control.quiz, control.practice])
+    # Lời giải là thứ câu hỏi sinh kèm, không tốn lệnh gọi mô hình riêng.
+    assert not [c for c in llm.calls if "Explanation" in c["model"].__name__]
     assert control.examples and control.slides
 
 

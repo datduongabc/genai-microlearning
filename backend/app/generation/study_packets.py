@@ -104,11 +104,10 @@ def rag_packet(module: Module, sources: list[str]) -> ModuleContentInput:
 
 
 def no_rag_packet(module: Module, generated: no_rag.NoRagModule, sources: list[str]) -> ModuleContentInput:
-    def as_input(asked: no_rag.AskedQuestion, explanation: str) -> QuizQuestionInput:
+    def as_input(asked: no_rag.AskedQuestion) -> QuizQuestionInput:
         q = asked.question
-        return QuizQuestionInput(stem=q.stem, choices=q.choices, correct_index=q.correct_index, explanation=explanation)
+        return QuizQuestionInput(stem=q.stem, choices=q.choices, correct_index=q.correct_index, explanation=q.explanation)
 
-    pairs = list(zip(generated.questions, generated.explanations, strict=True))
     return ModuleContentInput(
         anon_id="",
         topic=module.title,
@@ -118,8 +117,8 @@ def no_rag_packet(module: Module, generated: no_rag.NoRagModule, sources: list[s
         content_markdown=generated.content,
         slides=[SlideInput(title=s.title, bullets=s.bullets) for s in generated.slides.slides],
         examples=[ExampleInput(context=e.context, analysis=e.analysis) for e in generated.examples.examples],
-        quiz=[as_input(q, e) for q, e in pairs if q.mode == "quiz"],
-        practice=next(as_input(q, e) for q, e in pairs if q.mode == "practice"),
+        quiz=[as_input(q) for q in generated.questions if q.mode == "quiz"],
+        practice=next(as_input(q) for q in generated.questions if q.mode == "practice"),
         source_chunks=sources,
     )
 

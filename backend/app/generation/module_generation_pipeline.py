@@ -19,7 +19,6 @@ from app.generation.objective import generate_learning_objective
 from app.generation.planner import PLANNER_MAX_INPUT_CHARS, Concept, PlannerOutput, run_planner
 from app.generation.quiz_graph import (
     LENGTH_TELL_FEEDBACK,
-    generate_explanation,
     generate_quiz_question,
     question_to_rebalance,
 )
@@ -118,13 +117,10 @@ def _generate_questions(db: Session, doc: Document, lo, practice_query: str, sco
     return asked
 
 
-def _save_questions(
-    db: Session, module_id: uuid.UUID, asked: list[_Asked], explanations: dict[int, str]
-) -> None:
-    """Mỗi loại (quiz, practice) một thành phần, mỗi câu một Question theo đúng thứ tự sinh.
-    `explanations`: lời giải thích đã kiểm của từng câu, theo vị trí trong `asked`."""
+def _save_questions(db: Session, module_id: uuid.UUID, asked: list[_Asked]) -> None:
+    """Mỗi loại (quiz, practice) một thành phần, mỗi câu một Question theo đúng thứ tự sinh."""
     for component_type in (ComponentType.quiz, ComponentType.practice):
-        mine = [(i, a) for i, a in enumerate(asked) if a.type == component_type]
+        mine = [a for a in asked if a.type == component_type]
         component = ModuleComponent(
             module_id=module_id,
             type=component_type,
@@ -140,12 +136,12 @@ def _save_questions(
                     # the answer, and so the answer can be audited against it.
                     "reasoning": a.state["question"].reasoning if a.state.get("question") is not None else None,
                 }
-                for _, a in mine
+                for a in mine
             ]},
         )
         db.add(component)
         db.flush()
-        for position, (i, a) in enumerate(mine):
+        for position, a in enumerate(mine):
             db.add(Evaluation(
                 module_id=module_id, criterion=f"{component_type.value}_{position + 1}_groundedness_answerability_pass",
                 score=1.0 if a.state.get("passed") else 0.0,
@@ -158,7 +154,7 @@ def _save_questions(
                     stem=question.stem,
                     choices={"options": question.choices},
                     answer_key=str(question.correct_index),
-                    explanation=explanations.get(i, question.explanation),
+                    explanation=question.explanation,
                 ))
 
 
@@ -259,26 +255,22 @@ def run_module_generation(db: Session, doc: Document, section: DocumentSection |
 
     asked = _generate_questions(db, doc, lo, query, scope)
 
-    # One explanation per question, each from the passages that very question was made and checked
-    # against, not those of the objective: it has to stand on the same ground as the answer it explains.
-    items, explanations = [], {}
+    # The Explanation component is what each question already wrote along with its answer: its
+    # reasoning, written before the choices, and the explanation drawn from it, both checked along
+    # with the question against its own passages. A separate step would only cost more model calls.
+    items = []
     positions = {ComponentType.quiz: 0, ComponentType.practice: 0}
-    for i, a in enumerate(asked):
+    for a in asked:
         position = positions[a.type]
         positions[a.type] += 1
         question = a.state.get("question")
         if question is None:
             continue
-        explanation_out, explanation_check = generate_explanation(question, a.state["chunks"])
-        _log_hallucination_check(
-            db, module.id, f"{a.type.value}_{position + 1}_explanation_grounded_pass", explanation_check.grounded_pass
-        )
-        explanations[i] = explanation_out.explanation_text
         items.append({
             "component": a.type.value, "position": position,
-            "reasoning": explanation_out.reasoning, "explanation_text": explanation_out.explanation_text,
+            "reasoning": question.reasoning, "explanation_text": question.explanation,
         })
-    _save_questions(db, module.id, asked, explanations)
+    _save_questions(db, module.id, asked)
     if items:
         db.add(ModuleComponent(module_id=module.id, type=ComponentType.explanation, content={"items": items}))
 
