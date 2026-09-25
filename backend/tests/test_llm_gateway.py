@@ -142,3 +142,35 @@ def test_a_nested_choice_restores_the_outer_one(captured):
         llm.complete("outer")
 
     assert captured["model"] == "openai/groq-pro"
+
+
+class _Formula(BaseModel):
+    reason: str
+    ok: bool
+
+
+def test_a_structured_reply_with_a_raw_control_character_in_a_string_is_still_read(monkeypatch, captured):
+    """Model hay viết công thức kiểu LaTeX và để lọt ký tự điều khiển trần (tab, xuống dòng) vào
+    giữa chuỗi JSON. Trình đọc nghiêm từ chối cả câu trả lời, và một bước kiểm hỏng như vậy làm
+    hỏng cả lượt sinh module, dù nội dung vẫn đọc được và vẫn đúng schema."""
+    reply = '{"reason": "vì \\frac{1}{x}\tvà dòng mới\nở đây", "ok": true}'
+
+    def fake_completion(**kwargs):
+        return SimpleNamespace(choices=[SimpleNamespace(message=SimpleNamespace(content=reply))])
+
+    monkeypatch.setattr(litellm, "completion", fake_completion)
+
+    result = llm.complete_structured("kiểm tra", _Formula)
+
+    assert result.ok is True
+    assert "\frac{1}{x}\tvà dòng mới\nở đây" in result.reason
+
+
+def test_a_structured_reply_that_breaks_the_schema_is_still_rejected(monkeypatch, captured):
+    def fake_completion(**kwargs):
+        return SimpleNamespace(choices=[SimpleNamespace(message=SimpleNamespace(content='{"reason": "x"}'))])
+
+    monkeypatch.setattr(litellm, "completion", fake_completion)
+
+    with pytest.raises(ValueError):
+        llm.complete_structured("kiểm tra", _Formula)

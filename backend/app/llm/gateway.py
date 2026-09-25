@@ -6,6 +6,7 @@ a configuration change, not a code change.
 
 import contextlib
 import contextvars
+import json
 
 import litellm
 from pydantic import BaseModel
@@ -89,4 +90,6 @@ def complete_structured[T: BaseModel](
         messages.append({"role": "system", "content": system_instruction})
     messages.append({"role": "user", "content": prompt})
     response = _completion(messages=messages, response_format=response_model, **kwargs)
-    return response_model.model_validate_json(response.choices[0].message.content)
+    # strict=False: model hay để lọt tab, xuống dòng trần vào giữa chuỗi JSON khi viết công thức, và
+    # trình đọc nghiêm từ chối cả câu trả lời dù nó vẫn đọc được. Schema vẫn được kiểm đầy đủ ở bước sau.
+    return response_model.model_validate(json.loads(response.choices[0].message.content, strict=False))

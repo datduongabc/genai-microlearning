@@ -50,6 +50,7 @@ export interface ModuleDetail {
   title: string
   learning_objective: string | null
   bloom_level: string | null
+  sub_objectives?: string[] | null
   course_id: string
   moodle_course_id: number | null
   components: ModuleComponentInfo[]

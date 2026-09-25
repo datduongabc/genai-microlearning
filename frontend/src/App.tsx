@@ -1,12 +1,18 @@
+import { lazy, Suspense } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 import { AuthProvider } from "./auth/AuthContext";
 import { ProtectedRoute } from "./auth/ProtectedRoute";
 import { CourseDetailPage } from "./pages/CourseDetailPage";
 import { CoursesPage } from "./pages/CoursesPage";
 import { LoginPage } from "./pages/LoginPage";
-import { ModulePreviewPage } from "./pages/ModulePreviewPage";
 import { MonitoringPage } from "./pages/MonitoringPage";
 import { RegisterPage } from "./pages/RegisterPage";
+
+// Loaded only when a module is opened: its Markdown renderer is about a fifth of the bundle,
+// and no other page needs it before the first screen can be shown.
+const ModulePreviewPage = lazy(() =>
+  import("./pages/ModulePreviewPage").then((m) => ({ default: m.ModulePreviewPage })),
+);
 
 function App() {
   return (
@@ -17,7 +23,14 @@ function App() {
         <Route element={<ProtectedRoute />}>
           <Route path="/courses" element={<CoursesPage />} />
           <Route path="/courses/:courseId" element={<CourseDetailPage />} />
-          <Route path="/modules/:moduleId" element={<ModulePreviewPage />} />
+          <Route
+            path="/modules/:moduleId"
+            element={
+              <Suspense fallback={null}>
+                <ModulePreviewPage />
+              </Suspense>
+            }
+          />
           <Route path="/monitoring" element={<MonitoringPage />} />
         </Route>
         <Route path="*" element={<Navigate to="/courses" replace />} />

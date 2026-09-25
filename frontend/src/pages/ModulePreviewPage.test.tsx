@@ -158,7 +158,8 @@ describe('ModulePreviewPage - module structure', () => {
     const first = await screen.findByText('CÂU-HỎI-MỘT')
     const second = screen.getByText('CÂU-HỎI-HAI')
     expect(first.compareDocumentPosition(second) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
-    const firstExplanation = screen.getByText('GIẢI-THÍCH-MỘT')
+    const quizCard = first.closest('section') as HTMLElement
+    const firstExplanation = within(quizCard).getByText('LỜI-GIẢI-MỘT')
     expect(first.compareDocumentPosition(firstExplanation) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
     expect(firstExplanation.compareDocumentPosition(second) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
   })
@@ -170,8 +171,7 @@ describe('ModulePreviewPage - module structure', () => {
 
     renderPage()
 
-    await screen.findByText('LỜI-GIẢI-HAI')
-    const explanationCard = screen.getByText('LỜI-GIẢI-HAI').closest('section') as HTMLElement
+    const explanationCard = (await screen.findByText('Giải thích đáp án')).closest('section') as HTMLElement
     await user.click(within(explanationCard).getByRole('button', { name: 'Sửa' }))
     const field = within(explanationCard).getByLabelText('Giải thích Quiz - câu 2')
     await user.clear(field)
@@ -187,5 +187,59 @@ describe('ModulePreviewPage - module structure', () => {
         { component: 'quiz', position: 1, reasoning: 'LẬP-LUẬN-HAI', explanation_text: 'LỜI-GIẢI-ĐÃ-SỬA' },
       ],
     })
+  })
+})
+
+describe('ModulePreviewPage - reading the module', () => {
+  it('renders the content as formatted Markdown, not as raw text', async () => {
+    vi.mocked(api.getModule).mockResolvedValue({
+      ...baseModule,
+      components: [
+        { id: 'content-1', type: 'content', content: { markdown: '## TIÊU-ĐỀ-PHẦN\n- ý đầu tiên' }, questions: [] },
+      ],
+    })
+
+    renderPage()
+
+    expect(await screen.findByRole('heading', { name: 'TIÊU-ĐỀ-PHẦN' })).toBeInTheDocument()
+    expect(screen.getByRole('listitem')).toHaveTextContent('ý đầu tiên')
+    expect(screen.queryByText(/## TIÊU-ĐỀ-PHẦN/)).not.toBeInTheDocument()
+  })
+
+  it('shows under each question the explanation the teacher edited, which is the one Moodle gets', async () => {
+    vi.mocked(api.getModule).mockResolvedValue({
+      ...baseModule,
+      components: [
+        {
+          id: 'quiz-1',
+          type: 'quiz',
+          content: { questions: [{ passed: true }] },
+          questions: [
+            { id: 'q1', position: 0, stem: 'CÂU-HỎI', choices: { options: ['A', 'B', 'C', 'D'] }, answer_key: '0', explanation: 'BẢN-LÚC-SINH' },
+          ],
+        },
+        {
+          id: 'explanation-1',
+          type: 'explanation',
+          content: { items: [{ component: 'quiz', position: 0, reasoning: 'r', explanation_text: 'BẢN-ĐÃ-SỬA' }] },
+          questions: [],
+        },
+      ],
+    })
+
+    renderPage()
+
+    const quizCard = (await screen.findByText('CÂU-HỎI')).closest('section') as HTMLElement
+    expect(within(quizCard).getByText('BẢN-ĐÃ-SỬA')).toBeInTheDocument()
+    expect(within(quizCard).queryByText('BẢN-LÚC-SINH')).not.toBeInTheDocument()
+  })
+
+  it('lists the sub-objectives under the learning objective', async () => {
+    vi.mocked(api.getModule).mockResolvedValue({ ...baseModule, sub_objectives: ['MỤC-TIÊU-CON-A', 'MỤC-TIÊU-CON-B'] })
+
+    renderPage()
+
+    expect(await screen.findByText('MỤC-TIÊU-CON-A')).toBeInTheDocument()
+    expect(screen.getByText('MỤC-TIÊU-CON-B')).toBeInTheDocument()
   })
 })

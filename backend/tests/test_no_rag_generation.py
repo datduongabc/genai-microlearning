@@ -1,0 +1,251 @@
+"""Nhánh đối chứng llm_no_rag và cặp gói nghiên cứu: bản không RAG chỉ khác bản RAG ở chỗ không thấy
+tài liệu nào, còn chủ đề, Learning Objective, cấu trúc, model và tài liệu đối chiếu khi chấm thì như
+nhau, để khác biệt điểm quy được về RAG.
+
+Mọi lệnh gọi mô hình được thay bằng hàm giả ghi lại prompt và model đang dùng; truy hồi cũng được
+thay, nên không tốn hạn mức nào."""
+
+import json
+import re
+import types
+import uuid
+
+import pytest
+
+from app.db import SessionLocal
+from app.generation import no_rag, slides, study_packets
+from app.generation.example import Example, ExampleOutput
+from app.generation.quiz_graph import ExplanationOutput, QuizQuestion
+from app.generation.slides import Slide, SlidesOutput, SlidesVerification
+from app.llm import gateway
+from app.models import (
+    ComponentType,
+    Course,
+    Document,
+    DocumentStatus,
+    Job,
+    JobStatus,
+    JobType,
+    Module,
+    ModuleComponent,
+    Question,
+    User,
+    UserRole,
+)
+from scripts.export_study_pair import model_that_made
+
+SOURCES = ["NGUON-BI-MAT-1: một đoạn của giáo trình", "NGUON-BI-MAT-2: đoạn khác"]
+COURSE_NAME = "TEN-MON-HOC-KHONG-DUOC-LO"
+FILENAME = "ten-tep-khong-duoc-lo.pdf"
+
+
+@pytest.fixture
+def llm(monkeypatch):
+    """Mô hình giả cho nhánh không RAG: mọi bước đều đạt trừ khi test đặt `fail` cho một schema."""
+    calls: list[dict] = []
+    fail: dict[type, list] = {}
+
+    def fake(prompt, response_model, system_instruction=None, **kwargs):
+        calls.append({"model": response_model, "prompt": prompt, "system": system_instruction or "",
+                      "alias": gateway._active_model()})
+        queued = fail.get(response_model)
+        if queued:
+            return queued.pop(0)
+        if response_model is no_rag.NoRagContent:
+            return no_rag.NoRagContent(content="## Phần một\n- ý\n## Phần hai\n- ý")
+        if response_model is SlidesOutput:
+            return SlidesOutput(slides=[Slide(title="S1", bullets=["b"]), Slide(title="S2", bullets=["b"])])
+        if response_model is ExampleOutput:
+            return ExampleOutput(examples=[Example(context="bối cảnh", analysis="phân tích")])
+        if response_model is QuizQuestion:
+            target = re.search(r"ĐIỀU CẦN KIỂM: (.*)", prompt).group(1)
+            return QuizQuestion(common_misconceptions=["m1", "m2", "m3"], stem=f"Hỏi về {target}",
+                                reasoning="r", choices=["pa một", "pa hai", "pa ba", "pa bốn"], correct_index=1,
+                                explanation="e")
+        if response_model is ExplanationOutput:
+            return ExplanationOutput(reasoning="lập luận", explanation_text="lời giải")
+        # Mọi bản kiểm (Verification/Check): đạt hết.
+        values = {}
+        for name in response_model.model_fields:
+            values[name] = True if name.endswith("_pass") else "đạt"
+        return response_model(**values)
+
+    monkeypatch.setattr(no_rag, "complete_structured", fake)
+    monkeypatch.setattr(slides, "complete_structured", fake)
+    return types.SimpleNamespace(calls=calls, fail=fail)
+
+
+@pytest.fixture
+def rag_module(monkeypatch):
+    """Một module RAG đã sinh xong, và truy hồi giả trả SOURCES cho câu truy vấn đối chiếu."""
+    asked = []
+
+    def fake_retrieve(db, course_id, query, top_k=8, candidate_k=30, min_k=2, scope=None):
+        asked.append({"query": query, "scope": scope, "min_k": min_k})
+        return [types.SimpleNamespace(content=text) for text in SOURCES]
+
+    monkeypatch.setattr(study_packets, "retrieve", fake_retrieve)
+
+    db = SessionLocal()
+    try:
+        user = User(email=f"study-{uuid.uuid4().hex[:8]}@example.com", name="T", hashed_password="x",
+                    role=UserRole.teacher)
+        db.add(user)
+        db.flush()
+        course = Course(name=COURSE_NAME, owner_id=user.id)
+        db.add(course)
+        db.flush()
+        doc = Document(course_id=course.id, filename=FILENAME, status=DocumentStatus.embedded,
+                       planner_concepts=[{"name": "Chủ đề X", "priority": 1, "summary": "tóm tắt của planner"}])
+        db.add(doc)
+        db.flush()
+        module = Module(document_id=doc.id, course_id=course.id, title="Chủ đề X",
+                        learning_objective="Sau khi học, người học có thể giải thích X.", bloom_level="understand",
+                        sub_objectives=["mục tiêu con một", "mục tiêu con hai"])
+        db.add(module)
+        db.flush()
+
+        def component(type_, content, questions=()):
+            c = ModuleComponent(module_id=module.id, type=type_, content=content)
+            db.add(c)
+            db.flush()
+            for position, (stem, explanation) in enumerate(questions):
+                db.add(Question(component_id=c.id, position=position, stem=stem,
+                                choices={"options": ["A", "B", "C", "D"]}, answer_key="2", explanation=explanation))
+
+        component(ComponentType.content, {"markdown": "## RAG content"})
+        component(ComponentType.slides, {"slides": [{"title": "T", "bullets": ["b"]}]})
+        component(ComponentType.example, {"examples": [{"context": "c", "analysis": "a"}]})
+        component(ComponentType.quiz, {"questions": [{}, {}]}, [("RAG-Q1", "gốc 1"), ("RAG-Q2", "gốc 2")])
+        component(ComponentType.practice, {"questions": [{}]}, [("RAG-P1", "gốc p")])
+        component(ComponentType.explanation, {"items": [
+            {"component": "quiz", "position": 1, "reasoning": "r", "explanation_text": "ĐÃ-SỬA-2"},
+        ]})
+        db.add(Job(job_type=JobType.module_generation, step="generate", status=JobStatus.done,
+                   document_id=doc.id, module_id=module.id, payload={"model_alias": "groq-pro"}))
+        db.commit()
+        ids = {"user": user.id, "course": course.id, "module": module.id}
+    finally:
+        db.close()
+
+    yield types.SimpleNamespace(ids=ids, asked=asked)
+
+    db = SessionLocal()
+    try:
+        db.query(Course).filter(Course.id == ids["course"]).delete(synchronize_session=False)
+        db.query(User).filter(User.id == ids["user"]).delete(synchronize_session=False)
+        db.commit()
+    finally:
+        db.close()
+
+
+def _pair(rag_module, alias="groq-pro"):
+    db = SessionLocal()
+    try:
+        return study_packets.study_pair(db, db.get(Module, rag_module.ids["module"]), alias)
+    finally:
+        db.close()
+
+
+def test_no_source_passage_reaches_any_prompt_of_the_control(rag_module, llm):
+    _, control = _pair(rag_module)
+
+    assert llm.calls
+    for call in llm.calls:
+        assert "NGUON-BI-MAT" not in call["prompt"] and "NGUON-BI-MAT" not in call["system"]
+    assert control.source_chunks == SOURCES
+
+
+def test_both_packets_share_topic_objective_and_the_reference_the_judge_reads(rag_module, llm):
+    rag, control = _pair(rag_module)
+
+    for field in ("topic", "learning_objective", "bloom_level", "sub_objectives", "source_chunks"):
+        assert getattr(rag, field) == getattr(control, field)
+
+
+def test_the_reference_is_an_independent_retrieval_with_the_query_the_rag_objective_was_made_from(rag_module, llm):
+    _pair(rag_module)
+
+    assert rag_module.asked == [{"query": "Chủ đề X: tóm tắt của planner", "scope": None, "min_k": 8}]
+
+
+def test_the_control_is_never_checked_against_sources(rag_module, llm):
+    _pair(rag_module)
+
+    checked = {name for call in llm.calls for name in call["model"].model_fields if name.endswith("_pass")}
+    assert checked and not {name for name in checked if "grounded" in name or "style" in name}
+
+
+def test_the_control_has_the_same_structure_one_question_per_sub_objective_and_a_practice(rag_module, llm):
+    _, control = _pair(rag_module)
+
+    assert [q.stem for q in control.quiz] == ["Hỏi về mục tiêu con một", "Hỏi về mục tiêu con hai"]
+    assert control.practice.stem.startswith("Hỏi về")
+    assert all(q.explanation == "lời giải" for q in [*control.quiz, control.practice])
+    assert control.examples and control.slides
+
+
+def test_the_control_is_generated_with_the_model_given_for_the_pair(rag_module, llm):
+    _pair(rag_module, alias="groq-pro")
+
+    assert {call["alias"] for call in llm.calls} == {"groq-pro"}
+
+
+def test_the_model_of_the_pair_is_the_one_that_made_the_rag_module(rag_module):
+    db = SessionLocal()
+    try:
+        assert model_that_made(db, rag_module.ids["module"]) == "groq-pro"
+        assert model_that_made(db, uuid.uuid4()) is None
+    finally:
+        db.close()
+
+
+def test_the_rag_packet_keeps_question_order_and_the_teachers_edited_explanation(rag_module, llm):
+    rag, _ = _pair(rag_module)
+
+    assert [q.stem for q in rag.quiz] == ["RAG-Q1", "RAG-Q2"]
+    assert [q.explanation for q in rag.quiz] == ["gốc 1", "ĐÃ-SỬA-2"]
+    assert rag.practice.stem == "RAG-P1" and rag.quiz[0].correct_index == 2
+
+
+def test_neither_packet_carries_anything_that_reveals_its_group_or_source(rag_module, llm):
+    rag, control = _pair(rag_module)
+
+    for packet in (rag, control):
+        dumped = json.dumps(packet.model_dump(), ensure_ascii=False)
+        for secret in (COURSE_NAME, FILENAME, "groq-pro", "rag", "no_rag"):
+            assert secret not in dumped
+
+
+def test_a_module_without_quiz_questions_is_refused_before_any_generation(rag_module, llm):
+    db = SessionLocal()
+    try:
+        module = db.get(Module, rag_module.ids["module"])
+        quiz = next(c for c in module.components if c.type == ComponentType.quiz)
+        for q in list(quiz.questions):
+            db.delete(q)
+        db.commit()
+        with pytest.raises(study_packets.IncompleteModuleError):
+            study_packets.study_pair(db, db.get(Module, rag_module.ids["module"]), None)
+    finally:
+        db.close()
+
+    assert llm.calls == []
+
+
+def test_a_failed_control_check_is_retried_with_its_reason(rag_module, llm):
+    llm.fail[no_rag.NoRagContentVerification] = [no_rag.NoRagContentVerification(
+        completeness_pass=False, completeness_reason="LY-DO-THIEU-PHAN-HAI", scope_pass=True, scope_reason="ok",
+    )]
+
+    _pair(rag_module)
+
+    content_prompts = [c["prompt"] for c in llm.calls if c["model"] is no_rag.NoRagContent]
+    assert len(content_prompts) == 2
+    assert "LY-DO-THIEU-PHAN-HAI" not in content_prompts[0] and "LY-DO-THIEU-PHAN-HAI" in content_prompts[1]
+
+
+def test_slides_of_the_control_are_checked_like_the_rag_ones(rag_module, llm):
+    _pair(rag_module)
+
+    assert any(c["model"] is SlidesVerification for c in llm.calls)
