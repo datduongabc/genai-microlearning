@@ -1,4 +1,12 @@
-from app.ingestion.chunker import _classify, chunk_units
+import itertools
+
+from app.ingestion.chunker import (
+    MAX_CONTENT_TOKENS,
+    _classify,
+    chunk_units,
+    document_title,
+    estimate_tokens,
+)
 from app.ingestion.document_readers import DocumentUnit
 
 
@@ -27,7 +35,8 @@ def test_chunk_units_recursive_short_text_stays_one_chunk():
     chunks = chunk_units(units)
     assert len(chunks) == 1
     assert chunks[0].strategy == "recursive"
-    assert chunks[0].content == "Short text."
+    # Dòng đầu là tiêu đề mục làm nhãn ngữ cảnh, phần còn lại là nguyên văn đoạn chữ.
+    assert chunks[0].content == "H\nShort text."
 
 
 def test_chunk_units_page_level_groups_within_cap():
@@ -72,7 +81,7 @@ def test_chunk_units_transcript_oversized_single_unit_is_split():
     # (e.g. a mis-segmented ASR transcript dumping an entire lecture into one
     # 2-second "caption") must still be split, not emitted as one giant
     # chunk -- real bug found via eng-introduction.srt sample data.
-    long_text = "word " * 300  # well over TRANSCRIPT_CHUNK_CHARS=600
+    long_text = "word " * 300  # well over TRANSCRIPT_CHUNK_TOKENS
     units = [_unit(long_text, {"start_ms": 0, "end_ms": 2000})]
     chunks = chunk_units(units)
     assert len(chunks) > 1
@@ -114,3 +123,119 @@ def test_unit_index_counts_positions_in_the_original_list_even_when_units_are_em
     chunks = chunk_units(units)
 
     assert [c.locator["unit_index"] for c in chunks] == [1]
+
+
+# --- nhãn ngữ cảnh -----------------------------------------------------------
+
+
+def test_document_title_is_the_file_name_without_extension_or_underscores():
+    assert document_title("Chapter 1_Introduction to OS.pdf") == "Chapter 1 Introduction to OS"
+    assert document_title("uploads/abc/Chương 4a - Tích phân bất định.pdf") == "Chương 4a - Tích phân bất định"
+
+
+def test_every_chunk_of_a_titled_document_starts_with_the_document_title():
+    units = [
+        DocumentUnit(text=f"Slide {i} body text", locator={"page": i, "heading": f"Slide {i}"}, course_id="c")
+        for i in range(1, 6)
+    ]
+
+    chunks = chunk_units(units, title="Heap")
+
+    assert chunks and all(c.content.splitlines()[0].startswith("Heap") for c in chunks)
+
+
+def test_a_chunk_that_does_not_open_with_its_heading_gets_the_heading_in_its_context_line():
+    units = [DocumentUnit(text="∫ x dx = x^2/2 + C", locator={"page": 3, "heading": "Bảng tích phân"}, course_id="c")]
+
+    chunks = chunk_units(units, title="Tích phân bất định")
+
+    assert chunks[0].content.splitlines()[0] == "Tích phân bất định › Bảng tích phân"
+
+
+def test_a_chunk_that_already_opens_with_its_heading_does_not_repeat_it():
+    units = [DocumentUnit(text="Bảng tích phân\n∫ x dx", locator={"page": 3, "heading": "Bảng tích phân"}, course_id="c")]
+
+    chunks = chunk_units(units, title="Tích phân bất định")
+
+    assert chunks[0].content.splitlines()[:2] == ["Tích phân bất định", "Bảng tích phân"]
+
+
+def test_without_a_title_or_heading_the_content_is_unchanged():
+    units = [DocumentUnit(text="plain text", locator={"page": 1}, course_id="c")]
+
+    assert chunk_units(units)[0].content == "plain text"
+
+
+def test_slide_titles_label_their_chunks():
+    units = [DocumentUnit(text="body only", locator={"slide_index": 2, "slide_title": "Encapsulation"}, course_id="c")]
+
+    assert chunk_units(units, title="OOP")[0].content.splitlines()[0] == "OOP › Encapsulation"
+
+
+def test_recursive_chunks_are_labelled_with_the_section_they_come_from_not_the_first_one():
+    units = [
+        DocumentUnit(text="A" * 2500, locator={"heading": "Chapter 1"}, course_id="c"),
+        DocumentUnit(text="B" * 2500, locator={"heading": "Chapter 2"}, course_id="c"),
+    ]
+
+    chunks = chunk_units(units, title="Book")
+
+    last = chunks[-1]
+    assert "B" in last.content and last.content.splitlines()[0] == "Book › Chapter 2"
+
+
+# --- kích thước theo token -----------------------------------------------------
+
+# Trần của cả chunk, kể cả dòng ngữ cảnh, để câu hỏi cộng đoạn văn vẫn nằm trong 512 token mà
+# reranker đọc được.
+CHUNK_CEILING = 400
+
+
+def test_estimate_tokens_counts_words_and_symbols():
+    assert estimate_tokens("") == 0
+    assert estimate_tokens("heap tree node") == 3
+    assert estimate_tokens("x = 1") == 3
+
+
+def test_a_symbol_dense_page_is_split_where_prose_of_the_same_length_is_not():
+    prose = " ".join(["processes share the processor through scheduling"] * 20)[:1000]
+    formula = ("∫ x^2 dx = x^3/3 + C, (a+b)^2 = a^2 + 2ab + b^2; " * 30)[:1000]
+
+    prose_chunks = chunk_units([_unit(prose, {"page": 1})])
+    formula_chunks = chunk_units([_unit(formula, {"page": 1})])
+
+    assert len(prose_chunks) == 1
+    assert len(formula_chunks) > 1
+
+
+def test_no_page_chunk_outgrows_the_ceiling_even_with_its_context_line():
+    dense = "∑_(i=1)^n a_i b_i ≤ √(∑ a_i^2) √(∑ b_i^2) " * 200
+    units = [_unit(dense, {"page": 1, "heading": "Bất đẳng thức Cauchy-Schwarz cho dãy số thực"})]
+
+    chunks = chunk_units(units, title="Chương 2 - Giới hạn và liên tục")
+
+    assert len(chunks) > 1
+    assert all(estimate_tokens(c.content) <= CHUNK_CEILING for c in chunks)
+
+
+def test_pieces_of_a_split_page_overlap_so_a_sentence_on_the_cut_is_not_lost():
+    words = [f"w{i}" for i in range(900)]
+    chunks = chunk_units([_unit(" ".join(words), {"page": 1})])
+
+    for first, second in itertools.pairwise(chunks):
+        assert first.content.split()[-1] in second.content.split()
+
+
+def test_two_pages_that_would_overflow_the_ceiling_together_stay_separate():
+    page = " ".join(["node"] * (MAX_CONTENT_TOKENS // 2 + 20))
+    units = [_unit(page, {"page": 1}), _unit(page, {"page": 2})]
+
+    chunks = chunk_units(units)
+
+    assert len(chunks) == 2
+
+
+def test_token_count_is_the_estimate_of_the_stored_content():
+    chunks = chunk_units([_unit("Short text on a slide.", {"page": 1, "heading": "Slide"})], title="Deck")
+
+    assert all(c.token_count == estimate_tokens(c.content) for c in chunks)

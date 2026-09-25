@@ -43,7 +43,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 
 from app.config import settings
-from app.ingestion.chunker import chunk_units
+from app.ingestion.chunker import chunk_units, document_title
 from app.ingestion.document_readers import read_document
 from app.ingestion.embeddings import embed_texts
 from app.models.models import Chunk, Course, Document, DocumentKind, DocumentStatus, User, UserRole
@@ -138,7 +138,7 @@ def nap(db: Session, cac_mon: list[str]) -> None:
 
         for tep in _cac_tep(mon):
             units = read_document(str(tep), course_id=str(khoa.id), source_id=None)
-            cac_chunk = chunk_units(units)
+            cac_chunk = chunk_units(units, title=document_title(tep.name))
             tai_lieu = Document(
                 id=uuid.uuid4(), course_id=khoa.id, filename=tep.name,
                 status=DocumentStatus.embedded, kind=DocumentKind.lecture,

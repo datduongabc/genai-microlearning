@@ -1,5 +1,5 @@
 import bisect
-import math
+import re
 from dataclasses import dataclass
 from typing import Any
 
@@ -7,20 +7,36 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 from app.ingestion.document_readers import DocumentUnit
 
-# Recursive splitting (text/markdown-ish units: HTML, DOCX, plain .txt
-# paragraphs) -- mục 1 kiến trúc: chunk_size 400-512 token, overlap 10-20%.
-# Tokens approximated as chars/4 (same approximation chunker uses for
-# token_count below) -- good enough for a size target, not an exact tokenizer.
-RECURSIVE_CHUNK_CHARS = 2000
-RECURSIVE_OVERLAP_CHARS = 300
+# Kích thước đo bằng token ước lượng (estimate_tokens), không bằng ký tự: cùng 1000 ký tự,
+# văn bản tiếng Anh là khoảng 250 token còn slide toán tiếng Việt là hơn 500, nên một ngưỡng
+# ký tự chung làm chunk toán dài gấp đôi chunk tiếng Anh. Trần là giới hạn 512 token của
+# reranker (bge-reranker-base cắt cặp câu hỏi và đoạn văn ở đó): chừa khoảng 50 token cho câu
+# hỏi và chừng 40 token cho dòng ngữ cảnh gắn thêm sau khi cắt.
+MAX_CONTENT_TOKENS = 340
 
-# Page/slide-level chunking (PDF/PPTX units).
+# Recursive splitting (DOCX, HTML, .txt) -- mục 1 kiến trúc: overlap 10-20%.
+RECURSIVE_OVERLAP_TOKENS = 50
+
+# Page/slide-level chunking (PDF/PPTX units): gộp tới khoảng một slide dày chữ.
 MAX_UNITS_PER_CHUNK = 2
-PAGE_CHUNK_TARGET_CHARS = 1000
-PAGE_OVERLAP_CHARS = 150
+PAGE_CHUNK_TARGET_TOKENS = 250
+PAGE_OVERLAP_TOKENS = 40
 
 # Sentence/caption-level chunking (video/audio transcripts with timestamps).
-TRANSCRIPT_CHUNK_CHARS = 600
+TRANSCRIPT_CHUNK_TOKENS = 150
+
+_WORD_RE = re.compile(r"\w+")
+_SYMBOL_RE = re.compile(r"[^\w\s]")
+_SEGMENT_RE = re.compile(r"\S+\s*")
+
+
+def estimate_tokens(text: str) -> int:
+    """Số token ước lượng: mỗi từ một token, thêm một cho mỗi bảy ký tự của từ dài, mỗi ký hiệu
+    một token. Đo trên 1100 chunk của năm môn trong docs/documents, nó bám tokenizer thật của
+    reranker trong khoảng 0,84-1,02 lần ở cả tiếng Anh lẫn toán tiếng Việt, trong khi chia 4 theo
+    ký tự chỉ đúng với tiếng Anh và thấp một nửa với toán. Không nạp tokenizer thật vì chunker
+    chạy cả trong test, nơi không có mô hình của reranker."""
+    return sum(1 + len(w) // 7 for w in _WORD_RE.findall(text)) + len(_SYMBOL_RE.findall(text))
 
 
 @dataclass
@@ -43,7 +59,33 @@ def _classify(unit: DocumentUnit) -> str:
     return "recursive"
 
 
-def chunk_units(units: list[DocumentUnit]) -> list[Chunk]:
+def document_title(filename: str) -> str:
+    """Tên tài liệu đọc được từ tên tệp: bỏ đuôi và dấu gạch dưới. Giảng viên đặt tên tệp theo
+    bài ("Chương 4a - Tích phân bất định"), nên đây là nhãn ngữ cảnh rẻ và đúng nhất có sẵn."""
+    stem = filename.replace("\\", "/").rsplit("/", 1)[-1]
+    if "." in stem:
+        stem = stem.rsplit(".", 1)[0]
+    return re.sub(r"\s+", " ", stem.replace("_", " ")).strip()
+
+
+def _locator_heading(locator: dict) -> str | None:
+    first = locator["spans"][0] if locator.get("spans") else locator
+    return first.get("heading") or first.get("slide_title") or None
+
+
+def context_line(title: str | None, heading: str | None, content: str) -> str:
+    """Dòng ngữ cảnh đặt đầu chunk: "tài liệu › mục". Một chunk giữa bài chỉ còn lại vài công
+    thức hay vài gạch đầu dòng, không có chữ nào nói nó thuộc bài nào, trong khi truy hồi tìm
+    trên cả môn học gồm nhiều bài. Tiêu đề mục bị bỏ khi chunk đã mở đầu bằng chính nó."""
+    parts = [title] if title else []
+    heading = heading.strip() if heading else ""
+    redundant = bool(title) and heading.casefold() in title.casefold()
+    if heading and not redundant and not content.lstrip().startswith(heading):
+        parts.append(heading)
+    return " › ".join(parts)
+
+
+def chunk_units(units: list[DocumentUnit], title: str | None = None) -> list[Chunk]:
     """Dispatch each contiguous run of same-strategy units (per mục 1 kiến
     trúc: recursive cho text/markdown, page-level cho PDF/PPTX, sentence-based
     cho transcript) to its chunking function. A single `read_document()` call
@@ -75,6 +117,11 @@ def chunk_units(units: list[DocumentUnit]) -> list[Chunk]:
         current_strategy = strategy
         current_group.append(unit)
     flush_group()
+    for chunk in chunks:
+        line = context_line(title, _locator_heading(chunk.locator), chunk.content)
+        if line:
+            chunk.content = f"{line}\n{chunk.content}"
+            chunk.token_count = estimate_tokens(chunk.content)
     return chunks
 
 
@@ -87,7 +134,7 @@ def _make_chunk(
         chunk_index=len(chunks),
         locator=locator,
         course_id=course_id,
-        token_count=math.ceil(len(content) / 4),
+        token_count=estimate_tokens(content),
         extraction_method=extraction_method,
         strategy=strategy,
     ))
@@ -95,8 +142,9 @@ def _make_chunk(
 
 def _chunk_recursive(units: list[DocumentUnit], chunks: list[Chunk], first_unit_index: int = 0) -> None:
     splitter = RecursiveCharacterTextSplitter(
-        chunk_size=RECURSIVE_CHUNK_CHARS,
-        chunk_overlap=RECURSIVE_OVERLAP_CHARS,
+        chunk_size=MAX_CONTENT_TOKENS,
+        chunk_overlap=RECURSIVE_OVERLAP_TOKENS,
+        length_function=estimate_tokens,
         separators=["\n\n", "\n", ". ", " ", ""],
     )
     # Positions are kept against the ORIGINAL unit list (empty units included):
@@ -111,7 +159,7 @@ def _chunk_recursive(units: list[DocumentUnit], chunks: list[Chunk], first_unit_
         unit_starts.append(position)
         position += len(u.text) + len("\n\n")
     course_id = units[0].course_id
-    heading = next((u.locator.get("heading") for u in units if u.locator.get("heading")), None)
+    by_position = dict(kept)
     cursor = 0
     unit_index = kept[0][0]
     for piece in splitter.split_text(text):
@@ -122,32 +170,38 @@ def _chunk_recursive(units: list[DocumentUnit], chunks: list[Chunk], first_unit_
         if found != -1:
             cursor = found
             unit_index = kept[bisect.bisect_right(unit_starts, found) - 1][0]
+        # Tiêu đề của mục chứa đoạn này, không phải của mục đầu tài liệu: trước đây mọi chunk của
+        # một giáo trình DOCX đều mang tiêu đề chương 1.
+        heading = by_position[unit_index].locator.get("heading")
         _make_chunk(
             chunks, piece, {"heading": heading, "unit_index": unit_index}, course_id, "text_layer", "recursive"
         )
 
 
-def _split_long_text(text: str, target_chars: int, overlap_chars: int) -> list[str]:
-    """Character-based sliding window for a single oversized unit (e.g. a
-    very text-dense page) -- every piece capped at target_chars, overlapping
-    its neighbor by exactly overlap_chars, regardless of paragraph length.
-    """
-    text = text.strip()
-    if not text:
+def _split_long_text(text: str, max_tokens: int, overlap_tokens: int) -> list[str]:
+    """Cửa sổ trượt theo từ cho một đơn vị quá dài (một trang dày chữ, một caption khổng lồ):
+    mỗi mảnh không quá max_tokens, gối lên mảnh trước khoảng overlap_tokens. Cắt ở ranh giới từ
+    để không mảnh nào mở đầu bằng nửa chữ."""
+    segments = _SEGMENT_RE.findall(text.strip())
+    if not segments:
         return []
-    step = target_chars - overlap_chars if target_chars > overlap_chars else target_chars
+    costs = [max(1, estimate_tokens(seg)) for seg in segments]
     pieces: list[str] = []
     start = 0
-    n = len(text)
-    while start < n:
-        end = min(start + target_chars, n)
-        piece = text[start:end]
-        if piece.strip():
-            pieces.append(piece)
-        if end >= n:
+    while start < len(segments):
+        end, total = start, 0
+        while end < len(segments) and (end == start or total + costs[end] <= max_tokens):
+            total += costs[end]
+            end += 1
+        pieces.append("".join(segments[start:end]).strip())
+        if end >= len(segments):
             break
-        start += step
-    return pieces
+        back, kept = end, 0
+        while back - 1 > start and kept + costs[back - 1] <= overlap_tokens:
+            back -= 1
+            kept += costs[back]
+        start = back
+    return [p for p in pieces if p]
 
 
 def _group_key(locator: dict) -> Any:
@@ -182,18 +236,23 @@ def _chunk_page_level(units: list[DocumentUnit], chunks: list[Chunk]) -> None:
             if buffer_keys and unit_key not in buffer_keys and len(buffer_keys | {unit_key}) > MAX_UNITS_PER_CHUNK:
                 flush()
 
-        if len(unit.text) >= PAGE_CHUNK_TARGET_CHARS:
+        tokens = estimate_tokens(unit.text)
+        if tokens > MAX_CONTENT_TOKENS:
             flush()
-            for i, piece in enumerate(_split_long_text(unit.text, PAGE_CHUNK_TARGET_CHARS, PAGE_OVERLAP_CHARS)):
+            for i, piece in enumerate(_split_long_text(unit.text, MAX_CONTENT_TOKENS, PAGE_OVERLAP_TOKENS)):
                 _make_chunk(
                     chunks, piece, {**unit.locator, "part": i + 1}, unit.course_id,
                     unit.locator.get("extraction_method", "text_layer"), "page_level",
                 )
             continue
+        # Gộp thêm trang này mà vượt trần thì chốt chunk trước: trước đây chỉ xét sau khi gộp,
+        # nên hai trang vừa dưới ngưỡng thành một chunk dài gần gấp đôi.
+        if buffer_text and sum(estimate_tokens(t) for t in buffer_text) + tokens > MAX_CONTENT_TOKENS:
+            flush()
 
         buffer_text.append(unit.text)
         buffer_locators.append(unit.locator)
-        if sum(len(t) for t in buffer_text) >= PAGE_CHUNK_TARGET_CHARS:
+        if sum(estimate_tokens(t) for t in buffer_text) >= PAGE_CHUNK_TARGET_TOKENS:
             flush()
 
     flush()
@@ -225,16 +284,16 @@ def _chunk_transcript(units: list[DocumentUnit], chunks: list[Chunk]) -> None:
         # (e.g. a mis-segmented ASR transcript that dumps an entire lecture
         # into one "caption" spanning a couple of seconds) -- split it on
         # its own rather than emitting one giant chunk.
-        if len(unit.text) >= TRANSCRIPT_CHUNK_CHARS:
+        if estimate_tokens(unit.text) >= TRANSCRIPT_CHUNK_TOKENS:
             flush()
-            for piece in _split_long_text(unit.text, TRANSCRIPT_CHUNK_CHARS, 0):
+            for piece in _split_long_text(unit.text, TRANSCRIPT_CHUNK_TOKENS, 0):
                 _make_chunk(chunks, piece, {"start_ms": start_ms, "end_ms": end_ms}, course_id, "text_layer", "sentence")
             continue
 
         buffer_text.append(unit.text)
         buffer_start = start_ms if buffer_start is None else min(buffer_start, start_ms)
         buffer_end = end_ms if buffer_end is None else max(buffer_end, end_ms)
-        if sum(len(t) for t in buffer_text) >= TRANSCRIPT_CHUNK_CHARS:
+        if sum(estimate_tokens(t) for t in buffer_text) >= TRANSCRIPT_CHUNK_TOKENS:
             flush()
 
     flush()

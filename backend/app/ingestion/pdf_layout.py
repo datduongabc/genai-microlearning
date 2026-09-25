@@ -665,3 +665,55 @@ def page_lines(page: pymupdf.Page) -> list[str]:
             if text:
                 out.append(text)
     return out
+
+
+def title_candidates(page: pymupdf.Page) -> list[str]:
+    """Các dòng to hơn hẳn chữ thân bài, dòng to nhất trước. Trên slide, tiêu đề là dòng cỡ chữ
+    lớn nhất chứ không phải dòng đầu tiên: PyMuPDF hay trả chân trang hoặc số trang ra trước."""
+    blocks = [b for b in page.get_text("rawdict", flags=_TEXT_FLAGS)["blocks"] if b["type"] == 0 and b["lines"]]
+    if not blocks:
+        return []
+    vni_fonts = frozenset(_vni_fonts(blocks))
+
+    def is_math(span: dict) -> bool:
+        return any(f in span["font"].lower() for f in _MATH_FONTS)
+
+    # Cỡ chữ thân bài là cỡ phổ biến nhất của chữ thường. Không lấy trung vị: slide ít chữ có tiêu
+    # đề chiếm gần nửa số ký tự, kéo trung vị lên bằng cỡ tiêu đề phụ; còn trang nhiều công thức
+    # có hàng trăm chỉ số nhỏ kéo nó xuống. Phông toán không được tính vì cùng lý do đó.
+    weighted = [
+        round(s["size"] * 2) / 2 for b in blocks for line in b["lines"] for s in line["spans"] if not is_math(s)
+        for c in s["chars"] if c["c"].isalpha()
+    ]
+    body = statistics.mode(weighted) if weighted else 0
+    found: list[tuple[float, float, float, str]] = []
+    for block in blocks:
+        for line in block["lines"]:
+            text = _line_text(line["spans"], vni_fonts)
+            size = max(s["size"] for s in line["spans"])
+            visible = [c for c in text if not c.isspace()]
+            letters = sum(c.isalpha() for c in visible)
+            # Tiêu đề là chữ: không mở đầu bằng dấu đầu dòng, không mang ký hiệu toán, không phải
+            # một dòng công thức hay một câu dài.
+            if (
+                size >= 1.15 * body and letters >= 0.6 * len(visible) and len(text) <= 120
+                and re.search(r"[^\W\d_]{3,}", text)
+                and not text.startswith(("•", "-", "–", "▪", "◦", "o ", "*"))
+                and not any(is_math(s) for s in line["spans"] if _span_text(s).strip())
+            ):
+                found.append((size, line["bbox"][1], line["bbox"][3], text))
+    # Tiêu đề dài xuống dòng là nhiều dòng liền nhau cùng cỡ: nối lại thành một.
+    found.sort(key=lambda f: (-round(f[0]), f[1]))
+    merged: list[tuple[float, float, str]] = []
+    for size, top, bottom, text in found:
+        last = merged[-1] if merged else None
+        if last and round(last[0]) == round(size) and 0 <= top - last[1] < 0.6 * size:
+            merged[-1] = (size, bottom, f"{last[2]} {text}")
+        else:
+            merged.append((size, bottom, text))
+    seen, out = set(), []
+    for _, _, text in merged:
+        if text not in seen:
+            seen.add(text)
+            out.append(text)
+    return out
