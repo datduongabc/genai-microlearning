@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user
 from app.auth.rate_limit import limiter, user_or_address
+from app.config import settings
 from app.db import get_db
 from app.llm import catalog
 from app.models import User
@@ -35,15 +36,19 @@ class DefaultModel(BaseModel):
     alias: str | None
 
 
+def _model_list(default: str | None) -> ModelList:
+    models = [
+        ModelInfo(alias=c.alias, label=c.label, provider=c.provider, note=c.note)
+        for c in catalog.available_models()
+    ]
+    if default is not None and all(m.alias != default for m in models):
+        default = settings.llm_model
+    return ModelList(models=models, default=default)
+
+
 @router.get("", response_model=ModelList)
 def list_models(current_user: User = Depends(get_current_user)):
-    return ModelList(
-        models=[
-            ModelInfo(alias=c.alias, label=c.label, provider=c.provider, note=c.note)
-            for c in catalog.available_models()
-        ],
-        default=current_user.default_model_alias,
-    )
+    return _model_list(current_user.default_model_alias)
 
 
 @router.put("/default", response_model=ModelList)
@@ -75,10 +80,4 @@ def set_default_model(
     user.default_model_alias = body.alias
     db.commit()
 
-    return ModelList(
-        models=[
-            ModelInfo(alias=c.alias, label=c.label, provider=c.provider, note=c.note)
-            for c in catalog.available_models()
-        ],
-        default=user.default_model_alias,
-    )
+    return _model_list(user.default_model_alias)

@@ -45,11 +45,15 @@ def _alias_da_chon(body: GenerateRequest | None, current_user: User) -> str | No
     Kiểm ở đây chứ không tin client: một alias lạ lọt xuống hàng đợi thì lượt sinh chạy
     mười phút rồi mới hỏng ở lệnh gọi LLM, và lỗi chẳng nói gì về việc chọn model.
     """
-    alias = (body.model_alias if body is not None else None) or current_user.default_model_alias
+    alias = body.model_alias if body is not None else None
     if alias is None:
-        # Đường mặc định: không có gì để kiểm hay thử, nên không gọi gateway lúc bấm nút.
-        return None
-    if not catalog.is_available(alias):
+        alias = current_user.default_model_alias
+        if alias is None:
+            # Đường mặc định: không có gì để kiểm hay thử, nên không gọi gateway lúc bấm nút.
+            return None
+        if not catalog.is_available(alias):
+            return None
+    elif not catalog.is_available(alias):
         raise HTTPException(
             status_code=422,
             detail=f"Gateway không phục vụ model sinh văn bản nào tên '{alias}'.",
