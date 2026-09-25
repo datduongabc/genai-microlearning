@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import Markdown, { type Components } from 'react-markdown'
 import { Link, useParams } from 'react-router-dom'
 import { AppShell } from '../components/AppShell'
 import {
@@ -83,7 +84,13 @@ export function ModulePreviewPage() {
       <ModuleHeader module={module} onSaved={refresh} />
       <div className="mt-8 flex flex-col gap-6">
         {module.components.map((c) => (
-          <ComponentCard key={c.id} moduleId={module.id} component={c} onSaved={refresh} />
+          <ComponentCard
+            key={c.id}
+            moduleId={module.id}
+            component={c}
+            explanations={explanationsByQuestion(module, c.type)}
+            onSaved={refresh}
+          />
         ))}
       </div>
       <PublishToMoodleSection
@@ -251,6 +258,13 @@ function ModuleHeader({ module, onSaved }: { module: ModuleDetail; onSaved: () =
           {module.learning_objective}
         </p>
       )}
+      {module.sub_objectives && module.sub_objectives.length > 0 && (
+        <ul className="mt-2 list-disc pl-5 text-sm text-gray-600">
+          {module.sub_objectives.map((s) => (
+            <li key={s}>{s}</li>
+          ))}
+        </ul>
+      )}
       {module.bloom_level && (
         <span className="mt-2 inline-block rounded-[3px] bg-navy px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-[#f3f1ea]">
           Bloom: {BLOOM_LABEL[module.bloom_level] ?? module.bloom_level}
@@ -260,13 +274,25 @@ function ModuleHeader({ module, onSaved }: { module: ModuleDetail; onSaved: () =
   )
 }
 
+// The explanation a learner sees for each question, by position: the one in the Explanation
+// component, which is the teacher's edited version and the one sent to Moodle.
+function explanationsByQuestion(module: ModuleDetail, type: string): Record<number, string> {
+  const component = module.components.find((c) => c.type === 'explanation')
+  const items = (component?.content.items as ExplanationItem[] | undefined) ?? []
+  return Object.fromEntries(
+    items.filter((i) => i.component === type).map((i) => [i.position, i.explanation_text]),
+  )
+}
+
 function ComponentCard({
   moduleId,
   component,
+  explanations,
   onSaved,
 }: {
   moduleId: string
   component: ModuleComponentInfo
+  explanations: Record<number, string>
   onSaved: () => Promise<void>
 }) {
   return (
@@ -287,7 +313,7 @@ function ComponentCard({
         <ExplanationEditor moduleId={moduleId} component={component} onSaved={onSaved} />
       )}
       {(component.type === 'quiz' || component.type === 'practice') && (
-        <QuizDisplay component={component} />
+        <QuizDisplay component={component} explanations={explanations} />
       )}
     </section>
   )
@@ -329,6 +355,20 @@ function SaveCancelRow({
   )
 }
 
+// The page has no typography plugin, so each Markdown element gets the look of the rest of the
+// card. react-markdown builds React elements and never inserts raw HTML, so generated text
+// cannot put markup of its own on the page.
+const MARKDOWN: Components = {
+  h1: ({ children }) => <h4 className="mb-2 mt-4 text-base font-semibold first:mt-0">{children}</h4>,
+  h2: ({ children }) => <h4 className="mb-2 mt-4 text-base font-semibold first:mt-0">{children}</h4>,
+  h3: ({ children }) => <h5 className="mb-1 mt-3 font-semibold first:mt-0">{children}</h5>,
+  p: ({ children }) => <p className="mb-2">{children}</p>,
+  ul: ({ children }) => <ul className="mb-2 list-disc pl-5">{children}</ul>,
+  ol: ({ children }) => <ol className="mb-2 list-decimal pl-5">{children}</ol>,
+  li: ({ children }) => <li className="mb-0.5">{children}</li>,
+  code: ({ children }) => <code className="rounded bg-gray-100 px-1 font-mono text-[13px]">{children}</code>,
+}
+
 function MarkdownFieldEditor({
   moduleId,
   component,
@@ -364,7 +404,9 @@ function MarkdownFieldEditor({
           className="w-full rounded border border-gray-300 p-3 font-mono text-sm outline-none focus:border-terracotta"
         />
       ) : (
-        <pre className="whitespace-pre-wrap font-sans text-[15px] leading-relaxed">{original}</pre>
+        <div className="text-[15px] leading-relaxed">
+          <Markdown components={MARKDOWN}>{original}</Markdown>
+        </div>
       )}
       <SaveCancelRow
         editing={editing}
@@ -614,7 +656,13 @@ function ExplanationEditor({
   )
 }
 
-function QuizDisplay({ component }: { component: ModuleComponentInfo }) {
+function QuizDisplay({
+  component,
+  explanations,
+}: {
+  component: ModuleComponentInfo
+  explanations: Record<number, string>
+}) {
   const checks = (component.content.questions as QuestionCheck[] | undefined) ?? []
   const questions = [...component.questions].sort((a, b) => a.position - b.position)
   const failed = checks.filter((c) => !c.passed && c.fail_reason)
@@ -649,10 +697,10 @@ function QuizDisplay({ component }: { component: ModuleComponentInfo }) {
                 </li>
               ))}
             </ul>
-            {question.explanation && (
+            {(explanations[question.position] || question.explanation) && (
               <p className="mt-1 text-sm text-gray-500">
                 <span className="font-semibold">Giải thích: </span>
-                {question.explanation}
+                {explanations[question.position] || question.explanation}
               </p>
             )}
           </div>
