@@ -11,6 +11,7 @@ import pytest
 from app.db import SessionLocal
 from app.generation import module_generation_pipeline as pipeline
 from app.generation import relevance
+from app.generation.example import Example, ExampleOutput
 from app.generation.planner import Concept, PlannerOutput
 from app.generation.relevance import MAX_RELEVANCE_RETRY, RelevanceCheck, corrective_retrieve
 from app.models import (
@@ -246,7 +247,7 @@ def steps(monkeypatch):
     monkeypatch.setattr(
         pipeline, "generate_example",
         lambda lo, content, chunks: (
-            types.SimpleNamespace(context="c", analysis="a"), types.SimpleNamespace(no_overreach_pass=True)
+            ExampleOutput(examples=[Example(context="c", analysis="a")]), types.SimpleNamespace(no_overreach_pass=True)
         ),
     )
     monkeypatch.setattr(pipeline, "generate_quiz_question", lambda *a, **k: {"passed": False})

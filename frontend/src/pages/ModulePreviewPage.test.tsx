@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -98,5 +98,94 @@ describe('ModulePreviewPage - publish to Moodle', () => {
 
     expect(await screen.findByText(/push to moodle thất bại/i)).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /push to moodle/i })).toBeEnabled()
+  })
+})
+
+describe('ModulePreviewPage - module structure', () => {
+  const structured: ModuleDetail = {
+    ...baseModule,
+    components: [
+      {
+        id: 'example-1',
+        type: 'example',
+        content: {
+          examples: [
+            { context: 'BỐI-CẢNH-MỘT', analysis: 'PHÂN-TÍCH-MỘT' },
+            { context: 'BỐI-CẢNH-HAI', analysis: 'PHÂN-TÍCH-HAI' },
+          ],
+        },
+        questions: [],
+      },
+      {
+        id: 'quiz-1',
+        type: 'quiz',
+        content: { questions: [{ passed: true }, { passed: false }] },
+        // Out of order on purpose: the page must follow position, not the order they arrive in.
+        questions: [
+          { id: 'q2', position: 1, stem: 'CÂU-HỎI-HAI', choices: { options: ['A', 'B', 'C', 'D'] }, answer_key: '2', explanation: 'GIẢI-THÍCH-HAI' },
+          { id: 'q1', position: 0, stem: 'CÂU-HỎI-MỘT', choices: { options: ['A', 'B', 'C', 'D'] }, answer_key: '1', explanation: 'GIẢI-THÍCH-MỘT' },
+        ],
+      },
+      {
+        id: 'explanation-1',
+        type: 'explanation',
+        content: {
+          items: [
+            { component: 'quiz', position: 0, reasoning: 'LẬP-LUẬN-MỘT', explanation_text: 'LỜI-GIẢI-MỘT' },
+            { component: 'quiz', position: 1, reasoning: 'LẬP-LUẬN-HAI', explanation_text: 'LỜI-GIẢI-HAI' },
+          ],
+        },
+        questions: [],
+      },
+    ],
+  }
+
+  it('shows every example of the module', async () => {
+    vi.mocked(api.getModule).mockResolvedValue(structured)
+
+    renderPage()
+
+    for (const text of ['BỐI-CẢNH-MỘT', 'PHÂN-TÍCH-MỘT', 'BỐI-CẢNH-HAI', 'PHÂN-TÍCH-HAI']) {
+      expect(await screen.findByText(text)).toBeInTheDocument()
+    }
+  })
+
+  it('shows every quiz question in its order, each with its own explanation', async () => {
+    vi.mocked(api.getModule).mockResolvedValue(structured)
+
+    renderPage()
+
+    const first = await screen.findByText('CÂU-HỎI-MỘT')
+    const second = screen.getByText('CÂU-HỎI-HAI')
+    expect(first.compareDocumentPosition(second) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    const firstExplanation = screen.getByText('GIẢI-THÍCH-MỘT')
+    expect(first.compareDocumentPosition(firstExplanation) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(firstExplanation.compareDocumentPosition(second) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  })
+
+  it('saves an edited explanation for the question it belongs to and keeps the others', async () => {
+    vi.mocked(api.getModule).mockResolvedValue(structured)
+    vi.mocked(api.updateComponentContent).mockResolvedValue({ id: 'explanation-1', content: {} })
+    const user = userEvent.setup()
+
+    renderPage()
+
+    await screen.findByText('LỜI-GIẢI-HAI')
+    const explanationCard = screen.getByText('LỜI-GIẢI-HAI').closest('section') as HTMLElement
+    await user.click(within(explanationCard).getByRole('button', { name: 'Sửa' }))
+    const field = within(explanationCard).getByLabelText('Giải thích Quiz - câu 2')
+    await user.clear(field)
+    await user.type(field, 'LỜI-GIẢI-ĐÃ-SỬA')
+    await user.click(within(explanationCard).getByRole('button', { name: 'Lưu' }))
+
+    await waitFor(() => expect(api.updateComponentContent).toHaveBeenCalled())
+    const [, componentId, content] = vi.mocked(api.updateComponentContent).mock.calls[0]
+    expect(componentId).toBe('explanation-1')
+    expect(content).toEqual({
+      items: [
+        { component: 'quiz', position: 0, reasoning: 'LẬP-LUẬN-MỘT', explanation_text: 'LỜI-GIẢI-MỘT' },
+        { component: 'quiz', position: 1, reasoning: 'LẬP-LUẬN-HAI', explanation_text: 'LỜI-GIẢI-ĐÃ-SỬA' },
+      ],
+    })
   })
 })

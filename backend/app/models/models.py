@@ -313,7 +313,8 @@ class ModuleComponent(Base):
 
     module: Mapped["Module"] = relationship(back_populates="components")
     questions: Mapped[list["Question"]] = relationship(
-        back_populates="component", cascade="all, delete-orphan", passive_deletes=True
+        back_populates="component", cascade="all, delete-orphan", passive_deletes=True,
+        order_by="Question.position",
     )
 
 
@@ -328,6 +329,8 @@ class Question(Base):
     choices: Mapped[dict] = mapped_column(JSONB)
     answer_key: Mapped[str]
     explanation: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # Thứ tự trong thành phần: các câu của một module tạo cùng transaction nên created_at bằng nhau.
+    position: Mapped[int] = mapped_column(default=0, server_default="0")
     created_at: Mapped[datetime] = created_at_column()
 
     component: Mapped["ModuleComponent"] = relationship(back_populates="questions")

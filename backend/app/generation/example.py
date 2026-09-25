@@ -1,4 +1,5 @@
-"""Example: a worked application of the lesson, checked not to overreach its source."""
+"""Examples: worked applications of the lesson, at most one per sub-objective, checked not to
+overreach their source."""
 
 from pydantic import BaseModel, Field
 
@@ -18,9 +19,12 @@ from app.models import Chunk
 
 EXAMPLE_SYSTEM_INSTRUCTION = IGNORE_EMBEDDED_INSTRUCTIONS + """Bạn là chuyên gia biên soạn ví dụ minh họa cho giáo dục đại học.
 
-Nhiệm vụ: viết 1 Example minh họa cho Learning Objective/Content được cung
-cấp. Các đoạn SOURCE CHUNK bên dưới đóng vai trò few-shot — dùng để định hình
-VĂN PHONG và THUẬT NGỮ (không phải để chép lại nguyên văn).
+Nhiệm vụ: viết các Example minh họa cho Learning Objective/Content được cung
+cấp — TỐI ĐA 1 Example cho MỖI sub-objective (mỗi phần của Content), và chỉ
+cho những phần mà một ví dụ thật sự giúp người học hiểu hơn; ít nhất 1 Example.
+Không viết thêm ví dụ cho đủ số. Các đoạn SOURCE CHUNK bên dưới đóng vai trò
+few-shot — dùng để định hình VĂN PHONG và THUẬT NGỮ (không phải để chép lại
+nguyên văn).
 
 Ràng buộc BẮT BUỘC:
 1. Khác với Content, Example ĐƯỢC PHÉP chứa tình huống/ví dụ MỚI do bạn tự
@@ -38,9 +42,17 @@ Ràng buộc BẮT BUỘC:
 """
 
 
-class ExampleOutput(BaseModel):
+class Example(BaseModel):
     context: str = Field(description="Bối cảnh ứng dụng thực tế")
     analysis: str = Field(description="Phân tích liên hệ với khái niệm trong Content")
+
+
+class ExampleOutput(BaseModel):
+    # Trần 4 bằng trần số sub-objective: một bài 5-10 phút không cần nhiều ví dụ hơn số phần của nó.
+    examples: list[Example] = Field(
+        min_length=1, max_length=4,
+        description="Tối đa 1 Example cho mỗi sub-objective, theo đúng thứ tự các phần của Content",
+    )
 
 
 # Tầng 3 (GD2, cùng pattern LO/Content/Slides/Explanation): Example là thành
@@ -57,6 +69,9 @@ EXAMPLE_VERIFY_SYSTEM_INSTRUCTION = IGNORE_EMBEDDED_INSTRUCTIONS + """Bạn là 
 đoạn nguồn được cung cấp.
 
 Chấm đúng 3 tiêu chí:
+Mỗi tiêu chí xét trên TỪNG Example trong danh sách: chỉ cần 1 Example vi
+phạm là tiêu chí đó fail, và lý do phải nêu rõ Example số mấy.
+
 - consistency_pass: bối cảnh (context) và phân tích (analysis) có thực sự
   minh họa ĐÚNG khái niệm trong Content không, hay lạc đề/mâu thuẫn với
   Content?
@@ -83,14 +98,19 @@ class ExampleVerification(BaseModel):
     style_reason: str
 
 
+def _format_examples(example_out: ExampleOutput) -> str:
+    return "\n".join(
+        f"Example {n}:\n  context: {e.context}\n  analysis: {e.analysis}"
+        for n, e in enumerate(example_out.examples, start=1)
+    )
+
+
 def _verify_example(example_out: ExampleOutput, content: str, context_chunks: list[Chunk]) -> ExampleVerification:
     prompt = (
         f"CONTENT:\n{content}\n\n"
-        f"EXAMPLE ĐÃ SINH:\n"
-        f"context: {example_out.context}\n"
-        f"analysis: {example_out.analysis}\n\n"
+        f"CÁC EXAMPLE ĐÃ SINH:\n{_format_examples(example_out)}\n\n"
         f"{format_source_chunks(context_chunks)}\n\n"
-        f"Kiểm tra consistency_pass, no_overreach_pass, style_pass của Example trên."
+        f"Kiểm tra consistency_pass, no_overreach_pass, style_pass của các Example trên."
     )
     return complete_structured(
         prompt, ExampleVerification, system_instruction=EXAMPLE_VERIFY_SYSTEM_INSTRUCTION, temperature=0.0
@@ -103,12 +123,14 @@ def generate_example(
     feedback: str | None = None
     example_out: ExampleOutput | None = None
     check: ExampleVerification | None = None
+    sub_objectives_text = "\n".join(f"- {so}" for so in lo.sub_objectives)
     for _ in range(MAX_EXAMPLE_CORRECTION_RETRY + 1):
         prompt = (
-            f"LEARNING OBJECTIVE: {lo.objective_text}\n\n"
+            f"LEARNING OBJECTIVE: {lo.objective_text}\n"
+            f"SUB-OBJECTIVES (tối đa 1 Example cho mỗi cái):\n{sub_objectives_text}\n\n"
             f"CONTENT:\n{content}\n\n"
             f"{format_source_chunks(context_chunks)}\n\n"
-            f"Viết 1 Example cho Learning Objective/Content trên, tham khảo văn phong/thuật ngữ từ các SOURCE CHUNK (few-shot)."
+            f"Viết các Example cho Learning Objective/Content trên, tham khảo văn phong/thuật ngữ từ các SOURCE CHUNK (few-shot)."
         )
         if feedback:
             prompt += (

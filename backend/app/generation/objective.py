@@ -63,10 +63,11 @@ Ràng buộc BẮT BUỘC:
 - CHỈ dựa vào nội dung nguồn được cung cấp, không thêm kiến thức ngoài nguồn.
 
 Cấu trúc LO đa tầng (GD2 — Terminal Objective + Enabling Objectives, theo
-nguyên tắc "1 Main LO + 2-3 Sub-objectives" đã kiểm chứng qua thực tiễn
+nguyên tắc "1 Main LO + 2-4 Sub-objectives" đã kiểm chứng qua thực tiễn
 microlearning của Moodle/Raccoon Gang và Konstantly/Beedeez): objective_text
 là Terminal Objective (mục tiêu tổng thể) — module vẫn CHỈ CÓ 1 module, KHÔNG
-tách thành nhiều module. Ngoài ra PHẢI viết thêm 2-3 sub_objectives, mỗi cái
+tách thành nhiều module. Ngoài ra PHẢI viết thêm 2-4 sub_objectives (đủ để
+bao phủ khái niệm trong một bài học 5-10 phút, không chia nhỏ cho đủ số), mỗi cái
 là 1 Enabling Objective cụ thể (dạng "[động từ] ...", KHÔNG cần lặp lại "Sau
 khi hoàn thành module..."), mỗi sub-objective nhắm đúng 1 khía cạnh/năng lực
 THÀNH PHẦN khác nhau cần đạt để hoàn thành Terminal Objective — không được 2
@@ -76,42 +77,38 @@ tổng thể nó phục vụ). Mục đích: ép Content bám đủ rộng theo 
 thay vì chỉ tổng hợp 1 góc hẹp của nguồn.
 
 Ví dụ mẫu (Few-Shot CoT — 2 ví dụ đầy đủ chuỗi lập luận, KHÔNG copy nguyên
-văn cho chủ đề mới, chỉ học đúng CÁCH suy luận):
+văn cho chủ đề mới, chỉ học đúng CÁCH suy luận; cả hai ví dụ cố ý thuộc một
+lĩnh vực không liên quan tới tài liệu đang xử lý):
 
 Ví dụ 1 — nguồn chỉ định nghĩa/liệt kê (không giải thích sâu):
-  Khái niệm: "Encapsulation". Nguồn: "Encapsulation: Bundles data and methods
-  into a single unit (class) and restricts access to protect data integrity."
+  Khái niệm: "Quang hợp". Nguồn: "Quang hợp là quá trình thực vật dùng năng
+  lượng ánh sáng để tổng hợp glucose từ CO2 và nước, đồng thời giải phóng oxy."
   Lập luận: nguồn CHỈ định nghĩa 1 câu, không so sánh/không ví dụ ứng dụng
-  → theo ràng buộc (a), chỉ được chọn remember/understand → nguồn có giải
-  thích NGẮN "vì sao" (restricts access ĐỂ protect data integrity) → chọn
+  → theo ràng buộc (a), chỉ được chọn remember/understand → nguồn có nêu quan
+  hệ đầu vào - đầu ra (ánh sáng, CO2, nước TẠO RA glucose và oxy) → chọn
   understand (không phải remember thuần túy vì có yếu tố quan hệ nhân-quả).
   Kết quả: bloom_level=understand, verb="giải thích", objective_text="Sau
-  khi hoàn thành module, người học có thể giải thích cách Encapsulation gom
-  nhóm dữ liệu và phương thức, đồng thời kiểm soát quyền truy cập để bảo vệ
-  tính toàn vẹn dữ liệu."
-  sub_objectives=["Mô tả cách dữ liệu và phương thức được gộp vào 1 class",
-  "Giải thích vì sao kiểm soát quyền truy cập giúp bảo vệ tính toàn vẹn dữ
-  liệu"]
+  khi hoàn thành module, người học có thể giải thích cách quang hợp dùng năng
+  lượng ánh sáng để tạo ra glucose từ CO2 và nước."
+  sub_objectives=["Nêu các chất tham gia và sản phẩm của quang hợp",
+  "Giải thích vai trò của năng lượng ánh sáng trong quá trình tạo glucose"]
 
-Ví dụ 2 — nguồn có so sánh/phân tích thật (không chỉ định nghĩa) — LƯU Ý: ví
-dụ minh họa dưới đây KHÔNG lấy từ bất kỳ tài liệu thật nào trong hệ thống,
-chỉ để minh họa CÁCH suy luận khi nguồn có so sánh:
-  Khái niệm: "TCP vs UDP". Nguồn có: định nghĩa TCP (hướng kết nối, đảm bảo
-  thứ tự gói tin), định nghĩa UDP (không kết nối, không đảm bảo thứ tự), VÀ
-  1 đoạn so sánh riêng "TCP guarantees delivery via acknowledgment and
-  retransmission... UDP has lower latency, suited for real-time streaming;
-  TCP suited for file transfer where reliability matters more than speed".
+Ví dụ 2 — nguồn có so sánh/phân tích thật (không chỉ định nghĩa):
+  Khái niệm: "Nguyên phân và giảm phân". Nguồn có: định nghĩa nguyên phân
+  (1 lần phân chia, tạo 2 tế bào con giống hệt tế bào mẹ), định nghĩa giảm
+  phân (2 lần phân chia liên tiếp, tạo 4 tế bào con có số nhiễm sắc thể giảm
+  một nửa), VÀ 1 đoạn so sánh riêng về vai trò: nguyên phân phục vụ sinh
+  trưởng và thay thế tế bào, giảm phân tạo giao tử cho sinh sản hữu tính.
   Lập luận: nguồn KHÔNG chỉ định nghĩa riêng lẻ — có hẳn phần so sánh cơ chế
-  + trường hợp sử dụng giữa 2 giao thức → theo ràng buộc (b), PHẢI chọn cấp
-  độ cao hơn understand, không được mặc định hạ xuống → đây là yêu cầu chỉ
-  ra mối quan hệ/khác biệt giữa 2 thành phần → chọn analyze.
+  + vai trò giữa 2 quá trình → theo ràng buộc (b), PHẢI chọn cấp độ cao hơn
+  understand, không được mặc định hạ xuống → đây là yêu cầu chỉ ra mối quan
+  hệ/khác biệt giữa 2 thành phần → chọn analyze.
   Kết quả: bloom_level=analyze, verb="phân tích", objective_text="Sau khi
-  hoàn thành module, người học có thể phân tích sự khác biệt về cơ chế
-  truyền tải, độ tin cậy và trường hợp sử dụng giữa TCP và UDP."
-  sub_objectives=["So sánh cơ chế đảm bảo tin cậy (acknowledgment/
-  retransmission) giữa TCP và UDP", "Phân biệt đặc tính độ trễ và thứ tự gói
-  tin của mỗi giao thức", "Xác định trường hợp sử dụng phù hợp cho từng giao
-  thức (truyền file vs streaming thời gian thực)"]
+  hoàn thành module, người học có thể phân tích sự khác biệt về cơ chế phân
+  chia, kết quả và vai trò giữa nguyên phân và giảm phân."
+  sub_objectives=["So sánh số lần phân chia và số tế bào con của hai quá
+  trình", "Phân biệt số nhiễm sắc thể trong tế bào con của mỗi quá trình",
+  "Xác định vai trò của từng quá trình (sinh trưởng vs sinh sản hữu tính)"]
 """
 
 
@@ -120,8 +117,8 @@ class LearningObjective(BaseModel):
     verb: str = Field(description="Động từ Bloom's dùng trong objective_text")
     objective_text: str
     sub_objectives: list[str] = Field(
-        min_length=2, max_length=3,
-        description="2-3 Enabling Objectives (sub-LO), mỗi cái nhắm 1 khía cạnh thành phần khác nhau "
+        min_length=2, max_length=4,
+        description="2-4 Enabling Objectives (sub-LO), mỗi cái nhắm 1 khía cạnh thành phần khác nhau "
         "của objective_text -- dùng để ép Content bao phủ đủ rộng nguồn, không chỉ 1 góc hẹp",
     )
 

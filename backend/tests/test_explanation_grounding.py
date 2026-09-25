@@ -11,6 +11,7 @@ import pytest
 from app.db import SessionLocal
 from app.generation import module_generation_pipeline as pipeline
 from app.generation import quiz_graph, relevance
+from app.generation.example import Example, ExampleOutput
 from app.generation.planner import Concept, PlannerOutput
 from app.generation.quiz_graph import (
     ExplanationOutput,
@@ -211,12 +212,12 @@ def test_the_explanation_is_made_from_the_passages_of_the_question_and_not_those
     monkeypatch.setattr(
         pipeline, "generate_example",
         lambda lo, content, chunks: (
-            types.SimpleNamespace(context="c", analysis="a"), types.SimpleNamespace(no_overreach_pass=True)
+            ExampleOutput(examples=[Example(context="c", analysis="a")]), types.SimpleNamespace(no_overreach_pass=True)
         ),
     )
     monkeypatch.setattr(
         pipeline, "generate_quiz_question",
-        lambda db, course_id, query, lo, mode="quiz", scope=None: {
+        lambda db, course_id, query, lo, mode="quiz", scope=None, **kwargs: {
             "passed": True, "question": _question(), "chunks": question_chunks,
         },
     )
@@ -234,10 +235,10 @@ def test_the_explanation_is_made_from_the_passages_of_the_question_and_not_those
     try:
         module = pipeline.run_module_generation(db, db.get(Document, document["doc"]))
         quiz = next(c for c in module.components if c.type == ComponentType.quiz)
-        stored_reasoning = quiz.content.get("reasoning")
+        stored_reasoning = [q["reasoning"] for q in quiz.content["questions"]]
     finally:
         db.close()
 
     assert [c.content for c in seen["chunks"]] == ["QUESTION-PASSAGE-A", "QUESTION-PASSAGE-B"]
     # Kept with the quiz, so the teacher (and anyone auditing the answer) can read it.
-    assert stored_reasoning == REASONING
+    assert stored_reasoning and all(r == REASONING for r in stored_reasoning)

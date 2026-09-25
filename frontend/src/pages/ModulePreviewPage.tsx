@@ -8,10 +8,13 @@ import {
   publishToMoodle,
   updateComponentContent,
   updateModuleTitle,
+  type ExampleItem,
+  type ExplanationItem,
   type ModuleComponentInfo,
   type ModuleDetail,
   type MoodleSection,
   type PublishToMoodleResult,
+  type QuestionCheck,
 } from '../api'
 
 const BLOOM_LABEL: Record<string, string> = {
@@ -278,7 +281,7 @@ function ComponentCard({
         <SlidesEditor moduleId={moduleId} component={component} onSaved={onSaved} />
       )}
       {component.type === 'example' && (
-        <ExampleEditor moduleId={moduleId} component={component} onSaved={onSaved} />
+        <ExamplesEditor moduleId={moduleId} component={component} onSaved={onSaved} />
       )}
       {component.type === 'explanation' && (
         <ExplanationEditor moduleId={moduleId} component={component} onSaved={onSaved} />
@@ -457,7 +460,7 @@ function SlidesEditor({
   )
 }
 
-function ExampleEditor({
+function ExamplesEditor({
   moduleId,
   component,
   onSaved,
@@ -466,17 +469,19 @@ function ExampleEditor({
   component: ModuleComponentInfo
   onSaved: () => Promise<void>
 }) {
-  const originalContext = (component.content.context as string) ?? ''
-  const originalAnalysis = (component.content.analysis as string) ?? ''
+  const original = (component.content.examples as ExampleItem[] | undefined) ?? []
   const [editing, setEditing] = useState(false)
-  const [context, setContext] = useState(originalContext)
-  const [analysis, setAnalysis] = useState(originalAnalysis)
+  const [examples, setExamples] = useState<ExampleItem[]>(original)
   const [saving, setSaving] = useState(false)
+
+  function change(index: number, field: keyof ExampleItem, value: string) {
+    setExamples((current) => current.map((e, i) => (i === index ? { ...e, [field]: value } : e)))
+  }
 
   async function handleSave() {
     setSaving(true)
     try {
-      await updateComponentContent(moduleId, component.id, { context, analysis })
+      await updateComponentContent(moduleId, component.id, { examples })
       await onSaved()
       setEditing(false)
     } finally {
@@ -485,50 +490,46 @@ function ExampleEditor({
   }
 
   return (
-    <div className="flex flex-col gap-4">
-      <div>
-        <div className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-gray-500">
-          Bối cảnh
+    <div className="flex flex-col gap-6">
+      {(editing ? examples : original).map((example, index) => (
+        <div key={index} className="flex flex-col gap-3">
+          <div className="text-sm font-semibold">Ví dụ {index + 1}</div>
+          {(['context', 'analysis'] as const).map((field) => (
+            <div key={field}>
+              <div className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-gray-500">
+                {field === 'context' ? 'Bối cảnh' : 'Phân tích'}
+              </div>
+              {editing ? (
+                <textarea
+                  aria-label={`${field === 'context' ? 'Bối cảnh' : 'Phân tích'} ví dụ ${index + 1}`}
+                  value={example[field]}
+                  onChange={(e) => change(index, field, e.target.value)}
+                  rows={4}
+                  className="w-full rounded border border-gray-300 p-3 text-sm outline-none focus:border-terracotta"
+                />
+              ) : (
+                <p className="whitespace-pre-wrap text-[15px] leading-relaxed">{example[field]}</p>
+              )}
+            </div>
+          ))}
         </div>
-        {editing ? (
-          <textarea
-            value={context}
-            onChange={(e) => setContext(e.target.value)}
-            rows={4}
-            className="w-full rounded border border-gray-300 p-3 text-sm outline-none focus:border-terracotta"
-          />
-        ) : (
-          <p className="whitespace-pre-wrap text-[15px] leading-relaxed">{originalContext}</p>
-        )}
-      </div>
-      <div>
-        <div className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-gray-500">
-          Phân tích
-        </div>
-        {editing ? (
-          <textarea
-            value={analysis}
-            onChange={(e) => setAnalysis(e.target.value)}
-            rows={4}
-            className="w-full rounded border border-gray-300 p-3 text-sm outline-none focus:border-terracotta"
-          />
-        ) : (
-          <p className="whitespace-pre-wrap text-[15px] leading-relaxed">{originalAnalysis}</p>
-        )}
-      </div>
+      ))}
       <SaveCancelRow
         editing={editing}
         saving={saving}
         onEdit={() => setEditing(true)}
         onSave={handleSave}
         onCancel={() => {
-          setContext(originalContext)
-          setAnalysis(originalAnalysis)
+          setExamples(original)
           setEditing(false)
         }}
       />
     </div>
   )
+}
+
+function explanationLabel(item: ExplanationItem): string {
+  return item.component === 'quiz' ? `Quiz - câu ${item.position + 1}` : `Practice - câu ${item.position + 1}`
 }
 
 function ExplanationEditor({
@@ -540,17 +541,19 @@ function ExplanationEditor({
   component: ModuleComponentInfo
   onSaved: () => Promise<void>
 }) {
-  const originalReasoning = (component.content.reasoning as string) ?? ''
-  const originalText = (component.content.explanation_text as string) ?? ''
+  const original = (component.content.items as ExplanationItem[] | undefined) ?? []
   const [editing, setEditing] = useState(false)
-  const [reasoning, setReasoning] = useState(originalReasoning)
-  const [text, setText] = useState(originalText)
+  const [items, setItems] = useState<ExplanationItem[]>(original)
   const [saving, setSaving] = useState(false)
+
+  function change(index: number, field: 'reasoning' | 'explanation_text', value: string) {
+    setItems((current) => current.map((item, i) => (i === index ? { ...item, [field]: value } : item)))
+  }
 
   async function handleSave() {
     setSaving(true)
     try {
-      await updateComponentContent(moduleId, component.id, { reasoning, explanation_text: text })
+      await updateComponentContent(moduleId, component.id, { items })
       await onSaved()
       setEditing(false)
     } finally {
@@ -559,45 +562,51 @@ function ExplanationEditor({
   }
 
   return (
-    <div className="flex flex-col gap-4">
-      <div>
-        <div className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-gray-500">
-          Lập luận (reasoning)
+    <div className="flex flex-col gap-6">
+      {(editing ? items : original).map((item, index) => (
+        <div key={`${item.component}-${item.position}`} className="flex flex-col gap-3">
+          <div className="text-sm font-semibold">{explanationLabel(item)}</div>
+          <div>
+            <div className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-gray-500">
+              Lập luận (reasoning)
+            </div>
+            {editing ? (
+              <textarea
+                aria-label={`Lập luận ${explanationLabel(item)}`}
+                value={item.reasoning}
+                onChange={(e) => change(index, 'reasoning', e.target.value)}
+                rows={4}
+                className="w-full rounded border border-gray-300 p-3 text-sm outline-none focus:border-terracotta"
+              />
+            ) : (
+              <p className="whitespace-pre-wrap text-sm text-gray-600">{item.reasoning}</p>
+            )}
+          </div>
+          <div>
+            <div className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-gray-500">
+              Giải thích
+            </div>
+            {editing ? (
+              <textarea
+                aria-label={`Giải thích ${explanationLabel(item)}`}
+                value={item.explanation_text}
+                onChange={(e) => change(index, 'explanation_text', e.target.value)}
+                rows={4}
+                className="w-full rounded border border-gray-300 p-3 text-sm outline-none focus:border-terracotta"
+              />
+            ) : (
+              <p className="whitespace-pre-wrap text-[15px] leading-relaxed">{item.explanation_text}</p>
+            )}
+          </div>
         </div>
-        {editing ? (
-          <textarea
-            value={reasoning}
-            onChange={(e) => setReasoning(e.target.value)}
-            rows={4}
-            className="w-full rounded border border-gray-300 p-3 text-sm outline-none focus:border-terracotta"
-          />
-        ) : (
-          <p className="whitespace-pre-wrap text-sm text-gray-600">{originalReasoning}</p>
-        )}
-      </div>
-      <div>
-        <div className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-gray-500">
-          Giải thích
-        </div>
-        {editing ? (
-          <textarea
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            rows={4}
-            className="w-full rounded border border-gray-300 p-3 text-sm outline-none focus:border-terracotta"
-          />
-        ) : (
-          <p className="whitespace-pre-wrap text-[15px] leading-relaxed">{originalText}</p>
-        )}
-      </div>
+      ))}
       <SaveCancelRow
         editing={editing}
         saving={saving}
         onEdit={() => setEditing(true)}
         onSave={handleSave}
         onCancel={() => {
-          setReasoning(originalReasoning)
-          setText(originalText)
+          setItems(original)
           setEditing(false)
         }}
       />
@@ -606,46 +615,53 @@ function ExplanationEditor({
 }
 
 function QuizDisplay({ component }: { component: ModuleComponentInfo }) {
-  const passed = component.content.passed as boolean | undefined
-  const question = component.questions[0]
+  const checks = (component.content.questions as QuestionCheck[] | undefined) ?? []
+  const questions = [...component.questions].sort((a, b) => a.position - b.position)
+  const failed = checks.filter((c) => !c.passed && c.fail_reason)
 
   return (
-    <div className="flex flex-col gap-3">
-      <span
-        className={`inline-block w-fit rounded-[3px] px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide ${
-          passed ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-        }`}
-      >
-        {passed ? 'Đạt CRAG groundedness/answerability' : 'Không đạt CRAG check'}
-      </span>
-
-      {question ? (
-        <div className="flex flex-col gap-2">
-          <p className="font-medium">{question.stem}</p>
-          <ul className="flex flex-col gap-1 text-sm">
-            {question.choices.options.map((opt, i) => (
-              <li
-                key={i}
-                className={
-                  String(i) === question.answer_key ? 'font-semibold text-green-700' : 'text-gray-700'
-                }
+    <div className="flex flex-col gap-6">
+      {questions.map((question) => {
+        const passed = checks[question.position]?.passed
+        return (
+          <div key={question.id} className="flex flex-col gap-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-sm font-semibold">Câu {question.position + 1}</span>
+              <span
+                className={`inline-block w-fit rounded-[3px] px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide ${
+                  passed ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                }`}
               >
-                {String.fromCharCode(65 + i)}. {opt}
-                {String(i) === question.answer_key ? ' ✓' : ''}
-              </li>
-            ))}
-          </ul>
-          {question.explanation && (
-            <p className="mt-1 text-sm text-gray-500">
-              <span className="font-semibold">Giải thích: </span>
-              {question.explanation}
-            </p>
-          )}
-        </div>
-      ) : (
+                {passed ? 'Đạt CRAG groundedness/answerability' : 'Không đạt CRAG check'}
+              </span>
+            </div>
+            <p className="font-medium">{question.stem}</p>
+            <ul className="flex flex-col gap-1 text-sm">
+              {question.choices.options.map((opt, i) => (
+                <li
+                  key={i}
+                  className={
+                    String(i) === question.answer_key ? 'font-semibold text-green-700' : 'text-gray-700'
+                  }
+                >
+                  {String.fromCharCode(65 + i)}. {opt}
+                  {String(i) === question.answer_key ? ' ✓' : ''}
+                </li>
+              ))}
+            </ul>
+            {question.explanation && (
+              <p className="mt-1 text-sm text-gray-500">
+                <span className="font-semibold">Giải thích: </span>
+                {question.explanation}
+              </p>
+            )}
+          </div>
+        )
+      })}
+      {questions.length === 0 && (
         <p className="text-sm text-gray-500">
           Không sinh được câu hỏi hợp lệ
-          {component.content.fail_reason ? ` (${component.content.fail_reason as string})` : ''}.
+          {failed.length > 0 ? ` (${failed.map((c) => c.fail_reason).join('; ')})` : ''}.
         </p>
       )}
       <p className="text-xs text-gray-400">

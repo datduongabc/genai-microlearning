@@ -29,6 +29,11 @@ class SlideInput(BaseModel):
     bullets: list[str]
 
 
+class ExampleInput(BaseModel):
+    context: str
+    analysis: str
+
+
 class ModuleContentInput(BaseModel):
     """Group-agnostic module content -- the on-disk shape of one blind
     rating packet. Same shape regardless of source (RAG+LLM export,
@@ -41,13 +46,14 @@ class ModuleContentInput(BaseModel):
     topic: str
     bloom_level: str
     learning_objective: str
+    sub_objectives: list[str] = Field(default_factory=list)
     content_markdown: str
     slides: list[SlideInput]
-    example_context: str
-    example_analysis: str
-    quiz: QuizQuestionInput
+    examples: list[ExampleInput]
+    # Mỗi câu mang giải thích của riêng nó (QuizQuestionInput.explanation), như một bài giảng viên
+    # soạn: lời giải đi ngay sau câu hỏi, không gom thành một mục chung cho cả quiz.
+    quiz: list[QuizQuestionInput] = Field(min_length=1)
     practice: QuizQuestionInput
-    explanation: str
     source_chunks: list[str]
 
 
@@ -96,8 +102,8 @@ khong nhac toi. Neu y bi bo sot LA CAN THIET de dat chinh learning_objective da 
 thap tuong ung. Neu y bi bo sot la chu de khac, khong lien quan learning_objective (module tu
 gioi han pham vi hop le), ghi nhan trong justification nhung KHONG tru diem.
 
-3. consistency: Quiz co dung noi dung da day trong content khong; explanation co khop dap an
-dung cua quiz khong; example co mau thuan voi content khong.
+3. consistency: Moi cau quiz co dung noi dung da day trong content khong; giai thich cua MOI cau
+co khop dap an dung cua chinh cau do khong; cac example co mau thuan voi content khong.
 
 4. hallucination_score + hallucination_findings: Liet ke CU THE tung claim trong content/quiz/
 explanation KHONG co can cu trong SOURCE CHUNK (field = "content"/"quiz"/"explanation"). Khong
@@ -107,8 +113,9 @@ chi nay du module co ve sach -- phai kiem tra tung cau.
 5. slide_quality: Cac bullet trong slides co tom tat dung, ro rang, do dai hop ly so voi content
 khong.
 
-6. quiz_quality: Quiz co dung do kho theo bloom_level khai bao khong. Cac distractor co hop ly,
-khong tam thuong/ro rang sai ngay khong.
+6. quiz_quality: Cac cau quiz co dung do kho theo bloom_level khai bao khong. Cac distractor co
+hop ly, khong tam thuong/ro rang sai ngay khong. Ca bo cau hoi co de lo dap an khong (vd dap an
+dung luon la phuong an dai nhat), va cac cau co kiem cac y khac nhau cua bai hay lap lai mot y.
 
 7. bloom_fidelity: Muc do khop giua bloom_level da khai bao va cap do THUC TE ma content/quiz/
 practice dat duoc, dung bang neo sau:
@@ -144,17 +151,23 @@ def _build_prompt(packet: ModuleContentInput) -> str:
         correct = q.choices[q.correct_index] if 0 <= q.correct_index < len(q.choices) else "(invalid correct_index)"
         return f"  {q.stem}\n    Choices: {q.choices}\n    Correct: {correct}\n    Explanation: {q.explanation}"
 
+    examples_text = "\n".join(
+        f"  Example {n} - Boi canh: {e.context}\n  Example {n} - Phan tich: {e.analysis}"
+        for n, e in enumerate(packet.examples, start=1)
+    )
+    quiz_text = "\n".join(f"  Cau {n}:\n{_question_block(q)}" for n, q in enumerate(packet.quiz, start=1))
+    sub_objectives_text = "".join(f"\n  - {s}" for s in packet.sub_objectives)
+
     return (
         f"CHU DE GOC (dung de cham query_alignment):\n{packet.topic}\n\n"
         f"MODULE CAN DANH GIA (anon_id={packet.anon_id}):\n"
-        f"Learning Objective (bloom_level={packet.bloom_level}): {packet.learning_objective}\n"
+        f"Learning Objective (bloom_level={packet.bloom_level}): {packet.learning_objective}"
+        f"{sub_objectives_text}\n"
         f"Content: {packet.content_markdown}\n"
         f"Slides:\n{slides_text}\n"
-        f"Example - Boi canh: {packet.example_context}\n"
-        f"Example - Phan tich: {packet.example_analysis}\n"
-        f"Quiz:\n{_question_block(packet.quiz)}\n"
-        f"Practice:\n{_question_block(packet.practice)}\n"
-        f"Explanation: {packet.explanation}\n\n"
+        f"Examples:\n{examples_text}\n"
+        f"Quiz (moi cau kem giai thich rieng):\n{quiz_text}\n"
+        f"Practice:\n{_question_block(packet.practice)}\n\n"
         f"SOURCE CHUNK GOC (dung de doi chieu do chinh xac/hallucination):\n{source_text}\n\n"
         f"Hay danh gia module tren theo dung 9 tieu chi da huong dan. Truong anon_id trong ket "
         f"qua phai dung bang \"{packet.anon_id}\"."

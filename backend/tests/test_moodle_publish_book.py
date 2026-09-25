@@ -29,7 +29,9 @@ from app.moodle import client as moodle_client
 client = TestClient(app)
 
 EXPLANATION = "Vì sao B đúng và ba phương án còn lại sai: EXPLANATION-MARKER."
+EXPLANATION_2 = "Lời giải của câu thứ hai: EXPLANATION-2-MARKER."
 QUIZ_STEM = "Encapsulation là gì? QUIZ-STEM-MARKER"
+QUIZ_STEM_2 = "Vì sao dùng private? QUIZ-STEM-2-MARKER"
 
 
 @pytest.fixture
@@ -83,10 +85,10 @@ class Published:
                 component = ModuleComponent(module_id=module.id, type=type_, content=content)
                 db.add(component)
                 db.flush()
-                for stem, explanation in questions:
+                for position, (stem, explanation) in enumerate(questions):
                     db.add(Question(
-                        component_id=component.id, stem=stem, choices={"options": ["A", "B", "C", "D"]},
-                        answer_key="1", explanation=explanation,
+                        component_id=component.id, position=position, stem=stem,
+                        choices={"options": ["A", "B", "C", "D"]}, answer_key="1", explanation=explanation,
                     ))
             db.commit()
             return module.id
@@ -133,10 +135,20 @@ def full_module(p: Published, **overrides) -> uuid.UUID:
                 ]},
                 [],
             ),
-            (ComponentType.example, {"context": "Tài khoản ngân hàng", "analysis": "Số dư là private"}, []),
-            (ComponentType.quiz, {"passed": True}, [(QUIZ_STEM, "Giải thích ngắn của câu hỏi quiz")]),
-            (ComponentType.practice, {"passed": True}, [("Câu luyện tập PRACTICE-STEM", "Giải thích của câu luyện tập")]),
-            (ComponentType.explanation, {"reasoning": "r", "explanation_text": EXPLANATION}, []),
+            (ComponentType.example, {"examples": [
+                {"context": "Tài khoản ngân hàng", "analysis": "Số dư là private"},
+                {"context": "Hồ sơ sinh viên", "analysis": "Điểm chỉ sửa qua phương thức"},
+            ]}, []),
+            (
+                ComponentType.quiz, {"questions": [{"passed": True}, {"passed": True}]},
+                [(QUIZ_STEM, "Giải thích ngắn của câu hỏi quiz"), (QUIZ_STEM_2, "Giải thích ngắn của câu hai")],
+            ),
+            (ComponentType.practice, {"questions": [{"passed": True}]},
+             [("Câu luyện tập PRACTICE-STEM", "Giải thích của câu luyện tập")]),
+            (ComponentType.explanation, {"items": [
+                {"component": "quiz", "position": 0, "reasoning": "r", "explanation_text": EXPLANATION},
+                {"component": "quiz", "position": 1, "reasoning": "r", "explanation_text": EXPLANATION_2},
+            ]}, []),
         ],
         **fields,
     )
@@ -211,14 +223,14 @@ def test_every_slide_is_a_short_sub_chapter_of_the_slide_chapter(published, mood
     assert chapters[slide_at + 3]["title"] == "Ví dụ"
 
 
-def test_the_content_and_the_example_are_in_their_chapters(published, moodle):
+def test_the_content_and_every_example_are_in_their_chapters(published, moodle):
     published.publish(full_module(published))
 
     by_title = {c["title"]: _text(c["content"]) for c in _book(moodle)["chapters"]}
 
     assert "Gộp dữ liệu và phương thức" in by_title["Nội dung"]
-    assert "Tài khoản ngân hàng" in by_title["Ví dụ"]
-    assert "Số dư là private" in by_title["Ví dụ"]
+    for text in ("Tài khoản ngân hàng", "Số dư là private", "Hồ sơ sinh viên", "Điểm chỉ sửa qua phương thức"):
+        assert text in by_title["Ví dụ"]
 
 
 def test_chapter_fields_are_what_moodle_expects(published, moodle):
@@ -238,8 +250,19 @@ def test_the_explanation_is_not_in_the_book_but_is_the_feedback_of_the_quiz_ques
     assert "EXPLANATION-MARKER" not in book_text
 
     quiz = next(q for q in _quizzes(moodle) if q["name"].endswith("- Quiz"))
-    assert [q["stem"] for q in quiz["questions"]] == [QUIZ_STEM]
     assert "EXPLANATION-MARKER" in quiz["questions"][0]["explanation"]
+
+
+def test_every_quiz_question_gets_the_explanation_written_for_it_in_order(published, moodle):
+    """Các câu của một quiz cùng được tạo trong một transaction: nếu thứ tự không được giữ bằng vị
+    trí, lời giải của câu này sẽ nằm dưới câu kia."""
+    published.publish(full_module(published))
+
+    quiz = next(q for q in _quizzes(moodle) if q["name"].endswith("- Quiz"))
+
+    assert [q["stem"] for q in quiz["questions"]] == [QUIZ_STEM, QUIZ_STEM_2]
+    assert "EXPLANATION-MARKER" in quiz["questions"][0]["explanation"]
+    assert "EXPLANATION-2-MARKER" in quiz["questions"][1]["explanation"]
 
 
 def test_the_practice_question_keeps_its_own_explanation(published, moodle):
@@ -256,7 +279,7 @@ def test_a_quiz_without_a_generated_explanation_keeps_the_question_explanation(p
         learning_objective="Mục tiêu",
         components=[
             (ComponentType.content, {"markdown": "Nội dung"}, []),
-            (ComponentType.quiz, {"passed": True}, [("Câu hỏi", "Giải thích của chính câu hỏi")]),
+            (ComponentType.quiz, {"questions": [{"passed": True}]}, [("Câu hỏi", "Giải thích của chính câu hỏi")]),
         ],
     )
 
@@ -301,9 +324,11 @@ def test_nothing_active_from_the_source_reaches_moodle(published, moodle, hostil
         components=[
             (ComponentType.content, {"markdown": f"## Tiêu đề\n\n{hostile}\n\n- mục {hostile}"}, []),
             (ComponentType.slides, {"slides": [{"title": f"Slide {hostile}", "bullets": [f"ý {hostile}", "ý thường"]}]}, []),
-            (ComponentType.example, {"context": f"Bối cảnh {hostile}", "analysis": f"Phân tích {hostile}"}, []),
-            (ComponentType.quiz, {"passed": True}, [(f"Hỏi {hostile}", f"Giải thích {hostile}")]),
-            (ComponentType.explanation, {"reasoning": "r", "explanation_text": f"Đáp {hostile}"}, []),
+            (ComponentType.example, {"examples": [{"context": f"Bối cảnh {hostile}", "analysis": f"Phân tích {hostile}"}]}, []),
+            (ComponentType.quiz, {"questions": [{"passed": True}]}, [(f"Hỏi {hostile}", f"Giải thích {hostile}")]),
+            (ComponentType.explanation, {"items": [
+                {"component": "quiz", "position": 0, "reasoning": "r", "explanation_text": f"Đáp {hostile}"},
+            ]}, []),
         ],
     )
 

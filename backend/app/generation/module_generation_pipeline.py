@@ -8,6 +8,7 @@ app/api/modules.py, không đổi hành vi) -- chỉ đổi cách được gọi
 duy nhất cho "có đang sinh dở không", không cần 2 cơ chế song song)."""
 
 import uuid
+from dataclasses import dataclass
 
 from sqlalchemy.orm import Session
 
@@ -16,7 +17,12 @@ from app.generation.content import generate_content
 from app.generation.example import generate_example
 from app.generation.objective import generate_learning_objective
 from app.generation.planner import PLANNER_MAX_INPUT_CHARS, Concept, PlannerOutput, run_planner
-from app.generation.quiz_graph import generate_explanation, generate_quiz_question
+from app.generation.quiz_graph import (
+    LENGTH_TELL_FEEDBACK,
+    generate_explanation,
+    generate_quiz_question,
+    question_to_rebalance,
+)
 from app.generation.relevance import corrective_retrieve
 from app.generation.scope_digest import build_scope_digest
 from app.generation.slides import generate_slides
@@ -74,36 +80,86 @@ def _log_hallucination_check(db: Session, module_id: uuid.UUID, criterion: str, 
     db.add(Evaluation(module_id=module_id, criterion=criterion, score=1.0 if passed else 0.0))
 
 
-def _save_quiz_component(db: Session, module_id: uuid.UUID, quiz_type: ComponentType, quiz_state: dict) -> None:
-    question = quiz_state.get("question")
-    component = ModuleComponent(
-        module_id=module_id,
-        type=quiz_type,
-        content={
-            "passed": quiz_state.get("passed", False),
-            "relevance_confidence": quiz_state.get("relevance_confidence"),
-            "relevance_retry_count": quiz_state.get("relevance_retry_count", 0),
-            "correction_retry_count": quiz_state.get("correction_retry_count", 0),
-            "fail_reason": quiz_state.get("fail_reason"),
-            # Written before the answer was chosen: kept so a teacher can read why this is the
-            # answer, and so the answer can be audited against it.
-            "reasoning": question.reasoning if question is not None else None,
-        },
-    )
-    db.add(component)
-    db.flush()
+# Một bài 5-10 phút: mỗi câu quiz kiểm một sub-objective, tối đa ba câu.
+MAX_QUIZ_QUESTIONS = 3
 
-    db.add(Evaluation(module_id=module_id, criterion=f"{quiz_type.value}_groundedness_answerability_pass",
-                       score=1.0 if quiz_state.get("passed") else 0.0))
 
-    if question is not None:
-        db.add(QuestionModel(
-            component_id=component.id,
-            stem=question.stem,
-            choices={"options": question.choices},
-            answer_key=str(question.correct_index),
-            explanation=question.explanation,
-        ))
+@dataclass
+class _Asked:
+    """Một câu hỏi đã sinh: thuộc quiz hay practice, nó kiểm điều gì, và kết quả của đồ thị quiz."""
+
+    type: ComponentType
+    target: str
+    state: dict
+
+
+def _generate_questions(db: Session, doc: Document, lo, practice_query: str, scope) -> list[_Asked]:
+    """Quiz: một câu cho mỗi sub-objective (tối đa MAX_QUIZ_QUESTIONS), để cả bộ phủ đủ các phần
+    của bài thay vì hỏi lại một ý. Practice: một câu luyện tập theo khái niệm chính."""
+    asked = [
+        _Asked(ComponentType.quiz, target, generate_quiz_question(db, doc.course_id, target, lo, "quiz", scope))
+        for target in lo.sub_objectives[:MAX_QUIZ_QUESTIONS]
+    ]
+    asked.append(_Asked(
+        ComponentType.practice, practice_query,
+        generate_quiz_question(db, doc.course_id, practice_query, lo, "practice", scope),
+    ))
+
+    made = [a for a in asked if a.state.get("question") is not None]
+    index = question_to_rebalance([a.state["question"] for a in made])
+    if index is not None:
+        stale = made[index]
+        redone = generate_quiz_question(
+            db, doc.course_id, stale.target, lo, stale.type.value, scope, feedback=LENGTH_TELL_FEEDBACK
+        )
+        # Lần sinh lại không ra câu nào thì giữ câu cũ: một bộ lộ đáp án qua độ dài vẫn hơn một bộ thiếu câu.
+        if redone.get("question") is not None:
+            stale.state = redone
+    return asked
+
+
+def _save_questions(
+    db: Session, module_id: uuid.UUID, asked: list[_Asked], explanations: dict[int, str]
+) -> None:
+    """Mỗi loại (quiz, practice) một thành phần, mỗi câu một Question theo đúng thứ tự sinh.
+    `explanations`: lời giải thích đã kiểm của từng câu, theo vị trí trong `asked`."""
+    for component_type in (ComponentType.quiz, ComponentType.practice):
+        mine = [(i, a) for i, a in enumerate(asked) if a.type == component_type]
+        component = ModuleComponent(
+            module_id=module_id,
+            type=component_type,
+            content={"questions": [
+                {
+                    "target": a.target,
+                    "passed": a.state.get("passed", False),
+                    "relevance_confidence": a.state.get("relevance_confidence"),
+                    "relevance_retry_count": a.state.get("relevance_retry_count", 0),
+                    "correction_retry_count": a.state.get("correction_retry_count", 0),
+                    "fail_reason": a.state.get("fail_reason"),
+                    # Written before the answer was chosen: kept so a teacher can read why this is
+                    # the answer, and so the answer can be audited against it.
+                    "reasoning": a.state["question"].reasoning if a.state.get("question") is not None else None,
+                }
+                for _, a in mine
+            ]},
+        )
+        db.add(component)
+        db.flush()
+        for position, (i, a) in enumerate(mine):
+            db.add(Evaluation(
+                module_id=module_id, criterion=f"{component_type.value}_{position + 1}_groundedness_answerability_pass",
+                score=1.0 if a.state.get("passed") else 0.0,
+            ))
+            question = a.state.get("question")
+            if question is not None:
+                db.add(QuestionModel(
+                    component_id=component.id,
+                    position=position,
+                    stem=question.stem,
+                    choices={"options": question.choices},
+                    answer_key=str(question.correct_index),
+                    explanation=explanations.get(i, question.explanation),
+                ))
 
 
 def run_module_generation(db: Session, doc: Document, section: DocumentSection | None = None) -> Module:
@@ -197,25 +253,34 @@ def run_module_generation(db: Session, doc: Document, section: DocumentSection |
     example_out, example_check = generate_example(lo, content_out.content, context_chunks)
     db.add(ModuleComponent(
         module_id=module.id, type=ComponentType.example,
-        content={"context": example_out.context, "analysis": example_out.analysis},
+        content={"examples": [e.model_dump() for e in example_out.examples]},
     ))
     _log_hallucination_check(db, module.id, "example_no_overreach_pass", example_check.no_overreach_pass)
 
-    quiz_state = generate_quiz_question(db, doc.course_id, query, lo, mode="quiz", scope=scope)
-    _save_quiz_component(db, module.id, ComponentType.quiz, quiz_state)
+    asked = _generate_questions(db, doc, lo, query, scope)
 
-    practice_state = generate_quiz_question(db, doc.course_id, query, lo, mode="practice", scope=scope)
-    _save_quiz_component(db, module.id, ComponentType.practice, practice_state)
-
-    if quiz_state.get("question") is not None:
-        # The passages the question was made and checked against, not those of the objective:
-        # the explanation has to stand on the same ground as the answer it explains.
-        explanation_out, explanation_check = generate_explanation(quiz_state["question"], quiz_state["chunks"])
-        _log_hallucination_check(db, module.id, "explanation_grounded_pass", explanation_check.grounded_pass)
-        db.add(ModuleComponent(
-            module_id=module.id, type=ComponentType.explanation,
-            content={"reasoning": explanation_out.reasoning, "explanation_text": explanation_out.explanation_text},
-        ))
+    # One explanation per question, each from the passages that very question was made and checked
+    # against, not those of the objective: it has to stand on the same ground as the answer it explains.
+    items, explanations = [], {}
+    positions = {ComponentType.quiz: 0, ComponentType.practice: 0}
+    for i, a in enumerate(asked):
+        position = positions[a.type]
+        positions[a.type] += 1
+        question = a.state.get("question")
+        if question is None:
+            continue
+        explanation_out, explanation_check = generate_explanation(question, a.state["chunks"])
+        _log_hallucination_check(
+            db, module.id, f"{a.type.value}_{position + 1}_explanation_grounded_pass", explanation_check.grounded_pass
+        )
+        explanations[i] = explanation_out.explanation_text
+        items.append({
+            "component": a.type.value, "position": position,
+            "reasoning": explanation_out.reasoning, "explanation_text": explanation_out.explanation_text,
+        })
+    _save_questions(db, module.id, asked, explanations)
+    if items:
+        db.add(ModuleComponent(module_id=module.id, type=ComponentType.explanation, content={"items": items}))
 
     db.commit()
     db.refresh(module)

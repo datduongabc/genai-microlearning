@@ -332,7 +332,10 @@ def generate_quiz_question(
     lo: LearningObjective,
     mode: Literal["quiz", "practice"] = "quiz",
     scope: ChunkScope | None = None,
+    feedback: str | None = None,
 ) -> QuizGenState:
+    """`feedback`: lý do lần sinh trước của chính câu này không đạt, khi lỗi chỉ thấy được ở cấp
+    cả bộ câu hỏi (ví dụ đáp án đúng dài nhất ở mọi câu) nên bước kiểm từng câu không bắt được."""
     global _compiled_graph
     if _compiled_graph is None:
         _compiled_graph = build_quiz_graph()
@@ -341,7 +344,36 @@ def generate_quiz_question(
         "db": db, "course_id": course_id, "query": query, "lo": lo, "mode": mode, "scope": scope,
         "relevance_retry_count": 0, "correction_retry_count": 0,
     }
+    if feedback:
+        initial_state["correction_feedback"] = feedback
     return _compiled_graph.invoke(initial_state)
+
+
+# Đáp án đúng được phép là phương án dài nhất ở một số câu, nhưng không phải ở mọi câu: khi cả bộ
+# đều như vậy, người học đoán đúng chỉ bằng cách chọn phương án dài nhất mà không cần hiểu bài. Cấm
+# ở từng câu thì lại tạo ra mẹo ngược lại ("phương án dài nhất chắc chắn sai"), nên luật đặt ở cấp
+# cả bộ câu hỏi của một module.
+LENGTH_TELL_FEEDBACK = (
+    "Ở mọi câu hỏi của bài, đáp án đúng đều là phương án dài nhất, nên người học đoán được đáp án "
+    "chỉ nhờ độ dài. Viết lại câu này sao cho đáp án đúng không dài hơn các phương án nhiễu: các "
+    "phương án nhiễu phải chi tiết và cụ thể ngang đáp án đúng."
+)
+
+
+def question_to_rebalance(questions: list[QuizQuestion]) -> int | None:
+    """Câu nên sinh lại khi đáp án đúng dài nhất ở mọi câu của bộ: câu có đáp án đúng dài vượt
+    trội nhất so với phương án dài kế tiếp. None khi có ít nhất một câu mà đáp án đúng không dài
+    nhất, hoặc bộ chỉ có một câu (một câu đơn lẻ thì dài nhất là chuyện bình thường)."""
+    if len(questions) < 2:
+        return None
+    margins = []
+    for q in questions:
+        lengths = [len(c.strip()) for c in q.choices]
+        longest_other = max(n for i, n in enumerate(lengths) if i != q.correct_index)
+        if lengths[q.correct_index] <= longest_other:
+            return None
+        margins.append(lengths[q.correct_index] / max(1, longest_other))
+    return max(range(len(margins)), key=margins.__getitem__)
 
 
 # ---------------------------------------------------------------------------
