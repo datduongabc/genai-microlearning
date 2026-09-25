@@ -161,3 +161,31 @@ def test_a_rerun_only_judges_the_packets_still_missing(tmp_path, judge):
 
     assert len(judge) == 1
     assert sorted(line["anon_id"] for line in _lines(out)) == sorted(json.loads(x)["anon_id"] for x in first)
+
+
+def test_a_second_judge_on_the_same_output_file_judges_every_packet(tmp_path, judge):
+    _write_pairs(tmp_path, pairs=2)
+    out = tmp_path / "o.jsonl"
+    run_judge.main([str(tmp_path), "--judge", "claude-pro", "--out", str(out)])
+    judge.clear()
+
+    run_judge.main([str(tmp_path), "--judge", "groq-pro", "--out", str(out)])
+
+    assert len(judge) == 4
+    assert sorted(line["judge"] for line in _lines(out)) == ["claude-pro"] * 4 + ["groq-pro"] * 4
+
+
+def test_a_line_cut_mid_character_by_an_interrupted_run_is_trimmed_and_judged_again(tmp_path, judge):
+    """Dòng ghi dở cắt đôi một ký tự tiếng Việt nhiều byte: chạy lại không hỏng mà chấm lại gói đó."""
+    _write_pairs(tmp_path, pairs=2)
+    out = tmp_path / "o.jsonl"
+    run_judge.main([str(tmp_path), "--judge", "claude-pro", "--out", str(out)])
+    complete = out.read_bytes().splitlines(keepends=True)
+    cut = complete[3][: complete[3].index("ổn".encode()) + 1]
+    out.write_bytes(b"".join(complete[:3]) + cut)
+    judge.clear()
+
+    run_judge.main([str(tmp_path), "--judge", "claude-pro", "--out", str(out)])
+
+    assert len(judge) == 1
+    assert sorted(line["anon_id"] for line in _lines(out)) == sorted(json.loads(x)["anon_id"] for x in complete)

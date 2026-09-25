@@ -21,12 +21,12 @@ from scripts import analyze_study
 CRITERIA = analyze_study.CRITERIA
 
 
-def _line(anon_id, pair_id, group, accuracy=3, other=3, findings=0) -> dict:
+def _line(anon_id, pair_id, group, accuracy=3, other=3, findings=0, judge="j") -> dict:
     scores = {c: {"score": other, "justification": ""} for c in CRITERIA}
     scores["accuracy"] = {"score": accuracy, "justification": ""}
     finding = {"claim": "c", "field": "content", "reason": "r"}
     evaluation = {"anon_id": anon_id, **scores, "hallucination_findings": [finding] * findings, "overall_notes": ""}
-    return {"anon_id": anon_id, "pair_id": pair_id, "group": group, "judge": "j", "evaluation": evaluation}
+    return {"anon_id": anon_id, "pair_id": pair_id, "group": group, "judge": judge, "evaluation": evaluation}
 
 
 def _write(path, lines) -> str:
@@ -42,7 +42,7 @@ def study(tmp_path):
     for n, rag_accuracy in enumerate((2, 3, 4, 5)):
         lines.append(_line(f"R{n}", f"cap-{n}", "rag_llm", accuracy=rag_accuracy))
         lines.append(_line(f"N{n}", f"cap-{n}", "llm_no_rag", accuracy=1, findings=2))
-    return analyze_study.load_judgements(_write(tmp_path / "judge.jsonl", lines))
+    return analyze_study.load_judgements([_write(tmp_path / "judge.jsonl", lines)])["j"]
 
 
 def test_the_criteria_are_the_eight_scored_dimensions_of_the_rubric():
@@ -83,7 +83,7 @@ def test_mcnemar_on_having_at_least_one_hallucination(study):
 
 
 def test_a_packet_whose_pair_is_missing_is_left_out_of_the_paired_tests(tmp_path, study):
-    alone = analyze_study.load_judgements(_write(tmp_path / "x.jsonl", [_line("L", "le", "rag_llm", accuracy=5)]))
+    alone = analyze_study.load_judgements([_write(tmp_path / "x.jsonl", [_line("L", "le", "rag_llm", accuracy=5)])])["j"]
 
     assert analyze_study.compare_groups(study + alone)["accuracy"]["n"] == 4
 
@@ -127,10 +127,13 @@ def test_a_human_score_outside_the_scale_is_rejected(tmp_path):
         analyze_study.load_human(str(human))
 
 
+def _lines_of(study, judge) -> list[dict]:
+    return [_line(r.anon_id, r.pair_id, r.group, r.scores["accuracy"], judge=judge) for r in study]
+
+
 def test_the_report_covers_both_judges_and_the_human(tmp_path, study):
-    lines = [json.loads(json.dumps(_line(r.anon_id, r.pair_id, r.group, r.scores["accuracy"]))) for r in study]
-    first = _write(tmp_path / "a.jsonl", lines)
-    second = _write(tmp_path / "b.jsonl", lines)
+    first = _write(tmp_path / "a.jsonl", _lines_of(study, "a"))
+    second = _write(tmp_path / "b.jsonl", _lines_of(study, "b"))
     human = tmp_path / "human.csv"
     human.write_text("anon_id,accuracy\n" + "".join(f"{r.anon_id},{r.scores['accuracy']}\n" for r in study))
     out = tmp_path / "report.json"
@@ -142,3 +145,30 @@ def test_the_report_covers_both_judges_and_the_human(tmp_path, study):
     assert report["judges"]["a"]["wilcoxon"]["accuracy"]["p"] == pytest.approx(0.125)
     assert report["agreement"]["a~b"]["accuracy"]["kappa"] == pytest.approx(1.0)
     assert report["agreement"]["a~human"]["accuracy"]["n"] == 8
+
+
+def test_one_file_holding_two_judges_is_split_by_judge(tmp_path, study):
+    """run_judge ghi mô hình chấm thứ hai vào cùng tệp: phân tích tách thành hai mô hình chấm, không
+    gộp điểm của cả hai vào một bảng."""
+    mixed = _write(tmp_path / "r.jsonl", _lines_of(study, "claude-pro") + _lines_of(study, "groq-pro"))
+    out = tmp_path / "report.json"
+
+    analyze_study.main([mixed, "--out", str(out)])
+
+    report = json.loads(out.read_text(encoding="utf-8"))
+    assert set(report["judges"]) == {"claude-pro", "groq-pro"}
+    for judge in report["judges"].values():
+        assert judge["wilcoxon"]["accuracy"]["n"] == 4
+        assert judge["wilcoxon"]["accuracy"]["p"] == pytest.approx(0.125)
+    assert report["agreement"]["claude-pro~groq-pro"]["accuracy"]["n"] == 8
+    assert report["agreement"]["claude-pro~groq-pro"]["accuracy"]["kappa"] == pytest.approx(1.0)
+
+
+def test_a_packet_judged_twice_by_the_same_judge_is_refused(tmp_path, study):
+    first = _write(tmp_path / "a.jsonl", _lines_of(study, "claude-pro"))
+    again = _write(tmp_path / "b.jsonl", _lines_of(study, "claude-pro")[:1])
+
+    with pytest.raises(SystemExit) as refused:
+        analyze_study.load_judgements([first, again])
+
+    assert "claude-pro" in str(refused.value.code)

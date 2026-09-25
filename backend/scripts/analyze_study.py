@@ -1,21 +1,24 @@
 """Phân tích kết quả chấm của nghiên cứu RAG so với không RAG.
 
-    uv run python scripts/analyze_study.py <judge_a.jsonl> [<judge_b.jsonl>] [--human <ratings.csv>] [--out <report.json>]
+    uv run python scripts/analyze_study.py <judge.jsonl>... [--human <ratings.csv>] [--out <report.json>]
 
-Đầu vào là các tệp do scripts/run_judge.py ghi, mỗi mô hình chấm một tệp, và tuỳ chọn một tệp CSV điểm
-của người chấm (cột anon_id cùng các cột tiêu chí, xem docs/rubric.md). Với từng mô hình chấm:
+Đầu vào là các tệp do scripts/run_judge.py ghi, và tuỳ chọn một tệp CSV điểm của người chấm (cột anon_id
+cùng các cột tiêu chí, xem docs/rubric.md). Các dòng được tách theo mô hình chấm ghi trong dòng, không
+theo tệp: một tệp có thể chứa nhiều mô hình chấm, và một mô hình chấm có thể nằm ở nhiều tệp. Với từng
+mô hình chấm:
 
 - điểm trung bình mỗi tiêu chí của từng nhóm;
 - Wilcoxon signed-rank hai phía trên các cặp cùng chủ đề (rag_llm trừ llm_no_rag) cho từng tiêu chí,
   kèm p đã hiệu chỉnh Holm cho tám tiêu chí. Các cặp chênh 0 bị loại theo cách của Wilcoxon;
 - McNemar chính xác (kiểm nhị thức trên các cặp bất đồng) cho "có ít nhất một hallucination".
 
-Giữa hai mô hình chấm, và giữa mỗi mô hình chấm với người: Spearman và kappa trọng số bậc hai trên
+Giữa từng cặp mô hình chấm, và giữa mỗi mô hình chấm với người: Spearman và kappa trọng số bậc hai trên
 thang 1-5, ghép theo mã ẩn danh. Một chỉ số không xác định (ví dụ mọi điểm bằng nhau) ghi là null.
 """
 
 import argparse
 import csv
+import itertools
 import json
 import math
 import sys
@@ -41,19 +44,25 @@ class Judged:
     hallucinated: bool
 
 
-def load_judgements(path: str) -> list[Judged]:
-    rows = []
-    for line in Path(path).read_text(encoding="utf-8").splitlines():
-        if not line.strip():
-            continue
-        raw = json.loads(line)
-        evaluation = ModuleEvaluation.model_validate(raw["evaluation"])
-        rows.append(Judged(
-            anon_id=raw["anon_id"], pair_id=raw["pair_id"], group=raw["group"],
-            scores={c: getattr(evaluation, c).score for c in CRITERIA},
-            hallucinated=bool(evaluation.hallucination_findings),
-        ))
-    return rows
+def load_judgements(paths: list[str]) -> dict[str, list[Judged]]:
+    """Các dòng chấm của mọi tệp, tách theo mô hình chấm. Một gói được cùng mô hình chấm chấm hai lần thì
+    dừng: giữ lần nào cũng là chọn điểm một cách tuỳ tiện."""
+    by_judge: dict[str, dict[str, Judged]] = {}
+    for path in paths:
+        for line in Path(path).read_text(encoding="utf-8").splitlines():
+            if not line.strip():
+                continue
+            raw = json.loads(line)
+            judged = by_judge.setdefault(raw["judge"], {})
+            if raw["anon_id"] in judged:
+                raise SystemExit(f"{path}: mô hình chấm {raw['judge']} chấm gói {raw['anon_id']} hai lần")
+            evaluation = ModuleEvaluation.model_validate(raw["evaluation"])
+            judged[raw["anon_id"]] = Judged(
+                anon_id=raw["anon_id"], pair_id=raw["pair_id"], group=raw["group"],
+                scores={c: getattr(evaluation, c).score for c in CRITERIA},
+                hallucinated=bool(evaluation.hallucination_findings),
+            )
+    return {judge: list(rows.values()) for judge, rows in by_judge.items()}
 
 
 def _finite(value: float) -> float | None:
@@ -203,25 +212,21 @@ def _print_report(report: dict) -> None:
 def main(argv: list[str] | None = None) -> None:
     sys.stdout.reconfigure(encoding="utf-8")
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("judges", nargs="+", help="một hoặc hai tệp .jsonl của scripts/run_judge.py")
+    parser.add_argument("judges", nargs="+", help="các tệp .jsonl của scripts/run_judge.py")
     parser.add_argument("--human", help="CSV điểm của người chấm")
     parser.add_argument("--out", type=Path, help="ghi thêm báo cáo dạng JSON vào tệp này")
     args = parser.parse_args(argv)
-    if len(args.judges) > 2:
-        parser.error("tối đa hai tệp mô hình chấm")
 
-    loaded = {Path(p).stem: load_judgements(p) for p in args.judges}
-    if len(loaded) != len(args.judges):
-        parser.error("hai tệp mô hình chấm phải có tên khác nhau")
+    loaded = load_judgements(args.judges)
     report = {"judges": {}, "agreement": {}}
     for name, rows in loaded.items():
         report["judges"][name] = {
             "means": group_means(rows), "wilcoxon": compare_groups(rows), "mcnemar": mcnemar_hallucination(rows),
         }
-    names = list(loaded)
-    if len(names) == 2:
-        report["agreement"][f"{names[0]}~{names[1]}"] = agreement(
-            scores_by_code(loaded[names[0]]), scores_by_code(loaded[names[1]])
+    names = sorted(loaded)
+    for first, second in itertools.combinations(names, 2):
+        report["agreement"][f"{first}~{second}"] = agreement(
+            scores_by_code(loaded[first]), scores_by_code(loaded[second])
         )
     if args.human:
         human = load_human(args.human)

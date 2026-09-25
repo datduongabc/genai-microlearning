@@ -32,6 +32,7 @@ from app.models import (
     User,
     UserRole,
 )
+from scripts import export_study_pair
 from scripts.export_study_pair import model_that_made
 
 SOURCES = ["NGUON-BI-MAT-1: một đoạn của giáo trình", "NGUON-BI-MAT-2: đoạn khác"]
@@ -198,6 +199,22 @@ def test_the_model_of_the_pair_is_the_one_that_made_the_rag_module(rag_module):
         assert model_that_made(db, uuid.uuid4()) is None
     finally:
         db.close()
+
+
+def test_each_exported_file_records_the_model_that_made_its_own_packet(rag_module, llm, tmp_path):
+    """--model chỉ đổi model của bản không RAG; bản RAG vẫn do model trong job sinh module làm ra, và
+    bước chấm dựa vào đó để từ chối mô hình chấm cùng hãng."""
+    module_id = rag_module.ids["module"]
+
+    export_study_pair.main([str(module_id), "--out", str(tmp_path), "--model", "claude-fast"])
+
+    def generator(group):
+        path = tmp_path / f"{module_id}-{group}.json"
+        return study_packets.StudyFile.model_validate_json(path.read_text(encoding="utf-8")).generator_model
+
+    assert generator("rag_llm") == "groq-pro"
+    assert generator("llm_no_rag") == "claude-fast"
+    assert {call["alias"] for call in llm.calls} == {"claude-fast"}
 
 
 def test_the_rag_packet_keeps_question_order_and_the_teachers_edited_explanation(rag_module, llm):

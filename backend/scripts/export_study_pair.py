@@ -33,28 +33,29 @@ def model_that_made(db, module_id: uuid.UUID) -> str | None:
     return (job.payload or {}).get("model_alias") if job is not None else None
 
 
-def main() -> None:
+def main(argv: list[str] | None = None) -> None:
     sys.stdout.reconfigure(encoding="utf-8")
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("module_id", type=uuid.UUID)
     parser.add_argument("--out", type=Path, required=True)
     parser.add_argument("--model", default=None, help="ghi đè model của bản không RAG")
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
     db = SessionLocal()
     try:
         module = db.get(Module, args.module_id)
         if module is None:
             raise SystemExit(f"Không có module {args.module_id}")
-        alias = args.model or model_that_made(db, module.id)
-        rag, no_rag = study_pair(db, module, alias)
+        rag_alias = model_that_made(db, module.id)
+        no_rag_alias = args.model or rag_alias
+        rag, no_rag = study_pair(db, module, no_rag_alias)
     finally:
         db.close()
 
-    # Ghi tên alias thật chứ không để trống: bước chấm cần biết hãng của model đã sinh.
-    generator = alias or gateway.active_model()
+    # Ghi tên alias thật chứ không để trống: bước chấm cần biết hãng của model đã sinh từng gói.
     args.out.mkdir(parents=True, exist_ok=True)
-    for group, packet in (("rag_llm", rag), ("llm_no_rag", no_rag)):
+    for group, packet, alias in (("rag_llm", rag, rag_alias), ("llm_no_rag", no_rag, no_rag_alias)):
+        generator = alias or gateway.active_model()
         study = StudyFile(pair_id=str(args.module_id), group=group, generator_model=generator, packet=packet)
         path = args.out / f"{args.module_id}-{group}.json"
         path.write_text(json.dumps(study.model_dump(), ensure_ascii=False, indent=2), encoding="utf-8")

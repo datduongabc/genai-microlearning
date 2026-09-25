@@ -11,8 +11,9 @@ mình (self-preference bias). Hãng là nơi làm ra model chứ không phải n
 Groq vẫn là model của OpenAI. Kiểm cho mọi gói trước khi gọi lượt nào, để một thư mục lẫn gói không
 hợp lệ không tốn tiền nửa chừng rồi mới dừng.
 
-Chạy lại với cùng tệp kết quả thì chỉ chấm những gói còn thiếu: lượt chấm trả tiền bị ngắt giữa chừng
-(hết hạn mức, mất mạng) không phải trả lại cho phần đã xong.
+Chạy lại với cùng tệp kết quả thì chỉ chấm những gói mô hình chấm này còn thiếu: lượt chấm trả tiền bị
+ngắt giữa chừng (hết hạn mức, mất mạng) không phải trả lại cho phần đã xong. Mô hình chấm khác ghi vào
+cùng tệp thì chấm đủ mọi gói; scripts/analyze_study.py tách các dòng theo mô hình chấm.
 
 Tốn một lượt gọi LLM thật cho mỗi gói, qua gateway.
 """
@@ -82,10 +83,21 @@ def _refuse_same_family(judge: str, studies: list[tuple[Path, StudyFile]]) -> st
     return models[judge]
 
 
-def _already_judged(out: Path) -> set[str]:
+def _already_judged(out: Path) -> set[tuple[str, str]]:
+    """Các cặp (mã ẩn danh, mô hình chấm) đã có trong tệp kết quả. Dòng cuối dở dang do lượt trước bị
+    ngắt giữa lúc ghi (có thể cắt đôi một ký tự tiếng Việt) bị cắt bỏ khỏi tệp để chấm lại."""
     if not out.exists():
         return set()
-    return {json.loads(line)["anon_id"] for line in out.read_text(encoding="utf-8").splitlines() if line.strip()}
+    *complete, tail = out.read_text(encoding="utf-8", errors="replace").split("\n")
+    if tail.strip():
+        try:
+            json.loads(tail)
+            complete.append(tail)
+        except json.JSONDecodeError:
+            pass
+        out.write_text("".join(line + "\n" for line in complete if line.strip()), encoding="utf-8")
+    rows = [json.loads(line) for line in complete if line.strip()]
+    return {(row["anon_id"], row["judge"]) for row in rows}
 
 
 def main(argv: list[str] | None = None) -> None:
@@ -104,7 +116,7 @@ def main(argv: list[str] | None = None) -> None:
     with args.out.open("a", encoding="utf-8") as out, gateway.using_model(args.judge):
         for path, study in studies:
             code = anon_code(path)
-            if code in done:
+            if (code, args.judge) in done:
                 continue
             evaluation = judge_module(study.packet.model_copy(update={"anon_id": code}))
             line = {
