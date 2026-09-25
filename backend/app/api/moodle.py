@@ -64,8 +64,8 @@ def _objective_html(module: Module) -> str:
 
 def _build_book_chapters(module: Module) -> list[dict]:
     """The module as short Book chapters: objective, content, one sub-chapter per slide under a
-    "Slide" chapter, example. The explanation is left out on purpose: it explains the answer of
-    the quiz, so it belongs to the question's feedback, not to the reading before it."""
+    "Slide" chapter, the examples. The explanations are left out on purpose: each explains the
+    answer of one question, so it belongs to that question's feedback, not to the reading before it."""
     chapters: list[dict] = []
 
     def add(title: str, body: str, fallback_title: str, subchapter: int = 0) -> None:
@@ -90,28 +90,45 @@ def _build_book_chapters(module: Module) -> list[dict]:
             add(title, _list([str(b) for b in slide.get("bullets", []) if str(b).strip()]), f"Slide {n}", 1)
 
     example = _component(module, ComponentType.example)
-    if example:
+    examples = (example.content.get("examples") or []) if example else []
+    if examples:
         add(
             "Ví dụ",
-            f"<p><strong>Bối cảnh:</strong> {html.escape(str(example.content.get('context', '')))}</p>"
-            f"<p><strong>Phân tích:</strong> {html.escape(str(example.content.get('analysis', '')))}</p>",
+            "".join(
+                f"<h4>Ví dụ {n}</h4>"
+                f"<p><strong>Bối cảnh:</strong> {html.escape(str(e.get('context', '')))}</p>"
+                f"<p><strong>Phân tích:</strong> {html.escape(str(e.get('analysis', '')))}</p>"
+                for n, e in enumerate(examples, start=1)
+            ),
             "Ví dụ",
         )
     return chapters
 
 
-def _build_questions(component: ModuleComponent, explanation: str | None = None) -> list[dict]:
-    """The questions as Moodle wants them. `explanation`, when given, replaces the one the first
-    question came with (the explanation is written for that question): it is what the learner
-    sees after answering."""
+def _explanations(module: Module, component_type: ComponentType) -> dict[int, str]:
+    """Lời giải thích của từng câu theo vị trí, lấy từ thành phần Explanation: đó là bản giảng viên
+    đã sửa, còn Question.explanation là bản lúc sinh."""
+    component = _component(module, ComponentType.explanation)
+    items = (component.content.get("items") or []) if component else []
+    return {
+        int(item["position"]): str(item.get("explanation_text") or "").strip()
+        for item in items
+        if item.get("component") == component_type.value and "position" in item
+    }
+
+
+def _build_questions(component: ModuleComponent, explanations: dict[int, str] | None = None) -> list[dict]:
+    """The questions as Moodle wants them, each with the explanation the learner sees after
+    answering: the teacher's edited one when there is one, otherwise the one it was made with."""
+    explanations = explanations or {}
     return [
         {
             "stem": _clean_html(q.stem),
             "choices": [_clean_html(c) for c in q.choices.get("options", [])],
             "correct_index": int(q.answer_key),
-            "explanation": _clean_html((explanation if n == 0 else None) or q.explanation or ""),
+            "explanation": _clean_html(explanations.get(q.position) or q.explanation or ""),
         }
-        for n, q in enumerate(component.questions)
+        for q in component.questions
     ]
 
 
@@ -160,17 +177,15 @@ def publish_to_moodle(
         practice = _component(module, ComponentType.practice)
         if practice and practice.questions:
             result["practice_cmid"] = moodle_client.create_quiz(
-                course.moodle_course_id, f"{_plain(module.title)} - Practice", _build_questions(practice),
-                payload.section_num,
+                course.moodle_course_id, f"{_plain(module.title)} - Practice",
+                _build_questions(practice, _explanations(module, ComponentType.practice)), payload.section_num,
             )
 
         quiz = _component(module, ComponentType.quiz)
         if quiz and quiz.questions:
-            explanation = _component(module, ComponentType.explanation)
-            explained = ((explanation.content.get("explanation_text") or "") if explanation else "").strip()
             result["quiz_cmid"] = moodle_client.create_quiz(
-                course.moodle_course_id, f"{_plain(module.title)} - Quiz", _build_questions(quiz, explained or None),
-                payload.section_num,
+                course.moodle_course_id, f"{_plain(module.title)} - Quiz",
+                _build_questions(quiz, _explanations(module, ComponentType.quiz)), payload.section_num,
             )
     except MoodleError as e:
         raise HTTPException(status_code=502, detail=f"Moodle push failed: {e}") from e

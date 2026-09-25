@@ -285,8 +285,8 @@ def get_module(
                 "type": c.type,
                 "content": c.content,
                 "questions": [
-                    {"id": q.id, "stem": q.stem, "choices": q.choices, "answer_key": q.answer_key,
-                     "explanation": q.explanation}
+                    {"id": q.id, "position": q.position, "stem": q.stem, "choices": q.choices,
+                     "answer_key": q.answer_key, "explanation": q.explanation}
                     for q in c.questions
                 ],
             }

@@ -13,7 +13,7 @@ import pytest
 
 from app.generation import content, example, objective, slides
 from app.generation.content import ContentOutput, ContentVerification
-from app.generation.example import ExampleOutput, ExampleVerification
+from app.generation.example import Example, ExampleOutput, ExampleVerification
 from app.generation.objective import LearningObjective, LOVerification
 from app.generation.planner import Concept
 from app.generation.slides import Slide, SlidesOutput, SlidesVerification
@@ -51,7 +51,7 @@ STEPS = [
                               Slide(title="Đổi cận", bullets=["Tính cận mới theo u"])])),
     Step("example", example, ExampleOutput, ExampleVerification, ["consistency", "no_overreach", "style"],
          lambda: example.generate_example(LO, "## Chọn biến mới\n...", CHUNKS),
-         ExampleOutput(context="Tính ∫2x cos(x²)dx", analysis="Đặt u = x²")),
+         ExampleOutput(examples=[Example(context="Tính ∫2x cos(x²)dx", analysis="Đặt u = x²")])),
 ]
 
 

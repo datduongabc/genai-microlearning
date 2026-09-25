@@ -12,10 +12,30 @@ export interface ModuleSummary {
 
 export interface QuestionInfo {
   id: string
+  // Order inside its quiz or practice; explanations are matched to questions by it.
+  position: number
   stem: string
   choices: { options: string[] }
   answer_key: string
   explanation: string | null
+}
+
+export interface ExampleItem {
+  context: string
+  analysis: string
+}
+
+export interface ExplanationItem {
+  component: 'quiz' | 'practice'
+  position: number
+  reasoning: string
+  explanation_text: string
+}
+
+export interface QuestionCheck {
+  target?: string
+  passed?: boolean
+  fail_reason?: string | null
 }
 
 export interface ModuleComponentInfo {

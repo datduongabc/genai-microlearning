@@ -8,6 +8,7 @@ import pytest
 
 from app.db import SessionLocal
 from app.generation import module_generation_pipeline as pipeline
+from app.generation.example import Example, ExampleOutput
 from app.generation.planner import Concept, PlannerOutput
 from app.generation.relevance import CorrectiveResult
 from app.models import (
@@ -127,7 +128,7 @@ def seen(monkeypatch):
         pipeline,
         "generate_example",
         lambda lo, content, chunks: (
-            types.SimpleNamespace(context="ctx", analysis="analysis"),
+            ExampleOutput(examples=[Example(context="ctx", analysis="analysis")]),
             types.SimpleNamespace(no_overreach_pass=True),
         ),
     )
@@ -147,7 +148,7 @@ def test_generation_for_a_section_only_uses_that_sections_chunks(textbook, seen)
         assert seen["retrieve_scopes"]
         assert all(s == scope for s in seen["retrieve_scopes"])
         assert seen["expand_scopes"] == [scope]
-        assert seen["quiz_scopes"] == [scope, scope]
+        assert seen["quiz_scopes"] and all(s == scope for s in seen["quiz_scopes"])
     finally:
         db.close()
 

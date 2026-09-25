@@ -63,10 +63,11 @@ Ràng buộc BẮT BUỘC:
 - CHỈ dựa vào nội dung nguồn được cung cấp, không thêm kiến thức ngoài nguồn.
 
 Cấu trúc LO đa tầng (GD2 — Terminal Objective + Enabling Objectives, theo
-nguyên tắc "1 Main LO + 2-3 Sub-objectives" đã kiểm chứng qua thực tiễn
+nguyên tắc "1 Main LO + 2-4 Sub-objectives" đã kiểm chứng qua thực tiễn
 microlearning của Moodle/Raccoon Gang và Konstantly/Beedeez): objective_text
 là Terminal Objective (mục tiêu tổng thể) — module vẫn CHỈ CÓ 1 module, KHÔNG
-tách thành nhiều module. Ngoài ra PHẢI viết thêm 2-3 sub_objectives, mỗi cái
+tách thành nhiều module. Ngoài ra PHẢI viết thêm 2-4 sub_objectives (đủ để
+bao phủ khái niệm trong một bài học 5-10 phút, không chia nhỏ cho đủ số), mỗi cái
 là 1 Enabling Objective cụ thể (dạng "[động từ] ...", KHÔNG cần lặp lại "Sau
 khi hoàn thành module..."), mỗi sub-objective nhắm đúng 1 khía cạnh/năng lực
 THÀNH PHẦN khác nhau cần đạt để hoàn thành Terminal Objective — không được 2
@@ -116,8 +117,8 @@ class LearningObjective(BaseModel):
     verb: str = Field(description="Động từ Bloom's dùng trong objective_text")
     objective_text: str
     sub_objectives: list[str] = Field(
-        min_length=2, max_length=3,
-        description="2-3 Enabling Objectives (sub-LO), mỗi cái nhắm 1 khía cạnh thành phần khác nhau "
+        min_length=2, max_length=4,
+        description="2-4 Enabling Objectives (sub-LO), mỗi cái nhắm 1 khía cạnh thành phần khác nhau "
         "của objective_text -- dùng để ép Content bao phủ đủ rộng nguồn, không chỉ 1 góc hẹp",
     )
 
