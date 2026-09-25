@@ -23,7 +23,7 @@ depends_on: str | Sequence[str] | None = None
 def upgrade() -> None:
     # nullable: NULL nghĩa là giảng viên chưa chọn, khi đó dùng model trong cấu hình.
     # Không đặt giá trị mặc định ở tầng database: mặc định của hệ thống nằm ở
-    # settings.llm_model_dev, để hai chỗ cùng giữ một mặc định là mời gọi chúng lệch nhau.
+    # settings.llm_model, để hai chỗ cùng giữ một mặc định là mời gọi chúng lệch nhau.
     op.add_column("users", sa.Column("default_model_alias", sa.String(), nullable=True))
 
 

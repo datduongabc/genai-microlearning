@@ -24,9 +24,7 @@ def captured(monkeypatch):
     monkeypatch.setattr(litellm, "completion", fake_completion)
     monkeypatch.setattr(settings, "llm_gateway_url", "http://gateway.test:4000")
     monkeypatch.setattr(settings, "llm_gateway_key", "sk-gateway-test")
-    monkeypatch.setattr(settings, "llm_model_dev", "dev-alias")
-    monkeypatch.setattr(settings, "llm_model_demo", "demo-alias")
-    monkeypatch.setattr(settings, "llm_use_demo_model", False)
+    monkeypatch.setattr(settings, "llm_model", "configured-alias")
     return sent
 
 
@@ -40,16 +38,7 @@ def test_a_completion_goes_to_the_gateway_with_the_gateway_key(captured):
 def test_the_configured_alias_is_what_is_requested(captured):
     llm.complete("hello")
 
-    assert "dev-alias" in captured["model"]
-    assert "demo-alias" not in captured["model"]
-
-
-def test_the_demo_switch_selects_the_demo_alias(captured, monkeypatch):
-    monkeypatch.setattr(settings, "llm_use_demo_model", True)
-
-    llm.complete("hello")
-
-    assert "demo-alias" in captured["model"]
+    assert captured["model"] == "openai/configured-alias"
 
 
 def test_the_reply_text_is_returned(monkeypatch, captured):
@@ -114,7 +103,7 @@ def test_choosing_nothing_leaves_the_configured_alias_alone(captured):
     with llm.using_model(None):
         llm.complete("hello")
 
-    assert captured["model"] == "openai/dev-alias"
+    assert captured["model"] == "openai/configured-alias"
 
 
 def test_the_choice_does_not_outlive_the_block(captured):
@@ -122,7 +111,7 @@ def test_the_choice_does_not_outlive_the_block(captured):
         pass
     llm.complete("hello")
 
-    assert captured["model"] == "openai/dev-alias"
+    assert captured["model"] == "openai/configured-alias"
 
 
 def test_the_choice_does_not_leak_out_of_a_block_that_raises(captured):
@@ -131,7 +120,7 @@ def test_the_choice_does_not_leak_out_of_a_block_that_raises(captured):
         raise RuntimeError("sinh that bai")
     llm.complete("hello")
 
-    assert captured["model"] == "openai/dev-alias"
+    assert captured["model"] == "openai/configured-alias"
 
 
 def test_a_nested_choice_restores_the_outer_one(captured):

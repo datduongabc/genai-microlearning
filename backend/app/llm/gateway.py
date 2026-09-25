@@ -38,7 +38,7 @@ def _active_model() -> str:
     da_chon = _model_da_chon.get()
     if da_chon:
         return da_chon
-    return settings.llm_model_demo if settings.llm_use_demo_model else settings.llm_model_dev
+    return settings.llm_model
 
 
 def _completion(**kwargs):

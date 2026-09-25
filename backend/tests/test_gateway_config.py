@@ -35,11 +35,18 @@ def _deployments(gateway) -> list[dict]:
     return gateway["model_list"]
 
 
-def test_every_alias_the_backend_can_ask_for_is_defined_in_the_gateway(gateway):
-    defaults = {Settings.model_fields[name].default for name in ("llm_model_dev", "llm_model_demo")}
+def test_the_default_alias_of_the_backend_is_defined_in_the_gateway(gateway):
     defined = {d["model_name"] for d in _deployments(gateway)}
 
-    assert defaults <= defined
+    assert Settings.model_fields["llm_model"].default in defined
+
+
+def test_every_model_id_is_pinned(gateway):
+    """Google silently moves a "-latest" alias to each new release, so a result measured on
+    it cannot be reproduced later."""
+    floating = [d["litellm_params"]["model"] for d in _deployments(gateway) if d["litellm_params"]["model"].endswith("-latest")]
+
+    assert floating == []
 
 
 def test_only_the_supported_providers_are_routed(gateway):

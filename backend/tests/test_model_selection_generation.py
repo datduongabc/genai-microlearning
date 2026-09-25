@@ -32,7 +32,7 @@ client = TestClient(app)
 GATEWAY_GIA_LAP = [
     {
         "model_name": "gemini-fast",
-        "litellm_params": {"model": "gemini/gemini-flash-lite-latest"},
+        "litellm_params": {"model": "gemini/gemini-3.5-flash-lite"},
         "model_info": {"mode": "chat"},
     },
     {

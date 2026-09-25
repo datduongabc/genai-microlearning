@@ -62,15 +62,13 @@ class Settings(BaseSettings):
 
     # LLM calls go through the LLM gateway (LiteLLM Proxy, devops/gateway/config.yaml),
     # the only place that holds the provider API keys (Gemini/OpenAI/Anthropic) and
-    # maps the model aliases below to real provider models -- including the "-latest"
-    # Gemini aliases, kept there because Google deprecated dated model names for new
-    # API keys mid-project. Changing provider or model is an alias change here or a
-    # mapping change in the gateway config, never a code change.
+    # maps the model aliases below to pinned provider models, so a measured result can be
+    # reproduced. `llm_model` is the default alias; a generation can ask for another one
+    # (app/llm/gateway.py using_model). Changing provider or model is an alias change here
+    # or a mapping change in the gateway config, never a code change.
     llm_gateway_url: str = "http://localhost:4000"
     llm_gateway_key: str = Field(default="", repr=False)
-    llm_model_dev: str = "gemini-fast"
-    llm_model_demo: str = "gemini-pro"
-    llm_use_demo_model: bool = False
+    llm_model: str = "gemini-fast"
     # The gateway alias that serves the embeddings (devops/gateway/config.yaml).
     embedding_model: str = "embed-default"
 

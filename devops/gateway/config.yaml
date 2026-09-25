@@ -1,27 +1,29 @@
 # LLM gateway routing (LiteLLM Proxy). The backend asks for an alias
-# (LLM_MODEL_DEV / LLM_MODEL_DEMO, see backend/app/config.py); this file is the
+# (LLM_MODEL by default, see backend/app/config.py); this file is the
 # only place that says which provider and model an alias means, and the only
 # place that reads the provider API keys, from the environment (never write a
 # key here). A provider whose key is empty simply cannot be used.
 #
-# Model ids: Gemini uses the "-latest" aliases because Google deprecated dated
-# names for new API keys mid-project. Check the OpenAI ids when you first enable
-# that provider, model names change over time.
+# Model ids are pinned, never "-latest": Google moves a "-latest" alias to each new
+# release, so results measured on it could not be reproduced. Gemini ids are stable
+# models of the free tier (https://ai.google.dev/gemini-api/docs/models); there is no
+# stable Pro model on the free tier, so the stronger Gemini alias is Flash. Check the
+# OpenAI ids when you first enable that provider, model names change over time.
 model_list:
   - model_name: gemini-fast
     litellm_params:
-      model: gemini/gemini-flash-lite-latest
+      model: gemini/gemini-3.5-flash-lite
       api_key: os.environ/GEMINI_API_KEY
     model_info:
-      display_name: Gemini Flash Lite
+      display_name: Gemini 3.5 Flash Lite
       note: nhanh, có hạn mức miễn phí
-  - model_name: gemini-pro
+  - model_name: gemini-flash
     litellm_params:
-      model: gemini/gemini-pro-latest
+      model: gemini/gemini-3.5-flash
       api_key: os.environ/GEMINI_API_KEY
     model_info:
-      display_name: Gemini Pro
-      note: chất lượng cao hơn, hạn mức miễn phí thấp
+      display_name: Gemini 3.5 Flash
+      note: chất lượng cao hơn, hạn mức miễn phí thấp hơn
 
   # Embeddings for retrieval (backend/app/ingestion/embeddings.py), served by the `embedder`
   # service of docker-compose.yml rather than a provider: the free Gemini tier embeds only 1000
