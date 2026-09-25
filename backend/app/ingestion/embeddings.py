@@ -1,8 +1,8 @@
-"""Text to vectors, made by the embedding provider through the LLM gateway (see
-devops/gateway/config.yaml), so the backend does not carry an embedding model: it is multilingual,
-which Vietnamese documents need, and the image stays light.
+"""Text to vectors, made by the model behind the gateway's embedding alias (see
+devops/gateway/config.yaml): the embedder container by default, or a provider. The backend does not
+carry the model itself, so its image stays light.
 
-The provider limits how many texts it takes per minute (100 on the free tier, counted per text). A
+A provider limits how many texts it takes per minute (Gemini's free tier: 100, counted per text). A
 refused request is waited out and asked again, batch by batch, so one refusal never sends the batches
 before it again. When the wait is given up the error goes on to the caller, and the job queue tries
 the whole step later."""
@@ -18,7 +18,7 @@ from litellm.exceptions import RateLimitError
 from app.config import settings
 from app.models.models import EMBEDDING_DIM
 
-# The most texts the provider takes in one request.
+# The most texts a provider takes in one request; the embedder is set to take as many.
 BATCH_SIZE = 100
 # The limit is per minute, so waiting less would only be refused again.
 RATE_LIMIT_WAIT_SECONDS = 60

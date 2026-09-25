@@ -77,6 +77,48 @@ services:
       - ./moodle-plugin/local_lms_bridge:/var/www/html/public/local/lms_bridge
       - moodle_data:/var/www/moodledata
 
+  # Model nhung chay tai cho: khong co han muc ngay nhu goi mien phi cua Gemini
+  # (1000 chunk moi ngay, mot kho tai lieu mat nhieu ngay moi nhung xong), va tai
+  # lieu cua giang vien khong roi khoi may chu. Do tren cau hoi cu cua 5 mon, model
+  # nay truy hoi ngang Gemini, xem docs/measurements/2026-09-25-model-nhung.md.
+  # Ban ONNX chay duoc tren CPU cua moi may chu; cho ra dung vector cua ban goc.
+  # Chi gateway goi toi no, nen khong mo cong nao ra may that.
+  embedder:
+    image: ghcr.io/huggingface/text-embeddings-inference:cpu-1.9.4
+    container_name: do-an-embedder
+    command:
+      - --model-id
+      - onnx-community/Qwen3-Embedding-0.6B-ONNX
+      # Ghim commit: ban xuat ONNX do cong dong giu, doi ma khong bao ai, ma vector
+      # cu trong database chi so duoc voi vector cua dung model da sinh ra chung.
+      - --revision
+      - c25a394dd583836952667c12f008335071b3f43d
+      # Kho nay khong kem cau hinh Sentence Transformers, nen phai noi cach gop
+      # token; Qwen3-Embedding lay vector cua token cuoi.
+      - --pooling
+      - last-token
+      # 1024 token moi lo giu RAM o khoang 3 GB thay vi hon 5 GB, ma van du cho mot
+      # chunk (toi da khoang 512 token), va con nhanh hon tren CPU.
+      - --max-batch-tokens
+      - "1024"
+      # Backend gui toi 100 chunk mot lan (BATCH_SIZE trong embeddings.py); mac dinh
+      # 32 thi ca lo bi tu choi.
+      - --max-client-batch-size
+      - "128"
+      # Thieu khoa thi LiteLLM tu lay OPENAI_API_KEY gui sang day.
+      - --api-key
+      - ${EMBEDDER_API_KEY}
+    volumes:
+      # Tai model mot lan (khoang 2,4 GB) roi giu lai qua cac lan tao lai container.
+      - embedder_models:/data
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:80/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      # Lan dau con phai tai model.
+      start_period: 15m
+
   gateway:
     build: ./devops/gateway
     container_name: do-an-gateway
@@ -86,6 +128,7 @@ services:
       GEMINI_API_KEY: ${GEMINI_API_KEY}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
       GROQ_API_KEY: ${GROQ_API_KEY}
+      EMBEDDER_API_KEY: ${EMBEDDER_API_KEY}
     ports:
       - 127.0.0.1:4000:4000
     volumes:
@@ -109,6 +152,10 @@ services:
       migrate:
         condition: service_completed_successfully
       gateway:
+        condition: service_healthy
+      # Backend chi goi no qua gateway, nhung khong co no thi moi tai lieu tai len deu
+      # hong o buoc nhung.
+      embedder:
         condition: service_healthy
     environment:
       # Khong co URL cua vai tro chu so huu: tien trinh nay chay bang hai vai tro
@@ -169,6 +216,7 @@ services:
 
 volumes:
   db_data:
+  embedder_models:
   moodle_data:
   caddy_data:
   caddy_config:
