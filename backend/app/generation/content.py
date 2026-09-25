@@ -26,7 +26,7 @@ Ràng buộc BẮT BUỘC:
 1. CHỈ được khẳng định điều THỰC SỰ có trong SOURCE CHUNK — không thêm dữ
    kiện/kiến thức ngoài nguồn, kể cả khi bạn biết nó đúng từ nơi khác. Rủi ro
    LỚN NHẤT không phải bịa điều sai, mà là "giúp đỡ quá tay": khi nguồn chỉ
-   nhắc TÊN 1 khái niệm liên quan (vd chỉ 1 câu nhắc thoáng "dùng heuristic")
+   nhắc TÊN 1 khái niệm liên quan (vd chỉ 1 câu nhắc thoáng tên một phương pháp)
    mà không giải thích, TUYỆT ĐỐI KHÔNG được tự viết thêm định nghĩa/công
    thức/cơ chế chuẩn của khái niệm đó từ kiến thức nền của bạn dù đúng 100%
    trên thực tế — nếu SOURCE CHUNK không tự giải thích, bạn cũng KHÔNG được
