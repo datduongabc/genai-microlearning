@@ -58,3 +58,20 @@ def test_kho_ma_khong_phinh_qua_muc():
     # Toàn bộ mã nguồn của dự án vào khoảng vài nghìn tệp. Nếu vượt xa con số này
     # thì gần như chắc chắn một thư mục phụ thuộc đã lọt vào.
     assert len(_tracked_files()) < 2000
+
+
+def test_tai_lieu_mon_hoc_trong_docs_bi_bo_qua():
+    # docs/documents/ là tài liệu môn học có bản quyền, khoảng 240 MB.
+    result = subprocess.run(
+        ["git", "check-ignore", "-q", "docs/documents/x.pdf"],
+        cwd=REPO_ROOT, capture_output=True, timeout=60, check=False,
+    )
+    assert result.returncode == 0
+    assert not [p for p in _tracked_files() if p.startswith("docs/documents/")]
+
+
+def test_ket_qua_do_dac_duoc_theo_doi():
+    # Số đo benchmark là bằng chứng cho chương đánh giá, không được chỉ nằm trên một máy.
+    tracked = _tracked_files()
+
+    assert [p for p in tracked if p.startswith("docs/measurements/") and p.endswith(".md")]

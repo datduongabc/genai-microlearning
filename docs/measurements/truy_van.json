@@ -1,0 +1,1502 @@
+[
+  {
+    "course_id": "e69b1c16-6f55-44a3-a641-885885bfd0e0",
+    "course": "advanced-programming",
+    "chunk_id": "6e08ffc2-57bc-47b8-bf62-03e79d732aa5",
+    "cau_hoi": "When implementing a singleton, what kind of field should be added to the class to store the sole instance, and what access modifier must the class constructor have to prevent direct instantiation?"
+  },
+  {
+    "course_id": "e69b1c16-6f55-44a3-a641-885885bfd0e0",
+    "course": "advanced-programming",
+    "chunk_id": "5415d589-8d07-416e-aa19-3309a139a5ad",
+    "cau_hoi": "What is a constructor in OOP, when does it execute automatically, and what kind of error can it cause if it is not properly designed?"
+  },
+  {
+    "course_id": "e69b1c16-6f55-44a3-a641-885885bfd0e0",
+    "course": "advanced-programming",
+    "chunk_id": "5fed668c-5da5-44d0-ae35-b25d6065f41b",
+    "cau_hoi": "Trong lớp Author, phương thức toString() trả về chuỗi dạng “Author[name=?,email=?,gender=?]”; vậy nếu tên tác giả là “Tan Ah Teck”, email là “ahTeck@somewhere.com” và giới tính là ‘m’, kết quả trả về sẽ là gì?"
+  },
+  {
+    "course_id": "e69b1c16-6f55-44a3-a641-885885bfd0e0",
+    "course": "advanced-programming",
+    "chunk_id": "776b6fd3-7cf2-43bd-bea7-5e5418c6a23a",
+    "cau_hoi": "What are the default access levels for members of a struct and a class, and how does their support for encapsulation differ?"
+  },
+  {
+    "course_id": "e69b1c16-6f55-44a3-a641-885885bfd0e0",
+    "course": "advanced-programming",
+    "chunk_id": "fab67a94-b367-455c-9f4c-2d1a3c8dfa43",
+    "cau_hoi": "What lambda expression results from beta‑reducing the higher‑order function `(λf.λx.f (f x))(λy.y+1)` before applying it to any argument?"
+  },
+  {
+    "course_id": "e69b1c16-6f55-44a3-a641-885885bfd0e0",
+    "course": "advanced-programming",
+    "chunk_id": "8e829ee2-2067-4d49-9780-5e3c500ef1e9",
+    "cau_hoi": "In the Circle class described, what are the default values assigned to the radius and color private instance variables?"
+  },
+  {
+    "course_id": "e69b1c16-6f55-44a3-a641-885885bfd0e0",
+    "course": "advanced-programming",
+    "chunk_id": "a2bcd4dd-e2f2-4bba-99b7-02212bf3e4ef",
+    "cau_hoi": "What common language do design patterns define for developers and their teammates?"
+  },
+  {
+    "course_id": "e69b1c16-6f55-44a3-a641-885885bfd0e0",
+    "course": "advanced-programming",
+    "chunk_id": "4f7b9182-b3da-4769-8fa4-398c6100b29b",
+    "cau_hoi": "Which design pattern ensures that a class has only one instance and provides global access for managing shared resources?"
+  },
+  {
+    "course_id": "e69b1c16-6f55-44a3-a641-885885bfd0e0",
+    "course": "advanced-programming",
+    "chunk_id": "1a06ab22-3a97-4509-9b24-38ff4bcb7ae6",
+    "cau_hoi": "In the expression λx.((λy.y+2) x) + y, which occurrences of the variable y are free and which are bound?"
+  },
+  {
+    "course_id": "e69b1c16-6f55-44a3-a641-885885bfd0e0",
+    "course": "advanced-programming",
+    "chunk_id": "ccd6cf6d-6a68-4882-ad1c-5e00eff70259",
+    "cau_hoi": "In the expression (λx. 3) (D D), which evaluation strategy skips evaluating D D and directly returns 3?"
+  },
+  {
+    "course_id": "e69b1c16-6f55-44a3-a641-885885bfd0e0",
+    "course": "advanced-programming",
+    "chunk_id": "1b86b7c1-b5ea-4b4a-8c76-fe75321bfd6f",
+    "cau_hoi": "In the `curry` decorator, which attribute of the original function is used to determine when all required arguments have been supplied?"
+  },
+  {
+    "course_id": "e69b1c16-6f55-44a3-a641-885885bfd0e0",
+    "course": "advanced-programming",
+    "chunk_id": "a7548d72-f3e2-4e4f-a887-e80092265cc4",
+    "cau_hoi": "After the calls to `a.f2()` and `b.f2()` in the program, what values are printed for `a.n` and `b.n`?"
+  },
+  {
+    "course_id": "e69b1c16-6f55-44a3-a641-885885bfd0e0",
+    "course": "advanced-programming",
+    "chunk_id": "f1ae07dd-8e79-4963-94b9-a5c92e1d1a31",
+    "cau_hoi": "What is the printed output of the code that defines `numbers = [1, 2, 3, 4]` and creates `doubled_numbers` with the list comprehension `[num * 2 for num in numbers]`?"
+  },
+  {
+    "course_id": "e69b1c16-6f55-44a3-a641-885885bfd0e0",
+    "course": "advanced-programming",
+    "chunk_id": "e68ddd07-4e88-4220-ad9f-e96360f0c7ad",
+    "cau_hoi": "What is the base case condition used in the functional‑style factorial definition shown in the excerpt?"
+  },
+  {
+    "course_id": "e69b1c16-6f55-44a3-a641-885885bfd0e0",
+    "course": "advanced-programming",
+    "chunk_id": "b30842f9-3ecd-4c7b-b181-c1028bfda373",
+    "cau_hoi": "Which class of programming languages is said to guarantee referential transparency?"
+  },
+  {
+    "course_id": "e69b1c16-6f55-44a3-a641-885885bfd0e0",
+    "course": "advanced-programming",
+    "chunk_id": "22a41271-e826-4c20-9dbe-c2ed6ea775f6",
+    "cau_hoi": "I'm trying to understand the design: what extra attribute does the EBook subclass introduce, and how does its overridden displayDetails() method incorporate that attribute?"
+  },
+  {
+    "course_id": "e69b1c16-6f55-44a3-a641-885885bfd0e0",
+    "course": "advanced-programming",
+    "chunk_id": "a289357a-08d4-4b83-b21b-7a6f45b7d698",
+    "cau_hoi": "If I create a Subclass object, assign it to a Superclass variable (not a pointer) and then call sup.display(), what text will be printed to the console?"
+  },
+  {
+    "course_id": "e69b1c16-6f55-44a3-a641-885885bfd0e0",
+    "course": "advanced-programming",
+    "chunk_id": "cfd0c34e-adc6-4de8-848a-bd9c1407b53b",
+    "cau_hoi": "What is the data type and scope level of the variable X declared inside procedure SUB3?"
+  },
+  {
+    "course_id": "e69b1c16-6f55-44a3-a641-885885bfd0e0",
+    "course": "advanced-programming",
+    "chunk_id": "2919407b-f186-4839-bc10-e6ff6cafb189",
+    "cau_hoi": "What are the three main limitations of Python lambda expressions mentioned in the notes?"
+  },
+  {
+    "course_id": "e69b1c16-6f55-44a3-a641-885885bfd0e0",
+    "course": "advanced-programming",
+    "chunk_id": "dbe36296-b367-4087-b223-d72e658f442a",
+    "cau_hoi": "Can an interface in Java contain instance variables, or is it limited to constants only?"
+  },
+  {
+    "course_id": "e69b1c16-6f55-44a3-a641-885885bfd0e0",
+    "course": "advanced-programming",
+    "chunk_id": "6889953e-d089-4e4c-a56d-57957fe4de91",
+    "cau_hoi": "What is the result of evaluating `partial(f, 3)(4)` when `f` is defined as `def f(a1, a2): return a1 * a2`?"
+  },
+  {
+    "course_id": "e69b1c16-6f55-44a3-a641-885885bfd0e0",
+    "course": "advanced-programming",
+    "chunk_id": "51903700-3bf8-4770-a71e-d3713e3a0bfd",
+    "cau_hoi": "In which year did Alonzo Church invent the lambda calculus?"
+  },
+  {
+    "course_id": "e69b1c16-6f55-44a3-a641-885885bfd0e0",
+    "course": "advanced-programming",
+    "chunk_id": "eebffb37-e0fb-432d-8afb-c7be0cfd42fb",
+    "cau_hoi": "What list is produced when you apply `list(map(lambda x: x % 5, [0, 4, 7, 2, 1, 0, 9, 3, 5, 6, 8, 0, 3]))`?"
+  },
+  {
+    "course_id": "e69b1c16-6f55-44a3-a641-885885bfd0e0",
+    "course": "advanced-programming",
+    "chunk_id": "adad3315-64f2-44cc-ab14-dd5059ad4314",
+    "cau_hoi": "What does the text define as a marker interface, and why must a class implement Cloneable to become cloneable?"
+  },
+  {
+    "course_id": "e69b1c16-6f55-44a3-a641-885885bfd0e0",
+    "course": "advanced-programming",
+    "chunk_id": "f5ef1263-4632-4453-8422-83bb60a2e359",
+    "cau_hoi": "What is the second tuple in the list produced by `list(zip(['Alice', 'Bob', 'Charlie'], [25, 30, 35]))`?"
+  },
+  {
+    "course_id": "e69b1c16-6f55-44a3-a641-885885bfd0e0",
+    "course": "advanced-programming",
+    "chunk_id": "6c65e6c6-ab75-4984-95fc-efd423f786f0",
+    "cau_hoi": "What lambda expression defines the function that constructs a pair from two normal‑form expressions?"
+  },
+  {
+    "course_id": "e69b1c16-6f55-44a3-a641-885885bfd0e0",
+    "course": "advanced-programming",
+    "chunk_id": "0d3fd61e-4a83-4c4c-b825-aaa99fcb5337",
+    "cau_hoi": "What number appears on its own line between the discussion of iteration techniques and the closing thank‑you message?"
+  },
+  {
+    "course_id": "e69b1c16-6f55-44a3-a641-885885bfd0e0",
+    "course": "advanced-programming",
+    "chunk_id": "4e071b63-8d5a-4ee9-bcf7-bf71a23de9af",
+    "cau_hoi": "In the described pattern, which interface declares the update() method, and what purpose does it serve?"
+  },
+  {
+    "course_id": "e69b1c16-6f55-44a3-a641-885885bfd0e0",
+    "course": "advanced-programming",
+    "chunk_id": "bf5933b8-97f5-4880-8f58-45d24e1a3986",
+    "cau_hoi": "What default values are assigned to the `brand` and `year` attributes in the Vehicle class’s default constructor?"
+  },
+  {
+    "course_id": "e69b1c16-6f55-44a3-a641-885885bfd0e0",
+    "course": "advanced-programming",
+    "chunk_id": "7af956b1-f9cd-42f4-86e1-d41500eddb31",
+    "cau_hoi": "In which chapter is dynamic binding introduced, according to the text?"
+  },
+  {
+    "course_id": "e69b1c16-6f55-44a3-a641-885885bfd0e0",
+    "course": "advanced-programming",
+    "chunk_id": "aabd5fe6-afde-4f98-8d00-b30ed72ee707",
+    "cau_hoi": "Which benefit of using getters and setters is described as “Allows creation of read‑only or write‑only properties”?"
+  },
+  {
+    "course_id": "e69b1c16-6f55-44a3-a641-885885bfd0e0",
+    "course": "advanced-programming",
+    "chunk_id": "cc042e5a-50a5-4c54-9c1e-704076075f14",
+    "cau_hoi": "What issue does the “Compile‑Time Dependency Problem” describe regarding method signatures between classes?"
+  },
+  {
+    "course_id": "e69b1c16-6f55-44a3-a641-885885bfd0e0",
+    "course": "advanced-programming",
+    "chunk_id": "f3ae082a-78b7-458e-889e-cdd13e8b5d6b",
+    "cau_hoi": "According to the parsing rule presented, how should the term λx.f (f x) be parenthesized?"
+  },
+  {
+    "course_id": "e69b1c16-6f55-44a3-a641-885885bfd0e0",
+    "course": "advanced-programming",
+    "chunk_id": "45bec949-8087-41ca-a142-0dd1175777e5",
+    "cau_hoi": "What exact string format should the Book class’s toString() method return, including the placeholders for the book’s name, author’s details, price, and quantity?"
+  },
+  {
+    "course_id": "e69b1c16-6f55-44a3-a641-885885bfd0e0",
+    "course": "advanced-programming",
+    "chunk_id": "54d8e11f-71bd-40bd-a3da-163258e027fd",
+    "cau_hoi": "What type and scope level does the symbol table assign to the variable X that is declared inside the nested procedure SUB3?"
+  },
+  {
+    "course_id": "e69b1c16-6f55-44a3-a641-885885bfd0e0",
+    "course": "advanced-programming",
+    "chunk_id": "31e804d1-0351-4b3c-a6ea-dbe3411a528d",
+    "cau_hoi": "Which languages are mentioned as examples of pure functional languages?"
+  },
+  {
+    "course_id": "e69b1c16-6f55-44a3-a641-885885bfd0e0",
+    "course": "advanced-programming",
+    "chunk_id": "6213908b-fc8f-4636-9a99-a5dd2c489a8b",
+    "cau_hoi": "What data type is assigned to the variable Y in the symbol table?"
+  },
+  {
+    "course_id": "e69b1c16-6f55-44a3-a641-885885bfd0e0",
+    "course": "advanced-programming",
+    "chunk_id": "a3bf556a-95e5-49ca-a7af-4fadb626f608",
+    "cau_hoi": "What term is used to refer to the collection of variables whose values are modified in imperative languages?"
+  },
+  {
+    "course_id": "e69b1c16-6f55-44a3-a641-885885bfd0e0",
+    "course": "advanced-programming",
+    "chunk_id": "bc74e68b-f34d-42b0-8cab-23002a80308a",
+    "cau_hoi": "In the term (λx.x)(λy.yx), which variable is free in the second function?"
+  },
+  {
+    "course_id": "e69b1c16-6f55-44a3-a641-885885bfd0e0",
+    "course": "advanced-programming",
+    "chunk_id": "825ab9bb-714a-4155-a724-5c0ab97c01ec",
+    "cau_hoi": "What are the two problems related to the Single Responsibility Principle that the Singleton pattern solves?"
+  },
+  {
+    "course_id": "e69b1c16-6f55-44a3-a641-885885bfd0e0",
+    "course": "advanced-programming",
+    "chunk_id": "99ac1a01-afd2-406e-84f3-fe91604d2096",
+    "cau_hoi": "Which programming language shown uses indentation instead of curly braces and does not require semicolons at the end of statements?"
+  },
+  {
+    "course_id": "e69b1c16-6f55-44a3-a641-885885bfd0e0",
+    "course": "advanced-programming",
+    "chunk_id": "af3444c1-58be-44ad-b438-432bccaf382d",
+    "cau_hoi": "In the comparison of abstract classes and interfaces, which type supports multiple inheritance and what is the default accessibility modifier of its methods?"
+  },
+  {
+    "course_id": "e69b1c16-6f55-44a3-a641-885885bfd0e0",
+    "course": "advanced-programming",
+    "chunk_id": "97520633-5f44-4a9f-9048-0d0fc36d1e8b",
+    "cau_hoi": "According to the specification, what exact format should the Book class’s toString() method return?"
+  },
+  {
+    "course_id": "e69b1c16-6f55-44a3-a641-885885bfd0e0",
+    "course": "advanced-programming",
+    "chunk_id": "bd158ce6-de2c-4dc9-be0f-30527e1649bd",
+    "cau_hoi": "For the Laptop class exercise, which attribute is declared as a double, and how should the default constructor be implemented to invoke the parameterized constructor using constructor chaining?"
+  },
+  {
+    "course_id": "e69b1c16-6f55-44a3-a641-885885bfd0e0",
+    "course": "advanced-programming",
+    "chunk_id": "c9e89d9d-5f3b-4592-90cd-45cd519da0ef",
+    "cau_hoi": "Which language always uses dynamic binding by default, and how does C++ obtain dynamic binding despite its default static binding?"
+  },
+  {
+    "course_id": "e69b1c16-6f55-44a3-a641-885885bfd0e0",
+    "course": "advanced-programming",
+    "chunk_id": "93f855fe-2e0d-471a-b8a1-1d4a5892fb60",
+    "cau_hoi": "In Example 1, what term does (λx.x x)(λy.y) reduce to after the first β‑reduction step?"
+  },
+  {
+    "course_id": "e69b1c16-6f55-44a3-a641-885885bfd0e0",
+    "course": "advanced-programming",
+    "chunk_id": "419fa302-5314-4518-a7e4-cfd918c23819",
+    "cau_hoi": "When applying α‑reduction to λy.M, what condition must the new variable v satisfy?"
+  },
+  {
+    "course_id": "e69b1c16-6f55-44a3-a641-885885bfd0e0",
+    "course": "advanced-programming",
+    "chunk_id": "2893238f-ea85-4c4a-8632-c27d93a8a6ad",
+    "cau_hoi": "In the OOP motivation example, which car attribute is described as the amount of energy it can hold?"
+  },
+  {
+    "course_id": "e69b1c16-6f55-44a3-a641-885885bfd0e0",
+    "course": "advanced-programming",
+    "chunk_id": "78ba2f0c-1c04-428b-9a35-1a8834885ffa",
+    "cau_hoi": "In the excerpt, which language construct is identified as the von Neumann bottleneck of programming languages?"
+  },
+  {
+    "course_id": "e69b1c16-6f55-44a3-a641-885885bfd0e0",
+    "course": "advanced-programming",
+    "chunk_id": "f28ce2fb-0c6b-49a3-8b94-98d8b2f053c0",
+    "cau_hoi": "What term refers to the mechanism where the actual method to be executed is determined at runtime, allowing calling code to interact only with an interface or abstract class reference and thereby decoupling it from concrete implementations?"
+  },
+  {
+    "course_id": "d8149d40-3100-4dd4-8466-0c06d01f3e08",
+    "course": "operating-system",
+    "chunk_id": "c9d6b0a8-176e-4f17-8cce-988b998592f7",
+    "cau_hoi": "In interprocess communication, do ordinary pipes require a parent‑child relationship between the communicating processes, and are they unidirectional or bidirectional?"
+  },
+  {
+    "course_id": "d8149d40-3100-4dd4-8466-0c06d01f3e08",
+    "course": "operating-system",
+    "chunk_id": "01580dd9-2378-4993-9527-2c981f4d28a2",
+    "cau_hoi": "What alternative approach to solving the critical‑section problem is highlighted for not maintaining state and therefore being generally immune to race conditions and critical sections?"
+  },
+  {
+    "course_id": "d8149d40-3100-4dd4-8466-0c06d01f3e08",
+    "course": "operating-system",
+    "chunk_id": "20132fdb-1a4b-4506-b9c6-30b7e969cda1",
+    "cau_hoi": "What are the two types of parallelism mentioned, and how does each one handle the distribution of work across multiple cores?"
+  },
+  {
+    "course_id": "d8149d40-3100-4dd4-8466-0c06d01f3e08",
+    "course": "operating-system",
+    "chunk_id": "5d7c54d8-d21e-4473-93d2-b2bfe435bbd2",
+    "cau_hoi": "Which OS service is described as handling the creation, deletion, and permission management of files and directories?"
+  },
+  {
+    "course_id": "d8149d40-3100-4dd4-8466-0c06d01f3e08",
+    "course": "operating-system",
+    "chunk_id": "626e709d-7a62-4a1f-b7e9-57fe517d81fa",
+    "cau_hoi": "Which scheduling algorithm is described as provably optimal for achieving the shortest average waiting time, yet is difficult to implement because predicting the length of the next CPU burst is challenging?"
+  },
+  {
+    "course_id": "d8149d40-3100-4dd4-8466-0c06d01f3e08",
+    "course": "operating-system",
+    "chunk_id": "088745a4-f62c-4309-9dcb-ee8ff1512f9e",
+    "cau_hoi": "In the producer code for the shared‑memory bounded‑buffer solution, what expression is used to detect that the buffer is full?"
+  },
+  {
+    "course_id": "d8149d40-3100-4dd4-8466-0c06d01f3e08",
+    "course": "operating-system",
+    "chunk_id": "b793b199-f706-4646-99aa-88e11bb88f0a",
+    "cau_hoi": "In the described I/O structure, what does the system call enable the user program to do regarding I/O completion?"
+  },
+  {
+    "course_id": "d8149d40-3100-4dd4-8466-0c06d01f3e08",
+    "course": "operating-system",
+    "chunk_id": "fa5fe130-3441-4ff8-9334-acb9b257617a",
+    "cau_hoi": "In Windows kernel synchronization, what does the “G” prefix before certain items (e.g., “Spin locking‑thread will never be preempted”) signify?"
+  },
+  {
+    "course_id": "d8149d40-3100-4dd4-8466-0c06d01f3e08",
+    "course": "operating-system",
+    "chunk_id": "86d61189-2400-489a-8bf3-aae398630ffc",
+    "cau_hoi": "Which POSIX thread function does a parent thread call to wait for its child thread to finish execution?"
+  },
+  {
+    "course_id": "d8149d40-3100-4dd4-8466-0c06d01f3e08",
+    "course": "operating-system",
+    "chunk_id": "91e763fb-42f6-43ca-bb71-b646faece6a3",
+    "cau_hoi": "Which operating system is defined by having well‑defined fixed time constraints that must be met for correct operation?"
+  },
+  {
+    "course_id": "d8149d40-3100-4dd4-8466-0c06d01f3e08",
+    "course": "operating-system",
+    "chunk_id": "0ceced0b-4c25-4eee-857d-f5d56942931b",
+    "cau_hoi": "What are the initial values of the semaphores `mutex`, `full`, and `empty` in the Bounded-Buffer problem?"
+  },
+  {
+    "course_id": "d8149d40-3100-4dd4-8466-0c06d01f3e08",
+    "course": "operating-system",
+    "chunk_id": "58d2555d-5a08-460c-be12-7cf49fe846aa",
+    "cau_hoi": "Which system call is mentioned as the way a parent process can terminate its child processes?"
+  },
+  {
+    "course_id": "d8149d40-3100-4dd4-8466-0c06d01f3e08",
+    "course": "operating-system",
+    "chunk_id": "3b4761e4-62fb-46ca-8efe-091246628eb0",
+    "cau_hoi": "What are the two versions of POSIX semaphores, and which version can be used by unrelated processes?"
+  },
+  {
+    "course_id": "d8149d40-3100-4dd4-8466-0c06d01f3e08",
+    "course": "operating-system",
+    "chunk_id": "b5a3a573-c8eb-445c-afb6-c30d13813adf",
+    "cau_hoi": "What are the two categories of signal handlers mentioned, and how does a user‑defined handler affect the default handling of a signal?"
+  },
+  {
+    "course_id": "d8149d40-3100-4dd4-8466-0c06d01f3e08",
+    "course": "operating-system",
+    "chunk_id": "d495bbbd-4320-46cc-a84f-33264caddbec",
+    "cau_hoi": "What type is defined for atomic integers in the Linux synchronization section?"
+  },
+  {
+    "course_id": "d8149d40-3100-4dd4-8466-0c06d01f3e08",
+    "course": "operating-system",
+    "chunk_id": "f8461d8a-2ac8-4409-a088-9615aa0d0bf1",
+    "cau_hoi": "What percentage of the overall assessment for the CO2017 Operating Systems course is allocated to the final exam?"
+  },
+  {
+    "course_id": "d8149d40-3100-4dd4-8466-0c06d01f3e08",
+    "course": "operating-system",
+    "chunk_id": "43cddfa6-570c-4bf1-85c0-49851622669b",
+    "cau_hoi": "When process P invokes x.signal() while process Q is suspended in x.wait(), what does the text say happens to P and Q in the Concurrent Pascal implementation of monitors?"
+  },
+  {
+    "course_id": "d8149d40-3100-4dd4-8466-0c06d01f3e08",
+    "course": "operating-system",
+    "chunk_id": "b9930e29-d0d2-4821-8a4c-e7b01c235de8",
+    "cau_hoi": "In the producer‑consumer code, what role does the variable **counter** play in synchronizing the two processes, and how is it updated in the producer loop versus the consumer loop?"
+  },
+  {
+    "course_id": "d8149d40-3100-4dd4-8466-0c06d01f3e08",
+    "course": "operating-system",
+    "chunk_id": "7d92cc8c-abcf-4362-8d2d-c8c35df35a87",
+    "cau_hoi": "Which operating system kernel is partially based on Mach?"
+  },
+  {
+    "course_id": "d8149d40-3100-4dd4-8466-0c06d01f3e08",
+    "course": "operating-system",
+    "chunk_id": "bd734873-469c-4c43-93d2-8e36143cf639",
+    "cau_hoi": "In the code fragment for process P1, which flag variable is tested in the while loop that precedes the critical section?"
+  },
+  {
+    "course_id": "d8149d40-3100-4dd4-8466-0c06d01f3e08",
+    "course": "operating-system",
+    "chunk_id": "09638a42-cee1-462e-b614-a244067b3471",
+    "cau_hoi": "In a context switch, where is the process’s context stored that must be saved and later restored?"
+  },
+  {
+    "course_id": "d8149d40-3100-4dd4-8466-0c06d01f3e08",
+    "course": "operating-system",
+    "chunk_id": "8090c1b6-c352-4866-ac8a-db7b16e7b789",
+    "cau_hoi": "What are the four properties of a communication link in indirect communication?"
+  },
+  {
+    "course_id": "d8149d40-3100-4dd4-8466-0c06d01f3e08",
+    "course": "operating-system",
+    "chunk_id": "1fdae22f-510d-4e18-bb82-e1dbfaf81892",
+    "cau_hoi": "What are the three advantages of using a thread pool as described, and what are the two phases involved in fork‑join parallelism?"
+  },
+  {
+    "course_id": "d8149d40-3100-4dd4-8466-0c06d01f3e08",
+    "course": "operating-system",
+    "chunk_id": "0d6be3bb-a2fd-48e6-b9fa-89de9116494e",
+    "cau_hoi": "In the monitor implementation of the Dining Philosophers problem, what exact condition inside `test(i)` must be satisfied for a philosopher’s state to be set to `EATING`?"
+  },
+  {
+    "course_id": "d8149d40-3100-4dd4-8466-0c06d01f3e08",
+    "course": "operating-system",
+    "chunk_id": "f8e2c91c-db52-4c15-8c07-a84ac64c93d9",
+    "cau_hoi": "When using POSIX condition variables in C/C++, which type of lock must be associated with the condition variable to provide mutual exclusion?"
+  },
+  {
+    "course_id": "d8149d40-3100-4dd4-8466-0c06d01f3e08",
+    "course": "operating-system",
+    "chunk_id": "efd0c226-ee16-43b0-bf47-e7fd93d85ff4",
+    "cau_hoi": "Which POSIX Pthread scheduling scope values can be set with pthread_attr_setscope, and on which operating systems is PTHREAD_SCOPE_PROCESS not supported?"
+  },
+  {
+    "course_id": "d8149d40-3100-4dd4-8466-0c06d01f3e08",
+    "course": "operating-system",
+    "chunk_id": "1c495549-5d5e-45af-b7d3-df2a4deeba41",
+    "cau_hoi": "In the multilevel feedback queue example, how many queues are defined and what scheduling algorithm and time quantum are assigned to each queue?"
+  },
+  {
+    "course_id": "d8149d40-3100-4dd4-8466-0c06d01f3e08",
+    "course": "operating-system",
+    "chunk_id": "37aaff27-639f-4aad-9590-7cdf8973800c",
+    "cau_hoi": "When several processes are queued on a condition variable and x.signal() is executed, which process is resumed according to the priority rule described in the monitor’s conditional‑wait construct?"
+  },
+  {
+    "course_id": "d8149d40-3100-4dd4-8466-0c06d01f3e08",
+    "course": "operating-system",
+    "chunk_id": "31046ecf-8d6c-4acd-8c61-ba9b2b6597b9",
+    "cau_hoi": "In a dual‑mode operating system, what is the hardware‑provided “mode bit” used for, and how does a system call affect its value?"
+  },
+  {
+    "course_id": "d8149d40-3100-4dd4-8466-0c06d01f3e08",
+    "course": "operating-system",
+    "chunk_id": "a069cb10-b308-441e-bb8b-b68c9075a4f7",
+    "cau_hoi": "What component is described as being managed by the run‑time support library in the system‑call implementation?"
+  },
+  {
+    "course_id": "d8149d40-3100-4dd4-8466-0c06d01f3e08",
+    "course": "operating-system",
+    "chunk_id": "05ee38d1-c088-4f4e-a60c-ca1aa79ad45c",
+    "cau_hoi": "Which component of a process is called the stack section, and what type of data does it store?"
+  },
+  {
+    "course_id": "d8149d40-3100-4dd4-8466-0c06d01f3e08",
+    "course": "operating-system",
+    "chunk_id": "f2a8a501-8859-4ee2-b19d-9863b49802f2",
+    "cau_hoi": "In the message‑passing IPC mechanism described, what are the two operations that the facility provides?"
+  },
+  {
+    "course_id": "d8149d40-3100-4dd4-8466-0c06d01f3e08",
+    "course": "operating-system",
+    "chunk_id": "d94116da-511c-4be1-b0d0-f1e8903dfeb3",
+    "cau_hoi": "In the first proposal solution, after Process P0 leaves its critical section, what value does it assign to the shared variable `turn`?"
+  },
+  {
+    "course_id": "d8149d40-3100-4dd4-8466-0c06d01f3e08",
+    "course": "operating-system",
+    "chunk_id": "034ebaf0-1033-49a5-afb4-b57e88ed0c25",
+    "cau_hoi": "Which cancellation approach described allows the target thread to continue executing until it explicitly checks whether it should be cancelled?"
+  },
+  {
+    "course_id": "d8149d40-3100-4dd4-8466-0c06d01f3e08",
+    "course": "operating-system",
+    "chunk_id": "f9e6591f-8366-4432-9896-aeb4fdb191ca",
+    "cau_hoi": "In a multiprocessor environment, what hardware feature must be provided to ensure cache coherency so that all CPUs have the most recent value of a datum in their caches?"
+  },
+  {
+    "course_id": "d8149d40-3100-4dd4-8466-0c06d01f3e08",
+    "course": "operating-system",
+    "chunk_id": "619e8589-fd3e-4ad6-bd42-6392955c9e71",
+    "cau_hoi": "What three elements does the passage say now limit a student's ability to obtain source code for creating a new operating‑system distribution?"
+  },
+  {
+    "course_id": "d8149d40-3100-4dd4-8466-0c06d01f3e08",
+    "course": "operating-system",
+    "chunk_id": "cfcbbb27-3ee3-4591-9432-169073c8bace",
+    "cau_hoi": "Which two VMM products are cited as examples of native VMMs that also serve as the host, implying there is no separate general‑purpose host operating system?"
+  },
+  {
+    "course_id": "d8149d40-3100-4dd4-8466-0c06d01f3e08",
+    "course": "operating-system",
+    "chunk_id": "1e1549fc-9101-4515-821f-698d31779fd3",
+    "cau_hoi": "What happens when `pthread_cond_signal(&cond)` is called while no thread is currently blocked on that condition variable?"
+  },
+  {
+    "course_id": "d8149d40-3100-4dd4-8466-0c06d01f3e08",
+    "course": "operating-system",
+    "chunk_id": "de7960c8-d815-4d25-87f2-d9e2e7ebdcbf",
+    "cau_hoi": "Using the processes P1 (burst time 10), P2 (burst time 29), P3 (burst time 3), P4 (burst time 7), and P5 (burst time 12) with a Round‑Robin time quantum of 10, what is the average turnaround time?"
+  },
+  {
+    "course_id": "d8149d40-3100-4dd4-8466-0c06d01f3e08",
+    "course": "operating-system",
+    "chunk_id": "c4245412-56b1-47d7-9d92-e1ad0879c36a",
+    "cau_hoi": "In RPC, which data representation format is used to handle differences between architectures such as Motorola's big‑endian and Intel x86's little‑endian?"
+  },
+  {
+    "course_id": "d8149d40-3100-4dd4-8466-0c06d01f3e08",
+    "course": "operating-system",
+    "chunk_id": "12990f6f-e23a-4d01-af6d-ab11eb18593e",
+    "cau_hoi": "What does “hard affinity” allow a process to specify in multiple‑processor scheduling?"
+  },
+  {
+    "course_id": "d8149d40-3100-4dd4-8466-0c06d01f3e08",
+    "course": "operating-system",
+    "chunk_id": "ee30c40c-950a-4d12-b6f9-65ac2ddcec35",
+    "cau_hoi": "In the FCFS scheduling example where the processes arrive in the order P2, P3, P1, what is the average waiting time of the three processes?"
+  },
+  {
+    "course_id": "d8149d40-3100-4dd4-8466-0c06d01f3e08",
+    "course": "operating-system",
+    "chunk_id": "fa2abf17-be26-4476-adde-753e0870fc58",
+    "cau_hoi": "What is another term used for the Process Control Block (PCB), and what specific information does the PCB store for CPU scheduling?"
+  },
+  {
+    "course_id": "d8149d40-3100-4dd4-8466-0c06d01f3e08",
+    "course": "operating-system",
+    "chunk_id": "dd043fce-2d3c-4a66-b45c-ef6a6577248d",
+    "cau_hoi": "What does UID stand for, and what two pieces of information does it include according to the OS concepts?"
+  },
+  {
+    "course_id": "d8149d40-3100-4dd4-8466-0c06d01f3e08",
+    "course": "operating-system",
+    "chunk_id": "c4a2b57e-3124-4dae-a007-9308dbbaa5a3",
+    "cau_hoi": "What command can be used to obtain the number of context switches for a given process?"
+  },
+  {
+    "course_id": "d8149d40-3100-4dd4-8466-0c06d01f3e08",
+    "course": "operating-system",
+    "chunk_id": "6593ad1c-7c2d-45f9-a6f8-3e0694e2ca97",
+    "cau_hoi": "What is the distinction between asymmetric clustering (hot‑standby mode) and symmetric clustering in terms of how the nodes operate?"
+  },
+  {
+    "course_id": "d8149d40-3100-4dd4-8466-0c06d01f3e08",
+    "course": "operating-system",
+    "chunk_id": "4ac25e66-2215-4950-8763-de83179f2d78",
+    "cau_hoi": "When using the system() call, what value does it return if the command argument is NULL and a shell is available?"
+  },
+  {
+    "course_id": "d8149d40-3100-4dd4-8466-0c06d01f3e08",
+    "course": "operating-system",
+    "chunk_id": "dfdaabec-e3ff-44fa-8f88-196d505bcbf4",
+    "cau_hoi": "Which Windows package is mentioned as supporting the many‑to‑many threading model?"
+  },
+  {
+    "course_id": "d8149d40-3100-4dd4-8466-0c06d01f3e08",
+    "course": "operating-system",
+    "chunk_id": "e93503a0-9877-4aa6-86c6-c56a05f9e563",
+    "cau_hoi": "In the example where semaphore S1 is initialized to 1 and semaphore S2 to 0, and each process repeatedly performs `wait` on one semaphore, executes its critical section, then `signal`s the other semaphore, which process (P1 or P2) will enter its critical section first?"
+  },
+  {
+    "course_id": "d8149d40-3100-4dd4-8466-0c06d01f3e08",
+    "course": "operating-system",
+    "chunk_id": "ec58aebd-6754-4cdc-8d76-e88aa2e559ba",
+    "cau_hoi": "Which component is described as providing virtualization services?"
+  },
+  {
+    "course_id": "f15ff574-6bb8-4d18-a47a-ed9344a39f87",
+    "course": "dsa",
+    "chunk_id": "746a8c55-3aca-46a3-91b2-2974998dd0cd",
+    "cau_hoi": "In the searching illustration, which variable is associated with the node containing the value 47?"
+  },
+  {
+    "course_id": "f15ff574-6bb8-4d18-a47a-ed9344a39f87",
+    "course": "dsa",
+    "chunk_id": "54053c57-7345-4b2d-a6d4-015e99c951b6",
+    "cau_hoi": "What are the three types of linked lists listed under the heading “Other linked lists”?"
+  },
+  {
+    "course_id": "f15ff574-6bb8-4d18-a47a-ed9344a39f87",
+    "course": "dsa",
+    "chunk_id": "5a6769f5-e4ad-4da9-a07d-abe2873aa8d3",
+    "cau_hoi": "What are the two defining properties of a min‑heap as listed in its definition?"
+  },
+  {
+    "course_id": "f15ff574-6bb8-4d18-a47a-ed9344a39f87",
+    "course": "dsa",
+    "chunk_id": "79b1bf4f-037d-4a42-8545-485b1b7edc11",
+    "cau_hoi": "What are the signatures of the two virtual `add` functions declared in the `IntSLinkedList` class?"
+  },
+  {
+    "course_id": "f15ff574-6bb8-4d18-a47a-ed9344a39f87",
+    "course": "dsa",
+    "chunk_id": "50df635f-0338-4693-a3d9-0dd959e1e5f3",
+    "cau_hoi": "In the linked list structure described, which fields are marked as optional and what does the optional “count” field represent?"
+  },
+  {
+    "course_id": "f15ff574-6bb8-4d18-a47a-ed9344a39f87",
+    "course": "dsa",
+    "chunk_id": "869d405d-1821-4eed-b99f-714b74cb633b",
+    "cau_hoi": "What operation is performed immediately after inserting the key k into tree R “like in BSTs” according to the Splay Tree insertion algorithm?"
+  },
+  {
+    "course_id": "f15ff574-6bb8-4d18-a47a-ed9344a39f87",
+    "course": "dsa",
+    "chunk_id": "938e1354-2bd3-4713-b274-9033b5bb36f7",
+    "cau_hoi": "Trong ví dụ tìm 5 trên cây Splay, kiểu phép quay được áp dụng là gì?"
+  },
+  {
+    "course_id": "f15ff574-6bb8-4d18-a47a-ed9344a39f87",
+    "course": "dsa",
+    "chunk_id": "41a1c3aa-3402-473c-931c-e848373968eb",
+    "cau_hoi": "What is the learning‑outcome code that corresponds to the task “Describe and present basic data structures such as: array, linked list, stack, queue, tree, and graph”?"
+  },
+  {
+    "course_id": "f15ff574-6bb8-4d18-a47a-ed9344a39f87",
+    "course": "dsa",
+    "chunk_id": "08e3c494-10ec-43cf-bc32-7d02ca21588f",
+    "cau_hoi": "When rebalancing a tree after insertion or deletion, which two specific unbalanced cases are explicitly described as “left of left” and “right of right”?"
+  },
+  {
+    "course_id": "f15ff574-6bb8-4d18-a47a-ed9344a39f87",
+    "course": "dsa",
+    "chunk_id": "cb6bb574-edea-40eb-bfd6-3efa4a39fd46",
+    "cau_hoi": "In a water pipeline network with a single source and destination, what two conditions must the flow satisfy according to the maximum‑flow description?"
+  },
+  {
+    "course_id": "f15ff574-6bb8-4d18-a47a-ed9344a39f87",
+    "course": "dsa",
+    "chunk_id": "0a914d75-51b2-4364-b868-813b253b9678",
+    "cau_hoi": "In the breadth‑first topological sort algorithm, which vertices are placed into the queue at the start, before any vertex is visited?"
+  },
+  {
+    "course_id": "f15ff574-6bb8-4d18-a47a-ed9344a39f87",
+    "course": "dsa",
+    "chunk_id": "a22e6a60-ca2b-4cc8-bed3-c3f710fee577",
+    "cau_hoi": "In the AVL Right Balance Algorithm, after performing the left rotation, what values are assigned to `root->balance` and `rightTree->balance`, and what is the final state of the variable `taller`?"
+  },
+  {
+    "course_id": "f15ff574-6bb8-4d18-a47a-ed9344a39f87",
+    "course": "dsa",
+    "chunk_id": "42b21fb5-e639-41ae-92a1-e313363d21bf",
+    "cau_hoi": "What is the return type and parameter list of the `contains` method declared in the `IntSLinkedList` class?"
+  },
+  {
+    "course_id": "f15ff574-6bb8-4d18-a47a-ed9344a39f87",
+    "course": "dsa",
+    "chunk_id": "efb23240-d0f5-4830-a713-7eec47204db7",
+    "cau_hoi": "What value is inserted at index 2 in the illustrated insertion example?"
+  },
+  {
+    "course_id": "f15ff574-6bb8-4d18-a47a-ed9344a39f87",
+    "course": "dsa",
+    "chunk_id": "bb040837-b3ff-4191-a58c-2fca6a6920c3",
+    "cau_hoi": "Which page identifier is listed immediately after the entry “Applications of Queue” in the outline?"
+  },
+  {
+    "course_id": "f15ff574-6bb8-4d18-a47a-ed9344a39f87",
+    "course": "dsa",
+    "chunk_id": "11ab6ae1-b89d-4b4b-bfe9-50c65eb2cf9e",
+    "cau_hoi": "How many public member functions are declared in the linked‑list stack class implementation?"
+  },
+  {
+    "course_id": "f15ff574-6bb8-4d18-a47a-ed9344a39f87",
+    "course": "dsa",
+    "chunk_id": "90eb50e3-5bfe-464b-b986-3d8623440e49",
+    "cau_hoi": "According to the illustration of searching for the key 7, how many nodes are reported as visited in the unbalanced tree and how many in the balanced tree?"
+  },
+  {
+    "course_id": "f15ff574-6bb8-4d18-a47a-ed9344a39f87",
+    "course": "dsa",
+    "chunk_id": "d4329c42-3dc2-40a4-9e77-3a615b2fa40d",
+    "cau_hoi": "According to the description of Prim's algorithm, what is the first operation performed on the tree?"
+  },
+  {
+    "course_id": "f15ff574-6bb8-4d18-a47a-ed9344a39f87",
+    "course": "dsa",
+    "chunk_id": "da365c3c-9bb9-4794-af20-4734348d4aae",
+    "cau_hoi": "In the prepend operation illustration for a non‑empty singly linked list, what identifier is used for the newly added node?"
+  },
+  {
+    "course_id": "f15ff574-6bb8-4d18-a47a-ed9344a39f87",
+    "course": "dsa",
+    "chunk_id": "1e13daaa-b41b-4a0e-8112-71c4046c7fd9",
+    "cau_hoi": "What simple idea does the excerpt describe for bringing a query node to the root, and what does it say about the effectiveness of that idea?"
+  },
+  {
+    "course_id": "f15ff574-6bb8-4d18-a47a-ed9344a39f87",
+    "course": "dsa",
+    "chunk_id": "126419be-6b35-4a6a-9713-c55ac1b538fc",
+    "cau_hoi": "In the Zig‑Zag modification diagram, which node becomes the new root and how are the subtrees T₁, T₂, T₃, and T₄ positioned after the rotation?"
+  },
+  {
+    "course_id": "f15ff574-6bb8-4d18-a47a-ed9344a39f87",
+    "course": "dsa",
+    "chunk_id": "69af34b0-a90d-450f-9882-8d647ce138a2",
+    "cau_hoi": "What is the precondition stated for the `destroyQueue` algorithm that deletes all data from a queue?"
+  },
+  {
+    "course_id": "f15ff574-6bb8-4d18-a47a-ed9344a39f87",
+    "course": "dsa",
+    "chunk_id": "4956940c-d851-4850-89b1-10290960af28",
+    "cau_hoi": "When executing `deleteLeftBalance`, if `leftTree` is not `EH`, what values are assigned to `root->balance` and `leftTree->balance` before the rotation?"
+  },
+  {
+    "course_id": "f15ff574-6bb8-4d18-a47a-ed9344a39f87",
+    "course": "dsa",
+    "chunk_id": "0a30e8de-0fa8-494a-925b-4147a6b62c2d",
+    "cau_hoi": "What exact string is used in the exception thrown by the `enQueue` method when the queue is full?"
+  },
+  {
+    "course_id": "f15ff574-6bb8-4d18-a47a-ed9344a39f87",
+    "course": "dsa",
+    "chunk_id": "b07f9733-1851-47d0-a279-7feb02bc02e4",
+    "cau_hoi": "What exception does the `IntArrayList::checkIndex` method throw when the provided index is out of the valid range?"
+  },
+  {
+    "course_id": "f15ff574-6bb8-4d18-a47a-ed9344a39f87",
+    "course": "dsa",
+    "chunk_id": "fc925127-dd2b-4dcc-8884-0a24f16479de",
+    "cau_hoi": "What does the `GetQueueFront` function return when `count` is zero?"
+  },
+  {
+    "course_id": "f15ff574-6bb8-4d18-a47a-ed9344a39f87",
+    "course": "dsa",
+    "chunk_id": "73586290-440b-4863-af99-25797bb012e3",
+    "cau_hoi": "In the Dequeue routine, what assignment is made to the rear pointer when the queue contains exactly one element?"
+  },
+  {
+    "course_id": "f15ff574-6bb8-4d18-a47a-ed9344a39f87",
+    "course": "dsa",
+    "chunk_id": "05f44c7f-972d-4934-b9e2-1366857cb621",
+    "cau_hoi": "In the presented `search(k, R)` algorithm for a splay tree, what operation is performed immediately after locating the node N?"
+  },
+  {
+    "course_id": "f15ff574-6bb8-4d18-a47a-ed9344a39f87",
+    "course": "dsa",
+    "chunk_id": "3b76309f-be77-48a2-9cb2-e404a99df553",
+    "cau_hoi": "What is the last key value shown in the AVL insertion example (the sequence 41, 20, 65, 11, 29, 50, 26)?"
+  },
+  {
+    "course_id": "f15ff574-6bb8-4d18-a47a-ed9344a39f87",
+    "course": "dsa",
+    "chunk_id": "afe3f65b-d11d-418f-80a7-211be4083e98",
+    "cau_hoi": "In the GraphNode constructor, what values are assigned to `indegree` and `outdegree`, and what method is called on `adjVertex`?"
+  },
+  {
+    "course_id": "f15ff574-6bb8-4d18-a47a-ed9344a39f87",
+    "course": "dsa",
+    "chunk_id": "c824918e-c119-48f8-9763-90821240e391",
+    "cau_hoi": "Which heap operation repairs a broken heap by floating the last element up the tree until it reaches its correct location?"
+  },
+  {
+    "course_id": "f15ff574-6bb8-4d18-a47a-ed9344a39f87",
+    "course": "dsa",
+    "chunk_id": "cac93882-800a-4b89-8126-ffdaa3db5bda",
+    "cau_hoi": "In the AVL insertion algorithm, if inserting into the left subtree makes it taller and the current root’s balance is LH, which function is called to rebalance the tree?"
+  },
+  {
+    "course_id": "f15ff574-6bb8-4d18-a47a-ed9344a39f87",
+    "course": "dsa",
+    "chunk_id": "7c0d3394-255b-4f74-bd3b-6eae9d807fdf",
+    "cau_hoi": "Which data structure is listed directly after “Multilinked List” in the outline?"
+  },
+  {
+    "course_id": "f15ff574-6bb8-4d18-a47a-ed9344a39f87",
+    "course": "dsa",
+    "chunk_id": "a58aa759-ccdc-4b31-bf1b-2ae1b7a66010",
+    "cau_hoi": "When deleting a vertex in the digraph, under what condition is Remove_EdgeToVertex invoked, and what does DeleteVertex return if the vertex’s indegree is zero?"
+  },
+  {
+    "course_id": "f15ff574-6bb8-4d18-a47a-ed9344a39f87",
+    "course": "dsa",
+    "chunk_id": "6e29df67-4ec9-431e-8a81-1b236b9186f8",
+    "cau_hoi": "In the selection algorithm pseudocode, which line assigns `temp = heap[0]` and what is the role of this assignment in the process of extracting the desired element?"
+  },
+  {
+    "course_id": "f15ff574-6bb8-4d18-a47a-ed9344a39f87",
+    "course": "dsa",
+    "chunk_id": "b0d25592-2bcb-4132-aef6-bd538345a921",
+    "cau_hoi": "In the rotateLeft algorithm, which line assigns the original root to `tempPtr->left`?"
+  },
+  {
+    "course_id": "f15ff574-6bb8-4d18-a47a-ed9344a39f87",
+    "course": "dsa",
+    "chunk_id": "85f16b58-f69b-41f3-b11f-37e8ed11084f",
+    "cau_hoi": "Which page numbers are cited for the figures illustrating the successful and unsuccessful Top operations of a stack?"
+  },
+  {
+    "course_id": "f15ff574-6bb8-4d18-a47a-ed9344a39f87",
+    "course": "dsa",
+    "chunk_id": "bdfa6884-9f71-45cb-9d6f-7a9b321ab758",
+    "cau_hoi": "If a complete heap contains N elements, at which array index does the first leaf element appear?"
+  },
+  {
+    "course_id": "f15ff574-6bb8-4d18-a47a-ed9344a39f87",
+    "course": "dsa",
+    "chunk_id": "30801bbd-d3a8-49fb-b1e8-27fd67148c26",
+    "cau_hoi": "In the AVL insertion example shown, which node is identified as “out of balance: 29: Left of left,” and what specific rotation is performed at that node?"
+  },
+  {
+    "course_id": "f15ff574-6bb8-4d18-a47a-ed9344a39f87",
+    "course": "dsa",
+    "chunk_id": "56b186ce-18fc-4eaf-ae8b-ca3c05273fd6",
+    "cau_hoi": "In the BreadthTopoSort algorithm, after a vertex v is dequeued, under what condition is an adjacent vertex w enqueued into the queue?"
+  },
+  {
+    "course_id": "f15ff574-6bb8-4d18-a47a-ed9344a39f87",
+    "course": "dsa",
+    "chunk_id": "26133bff-4137-4920-b719-0df3927b8311",
+    "cau_hoi": "Which slide is labeled for the illustration of “Removal: Delete the last element” in the material?"
+  },
+  {
+    "course_id": "f15ff574-6bb8-4d18-a47a-ed9344a39f87",
+    "course": "dsa",
+    "chunk_id": "5eab36c5-8dbf-4516-914c-ed2179824a23",
+    "cau_hoi": "In the array‑based linked‑list representation, what are the two separate lists called, and what does each list manage?"
+  },
+  {
+    "course_id": "f15ff574-6bb8-4d18-a47a-ed9344a39f87",
+    "course": "dsa",
+    "chunk_id": "99b9de13-5985-4d59-8fad-2db866a99fc3",
+    "cau_hoi": "What is the exact wording of the source citation provided at the end of the document?"
+  },
+  {
+    "course_id": "f15ff574-6bb8-4d18-a47a-ed9344a39f87",
+    "course": "dsa",
+    "chunk_id": "9b3def90-c335-4bd8-967b-bd5fffad6809",
+    "cau_hoi": "What are the two basic queue operations that are explicitly listed in the outline?"
+  },
+  {
+    "course_id": "f15ff574-6bb8-4d18-a47a-ed9344a39f87",
+    "course": "dsa",
+    "chunk_id": "db365022-32bb-4865-b512-0d5eeae6ea06",
+    "cau_hoi": "In the balanced tree illustrated for Find 1, which node appears as the left child of the root node?"
+  },
+  {
+    "course_id": "f15ff574-6bb8-4d18-a47a-ed9344a39f87",
+    "course": "dsa",
+    "chunk_id": "ea89b2d2-ccde-4675-b3ad-a065a5fb0a30",
+    "cau_hoi": "In the C++ Queue class template, what are the names of the two private pointer members that represent the front and rear of the queue?"
+  },
+  {
+    "course_id": "f15ff574-6bb8-4d18-a47a-ed9344a39f87",
+    "course": "dsa",
+    "chunk_id": "57defce9-e562-4db3-adbb-c8cecaf4b829",
+    "cau_hoi": "In the Delete Right Balance routine, when the condition “rightTree not EH” is true, what values are assigned to root->balance and rightTree->balance, and which variable is set to false?"
+  },
+  {
+    "course_id": "f15ff574-6bb8-4d18-a47a-ed9344a39f87",
+    "course": "dsa",
+    "chunk_id": "2f3444c9-6565-48d0-81e1-d7f301a574bf",
+    "cau_hoi": "What initial value is assigned to the variable `position` in the HeapSort algorithm shown?"
+  },
+  {
+    "course_id": "f15ff574-6bb8-4d18-a47a-ed9344a39f87",
+    "course": "dsa",
+    "chunk_id": "359fee25-5b37-4c3b-a07e-92e374b10807",
+    "cau_hoi": "In the Splay Tree searching example for finding the key 5, which node becomes the new root after the Zig step?"
+  },
+  {
+    "course_id": "f15ff574-6bb8-4d18-a47a-ed9344a39f87",
+    "course": "dsa",
+    "chunk_id": "8dc0d6df-992a-46ad-9e55-c9f596d59d03",
+    "cau_hoi": "When deleting a node from a heap, which node’s data is moved to the root before performing the reheap‑down operation?"
+  },
+  {
+    "course_id": "f3c553e9-cb33-4f75-ac65-ed5b3130b1e0",
+    "course": "calculus1",
+    "chunk_id": "75688f70-ab76-43a1-9674-87ddf0888837",
+    "cau_hoi": "Khi dùng vi phân cấp 1 để xấp xỉ giá trị \\(\\arctan(0.97)\\), \\(\\Delta x\\) được tính bằng bao nhiêu?"
+  },
+  {
+    "course_id": "f3c553e9-cb33-4f75-ac65-ed5b3130b1e0",
+    "course": "calculus1",
+    "chunk_id": "59d98af6-f126-4aac-9a44-a758c79db8f0",
+    "cau_hoi": "Trong tiêu chuẩn so sánh 2 của tích phân suy rộng loại 1, nếu \\(\\displaystyle\\lim_{x\\to\\infty}\\frac{f(x)}{g(x)}=K=0\\), ta suy ra mối quan hệ hội tụ/​phân kỳ giữa \\(\\int_a^{\\infty}f(x)\\,dx\\) và \\(\\int_a^{\\infty}g(x)\\,dx\\) như thế nào?"
+  },
+  {
+    "course_id": "f3c553e9-cb33-4f75-ac65-ed5b3130b1e0",
+    "course": "calculus1",
+    "chunk_id": "65a117a3-bb37-49bd-ae0a-443e43c2b08b",
+    "cau_hoi": "Giới hạn của \\(\\displaystyle \\frac{\\arctan x}{x}\\) khi \\(x\\) tiến tới 0 bằng bao nhiêu?"
+  },
+  {
+    "course_id": "f3c553e9-cb33-4f75-ac65-ed5b3130b1e0",
+    "course": "calculus1",
+    "chunk_id": "7f04c98a-34dd-4de2-bff1-42c0123af942",
+    "cau_hoi": "Nếu ytn là nghiệm tổng quát của phương trình thuần nhất (1.1) và yr là một nghiệm riêng của phương trình không thuần nhất (2.1), thì nghiệm tổng quát của phương trình không thuần nhất (2.1) được tính như thế nào?"
+  },
+  {
+    "course_id": "f3c553e9-cb33-4f75-ac65-ed5b3130b1e0",
+    "course": "calculus1",
+    "chunk_id": "f380c0c8-ebce-449e-b7c5-30be6dc2591b",
+    "cau_hoi": "Theo định lý tích phân từng phần, nếu \\(u(x)\\) và \\(v'(x)\\) có nguyên hàm trên \\((a,b)\\), công thức tính \\(\\displaystyle\\int u'(x)v(x)\\,dx\\) là gì?"
+  },
+  {
+    "course_id": "f3c553e9-cb33-4f75-ac65-ed5b3130b1e0",
+    "course": "calculus1",
+    "chunk_id": "55c09fcc-8481-44a5-87bc-ce36c3f54687",
+    "cau_hoi": "Trong các hàm sơ cấp cơ bản, có bao nhiêu hàm lượng giác ngược được liệt kê?"
+  },
+  {
+    "course_id": "f3c553e9-cb33-4f75-ac65-ed5b3130b1e0",
+    "course": "calculus1",
+    "chunk_id": "8a7491bb-3bff-4639-b675-da251b71d330",
+    "cau_hoi": "Trong quy trình khảo sát hàm y = f(x) được liệt kê, bước nào đề cập đến việc xác định các điểm uốn?"
+  },
+  {
+    "course_id": "f3c553e9-cb33-4f75-ac65-ed5b3130b1e0",
+    "course": "calculus1",
+    "chunk_id": "9fb3bcb9-42ea-48c4-b8a2-b1122b375278",
+    "cau_hoi": "Trong ví dụ \\(D=\\{1/n \\mid n\\in\\mathbb{N}\\}\\), điểm tụ duy nhất của tập này là bao nhiêu?"
+  },
+  {
+    "course_id": "f3c553e9-cb33-4f75-ac65-ed5b3130b1e0",
+    "course": "calculus1",
+    "chunk_id": "405fc81b-43b4-46b3-a8ce-baf8cccca431",
+    "cau_hoi": "Khi chuyển một phương trình vi phân cấp 1 dạng \\(f(x)\\,dx+g(y)\\,dy=0\\) sang dạng tách biến, ta đặt \\(z(x)\\) bằng biểu thức nào?"
+  },
+  {
+    "course_id": "f3c553e9-cb33-4f75-ac65-ed5b3130b1e0",
+    "course": "calculus1",
+    "chunk_id": "0a504cae-6828-411b-963f-d4a274fb2c4c",
+    "cau_hoi": "Trong công thức tích phân bất định cho \\(n=1\\), \\(I_n\\) được biểu diễn bằng hàm arctan nào và hệ số trước hàm arctan là bao nhiêu?"
+  },
+  {
+    "course_id": "f3c553e9-cb33-4f75-ac65-ed5b3130b1e0",
+    "course": "calculus1",
+    "chunk_id": "c5a6ad9e-9dfb-491d-83b9-64518d26473d",
+    "cau_hoi": "Trong ví dụ khai triển Taylor hàm \\(y = x^4 + 3x^3 - 5x^2 + x - 1\\) tại \\(x_0 = 1\\), hệ số của \\((x-1)^2\\) trong đa thức Taylor là bao nhiêu?"
+  },
+  {
+    "course_id": "f3c553e9-cb33-4f75-ac65-ed5b3130b1e0",
+    "course": "calculus1",
+    "chunk_id": "0b714158-13e7-4541-83f1-b2331b01ed23",
+    "cau_hoi": "Khi tính d²y cho hàm y = f(eˣ) bằng cách đặt u = eˣ, công thức nào sau đây biểu diễn d²y đúng?  \n\nA) d²y = [f''(u)·eˣ + f'(u)]·eˣ dx  \nB) d²y = [f''(u)·e²ˣ + f'(u)·eˣ] dx  \nC) d²y = [f''(u)·eˣ − f'(u)]·eˣ dx  \nD) d²y = [f''(u)·e²ˣ − f'(u)·eˣ] dx"
+  },
+  {
+    "course_id": "f3c553e9-cb33-4f75-ac65-ed5b3130b1e0",
+    "course": "calculus1",
+    "chunk_id": "a4e79420-943d-4cb7-9488-fd8d5b894963",
+    "cau_hoi": "Một hàm 1-1 có đồ thị cắt mỗi đường thẳng y = C (với C thuộc miền giá trị của hàm) bao nhiêu điểm?"
+  },
+  {
+    "course_id": "f3c553e9-cb33-4f75-ac65-ed5b3130b1e0",
+    "course": "calculus1",
+    "chunk_id": "41022db6-ab80-4e31-af6d-14a1e8fb40ee",
+    "cau_hoi": "Miền xác định (MXĐ) của hàm \\(y=\\dfrac{5x-6}{x^{2}-5x+6}\\) là tập nào?"
+  },
+  {
+    "course_id": "f3c553e9-cb33-4f75-ac65-ed5b3130b1e0",
+    "course": "calculus1",
+    "chunk_id": "eaf83ef8-3e01-4a0a-adae-a84f6ff2b0b2",
+    "cau_hoi": "Đối với tích phân \\(\\displaystyle \\int_{1}^{+\\infty}\\frac{dx}{x^{\\alpha}}\\), giá trị \\(\\alpha\\) nào khiến tích phân này hội tụ và giá trị \\(\\alpha\\) nào khiến nó phân kỳ?"
+  },
+  {
+    "course_id": "f3c553e9-cb33-4f75-ac65-ed5b3130b1e0",
+    "course": "calculus1",
+    "chunk_id": "b5be1931-9f03-4c68-9f6d-4748b05ab307",
+    "cau_hoi": "Trong ví dụ tìm a sao cho hàm \\(f(x)\\) có giới hạn khi \\(x\\to 0\\), giá trị \\(a\\) phải thỏa mãn điều kiện gì?"
+  },
+  {
+    "course_id": "f3c553e9-cb33-4f75-ac65-ed5b3130b1e0",
+    "course": "calculus1",
+    "chunk_id": "15cbe552-9e84-47ea-be19-ee36c16e4d29",
+    "cau_hoi": "Trong hệ phương trình vi phân tuyến tính cấp 1 hệ số hằng, các hàm \\(f_i(t)\\) (với \\(i=1,2,\\dots ,n\\)) phải thỏa mãn tính chất gì trên khoảng \\((a,b)\\)?"
+  },
+  {
+    "course_id": "f3c553e9-cb33-4f75-ac65-ed5b3130b1e0",
+    "course": "calculus1",
+    "chunk_id": "9c758431-4edf-4420-b2fe-320b0b7a4ec3",
+    "cau_hoi": "Khi tính tích phân \\(I=\\displaystyle\\int\\left(\\frac{1}{x-1}+\\frac{1}{x+2}\\right)dx\\) trong ví dụ, hệ số trước \\(\\ln|x-1|\\) và \\(\\ln|x+2|\\) trong kết quả cuối cùng lần lượt là bao nhiêu?"
+  },
+  {
+    "course_id": "f3c553e9-cb33-4f75-ac65-ed5b3130b1e0",
+    "course": "calculus1",
+    "chunk_id": "c83c297d-ff1f-441a-b994-c1e2d214c61c",
+    "cau_hoi": "Trong phần tóm tắt lý thuyết, dãy nào được gọi là dãy VCB và dãy nào được gọi là dãy VCL, và các điều kiện cụ thể để một dãy thuộc mỗi loại là gì?"
+  },
+  {
+    "course_id": "f3c553e9-cb33-4f75-ac65-ed5b3130b1e0",
+    "course": "calculus1",
+    "chunk_id": "d92c1232-0131-40b6-a124-8bc51a5b4319",
+    "cau_hoi": "Phương trình vi phân bậc nhất số 13 trong danh sách có chứa hàm nào?"
+  },
+  {
+    "course_id": "f3c553e9-cb33-4f75-ac65-ed5b3130b1e0",
+    "course": "calculus1",
+    "chunk_id": "204f7a5b-1008-429c-a2a0-688541a1d7b4",
+    "cau_hoi": "Nếu dùng một điểm Mk bất kỳ trong khoảng \\([x_k, x_{k+1}]\\) để tính diện tích hình thang cong nhỏ thứ k, công thức gần đúng cho diện tích này là gì?"
+  },
+  {
+    "course_id": "f3c553e9-cb33-4f75-ac65-ed5b3130b1e0",
+    "course": "calculus1",
+    "chunk_id": "16a7cf9f-49c8-41a9-9123-7352170f7f3c",
+    "cau_hoi": "Hàm y = (x² + 1)/(x eˣ + 1) có tiệm cận dọc và tiệm cận nghiêng nào? Cụ thể, vị trí tiệm cận dọc và phương trình tiệm cận nghiêng là gì?"
+  },
+  {
+    "course_id": "f3c553e9-cb33-4f75-ac65-ed5b3130b1e0",
+    "course": "calculus1",
+    "chunk_id": "6e646419-a7cb-4a71-b546-3d7d60a0f4d3",
+    "cau_hoi": "Trong phép phân tích thành phần riêng của \\(\\displaystyle \\int \\frac{3x^{2}+9x+2}{x^{5}-x^{4}+5x-4}\\,dx\\), hệ số \\(a\\) của \\(\\frac{1}{x+1}\\) bằng bao nhiêu?"
+  },
+  {
+    "course_id": "f3c553e9-cb33-4f75-ac65-ed5b3130b1e0",
+    "course": "calculus1",
+    "chunk_id": "4718e22e-36e8-4246-94fd-954fbc886628",
+    "cau_hoi": "Trong phần “Tìm tiệm cận của các hàm”, hàm nào được liệt kê có điểm (0, 0) làm tiệm cận?"
+  },
+  {
+    "course_id": "f3c553e9-cb33-4f75-ac65-ed5b3130b1e0",
+    "course": "calculus1",
+    "chunk_id": "0ab345ba-1a4c-4d7d-8467-710e01e70f6b",
+    "cau_hoi": "Trong định nghĩa tích phân suy rộng loại 2, nếu \\(\\displaystyle \\lim_{c\\to b^-}\\int_a^{c}f(x)\\,dx\\) tồn tại và hữu hạn, ta gọi tích phân đó là loại nào?"
+  },
+  {
+    "course_id": "f3c553e9-cb33-4f75-ac65-ed5b3130b1e0",
+    "course": "calculus1",
+    "chunk_id": "adbbd2da-19b4-410e-bc2e-4e1cd3771001",
+    "cau_hoi": "Trong công thức phụ lục, O(x) được viết dưới dạng ∫₀ˣ (t − t³⁄3 + 2t⁵⁄5) dt; hệ số của t⁵ trong biểu thức tích phân là bao nhiêu?"
+  },
+  {
+    "course_id": "f3c553e9-cb33-4f75-ac65-ed5b3130b1e0",
+    "course": "calculus1",
+    "chunk_id": "fdcb9b41-7b5d-4f6b-a3ae-0c9842d0a144",
+    "cau_hoi": "Trong MATLAB, nếu lệnh int(f,a,b) không thể tính tích phân xác định của một hàm, tài liệu đề xuất dùng lệnh nào để nhận được giá trị gần đúng của tích phân đó?"
+  },
+  {
+    "course_id": "f3c553e9-cb33-4f75-ac65-ed5b3130b1e0",
+    "course": "calculus1",
+    "chunk_id": "74339c5e-1759-43e1-9aa6-95e882922e5c",
+    "cau_hoi": "Quy tắc ngắt bỏ VCL trong chương 2, phần III, được nêu như thế nào khi tính \\(\\displaystyle \\lim_{x\\to 0}\\) của một hàm VCL?"
+  },
+  {
+    "course_id": "f3c553e9-cb33-4f75-ac65-ed5b3130b1e0",
+    "course": "calculus1",
+    "chunk_id": "03a08f81-ef02-4008-b394-d82a8b2ba099",
+    "cau_hoi": "Khi viết hàm `hinhthang(f,a,b,solan)` trong Matlab, nếu tham số `solan` bằng n thì số đoạn chia thực tế là bao nhiêu?"
+  },
+  {
+    "course_id": "f3c553e9-cb33-4f75-ac65-ed5b3130b1e0",
+    "course": "calculus1",
+    "chunk_id": "3ee2c46d-5537-4061-be6b-06a874602618",
+    "cau_hoi": "Hàm ngược của hàm \\(y=\\frac{1}{x+1}\\) là gì?"
+  },
+  {
+    "course_id": "f3c553e9-cb33-4f75-ac65-ed5b3130b1e0",
+    "course": "calculus1",
+    "chunk_id": "ad7e74aa-c2cc-4e45-8ff1-d855885e6d50",
+    "cau_hoi": "Trong phần giải hệ phương trình cấp 1 hệ số hằng, công thức cho \\(y(t)\\) được biểu diễn như thế nào, bao gồm các hằng số \\(C_e\\) và các hàm mũ của \\(t\\)?"
+  },
+  {
+    "course_id": "f3c553e9-cb33-4f75-ac65-ed5b3130b1e0",
+    "course": "calculus1",
+    "chunk_id": "c11a8c49-6b7f-4ca6-89a1-73636ead912d",
+    "cau_hoi": "Khi khảo sát tính hội tụ của tích phân \\(I_6=\\displaystyle\\int_{0}^{1}\\frac{2x-1}{x^{2}}\\,dx\\), tại các cận \\(x\\to0\\) và \\(x\\to1\\), hàm dưới dấu tích phân có tính chất gì khiến \\(I_6\\) trở thành tổng của hai tích phân bất khả quy?"
+  },
+  {
+    "course_id": "f3c553e9-cb33-4f75-ac65-ed5b3130b1e0",
+    "course": "calculus1",
+    "chunk_id": "c57cbb20-2667-4307-a7d9-226eff0c01df",
+    "cau_hoi": "Theo Mệnh đề 2, hàm f có hàm ngược trên khoảng (a,b) khi nào?"
+  },
+  {
+    "course_id": "f3c553e9-cb33-4f75-ac65-ed5b3130b1e0",
+    "course": "calculus1",
+    "chunk_id": "83d754a9-32f4-4767-a8ee-2bdf7cdaedba",
+    "cau_hoi": "Giới hạn nào của dãy \\((1+\\frac{1}{n})^{n}\\) khi \\(n\\to\\infty\\) được dùng để định nghĩa số \\(e\\) trong tài liệu?"
+  },
+  {
+    "course_id": "f3c553e9-cb33-4f75-ac65-ed5b3130b1e0",
+    "course": "calculus1",
+    "chunk_id": "a7708467-70c0-4d91-b208-b96bd63ff64c",
+    "cau_hoi": "Hàm h(x,y) nào được nhân vào cả hai vế của phương trình để biến nó thành một phương trình vi phân toàn phần?"
+  },
+  {
+    "course_id": "f3c553e9-cb33-4f75-ac65-ed5b3130b1e0",
+    "course": "calculus1",
+    "chunk_id": "723848cb-e3f9-4db0-a46c-e27bddf8265c",
+    "cau_hoi": "Trong ví dụ về phương trình \\(y' = \\frac{1-y^{2}}{y}\\), tại sao các nghiệm \\(y = 1\\) và \\(y = -1\\) được gọi là nghiệm kì dị?"
+  },
+  {
+    "course_id": "f3c553e9-cb33-4f75-ac65-ed5b3130b1e0",
+    "course": "calculus1",
+    "chunk_id": "aee62591-3626-4dc7-ae67-333478555f97",
+    "cau_hoi": "Khi tính \\(\\displaystyle \\int \\arcsin x \\,dx\\) bằng phương pháp tích phân từng phần, nếu đặt \\(u=\\arcsin x\\) và \\(dv=dx\\), thì \\(du\\) bằng bao nhiêu?"
+  },
+  {
+    "course_id": "f3c553e9-cb33-4f75-ac65-ed5b3130b1e0",
+    "course": "calculus1",
+    "chunk_id": "8a39fa63-5290-4e15-b8c4-54eb9fd5d667",
+    "cau_hoi": "Đạo hàm bậc 10 của hàm \\(f(x)=\\ln(x^{2}+5x+4)\\) tại \\(x=0\\) có giá trị bằng bao nhiêu?"
+  },
+  {
+    "course_id": "f3c553e9-cb33-4f75-ac65-ed5b3130b1e0",
+    "course": "calculus1",
+    "chunk_id": "b93221ae-65c8-44d4-8b21-e147c0a5a621",
+    "cau_hoi": "Trong định lý Taylor, phần dư dạng Lagrange được biểu diễn bằng công thức nào và nó phụ thuộc vào điểm \\(c\\) nào?"
+  },
+  {
+    "course_id": "f3c553e9-cb33-4f75-ac65-ed5b3130b1e0",
+    "course": "calculus1",
+    "chunk_id": "3455dbf7-e2d0-4359-8ccc-49a84d9c9cee",
+    "cau_hoi": "Khi tính giới hạn \\(\\displaystyle\\lim_{x\\to0}\\frac{\\tan x-\\sin x}{\\sin^{3}x}\\), khai triển Maclaurin của \\(\\tan x\\) được viết dưới dạng nào?"
+  },
+  {
+    "course_id": "f3c553e9-cb33-4f75-ac65-ed5b3130b1e0",
+    "course": "calculus1",
+    "chunk_id": "5f8bf048-4428-43ed-b0e5-979ab59d0723",
+    "cau_hoi": "Trong quy tắc thay VCB tương đương, trường hợp duy nhất không được thay VCB tương đương là gì?"
+  },
+  {
+    "course_id": "f3c553e9-cb33-4f75-ac65-ed5b3130b1e0",
+    "course": "calculus1",
+    "chunk_id": "26149b80-cee3-4bcb-9b3f-aa9e196e238f",
+    "cau_hoi": "Trong cách 1 để tìm nghiệm tiềm năng \\(U(x,y)\\) của phương trình toàn phần, nếu chọn điểm \\((x_0,y_0)\\) sao cho \\(P\\) và \\(Q\\) liên tục tại đó, công thức tích phân nào được dùng để biểu diễn \\(U(x,y)\\)?"
+  },
+  {
+    "course_id": "f3c553e9-cb33-4f75-ac65-ed5b3130b1e0",
+    "course": "calculus1",
+    "chunk_id": "687e7ea6-6639-41dc-8bb8-10bc57400009",
+    "cau_hoi": "Trong ví dụ tính gần đúng \\(A=\\ln(1,05)\\) bằng công thức Taylor‑Maclaurin, \\(x_0\\) được chọn bằng bao nhiêu và hằng số \\(c\\) trong phần dư Lagrange nằm trong khoảng nào?"
+  },
+  {
+    "course_id": "f3c553e9-cb33-4f75-ac65-ed5b3130b1e0",
+    "course": "calculus1",
+    "chunk_id": "a22d9994-59c1-44f6-94cc-0ce3666a1073",
+    "cau_hoi": "Miền xác định và miền giá trị của hàm y = arccot x lần lượt là gì?"
+  },
+  {
+    "course_id": "f3c553e9-cb33-4f75-ac65-ed5b3130b1e0",
+    "course": "calculus1",
+    "chunk_id": "a31fa79e-24d2-41d2-8b6e-9c8c7194986f",
+    "cau_hoi": "Quy tắc tính đạo hàm của tích hai hàm f·g được cho bởi công thức nào?"
+  },
+  {
+    "course_id": "f3c553e9-cb33-4f75-ac65-ed5b3130b1e0",
+    "course": "calculus1",
+    "chunk_id": "dfa63bad-ba33-45ea-98e7-b61337bc213c",
+    "cau_hoi": "Trong khai triển Maclaurin bậc 5 của hàm \\(f(x)\\) được nêu, các hệ số của đa thức \\(O(x)\\) tương ứng với các lũy thừa \\(x, x^{2}, x^{3}, x^{4}, x^{5}\\) là bao nhiêu?"
+  },
+  {
+    "course_id": "f3c553e9-cb33-4f75-ac65-ed5b3130b1e0",
+    "course": "calculus1",
+    "chunk_id": "e85c33e3-99f9-4e7b-a9e4-80bcdf4f4e87",
+    "cau_hoi": "Giới hạn của hàm số \\(f(x)=\\frac{3x-2}{x-3}\\) khi \\(x\\) tiến tới \\(3\\) từ phía trái và từ phía phải lần lượt là bao nhiêu, và kết luận về giới hạn toàn bộ tại \\(x=3\\) là gì?"
+  },
+  {
+    "course_id": "f3c553e9-cb33-4f75-ac65-ed5b3130b1e0",
+    "course": "calculus1",
+    "chunk_id": "6182963a-edd7-42b1-9f21-1506a1a40ce2",
+    "cau_hoi": "Trong ví dụ tính \\(\\displaystyle\\int\\frac{2x+5}{x^{2}+2x+5}\\,dx\\), tác giả đặt \\(t=\\frac{x-1}{\\,x+1\\,}\\) và khi thay \\(t\\) tích phân được biến đổi thành \\(\\displaystyle\\int\\frac{4}{t^{2}-3}\\,dt\\). Hằng số \\(C\\) sau khi tính tích phân được biểu diễn dưới dạng nào?  \n\nA) \\(C=\\dfrac{x+3}{2x+2}\\)  \n\nB) \\(C=\\dfrac{x+1}{2x+3}\\)"
+  },
+  {
+    "course_id": "f3c553e9-cb33-4f75-ac65-ed5b3130b1e0",
+    "course": "calculus1",
+    "chunk_id": "33065f3d-275b-4ee1-a41b-ab10ea28f059",
+    "cau_hoi": "Trong chương 4, định lý nào khẳng định rằng mọi hàm liên tục trên \\([a,b]\\) (liên tục và liên tục trái tại \\(b\\), liên tục phải tại \\(a\\)) đều có nguyên hàm trên \\([a,b]\\)?"
+  },
+  {
+    "course_id": "f3c553e9-cb33-4f75-ac65-ed5b3130b1e0",
+    "course": "calculus1",
+    "chunk_id": "3c239a82-ea37-42a1-9953-e382b73cc1a3",
+    "cau_hoi": "Đối với hàm lũy thừa \\(y = x^{a}\\), khi \\(a = 2, 4, 6\\) thì tập xác định (MXĐ) và tập giá trị (MGT) của hàm là gì?"
+  },
+  {
+    "course_id": "b42c41e6-babc-4cc3-a322-232527acd9a3",
+    "course": "chemistry1",
+    "chunk_id": "5ea13df9-a910-44a7-8579-1f4f1d004ffa",
+    "cau_hoi": "Trong công thức Van’t Hoff được điều chỉnh cho dung dịch axit, baz và muối, biểu thức tính π' (áp suất thẩm thấu thực nghiệm) là gì và bao gồm các thành phần nào?"
+  },
+  {
+    "course_id": "b42c41e6-babc-4cc3-a322-232527acd9a3",
+    "course": "chemistry1",
+    "chunk_id": "4806c344-1a76-487a-9721-c385562d6799",
+    "cau_hoi": "Trong các ion O²⁻, F⁻, Na⁺, Mg²⁺, Al³⁺ có cùng cấu hình electron 1s² 2s² 2p⁶, thứ tự giảm dần của bán kính ion là gì?"
+  },
+  {
+    "course_id": "b42c41e6-babc-4cc3-a322-232527acd9a3",
+    "course": "chemistry1",
+    "chunk_id": "51e77817-7c40-418f-8b48-464fd783427c",
+    "cau_hoi": "Bán kính ion được xác định dựa trên khoảng cách nào và trong ví dụ, bán kính ion của anion O²⁻ là bao nhiêu picomet?"
+  },
+  {
+    "course_id": "b42c41e6-babc-4cc3-a322-232527acd9a3",
+    "course": "chemistry1",
+    "chunk_id": "637e7bdb-7879-4674-83ee-88d50fda1f46",
+    "cau_hoi": "Trong công thức Nernst đã nêu, khi thay các hằng số T = 298 K, R = 8.314 J·mol⁻¹·K⁻¹, F = 96 500 C·mol⁻¹ và ln = 2.303 lg, hệ số nhân trước log₁₀ (lg) được rút gọn thành bao nhiêu?"
+  },
+  {
+    "course_id": "b42c41e6-babc-4cc3-a322-232527acd9a3",
+    "course": "chemistry1",
+    "chunk_id": "cd2699bf-4e18-4c67-aeb0-e73021f0cc21",
+    "cau_hoi": "Trong bảng tuần hoàn, số thứ tự của một nguyên tố được xác định bằng số electron của lớp ngoài cùng của nguyên tử cuối cùng của nguyên tố đó?"
+  },
+  {
+    "course_id": "b42c41e6-babc-4cc3-a322-232527acd9a3",
+    "course": "chemistry1",
+    "chunk_id": "fc56a45e-5e99-49e4-aec0-d13000497ce8",
+    "cau_hoi": "Trong phản ứng cân bằng CaCO₃ (r) ⇌ CaO (r) + CO₂ (k) ở nhiệt độ không đổi, tại sao áp suất riêng phần của CaCO₃ và CaO được coi là hằng số và không xuất hiện trong biểu thức hằng số cân bằng K?"
+  },
+  {
+    "course_id": "b42c41e6-babc-4cc3-a322-232527acd9a3",
+    "course": "chemistry1",
+    "chunk_id": "479178c2-442e-4998-8561-83e3a0dfcc71",
+    "cau_hoi": "Trong ví dụ về phân tử nước, góc H–O–H được nêu là khoảng bao nhiêu độ và nguyên tử O được mô tả có cấu hình electron nào?"
+  },
+  {
+    "course_id": "b42c41e6-babc-4cc3-a322-232527acd9a3",
+    "course": "chemistry1",
+    "chunk_id": "72c17a27-e6ea-4b1a-89ea-f1186ce55326",
+    "cau_hoi": "Theo mô tả, sự tổ hợp tuyeán tính cộng và trừ của các AO tạo ra những loại MO nào (kí hiệu) và năng lượng của chúng so với năng lượng của các AO tham gia là như thế nào?"
+  },
+  {
+    "course_id": "b42c41e6-babc-4cc3-a322-232527acd9a3",
+    "course": "chemistry1",
+    "chunk_id": "84f94e7c-415c-461b-8f1c-29b298c2e180",
+    "cau_hoi": "Trong hệ đồng thể (khí, lỏng hay rắn) gồm hai hay nhiều chất, chất nào được gọi là chất tan và môi trường nào được gọi là dung môi?"
+  },
+  {
+    "course_id": "b42c41e6-babc-4cc3-a322-232527acd9a3",
+    "course": "chemistry1",
+    "chunk_id": "3cc51c8b-f645-42ae-8376-291901bc9c50",
+    "cau_hoi": "Trong hệ xúc tác dị thể, chất xúc tác thường ở pha nào trong khi chất phản ứng lại ở pha nào?"
+  },
+  {
+    "course_id": "b42c41e6-babc-4cc3-a322-232527acd9a3",
+    "course": "chemistry1",
+    "chunk_id": "082f26d2-0d11-4889-8532-40ed9eceefe0",
+    "cau_hoi": "Khi tính tốc độ tức thời của phản ứng, mình nên đặt dấu – trước dC/dt nếu C là nồng độ của chất phản ứng, còn nếu C là nồng độ của chất sản phẩm thì đặt dấu gì?"
+  },
+  {
+    "course_id": "b42c41e6-babc-4cc3-a322-232527acd9a3",
+    "course": "chemistry1",
+    "chunk_id": "d074a742-3bfc-4762-8383-c77ac2fa978f",
+    "cau_hoi": "Trong ví dụ so sánh entropi các dạng oxy, thứ tự tăng dần của \\(S^\\circ_{298}\\) là gì?"
+  },
+  {
+    "course_id": "b42c41e6-babc-4cc3-a322-232527acd9a3",
+    "course": "chemistry1",
+    "chunk_id": "b366fba0-2fe8-4f07-817e-b82d083c4c67",
+    "cau_hoi": "Theo nội dung, việc sử dụng thế điện cực tiêu chuẩn φ₀ để xác định chiều của phản ứng oxy hoá‑khử chỉ hợp lệ trong hai trường hợp nào?"
+  },
+  {
+    "course_id": "b42c41e6-babc-4cc3-a322-232527acd9a3",
+    "course": "chemistry1",
+    "chunk_id": "090ec1eb-ed67-4545-99c7-616a66bf9a01",
+    "cau_hoi": "Trong một phản ứng thuận nghịch dạng aA + bB ⇌ cC + dD, công thức tốc độ của phản ứng thuận được viết như thế nào?"
+  },
+  {
+    "course_id": "b42c41e6-babc-4cc3-a322-232527acd9a3",
+    "course": "chemistry1",
+    "chunk_id": "8aadc7da-31f1-4afc-a81a-f931b118bb14",
+    "cau_hoi": "Các loại bán kính hiệu dụng được liệt kê trong tài liệu gồm những loại nào?"
+  },
+  {
+    "course_id": "b42c41e6-babc-4cc3-a322-232527acd9a3",
+    "course": "chemistry1",
+    "chunk_id": "dbec1a73-1b15-49ba-830b-8110fc604a69",
+    "cau_hoi": "Trong nguyên tố Ganvanic (Cu‑Zn), điện cực Zn được ngâm trong dung dịch nào và vì sao electron lại di chuyển từ điện cực Zn sang điện cực Cu khi mạch ngoài được đóng?"
+  },
+  {
+    "course_id": "b42c41e6-babc-4cc3-a322-232527acd9a3",
+    "course": "chemistry1",
+    "chunk_id": "f53c4793-4d7f-4d2a-b17f-c9ffa5425a2c",
+    "cau_hoi": "Theo mô tả, các nguyên tử của cùng một nguyên tố hoá học có cùng số Z nhưng khác nhau ở những thông số nào?"
+  },
+  {
+    "course_id": "b42c41e6-babc-4cc3-a322-232527acd9a3",
+    "course": "chemistry1",
+    "chunk_id": "3f770aa5-9d22-49fb-8d71-f6c36ad5ab76",
+    "cau_hoi": "Theo mô hình năng lượng trong tinh thể kim loại, miền s, p và d chứa bao nhiêu electron cho N nguyên tử?"
+  },
+  {
+    "course_id": "b42c41e6-babc-4cc3-a322-232527acd9a3",
+    "course": "chemistry1",
+    "chunk_id": "f3a1b15c-73b3-4b5d-80de-d38ddd048e56",
+    "cau_hoi": "Theo Hệ quả 3, hiệu ứng nhiệt của phản ứng aA + bB → cC + dD được tính bằng công thức nào?"
+  },
+  {
+    "course_id": "b42c41e6-babc-4cc3-a322-232527acd9a3",
+    "course": "chemistry1",
+    "chunk_id": "9d27dc14-e644-4b56-8090-d95a99a30bca",
+    "cau_hoi": "Liên kết Van der Waals có năng lượng trung bình khoảng bao nhiêu Kcal/mol?"
+  },
+  {
+    "course_id": "b42c41e6-babc-4cc3-a322-232527acd9a3",
+    "course": "chemistry1",
+    "chunk_id": "0f30a619-012b-42db-95dd-05e20a6fcf5e",
+    "cau_hoi": "Trong phương trình Schrödinger cho nguyên tử hydro, các tọa độ Cartesian được chuyển sang hệ cầu như thế nào (công thức của x, y, z) và miền giá trị cho các góc θ và φ được đưa ra là gì?"
+  },
+  {
+    "course_id": "b42c41e6-babc-4cc3-a322-232527acd9a3",
+    "course": "chemistry1",
+    "chunk_id": "82007b9b-bd5b-438b-9171-1f744d72ff63",
+    "cau_hoi": "Khi hai nguyên tử tương tác giống nhau, đám mây electron phân bố như thế nào và mô men lưỡng cực của liên kết (μ) có giá trị bao nhiêu?"
+  },
+  {
+    "course_id": "b42c41e6-babc-4cc3-a322-232527acd9a3",
+    "course": "chemistry1",
+    "chunk_id": "b7f61d7d-4e21-4347-9c15-9c942d09a619",
+    "cau_hoi": "Ở nhiệt độ tuyệt đối 0 K, một tinh thể hoàn chỉnh có bao nhiêu cách sắp xếp (W) và entropy (S₀) của nó là bao nhiêu?"
+  },
+  {
+    "course_id": "b42c41e6-babc-4cc3-a322-232527acd9a3",
+    "course": "chemistry1",
+    "chunk_id": "bebb2429-f7f2-4f86-b520-6b7d2d1f3326",
+    "cau_hoi": "Theo thuyết điện ly cổ điển của Arrhenius, ion mang điện dương và ion mang điện âm lần lượt được gọi là gì?"
+  },
+  {
+    "course_id": "b42c41e6-babc-4cc3-a322-232527acd9a3",
+    "course": "chemistry1",
+    "chunk_id": "14bbca2a-2707-4ba8-9f2d-95bf6b9ef3e1",
+    "cau_hoi": "Liên kết hydro có hai dạng: liên kết hydro liên phaân tử và liên kết hydro nội phaân tử. Theo mô tả, dạng nào được so sánh với lực Van der Waals và thường xuất hiện trong các chất lỏng, tinh thể nhịa và khí?"
+  },
+  {
+    "course_id": "b42c41e6-babc-4cc3-a322-232527acd9a3",
+    "course": "chemistry1",
+    "chunk_id": "1192e85b-7dc1-4033-b940-201c54e7004c",
+    "cau_hoi": "Trong phương pháp VB, tại sao phân tử có liên kết tơ không liên kết được cho là không có liên kết cộng hoà trò?"
+  },
+  {
+    "course_id": "b42c41e6-babc-4cc3-a322-232527acd9a3",
+    "course": "chemistry1",
+    "chunk_id": "5a9a7600-dc1b-41ee-a1fa-06f75423c451",
+    "cau_hoi": "Cấu hình electron của nguyên tử nitơ (Z = 7) được viết như thế nào?"
+  },
+  {
+    "course_id": "b42c41e6-babc-4cc3-a322-232527acd9a3",
+    "course": "chemistry1",
+    "chunk_id": "426c966d-8717-470f-bac8-2e33a61f16d4",
+    "cau_hoi": "Theo khái niệm về xúc tác, hệ xúc tác được chia thành những loại nào?"
+  },
+  {
+    "course_id": "b42c41e6-babc-4cc3-a322-232527acd9a3",
+    "course": "chemistry1",
+    "chunk_id": "08605d35-635b-40d4-b435-fbeb44e9e323",
+    "cau_hoi": "Hiệu ứng Zeeman và Stark được phát hiện lần lượt vào năm nào?"
+  },
+  {
+    "course_id": "b42c41e6-babc-4cc3-a322-232527acd9a3",
+    "course": "chemistry1",
+    "chunk_id": "cfd09ef6-fa85-4275-830d-fd750a046bdf",
+    "cau_hoi": "Trong công thức tính công dãn nở A = Δn·R·T, nếu Δn = 1 mol, R = 8,314 J·mol⁻¹·K⁻¹ và T = 273 K, giá trị A bằng bao nhiêu joule?"
+  },
+  {
+    "course_id": "b42c41e6-babc-4cc3-a322-232527acd9a3",
+    "course": "chemistry1",
+    "chunk_id": "94229204-2403-48a8-bd7a-5e52b254d73f",
+    "cau_hoi": "Trong dung dịch chất điện ly mạnh, tại sao α < 1 và hệ số Van’t Hoff i không phải là số nguyên, và khái niệm độ điện ly biểu kiến được tính dựa trên hoạt độ a = fC, trong đó f là hệ số gì?"
+  },
+  {
+    "course_id": "b42c41e6-babc-4cc3-a322-232527acd9a3",
+    "course": "chemistry1",
+    "chunk_id": "ddbb1d93-24aa-41f9-a308-a189593348bd",
+    "cau_hoi": "Trong một phản ứng có Δn = 1, tại điều kiện đẳng áp‑đẳng nhiệt, tại sao ΔV > 0 lại dẫn tới ΔSₚ̃ > 0 và điều này ảnh hưởng như thế nào đến chiều hướng tự phát của phản ứng?"
+  },
+  {
+    "course_id": "b42c41e6-babc-4cc3-a322-232527acd9a3",
+    "course": "chemistry1",
+    "chunk_id": "fdb17740-e4bb-4104-a016-89ff9169bd84",
+    "cau_hoi": "Trong chương V, xác suất nhiệt động (W) được định nghĩa là gì và tại sao W thường được cho là « >> 1 »?"
+  },
+  {
+    "course_id": "b42c41e6-babc-4cc3-a322-232527acd9a3",
+    "course": "chemistry1",
+    "chunk_id": "5d6848a8-8925-459c-955e-628361a9938d",
+    "cau_hoi": "Trong một quá trình sinh công có ích và thuận nghịch, công hữu ích cực đại mà hệ sinh được tính bằng đại lượng nào?"
+  },
+  {
+    "course_id": "b42c41e6-babc-4cc3-a322-232527acd9a3",
+    "course": "chemistry1",
+    "chunk_id": "006edd37-fb03-4f89-9f85-3412f05768ad",
+    "cau_hoi": "Hàm trạng thái mới được đề xuất để kết hợp hiệu ứng năng lượng và hiệu ứng entropi được đặt tên là gì và còn gọi tắt là gì?"
+  },
+  {
+    "course_id": "b42c41e6-babc-4cc3-a322-232527acd9a3",
+    "course": "chemistry1",
+    "chunk_id": "c4ff789a-d5af-4693-bdd7-5ff326318167",
+    "cau_hoi": "Trong cân bằng đồng thể, đơn giản trong pha khí lý tưởng, hằng số cân bằng Kc được tính bằng công thức nào liên quan đến áp suất riêng phần của các chất khí?"
+  },
+  {
+    "course_id": "b42c41e6-babc-4cc3-a322-232527acd9a3",
+    "course": "chemistry1",
+    "chunk_id": "3391e593-efb0-409b-a874-76f7bc7f3527",
+    "cau_hoi": "Trong định nghĩa của tài liệu, hệ đoạn nhiệt được mô tả có đặc điểm gì về việc trao đổi chất, nhiệt và công với môi trường?"
+  },
+  {
+    "course_id": "b42c41e6-babc-4cc3-a322-232527acd9a3",
+    "course": "chemistry1",
+    "chunk_id": "939339b1-889e-45bb-b34e-017c9ad4a2ca",
+    "cau_hoi": "Theo phương pháp MO, tại sao ion H₂⁺ tồn tại được trong khi Be₂ và Ne₂ lại không tồn tại?"
+  },
+  {
+    "course_id": "b42c41e6-babc-4cc3-a322-232527acd9a3",
+    "course": "chemistry1",
+    "chunk_id": "ac0822d0-be04-4c22-88e9-df213af817d9",
+    "cau_hoi": "Trong phần mô tả nguyên tử, các quantum numbers nào được liệt kê trong ngoặc (n, λ, mλ, ms) và ký hiệu nào dùng để biểu thị hàm sóng phần tử?"
+  },
+  {
+    "course_id": "b42c41e6-babc-4cc3-a322-232527acd9a3",
+    "course": "chemistry1",
+    "chunk_id": "b23f8414-7795-4239-9e8b-835addc23286",
+    "cau_hoi": "Các MO được phân loại thành những loại nào (kí hiệu) khi xét đến các orbital s, p, d, f?"
+  },
+  {
+    "course_id": "b42c41e6-babc-4cc3-a322-232527acd9a3",
+    "course": "chemistry1",
+    "chunk_id": "67d382fd-e923-4484-8482-57ac8f1792f0",
+    "cau_hoi": "Trong phép tính ∆H⁰₂₉₈ cho phản ứng C₂H₄ (k) + H₂O (k) → C₂H₅OH (k), tổng năng lượng các liên kết bị đứt (E của H‑O và C=C) là bao nhiêu kJ/mol?"
+  },
+  {
+    "course_id": "b42c41e6-babc-4cc3-a322-232527acd9a3",
+    "course": "chemistry1",
+    "chunk_id": "91154c98-db79-480e-a3e7-31b616168f14",
+    "cau_hoi": "Theo công thức ΔE = const (χ_A - χ_B)², hằng số const có giá trị bao nhiêu khi tính năng lượng theo eV và khi tính theo kJ/mol?"
+  },
+  {
+    "course_id": "b42c41e6-babc-4cc3-a322-232527acd9a3",
+    "course": "chemistry1",
+    "chunk_id": "5ac5f6cd-07d8-42bf-a311-6d81e8b441f0",
+    "cau_hoi": "Trong một nguyên tử nhiều electron, quy tắc nào quy định rằng khi điền các electron vào các phân lớp (đặc trưng bởi n và λ) thì tổng (n + λ) phải tăng dần?"
+  },
+  {
+    "course_id": "b42c41e6-babc-4cc3-a322-232527acd9a3",
+    "course": "chemistry1",
+    "chunk_id": "945fcc93-0ca3-48f8-b20d-ab032546fb6e",
+    "cau_hoi": "Trong khái niệm về phản ứng hoá học, năng lượng tối thiểu mà các tiểu phân phải có để tham gia va chạm được gọi là gì, và nếu W < 1 thì entropi hoạt hoá S* sẽ có giá trị như thế nào?"
+  },
+  {
+    "course_id": "b42c41e6-babc-4cc3-a322-232527acd9a3",
+    "course": "chemistry1",
+    "chunk_id": "721fee35-79a9-44fc-82ef-b8b3929f2b38",
+    "cau_hoi": "Liên kết hydro mạnh hơn liên kết nào nhưng yếu hơn liên kết nào, và năng lượng liên kết hydro trung bình được nêu là bao nhiêu kcal/mol?"
+  },
+  {
+    "course_id": "b42c41e6-babc-4cc3-a322-232527acd9a3",
+    "course": "chemistry1",
+    "chunk_id": "a0d7f056-d396-4f86-adcf-8035fc581191",
+    "cau_hoi": "Trong cặp oxyhóa‑khử Cu²⁺/Cu, chất nào là chất oxyhóa và chất nào là chất khử?"
+  },
+  {
+    "course_id": "b42c41e6-babc-4cc3-a322-232527acd9a3",
+    "course": "chemistry1",
+    "chunk_id": "29a4fa79-61e5-4bdb-a54a-c476ebfaa878",
+    "cau_hoi": "Nếu có N AO của N người, thì sẽ tạo thành bao nhiêu MO, mỗi MO có bao nhiêu mức năng lượng, và chênh lệch năng lượng giữa các mức này là bao nhiêu?"
+  },
+  {
+    "course_id": "b42c41e6-babc-4cc3-a322-232527acd9a3",
+    "course": "chemistry1",
+    "chunk_id": "c5e8af34-aa80-41ca-8dee-df3b561c8f45",
+    "cau_hoi": "Nếu ΔG⁰ được biểu diễn bằng cal, hằng số Faraday F có giá trị là bao nhiêu?"
+  },
+  {
+    "course_id": "b42c41e6-babc-4cc3-a322-232527acd9a3",
+    "course": "chemistry1",
+    "chunk_id": "4b9e70ed-1b0f-490b-a08f-b7ff59a684a2",
+    "cau_hoi": "Trong phần giải thích về spin của electron, ms được cho là có bao nhiêu giá trị và chúng được mô tả như thế nào?"
+  },
+  {
+    "course_id": "b42c41e6-babc-4cc3-a322-232527acd9a3",
+    "course": "chemistry1",
+    "chunk_id": "1dfa4ef1-57b7-406e-9720-a6f1f0a99d6f",
+    "cau_hoi": "Trong thuyết VB, ưu điểm nào so với MO cho phép biểu diễn phân tử bằng công thức cấu tạo?"
+  }
+]
