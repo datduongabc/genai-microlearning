@@ -7,7 +7,8 @@ Bản không RAG được sinh bằng đúng model đã sinh module RAG (đọc 
 nội dung (khóa "packet", không lộ nhóm hay nguồn) bọc trong mã cặp, tên nhóm và model đã sinh. Phần
 bọc ngoài chỉ dành cho người nghiên cứu và scripts/run_judge.py, không đưa cho người chấm.
 
-Tốn lượt gọi LLM thật (khoảng 25-30 lượt cho bản không RAG), và một lượt nhúng câu truy vấn.
+Tốn lượt gọi LLM thật (12 lượt trên đường thuận cho bản không RAG, 7 khi module RAG tắt tự kiểm), và
+một lượt nhúng câu truy vấn.
 """
 
 import argparse
@@ -22,15 +23,24 @@ from app.llm import gateway
 from app.models import Job, JobType, Module
 
 
-def model_that_made(db, module_id: uuid.UUID) -> str | None:
+def _generation_payload(db, module_id: uuid.UUID) -> dict:
     job = (
         db.query(Job)
         .filter(Job.module_id == module_id, Job.job_type == JobType.module_generation)
         .order_by(Job.created_at.desc())
         .first()
     )
+    return (job.payload or {}) if job is not None else {}
+
+
+def model_that_made(db, module_id: uuid.UUID) -> str | None:
     # None nghĩa là module được sinh bằng model mặc định trong cấu hình, và bản đối chứng cũng vậy.
-    return (job.payload or {}).get("model_alias") if job is not None else None
+    return _generation_payload(db, module_id).get("model_alias")
+
+
+def self_check_of(db, module_id: uuid.UUID) -> bool:
+    """Module RAG có được sinh với vòng tự kiểm không; job cũ không ghi cờ này là có, như mặc định."""
+    return _generation_payload(db, module_id).get("self_check", True)
 
 
 def main(argv: list[str] | None = None) -> None:
@@ -48,7 +58,7 @@ def main(argv: list[str] | None = None) -> None:
             raise SystemExit(f"Không có module {args.module_id}")
         rag_alias = model_that_made(db, module.id)
         no_rag_alias = args.model or rag_alias
-        rag, no_rag = study_pair(db, module, no_rag_alias)
+        rag, no_rag = study_pair(db, module, no_rag_alias, self_check_of(db, module.id))
     finally:
         db.close()
 

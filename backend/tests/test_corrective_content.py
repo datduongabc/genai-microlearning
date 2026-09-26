@@ -222,7 +222,7 @@ def steps(monkeypatch):
         record["events"].append("retrieve")
         return db.query(Chunk).filter(Chunk.course_id == course_id).order_by(Chunk.chunk_index).limit(2).all()
 
-    def fake_content(lo, chunks):
+    def fake_content(lo, chunks, self_check=True):
         record["events"].append("content")
         record["content_chunks"] = list(chunks)
         return (
@@ -237,18 +237,16 @@ def steps(monkeypatch):
     monkeypatch.setattr(pipeline, "retrieve", fake_retrieve)
     monkeypatch.setattr(pipeline, "expand_with_parent_context", lambda db, chunks, window=2, scope=None: chunks)
     monkeypatch.setattr(
-        pipeline, "generate_learning_objective", lambda concept, chunks: (objective, types.SimpleNamespace(grounded_pass=True))
+        pipeline, "generate_learning_objective", lambda concept, chunks: objective
     )
     monkeypatch.setattr(pipeline, "generate_content", fake_content)
     monkeypatch.setattr(
         pipeline, "generate_slides",
-        lambda lo, content: (types.SimpleNamespace(slides=[]), types.SimpleNamespace(no_new_info_pass=True)),
+        lambda lo, content: types.SimpleNamespace(slides=[]),
     )
     monkeypatch.setattr(
         pipeline, "generate_example",
-        lambda lo, content, chunks: (
-            ExampleOutput(examples=[Example(context="c", analysis="a")]), types.SimpleNamespace(no_overreach_pass=True)
-        ),
+        lambda lo, content, chunks: ExampleOutput(examples=[Example(context="c", analysis="a")]),
     )
     monkeypatch.setattr(pipeline, "generate_quiz_question", lambda *a, **k: {"passed": False})
     return record

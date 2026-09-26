@@ -139,17 +139,15 @@ def run(document, monkeypatch):
                             lambda objective, chunks, re_retrieve: CorrectiveResult(chunks, "high", 0))
         monkeypatch.setattr(pipeline, "expand_with_parent_context", lambda db, chunks, **kw: chunks)
         monkeypatch.setattr(pipeline, "generate_learning_objective",
-                            lambda concept, chunks: (lo, types.SimpleNamespace(grounded_pass=True)))
-        monkeypatch.setattr(pipeline, "generate_content", lambda lo, chunks: (
+                            lambda concept, chunks: lo)
+        monkeypatch.setattr(pipeline, "generate_content", lambda lo, chunks, self_check=True: (
             types.SimpleNamespace(content="content", source_locators=[], claim_citations=[]),
             types.SimpleNamespace(groundedness_pass=True)))
-        monkeypatch.setattr(pipeline, "generate_slides", lambda lo, content: (
-            types.SimpleNamespace(slides=[]), types.SimpleNamespace(no_new_info_pass=True)))
-        monkeypatch.setattr(pipeline, "generate_example", lambda lo, content, chunks: (
-            ExampleOutput(examples=[Example(context="c1", analysis="a1"), Example(context="c2", analysis="a2")]),
-            types.SimpleNamespace(no_overreach_pass=True)))
+        monkeypatch.setattr(pipeline, "generate_slides", lambda lo, content: types.SimpleNamespace(slides=[]))
+        monkeypatch.setattr(pipeline, "generate_example", lambda lo, content, chunks: ExampleOutput(
+            examples=[Example(context="c1", analysis="a1"), Example(context="c2", analysis="a2")]))
 
-        def fake_quiz(db, course_id, query, lo, mode="quiz", scope=None, feedback=None):
+        def fake_quiz(db, course_id, query, lo, mode="quiz", scope=None, feedback=None, self_check=True):
             question = next(answers)
             calls["quiz"].append({"query": query, "mode": mode, "feedback": feedback})
             passages = [_chunk(f"PASSAGE-OF-{query}")]

@@ -1,4 +1,4 @@
-"""Learning objective, with its own check against the source."""
+"""Learning objective, written in one call from the retrieved passages."""
 
 from pydantic import BaseModel, Field
 
@@ -123,91 +123,16 @@ class LearningObjective(BaseModel):
     )
 
 
-# Tầng 3 (GD2 — LLM-as-Judge / Self-Correction): LO trước đây sinh 1 lần
-# duy nhất, không ai kiểm lại -- cùng lớp lỗ hổng đã vá cho Quiz
-# (bloom_level_pass), giờ áp dụng cho chính LO. 1 vòng retry best-effort,
-# giống hệt pattern MAX_CORRECTION_RETRY của quiz_graph.py.
-MAX_LO_CORRECTION_RETRY = 1
-
-LO_VERIFY_SYSTEM_INSTRUCTION = IGNORE_EMBEDDED_INSTRUCTIONS + """Bạn là bộ kiểm tra chất lượng Learning Objective (Critic), dựa trên các đoạn
-nguồn được cung cấp.
-
-Chấm đúng 3 tiêu chí:
-- verb_pass: objective_text có bắt đầu bằng 1 động từ hành động ĐO LƯỜNG ĐƯỢC
-  không -- đặc biệt: có dùng các từ CẤM "hiểu"/"biết"/"học"/"nắm được"/"nắm
-  vững"/"có kiến thức về"/"làm quen với" làm động từ hành động không (nếu có
-  -> fail, kể cả khi cấp độ Bloom's ghi đúng)?
-- atomic_pass: objective_text có chỉ chứa ĐÚNG 1 mục tiêu hiệu năng duy nhất
-  không, hay bị gộp 2+ hành động khác nhau vào 1 câu (vd nối bằng "và"/"cũng
-  như" 2 động từ khác cấp độ nhận thức)?
-- grounded_pass: objective_text VÀ sub_objectives có bám đúng nội dung nguồn
-  được cung cấp không, không suy diễn/thêm khẳng định ngoài nguồn?
-
-Nếu vi phạm bất kỳ tiêu chí nào, đặt pass=false và nêu rõ lý do cụ thể (để
-dùng làm feedback sinh lại).
-"""
-
-
-class LOVerification(BaseModel):
-    verb_pass: bool
-    verb_reason: str
-    atomic_pass: bool
-    atomic_reason: str
-    grounded_pass: bool
-    grounded_reason: str
-
-
-def _verify_learning_objective(lo: LearningObjective, context_chunks: list[Chunk]) -> LOVerification:
+def generate_learning_objective(concept: Concept, context_chunks: list[Chunk]) -> LearningObjective:
+    """One call, no self-check round: the schema holds the shape (2-4 sub-objectives, a Bloom level
+    from the table) and the Content and quiz checks downstream read the objective against the source."""
     prompt = (
-        f"LEARNING OBJECTIVE ĐÃ SINH:\n"
-        f"bloom_level: {lo.bloom_level}\n"
-        f"verb: {lo.verb}\n"
-        f"objective_text: {lo.objective_text}\n"
-        f"sub_objectives: {lo.sub_objectives}\n\n"
+        f"KHÁI NIỆM CỐT LÕI: {concept.name}\n"
+        f"TÓM TẮT: {concept.summary}\n\n"
         f"{format_source_chunks(context_chunks)}\n\n"
-        f"Kiểm tra verb_pass, atomic_pass, grounded_pass của Learning Objective trên."
+        f"Sinh 1 Learning Objective cho khái niệm trên, dựa trên các đoạn nguồn đã cung cấp."
     )
-    return complete_structured(
-        prompt, LOVerification, system_instruction=LO_VERIFY_SYSTEM_INSTRUCTION, temperature=0.0
-    )
-
-
-def generate_learning_objective(
-    concept: Concept, context_chunks: list[Chunk]
-) -> tuple[LearningObjective, LOVerification]:
-    feedback: str | None = None
-    lo: LearningObjective | None = None
-    check: LOVerification | None = None
-    for _ in range(MAX_LO_CORRECTION_RETRY + 1):
-        prompt = (
-            f"KHÁI NIỆM CỐT LÕI: {concept.name}\n"
-            f"TÓM TẮT: {concept.summary}\n\n"
-            f"{format_source_chunks(context_chunks)}\n\n"
-            f"Sinh 1 Learning Objective cho khái niệm trên, dựa trên các đoạn nguồn đã cung cấp."
-        )
-        if feedback:
-            prompt += (
-                f"\n\nLƯU Ý: lần sinh trước KHÔNG ĐẠT vì lý do sau -- sửa đúng lỗi này, "
-                f"không lặp lại: {feedback}"
-            )
-        # temperature=0.0: phan loai bloom_level la tac vu co can cu (dua tren
-        # do sau nguon), khong phai sang tac -- giam sampling randomness de
-        # cung 1 concept+context luon ra cung 1 ket luan.
-        lo = complete_structured(
-            prompt, LearningObjective, system_instruction=LO_SYSTEM_INSTRUCTION, temperature=0.0
-        )
-
-        check = _verify_learning_objective(lo, context_chunks)
-        if check.verb_pass and check.atomic_pass and check.grounded_pass:
-            return lo, check
-
-        reasons = []
-        if not check.verb_pass:
-            reasons.append(f"Verb fail: {check.verb_reason}")
-        if not check.atomic_pass:
-            reasons.append(f"Atomic fail: {check.atomic_reason}")
-        if not check.grounded_pass:
-            reasons.append(f"Grounded fail: {check.grounded_reason}")
-        feedback = "; ".join(reasons)
-
-    return lo, check  # best-effort sau khi hết retry budget, giống pattern quiz_graph.py
+    # temperature=0.0: phan loai bloom_level la tac vu co can cu (dua tren
+    # do sau nguon), khong phai sang tac -- giam sampling randomness de
+    # cung 1 concept+context luon ra cung 1 ket luan.
+    return complete_structured(prompt, LearningObjective, system_instruction=LO_SYSTEM_INSTRUCTION, temperature=0.0)

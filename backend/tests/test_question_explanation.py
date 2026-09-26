@@ -110,24 +110,22 @@ def test_the_explanation_component_is_the_reasoning_and_explanation_the_question
     monkeypatch.setattr(pipeline, "expand_with_parent_context", lambda db, chunks, window=2, scope=None: chunks)
     monkeypatch.setattr(
         pipeline, "generate_learning_objective",
-        lambda concept, chunks: (objective, types.SimpleNamespace(grounded_pass=True)),
+        lambda concept, chunks: objective,
     )
     monkeypatch.setattr(
         pipeline, "generate_content",
-        lambda lo, chunks: (
+        lambda lo, chunks, self_check=True: (
             types.SimpleNamespace(content="content", source_locators=[], claim_citations=[]),
             types.SimpleNamespace(groundedness_pass=True),
         ),
     )
     monkeypatch.setattr(
         pipeline, "generate_slides",
-        lambda lo, content: (types.SimpleNamespace(slides=[]), types.SimpleNamespace(no_new_info_pass=True)),
+        lambda lo, content: types.SimpleNamespace(slides=[]),
     )
     monkeypatch.setattr(
         pipeline, "generate_example",
-        lambda lo, content, chunks: (
-            ExampleOutput(examples=[Example(context="c", analysis="a")]), types.SimpleNamespace(no_overreach_pass=True)
-        ),
+        lambda lo, content, chunks: ExampleOutput(examples=[Example(context="c", analysis="a")]),
     )
     monkeypatch.setattr(
         pipeline, "generate_quiz_question",

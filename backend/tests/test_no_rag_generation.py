@@ -16,7 +16,7 @@ from app.db import SessionLocal
 from app.generation import no_rag, slides, study_packets
 from app.generation.example import Example, ExampleOutput
 from app.generation.quiz_graph import QuizQuestion
-from app.generation.slides import Slide, SlidesOutput, SlidesVerification
+from app.generation.slides import Slide, SlidesOutput
 from app.llm import gateway
 from app.models import (
     ComponentType,
@@ -138,10 +138,10 @@ def rag_module(monkeypatch):
         db.close()
 
 
-def _pair(rag_module, alias="groq-pro"):
+def _pair(rag_module, alias="groq-pro", self_check=True):
     db = SessionLocal()
     try:
-        return study_packets.study_pair(db, db.get(Module, rag_module.ids["module"]), alias)
+        return study_packets.study_pair(db, db.get(Module, rag_module.ids["module"]), alias, self_check)
     finally:
         db.close()
 
@@ -262,7 +262,38 @@ def test_a_failed_control_check_is_retried_with_its_reason(rag_module, llm):
     assert "LY-DO-THIEU-PHAN-HAI" not in content_prompts[0] and "LY-DO-THIEU-PHAN-HAI" in content_prompts[1]
 
 
-def test_slides_of_the_control_are_checked_like_the_rag_ones(rag_module, llm):
+def _checks(llm) -> list[str]:
+    return [c["model"].__name__ for c in llm.calls if any(n.endswith("_pass") for n in c["model"].model_fields)]
+
+
+def test_only_content_and_questions_of_the_control_are_checked_like_the_rag_ones(rag_module, llm):
+    """Hai sub-objective: Content, Slides, Example, rồi ba câu (hai quiz, một practice), mỗi câu một
+    lượt sinh và một lượt kiểm; Content một lượt kiểm. Slides và Example không có lượt kiểm nào."""
     _pair(rag_module)
 
-    assert any(c["model"] is SlidesVerification for c in llm.calls)
+    assert _checks(llm) == ["NoRagContentVerification"] + ["NoRagQuestionCheck"] * 3
+    assert len(llm.calls) == 3 + 1 + 3 * 2
+
+
+def test_without_self_check_the_control_makes_no_check_call_at_all(rag_module, llm):
+    _, control = _pair(rag_module, self_check=False)
+
+    assert _checks(llm) == []
+    assert [c["model"].__name__ for c in llm.calls] == [
+        "NoRagContent", "SlidesOutput", "ExampleOutput", "QuizQuestion", "QuizQuestion", "QuizQuestion",
+    ]
+    assert len(control.quiz) == 2 and control.practice.stem.startswith("Hỏi về")
+
+
+def test_the_export_follows_the_self_check_flag_the_rag_module_was_made_with(rag_module, llm, tmp_path):
+    db = SessionLocal()
+    try:
+        job = db.query(Job).filter(Job.module_id == rag_module.ids["module"]).one()
+        job.payload = {**job.payload, "self_check": False}
+        db.commit()
+    finally:
+        db.close()
+
+    export_study_pair.main([str(rag_module.ids["module"]), "--out", str(tmp_path)])
+
+    assert _checks(llm) == []

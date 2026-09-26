@@ -95,6 +95,8 @@ class QuizGenState(TypedDict, total=False):
     mode: Literal["quiz", "practice"]
     # Confines retrieval to one section of a textbook; absent for a whole course.
     scope: ChunkScope | None
+    # Off: the model does not check its own question; only the free syntax heuristic runs.
+    self_check: bool
     chunks: list[Chunk]
     relevance_confidence: Literal["high", "low"]
     relevance_retry_count: int
@@ -241,6 +243,14 @@ def _groundedness_answerability_node(state: QuizGenState) -> QuizGenState:
     q = state["question"]
     bloom_level = state["lo"].bloom_level
     syntax_issues = _syntax_iwf_check(q)
+    # Practice: syntax-check không chặn (chỉ log), độ nghiêm ngặt thấp hơn quiz
+    # (mục "Điểm khác biệt: ngưỡng chấp nhận thấp hơn Quiz").
+    blocking_issues = list(syntax_issues) if state["mode"] == "quiz" else []
+
+    if not state.get("self_check", True):
+        if not blocking_issues:
+            return {"passed": True, "syntax_issues": syntax_issues}
+        return {"passed": False, "syntax_issues": syntax_issues, "correction_feedback": "; ".join(blocking_issues)}
 
     prompt = (
         f"{format_source_chunks(state['chunks'])}\n\n"
@@ -255,10 +265,6 @@ def _groundedness_answerability_node(state: QuizGenState) -> QuizGenState:
         f"Kiểm tra groundedness, answerability và bloom_level_pass của câu hỏi trên."
     )
     check = complete_structured(prompt, GroundednessAnswerabilityCheck, system_instruction=GROUNDEDNESS_SYSTEM_INSTRUCTION)
-
-    # Practice: syntax-check không chặn (chỉ log), độ nghiêm ngặt thấp hơn quiz
-    # (mục "Điểm khác biệt: ngưỡng chấp nhận thấp hơn Quiz").
-    blocking_issues = list(syntax_issues) if state["mode"] == "quiz" else []
 
     passed = (
         check.groundedness_pass and check.answerability_pass and check.bloom_level_pass
@@ -338,16 +344,20 @@ def generate_quiz_question(
     mode: Literal["quiz", "practice"] = "quiz",
     scope: ChunkScope | None = None,
     feedback: str | None = None,
+    self_check: bool = True,
 ) -> QuizGenState:
     """`feedback`: lý do lần sinh trước của chính câu này không đạt, khi lỗi chỉ thấy được ở cấp
-    cả bộ câu hỏi (ví dụ đáp án đúng dài nhất ở mọi câu) nên bước kiểm từng câu không bắt được."""
+    cả bộ câu hỏi (ví dụ đáp án đúng dài nhất ở mọi câu) nên bước kiểm từng câu không bắt được.
+
+    `self_check=False` bỏ lượt model tự kiểm groundedness/answerability/Bloom của câu hỏi; bẫy cú
+    pháp (không tốn lượt gọi nào) vẫn chặn câu quiz như khi bật."""
     global _compiled_graph
     if _compiled_graph is None:
         _compiled_graph = build_quiz_graph()
 
     initial_state: QuizGenState = {
         "db": db, "course_id": course_id, "query": query, "lo": lo, "mode": mode, "scope": scope,
-        "relevance_retry_count": 0, "correction_retry_count": 0,
+        "self_check": self_check, "relevance_retry_count": 0, "correction_retry_count": 0,
     }
     if feedback:
         initial_state["correction_feedback"] = feedback

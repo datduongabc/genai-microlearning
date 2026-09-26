@@ -92,7 +92,7 @@ def seen(monkeypatch):
         record["expand_scopes"].append(scope)
         return chunks
 
-    def fake_quiz(db, course_id, query, lo, mode="quiz", scope=None):
+    def fake_quiz(db, course_id, query, lo, mode="quiz", scope=None, **kwargs):
         record["quiz_scopes"].append(scope)
         return {"passed": False}
 
@@ -109,12 +109,12 @@ def seen(monkeypatch):
     monkeypatch.setattr(
         pipeline,
         "generate_learning_objective",
-        lambda concept, chunks: (objective, types.SimpleNamespace(grounded_pass=True)),
+        lambda concept, chunks: objective,
     )
     monkeypatch.setattr(
         pipeline,
         "generate_content",
-        lambda lo, chunks: (
+        lambda lo, chunks, self_check=True: (
             types.SimpleNamespace(content="content", source_locators=[], claim_citations=[]),
             types.SimpleNamespace(groundedness_pass=True),
         ),
@@ -122,15 +122,12 @@ def seen(monkeypatch):
     monkeypatch.setattr(
         pipeline,
         "generate_slides",
-        lambda lo, content: (types.SimpleNamespace(slides=[]), types.SimpleNamespace(no_new_info_pass=True)),
+        lambda lo, content: types.SimpleNamespace(slides=[]),
     )
     monkeypatch.setattr(
         pipeline,
         "generate_example",
-        lambda lo, content, chunks: (
-            ExampleOutput(examples=[Example(context="ctx", analysis="analysis")]),
-            types.SimpleNamespace(no_overreach_pass=True),
-        ),
+        lambda lo, content, chunks: ExampleOutput(examples=[Example(context="ctx", analysis="analysis")]),
     )
     return record
 

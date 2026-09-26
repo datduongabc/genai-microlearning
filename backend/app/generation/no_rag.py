@@ -38,10 +38,13 @@ _RETRY_SUFFIX = "\n\nLƯU Ý: lần sinh trước KHÔNG ĐẠT vì lý do sau -
 
 
 def _checked[T, C](
-    generate: Callable[[str | None], T], verify: Callable[[T], C], criteria: list[tuple[str, str]]
-) -> tuple[T, C]:
+    generate: Callable[[str | None], T], verify: Callable[[T], C] | None, criteria: list[tuple[str, str]]
+) -> tuple[T, C | None]:
     """Sinh, tự kiểm, sinh lại một lần với đúng lý do trượt; hết lượt thì trả bản cuối và kết quả
-    kiểm của nó, như các bước của pipeline RAG. `criteria`: (tên trường, nhãn trong lý do)."""
+    kiểm của nó, như các bước của pipeline RAG. `criteria`: (tên trường, nhãn trong lý do).
+    `verify=None` (tắt tự kiểm): sinh một lượt, không có kết quả kiểm."""
+    if verify is None:
+        return generate(None), None
     feedback: str | None = None
     for _ in range(MAX_CORRECTION_RETRY + 1):
         out = generate(feedback)
@@ -103,7 +106,9 @@ def _objective_text(lo: LearningObjective) -> str:
     return f"LEARNING OBJECTIVE: {lo.objective_text} (bloom_level={lo.bloom_level})\nSUB-OBJECTIVES:\n{subs}"
 
 
-def generate_content(lo: LearningObjective) -> tuple[NoRagContent, NoRagContentVerification]:
+def generate_content(
+    lo: LearningObjective, self_check: bool = True
+) -> tuple[NoRagContent, NoRagContentVerification | None]:
     def generate(feedback):
         prompt = f"{_objective_text(lo)}\n\nViết phần Content cho Learning Objective trên."
         if feedback:
@@ -116,7 +121,7 @@ def generate_content(lo: LearningObjective) -> tuple[NoRagContent, NoRagContentV
             prompt, NoRagContentVerification, system_instruction=CONTENT_VERIFY_SYSTEM_INSTRUCTION, temperature=0.0
         )
 
-    return _checked(generate, verify, [("completeness", "Completeness"), ("scope", "Scope")])
+    return _checked(generate, verify if self_check else None, [("completeness", "Completeness"), ("scope", "Scope")])
 
 
 # --- Examples -----------------------------------------------------------------------------------
@@ -135,44 +140,10 @@ Ràng buộc BẮT BUỘC:
 4. Ngôn ngữ khớp ngôn ngữ chính của Content.
 """
 
-EXAMPLE_VERIFY_SYSTEM_INSTRUCTION = """Bạn là bộ kiểm tra chất lượng Example (Critic), dựa trên Content.
-
-Mỗi tiêu chí xét trên TỪNG Example: chỉ cần 1 Example vi phạm là tiêu chí đó fail, và lý do phải nêu
-rõ Example số mấy.
-
-- consistency_pass: context và analysis có minh họa ĐÚNG khái niệm trong Content không, hay lạc
-  đề/mâu thuẫn với Content?
-- no_overreach_pass: analysis có dùng tình huống để khẳng định thêm dữ kiện/tính chất MỚI về khái
-  niệm mà Content không hề nói tới không? Nếu có, đặt fail.
-
-Nếu vi phạm tiêu chí nào, đặt pass=false và nêu rõ lý do cụ thể (để dùng làm feedback sinh lại).
-"""
-
-
-class NoRagExampleVerification(BaseModel):
-    consistency_pass: bool
-    consistency_reason: str
-    no_overreach_pass: bool
-    no_overreach_reason: str
-
-
-def generate_examples(lo: LearningObjective, content: str) -> tuple[ExampleOutput, NoRagExampleVerification]:
-    def generate(feedback):
-        prompt = f"{_objective_text(lo)}\n\nCONTENT:\n{content}\n\nViết các Example cho Learning Objective/Content trên."
-        if feedback:
-            prompt += _RETRY_SUFFIX.format(feedback=feedback)
-        return complete_structured(prompt, ExampleOutput, system_instruction=EXAMPLE_SYSTEM_INSTRUCTION, temperature=0.0)
-
-    def verify(out):
-        examples = "\n".join(
-            f"Example {n}:\n  context: {e.context}\n  analysis: {e.analysis}" for n, e in enumerate(out.examples, 1)
-        )
-        prompt = f"CONTENT:\n{content}\n\nCÁC EXAMPLE ĐÃ SINH:\n{examples}\n\nKiểm tra consistency_pass, no_overreach_pass."
-        return complete_structured(
-            prompt, NoRagExampleVerification, system_instruction=EXAMPLE_VERIFY_SYSTEM_INSTRUCTION, temperature=0.0
-        )
-
-    return _checked(generate, verify, [("consistency", "Consistency"), ("no_overreach", "Overreach")])
+def generate_examples(lo: LearningObjective, content: str) -> ExampleOutput:
+    """Một lượt, không tự kiểm, như Example của pipeline RAG."""
+    prompt = f"{_objective_text(lo)}\n\nCONTENT:\n{content}\n\nViết các Example cho Learning Objective/Content trên."
+    return complete_structured(prompt, ExampleOutput, system_instruction=EXAMPLE_SYSTEM_INSTRUCTION, temperature=0.0)
 
 
 # --- Questions ----------------------------------------------------------------------------------
@@ -229,7 +200,8 @@ class AskedQuestion:
 
 
 def generate_question(
-    lo: LearningObjective, content: str, target: str, mode: Literal["quiz", "practice"], feedback: str | None = None
+    lo: LearningObjective, content: str, target: str, mode: Literal["quiz", "practice"], feedback: str | None = None,
+    self_check: bool = True,
 ) -> AskedQuestion:
     anchor = BLOOM_LEVEL_ANCHORS[lo.bloom_level]
     first_feedback = feedback
@@ -247,18 +219,24 @@ def generate_question(
         return complete_structured(prompt, QuizQuestion, system_instruction=QUESTION_SYSTEM_INSTRUCTION)
 
     def verify(q):
-        prompt = (
-            f"CÂU HỎI ĐÃ SINH:\nstem: {q.stem}\nchoices: {q.choices}\nreasoning: {q.reasoning}\n"
-            f"correct_index: {q.correct_index} (đáp án: {q.choices[q.correct_index]})\n\n"
-            f"BLOOM_LEVEL ĐÃ KHAI BÁO: {lo.bloom_level}\nMÔ TẢ HÀNH VI CẤP ĐỘ {lo.bloom_level}: {anchor}\n\n"
-            f"Kiểm tra answerability_pass, bloom_level_pass."
-        )
-        check = complete_structured(prompt, NoRagQuestionCheck, system_instruction=QUESTION_CHECK_SYSTEM_INSTRUCTION)
+        if self_check:
+            prompt = (
+                f"CÂU HỎI ĐÃ SINH:\nstem: {q.stem}\nchoices: {q.choices}\nreasoning: {q.reasoning}\n"
+                f"correct_index: {q.correct_index} (đáp án: {q.choices[q.correct_index]})\n\n"
+                f"BLOOM_LEVEL ĐÃ KHAI BÁO: {lo.bloom_level}\nMÔ TẢ HÀNH VI CẤP ĐỘ {lo.bloom_level}: {anchor}\n\n"
+                f"Kiểm tra answerability_pass, bloom_level_pass."
+            )
+            check = complete_structured(prompt, NoRagQuestionCheck, system_instruction=QUESTION_CHECK_SYSTEM_INSTRUCTION)
+        else:
+            # Tắt tự kiểm: model không chấm câu hỏi, chỉ còn bẫy cú pháp bên dưới.
+            check = NoRagQuestionCheck(
+                answerability_pass=True, answerability_reason="", bloom_level_pass=True, bloom_level_reason=""
+            )
         # Bẫy cú pháp (độ dài chênh, từ tuyệt đối) chặn quiz như ở pipeline RAG, practice thì không.
         issues = _syntax_iwf_check(q) if mode == "quiz" else []
         if issues:
             check.answerability_pass = False
-            check.answerability_reason = "; ".join([check.answerability_reason, *issues])
+            check.answerability_reason = "; ".join(r for r in [check.answerability_reason, *issues] if r)
         return check
 
     question, check = _checked(
@@ -281,31 +259,26 @@ class NoRagModule:
     checks: dict[str, bool] = field(default_factory=dict)
 
 
-def generate_module(lo: LearningObjective, practice_target: str) -> NoRagModule:
+def generate_module(lo: LearningObjective, practice_target: str, self_check: bool = True) -> NoRagModule:
     """Cùng chuỗi và cùng cấu trúc với pipeline RAG, trên cùng Learning Objective: Content, Slides,
     tối đa một Example mỗi phần, một câu quiz mỗi sub-objective (tối đa ba), một câu practice; lời giải
-    của mỗi câu sinh cùng câu đó."""
-    content, content_check = generate_content(lo)
-    slides, slides_check = generate_slides(lo, content.content)
-    examples, example_check = generate_examples(lo, content.content)
+    của mỗi câu sinh cùng câu đó. Như pipeline RAG, chỉ Content và câu hỏi có vòng tự kiểm, và
+    `self_check=False` tắt cả hai (bản đối chứng phải theo đúng nhánh của module RAG đi cặp)."""
+    content, content_check = generate_content(lo, self_check)
+    slides = generate_slides(lo, content.content)
+    examples = generate_examples(lo, content.content)
 
-    questions = [generate_question(lo, content.content, t, "quiz") for t in lo.sub_objectives[:MAX_QUIZ_QUESTIONS]]
-    questions.append(generate_question(lo, content.content, practice_target, "practice"))
+    def ask(target, mode, feedback=None):
+        return generate_question(lo, content.content, target, mode, feedback, self_check=self_check)
+
+    questions = [ask(t, "quiz") for t in lo.sub_objectives[:MAX_QUIZ_QUESTIONS]]
+    questions.append(ask(practice_target, "practice"))
     index = question_to_rebalance([q.question for q in questions])
     if index is not None:
         stale = questions[index]
-        questions[index] = generate_question(lo, content.content, stale.target, stale.mode, LENGTH_TELL_FEEDBACK)
+        questions[index] = ask(stale.target, stale.mode, LENGTH_TELL_FEEDBACK)
 
-    return NoRagModule(
-        content=content.content,
-        slides=slides,
-        examples=examples,
-        questions=questions,
-        checks={
-            "content_pass": content_check.completeness_pass and content_check.scope_pass,
-            "slides_pass": slides_check.no_new_info_pass and slides_check.conciseness_pass
-            and slides_check.cognitive_load_pass,
-            "example_pass": example_check.consistency_pass and example_check.no_overreach_pass,
-            "questions_pass": all(q.passed for q in questions),
-        },
-    )
+    checks = {"questions_pass": all(q.passed for q in questions)}
+    if content_check is not None:
+        checks["content_pass"] = content_check.completeness_pass and content_check.scope_pass
+    return NoRagModule(content=content.content, slides=slides, examples=examples, questions=questions, checks=checks)
