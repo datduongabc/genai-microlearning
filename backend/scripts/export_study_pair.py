@@ -1,6 +1,6 @@
 """Xuất cặp gói nghiên cứu (rag_llm, llm_no_rag) của một module RAG ra hai tệp JSON.
 
-    uv run python scripts/export_study_pair.py <module_id> --out <thư mục> [--model <alias>]
+    PYTHONPATH=. uv run python scripts/export_study_pair.py <module_id> --out <thư mục> [--model <alias>]
 
 Bản không RAG được sinh bằng đúng model đã sinh module RAG (đọc từ job sinh module), để khác biệt
 điểm chấm chỉ còn là RAG; --model chỉ dùng khi muốn ghi đè có chủ ý. Mỗi tệp là một StudyFile: gói

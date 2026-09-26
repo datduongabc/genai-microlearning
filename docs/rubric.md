@@ -129,15 +129,15 @@ Chạy trong thư mục `backend/`. Mỗi lệnh chấm tốn một lượt gọ
 
 ```bash
 # 1. Xuất cặp gói của từng module RAG đã sinh (một lần cho mỗi module).
-uv run python scripts/export_study_pair.py <module_id> --out study/packets
+PYTHONPATH=. uv run python scripts/export_study_pair.py <module_id> --out study/packets
 
 # 2. Chấm bằng hai mô hình chấm khác hãng với model sinh. Bị ngắt thì chạy lại
 #    đúng lệnh đó: chỉ những gói còn thiếu được chấm tiếp.
-uv run python scripts/run_judge.py study/packets --judge claude-pro --out study/claude-pro.jsonl
-uv run python scripts/run_judge.py study/packets --judge groq-pro --out study/groq-pro.jsonl
+PYTHONPATH=. uv run python scripts/run_judge.py study/packets --judge claude-pro --out study/claude-pro.jsonl
+PYTHONPATH=. uv run python scripts/run_judge.py study/packets --judge groq-pro --out study/groq-pro.jsonl
 
 # 3. Phân tích, kèm điểm của người chấm nếu có.
-uv run python scripts/analyze_study.py study/claude-pro.jsonl study/groq-pro.jsonl \
+PYTHONPATH=. uv run python scripts/analyze_study.py study/claude-pro.jsonl study/groq-pro.jsonl \
     --human study/human.csv --out study/report.json
 ```
 

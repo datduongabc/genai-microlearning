@@ -1,6 +1,6 @@
 """Chấm một thư mục gói nghiên cứu bằng LLM chấm theo rubric chín tiêu chí (docs/rubric.md).
 
-    uv run python scripts/run_judge.py <thư mục gói> --judge <alias> --out <tệp .jsonl>
+    PYTHONPATH=. uv run python scripts/run_judge.py <thư mục gói> --judge <alias> --out <tệp .jsonl>
 
 Thư mục là đầu ra của scripts/export_study_pair.py, mỗi tệp một StudyFile. Mỗi gói ra một dòng JSON
 trong tệp kết quả: mã ẩn danh, mã cặp, nhóm, mô hình chấm và bản chấm đầy đủ. scripts/analyze_study.py

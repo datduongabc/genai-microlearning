@@ -1,6 +1,6 @@
 """Phân tích kết quả chấm của nghiên cứu RAG so với không RAG.
 
-    uv run python scripts/analyze_study.py <judge.jsonl>... [--human <ratings.csv>] [--out <report.json>]
+    PYTHONPATH=. uv run python scripts/analyze_study.py <judge.jsonl>... [--human <ratings.csv>] [--out <report.json>]
 
 Đầu vào là các tệp do scripts/run_judge.py ghi, và tuỳ chọn một tệp CSV điểm của người chấm (cột anon_id
 cùng các cột tiêu chí, xem docs/rubric.md). Các dòng được tách theo mô hình chấm ghi trong dòng, không
