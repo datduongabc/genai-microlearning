@@ -1,33 +1,36 @@
-"""Tuần 8 — Quiz/Practice + CRAG + Groundedness (mục 3.1 kiến trúc).
+"""Quiz/Practice: một câu hỏi trắc nghiệm cho mỗi điều cần kiểm, cùng lời giải của nó.
 
-LangGraph state machine: retrieve -> Corrective RAG (relevance, tối đa 1
-retry) -> Question Generator (misconception CoT + Bloom's + JSON schema) ->
-Syntax/IWF Analyzer (heuristic) -> Groundedness & Answerability Check ->
-Correction (tối đa 1 retry, quay lại Question Generator).
+Mỗi câu: truy hồi top-5 đoạn theo đúng điều cần kiểm (sub-objective) -> Question Generator
+(misconception CoT + Bloom's + JSON schema) -> kiểm câu vừa sinh (Syntax/IWF heuristic, và khi bật
+tự kiểm thì model chấm Groundedness, Answerability, Bloom's) -> trượt thì sinh lại đúng một lần với
+lý do trượt. Vòng sinh-kiểm-sinh lại là `_checked` dùng chung với Content và nhánh không RAG.
+Không chấm độ liên quan riêng cho từng câu: Corrective RAG chỉ chạy một lần trước Content.
 
-Practice tái dùng NGUYÊN pipeline này (mode="practice"): ngưỡng chấp nhận
-thấp hơn, syntax-check không chặn retry, không tốn hạ tầng riêng.
+Practice tái dùng NGUYÊN hàm này (mode="practice"): ngưỡng chấp nhận thấp hơn, syntax-check không
+chặn, không tốn hạ tầng riêng.
 """
 
 import uuid
+from dataclasses import dataclass, field
 from typing import Literal, TypedDict
 
-from langgraph.graph import END, StateGraph
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from app.generation.common import (
     BLOOM_LEVEL_ANCHORS,
     IGNORE_EMBEDDED_INSTRUCTIONS,
+    _checked,
+    failed_criteria,
     format_source_chunks,
 )
 from app.generation.objective import LearningObjective
-from app.generation.relevance import MAX_RELEVANCE_RETRY, check_relevance
 from app.llm.gateway import complete_structured
 from app.models import Chunk
 from app.retrieval.search import ChunkScope, retrieve
 
-MAX_CORRECTION_RETRY = 1
+# Số đoạn truy hồi cho mỗi câu hỏi, theo đúng điều câu đó kiểm.
+QUESTION_TOP_K = 5
 
 # mục 3.1 bước 3 (Syntax/IWF Analyzer) — loại bỏ từ mang tính tuyệt đối
 # thường lộ đáp án ("luôn luôn"/"never" hiếm khi đúng làm distractor).
@@ -83,29 +86,16 @@ class GroundednessAnswerabilityCheck(BaseModel):
     bloom_level_reason: str
 
 
-# ---------------------------------------------------------------------------
-# State
-# ---------------------------------------------------------------------------
+class QuizResult(TypedDict, total=False):
+    """Kết quả sinh một câu. Thiếu `question` khi không sinh được câu nào (chỉ gặp ở hàm giả trong test)."""
 
-class QuizGenState(TypedDict, total=False):
-    db: Session
-    course_id: uuid.UUID
-    query: str
-    lo: LearningObjective
-    mode: Literal["quiz", "practice"]
-    # Confines retrieval to one section of a textbook; absent for a whole course.
-    scope: ChunkScope | None
-    # Off: the model does not check its own question; only the free syntax heuristic runs.
-    self_check: bool
-    chunks: list[Chunk]
-    relevance_confidence: Literal["high", "low"]
-    relevance_retry_count: int
     question: QuizQuestion
-    syntax_issues: list[str]
-    correction_retry_count: int
-    correction_feedback: str
     passed: bool
-    fail_reason: str
+    # Lý do trượt của lần kiểm cuối; None khi đạt.
+    fail_reason: str | None
+    syntax_issues: list[str]
+    # Số lần sinh lại sau lần đầu: 0 hoặc 1.
+    correction_retry_count: int
 
 
 # ---------------------------------------------------------------------------
@@ -180,52 +170,8 @@ dùng làm feedback sinh lại).
 
 
 # ---------------------------------------------------------------------------
-# Nodes
+# Kiểm một câu
 # ---------------------------------------------------------------------------
-
-def _retrieve_node(state: QuizGenState) -> QuizGenState:
-    chunks = retrieve(state["db"], state["course_id"], state["query"], top_k=5, scope=state.get("scope"))
-    return {"chunks": chunks}
-
-
-def _check_relevance_node(state: QuizGenState) -> QuizGenState:
-    result = check_relevance(state["lo"].objective_text, state["chunks"])
-    update: QuizGenState = {"relevance_confidence": result.confidence}
-    if result.confidence == "low" and result.refined_query:
-        update["query"] = result.refined_query
-    return update
-
-
-def _route_after_relevance(state: QuizGenState) -> str:
-    if state.get("relevance_confidence") == "high":
-        return "generate_question"
-    if state.get("relevance_retry_count", 0) < MAX_RELEVANCE_RETRY:
-        return "retry_retrieve"
-    # Hết lượt retry: vẫn tiến hành với chunk tốt nhất hiện có (best-effort),
-    # thay vì chặn cứng toàn bộ pipeline (mục 3.1: "fallback tìm tài liệu bổ trợ"
-    # rút gọn cho GD1 thành "chấp nhận best-effort").
-    return "generate_question"
-
-
-def _bump_relevance_retry_node(state: QuizGenState) -> QuizGenState:
-    return {"relevance_retry_count": state.get("relevance_retry_count", 0) + 1}
-
-
-def _generate_question_node(state: QuizGenState) -> QuizGenState:
-    bloom_level = state["lo"].bloom_level
-    prompt = (
-        f"LEARNING OBJECTIVE: {state['lo'].objective_text} (bloom_level={bloom_level})\n"
-        f"MÔ TẢ HÀNH VI CẤP ĐỘ {bloom_level} (dùng để quyết định dạng câu hỏi, không tự suy luận khác): "
-        f"{BLOOM_LEVEL_ANCHORS[bloom_level]}\n"
-        f"MODE: {state['mode']}\n\n"
-        f"{format_source_chunks(state['chunks'])}\n\n"
-        f"Sinh 1 câu hỏi trắc nghiệm cho Learning Objective trên."
-    )
-    if state.get("correction_feedback"):
-        prompt += CORRECTION_SUFFIX_TEMPLATE.format(feedback=state["correction_feedback"])
-    question = complete_structured(prompt, QuizQuestion, system_instruction=QUESTION_SYSTEM_INSTRUCTION)
-    return {"question": question}
-
 
 def _syntax_iwf_check(question: QuizQuestion) -> list[str]:
     issues = []
@@ -239,21 +185,47 @@ def _syntax_iwf_check(question: QuizQuestion) -> list[str]:
     return issues
 
 
-def _groundedness_answerability_node(state: QuizGenState) -> QuizGenState:
-    q = state["question"]
-    bloom_level = state["lo"].bloom_level
+@dataclass
+class QuestionCheck:
+    """Kết quả kiểm một câu, theo dạng `<tên>_pass`/`<tên>_reason` mà `_checked` đọc: ba tiêu chí
+    model chấm (đạt sẵn khi tắt tự kiểm) cộng bẫy cú pháp, vốn không tốn lượt gọi nào."""
+
+    groundedness_pass: bool = True
+    groundedness_reason: str = ""
+    answerability_pass: bool = True
+    answerability_reason: str = ""
+    bloom_level_pass: bool = True
+    bloom_level_reason: str = ""
+    syntax_pass: bool = True
+    syntax_reason: str = ""
+    # Mọi lỗi cú pháp tìm thấy, kể cả ở practice nơi chúng không chặn câu.
+    syntax_issues: list[str] = field(default_factory=list)
+
+
+QUESTION_CRITERIA = [
+    ("groundedness", "Groundedness"),
+    ("answerability", "Answerability"),
+    ("bloom_level", "Bloom's level"),
+    ("syntax", "Syntax/IWF"),
+]
+
+
+def _verify_question(
+    q: QuizQuestion, lo: LearningObjective, chunks: list[Chunk], mode: Literal["quiz", "practice"], self_check: bool
+) -> QuestionCheck:
     syntax_issues = _syntax_iwf_check(q)
-    # Practice: syntax-check không chặn (chỉ log), độ nghiêm ngặt thấp hơn quiz
+    # Practice: syntax-check không chặn (chỉ ghi lại), độ nghiêm ngặt thấp hơn quiz
     # (mục "Điểm khác biệt: ngưỡng chấp nhận thấp hơn Quiz").
-    blocking_issues = list(syntax_issues) if state["mode"] == "quiz" else []
+    blocking = syntax_issues if mode == "quiz" else []
+    result = QuestionCheck(
+        syntax_pass=not blocking, syntax_reason="; ".join(blocking), syntax_issues=syntax_issues
+    )
+    if not self_check:
+        return result
 
-    if not state.get("self_check", True):
-        if not blocking_issues:
-            return {"passed": True, "syntax_issues": syntax_issues}
-        return {"passed": False, "syntax_issues": syntax_issues, "correction_feedback": "; ".join(blocking_issues)}
-
+    bloom_level = lo.bloom_level
     prompt = (
-        f"{format_source_chunks(state['chunks'])}\n\n"
+        f"{format_source_chunks(chunks)}\n\n"
         f"CÂU HỎI ĐÃ SINH:\n"
         f"stem: {q.stem}\n"
         f"choices: {q.choices}\n"
@@ -265,76 +237,15 @@ def _groundedness_answerability_node(state: QuizGenState) -> QuizGenState:
         f"Kiểm tra groundedness, answerability và bloom_level_pass của câu hỏi trên."
     )
     check = complete_structured(prompt, GroundednessAnswerabilityCheck, system_instruction=GROUNDEDNESS_SYSTEM_INSTRUCTION)
-
-    passed = (
-        check.groundedness_pass and check.answerability_pass and check.bloom_level_pass
-        and not blocking_issues
-    )
-    if passed:
-        return {"passed": True, "syntax_issues": syntax_issues}
-
-    reasons = []
-    if not check.groundedness_pass:
-        reasons.append(f"Groundedness fail: {check.groundedness_reason}")
-    if not check.answerability_pass:
-        reasons.append(f"Answerability fail: {check.answerability_reason}")
-    if not check.bloom_level_pass:
-        reasons.append(f"Bloom's level fail: {check.bloom_level_reason}")
-    reasons.extend(blocking_issues)
-    return {"passed": False, "syntax_issues": syntax_issues, "correction_feedback": "; ".join(reasons)}
-
-
-def _route_after_groundedness(state: QuizGenState) -> str:
-    if state.get("passed"):
-        return "done"
-    if state.get("correction_retry_count", 0) < MAX_CORRECTION_RETRY:
-        return "retry_generate"
-    return "failed"
-
-
-def _bump_correction_retry_node(state: QuizGenState) -> QuizGenState:
-    return {"correction_retry_count": state.get("correction_retry_count", 0) + 1}
-
-
-def _mark_failed_node(state: QuizGenState) -> QuizGenState:
-    return {"fail_reason": state.get("correction_feedback", "unknown")}
+    result.groundedness_pass, result.groundedness_reason = check.groundedness_pass, check.groundedness_reason
+    result.answerability_pass, result.answerability_reason = check.answerability_pass, check.answerability_reason
+    result.bloom_level_pass, result.bloom_level_reason = check.bloom_level_pass, check.bloom_level_reason
+    return result
 
 
 # ---------------------------------------------------------------------------
-# Graph
+# Sinh một câu
 # ---------------------------------------------------------------------------
-
-def build_quiz_graph():
-    graph = StateGraph(QuizGenState)
-
-    graph.add_node("retrieve", _retrieve_node)
-    graph.add_node("check_relevance", _check_relevance_node)
-    graph.add_node("bump_relevance_retry", _bump_relevance_retry_node)
-    graph.add_node("generate_question", _generate_question_node)
-    graph.add_node("check_groundedness", _groundedness_answerability_node)
-    graph.add_node("bump_correction_retry", _bump_correction_retry_node)
-    graph.add_node("mark_failed", _mark_failed_node)
-
-    graph.set_entry_point("retrieve")
-    graph.add_edge("retrieve", "check_relevance")
-    graph.add_conditional_edges(
-        "check_relevance", _route_after_relevance,
-        {"generate_question": "generate_question", "retry_retrieve": "bump_relevance_retry"},
-    )
-    graph.add_edge("bump_relevance_retry", "retrieve")
-    graph.add_edge("generate_question", "check_groundedness")
-    graph.add_conditional_edges(
-        "check_groundedness", _route_after_groundedness,
-        {"done": END, "retry_generate": "bump_correction_retry", "failed": "mark_failed"},
-    )
-    graph.add_edge("bump_correction_retry", "generate_question")
-    graph.add_edge("mark_failed", END)
-
-    return graph.compile()
-
-
-_compiled_graph = None
-
 
 def generate_quiz_question(
     db: Session,
@@ -345,23 +256,47 @@ def generate_quiz_question(
     scope: ChunkScope | None = None,
     feedback: str | None = None,
     self_check: bool = True,
-) -> QuizGenState:
-    """`feedback`: lý do lần sinh trước của chính câu này không đạt, khi lỗi chỉ thấy được ở cấp
+) -> QuizResult:
+    """`query`: điều câu hỏi kiểm (một sub-objective, hoặc khái niệm chính với practice); truy hồi
+    top-5 đoạn theo nó, không chấm độ liên quan riêng.
+
+    `feedback`: lý do lần sinh trước của chính câu này không đạt, khi lỗi chỉ thấy được ở cấp
     cả bộ câu hỏi (ví dụ đáp án đúng dài nhất ở mọi câu) nên bước kiểm từng câu không bắt được.
+    Nó đi cùng câu hỏi qua cả lần sinh lại, cộng với lý do trượt của lần kiểm.
 
     `self_check=False` bỏ lượt model tự kiểm groundedness/answerability/Bloom của câu hỏi; bẫy cú
     pháp (không tốn lượt gọi nào) vẫn chặn câu quiz như khi bật."""
-    global _compiled_graph
-    if _compiled_graph is None:
-        _compiled_graph = build_quiz_graph()
+    chunks = retrieve(db, course_id, query, top_k=QUESTION_TOP_K, scope=scope)
+    bloom_level = lo.bloom_level
+    attempts = 0
 
-    initial_state: QuizGenState = {
-        "db": db, "course_id": course_id, "query": query, "lo": lo, "mode": mode, "scope": scope,
-        "self_check": self_check, "relevance_retry_count": 0, "correction_retry_count": 0,
+    def generate(retry_feedback: str | None) -> QuizQuestion:
+        nonlocal attempts
+        attempts += 1
+        prompt = (
+            f"LEARNING OBJECTIVE: {lo.objective_text} (bloom_level={bloom_level})\n"
+            f"MÔ TẢ HÀNH VI CẤP ĐỘ {bloom_level} (dùng để quyết định dạng câu hỏi, không tự suy luận khác): "
+            f"{BLOOM_LEVEL_ANCHORS[bloom_level]}\n"
+            f"MODE: {mode}\n\n"
+            f"{format_source_chunks(chunks)}\n\n"
+            f"Sinh 1 câu hỏi trắc nghiệm cho Learning Objective trên."
+        )
+        reasons = "; ".join(r for r in (feedback, retry_feedback) if r)
+        if reasons:
+            prompt += CORRECTION_SUFFIX_TEMPLATE.format(feedback=reasons)
+        return complete_structured(prompt, QuizQuestion, system_instruction=QUESTION_SYSTEM_INSTRUCTION)
+
+    question, check = _checked(
+        generate, lambda q: _verify_question(q, lo, chunks, mode, self_check), QUESTION_CRITERIA
+    )
+    failed = failed_criteria(check, QUESTION_CRITERIA)
+    return {
+        "question": question,
+        "passed": not failed,
+        "fail_reason": "; ".join(failed) or None,
+        "syntax_issues": check.syntax_issues,
+        "correction_retry_count": attempts - 1,
     }
-    if feedback:
-        initial_state["correction_feedback"] = feedback
-    return _compiled_graph.invoke(initial_state)
 
 
 # Đáp án đúng được phép là phương án dài nhất ở một số câu, nhưng không phải ở mọi câu: khi cả bộ

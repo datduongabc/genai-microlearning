@@ -85,7 +85,7 @@ MAX_QUIZ_QUESTIONS = 3
 
 @dataclass
 class _Asked:
-    """Một câu hỏi đã sinh: thuộc quiz hay practice, nó kiểm điều gì, và kết quả của đồ thị quiz."""
+    """Một câu hỏi đã sinh: thuộc quiz hay practice, nó kiểm điều gì, và kết quả sinh câu đó."""
 
     type: ComponentType
     target: str
@@ -134,8 +134,6 @@ def _save_questions(db: Session, module_id: uuid.UUID, asked: list[_Asked], self
                 {
                     "target": a.target,
                     "passed": a.state.get("passed", False),
-                    "relevance_confidence": a.state.get("relevance_confidence"),
-                    "relevance_retry_count": a.state.get("relevance_retry_count", 0),
                     "correction_retry_count": a.state.get("correction_retry_count", 0),
                     "fail_reason": a.state.get("fail_reason"),
                     # Written before the answer was chosen: kept so a teacher can read why this is
