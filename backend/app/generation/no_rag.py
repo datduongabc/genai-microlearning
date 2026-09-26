@@ -12,13 +12,12 @@ lời giải) đọc Content thay cho đoạn truy hồi, vì đó là thứ duy
 Prompt ở đây chỉ mô tả cấu trúc và cách làm, không có ví dụ lấy từ tài liệu hay môn học nào.
 """
 
-from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Literal
 
 from pydantic import BaseModel, Field
 
-from app.generation.common import BLOOM_LEVEL_ANCHORS
+from app.generation.common import BLOOM_LEVEL_ANCHORS, _checked
 from app.generation.example import ExampleOutput
 from app.generation.objective import LearningObjective
 from app.generation.quiz_graph import (
@@ -30,34 +29,9 @@ from app.generation.quiz_graph import (
 from app.generation.slides import SlidesOutput, generate_slides
 from app.llm.gateway import complete_structured
 
-# Cùng ngân sách sửa lỗi với pipeline RAG: một lần sinh lại cho mỗi bước.
-MAX_CORRECTION_RETRY = 1
 MAX_QUIZ_QUESTIONS = 3
 
 _RETRY_SUFFIX = "\n\nLƯU Ý: lần sinh trước KHÔNG ĐẠT vì lý do sau -- sửa đúng lỗi này, không lặp lại: {feedback}"
-
-
-def _checked[T, C](
-    generate: Callable[[str | None], T], verify: Callable[[T], C] | None, criteria: list[tuple[str, str]]
-) -> tuple[T, C | None]:
-    """Sinh, tự kiểm, sinh lại một lần với đúng lý do trượt; hết lượt thì trả bản cuối và kết quả
-    kiểm của nó, như các bước của pipeline RAG. `criteria`: (tên trường, nhãn trong lý do).
-    `verify=None` (tắt tự kiểm): sinh một lượt, không có kết quả kiểm."""
-    if verify is None:
-        return generate(None), None
-    feedback: str | None = None
-    for _ in range(MAX_CORRECTION_RETRY + 1):
-        out = generate(feedback)
-        check = verify(out)
-        failed = [
-            f"{label} fail: {getattr(check, f'{name}_reason')}"
-            for name, label in criteria
-            if not getattr(check, f"{name}_pass")
-        ]
-        if not failed:
-            return out, check
-        feedback = "; ".join(failed)
-    return out, check
 
 
 # --- Content ------------------------------------------------------------------------------------

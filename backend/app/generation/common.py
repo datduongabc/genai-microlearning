@@ -1,6 +1,7 @@
 """What every generated component shares: the Bloom table, the guard against instructions
-hidden in a source, and how source chunks are shown to the model."""
+hidden in a source, how source chunks are shown to the model, and the self-check loop."""
 
+from collections.abc import Callable
 from typing import Literal
 
 from app.models import Chunk
@@ -57,3 +58,36 @@ def format_source_chunks(chunks: list[Chunk]) -> str:
             f"{c.content}\n--- END SOURCE CHUNK DATA ---"
         )
     return "\n\n".join(blocks)
+
+
+# Một lần sinh lại cho mỗi bước có tự kiểm, ở cả pipeline RAG lẫn nhánh không RAG.
+MAX_CORRECTION_RETRY = 1
+
+
+def failed_criteria(check, criteria: list[tuple[str, str]]) -> list[str]:
+    """Lý do trượt của `check` theo `criteria` (tên trường, nhãn trong lý do): mỗi tiêu chí có
+    `<tên>_pass` sai cho một dòng "<nhãn> fail: <tên>_reason"."""
+    return [
+        f"{label} fail: {getattr(check, f'{name}_reason')}"
+        for name, label in criteria
+        if not getattr(check, f"{name}_pass")
+    ]
+
+
+def _checked[T, C](
+    generate: Callable[[str | None], T], verify: Callable[[T], C] | None, criteria: list[tuple[str, str]]
+) -> tuple[T, C | None]:
+    """Sinh, tự kiểm, sinh lại một lần với đúng lý do trượt; hết lượt thì trả bản cuối và kết quả
+    kiểm của nó. `criteria`: (tên trường, nhãn trong lý do). `verify=None` (tắt tự kiểm): sinh một
+    lượt, không có kết quả kiểm."""
+    if verify is None:
+        return generate(None), None
+    feedback: str | None = None
+    for _ in range(MAX_CORRECTION_RETRY + 1):
+        out = generate(feedback)
+        check = verify(out)
+        failed = failed_criteria(check, criteria)
+        if not failed:
+            return out, check
+        feedback = "; ".join(failed)
+    return out, check

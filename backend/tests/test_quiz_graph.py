@@ -1,39 +1,174 @@
+"""Sinh một câu hỏi: truy hồi theo điều câu đó kiểm, sinh, kiểm, và trượt thì sinh lại đúng một lần.
+
+Mô hình và truy hồi được thay bằng hàm giả, nên không tốn hạn mức nào."""
+
+import ast
+import tomllib
+import uuid
+from pathlib import Path
+
+import pytest
+
+from app.generation import common, content, no_rag, quiz_graph
+from app.generation.common import MAX_CORRECTION_RETRY
+from app.generation.objective import LearningObjective
 from app.generation.quiz_graph import (
-    MAX_CORRECTION_RETRY,
+    GroundednessAnswerabilityCheck,
     QuizQuestion,
-    _route_after_groundedness,
-    _route_after_relevance,
     _syntax_iwf_check,
+    generate_quiz_question,
 )
-from app.generation.relevance import MAX_RELEVANCE_RETRY
+from app.retrieval.search import ChunkScope
+
+BACKEND = Path(__file__).resolve().parents[1]
+
+LO = LearningObjective(
+    bloom_level="understand", verb="giải thích", objective_text="Giải thích khái niệm",
+    sub_objectives=["Nêu định nghĩa", "Phân biệt hai trường hợp", "Giải thích vai trò"],
+)
+
+BALANCED = QuizQuestion(
+    common_misconceptions=["m1", "m2", "m3"], stem="Hỏi", reasoning="r",
+    choices=["pa một", "pa hai", "pa ba", "pa bốn"], correct_index=1, explanation="lời giải",
+)
+ABSOLUTE = BALANCED.model_copy(update={"choices": ["luôn luôn", "pa hai", "pa ba", "pa bốn"]})
+
+PASS = GroundednessAnswerabilityCheck(
+    groundedness_pass=True, groundedness_reason="", answerability_pass=True, answerability_reason="",
+    bloom_level_pass=True, bloom_level_reason="",
+)
+UNGROUNDED = PASS.model_copy(update={"groundedness_pass": False, "groundedness_reason": "ngoài nguồn"})
 
 
-def test_route_after_relevance_high_confidence_proceeds():
-    assert _route_after_relevance({"relevance_confidence": "high"}) == "generate_question"
+class FakeModel:
+    """Trả lần lượt các câu hỏi và các kết quả kiểm cho trước (phần tử cuối lặp lại khi hết), và
+    ghi lại mọi lượt gọi."""
+
+    def __init__(self, questions=(BALANCED,), checks=(PASS,)):
+        self.answers = {QuizQuestion: list(questions), GroundednessAnswerabilityCheck: list(checks)}
+        self.calls: list[tuple[str, str]] = []
+
+    def __call__(self, prompt, response_model, system_instruction=None, **kwargs):
+        self.calls.append((response_model.__name__, prompt))
+        queue = self.answers[response_model]
+        return queue.pop(0) if len(queue) > 1 else queue[0]
+
+    def names(self):
+        return [name for name, _ in self.calls]
+
+    def question_prompts(self):
+        return [prompt for name, prompt in self.calls if name == "QuizQuestion"]
 
 
-def test_route_after_relevance_low_confidence_retries_once():
-    assert _route_after_relevance({"relevance_confidence": "low", "relevance_retry_count": 0}) == "retry_retrieve"
+@pytest.fixture
+def searches(monkeypatch):
+    seen = []
+
+    def fake_retrieve(db, course_id, query, top_k=8, scope=None, **kwargs):
+        seen.append({"query": query, "top_k": top_k, "scope": scope, **kwargs})
+        return []
+
+    monkeypatch.setattr(quiz_graph, "retrieve", fake_retrieve)
+    return seen
 
 
-def test_route_after_relevance_low_confidence_proceeds_best_effort_after_retry_budget():
-    # MAX_RELEVANCE_RETRY = 1 -> once the budget is exhausted, don't block
-    # the whole pipeline forever; proceed with the best chunks available.
-    state = {"relevance_confidence": "low", "relevance_retry_count": MAX_RELEVANCE_RETRY}
-    assert _route_after_relevance(state) == "generate_question"
+def _use(monkeypatch, model):
+    monkeypatch.setattr(quiz_graph, "complete_structured", model)
+    return model
 
 
-def test_route_after_groundedness_passed_ends():
-    assert _route_after_groundedness({"passed": True}) == "done"
+def test_a_question_that_passes_its_check_is_generated_once(monkeypatch, searches):
+    model = _use(monkeypatch, FakeModel())
+
+    result = generate_quiz_question(None, uuid.uuid4(), "Nêu định nghĩa", LO)
+
+    assert model.names() == ["QuizQuestion", "GroundednessAnswerabilityCheck"]
+    assert result["passed"] is True and result["fail_reason"] is None
+    assert result["correction_retry_count"] == 0
+    assert result["question"] == BALANCED
 
 
-def test_route_after_groundedness_fails_retries_once():
-    assert _route_after_groundedness({"passed": False, "correction_retry_count": 0}) == "retry_generate"
+def test_a_question_that_fails_is_regenerated_exactly_once_with_the_reason(monkeypatch, searches):
+    model = _use(monkeypatch, FakeModel(checks=[UNGROUNDED]))
+
+    result = generate_quiz_question(None, uuid.uuid4(), "Nêu định nghĩa", LO)
+
+    assert MAX_CORRECTION_RETRY == 1
+    assert model.names() == ["QuizQuestion", "GroundednessAnswerabilityCheck"] * 2
+    assert result["passed"] is False
+    assert result["fail_reason"] == "Groundedness fail: ngoài nguồn"
+    assert result["correction_retry_count"] == 1
+    first, second = model.question_prompts()
+    assert "ngoài nguồn" not in first and "Groundedness fail: ngoài nguồn" in second
 
 
-def test_route_after_groundedness_fails_permanently_after_retry_budget():
-    state = {"passed": False, "correction_retry_count": MAX_CORRECTION_RETRY}
-    assert _route_after_groundedness(state) == "failed"
+def test_a_question_that_passes_on_the_second_try_is_kept(monkeypatch, searches):
+    model = _use(monkeypatch, FakeModel(questions=[ABSOLUTE, BALANCED]))
+
+    result = generate_quiz_question(None, uuid.uuid4(), "Nêu định nghĩa", LO)
+
+    assert model.names().count("QuizQuestion") == 2
+    assert result["passed"] is True and result["correction_retry_count"] == 1
+    assert result["question"] == BALANCED
+    assert "Syntax/IWF fail" in model.question_prompts()[1]
+
+
+def test_each_question_retrieves_five_passages_for_what_it_asks_and_never_grades_them(monkeypatch, searches):
+    model = _use(monkeypatch, FakeModel())
+    scope = ChunkScope(uuid.uuid4(), 1, 2)
+
+    generate_quiz_question(None, uuid.uuid4(), "Nêu định nghĩa", LO, scope=scope)
+
+    assert searches == [{"query": "Nêu định nghĩa", "top_k": 5, "scope": scope}]
+    assert "RelevanceCheck" not in model.names()
+
+
+def test_without_self_check_the_model_never_checks_and_the_syntax_trap_still_blocks_quiz(monkeypatch, searches):
+    model = _use(monkeypatch, FakeModel(questions=[ABSOLUTE]))
+
+    result = generate_quiz_question(None, uuid.uuid4(), "q", LO, "quiz", self_check=False)
+
+    assert model.names() == ["QuizQuestion", "QuizQuestion"]
+    assert result["passed"] is False and "tuyệt đối" in result["fail_reason"]
+
+
+def test_the_syntax_trap_does_not_block_practice(monkeypatch, searches):
+    model = _use(monkeypatch, FakeModel(questions=[ABSOLUTE]))
+
+    result = generate_quiz_question(None, uuid.uuid4(), "q", LO, "practice", self_check=False)
+
+    assert model.names() == ["QuizQuestion"]
+    assert result["passed"] is True and result["syntax_issues"]
+
+
+def test_set_level_feedback_stays_on_the_retry_along_with_the_check_reason(monkeypatch, searches):
+    model = _use(monkeypatch, FakeModel(checks=[UNGROUNDED]))
+
+    generate_quiz_question(None, uuid.uuid4(), "q", LO, feedback="đáp án đúng dài nhất")
+
+    first, second = model.question_prompts()
+    assert "đáp án đúng dài nhất" in first
+    assert "đáp án đúng dài nhất" in second and "ngoài nguồn" in second
+
+
+def test_rag_and_no_rag_steps_share_one_self_check_loop():
+    assert no_rag._checked is common._checked
+    assert content._checked is common._checked
+    assert quiz_graph._checked is common._checked
+
+
+def test_nothing_imports_langgraph_any_more():
+    imported = set()
+    for path in (BACKEND / "app").rglob("*.py"):
+        for node in ast.walk(ast.parse(path.read_text(encoding="utf-8"))):
+            if isinstance(node, ast.Import):
+                imported.update(alias.name.split(".")[0] for alias in node.names)
+            elif isinstance(node, ast.ImportFrom) and node.module:
+                imported.add(node.module.split(".")[0])
+    assert "langgraph" not in imported
+
+    dependencies = tomllib.loads((BACKEND / "pyproject.toml").read_text())["project"]["dependencies"]
+    assert not any(d.startswith("langgraph") for d in dependencies)
 
 
 def _question(choices, explanation="ok"):

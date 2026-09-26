@@ -2,7 +2,7 @@
 
 Chỉ Content và từng câu hỏi còn vòng model tự kiểm; Learning Objective, Slides và Example sinh một
 lượt. Mô hình được thay bằng một hàm giả đếm lượt gọi và luôn cho đạt, truy hồi cũng được thay, nên
-không tốn hạn mức nào. Phần còn lại của pipeline (Corrective RAG, đồ thị câu hỏi) chạy thật."""
+không tốn hạn mức nào. Phần còn lại của pipeline (Corrective RAG trước Content, vòng sinh-kiểm câu hỏi) chạy thật."""
 
 import importlib
 import pkgutil
@@ -121,17 +121,22 @@ def _generate(document, self_check: bool) -> set[str]:
         db.close()
 
 
-def test_with_self_check_one_module_costs_19_calls(document, llm):
+def test_with_self_check_one_module_costs_15_calls(document, llm):
     """Ba sub-objective cho ba câu quiz và một câu practice, bốn câu hỏi:
 
     Planner 1 + Learning Objective 1 + chấm độ liên quan cho Content 1 + Content 1 + kiểm Content 1
-    + Slides 1 + Example 1 = 7, cộng mỗi câu hỏi 3 (chấm độ liên quan, sinh, kiểm) x 4 = 12: 19.
-    Trước đây LO, Slides và Example mỗi bước thêm một lượt kiểm, 22 lượt."""
+    + Slides 1 + Example 1 = 7, cộng mỗi câu hỏi 2 (sinh, kiểm) x 4 = 8: 15. Câu hỏi không còn
+    chấm độ liên quan riêng (trước đây thêm 1 lượt mỗi câu, 19 lượt); Corrective RAG chỉ chạy
+    một lần, trước Content.
+
+    Tối đa khi mọi bước đều trượt: Planner 1 + LO 1 + chấm độ liên quan 2 (chấm, truy hồi lại, chấm
+    lại) + Content 2 x 2 (sinh, kiểm, hai lần) + Slides 1 + Example 1 = 10, cộng bốn câu x 4 (sinh,
+    kiểm, hai lần) = 16, cộng sinh lại một câu vì lộ đáp án qua độ dài 4: 30."""
     criteria = _generate(document, self_check=True)
 
-    assert len(llm) == 19
+    assert len(llm) == 15
     assert Counter(llm) == {
-        "PlannerOutput": 1, "LearningObjective": 1, "RelevanceCheck": 5, "ContentOutput": 1,
+        "PlannerOutput": 1, "LearningObjective": 1, "RelevanceCheck": 1, "ContentOutput": 1,
         "ContentVerification": 1, "SlidesOutput": 1, "ExampleOutput": 1, "QuizQuestion": 4,
         "GroundednessAnswerabilityCheck": 4,
     }
@@ -142,12 +147,12 @@ def test_with_self_check_one_module_costs_19_calls(document, llm):
     }
 
 
-def test_without_self_check_one_module_costs_14_calls(document, llm):
-    """19 lượt trừ lượt kiểm Content và bốn lượt kiểm câu hỏi: 14. Chấm độ liên quan (Corrective
+def test_without_self_check_one_module_costs_10_calls(document, llm):
+    """15 lượt trừ lượt kiểm Content và bốn lượt kiểm câu hỏi: 10. Chấm độ liên quan (Corrective
     RAG) không phải tự kiểm đầu ra nên vẫn chạy, và chỉ tiêu chí của nó còn trong evaluations."""
     criteria = _generate(document, self_check=False)
 
-    assert len(llm) == 14
+    assert len(llm) == 10
     assert "ContentVerification" not in llm and "GroundednessAnswerabilityCheck" not in llm
     assert criteria == {"content_relevance_pass"}
 

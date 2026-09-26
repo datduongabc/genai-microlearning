@@ -1,6 +1,6 @@
 """Corrective RAG: judge the passages found for an objective before anything is written from them,
-and when they do not fit, rewrite the search and run it again. Shared by the lesson text and the
-questions, so both stand on passages that were judged the same way."""
+and when they do not fit, rewrite the search and run it again. Runs once per module, before the
+lesson text; the questions then search by their own sub-objective without a separate judgement."""
 
 from collections.abc import Callable
 from dataclasses import dataclass
@@ -14,7 +14,6 @@ from app.models import Chunk
 
 MAX_RELEVANCE_RETRY = 1
 
-QUESTION_PURPOSE = "sinh 1 câu hỏi trắc nghiệm đúng chủ đề/Learning Objective"
 CONTENT_PURPOSE = "biên soạn bài giảng bao phủ Learning Objective và các mục tiêu thành phần của nó"
 
 
@@ -38,7 +37,7 @@ quan để {purpose} hay không.
 """
 
 
-def check_relevance(objective_text: str, chunks: list[Chunk], purpose: str = QUESTION_PURPOSE) -> RelevanceCheck:
+def check_relevance(objective_text: str, chunks: list[Chunk], purpose: str = CONTENT_PURPOSE) -> RelevanceCheck:
     prompt = (
         f"LEARNING OBJECTIVE: {objective_text}\n\n"
         f"{format_source_chunks(chunks)}\n\n"

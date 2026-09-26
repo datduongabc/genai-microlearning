@@ -4,6 +4,7 @@ from pydantic import BaseModel, Field
 
 from app.generation.common import (
     IGNORE_EMBEDDED_INSTRUCTIONS,
+    _checked,
     format_source_chunks,
 )
 from app.generation.objective import LearningObjective
@@ -11,9 +12,9 @@ from app.llm.gateway import complete_structured
 from app.models import Chunk
 
 # ---------------------------------------------------------------------------
-# 3. Content — grounded qua retrieval pipeline (mục 5.2). CRAG relevance-check
-# đầy đủ (LangGraph, retry) được xây ở Tuần 8 cho Quiz/Practice; Content ở
-# Tuần 6 dựa vào chất lượng retrieve() (hybrid+rerank) đã có sẵn từ Tuần 4-5.
+# 3. Content — grounded qua retrieval pipeline (mục 5.2). Corrective RAG
+# (chấm độ liên quan, truy hồi lại tối đa 1 lần) chạy một lần trước Content,
+# trong module_generation_pipeline.py.
 # ---------------------------------------------------------------------------
 
 CONTENT_SYSTEM_INSTRUCTION = IGNORE_EMBEDDED_INSTRUCTIONS + """Bạn là chuyên gia biên soạn nội dung Microlearning cho giáo dục đại học.
@@ -74,8 +75,8 @@ class ContentOutput(BaseModel):
 # mọi bước sau đọc lại Content, nên lỗi ở đây lan ra cả module. Nghiên cứu thật (claim-by-claim verification -- xem checklist GD2)
 # xác nhận dạng lỗi RAG phổ biến nhất là "unfaithfulness": model CÓ nguồn
 # đúng nhưng bỏ sót/hiểu sai/chỉ lấy phần tiện, không phải bịa từ hư không --
-# khó bắt bằng mắt thường, cần kiểm chứng độc lập.
-MAX_CONTENT_CORRECTION_RETRY = 1
+# khó bắt bằng mắt thường, cần kiểm chứng độc lập. Một lần sinh lại khi trượt
+# (common.MAX_CORRECTION_RETRY).
 
 CONTENT_VERIFY_SYSTEM_INSTRUCTION = IGNORE_EMBEDDED_INSTRUCTIONS + """Bạn là bộ kiểm tra chất lượng Content (Critic), dựa trên các đoạn nguồn
 được cung cấp.
@@ -138,10 +139,8 @@ def generate_content(
     """With `self_check` off the lesson is written once and nothing checks it (the check is None):
     the arm of the self-check ablation."""
     sub_objectives_text = "\n".join(f"- {so}" for so in lo.sub_objectives)
-    feedback: str | None = None
-    content_out: ContentOutput | None = None
-    check: ContentVerification | None = None
-    for _ in range(MAX_CONTENT_CORRECTION_RETRY + 1):
+
+    def generate(feedback: str | None) -> ContentOutput:
         prompt = (
             f"LEARNING OBJECTIVE (Terminal): {lo.objective_text} (bloom_level={lo.bloom_level})\n"
             f"SUB-OBJECTIVES (Enabling — mỗi cái cần 1 heading riêng trong Content):\n{sub_objectives_text}\n\n"
@@ -157,23 +156,13 @@ def generate_content(
         # nguon ("CHI duoc khang dinh dieu THUC SU co trong SOURCE CHUNK"),
         # khong phai sang tac tu do -- giam sampling giup giam rui ro tu
         # "dien giai qua tay" (unfaithfulness), nhat quan voi Planner/LO.
-        content_out = complete_structured(
+        return complete_structured(
             prompt, ContentOutput, system_instruction=CONTENT_SYSTEM_INSTRUCTION, temperature=0.0
         )
 
-        if not self_check:
-            return content_out, None
-        check = _verify_content(content_out, lo, context_chunks)
-        if check.groundedness_pass and check.completeness_pass and check.scope_pass:
-            return content_out, check
-
-        reasons = []
-        if not check.groundedness_pass:
-            reasons.append(f"Groundedness fail: {check.groundedness_reason}")
-        if not check.completeness_pass:
-            reasons.append(f"Completeness fail: {check.completeness_reason}")
-        if not check.scope_pass:
-            reasons.append(f"Scope fail: {check.scope_reason}")
-        feedback = "; ".join(reasons)
-
-    return content_out, check  # best-effort sau khi hết retry budget, giống pattern quiz_graph.py
+    # Hết lượt sinh lại thì trả bản cuối (best-effort), như câu hỏi và nhánh không RAG.
+    return _checked(
+        generate,
+        (lambda out: _verify_content(out, lo, context_chunks)) if self_check else None,
+        [("groundedness", "Groundedness"), ("completeness", "Completeness"), ("scope", "Scope")],
+    )

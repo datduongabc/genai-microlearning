@@ -5,7 +5,6 @@ import uuid
 import pytest
 
 from app.db import SessionLocal
-from app.generation import quiz_graph
 from app.ingestion.embeddings import embed_texts
 from app.models import Chunk, Course, Document, DocumentStatus, User, UserRole
 from app.retrieval import search as retrieval
@@ -157,31 +156,3 @@ def test_retrieve_returns_only_chunks_of_the_scope(book, monkeypatch):
         assert all(c.chunk_index <= 2 for c in results)
     finally:
         db.close()
-
-
-def test_the_quiz_graph_retrieval_step_passes_the_scope_on(monkeypatch):
-    seen = {}
-
-    def fake_retrieve(db, course_id, query, top_k=8, scope=None, **_kwargs):
-        seen["scope"] = scope
-        return []
-
-    monkeypatch.setattr(quiz_graph, "retrieve", fake_retrieve)
-    scope = ChunkScope(uuid.uuid4(), 1, 2)
-
-    quiz_graph._retrieve_node({"db": None, "course_id": uuid.uuid4(), "query": "q", "scope": scope})
-
-    assert seen["scope"] == scope
-
-
-def test_generate_quiz_question_starts_the_graph_with_the_scope(monkeypatch):
-    class FakeGraph:
-        def invoke(self, state):
-            return state
-
-    monkeypatch.setattr(quiz_graph, "_compiled_graph", FakeGraph())
-    scope = ChunkScope(uuid.uuid4(), 1, 2)
-
-    state = quiz_graph.generate_quiz_question(None, uuid.uuid4(), "q", None, mode="quiz", scope=scope)
-
-    assert state["scope"] == scope
