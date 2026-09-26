@@ -228,20 +228,32 @@ def test_the_two_arms_prompts_differ_only_in_the_source_block(document, llm):
     assert sourced == 2 + 1 + 4 * 2
 
 
-@pytest.mark.parametrize(("body", "sourced", "unsourced"), [
-    (content._CONTENT_BODY, content.CONTENT_SYSTEM_INSTRUCTION, content.NO_SOURCE_CONTENT_SYSTEM_INSTRUCTION),
-    (content._CONTENT_VERIFY_BODY, content.CONTENT_VERIFY_SYSTEM_INSTRUCTION,
-     content.NO_SOURCE_CONTENT_VERIFY_SYSTEM_INSTRUCTION),
-    (example._EXAMPLE_BODY, example.EXAMPLE_SYSTEM_INSTRUCTION, example.NO_SOURCE_EXAMPLE_SYSTEM_INSTRUCTION),
-    (quiz_graph._QUESTION_BODY, quiz_graph.QUESTION_SYSTEM_INSTRUCTION,
-     quiz_graph.NO_SOURCE_QUESTION_SYSTEM_INSTRUCTION),
-    (quiz_graph._QUESTION_CHECK_BODY, quiz_graph.GROUNDEDNESS_SYSTEM_INSTRUCTION,
-     quiz_graph.NO_SOURCE_QUESTION_CHECK_SYSTEM_INSTRUCTION),
-])
-def test_both_arms_share_each_steps_instruction_and_differ_only_in_the_source_rules(body, sourced, unsourced):
-    assert sourced.startswith(IGNORE_EMBEDDED_INSTRUCTIONS + body)
-    assert unsourced.startswith(body)
-    assert "SOURCE CHUNK" not in unsourced
+STEP_BODIES = {
+    "ContentOutput": content._CONTENT_BODY,
+    "ContentVerification": content._CONTENT_VERIFY_BODY,
+    "ExampleOutput": example._EXAMPLE_BODY,
+    "QuizQuestion": quiz_graph._QUESTION_BODY,
+    "GroundednessAnswerabilityCheck": quiz_graph._QUESTION_CHECK_BODY,
+}
+
+
+def test_each_step_sends_both_arms_the_same_instruction_but_for_the_source_rules(document, llm):
+    _, _, rag_calls, control_calls = _pair(document, llm)
+    rag_calls = [c for c in rag_calls if c["model"] not in RAG_ONLY]
+
+    seen = set()
+    for rag, control in zip(rag_calls, control_calls, strict=True):
+        body = STEP_BODIES.get(rag["model"])
+        if body is None:
+            assert rag["system"] == control["system"]
+            continue
+        seen.add(rag["model"])
+        assert rag["system"].startswith(IGNORE_EMBEDDED_INSTRUCTIONS + body)
+        assert control["system"].startswith(body)
+        source_rules = rag["system"].removeprefix(IGNORE_EMBEDDED_INSTRUCTIONS + body)
+        no_source_rules = control["system"].removeprefix(body)
+        assert source_rules != no_source_rules and "SOURCE CHUNK" not in no_source_rules
+    assert seen == set(STEP_BODIES)
 
 
 def test_the_control_logs_no_source_based_evaluation(document, llm):

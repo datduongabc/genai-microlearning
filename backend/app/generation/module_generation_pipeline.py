@@ -117,6 +117,26 @@ def generation_payload_of(db: Session, module_id: uuid.UUID) -> dict:
     return (job.payload or {}) if job is not None else {}
 
 
+def generation_payload(alias: str | None, self_check: bool = True) -> dict:
+    """Không ghi alias khi chưa chọn, thay vì ghi sẵn giá trị từ cấu hình: ghi sẵn thì
+    đổi cấu hình hệ thống sẽ không tác dụng với các job đã nằm trong hàng đợi. `self_check`
+    luôn được ghi, để biết chắc mỗi module của thí nghiệm thuộc nhánh nào."""
+    payload: dict = {"self_check": self_check}
+    if alias:
+        payload["model_alias"] = alias
+    return payload
+
+
+def control_payload(paired_module_id: uuid.UUID, alias: str | None, self_check: bool) -> dict:
+    """Payload của job sinh bản đối chứng không RAG, như nhau dù job đến từ API hay từ CLI."""
+    return {**generation_payload(alias, self_check), "use_retrieval": False, "paired_module_id": str(paired_module_id)}
+
+
+def is_control(db: Session, module_id: uuid.UUID) -> bool:
+    """Module có phải bản đối chứng không RAG (nhóm llm_no_rag) không, theo job đã sinh nó."""
+    return generation_payload_of(db, module_id).get("use_retrieval", True) is False
+
+
 # Một bài 5-10 phút: mỗi câu quiz kiểm một sub-objective, tối đa ba câu.
 MAX_QUIZ_QUESTIONS = 3
 

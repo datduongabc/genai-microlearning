@@ -3,7 +3,7 @@
     PYTHONPATH=. uv run python scripts/export_study_pair.py <module_id> --out <thư mục> [--model <alias>]
 
 Bản không RAG là một module sinh bằng chính pipeline RAG với use_retrieval=False (được lưu như mọi
-module khác), bằng đúng model đã sinh module RAG (đọc từ job sinh module), để khác biệt
+module khác và dùng lại ở các lần xuất sau với cùng model), bằng đúng model đã sinh module RAG (đọc từ job sinh module), để khác biệt
 điểm chấm chỉ còn là RAG; --model chỉ dùng khi muốn ghi đè có chủ ý. Mỗi tệp là một StudyFile: gói
 nội dung (khóa "packet", không lộ nhóm hay nguồn) bọc trong mã cặp, tên nhóm và model đã sinh. Phần
 bọc ngoài chỉ dành cho người nghiên cứu và scripts/run_judge.py, không đưa cho người chấm.
@@ -50,7 +50,10 @@ def main(argv: list[str] | None = None) -> None:
             raise SystemExit(f"Không có module {args.module_id}")
         rag_alias = model_that_made(db, module.id)
         no_rag_alias = args.model or rag_alias
-        rag, no_rag = study_pair(db, module, no_rag_alias, self_check_of(db, module.id))
+        try:
+            rag, no_rag = study_pair(db, module, no_rag_alias, self_check_of(db, module.id))
+        except ValueError as loi:
+            raise SystemExit(str(loi)) from loi
     finally:
         db.close()
 

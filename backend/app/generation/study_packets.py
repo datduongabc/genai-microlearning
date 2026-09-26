@@ -25,11 +25,13 @@ from app.generation.evaluation import (
 from app.generation.module_generation_pipeline import (
     IncompleteModuleError,
     concept_query_of,
+    control_payload,
+    is_control,
     learning_objective_of,
     run_module_generation,
 )
 from app.llm.gateway import using_model
-from app.models import ComponentType, DocumentSection, Module
+from app.models import ComponentType, DocumentSection, Job, JobStatus, JobType, Module
 from app.retrieval.search import ChunkScope, retrieve
 
 # Cùng số đoạn tối thiểu mà pipeline RAG lấy khi đặt Learning Objective.
@@ -98,19 +100,45 @@ def module_packet(module: Module, sources: list[str]) -> ModuleContentInput:
     )
 
 
-def study_pair(
-    db: Session, module: Module, model_alias: str | None, self_check: bool = True
-) -> tuple[ModuleContentInput, ModuleContentInput]:
-    """(gói rag_llm, gói llm_no_rag). Bản đối chứng là một module sinh bằng chính pipeline RAG với
-    `use_retrieval=False`, lưu như mọi module khác. `model_alias` là model đã sinh module RAG: bản
-    đối chứng phải dùng đúng model đó, không thì khác biệt điểm lẫn cả khác biệt giữa hai model.
-    `self_check` cũng phải là cờ đã dùng khi sinh module RAG, vì cùng lý do."""
-    learning_objective_of(module)
-    sources = reference_chunks(db, module)
-    rag = module_packet(module, sources)
+def _control_of(db: Session, module: Module, model_alias: str | None, self_check: bool) -> Module:
+    """Bản đối chứng của `module` với đúng model và cờ tự kiểm này: dùng lại bản đã sinh nếu có, không
+    thì sinh mới và ghi một job đã xong mang payload như job đối chứng xếp qua API, để mọi nơi nhận ra
+    đó là bản đối chứng."""
+    payload = control_payload(module.id, model_alias, self_check)
+    existing = (
+        db.query(Job)
+        .filter(
+            Job.job_type == JobType.module_generation, Job.status == JobStatus.done,
+            Job.module_id.is_not(None), Job.payload == payload,
+        )
+        .order_by(Job.created_at.desc())
+        .first()
+    )
+    if existing is not None:
+        return db.get(Module, existing.module_id)
     section = db.get(DocumentSection, module.section_id) if module.section_id else None
     with using_model(model_alias):
         control = run_module_generation(
             db, module.document, section, self_check=self_check, use_retrieval=False, paired_module=module,
         )
-    return rag, module_packet(control, sources)
+    db.add(Job(
+        job_type=JobType.module_generation, step="generate", status=JobStatus.done, document_id=control.document_id,
+        section_id=control.section_id, module_id=control.id, payload=payload,
+    ))
+    db.commit()
+    return control
+
+
+def study_pair(
+    db: Session, module: Module, model_alias: str | None, self_check: bool = True
+) -> tuple[ModuleContentInput, ModuleContentInput]:
+    """(gói rag_llm, gói llm_no_rag). Bản đối chứng là một module sinh bằng chính pipeline RAG với
+    `use_retrieval=False`, lưu như mọi module khác và dùng lại ở các lần xuất sau. `model_alias` là
+    model đã sinh module RAG: bản đối chứng phải dùng đúng model đó, không thì khác biệt điểm lẫn cả
+    khác biệt giữa hai model. `self_check` cũng phải là cờ đã dùng khi sinh module RAG, vì cùng lý do."""
+    if is_control(db, module.id):
+        raise ValueError(f"Module {module.id} là bản đối chứng không RAG, không phải module RAG.")
+    learning_objective_of(module)
+    sources = reference_chunks(db, module)
+    rag = module_packet(module, sources)
+    return rag, module_packet(_control_of(db, module, model_alias, self_check), sources)

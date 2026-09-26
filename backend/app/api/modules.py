@@ -10,7 +10,10 @@ from app.auth.rate_limit import limiter, user_or_address
 from app.db import get_db
 from app.generation.module_generation_pipeline import (
     IncompleteModuleError,
+    control_payload,
+    generation_payload,
     generation_payload_of,
+    is_control,
     learning_objective_of,
 )
 from app.jobs.queue import enqueue_job
@@ -90,16 +93,6 @@ def _alias_dung_duoc(alias: str) -> str:
     return alias
 
 
-def _payload_model(alias: str | None, self_check: bool = True) -> dict:
-    """Không ghi alias khi chưa chọn, thay vì ghi sẵn giá trị từ cấu hình: ghi sẵn thì
-    đổi cấu hình hệ thống sẽ không tác dụng với các job đã nằm trong hàng đợi. `self_check`
-    luôn được ghi, để biết chắc mỗi module của thí nghiệm thuộc nhánh nào."""
-    payload: dict = {"self_check": self_check}
-    if alias:
-        payload["model_alias"] = alias
-    return payload
-
-
 def _owned_document(
     db: Session, document_id: uuid.UUID, current_user: User, *, lock: bool = False
 ) -> Document:
@@ -158,7 +151,7 @@ def _generate_for_sections(
     jobs = [
         enqueue_job(
             db, job_type=JobType.module_generation, step="generate", document_id=doc.id,
-            section_id=section_id, payload=_payload_model(model_alias, self_check),
+            section_id=section_id, payload=generation_payload(model_alias, self_check),
         )
         for section_id in unique_ids
     ]
@@ -189,9 +182,9 @@ def _generate_without_retrieval(db: Session, doc: Document, body: GenerateReques
     except IncompleteModuleError as loi:
         raise HTTPException(status_code=422, detail=str(loi)) from loi
 
-    paired_payload = generation_payload_of(db, paired.id)
-    if paired_payload.get("use_retrieval", True) is False:
+    if is_control(db, paired.id):
         raise HTTPException(status_code=422, detail="Module đi cặp phải là module sinh có RAG.")
+    paired_payload = generation_payload_of(db, paired.id)
     alias = body.model_alias or paired_payload.get("model_alias")
     alias = _alias_dung_duoc(alias) if alias is not None else None
     self_check = body.self_check if "self_check" in body.model_fields_set else paired_payload.get("self_check", True)
@@ -210,7 +203,7 @@ def _generate_without_retrieval(db: Session, doc: Document, body: GenerateReques
 
     job = enqueue_job(
         db, job_type=JobType.module_generation, step="generate", document_id=doc.id, section_id=paired.section_id,
-        payload={**_payload_model(alias, self_check), "use_retrieval": False, "paired_module_id": str(paired.id)},
+        payload=control_payload(paired.id, alias, self_check),
     )
     db.commit()
     return {"job_id": job.id, "status": job.status}
@@ -269,7 +262,7 @@ def generate_module(
     # app/services/module_generation_pipeline.py + job_queue.py.
     job = enqueue_job(
         db, job_type=JobType.module_generation, step="generate", document_id=document_id,
-        payload=_payload_model(alias, self_check),
+        payload=generation_payload(alias, self_check),
     )
     db.commit()
     return {"job_id": job.id, "status": job.status}

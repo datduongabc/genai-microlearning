@@ -313,3 +313,61 @@ def test_the_export_follows_the_self_check_flag_the_rag_module_was_made_with(rag
     export_study_pair.main([str(rag_module.ids["module"]), "--out", str(tmp_path)])
 
     assert _checks(llm) == []
+
+
+def _controls_of(rag_module) -> list[Job]:
+    db = SessionLocal()
+    try:
+        return [
+            j for j in db.query(Job).filter(Job.module_id.is_not(None))
+            if j.payload.get("paired_module_id") == str(rag_module.ids["module"])
+        ]
+    finally:
+        db.close()
+
+
+def test_the_control_is_recorded_with_the_payload_an_api_queued_control_carries(rag_module, llm):
+    _pair(rag_module, alias="groq-pro", self_check=False)
+
+    [job] = _controls_of(rag_module)
+    assert job.status == JobStatus.done and job.job_type == JobType.module_generation
+    assert job.payload == {
+        "self_check": False, "model_alias": "groq-pro", "use_retrieval": False,
+        "paired_module_id": str(rag_module.ids["module"]),
+    }
+    db = SessionLocal()
+    try:
+        assert pipeline.is_control(db, job.module_id)
+        assert not pipeline.is_control(db, rag_module.ids["module"])
+    finally:
+        db.close()
+
+
+def test_a_later_export_reuses_the_control_for_the_same_model(rag_module, llm):
+    _, first = _pair(rag_module)
+    calls = len(llm.calls)
+
+    _, again = _pair(rag_module)
+
+    assert len(llm.calls) == calls and again == first
+    assert len(_controls_of(rag_module)) == 1
+
+    _pair(rag_module, alias="claude-fast")
+    assert len(_controls_of(rag_module)) == 2
+
+
+def test_a_control_is_refused_as_the_rag_module_of_a_pair(rag_module, llm, tmp_path):
+    _pair(rag_module)
+    [job] = _controls_of(rag_module)
+    llm.calls.clear()
+
+    db = SessionLocal()
+    try:
+        with pytest.raises(ValueError, match="đối chứng"):
+            study_packets.study_pair(db, db.get(Module, job.module_id), "groq-pro")
+    finally:
+        db.close()
+    with pytest.raises(SystemExit, match="đối chứng"):
+        export_study_pair.main([str(job.module_id), "--out", str(tmp_path)])
+
+    assert llm.calls == [] and not list(tmp_path.iterdir())
