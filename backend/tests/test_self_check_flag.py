@@ -22,7 +22,17 @@ from app.generation.planner import Concept, PlannerOutput
 from app.generation.quiz_graph import QuizQuestion
 from app.generation.relevance import RelevanceCheck
 from app.generation.slides import Slide, SlidesOutput
-from app.models import Chunk, ComponentType, Course, Document, DocumentStatus, Evaluation, ModuleComponent, User, UserRole
+from app.models import (
+    Chunk,
+    ComponentType,
+    Course,
+    Document,
+    DocumentStatus,
+    Evaluation,
+    ModuleComponent,
+    User,
+    UserRole,
+)
 
 SUB_OBJECTIVES = ["Nêu định nghĩa", "Phân biệt hai trường hợp", "Giải thích vai trò"]
 
