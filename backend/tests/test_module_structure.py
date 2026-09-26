@@ -147,7 +147,7 @@ def run(document, monkeypatch):
         monkeypatch.setattr(pipeline, "generate_example", lambda lo, content, chunks: ExampleOutput(
             examples=[Example(context="c1", analysis="a1"), Example(context="c2", analysis="a2")]))
 
-        def fake_quiz(db, course_id, query, lo, mode="quiz", scope=None, feedback=None, self_check=True):
+        def fake_quiz(db, course_id, query, lo, mode="quiz", scope=None, feedback=None, self_check=True, lesson=None):
             question = next(answers)
             calls["quiz"].append({"query": query, "mode": mode, "feedback": feedback})
             passages = [_chunk(f"PASSAGE-OF-{query}")]

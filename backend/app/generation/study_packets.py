@@ -1,5 +1,5 @@
-"""Cặp gói nghiên cứu cho một module RAG: gói của chính module đó (nhóm rag_llm) và gói do nhánh không
-RAG sinh trên cùng Learning Objective (nhóm llm_no_rag).
+"""Cặp gói nghiên cứu cho một module RAG: gói của chính module đó (nhóm rag_llm) và gói của module do
+chính pipeline đó sinh với `use_retrieval=False` trên cùng Learning Objective (nhóm llm_no_rag).
 
 Hai gói cùng chủ đề, cùng Learning Objective và cùng một bộ tài liệu đối chiếu cho người và mô hình
 chấm. Bộ tài liệu đó lấy bằng một lượt truy hồi độc lập với cả hai bản, chạy lại đúng câu truy vấn
@@ -16,16 +16,22 @@ from typing import Literal
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
-from app.generation import no_rag
 from app.generation.evaluation import (
     ExampleInput,
     ModuleContentInput,
     QuizQuestionInput,
     SlideInput,
 )
-from app.generation.objective import LearningObjective
+from app.generation.module_generation_pipeline import (
+    IncompleteModuleError,
+    concept_query_of,
+    control_payload,
+    is_control,
+    learning_objective_of,
+    run_module_generation,
+)
 from app.llm.gateway import using_model
-from app.models import ComponentType, DocumentSection, Module
+from app.models import ComponentType, DocumentSection, Job, JobStatus, JobType, Module
 from app.retrieval.search import ChunkScope, retrieve
 
 # Cùng số đoạn tối thiểu mà pipeline RAG lấy khi đặt Learning Objective.
@@ -42,35 +48,11 @@ class StudyFile(BaseModel):
     packet: ModuleContentInput
 
 
-class IncompleteModuleError(ValueError):
-    """Module thiếu một phần mà gói nghiên cứu bắt buộc phải có, ví dụ quiz không sinh được câu nào."""
-
-
-def _concept_query(module: Module, section: DocumentSection | None) -> str:
-    """Câu truy vấn pipeline RAG đã dùng: "tên khái niệm: tóm tắt" của Planner. Không tìm lại được
-    khái niệm (Planner đã chạy lại, đổi tên) thì dùng tên module cùng Learning Objective."""
-    holder = section if section is not None else module.document
-    for concept in holder.planner_concepts or []:
-        if concept.get("name") == module.title:
-            return f"{concept['name']}: {concept['summary']}"
-    return f"{module.title}: {module.learning_objective or ''}"
-
-
 def reference_chunks(db: Session, module: Module) -> list[str]:
     section = db.get(DocumentSection, module.section_id) if module.section_id else None
     scope = ChunkScope(module.document_id, section.first_chunk_index, section.last_chunk_index) if section else None
-    chunks = retrieve(db, module.course_id, _concept_query(module, section), top_k=None, min_k=REFERENCE_MIN_K, scope=scope)
+    chunks = retrieve(db, module.course_id, concept_query_of(module, section), top_k=None, min_k=REFERENCE_MIN_K, scope=scope)
     return [c.content for c in chunks]
-
-
-def learning_objective_of(module: Module) -> LearningObjective:
-    if not module.learning_objective or not module.bloom_level or not module.sub_objectives:
-        raise IncompleteModuleError("Module chưa có đủ Learning Objective, mức Bloom và sub-objective.")
-    # verb chỉ dùng khi sinh Learning Objective; ở đây Learning Objective đã có sẵn.
-    return LearningObjective(
-        bloom_level=module.bloom_level, verb="", objective_text=module.learning_objective,
-        sub_objectives=list(module.sub_objectives),
-    )
 
 
 def _component(module: Module, component_type: ComponentType):
@@ -94,7 +76,8 @@ def _questions(module: Module, component_type: ComponentType) -> list[QuizQuesti
     ]
 
 
-def rag_packet(module: Module, sources: list[str]) -> ModuleContentInput:
+def module_packet(module: Module, sources: list[str]) -> ModuleContentInput:
+    """Gói của một module đã lưu, như nhau cho cả hai nhóm."""
     quiz = _questions(module, ComponentType.quiz)
     practice = _questions(module, ComponentType.practice)
     if not quiz or not practice:
@@ -117,36 +100,45 @@ def rag_packet(module: Module, sources: list[str]) -> ModuleContentInput:
     )
 
 
-def no_rag_packet(module: Module, generated: no_rag.NoRagModule, sources: list[str]) -> ModuleContentInput:
-    def as_input(asked: no_rag.AskedQuestion) -> QuizQuestionInput:
-        q = asked.question
-        return QuizQuestionInput(stem=q.stem, choices=q.choices, correct_index=q.correct_index, explanation=q.explanation)
-
-    return ModuleContentInput(
-        anon_id="",
-        topic=module.title,
-        bloom_level=module.bloom_level,
-        learning_objective=module.learning_objective,
-        sub_objectives=list(module.sub_objectives or []),
-        content_markdown=generated.content,
-        slides=[SlideInput(title=s.title, bullets=s.bullets) for s in generated.slides.slides],
-        examples=[ExampleInput(context=e.context, analysis=e.analysis) for e in generated.examples.examples],
-        quiz=[as_input(q) for q in generated.questions if q.mode == "quiz"],
-        practice=next(as_input(q) for q in generated.questions if q.mode == "practice"),
-        source_chunks=sources,
+def _control_of(db: Session, module: Module, model_alias: str | None, self_check: bool) -> Module:
+    """Bản đối chứng của `module` với đúng model và cờ tự kiểm này: dùng lại bản đã sinh nếu có, không
+    thì sinh mới và ghi một job đã xong mang payload như job đối chứng xếp qua API, để mọi nơi nhận ra
+    đó là bản đối chứng."""
+    payload = control_payload(module.id, model_alias, self_check)
+    existing = (
+        db.query(Job)
+        .filter(
+            Job.job_type == JobType.module_generation, Job.status == JobStatus.done,
+            Job.module_id.is_not(None), Job.payload == payload,
+        )
+        .order_by(Job.created_at.desc())
+        .first()
     )
+    if existing is not None:
+        return db.get(Module, existing.module_id)
+    section = db.get(DocumentSection, module.section_id) if module.section_id else None
+    with using_model(model_alias):
+        control = run_module_generation(
+            db, module.document, section, self_check=self_check, use_retrieval=False, paired_module=module,
+        )
+    db.add(Job(
+        job_type=JobType.module_generation, step="generate", status=JobStatus.done, document_id=control.document_id,
+        section_id=control.section_id, module_id=control.id, payload=payload,
+    ))
+    db.commit()
+    return control
 
 
 def study_pair(
     db: Session, module: Module, model_alias: str | None, self_check: bool = True
 ) -> tuple[ModuleContentInput, ModuleContentInput]:
-    """(gói rag_llm, gói llm_no_rag). `model_alias` là model đã sinh module RAG: bản đối chứng phải
-    dùng đúng model đó, không thì khác biệt điểm lẫn cả khác biệt giữa hai model. `self_check` cũng
-    phải là cờ đã dùng khi sinh module RAG, vì cùng lý do."""
-    lo = learning_objective_of(module)
+    """(gói rag_llm, gói llm_no_rag). Bản đối chứng là một module sinh bằng chính pipeline RAG với
+    `use_retrieval=False`, lưu như mọi module khác và dùng lại ở các lần xuất sau. `model_alias` là
+    model đã sinh module RAG: bản đối chứng phải dùng đúng model đó, không thì khác biệt điểm lẫn cả
+    khác biệt giữa hai model. `self_check` cũng phải là cờ đã dùng khi sinh module RAG, vì cùng lý do."""
+    if is_control(db, module.id):
+        raise ValueError(f"Module {module.id} là bản đối chứng không RAG, không phải module RAG.")
+    learning_objective_of(module)
     sources = reference_chunks(db, module)
-    rag = rag_packet(module, sources)
-    section = db.get(DocumentSection, module.section_id) if module.section_id else None
-    with using_model(model_alias):
-        generated = no_rag.generate_module(lo, practice_target=_concept_query(module, section), self_check=self_check)
-    return rag, no_rag_packet(module, generated, sources)
+    rag = module_packet(module, sources)
+    return rag, module_packet(_control_of(db, module, model_alias, self_check), sources)

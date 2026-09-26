@@ -8,6 +8,14 @@ from sqlalchemy.orm import Session, joinedload, selectinload
 from app.api.deps import get_current_user
 from app.auth.rate_limit import limiter, user_or_address
 from app.db import get_db
+from app.generation.module_generation_pipeline import (
+    IncompleteModuleError,
+    control_payload,
+    generation_payload,
+    generation_payload_of,
+    is_control,
+    learning_objective_of,
+)
 from app.jobs.queue import enqueue_job
 from app.llm import catalog
 from app.models import (
@@ -39,6 +47,10 @@ class GenerateRequest(BaseModel):
     model_alias: str | None = None
     # Tắt vòng model tự kiểm Content và câu hỏi (thí nghiệm có/không tự kiểm cho chương đánh giá).
     self_check: bool = True
+    # False: sinh bản đối chứng không RAG (nhóm llm_no_rag) của module RAG `paired_module_id`, trên
+    # đúng Learning Objective và mục của nó. Model và cờ tự kiểm bỏ trống thì theo module RAG đó.
+    use_retrieval: bool = True
+    paired_module_id: uuid.UUID | None = None
 
 
 def _alias_da_chon(body: GenerateRequest | None, current_user: User) -> str | None:
@@ -48,16 +60,22 @@ def _alias_da_chon(body: GenerateRequest | None, current_user: User) -> str | No
     mười phút rồi mới hỏng ở lệnh gọi LLM, và lỗi chẳng nói gì về việc chọn model.
     """
     alias = body.model_alias if body is not None else None
+    if alias is not None:
+        return _alias_dung_duoc(alias)
+    alias = current_user.default_model_alias
     if alias is None:
-        alias = current_user.default_model_alias
-        if alias is None:
-            # Đường mặc định: không có gì để kiểm hay thử, nên không gọi gateway lúc bấm nút.
-            return None
-        if not catalog.is_available(alias):
-            # Mặc định đã lưu có thể trỏ tới alias gateway đã bỏ (gemini-pro đổi thành
-            # gemini-flash): lùi về cấu hình hệ thống, đừng chặn mọi lượt sinh bằng 422.
-            return None
-    elif not catalog.is_available(alias):
+        # Đường mặc định: không có gì để kiểm hay thử, nên không gọi gateway lúc bấm nút.
+        return None
+    if not catalog.is_available(alias):
+        # Mặc định đã lưu có thể trỏ tới alias gateway đã bỏ (gemini-pro đổi thành
+        # gemini-flash): lùi về cấu hình hệ thống, đừng chặn mọi lượt sinh bằng 422.
+        return None
+    return _alias_dung_duoc(alias)
+
+
+def _alias_dung_duoc(alias: str) -> str:
+    """`alias` nếu gateway phục vụ nó và nó dùng được ngay lúc này, không thì 422."""
+    if not catalog.is_available(alias):
         raise HTTPException(
             status_code=422,
             detail=f"Gateway không phục vụ model sinh văn bản nào tên '{alias}'.",
@@ -73,16 +91,6 @@ def _alias_da_chon(body: GenerateRequest | None, current_user: User) -> str | No
             detail=f"Model '{loi.alias}' chưa dùng được: {loi.ly_do}. Hãy chọn model khác.",
         ) from loi
     return alias
-
-
-def _payload_model(alias: str | None, self_check: bool = True) -> dict:
-    """Không ghi alias khi chưa chọn, thay vì ghi sẵn giá trị từ cấu hình: ghi sẵn thì
-    đổi cấu hình hệ thống sẽ không tác dụng với các job đã nằm trong hàng đợi. `self_check`
-    luôn được ghi, để biết chắc mỗi module của thí nghiệm thuộc nhánh nào."""
-    payload: dict = {"self_check": self_check}
-    if alias:
-        payload["model_alias"] = alias
-    return payload
 
 
 def _owned_document(
@@ -143,12 +151,62 @@ def _generate_for_sections(
     jobs = [
         enqueue_job(
             db, job_type=JobType.module_generation, step="generate", document_id=doc.id,
-            section_id=section_id, payload=_payload_model(model_alias, self_check),
+            section_id=section_id, payload=generation_payload(model_alias, self_check),
         )
         for section_id in unique_ids
     ]
     db.commit()
     return {"jobs": [{"section_id": j.section_id, "job_id": j.id} for j in jobs]}
+
+
+def _generate_without_retrieval(db: Session, doc: Document, body: GenerateRequest, current_user: User):
+    """Một job sinh bản đối chứng không RAG (nhóm llm_no_rag) của module RAG `paired_module_id`: cùng
+    Learning Objective, cùng mục, và theo mặc định cùng model và cờ tự kiểm đã sinh module RAG đó,
+    để khác biệt giữa hai bản chỉ còn là RAG."""
+    if body.use_retrieval:
+        raise HTTPException(status_code=422, detail="paired_module_id chỉ dùng khi use_retrieval=false.")
+    if body.paired_module_id is None:
+        raise HTTPException(
+            status_code=422,
+            detail="Sinh không RAG cần paired_module_id: module RAG đi cặp để lấy Learning Objective.",
+        )
+    if body.section_ids:
+        raise HTTPException(
+            status_code=422, detail="Sinh không RAG dùng đúng mục của module đi cặp, không chọn section_ids.",
+        )
+    paired = _owned_module(db, body.paired_module_id, current_user)
+    if paired.document_id != doc.id:
+        raise HTTPException(status_code=422, detail="Module đi cặp không thuộc tài liệu này.")
+    try:
+        learning_objective_of(paired)
+    except IncompleteModuleError as loi:
+        raise HTTPException(status_code=422, detail=str(loi)) from loi
+
+    if is_control(db, paired.id):
+        raise HTTPException(status_code=422, detail="Module đi cặp phải là module sinh có RAG.")
+    paired_payload = generation_payload_of(db, paired.id)
+    alias = body.model_alias or paired_payload.get("model_alias")
+    alias = _alias_dung_duoc(alias) if alias is not None else None
+    self_check = body.self_check if "self_check" in body.model_fields_set else paired_payload.get("self_check", True)
+
+    running = (
+        db.query(Job.id)
+        .filter(
+            Job.job_type == JobType.module_generation, Job.document_id == doc.id,
+            Job.section_id.is_(None) if paired.section_id is None else Job.section_id == paired.section_id,
+            Job.status.in_([JobStatus.queued, JobStatus.running]),
+        )
+        .first()
+    )
+    if running is not None:
+        raise HTTPException(status_code=409, detail="Mục này đang có 1 lượt sinh mô-đun khác đang chạy, vui lòng chờ.")
+
+    job = enqueue_job(
+        db, job_type=JobType.module_generation, step="generate", document_id=doc.id, section_id=paired.section_id,
+        payload=control_payload(paired.id, alias, self_check),
+    )
+    db.commit()
+    return {"job_id": job.id, "status": job.status}
 
 
 @router.post("/generate")
@@ -163,6 +221,9 @@ def generate_module(
     doc = _owned_document(db, document_id, current_user, lock=True)
     if not doc.raw_text:
         raise HTTPException(status_code=422, detail="Document chưa được parse (raw_text rỗng)")
+
+    if body is not None and (not body.use_retrieval or body.paired_module_id is not None):
+        return _generate_without_retrieval(db, doc, body, current_user)
 
     alias = _alias_da_chon(body, current_user)
     self_check = body.self_check if body is not None else True
@@ -201,7 +262,7 @@ def generate_module(
     # app/services/module_generation_pipeline.py + job_queue.py.
     job = enqueue_job(
         db, job_type=JobType.module_generation, step="generate", document_id=document_id,
-        payload=_payload_model(alias, self_check),
+        payload=generation_payload(alias, self_check),
     )
     db.commit()
     return {"job_id": job.id, "status": job.status}

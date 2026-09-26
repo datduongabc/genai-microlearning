@@ -199,7 +199,7 @@ def test_worker_chay_luot_sinh_bang_dung_model_trong_payload(monkeypatch):
 
     thay = {}
 
-    def gia_lap_sinh(db, doc, section=None, self_check=True):
+    def gia_lap_sinh(db, doc, section=None, self_check=True, **kwargs):
         thay["model"] = llm.active_model()
         thay["self_check"] = self_check
         # Tạo Module thật chứ không trả về đối tượng giả: bước worker gán job.module_id nên
@@ -236,7 +236,7 @@ def test_tat_tu_kiem_luc_bam_sinh_di_vao_payload_va_toi_worker(monkeypatch):
         db.close()
     thay = {}
 
-    def gia_lap_sinh(db, doc, section=None, self_check=True):
+    def gia_lap_sinh(db, doc, section=None, self_check=True, **kwargs):
         thay["self_check"] = self_check
         module = Module(document_id=doc.id, course_id=doc.course_id, title="M")
         db.add(module)

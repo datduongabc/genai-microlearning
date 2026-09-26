@@ -1,19 +1,24 @@
-"""Nhánh đối chứng llm_no_rag và cặp gói nghiên cứu: bản không RAG chỉ khác bản RAG ở chỗ không thấy
-tài liệu nào, còn chủ đề, Learning Objective, cấu trúc, model và tài liệu đối chiếu khi chấm thì như
+"""Nhánh đối chứng llm_no_rag (pipeline chung với `use_retrieval=False`) và cặp gói nghiên cứu: bản
+không RAG chỉ khác bản RAG ở chỗ không thấy tài liệu nào, còn chủ đề, Learning Objective, cấu trúc, model và tài liệu đối chiếu khi chấm thì như
 nhau, để khác biệt điểm quy được về RAG.
 
 Mọi lệnh gọi mô hình được thay bằng hàm giả ghi lại prompt và model đang dùng; truy hồi cũng được
 thay, nên không tốn hạn mức nào."""
 
+import importlib
 import json
+import pkgutil
 import re
 import types
 import uuid
 
 import pytest
 
+from app import generation
 from app.db import SessionLocal
-from app.generation import no_rag, slides, study_packets
+from app.generation import module_generation_pipeline as pipeline
+from app.generation import quiz_graph, study_packets
+from app.generation.content import LessonText, LessonVerification
 from app.generation.example import Example, ExampleOutput
 from app.generation.quiz_graph import QuizQuestion
 from app.generation.slides import Slide, SlidesOutput
@@ -52,8 +57,8 @@ def llm(monkeypatch):
         queued = fail.get(response_model)
         if queued:
             return queued.pop(0)
-        if response_model is no_rag.NoRagContent:
-            return no_rag.NoRagContent(content="## Phần một\n- ý\n## Phần hai\n- ý")
+        if response_model is LessonText:
+            return LessonText(content="## Phần một\n- ý\n## Phần hai\n- ý")
         if response_model is SlidesOutput:
             return SlidesOutput(slides=[Slide(title="S1", bullets=["b"]), Slide(title="S2", bullets=["b"])])
         if response_model is ExampleOutput:
@@ -69,8 +74,10 @@ def llm(monkeypatch):
             values[name] = True if name.endswith("_pass") else "đạt"
         return response_model(**values)
 
-    monkeypatch.setattr(no_rag, "complete_structured", fake)
-    monkeypatch.setattr(slides, "complete_structured", fake)
+    for info in pkgutil.iter_modules(generation.__path__):
+        module = importlib.import_module(f"app.generation.{info.name}")
+        if hasattr(module, "complete_structured"):
+            monkeypatch.setattr(module, "complete_structured", fake)
     return types.SimpleNamespace(calls=calls, fail=fail)
 
 
@@ -84,6 +91,15 @@ def rag_module(monkeypatch):
         return [types.SimpleNamespace(content=text) for text in SOURCES]
 
     monkeypatch.setattr(study_packets, "retrieve", fake_retrieve)
+
+    def no_retrieval(*args, **kwargs):
+        raise AssertionError("the control must not retrieve anything")
+
+    # Only the reference set is retrieved; the control module itself never searches.
+    monkeypatch.setattr(pipeline, "retrieve", no_retrieval)
+    monkeypatch.setattr(quiz_graph, "retrieve", no_retrieval)
+    monkeypatch.setattr(pipeline, "expand_with_parent_context", no_retrieval)
+    monkeypatch.setattr(pipeline, "run_planner", no_retrieval)
 
     db = SessionLocal()
     try:
@@ -251,13 +267,13 @@ def test_a_module_without_quiz_questions_is_refused_before_any_generation(rag_mo
 
 
 def test_a_failed_control_check_is_retried_with_its_reason(rag_module, llm):
-    llm.fail[no_rag.NoRagContentVerification] = [no_rag.NoRagContentVerification(
+    llm.fail[LessonVerification] = [LessonVerification(
         completeness_pass=False, completeness_reason="LY-DO-THIEU-PHAN-HAI", scope_pass=True, scope_reason="ok",
     )]
 
     _pair(rag_module)
 
-    content_prompts = [c["prompt"] for c in llm.calls if c["model"] is no_rag.NoRagContent]
+    content_prompts = [c["prompt"] for c in llm.calls if c["model"] is LessonText]
     assert len(content_prompts) == 2
     assert "LY-DO-THIEU-PHAN-HAI" not in content_prompts[0] and "LY-DO-THIEU-PHAN-HAI" in content_prompts[1]
 
@@ -271,7 +287,7 @@ def test_only_content_and_questions_of_the_control_are_checked_like_the_rag_ones
     lượt sinh và một lượt kiểm; Content một lượt kiểm. Slides và Example không có lượt kiểm nào."""
     _pair(rag_module)
 
-    assert _checks(llm) == ["NoRagContentVerification"] + ["NoRagQuestionCheck"] * 3
+    assert _checks(llm) == ["LessonVerification"] + ["AnswerabilityCheck"] * 3
     assert len(llm.calls) == 3 + 1 + 3 * 2
 
 
@@ -280,7 +296,7 @@ def test_without_self_check_the_control_makes_no_check_call_at_all(rag_module, l
 
     assert _checks(llm) == []
     assert [c["model"].__name__ for c in llm.calls] == [
-        "NoRagContent", "SlidesOutput", "ExampleOutput", "QuizQuestion", "QuizQuestion", "QuizQuestion",
+        "LessonText", "SlidesOutput", "ExampleOutput", "QuizQuestion", "QuizQuestion", "QuizQuestion",
     ]
     assert len(control.quiz) == 2 and control.practice.stem.startswith("Hỏi về")
 
@@ -297,3 +313,61 @@ def test_the_export_follows_the_self_check_flag_the_rag_module_was_made_with(rag
     export_study_pair.main([str(rag_module.ids["module"]), "--out", str(tmp_path)])
 
     assert _checks(llm) == []
+
+
+def _controls_of(rag_module) -> list[Job]:
+    db = SessionLocal()
+    try:
+        return [
+            j for j in db.query(Job).filter(Job.module_id.is_not(None))
+            if j.payload.get("paired_module_id") == str(rag_module.ids["module"])
+        ]
+    finally:
+        db.close()
+
+
+def test_the_control_is_recorded_with_the_payload_an_api_queued_control_carries(rag_module, llm):
+    _pair(rag_module, alias="groq-pro", self_check=False)
+
+    [job] = _controls_of(rag_module)
+    assert job.status == JobStatus.done and job.job_type == JobType.module_generation
+    assert job.payload == {
+        "self_check": False, "model_alias": "groq-pro", "use_retrieval": False,
+        "paired_module_id": str(rag_module.ids["module"]),
+    }
+    db = SessionLocal()
+    try:
+        assert pipeline.is_control(db, job.module_id)
+        assert not pipeline.is_control(db, rag_module.ids["module"])
+    finally:
+        db.close()
+
+
+def test_a_later_export_reuses_the_control_for_the_same_model(rag_module, llm):
+    _, first = _pair(rag_module)
+    calls = len(llm.calls)
+
+    _, again = _pair(rag_module)
+
+    assert len(llm.calls) == calls and again == first
+    assert len(_controls_of(rag_module)) == 1
+
+    _pair(rag_module, alias="claude-fast")
+    assert len(_controls_of(rag_module)) == 2
+
+
+def test_a_control_is_refused_as_the_rag_module_of_a_pair(rag_module, llm, tmp_path):
+    _pair(rag_module)
+    [job] = _controls_of(rag_module)
+    llm.calls.clear()
+
+    db = SessionLocal()
+    try:
+        with pytest.raises(ValueError, match="đối chứng"):
+            study_packets.study_pair(db, db.get(Module, job.module_id), "groq-pro")
+    finally:
+        db.close()
+    with pytest.raises(SystemExit, match="đối chứng"):
+        export_study_pair.main([str(job.module_id), "--out", str(tmp_path)])
+
+    assert llm.calls == [] and not list(tmp_path.iterdir())

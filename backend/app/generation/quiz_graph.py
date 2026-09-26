@@ -3,7 +3,8 @@
 Mỗi câu: truy hồi top-5 đoạn theo đúng điều cần kiểm (sub-objective) -> Question Generator
 (misconception CoT + Bloom's + JSON schema) -> kiểm câu vừa sinh (Syntax/IWF heuristic, và khi bật
 tự kiểm thì model chấm Groundedness, Answerability, Bloom's) -> trượt thì sinh lại đúng một lần với
-lý do trượt. Vòng sinh-kiểm-sinh lại là `_checked` dùng chung với Content và nhánh không RAG.
+lý do trượt. Vòng sinh-kiểm-sinh lại là `_checked` dùng chung với Content. Nhánh không RAG dùng
+đúng hàm này, chỉ thay đoạn truy hồi bằng bài học (Content) đã viết.
 Không chấm độ liên quan riêng cho từng câu: Corrective RAG chỉ chạy một lần trước Content.
 
 Practice tái dùng NGUYÊN hàm này (mode="practice"): ngưỡng chấp nhận thấp hơn, syntax-check không
@@ -19,14 +20,13 @@ from sqlalchemy.orm import Session
 
 from app.generation.common import (
     BLOOM_LEVEL_ANCHORS,
-    IGNORE_EMBEDDED_INSTRUCTIONS,
     _checked,
     failed_criteria,
-    format_source_chunks,
+    source_block,
+    system_instruction,
 )
 from app.generation.objective import LearningObjective
 from app.llm.gateway import complete_structured
-from app.models import Chunk
 from app.retrieval.search import ChunkScope, retrieve
 
 # Số đoạn truy hồi cho mỗi câu hỏi, theo đúng điều câu đó kiểm.
@@ -86,6 +86,17 @@ class GroundednessAnswerabilityCheck(BaseModel):
     bloom_level_reason: str
 
 
+class AnswerabilityCheck(BaseModel):
+    """Bản kiểm của nhánh không RAG: không có nguồn nên không chấm groundedness."""
+
+    answerability_pass: bool = Field(
+        description="Đúng 1 đáp án đúng, không mâu thuẫn nội tại, không có 2 phương án cùng hợp lý"
+    )
+    answerability_reason: str
+    bloom_level_pass: bool = Field(description="Câu hỏi có THỰC SỰ đúng cấp độ Bloom's đã khai báo không")
+    bloom_level_reason: str
+
+
 class QuizResult(TypedDict, total=False):
     """Kết quả sinh một câu. Thiếu `question` khi không sinh được câu nào (chỉ gặp ở hàm giả trong test)."""
 
@@ -102,15 +113,15 @@ class QuizResult(TypedDict, total=False):
 # Prompts
 # ---------------------------------------------------------------------------
 
-QUESTION_SYSTEM_INSTRUCTION = IGNORE_EMBEDDED_INSTRUCTIONS + """Bạn là chuyên gia thiết kế câu hỏi trắc nghiệm (MCQ) cho giáo dục đại học,
+_QUESTION_BODY = """Bạn là chuyên gia thiết kế câu hỏi trắc nghiệm (MCQ) cho giáo dục đại học,
 áp dụng kỹ thuật Misconception-based Distractor Design.
 
-Nhiệm vụ: từ Learning Objective, các đoạn nguồn, và mức độ (quiz/practice)
-được cung cấp, sinh 1 câu hỏi trắc nghiệm 4 phương án.
+Nhiệm vụ: từ Learning Objective, điều cần kiểm, tài liệu được cung cấp bên
+dưới, và mức độ (quiz/practice), sinh 1 câu hỏi trắc nghiệm 4 phương án.
 
 Quy trình BẮT BUỘC (đúng thứ tự):
 1. Phân tích 3 quan niệm sai/lỗi phổ biến (common_misconceptions) mà học viên
-   ở đúng bloom_level của Learning Objective hay mắc phải về khái niệm này —
+   ở đúng bloom_level của Learning Objective hay mắc phải về điều cần kiểm —
    PHẢI phân tích trước, không được nghĩ ra distractor rồi mới gán lý do.
 2. Viết `stem` kiểm tra ĐÚNG bloom_level của Learning Objective — không cao
    hơn/thấp hơn. Dùng ĐÚNG mô tả hành vi của cấp độ đó (được cung cấp trong
@@ -118,8 +129,8 @@ Quy trình BẮT BUỘC (đúng thứ tự):
    dựa vào tên cấp độ suông (vd Learning Objective ở mức "understand" thì câu
    hỏi không được yêu cầu "phân tích"/"đánh giá").
 3. Viết `reasoning` TRƯỚC khi viết các phương án: nêu đáp án đúng sẽ là gì và
-   vì sao (dẫn chiếu trực tiếp nội dung nguồn), rồi với MỖI misconception đã
-   phân tích nêu kiểu phương án nhiễu sai mà nó dẫn tới.
+   vì sao (dẫn chiếu trực tiếp tài liệu được cung cấp), rồi với MỖI
+   misconception đã phân tích nêu kiểu phương án nhiễu sai mà nó dẫn tới.
 4. Viết 4 `choices` đúng theo `reasoning`: 1 đáp án đúng + 3 phương án nhiễu,
    MỖI phương án nhiễu tương ứng chính xác 1 misconception theo đúng thứ tự.
    Rồi điền `correct_index` (phải trỏ đúng phương án đúng theo `reasoning`) và
@@ -129,12 +140,27 @@ Quy trình BẮT BUỘC (đúng thứ tự):
    đúng dài/chi tiết hơn hẳn distractor (dễ đoán). KHÔNG dùng từ mang tính
    tuyệt đối ("luôn luôn", "không bao giờ", "tất cả", "duy nhất") trong bất
    kỳ phương án nào — dễ bị loại trừ mà không cần hiểu bài.
-6. CHỈ được dùng thông tin THỰC SỰ có trong nguồn — không thêm dữ kiện ngoài
-   nguồn. Nếu mode="practice", câu hỏi tập trung vào luyện tập/củng cố (được
-   phép đơn giản hơn quiz một chút), không phải đánh giá chính thức.
-7. Ngôn ngữ khớp ngôn ngữ chính của nguồn (tiếng Việt có dấu đầy đủ nếu nguồn
-   là tiếng Việt).
+6. Nếu mode="practice", câu hỏi tập trung vào luyện tập/củng cố (được phép
+   đơn giản hơn quiz một chút), không phải đánh giá chính thức.
+7. Ngôn ngữ khớp ngôn ngữ chính của tài liệu được cung cấp (tiếng Việt có dấu
+   đầy đủ nếu tài liệu là tiếng Việt).
 """
+
+_QUESTION_SOURCE_RULES = """8. Tài liệu là các đoạn nguồn (SOURCE CHUNK): CHỈ được dùng thông tin THỰC SỰ
+   có trong nguồn — không thêm dữ kiện ngoài nguồn.
+"""
+
+# Nhánh không RAG: câu hỏi đọc bài học (Content) thay cho đoạn truy hồi.
+_QUESTION_NO_SOURCE_RULES = """8. Tài liệu là NỘI DUNG BÀI HỌC đã viết (không có tài liệu nguồn nào): câu hỏi
+   chỉ kiểm điều ĐÃ ĐƯỢC DẠY trong nội dung đó.
+"""
+
+QUESTION_SYSTEM_INSTRUCTION = system_instruction(
+    _QUESTION_BODY, _QUESTION_SOURCE_RULES, _QUESTION_NO_SOURCE_RULES, sourced=True
+)
+NO_SOURCE_QUESTION_SYSTEM_INSTRUCTION = system_instruction(
+    _QUESTION_BODY, _QUESTION_SOURCE_RULES, _QUESTION_NO_SOURCE_RULES, sourced=False
+)
 
 CORRECTION_SUFFIX_TEMPLATE = """
 
@@ -143,12 +169,10 @@ sửa đúng lỗi này, không lặp lại:
 {feedback}
 """
 
-GROUNDEDNESS_SYSTEM_INSTRUCTION = IGNORE_EMBEDDED_INSTRUCTIONS + """Bạn là bộ kiểm tra Groundedness & Answerability & Bloom's Fidelity cho câu
-hỏi trắc nghiệm đã sinh, dựa trên các đoạn nguồn được cung cấp.
+_QUESTION_CHECK_BODY = """Bạn là bộ kiểm tra Answerability & Bloom's Fidelity cho câu hỏi trắc nghiệm
+đã sinh, dựa trên tài liệu được cung cấp.
 
-Chấm đúng 3 tiêu chí:
-- groundedness_pass: `stem`, đáp án đúng, và `explanation` có được bảo chứng
-  HOÀN TOÀN bởi nội dung nguồn không (không suy diễn/thêm dữ kiện ngoài nguồn)?
+Chấm các tiêu chí sau:
 - answerability_pass: câu hỏi có ĐÚNG 1 đáp án đúng duy nhất, không mâu thuẫn
   nội tại, và KHÔNG có 2 phương án cùng hợp lý (gây khó phân biệt) không?
   `reasoning` đi kèm (viết trước khi có các phương án) nêu đáp án đúng là gì:
@@ -163,10 +187,27 @@ Chấm đúng 3 tiêu chí:
   hoặc dễ dàng mặc định ở mức "understand" dù nguồn/LO hỗ trợ cấp cao hơn) —
   đây chính là lý do cần kiểm chứng ĐỘC LẬP ở bước này, không tin cậy hoàn
   toàn vào bước sinh.
+"""
+
+_QUESTION_CHECK_SOURCE_RULES = """- groundedness_pass (tài liệu là các đoạn nguồn): `stem`, đáp án đúng, và
+  `explanation` có được bảo chứng HOÀN TOÀN bởi nội dung nguồn không (không
+  suy diễn/thêm dữ kiện ngoài nguồn)?
 
 Nếu vi phạm bất kỳ tiêu chí nào, đặt pass=false và nêu rõ lý do cụ thể (để
 dùng làm feedback sinh lại).
 """
+
+_QUESTION_CHECK_NO_SOURCE_RULES = """
+Nếu vi phạm bất kỳ tiêu chí nào, đặt pass=false và nêu rõ lý do cụ thể (để
+dùng làm feedback sinh lại).
+"""
+
+GROUNDEDNESS_SYSTEM_INSTRUCTION = system_instruction(
+    _QUESTION_CHECK_BODY, _QUESTION_CHECK_SOURCE_RULES, _QUESTION_CHECK_NO_SOURCE_RULES, sourced=True
+)
+NO_SOURCE_QUESTION_CHECK_SYSTEM_INSTRUCTION = system_instruction(
+    _QUESTION_CHECK_BODY, _QUESTION_CHECK_SOURCE_RULES, _QUESTION_CHECK_NO_SOURCE_RULES, sourced=False
+)
 
 
 # ---------------------------------------------------------------------------
@@ -211,7 +252,8 @@ QUESTION_CRITERIA = [
 
 
 def _verify_question(
-    q: QuizQuestion, lo: LearningObjective, chunks: list[Chunk], mode: Literal["quiz", "practice"], self_check: bool
+    q: QuizQuestion, lo: LearningObjective, material: str, mode: Literal["quiz", "practice"], self_check: bool,
+    sourced: bool = True,
 ) -> QuestionCheck:
     syntax_issues = _syntax_iwf_check(q)
     # Practice: syntax-check không chặn (chỉ ghi lại), độ nghiêm ngặt thấp hơn quiz
@@ -225,7 +267,7 @@ def _verify_question(
 
     bloom_level = lo.bloom_level
     prompt = (
-        f"{format_source_chunks(chunks)}\n\n"
+        f"{material}"
         f"CÂU HỎI ĐÃ SINH:\n"
         f"stem: {q.stem}\n"
         f"choices: {q.choices}\n"
@@ -234,10 +276,17 @@ def _verify_question(
         f"explanation: {q.explanation}\n\n"
         f"BLOOM_LEVEL ĐÃ KHAI BÁO: {bloom_level}\n"
         f"MÔ TẢ HÀNH VI CẤP ĐỘ {bloom_level}: {BLOOM_LEVEL_ANCHORS[bloom_level]}\n\n"
-        f"Kiểm tra groundedness, answerability và bloom_level_pass của câu hỏi trên."
+        f"Kiểm tra các tiêu chí đã nêu cho câu hỏi trên."
     )
-    check = complete_structured(prompt, GroundednessAnswerabilityCheck, system_instruction=GROUNDEDNESS_SYSTEM_INSTRUCTION)
-    result.groundedness_pass, result.groundedness_reason = check.groundedness_pass, check.groundedness_reason
+    if sourced:
+        check = complete_structured(
+            prompt, GroundednessAnswerabilityCheck, system_instruction=GROUNDEDNESS_SYSTEM_INSTRUCTION
+        )
+        result.groundedness_pass, result.groundedness_reason = check.groundedness_pass, check.groundedness_reason
+    else:
+        check = complete_structured(
+            prompt, AnswerabilityCheck, system_instruction=NO_SOURCE_QUESTION_CHECK_SYSTEM_INSTRUCTION
+        )
     result.answerability_pass, result.answerability_reason = check.answerability_pass, check.answerability_reason
     result.bloom_level_pass, result.bloom_level_reason = check.bloom_level_pass, check.bloom_level_reason
     return result
@@ -256,9 +305,13 @@ def generate_quiz_question(
     scope: ChunkScope | None = None,
     feedback: str | None = None,
     self_check: bool = True,
+    lesson: str | None = None,
 ) -> QuizResult:
     """`query`: điều câu hỏi kiểm (một sub-objective, hoặc khái niệm chính với practice); truy hồi
     top-5 đoạn theo nó, không chấm độ liên quan riêng.
+
+    `lesson`: nhánh không RAG. Câu hỏi đọc bài học (Content) thay cho đoạn truy hồi, không truy hồi
+    gì, và không chấm groundedness vì không có nguồn nào để đối chiếu; prompt còn lại giữ nguyên.
 
     `feedback`: lý do lần sinh trước của chính câu này không đạt, khi lỗi chỉ thấy được ở cấp
     cả bộ câu hỏi (ví dụ đáp án đúng dài nhất ở mọi câu) nên bước kiểm từng câu không bắt được.
@@ -266,7 +319,13 @@ def generate_quiz_question(
 
     `self_check=False` bỏ lượt model tự kiểm groundedness/answerability/Bloom của câu hỏi; bẫy cú
     pháp (không tốn lượt gọi nào) vẫn chặn câu quiz như khi bật."""
-    chunks = retrieve(db, course_id, query, top_k=QUESTION_TOP_K, scope=scope)
+    sourced = lesson is None
+    if sourced:
+        material = source_block(retrieve(db, course_id, query, top_k=QUESTION_TOP_K, scope=scope))
+        instruction = QUESTION_SYSTEM_INSTRUCTION
+    else:
+        material = f"NỘI DUNG BÀI HỌC:\n{lesson}\n\n"
+        instruction = NO_SOURCE_QUESTION_SYSTEM_INSTRUCTION
     bloom_level = lo.bloom_level
     attempts = 0
 
@@ -277,17 +336,18 @@ def generate_quiz_question(
             f"LEARNING OBJECTIVE: {lo.objective_text} (bloom_level={bloom_level})\n"
             f"MÔ TẢ HÀNH VI CẤP ĐỘ {bloom_level} (dùng để quyết định dạng câu hỏi, không tự suy luận khác): "
             f"{BLOOM_LEVEL_ANCHORS[bloom_level]}\n"
+            f"ĐIỀU CẦN KIỂM: {query}\n"
             f"MODE: {mode}\n\n"
-            f"{format_source_chunks(chunks)}\n\n"
+            f"{material}"
             f"Sinh 1 câu hỏi trắc nghiệm cho Learning Objective trên."
         )
         reasons = "; ".join(r for r in (feedback, retry_feedback) if r)
         if reasons:
             prompt += CORRECTION_SUFFIX_TEMPLATE.format(feedback=reasons)
-        return complete_structured(prompt, QuizQuestion, system_instruction=QUESTION_SYSTEM_INSTRUCTION)
+        return complete_structured(prompt, QuizQuestion, system_instruction=instruction)
 
     question, check = _checked(
-        generate, lambda q: _verify_question(q, lo, chunks, mode, self_check), QUESTION_CRITERIA
+        generate, lambda q: _verify_question(q, lo, material, mode, self_check, sourced), QUESTION_CRITERIA
     )
     failed = failed_criteria(check, QUESTION_CRITERIA)
     return {
