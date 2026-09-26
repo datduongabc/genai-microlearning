@@ -23,9 +23,7 @@ dependencies = [
     "python-pptx>=1.0",
     "pytesseract>=0.3.13",
     "rank-bm25>=0.2.2",
-    "sentence-transformers>=6.0.1",
     "sqlalchemy>=2.0.52",
-    "torch>=2.2,<3.0",
     "uvicorn[standard]>=0.52.4",
     "slowapi>=0.1.10",
     "markdown>=3.10.3",
@@ -54,11 +52,3 @@ line-length = 100
 # B023: flake8-bugbear's loop-closure check false-positives on `flush()` helpers that are called synchronously inside the same loop iteration.
 # BLE001: OCR fallback in document_readers.py deliberately catches broad
 ignore = ["B008", "B023", "BLE001"]
-
-[tool.uv.sources]
-torch = [{ index = "pytorch-cpu" }]
-
-[[tool.uv.index]]
-name = "pytorch-cpu"
-url = "https://download.pytorch.org/whl/cpu"
-explicit = true

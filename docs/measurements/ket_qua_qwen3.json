@@ -1,0 +1,406 @@
+{
+  "dense": {
+    "tung_mon": {
+      "advanced-programming": {
+        "recall@1": 0.8,
+        "recall@3": 0.96,
+        "recall@5": 0.98,
+        "recall@8": 1.0,
+        "recall@10": 1.0,
+        "mrr@10": 0.8868571428571428,
+        "ndcg@10": 0.9153524833827907
+      },
+      "calculus1": {
+        "recall@1": 0.66,
+        "recall@3": 0.92,
+        "recall@5": 0.94,
+        "recall@8": 0.94,
+        "recall@10": 0.94,
+        "mrr@10": 0.7783333333333333,
+        "ndcg@10": 0.8195622917329011
+      },
+      "chemistry1": {
+        "recall@1": 0.74,
+        "recall@3": 0.94,
+        "recall@5": 0.98,
+        "recall@8": 1.0,
+        "recall@10": 1.0,
+        "mrr@10": 0.8446666666666667,
+        "ndcg@10": 0.8835470166029754
+      },
+      "dsa": {
+        "recall@1": 0.54,
+        "recall@3": 0.62,
+        "recall@5": 0.86,
+        "recall@8": 0.9,
+        "recall@10": 0.96,
+        "mrr@10": 0.6473015873015874,
+        "ndcg@10": 0.7210785158800919
+      },
+      "operating-system": {
+        "recall@1": 0.76,
+        "recall@3": 0.94,
+        "recall@5": 0.96,
+        "recall@8": 0.98,
+        "recall@10": 1.0,
+        "mrr@10": 0.8490793650793651,
+        "ndcg@10": 0.8861358931532121
+      }
+    },
+    "chung": {
+      "recall@1": 0.7,
+      "recall@3": 0.876,
+      "recall@5": 0.944,
+      "recall@8": 0.964,
+      "recall@10": 0.98,
+      "mrr@10": 0.8012476190476191,
+      "ndcg@10": 0.8451352401503942
+    }
+  },
+  "hybrid": {
+    "tung_mon": {
+      "advanced-programming": {
+        "recall@1": 0.82,
+        "recall@3": 0.96,
+        "recall@5": 0.96,
+        "recall@8": 1.0,
+        "recall@10": 1.0,
+        "mrr@10": 0.8966666666666667,
+        "ndcg@10": 0.922578452984325
+      },
+      "calculus1": {
+        "recall@1": 0.66,
+        "recall@3": 0.82,
+        "recall@5": 0.88,
+        "recall@8": 0.9,
+        "recall@10": 0.94,
+        "mrr@10": 0.7582222222222222,
+        "ndcg@10": 0.8022203241494285
+      },
+      "chemistry1": {
+        "recall@1": 0.76,
+        "recall@3": 0.94,
+        "recall@5": 0.94,
+        "recall@8": 0.96,
+        "recall@10": 0.98,
+        "mrr@10": 0.8420000000000001,
+        "ndcg@10": 0.8759984156256639
+      },
+      "dsa": {
+        "recall@1": 0.5,
+        "recall@3": 0.74,
+        "recall@5": 0.84,
+        "recall@8": 0.88,
+        "recall@10": 0.9,
+        "mrr@10": 0.6343888888888889,
+        "ndcg@10": 0.6990989124649439
+      },
+      "operating-system": {
+        "recall@1": 0.8,
+        "recall@3": 0.94,
+        "recall@5": 1.0,
+        "recall@8": 1.0,
+        "recall@10": 1.0,
+        "mrr@10": 0.875,
+        "ndcg@10": 0.9063149737701203
+      }
+    },
+    "chung": {
+      "recall@1": 0.708,
+      "recall@3": 0.88,
+      "recall@5": 0.924,
+      "recall@8": 0.948,
+      "recall@10": 0.964,
+      "mrr@10": 0.8012555555555556,
+      "ndcg@10": 0.8412422157988962
+    }
+  },
+  "hybrid+rerank": {
+    "tung_mon": {
+      "advanced-programming": {
+        "recall@1": 0.92,
+        "recall@3": 0.98,
+        "recall@5": 1.0,
+        "recall@8": 1.0,
+        "recall@10": 1.0,
+        "mrr@10": 0.9540000000000001,
+        "ndcg@10": 0.9655928413589783
+      },
+      "calculus1": {
+        "recall@1": 0.64,
+        "recall@3": 0.78,
+        "recall@5": 0.82,
+        "recall@8": 0.86,
+        "recall@10": 0.92,
+        "mrr@10": 0.7282460317460316,
+        "ndcg@10": 0.773497789919887
+      },
+      "chemistry1": {
+        "recall@1": 0.88,
+        "recall@3": 0.94,
+        "recall@5": 0.96,
+        "recall@8": 0.96,
+        "recall@10": 0.98,
+        "mrr@10": 0.9162222222222222,
+        "ndcg@10": 0.9316134412722579
+      },
+      "dsa": {
+        "recall@1": 0.58,
+        "recall@3": 0.74,
+        "recall@5": 0.82,
+        "recall@8": 0.88,
+        "recall@10": 0.92,
+        "mrr@10": 0.6741111111111111,
+        "ndcg@10": 0.7323408984667538
+      },
+      "operating-system": {
+        "recall@1": 0.9,
+        "recall@3": 0.96,
+        "recall@5": 1.0,
+        "recall@8": 1.0,
+        "recall@10": 1.0,
+        "mrr@10": 0.9356666666666666,
+        "ndcg@10": 0.951587777449017
+      }
+    },
+    "chung": {
+      "recall@1": 0.784,
+      "recall@3": 0.88,
+      "recall@5": 0.92,
+      "recall@8": 0.94,
+      "recall@10": 0.964,
+      "mrr@10": 0.8416492063492064,
+      "ndcg@10": 0.8709265496933788
+    }
+  },
+  "kiem_dinh": {
+    "chung": {
+      "hybrid+rerank so với hybrid, recall@1": {
+        "chi_sau_dung": 35,
+        "chi_truoc_dung": 16,
+        "p": 0.010973562899720513
+      },
+      "hybrid+rerank so với hybrid, recall@10": {
+        "chi_sau_dung": 3,
+        "chi_truoc_dung": 3,
+        "p": 1.0
+      },
+      "hybrid so với dense, recall@1": {
+        "chi_sau_dung": 17,
+        "chi_truoc_dung": 15,
+        "p": 0.860050065908581
+      },
+      "hybrid so với dense, recall@10": {
+        "chi_sau_dung": 2,
+        "chi_truoc_dung": 6,
+        "p": 0.2890625
+      },
+      "hybrid+rerank so với dense, recall@1": {
+        "chi_sau_dung": 41,
+        "chi_truoc_dung": 20,
+        "p": 0.009853448195259268
+      },
+      "hybrid+rerank so với dense, recall@10": {
+        "chi_sau_dung": 3,
+        "chi_truoc_dung": 7,
+        "p": 0.34375
+      },
+      "adaptive-k so với hybrid@8": {
+        "chi_sau_dung": 6,
+        "chi_truoc_dung": 6,
+        "p": 1.0,
+        "k_trung_binh": 8.656
+      }
+    },
+    "advanced-programming": {
+      "hybrid+rerank so với hybrid, recall@1": {
+        "chi_sau_dung": 6,
+        "chi_truoc_dung": 1,
+        "p": 0.125
+      },
+      "hybrid+rerank so với hybrid, recall@10": {
+        "chi_sau_dung": 0,
+        "chi_truoc_dung": 0,
+        "p": 1.0
+      },
+      "hybrid so với dense, recall@1": {
+        "chi_sau_dung": 2,
+        "chi_truoc_dung": 1,
+        "p": 1.0
+      },
+      "hybrid so với dense, recall@10": {
+        "chi_sau_dung": 0,
+        "chi_truoc_dung": 0,
+        "p": 1.0
+      },
+      "hybrid+rerank so với dense, recall@1": {
+        "chi_sau_dung": 7,
+        "chi_truoc_dung": 1,
+        "p": 0.0703125
+      },
+      "hybrid+rerank so với dense, recall@10": {
+        "chi_sau_dung": 0,
+        "chi_truoc_dung": 0,
+        "p": 1.0
+      },
+      "adaptive-k so với hybrid@8": {
+        "chi_sau_dung": 0,
+        "chi_truoc_dung": 0,
+        "p": 1.0,
+        "k_trung_binh": 8.12
+      }
+    },
+    "calculus1": {
+      "hybrid+rerank so với hybrid, recall@1": {
+        "chi_sau_dung": 6,
+        "chi_truoc_dung": 7,
+        "p": 1.0
+      },
+      "hybrid+rerank so với hybrid, recall@10": {
+        "chi_sau_dung": 1,
+        "chi_truoc_dung": 2,
+        "p": 1.0
+      },
+      "hybrid so với dense, recall@1": {
+        "chi_sau_dung": 5,
+        "chi_truoc_dung": 5,
+        "p": 1.0
+      },
+      "hybrid so với dense, recall@10": {
+        "chi_sau_dung": 1,
+        "chi_truoc_dung": 1,
+        "p": 1.0
+      },
+      "hybrid+rerank so với dense, recall@1": {
+        "chi_sau_dung": 9,
+        "chi_truoc_dung": 10,
+        "p": 1.0
+      },
+      "hybrid+rerank so với dense, recall@10": {
+        "chi_sau_dung": 2,
+        "chi_truoc_dung": 3,
+        "p": 1.0
+      },
+      "adaptive-k so với hybrid@8": {
+        "chi_sau_dung": 3,
+        "chi_truoc_dung": 3,
+        "p": 1.0,
+        "k_trung_binh": 9.62
+      }
+    },
+    "chemistry1": {
+      "hybrid+rerank so với hybrid, recall@1": {
+        "chi_sau_dung": 7,
+        "chi_truoc_dung": 1,
+        "p": 0.0703125
+      },
+      "hybrid+rerank so với hybrid, recall@10": {
+        "chi_sau_dung": 0,
+        "chi_truoc_dung": 0,
+        "p": 1.0
+      },
+      "hybrid so với dense, recall@1": {
+        "chi_sau_dung": 4,
+        "chi_truoc_dung": 3,
+        "p": 1.0
+      },
+      "hybrid so với dense, recall@10": {
+        "chi_sau_dung": 0,
+        "chi_truoc_dung": 1,
+        "p": 1.0
+      },
+      "hybrid+rerank so với dense, recall@1": {
+        "chi_sau_dung": 7,
+        "chi_truoc_dung": 0,
+        "p": 0.015625
+      },
+      "hybrid+rerank so với dense, recall@10": {
+        "chi_sau_dung": 0,
+        "chi_truoc_dung": 1,
+        "p": 1.0
+      },
+      "adaptive-k so với hybrid@8": {
+        "chi_sau_dung": 1,
+        "chi_truoc_dung": 1,
+        "p": 1.0,
+        "k_trung_binh": 8.38
+      }
+    },
+    "dsa": {
+      "hybrid+rerank so với hybrid, recall@1": {
+        "chi_sau_dung": 9,
+        "chi_truoc_dung": 5,
+        "p": 0.4239501953125
+      },
+      "hybrid+rerank so với hybrid, recall@10": {
+        "chi_sau_dung": 2,
+        "chi_truoc_dung": 1,
+        "p": 1.0
+      },
+      "hybrid so với dense, recall@1": {
+        "chi_sau_dung": 3,
+        "chi_truoc_dung": 5,
+        "p": 0.7265625
+      },
+      "hybrid so với dense, recall@10": {
+        "chi_sau_dung": 1,
+        "chi_truoc_dung": 4,
+        "p": 0.375
+      },
+      "hybrid+rerank so với dense, recall@1": {
+        "chi_sau_dung": 8,
+        "chi_truoc_dung": 6,
+        "p": 0.79052734375
+      },
+      "hybrid+rerank so với dense, recall@10": {
+        "chi_sau_dung": 1,
+        "chi_truoc_dung": 3,
+        "p": 0.625
+      },
+      "adaptive-k so với hybrid@8": {
+        "chi_sau_dung": 2,
+        "chi_truoc_dung": 2,
+        "p": 1.0,
+        "k_trung_binh": 8.9
+      }
+    },
+    "operating-system": {
+      "hybrid+rerank so với hybrid, recall@1": {
+        "chi_sau_dung": 7,
+        "chi_truoc_dung": 2,
+        "p": 0.1796875
+      },
+      "hybrid+rerank so với hybrid, recall@10": {
+        "chi_sau_dung": 0,
+        "chi_truoc_dung": 0,
+        "p": 1.0
+      },
+      "hybrid so với dense, recall@1": {
+        "chi_sau_dung": 3,
+        "chi_truoc_dung": 1,
+        "p": 0.625
+      },
+      "hybrid so với dense, recall@10": {
+        "chi_sau_dung": 0,
+        "chi_truoc_dung": 0,
+        "p": 1.0
+      },
+      "hybrid+rerank so với dense, recall@1": {
+        "chi_sau_dung": 10,
+        "chi_truoc_dung": 3,
+        "p": 0.09228515625
+      },
+      "hybrid+rerank so với dense, recall@10": {
+        "chi_sau_dung": 0,
+        "chi_truoc_dung": 0,
+        "p": 1.0
+      },
+      "adaptive-k so với hybrid@8": {
+        "chi_sau_dung": 0,
+        "chi_truoc_dung": 0,
+        "p": 1.0,
+        "k_trung_binh": 8.26
+      }
+    }
+  }
+}

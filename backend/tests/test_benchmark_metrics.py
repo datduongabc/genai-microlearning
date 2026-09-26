@@ -14,7 +14,7 @@ import pytest
 # scripts/ không phải package nên phải chỉ đường trước khi nhập.
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
 
-from benchmark_rerank import _chi_so
+from benchmark_rerank import _chi_so, _giay_phai_cho, _kiem_dinh, _mcnemar
 
 
 def test_tat_ca_dung_o_vi_tri_dau_thi_moi_chi_so_deu_tuyet_doi():
@@ -76,3 +76,42 @@ def test_ndcg_luon_nam_giua_mrr_va_recall_khi_thu_hang_lon_hon_mot():
     assert chi_so["mrr@10"] == 0.25
     assert chi_so["ndcg@10"] > chi_so["mrr@10"]
     assert chi_so["ndcg@10"] < chi_so["recall@10"]
+
+
+def test_mcnemar_chi_dem_cap_cau_hai_ben_khac_nhau():
+    # 10 câu chỉ bên sau đúng, 2 câu chỉ bên trước đúng, 3 câu cả hai cùng đúng và 1 câu
+    # cả hai cùng sai. p chính xác hai phía = 2 * (C(12,0) + C(12,1) + C(12,2)) / 2^12
+    # = 158 / 4096, đúng con số 0,039 của môn operating-system trong 2026-09-24-rerank.md.
+    truoc = [False] * 10 + [True] * 2 + [True] * 3 + [False]
+    sau = [True] * 10 + [False] * 2 + [True] * 3 + [False]
+
+    kq = _mcnemar(truoc, sau)
+
+    assert kq["chi_sau_dung"] == 10
+    assert kq["chi_truoc_dung"] == 2
+    assert kq["p"] == pytest.approx(158 / 4096)
+
+
+def test_mcnemar_khong_co_cap_nao_lech_thi_p_bang_mot():
+    assert _mcnemar([True, False], [True, False])["p"] == 1.0
+
+
+def test_kiem_dinh_so_adaptive_k_voi_hybrid_lay_co_dinh_tam_chunk():
+    # Câu đầu: hybrid để chunk đúng ở hạng 9, ngoài 8 chunk cố định, còn Adaptive-k có.
+    # Câu sau: hybrid ở hạng 2, Adaptive-k cũng có.
+    chi_tiet = [
+        {"course": "a", "thu_hang": {"dense": 9, "hybrid": 9, "hybrid+rerank": 1},
+         "adaptive_k": {"k": 12, "trung": True}},
+        {"course": "a", "thu_hang": {"dense": 1, "hybrid": 2, "hybrid+rerank": 3},
+         "adaptive_k": {"k": 8, "trung": True}},
+    ]
+
+    kq = _kiem_dinh(chi_tiet)["chung"]["adaptive-k so với hybrid@8"]
+
+    assert (kq["chi_sau_dung"], kq["chi_truoc_dung"]) == (1, 0)
+    assert kq["k_trung_binh"] == 10
+
+
+def test_doc_thoi_gian_cho_tu_loi_tu_choi_cua_groq():
+    assert _giay_phai_cho("Please try again in 1m2.5s. Need more tokens?") == pytest.approx(63.5)
+    assert _giay_phai_cho("Please try again in 7.2s.") == pytest.approx(8.2)

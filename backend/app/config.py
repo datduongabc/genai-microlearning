@@ -71,6 +71,9 @@ class Settings(BaseSettings):
     llm_model: str = "gemini-fast"
     # The gateway alias that serves the embeddings (devops/gateway/config.yaml).
     embedding_model: str = "embed-default"
+    # The reranker service of devops/docker-compose.yml, a cross-encoder in a container of its
+    # own so the backend image carries no torch. Not behind the gateway: it holds no provider key.
+    reranker_url: str = "http://localhost:8082"
 
     # Upload lưu ở đây cho tới khi job document_pipeline xử lý xong (job
     # chạy nền, sau khi request upload gốc đã trả response từ lâu -- khác

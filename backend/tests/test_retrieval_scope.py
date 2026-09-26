@@ -142,7 +142,7 @@ def test_two_chunks_that_expand_to_the_same_clamped_window_give_one_parent(book)
 
 
 def test_retrieve_returns_only_chunks_of_the_scope(book, monkeypatch):
-    # Reranking is not what is under test and would load a large local model.
+    # Reranking is not what is under test and would call the reranker service over HTTP.
     monkeypatch.setattr(
         retrieval, "rerank_scored", lambda query, chunks: [(c, 1.0 - i * 0.01) for i, c in enumerate(chunks)]
     )
