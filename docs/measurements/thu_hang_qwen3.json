@@ -1,0 +1,3502 @@
+[
+  {
+    "course": "advanced-programming",
+    "chunk_id": "5d69f815-f4cd-4f3d-9d94-75279f68199c",
+    "cau_hoi": "After executing `names.remove('Laura')` followed by `del names[1]` on the list `['John', 'Eva', 'Laura', 'Nick', 'Jack']`, what elements remain in `names` before the next `del` operation?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "advanced-programming",
+    "chunk_id": "45bc7338-be62-44bc-9641-6d1b97f2439d",
+    "cau_hoi": "What exact string format is required for the Book class’s toString() method, including how the Author’s toString() output should appear within it?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "advanced-programming",
+    "chunk_id": "4c7c79c1-7976-4e5e-bca1-93f6a566b958",
+    "cau_hoi": "What advantage does dynamic method resolution provide by allowing the calling code to interact only with an interface or abstract class reference?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "advanced-programming",
+    "chunk_id": "66e00d16-3c92-4336-877a-2f9dbdc0ecfb",
+    "cau_hoi": "In the C++ snippet where class A defines a virtual f() and class B overrides it, after executing `a = b;` (with a an A object and b a B object) and then calling `a.f2();`, which implementation of f() is invoked at runtime?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 2
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "advanced-programming",
+    "chunk_id": "f0e7fb60-ac4a-47bb-b9b7-7a51cd045d30",
+    "cau_hoi": "When overriding a method in a derived class, which elements of the base class method must be identical (name, return type, and parameters)?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "advanced-programming",
+    "chunk_id": "f746cf35-032e-4e88-ae4b-98d44071d559",
+    "cau_hoi": "Which keyword is recommended to stop a while loop early in Python?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "advanced-programming",
+    "chunk_id": "6ef2d2aa-880e-471f-a1d5-d40f77879909",
+    "cau_hoi": "In the symbol table, what type and scope level are assigned to the variable Y declared inside procedure SUB2?",
+    "thu_hang": {
+      "dense": 7,
+      "hybrid": 6,
+      "hybrid+rerank": 5
+    },
+    "adaptive_k": {
+      "k": 12,
+      "trung": true
+    }
+  },
+  {
+    "course": "advanced-programming",
+    "chunk_id": "863dc3c4-4954-4fb5-8d45-05c74767281d",
+    "cau_hoi": "In the car analogy, which attributes and which behaviors are listed to illustrate encapsulation?",
+    "thu_hang": {
+      "dense": 2,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "advanced-programming",
+    "chunk_id": "3f60e1b0-c9eb-411d-8055-6d8a46a1ccf3",
+    "cau_hoi": "What three characteristics are described for Python lists concerning their order, mutability, and ability to contain duplicate values?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "advanced-programming",
+    "chunk_id": "0762523d-ca72-42ff-864c-f995dfe92c43",
+    "cau_hoi": "After executing `fruits.append(\"orange\")` on the list `fruits = [\"apple\", \"banana\", \"cherry\"]`, what value does `print(fruits[1])` output?",
+    "thu_hang": {
+      "dense": 5,
+      "hybrid": 2,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "advanced-programming",
+    "chunk_id": "c93ff566-93d8-45ec-b6a3-68531d2e5410",
+    "cau_hoi": "In the example with a Customer interested in a new iPhone model and a Store, what are the two inefficient approaches described before introducing the Observer pattern?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "advanced-programming",
+    "chunk_id": "091095ef-73bf-43c4-b568-c4f2899e9b19",
+    "cau_hoi": "Which attribute of the original function does the `curry` decorator use to check whether the required number of arguments has been provided?",
+    "thu_hang": {
+      "dense": 2,
+      "hybrid": 2,
+      "hybrid+rerank": 2
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "advanced-programming",
+    "chunk_id": "8cad094c-8be9-4605-b68c-ae333cd4fb90",
+    "cau_hoi": "Which Python data type is described as representing “nothing”?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "advanced-programming",
+    "chunk_id": "e9754858-6b66-4fe3-803d-a0e91fd20a7d",
+    "cau_hoi": "Given `my_list = ['p', 'r', 'o', 'g', 'r', 'a', 'm']`, what list is produced by the slice `my_list[2:-2]`?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "advanced-programming",
+    "chunk_id": "d7d31b39-010d-4321-8ef3-07f0554ccfb2",
+    "cau_hoi": "When applying `list(map(lambda x: x % 5, nums))` to the list `nums = [0, 4, 7, 2, 1, 0, 9, 3, 5, 6, 8, 0, 3]`, what list is produced?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "advanced-programming",
+    "chunk_id": "a649c720-65a0-4da5-9362-060c77d3a8e1",
+    "cau_hoi": "What private attributes should I declare in the Car class for the encapsulation exercise?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "advanced-programming",
+    "chunk_id": "10cb6830-914f-4994-bdf4-3842b53861dc",
+    "cau_hoi": "In the lambda‑calculus list encoding presented, how is the empty list (NIL) defined, and what boolean value does the expression ISEMPTY NIL evaluate to?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "advanced-programming",
+    "chunk_id": "84e44d77-1b91-416a-a1df-3f7d8b7979ff",
+    "cau_hoi": "When declaring an interface, what are the allowed options for the modifier keyword as mentioned in the excerpt?",
+    "thu_hang": {
+      "dense": 2,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "advanced-programming",
+    "chunk_id": "cc551226-2103-4f16-884f-0d437bd3a455",
+    "cau_hoi": "What does the Adapter pattern use to hide complexity and handle conversion behind the scenes, and how does it interact with the target object?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "advanced-programming",
+    "chunk_id": "15683906-020a-46ac-88a3-306d459922ab",
+    "cau_hoi": "What are the two problems that the Singleton pattern addresses, which are said to violate the Single Responsibility Principle?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "advanced-programming",
+    "chunk_id": "d36af392-20e0-4d12-8136-3fd2c662f3c6",
+    "cau_hoi": "In the Person class example, which access modifier is used for the field `age`, and what visibility does it provide?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "advanced-programming",
+    "chunk_id": "5a8ed61b-b2e0-4a9d-901a-178bd4d65cc2",
+    "cau_hoi": "In which year did Alonzo Church invent the lambda calculus?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "advanced-programming",
+    "chunk_id": "4144e024-e882-413f-be92-c03a1bda916d",
+    "cau_hoi": "Trong lớp Author, phương thức nào được dùng để lấy giới tính của tác giả và kiểu dữ liệu trả về của nó là gì?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "advanced-programming",
+    "chunk_id": "e2f9ccb5-157e-4d63-aee8-217556e227a1",
+    "cau_hoi": "If I define `def f(a1, a2): return a1 * a2` and then call `partial(f, 3)(4)`, what result will I get?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "advanced-programming",
+    "chunk_id": "9a50c207-651d-42d6-8c64-999e90cf4697",
+    "cau_hoi": "What is the lambda expression for the predecessor function PRED as defined using PAIR, FIRST, and SECOND?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "advanced-programming",
+    "chunk_id": "f42fdf62-7c3a-4b81-93d3-c921a2060cb3",
+    "cau_hoi": "In the described Circle class, what are the default values assigned to the radius and color instance variables?",
+    "thu_hang": {
+      "dense": 2,
+      "hybrid": 2,
+      "hybrid+rerank": 2
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "advanced-programming",
+    "chunk_id": "5b29ce89-27ed-4543-875f-3a5cbf696c1e",
+    "cau_hoi": "What benefit of encapsulation is defined as “Allows creation of read‑only or write‑only properties”?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "advanced-programming",
+    "chunk_id": "01a8702f-9eec-4d8b-a23c-430115254744",
+    "cau_hoi": "What will be the final contents of the list `fruits` after performing the `append('cherry')`, `insert(2, 'kiwi')`, and `extend(favorite_fruits)` operations as shown?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "advanced-programming",
+    "chunk_id": "39c6dfc0-8f5d-4f5a-87d7-1c7aee60bef8",
+    "cau_hoi": "What is the main difference between a class and a struct regarding data security (private/public)?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "advanced-programming",
+    "chunk_id": "c3b02b7c-c7f4-4b68-9dd5-a4ad53c4798e",
+    "cau_hoi": "After executing the statements `a.f2(); b.f2();` in the C++ code, what values are printed by `std::cout` for `a.n` and `b.n`?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "advanced-programming",
+    "chunk_id": "691df4ea-8ce4-4ca3-a36f-0bb0013d29b0",
+    "cau_hoi": "According to the comparison, what type of inheritance does an abstract class support, and what type does an interface support?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 6,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 10,
+      "trung": true
+    }
+  },
+  {
+    "course": "advanced-programming",
+    "chunk_id": "8f2c865b-94c6-4be6-a8f7-adc3c1776bf2",
+    "cau_hoi": "In Java, when you write `Superclass obj = new Subclass();` and then invoke `obj.display();`, what exact string is printed to the console?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "advanced-programming",
+    "chunk_id": "d0a0346a-ed78-4200-9756-162af047de91",
+    "cau_hoi": "In object‑oriented programming, what two elements does each object consist of?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "advanced-programming",
+    "chunk_id": "9bd876bf-be69-4bac-a61c-341de84dbdaa",
+    "cau_hoi": "How does the lambda expression (λf.f(5))(λx.x+2) evaluate to the same result as the Python code def f(x): return x + 2 followed by print(f(5)) which outputs 7?",
+    "thu_hang": {
+      "dense": 2,
+      "hybrid": 2,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "advanced-programming",
+    "chunk_id": "f08d2844-0c3f-4ba3-a592-835406330ca3",
+    "cau_hoi": "What term is used to describe the class that provides functionality to be reused and extended by a derived (child) class?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "advanced-programming",
+    "chunk_id": "2fc1aa98-cec7-46b2-afde-28c3af55e401",
+    "cau_hoi": "In C++, what happens to the vtable lookup when a method is invoked on a static object (i.e., without using a pointer or reference), and how does this affect binding?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "advanced-programming",
+    "chunk_id": "49d06ad5-757c-4814-b2cd-d81600a7caca",
+    "cau_hoi": "What are the default values assigned to the private instance variables `radius` and `color` in the Circle class?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "advanced-programming",
+    "chunk_id": "1b4e8b7f-61bc-4e7a-9b52-d5c14d6a7b9e",
+    "cau_hoi": "Trong quá trình lặp lại n lần, giá trị thứ nhất của cặp được cập nhật thành gì?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "advanced-programming",
+    "chunk_id": "5115501d-47ae-4da2-82d3-9f9d0980df0b",
+    "cau_hoi": "When implementing a singleton, what should the public static creation method do on its first call?",
+    "thu_hang": {
+      "dense": 2,
+      "hybrid": 2,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "advanced-programming",
+    "chunk_id": "87a7685b-ad3d-4e23-be0b-c2ff5486a4cc",
+    "cau_hoi": "Which keyword is used for an interface to inherit another interface, and what must a class provide when it implements an interface that extends a parent interface?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "advanced-programming",
+    "chunk_id": "8b19e80b-5220-4d13-acda-6de1df32b977",
+    "cau_hoi": "In the call‑by‑value operational semantics, what term results after the first β‑reduction step of the expression (λx.x x)(λy.y)?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "advanced-programming",
+    "chunk_id": "bdf14b15-3337-4a45-94ac-b8a1e4302f80",
+    "cau_hoi": "When resolving the diamond problem in class C, how does the overridden show() method explicitly invoke the default method from interface A?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "advanced-programming",
+    "chunk_id": "cf058010-ea41-4f15-a9c2-9685398644b7",
+    "cau_hoi": "Which static method does a Singleton class declare to return the same instance of its own class?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "advanced-programming",
+    "chunk_id": "7a1ef947-54dc-48da-9e96-b019d397096a",
+    "cau_hoi": "Which design pattern mentioned ensures a class has only one instance and provides global access for managing shared resources?",
+    "thu_hang": {
+      "dense": 2,
+      "hybrid": 2,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "advanced-programming",
+    "chunk_id": "2685ba3e-3be4-4084-b406-56ee87642b83",
+    "cau_hoi": "Which languages are listed as examples of pure functional languages that have no implicit side‑effects?",
+    "thu_hang": {
+      "dense": 2,
+      "hybrid": 2,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "advanced-programming",
+    "chunk_id": "1555ed85-f6ae-47b2-9eae-a99e0899b3cf",
+    "cau_hoi": "What do we call a class such as Dog that inherits from a class like Animal and can use or override its members?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "advanced-programming",
+    "chunk_id": "66f0156c-6cbf-4b7e-a578-54f36e863649",
+    "cau_hoi": "What attributes are required for the Book class in the encapsulation exercise for the library system?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "advanced-programming",
+    "chunk_id": "d6ba0d82-c0c3-4092-b74f-2ccca9365f31",
+    "cau_hoi": "In the Vehicle class, what default values are assigned to the brand and year attributes by its default constructor?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "advanced-programming",
+    "chunk_id": "174eafb5-7c78-4c75-b7f7-ac2438ddb90b",
+    "cau_hoi": "What key benefit of using interfaces is described as promoting composition over inheritance and avoiding the rigidity of deep class hierarchies?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "advanced-programming",
+    "chunk_id": "56988b5f-2700-4c48-a200-1e0cd0dbc14d",
+    "cau_hoi": "What are the three main limitations of Python lambda expressions mentioned in the notes?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "calculus1",
+    "chunk_id": "e1779a13-5be1-4e6c-b361-6cebbcedec90",
+    "cau_hoi": "Để hàm \\(f(x)=\\begin{cases}x+1,& x\\le 1\\\\ 3- a x^{2},& x>1\\end{cases}\\) liên tục tại \\(x=1\\), giá trị \\(a\\) phải bằng bao nhiêu?",
+    "thu_hang": {
+      "dense": 2,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "calculus1",
+    "chunk_id": "ff0f75db-cc7a-48ac-8931-f78991e60985",
+    "cau_hoi": "Đạo hàm bậc n của hàm \\( \\ln(x+1) \\) được cho bởi công thức nào?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 3,
+      "hybrid+rerank": 10
+    },
+    "adaptive_k": {
+      "k": 16,
+      "trung": true
+    }
+  },
+  {
+    "course": "calculus1",
+    "chunk_id": "e10f6b20-79d8-4004-8ee7-2242a7531e00",
+    "cau_hoi": "Sau khi đặt \\(x = e^{t}\\) để đưa phương trình Euler‑Cauchy bậc hai về dạng hệ số hằng, biểu thức nào được dùng để thay thế cho \\(x^{2}y''\\)?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "calculus1",
+    "chunk_id": "288ad63f-8582-4432-8b5f-5bd2caecb6ef",
+    "cau_hoi": "Nếu đặt \\(Y=S^{-1}X\\) trong hệ \\(\\dfrac{dX}{dt}=AX+F(t)\\) với \\(A=SDS^{-1}\\), ta thu được phương trình vi phân bậc nhất cho \\(Y\\) là gì?",
+    "thu_hang": {
+      "dense": 2,
+      "hybrid": 1,
+      "hybrid+rerank": 2
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "calculus1",
+    "chunk_id": "cd3a5eca-d4a3-4ae0-85ff-1ce4e1b0812e",
+    "cau_hoi": "Trong ví dụ tính giới hạn \\(L_8=\\displaystyle\\lim_{x\\to0}\\frac{e^{x}-e^{\\sin x}}{3x}\\), tác giả thay \\((e^{x}-1)\\) và \\((e^{\\sin x}-1)\\) bằng các xấp xỉ nào?",
+    "thu_hang": {
+      "dense": 2,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 9,
+      "trung": true
+    }
+  },
+  {
+    "course": "calculus1",
+    "chunk_id": "624363e2-8a92-4e1e-9ccc-23acac3bd209",
+    "cau_hoi": "Trong hàm lũy thừa y = x^a, khi a = -1, tập xác định (MXĐ) và tập giá trị (MGT) của hàm là gì?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "calculus1",
+    "chunk_id": "7700a128-5798-4635-8cec-24811d3bc621",
+    "cau_hoi": "Giới hạn của biểu thức \\(\\sqrt{x^{2}+x+1}\\;-\\;\\sqrt{x^{2}-x+1}\\) khi \\(x\\to\\pm\\infty\\) bằng bao nhiêu?",
+    "thu_hang": {
+      "dense": 2,
+      "hybrid": null,
+      "hybrid+rerank": null
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": false
+    }
+  },
+  {
+    "course": "calculus1",
+    "chunk_id": "7a2122d8-ea11-467d-9e66-63d5a26d986e",
+    "cau_hoi": "Trong ví dụ tính đạo hàm cấp 3 của hàm \\(y = \\sin x \\cdot \\ln(x+1)\\), hệ số đứng trước \\(\\displaystyle \\frac{\\sin x}{(x+1)^3}\\) là bao nhiêu?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 27,
+      "trung": true
+    }
+  },
+  {
+    "course": "calculus1",
+    "chunk_id": "a768e418-bef2-40b5-8e02-a6a4d38b9865",
+    "cau_hoi": "Khi lim₍ₓ→ₓ₀₎ α(x)/β(x) = 1, α(x) và β(x) được gọi là gì và ký hiệu như thế nào?",
+    "thu_hang": {
+      "dense": null,
+      "hybrid": 9,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "calculus1",
+    "chunk_id": "40acec5f-ceeb-4878-b76f-5458636486d4",
+    "cau_hoi": "Theo định nghĩa, hàm y = f(x) được gọi là liên tục tại điểm x = a khi nào, và theo ví dụ nào thì đồ thị của hàm này bị gián đoạn tại x = 3?",
+    "thu_hang": {
+      "dense": 2,
+      "hybrid": 2,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 15,
+      "trung": true
+    }
+  },
+  {
+    "course": "calculus1",
+    "chunk_id": "9701581c-5bfa-4ca0-8cf6-8eb63cad5a16",
+    "cau_hoi": "Giá trị của \\(\\arcsin\\left(-\\frac{1}{\\sqrt{2}}\\right)\\) bằng bao nhiêu?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": null
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": false
+    }
+  },
+  {
+    "course": "calculus1",
+    "chunk_id": "9aef1684-4bc7-42cd-87d1-e352445b2287",
+    "cau_hoi": "Trong ví dụ tính gần đúng √{29}^3 bằng khai triển Taylor‑Maclaurin của f(x) = (1 + x)^{1/3}, để đạt sai số ≤ 10⁻⁵ cần lấy bậc n tối thiểu là bao nhiêu?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 2,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "calculus1",
+    "chunk_id": "68ab8820-1f93-4457-8e53-8bc79b87a312",
+    "cau_hoi": "Trong trường hợp n < m, khi biểu diễn Q_m(x) dưới dạng \\((a_1x+b_1)^{l_1}\\dots(a_rx+b_r)^{l_r}(c_1x^2+d_1x+e_1)^{k_1}\\dots(c_sx^2+d_sx+e_s)^{k_s}\\), tổng các số mũ \\(l_1+l_2+\\dots+l_r+k_1+k_2+\\dots+k_s\\) phải bằng bao nhiêu?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "calculus1",
+    "chunk_id": "2c10bc23-fba6-48da-b084-0bd7d841bcb0",
+    "cau_hoi": "Khi chứng minh định lý đổi biến ∫ f(φ(t)) φ′(t) dt = F(φ(t)) + C, ta tính đạo hàm của F(φ(t)) + C như thế nào để thu được f(φ(t)) φ′(t)?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "calculus1",
+    "chunk_id": "19cd8f76-b0c0-47ef-94de-9882b59bbfd4",
+    "cau_hoi": "Trong ví dụ giải PT Bernoulli y′−2y tan x = −y² sin² x, sau khi đặt z = y^{−1} và tính tích phân, biểu thức cuối cùng của y được cho bởi công thức nào?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "calculus1",
+    "chunk_id": "43c424c8-559c-4acd-beea-d154c1e06fb6",
+    "cau_hoi": "Trong các hệ phương trình vi phân cấp 1 hệ số hằng được liệt kê, hệ nào có hạng tử \\(e^{-2t}\\) xuất hiện trong phương trình \\(x_2'\\)?",
+    "thu_hang": {
+      "dense": 3,
+      "hybrid": 2,
+      "hybrid+rerank": 10
+    },
+    "adaptive_k": {
+      "k": 16,
+      "trung": true
+    }
+  },
+  {
+    "course": "calculus1",
+    "chunk_id": "bd027255-81d7-4908-9984-c2bd6c18ae59",
+    "cau_hoi": "Khi khử \\(x_2\\) bằng cách nhân (4) với \\((D^{2}+5D+3)\\) và (5) với \\((D+2)\\), phương trình thu được cho \\(x_1\\) là gì?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "calculus1",
+    "chunk_id": "16ebd127-a25d-4e09-8e94-dc9773f5f0c4",
+    "cau_hoi": "Trong phương pháp biến thiên hằng số cho phương trình vi phân cấp 2 hệ số hằng không thuần nhất, điều kiện phụ được đưa ra để đơn giản hoá tính toán là gì?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 2
+    },
+    "adaptive_k": {
+      "k": 19,
+      "trung": true
+    }
+  },
+  {
+    "course": "calculus1",
+    "chunk_id": "cb6c6764-0e38-4e34-af0c-49f475bff803",
+    "cau_hoi": "Trong khai triển Taylor, hệ số của \\(x^4\\) trong \\(\\alpha_2(x)=\\frac{1}{4!}x^4+O(x^4)\\) là bao nhiêu?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 10,
+      "hybrid+rerank": 3
+    },
+    "adaptive_k": {
+      "k": 11,
+      "trung": true
+    }
+  },
+  {
+    "course": "calculus1",
+    "chunk_id": "83459dff-e203-48a2-a5e5-18420e85ff2d",
+    "cau_hoi": "Trong ví dụ khai triển Taylor hàm \\(y = x^4 + 3x^3 - 5x^2 + x - 1\\) tại \\(x_0 = 1\\), hệ số của \\((x-1)^2\\) là bao nhiêu?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 2
+    },
+    "adaptive_k": {
+      "k": 18,
+      "trung": true
+    }
+  },
+  {
+    "course": "calculus1",
+    "chunk_id": "bbbc40b2-950e-46f6-b68f-9d091ae5c5e8",
+    "cau_hoi": "Trong khai triển Maclaurin của hàm \\(f_2(x)=\\ln\\bigl(x+\\sqrt{x^{2}+1}\\bigr)\\) tới bậc 5, hệ số của hạng \\(x^{5}\\) là bao nhiêu?",
+    "thu_hang": {
+      "dense": 3,
+      "hybrid": 2,
+      "hybrid+rerank": 7
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "calculus1",
+    "chunk_id": "81424449-07a5-4716-bbd4-9b3eed321818",
+    "cau_hoi": "Giới hạn \\(\\displaystyle \\lim_{x\\to 0}\\frac{x+\\sin x}{\\cot x}\\) thuộc dạng nào và giá trị của nó là bao nhiêu?",
+    "thu_hang": {
+      "dense": 2,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "calculus1",
+    "chunk_id": "6e482144-3157-40f8-8fef-e6e546deb9c9",
+    "cau_hoi": "Trong các hàm α_i, hàm có chỉ số 7 được cho bởi công thức nào?",
+    "thu_hang": {
+      "dense": null,
+      "hybrid": null,
+      "hybrid+rerank": null
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": false
+    }
+  },
+  {
+    "course": "calculus1",
+    "chunk_id": "4583e30f-6557-48f4-aa54-868abd18f48e",
+    "cau_hoi": "Trong bài toán tìm các đường cong y = f(x) sao cho diện tích hình thang cong trên đoạn \\([1, x]\\) bằng tỉ số \\(\\frac{x}{y}\\), phương trình vi phân cấp 1 được suy ra là gì?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 10,
+      "trung": true
+    }
+  },
+  {
+    "course": "calculus1",
+    "chunk_id": "55e31714-32c3-48de-b64c-20e3585be4c2",
+    "cau_hoi": "Khi tính \\(\\displaystyle I_2=\\int\\frac{dx}{x^{2}+a^{2}}\\) bằng cách đặt \\(u=\\frac{x}{a}\\) (suy ra \\(dx=a\\,du\\)), mình thấy ở bước đầu tiên có hệ số \\(\\frac{1}{a^{2}}\\) nhưng kết quả cuối cùng lại là \\(\\frac{1}{a}\\arctan\\frac{x}{a}+C\\); vậy hệ số \\(\\frac{1}{a^{2}}\\) được rút gọn thành \\(\\frac{1}{a}\\) ở bước nào?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "calculus1",
+    "chunk_id": "cf959bff-68a6-4eb6-b4ca-0a1fcc66a920",
+    "cau_hoi": "Nếu lim₍ₓ→b⁻₎ f(x)=∞ và f(x) khả tích trên [a,c] với mọi c∈[a,b), công thức tính ∫ₐᵇ f(x)dx theo giới hạn là gì?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "calculus1",
+    "chunk_id": "0c6cf59c-2934-4429-b364-86b44980ec65",
+    "cau_hoi": "Trong việc tính tích phân I₍₁₃₎ = ∫ dx / √(x² − 2x + 5), sau khi đổi biến thành (x − 1) và viết biểu thức dưới căn dưới dạng (x − 1)² + 2², kết quả cuối cùng của tích phân này là gì (kèm hằng số C)?",
+    "thu_hang": {
+      "dense": 4,
+      "hybrid": 2,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "calculus1",
+    "chunk_id": "89923809-2bba-4985-8bcf-19f4c045e9aa",
+    "cau_hoi": "Nếu \\(\\displaystyle\\lim_{x\\to x_0}f(x)=a\\) và \\(\\displaystyle\\lim_{x\\to x_0}g(x)=b\\), thì \\(\\displaystyle\\lim_{x\\to x_0}\\bigl(\\alpha\\,f(x)\\bigr)\\) bằng bao nhiêu, trong đó \\(\\alpha\\in\\mathbb{R}\\)?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 8
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "calculus1",
+    "chunk_id": "4d4c857d-4e45-4b36-8a03-65a99dacf3ee",
+    "cau_hoi": "Để cả J₁ và J₂ đều hội tụ và do đó I₈ hội tụ, α phải nằm trong khoảng nào?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "calculus1",
+    "chunk_id": "7c17572e-a7fa-4a2f-aa8a-ecafa93437e1",
+    "cau_hoi": "Trong danh sách các bài tập, phương trình vi phân cấp 1 số 29 được viết dưới dạng \\((e^{x}\\sin y)\\,dx + (e^{x}\\cos y)\\,dy = 0\\) đúng không?",
+    "thu_hang": {
+      "dense": 2,
+      "hybrid": 2,
+      "hybrid+rerank": 4
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "calculus1",
+    "chunk_id": "488c66dd-9a17-4ff3-93ed-270eea5fc65f",
+    "cau_hoi": "Khi tính tích phân I₁ = ∫√(1−x²)dx bằng cách đặt x = sin t, kết quả cuối cùng của I₁ được biểu diễn dưới dạng nào?",
+    "thu_hang": {
+      "dense": 3,
+      "hybrid": 4,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "calculus1",
+    "chunk_id": "8a72e34f-c769-4ef8-a293-57785b7b666c",
+    "cau_hoi": "Trong các giới hạn cơ bản, lim_{n→∞} (ln^p n)/n^α bằng 0 với mọi giá trị của p và α > 0?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "calculus1",
+    "chunk_id": "b4106759-fea3-43d1-86f2-bd623c6683c8",
+    "cau_hoi": "Trong việc tìm nghiệm tổng quát của một phương trình vi phân cấp 1 toàn phần, nếu thiếu nguyên hàm của \\(-\\frac{3}{y^{2}}\\) thì nguyên hàm cần bổ sung là gì?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "calculus1",
+    "chunk_id": "393aaa97-7804-4783-a682-d9417213c73f",
+    "cau_hoi": "Theo định lý, hàm liên tục tại x = a khi và chỉ khi nó thỏa mãn hai điều kiện nào?",
+    "thu_hang": {
+      "dense": 3,
+      "hybrid": 4,
+      "hybrid+rerank": 2
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "calculus1",
+    "chunk_id": "bda6d054-3e93-44a2-9394-2bdf3c803fbd",
+    "cau_hoi": "Nếu f(x)=f₁(x)+f₂(x) và y₁, y₂ lần lượt là nghiệm riêng của các phương trình y″+a₁y′+a₂y=f₁(x) và y″+a₁y′+a₂y=f₂(x), thì y₁+y₂ là nghiệm riêng của phương trình nào?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "calculus1",
+    "chunk_id": "06f7a550-1a09-4b2a-9d0f-2e72514f99b7",
+    "cau_hoi": "Trong ví dụ thứ ba, nghiệm tổng quát của phương trình \\(y'''-8y=0\\) được biểu diễn bằng những hàm mũ và hàm lượng giác nào?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 6,
+      "hybrid+rerank": null
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": false
+    }
+  },
+  {
+    "course": "calculus1",
+    "chunk_id": "d4ea4063-9ce0-40c9-959e-156508a96a0e",
+    "cau_hoi": "Với một hàm 1‑1 \\(f: X \\to Y\\), miền xác định (MXĐ) của hàm ngược \\(f^{-1}\\) tương ứng với miền giá trị (MGT) của hàm \\(f\\) là gì?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 16,
+      "trung": true
+    }
+  },
+  {
+    "course": "calculus1",
+    "chunk_id": "a1c55bfb-a391-4afa-9bd4-24bd17773edd",
+    "cau_hoi": "Khi a = −1, đạo hàm bậc n của hàm y = 1/(x + 1) được tính theo công thức nào?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "calculus1",
+    "chunk_id": "8e3261ea-014b-414f-b49d-1bc76b18a636",
+    "cau_hoi": "Trong ví dụ tính \\(\\displaystyle \\lim_{x\\to\\infty}\\frac{\\sqrt{x^{10}-2x^{5}+2}^{\\,3}-2x^{3}+x^{4}}{\\sqrt{x^{5}+2x^{3}-x}+x^{2}+3x^{3}-2x^{4}}\\), bậc cao nhất của tử và mẫu là bao nhiêu và giá trị giới hạn cuối cùng bằng bao nhiêu?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 2
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "calculus1",
+    "chunk_id": "f8949174-08b4-4acc-9b42-caab18d115c1",
+    "cau_hoi": "Trong phép tính gần đúng arctan(0.97) bằng vi phân cấp 1, giá trị xấp xỉ thu được là bao nhiêu?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "calculus1",
+    "chunk_id": "7438ec3f-a0e2-4f4a-aaa7-5d7e5aaac803",
+    "cau_hoi": "Trong ví dụ tính I20, sau khi đặt \\(t=\\tan\\frac{x}{2}\\) và rút gọn, biểu thức tích phân cuối cùng có dạng \\(\\frac{1}{\\sqrt{3}}\\arctan\\frac{2t+1}{\\sqrt{3}}+C\\); hằng số nhân trước \\(\\arctan\\) là bao nhiêu?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "calculus1",
+    "chunk_id": "162f75a3-038e-4430-acf9-c37cc5ca9d25",
+    "cau_hoi": "Trong định nghĩa giới hạn hàm số bằng ngôn ngữ ε–δ, ký hiệu “MXĐ D_f” được dùng để chỉ gì?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "calculus1",
+    "chunk_id": "b5f7f331-3242-4b6b-b25f-89bd44b446ec",
+    "cau_hoi": "Theo định lý, hàm số y = f(x) có giới hạn tại x₀ khi và chỉ khi nó có giới hạn trái và giới hạn phải tại x₀ và …?",
+    "thu_hang": {
+      "dense": 2,
+      "hybrid": 2,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 9,
+      "trung": true
+    }
+  },
+  {
+    "course": "calculus1",
+    "chunk_id": "a475c740-c8a6-4250-ac73-b73fe3f6f921",
+    "cau_hoi": "Trong định nghĩa về hệ hàm độc lập tuyến tính trên khoảng (a,b), làm sao để xác định rằng các hàm \\(y_1(x), y_2(x), \\dots , y_n(x)\\) thực sự độc lập tuyến tính?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "calculus1",
+    "chunk_id": "46ae6e6a-de64-4ab9-9c19-37bd3208c1b1",
+    "cau_hoi": "Trong phương pháp tích phân từng phần, công thức ∫u dv = uv − ∫v du xuất phát từ định lý nào và yêu cầu gì đối với các hàm u(x) và v(x) trên khoảng (a,b)?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "calculus1",
+    "chunk_id": "c7d3941d-f694-46e1-8528-4bd9c4923827",
+    "cau_hoi": "Khi tính I₃ = ∫ eˣ √(4 + eˣ) dx và đặt u = √(4 + eˣ), biểu thức eˣ dx được thay thế bằng gì?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 2
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "calculus1",
+    "chunk_id": "6c45764d-3653-43b5-b937-3e611fcb2a78",
+    "cau_hoi": "Giá trị giới hạn \\(L_2\\) và \\(L_3\\) khi \\(x\\to 0\\) lần lượt là bao nhiêu?",
+    "thu_hang": {
+      "dense": null,
+      "hybrid": null,
+      "hybrid+rerank": 4
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "calculus1",
+    "chunk_id": "8cfb7a10-9493-44bc-9f73-73346593b316",
+    "cau_hoi": "Theo bảng tích phân các hàm cơ bản, tích phân \\(\\displaystyle \\int \\frac{1}{a^{2}-x^{2}}\\,dx\\) cho kết quả là gì?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "calculus1",
+    "chunk_id": "6cf98531-a45b-4f09-952c-a0c002a46283",
+    "cau_hoi": "Theo định lý về tính liên tục, một hàm f(x) được gọi là liên tục tại x = a nếu và chỉ nếu nó thỏa mãn những điều kiện nào liên quan đến liên tục trái và liên tục phải?",
+    "thu_hang": {
+      "dense": 3,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 11,
+      "trung": true
+    }
+  },
+  {
+    "course": "calculus1",
+    "chunk_id": "1cc931a0-3d4b-4289-9eca-8868aed9a700",
+    "cau_hoi": "Đối với hàm \\(y=\\sqrt{x^{2}-2^{3}}\\), công thức đạo hàm \\(y'\\) được cho như thế nào trên các miền \\(|x|\\ge \\sqrt{2}\\) và \\(|x|<\\sqrt{2}\\)?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 5,
+      "hybrid+rerank": 9
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": false
+    }
+  },
+  {
+    "course": "chemistry1",
+    "chunk_id": "a8339ec3-24c3-4eb9-a515-15c25fba8bcd",
+    "cau_hoi": "Số lượng tử từ mₗ xác định giá trị hình chiếu của momen động lượng orbital (MZ) lên phương Z của từ trường ngoài; công thức tính MZ được đưa ra như thế nào?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "chemistry1",
+    "chunk_id": "a579ebb4-d764-409b-b5fe-5165bcd14fef",
+    "cau_hoi": "Tại sao nguyên tố Flo có ái lực điện tử yếu hơn Clo, mặc dù có kích thước nhỏ hơn?",
+    "thu_hang": {
+      "dense": 2,
+      "hybrid": 2,
+      "hybrid+rerank": 2
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "chemistry1",
+    "chunk_id": "f5cb7ffd-6adc-431e-ba68-3574434213d9",
+    "cau_hoi": "Nếu ΔH⁰ được cho bằng cal, hằng số khí R trong công thức ln K_T = -ΔH⁰/(RT) + ΔS⁰/R phải lấy giá trị bao nhiêu?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "chemistry1",
+    "chunk_id": "106f03af-7af3-4523-b31f-15b76e18e2b4",
+    "cau_hoi": "Các nguyên tố nào được liệt kê là ví dụ của hiện tượng bão hòa sớm với cấu hình electron ns²(n – 1)d⁹ → ns¹(n – 1)d¹⁰?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 2,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "chemistry1",
+    "chunk_id": "9ae9bd73-9765-493e-bca0-fa284c7582e2",
+    "cau_hoi": "Theo định nghĩa, các thông số trạng thái được chia thành hai loại nào, mỗi loại có tính chất gì và ví dụ cụ thể nào?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "chemistry1",
+    "chunk_id": "dc7b9ce4-f48e-489f-bc62-e911ddc4670f",
+    "cau_hoi": "Các giá trị có thể của số lượng tử mₗ được liệt kê như thế nào?",
+    "thu_hang": {
+      "dense": 6,
+      "hybrid": null,
+      "hybrid+rerank": null
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": false
+    }
+  },
+  {
+    "course": "chemistry1",
+    "chunk_id": "d6cb1649-b173-49e6-8dc0-be962401d132",
+    "cau_hoi": "Trong loạt hợp chất H₂O, H₂S, H₂Se và H₂Te, góc liên kết của H₂S được cho là bao nhiêu độ?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 10,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "chemistry1",
+    "chunk_id": "15af743e-d6a4-4e34-8945-09a887fd4689",
+    "cau_hoi": "Trong điều kiện chuẩn, nhiệt tạo thành tiêu chuẩn của ion H⁺·nH₂O trong dung dịch nước được quy ước bằng bao nhiêu?",
+    "thu_hang": {
+      "dense": 2,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "chemistry1",
+    "chunk_id": "a2442267-e89f-4d33-bf0a-15ea4fb69250",
+    "cau_hoi": "Nguyên tố nào trong chu kỳ IV có bán kính nguyên tử bằng 1,37 Å?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "chemistry1",
+    "chunk_id": "061c0ceb-1d2e-4b8e-bbcd-ebdcb1a2d302",
+    "cau_hoi": "Kích thước của nguyên tử lớn hơn kích thước của hạt nhân khoảng bao nhiêu lần?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "chemistry1",
+    "chunk_id": "2a699af9-47fa-466a-afd0-50c5724dba8b",
+    "cau_hoi": "Năng lượng liên kết σns‑ns của Li‑Li được cho là bao nhiêu kJ/mol?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "chemistry1",
+    "chunk_id": "52391b03-2ae8-4b67-8333-7b3e5ab63455",
+    "cau_hoi": "Tại sao bán kính nguyên tử của khí trơ lại có giá trị đặc biệt lớn hơn so với các nguyên tử cùng chu kỳ?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "chemistry1",
+    "chunk_id": "56311a81-d3a1-48ba-8636-c9ef425626a7",
+    "cau_hoi": "Trong quy ước độ điện ly biểu kiến cho dung dịch nước 0.1 N, 25 °C, chất điện ly mạnh được xác định khi α vượt quá bao nhiêu phần trăm?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "chemistry1",
+    "chunk_id": "0ec21e27-98d3-4062-9c2e-11bb5ec705b5",
+    "cau_hoi": "Sommerfeld đã bổ sung các quỹ đạo hình elip vào mô hình Bohr; tuy nhiên, mô hình Bohr‑Sommerfeld vẫn bị coi là không chính xác. Nguyên nhân chính của hạn chế này là gì?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "chemistry1",
+    "chunk_id": "8d446924-24ce-4855-9e66-6574bf476911",
+    "cau_hoi": "Trong cặp oxy hoá‑khử Cu^(2+)/Cu, đây là cặp oxy hoá‑khử thứ mấy được đề cập?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "chemistry1",
+    "chunk_id": "ebc1868c-3c9b-4ad8-8835-0f35a3972e7f",
+    "cau_hoi": "Trong các bảng thế điện cực chuẩn, thế điện cực được ghi ở dạng nào và khi chuyển sang dạng oxy hoá cần thực hiện thao tác gì với giá trị đã ghi?",
+    "thu_hang": {
+      "dense": 2,
+      "hybrid": 2,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "chemistry1",
+    "chunk_id": "7156f92b-cfb8-4a60-9afc-7a544f2ae14d",
+    "cau_hoi": "Khi nhiệt độ tăng từ 27 °C lên 37 °C, động năng trung bình của các tiểu phân tăng bao nhiêu phần trăm và tốc độ trung bình của chúng tăng bao nhiêu phần trăm?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "chemistry1",
+    "chunk_id": "834d685e-e064-4ae2-bf36-1c774d9b8dcf",
+    "cau_hoi": "Góc liên kết thực nghiệm của phân tử nước (HOH) khoảng bao nhiêu độ, và dựa vào góc này nguyên tử oxy được cho là ở trạng thái lai hoá nào?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "chemistry1",
+    "chunk_id": "147d7b30-b22b-44bb-a928-e5a97ac3df48",
+    "cau_hoi": "Theo mô tả về liên kết cộng hoá trị, các AO hoá trị tham gia che phủ phải thỏa mãn ba điều kiện nào?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 11,
+      "trung": true
+    }
+  },
+  {
+    "course": "chemistry1",
+    "chunk_id": "502e3b80-b29a-496e-a2e6-f904d134125a",
+    "cau_hoi": "Với ΔH° = –56,484 kJ và Kp = 1,3 × 10^6 ở 25 °C, hằng số cân bằng K ở 325 K được tính ra là bao nhiêu?",
+    "thu_hang": {
+      "dense": 5,
+      "hybrid": 3,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "chemistry1",
+    "chunk_id": "3f65c248-7854-44af-a407-8f39a7dd53b2",
+    "cau_hoi": "Trong các loại hệ phân tán, hệ nào có kích thước hạt lớn hơn 100 μm và còn được gọi là gì?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "chemistry1",
+    "chunk_id": "8c919e0a-fab1-4490-a3f8-2ccb190c30e6",
+    "cau_hoi": "Trong một pin Galvanic, ion nào di chuyển từ ngăn catod sang ngăn anode để duy trì trung hòa điện tích?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "chemistry1",
+    "chunk_id": "a93d342a-7a1d-42f8-af4d-4463dc5a7da5",
+    "cau_hoi": "Giá trị ΔS°_298 của phản ứng C(s) + CO₂(g) → 2 CO(g) tính được là bao nhiêu (đơn vị J K⁻¹)?",
+    "thu_hang": {
+      "dense": 2,
+      "hybrid": 1,
+      "hybrid+rerank": 5
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "chemistry1",
+    "chunk_id": "e1f0cad5-9900-45bd-bf71-86482cd2b286",
+    "cau_hoi": "Mình thắc mắc, trong phương pháp orbital phân tử, MO nào được đặt tên σ và MO nào được đặt tên π dựa trên kiểu che phủ của các AO như thế nào, chúng có đặc điểm đối xứng gì liên quan đến trục liên nhân, và các MO phản liên kết được ký hiệu như thế nào, năng lượng của chúng so với các AO tham gia là như thế nào?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "chemistry1",
+    "chunk_id": "48da08a0-72eb-4b26-acf6-db6688bb3fda",
+    "cau_hoi": "Quy tắc kinh nghiệm của Van’t Hoff cho biết khi nhiệt độ tăng thêm 10 °C, tốc độ phản ứng tăng lên bao nhiêu lần?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "chemistry1",
+    "chunk_id": "8f140e0e-68d4-44a4-9c91-30a5969f7097",
+    "cau_hoi": "Ai là nhà khoa học người Thụy Điển đã đề xuất giả thuyết về năng lượng hoạt hoá E^* và năm nào ông nhận giải Nobel hoá học?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "chemistry1",
+    "chunk_id": "cc804ded-486f-42d3-aa5c-21aab8c71dc0",
+    "cau_hoi": "Trong các loại tương tác của liên kết hydro, tương tác cảm ứng chỉ được coi là đáng kể khi nào?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "chemistry1",
+    "chunk_id": "6bc0bad8-82c0-4d91-8510-485b26a4c7b6",
+    "cau_hoi": "Nếu ΔG^0298(pư) = -45 kJ ở 298 K, phản ứng sẽ tự phát theo chiều nào?",
+    "thu_hang": {
+      "dense": 3,
+      "hybrid": 2,
+      "hybrid+rerank": 2
+    },
+    "adaptive_k": {
+      "k": 16,
+      "trung": true
+    }
+  },
+  {
+    "course": "chemistry1",
+    "chunk_id": "9784224e-728b-4d8a-98e3-21eecc1aea33",
+    "cau_hoi": "Trong ví dụ cân bằng phản ứng CaCO₃ ⇌ CaO + CO₂, ở nhiệt độ không đổi và do áp suất riêng phần của các chất rắn là hằng số, công thức tính K′ₚ được đưa ra như thế nào và Kp(T) được biểu diễn bằng áp suất p₍CO₂₎ ở trạng thái cân bằng?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "chemistry1",
+    "chunk_id": "fa5c72e4-d51b-45ad-8de8-514d6d0d02fb",
+    "cau_hoi": "Trong việc viết cấu hình điện tử cho cation, khi các orbital có cùng giá trị n, ta bắt đầu lấy bớt điện tử từ orbital nào?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "chemistry1",
+    "chunk_id": "6e179d55-066d-4ff7-8276-b756ff7dee55",
+    "cau_hoi": "Theo định nghĩa, thế điện cực tiêu chuẩn được quy ước bằng bao nhiêu và các điều kiện chuẩn (áp suất, nhiệt độ, nồng độ [H⁺] và [OH⁻]) được đặt như thế nào?",
+    "thu_hang": {
+      "dense": 2,
+      "hybrid": 2,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "chemistry1",
+    "chunk_id": "2a217819-04fc-44fc-acda-b8637421c477",
+    "cau_hoi": "Trong bảng hệ thống tuần hoàn, nguyên tố nào có cấu hình electron [Xe] 6s² 5d¹ 4f¹?",
+    "thu_hang": {
+      "dense": 2,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "chemistry1",
+    "chunk_id": "153c2178-6a3d-4e7a-97f1-8a2c64817023",
+    "cau_hoi": "Điện hóa học nghiên cứu sự chuyển hóa tương hỗ giữa hai dạng năng lượng nào?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "chemistry1",
+    "chunk_id": "ca171230-4024-4565-9556-13dc8b22033e",
+    "cau_hoi": "Khi một kim loại có N nguyên tử, mỗi nguyên tử cung cấp 1 AO và các AO này che phủ lẫn nhau, sẽ tạo ra bao nhiêu mức năng lượng MO và khoảng cách năng lượng giữa các mức này thay đổi như thế nào khi N tăng lên rất lớn (ví dụ 1 cm³ kim loại chứa khoảng 10^22–10^23 nguyên tử)?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "chemistry1",
+    "chunk_id": "d4e7ed88-76b6-4432-9f29-43ac317c13ae",
+    "cau_hoi": "Góc hóa trị được định nghĩa là góc tạo bởi hai đoạn thẳng tưởng tượng nối hạt nhân nguyên tử trung tâm với hai hạt nhân nguyên tử liên kết; nó phụ thuộc vào những yếu tố nào?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "chemistry1",
+    "chunk_id": "e63adad9-f776-45b8-b7ad-6816bda54256",
+    "cau_hoi": "Khi nhiệt độ tăng, độ tan của các hợp chất ion rắn trong dung môi lỏng thường tăng; điều này dựa trên dấu của ΔHht là gì?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "chemistry1",
+    "chunk_id": "f8391eaa-981e-4cee-85b3-9a13f297b94e",
+    "cau_hoi": "Với phản ứng 2 NO₂(k) ⇌ N₂O₄(k) ở 298 K, khi ΔH°₍₂₉₈₎ = −58 040 kJ và ΔS°₍₂₉₈₎ = −1766 J·K⁻¹, giá trị Kp là bao nhiêu và biểu thức Kp được viết như thế nào?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "chemistry1",
+    "chunk_id": "258687cf-9673-4368-9e9d-7fc38e670779",
+    "cau_hoi": "Nếu một liên kết ba tồn tại giữa hai nguyên tử, thì nó bao gồm bao nhiêu liên kết σ và bao nhiêu liên kết π?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "chemistry1",
+    "chunk_id": "3788619f-ea5e-4307-9440-a2e4a608fd8f",
+    "cau_hoi": "Trong công thức Nernst ở 25 °C, hệ số nhân logarit (lg) được tính là bao nhiêu khi thay các hằng số R = 8.314 J·mol⁻¹·K⁻¹, T = 298 K và F = 96500 C·mol⁻¹ vào?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 3,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "chemistry1",
+    "chunk_id": "34d66961-b9e4-4727-9e31-ef1a4f32ac36",
+    "cau_hoi": "Phương pháp VB không thể giải thích được tính thuận từ của O₂, sự tồn tại bền của ion H₂⁺, và hiện tượng nào khác liên quan đến màu sắc của phân tử?",
+    "thu_hang": {
+      "dense": 3,
+      "hybrid": 3,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "chemistry1",
+    "chunk_id": "86b9b316-f20f-4ad6-8629-32010e50e0a4",
+    "cau_hoi": "Trong bối cảnh các miền năng lượng của kim loại, khoảng cách giữa miền HOMO (miền hoá trị) và LUMO (miền daãn) được gọi là gì?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "chemistry1",
+    "chunk_id": "c65f54a8-b4fa-423e-96ff-87bd8437d1b7",
+    "cau_hoi": "Nếu một chùm bức xạ điện từ bao gồm toàn bộ các bước sóng khả kiến và được phân ly bằng lăng kính, quang phổ thu được được gọi là gì và trong dải nhìn thấy có những màu nào?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "chemistry1",
+    "chunk_id": "0ceed536-35ad-4327-8f8b-66b5c4a9c486",
+    "cau_hoi": "Trong nguyên tử nhiều electron, hiệu ứng chắn làm yếu lực hút của hạt nhân đối với các electron bên ngoài như thế nào và ảnh hưởng ra sao đến năng lượng của chúng?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 12,
+      "trung": true
+    }
+  },
+  {
+    "course": "chemistry1",
+    "chunk_id": "e04f4a17-d9d1-490e-bb25-4489ef17b16d",
+    "cau_hoi": "Khi quá trình diễn ra ở áp suất không đổi, công thức tính nhiệt lượng \\(Q_p\\) là gì và nó liên quan đến những đại lượng nào?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "chemistry1",
+    "chunk_id": "b178c9e1-32d9-4689-bf53-7a67bcc6bab8",
+    "cau_hoi": "Trong quy luật biến đổi năng lượng ion hoá theo chu kỳ, nguyên tử nào có năng lượng ion hoá thấp nhất và nguyên tử nào có năng lượng ion hoá cao nhất?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 9,
+      "trung": true
+    }
+  },
+  {
+    "course": "chemistry1",
+    "chunk_id": "0b4d7336-dec3-476c-9ea7-787d19eca1fc",
+    "cau_hoi": "Theo công thức ΔG⁰₂₉₈ = ΔH⁰₂₉₈ − 298·ΔS⁰₂₉₈, giá trị ΔS⁰₂₉₈ cho phản ứng phân hủy CaCO₃ → CaO + CO₂ là bao nhiêu (đơn vị J·K⁻¹)?",
+    "thu_hang": {
+      "dense": 2,
+      "hybrid": 6,
+      "hybrid+rerank": 9
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": false
+    }
+  },
+  {
+    "course": "chemistry1",
+    "chunk_id": "ea529ac4-2bf6-42d2-8f1e-c76e1e7f2efb",
+    "cau_hoi": "Entropi của một tinh thể hoàn chỉnh ở 0 K có giá trị bao nhiêu?",
+    "thu_hang": {
+      "dense": 2,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "chemistry1",
+    "chunk_id": "5425950f-cd22-4c6e-97c9-2202f10eb067",
+    "cau_hoi": "Trong ví dụ minh họa hệ và môi trường, hệ được mô tả bao gồm những gì?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "chemistry1",
+    "chunk_id": "a73ba11b-60c6-4c84-9bd1-87abeaad2a67",
+    "cau_hoi": "Trong công thức ∆H°pư = [a∆H°đc (A) + b∆H°đc (B)] – [c∆H°đc (C) + d∆H°đc (D)], nếu phản ứng aA + bB → cC + dD có a = 2, b = 3, c = 1, d = 2, ∆H°đc (A) = ‑250 kJ/mol, ∆H°đc (B) = ‑180 kJ/mol, ∆H°đc (C) = ‑320 kJ/mol, ∆H°đc (D) = ‑140 kJ/mol, thì ∆H°pư bằng bao nhiêu?",
+    "thu_hang": {
+      "dense": 5,
+      "hybrid": 3,
+      "hybrid+rerank": 2
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "chemistry1",
+    "chunk_id": "29a73dcb-ac9d-4a43-93e3-7b370cad35b3",
+    "cau_hoi": "Trong một quá trình đẳng nhiệt đẳng áp, điều kiện nào của ∆G biểu thị rằng quá trình là tự phát?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 11,
+      "trung": true
+    }
+  },
+  {
+    "course": "dsa",
+    "chunk_id": "cf7d86e1-d95e-4f97-9a21-bc7bed1a57e8",
+    "cau_hoi": "What exact phrase does the material use to describe the operation that removes the sole element from a queue?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 6,
+      "hybrid+rerank": null
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": false
+    }
+  },
+  {
+    "course": "dsa",
+    "chunk_id": "eb9593a1-ecd1-4fc7-8526-e8bba80ba124",
+    "cau_hoi": "After an unsuccessful push operation, what happens to the stack?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "dsa",
+    "chunk_id": "91b87589-faf4-4529-bd80-23f7bd1e7139",
+    "cau_hoi": "In the “Insertion: Append to the list” diagram, after appending the new node containing 18, which node is shown as the tail of the list?",
+    "thu_hang": {
+      "dense": 2,
+      "hybrid": 2,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "dsa",
+    "chunk_id": "a893099e-1124-49e9-95d7-31f60d54e1fd",
+    "cau_hoi": "Which node is identified as out of balance, and what specific imbalance case (e.g., left‑left) is indicated in the AVL insertion example?",
+    "thu_hang": {
+      "dense": 3,
+      "hybrid": 3,
+      "hybrid+rerank": 3
+    },
+    "adaptive_k": {
+      "k": 9,
+      "trung": true
+    }
+  },
+  {
+    "course": "dsa",
+    "chunk_id": "cb04cda9-67a2-4b78-8330-144275e5d427",
+    "cau_hoi": "During the Build a Heap algorithm, what does the “wall” separate and how is its position updated after each insertion?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "dsa",
+    "chunk_id": "1fb41bea-1900-4339-be4c-5223cb89a432",
+    "cau_hoi": "What is the best‑possible time complexity for searching random elements in a balanced tree, and what technique is proposed for improving search performance when some items are queried more frequently?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "dsa",
+    "chunk_id": "be7c14a9-9f64-42af-b3c6-c94811130ccc",
+    "cau_hoi": "In the deleteHeap procedure, which array element is assigned to dataOut before the heap is re‑heapified?",
+    "thu_hang": {
+      "dense": 4,
+      "hybrid": 3,
+      "hybrid+rerank": 4
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "dsa",
+    "chunk_id": "79adc5b6-87a6-4d9c-a068-34acb77026d2",
+    "cau_hoi": "In the AVLDelete procedure, after assigning `root->data = exchPtr->data`, which function is invoked to rebalance the tree when the variable `shorter` is true?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "dsa",
+    "chunk_id": "9b72a7e2-0c04-44f3-9e69-29de4f44e82a",
+    "cau_hoi": "Which vertex does Dijkstra's algorithm add to set S at each iteration according to the greedy criterion?",
+    "thu_hang": {
+      "dense": 4,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 12,
+      "trung": true
+    }
+  },
+  {
+    "course": "dsa",
+    "chunk_id": "fa601d9b-3040-416c-b927-6ca2a66ce885",
+    "cau_hoi": "In the Zig‑Zag modification diagram, which node becomes the new root and where are subtrees T1 and T3 positioned relative to that root?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 2
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "dsa",
+    "chunk_id": "a93b8b8c-2325-4c1c-9519-51e9f874fe0d",
+    "cau_hoi": "What are the two defining properties of a min‑heap according to the definition, and which textbook is cited as the source for this definition?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "dsa",
+    "chunk_id": "64478998-52ee-4e8f-afae-890563bee18b",
+    "cau_hoi": "Which case number is labeled “Left of Right” in the balancing trees discussion?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 2,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 9,
+      "trung": true
+    }
+  },
+  {
+    "course": "dsa",
+    "chunk_id": "56698a18-9500-42ab-a00e-6994269f0b83",
+    "cau_hoi": "What identifier is used for the newly created node in the prepend insertion diagrams?",
+    "thu_hang": {
+      "dense": 10,
+      "hybrid": 2,
+      "hybrid+rerank": 4
+    },
+    "adaptive_k": {
+      "k": 9,
+      "trung": true
+    }
+  },
+  {
+    "course": "dsa",
+    "chunk_id": "3763ced8-dbeb-4d61-aab6-dc4003da0ca7",
+    "cau_hoi": "What are the node values displayed in the Splay Tree example when searching for the key 5?",
+    "thu_hang": {
+      "dense": 5,
+      "hybrid": 1,
+      "hybrid+rerank": 9
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": false
+    }
+  },
+  {
+    "course": "dsa",
+    "chunk_id": "77decaeb-44a8-4c14-84a7-ed490888f0c2",
+    "cau_hoi": "Which two heap operations are listed both under the “Basic Heap” heading and again under the “Heap Algorithms” heading?",
+    "thu_hang": {
+      "dense": 4,
+      "hybrid": 9,
+      "hybrid+rerank": 8
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "dsa",
+    "chunk_id": "19f5657a-280e-441c-989f-e3a58aa304b1",
+    "cau_hoi": "What is the exact prototype of the function used to retrieve the front element of the queue?",
+    "thu_hang": {
+      "dense": 9,
+      "hybrid": null,
+      "hybrid+rerank": null
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": false
+    }
+  },
+  {
+    "course": "dsa",
+    "chunk_id": "b9cfd72e-0cff-4086-aef0-eabca7cb864f",
+    "cau_hoi": "During the shortest‑path loop, what exact inequality is tested before a vertex w’s distance is updated, and to what value is the distance set if the test succeeds?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 2,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "dsa",
+    "chunk_id": "b87f076d-b9dd-4e91-8374-1f0878297f89",
+    "cau_hoi": "In the sample code that creates an ArrayStack, which integer is pushed onto the stack immediately before the call to print2Console()?",
+    "thu_hang": {
+      "dense": 2,
+      "hybrid": 3,
+      "hybrid+rerank": 5
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "dsa",
+    "chunk_id": "57bf18c7-d971-4996-b1f3-f63849d9ad40",
+    "cau_hoi": "What are the signatures of the two `add` methods declared in the `IntSLinkedList` class?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 2
+    },
+    "adaptive_k": {
+      "k": 9,
+      "trung": true
+    }
+  },
+  {
+    "course": "dsa",
+    "chunk_id": "a423c86d-2a25-48ce-8743-d786626f2ce7",
+    "cau_hoi": "In the distance‑updating loop, under what condition are the node’s vertexFrom and distance fields updated?",
+    "thu_hang": {
+      "dense": 7,
+      "hybrid": 4,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "dsa",
+    "chunk_id": "59f9d46b-30f1-4a02-b528-004cec2e079f",
+    "cau_hoi": "According to the BreadthTopoSort procedure, which vertices are initially placed into the queue before the traversal begins?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "dsa",
+    "chunk_id": "45d01df5-e5b3-453f-a9b3-0d247df128b4",
+    "cau_hoi": "In AVL tree rebalancing, which rotation is applied to correct an out‑of‑balance condition caused by a right‑high subtree of a right‑high tree?",
+    "thu_hang": {
+      "dense": 4,
+      "hybrid": 4,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 11,
+      "trung": true
+    }
+  },
+  {
+    "course": "dsa",
+    "chunk_id": "ef52461f-8098-4314-9afb-a6fe7d6f6ed2",
+    "cau_hoi": "Who discovered the AVL tree and in what year?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "dsa",
+    "chunk_id": "fbeaf593-9dd5-4005-a9a3-2249e7a9060c",
+    "cau_hoi": "What are the three types of “Other linked lists” mentioned?",
+    "thu_hang": {
+      "dense": null,
+      "hybrid": 8,
+      "hybrid+rerank": 8
+    },
+    "adaptive_k": {
+      "k": 22,
+      "trung": true
+    }
+  },
+  {
+    "course": "dsa",
+    "chunk_id": "2083941c-e44d-4336-822e-a35ee43d5afe",
+    "cau_hoi": "In the search illustration, which three node identifiers are shown (e.g., head, temp, tail)?",
+    "thu_hang": {
+      "dense": 6,
+      "hybrid": 2,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "dsa",
+    "chunk_id": "29ec02ab-82ff-4030-aaeb-e47d8eccba30",
+    "cau_hoi": "In the linked‑list implementation of a stack, what are the names and types of the private member variables that store the stack’s top node and the element count?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 3,
+      "hybrid+rerank": 3
+    },
+    "adaptive_k": {
+      "k": 11,
+      "trung": true
+    }
+  },
+  {
+    "course": "dsa",
+    "chunk_id": "8d833190-8fae-4abd-8c11-53be33a17e99",
+    "cau_hoi": "In the `createQueue` algorithm, what values are assigned to `queue.count`, `queue.front`, and `queue.rear` during initialization?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "dsa",
+    "chunk_id": "557e523e-4eb3-4e1c-8a9e-da738986eef6",
+    "cau_hoi": "In the discussion of restricted lists, which two abstract data structures are highlighted, and what access order does each one follow (FIFO or LIFO)?",
+    "thu_hang": {
+      "dense": 2,
+      "hybrid": 2,
+      "hybrid+rerank": 3
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "dsa",
+    "chunk_id": "f0a6375f-d229-4b51-bf52-dbf55764e2c1",
+    "cau_hoi": "What is the value of the node labeled “pre” in the illustration of removing the last element?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 10,
+      "trung": true
+    }
+  },
+  {
+    "course": "dsa",
+    "chunk_id": "ec2f5a0e-1547-4916-92a7-d050bc7a4ad7",
+    "cau_hoi": "In the outline of the balanced‑trees lecture, which section heading is misspelled?",
+    "thu_hang": {
+      "dense": 4,
+      "hybrid": null,
+      "hybrid+rerank": 9
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": false
+    }
+  },
+  {
+    "course": "dsa",
+    "chunk_id": "ef1445d3-27dd-47e2-bf74-a101e27d5242",
+    "cau_hoi": "When is contiguous storage generally preferable for implementing a list, and what are the four specific criteria that justify its use?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "dsa",
+    "chunk_id": "46b2bd36-515e-417a-a660-aef9dcb0e447",
+    "cau_hoi": "In the DepthTopoSort algorithm, which vertex is selected first and where is it placed in the resulting list?",
+    "thu_hang": {
+      "dense": 5,
+      "hybrid": 3,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 10,
+      "trung": true
+    }
+  },
+  {
+    "course": "dsa",
+    "chunk_id": "d35b4a36-246a-461a-b79e-e44a62027b67",
+    "cau_hoi": "When balancing a tree in the “Left of Right” case, what two rotations are performed and in what order?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 3
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "dsa",
+    "chunk_id": "06b09600-beca-4d90-a8c5-ee3020d7e145",
+    "cau_hoi": "What are the three balance‑factor categories defined for an AVL node, and what exact height relationships correspond to left_higher (LH), equal_height (EH), and right_higher (RH)?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "dsa",
+    "chunk_id": "67541413-ae6b-48d9-b19e-161fc7734686",
+    "cau_hoi": "In the AVL Right Balance Algorithm, what rotation is performed and what balance values are assigned to `root` and `rightTree` in the “Right of right” case?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 15,
+      "trung": true
+    }
+  },
+  {
+    "course": "dsa",
+    "chunk_id": "55f6bf9c-c624-451f-adb7-eeb0a2093731",
+    "cau_hoi": "In the HeapSort algorithm shown, what expression is used to compute the initial value of the variable `position`?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 3
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "dsa",
+    "chunk_id": "9130f294-3d70-457e-8a9d-ef589e398059",
+    "cau_hoi": "What operation is defined as repairing a “broken” heap by floating the last element up the tree until it reaches its correct location?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "dsa",
+    "chunk_id": "8f943850-63a3-47e1-b915-ec1d93c4db1a",
+    "cau_hoi": "What exception type and message are thrown by IntArrayList::checkIndex when the provided index is outside the valid range?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "dsa",
+    "chunk_id": "bf445096-ab09-456d-98d8-ed4c829af68c",
+    "cau_hoi": "What are the two mandatory fields that each node in a singly linked list must contain according to the node definition?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "dsa",
+    "chunk_id": "855735f0-6cf6-4fea-9a35-7d3a7b81fcca",
+    "cau_hoi": "Which operation is described as repairing a broken heap by pushing the root down the tree until it reaches its correct location?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "dsa",
+    "chunk_id": "700a9d1a-14f6-4e96-aa64-33267b6d6b17",
+    "cau_hoi": "According to the description, in which year was Dijkstra's greedy algorithm for shortest paths introduced?",
+    "thu_hang": {
+      "dense": 4,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 9,
+      "trung": true
+    }
+  },
+  {
+    "course": "dsa",
+    "chunk_id": "2e1ef223-2310-47fc-bbde-ddca4b524f86",
+    "cau_hoi": "Which node is identified as out of balance with a “left of right” case in the AVL insertion example?",
+    "thu_hang": {
+      "dense": 4,
+      "hybrid": 5,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 13,
+      "trung": true
+    }
+  },
+  {
+    "course": "dsa",
+    "chunk_id": "eb348a5c-9c44-48c5-8fff-1635efba8638",
+    "cau_hoi": "In the circularly linked list diagram, what are the two components defined for each node?",
+    "thu_hang": {
+      "dense": 4,
+      "hybrid": null,
+      "hybrid+rerank": 6
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "dsa",
+    "chunk_id": "f986011c-7711-4b81-8101-bc78333dadff",
+    "cau_hoi": "When inserting the key 15 as illustrated, which node values are shown in the tree before the insertion?",
+    "thu_hang": {
+      "dense": 4,
+      "hybrid": null,
+      "hybrid+rerank": null
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": false
+    }
+  },
+  {
+    "course": "dsa",
+    "chunk_id": "b2738131-6a1b-49be-949b-a78a3958303b",
+    "cau_hoi": "What are the two procedures mentioned that are used to restore the heap property after inserting or deleting a node?",
+    "thu_hang": {
+      "dense": null,
+      "hybrid": null,
+      "hybrid+rerank": null
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": false
+    }
+  },
+  {
+    "course": "dsa",
+    "chunk_id": "085f9e4c-32c1-4c8c-9c58-baf212cc50fa",
+    "cau_hoi": "When searching for the key 5 in the illustrated splay‑tree example, which splay rotation is performed?",
+    "thu_hang": {
+      "dense": 4,
+      "hybrid": 4,
+      "hybrid+rerank": 2
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "dsa",
+    "chunk_id": "eba0895e-6d96-4eea-b074-6ad39de090a2",
+    "cau_hoi": "What are the three suggested approaches for representing a sparse matrix mentioned in the notes?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 2,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "dsa",
+    "chunk_id": "91f76a90-0745-4f38-8647-a0332c6e15b0",
+    "cau_hoi": "What operation must be performed on subsequent elements when inserting or deleting an element in an array, and why does accessing a specific element in a singly linked list typically take longer than in an array?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "dsa",
+    "chunk_id": "b252272a-d648-4166-89b4-6ddb0ef21805",
+    "cau_hoi": "What node values are listed in the AVL Insertion example diagram?",
+    "thu_hang": {
+      "dense": 9,
+      "hybrid": 5,
+      "hybrid+rerank": 5
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "dsa",
+    "chunk_id": "73d05e1b-e75a-4f74-ba66-82d1fe904ae2",
+    "cau_hoi": "In the IntSLinkedList class definition, which line contains the forward declaration of the nested Node class?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "operating-system",
+    "chunk_id": "8422894d-1295-410b-998e-0c3a066bf7b4",
+    "cau_hoi": "If several processes are queued on a condition variable x and x.signal() is executed, which process is resumed under the conditional‑wait construct that uses a priority number c?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "operating-system",
+    "chunk_id": "0900ad63-6aab-4373-97c3-fa9a534e758d",
+    "cau_hoi": "What are the two types of thread cancellation of a target thread described?",
+    "thu_hang": {
+      "dense": 3,
+      "hybrid": 3,
+      "hybrid+rerank": 3
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "operating-system",
+    "chunk_id": "cc170323-04d6-45ae-9ed5-e23459e798d9",
+    "cau_hoi": "According to the SJF scheduling example, what is the calculated average waiting time for the four processes?",
+    "thu_hang": {
+      "dense": 5,
+      "hybrid": 4,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 14,
+      "trung": true
+    }
+  },
+  {
+    "course": "operating-system",
+    "chunk_id": "eb87bb89-a577-4bdc-8f1a-894152da8426",
+    "cau_hoi": "When a process invokes fork() in UNIX, is only the calling thread duplicated in the child process, or are all of the original process’s threads duplicated?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "operating-system",
+    "chunk_id": "5765b90b-8ee4-463c-86cf-32757e44ce6d",
+    "cau_hoi": "What is the average waiting time reported for the priority scheduling example (without round‑robin)?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "operating-system",
+    "chunk_id": "2fb5ef72-db24-4f76-8de5-3ba76397ed3f",
+    "cau_hoi": "What are the three most common APIs listed for accessing system calls, and which of them is used for POSIX‑based systems (including virtually all versions of UNIX, Linux, and Mac OS X)?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "operating-system",
+    "chunk_id": "2259b534-296d-40aa-bf9a-ff68fe18b0d5",
+    "cau_hoi": "In modern general‑purpose systems, which type of libraries are loaded on demand and shared by all processes that use the same version?",
+    "thu_hang": {
+      "dense": 3,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "operating-system",
+    "chunk_id": "5db91f4f-090b-4769-beb8-a1e8e4e5a35c",
+    "cau_hoi": "Which organization initiated the free and open‑source operating‑system movement and introduced the copyleft GNU General Public License (GPL)?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "operating-system",
+    "chunk_id": "741240ed-f9fa-438e-9b41-e1a8ff1960e2",
+    "cau_hoi": "According to the classification presented, what are the four components of a computer system, and can you give one specific example for each component?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "operating-system",
+    "chunk_id": "19b9ade1-e65b-44d6-9050-85e4abb60a06",
+    "cau_hoi": "In the monitor ResourceAllocator, what is the name of the condition variable that processes wait on when the resource is busy?",
+    "thu_hang": {
+      "dense": 2,
+      "hybrid": 2,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "operating-system",
+    "chunk_id": "63004258-0fe8-40ca-b083-94e2b897b0e3",
+    "cau_hoi": "Which type of system call is described as handling protection, controlling access to resources, getting and setting permissions, and allowing or denying user access?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "operating-system",
+    "chunk_id": "ba2560ea-6165-44a4-a5ad-45f43ddbb3c8",
+    "cau_hoi": "What are the two execution options for a parent process regarding its children, and how is the child’s address space described when a new process is created?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "operating-system",
+    "chunk_id": "27df3c2e-2f3b-4d5e-bdbe-3dbe532a50e6",
+    "cau_hoi": "In the memory‑barrier example that guarantees Thread 1 prints 100, where are the memory_barrier() calls inserted in Thread 1 and in Thread 2?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "operating-system",
+    "chunk_id": "aa24c4d6-b3f7-41b5-866a-2e1442af7692",
+    "cau_hoi": "What are the five specific activities that the operating system performs in connection with process management?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "operating-system",
+    "chunk_id": "fd42aca1-a9ed-44e1-a07f-7ac38ad7edc9",
+    "cau_hoi": "In the virtualization diagram, which component is positioned directly above the hardware layer and below the virtual machines (VM1, VM2, VM3)?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "operating-system",
+    "chunk_id": "ae404735-521f-4048-9e58-f02d5569636c",
+    "cau_hoi": "I wonder, which type of pipe supports bidirectional communication, does not require a parent‑child relationship, and can be used by multiple processes on both UNIX and Windows?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "operating-system",
+    "chunk_id": "0e4daac1-8459-40f2-87a5-5f874ce7a41c",
+    "cau_hoi": "In the producer code for the bounded‑buffer problem, which variable is incremented after placing an item into the buffer, and what value is it initialized to?",
+    "thu_hang": {
+      "dense": 7,
+      "hybrid": 4,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "operating-system",
+    "chunk_id": "6e47c7f0-a777-4151-911d-3e809a651317",
+    "cau_hoi": "What hardware feature is used to differentiate user code from kernel code, and how does a system call affect its state?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "operating-system",
+    "chunk_id": "30e76123-ceba-4ae6-a3e4-b62d60642e1f",
+    "cau_hoi": "In the producer process code, which expression is used to detect that the buffer is full before writing a new item?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 4,
+      "hybrid+rerank": 5
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "operating-system",
+    "chunk_id": "c7e48930-d5a2-481a-843b-473e887d3c1a",
+    "cau_hoi": "In a microkernel system structure, what is the name of the mechanism that allows each core component to be loaded on demand and communicate through known interfaces?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "operating-system",
+    "chunk_id": "6137386a-2899-4d65-9aee-23df2796197d",
+    "cau_hoi": "What are the two scheduling queues described, and how do the processes in each queue differ?",
+    "thu_hang": {
+      "dense": 2,
+      "hybrid": 3,
+      "hybrid+rerank": 4
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "operating-system",
+    "chunk_id": "7cf08db6-db39-43eb-b6d2-83bf3b2ac6f3",
+    "cau_hoi": "What initial value is assigned to `thread_flag` in the `initialize_flag` function?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "operating-system",
+    "chunk_id": "c996449b-2e26-4976-b420-2e55fb4df6a0",
+    "cau_hoi": "In the consumer–message passing model, what are the three possible capacities for a message queue attached to a link, and how does the sender’s behavior differ for each (zero capacity, bounded capacity, and unbounded capacity)?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "operating-system",
+    "chunk_id": "734ffaa8-5674-4f5c-a294-dfe72f4a4695",
+    "cau_hoi": "What is the term used for a string of n binary digits that represents the status of n items?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "operating-system",
+    "chunk_id": "30ef66bb-e799-4f06-90da-66c1b023bc60",
+    "cau_hoi": "What information does each entry in the device‑status table contain for an I/O device?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "operating-system",
+    "chunk_id": "bd7f7ae5-0ef0-424d-ba8e-4fd89005b1e7",
+    "cau_hoi": "Which method of system‑call parameter passing stores the parameters in a memory block and passes the block’s address in a register, and which operating systems are cited as using this approach?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "operating-system",
+    "chunk_id": "b1b2b9ff-6455-430d-b8e7-90fc13598997",
+    "cau_hoi": "In the solution to the Dining Philosophers problem, what two operations does each philosopher i invoke, and in what order are they called?",
+    "thu_hang": {
+      "dense": 3,
+      "hybrid": 3,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 9,
+      "trung": true
+    }
+  },
+  {
+    "course": "operating-system",
+    "chunk_id": "bfbc559d-c373-4a7d-a99c-5d24381364ec",
+    "cau_hoi": "What virtualization method is described as the generally slowest and is used when the source CPU type differs from the target CPU type (e.g., PowerPC to Intel x86)?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "operating-system",
+    "chunk_id": "e71b693e-e5a7-4448-b626-9a28342a6f78",
+    "cau_hoi": "What are the four parameters required by pthread_create(), and what specific types must each of them have?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "operating-system",
+    "chunk_id": "4d2e66fc-a90d-425f-b54b-97bfa9f8dfdb",
+    "cau_hoi": "According to the POSIX synchronization examples, which type of lock must be associated with a POSIX condition variable to provide mutual exclusion?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 14,
+      "trung": true
+    }
+  },
+  {
+    "course": "operating-system",
+    "chunk_id": "af18bd30-8b41-4088-9236-4f53a9ea4aab",
+    "cau_hoi": "Which synchronization mechanisms does Java offer directly at the language level, and which ones are provided through its API?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "operating-system",
+    "chunk_id": "e828d3fe-d620-49f2-b14d-99eb0cf5de88",
+    "cau_hoi": "When calling system() with a NULL argument, what value does it return if a shell is available, and what value does it return if no shell is available?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "operating-system",
+    "chunk_id": "e3276db3-f276-4024-892e-973b6c6e6f41",
+    "cau_hoi": "Which kernel is partially based on Mach and is used in Mac OS X?",
+    "thu_hang": {
+      "dense": 2,
+      "hybrid": 2,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "operating-system",
+    "chunk_id": "f8789b85-1d0c-40db-a031-1bd738a3fbff",
+    "cau_hoi": "What type of interrupt is generated by a division‑by‑zero error in the operating‑system operations described?",
+    "thu_hang": {
+      "dense": 2,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "operating-system",
+    "chunk_id": "1ca5057b-6018-4041-8f6e-e3e9b67055e7",
+    "cau_hoi": "What are the burst times for processes P₁, P₂, and P₃ in the Round Robin example with time quantum q = 4?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "operating-system",
+    "chunk_id": "bbba17d7-7062-465d-a472-665a9679311d",
+    "cau_hoi": "In the example program, which two constant values are compared against the variable `scope` after calling `pthread_attr_getscope`?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 2
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "operating-system",
+    "chunk_id": "cb91332c-66cd-48c7-acf4-a217111dcdc5",
+    "cau_hoi": "Which operating systems are listed as being available in both source and binary formats?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "operating-system",
+    "chunk_id": "963d8784-ab2c-4bae-8f3a-d1c9cc65a222",
+    "cau_hoi": "How many main sections are listed in the Chapter 4 outline on Threads & Concurrency?",
+    "thu_hang": {
+      "dense": 2,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "operating-system",
+    "chunk_id": "e2b627d1-5054-432b-9e22-54a9168cb022",
+    "cau_hoi": "According to the description of the original UNIX OS, what are the two separable components that make up its structure?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "operating-system",
+    "chunk_id": "3d352fb6-b67e-4261-b6b6-fe6b1e749aba",
+    "cau_hoi": "What alternative name is given to the Process Control Block (PCB) in the text?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "operating-system",
+    "chunk_id": "7459c80c-e0f7-4223-808c-7683438da711",
+    "cau_hoi": "In the monitor bounded_buffer, which condition variable does the produce operation signal after inserting a resource?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 2
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "operating-system",
+    "chunk_id": "99e9a16a-ebbd-45b0-82de-03caa9a67d29",
+    "cau_hoi": "Which type of POSIX semaphore can be used by unrelated processes: the named version or the unnamed version?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "operating-system",
+    "chunk_id": "b80e0cd9-576d-455d-b50d-fb2068102266",
+    "cau_hoi": "In the producer process for the bounded‑buffer problem, which semaphore is waited on first, and what are the initial values assigned to the semaphores mutex, full, and empty?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "operating-system",
+    "chunk_id": "ec405f49-3cdf-4b5c-ac2e-f0d49a9b51d0",
+    "cau_hoi": "Which objective listed for the introductory chapter includes illustrating the transition from user mode to kernel mode?",
+    "thu_hang": {
+      "dense": 2,
+      "hybrid": 2,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "operating-system",
+    "chunk_id": "13ccea91-7e1a-41f7-8a34-37e4b6c37e5e",
+    "cau_hoi": "What are the three system configurations listed under the Dual‑Core Design in the symmetric multiprocessing architecture discussion?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "operating-system",
+    "chunk_id": "886d4b85-52bd-4c8a-9fda-3b3fe76d1a16",
+    "cau_hoi": "What term describes a child process whose parent has terminated without invoking wait()?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "operating-system",
+    "chunk_id": "191d3a68-a3c6-4c09-b3e2-11147b378697",
+    "cau_hoi": "What is the name of the kernel variable that can experience a race condition when processes P₀ and P₁ create child processes using the fork() system call?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "operating-system",
+    "chunk_id": "1a63acaa-337b-4e65-889c-446cf7a5b9ce",
+    "cau_hoi": "If a user‑level thread becomes blocked, what happens to its peer threads, and what is the reason for this behavior?",
+    "thu_hang": {
+      "dense": 9,
+      "hybrid": 2,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "operating-system",
+    "chunk_id": "1b18d691-d95f-492f-8998-2a5c080e5c56",
+    "cau_hoi": "In the many‑to‑one threading model, which two systems are cited as examples of its implementation?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  },
+  {
+    "course": "operating-system",
+    "chunk_id": "a07aa7fb-ff2a-40bd-b2bf-51ddc0b083ec",
+    "cau_hoi": "Which system call does a process invoke to ask the operating system to delete it after executing its last statement, and how does the parent retrieve the child's exit status?",
+    "thu_hang": {
+      "dense": 1,
+      "hybrid": 1,
+      "hybrid+rerank": 1
+    },
+    "adaptive_k": {
+      "k": 8,
+      "trung": true
+    }
+  }
+]

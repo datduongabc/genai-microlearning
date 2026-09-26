@@ -33,22 +33,15 @@ RUN adduser \
     appuser \
     && chown appuser:appuser /app
 
-# Doi sang nguoi dung thuong TRUOC khi cai dat, khong phai sau. Hai ly do:
-# moi thu tao ra da thuoc dung chu so huu nen khong can `chown -R` o cuoi, ma
-# lenh do buoc Docker chep lai ca thu muc .venv 1,5 GB sang mot lop moi chi de
-# doi quyen; va mo hinh tai ve nam trong cache cua chinh nguoi dung se chay ung
-# dung, thay vi nam trong /root/.cache ma nguoi dung do khong doc duoc va phai
-# tai lai luc chay.
+# Doi sang nguoi dung thuong TRUOC khi cai dat, khong phai sau: moi thu tao ra
+# da thuoc dung chu so huu nen khong can `chown -R` o cuoi, ma lenh do buoc
+# Docker chep lai ca thu muc .venv sang mot lop moi chi de doi quyen.
 USER appuser
 
 COPY --chown=appuser:appuser pyproject.toml uv.lock ./
 
 RUN --mount=type=cache,target=/home/appuser/.cache/uv,uid=10001,gid=10001 \
     uv sync --frozen --no-dev
-
-# Tai san mo hinh rerank vao anh, de lan chay dau tien khong phai cho tai ve.
-# Khong con nap all-MiniLM-L6-v2: tu khi nhung qua gateway thi khong ai dung no nua.
-RUN uv run python -c "from sentence_transformers import CrossEncoder; CrossEncoder('BAAI/bge-reranker-base')"
 
 COPY --chown=appuser:appuser . .
 

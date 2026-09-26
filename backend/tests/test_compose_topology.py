@@ -79,6 +79,13 @@ def test_the_proxy_terminates_https_in_front_of_the_backend_and_frontend(service
     assert any(str(volume).startswith("./devops/caddy/Caddyfile") for volume in proxy["volumes"])
 
 
+def test_the_backend_reaches_the_reranker_inside_the_compose_network(services):
+    """The reranker holds no secret and needs no port on the host: only the backend calls it."""
+    assert _environment(services["backend"])["RERANKER_URL"] == "http://reranker:80"
+    assert services["backend"]["depends_on"]["reranker"]["condition"] == "service_healthy"
+    assert "ports" not in services["reranker"]
+
+
 def test_the_backend_believes_forwarded_addresses_only_from_the_compose_network(services):
     trusted = _environment(services["backend"])["FORWARDED_ALLOW_IPS"]
 

@@ -119,6 +119,40 @@ services:
       # Lan dau con phai tai model.
       start_period: 15m
 
+  # Cross-encoder cham lai cac chunk ung vien cua moi lan truy xuat. Do lai tren 250 cau
+  # hoi cua 5 mon voi nhung Qwen3: dua chunk dung len dau nhieu hon co y nghia, khong mon
+  # nao kem di, xem docs/measurements/2026-09-26-rerank-qwen3.md. Chay trong container
+  # rieng de anh backend khong phai mang torch. Ban ONNX cua chinh kho BAAI, chay tren CPU.
+  # Chi backend goi toi no, nen khong mo cong nao ra may that.
+  reranker:
+    image: ghcr.io/huggingface/text-embeddings-inference:cpu-1.9.4
+    container_name: do-an-reranker
+    command:
+      - --model-id
+      - BAAI/bge-reranker-base
+      # Ghim commit nhu embedder: diem cua model khac thi Adaptive-k cat o cho khac.
+      - --revision
+      - 2cfc18c9415c912f9d8155881c133215df768a70
+      # Backend gui toi 30 ung vien mot lan (candidate_k trong retrieval/search.py); mac
+      # dinh 32 thi sat nguong.
+      - --max-client-batch-size
+      - "64"
+    # ONNX Runtime mo mot luong cho moi nhan CPU no thay, va RAM tang theo: tren may 20
+    # nhan no giu khoang 6 GB, gioi han 4 nhan thi khoang 2,2 GB ma van cham 30 ung vien
+    # trong khoang 5,5 giay, nhanh ngang 8 nhan. May it hon 4 nhan dat RERANKER_CPUS
+    # trong .env, vi Docker tu choi so nhan lon hon so may co.
+    cpus: ${RERANKER_CPUS:-4}
+    volumes:
+      # Tai model mot lan (khoang 1,1 GB) roi giu lai qua cac lan tao lai container.
+      - reranker_models:/data
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:80/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      # Lan dau con phai tai model.
+      start_period: 15m
+
   gateway:
     build: ./devops/gateway
     container_name: do-an-gateway
@@ -157,6 +191,9 @@ services:
       # hong o buoc nhung.
       embedder:
         condition: service_healthy
+      # Moi lan truy xuat cua LO, Content va cau hoi deu di qua no.
+      reranker:
+        condition: service_healthy
     environment:
       # Khong co URL cua vai tro chu so huu: tien trinh nay chay bang hai vai tro
       # bi Row Level Security rang buoc.
@@ -172,6 +209,7 @@ services:
       MOODLE_WWWROOT: ${MOODLE_WWWROOT}
       LLM_GATEWAY_URL: http://gateway:4000
       LLM_GATEWAY_KEY: ${LLM_GATEWAY_KEY}
+      RERANKER_URL: http://reranker:80
       FORWARDED_ALLOW_IPS: 172.16.0.0/12,192.168.0.0/16,10.0.0.0/8
     ports:
       - 127.0.0.1:8000:8000
@@ -217,6 +255,7 @@ services:
 volumes:
   db_data:
   embedder_models:
+  reranker_models:
   moodle_data:
   caddy_data:
   caddy_config:
