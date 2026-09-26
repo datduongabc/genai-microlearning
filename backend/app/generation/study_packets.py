@@ -7,9 +7,13 @@ mà pipeline RAG đã dùng để đặt Learning Objective, trong đúng phạm
 RAG đã trích dẫn thì bản RAG được chấm trên những gì nó tự chọn, và được lợi.
 
 Gói chỉ chứa nội dung, không chứa gì lộ nhóm hay nguồn (tên tệp, tên môn, tên model); mã ẩn danh do
-phân hệ nghiên cứu gán khi nạp gói.
+phân hệ nghiên cứu gán khi nạp gói. Nhóm, mã cặp và model đã sinh nằm ở tệp nghiên cứu bọc ngoài gói
+(StudyFile), dành cho người nghiên cứu và bước chấm, không bao giờ đưa cho người hay mô hình chấm.
 """
 
+from typing import Literal
+
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from app.generation import no_rag
@@ -26,6 +30,16 @@ from app.retrieval.search import ChunkScope, retrieve
 
 # Cùng số đoạn tối thiểu mà pipeline RAG lấy khi đặt Learning Objective.
 REFERENCE_MIN_K = 8
+
+
+class StudyFile(BaseModel):
+    """Một tệp của thư mục nghiên cứu: gói đem chấm cùng những gì chỉ người nghiên cứu được biết.
+    `generator_model` là alias gateway đã sinh gói, để bước chấm từ chối mô hình chấm cùng hãng."""
+
+    pair_id: str
+    group: Literal["rag_llm", "llm_no_rag"]
+    generator_model: str
+    packet: ModuleContentInput
 
 
 class IncompleteModuleError(ValueError):

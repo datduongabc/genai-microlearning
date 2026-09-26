@@ -200,7 +200,7 @@ def test_worker_chay_luot_sinh_bang_dung_model_trong_payload(monkeypatch):
     thay = {}
 
     def gia_lap_sinh(db, doc, section=None):
-        thay["model"] = llm._active_model()
+        thay["model"] = llm.active_model()
         # Tạo Module thật chứ không trả về đối tượng giả: bước worker gán job.module_id nên
         # một id không có trong bảng modules sẽ vi phạm khoá ngoại.
         module = Module(document_id=doc.id, course_id=doc.course_id, title="M")

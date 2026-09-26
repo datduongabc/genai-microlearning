@@ -34,7 +34,7 @@ def using_model(alias: str | None):
         _model_da_chon.reset(token)
 
 
-def _active_model() -> str:
+def active_model() -> str:
     da_chon = _model_da_chon.get()
     if da_chon:
         return da_chon
@@ -45,7 +45,7 @@ def _completion(**kwargs):
     # "openai/" only means "speak the OpenAI-compatible protocol to api_base";
     # the gateway decides which provider actually serves the alias.
     return litellm.completion(
-        model=f"openai/{_active_model()}",
+        model=f"openai/{active_model()}",
         api_base=settings.llm_gateway_url,
         api_key=settings.llm_gateway_key,
         **kwargs,

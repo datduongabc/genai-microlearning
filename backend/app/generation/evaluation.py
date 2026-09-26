@@ -1,15 +1,11 @@
-"""LLM-as-judge evaluation for the GD2 Human vs LLM-no-RAG vs RAG+LLM study
-(muc 2.2, AI_Microlearning_LMS_Architecture_GD2.md). Scores a group-agnostic
-ModuleContentInput packet against the 9-criteria rubric in
-AI_Microlearning_LMS_Rubric_GD2.md -- the same rubric human raters use, so
-the two can be compared for agreement (Tuan 7 checklist).
+"""LLM chấm (LLM-as-judge) cho nghiên cứu RAG so với không RAG: chấm một gói nội dung module
+(ModuleContentInput) theo rubric chín tiêu chí ở docs/rubric.md, đúng rubric mà người chấm dùng, để
+so được độ đồng thuận giữa mô hình chấm và người.
 
-Deliberately does not query the DB by module_id: two of the three study
-groups (Human-created, LLM-no-RAG) never exist as real Module rows in this
-app's schema, so the input has to be a self-contained packet regardless of
-source. export_blind_packet.py (scripts/) builds this shape from a real
-Module for the RAG+LLM group; the other two groups are authored directly
-into this shape (see gd2_evaluation/TEMPLATE_packet.json).
+Không đọc module từ database: bản không RAG không bao giờ là một Module thật, nên đầu vào phải là
+một gói tự đủ, cùng một cấu trúc cho mọi nhóm. scripts/export_study_pair.py xuất cặp gói của một
+module, scripts/run_judge.py gọi judge_module cho cả thư mục gói, scripts/analyze_study.py tính
+thống kê trên kết quả.
 """
 
 from pydantic import BaseModel, Field
