@@ -130,7 +130,7 @@ def _save_questions(db: Session, module_id: uuid.UUID, asked: list[_Asked], self
         component = ModuleComponent(
             module_id=module_id,
             type=component_type,
-            content={"questions": [
+            content={"self_checked": self_check, "questions": [
                 {
                     "target": a.target,
                     "passed": a.state.get("passed", False),

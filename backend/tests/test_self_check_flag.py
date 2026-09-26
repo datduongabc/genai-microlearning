@@ -22,7 +22,7 @@ from app.generation.planner import Concept, PlannerOutput
 from app.generation.quiz_graph import QuizQuestion
 from app.generation.relevance import RelevanceCheck
 from app.generation.slides import Slide, SlidesOutput
-from app.models import Chunk, Course, Document, DocumentStatus, Evaluation, User, UserRole
+from app.models import Chunk, ComponentType, Course, Document, DocumentStatus, Evaluation, ModuleComponent, User, UserRole
 
 SUB_OBJECTIVES = ["Nêu định nghĩa", "Phân biệt hai trường hợp", "Giải thích vai trò"]
 
@@ -140,6 +140,22 @@ def test_without_self_check_one_module_costs_14_calls(document, llm):
     assert len(llm) == 14
     assert "ContentVerification" not in llm and "GroundednessAnswerabilityCheck" not in llm
     assert criteria == {"content_relevance_pass"}
+
+
+@pytest.mark.parametrize("self_check", [True, False])
+def test_question_components_record_whether_they_were_self_checked(document, llm, self_check):
+    db = SessionLocal()
+    try:
+        module = pipeline.run_module_generation(db, db.get(Document, document["doc"]), self_check=self_check)
+        components = db.query(ModuleComponent).filter(
+            ModuleComponent.module_id == module.id,
+            ModuleComponent.type.in_([ComponentType.quiz, ComponentType.practice]),
+        ).all()
+    finally:
+        db.close()
+
+    assert len(components) == 2
+    assert all(c.content["self_checked"] is self_check for c in components)
 
 
 def test_evaluations_keep_only_content_and_quiz_criteria(document, llm):
