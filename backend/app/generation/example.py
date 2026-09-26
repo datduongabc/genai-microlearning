@@ -1,5 +1,4 @@
-"""Examples: worked applications of the lesson, at most one per sub-objective, checked not to
-overreach their source."""
+"""Examples: worked applications of the lesson, at most one per sub-objective."""
 
 from pydantic import BaseModel, Field
 
@@ -55,107 +54,19 @@ class ExampleOutput(BaseModel):
     )
 
 
-# Tầng 3 (GD2, cùng pattern LO/Content/Slides/Explanation): Example là thành
-# phần CUỐI CÙNG trong 7 thành phần thiếu bước kiểm tra sau khi sinh. Khác
-# các thành phần kia, Example được PHÉP sáng tạo tình huống mới -- nên không
-# kiểm groundedness (không áp dụng), mà kiểm 3 tiêu chí khác: tình huống có
-# thực sự minh họa đúng khái niệm không (không lạc đề/mâu thuẫn), có bị lợi
-# dụng để "tuồn" thêm dữ kiện mới vào như thể đã có trong Content không
-# (ràng buộc 1 trong prompt, chưa từng verify), và văn phong/thuật ngữ có
-# nhất quán với nguồn (few-shot) không.
-MAX_EXAMPLE_CORRECTION_RETRY = 1
-
-EXAMPLE_VERIFY_SYSTEM_INSTRUCTION = IGNORE_EMBEDDED_INSTRUCTIONS + """Bạn là bộ kiểm tra chất lượng Example (Critic), dựa trên Content và các
-đoạn nguồn được cung cấp.
-
-Chấm đúng 3 tiêu chí:
-Mỗi tiêu chí xét trên TỪNG Example trong danh sách: chỉ cần 1 Example vi
-phạm là tiêu chí đó fail, và lý do phải nêu rõ Example số mấy.
-
-- consistency_pass: bối cảnh (context) và phân tích (analysis) có thực sự
-  minh họa ĐÚNG khái niệm trong Content không, hay lạc đề/mâu thuẫn với
-  Content?
-- no_overreach_pass: Example được PHÉP sáng tạo 1 tình huống minh họa mới,
-  nhưng KHÔNG được dùng tình huống đó để khẳng định thêm dữ kiện/tính chất
-  MỚI về chính khái niệm đang học (những dữ kiện không có trong Content) --
-  chỉ được minh họa khái niệm đã có, không mở rộng thêm hiểu biết về nó.
-  Nếu analysis suy ra thêm 1 đặc tính/quy tắc mới của khái niệm mà Content
-  không hề nói tới, đặt fail.
-- style_pass: văn phong và thuật ngữ dùng trong context/analysis có nhất
-  quán với văn phong/thuật ngữ của source chunk (few-shot) không?
-
-Nếu vi phạm bất kỳ tiêu chí nào, đặt pass=false và nêu rõ lý do cụ thể (để
-dùng làm feedback sinh lại).
-"""
-
-
-class ExampleVerification(BaseModel):
-    consistency_pass: bool
-    consistency_reason: str
-    no_overreach_pass: bool
-    no_overreach_reason: str
-    style_pass: bool
-    style_reason: str
-
-
-def _format_examples(example_out: ExampleOutput) -> str:
-    return "\n".join(
-        f"Example {n}:\n  context: {e.context}\n  analysis: {e.analysis}"
-        for n, e in enumerate(example_out.examples, start=1)
-    )
-
-
-def _verify_example(example_out: ExampleOutput, content: str, context_chunks: list[Chunk]) -> ExampleVerification:
-    prompt = (
-        f"CONTENT:\n{content}\n\n"
-        f"CÁC EXAMPLE ĐÃ SINH:\n{_format_examples(example_out)}\n\n"
-        f"{format_source_chunks(context_chunks)}\n\n"
-        f"Kiểm tra consistency_pass, no_overreach_pass, style_pass của các Example trên."
-    )
-    return complete_structured(
-        prompt, ExampleVerification, system_instruction=EXAMPLE_VERIFY_SYSTEM_INSTRUCTION, temperature=0.0
-    )
-
-
-def generate_example(
-    lo: LearningObjective, content: str, context_chunks: list[Chunk]
-) -> tuple[ExampleOutput, ExampleVerification]:
-    feedback: str | None = None
-    example_out: ExampleOutput | None = None
-    check: ExampleVerification | None = None
+def generate_example(lo: LearningObjective, content: str, context_chunks: list[Chunk]) -> ExampleOutput:
+    """One call, no self-check round: the schema caps the count (1-4, at most one per sub-objective),
+    and an example may invent its situation, so there is no source to hold it against."""
     sub_objectives_text = "\n".join(f"- {so}" for so in lo.sub_objectives)
-    for _ in range(MAX_EXAMPLE_CORRECTION_RETRY + 1):
-        prompt = (
-            f"LEARNING OBJECTIVE: {lo.objective_text}\n"
-            f"SUB-OBJECTIVES (tối đa 1 Example cho mỗi cái):\n{sub_objectives_text}\n\n"
-            f"CONTENT:\n{content}\n\n"
-            f"{format_source_chunks(context_chunks)}\n\n"
-            f"Viết các Example cho Learning Objective/Content trên, tham khảo văn phong/thuật ngữ từ các SOURCE CHUNK (few-shot)."
-        )
-        if feedback:
-            prompt += (
-                f"\n\nLƯU Ý: lần sinh trước KHÔNG ĐẠT vì lý do sau -- sửa đúng lỗi này, "
-                f"không lặp lại: {feedback}"
-            )
-        # temperature=0.0: du Example duoc phep sang tao tinh huong moi, viec
-        # LUA CHON tinh huong nao + phan tich no van nen nhat quan/co the du
-        # doan duoc giua cac lan goi, khong can bien thien ngau nhien -- nhat
-        # quan voi phan con lai cua pipeline.
-        example_out = complete_structured(
-            prompt, ExampleOutput, system_instruction=EXAMPLE_SYSTEM_INSTRUCTION, temperature=0.0
-        )
-
-        check = _verify_example(example_out, content, context_chunks)
-        if check.consistency_pass and check.no_overreach_pass and check.style_pass:
-            return example_out, check
-
-        reasons = []
-        if not check.consistency_pass:
-            reasons.append(f"Consistency fail: {check.consistency_reason}")
-        if not check.no_overreach_pass:
-            reasons.append(f"Overreach fail: {check.no_overreach_reason}")
-        if not check.style_pass:
-            reasons.append(f"Style fail: {check.style_reason}")
-        feedback = "; ".join(reasons)
-
-    return example_out, check  # best-effort sau khi hết retry budget, giống pattern LO/Content/Slides/Explanation
+    prompt = (
+        f"LEARNING OBJECTIVE: {lo.objective_text}\n"
+        f"SUB-OBJECTIVES (tối đa 1 Example cho mỗi cái):\n{sub_objectives_text}\n\n"
+        f"CONTENT:\n{content}\n\n"
+        f"{format_source_chunks(context_chunks)}\n\n"
+        f"Viết các Example cho Learning Objective/Content trên, tham khảo văn phong/thuật ngữ từ các SOURCE CHUNK (few-shot)."
+    )
+    # temperature=0.0: du Example duoc phep sang tao tinh huong moi, viec
+    # LUA CHON tinh huong nao + phan tich no van nen nhat quan/co the du
+    # doan duoc giua cac lan goi, khong can bien thien ngau nhien -- nhat
+    # quan voi phan con lai cua pipeline.
+    return complete_structured(prompt, ExampleOutput, system_instruction=EXAMPLE_SYSTEM_INSTRUCTION, temperature=0.0)

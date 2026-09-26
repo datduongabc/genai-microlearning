@@ -70,9 +70,8 @@ class ContentOutput(BaseModel):
     )
 
 
-# Tầng 3 (GD2, giống LO/Quiz): Content trước đây sinh 1 lần, không ai kiểm
-# lại -- đây là lỗ hổng cuối cùng trong 7 thành phần (LO và Quiz/Practice đã
-# vá). Nghiên cứu thật (claim-by-claim verification -- xem checklist GD2)
+# Tầng 3 (GD2): Content và Quiz/Practice là hai bước còn giữ vòng tự kiểm --
+# mọi bước sau đọc lại Content, nên lỗi ở đây lan ra cả module. Nghiên cứu thật (claim-by-claim verification -- xem checklist GD2)
 # xác nhận dạng lỗi RAG phổ biến nhất là "unfaithfulness": model CÓ nguồn
 # đúng nhưng bỏ sót/hiểu sai/chỉ lấy phần tiện, không phải bịa từ hư không --
 # khó bắt bằng mắt thường, cần kiểm chứng độc lập.
@@ -134,8 +133,10 @@ def _verify_content(content_out: ContentOutput, lo: LearningObjective, context_c
 
 
 def generate_content(
-    lo: LearningObjective, context_chunks: list[Chunk]
-) -> tuple[ContentOutput, ContentVerification]:
+    lo: LearningObjective, context_chunks: list[Chunk], self_check: bool = True
+) -> tuple[ContentOutput, ContentVerification | None]:
+    """With `self_check` off the lesson is written once and nothing checks it (the check is None):
+    the arm of the self-check ablation."""
     sub_objectives_text = "\n".join(f"- {so}" for so in lo.sub_objectives)
     feedback: str | None = None
     content_out: ContentOutput | None = None
@@ -160,6 +161,8 @@ def generate_content(
             prompt, ContentOutput, system_instruction=CONTENT_SYSTEM_INSTRUCTION, temperature=0.0
         )
 
+        if not self_check:
+            return content_out, None
         check = _verify_content(content_out, lo, context_chunks)
         if check.groundedness_pass and check.completeness_pass and check.scope_pass:
             return content_out, check
@@ -173,4 +176,4 @@ def generate_content(
             reasons.append(f"Scope fail: {check.scope_reason}")
         feedback = "; ".join(reasons)
 
-    return content_out, check  # best-effort sau khi hết retry budget, giống pattern LO/quiz_graph.py
+    return content_out, check  # best-effort sau khi hết retry budget, giống pattern quiz_graph.py

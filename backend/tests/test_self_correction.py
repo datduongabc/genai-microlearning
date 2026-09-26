@@ -1,7 +1,8 @@
-"""Hợp đồng chung của bốn bước sinh có tự kiểm (Learning Objective, Content, Slides, Example):
-sinh xong thì cho model tự kiểm theo từng tiêu chí; trượt tiêu chí nào thì sinh lại một lần và
-nói rõ lý do trượt; hết lượt thì trả về bản cuối cùng kèm kết quả kiểm, không ném lỗi, để cả
-module vẫn thành hình và kết quả kiểm được ghi lại cho giảng viên xem.
+"""Hợp đồng của bước sinh Content, bước duy nhất ngoài câu hỏi còn giữ vòng tự kiểm: sinh xong thì
+cho model tự kiểm theo từng tiêu chí; trượt tiêu chí nào thì sinh lại một lần và nói rõ lý do trượt;
+hết lượt thì trả về bản cuối cùng kèm kết quả kiểm, không ném lỗi, để cả module vẫn thành hình và
+kết quả kiểm được ghi lại cho giảng viên xem. Learning Objective, Slides và Example sinh đúng một
+lượt, không có bước kiểm nào.
 
 Model được thay bằng một hàm giả ghi lại mọi prompt nó nhận, nên không tốn hạn mức nào."""
 
@@ -13,10 +14,10 @@ import pytest
 
 from app.generation import content, example, objective, slides
 from app.generation.content import ContentOutput, ContentVerification
-from app.generation.example import Example, ExampleOutput, ExampleVerification
-from app.generation.objective import LearningObjective, LOVerification
+from app.generation.example import Example, ExampleOutput
+from app.generation.objective import LearningObjective
 from app.generation.planner import Concept
-from app.generation.slides import Slide, SlidesOutput, SlidesVerification
+from app.generation.slides import Slide, SlidesOutput
 
 LO = LearningObjective(
     bloom_level="apply", verb="Tính", objective_text="Tính tích phân bằng phương pháp đổi biến",
@@ -38,20 +39,23 @@ class Step:
 
 
 STEPS = [
-    Step("objective", objective, LearningObjective, LOVerification, ["verb", "atomic", "grounded"],
-         lambda: objective.generate_learning_objective(
-             Concept(name="Đổi biến", priority=1, summary="Phương pháp đổi biến trong tích phân"), CHUNKS),
-         LO),
     Step("content", content, ContentOutput, ContentVerification, ["groundedness", "completeness", "scope"],
          lambda: content.generate_content(LO, CHUNKS),
          ContentOutput(content="## Chọn biến mới\n...", source_locators=["{}"])),
-    Step("slides", slides, SlidesOutput, SlidesVerification, ["no_new_info", "conciseness", "cognitive_load"],
-         lambda: slides.generate_slides(LO, "## Chọn biến mới\n..."),
-         SlidesOutput(slides=[Slide(title="Đổi biến", bullets=["Đặt u = φ(x)"]),
-                              Slide(title="Đổi cận", bullets=["Tính cận mới theo u"])])),
-    Step("example", example, ExampleOutput, ExampleVerification, ["consistency", "no_overreach", "style"],
-         lambda: example.generate_example(LO, "## Chọn biến mới\n...", CHUNKS),
-         ExampleOutput(examples=[Example(context="Tính ∫2x cos(x²)dx", analysis="Đặt u = x²")])),
+]
+
+# Bước không có vòng tự kiểm: (tên, module, schema đầu ra, đầu ra giả, cách gọi).
+UNCHECKED = [
+    ("objective", objective, LearningObjective, LO,
+     lambda: objective.generate_learning_objective(
+         Concept(name="Đổi biến", priority=1, summary="Phương pháp đổi biến trong tích phân"), CHUNKS)),
+    ("slides", slides, SlidesOutput,
+     SlidesOutput(slides=[Slide(title="Đổi biến", bullets=["Đặt u = φ(x)"]),
+                          Slide(title="Đổi cận", bullets=["Tính cận mới theo u"])]),
+     lambda: slides.generate_slides(LO, "## Chọn biến mới\n...")),
+    ("example", example, ExampleOutput,
+     ExampleOutput(examples=[Example(context="Tính ∫2x cos(x²)dx", analysis="Đặt u = x²")]),
+     lambda: example.generate_example(LO, "## Chọn biến mới\n...", CHUNKS)),
 ]
 
 
@@ -136,3 +140,29 @@ def test_when_the_retry_also_fails_the_last_output_and_its_verdict_are_returned(
     assert out == step.output
     assert getattr(check, f"{failing}_pass") is False
     assert len(_generations(step)) == 2
+
+
+def test_content_without_self_check_is_written_once_and_never_checked(monkeypatch):
+    step = STEPS[0]
+    step.asked.clear()
+    _install(monkeypatch, step, [{step.criteria[0]: "sẽ không ai hỏi tới"}])
+
+    out, check = content.generate_content(LO, CHUNKS, self_check=False)
+
+    assert out == step.output and check is None
+    assert [model for model, _ in step.asked] == [ContentOutput]
+
+
+@pytest.mark.parametrize("name, module, output_model, output, run", UNCHECKED, ids=[u[0] for u in UNCHECKED])
+def test_objective_slides_and_example_are_one_call_with_no_check(name, module, output_model, output, run, monkeypatch):
+    """Ràng buộc còn lại của ba bước này nằm ở schema (2-4 sub-objective, 2-8 slide, 1-4 example)."""
+    asked = []
+
+    def fake(prompt, response_model, system_instruction=None, **kwargs):
+        asked.append(response_model)
+        return output
+
+    monkeypatch.setattr(module, "complete_structured", fake)
+
+    assert run() == output
+    assert asked == [output_model]

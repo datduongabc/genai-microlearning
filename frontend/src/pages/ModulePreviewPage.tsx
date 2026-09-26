@@ -666,6 +666,7 @@ function QuizDisplay({
   const checks = (component.content.questions as QuestionCheck[] | undefined) ?? []
   const questions = [...component.questions].sort((a, b) => a.position - b.position)
   const failed = checks.filter((c) => !c.passed && c.fail_reason)
+  const selfChecked = component.content.self_checked !== false
 
   return (
     <div className="flex flex-col gap-6">
@@ -677,10 +678,14 @@ function QuizDisplay({
               <span className="text-sm font-semibold">Câu {question.position + 1}</span>
               <span
                 className={`inline-block w-fit rounded-[3px] px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide ${
-                  passed ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                  !passed
+                    ? 'bg-red-100 text-red-800'
+                    : selfChecked
+                      ? 'bg-green-100 text-green-800'
+                      : 'bg-gray-100 text-gray-700'
                 }`}
               >
-                {passed ? 'Đạt CRAG groundedness/answerability' : 'Không đạt CRAG check'}
+                {!passed ? 'Không đạt CRAG check' : selfChecked ? 'Đạt CRAG groundedness/answerability' : 'Chưa tự kiểm'}
               </span>
             </div>
             <p className="font-medium">{question.stem}</p>

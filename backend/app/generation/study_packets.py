@@ -137,13 +137,16 @@ def no_rag_packet(module: Module, generated: no_rag.NoRagModule, sources: list[s
     )
 
 
-def study_pair(db: Session, module: Module, model_alias: str | None) -> tuple[ModuleContentInput, ModuleContentInput]:
+def study_pair(
+    db: Session, module: Module, model_alias: str | None, self_check: bool = True
+) -> tuple[ModuleContentInput, ModuleContentInput]:
     """(gói rag_llm, gói llm_no_rag). `model_alias` là model đã sinh module RAG: bản đối chứng phải
-    dùng đúng model đó, không thì khác biệt điểm lẫn cả khác biệt giữa hai model."""
+    dùng đúng model đó, không thì khác biệt điểm lẫn cả khác biệt giữa hai model. `self_check` cũng
+    phải là cờ đã dùng khi sinh module RAG, vì cùng lý do."""
     lo = learning_objective_of(module)
     sources = reference_chunks(db, module)
     rag = rag_packet(module, sources)
     section = db.get(DocumentSection, module.section_id) if module.section_id else None
     with using_model(model_alias):
-        generated = no_rag.generate_module(lo, practice_target=_concept_query(module, section))
+        generated = no_rag.generate_module(lo, practice_target=_concept_query(module, section), self_check=self_check)
     return rag, no_rag_packet(module, generated, sources)

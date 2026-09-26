@@ -199,8 +199,9 @@ def test_worker_chay_luot_sinh_bang_dung_model_trong_payload(monkeypatch):
 
     thay = {}
 
-    def gia_lap_sinh(db, doc, section=None):
+    def gia_lap_sinh(db, doc, section=None, self_check=True):
         thay["model"] = llm.active_model()
+        thay["self_check"] = self_check
         # Tạo Module thật chứ không trả về đối tượng giả: bước worker gán job.module_id nên
         # một id không có trong bảng modules sẽ vi phạm khoá ngoại.
         module = Module(document_id=doc.id, course_id=doc.course_id, title="M")
@@ -212,6 +213,48 @@ def test_worker_chay_luot_sinh_bang_dung_model_trong_payload(monkeypatch):
     pipeline.run_module_generation_step(type("J", (), {"id": job_id})())
 
     assert thay["model"] == "groq-pro"
+    assert thay["self_check"] is True
+
+
+def test_tat_tu_kiem_luc_bam_sinh_di_vao_payload_va_toi_worker(monkeypatch):
+    """Cờ của thí nghiệm có/không tự kiểm: ghi trong payload để biết module thuộc nhánh nào."""
+    from app.generation import module_generation_pipeline as pipeline
+
+    token, doc_id = _tai_lieu_cua_giang_vien()
+    phan_hoi = client.post(
+        f"/modules/generate?document_id={doc_id}",
+        json={"self_check": False},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert phan_hoi.status_code == 200, phan_hoi.text
+    assert _payload_cua_job(doc_id)["self_check"] is False
+
+    db = SessionLocal()
+    try:
+        job_id = db.query(Job).filter(Job.document_id == doc_id).one().id
+    finally:
+        db.close()
+    thay = {}
+
+    def gia_lap_sinh(db, doc, section=None, self_check=True):
+        thay["self_check"] = self_check
+        module = Module(document_id=doc.id, course_id=doc.course_id, title="M")
+        db.add(module)
+        db.flush()
+        return module
+
+    monkeypatch.setattr(pipeline, "run_module_generation", gia_lap_sinh)
+    pipeline.run_module_generation_step(type("J", (), {"id": job_id})())
+
+    assert thay["self_check"] is False
+
+
+def test_khong_noi_gi_thi_van_tu_kiem():
+    token, doc_id = _tai_lieu_cua_giang_vien()
+
+    client.post(f"/modules/generate?document_id={doc_id}", headers={"Authorization": f"Bearer {token}"})
+
+    assert _payload_cua_job(doc_id)["self_check"] is True
 
 
 def test_khong_chon_model_thi_sinh_duoc_ca_khi_gateway_dang_sap(monkeypatch):

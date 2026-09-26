@@ -234,6 +234,50 @@ describe('ModulePreviewPage - reading the module', () => {
     expect(within(quizCard).queryByText('BẢN-LÚC-SINH')).not.toBeInTheDocument()
   })
 
+  it('says a question was not self-checked instead of claiming it passed the CRAG check', async () => {
+    vi.mocked(api.getModule).mockResolvedValue({
+      ...baseModule,
+      components: [
+        {
+          id: 'quiz-1',
+          type: 'quiz',
+          content: { self_checked: false, questions: [{ passed: true }] },
+          questions: [
+            { id: 'q1', position: 0, stem: 'CÂU-HỎI', choices: { options: ['A', 'B', 'C', 'D'] }, answer_key: '0', explanation: 'e' },
+          ],
+        },
+      ],
+    })
+
+    renderPage()
+
+    const quizCard = (await screen.findByText('CÂU-HỎI')).closest('section') as HTMLElement
+    expect(within(quizCard).getByText('Chưa tự kiểm')).toBeInTheDocument()
+    expect(within(quizCard).queryByText('Đạt CRAG groundedness/answerability')).not.toBeInTheDocument()
+  })
+
+  it('treats a module saved before the self-check flag existed as self-checked', async () => {
+    vi.mocked(api.getModule).mockResolvedValue({
+      ...baseModule,
+      components: [
+        {
+          id: 'quiz-1',
+          type: 'quiz',
+          content: { questions: [{ passed: true }] },
+          questions: [
+            { id: 'q1', position: 0, stem: 'CÂU-HỎI', choices: { options: ['A', 'B', 'C', 'D'] }, answer_key: '0', explanation: 'e' },
+          ],
+        },
+      ],
+    })
+
+    renderPage()
+
+    const quizCard = (await screen.findByText('CÂU-HỎI')).closest('section') as HTMLElement
+    expect(within(quizCard).getByText('Đạt CRAG groundedness/answerability')).toBeInTheDocument()
+    expect(within(quizCard).queryByText('Chưa tự kiểm')).not.toBeInTheDocument()
+  })
+
   it('lists the sub-objectives under the learning objective', async () => {
     vi.mocked(api.getModule).mockResolvedValue({ ...baseModule, sub_objectives: ['MỤC-TIÊU-CON-A', 'MỤC-TIÊU-CON-B'] })
 

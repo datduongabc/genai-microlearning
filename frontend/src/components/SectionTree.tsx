@@ -9,7 +9,7 @@ import {
 } from "../api";
 
 // Mirrors MAX_SECTIONS_PER_REQUEST in backend/app/api/modules.py: each module
-// costs about 17 LLM calls, so this caps how much one click can push into the
+// costs about 19 LLM calls, so this caps how much one click can push into the
 // free tier's rate limit.
 const MAX_SECTIONS_PER_REQUEST = 5;
 const POLL_INTERVAL_MS = 3000;

@@ -92,16 +92,20 @@ class _Asked:
     state: dict
 
 
-def _generate_questions(db: Session, doc: Document, lo, practice_query: str, scope) -> list[_Asked]:
+def _generate_questions(
+    db: Session, doc: Document, lo, practice_query: str, scope, self_check: bool = True
+) -> list[_Asked]:
     """Quiz: một câu cho mỗi sub-objective (tối đa MAX_QUIZ_QUESTIONS), để cả bộ phủ đủ các phần
     của bài thay vì hỏi lại một ý. Practice: một câu luyện tập theo khái niệm chính."""
     asked = [
-        _Asked(ComponentType.quiz, target, generate_quiz_question(db, doc.course_id, target, lo, "quiz", scope))
+        _Asked(ComponentType.quiz, target, generate_quiz_question(
+            db, doc.course_id, target, lo, "quiz", scope, self_check=self_check,
+        ))
         for target in lo.sub_objectives[:MAX_QUIZ_QUESTIONS]
     ]
     asked.append(_Asked(
         ComponentType.practice, practice_query,
-        generate_quiz_question(db, doc.course_id, practice_query, lo, "practice", scope),
+        generate_quiz_question(db, doc.course_id, practice_query, lo, "practice", scope, self_check=self_check),
     ))
 
     made = [a for a in asked if a.state.get("question") is not None]
@@ -109,7 +113,8 @@ def _generate_questions(db: Session, doc: Document, lo, practice_query: str, sco
     if index is not None:
         stale = made[index]
         redone = generate_quiz_question(
-            db, doc.course_id, stale.target, lo, stale.type.value, scope, feedback=LENGTH_TELL_FEEDBACK
+            db, doc.course_id, stale.target, lo, stale.type.value, scope, feedback=LENGTH_TELL_FEEDBACK,
+            self_check=self_check,
         )
         # Lần sinh lại không ra câu nào thì giữ câu cũ: một bộ lộ đáp án qua độ dài vẫn hơn một bộ thiếu câu.
         if redone.get("question") is not None:
@@ -117,14 +122,15 @@ def _generate_questions(db: Session, doc: Document, lo, practice_query: str, sco
     return asked
 
 
-def _save_questions(db: Session, module_id: uuid.UUID, asked: list[_Asked]) -> None:
-    """Mỗi loại (quiz, practice) một thành phần, mỗi câu một Question theo đúng thứ tự sinh."""
+def _save_questions(db: Session, module_id: uuid.UUID, asked: list[_Asked], self_check: bool = True) -> None:
+    """Mỗi loại (quiz, practice) một thành phần, mỗi câu một Question theo đúng thứ tự sinh. Kết quả
+    tự kiểm của từng câu chỉ vào bảng evaluations khi model thực sự đã kiểm câu đó."""
     for component_type in (ComponentType.quiz, ComponentType.practice):
         mine = [a for a in asked if a.type == component_type]
         component = ModuleComponent(
             module_id=module_id,
             type=component_type,
-            content={"questions": [
+            content={"self_checked": self_check, "questions": [
                 {
                     "target": a.target,
                     "passed": a.state.get("passed", False),
@@ -142,10 +148,12 @@ def _save_questions(db: Session, module_id: uuid.UUID, asked: list[_Asked]) -> N
         db.add(component)
         db.flush()
         for position, a in enumerate(mine):
-            db.add(Evaluation(
-                module_id=module_id, criterion=f"{component_type.value}_{position + 1}_groundedness_answerability_pass",
-                score=1.0 if a.state.get("passed") else 0.0,
-            ))
+            if self_check:
+                db.add(Evaluation(
+                    module_id=module_id,
+                    criterion=f"{component_type.value}_{position + 1}_groundedness_answerability_pass",
+                    score=1.0 if a.state.get("passed") else 0.0,
+                ))
             question = a.state.get("question")
             if question is not None:
                 db.add(QuestionModel(
@@ -158,14 +166,21 @@ def _save_questions(db: Session, module_id: uuid.UUID, asked: list[_Asked]) -> N
                 ))
 
 
-def run_module_generation(db: Session, doc: Document, section: DocumentSection | None = None) -> Module:
+def run_module_generation(
+    db: Session, doc: Document, section: DocumentSection | None = None, self_check: bool = True
+) -> Module:
     """Planner -> LO -> Content -> Slides -> Example -> Quiz/Practice ->
     Explanation. Nguyên logic chuyển từ _run_generate_module() cũ
     (app/api/modules.py) -- chỉ đổi return type (Module object, không phải
     dict HTTP response, vì caller giờ là job executor).
 
     Với `section` (1 chương/mục của giáo trình), mọi bước đều chỉ thấy các
-    chunk của mục đó thay vì cả tài liệu."""
+    chunk của mục đó thay vì cả tài liệu.
+
+    Chỉ Content và từng câu Quiz/Practice có vòng model tự kiểm (sinh lại một lần khi trượt); LO,
+    Slides và Example sinh một lượt, ràng buộc còn lại nằm ở schema. `self_check=False` tắt cả hai
+    vòng đó, để thí nghiệm so sánh module có và không có tự kiểm (bẫy cú pháp và luật cân bằng độ
+    dài đáp án vẫn chạy vì không tốn lượt gọi model nào để phát hiện)."""
     planner_out = _get_or_cache_planner(db, doc, section)
     # A section confines every later step to its own chunks: retrieval, the
     # parent-context window and the quiz all see nothing outside it.
@@ -176,7 +191,7 @@ def run_module_generation(db: Session, doc: Document, section: DocumentSection |
     query = f"{top_concept.name}: {top_concept.summary}"
     context_chunks = retrieve(db, doc.course_id, query, top_k=None, min_k=8, scope=scope)
 
-    lo, lo_check = generate_learning_objective(top_concept, context_chunks)
+    lo = generate_learning_objective(top_concept, context_chunks)
 
     module = Module(
         document_id=doc.id,
@@ -189,7 +204,6 @@ def run_module_generation(db: Session, doc: Document, section: DocumentSection |
     )
     db.add(module)
     db.flush()
-    _log_hallucination_check(db, module.id, "lo_grounded_pass", lo_check.grounded_pass)
 
     # Retrieve THÊM theo từng sub_objective, không chỉ dùng lại context_chunks
     # đã lấy cho top_concept -- phát hiện thật qua LLM-judge (11 module thật,
@@ -225,7 +239,7 @@ def run_module_generation(db: Session, doc: Document, section: DocumentSection |
         lambda refined: retrieve(db, doc.course_id, refined, top_k=None, min_k=8, scope=scope),
     )
     content_context = expand_with_parent_context(db, corrected.chunks, scope=scope)
-    content_out, content_check = generate_content(lo, content_context)
+    content_out, content_check = generate_content(lo, content_context, self_check=self_check)
     db.add(ModuleComponent(
         module_id=module.id, type=ComponentType.content,
         content={
@@ -237,23 +251,22 @@ def run_module_generation(db: Session, doc: Document, section: DocumentSection |
         },
     ))
     _log_hallucination_check(db, module.id, "content_relevance_pass", corrected.confidence == "high")
-    _log_hallucination_check(db, module.id, "content_groundedness_pass", content_check.groundedness_pass)
+    if content_check is not None:
+        _log_hallucination_check(db, module.id, "content_groundedness_pass", content_check.groundedness_pass)
 
-    slides_out, slides_check = generate_slides(lo, content_out.content)
+    slides_out = generate_slides(lo, content_out.content)
     db.add(ModuleComponent(
         module_id=module.id, type=ComponentType.slides,
         content={"slides": [s.model_dump() for s in slides_out.slides]},
     ))
-    _log_hallucination_check(db, module.id, "slides_no_new_info_pass", slides_check.no_new_info_pass)
 
-    example_out, example_check = generate_example(lo, content_out.content, context_chunks)
+    example_out = generate_example(lo, content_out.content, context_chunks)
     db.add(ModuleComponent(
         module_id=module.id, type=ComponentType.example,
         content={"examples": [e.model_dump() for e in example_out.examples]},
     ))
-    _log_hallucination_check(db, module.id, "example_no_overreach_pass", example_check.no_overreach_pass)
 
-    asked = _generate_questions(db, doc, lo, query, scope)
+    asked = _generate_questions(db, doc, lo, query, scope, self_check)
 
     # The Explanation component is what each question already wrote along with its answer: its
     # reasoning, written before the choices, and the explanation drawn from it, both checked along
@@ -270,7 +283,7 @@ def run_module_generation(db: Session, doc: Document, section: DocumentSection |
             "component": a.type.value, "position": position,
             "reasoning": question.reasoning, "explanation_text": question.explanation,
         })
-    _save_questions(db, module.id, asked)
+    _save_questions(db, module.id, asked, self_check)
     if items:
         db.add(ModuleComponent(module_id=module.id, type=ComponentType.explanation, content={"items": items}))
 
@@ -298,8 +311,10 @@ def run_module_generation_step(job: Job) -> None:
         # Model giảng viên đã chọn nằm trong payload, vì request đã trả về từ lâu trước
         # khi worker bắt đầu. Bọc cả lượt sinh một lần ở đây thay vì truyền alias xuống
         # từng hàm: một lượt đi qua mười chỗ gọi LLM rải khắp generation và retrieval.
+        # Thiếu khóa (job cũ, hoặc request không nói gì) nghĩa là bật tự kiểm như trước đây.
+        self_check = current_job.payload.get("self_check", True)
         with using_model(current_job.payload.get("model_alias")):
-            module = run_module_generation(db, doc, section)
+            module = run_module_generation(db, doc, section, self_check=self_check)
 
         current_job.module_id = module.id
         current_job.status = JobStatus.done

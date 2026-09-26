@@ -24,7 +24,7 @@ from app.models import (
 
 router = APIRouter(prefix="/modules", tags=["modules"], dependencies=[Depends(get_current_user)])
 
-# Each module costs about 17 LLM calls, so this caps how many one click can push
+# Each module costs about 19 LLM calls, so this caps how many one click can push
 # into the free tier's rate limit. Mirrored by MAX_SECTIONS_PER_REQUEST in
 # frontend/src/components/SectionTree.tsx.
 MAX_SECTIONS_PER_REQUEST = 5
@@ -37,6 +37,8 @@ class GenerateRequest(BaseModel):
     # Model cho riêng lượt sinh này, ghi đè mặc định của giảng viên. Bỏ trống thì dùng
     # mặc định của họ, không có mặc định thì dùng cấu hình hệ thống.
     model_alias: str | None = None
+    # Tắt vòng model tự kiểm Content và câu hỏi (thí nghiệm có/không tự kiểm cho chương đánh giá).
+    self_check: bool = True
 
 
 def _alias_da_chon(body: GenerateRequest | None, current_user: User) -> str | None:
@@ -73,10 +75,14 @@ def _alias_da_chon(body: GenerateRequest | None, current_user: User) -> str | No
     return alias
 
 
-def _payload_model(alias: str | None) -> dict:
-    """Không ghi khóa nào khi chưa chọn, thay vì ghi sẵn giá trị từ cấu hình: ghi sẵn thì
-    đổi cấu hình hệ thống sẽ không tác dụng với các job đã nằm trong hàng đợi."""
-    return {"model_alias": alias} if alias else {}
+def _payload_model(alias: str | None, self_check: bool = True) -> dict:
+    """Không ghi alias khi chưa chọn, thay vì ghi sẵn giá trị từ cấu hình: ghi sẵn thì
+    đổi cấu hình hệ thống sẽ không tác dụng với các job đã nằm trong hàng đợi. `self_check`
+    luôn được ghi, để biết chắc mỗi module của thí nghiệm thuộc nhánh nào."""
+    payload: dict = {"self_check": self_check}
+    if alias:
+        payload["model_alias"] = alias
+    return payload
 
 
 def _owned_document(
@@ -96,7 +102,8 @@ def _owned_module(db: Session, module_id: uuid.UUID, current_user: User) -> Modu
 
 
 def _generate_for_sections(
-    db: Session, doc: Document, section_ids: list[uuid.UUID] | None, model_alias: str | None = None
+    db: Session, doc: Document, section_ids: list[uuid.UUID] | None, model_alias: str | None = None,
+    self_check: bool = True,
 ):
     if not section_ids:
         raise HTTPException(status_code=422, detail="Chọn ít nhất 1 mục để sinh mô-đun.")
@@ -136,7 +143,7 @@ def _generate_for_sections(
     jobs = [
         enqueue_job(
             db, job_type=JobType.module_generation, step="generate", document_id=doc.id,
-            section_id=section_id, payload=_payload_model(model_alias),
+            section_id=section_id, payload=_payload_model(model_alias, self_check),
         )
         for section_id in unique_ids
     ]
@@ -158,11 +165,12 @@ def generate_module(
         raise HTTPException(status_code=422, detail="Document chưa được parse (raw_text rỗng)")
 
     alias = _alias_da_chon(body, current_user)
+    self_check = body.self_check if body is not None else True
 
     section_ids = body.section_ids if body is not None else None
     has_outline = db.query(DocumentSection.id).filter(DocumentSection.document_id == doc.id).first() is not None
     if has_outline:
-        return _generate_for_sections(db, doc, section_ids, alias)
+        return _generate_for_sections(db, doc, section_ids, alias, self_check)
     if section_ids:
         raise HTTPException(status_code=422, detail="Tài liệu này không có mục lục để chọn mục.")
 
@@ -193,7 +201,7 @@ def generate_module(
     # app/services/module_generation_pipeline.py + job_queue.py.
     job = enqueue_job(
         db, job_type=JobType.module_generation, step="generate", document_id=document_id,
-        payload=_payload_model(alias),
+        payload=_payload_model(alias, self_check),
     )
     db.commit()
     return {"job_id": job.id, "status": job.status}
