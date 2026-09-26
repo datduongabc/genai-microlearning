@@ -2,7 +2,8 @@
 
     PYTHONPATH=. uv run python scripts/export_study_pair.py <module_id> --out <thư mục> [--model <alias>]
 
-Bản không RAG được sinh bằng đúng model đã sinh module RAG (đọc từ job sinh module), để khác biệt
+Bản không RAG là một module sinh bằng chính pipeline RAG với use_retrieval=False (được lưu như mọi
+module khác), bằng đúng model đã sinh module RAG (đọc từ job sinh module), để khác biệt
 điểm chấm chỉ còn là RAG; --model chỉ dùng khi muốn ghi đè có chủ ý. Mỗi tệp là một StudyFile: gói
 nội dung (khóa "packet", không lộ nhóm hay nguồn) bọc trong mã cặp, tên nhóm và model đã sinh. Phần
 bọc ngoài chỉ dành cho người nghiên cứu và scripts/run_judge.py, không đưa cho người chấm.
@@ -18,29 +19,20 @@ import uuid
 from pathlib import Path
 
 from app.db import SessionLocal
+from app.generation.module_generation_pipeline import generation_payload_of
 from app.generation.study_packets import StudyFile, study_pair
 from app.llm import gateway
-from app.models import Job, JobType, Module
-
-
-def _generation_payload(db, module_id: uuid.UUID) -> dict:
-    job = (
-        db.query(Job)
-        .filter(Job.module_id == module_id, Job.job_type == JobType.module_generation)
-        .order_by(Job.created_at.desc())
-        .first()
-    )
-    return (job.payload or {}) if job is not None else {}
+from app.models import Module
 
 
 def model_that_made(db, module_id: uuid.UUID) -> str | None:
     # None nghĩa là module được sinh bằng model mặc định trong cấu hình, và bản đối chứng cũng vậy.
-    return _generation_payload(db, module_id).get("model_alias")
+    return generation_payload_of(db, module_id).get("model_alias")
 
 
 def self_check_of(db, module_id: uuid.UUID) -> bool:
     """Module RAG có được sinh với vòng tự kiểm không; job cũ không ghi cờ này là có, như mặc định."""
-    return _generation_payload(db, module_id).get("self_check", True)
+    return generation_payload_of(db, module_id).get("self_check", True)
 
 
 def main(argv: list[str] | None = None) -> None:

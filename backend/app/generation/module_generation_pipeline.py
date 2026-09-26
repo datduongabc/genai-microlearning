@@ -15,14 +15,14 @@ from sqlalchemy.orm import Session
 from app.db import WorkerSessionLocal
 from app.generation.content import generate_content
 from app.generation.example import generate_example
-from app.generation.objective import generate_learning_objective
+from app.generation.objective import LearningObjective, generate_learning_objective
 from app.generation.planner import PLANNER_MAX_INPUT_CHARS, Concept, PlannerOutput, run_planner
 from app.generation.quiz_graph import (
     LENGTH_TELL_FEEDBACK,
     generate_quiz_question,
     question_to_rebalance,
 )
-from app.generation.relevance import corrective_retrieve
+from app.generation.relevance import CorrectiveResult, corrective_retrieve
 from app.generation.scope_digest import build_scope_digest
 from app.generation.slides import generate_slides
 from app.llm.gateway import using_model
@@ -34,6 +34,7 @@ from app.models import (
     Evaluation,
     Job,
     JobStatus,
+    JobType,
     Module,
     ModuleComponent,
 )
@@ -79,6 +80,43 @@ def _log_hallucination_check(db: Session, module_id: uuid.UUID, criterion: str, 
     db.add(Evaluation(module_id=module_id, criterion=criterion, score=1.0 if passed else 0.0))
 
 
+class IncompleteModuleError(ValueError):
+    """Module thiếu một phần mà bước sau bắt buộc phải có, ví dụ chưa có Learning Objective."""
+
+
+def learning_objective_of(module: Module) -> LearningObjective:
+    """Learning Objective đã lưu của một module, để nhánh không RAG sinh trên đúng LO của module
+    RAG đi cặp thay vì tự đặt LO mới."""
+    if not module.learning_objective or not module.bloom_level or not module.sub_objectives:
+        raise IncompleteModuleError("Module chưa có đủ Learning Objective, mức Bloom và sub-objective.")
+    # verb chỉ dùng khi sinh Learning Objective; ở đây Learning Objective đã có sẵn.
+    return LearningObjective(
+        bloom_level=module.bloom_level, verb="", objective_text=module.learning_objective,
+        sub_objectives=list(module.sub_objectives),
+    )
+
+
+def concept_query_of(module: Module, section: DocumentSection | None) -> str:
+    """Câu truy vấn pipeline RAG đã dùng cho module: "tên khái niệm: tóm tắt" của Planner. Không tìm
+    lại được khái niệm (Planner đã chạy lại, đổi tên) thì dùng tên module cùng Learning Objective."""
+    holder = section if section is not None else module.document
+    for concept in holder.planner_concepts or []:
+        if concept.get("name") == module.title:
+            return f"{concept['name']}: {concept['summary']}"
+    return f"{module.title}: {module.learning_objective or ''}"
+
+
+def generation_payload_of(db: Session, module_id: uuid.UUID) -> dict:
+    """Payload của job đã sinh module (model, cờ tự kiểm, nhánh); {} khi module không đến từ job nào."""
+    job = (
+        db.query(Job)
+        .filter(Job.module_id == module_id, Job.job_type == JobType.module_generation)
+        .order_by(Job.created_at.desc())
+        .first()
+    )
+    return (job.payload or {}) if job is not None else {}
+
+
 # Một bài 5-10 phút: mỗi câu quiz kiểm một sub-objective, tối đa ba câu.
 MAX_QUIZ_QUESTIONS = 3
 
@@ -93,19 +131,22 @@ class _Asked:
 
 
 def _generate_questions(
-    db: Session, doc: Document, lo, practice_query: str, scope, self_check: bool = True
+    db: Session, doc: Document, lo, practice_query: str, scope, self_check: bool = True, lesson: str | None = None
 ) -> list[_Asked]:
     """Quiz: một câu cho mỗi sub-objective (tối đa MAX_QUIZ_QUESTIONS), để cả bộ phủ đủ các phần
-    của bài thay vì hỏi lại một ý. Practice: một câu luyện tập theo khái niệm chính."""
+    của bài thay vì hỏi lại một ý. Practice: một câu luyện tập theo khái niệm chính. `lesson`
+    (nhánh không RAG): mọi câu đọc bài học này thay cho đoạn truy hồi."""
     asked = [
         _Asked(ComponentType.quiz, target, generate_quiz_question(
-            db, doc.course_id, target, lo, "quiz", scope, self_check=self_check,
+            db, doc.course_id, target, lo, "quiz", scope, self_check=self_check, lesson=lesson,
         ))
         for target in lo.sub_objectives[:MAX_QUIZ_QUESTIONS]
     ]
     asked.append(_Asked(
         ComponentType.practice, practice_query,
-        generate_quiz_question(db, doc.course_id, practice_query, lo, "practice", scope, self_check=self_check),
+        generate_quiz_question(
+            db, doc.course_id, practice_query, lo, "practice", scope, self_check=self_check, lesson=lesson,
+        ),
     ))
 
     made = [a for a in asked if a.state.get("question") is not None]
@@ -114,7 +155,7 @@ def _generate_questions(
         stale = made[index]
         redone = generate_quiz_question(
             db, doc.course_id, stale.target, lo, stale.type.value, scope, feedback=LENGTH_TELL_FEEDBACK,
-            self_check=self_check,
+            self_check=self_check, lesson=lesson,
         )
         # Lần sinh lại không ra câu nào thì giữ câu cũ: một bộ lộ đáp án qua độ dài vẫn hơn một bộ thiếu câu.
         if redone.get("question") is not None:
@@ -122,9 +163,13 @@ def _generate_questions(
     return asked
 
 
-def _save_questions(db: Session, module_id: uuid.UUID, asked: list[_Asked], self_check: bool = True) -> None:
+def _save_questions(
+    db: Session, module_id: uuid.UUID, asked: list[_Asked], self_check: bool = True, use_retrieval: bool = True
+) -> None:
     """Mỗi loại (quiz, practice) một thành phần, mỗi câu một Question theo đúng thứ tự sinh. Kết quả
-    tự kiểm của từng câu chỉ vào bảng evaluations khi model thực sự đã kiểm câu đó."""
+    tự kiểm của từng câu chỉ vào bảng evaluations khi model thực sự đã kiểm câu đó; nhánh không RAG
+    không chấm groundedness nên tiêu chí mang tên khác."""
+    checked = "groundedness_answerability_pass" if use_retrieval else "answerability_pass"
     for component_type in (ComponentType.quiz, ComponentType.practice):
         mine = [a for a in asked if a.type == component_type]
         component = ModuleComponent(
@@ -149,7 +194,7 @@ def _save_questions(db: Session, module_id: uuid.UUID, asked: list[_Asked], self
             if self_check:
                 db.add(Evaluation(
                     module_id=module_id,
-                    criterion=f"{component_type.value}_{position + 1}_groundedness_answerability_pass",
+                    criterion=f"{component_type.value}_{position + 1}_{checked}",
                     score=1.0 if a.state.get("passed") else 0.0,
                 ))
             question = a.state.get("question")
@@ -164,45 +209,9 @@ def _save_questions(db: Session, module_id: uuid.UUID, asked: list[_Asked], self
                 ))
 
 
-def run_module_generation(
-    db: Session, doc: Document, section: DocumentSection | None = None, self_check: bool = True
-) -> Module:
-    """Planner -> LO -> Content -> Slides -> Example -> Quiz/Practice ->
-    Explanation. Nguyên logic chuyển từ _run_generate_module() cũ
-    (app/api/modules.py) -- chỉ đổi return type (Module object, không phải
-    dict HTTP response, vì caller giờ là job executor).
-
-    Với `section` (1 chương/mục của giáo trình), mọi bước đều chỉ thấy các
-    chunk của mục đó thay vì cả tài liệu.
-
-    Chỉ Content và từng câu Quiz/Practice có vòng model tự kiểm (sinh lại một lần khi trượt); LO,
-    Slides và Example sinh một lượt, ràng buộc còn lại nằm ở schema. `self_check=False` tắt cả hai
-    vòng đó, để thí nghiệm so sánh module có và không có tự kiểm (bẫy cú pháp và luật cân bằng độ
-    dài đáp án vẫn chạy vì không tốn lượt gọi model nào để phát hiện)."""
-    planner_out = _get_or_cache_planner(db, doc, section)
-    # A section confines every later step to its own chunks: retrieval, the
-    # parent-context window and the quiz all see nothing outside it.
-    scope = (
-        ChunkScope(doc.id, section.first_chunk_index, section.last_chunk_index) if section is not None else None
-    )
-    top_concept = min(planner_out.concepts, key=lambda c: c.priority)
-    query = f"{top_concept.name}: {top_concept.summary}"
-    context_chunks = retrieve(db, doc.course_id, query, top_k=None, min_k=8, scope=scope)
-
-    lo = generate_learning_objective(top_concept, context_chunks)
-
-    module = Module(
-        document_id=doc.id,
-        course_id=doc.course_id,
-        section_id=section.id if section is not None else None,
-        title=top_concept.name,
-        learning_objective=lo.objective_text,
-        bloom_level=lo.bloom_level,
-        sub_objectives=lo.sub_objectives,
-    )
-    db.add(module)
-    db.flush()
-
+def _retrieve_for_content(
+    db: Session, doc: Document, lo: LearningObjective, context_chunks: list[Chunk], scope: ChunkScope | None
+) -> CorrectiveResult:
     # Retrieve THÊM theo từng sub_objective, không chỉ dùng lại context_chunks
     # đã lấy cho top_concept -- phát hiện thật qua LLM-judge (11 module thật,
     # GD2 Tuần 1): completeness trung bình chỉ 3.45/5, 2/3 module bị điểm
@@ -231,25 +240,89 @@ def run_module_generation(
     # sub-objectives, and a search that missed is rewritten and run again, instead of the lesson
     # being written from whatever the first search happened to return.
     objective_text = "\n".join([lo.objective_text, *(f"- {sub}" for sub in lo.sub_objectives)])
-    corrected = corrective_retrieve(
+    return corrective_retrieve(
         objective_text,
         context_chunks + extra_chunks,
         lambda refined: retrieve(db, doc.course_id, refined, top_k=None, min_k=8, scope=scope),
     )
-    content_context = expand_with_parent_context(db, corrected.chunks, scope=scope)
+
+
+def run_module_generation(
+    db: Session, doc: Document, section: DocumentSection | None = None, self_check: bool = True,
+    use_retrieval: bool = True, paired_module: Module | None = None,
+) -> Module:
+    """Planner -> LO -> Content -> Slides -> Example -> Quiz/Practice ->
+    Explanation. Nguyên logic chuyển từ _run_generate_module() cũ
+    (app/api/modules.py) -- chỉ đổi return type (Module object, không phải
+    dict HTTP response, vì caller giờ là job executor).
+
+    Với `section` (1 chương/mục của giáo trình), mọi bước đều chỉ thấy các
+    chunk của mục đó thay vì cả tài liệu.
+
+    Chỉ Content và từng câu Quiz/Practice có vòng model tự kiểm (sinh lại một lần khi trượt); LO,
+    Slides và Example sinh một lượt, ràng buộc còn lại nằm ở schema. `self_check=False` tắt cả hai
+    vòng đó, để thí nghiệm so sánh module có và không có tự kiểm (bẫy cú pháp và luật cân bằng độ
+    dài đáp án vẫn chạy vì không tốn lượt gọi model nào để phát hiện).
+
+    `use_retrieval=False` là nhóm đối chứng llm_no_rag của nghiên cứu RAG và không RAG: cùng chuỗi
+    bước, cùng cấu trúc module, nhưng không truy hồi gì. Learning Objective lấy từ `paired_module`
+    (module RAG đi cặp) thay vì Planner và LO tự đặt lại; mỗi bước dùng đúng prompt của nhánh RAG
+    trừ khối SOURCE CHUNK, và câu hỏi (kèm lời giải) đọc Content thay cho đoạn truy hồi. Các bước
+    tự kiểm bỏ những tiêu chí cần nguồn để đối chiếu (groundedness)."""
+    # A section confines every later step to its own chunks: retrieval, the
+    # parent-context window and the quiz all see nothing outside it.
+    scope = (
+        ChunkScope(doc.id, section.first_chunk_index, section.last_chunk_index) if section is not None else None
+    )
+    context_chunks = None
+    if use_retrieval:
+        planner_out = _get_or_cache_planner(db, doc, section)
+        top_concept = min(planner_out.concepts, key=lambda c: c.priority)
+        title = top_concept.name
+        query = f"{top_concept.name}: {top_concept.summary}"
+        context_chunks = retrieve(db, doc.course_id, query, top_k=None, min_k=8, scope=scope)
+        lo = generate_learning_objective(top_concept, context_chunks)
+    else:
+        if paired_module is None:
+            raise ValueError("Sinh không RAG cần module RAG đi cặp để lấy Learning Objective.")
+        if paired_module.document_id != doc.id or paired_module.section_id != (section.id if section else None):
+            raise ValueError("Module đi cặp không thuộc đúng tài liệu và mục đang sinh.")
+        title = paired_module.title
+        query = concept_query_of(paired_module, section)
+        lo = learning_objective_of(paired_module)
+
+    module = Module(
+        document_id=doc.id,
+        course_id=doc.course_id,
+        section_id=section.id if section is not None else None,
+        title=title,
+        learning_objective=lo.objective_text,
+        bloom_level=lo.bloom_level,
+        sub_objectives=lo.sub_objectives,
+    )
+    db.add(module)
+    db.flush()
+
+    content_context = None
+    if use_retrieval:
+        corrected = _retrieve_for_content(db, doc, lo, context_chunks, scope)
+        content_context = expand_with_parent_context(db, corrected.chunks, scope=scope)
     content_out, content_check = generate_content(lo, content_context, self_check=self_check)
+    # Nhánh không RAG giữ nguyên hình dạng thành phần Content: không có nguồn nên không có trích dẫn,
+    # và không chấm độ liên quan (None).
     db.add(ModuleComponent(
         module_id=module.id, type=ComponentType.content,
         content={
             "markdown": content_out.content,
-            "source_locators": content_out.source_locators,
-            "claim_citations": [c.model_dump() for c in content_out.claim_citations],
-            "relevance_confidence": corrected.confidence,
-            "relevance_retry_count": corrected.retries,
+            "source_locators": getattr(content_out, "source_locators", []),
+            "claim_citations": [c.model_dump() for c in getattr(content_out, "claim_citations", [])],
+            "relevance_confidence": corrected.confidence if use_retrieval else None,
+            "relevance_retry_count": corrected.retries if use_retrieval else 0,
         },
     ))
-    _log_hallucination_check(db, module.id, "content_relevance_pass", corrected.confidence == "high")
-    if content_check is not None:
+    if use_retrieval:
+        _log_hallucination_check(db, module.id, "content_relevance_pass", corrected.confidence == "high")
+    if content_check is not None and use_retrieval:
         _log_hallucination_check(db, module.id, "content_groundedness_pass", content_check.groundedness_pass)
 
     slides_out = generate_slides(lo, content_out.content)
@@ -264,7 +337,8 @@ def run_module_generation(
         content={"examples": [e.model_dump() for e in example_out.examples]},
     ))
 
-    asked = _generate_questions(db, doc, lo, query, scope, self_check)
+    lesson = None if use_retrieval else content_out.content
+    asked = _generate_questions(db, doc, lo, query, scope, self_check, lesson=lesson)
 
     # The Explanation component is what each question already wrote along with its answer: its
     # reasoning, written before the choices, and the explanation drawn from it, both checked along
@@ -281,7 +355,7 @@ def run_module_generation(
             "component": a.type.value, "position": position,
             "reasoning": question.reasoning, "explanation_text": question.explanation,
         })
-    _save_questions(db, module.id, asked, self_check)
+    _save_questions(db, module.id, asked, self_check, use_retrieval)
     if items:
         db.add(ModuleComponent(module_id=module.id, type=ComponentType.explanation, content={"items": items}))
 
@@ -311,8 +385,18 @@ def run_module_generation_step(job: Job) -> None:
         # từng hàm: một lượt đi qua mười chỗ gọi LLM rải khắp generation và retrieval.
         # Thiếu khóa (job cũ, hoặc request không nói gì) nghĩa là bật tự kiểm như trước đây.
         self_check = current_job.payload.get("self_check", True)
+        # Nhóm đối chứng không RAG: job ghi module RAG đi cặp, Learning Objective lấy từ đó.
+        use_retrieval = current_job.payload.get("use_retrieval", True)
+        paired_module = None
+        if not use_retrieval:
+            paired_id = current_job.payload.get("paired_module_id")
+            paired_module = db.get(Module, uuid.UUID(paired_id)) if paired_id else None
+            if paired_module is None:
+                raise ValueError(f"Paired module {paired_id} not found")
         with using_model(current_job.payload.get("model_alias")):
-            module = run_module_generation(db, doc, section, self_check=self_check)
+            module = run_module_generation(
+                db, doc, section, self_check=self_check, use_retrieval=use_retrieval, paired_module=paired_module,
+            )
 
         current_job.module_id = module.id
         current_job.status = JobStatus.done

@@ -10,7 +10,7 @@ from pathlib import Path
 
 import pytest
 
-from app.generation import common, content, no_rag, quiz_graph
+from app.generation import common, content, quiz_graph
 from app.generation.common import MAX_CORRECTION_RETRY
 from app.generation.objective import LearningObjective
 from app.generation.quiz_graph import (
@@ -152,8 +152,7 @@ def test_set_level_feedback_stays_on_the_retry_along_with_the_check_reason(monke
     assert "đáp án đúng dài nhất" in second and "ngoài nguồn" in second
 
 
-def test_rag_and_no_rag_steps_share_one_self_check_loop():
-    assert no_rag._checked is common._checked
+def test_content_and_questions_share_one_self_check_loop():
     assert content._checked is common._checked
     assert quiz_graph._checked is common._checked
 

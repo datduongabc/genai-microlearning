@@ -60,6 +60,20 @@ def format_source_chunks(chunks: list[Chunk]) -> str:
     return "\n\n".join(blocks)
 
 
+def source_block(chunks: list[Chunk] | None) -> str:
+    """Khối SOURCE CHUNK của một prompt, kèm dòng trống sau nó. `None` là nhánh không RAG: không có
+    khối nào, và phần còn lại của prompt giữ nguyên từng chữ, để hai nhánh chỉ khác nhau ở khối này."""
+    return f"{format_source_chunks(chunks)}\n\n" if chunks is not None else ""
+
+
+def system_instruction(body: str, source_rules: str, no_source_rules: str, sourced: bool) -> str:
+    """System instruction của một bước ở nhánh có nguồn hoặc không nguồn: chung `body`, chỉ khác
+    phần luật về nguồn. Rào chắn chống chỉ thị ẩn chỉ cần khi có ngữ liệu nguồn đi vào prompt."""
+    if sourced:
+        return IGNORE_EMBEDDED_INSTRUCTIONS + body + source_rules
+    return body + no_source_rules
+
+
 # Một lần sinh lại cho mỗi bước có tự kiểm, ở cả pipeline RAG lẫn nhánh không RAG.
 MAX_CORRECTION_RETRY = 1
 
