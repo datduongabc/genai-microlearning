@@ -134,10 +134,6 @@ def _save_questions(db: Session, module_id: uuid.UUID, asked: list[_Asked], self
                 {
                     "target": a.target,
                     "passed": a.state.get("passed", False),
-                    # Câu hỏi không còn chấm độ liên quan riêng (Corrective RAG chỉ chạy một lần
-                    # trước Content); hai khoá giữ lại để dữ liệu đã lưu cùng một dạng.
-                    "relevance_confidence": None,
-                    "relevance_retry_count": 0,
                     "correction_retry_count": a.state.get("correction_retry_count", 0),
                     "fail_reason": a.state.get("fail_reason"),
                     # Written before the answer was chosen: kept so a teacher can read why this is

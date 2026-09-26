@@ -2,7 +2,8 @@
 
 Mô hình và truy hồi được thay bằng hàm giả, nên không tốn hạn mức nào."""
 
-import ast
+import subprocess
+import sys
 import tomllib
 import uuid
 from pathlib import Path
@@ -158,14 +159,16 @@ def test_rag_and_no_rag_steps_share_one_self_check_loop():
 
 
 def test_nothing_imports_langgraph_any_more():
-    imported = set()
-    for path in (BACKEND / "app").rglob("*.py"):
-        for node in ast.walk(ast.parse(path.read_text(encoding="utf-8"))):
-            if isinstance(node, ast.Import):
-                imported.update(alias.name.split(".")[0] for alias in node.names)
-            elif isinstance(node, ast.ImportFrom) and node.module:
-                imported.add(node.module.split(".")[0])
-    assert "langgraph" not in imported
+    script = (
+        "import importlib, pkgutil, sys, app\n"
+        "for info in pkgutil.walk_packages(app.__path__, 'app.'):\n"
+        "    importlib.import_module(info.name)\n"
+        "print(sorted(m for m in sys.modules if m.split('.')[0] == 'langgraph'))\n"
+    )
+    loaded = subprocess.run(
+        [sys.executable, "-c", script], cwd=BACKEND, capture_output=True, text=True, check=True,
+    ).stdout.strip()
+    assert loaded == "[]"
 
     dependencies = tomllib.loads((BACKEND / "pyproject.toml").read_text())["project"]["dependencies"]
     assert not any(d.startswith("langgraph") for d in dependencies)
