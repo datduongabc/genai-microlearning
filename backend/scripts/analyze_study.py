@@ -219,11 +219,16 @@ def _print_report(report: dict) -> None:
 def analyze_claims(paths: list[str]) -> dict:
     grouped = {}
     seen = set()
+    judge_models = {}
     for path in paths:
         for line in Path(path).read_text(encoding="utf-8").splitlines():
             if not line.strip():
                 continue
             raw = json.loads(line)
+            judge, model = raw["judge"], raw["judge_model"]
+            if judge in judge_models and judge_models[judge] != model:
+                raise SystemExit(f"{path}: conflicting R9 judge_model for {judge}: {judge_models[judge]} != {model}")
+            judge_models[judge] = model
             key = (raw["judge"], raw["anon_id"])
             if key in seen:
                 raise SystemExit(f"{path}: duplicate R9 assessment {key}")

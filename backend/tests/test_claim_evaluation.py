@@ -135,6 +135,41 @@ def test_analysis_excludes_partial_reference_packets(tmp_path, judge):
     assert report["unsupported_rate"] is None
 
 
+@pytest.mark.parametrize("group", ["rag_llm", "llm_no_rag"])
+@pytest.mark.parametrize("coverage", ["complete", "partial"])
+def test_analysis_refuses_conflicting_models_across_distinct_packets(tmp_path, judge, group, coverage):
+    write_pair(tmp_path, coverage)
+    first, second = tmp_path / "first.jsonl", tmp_path / "second.jsonl"
+    run_claim_judge.main([str(tmp_path), "--judge", "groq-pro", "--out", str(first)])
+    rows = [json.loads(line) for line in first.read_text().splitlines()]
+    row = next(row for row in rows if row["group"] == group)
+    row["anon_id"] = "distinct-packet"
+    row["judge_model"] = "groq/openai/gpt-oss-20b"
+    second.write_text(json.dumps(row) + "\n", encoding="utf-8")
+
+    with pytest.raises(SystemExit, match="conflicting R9 judge_model for groq-pro"):
+        analyze_study.analyze_claims([str(first), str(second)])
+
+
+def test_analysis_pools_consistent_models_across_files(tmp_path, judge):
+    write_pair(tmp_path)
+    first, second = tmp_path / "first.jsonl", tmp_path / "second.jsonl"
+    run_claim_judge.main([str(tmp_path), "--judge", "groq-pro", "--out", str(first)])
+    rows = [json.loads(line) for line in first.read_text().splitlines()]
+    for row in rows:
+        row["anon_id"] += "-second"
+    second.write_text("".join(json.dumps(row) + "\n" for row in rows), encoding="utf-8")
+
+    report = analyze_study.analyze_claims([str(first), str(second)])["groq-pro"]
+
+    for group in ("rag_llm", "llm_no_rag"):
+        assert report[group]["packets"] == 2
+        assert report[group]["total_claims"] == 4
+        assert report[group]["unsupported_rate"] == .5
+    assert report["rag_llm"]["citation_packets"] == 2
+    assert report["llm_no_rag"]["citation_packets"] == 0
+
+
 def test_interrupted_output_rejudges_tail_and_another_judge_runs_all(tmp_path, judge):
     write_pair(tmp_path)
     out = tmp_path / "out.jsonl"
