@@ -2,8 +2,8 @@
 chính pipeline đó sinh với `use_retrieval=False` trên cùng Learning Objective (nhóm llm_no_rag).
 
 Hai gói cùng chủ đề, cùng Learning Objective và cùng một bộ tài liệu đối chiếu cho người và mô hình
-chấm. Bộ tài liệu đó lấy bằng một lượt truy hồi độc lập với cả hai bản, chạy lại đúng câu truy vấn
-mà pipeline RAG đã dùng để đặt Learning Objective, trong đúng phạm vi mục: lấy chính các đoạn module
+chấm. Với mục nhỏ, bộ đối chiếu gồm toàn bộ chunk của mục. Mục lớn dùng một lượt truy hồi độc lập
+với cả hai bản, chạy lại câu truy vấn đặt Learning Objective và ghi rõ độ phủ chưa đầy đủ: lấy các đoạn module
 RAG đã trích dẫn thì bản RAG được chấm trên những gì nó tự chọn, và được lợi.
 
 Gói chỉ chứa nội dung, không chứa gì lộ nhóm hay nguồn (tên tệp, tên môn, tên model); mã ẩn danh do
@@ -16,6 +16,7 @@ from typing import Literal
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
+from app.generation.claim_evaluation import ReferenceEvidence, StoredCitation
 from app.generation.evaluation import (
     ExampleInput,
     ModuleContentInput,
@@ -31,11 +32,13 @@ from app.generation.module_generation_pipeline import (
     run_module_generation,
 )
 from app.llm.gateway import using_model
-from app.models import ComponentType, DocumentSection, Job, JobStatus, JobType, Module
+from app.models import Chunk, ComponentType, DocumentSection, Job, JobStatus, JobType, Module
 from app.retrieval.search import ChunkScope, retrieve
 
 # Cùng số đoạn tối thiểu mà pipeline RAG lấy khi đặt Learning Objective.
 REFERENCE_MIN_K = 8
+REFERENCE_MAX_CHUNKS = 64
+REFERENCE_MAX_CHARACTERS = 120_000
 
 
 class StudyFile(BaseModel):
@@ -46,13 +49,65 @@ class StudyFile(BaseModel):
     group: Literal["rag_llm", "llm_no_rag"]
     generator_model: str
     packet: ModuleContentInput
+    reference: ReferenceEvidence = ReferenceEvidence()
+    claim_citations: list[StoredCitation] | None = None
 
 
 def reference_chunks(db: Session, module: Module) -> list[str]:
     section = db.get(DocumentSection, module.section_id) if module.section_id else None
+    if section:
+        all_chunks = section_chunks(db, module, section)
+        if small_reference(all_chunks):
+            return [c.content for c in all_chunks]
     scope = ChunkScope(module.document_id, section.first_chunk_index, section.last_chunk_index) if section else None
     chunks = retrieve(db, module.course_id, concept_query_of(module, section), top_k=None, min_k=REFERENCE_MIN_K, scope=scope)
     return [c.content for c in chunks]
+
+
+def section_chunks(db: Session, module: Module, section: DocumentSection) -> list[Chunk]:
+    return db.query(Chunk).filter(
+        Chunk.document_id == module.document_id, Chunk.course_id == module.course_id,
+        Chunk.chunk_index >= section.first_chunk_index, Chunk.chunk_index <= section.last_chunk_index,
+    ).order_by(Chunk.chunk_index).all()
+
+
+def small_reference(chunks: list[Chunk]) -> bool:
+    return bool(chunks) and len(chunks) <= REFERENCE_MAX_CHUNKS and sum(
+        len(c.content) for c in chunks
+    ) <= REFERENCE_MAX_CHARACTERS
+
+
+def study_evidence(db: Session, module: Module, sources: list[str]) -> tuple[ReferenceEvidence, list[StoredCitation] | None]:
+    """Snapshot reference coverage and resolve saved locators within this document only.
+
+    Repeated locators are ambiguous: never choose an arbitrary chunk or a supporting neighbour.
+    Legacy Content without claim_citations stays missing, distinct from a recorded empty list.
+    """
+    section = db.get(DocumentSection, module.section_id) if module.section_id else None
+    chunks = section_chunks(db, module, section) if section else []
+    complete = small_reference(chunks) and sources == [c.content for c in chunks]
+    reference = ReferenceEvidence(
+        coverage="complete" if complete else "partial" if section else "unknown",
+        chunk_ids=[str(c.id) for c in chunks] if complete else [],
+        total_chunks=len(chunks) if section else None,
+    )
+    content = _component(module, ComponentType.content)
+    saved = content.content.get("claim_citations") if content else None
+    if saved is None:
+        return reference, None
+    candidates = db.query(Chunk).filter(
+        Chunk.document_id == module.document_id, Chunk.course_id == module.course_id,
+    ).all()
+    citations = []
+    for item in saved:
+        matches = [c for c in candidates if c.source_ref and c.source_ref == item["locator"]]
+        chunk = matches[0] if len(matches) == 1 else None
+        citations.append(StoredCitation(
+            claim=item["claim"], locator=item["locator"],
+            chunk_id=str(chunk.id) if chunk else None, chunk_content=chunk.content if chunk else None,
+            resolution="resolved" if chunk else "ambiguous" if matches else "missing",
+        ))
+    return reference, citations
 
 
 def _component(module: Module, component_type: ComponentType):

@@ -20,7 +20,7 @@ from pathlib import Path
 
 from app.db import SessionLocal
 from app.generation.module_generation_pipeline import generation_payload_of
-from app.generation.study_packets import StudyFile, study_pair
+from app.generation.study_packets import StudyFile, study_evidence, study_pair
 from app.llm import gateway
 from app.models import Module
 
@@ -52,6 +52,7 @@ def main(argv: list[str] | None = None) -> None:
         no_rag_alias = args.model or rag_alias
         try:
             rag, no_rag = study_pair(db, module, no_rag_alias, self_check_of(db, module.id))
+            reference, citations = study_evidence(db, module, rag.source_chunks)
         except ValueError as loi:
             raise SystemExit(str(loi)) from loi
     finally:
@@ -61,7 +62,10 @@ def main(argv: list[str] | None = None) -> None:
     args.out.mkdir(parents=True, exist_ok=True)
     for group, packet, alias in (("rag_llm", rag, rag_alias), ("llm_no_rag", no_rag, no_rag_alias)):
         generator = alias or gateway.active_model()
-        study = StudyFile(pair_id=str(args.module_id), group=group, generator_model=generator, packet=packet)
+        study = StudyFile(
+            pair_id=str(args.module_id), group=group, generator_model=generator, packet=packet,
+            reference=reference, claim_citations=citations if group == "rag_llm" else None,
+        )
         path = args.out / f"{args.module_id}-{group}.json"
         path.write_text(json.dumps(study.model_dump(), ensure_ascii=False, indent=2), encoding="utf-8")
         print(path)
