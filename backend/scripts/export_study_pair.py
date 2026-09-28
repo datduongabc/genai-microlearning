@@ -5,11 +5,11 @@
 Bản không RAG là một module sinh bằng chính pipeline RAG với use_retrieval=False (được lưu như mọi
 module khác và dùng lại ở các lần xuất sau với cùng model), bằng đúng model đã sinh module RAG (đọc từ job sinh module), để khác biệt
 điểm chấm chỉ còn là RAG; --model chỉ dùng khi muốn ghi đè có chủ ý. Mỗi tệp là một StudyFile: gói
-nội dung (khóa "packet", không lộ nhóm hay nguồn) bọc trong mã cặp, tên nhóm và model đã sinh. Phần
-bọc ngoài chỉ dành cho người nghiên cứu và scripts/run_judge.py, không đưa cho người chấm.
+nội dung (khóa "packet", không lộ nhóm hay nguồn) bọc trong mã cặp, tên nhóm và model đã sinh. Metadata đối chiếu và trích dẫn R9 cũng nằm ở lớp bọc ngoài; xem docs/rubric.md
+cho định dạng và quy trình chấm. Không đưa toàn bộ lớp bọc cho người chấm.
 
-Tốn lượt gọi LLM thật (12 lượt trên đường thuận cho bản không RAG, 7 khi module RAG tắt tự kiểm), và
-một lượt nhúng câu truy vấn.
+Khi chưa có bản đối chứng, bước xuất gọi LLM để sinh bản không RAG. Chỉ nhúng câu truy vấn
+khi bộ đối chiếu cần truy hồi; mục nhỏ dùng toàn bộ chunk sẵn có, không cần lượt nhúng này.
 """
 
 import argparse
