@@ -55,10 +55,9 @@ class StudyFile(BaseModel):
 
 def reference_chunks(db: Session, module: Module) -> list[str]:
     section = db.get(DocumentSection, module.section_id) if module.section_id else None
-    if section:
-        all_chunks = section_chunks(db, module, section)
-        if small_reference(all_chunks):
-            return [c.content for c in all_chunks]
+    all_chunks = reference_scope_chunks(db, module, section)
+    if small_reference(all_chunks):
+        return [c.content for c in all_chunks]
     scope = ChunkScope(module.document_id, section.first_chunk_index, section.last_chunk_index) if section else None
     chunks = retrieve(db, module.course_id, concept_query_of(module, section), top_k=None, min_k=REFERENCE_MIN_K, scope=scope)
     return [c.content for c in chunks]
@@ -68,6 +67,16 @@ def section_chunks(db: Session, module: Module, section: DocumentSection) -> lis
     return db.query(Chunk).filter(
         Chunk.document_id == module.document_id, Chunk.course_id == module.course_id,
         Chunk.chunk_index >= section.first_chunk_index, Chunk.chunk_index <= section.last_chunk_index,
+    ).order_by(Chunk.chunk_index).all()
+
+
+def reference_scope_chunks(db: Session, module: Module, section: DocumentSection | None) -> list[Chunk]:
+    if section:
+        return section_chunks(db, module, section)
+    if module.section_id is not None:
+        return []
+    return db.query(Chunk).filter(
+        Chunk.document_id == module.document_id, Chunk.course_id == module.course_id,
     ).order_by(Chunk.chunk_index).all()
 
 
@@ -84,12 +93,12 @@ def study_evidence(db: Session, module: Module, sources: list[str]) -> tuple[Ref
     Legacy Content without claim_citations stays missing, distinct from a recorded empty list.
     """
     section = db.get(DocumentSection, module.section_id) if module.section_id else None
-    chunks = section_chunks(db, module, section) if section else []
+    chunks = reference_scope_chunks(db, module, section)
     complete = small_reference(chunks) and sources == [c.content for c in chunks]
     reference = ReferenceEvidence(
         coverage="complete" if complete else "partial" if section else "unknown",
         chunk_ids=[str(c.id) for c in chunks] if complete else [],
-        total_chunks=len(chunks) if section else None,
+        total_chunks=len(chunks) if complete or section else None,
     )
     content = _component(module, ComponentType.content)
     saved = content.content.get("claim_citations") if content else None

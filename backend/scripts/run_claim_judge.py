@@ -57,6 +57,7 @@ def main(argv: list[str] | None = None) -> None:
             evaluation = assess_content(
                 study.packet.content_markdown, study.packet.source_chunks, study.reference,
                 study.claim_citations if study.group == "rag_llm" else None,
+                judge_model=judge_model,
             )
             row = {
                 "anon_id": code, "pair_id": study.pair_id, "group": study.group,

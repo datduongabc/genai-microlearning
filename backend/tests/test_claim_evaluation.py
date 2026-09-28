@@ -22,7 +22,7 @@ def judge(monkeypatch):
     calls = []
     def fake(prompt, model, **kwargs):
         data = json.loads(prompt)
-        calls.append((model, data))
+        calls.append((model, data, kwargs))
         if model is ce.ClaimExtraction:
             start, claims = 0, []
             for line in data["content"].splitlines(keepends=True):
@@ -48,6 +48,19 @@ def test_wrong_chunk_is_incorrect_despite_support_elsewhere(judge):
     assert result.unsupported_rate == 0 and result.citation_accuracy == 0
     assert result.citation_count == 1 and result.correct_citations == 0
     assert judge[-1][1]["evidence"] == ["Other"]
+
+
+def test_groq_judge_requests_low_reasoning_for_extraction_and_support(judge):
+    ce.assess_content("Fact", ["Fact"], reference(), judge_model="groq/openai/gpt-oss-120b")
+    assert len(judge) == 2
+    for _, _, kwargs in judge:
+        assert kwargs["reasoning_effort"] == "low"
+        assert kwargs["allowed_openai_params"] == ["reasoning_effort"]
+
+
+def test_non_groq_judge_keeps_default_reasoning(judge):
+    ce.assess_content("Fact", ["Fact"], reference(), judge_model="gemini/gemini-3.5-flash")
+    assert all("reasoning_effort" not in kwargs for _, _, kwargs in judge)
 
 
 @pytest.mark.parametrize("coverage", ["partial", "unknown"])
@@ -96,6 +109,7 @@ def test_runner_persists_resumes_analyzes_and_refuses_changed_packet(tmp_path, j
     args = [str(tmp_path), "--judge", "groq-pro", "--out", str(out)]
     run_claim_judge.main(args)
     count = len(judge)
+    assert all(kwargs.get("reasoning_effort") == "low" for _, _, kwargs in judge)
     run_claim_judge.main(args)
     assert len(judge) == count
     rows = [json.loads(line) for line in out.read_text().splitlines()]
@@ -270,3 +284,33 @@ def test_small_section_reference_and_citation_identities_in_isolated_sqlite(monk
         sources = sp.reference_chunks(db, module)
         evidence, _ = sp.study_evidence(db, module, sources)
         assert sources == ["Fact"] and evidence.coverage == "partial" and evidence.total_chunks == 2
+
+
+def test_small_document_without_section_is_complete_reference(monkeypatch):
+    engine = create_engine("sqlite://")
+    Chunk.__table__.create(engine)
+    with Session(engine) as db:
+        document_id, course_id = uuid.uuid4(), uuid.uuid4()
+        chunks = [Chunk(document_id=document_id, course_id=course_id, chunk_index=i, content=text)
+                  for i, text in enumerate(["First fact", "Second fact"])]
+        db.add_all(chunks)
+        db.add(Chunk(document_id=uuid.uuid4(), course_id=course_id, chunk_index=0, content="Other document"))
+        db.flush()
+        module = Module(document_id=document_id, course_id=course_id, section_id=None, components=[])
+        monkeypatch.setattr(sp, "concept_query_of", lambda *a: "query")
+        monkeypatch.setattr(sp, "retrieve", lambda *a, **k: pytest.fail("small document must not retrieve"))
+
+        sources = sp.reference_chunks(db, module)
+        evidence, _ = sp.study_evidence(db, module, sources)
+
+        assert sources == ["First fact", "Second fact"]
+        assert evidence.coverage == "complete"
+        assert evidence.total_chunks == 2
+        assert evidence.chunk_ids == [str(c.id) for c in chunks]
+
+        monkeypatch.setattr(sp, "REFERENCE_MAX_CHUNKS", 1)
+        monkeypatch.setattr(sp, "retrieve", lambda *a, **k: chunks[:1])
+        sources = sp.reference_chunks(db, module)
+        evidence, _ = sp.study_evidence(db, module, sources)
+        assert sources == ["First fact"]
+        assert evidence.coverage == "unknown" and evidence.total_chunks is None
