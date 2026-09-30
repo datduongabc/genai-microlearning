@@ -2,9 +2,8 @@
 chính pipeline đó sinh với `use_retrieval=False` trên cùng Learning Objective (nhóm llm_no_rag).
 
 Hai gói cùng chủ đề, cùng Learning Objective và cùng một bộ tài liệu đối chiếu cho người và mô hình
-chấm. Với mục nhỏ, bộ đối chiếu gồm toàn bộ chunk của mục. Mục lớn dùng một lượt truy hồi độc lập
-với cả hai bản, chạy lại câu truy vấn đặt Learning Objective và ghi rõ độ phủ chưa đầy đủ: lấy các đoạn module
-RAG đã trích dẫn thì bản RAG được chấm trên những gì nó tự chọn, và được lợi.
+chấm; quy tắc phạm vi và độ phủ ở docs/rubric.md, mục 7. Không lấy riêng các đoạn module RAG
+đã trích dẫn: như vậy bản RAG được chấm trên những gì nó tự chọn, và được lợi.
 
 Gói chỉ chứa nội dung, không chứa gì lộ nhóm hay nguồn (tên tệp, tên môn, tên model); mã ẩn danh do
 phân hệ nghiên cứu gán khi nạp gói. Nhóm, mã cặp và model đã sinh nằm ở tệp nghiên cứu bọc ngoài gói

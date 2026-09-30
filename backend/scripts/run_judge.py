@@ -11,11 +11,11 @@ mình (self-preference bias). Hãng là nơi làm ra model chứ không phải n
 Groq vẫn là model của OpenAI. Kiểm cho mọi gói trước khi gọi lượt nào, để một thư mục lẫn gói không
 hợp lệ không tốn tiền nửa chừng rồi mới dừng.
 
-Chạy lại với cùng tệp kết quả thì chỉ chấm những gói mô hình chấm này còn thiếu: lượt chấm trả tiền bị
-ngắt giữa chừng (hết hạn mức, mất mạng) không phải trả lại cho phần đã xong. Mô hình chấm khác ghi vào
+Chạy lại với cùng tệp kết quả thì chỉ chấm những gói mô hình chấm này còn thiếu: lượt chấm bị
+ngắt giữa chừng (hết hạn mức, mất mạng) không phải gọi lại cho phần đã xong. Mô hình chấm khác ghi vào
 cùng tệp thì chấm đủ mọi gói; scripts/analyze_study.py tách các dòng theo mô hình chấm.
 
-Tốn một lượt gọi LLM thật cho mỗi gói, qua gateway.
+Tốn một lượt gọi LLM thật cho mỗi gói, qua gateway; điều kiện chạy miễn phí ở docs/rubric.md, mục 6.
 """
 
 import argparse
