@@ -87,6 +87,7 @@ class create_quiz extends external_api {
         $data->cmidnumber = '';
         $data->timeopen = 0;
         $data->timeclose = 0;
+        $data->decimalpoints = 2;
         $data->questiondecimalpoints = -1;
         $data->name = $params['name'];
         $data->intro = '';
