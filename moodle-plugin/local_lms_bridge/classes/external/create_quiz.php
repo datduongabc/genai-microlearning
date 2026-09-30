@@ -17,6 +17,9 @@ use core_external\external_value;
  */
 class create_quiz extends external_api {
 
+    /** Hanh vi lam bai duoc phep: Quiz cham cuoi bai, Practice phan hoi ngay. */
+    const BEHAVIOURS = ['deferredfeedback', 'immediatefeedback'];
+
     public static function execute_parameters(): external_function_parameters {
         return new external_function_parameters([
             'courseid'  => new external_value(PARAM_INT, 'Ma khoa hoc trong Moodle'),
@@ -32,6 +35,12 @@ class create_quiz extends external_api {
                 ])
             ),
             'sectionnum' => new external_value(PARAM_INT, 'Muc trong khoa hoc', VALUE_DEFAULT, 0),
+            'behaviour'  => new external_value(
+                PARAM_ALPHA,
+                'Hanh vi cau hoi (preferredbehaviour): deferredfeedback hoac immediatefeedback',
+                VALUE_DEFAULT,
+                'deferredfeedback'
+            ),
         ]);
     }
 
@@ -39,7 +48,8 @@ class create_quiz extends external_api {
         return new external_value(PARAM_INT, 'Ma course module cua quiz vua tao');
     }
 
-    public static function execute(int $courseid, string $name, array $questions, int $sectionnum = 0): int {
+    public static function execute(int $courseid, string $name, array $questions, int $sectionnum = 0,
+            string $behaviour = 'deferredfeedback'): int {
         global $CFG, $DB, $USER;
         require_once($CFG->dirroot . '/course/modlib.php');
         require_once($CFG->dirroot . '/question/engine/bank.php');
@@ -50,7 +60,14 @@ class create_quiz extends external_api {
             'name'       => $name,
             'questions'  => $questions,
             'sectionnum' => $sectionnum,
+            'behaviour'  => $behaviour,
         ]);
+
+        if (!in_array($params['behaviour'], self::BEHAVIOURS, true)) {
+            throw new \invalid_parameter_exception(
+                'behaviour phai la mot trong: ' . implode(', ', self::BEHAVIOURS)
+            );
+        }
 
         $course = get_course($params['courseid']);
         $context = \context_course::instance($course->id);
@@ -70,7 +87,7 @@ class create_quiz extends external_api {
         $data->introformat = FORMAT_HTML;
         $data->grade = 10;
         $data->questionsperpage = 1;
-        $data->preferredbehaviour = 'deferredfeedback';
+        $data->preferredbehaviour = $params['behaviour'];
         // Cot password cua mdl_quiz khong cho phep null, va mod_quiz lay gia tri
         // tu truong bieu mau ten quizpassword roi moi gan sang cot password
         // (mod/quiz/lib.php). Dat thang $data->password se bi ghi de bang null.

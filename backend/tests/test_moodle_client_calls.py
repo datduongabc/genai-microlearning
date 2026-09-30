@@ -39,3 +39,29 @@ def test_get_course_returns_the_matching_course(monkeypatch):
     _answer(monkeypatch, [{"id": 7, "fullname": "Cấu trúc dữ liệu", "shortname": "CO2003", "extra": 1}])
 
     assert REAL_GET_COURSE(7) == {"id": 7, "fullname": "Cấu trúc dữ liệu", "shortname": "CO2003"}
+
+
+def test_create_quiz_defaults_to_deferred_feedback_for_old_callers(monkeypatch):
+    sent = _answer(monkeypatch, 5)
+
+    moodle_client.create_quiz(3, "Quiz", [])
+
+    assert sent[0]["behaviour"] == "deferredfeedback"
+
+
+def test_create_quiz_sends_the_requested_behaviour_to_the_web_service(monkeypatch):
+    sent = _answer(monkeypatch, 5)
+
+    moodle_client.create_quiz(3, "Practice", [], behaviour="immediatefeedback")
+
+    assert sent[0]["wsfunction"] == "local_lms_bridge_create_quiz"
+    assert sent[0]["behaviour"] == "immediatefeedback"
+
+
+def test_create_quiz_refuses_an_unknown_behaviour_without_calling_moodle(monkeypatch):
+    sent = _answer(monkeypatch, 5)
+
+    with pytest.raises(ValueError, match="behaviour"):
+        moodle_client.create_quiz(3, "Quiz", [], behaviour="interactive")
+
+    assert sent == []

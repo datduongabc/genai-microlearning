@@ -147,18 +147,30 @@ def create_book(course_id: int, name: str, chapters: list[dict[str, Any]], secti
     ))
 
 
+QUIZ_BEHAVIOURS = ("deferredfeedback", "immediatefeedback")
+
+
 def create_quiz(
-    course_id: int, name: str, questions: list[dict[str, Any]], section_num: int = 0
+    course_id: int,
+    name: str,
+    questions: list[dict[str, Any]],
+    section_num: int = 0,
+    behaviour: str = "deferredfeedback",
 ) -> int:
     """Returns the created quiz's course module id (cmid).
 
     Each item in `questions` needs: stem (str), choices (list[str]),
-    correct_index (int), explanation (str, optional).
+    correct_index (int), explanation (str, optional). `behaviour` is Moodle's
+    preferredbehaviour: "deferredfeedback" (graded at the end, the Quiz) or
+    "immediatefeedback" (feedback after each answer, the Practice).
     """
+    if behaviour not in QUIZ_BEHAVIOURS:
+        raise ValueError(f"behaviour must be one of {QUIZ_BEHAVIOURS}, got {behaviour!r}")
     return int(call(
         "local_lms_bridge_create_quiz",
         courseid=course_id,
         name=name,
         questions=questions,
         sectionnum=section_num,
+        behaviour=behaviour,
     ))

@@ -63,3 +63,13 @@ def test_moodle_is_given_the_token_the_backend_uses():
 
     assert services["moodle"]["environment"]["MOODLE_TOKEN"] == "${MOODLE_TOKEN}"
     assert services["backend"]["environment"]["MOODLE_TOKEN"] == "${MOODLE_TOKEN}"
+
+
+def test_create_quiz_validates_behaviour_at_the_web_service_boundary():
+    php = (PLUGIN / "classes" / "external" / "create_quiz.php").read_text(encoding="utf-8")
+
+    assert "'behaviour'" in php
+    assert "VALUE_DEFAULT,\n                'deferredfeedback'" in php
+    assert "BEHAVIOURS = ['deferredfeedback', 'immediatefeedback']" in php
+    assert "invalid_parameter_exception" in php
+    assert "$data->preferredbehaviour = $params['behaviour']" in php
