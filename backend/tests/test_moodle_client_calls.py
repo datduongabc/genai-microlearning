@@ -57,11 +57,3 @@ def test_create_quiz_sends_the_requested_behaviour_to_the_web_service(monkeypatc
     assert sent[0]["wsfunction"] == "local_lms_bridge_create_quiz"
     assert sent[0]["behaviour"] == "immediatefeedback"
 
-
-def test_create_quiz_refuses_an_unknown_behaviour_without_calling_moodle(monkeypatch):
-    sent = _answer(monkeypatch, 5)
-
-    with pytest.raises(ValueError, match="behaviour"):
-        moodle_client.create_quiz(3, "Quiz", [], behaviour="interactive")
-
-    assert sent == []

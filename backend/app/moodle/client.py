@@ -147,9 +147,6 @@ def create_book(course_id: int, name: str, chapters: list[dict[str, Any]], secti
     ))
 
 
-QUIZ_BEHAVIOURS = ("deferredfeedback", "immediatefeedback")
-
-
 def create_quiz(
     course_id: int,
     name: str,
@@ -164,8 +161,6 @@ def create_quiz(
     preferredbehaviour: "deferredfeedback" (graded at the end, the Quiz) or
     "immediatefeedback" (feedback after each answer, the Practice).
     """
-    if behaviour not in QUIZ_BEHAVIOURS:
-        raise ValueError(f"behaviour must be one of {QUIZ_BEHAVIOURS}, got {behaviour!r}")
     return int(call(
         "local_lms_bridge_create_quiz",
         courseid=course_id,
