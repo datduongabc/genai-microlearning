@@ -5,7 +5,7 @@ Rubric này dùng chung cho mô hình chấm (`judge_module` trong `backend/app/
 ## 1. Thiết kế nghiên cứu
 
 - **Hai nhóm ghép cặp.** Với mỗi chủ đề có một module sinh bằng RAG (nhóm `rag_llm`) và một module sinh không RAG trên cùng Learning Objective, cùng model sinh (nhóm `llm_no_rag`). Khác biệt điểm trong một cặp vì vậy chỉ còn là do RAG.
-- **Cùng tài liệu đối chiếu.** Hai module của một cặp được chấm trên cùng một bộ đoạn nguồn, lấy bằng một lượt truy hồi độc lập với cả hai bản.
+- **Cùng tài liệu đối chiếu.** Hai module của một cặp được chấm trên cùng một bộ đoạn nguồn; quy tắc phạm vi và độ phủ ở [mục 7](#7-r9-claim-không-có-căn-cứ-và-độ-chính-xác-trích-dẫn). Không lấy bộ đối chiếu từ những chunk mà bản RAG tự trích dẫn.
 - **Chấm mù.** Người chấm và mô hình chấm chỉ thấy mã ẩn danh (dạng `M-3fa9c2d1`), không thấy nhóm, tên môn, tên tệp hay tên model.
 - **Hai mô hình chấm khác hãng với model sinh.** Mô hình chấm chính là Claude Sonnet 5 (alias `claude-pro`), mô hình chấm thứ hai là gpt-oss-120b trên Groq (alias `groq-pro`). Model sinh là Gemini, nên cả hai mô hình chấm đều khác hãng: mô hình chấm thường ưu ái văn của chính họ nhà mình. `scripts/run_judge.py` từ chối chạy khi mô hình chấm cùng hãng với model đã sinh gói.
 
@@ -125,7 +125,7 @@ M-3fa9c2d1,4,3,5,4,4,3,5,5,"nội dung: câu về năm 1998 không có trong ngu
 
 ## 6. Quy trình chạy và phân tích
 
-Chạy trong thư mục `backend/`. Mỗi lệnh chấm tốn một lượt gọi LLM trả tiền cho mỗi gói.
+Chạy trong thư mục `backend/`. R8 gọi LLM một lượt mỗi gói; R9 gọi một lượt tách claim khi Content không rỗng, một lượt kiểm mỗi claim khi có nguồn hợp lệ, rồi một lượt kiểm mỗi trích dẫn đã giải được chunk có nội dung. Hiện phát triển và validation chỉ dùng kiểm thử xác định hoặc route miễn phí được xác minh, đủ ngữ cảnh và quota; API trả phí để sau khi hoàn thành toàn bộ dự án. Bước xuất có thể sinh bản không RAG nếu chưa có sẵn, nên cũng cần route miễn phí. Kết quả và giới hạn của các lượt live đã chạy nằm trong [báo cáo smoke R9](measurements/2026-09-28-r9-live-smoke.md).
 
 ```bash
 # 1. Xuất cặp gói của từng module RAG đã sinh (một lần cho mỗi module).
@@ -133,12 +133,14 @@ PYTHONPATH=. uv run python scripts/export_study_pair.py <module_id> --out study/
 
 # 2. Chấm bằng hai mô hình chấm khác hãng với model sinh. Bị ngắt thì chạy lại
 #    đúng lệnh đó: chỉ những gói còn thiếu được chấm tiếp.
-PYTHONPATH=. uv run python scripts/run_judge.py study/packets --judge claude-pro --out study/claude-pro.jsonl
-PYTHONPATH=. uv run python scripts/run_judge.py study/packets --judge groq-pro --out study/groq-pro.jsonl
+PYTHONPATH=. uv run python scripts/run_judge.py study/packets --judge <verified-free-alias> --out study/rubric.jsonl
 
-# 3. Phân tích, kèm điểm của người chấm nếu có.
-PYTHONPATH=. uv run python scripts/analyze_study.py study/claude-pro.jsonl study/groq-pro.jsonl \
-    --human study/human.csv --out study/report.json
+# 3. R9: chấm riêng Content và các claim_citations đã lưu.
+PYTHONPATH=. uv run python scripts/run_claim_judge.py study/packets --judge <verified-free-alias> --out study/claims.jsonl
+
+# 4. Phân tích cùng R8, kèm điểm người chấm nếu có.
+PYTHONPATH=. uv run python scripts/analyze_study.py study/rubric.jsonl \
+    --claims study/claims.jsonl --human study/human.csv --out study/report.json
 ```
 
 Mã ẩn danh của mỗi gói (cột `anon_id` trong tệp `.jsonl`) cố định theo tên tệp gói, nên người nghiên cứu dùng chính mã đó khi đưa gói cho người chấm.
@@ -149,3 +151,24 @@ Mã ẩn danh của mỗi gói (cột `anon_id` trong tệp `.jsonl`) cố đị
 - **Wilcoxon signed-rank hai phía** trên các cặp (rag_llm trừ llm_no_rag) cho từng tiêu chí, kèm p đã hiệu chỉnh Holm cho 8 tiêu chí. Dùng Wilcoxon vì điểm là thang thứ bậc và mẫu nhỏ, không giả định phân phối chuẩn.
 - **McNemar chính xác** cho tỉ lệ module có ít nhất một hallucination giữa hai nhóm, trên các cặp.
 - **Spearman và kappa trọng số bậc hai** (thang 1-5) cho từng tiêu chí, giữa hai mô hình chấm và giữa mỗi mô hình chấm với người.
+
+## 7. R9: claim không có căn cứ và độ chính xác trích dẫn
+
+R9 là bước chấm riêng, không thay đổi điểm hay danh sách hallucination của R8. Chỉ tách **mọi khẳng định thực tế nguyên tử trong Content**, kể cả câu không có trích dẫn; không chấm Slides, Example, Quiz hay Practice. Mỗi claim lưu văn bản, khoảng ký tự Python `start` (gồm), `end` (không gồm) trong Content, quyết định hỗ trợ và lý do. Câu ghép có thể tách thành nhiều claim dùng chung khoảng ký tự. Tiêu đề không khẳng định, câu nối và chỉ dẫn học tập không thuộc mẫu số.
+
+- `unsupported_rate = unsupported_claims / total_claims`: mẫu số là toàn bộ claim đã tách, không phải số câu hay số trích dẫn. Diễn đạt lại trung thành hoặc suy ra trực tiếp từ bộ đối chiếu được tính có hỗ trợ. **Không được nguồn hỗ trợ không chứng minh claim sai ngoài đời.** Đây là ước lượng từ mô hình chấm; bỏ sót khi tách claim hoặc phán đoán hỗ trợ sai vẫn là giới hạn cần kiểm chứng bằng người.
+- Chỉ công bố tỉ lệ cho bộ đối chiếu `complete`, đủ định danh và tổng số chunk khớp, mọi chunk có nội dung. Với `partial` hoặc `unknown`, vẫn lưu quyết định đối với nguồn đã cung cấp nhưng `unsupported_rate` là `null`, không coi đó là đánh giá đầy đủ. Không có nguồn hoặc có chunk rỗng: quyết định claim là `null`, không được đếm thành không có căn cứ. Không có claim: mẫu số 0 và tỉ lệ `null`.
+- Khi module có mục, bộ đối chiếu lấy toàn bộ chunk của mục theo thứ tự nếu phạm vi không rỗng và nằm trong giới hạn `REFERENCE_MAX_CHUNKS` và `REFERENCE_MAX_CHARACTERS` do [`small_reference` trong `study_packets.py`](../backend/app/generation/study_packets.py) quy định; độ phủ là `complete`. Khi module không có mục, áp dụng cùng quy tắc cho toàn bộ chunk của tài liệu đó. Phạm vi vượt giới hạn dùng truy hồi độc lập với cả hai bản theo câu truy vấn đặt Learning Objective; độ phủ là `partial` khi có mục, `unknown` khi không có mục, nên không công bố tỉ lệ claim không có căn cứ.
+- `citation_accuracy = correct_citations / citation_count`: chỉ nhóm RAG; mẫu số là số mục **claim–locator đã lưu** trong `Content.claim_citations`, độc lập với claim nguyên tử đã tách. Khi xuất, locator được giải thành ID và nội dung của đúng một chunk trong cùng tài liệu và môn. Mô hình chỉ nhận chunk đó khi kiểm trích dẫn. Hỗ trợ từ chunk khác không làm trích dẫn đúng. Locator không tìm thấy hoặc khớp nhiều chunk tính trích dẫn sai; không chọn tuỳ ý một chunk. Chỉ số này đo tính đúng của trích dẫn đã có, không đo đủ trích dẫn cho mọi claim.
+- Thiếu `claim_citations` ở gói cũ: số trích dẫn và tỉ lệ là `null`. Danh sách đã lưu nhưng rỗng: số trích dẫn 0, tỉ lệ `null`. Nhóm không RAG không chấm trích dẫn. Độ phủ bộ đối chiếu không quyết định độ đúng của trích dẫn: trích dẫn đã giải được vẫn kiểm trên đúng chunk của nó, kể cả ngoài mục.
+
+Tệp R9 JSONL lưu mỗi gói/mô hình một dòng: mã ẩn danh, mã cặp, nhóm, alias và model chấm thật, SHA-256 của gói, cùng `claim_evaluation` đầy đủ (claim, trích dẫn, độ phủ, tử số, mẫu số, tỉ lệ). Metadata nhóm không đưa vào prompt chấm. Hai nhóm cùng cặp phải có nguồn và metadata đối chiếu giống nhau; cùng quy tắc từ chối model chấm cùng hãng như R8. Gói cũ chưa có metadata vẫn đọc được nhưng độ phủ mặc định `unknown`; xuất lại để có đánh giá đầy đủ.
+
+Chạy lại cùng lệnh/tệp chỉ chấm gói còn thiếu; dòng cuối ghi dở được bỏ và chấm lại. Nếu gói, metadata hoặc model thật đằng sau alias chấm thay đổi, runner từ chối dùng kết quả cũ: dùng tệp kết quả mới cho lượt đánh giá mới. `--claims` đưa kết quả vào phần `claims` của báo cáo, tách theo alias chấm và nhóm, cộng tử số/mẫu số của các gói đủ điều kiện (không lấy trung bình tỉ lệ từng gói), công bố số gói được dùng/bị loại. Trình phân tích từ chối cặp `(judge, anon_id)` trùng lặp và cùng alias `judge` ánh xạ tới các `judge_model` khác nhau trong toàn bộ tệp R9 đầu vào, kể cả khi các gói khác nhau; phân tích riêng các lượt dùng model khác nhau. Trích dẫn cộng trên gói có dữ liệu trích dẫn. Các kiểm định và độ đồng thuận R8 vẫn dùng kết quả rubric, chưa áp dụng cho R9.
+
+Kiểm chứng miễn phí bằng fake judge: 10 claim với 2 claim không có trong nguồn cho `unsupported_rate = 0,2`; claim được nguồn khác hỗ trợ nhưng trích sai chunk cho `citation_accuracy = 0`.
+
+```bash
+PYTHONPATH=. uv run pytest -q tests/test_claim_evaluation.py tests/test_run_judge.py \
+    tests/test_analyze_study.py tests/test_evaluation.py
+```

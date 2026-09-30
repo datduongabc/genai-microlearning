@@ -2,6 +2,9 @@
 
     PYTHONPATH=. uv run python scripts/analyze_study.py <judge.jsonl>... [--human <ratings.csv>] [--out <report.json>]
 
+--claims <claims.jsonl>... thêm metric R9 từ run_claim_judge.py, cộng tử số/mẫu số
+theo mô hình và nhóm, loại gói có bộ đối chiếu chưa đủ khỏi tỉ lệ claim không có căn cứ.
+
 Đầu vào là các tệp do scripts/run_judge.py ghi, và tuỳ chọn một tệp CSV điểm của người chấm (cột anon_id
 cùng các cột tiêu chí, xem docs/rubric.md). Các dòng được tách theo mô hình chấm ghi trong dòng, không
 theo tệp: một tệp có thể chứa nhiều mô hình chấm, và một mô hình chấm có thể nằm ở nhiều tệp. Với từng
@@ -27,6 +30,7 @@ from pathlib import Path
 
 from scipy import stats
 
+from app.generation.claim_evaluation import ClaimEvaluation
 from app.generation.evaluation import DimensionScore, ModuleEvaluation
 
 # Tám tiêu chí chấm điểm, theo đúng thứ tự của rubric. Tiêu chí thứ chín là danh sách
@@ -207,6 +211,49 @@ def _print_report(report: dict) -> None:
         print(f"{'tiêu chí':<22}{'n':>4}{'Spearman':>10}{'kappa':>8}")
         for c, a in per_criterion.items():
             print(f"{c:<22}{a['n']:>4}{fmt(a['spearman']):>10}{fmt(a['kappa']):>8}")
+    if "claims" in report:
+        print("\nR9 Content claims (pooled counts; incomplete references excluded):")
+        print(json.dumps(report["claims"], ensure_ascii=False, indent=2))
+
+
+def analyze_claims(paths: list[str]) -> dict:
+    grouped = {}
+    seen = set()
+    judge_models = {}
+    for path in paths:
+        for line in Path(path).read_text(encoding="utf-8").splitlines():
+            if not line.strip():
+                continue
+            raw = json.loads(line)
+            judge, model = raw["judge"], raw["judge_model"]
+            if judge in judge_models and judge_models[judge] != model:
+                raise SystemExit(f"{path}: conflicting R9 judge_model for {judge}: {judge_models[judge]} != {model}")
+            judge_models[judge] = model
+            key = (raw["judge"], raw["anon_id"])
+            if key in seen:
+                raise SystemExit(f"{path}: duplicate R9 assessment {key}")
+            seen.add(key)
+            evaluation = ClaimEvaluation.model_validate(raw["claim_evaluation"])
+            grouped.setdefault(raw["judge"], {}).setdefault(raw["group"], []).append(evaluation)
+    result = {}
+    for judge, groups in grouped.items():
+        result[judge] = {}
+        for group, rows in groups.items():
+            eligible = [r for r in rows if r.unsupported_rate is not None]
+            claims = sum(r.total_claims for r in eligible)
+            unsupported = sum(r.unsupported_claims for r in eligible)
+            citations = sum(r.citation_count or 0 for r in rows)
+            correct = sum(r.correct_citations or 0 for r in rows)
+            result[judge][group] = {
+                "packets": len(rows), "eligible_packets": len(eligible),
+                "excluded_packets": len(rows) - len(eligible),
+                "total_claims": claims, "unsupported_claims": unsupported,
+                "unsupported_rate": unsupported / claims if claims else None,
+                "citation_packets": sum(r.citations is not None for r in rows),
+                "citation_count": citations, "correct_citations": correct,
+                "citation_accuracy": correct / citations if citations else None,
+            }
+    return result
 
 
 def main(argv: list[str] | None = None) -> None:
@@ -214,11 +261,14 @@ def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("judges", nargs="+", help="các tệp .jsonl của scripts/run_judge.py")
     parser.add_argument("--human", help="CSV điểm của người chấm")
+    parser.add_argument("--claims", nargs="+", help="R9 JSONL from run_claim_judge.py")
     parser.add_argument("--out", type=Path, help="ghi thêm báo cáo dạng JSON vào tệp này")
     args = parser.parse_args(argv)
 
     loaded = load_judgements(args.judges)
     report = {"judges": {}, "agreement": {}}
+    if args.claims:
+        report["claims"] = analyze_claims(args.claims)
     for name, rows in loaded.items():
         report["judges"][name] = {
             "means": group_means(rows), "wilcoxon": compare_groups(rows), "mcnemar": mcnemar_hallucination(rows),

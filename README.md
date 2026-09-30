@@ -14,6 +14,7 @@ Học viên không đăng nhập vào đây mà học trên Moodle.
 - Đề tài: `GenerativeAI.md`
 - Thiết kế kiến trúc Giai đoạn 2: `docs/specs/2026-09-23-kien-truc-gd2-design.md`
 - Kế hoạch thực thi: `docs/plans/`
+- Đánh giá R8 và metric claim/trích dẫn R9: [docs/rubric.md](docs/rubric.md), gồm xuất cặp gói, chấm riêng Content, phân tích kết quả đã lưu và điều kiện chạy miễn phí.
 
 ## Kiến trúc
 
