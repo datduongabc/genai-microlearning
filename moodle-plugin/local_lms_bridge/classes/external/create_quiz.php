@@ -88,6 +88,8 @@ class create_quiz extends external_api {
         $data->grade = 10;
         $data->questionsperpage = 1;
         $data->preferredbehaviour = $params['behaviour'];
+        $data->correctnessduring = $params['behaviour'] === 'immediatefeedback';
+        $data->generalfeedbackduring = $params['behaviour'] === 'immediatefeedback';
         // Cot password cua mdl_quiz khong cho phep null, va mod_quiz lay gia tri
         // tu truong bieu mau ten quizpassword roi moi gan sang cot password
         // (mod/quiz/lib.php). Dat thang $data->password se bi ghi de bang null.
