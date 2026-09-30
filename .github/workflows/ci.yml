@@ -60,3 +60,44 @@ jobs:
       - run: npm ci
       - run: npm run test
       - run: npm run build
+
+  moodle-plugin:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      # Nhánh của Moodle 5.2 mà docker-compose đang chạy; moodle-plugin-ci tải nhánh này về
+      # rồi dựng site PHPUnit thử ngay trong job.
+      MOODLE_BRANCH: MOODLE_502_STABLE
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          path: repo
+      - uses: shivammathur/setup-php@v2
+        with:
+          # Moodle 5.2 đòi PHP 8.3 trở lên.
+          php-version: "8.3"
+          extensions: pgsql, pdo_pgsql, zip, gd, intl, soap, sodium, xmlrpc, mbstring, xml, curl
+          ini-values: max_input_vars=5000
+          coverage: none
+      # Ghim đúng phiên bản như các job trên: 4.5.x là dòng hỗ trợ Moodle 5.x.
+      - run: composer create-project -n --no-dev --prefer-dist moodlehq/moodle-plugin-ci ci 4.5.11
+      - run: echo "$(cd ci/bin; pwd)" >> "$GITHUB_PATH"
+      - run: echo "$(cd ci/vendor/bin; pwd)" >> "$GITHUB_PATH"
+      - run: moodle-plugin-ci install --plugin ./repo/moodle-plugin/local_lms_bridge --db-host=127.0.0.1
+        env:
+          DB: pgsql
+      - run: moodle-plugin-ci phplint
+      - run: moodle-plugin-ci phpunit --fail-on-warning
