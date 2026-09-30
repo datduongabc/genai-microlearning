@@ -82,6 +82,12 @@ class create_quiz extends external_api {
         $data->modulename = 'quiz';
         $data->section = $params['sectionnum'];
         $data->visible = 1;
+        // Cac truong bieu mau luon co khi tao qua giao dien; add_moduleinfo() va
+        // mod_quiz doc thang chung nen thieu se sinh canh bao "Undefined property".
+        $data->cmidnumber = '';
+        $data->timeopen = 0;
+        $data->timeclose = 0;
+        $data->questiondecimalpoints = -1;
         $data->name = $params['name'];
         $data->intro = '';
         $data->introformat = FORMAT_HTML;
