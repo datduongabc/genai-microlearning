@@ -27,6 +27,7 @@ final class create_quiz_test extends \advanced_testcase {
             $quiz = $DB->get_record('quiz', ['id' => $cm->instance], '*', MUST_EXIST);
             $this->assertSame($behaviour ?? 'deferredfeedback', $quiz->preferredbehaviour);
             $this->assertEquals(1, $DB->count_records('quiz_slots', ['quizid' => $quiz->id]));
+            $this->assertEquals(1, $quiz->sumgrades);
             $question = $DB->get_record('question', ['name' => $name . ' Q1'], '*', MUST_EXIST);
             $this->assertSame($questions[0]['explanation'], $question->generalfeedback);
             $options = display_options::make_from_quiz($quiz, display_options::DURING);

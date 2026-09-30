@@ -143,6 +143,8 @@ class create_quiz extends external_api {
             quiz_add_quiz_question($created->id, $quiz);
         }
 
+        \mod_quiz\quiz_settings::create($quiz->id)->get_grade_calculator()->recompute_quiz_sumgrades();
+
         return (int) $moduleinfo->coursemodule;
     }
 }
