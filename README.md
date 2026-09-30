@@ -86,6 +86,7 @@ npm run build
 ```
 
 Đây cũng đúng là những lệnh mà CI chạy, xem `.github/workflows/ci.yml`.
+CI còn có job `moodle-plugin` chạy php lint và PHPUnit cho `moodle-plugin/local_lms_bridge` trên một site Moodle 5.2 dựng sẵn trong job.
 
 ## Quy trình đóng góp
 

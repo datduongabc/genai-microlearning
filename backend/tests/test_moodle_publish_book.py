@@ -43,8 +43,11 @@ def moodle(monkeypatch):
         calls.append(("book", {"course_id": course_id, "name": name, "chapters": chapters, "section": section_num}))
         return 101
 
-    def create_quiz(course_id, name, questions, section_num=0):
-        calls.append(("quiz", {"course_id": course_id, "name": name, "questions": questions, "section": section_num}))
+    def create_quiz(course_id, name, questions, section_num=0, behaviour="deferredfeedback"):
+        calls.append(("quiz", {
+            "course_id": course_id, "name": name, "questions": questions, "section": section_num,
+            "behaviour": behaviour,
+        }))
         return 200 + len(calls)
 
     monkeypatch.setattr(moodle_client, "create_book", create_book)
@@ -373,3 +376,11 @@ def test_a_moodle_failure_is_reported_as_a_bad_gateway(published, monkeypatch):
     response = published.publish(full_module(published))
 
     assert response.status_code == 502
+
+
+def test_the_practice_gets_immediate_feedback_and_the_quiz_keeps_deferred_feedback(published, moodle):
+    published.publish(full_module(published))
+
+    behaviour = {q["name"].rsplit(" - ", 1)[1]: q["behaviour"] for q in _quizzes(moodle)}
+
+    assert behaviour == {"Practice": "immediatefeedback", "Quiz": "deferredfeedback"}

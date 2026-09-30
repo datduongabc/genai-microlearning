@@ -179,6 +179,7 @@ def publish_to_moodle(
             result["practice_cmid"] = moodle_client.create_quiz(
                 course.moodle_course_id, f"{_plain(module.title)} - Practice",
                 _build_questions(practice, _explanations(module, ComponentType.practice)), payload.section_num,
+                behaviour="immediatefeedback",
             )
 
         quiz = _component(module, ComponentType.quiz)
@@ -186,6 +187,7 @@ def publish_to_moodle(
             result["quiz_cmid"] = moodle_client.create_quiz(
                 course.moodle_course_id, f"{_plain(module.title)} - Quiz",
                 _build_questions(quiz, _explanations(module, ComponentType.quiz)), payload.section_num,
+                behaviour="deferredfeedback",
             )
     except MoodleError as e:
         raise HTTPException(status_code=502, detail=f"Moodle push failed: {e}") from e

@@ -3,9 +3,9 @@
 // goi qua token cua service nay.
 //
 // Danh sach 'functions' phai khop voi nhung ham backend thuc su goi trong
-// app/services/moodle_client.py. Test backend/tests/test_moodle_bridge_service.py
-// doc ca hai phia va so sanh, vi mot ham thieu o day chi that bai khi chay that
-// chu khong lo ra trong cac test da thay the Moodle bang ban gia.
+// backend/app/moodle/client.py. Khong co test tu dong so sanh hai phia: mot ham
+// thieu o day chi that bai khi chay that, khong lo ra trong cac test da thay the
+// Moodle bang ban gia.
 
 defined('MOODLE_INTERNAL') || die();
 
