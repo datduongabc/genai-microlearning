@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 from app.api.deps import get_current_user
 from app.auth.rate_limit import limiter, user_or_address
 from app.db import get_db
+from app.generation.module_generation_pipeline import is_control
 from app.models import ComponentType, Course, Module, ModuleComponent, User
 from app.moodle import client as moodle_client
 from app.moodle.client import MoodleError
@@ -152,6 +153,12 @@ def publish_to_moodle(
     module = db.get(Module, module_id)
     if module is None or module.course.owner_id != current_user.id:
         raise HTTPException(status_code=404, detail="Module not found")
+
+    if is_control(db, module.id):
+        raise HTTPException(
+            status_code=422,
+            detail="Mô-đun đối chứng (không RAG) chỉ dùng cho nghiên cứu, không được đẩy lên Moodle.",
+        )
 
     course = db.get(Course, module.course_id)
     if course.moodle_course_id is None:

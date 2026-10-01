@@ -303,7 +303,7 @@ describe('CourseDetailPage - module generation availability', () => {
     title: 'Intro to search',
     learning_objective: null,
     bloom_level: null,
-    component_count: 6,
+    is_control: false, component_count: 6,
     section_id: null,
   }
 
@@ -471,7 +471,7 @@ describe('CourseDetailPage - textbooks', () => {
   it('does not list a module twice while the outline shows it under its section', async () => {
     vi.mocked(api.listDocuments).mockResolvedValue([textbook])
     vi.mocked(api.listModules).mockResolvedValue([
-      { id: 'm1', title: 'Merge sort', learning_objective: null, bloom_level: null, component_count: 6, section_id: 's1' },
+      { id: 'm1', title: 'Merge sort', learning_objective: null, bloom_level: null, is_control: true, component_count: 6, section_id: 's1' },
     ])
     vi.mocked(api.listSections).mockResolvedValue([
       { id: 's1', parent_id: null, title: 'Sorting', level: 1, page_start: 1, page_end: 9, module_count: 1, generating: false },
@@ -479,6 +479,7 @@ describe('CourseDetailPage - textbooks', () => {
 
     renderPage()
     expect(await screen.findAllByRole('link', { name: /Merge sort/ })).toHaveLength(1)
+    expect(screen.getByText('Đối chứng (không RAG) - chỉ dùng cho nghiên cứu')).toBeInTheDocument()
 
     await userEvent.click(screen.getByRole('button', { name: /mục lục \(3\)/i }))
 

@@ -19,6 +19,7 @@ vi.mock('../api', async (importOriginal) => {
 })
 
 const baseModule: ModuleDetail = {
+  is_control: false,
   id: 'module-1',
   title: 'Test Module',
   learning_objective: 'Understand X',
@@ -73,6 +74,15 @@ it('downloads slides through the authenticated API client', async () => {
 })
 
 describe('ModulePreviewPage - publish to Moodle', () => {
+  it('labels a control module and hides publishing even when the course is linked', async () => {
+    vi.mocked(api.getModule).mockResolvedValue({ ...baseModule, is_control: true, moodle_course_id: 6 })
+    vi.mocked(api.getMoodleSections).mockResolvedValue([])
+    renderPage()
+    expect(await screen.findByText('Đối chứng (không RAG) - chỉ dùng cho nghiên cứu')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /push to moodle/i })).not.toBeInTheDocument()
+    expect(api.publishToMoodle).not.toHaveBeenCalled()
+  })
+
   it('prompts to link the course first when it has no moodle_course_id', async () => {
     vi.mocked(api.getModule).mockResolvedValue(baseModule)
 

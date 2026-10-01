@@ -141,14 +141,15 @@ describe('SectionTree', () => {
 
   it('shows the modules already generated for a section as links', async () => {
     const modules: ModuleSummary[] = [
-      { id: 'm1', title: 'Merge sort', learning_objective: null, bloom_level: null, component_count: 6, section_id: 's3' },
-      { id: 'm2', title: 'Whole book module', learning_objective: null, bloom_level: null, component_count: 6, section_id: null },
+      { id: 'm1', title: 'Merge sort', learning_objective: null, bloom_level: null, is_control: true, component_count: 6, section_id: 's3' },
+      { id: 'm2', title: 'Whole book module', learning_objective: null, bloom_level: null, is_control: false, component_count: 6, section_id: null },
     ]
     renderTree({ modules })
 
     const link = await screen.findByRole('link', { name: /Merge sort/ })
 
     expect(link).toHaveAttribute('href', '/modules/m1')
+    expect(screen.getByText('Đối chứng (không RAG) - chỉ dùng cho nghiên cứu')).toBeInTheDocument()
     expect(screen.queryByRole('link', { name: /Whole book module/ })).not.toBeInTheDocument()
   })
 
