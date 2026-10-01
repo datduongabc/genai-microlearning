@@ -76,6 +76,15 @@ def test_an_objective_has_between_two_and_four_sub_objectives():
             LearningObjective(**fields, sub_objectives=wrong)
 
 
+def test_examples_have_between_one_and_two_items():
+    example = Example(context="c", analysis="a")
+    for count in (1, 2):
+        assert len(ExampleOutput(examples=[example] * count).examples) == count
+    for count in (0, 3, 4):
+        with pytest.raises(ValidationError):
+            ExampleOutput(examples=[example] * count)
+
+
 # --- pipeline -------------------------------------------------------------------------------------
 
 

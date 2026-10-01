@@ -23,7 +23,7 @@ _EXAMPLE_BODY = """Bạn là chuyên gia biên soạn ví dụ minh họa cho gi
 Nhiệm vụ: viết các Example minh họa cho Learning Objective/Content được cung
 cấp — TỐI ĐA 1 Example cho MỖI sub-objective (mỗi phần của Content), và chỉ
 cho những phần mà một ví dụ thật sự giúp người học hiểu hơn; ít nhất 1 Example.
-Không viết thêm ví dụ cho đủ số.
+Chọn tối đa 2 ví dụ hữu ích nhất. Không viết thêm ví dụ cho đủ số.
 
 Ràng buộc BẮT BUỘC:
 1. Khác với Content, Example ĐƯỢC PHÉP chứa tình huống/ví dụ MỚI do bạn tự
@@ -60,9 +60,8 @@ class Example(BaseModel):
 
 
 class ExampleOutput(BaseModel):
-    # Trần 4 bằng trần số sub-objective: một bài 5-10 phút không cần nhiều ví dụ hơn số phần của nó.
     examples: list[Example] = Field(
-        min_length=1, max_length=4,
+        min_length=1, max_length=2,
         description="Tối đa 1 Example cho mỗi sub-objective, theo đúng thứ tự các phần của Content",
     )
 
@@ -71,7 +70,7 @@ def generate_example(
     lo: LearningObjective, content: str, context_chunks: list[Chunk] | None,
     output_language: OutputLanguage = "vi",
 ) -> ExampleOutput:
-    """One call, no self-check round: the schema caps the count (1-4, at most one per sub-objective),
+    """One call, no self-check round: the schema caps the count (1-2, at most one per sub-objective),
     and an example may invent its situation, so there is no source to hold it against.
     `context_chunks=None` is the no-RAG arm: the same prompt without the source block."""
     sub_objectives_text = "\n".join(f"- {so}" for so in lo.sub_objectives)

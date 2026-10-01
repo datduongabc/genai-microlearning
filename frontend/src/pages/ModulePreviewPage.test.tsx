@@ -351,6 +351,8 @@ describe('ModulePreviewPage - reading the module', () => {
 
     expect(await screen.findByText('MỤC-TIÊU-CON-A')).toBeInTheDocument()
     expect(screen.getByText('MỤC-TIÊU-CON-B')).toBeInTheDocument()
+    expect(screen.getByText('Understand X')).toBeInTheDocument()
+    expect(screen.queryByText(/Bloom:/i)).not.toBeInTheDocument()
   })
 })
 
