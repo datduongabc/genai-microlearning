@@ -376,3 +376,20 @@ it.each(['quiz', 'practice'] as const)('edits and saves a %s question', async (t
   await waitFor(() => expect(api.updateQuestion).toHaveBeenCalledWith('module-1', 'q1', { stem: 'Edited stem', choices: ['A', 'Edited B'], answer_key: 1, explanation: 'Edited explanation' }))
   expect(await screen.findByText('Edited stem')).toBeInTheDocument()
 })
+
+it('falls back to the question explanation when its Explanation item is empty', async () => {
+  const question = { id: 'q1', position: 0, stem: 'Original stem', choices: { options: ['A', 'B'] }, answer_key: '0', explanation: 'Question explanation' }
+  vi.mocked(api.getModule).mockResolvedValue({ ...baseModule, components: [
+    { id: 'quiz-1', type: 'quiz', content: {}, questions: [question] },
+    { id: 'exp-1', type: 'explanation', content: { items: [{ component: 'quiz', position: 0, reasoning: 'r', explanation_text: '' }] }, questions: [] },
+  ] })
+  const user = userEvent.setup()
+  renderPage()
+  expect(await screen.findByText('Question explanation')).toBeInTheDocument()
+  await user.click(screen.getAllByRole('button', { name: 'Sửa' })[0])
+  const stem = screen.getByRole('textbox', { name: 'Câu hỏi' })
+  await user.clear(stem)
+  await user.type(stem, 'Edited stem')
+  await user.click(screen.getByRole('button', { name: 'Lưu' }))
+  await waitFor(() => expect(api.updateQuestion).toHaveBeenCalledWith('module-1', 'q1', { stem: 'Edited stem', choices: ['A', 'B'], answer_key: 0, explanation: 'Question explanation' }))
+})

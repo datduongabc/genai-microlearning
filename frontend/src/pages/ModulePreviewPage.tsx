@@ -750,7 +750,7 @@ function QuizDisplay({
               </span>
             </div>
             <QuestionEditor moduleId={moduleId} question={question}
-              explanation={explanations[question.position] ?? question.explanation ?? ''} onSaved={onSaved} />
+              explanation={explanations[question.position] || question.explanation || ''} onSaved={onSaved} />
           </div>
         )
       })}
