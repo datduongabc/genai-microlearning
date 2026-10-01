@@ -5,6 +5,7 @@ import { AppShell } from '../components/AppShell'
 import {
   api,
   apiErrorMessage,
+  chatEditModule,
   getMoodleSections,
   getModule,
   publishToMoodle,
@@ -104,6 +105,7 @@ export function ModulePreviewPage() {
         </button>
       )}
       {downloadError && <p role="alert" className="mt-3 text-sm text-red-700">{downloadError}</p>}
+      <ModuleChatPanel key={module.id} module={module} onSaved={refresh} />
       <div className="mt-8 flex flex-col gap-6">
         {module.components.map((c) => (
           <ComponentCard
@@ -124,6 +126,53 @@ export function ModulePreviewPage() {
       />}
     </AppShell>
   )
+}
+
+function ModuleChatPanel({ module, onSaved }: { module: ModuleDetail; onSaved: () => Promise<void> }) {
+  const [message, setMessage] = useState('')
+  const [sessionId, setSessionId] = useState<string>()
+  const [turns, setTurns] = useState<{ message: string; reply: string }[]>([])
+  const [sending, setSending] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  async function send() {
+    if (!message.trim() || sending) return
+    setSending(true)
+    setError(null)
+    try {
+      const result = await chatEditModule(module.id, message.trim(), sessionId)
+      setSessionId(result.session_id)
+      setTurns((previous) => [...previous, { message: message.trim(), reply: result.reply }])
+      setMessage('')
+      if (result.applied) await onSaved()
+    } catch (err) {
+      setError(apiErrorMessage(err, 'Chỉnh sửa thất bại. Vui lòng thử lại.'))
+    } finally {
+      setSending(false)
+    }
+  }
+
+  return <section className="mt-6 rounded-[3px] border border-gray-200 bg-white p-6">
+    <h3 className="text-sm font-semibold">Chỉnh sửa bằng AI</h3>
+    <p className="mt-1 text-sm text-gray-500">Nêu một phần cần sửa, ví dụ: “Rút gọn slide 3” hoặc “Làm câu quiz 2 khó hơn”.</p>
+    <p className="mt-1 text-xs text-gray-500">Số lượt đã áp dụng: {module.chat_edit_count ?? 0}</p>
+    <div aria-live="polite" className="mt-3 space-y-3 text-sm">
+      {turns.map((turn, i) => <div key={i}>
+        <p className="text-gray-500">{turn.message}</p>
+        <p className="mt-1 whitespace-pre-wrap">{turn.reply}</p>
+      </div>)}
+    </div>
+    <form onSubmit={(e) => { e.preventDefault(); void send() }} className="mt-3 flex flex-col gap-2">
+      <label htmlFor="module-chat-message" className="text-sm">Yêu cầu chỉnh sửa</label>
+      <textarea id="module-chat-message" maxLength={4000} rows={3} value={message} disabled={sending}
+        onChange={(e) => setMessage(e.target.value)} className="w-full rounded border border-gray-300 p-3 text-sm outline-none focus:border-terracotta" />
+      <button type="submit" disabled={sending || !message.trim()}
+        className="w-fit rounded-[3px] bg-terracotta px-4 py-2 text-sm font-semibold text-white disabled:opacity-60">
+        {sending ? 'Đang chỉnh sửa...' : 'Gửi yêu cầu'}
+      </button>
+    </form>
+    {error && <p role="alert" className="mt-2 text-sm text-red-700">{error}</p>}
+  </section>
 }
 
 function PublishToMoodleSection({

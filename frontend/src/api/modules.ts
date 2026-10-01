@@ -56,6 +56,7 @@ export interface ModuleDetail {
   course_id: string
   moodle_course_id: number | null
   components: ModuleComponentInfo[]
+  chat_edit_count?: number
   claim_citations?: {
     claim: string
     locator: string
@@ -151,4 +152,11 @@ export async function updateQuestion(
 ) {
   const { data } = await api.patch(`/modules/${moduleId}/questions/${questionId}`, question)
   return data as Omit<QuestionInfo, 'position'>
+}
+
+export async function chatEditModule(moduleId: string, message: string, sessionId?: string) {
+  const { data } = await api.post<{ session_id: string; reply: string; applied: boolean; edit_count: number }>(
+    `/modules/${moduleId}/chat-edit`, { message, session_id: sessionId },
+  )
+  return data
 }

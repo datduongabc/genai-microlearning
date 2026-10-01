@@ -356,6 +356,9 @@ class ChatSession(Base):
 
     id: Mapped[uuid.UUID] = uuid_pk()
     course_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("courses.id", ondelete="CASCADE"), index=True)
+    module_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("modules.id", ondelete="CASCADE"), nullable=True, index=True
+    )
     title: Mapped[str | None] = mapped_column(nullable=True)
     created_at: Mapped[datetime] = created_at_column()
 
@@ -379,6 +382,7 @@ class ChatMessage(Base):
     # chiếu lại với context_chunks THỰC SỰ truy xuất trước khi lưu (không tin
     # citation model tự echo ra, tránh hallucinate chunk_id không tồn tại).
     citations: Mapped[list] = mapped_column(JSONB, default=list)
+    applied_edit: Mapped[bool] = mapped_column(default=False, server_default="false")
     created_at: Mapped[datetime] = created_at_column()
 
     session: Mapped["ChatSession"] = relationship(back_populates="messages")

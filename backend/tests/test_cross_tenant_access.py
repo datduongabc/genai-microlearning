@@ -137,6 +137,7 @@ ATTACKS = [
     ("POST", "/modules/generate", {"document_id": "{document}"}, {}),
     ("GET", "/modules/jobs/{failed_job}", None, {}),
     ("GET", "/modules/{module}", None, {}),
+    ("POST", "/modules/{module}/chat-edit", None, {"json": {"message": "shorten slide 1"}}),
     ("GET", "/modules/{module}/slides.pptx", None, {}),
     ("PATCH", "/modules/{module}", {"title": "pwned"}, {}),
     ("PATCH", "/modules/{module}/components/{component}", None, {"json": {"content": {"markdown": "pwned"}}}),

@@ -1,19 +1,24 @@
 import json
 import uuid
+from datetime import UTC, datetime
 from io import BytesIO
 from urllib.parse import quote
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import Response
 from pptx import Presentation
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ValidationError
 from sqlalchemy import select
 from sqlalchemy.orm import Session, joinedload, selectinload
 
+from app.api.chat import ChatRequest, _get_or_create_session
 from app.api.deps import get_current_user
 from app.auth.rate_limit import limiter, user_or_address
+from app.chat.service import HISTORY_TURNS, module_edit_count, propose_module_edit
 from app.db import get_db
 from app.generation.common import OutputLanguage
+from app.generation.content import ContentOutput
+from app.generation.example import ExampleOutput
 from app.generation.module_generation_pipeline import (
     IncompleteModuleError,
     control_payload,
@@ -22,10 +27,15 @@ from app.generation.module_generation_pipeline import (
     is_control,
     learning_objective_of,
 )
-from app.generation.study_packets import resolved_citations
+from app.generation.quiz_graph import QuizQuestion
+from app.generation.slides import SlidesOutput
+from app.generation.study_packets import reference_scope_chunks, resolved_citations
 from app.jobs.queue import enqueue_job
 from app.llm import catalog
+from app.llm.gateway import using_model
 from app.models import (
+    ChatMessage,
+    ChatRole,
     ComponentType,
     Document,
     DocumentSection,
@@ -413,6 +423,7 @@ def get_module(
         "moodle_course_id": module.course.moodle_course_id,
         "is_control": control,
         "claim_citations": citations,
+        "chat_edit_count": module_edit_count(db, module.id),
         "components": [
             {
                 "id": c.id,
@@ -479,12 +490,15 @@ def update_component(
     component = db.get(ModuleComponent, component_id, with_for_update=True)
     if component is None or component.module_id != module_id:
         raise HTTPException(status_code=404, detail="Component not found")
-    content = {k: v for k, v in payload.content.items() if k != "ai_original"}
-    if "ai_original" in component.content:
-        content["ai_original"] = component.content["ai_original"]
-    component.content = content
+    _apply_component_update(component, payload.content)
     db.commit()
     return {"id": component.id, "content": component.content}
+
+
+def _apply_component_update(component: ModuleComponent, revised: dict) -> None:
+    content = {k: v for k, v in revised.items() if k != "ai_original"}
+    content["ai_original"] = component.content.get("ai_original", component.content)
+    component.content = content
 
 
 class QuestionUpdate(BaseModel):
@@ -506,6 +520,14 @@ def update_question(
     component = db.get(ModuleComponent, question.component_id, with_for_update=True)
     if component.module_id != module_id or component.type not in (ComponentType.quiz, ComponentType.practice):
         raise HTTPException(status_code=404, detail="Question not found")
+    _apply_question_update(module, component, question, payload)
+    db.commit()
+    return {"id": question.id, "stem": question.stem, "choices": question.choices,
+            "answer_key": question.answer_key, "explanation": question.explanation}
+
+
+def _apply_question_update(module: Module, component: ModuleComponent, question: Question,
+                           payload: QuestionUpdate) -> None:
     if payload.answer_key >= len(payload.choices) or not payload.stem.strip() or any(not c.strip() for c in payload.choices):
         raise HTTPException(status_code=422, detail="Câu hỏi, phương án và đáp án không hợp lệ.")
     explanation = next((c for c in module.components if c.type == ComponentType.explanation), None)
@@ -530,6 +552,71 @@ def update_question(
             if item.get("component") == component.type.value and item.get("position") == question.position
             else item for item in items
         ]}
+
+
+@router.post("/{module_id}/chat-edit")
+@limiter.limit("20/minute", key_func=user_or_address)
+def chat_edit_module(
+    request: Request, module_id: uuid.UUID, payload: ChatRequest,
+    db: Session = Depends(get_db), current_user: User = Depends(get_current_user),
+):
+    module = _owned_module(db, module_id, current_user)
+    message = payload.message.strip()
+    if not message:
+        raise HTTPException(status_code=400, detail="message is required")
+    session = _get_or_create_session(db, module.course_id, payload.session_id, message, module.id)
+    history_rows = db.query(ChatMessage).filter(ChatMessage.session_id == session.id).order_by(
+        ChatMessage.created_at.desc(), ChatMessage.id.desc(),
+    ).limit(HISTORY_TURNS).all()
+    history = [{"role": r.role.value, "content": r.content} for r in reversed(history_rows)]
+    section = db.get(DocumentSection, module.section_id) if module.section_id else None
+    chunks = reference_scope_chunks(db, module, section)
+    generation = generation_payload_of(db, module.id)
+    try:
+        with using_model(generation.get("model_alias")):
+            edit = propose_module_edit(message, module, chunks, history, generation.get("output_language", "vi"))
+        applied = edit.target is not None
+        if not applied:
+            if edit.revised is not None or edit.question_position is not None:
+                raise ValueError("Clarification must not contain an edit")
+        else:
+            component = next((c for c in module.components if c.type.value == edit.target), None)
+            if component is None or edit.revised is None:
+                raise ValueError("Missing component or revision")
+            # Use the same lock and original-preserving mutations as the manual editors.
+            component = db.get(ModuleComponent, component.id, with_for_update=True)
+            schemas = {"content": ContentOutput, "slides": SlidesOutput, "example": ExampleOutput,
+                       "quiz": QuizQuestion, "practice": QuizQuestion}
+            revised = schemas[edit.target].model_validate(edit.revised.model_dump())
+            if edit.target in ("quiz", "practice"):
+                question = next((q for q in component.questions if q.position == edit.question_position), None)
+                if question is None:
+                    raise ValueError("Question position not found")
+                _apply_question_update(module, component, question, QuestionUpdate(
+                    stem=revised.stem, choices=revised.choices, answer_key=revised.correct_index,
+                    explanation=revised.explanation,
+                ))
+            else:
+                if edit.question_position is not None:
+                    raise ValueError("Question position only applies to quiz/practice")
+                content = revised.model_dump()
+                if edit.target == "content":
+                    locators = {c.source_ref for c in chunks}
+                    if not set(revised.source_locators).issubset(locators) or any(
+                        c.locator not in locators for c in revised.claim_citations
+                    ):
+                        raise ValueError("Citation outside source chunks")
+                    content["markdown"] = content.pop("content")
+                _apply_component_update(component, {**component.content, **content})
+    except (ValidationError, ValueError) as exc:
+        db.rollback()
+        raise HTTPException(status_code=422, detail="Phản hồi AI không hợp lệ; chưa thay đổi mô-đun.") from exc
+    db.add_all([
+        ChatMessage(session_id=session.id, role=ChatRole.user, content=message, citations=[],
+                    created_at=datetime.now(UTC).replace(tzinfo=None)),
+        ChatMessage(session_id=session.id, role=ChatRole.assistant, content=edit.reply,
+                    citations=[], applied_edit=applied, created_at=datetime.now(UTC).replace(tzinfo=None)),
+    ])
     db.commit()
-    return {"id": question.id, "stem": question.stem, "choices": question.choices,
-            "answer_key": question.answer_key, "explanation": question.explanation}
+    return {"session_id": session.id, "reply": edit.reply, "applied": applied,
+            "edit_count": module_edit_count(db, module.id)}
