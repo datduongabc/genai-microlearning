@@ -99,10 +99,15 @@ def study_evidence(db: Session, module: Module, sources: list[str]) -> tuple[Ref
         chunk_ids=[str(c.id) for c in chunks] if complete else [],
         total_chunks=len(chunks) if complete or section else None,
     )
+    return reference, resolved_citations(db, module)
+
+
+def resolved_citations(db: Session, module: Module) -> list[StoredCitation] | None:
+    """Resolve saved Content locators within the module's document, without guessing ties."""
     content = _component(module, ComponentType.content)
     saved = content.content.get("claim_citations") if content else None
     if saved is None:
-        return reference, None
+        return None
     candidates = db.query(Chunk).filter(
         Chunk.document_id == module.document_id, Chunk.course_id == module.course_id,
     ).all()
@@ -115,7 +120,7 @@ def study_evidence(db: Session, module: Module, sources: list[str]) -> tuple[Ref
             chunk_id=str(chunk.id) if chunk else None, chunk_content=chunk.content if chunk else None,
             resolution="resolved" if chunk else "ambiguous" if matches else "missing",
         ))
-    return reference, citations
+    return citations
 
 
 def _component(module: Module, component_type: ComponentType):

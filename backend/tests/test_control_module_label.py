@@ -8,6 +8,7 @@ from app.auth.security import create_access_token
 from app.db import SessionLocal
 from app.main import app
 from app.models import (
+    Chunk,
     ComponentType,
     Course,
     Document,
@@ -74,3 +75,57 @@ def test_control_publish_is_rejected_before_any_moodle_call(modules, monkeypatch
     assert response.status_code == 422
     assert response.json()["detail"] == "Mô-đun đối chứng (không RAG) chỉ dùng cho nghiên cứu, không được đẩy lên Moodle."
     call.assert_not_called()
+
+
+def test_detail_citations_resolve_within_document_and_require_owner(modules):
+    user, course, doc, rag, control = modules
+    saved = [{"claim": "Grounded", "locator": "lesson.pdf, trang 2"},
+             {"claim": "Missing", "locator": "other.pdf, trang 1"},
+             {"claim": "Ambiguous", "locator": "duplicate"}]
+    with SessionLocal() as db:
+        other_doc = Document(course_id=course, filename="other.pdf")
+        db.add(other_doc)
+        db.flush()
+        db.add_all([
+            ModuleComponent(module_id=rag, type=ComponentType.content,
+                            content={"markdown": "Lesson", "claim_citations": saved}),
+            Chunk(course_id=course, document_id=doc, chunk_index=0,
+                  content="Original source paragraph", source_ref=saved[0]["locator"]),
+            Chunk(course_id=course, document_id=other_doc.id, chunk_index=0,
+                  content="Not this document", source_ref=saved[1]["locator"]),
+            *[Chunk(course_id=course, document_id=doc, chunk_index=i,
+                    content="Duplicate source", source_ref="duplicate") for i in (1, 2)],
+        ])
+        db.commit()
+    headers = {"Authorization": f"Bearer {create_access_token(str(user))}"}
+    response = client.get(f"/modules/{rag}", headers=headers)
+    assert response.status_code == 200
+    citations = response.json()["claim_citations"]
+    assert [(c["claim"], c["locator"], c["chunk_content"], c["resolution"]) for c in citations] == [
+        ("Grounded", "lesson.pdf, trang 2", "Original source paragraph", "resolved"),
+        ("Missing", "other.pdf, trang 1", None, "missing"),
+        ("Ambiguous", "duplicate", None, "ambiguous"),
+    ]
+    assert client.get(f"/modules/{control}", headers=headers).json()["claim_citations"] is None
+    with SessionLocal() as db:
+        content = db.query(ModuleComponent).filter(ModuleComponent.module_id == rag).one()
+        content.content = {"markdown": "Legacy"}
+        db.commit()
+    assert client.get(f"/modules/{rag}", headers=headers).json()["claim_citations"] is None
+    assert client.get(f"/modules/{rag}").status_code == 401
+    stranger = {"Authorization": f"Bearer {create_access_token(str(uuid.uuid4()))}"}
+    assert client.get(f"/modules/{rag}", headers=stranger).status_code == 401
+    # A real authenticated non-owner must also be refused.
+    with SessionLocal() as db:
+        outsider = User(email=f"outsider-{uuid.uuid4()}@example.com", name="Other",
+                        hashed_password="x", role=UserRole.teacher)
+        db.add(outsider)
+        db.commit()
+        outsider_id = outsider.id
+    try:
+        headers = {"Authorization": f"Bearer {create_access_token(str(outsider_id))}"}
+        assert client.get(f"/modules/{rag}", headers=headers).status_code == 404
+    finally:
+        with SessionLocal() as db:
+            db.query(User).filter(User.id == outsider_id).delete()
+            db.commit()

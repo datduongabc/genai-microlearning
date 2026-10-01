@@ -45,6 +45,35 @@ beforeEach(() => {
   vi.clearAllMocks()
 })
 
+it('shows citation labels and reveals the original chunk only when opened', async () => {
+  const citations = [
+    { claim: 'A grounded claim', locator: 'lesson.pdf, trang 2', chunk_content: 'Original source paragraph', resolution: 'resolved' as const },
+    { claim: 'Missing claim', locator: 'lesson.pdf, trang 9', chunk_content: null, resolution: 'missing' as const },
+    { claim: 'Ambiguous claim', locator: 'lesson.pdf, trang 3', chunk_content: null, resolution: 'ambiguous' as const },
+  ]
+  const module = {
+    ...baseModule,
+    claim_citations: citations,
+    components: [{ id: 'content-1', type: 'content' as const, content: { markdown: 'Lesson' }, questions: [] }],
+  }
+  vi.mocked(api.getModule).mockResolvedValue(module)
+  const page = renderPage()
+  expect(await screen.findByText('A grounded claim')).toBeInTheDocument()
+  const label = screen.getByText('lesson.pdf, trang 2')
+  const details = label.closest('details')!
+  expect(details).not.toHaveAttribute('open')
+  await userEvent.click(label)
+  expect(details).toHaveAttribute('open')
+  expect(within(details).getByText('Original source paragraph')).toBeVisible()
+  expect(screen.getAllByText('không tìm thấy đoạn nguồn')).toHaveLength(1)
+  expect(screen.getByText('trùng nhiều đoạn nguồn, không xác định được')).toBeInTheDocument()
+  page.unmount()
+  vi.mocked(api.getModule).mockResolvedValue({ ...module, claim_citations: null })
+  renderPage()
+  await screen.findByText('Lesson')
+  expect(screen.queryByText('A grounded claim')).not.toBeInTheDocument()
+})
+
 it('downloads slides through the authenticated API client', async () => {
   vi.mocked(api.getModule).mockResolvedValue({
     ...baseModule,
