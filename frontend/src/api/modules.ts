@@ -143,3 +143,12 @@ export async function updateComponentContent(
   const { data } = await api.patch(`/modules/${moduleId}/components/${componentId}`, { content })
   return data as { id: string; content: Record<string, unknown> }
 }
+
+export async function updateQuestion(
+  moduleId: string,
+  questionId: string,
+  question: { stem: string; choices: string[]; answer_key: number; explanation: string },
+) {
+  const { data } = await api.patch(`/modules/${moduleId}/questions/${questionId}`, question)
+  return data as Omit<QuestionInfo, 'position'>
+}

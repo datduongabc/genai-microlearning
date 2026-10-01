@@ -35,6 +35,7 @@ from app.models import (
     JobType,
     Module,
     ModuleComponent,
+    Question,
     User,
     UserRole,
 )
@@ -65,6 +66,12 @@ def world():
         component = ModuleComponent(module_id=module.id, type=ComponentType.content, content={"markdown": "secret A"})
         db.add(component)
         db.flush()
+        quiz = ModuleComponent(module_id=module.id, type=ComponentType.quiz, content={})
+        db.add(quiz)
+        db.flush()
+        question = Question(component_id=quiz.id, stem="secret question A", choices={"options": ["A", "B"]}, answer_key="0")
+        db.add(question)
+        db.flush()
         session = ChatSession(course_id=course.id, title="chat of A")
         db.add(session)
         db.flush()
@@ -79,7 +86,7 @@ def world():
         ids = {
             "owner": owner.id, "stranger": stranger.id, "course": course.id, "stranger_course": stranger_course.id,
             "document": document.id, "module": module.id, "component": component.id, "session": session.id,
-            "pipeline_job": pipeline_job.id, "failed_job": failed_job.id,
+            "pipeline_job": pipeline_job.id, "failed_job": failed_job.id, "question": question.id,
         }
     finally:
         db.close()
@@ -133,6 +140,7 @@ ATTACKS = [
     ("GET", "/modules/{module}/slides.pptx", None, {}),
     ("PATCH", "/modules/{module}", {"title": "pwned"}, {}),
     ("PATCH", "/modules/{module}/components/{component}", None, {"json": {"content": {"markdown": "pwned"}}}),
+    ("PATCH", "/modules/{module}/questions/{question}", None, {"json": {"stem": "pwned", "choices": ["A", "B"], "answer_key": 0, "explanation": "pwned"}}),
     ("POST", "/modules/{module}/publish-to-moodle", None, {"json": {"section_num": 0}}),
     ("DELETE", "/courses/{course}", None, {}),
     ("POST", "/courses/{course}/link-moodle", None, {"json": {"moodle_course_id": 999}}),
@@ -162,7 +170,7 @@ def _send(spec, ids, headers):
     return client.request(method, _fill(path, ids), params=_fill(query, ids), headers=headers, **_fill(extra, ids))
 
 
-OWNER_RESOURCES = ("course", "document", "module", "component", "session", "pipeline_job", "failed_job")
+OWNER_RESOURCES = ("course", "document", "module", "component", "session", "pipeline_job", "failed_job", "question")
 
 
 def _ids_of_the_owner(world):

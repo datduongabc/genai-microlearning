@@ -34,6 +34,7 @@ from app.models import (
     JobType,
     Module,
     ModuleComponent,
+    Question,
     User,
 )
 
@@ -475,9 +476,60 @@ def update_component(
     current_user: User = Depends(get_current_user),
 ):
     _owned_module(db, module_id, current_user)
-    component = db.get(ModuleComponent, component_id)
+    component = db.get(ModuleComponent, component_id, with_for_update=True)
     if component is None or component.module_id != module_id:
         raise HTTPException(status_code=404, detail="Component not found")
-    component.content = payload.content
+    content = {k: v for k, v in payload.content.items() if k != "ai_original"}
+    if "ai_original" in component.content:
+        content["ai_original"] = component.content["ai_original"]
+    component.content = content
     db.commit()
     return {"id": component.id, "content": component.content}
+
+
+class QuestionUpdate(BaseModel):
+    stem: str = Field(min_length=1)
+    choices: list[str] = Field(min_length=2)
+    answer_key: int = Field(ge=0)
+    explanation: str
+
+
+@router.patch("/{module_id}/questions/{question_id}")
+def update_question(
+    module_id: uuid.UUID, question_id: uuid.UUID, payload: QuestionUpdate, db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    module = _owned_module(db, module_id, current_user)
+    question = db.get(Question, question_id)
+    if question is None:
+        raise HTTPException(status_code=404, detail="Question not found")
+    component = db.get(ModuleComponent, question.component_id, with_for_update=True)
+    if component.module_id != module_id or component.type not in (ComponentType.quiz, ComponentType.practice):
+        raise HTTPException(status_code=404, detail="Question not found")
+    if payload.answer_key >= len(payload.choices) or not payload.stem.strip() or any(not c.strip() for c in payload.choices):
+        raise HTTPException(status_code=422, detail="Câu hỏi, phương án và đáp án không hợp lệ.")
+    explanation = next((c for c in module.components if c.type == ComponentType.explanation), None)
+    items = explanation.content.get("items", []) if explanation is not None else []
+    # Keep the whole untouched component once; the publisher reads only the live question rows.
+    if "ai_original" not in component.content:
+        component.content = {**component.content, "ai_original": {
+            "content": component.content,
+            "questions": [{
+                "id": str(q.id), "position": q.position, "stem": q.stem, "choices": q.choices,
+                "answer_key": q.answer_key,
+                "explanation": q.explanation,
+            } for q in component.questions],
+        }}
+    question.stem = payload.stem
+    question.choices = {"options": payload.choices}
+    question.answer_key = str(payload.answer_key)
+    question.explanation = payload.explanation
+    if explanation is not None:
+        explanation.content = {**explanation.content, "items": [
+            {**item, "explanation_text": payload.explanation}
+            if item.get("component") == component.type.value and item.get("position") == question.position
+            else item for item in items
+        ]}
+    db.commit()
+    return {"id": question.id, "stem": question.stem, "choices": question.choices,
+            "answer_key": question.answer_key, "explanation": question.explanation}

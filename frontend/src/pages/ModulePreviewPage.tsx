@@ -10,6 +10,7 @@ import {
   publishToMoodle,
   updateComponentContent,
   updateModuleTitle,
+  updateQuestion,
   type ExampleItem,
   type ExplanationItem,
   type ModuleComponentInfo,
@@ -17,6 +18,7 @@ import {
   type MoodleSection,
   type PublishToMoodleResult,
   type QuestionCheck,
+  type QuestionInfo,
 } from '../api'
 
 const BLOOM_LABEL: Record<string, string> = {
@@ -368,7 +370,7 @@ function ComponentCard({
         <ExplanationEditor moduleId={moduleId} component={component} onSaved={onSaved} />
       )}
       {(component.type === 'quiz' || component.type === 'practice') && (
-        <QuizDisplay component={component} explanations={explanations} />
+        <QuizDisplay moduleId={moduleId} component={component} explanations={explanations} onSaved={onSaved} />
       )}
     </section>
   )
@@ -712,11 +714,15 @@ function ExplanationEditor({
 }
 
 function QuizDisplay({
+  moduleId,
   component,
   explanations,
+  onSaved,
 }: {
+  moduleId: string
   component: ModuleComponentInfo
   explanations: Record<number, string>
+  onSaved: () => Promise<void>
 }) {
   const checks = (component.content.questions as QuestionCheck[] | undefined) ?? []
   const questions = [...component.questions].sort((a, b) => a.position - b.position)
@@ -743,26 +749,8 @@ function QuizDisplay({
                 {!passed ? 'Không đạt CRAG check' : selfChecked ? 'Đạt CRAG groundedness/answerability' : 'Chưa tự kiểm'}
               </span>
             </div>
-            <p className="font-medium">{question.stem}</p>
-            <ul className="flex flex-col gap-1 text-sm">
-              {question.choices.options.map((opt, i) => (
-                <li
-                  key={i}
-                  className={
-                    String(i) === question.answer_key ? 'font-semibold text-green-700' : 'text-gray-700'
-                  }
-                >
-                  {String.fromCharCode(65 + i)}. {opt}
-                  {String(i) === question.answer_key ? ' ✓' : ''}
-                </li>
-              ))}
-            </ul>
-            {(explanations[question.position] || question.explanation) && (
-              <p className="mt-1 text-sm text-gray-500">
-                <span className="font-semibold">Giải thích: </span>
-                {explanations[question.position] || question.explanation}
-              </p>
-            )}
+            <QuestionEditor moduleId={moduleId} question={question}
+              explanation={explanations[question.position] ?? question.explanation ?? ''} onSaved={onSaved} />
           </div>
         )
       })}
@@ -772,10 +760,56 @@ function QuizDisplay({
           {failed.length > 0 ? ` (${failed.map((c) => c.fail_reason).join('; ')})` : ''}.
         </p>
       )}
-      <p className="text-xs text-gray-400">
-        Nội dung câu hỏi do pipeline CRAG sinh ra, không chỉnh sửa trực tiếp ở đây — nội dung này
-        chỉ đọc.
-      </p>
+
     </div>
   )
+}
+
+function QuestionEditor({ moduleId, question, explanation, onSaved }: {
+  moduleId: string
+  question: QuestionInfo
+  explanation: string
+  onSaved: () => Promise<void>
+}) {
+  const [editing, setEditing] = useState(false)
+  const [draft, setDraft] = useState({ stem: question.stem, choices: question.choices.options, answer_key: Number(question.answer_key), explanation })
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  async function save() {
+    setSaving(true)
+    setError(null)
+    try {
+      await updateQuestion(moduleId, question.id, draft)
+      await onSaved()
+      setEditing(false)
+    } catch (err) {
+      setError(apiErrorMessage(err, 'Lưu câu hỏi thất bại'))
+    } finally {
+      setSaving(false)
+    }
+  }
+  return <div className="flex flex-col gap-3">
+    {editing ? <form onSubmit={(e) => { e.preventDefault(); void save() }} className="flex flex-col gap-3">
+      <label>Câu hỏi<textarea required aria-label="Câu hỏi" value={draft.stem} onChange={(e) => setDraft({ ...draft, stem: e.target.value })} className="w-full rounded border border-gray-300 p-2" /></label>
+      {draft.choices.map((choice, i) => <div key={i} className="flex items-center gap-2">
+        <input type="radio" name={`answer-${question.id}`} aria-label={`Đáp án ${String.fromCharCode(65 + i)}`} checked={draft.answer_key === i} onChange={() => setDraft({ ...draft, answer_key: i })} />
+        <input required aria-label={`Phương án ${String.fromCharCode(65 + i)}`} value={choice} onChange={(e) => setDraft({ ...draft, choices: draft.choices.map((c, j) => j === i ? e.target.value : c) })} className="w-full rounded border border-gray-300 p-2" />
+      </div>)}
+      <label>Giải thích<textarea aria-label="Giải thích" value={draft.explanation} onChange={(e) => setDraft({ ...draft, explanation: e.target.value })} className="w-full rounded border border-gray-300 p-2" /></label>
+      <div className="flex gap-3">
+        <button type="submit" disabled={saving} className="text-sm font-semibold text-terracotta">{saving ? 'Đang lưu...' : 'Lưu'}</button>
+        <button type="button" disabled={saving} onClick={() => setEditing(false)} className="text-sm text-gray-500">Hủy</button>
+      </div>
+    </form> : <>
+      <p className="font-medium">{question.stem}</p>
+      <ul className="flex flex-col gap-1 text-sm">{question.choices.options.map((choice, i) => <li key={i} className={String(i) === question.answer_key ? 'font-semibold text-green-700' : 'text-gray-700'}>{String.fromCharCode(65 + i)}. {choice}{String(i) === question.answer_key ? ' ✓' : ''}</li>)}</ul>
+      {explanation && <p className="text-sm text-gray-500"><span className="font-semibold">Giải thích: </span>{explanation}</p>}
+      <SaveCancelRow editing={false} saving={saving} onSave={save} onCancel={() => setEditing(false)} onEdit={() => {
+        setDraft({ stem: question.stem, choices: question.choices.options, answer_key: Number(question.answer_key), explanation })
+        setError(null)
+        setEditing(true)
+      }} />
+    </>}
+    {error && <p role="alert" className="text-sm text-red-700">{error}</p>}
+  </div>
 }
