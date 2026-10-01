@@ -51,15 +51,15 @@ def test_rate_limited_piece_waits_and_retries_only_that_piece(tmp_path):
     assert [u.locator for u in units] == [{"start_ms": 0, "end_ms": 2000}]
 
 
-def test_exhausted_rate_limit_reports_quota(tmp_path):
+@pytest.mark.parametrize(("retry_after", "sleeps"), [(None, [60] * 10), ("900", [])])
+def test_rate_limit_wait_stays_under_stuck_job_threshold(tmp_path, retry_after, sleeps):
     path = tmp_path / "lecture.mp3"
     path.write_bytes(b"audio")
-    with patch.object(readers, "transcribe_audio", side_effect=_rate_limit()), patch.object(
+    with patch.object(readers, "transcribe_audio", side_effect=_rate_limit(retry_after)), patch.object(
         readers.time, "sleep"
     ) as sleep, pytest.raises(ValueError, match="han muc audio Groq"):
         readers.read_audio_video(str(path))
-    assert sleep.call_count == readers._RATE_LIMIT_ATTEMPTS - 1
-    sleep.assert_called_with(60)
+    assert [c.args[0] for c in sleep.call_args_list] == sleeps
 
 
 @pytest.mark.parametrize("extension", ["wav", "mp4"])

@@ -347,7 +347,9 @@ def read_transcript_file(path: str) -> list[DocumentUnit]:
 
 # Leave headroom below Groq's 25 MB upload limit (decimal bytes).
 _AUDIO_UPLOAD_BYTES = 24_000_000
-_RATE_LIMIT_ATTEMPTS = 4
+# ponytail: total in-job wait stays under the 15-minute stuck-job threshold; lectures
+# needing more than one hourly Groq window may need a manual retry later.
+_RATE_LIMIT_WAIT_SECONDS = 600
 
 
 def _transcode_to_mp3(input_path: str, out_dir: str) -> str:
@@ -365,6 +367,7 @@ def _transcode_to_mp3(input_path: str, out_dir: str) -> str:
 def read_audio_video(path: str) -> list[DocumentUnit]:
     """Compress audio/video for Whisper and retain original-timeline citations."""
     units = []
+    waited = 0
     with tempfile.TemporaryDirectory() as tmp:
         mp3_path = _transcode_to_mp3(path, tmp)
         pieces = [(mp3_path, 0.0)]
@@ -383,18 +386,19 @@ def read_audio_video(path: str) -> list[DocumentUnit]:
         for piece, offset in pieces:
             if os.path.getsize(piece) > _AUDIO_UPLOAD_BYTES:
                 raise ValueError("Audio vuot gioi han 24 MB sau khi chia")
-            for attempt in range(_RATE_LIMIT_ATTEMPTS):
+            while True:
                 try:
                     segments = transcribe_audio(piece)
                     break
                 except RateLimitError as exc:
-                    if attempt == _RATE_LIMIT_ATTEMPTS - 1:
-                        raise ValueError("Da het han muc audio Groq Whisper, vui long thu lai sau") from exc
                     try:
-                        wait = float(exc.response.headers.get("retry-after", 60))
+                        wait = max(float(exc.response.headers.get("retry-after", 60)), 1)
                     except ValueError:
                         wait = 60
-                    time.sleep(min(wait, 3600))
+                    if waited + wait > _RATE_LIMIT_WAIT_SECONDS:
+                        raise ValueError("Da het han muc audio Groq Whisper, vui long thu lai sau") from exc
+                    time.sleep(wait)
+                    waited += wait
             for segment in segments:
                 text = segment["text"].strip()
                 if text:
