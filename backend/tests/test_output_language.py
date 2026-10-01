@@ -78,6 +78,12 @@ def test_language_reaches_steps_through_the_pipeline(request, monkeypatch):
     ('[]', 'source.pdf'),
     ('old readable locator', 'old readable locator'),
     ('{"spans":4,"heading":9}', 'source.pdf'),
+    ('{"slide_index":3,"slide_title":"A* search"}', 'source.pdf · slide 3 · A* search'),
+    ('{"spans":[{"slide_index":3,"slide_title":""},{"slide_index":4,"slide_title":"BFS"}]}', 'source.pdf · slide 3–4 · BFS'),
+    ('{"table_index":0,"row_index":2}', 'source.pdf · bảng 1 · hàng 3'),
+    ('{"spans":[{"start_ms":65000,"end_ms":70000},{"start_ms":70000,"end_ms":125500}]}', 'source.pdf · 01:05–02:05'),
+    ('{"paragraph_index":0}', 'source.pdf · đoạn 1'),
+    ('{"heading":"Intro","heading_level":1}', 'source.pdf · Intro'),
 ])
 def test_citation_label(locator, label):
     from app.api.modules import citation_label

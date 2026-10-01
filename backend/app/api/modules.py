@@ -342,18 +342,31 @@ def citation_label(filename: str, locator: str) -> str:
     spans = parsed.get("spans")
     spans = spans if isinstance(spans, list) else [parsed]
     spans = [span for span in spans if isinstance(span, dict)]
-    pages = sorted({span["page"] for span in spans if isinstance(span.get("page"), int)})
-    ranges = []
-    for page in pages:
-        if ranges and page == ranges[-1][1] + 1:
-            ranges[-1][1] = page
-        else:
-            ranges.append([page, page])
-    page_text = ", ".join(str(start) if start == end else f"{start}–{end}" for start, end in ranges)
-    heading = next((span["heading"] for span in spans if isinstance(span.get("heading"), str)), None)
-    return " · ".join(
-        part for part in (filename, f"trang {page_text}" if pages else None, heading) if part
-    )
+    parts = [filename]
+    for key, word, offset in (
+        ("page", "trang", 0),
+        ("slide_index", "slide", 0),
+        ("table_index", "bảng", 1),
+        ("row_index", "hàng", 1),
+        ("paragraph_index", "đoạn", 1),
+    ):
+        numbers = sorted({span[key] + offset for span in spans if isinstance(span.get(key), int)})
+        ranges = []
+        for number in numbers:
+            if ranges and number == ranges[-1][1] + 1:
+                ranges[-1][1] = number
+            else:
+                ranges.append([number, number])
+        if ranges:
+            parts.append(f"{word} " + ", ".join(str(a) if a == b else f"{a}–{b}" for a, b in ranges))
+    times = [span[key] for span in spans for key in ("start_ms", "end_ms") if isinstance(span.get(key), int)]
+    if times:
+        parts.append("–".join(f"{t // 60000:02d}:{t // 1000 % 60:02d}" for t in (min(times), max(times))))
+    parts.append(next(
+        (span[key] for span in spans for key in ("heading", "slide_title") if isinstance(span.get(key), str) and span[key]),
+        None,
+    ))
+    return " · ".join(part for part in parts if part)
 
 
 @router.get("/{module_id}")
