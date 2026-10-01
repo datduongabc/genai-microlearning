@@ -3,6 +3,7 @@ import Markdown, { type Components } from 'react-markdown'
 import { Link, useParams } from 'react-router-dom'
 import { AppShell } from '../components/AppShell'
 import {
+  api,
   apiErrorMessage,
   getMoodleSections,
   getModule,
@@ -40,6 +41,7 @@ export function ModulePreviewPage() {
   const { moduleId } = useParams<{ moduleId: string }>()
   const [module, setModule] = useState<ModuleDetail | null>(null)
   const [loading, setLoading] = useState(true)
+  const [downloadError, setDownloadError] = useState<string | null>(null)
 
   const refresh = useCallback(async () => {
     if (!moduleId) return
@@ -82,6 +84,30 @@ export function ModulePreviewPage() {
   return (
     <AppShell title="Xem trước mô-đun">
       <ModuleHeader module={module} onSaved={refresh} />
+      {module.components.some((c) => c.type === 'slides') && (
+        <button
+          className="mt-4 rounded-[3px] bg-navy px-5 py-2.5 text-sm font-semibold text-[#f3f1ea] hover:bg-[#28394b]"
+          onClick={async () => {
+            setDownloadError(null)
+            try {
+              const { data } = await api.get<Blob>(`/modules/${module.id}/slides.pptx`, { responseType: 'blob' })
+              const url = URL.createObjectURL(data)
+              const link = document.createElement('a')
+              link.href = url
+              link.download = `${module.title}.pptx`
+              document.body.append(link)
+              link.click()
+              link.remove()
+              URL.revokeObjectURL(url)
+            } catch (err) {
+              setDownloadError(apiErrorMessage(err, 'Tải slide thất bại'))
+            }
+          }}
+        >
+          Tải slide
+        </button>
+      )}
+      {downloadError && <p role="alert" className="mt-3 text-sm text-red-700">{downloadError}</p>}
       <div className="mt-8 flex flex-col gap-6">
         {module.components.map((c) => (
           <ComponentCard

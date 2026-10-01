@@ -130,6 +130,7 @@ ATTACKS = [
     ("POST", "/modules/generate", {"document_id": "{document}"}, {}),
     ("GET", "/modules/jobs/{failed_job}", None, {}),
     ("GET", "/modules/{module}", None, {}),
+    ("GET", "/modules/{module}/slides.pptx", None, {}),
     ("PATCH", "/modules/{module}", {"title": "pwned"}, {}),
     ("PATCH", "/modules/{module}/components/{component}", None, {"json": {"content": {"markdown": "pwned"}}}),
     ("POST", "/modules/{module}/publish-to-moodle", None, {"json": {"section_num": 0}}),
