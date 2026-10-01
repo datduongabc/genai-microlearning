@@ -349,7 +349,7 @@ function ComponentCard({
                     </details>
                   ) : (
                     <p className="mt-1 text-xs text-gray-500">
-                      {citation.locator} — <span>không tìm thấy đoạn nguồn</span>
+                      {citation.locator} — <span>{citation.resolution === 'ambiguous' ? 'trùng nhiều đoạn nguồn, không xác định được' : 'không tìm thấy đoạn nguồn'}</span>
                     </p>
                   )}
                 </li>
