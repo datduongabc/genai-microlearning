@@ -129,6 +129,7 @@ export function ModulePreviewPage() {
         moduleId={module.id}
         courseId={module.course_id}
         moodleCourseId={module.moodle_course_id}
+        onRefresh={refresh}
       />}
     </AppShell>
   )
@@ -138,10 +139,12 @@ function PublishToMoodleSection({
   moduleId,
   courseId,
   moodleCourseId,
+  onRefresh,
 }: {
   moduleId: string
   courseId: string
   moodleCourseId: number | null
+  onRefresh: () => Promise<void>
 }) {
   const [publishing, setPublishing] = useState(false)
   const [result, setResult] = useState<PublishToMoodleResult | null>(null)
@@ -154,8 +157,12 @@ function PublishToMoodleSection({
     if (moodleCourseId === null) return
     getMoodleSections(courseId)
       .then(setSections)
-      .catch(() => setSections([]))
-  }, [courseId, moodleCourseId])
+      .catch((err) => {
+        setSections([])
+        setError(apiErrorMessage(err, 'Không tải được danh sách phần học Moodle'))
+        void onRefresh().catch(() => {})
+      })
+  }, [courseId, moodleCourseId, onRefresh])
 
   async function handlePublish() {
     setPublishing(true)
@@ -168,6 +175,7 @@ function PublishToMoodleSection({
       setResult(await publishToMoodle(moduleId, target))
     } catch (err) {
       setError(apiErrorMessage(err, 'Push to Moodle thất bại'))
+      await onRefresh().catch(() => {})
     } finally {
       setPublishing(false)
     }
@@ -183,6 +191,7 @@ function PublishToMoodleSection({
           </Link>
           .
         </p>
+        {error && <p role="alert" className="mt-3 text-sm text-red-700">{error}</p>}
       </div>
     )
   }

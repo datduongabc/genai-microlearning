@@ -393,3 +393,17 @@ it('falls back to the question explanation when its Explanation item is empty', 
   await user.click(screen.getByRole('button', { name: 'Lưu' }))
   await waitFor(() => expect(api.updateQuestion).toHaveBeenCalledWith('module-1', 'q1', { stem: 'Edited stem', choices: ['A', 'B'], answer_key: 0, explanation: 'Question explanation' }))
 })
+
+it('shows the Vietnamese deleted-course error and offers relinking immediately', async () => {
+  const message = 'Khóa học trên Moodle đã bị xóa hoặc không còn tồn tại. Hãy liên kết lại hoặc tạo khóa học Moodle mới.'
+  vi.mocked(api.getModule).mockResolvedValue({ ...baseModule, moodle_course_id: 6 })
+  vi.mocked(api.getMoodleSections).mockResolvedValue([])
+  vi.mocked(api.publishToMoodle).mockRejectedValue({ isAxiosError: true, response: { data: { detail: message } } })
+  renderPage()
+  const button = await screen.findByRole('button', { name: /push to moodle/i })
+  vi.mocked(api.getModule).mockResolvedValue(baseModule)
+  await userEvent.click(button)
+  expect(await screen.findByText(message)).toBeInTheDocument()
+  expect(await screen.findByRole('link', { name: /vào trang course để liên kết trước/i })).toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: /push to moodle/i })).not.toBeInTheDocument()
+})

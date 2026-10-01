@@ -407,8 +407,8 @@ function MoodleLinkSection({ course, onLinked }: { course: Course; onLinked: () 
     setError(null);
     try {
       setResults(await searchMoodleCourses(query.trim()));
-    } catch {
-      setError("Tìm kiếm course trên Moodle thất bại");
+    } catch (err) {
+      setError(apiErrorMessage(err, "Tìm kiếm course trên Moodle thất bại"));
     } finally {
       setSearching(false);
     }
@@ -433,8 +433,9 @@ function MoodleLinkSection({ course, onLinked }: { course: Course; onLinked: () 
     try {
       await createMoodleCourseFor(course.id);
       onLinked();
-    } catch {
-      setError("Tạo course Moodle mới thất bại");
+    } catch (err) {
+      setError(apiErrorMessage(err, "Tạo course Moodle mới thất bại"));
+      onLinked();
     } finally {
       setBusy(false);
     }
