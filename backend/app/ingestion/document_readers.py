@@ -347,9 +347,11 @@ def read_transcript_file(path: str) -> list[DocumentUnit]:
 
 # Leave headroom below Groq's 25 MB upload limit (decimal bytes).
 _AUDIO_UPLOAD_BYTES = 24_000_000
-# ponytail: total in-job wait stays under the 15-minute stuck-job threshold; lectures
-# needing more than one hourly Groq window may need a manual retry later.
+# ponytail: total in-job wait stays under the 15-minute stuck-job threshold, and audio
+# longer than one hourly Groq window (7,200 audio-seconds) is refused up front, because
+# a retry would re-send every finished piece and hit the same limit again.
 _RATE_LIMIT_WAIT_SECONDS = 600
+_MAX_AUDIO_SECONDS = 7000
 
 
 def _transcode_to_mp3(input_path: str, out_dir: str) -> str:
@@ -364,12 +366,25 @@ def _transcode_to_mp3(input_path: str, out_dir: str) -> str:
     return out_path
 
 
+def _duration_seconds(path: str) -> float:
+    result = subprocess.run(
+        ["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", path],
+        check=True, timeout=60, capture_output=True, text=True,
+    )
+    return float(result.stdout)
+
+
 def read_audio_video(path: str) -> list[DocumentUnit]:
     """Compress audio/video for Whisper and retain original-timeline citations."""
     units = []
     waited = 0
     with tempfile.TemporaryDirectory() as tmp:
         mp3_path = _transcode_to_mp3(path, tmp)
+        if _duration_seconds(mp3_path) > _MAX_AUDIO_SECONDS:
+            raise ValueError(
+                "Audio dài hơn khoảng 2 giờ vượt hạn mức phiên âm miễn phí; "
+                "hãy cắt file thành các phần dưới 2 giờ rồi tải lên từng phần."
+            )
         pieces = [(mp3_path, 0.0)]
         if os.path.getsize(mp3_path) > _AUDIO_UPLOAD_BYTES:
             manifest = os.path.join(tmp, "pieces.csv")

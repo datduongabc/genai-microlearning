@@ -1,6 +1,7 @@
 """Audio preparation and timestamped transcription without provider calls."""
 import json
 from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import patch
 
 import httpx
@@ -8,6 +9,14 @@ import pytest
 from litellm.exceptions import RateLimitError
 
 from app.ingestion import document_readers as readers
+
+_probe_duration = readers._duration_seconds
+
+
+@pytest.fixture(autouse=True)
+def short_audio():
+    with patch.object(readers, "_duration_seconds", return_value=60.0):
+        yield
 
 
 def test_small_mp3_skips_ffmpeg_and_keeps_segment_timestamps(tmp_path):
@@ -109,3 +118,17 @@ def test_empty_transcript_is_rejected(tmp_path):
     path.write_bytes(b"audio")
     with patch.object(readers, "transcribe_audio", return_value=[]), pytest.raises(ValueError, match="rong"):
         readers.read_audio_video(str(path))
+
+
+def test_audio_over_two_hours_is_refused_before_spending_quota(tmp_path):
+    path = tmp_path / "long.mp3"
+    path.write_bytes(b"audio")
+    probe = SimpleNamespace(stdout="7200.500000\n")
+    with patch.object(readers, "_duration_seconds", _probe_duration), patch.object(
+        readers.subprocess, "run", return_value=probe
+    ) as run, patch.object(
+        readers, "transcribe_audio"
+    ) as transcribe, pytest.raises(ValueError, match="dài hơn khoảng 2 giờ"):
+        readers.read_audio_video(str(path))
+    assert run.call_args.args[0][0] == "ffprobe"
+    transcribe.assert_not_called()

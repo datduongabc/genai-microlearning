@@ -70,6 +70,7 @@ def transcribe_audio(path: str) -> list[dict]:
             api_base=settings.llm_gateway_url,
             api_key=settings.llm_gateway_key,
             response_format="verbose_json",
+            max_retries=0,
         )
     return response.segments or []
 

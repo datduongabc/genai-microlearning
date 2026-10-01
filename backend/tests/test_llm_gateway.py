@@ -93,6 +93,7 @@ def test_audio_transcription_also_goes_through_the_gateway(monkeypatch, captured
     assert captured["api_key"] == "sk-gateway-test"
     assert captured["model"] == "openai/transcribe"
     assert captured["response_format"] == "verbose_json"
+    assert captured["max_retries"] == 0
     assert captured["file"].closed
 
 
