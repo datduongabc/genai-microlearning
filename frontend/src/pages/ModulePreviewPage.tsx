@@ -117,7 +117,7 @@ export function ModulePreviewPage() {
             key={c.id}
             moduleId={module.id}
             component={c}
-            citations={module.is_control ? null : module.claim_citations}
+            citations={module.claim_citations}
             explanations={explanationsByQuestion(module, c.type)}
             onSaved={refresh}
           />
