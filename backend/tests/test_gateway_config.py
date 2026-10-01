@@ -193,3 +193,11 @@ def test_every_alias_has_a_label_for_the_teacher(gateway):
     ]
 
     assert unlabelled == []
+
+
+def test_transcription_alias_routes_to_groq_whisper(gateway):
+    deployment = next(d for d in _deployments(gateway) if d["model_name"] == "transcribe")
+    assert deployment["litellm_params"] == {
+        "model": "groq/whisper-large-v3-turbo", "api_key": "os.environ/GROQ_API_KEY",
+    }
+    assert deployment["model_info"]["mode"] == "audio_transcription"

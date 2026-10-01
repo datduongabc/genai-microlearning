@@ -78,12 +78,22 @@ def test_structured_completion_requests_the_schema_and_parses_the_reply(monkeypa
     assert captured["api_base"] == "http://gateway.test:4000"
 
 
-def test_audio_transcription_also_goes_through_the_gateway(captured):
-    llm.transcribe_audio("AAAA", "mp3", "transcribe this")
-
+def test_audio_transcription_also_goes_through_the_gateway(monkeypatch, captured, tmp_path):
+    path = tmp_path / "audio.mp3"
+    path.write_bytes(b"audio")
+    segments = [{"start": 0, "end": 1, "text": "hello"}]
+    def transcription(**kwargs):
+        captured.update(kwargs)
+        assert kwargs["file"].read() == b"audio"
+        return SimpleNamespace(segments=segments)
+    monkeypatch.setattr(litellm, "transcription", transcription)
+    with llm.using_model("groq-pro"):
+        assert llm.transcribe_audio(str(path)) == segments
     assert captured["api_base"] == "http://gateway.test:4000"
-    parts = captured["messages"][0]["content"]
-    assert {"type": "input_audio", "input_audio": {"data": "AAAA", "format": "mp3"}} in parts
+    assert captured["api_key"] == "sk-gateway-test"
+    assert captured["model"] == "openai/transcribe"
+    assert captured["response_format"] == "verbose_json"
+    assert captured["file"].closed
 
 
 # --- choosing the model for one run ------------------------------------------

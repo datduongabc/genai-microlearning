@@ -1,4 +1,4 @@
-import base64
+import csv
 import io
 import logging
 import os
@@ -343,47 +343,63 @@ def read_transcript_file(path: str) -> list[DocumentUnit]:
     paragraphs = [p.strip() for p in content.split("\n\n") if p.strip()]
     return [DocumentUnit(text=p, locator={"paragraph_index": i}) for i, p in enumerate(paragraphs)]
 
-_TRANSCRIBE_PROMPT = (
-    "Phien am toan bo audio nay thanh van ban. CHI tra ve van ban da phien "
-    "am, khong them binh luan/tom tat/ghi chu nao khac. Giu nguyen ngon ngu "
-    "goc (khong dich). Neu co nhieu doan y ro ret, xuong dong trong (blank "
-    "line) giua cac doan."
-)
+# Leave headroom below Groq's 25 MB upload limit (decimal bytes).
+_AUDIO_UPLOAD_BYTES = 24_000_000
 
 
 def _transcode_to_mp3(input_path: str, out_dir: str) -> str:
-    # ffmpeg -vn: bo qua stream video neu input la file video, chi lay audio.
-    # Chuan hoa MOI dinh dang dau vao (bat ke container/codec) ve 1 dinh
-    # dang duy nhat truoc khi goi Gemini, thay vi doan MIME type cho tung
-    # phan mo rong (m4a/aac dung chung container nhung khac nhau ve chi tiet
-    # dong nhat voi cac audio/* MIME type Gemini cong bo ho tro).
+    if input_path.lower().endswith(".mp3") and os.path.getsize(input_path) <= _AUDIO_UPLOAD_BYTES:
+        return input_path
     out_path = os.path.join(out_dir, "audio.mp3")
     subprocess.run(
-        ["ffmpeg", "-y", "-i", input_path, "-vn", "-acodec", "libmp3lame", out_path],
+        ["ffmpeg", "-y", "-i", input_path, "-vn", "-ac", "1", "-ar", "16000",
+         "-acodec", "libmp3lame", "-b:a", "32k", out_path],
         check=True, timeout=300, capture_output=True,
     )
     return out_path
 
 
 def read_audio_video(path: str) -> list[DocumentUnit]:
-    """Audio/video CHUA co transcript (khac read_transcript_file() -- doc
-    file .srt/.vtt/.txt giang vien da co san, khong ASR). Chuyen sang mp3
-    chuan hoa qua ffmpeg roi goi Gemini phien am (app.llm.gateway.
-    transcribe_audio) -- khong dung dich vu ASR rieng (vd Speechmatics) de
-    giu dung triet ly "moi lenh goi LLM qua litellm, free-tier" da ap dung
-    xuyen suot pipeline. Khong co timestamp cap tu/cau chinh xac nhu ASR
-    chuyen dung -- chia doan theo dong trong model tu chen, giong nhanh
-    "plain text" cua read_transcript_file()."""
+    """Compress audio/video for Whisper and retain original-timeline citations."""
+    units = []
     with tempfile.TemporaryDirectory() as tmp:
         mp3_path = _transcode_to_mp3(path, tmp)
-        with open(mp3_path, "rb") as f:
-            audio_b64 = base64.b64encode(f.read()).decode("ascii")
-
-    transcript = transcribe_audio(audio_b64, "mp3", _TRANSCRIBE_PROMPT)
-    paragraphs = [p.strip() for p in transcript.split("\n\n") if p.strip()]
-    if not paragraphs:
-        raise ValueError("Gemini tra ve transcript rong -- audio co the khong co loi noi")
-    return [DocumentUnit(text=p, locator={"paragraph_index": i}) for i, p in enumerate(paragraphs)]
+        pieces = [(mp3_path, 0.0)]
+        if os.path.getsize(mp3_path) > _AUDIO_UPLOAD_BYTES:
+            manifest = os.path.join(tmp, "pieces.csv")
+            # 90 minutes at 32 kbit/s is ~21.6 MB. Copy the already compressed audio;
+            # the manifest records actual packet boundaries, not rounded split times.
+            subprocess.run(
+                ["ffmpeg", "-y", "-i", mp3_path, "-c", "copy", "-f", "segment",
+                 "-segment_time", "5400", "-reset_timestamps", "1",
+                 "-segment_list", manifest, os.path.join(tmp, "part%03d.mp3")],
+                check=True, timeout=300, capture_output=True,
+            )
+            with open(manifest, newline="", encoding="utf-8") as f:
+                pieces = [(os.path.join(tmp, name), float(start)) for name, start, _ in csv.reader(f)]
+        for piece, offset in pieces:
+            if os.path.getsize(piece) > _AUDIO_UPLOAD_BYTES:
+                raise ValueError("Audio vuot gioi han 24 MB sau khi chia")
+            current = None
+            for segment in transcribe_audio(piece):
+                text = segment["text"].strip()
+                if not text:
+                    continue
+                start = round((offset + segment["start"]) * 1000)
+                end = round((offset + segment["end"]) * 1000)
+                if current is None:
+                    current = DocumentUnit(text=text, locator={"start_ms": start, "end_ms": end})
+                else:
+                    current.text += " " + text
+                    current.locator["end_ms"] = end
+                if end - current.locator["start_ms"] >= 30_000:
+                    units.append(current)
+                    current = None
+            if current is not None:
+                units.append(current)
+    if not units:
+        raise ValueError("Whisper tra ve transcript rong -- audio co the khong co loi noi")
+    return units
 
 
 def read_document(path: str, *, course_id: str, source_id: str | None = None) -> list[DocumentUnit]:
