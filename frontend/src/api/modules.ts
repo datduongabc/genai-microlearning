@@ -84,8 +84,8 @@ function modelBody(modelAlias?: string | null) {
   return modelAlias ? { model_alias: modelAlias } : {}
 }
 
-export async function generateModule(documentId: string, modelAlias?: string | null) {
-  const { data } = await api.post('/modules/generate', modelBody(modelAlias), {
+export async function generateModule(documentId: string, modelAlias?: string | null, outputLanguage: "vi" | "en" = "vi") {
+  const { data } = await api.post('/modules/generate', { ...modelBody(modelAlias), output_language: outputLanguage }, {
     params: { document_id: documentId },
   })
   return data as { job_id: string; status: string }
@@ -95,10 +95,11 @@ export async function generateModulesFromSections(
   documentId: string,
   sectionIds: string[],
   modelAlias?: string | null,
+  outputLanguage: "vi" | "en" = "vi",
 ) {
   const { data } = await api.post(
     '/modules/generate',
-    { section_ids: sectionIds, ...modelBody(modelAlias) },
+    { section_ids: sectionIds, ...modelBody(modelAlias), output_language: outputLanguage },
     { params: { document_id: documentId } },
   )
   return data as { jobs: { section_id: string; job_id: string }[] }

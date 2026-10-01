@@ -14,7 +14,8 @@ def _seed_document(db, planner_concepts=None):
     db.flush()
     doc = Document(
         course_id=course.id, filename="x.pdf", status=DocumentStatus.embedded,
-        raw_text="irrelevant for the cache-hit path", planner_concepts=planner_concepts,
+        raw_text="irrelevant for the cache-hit path",
+        planner_concepts=[{**c, "output_language": "vi"} for c in planner_concepts] if planner_concepts else None,
     )
     db.add(doc)
     db.commit()
@@ -58,3 +59,19 @@ def test_cache_hit_is_stable_across_repeated_calls():
         assert summaries == {"The only one"}
     finally:
         db.close()
+
+
+
+def test_language_change_refreshes_planner_once(monkeypatch):
+    from app.generation import module_generation_pipeline as pipeline
+    from app.generation.planner import Concept, PlannerOutput
+    calls = []
+    def planner(text, output_language="vi"):
+        calls.append(output_language)
+        return PlannerOutput(concepts=[Concept(name="Search" if output_language == "en" else "Tìm kiếm", priority=1, summary="s")])
+    monkeypatch.setattr(pipeline, "run_planner", planner)
+    with SessionLocal() as db:
+        doc = _seed_document(db, [{"name": "Tìm kiếm", "priority": 1, "summary": "s"}])
+        assert _get_or_cache_planner(db, doc, output_language="en").concepts[0].name == "Search"
+        assert _get_or_cache_planner(db, doc, output_language="en").concepts[0].name == "Search"
+        assert calls == ["en"]

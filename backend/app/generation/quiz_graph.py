@@ -20,8 +20,10 @@ from sqlalchemy.orm import Session
 
 from app.generation.common import (
     BLOOM_LEVEL_ANCHORS,
+    OutputLanguage,
     _checked,
     failed_criteria,
+    output_language_instruction,
     source_block,
     system_instruction,
 )
@@ -142,8 +144,6 @@ Quy trình BẮT BUỘC (đúng thứ tự):
    kỳ phương án nào — dễ bị loại trừ mà không cần hiểu bài.
 6. Nếu mode="practice", câu hỏi tập trung vào luyện tập/củng cố (được phép
    đơn giản hơn quiz một chút), không phải đánh giá chính thức.
-7. Ngôn ngữ khớp ngôn ngữ chính của tài liệu được cung cấp (tiếng Việt có dấu
-   đầy đủ nếu tài liệu là tiếng Việt).
 """
 
 _QUESTION_SOURCE_RULES = """8. Tài liệu là các đoạn nguồn (SOURCE CHUNK): CHỈ được dùng thông tin THỰC SỰ
@@ -306,6 +306,7 @@ def generate_quiz_question(
     feedback: str | None = None,
     self_check: bool = True,
     lesson: str | None = None,
+    output_language: OutputLanguage = "vi",
 ) -> QuizResult:
     """`query`: điều câu hỏi kiểm (một sub-objective, hoặc khái niệm chính với practice); truy hồi
     top-5 đoạn theo nó, không chấm độ liên quan riêng.
@@ -344,7 +345,10 @@ def generate_quiz_question(
         reasons = "; ".join(r for r in (feedback, retry_feedback) if r)
         if reasons:
             prompt += CORRECTION_SUFFIX_TEMPLATE.format(feedback=reasons)
-        return complete_structured(prompt, QuizQuestion, system_instruction=instruction)
+        return complete_structured(
+            prompt, QuizQuestion,
+            system_instruction=instruction + output_language_instruction(output_language),
+        )
 
     question, check = _checked(
         generate, lambda q: _verify_question(q, lo, material, mode, self_check, sourced), QUESTION_CRITERIA

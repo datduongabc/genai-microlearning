@@ -26,6 +26,7 @@ from app.generation.module_generation_pipeline import (
     IncompleteModuleError,
     concept_query_of,
     control_payload,
+    generation_payload_of,
     is_control,
     learning_objective_of,
     run_module_generation,
@@ -172,7 +173,8 @@ def _control_of(db: Session, module: Module, model_alias: str | None, self_check
     """Bản đối chứng của `module` với đúng model và cờ tự kiểm này: dùng lại bản đã sinh nếu có, không
     thì sinh mới và ghi một job đã xong mang payload như job đối chứng xếp qua API, để mọi nơi nhận ra
     đó là bản đối chứng."""
-    payload = control_payload(module.id, model_alias, self_check)
+    output_language = generation_payload_of(db, module.id).get("output_language", "vi")
+    payload = control_payload(module.id, model_alias, self_check, output_language)
     existing = (
         db.query(Job)
         .filter(
@@ -188,6 +190,7 @@ def _control_of(db: Session, module: Module, model_alias: str | None, self_check
     with using_model(model_alias):
         control = run_module_generation(
             db, module.document, section, self_check=self_check, use_retrieval=False, paired_module=module,
+            output_language=output_language,
         )
     db.add(Job(
         job_type=JobType.module_generation, step="generate", status=JobStatus.done, document_id=control.document_id,

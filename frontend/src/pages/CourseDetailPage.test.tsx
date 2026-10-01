@@ -362,9 +362,10 @@ describe('CourseDetailPage - module generation availability', () => {
     await waitFor(() =>
       expect((screen.getByRole('combobox', { name: /model sinh/i }) as HTMLSelectElement).value).toBe('groq-pro'),
     )
+    await userEvent.selectOptions(screen.getByRole('combobox', { name: /ngôn ngữ đầu ra/i }), 'en')
     await userEvent.click(await screen.findByRole('button', { name: /\+ sinh mô-đun/i }))
 
-    expect(api.generateModule).toHaveBeenCalledWith('doc-1', 'groq-pro')
+    expect(api.generateModule).toHaveBeenCalledWith('doc-1', 'groq-pro', 'en')
   })
 
   it('shows why a chosen model cannot be used instead of a generic failure', async () => {
@@ -394,7 +395,7 @@ describe('CourseDetailPage - module generation availability', () => {
     renderPage()
     await userEvent.click(await screen.findByRole('button', { name: /\+ sinh mô-đun/i }))
 
-    expect(api.generateModule).toHaveBeenCalledWith('doc-1', '')
+    expect(api.generateModule).toHaveBeenCalledWith('doc-1', '', 'vi')
     expect(await screen.findByRole('button', { name: /đang sinh mô-đun/i })).toBeDisabled()
   })
 })

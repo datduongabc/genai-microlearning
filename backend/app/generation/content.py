@@ -4,7 +4,9 @@ no-RAG arm, written from the model's own knowledge with the same prompt minus th
 from pydantic import BaseModel, Field
 
 from app.generation.common import (
+    OutputLanguage,
     _checked,
+    output_language_instruction,
     source_block,
     system_instruction,
 )
@@ -30,9 +32,6 @@ Ràng buộc BẮT BUỘC:
 2. Content PHẢI có 1 heading (mục/phần) riêng cho MỖI sub_objective được cung
    cấp bên dưới (đúng thứ tự, đủ số lượng) — đây là cơ chế ép bao phủ đủ rộng,
    không chỉ tổng hợp 1 góc hẹp trùng khớp objective_text tổng thể.
-3. Ngôn ngữ của content PHẢI khớp ngôn ngữ của Learning Objective (tiếng Việt
-   có dấu đầy đủ nếu Learning Objective là tiếng Việt); thuật ngữ kỹ thuật
-   được phép giữ nguyên tiếng Anh.
 """
 
 _CONTENT_SOURCE_RULES = """
@@ -197,7 +196,8 @@ def _verify_content(
 
 
 def generate_content(
-    lo: LearningObjective, context_chunks: list[Chunk] | None, self_check: bool = True
+    lo: LearningObjective, context_chunks: list[Chunk] | None, self_check: bool = True,
+    output_language: OutputLanguage = "vi",
 ) -> tuple[LessonText, ContentVerification | LessonVerification | None]:
     """`context_chunks=None` is the no-RAG arm: the same prompt without the source block, written from
     the model's own knowledge, and checked for completeness and scope only (there is nothing to hold
@@ -224,10 +224,12 @@ def generate_content(
         # "dien giai qua tay" (unfaithfulness), nhat quan voi Planner/LO.
         if not sourced:
             return complete_structured(
-                prompt, LessonText, system_instruction=NO_SOURCE_CONTENT_SYSTEM_INSTRUCTION, temperature=0.0
+                prompt, LessonText, system_instruction=NO_SOURCE_CONTENT_SYSTEM_INSTRUCTION
+                + output_language_instruction(output_language), temperature=0.0,
             )
         return complete_structured(
-            prompt, ContentOutput, system_instruction=CONTENT_SYSTEM_INSTRUCTION, temperature=0.0
+            prompt, ContentOutput, system_instruction=CONTENT_SYSTEM_INSTRUCTION
+            + output_language_instruction(output_language), temperature=0.0,
         )
 
     criteria = [("completeness", "Completeness"), ("scope", "Scope")]

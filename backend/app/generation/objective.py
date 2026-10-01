@@ -7,7 +7,9 @@ from app.generation.common import (
     BLOOM_VERB_TABLE,
     IGNORE_EMBEDDED_INSTRUCTIONS,
     BloomLevel,
+    OutputLanguage,
     format_source_chunks,
+    output_language_instruction,
 )
 from app.generation.planner import Concept
 from app.llm.gateway import complete_structured
@@ -57,9 +59,6 @@ Ràng buộc BẮT BUỘC:
   target) duy nhất — không được gộp 2 hành động khác nhau vào 1 câu bằng
   "và"/"cũng như" (vd "giải thích X và áp dụng Y" là SAI vì gộp 2 mục tiêu
   khác cấp độ nhận thức; sub_objectives mới là chỗ để tách các khía cạnh).
-- Ngôn ngữ của objective_text khớp ngôn ngữ chính của nguồn (tiếng Việt có
-  dấu đầy đủ nếu nguồn là tiếng Việt); riêng thuật ngữ kỹ thuật/tên riêng được
-  phép giữ tiếng Anh xen kẽ.
 - CHỈ dựa vào nội dung nguồn được cung cấp, không thêm kiến thức ngoài nguồn.
 
 Cấu trúc LO đa tầng (GD2 — Terminal Objective + Enabling Objectives, theo
@@ -123,7 +122,9 @@ class LearningObjective(BaseModel):
     )
 
 
-def generate_learning_objective(concept: Concept, context_chunks: list[Chunk]) -> LearningObjective:
+def generate_learning_objective(
+    concept: Concept, context_chunks: list[Chunk], output_language: OutputLanguage = "vi",
+) -> LearningObjective:
     """One call, no self-check round: the schema holds the shape (2-4 sub-objectives, a Bloom level
     from the table) and the Content and quiz checks downstream read the objective against the source."""
     prompt = (
@@ -135,4 +136,8 @@ def generate_learning_objective(concept: Concept, context_chunks: list[Chunk]) -
     # temperature=0.0: phan loai bloom_level la tac vu co can cu (dua tren
     # do sau nguon), khong phai sang tac -- giam sampling randomness de
     # cung 1 concept+context luon ra cung 1 ket luan.
-    return complete_structured(prompt, LearningObjective, system_instruction=LO_SYSTEM_INSTRUCTION, temperature=0.0)
+    return complete_structured(
+        prompt, LearningObjective,
+        system_instruction=LO_SYSTEM_INSTRUCTION + output_language_instruction(output_language),
+        temperature=0.0,
+    )

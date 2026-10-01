@@ -75,6 +75,7 @@ export function CourseDetailPage() {
   // Model cho các lượt sinh bấm từ trang này, dùng chung cho cả tài liệu lẫn từng mục;
   // chuỗi rỗng nghĩa là chưa chọn gì. ModelPicker điền sẵn mặc định đã lưu của giảng viên.
   const [modelAlias, setModelAlias] = useState("");
+  const [outputLanguage, setOutputLanguage] = useState<"vi" | "en">("vi");
   const [modulesByDoc, setModulesByDoc] = useState<
     Record<string, ModuleSummary[]>
   >({});
@@ -190,7 +191,7 @@ export function CourseDetailPage() {
     setStartingIds((ids) => new Set(ids).add(documentId));
     setError(null);
     try {
-      const { job_id } = await generateModule(documentId, modelAlias);
+      const { job_id } = await generateModule(documentId, modelAlias, outputLanguage);
       const finalStatus = await pollJobStatus(() => getModuleJobStatus(job_id));
       if (finalStatus.status === "failed") {
         setError(finalStatus.last_error ?? "Sinh mô-đun thất bại");
@@ -264,6 +265,17 @@ export function CourseDetailPage() {
           dòng ghi chú dưới ô chọn còn đẩy ô chọn lệch lên so với các nút bên cạnh. */}
       <div className="mt-4">
         <ModelPicker value={modelAlias} onChange={setModelAlias} />
+        <label className="mt-3 flex items-center gap-3 text-sm">
+          Ngôn ngữ đầu ra
+          <select
+            value={outputLanguage}
+            onChange={(e) => setOutputLanguage(e.target.value as "vi" | "en")}
+            className="rounded-[3px] border border-gray-300 px-3 py-2"
+          >
+            <option value="vi">Tiếng Việt</option>
+            <option value="en">English</option>
+          </select>
+        </label>
       </div>
       {uploadBusy && (
         <p className="mt-2 text-xs text-gray-500">
@@ -330,6 +342,7 @@ export function CourseDetailPage() {
                   modules={modulesByDoc[d.id] ?? []}
                   onGenerated={refresh}
                   modelAlias={modelAlias}
+                  outputLanguage={outputLanguage}
                 />
               )}
               {listedModules(d).length > 0 && (

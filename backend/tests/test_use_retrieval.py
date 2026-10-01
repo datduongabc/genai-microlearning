@@ -356,7 +356,7 @@ def test_a_no_rag_job_is_queued_with_the_paired_module_model_and_self_check(api)
     assert response.status_code == 200, response.text
     job = _no_rag_job(api)
     assert job.payload == {
-        "self_check": False, "model_alias": "groq-pro", "use_retrieval": False,
+        "self_check": False, "output_language": "vi", "model_alias": "groq-pro", "use_retrieval": False,
         "paired_module_id": str(api["module"]),
     }
     assert job.section_id is None
@@ -442,3 +442,14 @@ def test_a_paired_module_that_is_itself_a_control_is_refused(api):
     response = _post(api, {"use_retrieval": False, "paired_module_id": str(api["module"])})
 
     assert response.status_code == 422, response.text
+
+
+
+def test_control_reuses_the_paired_output_language(api):
+    with SessionLocal() as db:
+        job = db.query(Job).filter(Job.module_id == api["module"]).one()
+        job.payload = {**job.payload, "output_language": "en"}
+        db.commit()
+    response = _post(api, {"use_retrieval": False, "paired_module_id": str(api["module"]), "output_language": "vi"})
+    assert response.status_code == 200, response.text
+    assert _no_rag_job(api).payload["output_language"] == "en"

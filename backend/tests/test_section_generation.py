@@ -80,7 +80,7 @@ def textbook():
 def seen(monkeypatch):
     record = {"planner_inputs": [], "retrieve_scopes": [], "expand_scopes": [], "quiz_scopes": []}
 
-    def fake_planner(text):
+    def fake_planner(text, output_language="vi"):
         record["planner_inputs"].append(text)
         return PlannerOutput(concepts=[Concept(name="Sorting", priority=1, summary="how to sort")])
 
@@ -109,12 +109,12 @@ def seen(monkeypatch):
     monkeypatch.setattr(
         pipeline,
         "generate_learning_objective",
-        lambda concept, chunks: objective,
+        lambda concept, chunks, output_language="vi": objective,
     )
     monkeypatch.setattr(
         pipeline,
         "generate_content",
-        lambda lo, chunks, self_check=True: (
+        lambda lo, chunks, self_check=True, output_language="vi": (
             types.SimpleNamespace(content="content", source_locators=[], claim_citations=[]),
             types.SimpleNamespace(groundedness_pass=True),
         ),
@@ -122,12 +122,12 @@ def seen(monkeypatch):
     monkeypatch.setattr(
         pipeline,
         "generate_slides",
-        lambda lo, content: types.SimpleNamespace(slides=[]),
+        lambda lo, content, output_language="vi": types.SimpleNamespace(slides=[]),
     )
     monkeypatch.setattr(
         pipeline,
         "generate_example",
-        lambda lo, content, chunks: ExampleOutput(examples=[Example(context="ctx", analysis="analysis")]),
+        lambda lo, content, chunks, output_language="vi": ExampleOutput(examples=[Example(context="ctx", analysis="analysis")]),
     )
     return record
 

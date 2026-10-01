@@ -223,7 +223,7 @@ def test_tat_tu_kiem_luc_bam_sinh_di_vao_payload_va_toi_worker(monkeypatch):
     token, doc_id = _tai_lieu_cua_giang_vien()
     phan_hoi = client.post(
         f"/modules/generate?document_id={doc_id}",
-        json={"self_check": False},
+        json={"self_check": False, "output_language": "en"},
         headers={"Authorization": f"Bearer {token}"},
     )
     assert phan_hoi.status_code == 200, phan_hoi.text
@@ -238,6 +238,7 @@ def test_tat_tu_kiem_luc_bam_sinh_di_vao_payload_va_toi_worker(monkeypatch):
 
     def gia_lap_sinh(db, doc, section=None, self_check=True, **kwargs):
         thay["self_check"] = self_check
+        thay["output_language"] = kwargs["output_language"]
         module = Module(document_id=doc.id, course_id=doc.course_id, title="M")
         db.add(module)
         db.flush()
@@ -247,6 +248,7 @@ def test_tat_tu_kiem_luc_bam_sinh_di_vao_payload_va_toi_worker(monkeypatch):
     pipeline.run_module_generation_step(type("J", (), {"id": job_id})())
 
     assert thay["self_check"] is False
+    assert thay["output_language"] == "en"
 
 
 def test_khong_noi_gi_thi_van_tu_kiem():
@@ -363,4 +365,21 @@ def test_phep_thu_thay_gateway_sap_thi_bao_503(monkeypatch):
     )
 
     assert phan_hoi.status_code == 503
+    assert _so_job(doc_id) == 0
+
+
+@pytest.mark.parametrize("body,language", [({}, "vi"), ({"output_language": "en"}, "en"), ({"output_language": "vi"}, "vi")])
+def test_output_language_is_saved_in_the_job(body, language):
+    token, doc_id = _tai_lieu_cua_giang_vien()
+    response = client.post(f"/modules/generate?document_id={doc_id}", json=body,
+                           headers={"Authorization": f"Bearer {token}"})
+    assert response.status_code == 200, response.text
+    assert _payload_cua_job(doc_id)["output_language"] == language
+
+
+def test_other_output_languages_are_rejected():
+    token, doc_id = _tai_lieu_cua_giang_vien()
+    response = client.post(f"/modules/generate?document_id={doc_id}", json={"output_language": "fr"},
+                           headers={"Authorization": f"Bearer {token}"})
+    assert response.status_code == 422
     assert _so_job(doc_id) == 0

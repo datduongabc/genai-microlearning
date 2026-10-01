@@ -2,7 +2,12 @@
 
 from pydantic import BaseModel, Field
 
-from app.generation.common import source_block, system_instruction
+from app.generation.common import (
+    OutputLanguage,
+    output_language_instruction,
+    source_block,
+    system_instruction,
+)
 from app.generation.objective import LearningObjective
 from app.llm.gateway import complete_structured
 from app.models import Chunk
@@ -29,8 +34,6 @@ Ràng buộc BẮT BUỘC:
    Objective (không chung chung).
 3. `analysis`: phân tích cách bối cảnh đó minh họa đúng khái niệm trong
    Content — liên hệ trực tiếp, không lạc đề.
-4. Ngôn ngữ khớp ngôn ngữ chính của Content (tiếng Việt có dấu đầy đủ nếu
-   Content là tiếng Việt).
 """
 
 _EXAMPLE_SOURCE_RULES = """5. Các đoạn SOURCE CHUNK bên dưới đóng vai trò few-shot — văn phong và thuật
@@ -64,7 +67,10 @@ class ExampleOutput(BaseModel):
     )
 
 
-def generate_example(lo: LearningObjective, content: str, context_chunks: list[Chunk] | None) -> ExampleOutput:
+def generate_example(
+    lo: LearningObjective, content: str, context_chunks: list[Chunk] | None,
+    output_language: OutputLanguage = "vi",
+) -> ExampleOutput:
     """One call, no self-check round: the schema caps the count (1-4, at most one per sub-objective),
     and an example may invent its situation, so there is no source to hold it against.
     `context_chunks=None` is the no-RAG arm: the same prompt without the source block."""
@@ -81,4 +87,7 @@ def generate_example(lo: LearningObjective, content: str, context_chunks: list[C
     # LUA CHON tinh huong nao + phan tich no van nen nhat quan/co the du
     # doan duoc giua cac lan goi, khong can bien thien ngau nhien -- nhat
     # quan voi phan con lai cua pipeline.
-    return complete_structured(prompt, ExampleOutput, system_instruction=instruction, temperature=0.0)
+    return complete_structured(
+        prompt, ExampleOutput, system_instruction=instruction + output_language_instruction(output_language),
+        temperature=0.0,
+    )

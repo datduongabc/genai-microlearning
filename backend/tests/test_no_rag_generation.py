@@ -332,7 +332,7 @@ def test_the_control_is_recorded_with_the_payload_an_api_queued_control_carries(
     [job] = _controls_of(rag_module)
     assert job.status == JobStatus.done and job.job_type == JobType.module_generation
     assert job.payload == {
-        "self_check": False, "model_alias": "groq-pro", "use_retrieval": False,
+        "self_check": False, "output_language": "vi", "model_alias": "groq-pro", "use_retrieval": False,
         "paired_module_id": str(rag_module.ids["module"]),
     }
     db = SessionLocal()

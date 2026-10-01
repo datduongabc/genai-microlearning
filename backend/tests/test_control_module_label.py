@@ -129,3 +129,22 @@ def test_detail_citations_resolve_within_document_and_require_owner(modules):
         with SessionLocal() as db:
             db.query(User).filter(User.id == outsider_id).delete()
             db.commit()
+
+
+
+def test_detail_formats_structured_citation_without_changing_resolution(modules):
+    import json
+    user, course, doc, rag, _ = modules
+    locator = json.dumps({"spans": [{"page": 9, "heading": None, "extraction_method": "text_layer"},
+                                  {"page": 10, "heading": "Search", "extraction_method": "text_layer"}]})
+    with SessionLocal() as db:
+        filename = db.get(Document, doc).filename
+        db.add(ModuleComponent(module_id=rag, type=ComponentType.content,
+                               content={"markdown": "Lesson", "claim_citations": [{"claim": "Fact", "locator": locator}]}))
+        db.add(Chunk(course_id=course, document_id=doc, chunk_index=0, content="Original", source_ref=locator))
+        db.commit()
+    response = client.get(f"/modules/{rag}", headers={"Authorization": f"Bearer {create_access_token(str(user))}"})
+    citation = response.json()["claim_citations"][0]
+    assert citation["locator"] == f"{filename} · trang 9–10 · Search"
+    assert citation["chunk_content"] == "Original"
+    assert citation["resolution"] == "resolved"
