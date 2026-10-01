@@ -5,6 +5,7 @@ import os
 import re
 import subprocess
 import tempfile
+import time
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -12,6 +13,7 @@ import pymupdf
 import pytesseract
 from bs4 import BeautifulSoup
 from docx import Document as DocxDocument
+from litellm.exceptions import RateLimitError
 from PIL import Image
 from pptx import Presentation
 from pptx.enum.shapes import MSO_SHAPE_TYPE
@@ -345,6 +347,7 @@ def read_transcript_file(path: str) -> list[DocumentUnit]:
 
 # Leave headroom below Groq's 25 MB upload limit (decimal bytes).
 _AUDIO_UPLOAD_BYTES = 24_000_000
+_RATE_LIMIT_ATTEMPTS = 4
 
 
 def _transcode_to_mp3(input_path: str, out_dir: str) -> str:
@@ -380,23 +383,25 @@ def read_audio_video(path: str) -> list[DocumentUnit]:
         for piece, offset in pieces:
             if os.path.getsize(piece) > _AUDIO_UPLOAD_BYTES:
                 raise ValueError("Audio vuot gioi han 24 MB sau khi chia")
-            current = None
-            for segment in transcribe_audio(piece):
+            for attempt in range(_RATE_LIMIT_ATTEMPTS):
+                try:
+                    segments = transcribe_audio(piece)
+                    break
+                except RateLimitError as exc:
+                    if attempt == _RATE_LIMIT_ATTEMPTS - 1:
+                        raise ValueError("Da het han muc audio Groq Whisper, vui long thu lai sau") from exc
+                    try:
+                        wait = float(exc.response.headers.get("retry-after", 60))
+                    except ValueError:
+                        wait = 60
+                    time.sleep(min(wait, 3600))
+            for segment in segments:
                 text = segment["text"].strip()
-                if not text:
-                    continue
-                start = round((offset + segment["start"]) * 1000)
-                end = round((offset + segment["end"]) * 1000)
-                if current is None:
-                    current = DocumentUnit(text=text, locator={"start_ms": start, "end_ms": end})
-                else:
-                    current.text += " " + text
-                    current.locator["end_ms"] = end
-                if end - current.locator["start_ms"] >= 30_000:
-                    units.append(current)
-                    current = None
-            if current is not None:
-                units.append(current)
+                if text:
+                    units.append(DocumentUnit(text=text, locator={
+                        "start_ms": round((offset + segment["start"]) * 1000),
+                        "end_ms": round((offset + segment["end"]) * 1000),
+                    }))
     if not units:
         raise ValueError("Whisper tra ve transcript rong -- audio co the khong co loi noi")
     return units

@@ -3,17 +3,19 @@ import json
 from pathlib import Path
 from unittest.mock import patch
 
+import httpx
 import pytest
+from litellm.exceptions import RateLimitError
 
 from app.ingestion import document_readers as readers
 
 
-def test_small_mp3_skips_ffmpeg_and_merges_short_segments(tmp_path):
+def test_small_mp3_skips_ffmpeg_and_keeps_segment_timestamps(tmp_path):
     path = tmp_path / "lecture.mp3"
     path.write_bytes(b"audio")
     segments = [
         {"start": 750, "end": 760, "text": " A "},
-        {"start": 760, "end": 785, "text": "B"},
+        {"start": 760, "end": 785, "text": "  "},
         {"start": 785, "end": 820, "text": "C"},
     ]
     with patch.object(readers.subprocess, "run") as ffmpeg, patch.object(
@@ -23,12 +25,41 @@ def test_small_mp3_skips_ffmpeg_and_merges_short_segments(tmp_path):
     ffmpeg.assert_not_called()
     transcribe.assert_called_once_with(str(path))
     assert [(u.text, u.locator) for u in units] == [
-        ("A B", {"start_ms": 750000, "end_ms": 785000}),
+        ("A", {"start_ms": 750000, "end_ms": 760000}),
         ("C", {"start_ms": 785000, "end_ms": 820000}),
     ]
 
     from app.api.modules import citation_label
-    assert citation_label("lecture.mp3", json.dumps(units[0].locator)) == "lecture.mp3 · 12:30–13:05"
+    assert citation_label("lecture.mp3", json.dumps(units[0].locator)) == "lecture.mp3 · 12:30–12:40"
+
+
+def _rate_limit(retry_after=None):
+    headers = {"retry-after": retry_after} if retry_after else None
+    return RateLimitError("quota", "groq", "transcribe", response=httpx.Response(429, headers=headers))
+
+
+def test_rate_limited_piece_waits_and_retries_only_that_piece(tmp_path):
+    path = tmp_path / "lecture.mp3"
+    path.write_bytes(b"audio")
+    segment = [{"start": 0, "end": 2, "text": "speech"}]
+    with patch.object(
+        readers, "transcribe_audio", side_effect=[_rate_limit("120"), segment]
+    ) as transcribe, patch.object(readers.time, "sleep") as sleep:
+        units = readers.read_audio_video(str(path))
+    assert transcribe.call_count == 2
+    sleep.assert_called_once_with(120.0)
+    assert [u.locator for u in units] == [{"start_ms": 0, "end_ms": 2000}]
+
+
+def test_exhausted_rate_limit_reports_quota(tmp_path):
+    path = tmp_path / "lecture.mp3"
+    path.write_bytes(b"audio")
+    with patch.object(readers, "transcribe_audio", side_effect=_rate_limit()), patch.object(
+        readers.time, "sleep"
+    ) as sleep, pytest.raises(ValueError, match="han muc audio Groq"):
+        readers.read_audio_video(str(path))
+    assert sleep.call_count == readers._RATE_LIMIT_ATTEMPTS - 1
+    sleep.assert_called_with(60)
 
 
 @pytest.mark.parametrize("extension", ["wav", "mp4"])
