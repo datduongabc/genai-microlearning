@@ -56,6 +56,12 @@ export interface ModuleDetail {
   course_id: string
   moodle_course_id: number | null
   components: ModuleComponentInfo[]
+  claim_citations?: {
+    claim: string
+    locator: string
+    chunk_content: string | null
+    resolution: 'resolved' | 'missing' | 'ambiguous'
+  }[] | null
 }
 
 export interface JobStatusInfo {

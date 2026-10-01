@@ -117,6 +117,7 @@ export function ModulePreviewPage() {
             key={c.id}
             moduleId={module.id}
             component={c}
+            citations={module.is_control ? null : module.claim_citations}
             explanations={explanationsByQuestion(module, c.type)}
             onSaved={refresh}
           />
@@ -316,11 +317,13 @@ function explanationsByQuestion(module: ModuleDetail, type: string): Record<numb
 function ComponentCard({
   moduleId,
   component,
+  citations,
   explanations,
   onSaved,
 }: {
   moduleId: string
   component: ModuleComponentInfo
+  citations: ModuleDetail['claim_citations']
   explanations: Record<number, string>
   onSaved: () => Promise<void>
 }) {
@@ -330,7 +333,30 @@ function ComponentCard({
         {COMPONENT_LABEL[component.type] ?? component.type}
       </h3>
       {component.type === 'content' && (
-        <MarkdownFieldEditor moduleId={moduleId} component={component} onSaved={onSaved} />
+        <>
+          <MarkdownFieldEditor moduleId={moduleId} component={component} onSaved={onSaved} />
+          {citations && citations.length > 0 && (
+            <ul className="mt-4 space-y-3 border-t border-gray-200 pt-4 text-sm">
+              {citations.map((citation, i) => (
+                <li key={i}>
+                  <p>{citation.claim}</p>
+                  {citation.resolution === 'resolved' ? (
+                    <details className="mt-1">
+                      <summary className="cursor-pointer text-xs text-terracotta hover:underline">
+                        {citation.locator}
+                      </summary>
+                      <p className="mt-2 whitespace-pre-wrap rounded bg-gray-50 p-3">{citation.chunk_content}</p>
+                    </details>
+                  ) : (
+                    <p className="mt-1 text-xs text-gray-500">
+                      {citation.locator} — <span>không tìm thấy đoạn nguồn</span>
+                    </p>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
+        </>
       )}
       {component.type === 'slides' && (
         <SlidesEditor moduleId={moduleId} component={component} onSaved={onSaved} />

@@ -20,6 +20,7 @@ from app.generation.module_generation_pipeline import (
     is_control,
     learning_objective_of,
 )
+from app.generation.study_packets import resolved_citations
 from app.jobs.queue import enqueue_job
 from app.llm import catalog
 from app.models import (
@@ -351,6 +352,7 @@ def get_module(
     # created_at — DB order is otherwise undefined. Sort by the fixed
     # pedagogical reading order instead (content -> slides -> ... -> explanation).
     ordered_components = sorted(module.components, key=lambda c: _COMPONENT_ORDER.get(c.type, 99))
+    control = is_control(db, module.id)
     return {
         "id": module.id,
         "title": module.title,
@@ -359,7 +361,8 @@ def get_module(
         "sub_objectives": module.sub_objectives,
         "course_id": module.course_id,
         "moodle_course_id": module.course.moodle_course_id,
-        "is_control": is_control(db, module.id),
+        "is_control": control,
+        "claim_citations": None if control else resolved_citations(db, module),
         "components": [
             {
                 "id": c.id,
