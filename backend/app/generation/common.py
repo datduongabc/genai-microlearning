@@ -6,6 +6,23 @@ from typing import Literal
 
 from app.models import Chunk
 
+OutputLanguage = Literal["vi", "en"]
+
+
+def output_language_instruction(language: OutputLanguage = "vi") -> str:
+    instruction = "Write ALL output in English." if language == "en" else (
+        "Write ALL output in Vietnamese with full diacritics; keep technical terms "
+        "in English only where natural, e.g. in parentheses."
+    )
+    return (
+        "\n" + instruction + "\nThis applies to ALL learner-facing text fields, including concept "
+        "names, titles, objectives, headings, claims, questions, choices, reasoning and explanations. "
+        "Translate titles into the selected language too. EXCEPTION: quoted source evidence must "
+        "stay verbatim in its original language; write the surrounding text in the selected language. "
+        "Keep JSON keys, enum values and source locators unchanged."
+    )
+
+
 BloomLevel = Literal["remember", "understand", "apply", "analyze", "evaluate", "create"]
 
 BLOOM_VERB_TABLE = """

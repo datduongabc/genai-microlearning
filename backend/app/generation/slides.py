@@ -2,7 +2,11 @@
 
 from pydantic import BaseModel, Field
 
-from app.generation.common import IGNORE_EMBEDDED_INSTRUCTIONS
+from app.generation.common import (
+    IGNORE_EMBEDDED_INSTRUCTIONS,
+    OutputLanguage,
+    output_language_instruction,
+)
 from app.generation.objective import LearningObjective
 from app.llm.gateway import complete_structured
 
@@ -26,8 +30,6 @@ Ràng buộc BẮT BUỘC:
    Content) — slide dùng để trình chiếu, không phải để đọc như văn bản.
 4. Thứ tự slide phải phục vụ đúng Learning Objective — đi từ khái niệm nền
    tảng đến khái niệm phụ thuộc, không đảo lộn logic.
-5. Ngôn ngữ của title/bullets khớp ngôn ngữ chính của Content (tiếng Việt có
-   dấu đầy đủ nếu Content là tiếng Việt).
 """
 
 
@@ -40,7 +42,9 @@ class SlidesOutput(BaseModel):
     slides: list[Slide] = Field(min_length=2, max_length=8)
 
 
-def generate_slides(lo: LearningObjective, content: str) -> SlidesOutput:
+def generate_slides(
+    lo: LearningObjective, content: str, output_language: OutputLanguage = "vi",
+) -> SlidesOutput:
     """One call, no self-check round: the schema caps the deck (2-8 slides, 1-3 bullets each), and the
     only source is the Content, which has already been checked."""
     prompt = (
@@ -50,4 +54,8 @@ def generate_slides(lo: LearningObjective, content: str) -> SlidesOutput:
     )
     # temperature=0.0: Slides la tac vu bien doi/rut gon tu Content da co
     # san (khong duoc them khai niem moi), nhat quan voi Planner/LO/Content.
-    return complete_structured(prompt, SlidesOutput, system_instruction=SLIDES_SYSTEM_INSTRUCTION, temperature=0.0)
+    return complete_structured(
+        prompt, SlidesOutput,
+        system_instruction=SLIDES_SYSTEM_INSTRUCTION + output_language_instruction(output_language),
+        temperature=0.0,
+    )

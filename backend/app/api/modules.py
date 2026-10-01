@@ -1,3 +1,4 @@
+import json
 import uuid
 from io import BytesIO
 from urllib.parse import quote
@@ -12,6 +13,7 @@ from sqlalchemy.orm import Session, joinedload, selectinload
 from app.api.deps import get_current_user
 from app.auth.rate_limit import limiter, user_or_address
 from app.db import get_db
+from app.generation.common import OutputLanguage
 from app.generation.module_generation_pipeline import (
     IncompleteModuleError,
     control_payload,
@@ -52,6 +54,7 @@ class GenerateRequest(BaseModel):
     model_alias: str | None = None
     # Tắt vòng model tự kiểm Content và câu hỏi (thí nghiệm có/không tự kiểm cho chương đánh giá).
     self_check: bool = True
+    output_language: OutputLanguage = "vi"
     # False: sinh bản đối chứng không RAG (nhóm llm_no_rag) của module RAG `paired_module_id`, trên
     # đúng Learning Objective và mục của nó. Model và cờ tự kiểm bỏ trống thì theo module RAG đó.
     use_retrieval: bool = True
@@ -117,6 +120,7 @@ def _owned_module(db: Session, module_id: uuid.UUID, current_user: User) -> Modu
 def _generate_for_sections(
     db: Session, doc: Document, section_ids: list[uuid.UUID] | None, model_alias: str | None = None,
     self_check: bool = True,
+    output_language: OutputLanguage = "vi",
 ):
     if not section_ids:
         raise HTTPException(status_code=422, detail="Chọn ít nhất 1 mục để sinh mô-đun.")
@@ -156,7 +160,7 @@ def _generate_for_sections(
     jobs = [
         enqueue_job(
             db, job_type=JobType.module_generation, step="generate", document_id=doc.id,
-            section_id=section_id, payload=generation_payload(model_alias, self_check),
+            section_id=section_id, payload=generation_payload(model_alias, self_check, output_language),
         )
         for section_id in unique_ids
     ]
@@ -208,7 +212,7 @@ def _generate_without_retrieval(db: Session, doc: Document, body: GenerateReques
 
     job = enqueue_job(
         db, job_type=JobType.module_generation, step="generate", document_id=doc.id, section_id=paired.section_id,
-        payload=control_payload(paired.id, alias, self_check),
+        payload=control_payload(paired.id, alias, self_check, paired_payload.get("output_language", "vi")),
     )
     db.commit()
     return {"job_id": job.id, "status": job.status}
@@ -233,10 +237,11 @@ def generate_module(
     alias = _alias_da_chon(body, current_user)
     self_check = body.self_check if body is not None else True
 
+    output_language = body.output_language if body is not None else "vi"
     section_ids = body.section_ids if body is not None else None
     has_outline = db.query(DocumentSection.id).filter(DocumentSection.document_id == doc.id).first() is not None
     if has_outline:
-        return _generate_for_sections(db, doc, section_ids, alias, self_check)
+        return _generate_for_sections(db, doc, section_ids, alias, self_check, output_language)
     if section_ids:
         raise HTTPException(status_code=422, detail="Tài liệu này không có mục lục để chọn mục.")
 
@@ -267,7 +272,7 @@ def generate_module(
     # app/services/module_generation_pipeline.py + job_queue.py.
     job = enqueue_job(
         db, job_type=JobType.module_generation, step="generate", document_id=document_id,
-        payload=generation_payload(alias, self_check),
+        payload=generation_payload(alias, self_check, output_language),
     )
     db.commit()
     return {"job_id": job.id, "status": job.status}
@@ -326,6 +331,31 @@ _COMPONENT_ORDER = {
 }
 
 
+def citation_label(filename: str, locator: str) -> str:
+    """A display label only: the saved locator remains exact for source resolution."""
+    try:
+        parsed = json.loads(locator)
+    except (ValueError, TypeError):
+        return filename if locator.lstrip().startswith(("{", "[")) else locator
+    if not isinstance(parsed, dict):
+        return filename
+    spans = parsed.get("spans")
+    spans = spans if isinstance(spans, list) else [parsed]
+    spans = [span for span in spans if isinstance(span, dict)]
+    pages = sorted({span["page"] for span in spans if isinstance(span.get("page"), int)})
+    ranges = []
+    for page in pages:
+        if ranges and page == ranges[-1][1] + 1:
+            ranges[-1][1] = page
+        else:
+            ranges.append([page, page])
+    page_text = ", ".join(str(start) if start == end else f"{start}–{end}" for start, end in ranges)
+    heading = next((span["heading"] for span in spans if isinstance(span.get("heading"), str)), None)
+    return " · ".join(
+        part for part in (filename, f"trang {page_text}" if pages else None, heading) if part
+    )
+
+
 @router.get("/{module_id}")
 def get_module(
     module_id: uuid.UUID, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)
@@ -353,6 +383,12 @@ def get_module(
     # pedagogical reading order instead (content -> slides -> ... -> explanation).
     ordered_components = sorted(module.components, key=lambda c: _COMPONENT_ORDER.get(c.type, 99))
     control = is_control(db, module.id)
+    citations = None if control else resolved_citations(db, module)
+    if citations is not None:
+        citations = [
+            c.model_copy(update={"locator": citation_label(module.document.filename, c.locator)})
+            for c in citations
+        ]
     return {
         "id": module.id,
         "title": module.title,
@@ -362,7 +398,7 @@ def get_module(
         "course_id": module.course_id,
         "moodle_course_id": module.course.moodle_course_id,
         "is_control": control,
-        "claim_citations": None if control else resolved_citations(db, module),
+        "claim_citations": citations,
         "components": [
             {
                 "id": c.id,
