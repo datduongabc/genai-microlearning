@@ -26,20 +26,15 @@ from app.models import (
 
 router = APIRouter(prefix="/documents", tags=["documents"], dependencies=[Depends(get_current_user)])
 
-# 50MB đủ cho slide/PDF bài giảng thật (tài liệu lớn nhất đã test trong
-# session này < 5MB), nhưng video bài giảng gốc (trước khi transcode xuống
-# chỉ còn audio track) có thể lớn hơn nhiều -- nới lên 500MB riêng cho
-# audio/video, giữ nguyên 50MB cho các định dạng còn lại. Chặn ở đây trước
-# khi đọc hết vào bộ nhớ -- trước đây file.file.read() không giới hạn.
+# Bound memory use before extraction: audio 200 MB, video 500 MB, documents 50 MB.
 MAX_UPLOAD_SIZE_BYTES = 50 * 1024 * 1024
-MAX_UPLOAD_SIZE_BYTES_AUDIO_VIDEO = 500 * 1024 * 1024
+MAX_UPLOAD_SIZE_BYTES_AUDIO = 200 * 1024 * 1024
+MAX_UPLOAD_SIZE_BYTES_VIDEO = 500 * 1024 * 1024
 _READ_CHUNK_SIZE = 1024 * 1024
 # A document in one of these states still has its pipeline running or queued.
 _PIPELINE_ACTIVE_STATUSES = (DocumentStatus.uploaded, DocumentStatus.processing)
-_AUDIO_VIDEO_EXTENSIONS = {
-    ".mp3", ".wav", ".m4a", ".flac", ".ogg", ".aac",
-    ".mp4", ".mkv", ".webm", ".mov", ".avi",
-}
+_AUDIO_EXTENSIONS = {".mp3", ".wav", ".m4a", ".flac", ".ogg", ".aac"}
+_VIDEO_EXTENSIONS = {".mp4", ".mkv", ".webm", ".mov", ".avi"}
 
 
 @router.post("")
@@ -79,9 +74,12 @@ def upload_document(
                    f"Các định dạng được nhận: {', '.join(sorted(SUPPORTED_EXTENSIONS))}.",
         )
 
-    size_limit = (
-        MAX_UPLOAD_SIZE_BYTES_AUDIO_VIDEO if suffix in _AUDIO_VIDEO_EXTENSIONS else MAX_UPLOAD_SIZE_BYTES
-    )
+    if suffix in _AUDIO_EXTENSIONS:
+        size_limit, size_error = MAX_UPLOAD_SIZE_BYTES_AUDIO, "Tệp âm thanh tối đa 200 MB"
+    elif suffix in _VIDEO_EXTENSIONS:
+        size_limit, size_error = MAX_UPLOAD_SIZE_BYTES_VIDEO, "Tệp video tối đa 500 MB"
+    else:
+        size_limit, size_error = MAX_UPLOAD_SIZE_BYTES, "File vượt quá giới hạn 50MB"
     # Đọc theo từng khối và chặn sớm nếu vượt giới hạn, thay vì file.file.read()
     # không giới hạn (đọc hết file vào bộ nhớ trước khi kiểm tra bất cứ gì).
     content = bytearray()
@@ -90,7 +88,7 @@ def upload_document(
         if len(content) > size_limit:
             raise HTTPException(
                 status_code=413,
-                detail=f"File vượt quá giới hạn {size_limit // (1024 * 1024)}MB",
+                detail=size_error,
             )
 
     doc = Document(course_id=course_id, filename=file.filename, status=DocumentStatus.uploaded, kind=kind)
