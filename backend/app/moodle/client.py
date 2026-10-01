@@ -23,6 +23,10 @@ from app.config import settings
 class MoodleError(Exception):
     """Moodle returned an exception envelope instead of a normal result."""
 
+    def __init__(self, message: str, errorcode: str | None = None):
+        super().__init__(message)
+        self.errorcode = errorcode
+
 
 def _flatten(prefix: str, value: Any) -> list[tuple[str, str]]:
     """Encode a nested dict/list into Moodle's expected PHP-style
@@ -61,7 +65,9 @@ def call(wsfunction: str, **params: Any) -> Any:
     result = response.json()
 
     if isinstance(result, dict) and "exception" in result:
-        raise MoodleError(f"{wsfunction}: {result.get('message', result['exception'])}")
+        raise MoodleError(
+            f"{wsfunction}: {result.get('message', result['exception'])}", result.get("errorcode")
+        )
     return result
 
 
@@ -116,7 +122,12 @@ def search_courses(query: str, limit: int = 20) -> list[dict[str, Any]]:
 
 def get_course(course_id: int) -> dict[str, Any] | None:
     """The Moodle course with this id, or None when there is none."""
-    result = call("core_course_get_courses", options={"ids": [course_id]})
+    try:
+        result = call("core_course_get_courses", options={"ids": [course_id]})
+    except MoodleError as error:
+        if error.errorcode == "invalidrecord":
+            return None
+        raise
     for course in result:
         if course["id"] == course_id:
             return {"id": course["id"], "fullname": course["fullname"], "shortname": course["shortname"]}

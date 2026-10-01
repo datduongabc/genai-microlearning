@@ -7,6 +7,7 @@ tests read what would have been sent to it."""
 import random
 import uuid
 
+import httpx
 import pytest
 from bs4 import BeautifulSoup
 from fastapi.testclient import TestClient
@@ -433,3 +434,61 @@ def test_question_edit_by_non_owner_returns_404(published):
         assert response.status_code == 404
     finally:
         other.cleanup()
+
+
+REAL_GET_COURSE = moodle_client.get_course
+
+DELETED = 'Khóa học trên Moodle đã bị xóa hoặc không còn tồn tại. Hãy liên kết lại hoặc tạo khóa học Moodle mới.'
+UNREACHABLE = 'Không kết nối được tới Moodle, vui lòng thử lại sau.'
+GENERIC = 'Thao tác với Moodle thất bại, vui lòng thử lại sau.'
+
+
+@pytest.mark.parametrize('endpoint', ['publish', 'sections'])
+@pytest.mark.parametrize('check', ['missing', 'exists', 'timeout', 'invalidrecord'])
+def test_deleted_course_requires_confirmation_before_unlinking(monkeypatch, endpoint, check):
+    published = Published()
+    module_id = published.module(components=[(ComponentType.content, {'markdown': 'Bài học'}, [])])
+    probes = []
+
+    def fail(*args, **kwargs):
+        raise moodle_client.MoodleError("Can't find data record in database.")
+
+    def lookup(course_id):
+        probes.append(course_id)
+        if check == 'timeout':
+            raise httpx.ReadTimeout('private upstream error')
+        if check == 'invalidrecord':
+            return REAL_GET_COURSE(course_id)
+        return None if check == 'missing' else {'id': course_id}
+
+    monkeypatch.setattr(moodle_client, 'create_book', fail)
+    monkeypatch.setattr(moodle_client, 'get_course_sections', fail)
+    monkeypatch.setattr(moodle_client, 'get_course', lookup)
+    monkeypatch.setattr(moodle_client.httpx, 'post', lambda url, **kwargs: httpx.Response(
+        200, json={'exception': 'dml_missing_record_exception', 'errorcode': 'invalidrecord',
+                   'message': "Can't find data record in database."}, request=httpx.Request('POST', url)))
+    response = (published.publish(module_id) if endpoint == 'publish' else
+                client.get(f'/courses/{published.course_id}/moodle-sections', headers=published.headers))
+    assert response.status_code == 502
+    assert response.json()['detail'] == (DELETED if check in ('missing', 'invalidrecord') else GENERIC)
+    assert probes == [published.moodle_course_id]
+    with SessionLocal() as db:
+        assert db.get(Course, published.course_id).moodle_course_id == (
+            None if check in ('missing', 'invalidrecord') else published.moodle_course_id)
+
+
+@pytest.mark.parametrize('operation', ['publish', 'sections'])
+@pytest.mark.parametrize('error', [httpx.ConnectError('secret host'), moodle_client.MoodleError('secret detail')])
+def test_moodle_failures_are_human_readable(monkeypatch, operation, error):
+    published = Published()
+    module_id = published.module(components=[(ComponentType.content, {'markdown': 'Bài học'}, [])])
+
+    def fail(*args, **kwargs):
+        raise error
+
+    for name in ('create_book', 'get_course_sections', 'get_course'):
+        monkeypatch.setattr(moodle_client, name, fail)
+    response = (published.publish(module_id) if operation == 'publish' else
+                client.get(f'/courses/{published.course_id}/moodle-sections', headers=published.headers))
+    assert response.status_code == 502
+    assert response.json()['detail'] == (UNREACHABLE if isinstance(error, httpx.HTTPError) else GENERIC)

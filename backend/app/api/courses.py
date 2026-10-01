@@ -12,6 +12,7 @@ from app.db import get_db
 from app.models import Course, MoodleCourseClaim, User
 from app.moodle import client as moodle_client
 from app.moodle.client import MoodleError
+from app.moodle.errors import MOODLE_FAILURES, moodle_failure
 
 router = APIRouter(prefix="/courses", tags=["courses"], dependencies=[Depends(get_current_user)])
 
@@ -205,5 +206,5 @@ def get_moodle_sections(
         raise HTTPException(status_code=400, detail="Course is not linked to a Moodle course yet")
     try:
         return moodle_client.get_course_sections(course.moodle_course_id)
-    except MoodleError as e:
-        raise HTTPException(status_code=502, detail=f"Moodle section lookup failed: {e}") from e
+    except MOODLE_FAILURES as e:
+        raise moodle_failure(e, db, course) from e

@@ -13,7 +13,7 @@ from app.db import get_db
 from app.generation.module_generation_pipeline import is_control
 from app.models import ComponentType, Course, Module, ModuleComponent, User
 from app.moodle import client as moodle_client
-from app.moodle.client import MoodleError
+from app.moodle.errors import MOODLE_FAILURES, moodle_failure
 
 router = APIRouter(prefix="/modules", tags=["moodle"], dependencies=[Depends(get_current_user)])
 
@@ -183,7 +183,7 @@ def publish_to_moodle(
                 _build_questions(quiz, _explanations(module, ComponentType.quiz)), payload.section_num,
                 behaviour="deferredfeedback",
             )
-    except MoodleError as e:
-        raise HTTPException(status_code=502, detail=f"Moodle push failed: {e}") from e
+    except MOODLE_FAILURES as e:
+        raise moodle_failure(e, db, course) from e
 
     return result
