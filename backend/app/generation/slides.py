@@ -57,6 +57,6 @@ def generate_slides(
     # san (khong duoc them khai niem moi), nhat quan voi Planner/LO/Content.
     return complete_structured(
         prompt, SlidesOutput,
-        system_instruction=SLIDES_SYSTEM_INSTRUCTION + output_language_instruction(output_language) + custom_instructions_instruction(custom_instructions),
+        system_instruction=SLIDES_SYSTEM_INSTRUCTION + output_language_instruction(output_language) + custom_instructions_instruction(custom_instructions, sourced=False),
         temperature=0.0,
     )

@@ -1,11 +1,10 @@
 import { useState, type RefObject } from "react";
 
-export function GenerateDialog({ dialogRef, onGenerate, outputLanguage = "vi" }: {
+export function GenerateDialog({ dialogRef, onGenerate }: {
   dialogRef: RefObject<HTMLDialogElement | null>;
   onGenerate: (language: "vi" | "en", instructions: string) => void;
-  outputLanguage?: "vi" | "en";
 }) {
-  const [language, setLanguage] = useState(outputLanguage);
+  const [language, setLanguage] = useState<"vi" | "en">("vi");
   const [instructions, setInstructions] = useState("");
   return (
     <dialog ref={dialogRef} aria-label="Sinh mô-đun" className="m-auto w-full max-w-lg rounded-[3px] p-6 backdrop:bg-black/40">

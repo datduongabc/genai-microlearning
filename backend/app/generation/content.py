@@ -226,7 +226,7 @@ def generate_content(
         if not sourced:
             return complete_structured(
                 prompt, LessonText, system_instruction=NO_SOURCE_CONTENT_SYSTEM_INSTRUCTION
-                + output_language_instruction(output_language) + custom_instructions_instruction(custom_instructions), temperature=0.0,
+                + output_language_instruction(output_language) + custom_instructions_instruction(custom_instructions, sourced=False), temperature=0.0,
             )
         return complete_structured(
             prompt, ContentOutput, system_instruction=CONTENT_SYSTEM_INSTRUCTION

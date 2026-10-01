@@ -87,6 +87,6 @@ def generate_example(
     # doan duoc giua cac lan goi, khong can bien thien ngau nhien -- nhat
     # quan voi phan con lai cua pipeline.
     return complete_structured(
-        prompt, ExampleOutput, system_instruction=instruction + output_language_instruction(output_language) + custom_instructions_instruction(custom_instructions),
+        prompt, ExampleOutput, system_instruction=instruction + output_language_instruction(output_language) + custom_instructions_instruction(custom_instructions, context_chunks is not None),
         temperature=0.0,
     )

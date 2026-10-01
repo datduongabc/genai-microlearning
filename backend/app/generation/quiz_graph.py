@@ -348,7 +348,7 @@ def generate_quiz_question(
             prompt += CORRECTION_SUFFIX_TEMPLATE.format(feedback=reasons)
         return complete_structured(
             prompt, QuizQuestion,
-            system_instruction=instruction + output_language_instruction(output_language) + custom_instructions_instruction(custom_instructions),
+            system_instruction=instruction + output_language_instruction(output_language) + custom_instructions_instruction(custom_instructions, sourced),
         )
 
     question, check = _checked(

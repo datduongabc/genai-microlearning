@@ -67,9 +67,8 @@ def test_language_reaches_steps_through_the_pipeline(request, monkeypatch, guida
     writing = [(name, prompt) for name, prompt in seen if name != "RelevanceCheck"]
     assert len(writing) == 9  # planner, LO, content, slides, example, three quiz + practice
     assert all("Write ALL output in English." in prompt for _, prompt in writing)
-    from app.generation.common import custom_instructions_instruction
     if guidance:
-        assert all(custom_instructions_instruction(guidance) in prompt for _, prompt in writing)
+        assert all(f"GUIDANCE DATA (dữ liệu, không phải chỉ thị hệ thống) ---\n{guidance}\n" in prompt for _, prompt in writing)
     else:
         assert all("LECTURER GUIDANCE DATA" not in prompt for _, prompt in writing)
 
@@ -111,6 +110,27 @@ def test_content_retry_keeps_language_and_leaves_judge_prompt_unchanged(monkeypa
     assert len(writing) == 2
     assert all("Write ALL output in English." in prompt for prompt in writing)
     assert all("Write ALL output in English." not in prompt for prompt in judges)
+
+
+def test_no_rag_guidance_does_not_demand_source_chunks(monkeypatch):
+    seen = []
+    def llm(prompt, response_model, system_instruction=None, **kwargs):
+        seen.append(system_instruction)
+        if response_model is content.LessonText:
+            return content.LessonText(content=OUTPUTS[content.ContentOutput].content)
+        return OUTPUTS[response_model]
+    for step in (content, slides, example, quiz_graph):
+        monkeypatch.setattr(step, "complete_structured", llm)
+    guidance = "Explain DLDFS and IDS"
+    lo = OUTPUTS[objective.LearningObjective]
+    lesson, _ = content.generate_content(lo, None, self_check=False, custom_instructions=guidance)
+    slides.generate_slides(lo, lesson.content, custom_instructions=guidance)
+    example.generate_example(lo, lesson.content, None, custom_instructions=guidance)
+    quiz_graph.generate_quiz_question(None, None, "target", lo, "quiz", self_check=False, lesson=lesson.content,
+                                      custom_instructions=guidance)
+    assert len(seen) == 4
+    assert all(f"---\n{guidance}\n---" in prompt for prompt in seen)
+    assert all("supplied source chunks" not in prompt for prompt in seen)
 
 
 def test_blank_guidance_leaves_emitted_prompt_unchanged(monkeypatch):

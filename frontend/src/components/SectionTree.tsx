@@ -24,7 +24,6 @@ interface SectionTreeProps {
   onGenerated: () => void;
   // Model giảng viên chọn ở đầu trang; chuỗi rỗng nghĩa là chưa chọn gì.
   modelAlias?: string;
-  outputLanguage?: "vi" | "en";
 }
 
 // A picked section already contains its sub-sections and sits inside its
@@ -67,7 +66,6 @@ export function SectionTree({
   modules,
   onGenerated,
   modelAlias = "",
-  outputLanguage = "vi",
 }: SectionTreeProps) {
   const generateDialog = useRef<HTMLDialogElement>(null);
   const [sections, setSections] = useState<SectionInfo[] | null>(null);
@@ -142,7 +140,7 @@ export function SectionTree({
 
   return (
     <div className="mt-3 rounded-[3px] border border-gray-200 p-4">
-      <GenerateDialog dialogRef={generateDialog} outputLanguage={outputLanguage} onGenerate={handleGenerate} />
+      <GenerateDialog dialogRef={generateDialog} onGenerate={handleGenerate} />
       <p className="mb-3 text-xs text-gray-500">
         Mỗi mục được chọn sinh một mô-đun riêng, chỉ từ nội dung của mục đó.
       </p>

@@ -113,12 +113,13 @@ describe('SectionTree', () => {
 
   it('sends the model the teacher picked along with the sections', async () => {
     vi.mocked(api.generateModulesFromSections).mockResolvedValue({ jobs: [] })
-    renderTree({ modelAlias: 'groq-pro', outputLanguage: 'en' })
+    renderTree({ modelAlias: 'groq-pro' })
     await screen.findByText(/Chapter 1/)
 
     await userEvent.click(checkbox(/Chapter 1/))
     await userEvent.click(generateButton())
     expect(api.generateModulesFromSections).not.toHaveBeenCalled()
+    await userEvent.selectOptions(screen.getByLabelText(/Ngôn ngữ đầu ra/), 'en')
     await userEvent.type(screen.getByLabelText(/Hướng dẫn thêm/), 'Explain IDS')
     await userEvent.click(screen.getByRole('button', { name: 'Sinh' }))
 
