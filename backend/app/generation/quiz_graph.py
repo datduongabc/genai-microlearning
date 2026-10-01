@@ -22,6 +22,7 @@ from app.generation.common import (
     BLOOM_LEVEL_ANCHORS,
     OutputLanguage,
     _checked,
+    custom_instructions_instruction,
     failed_criteria,
     output_language_instruction,
     source_block,
@@ -306,7 +307,7 @@ def generate_quiz_question(
     feedback: str | None = None,
     self_check: bool = True,
     lesson: str | None = None,
-    output_language: OutputLanguage = "vi",
+    output_language: OutputLanguage = "vi", custom_instructions: str = "",
 ) -> QuizResult:
     """`query`: điều câu hỏi kiểm (một sub-objective, hoặc khái niệm chính với practice); truy hồi
     top-5 đoạn theo nó, không chấm độ liên quan riêng.
@@ -347,7 +348,7 @@ def generate_quiz_question(
             prompt += CORRECTION_SUFFIX_TEMPLATE.format(feedback=reasons)
         return complete_structured(
             prompt, QuizQuestion,
-            system_instruction=instruction + output_language_instruction(output_language),
+            system_instruction=instruction + output_language_instruction(output_language) + custom_instructions_instruction(custom_instructions),
         )
 
     question, check = _checked(

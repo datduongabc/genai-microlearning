@@ -45,7 +45,7 @@ from app.retrieval.search import ChunkScope, expand_with_parent_context, retriev
 
 def _get_or_cache_planner(
     db: Session, doc: Document, section: DocumentSection | None = None,
-    output_language: OutputLanguage = "vi",
+    output_language: OutputLanguage = "vi", custom_instructions: str = "",
 ) -> PlannerOutput:
     """run_planner() tu nhan thiet ke "1 lenh goi/tai lieu" nhung truoc day
     bi goi lai MOI LAN generate duoc goi cho cung document -- nguyen nhan
@@ -60,6 +60,7 @@ def _get_or_cache_planner(
     if (
         holder.planner_concepts
         and holder.planner_concepts[0].get("output_language") == output_language
+        and holder.planner_concepts[0].get("custom_instructions", "") == custom_instructions
     ):
         return PlannerOutput(concepts=[Concept(**c) for c in holder.planner_concepts])
 
@@ -77,9 +78,9 @@ def _get_or_cache_planner(
         ]
         source_text = build_scope_digest(chunk_texts, PLANNER_MAX_INPUT_CHARS)
 
-    planner_out = run_planner(source_text, output_language=output_language)
+    planner_out = run_planner(source_text, output_language=output_language, custom_instructions=custom_instructions)
     holder.planner_concepts = [
-        {**c.model_dump(), "output_language": output_language} for c in planner_out.concepts
+        {**c.model_dump(), "output_language": output_language, "custom_instructions": custom_instructions.strip()} for c in planner_out.concepts
     ]
     db.commit()
     return planner_out
@@ -127,12 +128,14 @@ def generation_payload_of(db: Session, module_id: uuid.UUID) -> dict:
 
 
 def generation_payload(
-    alias: str | None, self_check: bool = True, output_language: OutputLanguage = "vi",
+    alias: str | None, self_check: bool = True, output_language: OutputLanguage = "vi", custom_instructions: str = "",
 ) -> dict:
     """Không ghi alias khi chưa chọn, thay vì ghi sẵn giá trị từ cấu hình: ghi sẵn thì
     đổi cấu hình hệ thống sẽ không tác dụng với các job đã nằm trong hàng đợi. `self_check`
     luôn được ghi, để biết chắc mỗi module của thí nghiệm thuộc nhánh nào."""
     payload: dict = {"self_check": self_check, "output_language": output_language}
+    if custom_instructions.strip():
+        payload["custom_instructions"] = custom_instructions.strip()
     if alias:
         payload["model_alias"] = alias
     return payload
@@ -140,11 +143,11 @@ def generation_payload(
 
 def control_payload(
     paired_module_id: uuid.UUID, alias: str | None, self_check: bool,
-    output_language: OutputLanguage = "vi",
+    output_language: OutputLanguage = "vi", custom_instructions: str = "",
 ) -> dict:
     """Payload của job sinh bản đối chứng không RAG, như nhau dù job đến từ API hay từ CLI."""
     return {
-        **generation_payload(alias, self_check, output_language),
+        **generation_payload(alias, self_check, output_language, custom_instructions),
         "use_retrieval": False, "paired_module_id": str(paired_module_id),
     }
 
@@ -169,7 +172,7 @@ class _Asked:
 
 def _generate_questions(
     db: Session, doc: Document, lo, practice_query: str, scope, self_check: bool = True, lesson: str | None = None,
-    output_language: OutputLanguage = "vi",
+    output_language: OutputLanguage = "vi", custom_instructions: str = "",
 ) -> list[_Asked]:
     """Quiz: một câu cho mỗi sub-objective (tối đa MAX_QUIZ_QUESTIONS), để cả bộ phủ đủ các phần
     của bài thay vì hỏi lại một ý. Practice: một câu luyện tập theo khái niệm chính. `lesson`
@@ -177,7 +180,7 @@ def _generate_questions(
     asked = [
         _Asked(ComponentType.quiz, target, generate_quiz_question(
             db, doc.course_id, target, lo, "quiz", scope, self_check=self_check, lesson=lesson,
-            output_language=output_language,
+            output_language=output_language, custom_instructions=custom_instructions,
         ))
         for target in lo.sub_objectives[:MAX_QUIZ_QUESTIONS]
     ]
@@ -185,7 +188,7 @@ def _generate_questions(
         ComponentType.practice, practice_query,
         generate_quiz_question(
             db, doc.course_id, practice_query, lo, "practice", scope, self_check=self_check, lesson=lesson,
-            output_language=output_language,
+            output_language=output_language, custom_instructions=custom_instructions,
         ),
     ))
 
@@ -196,7 +199,7 @@ def _generate_questions(
         redone = generate_quiz_question(
             db, doc.course_id, stale.target, lo, stale.type.value, scope, feedback=LENGTH_TELL_FEEDBACK,
             self_check=self_check, lesson=lesson,
-            output_language=output_language,
+            output_language=output_language, custom_instructions=custom_instructions,
         )
         # Lần sinh lại không ra câu nào thì giữ câu cũ: một bộ lộ đáp án qua độ dài vẫn hơn một bộ thiếu câu.
         if redone.get("question") is not None:
@@ -291,7 +294,7 @@ def _retrieve_for_content(
 def run_module_generation(
     db: Session, doc: Document, section: DocumentSection | None = None, self_check: bool = True,
     use_retrieval: bool = True, paired_module: Module | None = None,
-    output_language: OutputLanguage = "vi",
+    output_language: OutputLanguage = "vi", custom_instructions: str = "",
 ) -> Module:
     """Planner -> LO -> Content -> Slides -> Example -> Quiz/Practice ->
     Explanation. Nguyên logic chuyển từ _run_generate_module() cũ
@@ -319,12 +322,12 @@ def run_module_generation(
     )
     context_chunks = None
     if use_retrieval:
-        planner_out = _get_or_cache_planner(db, doc, section, output_language)
+        planner_out = _get_or_cache_planner(db, doc, section, output_language, custom_instructions)
         top_concept = min(planner_out.concepts, key=lambda c: c.priority)
         title = top_concept.name
         query = f"{top_concept.name}: {top_concept.summary}"
         context_chunks = retrieve(db, doc.course_id, query, top_k=None, min_k=8, scope=scope)
-        lo = generate_learning_objective(top_concept, context_chunks, output_language=output_language)
+        lo = generate_learning_objective(top_concept, context_chunks, output_language=output_language, custom_instructions=custom_instructions)
     else:
         if paired_module is None:
             raise ValueError("Sinh không RAG cần module RAG đi cặp để lấy Learning Objective.")
@@ -351,7 +354,7 @@ def run_module_generation(
         corrected = _retrieve_for_content(db, doc, lo, context_chunks, scope)
         content_context = expand_with_parent_context(db, corrected.chunks, scope=scope)
     content_out, content_check = generate_content(
-        lo, content_context, self_check=self_check, output_language=output_language,
+        lo, content_context, self_check=self_check, output_language=output_language, custom_instructions=custom_instructions,
     )
     # Nhánh không RAG giữ nguyên hình dạng thành phần Content: không có nguồn nên không có trích dẫn,
     # và không chấm độ liên quan (None).
@@ -370,13 +373,13 @@ def run_module_generation(
     if content_check is not None and use_retrieval:
         _log_hallucination_check(db, module.id, "content_groundedness_pass", content_check.groundedness_pass)
 
-    slides_out = generate_slides(lo, content_out.content, output_language=output_language)
+    slides_out = generate_slides(lo, content_out.content, output_language=output_language, custom_instructions=custom_instructions)
     db.add(ModuleComponent(
         module_id=module.id, type=ComponentType.slides,
         content={"slides": [s.model_dump() for s in slides_out.slides]},
     ))
 
-    example_out = generate_example(lo, content_out.content, context_chunks, output_language=output_language)
+    example_out = generate_example(lo, content_out.content, context_chunks, output_language=output_language, custom_instructions=custom_instructions)
     db.add(ModuleComponent(
         module_id=module.id, type=ComponentType.example,
         content={"examples": [e.model_dump() for e in example_out.examples]},
@@ -384,7 +387,7 @@ def run_module_generation(
 
     lesson = None if use_retrieval else content_out.content
     asked = _generate_questions(
-        db, doc, lo, query, scope, self_check, lesson=lesson, output_language=output_language,
+        db, doc, lo, query, scope, self_check, lesson=lesson, output_language=output_language, custom_instructions=custom_instructions,
     )
 
     # The Explanation component is what each question already wrote along with its answer: its
@@ -444,6 +447,7 @@ def run_module_generation_step(job: Job) -> None:
             module = run_module_generation(
                 db, doc, section, self_check=self_check, use_retrieval=use_retrieval, paired_module=paired_module,
                 output_language=current_job.payload.get("output_language", "vi"),
+                custom_instructions=current_job.payload.get("custom_instructions", ""),
             )
 
         current_job.module_id = module.id

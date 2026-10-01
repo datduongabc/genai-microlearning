@@ -176,8 +176,10 @@ def _control_of(db: Session, module: Module, model_alias: str | None, self_check
     """Bản đối chứng của `module` với đúng model và cờ tự kiểm này: dùng lại bản đã sinh nếu có, không
     thì sinh mới và ghi một job đã xong mang payload như job đối chứng xếp qua API, để mọi nơi nhận ra
     đó là bản đối chứng."""
-    output_language = generation_payload_of(db, module.id).get("output_language", "vi")
-    payload = control_payload(module.id, model_alias, self_check, output_language)
+    paired_payload = generation_payload_of(db, module.id)
+    output_language = paired_payload.get("output_language", "vi")
+    custom_instructions = paired_payload.get("custom_instructions", "")
+    payload = control_payload(module.id, model_alias, self_check, output_language, custom_instructions)
     existing = (
         db.query(Job)
         .filter(
@@ -193,7 +195,7 @@ def _control_of(db: Session, module: Module, model_alias: str | None, self_check
     with using_model(model_alias):
         control = run_module_generation(
             db, module.document, section, self_check=self_check, use_retrieval=False, paired_module=module,
-            output_language=output_language,
+            output_language=output_language, custom_instructions=custom_instructions,
         )
     db.add(Job(
         job_type=JobType.module_generation, step="generate", status=JobStatus.done, document_id=control.document_id,

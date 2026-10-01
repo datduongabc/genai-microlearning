@@ -118,9 +118,12 @@ describe('SectionTree', () => {
 
     await userEvent.click(checkbox(/Chapter 1/))
     await userEvent.click(generateButton())
+    expect(api.generateModulesFromSections).not.toHaveBeenCalled()
+    await userEvent.type(screen.getByLabelText(/Hướng dẫn thêm/), 'Explain IDS')
+    await userEvent.click(screen.getByRole('button', { name: 'Sinh' }))
 
     await waitFor(() =>
-      expect(api.generateModulesFromSections).toHaveBeenCalledWith('doc-1', ['s1'], 'groq-pro', 'en'),
+      expect(api.generateModulesFromSections).toHaveBeenCalledWith('doc-1', ['s1'], 'groq-pro', 'en', 'Explain IDS'),
     )
   })
 
@@ -132,9 +135,10 @@ describe('SectionTree', () => {
     await userEvent.click(checkbox(/Chapter 2/))
     await userEvent.click(checkbox(/Chapter 1/))
     await userEvent.click(generateButton())
+    await userEvent.click(screen.getByRole('button', { name: 'Sinh' }))
 
     // Chưa chọn model thì gửi chuỗi rỗng, và lớp api bỏ hẳn khóa model_alias đi.
-    await waitFor(() => expect(api.generateModulesFromSections).toHaveBeenCalledWith('doc-1', ['s1', 's3'], '', 'vi'))
+    await waitFor(() => expect(api.generateModulesFromSections).toHaveBeenCalledWith('doc-1', ['s1', 's3'], '', 'vi', ''))
     await waitFor(() => expect(onGenerated).toHaveBeenCalled())
     expect(generateButton()).toBeDisabled() // the selection was cleared
   })
@@ -173,6 +177,7 @@ describe('SectionTree', () => {
 
     await userEvent.click(checkbox(/Chapter 2/))
     await userEvent.click(generateButton())
+    await userEvent.click(screen.getByRole('button', { name: 'Sinh' }))
 
     expect(await screen.findByText('Có mục đang sinh mô-đun')).toBeInTheDocument()
   })

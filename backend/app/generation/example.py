@@ -4,6 +4,7 @@ from pydantic import BaseModel, Field
 
 from app.generation.common import (
     OutputLanguage,
+    custom_instructions_instruction,
     output_language_instruction,
     source_block,
     system_instruction,
@@ -67,7 +68,7 @@ class ExampleOutput(BaseModel):
 
 def generate_example(
     lo: LearningObjective, content: str, context_chunks: list[Chunk] | None,
-    output_language: OutputLanguage = "vi",
+    output_language: OutputLanguage = "vi", custom_instructions: str = "",
 ) -> ExampleOutput:
     """One call, no self-check round: the schema fixes the count (exactly 2, at most one per sub-objective),
     and an example may invent its situation, so there is no source to hold it against.
@@ -86,6 +87,6 @@ def generate_example(
     # doan duoc giua cac lan goi, khong can bien thien ngau nhien -- nhat
     # quan voi phan con lai cua pipeline.
     return complete_structured(
-        prompt, ExampleOutput, system_instruction=instruction + output_language_instruction(output_language),
+        prompt, ExampleOutput, system_instruction=instruction + output_language_instruction(output_language) + custom_instructions_instruction(custom_instructions),
         temperature=0.0,
     )

@@ -383,3 +383,22 @@ def test_other_output_languages_are_rejected():
                            headers={"Authorization": f"Bearer {token}"})
     assert response.status_code == 422
     assert _so_job(doc_id) == 0
+
+
+@pytest.mark.parametrize("guidance,expected", [("  Explain IDS  ", "Explain IDS"), ("   ", "")])
+def test_custom_instructions_are_trimmed_and_saved(guidance, expected):
+    token, doc_id = _tai_lieu_cua_giang_vien()
+    response = client.post(f"/modules/generate?document_id={doc_id}",
+                           json={"custom_instructions": guidance},
+                           headers={"Authorization": f"Bearer {token}"})
+    assert response.status_code == 200, response.text
+    assert _payload_cua_job(doc_id).get("custom_instructions", "") == expected
+
+
+def test_overlong_custom_instructions_are_rejected():
+    token, doc_id = _tai_lieu_cua_giang_vien()
+    response = client.post(f"/modules/generate?document_id={doc_id}",
+                           json={"custom_instructions": "x" * 1001},
+                           headers={"Authorization": f"Bearer {token}"})
+    assert response.status_code == 422
+    assert _so_job(doc_id) == 0

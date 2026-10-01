@@ -97,7 +97,7 @@ def test_the_explanation_component_is_the_reasoning_and_explanation_the_question
     objective = types.SimpleNamespace(objective_text="o", bloom_level="understand", sub_objectives=["first", "second"])
 
     monkeypatch.setattr(
-        pipeline, "run_planner", lambda text, output_language="vi": PlannerOutput(concepts=[Concept(name="C", priority=1, summary="s")])
+        pipeline, "run_planner", lambda text, output_language="vi", custom_instructions="": PlannerOutput(concepts=[Concept(name="C", priority=1, summary="s")])
     )
     monkeypatch.setattr(
         pipeline, "retrieve",
@@ -110,22 +110,22 @@ def test_the_explanation_component_is_the_reasoning_and_explanation_the_question
     monkeypatch.setattr(pipeline, "expand_with_parent_context", lambda db, chunks, window=2, scope=None: chunks)
     monkeypatch.setattr(
         pipeline, "generate_learning_objective",
-        lambda concept, chunks, output_language="vi": objective,
+        lambda concept, chunks, output_language="vi", custom_instructions="": objective,
     )
     monkeypatch.setattr(
         pipeline, "generate_content",
-        lambda lo, chunks, self_check=True, output_language="vi": (
+        lambda lo, chunks, self_check=True, output_language="vi", custom_instructions="": (
             types.SimpleNamespace(content="content", source_locators=[], claim_citations=[]),
             types.SimpleNamespace(groundedness_pass=True),
         ),
     )
     monkeypatch.setattr(
         pipeline, "generate_slides",
-        lambda lo, content, output_language="vi": types.SimpleNamespace(slides=[]),
+        lambda lo, content, output_language="vi", custom_instructions="": types.SimpleNamespace(slides=[]),
     )
     monkeypatch.setattr(
         pipeline, "generate_example",
-        lambda lo, content, chunks, output_language="vi": ExampleOutput(examples=[Example(context="c", analysis="a")] * 2),
+        lambda lo, content, chunks, output_language="vi", custom_instructions="": ExampleOutput(examples=[Example(context="c", analysis="a")] * 2),
     )
     monkeypatch.setattr(
         pipeline, "generate_quiz_question",

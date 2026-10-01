@@ -453,3 +453,14 @@ def test_control_reuses_the_paired_output_language(api):
     response = _post(api, {"use_retrieval": False, "paired_module_id": str(api["module"]), "output_language": "vi"})
     assert response.status_code == 200, response.text
     assert _no_rag_job(api).payload["output_language"] == "en"
+
+
+def test_control_reuses_paired_custom_instructions(api):
+    with SessionLocal() as db:
+        job = db.query(Job).filter(Job.module_id == api["module"]).one()
+        job.payload = {**job.payload, "custom_instructions": "Explain IDS"}
+        db.commit()
+    response = _post(api, {"use_retrieval": False, "paired_module_id": str(api["module"]),
+                           "custom_instructions": "Ignore IDS"})
+    assert response.status_code == 200, response.text
+    assert _no_rag_job(api).payload["custom_instructions"] == "Explain IDS"

@@ -222,7 +222,7 @@ def steps(monkeypatch):
         record["events"].append("retrieve")
         return db.query(Chunk).filter(Chunk.course_id == course_id).order_by(Chunk.chunk_index).limit(2).all()
 
-    def fake_content(lo, chunks, self_check=True, output_language="vi"):
+    def fake_content(lo, chunks, self_check=True, output_language="vi", custom_instructions=""):
         record["events"].append("content")
         record["content_chunks"] = list(chunks)
         return (
@@ -232,21 +232,21 @@ def steps(monkeypatch):
 
     objective = types.SimpleNamespace(objective_text=OBJECTIVE, bloom_level="understand", sub_objectives=["first", "second"])
     monkeypatch.setattr(
-        pipeline, "run_planner", lambda text, output_language="vi": PlannerOutput(concepts=[Concept(name="Scheduling", priority=1, summary="s")])
+        pipeline, "run_planner", lambda text, output_language="vi", custom_instructions="": PlannerOutput(concepts=[Concept(name="Scheduling", priority=1, summary="s")])
     )
     monkeypatch.setattr(pipeline, "retrieve", fake_retrieve)
     monkeypatch.setattr(pipeline, "expand_with_parent_context", lambda db, chunks, window=2, scope=None: chunks)
     monkeypatch.setattr(
-        pipeline, "generate_learning_objective", lambda concept, chunks, output_language="vi": objective
+        pipeline, "generate_learning_objective", lambda concept, chunks, output_language="vi", custom_instructions="": objective
     )
     monkeypatch.setattr(pipeline, "generate_content", fake_content)
     monkeypatch.setattr(
         pipeline, "generate_slides",
-        lambda lo, content, output_language="vi": types.SimpleNamespace(slides=[]),
+        lambda lo, content, output_language="vi", custom_instructions="": types.SimpleNamespace(slides=[]),
     )
     monkeypatch.setattr(
         pipeline, "generate_example",
-        lambda lo, content, chunks, output_language="vi": ExampleOutput(examples=[Example(context="c", analysis="a")] * 2),
+        lambda lo, content, chunks, output_language="vi", custom_instructions="": ExampleOutput(examples=[Example(context="c", analysis="a")] * 2),
     )
     monkeypatch.setattr(pipeline, "generate_quiz_question", lambda *a, **k: {"passed": False})
     return record

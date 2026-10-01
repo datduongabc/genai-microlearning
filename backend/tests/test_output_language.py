@@ -50,7 +50,8 @@ def test_every_writing_step_receives_language(monkeypatch, language, instruction
 
 
 
-def test_language_reaches_steps_through_the_pipeline(request, monkeypatch):
+@pytest.mark.parametrize("guidance", ["", "Explain DLDFS and IDS"] )
+def test_language_reaches_steps_through_the_pipeline(request, monkeypatch, guidance):
     ids = request.getfixturevalue("document")
     seen = []
     def llm(prompt, response_model, system_instruction=None, **kwargs):
@@ -62,10 +63,15 @@ def test_language_reaches_steps_through_the_pipeline(request, monkeypatch):
     for step in (planner, objective, content, slides, example, quiz_graph, relevance):
         monkeypatch.setattr(step, "complete_structured", llm)
     with SessionLocal() as db:
-        pipeline.run_module_generation(db, db.get(Document, ids["doc"]), self_check=False, output_language="en")
+        pipeline.run_module_generation(db, db.get(Document, ids["doc"]), self_check=False, output_language="en", custom_instructions=guidance)
     writing = [(name, prompt) for name, prompt in seen if name != "RelevanceCheck"]
     assert len(writing) == 9  # planner, LO, content, slides, example, three quiz + practice
     assert all("Write ALL output in English." in prompt for _, prompt in writing)
+    from app.generation.common import custom_instructions_instruction
+    if guidance:
+        assert all(custom_instructions_instruction(guidance) in prompt for _, prompt in writing)
+    else:
+        assert all("LECTURER GUIDANCE DATA" not in prompt for _, prompt in writing)
 
 
 @pytest.mark.parametrize("locator,label", [
@@ -105,3 +111,30 @@ def test_content_retry_keeps_language_and_leaves_judge_prompt_unchanged(monkeypa
     assert len(writing) == 2
     assert all("Write ALL output in English." in prompt for prompt in writing)
     assert all("Write ALL output in English." not in prompt for prompt in judges)
+
+
+def test_blank_guidance_leaves_emitted_prompt_unchanged(monkeypatch):
+    seen = []
+    def llm(prompt, response_model, system_instruction=None, **kwargs):
+        seen.append((prompt, system_instruction))
+        return OUTPUTS[response_model]
+    monkeypatch.setattr(planner, "complete_structured", llm)
+    planner.run_planner("Source")
+    planner.run_planner("Source", custom_instructions="   ")
+    assert seen[0] == seen[1]
+
+
+def test_guidance_invalidates_planner_cache(request, monkeypatch):
+    ids = request.getfixturevalue("document")
+    seen = []
+    def llm(prompt, response_model, system_instruction=None, **kwargs):
+        seen.append(system_instruction)
+        return OUTPUTS[response_model]
+    monkeypatch.setattr(planner, "complete_structured", llm)
+    with SessionLocal() as db:
+        doc = db.get(Document, ids["doc"])
+        pipeline._get_or_cache_planner(db, doc)
+        pipeline._get_or_cache_planner(db, doc, custom_instructions="Explain IDS")
+        pipeline._get_or_cache_planner(db, doc, custom_instructions="Explain IDS")
+    assert len(seen) == 2
+    assert "Explain IDS" in seen[1]

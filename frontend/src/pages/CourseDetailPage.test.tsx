@@ -323,6 +323,16 @@ describe('CourseDetailPage - module generation availability', () => {
     expect(await screen.findByRole('button', { name: /\+ sinh mô-đun/i })).toBeEnabled()
   })
 
+  it('cancels the dialog without starting generation', async () => {
+    vi.mocked(api.listDocuments).mockResolvedValue([sampleDocument])
+    renderPage()
+    await userEvent.click(await screen.findByRole('button', { name: /\+ sinh mô-đun/i }))
+    expect(screen.getByRole('dialog')).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Huỷ' }))
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(api.generateModule).not.toHaveBeenCalled()
+  })
+
   it('shows the button busy and disabled when the server reports a generation in progress, e.g. after a refresh', async () => {
     vi.mocked(api.listDocuments).mockResolvedValue([generatingDocument])
 
@@ -362,10 +372,14 @@ describe('CourseDetailPage - module generation availability', () => {
     await waitFor(() =>
       expect((screen.getByRole('combobox', { name: /model sinh/i }) as HTMLSelectElement).value).toBe('groq-pro'),
     )
-    await userEvent.selectOptions(screen.getByRole('combobox', { name: /ngôn ngữ đầu ra/i }), 'en')
     await userEvent.click(await screen.findByRole('button', { name: /\+ sinh mô-đun/i }))
+    expect(api.generateModule).not.toHaveBeenCalled()
+    expect(screen.getByRole('dialog')).toBeInTheDocument()
+    await userEvent.selectOptions(screen.getByRole('combobox', { name: /ngôn ngữ đầu ra/i }), 'en')
+    await userEvent.type(screen.getByLabelText(/Hướng dẫn thêm/), 'Giải thích kỹ DLDFS và IDS')
+    await userEvent.click(screen.getByRole('button', { name: 'Sinh' }))
 
-    expect(api.generateModule).toHaveBeenCalledWith('doc-1', 'groq-pro', 'en')
+    expect(api.generateModule).toHaveBeenCalledWith('doc-1', 'groq-pro', 'en', 'Giải thích kỹ DLDFS và IDS')
   })
 
   it('shows why a chosen model cannot be used instead of a generic failure', async () => {
@@ -383,6 +397,7 @@ describe('CourseDetailPage - module generation availability', () => {
 
     renderPage()
     await userEvent.click(await screen.findByRole('button', { name: /\+ sinh mô-đun/i }))
+    await userEvent.click(screen.getByRole('button', { name: 'Sinh' }))
 
     expect(await screen.findByText(/chưa có API key hợp lệ/)).toBeInTheDocument()
   })
@@ -394,8 +409,9 @@ describe('CourseDetailPage - module generation availability', () => {
 
     renderPage()
     await userEvent.click(await screen.findByRole('button', { name: /\+ sinh mô-đun/i }))
+    await userEvent.click(screen.getByRole('button', { name: 'Sinh' }))
 
-    expect(api.generateModule).toHaveBeenCalledWith('doc-1', '', 'vi')
+    expect(api.generateModule).toHaveBeenCalledWith('doc-1', '', 'vi', '')
     expect(await screen.findByRole('button', { name: /đang sinh mô-đun/i })).toBeDisabled()
   })
 })
@@ -411,36 +427,14 @@ describe('CourseDetailPage - textbooks', () => {
     vi.mocked(api.listCourses).mockResolvedValue([unlinkedCourse])
   })
 
-  it('uploads with the kind the teacher chose', async () => {
+  it('uploads with the default kind and offers no kind select', async () => {
     vi.mocked(api.listDocuments).mockResolvedValue([])
     vi.mocked(api.uploadDocument).mockResolvedValue({ id: 'doc-2', status: 'uploaded', job_id: 'job-1' })
-
     renderPage()
     await waitFor(() => expect(uploadInput()).toBeEnabled())
-    await userEvent.selectOptions(screen.getByLabelText(/loại tài liệu/i), 'textbook')
+    expect(screen.queryByLabelText(/loại tài liệu/i)).not.toBeInTheDocument()
     await userEvent.upload(uploadInput(), new File(['x'], 'dsa.pdf', { type: 'application/pdf' }))
-
-    await waitFor(() => expect(api.uploadDocument).toHaveBeenCalledWith('course-1', expect.any(File), 'textbook'))
-  })
-
-  it('uploads a lecture unless the teacher picks the other kind', async () => {
-    vi.mocked(api.listDocuments).mockResolvedValue([])
-    vi.mocked(api.uploadDocument).mockResolvedValue({ id: 'doc-2', status: 'uploaded', job_id: 'job-1' })
-
-    renderPage()
-    await waitFor(() => expect(uploadInput()).toBeEnabled())
-    await userEvent.upload(uploadInput(), new File(['x'], 'slides.pdf', { type: 'application/pdf' }))
-
-    await waitFor(() => expect(api.uploadDocument).toHaveBeenCalledWith('course-1', expect.any(File), 'lecture'))
-  })
-
-  it('locks the kind selector together with the upload while a document is processing', async () => {
-    vi.mocked(api.listDocuments).mockResolvedValue([{ ...sampleDocument, status: 'processing' }])
-
-    renderPage()
-
-    expect(await screen.findByText(/đang xử lý tài liệu/i)).toBeInTheDocument()
-    expect(screen.getByLabelText(/loại tài liệu/i)).toBeDisabled()
+    await waitFor(() => expect(api.uploadDocument).toHaveBeenCalledWith('course-1', expect.any(File)))
   })
 
   it('offers the outline instead of whole-document generation for a textbook with sections', async () => {
