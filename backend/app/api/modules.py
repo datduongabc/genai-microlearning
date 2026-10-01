@@ -20,7 +20,6 @@ from app.generation.module_generation_pipeline import (
     is_control,
     learning_objective_of,
 )
-from app.generation.slides import Slide
 from app.jobs.queue import enqueue_job
 from app.llm import catalog
 from app.models import (
@@ -385,11 +384,10 @@ def export_slides(
         raise HTTPException(status_code=404, detail="Slides not found")
     deck = Presentation()
     for entry in component.content["slides"]:
-        content = Slide.model_validate(entry)
         slide = deck.slides.add_slide(deck.slide_layouts[1])
-        slide.shapes.title.text = content.title
+        slide.shapes.title.text = entry["title"]
         frame = slide.placeholders[1].text_frame
-        for index, bullet in enumerate(content.bullets):
+        for index, bullet in enumerate(b for b in entry["bullets"] if b):
             paragraph = frame.paragraphs[0] if index == 0 else frame.add_paragraph()
             paragraph.text = bullet
     output = BytesIO()
