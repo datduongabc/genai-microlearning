@@ -84,6 +84,9 @@ export function ModulePreviewPage() {
   return (
     <AppShell title="Xem trước mô-đun">
       <ModuleHeader module={module} onSaved={refresh} />
+      {module.is_control && (
+        <p className="mt-2 text-sm text-amber-600">Đối chứng (không RAG) - chỉ dùng cho nghiên cứu</p>
+      )}
       {module.components.some((c) => c.type === 'slides') && (
         <button
           className="mt-4 rounded-[3px] bg-navy px-5 py-2.5 text-sm font-semibold text-[#f3f1ea] hover:bg-[#28394b]"
@@ -119,11 +122,11 @@ export function ModulePreviewPage() {
           />
         ))}
       </div>
-      <PublishToMoodleSection
+      {!module.is_control && <PublishToMoodleSection
         moduleId={module.id}
         courseId={module.course_id}
         moodleCourseId={module.moodle_course_id}
-      />
+      />}
     </AppShell>
   )
 }

@@ -1,6 +1,7 @@
 import { api } from './client'
 
 export interface ModuleSummary {
+  is_control: boolean
   id: string
   title: string
   learning_objective: string | null
@@ -46,6 +47,7 @@ export interface ModuleComponentInfo {
 }
 
 export interface ModuleDetail {
+  is_control: boolean
   id: string
   title: string
   learning_objective: string | null

@@ -309,6 +309,7 @@ def list_modules(
             "bloom_level": m.bloom_level,
             "component_count": len(m.components),
             "section_id": m.section_id,
+            "is_control": is_control(db, m.id),
         }
         for m in modules
     ]
@@ -358,6 +359,7 @@ def get_module(
         "sub_objectives": module.sub_objectives,
         "course_id": module.course_id,
         "moodle_course_id": module.course.moodle_course_id,
+        "is_control": is_control(db, module.id),
         "components": [
             {
                 "id": c.id,

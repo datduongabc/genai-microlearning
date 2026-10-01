@@ -341,6 +341,9 @@ export function CourseDetailPage() {
                         className="text-sm hover:text-terracotta"
                       >
                         → {m.title}
+                        {m.is_control && (
+                          <span className="ml-2 text-xs font-medium text-amber-600">Đối chứng (không RAG) - chỉ dùng cho nghiên cứu</span>
+                        )}
                       </Link>
                     </li>
                   ))}
