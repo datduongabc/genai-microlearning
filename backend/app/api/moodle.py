@@ -23,6 +23,7 @@ router = APIRouter(prefix="/modules", tags=["moodle"], dependencies=[Depends(get
 # Moodle (a Book chapter is FORMAT_HTML and quiz text is PARAM_RAW, both rendered unescaped).
 _ALLOWED_TAGS = ["h1", "h2", "h3", "p", "ul", "ol", "li", "strong", "em", "b", "i", "br", "code", "pre", "blockquote"]
 
+
 def _clean_html(html_text: str) -> str:
     return bleach.clean(html_text, tags=_ALLOWED_TAGS, attributes={}, strip=True)
 
