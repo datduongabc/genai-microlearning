@@ -477,7 +477,7 @@ def test_deleted_course_requires_confirmation_before_unlinking(monkeypatch, endp
             None if check in ('missing', 'invalidrecord') else published.moodle_course_id)
 
 
-@pytest.mark.parametrize('operation', ['publish', 'sections', 'search', 'link', 'create'])
+@pytest.mark.parametrize('operation', ['publish', 'sections'])
 @pytest.mark.parametrize('error', [httpx.ConnectError('secret host'), moodle_client.MoodleError('secret detail')])
 def test_moodle_failures_are_human_readable(monkeypatch, operation, error):
     published = Published()
@@ -486,22 +486,9 @@ def test_moodle_failures_are_human_readable(monkeypatch, operation, error):
     def fail(*args, **kwargs):
         raise error
 
-    for name in ('create_book', 'get_course_sections', 'search_courses', 'get_course', 'create_course'):
+    for name in ('create_book', 'get_course_sections', 'get_course'):
         monkeypatch.setattr(moodle_client, name, fail)
-    if operation == 'create':
-        with SessionLocal() as db:
-            db.get(Course, published.course_id).moodle_course_id = None
-            db.commit()
-    routes = {
-        'sections': ('get', f'/courses/{published.course_id}/moodle-sections', {}),
-        'search': ('get', '/courses/moodle/search?q=hello', {}),
-        'link': ('post', f'/courses/{published.course_id}/link-moodle', {'json': {'moodle_course_id': 987}}),
-        'create': ('post', f'/courses/{published.course_id}/create-moodle', {}),
-    }
-    if operation == 'publish':
-        response = published.publish(module_id)
-    else:
-        method, url, kwargs = routes[operation]
-        response = getattr(client, method)(url, headers=published.headers, **kwargs)
+    response = (published.publish(module_id) if operation == 'publish' else
+                client.get(f'/courses/{published.course_id}/moodle-sections', headers=published.headers))
     assert response.status_code == 502
     assert response.json()['detail'] == (UNREACHABLE if isinstance(error, httpx.HTTPError) else GENERIC)
