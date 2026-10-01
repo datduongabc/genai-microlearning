@@ -1,6 +1,10 @@
 import uuid
+from io import BytesIO
+from urllib.parse import quote
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi.responses import Response
+from pptx import Presentation
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.orm import Session, joinedload, selectinload
@@ -368,6 +372,31 @@ def get_module(
             for c in ordered_components
         ],
     }
+
+
+@router.get("/{module_id}/slides.pptx")
+def export_slides(
+    module_id: uuid.UUID, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)
+):
+    module = _owned_module(db, module_id, current_user)
+    component = next((c for c in module.components if c.type == ComponentType.slides), None)
+    if component is None:
+        raise HTTPException(status_code=404, detail="Slides not found")
+    deck = Presentation()
+    for entry in component.content["slides"]:
+        slide = deck.slides.add_slide(deck.slide_layouts[1])
+        slide.shapes.title.text = entry["title"]
+        frame = slide.placeholders[1].text_frame
+        for index, bullet in enumerate(b for b in entry["bullets"] if b):
+            paragraph = frame.paragraphs[0] if index == 0 else frame.add_paragraph()
+            paragraph.text = bullet
+    output = BytesIO()
+    deck.save(output)
+    return Response(
+        content=output.getvalue(),
+        media_type="application/vnd.openxmlformats-officedocument.presentationml.presentation",
+        headers={"Content-Disposition": f"attachment; filename*=UTF-8''{quote(module.title + '.pptx', safe='')}"},
+    )
 
 
 @router.patch("/{module_id}")

@@ -7,14 +7,13 @@ import { AuthProvider } from '../auth/AuthContext'
 import * as api from '../api'
 import type { ModuleDetail } from '../api'
 
-// Every function of the module is replaced except the one that words an error: that is
-// real logic the pages rely on, not a call to the server.
+// Keep the client and error handling real; replace the other server calls.
 vi.mock('../api', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../api')>()
   return Object.fromEntries(
     Object.entries(actual).map(([name, value]) => [
       name,
-      typeof value === 'function' && name !== 'apiErrorMessage' ? vi.fn() : value,
+      typeof value === 'function' && !['api', 'apiErrorMessage'].includes(name) ? vi.fn() : value,
     ]),
   )
 })
@@ -43,6 +42,34 @@ function renderPage() {
 
 beforeEach(() => {
   vi.clearAllMocks()
+})
+
+it('downloads slides through the authenticated API client', async () => {
+  vi.mocked(api.getModule).mockResolvedValue({
+    ...baseModule,
+    components: [{ id: 'slides-1', type: 'slides', content: { slides: [] }, questions: [] }],
+  })
+  const blob = new Blob(['pptx'])
+  const request = vi.spyOn(api.api, 'get').mockResolvedValue({ data: blob })
+  const createURL = vi.fn().mockReturnValue('blob:slides')
+  const revokeURL = vi.fn()
+  vi.stubGlobal('URL', { createObjectURL: createURL, revokeObjectURL: revokeURL })
+  const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function (this: HTMLAnchorElement) {
+    expect(this.href).toBe('blob:slides')
+    expect(this.download).toBe('Test Module.pptx')
+  })
+  try {
+    renderPage()
+    await userEvent.click(await screen.findByRole('button', { name: 'Tải slide' }))
+    await waitFor(() => expect(click).toHaveBeenCalledOnce())
+    expect(request).toHaveBeenCalledWith('/modules/module-1/slides.pptx', { responseType: 'blob' })
+    expect(createURL).toHaveBeenCalledWith(blob)
+    expect(revokeURL).toHaveBeenCalledWith('blob:slides')
+  } finally {
+    request.mockRestore()
+    click.mockRestore()
+    vi.unstubAllGlobals()
+  }
 })
 
 describe('ModulePreviewPage - publish to Moodle', () => {
