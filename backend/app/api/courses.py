@@ -11,6 +11,7 @@ from app.auth.rate_limit import limiter, user_or_address
 from app.db import get_db
 from app.models import Course, MoodleCourseClaim, User
 from app.moodle import client as moodle_client
+from app.moodle.client import MoodleError
 from app.moodle.errors import MOODLE_FAILURES, moodle_failure
 
 router = APIRouter(prefix="/courses", tags=["courses"], dependencies=[Depends(get_current_user)])
@@ -80,8 +81,8 @@ def search_moodle_courses(
     """
     try:
         results = moodle_client.search_courses(q)
-    except MOODLE_FAILURES as e:
-        raise moodle_failure(e, db) from e
+    except MoodleError as e:
+        raise HTTPException(status_code=502, detail=f"Moodle search failed: {e}") from e
 
     # What is left out is what this user could not link anyway: their own links (the
     # mapping is 1-1) and every course another user has claimed, whether or not it is
@@ -110,8 +111,8 @@ def link_moodle_course(
     unavailable = HTTPException(status_code=404, detail="Không tìm thấy khóa học Moodle này")
     try:
         exists = moodle_client.get_course(moodle_course_id) is not None
-    except MOODLE_FAILURES as e:
-        raise moodle_failure(e, db) from e
+    except MoodleError as e:
+        raise HTTPException(status_code=502, detail=f"Moodle course lookup failed: {e}") from e
     if not exists:
         raise unavailable
 
@@ -150,16 +151,22 @@ def create_moodle_course(
         raise HTTPException(status_code=400, detail="Course already linked to a Moodle course")
     try:
         course.moodle_course_id = moodle_client.create_course(course.name)
-    except MOODLE_FAILURES as e:
-        raise moodle_failure(e, db) from e
+    except MoodleError as e:
+        raise HTTPException(status_code=502, detail=f"Moodle course creation failed: {e}") from e
     db.add(MoodleCourseClaim(moodle_course_id=course.moodle_course_id, owner_id=current_user.id))
     # Commit the link before enrolling: the Moodle course exists now, so if
     # enrolling fails a retry must not create a second, orphaned course.
     db.commit()
     try:
         moodle_client.enrol_as_teacher(course.moodle_course_id)
-    except MOODLE_FAILURES as e:
-        raise moodle_failure(e, db, course) from e
+    except MoodleError as e:
+        raise HTTPException(
+            status_code=502,
+            detail=(
+                f"Moodle course {course.moodle_course_id} was created and linked, "
+                f"but enrolling you as its teacher failed: {e}"
+            ),
+        ) from e
     return {"moodle_course_id": course.moodle_course_id}
 
 

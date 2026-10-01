@@ -131,7 +131,7 @@ def test_create_moodle_keeps_the_link_when_enrolment_fails(monkeypatch):
     response = client.post(f"/courses/{course_id}/create-moodle", headers=headers)
 
     assert response.status_code == 502
-    assert response.json()["detail"] == "Thao tác với Moodle thất bại, vui lòng thử lại sau."
+    assert str(moodle_id) in response.json()["detail"]
     # The Moodle course already exists, so the link must survive: otherwise a
     # retry would create a second, orphaned Moodle course.
     courses = {c["id"]: c["moodle_course_id"] for c in client.get("/courses", headers=headers).json()}

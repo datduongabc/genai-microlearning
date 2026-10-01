@@ -1,4 +1,4 @@
-"""Safe lecturer-facing Moodle failures, shared by publishing and course linking."""
+"""Safe lecturer-facing Moodle failures, shared by publishing and section lookup."""
 
 import logging
 
