@@ -11,6 +11,8 @@ from app.generation import module_generation_pipeline as pipeline
 from app.generation.example import Example, ExampleOutput
 from app.generation.planner import Concept, PlannerOutput
 from app.generation.relevance import CorrectiveResult
+from app.generation.study_packets import resolved_citations
+from app.ingestion.embeddings import embed_texts
 from app.models import (
     Chunk,
     Course,
@@ -25,6 +27,7 @@ from app.models import (
     User,
     UserRole,
 )
+from app.retrieval import search as retrieval
 from app.retrieval.search import ChunkScope
 
 CHUNK_TEXTS = [f"CHUNK-{i} " + "filler text " * 20 for i in range(6)]
@@ -184,7 +187,7 @@ def test_the_planner_result_is_cached_on_the_section_not_the_document(textbook, 
         db.close()
 
 
-def test_generation_from_the_whole_document_is_unchanged(textbook, seen):
+def test_generation_from_the_whole_document_stays_in_that_document(textbook, seen):
     db = SessionLocal()
     try:
         doc = db.get(Document, textbook["doc"])
@@ -193,12 +196,61 @@ def test_generation_from_the_whole_document_is_unchanged(textbook, seen):
 
         assert module.section_id is None
         assert seen["retrieve_scopes"]
-        assert all(s is None for s in seen["retrieve_scopes"])
-        assert seen["expand_scopes"] == [None]
+        assert all(s is not None and s.document_id == doc.id for s in seen["retrieve_scopes"])
+        assert all(s is not None and s.document_id == doc.id for s in seen["expand_scopes"])
+        assert all(s is not None and s.document_id == doc.id for s in seen["quiz_scopes"])
         assert seen["planner_inputs"] == ["the whole book"]
         db.refresh(doc)
         assert doc.planner_concepts is not None
     finally:
+        db.close()
+
+
+def test_pdf_and_mp3_in_one_course_keep_generation_citations_in_their_document(textbook, seen, monkeypatch):
+    # Reproduced live: a PDF module cited the MP3's chunk, which its resolver could not find.
+    # Keep retrieval, parent expansion and resolution real; only external model calls are faked.
+    monkeypatch.setattr(pipeline, "retrieve", retrieval.retrieve)
+    monkeypatch.setattr(pipeline, "expand_with_parent_context", retrieval.expand_with_parent_context)
+    monkeypatch.setattr(retrieval, "rerank_scored", lambda query, chunks: [(c, 1.0) for c in chunks])
+    monkeypatch.setattr(pipeline, "corrective_retrieve", lambda objective, chunks, re_retrieve:
+                        CorrectiveResult(re_retrieve("Sorting"), "high", 1))
+    monkeypatch.setattr(pipeline, "generate_content", lambda lo, chunks, **kwargs: (
+        types.SimpleNamespace(content="content", source_locators=[], claim_citations=[
+            types.SimpleNamespace(model_dump=lambda c=c: {"claim": c.content, "locator": c.source_ref})
+            for c in chunks
+        ]), None,
+    ))
+    question_sources = []
+
+    def question(db, course_id, query, lo, mode="quiz", scope=None, **kwargs):
+        question_sources.extend(retrieval.retrieve(db, course_id, query, scope=scope))
+        return {"passed": False}
+
+    monkeypatch.setattr(pipeline, "generate_quiz_question", question)
+    db = SessionLocal()
+    try:
+        pdf = db.get(Document, textbook["doc"])
+        mp3 = Document(course_id=pdf.course_id, filename="lecture.mp3", raw_text="Sorting",
+                       status=DocumentStatus.embedded)
+        db.add(mp3)
+        db.flush()
+        db.add(Chunk(document_id=mp3.id, course_id=pdf.course_id, chunk_index=0,
+                     content="Sorting algorithm", source_ref='{"heading": null, "unit_index": 0}'))
+        db.flush()
+        chunks = db.query(Chunk).filter(Chunk.course_id == pdf.course_id).all()
+        for chunk, vector in zip(chunks, embed_texts([c.content for c in chunks]), strict=True):
+            chunk.embedding = vector
+            if chunk.document_id == pdf.id:
+                chunk.source_ref = f'{{"page": {chunk.chunk_index + 1}}}'
+        db.commit()
+        for doc in (pdf, mp3):
+            question_sources.clear()
+            module = pipeline.run_module_generation(db, doc, self_check=False)
+            citations = resolved_citations(db, module)
+            assert citations and all(c.resolution == "resolved" for c in citations)
+            assert question_sources and all(c.document_id == doc.id for c in question_sources)
+    finally:
+        retrieval.invalidate_sparse_cache(textbook["course"])
         db.close()
 
 
@@ -245,6 +297,6 @@ def test_the_job_step_without_a_section_generates_from_the_whole_document(textbo
         finished = db.get(Job, job_id)
         assert finished.status == JobStatus.done
         assert db.get(Module, finished.module_id).section_id is None
-        assert all(s is None for s in seen["retrieve_scopes"])
+        assert all(s is not None and s.document_id == textbook["doc"] for s in seen["retrieve_scopes"])
     finally:
         db.close()

@@ -311,10 +311,11 @@ def run_module_generation(
     (module RAG đi cặp) thay vì Planner và LO tự đặt lại; mỗi bước dùng đúng prompt của nhánh RAG
     trừ khối SOURCE CHUNK, và câu hỏi (kèm lời giải) đọc Content thay cho đoạn truy hồi. Các bước
     tự kiểm bỏ những tiêu chí cần nguồn để đối chiếu (groundedness)."""
-    # A section confines every later step to its own chunks: retrieval, the
-    # parent-context window and the quiz all see nothing outside it.
+    # Every source must belong to the module's document, where citations resolve.
+    # A chosen section further confines retrieval, parent context and questions.
     scope = (
-        ChunkScope(doc.id, section.first_chunk_index, section.last_chunk_index) if section is not None else None
+        ChunkScope(doc.id, section.first_chunk_index, section.last_chunk_index)
+        if section is not None else ChunkScope(doc.id)
     )
     context_chunks = None
     if use_retrieval:

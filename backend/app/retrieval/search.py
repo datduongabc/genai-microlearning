@@ -26,8 +26,8 @@ class ChunkScope:
     the chapter a teacher picked from a textbook. Frozen so it can key a cache."""
 
     document_id: UUID
-    first_chunk_index: int
-    last_chunk_index: int
+    first_chunk_index: int = 0
+    last_chunk_index: int = 2**31 - 1  # Full range of the stored Integer chunk index.
 
 
 def _scoped(query, scope: ChunkScope | None):
