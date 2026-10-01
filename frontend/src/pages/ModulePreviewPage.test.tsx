@@ -429,3 +429,20 @@ it('shows a clarification reply without refreshing the preview', async () => {
   expect(await screen.findByText('Bạn muốn sửa phần nào?')).toBeInTheDocument()
   expect(api.getModule).toHaveBeenCalledTimes(1)
 })
+
+it('asks for a reload instead of a retry when the refresh after an applied chat edit fails', async () => {
+  vi.mocked(api.getModule).mockResolvedValueOnce(baseModule).mockRejectedValue(new Error('offline'))
+  vi.mocked(api.chatEditModule).mockResolvedValue({ session_id: 'session-3', applied: true, reply: 'Đã sửa slide 1.', edit_count: 1 })
+  renderPage()
+  await userEvent.type(await screen.findByRole('textbox', { name: 'Yêu cầu chỉnh sửa' }), 'Rút gọn slide 1')
+  await userEvent.click(screen.getByRole('button', { name: 'Gửi yêu cầu' }))
+  expect(await screen.findByText('Đã áp dụng chỉnh sửa nhưng không tải lại được mô-đun. Vui lòng tải lại trang.')).toBeInTheDocument()
+  expect(screen.queryByText('Chỉnh sửa thất bại. Vui lòng thử lại.')).not.toBeInTheDocument()
+})
+
+it('hides the chat edit panel for research control modules', async () => {
+  vi.mocked(api.getModule).mockResolvedValue({ ...baseModule, is_control: true })
+  renderPage()
+  expect(await screen.findByText('Đối chứng (không RAG) - chỉ dùng cho nghiên cứu')).toBeInTheDocument()
+  expect(screen.queryByRole('textbox', { name: 'Yêu cầu chỉnh sửa' })).not.toBeInTheDocument()
+})

@@ -490,15 +490,12 @@ def update_component(
     component = db.get(ModuleComponent, component_id, with_for_update=True)
     if component is None or component.module_id != module_id:
         raise HTTPException(status_code=404, detail="Component not found")
-    _apply_component_update(component, payload.content)
+    content = {k: v for k, v in payload.content.items() if k != "ai_original"}
+    if "ai_original" in component.content:
+        content["ai_original"] = component.content["ai_original"]
+    component.content = content
     db.commit()
     return {"id": component.id, "content": component.content}
-
-
-def _apply_component_update(component: ModuleComponent, revised: dict) -> None:
-    content = {k: v for k, v in revised.items() if k != "ai_original"}
-    content["ai_original"] = component.content.get("ai_original", component.content)
-    component.content = content
 
 
 class QuestionUpdate(BaseModel):
@@ -561,6 +558,11 @@ def chat_edit_module(
     db: Session = Depends(get_db), current_user: User = Depends(get_current_user),
 ):
     module = _owned_module(db, module_id, current_user)
+    if is_control(db, module.id):
+        raise HTTPException(
+            status_code=422,
+            detail="Mô-đun đối chứng (không RAG) chỉ dùng cho nghiên cứu, không được chỉnh sửa bằng chat.",
+        )
     message = payload.message.strip()
     if not message:
         raise HTTPException(status_code=400, detail="message is required")
@@ -607,7 +609,8 @@ def chat_edit_module(
                     ):
                         raise ValueError("Citation outside source chunks")
                     content["markdown"] = content.pop("content")
-                _apply_component_update(component, {**component.content, **content})
+                component.content = {**component.content, **content,
+                                     "ai_original": component.content.get("ai_original", component.content)}
     except (ValidationError, ValueError) as exc:
         db.rollback()
         raise HTTPException(status_code=422, detail="Phản hồi AI không hợp lệ; chưa thay đổi mô-đun.") from exc

@@ -105,7 +105,7 @@ export function ModulePreviewPage() {
         </button>
       )}
       {downloadError && <p role="alert" className="mt-3 text-sm text-red-700">{downloadError}</p>}
-      <ModuleChatPanel key={module.id} module={module} onSaved={refresh} />
+      {!module.is_control && <ModuleChatPanel key={module.id} module={module} onSaved={refresh} />}
       <div className="mt-8 flex flex-col gap-6">
         {module.components.map((c) => (
           <ComponentCard
@@ -139,14 +139,18 @@ function ModuleChatPanel({ module, onSaved }: { module: ModuleDetail; onSaved: (
     if (!message.trim() || sending) return
     setSending(true)
     setError(null)
+    let applied = false
     try {
       const result = await chatEditModule(module.id, message.trim(), sessionId)
       setSessionId(result.session_id)
       setTurns((previous) => [...previous, { message: message.trim(), reply: result.reply }])
       setMessage('')
-      if (result.applied) await onSaved()
+      applied = result.applied
+      if (applied) await onSaved()
     } catch (err) {
-      setError(apiErrorMessage(err, 'Chỉnh sửa thất bại. Vui lòng thử lại.'))
+      setError(applied
+        ? 'Đã áp dụng chỉnh sửa nhưng không tải lại được mô-đun. Vui lòng tải lại trang.'
+        : apiErrorMessage(err, 'Chỉnh sửa thất bại. Vui lòng thử lại.'))
     } finally {
       setSending(false)
     }

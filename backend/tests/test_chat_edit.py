@@ -185,3 +185,26 @@ def test_missing_source_asks_for_clarification_without_editing(lesson, monkeypat
     assert response.status_code == 200
     assert response.json()["applied"] is False
     assert response.json()["edit_count"] == 0
+
+
+def test_control_module_rejects_chat_edit(lesson, monkeypatch):
+    ids, _ = lesson
+    with SessionLocal() as db:
+        job = db.query(Job).filter(Job.module_id == ids["module"]).one()
+        job.payload = {"output_language": "en", "use_retrieval": False}
+        db.commit()
+    monkeypatch.setattr(service, "complete_structured", lambda *a, **kw: pytest.fail("Control module must not invoke the model"))
+    response = send(lesson)
+    assert response.status_code == 422
+    with SessionLocal() as db:
+        assert "ai_original" not in db.get(ModuleComponent, ids["slides"]).content
+        assert db.query(ChatSession).filter(ChatSession.course_id == ids["course"]).count() == 0
+
+
+def test_manual_component_edit_does_not_snapshot_original(lesson):
+    ids, headers = lesson
+    response = client.patch(f"/modules/{ids['module']}/components/{ids['slides']}", headers=headers,
+        json={"content": {"slides": [{"title": "Manual", "bullets": ["x"]}]}})
+    assert response.status_code == 200, response.text
+    with SessionLocal() as db:
+        assert db.get(ModuleComponent, ids["slides"]).content == {"slides": [{"title": "Manual", "bullets": ["x"]}]}
