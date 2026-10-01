@@ -62,7 +62,7 @@ def llm(monkeypatch):
         if response_model is SlidesOutput:
             return SlidesOutput(slides=[Slide(title="S1", bullets=["b"]), Slide(title="S2", bullets=["b"])])
         if response_model is ExampleOutput:
-            return ExampleOutput(examples=[Example(context="bối cảnh", analysis="phân tích")])
+            return ExampleOutput(examples=[Example(context="bối cảnh", analysis="phân tích")] * 2)
         if response_model is QuizQuestion:
             target = re.search(r"ĐIỀU CẦN KIỂM: (.*)", prompt).group(1)
             return QuizQuestion(common_misconceptions=["m1", "m2", "m3"], stem=f"Hỏi về {target}",

@@ -127,7 +127,7 @@ def seen(monkeypatch):
     monkeypatch.setattr(
         pipeline,
         "generate_example",
-        lambda lo, content, chunks, output_language="vi": ExampleOutput(examples=[Example(context="ctx", analysis="analysis")]),
+        lambda lo, content, chunks, output_language="vi": ExampleOutput(examples=[Example(context="ctx", analysis="analysis")] * 2),
     )
     return record
 
