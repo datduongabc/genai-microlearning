@@ -21,15 +21,6 @@ import {
   type QuestionInfo,
 } from '../api'
 
-const BLOOM_LABEL: Record<string, string> = {
-  remember: 'Nhớ',
-  understand: 'Hiểu',
-  apply: 'Áp dụng',
-  analyze: 'Phân tích',
-  evaluate: 'Đánh giá',
-  create: 'Sáng tạo',
-}
-
 const COMPONENT_LABEL: Record<string, string> = {
   content: 'Nội dung',
   slides: 'Slide bài giảng',
@@ -296,11 +287,6 @@ function ModuleHeader({ module, onSaved }: { module: ModuleDetail; onSaved: () =
             <li key={s}>{s}</li>
           ))}
         </ul>
-      )}
-      {module.bloom_level && (
-        <span className="mt-2 inline-block rounded-[3px] bg-navy px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-[#f3f1ea]">
-          Bloom: {BLOOM_LABEL[module.bloom_level] ?? module.bloom_level}
-        </span>
       )}
     </div>
   )
@@ -760,7 +746,6 @@ function QuizDisplay({
           {failed.length > 0 ? ` (${failed.map((c) => c.fail_reason).join('; ')})` : ''}.
         </p>
       )}
-
     </div>
   )
 }

@@ -125,7 +125,7 @@ def test_the_explanation_component_is_the_reasoning_and_explanation_the_question
     )
     monkeypatch.setattr(
         pipeline, "generate_example",
-        lambda lo, content, chunks, output_language="vi": ExampleOutput(examples=[Example(context="c", analysis="a")]),
+        lambda lo, content, chunks, output_language="vi": ExampleOutput(examples=[Example(context="c", analysis="a")] * 2),
     )
     monkeypatch.setattr(
         pipeline, "generate_quiz_question",

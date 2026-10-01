@@ -199,7 +199,7 @@ def test_the_book_has_a_chapter_for_the_objective_the_content_the_slides_and_the
     assert top_level == ["Mục tiêu học tập", "Nội dung", "Slide", "Ví dụ"]
 
 
-def test_the_objective_chapter_has_the_objective_the_sub_objectives_and_the_bloom_level(published, moodle):
+def test_the_objective_chapter_has_the_objective_and_the_sub_objectives_but_no_bloom_level(published, moodle):
     published.publish(full_module(published))
 
     objective = _text(_book(moodle)["chapters"][0]["content"])
@@ -207,7 +207,7 @@ def test_the_objective_chapter_has_the_objective_the_sub_objectives_and_the_bloo
     assert "phân tích Encapsulation" in objective
     assert "Mô tả cách gộp dữ liệu vào lớp" in objective
     assert "So sánh public và private" in objective
-    assert "Phân tích" in objective  # the Bloom level, in the learner's language
+    assert "Bloom" not in objective
 
 
 def test_every_slide_is_a_short_sub_chapter_of_the_slide_chapter(published, moodle):

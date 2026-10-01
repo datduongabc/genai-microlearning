@@ -21,9 +21,8 @@ from app.models import Chunk
 _EXAMPLE_BODY = """Bạn là chuyên gia biên soạn ví dụ minh họa cho giáo dục đại học.
 
 Nhiệm vụ: viết các Example minh họa cho Learning Objective/Content được cung
-cấp — TỐI ĐA 1 Example cho MỖI sub-objective (mỗi phần của Content), và chỉ
-cho những phần mà một ví dụ thật sự giúp người học hiểu hơn; ít nhất 1 Example.
-Không viết thêm ví dụ cho đủ số.
+cấp — viết ĐÚNG 2 Example, mỗi Example cho MỘT sub-objective khác nhau (mỗi
+phần của Content), chọn 2 phần mà một ví dụ thật sự giúp người học hiểu hơn.
 
 Ràng buộc BẮT BUỘC:
 1. Khác với Content, Example ĐƯỢC PHÉP chứa tình huống/ví dụ MỚI do bạn tự
@@ -60,10 +59,9 @@ class Example(BaseModel):
 
 
 class ExampleOutput(BaseModel):
-    # Trần 4 bằng trần số sub-objective: một bài 5-10 phút không cần nhiều ví dụ hơn số phần của nó.
     examples: list[Example] = Field(
-        min_length=1, max_length=4,
-        description="Tối đa 1 Example cho mỗi sub-objective, theo đúng thứ tự các phần của Content",
+        min_length=2, max_length=2,
+        description="Đúng 2 Example, mỗi cái cho một sub-objective khác nhau, theo đúng thứ tự các phần của Content",
     )
 
 
@@ -71,7 +69,7 @@ def generate_example(
     lo: LearningObjective, content: str, context_chunks: list[Chunk] | None,
     output_language: OutputLanguage = "vi",
 ) -> ExampleOutput:
-    """One call, no self-check round: the schema caps the count (1-4, at most one per sub-objective),
+    """One call, no self-check round: the schema fixes the count (exactly 2, at most one per sub-objective),
     and an example may invent its situation, so there is no source to hold it against.
     `context_chunks=None` is the no-RAG arm: the same prompt without the source block."""
     sub_objectives_text = "\n".join(f"- {so}" for so in lo.sub_objectives)

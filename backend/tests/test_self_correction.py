@@ -54,7 +54,7 @@ UNCHECKED = [
                           Slide(title="Đổi cận", bullets=["Tính cận mới theo u"])]),
      lambda: slides.generate_slides(LO, "## Chọn biến mới\n...")),
     ("example", example, ExampleOutput,
-     ExampleOutput(examples=[Example(context="Tính ∫2x cos(x²)dx", analysis="Đặt u = x²")]),
+     ExampleOutput(examples=[Example(context="Tính ∫2x cos(x²)dx", analysis="Đặt u = x²")] * 2),
      lambda: example.generate_example(LO, "## Chọn biến mới\n...", CHUNKS)),
 ]
 

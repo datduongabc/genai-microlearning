@@ -59,7 +59,7 @@ OUTPUTS = {
     ContentOutput: ContentOutput(content=LESSON, source_locators=[]),
     LessonText: LessonText(content=LESSON),
     SlidesOutput: SlidesOutput(slides=[Slide(title="S1", bullets=["b"]), Slide(title="S2", bullets=["b"])]),
-    ExampleOutput: ExampleOutput(examples=[Example(context="bối cảnh", analysis="phân tích")]),
+    ExampleOutput: ExampleOutput(examples=[Example(context="bối cảnh", analysis="phân tích")] * 2),
     QuizQuestion: QuizQuestion(
         common_misconceptions=["m1", "m2", "m3"], stem="Hỏi", reasoning="r",
         choices=["pa một", "pa hai", "pa ba", "pa bốn"], correct_index=1, explanation="lời giải",

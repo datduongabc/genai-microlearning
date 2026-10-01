@@ -23,16 +23,6 @@ router = APIRouter(prefix="/modules", tags=["moodle"], dependencies=[Depends(get
 # Moodle (a Book chapter is FORMAT_HTML and quiz text is PARAM_RAW, both rendered unescaped).
 _ALLOWED_TAGS = ["h1", "h2", "h3", "p", "ul", "ol", "li", "strong", "em", "b", "i", "br", "code", "pre", "blockquote"]
 
-# The learner reads the Book in Vietnamese, so the level is named the way the interface names it.
-_BLOOM_LABEL = {
-    "remember": "Nhớ",
-    "understand": "Hiểu",
-    "apply": "Áp dụng",
-    "analyze": "Phân tích",
-    "evaluate": "Đánh giá",
-    "create": "Sáng tạo",
-}
-
 
 def _clean_html(html_text: str) -> str:
     return bleach.clean(html_text, tags=_ALLOWED_TAGS, attributes={}, strip=True)
@@ -54,9 +44,6 @@ def _list(items: list[str], *, ordered: bool = False) -> str:
 
 def _objective_html(module: Module) -> str:
     parts = [f"<p>{html.escape(module.learning_objective or '')}</p>"]
-    if module.bloom_level:
-        level = _BLOOM_LABEL.get(module.bloom_level, module.bloom_level)
-        parts.append(f"<p><strong>Cấp độ Bloom:</strong> {html.escape(level)}</p>")
     if module.sub_objectives:
         parts.append("<p><strong>Sau bài này bạn sẽ:</strong></p>")
         parts.append(_list([str(s) for s in module.sub_objectives]))

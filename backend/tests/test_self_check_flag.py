@@ -45,7 +45,7 @@ OUTPUTS = {
     RelevanceCheck: RelevanceCheck(confidence="high", reason="đủ"),
     ContentOutput: ContentOutput(content="## Phần một\n- ý", source_locators=[]),
     SlidesOutput: SlidesOutput(slides=[Slide(title="S1", bullets=["b"]), Slide(title="S2", bullets=["b"])]),
-    ExampleOutput: ExampleOutput(examples=[Example(context="bối cảnh", analysis="phân tích")]),
+    ExampleOutput: ExampleOutput(examples=[Example(context="bối cảnh", analysis="phân tích")] * 2),
     # Các phương án dài bằng nhau: không vướng bẫy cú pháp, không phải cân bằng lại độ dài đáp án.
     QuizQuestion: QuizQuestion(
         common_misconceptions=["m1", "m2", "m3"], stem="Hỏi", reasoning="r",

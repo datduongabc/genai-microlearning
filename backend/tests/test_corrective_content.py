@@ -246,7 +246,7 @@ def steps(monkeypatch):
     )
     monkeypatch.setattr(
         pipeline, "generate_example",
-        lambda lo, content, chunks, output_language="vi": ExampleOutput(examples=[Example(context="c", analysis="a")]),
+        lambda lo, content, chunks, output_language="vi": ExampleOutput(examples=[Example(context="c", analysis="a")] * 2),
     )
     monkeypatch.setattr(pipeline, "generate_quiz_question", lambda *a, **k: {"passed": False})
     return record
