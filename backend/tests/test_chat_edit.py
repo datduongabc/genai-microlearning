@@ -5,6 +5,7 @@ import uuid
 import pytest
 from fastapi.testclient import TestClient
 
+from app.api import modules as modules_api
 from app.chat import service
 from app.db import SessionLocal
 from app.main import app
@@ -208,3 +209,26 @@ def test_manual_component_edit_does_not_snapshot_original(lesson):
     assert response.status_code == 200, response.text
     with SessionLocal() as db:
         assert db.get(ModuleComponent, ids["slides"]).content == {"slides": [{"title": "Manual", "bullets": ["x"]}]}
+
+
+def test_large_scope_sends_only_retrieved_document_chunks(lesson, monkeypatch):
+    ids, _ = lesson
+    with SessionLocal() as db:
+        document_id = db.get(Module, ids["module"]).document_id
+        db.add_all([Chunk(document_id=document_id, course_id=ids["course"], chunk_index=i,
+            content=f"Filler chunk {i}.", source_ref=f"lesson.txt#{i}") for i in range(1, 70)])
+        db.commit()
+    seen = {}
+    def fake_retrieve(db, course_id, query, top_k, scope):
+        seen.update(course_id=course_id, query=query, scope=scope)
+        return db.query(Chunk).filter(Chunk.document_id == document_id, Chunk.chunk_index == 0).all()
+    monkeypatch.setattr(modules_api, "retrieve", fake_retrieve)
+    prompts = []
+    def fake(prompt, response_model, **kw):
+        prompts.append(prompt)
+        return response_model(target=None, question_position=None, revised=None, reply="Bạn muốn sửa slide nào?")
+    monkeypatch.setattr(service, "complete_structured", fake)
+    assert send(lesson, "shorten slide 1").status_code == 200
+    assert seen["course_id"] == ids["course"] and seen["query"] == "shorten slide 1"
+    assert (seen["scope"].document_id, seen["scope"].first_chunk_index, seen["scope"].last_chunk_index) == (document_id, 0, 69)
+    assert "A stack is LIFO." in prompts[0] and "Filler chunk" not in prompts[0]

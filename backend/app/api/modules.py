@@ -29,7 +29,7 @@ from app.generation.module_generation_pipeline import (
 )
 from app.generation.quiz_graph import QuizQuestion
 from app.generation.slides import SlidesOutput
-from app.generation.study_packets import reference_scope_chunks, resolved_citations
+from app.generation.study_packets import reference_scope_chunks, resolved_citations, small_reference
 from app.jobs.queue import enqueue_job
 from app.llm import catalog
 from app.llm.gateway import using_model
@@ -47,6 +47,7 @@ from app.models import (
     Question,
     User,
 )
+from app.retrieval.search import ChunkScope, retrieve
 
 router = APIRouter(prefix="/modules", tags=["modules"], dependencies=[Depends(get_current_user)])
 
@@ -573,6 +574,9 @@ def chat_edit_module(
     history = [{"role": r.role.value, "content": r.content} for r in reversed(history_rows)]
     section = db.get(DocumentSection, module.section_id) if module.section_id else None
     chunks = reference_scope_chunks(db, module, section)
+    if chunks and not small_reference(chunks):
+        chunks = retrieve(db, module.course_id, message, top_k=8, scope=ChunkScope(
+            module.document_id, chunks[0].chunk_index, chunks[-1].chunk_index))
     generation = generation_payload_of(db, module.id)
     try:
         with using_model(generation.get("model_alias")):
