@@ -384,3 +384,52 @@ def test_the_practice_gets_immediate_feedback_and_the_quiz_keeps_deferred_feedba
     behaviour = {q["name"].rsplit(" - ", 1)[1]: q["behaviour"] for q in _quizzes(moodle)}
 
     assert behaviour == {"Practice": "immediatefeedback", "Quiz": "deferredfeedback"}
+
+
+@pytest.mark.parametrize("kind", ["quiz", "practice"])
+def test_question_edits_keep_ai_original_and_publish_the_latest_version(published, moodle, kind):
+    module_id = full_module(published)
+    detail = client.get(f"/modules/{module_id}", headers=published.headers).json()
+    component = next(c for c in detail["components"] if c["type"] == kind)
+    question = component["questions"][0]
+    url = f'/modules/{module_id}/questions/{question["id"]}'
+    for stem in ["EDIT-ONE", "EDIT-TWO"]:
+        response = client.patch(url, headers=published.headers, json={
+            "stem": stem, "choices": ["New A", "New B"], "answer_key": 0, "explanation": "EDIT-EXPLANATION",
+        })
+        assert response.status_code == 200
+    with SessionLocal() as db:
+        stored = db.get(ModuleComponent, component["id"])
+        original = stored.content["ai_original"]
+        assert original["content"] == component["content"]
+        assert original["questions"][0]["stem"] == question["stem"]
+        assert original["questions"][0]["choices"] == question["choices"]
+        assert original["questions"][0]["answer_key"] == question["answer_key"]
+        assert original["questions"][0]["explanation"] == question["explanation"]
+    # An existing whole-component editor cannot remove or forge the snapshot.
+    response = client.patch(f'/modules/{module_id}/components/{component["id"]}',
+                            headers=published.headers, json={"content": {"ai_original": {"forged": True}}})
+    assert response.status_code == 200
+    assert response.json()["content"]["ai_original"] == original
+    assert published.publish(module_id).status_code == 200
+    quiz = next(q for q in _quizzes(moodle) if q["name"].endswith(f'- {kind.title()}'))
+    edited = quiz["questions"][0]
+    assert edited["stem"] == "EDIT-TWO"
+    assert edited["choices"] == ["New A", "New B"]
+    assert edited["correct_index"] == 0
+    assert edited["explanation"] == "EDIT-EXPLANATION"
+    assert "ai_original" not in str(moodle)
+    assert question["stem"] not in str(moodle)
+
+
+def test_question_edit_by_non_owner_returns_404(published):
+    module_id = full_module(published)
+    detail = client.get(f"/modules/{module_id}", headers=published.headers).json()
+    question = next(c for c in detail["components"] if c["type"] == "quiz")["questions"][0]
+    other = Published()
+    try:
+        response = client.patch(f'/modules/{module_id}/questions/{question["id"]}', headers=other.headers,
+                                json={"stem": "x", "choices": ["A", "B"], "answer_key": 0, "explanation": "e"})
+        assert response.status_code == 404
+    finally:
+        other.cleanup()

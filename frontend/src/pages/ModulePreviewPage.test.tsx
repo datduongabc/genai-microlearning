@@ -353,3 +353,43 @@ describe('ModulePreviewPage - reading the module', () => {
     expect(screen.getByText('MỤC-TIÊU-CON-B')).toBeInTheDocument()
   })
 })
+
+it.each(['quiz', 'practice'] as const)('edits and saves a %s question', async (type) => {
+  const question = { id: 'q1', position: 0, stem: 'Original stem', choices: { options: ['A', 'B'] }, answer_key: '0', explanation: 'Original explanation' }
+  const module = { ...baseModule, components: [{ id: 'quiz-1', type, content: {}, questions: [question] }] }
+  vi.mocked(api.getModule).mockResolvedValue(module)
+  const user = userEvent.setup()
+  renderPage()
+  await user.click(await screen.findByRole('button', { name: 'Sửa' }))
+  const stem = screen.getByRole('textbox', { name: 'Câu hỏi' })
+  await user.clear(stem)
+  await user.type(stem, 'Edited stem')
+  const choice = screen.getByRole('textbox', { name: 'Phương án B' })
+  await user.clear(choice)
+  await user.type(choice, 'Edited B')
+  await user.click(screen.getByRole('radio', { name: 'Đáp án B' }))
+  const explanation = screen.getByRole('textbox', { name: 'Giải thích' })
+  await user.clear(explanation)
+  await user.type(explanation, 'Edited explanation')
+  vi.mocked(api.getModule).mockResolvedValue({ ...module, components: [{ ...module.components[0], questions: [{ ...question, stem: 'Edited stem', choices: { options: ['A', 'Edited B'] }, answer_key: '1', explanation: 'Edited explanation' }] }] })
+  await user.click(screen.getByRole('button', { name: 'Lưu' }))
+  await waitFor(() => expect(api.updateQuestion).toHaveBeenCalledWith('module-1', 'q1', { stem: 'Edited stem', choices: ['A', 'Edited B'], answer_key: 1, explanation: 'Edited explanation' }))
+  expect(await screen.findByText('Edited stem')).toBeInTheDocument()
+})
+
+it('falls back to the question explanation when its Explanation item is empty', async () => {
+  const question = { id: 'q1', position: 0, stem: 'Original stem', choices: { options: ['A', 'B'] }, answer_key: '0', explanation: 'Question explanation' }
+  vi.mocked(api.getModule).mockResolvedValue({ ...baseModule, components: [
+    { id: 'quiz-1', type: 'quiz', content: {}, questions: [question] },
+    { id: 'exp-1', type: 'explanation', content: { items: [{ component: 'quiz', position: 0, reasoning: 'r', explanation_text: '' }] }, questions: [] },
+  ] })
+  const user = userEvent.setup()
+  renderPage()
+  expect(await screen.findByText('Question explanation')).toBeInTheDocument()
+  await user.click(screen.getAllByRole('button', { name: 'Sửa' })[0])
+  const stem = screen.getByRole('textbox', { name: 'Câu hỏi' })
+  await user.clear(stem)
+  await user.type(stem, 'Edited stem')
+  await user.click(screen.getByRole('button', { name: 'Lưu' }))
+  await waitFor(() => expect(api.updateQuestion).toHaveBeenCalledWith('module-1', 'q1', { stem: 'Edited stem', choices: ['A', 'B'], answer_key: 0, explanation: 'Question explanation' }))
+})
