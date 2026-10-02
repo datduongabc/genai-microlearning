@@ -140,22 +140,22 @@ def run(document, monkeypatch):
         answers = iter(questions)
         lo = types.SimpleNamespace(objective_text="o", bloom_level="understand", sub_objectives=sub_objectives)
         monkeypatch.setattr(pipeline, "run_planner",
-                            lambda text, output_language="vi": PlannerOutput(concepts=[Concept(name="C", priority=1, summary="s")]))
+                            lambda text, output_language="vi", custom_instructions="": PlannerOutput(concepts=[Concept(name="C", priority=1, summary="s")]))
         monkeypatch.setattr(pipeline, "retrieve", lambda db, course_id, query, **kw: db.query(Chunk).filter(
             Chunk.course_id == course_id).order_by(Chunk.chunk_index).limit(2).all())
         monkeypatch.setattr(pipeline, "corrective_retrieve",
                             lambda objective, chunks, re_retrieve: CorrectiveResult(chunks, "high", 0))
         monkeypatch.setattr(pipeline, "expand_with_parent_context", lambda db, chunks, **kw: chunks)
         monkeypatch.setattr(pipeline, "generate_learning_objective",
-                            lambda concept, chunks, output_language="vi": lo)
-        monkeypatch.setattr(pipeline, "generate_content", lambda lo, chunks, self_check=True, output_language="vi": (
+                            lambda concept, chunks, output_language="vi", custom_instructions="": lo)
+        monkeypatch.setattr(pipeline, "generate_content", lambda lo, chunks, self_check=True, output_language="vi", custom_instructions="": (
             types.SimpleNamespace(content="content", source_locators=[], claim_citations=[]),
             types.SimpleNamespace(groundedness_pass=True)))
-        monkeypatch.setattr(pipeline, "generate_slides", lambda lo, content, output_language="vi": types.SimpleNamespace(slides=[]))
-        monkeypatch.setattr(pipeline, "generate_example", lambda lo, content, chunks, output_language="vi": ExampleOutput(
+        monkeypatch.setattr(pipeline, "generate_slides", lambda lo, content, output_language="vi", custom_instructions="": types.SimpleNamespace(slides=[]))
+        monkeypatch.setattr(pipeline, "generate_example", lambda lo, content, chunks, output_language="vi", custom_instructions="": ExampleOutput(
             examples=[Example(context="c1", analysis="a1"), Example(context="c2", analysis="a2")]))
 
-        def fake_quiz(db, course_id, query, lo, mode="quiz", scope=None, feedback=None, self_check=True, lesson=None, output_language="vi"):
+        def fake_quiz(db, course_id, query, lo, mode="quiz", scope=None, feedback=None, self_check=True, lesson=None, output_language="vi", custom_instructions=""):
             question = next(answers)
             calls["quiz"].append({"query": query, "mode": mode, "feedback": feedback})
             passages = [_chunk(f"PASSAGE-OF-{query}")]

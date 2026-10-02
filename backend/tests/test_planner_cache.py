@@ -66,7 +66,7 @@ def test_language_change_refreshes_planner_once(monkeypatch):
     from app.generation import module_generation_pipeline as pipeline
     from app.generation.planner import Concept, PlannerOutput
     calls = []
-    def planner(text, output_language="vi"):
+    def planner(text, output_language="vi", custom_instructions=""):
         calls.append(output_language)
         return PlannerOutput(concepts=[Concept(name="Search" if output_language == "en" else "Tìm kiếm", priority=1, summary="s")])
     monkeypatch.setattr(pipeline, "run_planner", planner)

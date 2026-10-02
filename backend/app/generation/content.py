@@ -6,6 +6,7 @@ from pydantic import BaseModel, Field
 from app.generation.common import (
     OutputLanguage,
     _checked,
+    custom_instructions_instruction,
     output_language_instruction,
     source_block,
     system_instruction,
@@ -197,7 +198,7 @@ def _verify_content(
 
 def generate_content(
     lo: LearningObjective, context_chunks: list[Chunk] | None, self_check: bool = True,
-    output_language: OutputLanguage = "vi",
+    output_language: OutputLanguage = "vi", custom_instructions: str = "",
 ) -> tuple[LessonText, ContentVerification | LessonVerification | None]:
     """`context_chunks=None` is the no-RAG arm: the same prompt without the source block, written from
     the model's own knowledge, and checked for completeness and scope only (there is nothing to hold
@@ -225,11 +226,11 @@ def generate_content(
         if not sourced:
             return complete_structured(
                 prompt, LessonText, system_instruction=NO_SOURCE_CONTENT_SYSTEM_INSTRUCTION
-                + output_language_instruction(output_language), temperature=0.0,
+                + output_language_instruction(output_language) + custom_instructions_instruction(custom_instructions, sourced=False), temperature=0.0,
             )
         return complete_structured(
             prompt, ContentOutput, system_instruction=CONTENT_SYSTEM_INSTRUCTION
-            + output_language_instruction(output_language), temperature=0.0,
+            + output_language_instruction(output_language) + custom_instructions_instruction(custom_instructions), temperature=0.0,
         )
 
     criteria = [("completeness", "Completeness"), ("scope", "Scope")]

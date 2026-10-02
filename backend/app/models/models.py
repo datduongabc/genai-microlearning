@@ -134,8 +134,9 @@ class Document(Base):
     status: Mapped[DocumentStatus] = mapped_column(
         Enum(DocumentStatus), default=DocumentStatus.uploaded
     )
-    # Chosen by the teacher at upload: only a textbook gets an outline detected
-    # and offered for picking sections. Slides and short notes keep working on
+    # The upload UI no longer asks and always sends lecture; textbook-specific
+    # processing is deferred. Only a textbook gets an outline detected and
+    # offered for picking sections. Slides and short notes keep working on
     # the whole document.
     kind: Mapped[DocumentKind] = mapped_column(
         Enum(DocumentKind), default=DocumentKind.lecture, server_default=DocumentKind.lecture.value

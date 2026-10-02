@@ -2,12 +2,13 @@ import json
 import uuid
 from datetime import UTC, datetime
 from io import BytesIO
+from typing import Annotated
 from urllib.parse import quote
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import Response
 from pptx import Presentation
-from pydantic import BaseModel, Field, ValidationError
+from pydantic import BaseModel, Field, StringConstraints, ValidationError
 from sqlalchemy import select
 from sqlalchemy.orm import Session, joinedload, selectinload
 
@@ -66,6 +67,7 @@ class GenerateRequest(BaseModel):
     # Tắt vòng model tự kiểm Content và câu hỏi (thí nghiệm có/không tự kiểm cho chương đánh giá).
     self_check: bool = True
     output_language: OutputLanguage = "vi"
+    custom_instructions: Annotated[str, StringConstraints(strip_whitespace=True, max_length=1000)] = ""
     # False: sinh bản đối chứng không RAG (nhóm llm_no_rag) của module RAG `paired_module_id`, trên
     # đúng Learning Objective và mục của nó. Model và cờ tự kiểm bỏ trống thì theo module RAG đó.
     use_retrieval: bool = True
@@ -131,7 +133,7 @@ def _owned_module(db: Session, module_id: uuid.UUID, current_user: User) -> Modu
 def _generate_for_sections(
     db: Session, doc: Document, section_ids: list[uuid.UUID] | None, model_alias: str | None = None,
     self_check: bool = True,
-    output_language: OutputLanguage = "vi",
+    output_language: OutputLanguage = "vi", custom_instructions: str = "",
 ):
     if not section_ids:
         raise HTTPException(status_code=422, detail="Chọn ít nhất 1 mục để sinh mô-đun.")
@@ -171,7 +173,7 @@ def _generate_for_sections(
     jobs = [
         enqueue_job(
             db, job_type=JobType.module_generation, step="generate", document_id=doc.id,
-            section_id=section_id, payload=generation_payload(model_alias, self_check, output_language),
+            section_id=section_id, payload=generation_payload(model_alias, self_check, output_language, custom_instructions),
         )
         for section_id in unique_ids
     ]
@@ -223,7 +225,8 @@ def _generate_without_retrieval(db: Session, doc: Document, body: GenerateReques
 
     job = enqueue_job(
         db, job_type=JobType.module_generation, step="generate", document_id=doc.id, section_id=paired.section_id,
-        payload=control_payload(paired.id, alias, self_check, paired_payload.get("output_language", "vi")),
+        payload=control_payload(paired.id, alias, self_check, paired_payload.get("output_language", "vi"),
+                                paired_payload.get("custom_instructions", "")),
     )
     db.commit()
     return {"job_id": job.id, "status": job.status}
@@ -249,10 +252,11 @@ def generate_module(
     self_check = body.self_check if body is not None else True
 
     output_language = body.output_language if body is not None else "vi"
+    custom_instructions = body.custom_instructions if body is not None else ""
     section_ids = body.section_ids if body is not None else None
     has_outline = db.query(DocumentSection.id).filter(DocumentSection.document_id == doc.id).first() is not None
     if has_outline:
-        return _generate_for_sections(db, doc, section_ids, alias, self_check, output_language)
+        return _generate_for_sections(db, doc, section_ids, alias, self_check, output_language, custom_instructions)
     if section_ids:
         raise HTTPException(status_code=422, detail="Tài liệu này không có mục lục để chọn mục.")
 
@@ -283,7 +287,7 @@ def generate_module(
     # app/services/module_generation_pipeline.py + job_queue.py.
     job = enqueue_job(
         db, job_type=JobType.module_generation, step="generate", document_id=document_id,
-        payload=generation_payload(alias, self_check, output_language),
+        payload=generation_payload(alias, self_check, output_language, custom_instructions),
     )
     db.commit()
     return {"job_id": job.id, "status": job.status}

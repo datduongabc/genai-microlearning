@@ -13,3 +13,11 @@ it('sends the selected output language for whole documents and sections', async 
   await generateModule('doc')
   expect(post).toHaveBeenLastCalledWith('/modules/generate', { output_language: 'vi' }, { params: { document_id: 'doc' } })
 })
+
+it('sends trimmed guidance with the selected language for documents and sections', async () => {
+  const post = vi.spyOn(api, 'post').mockResolvedValue({ data: {} })
+  await generateModule('doc', null, 'en', '  Explain IDS  ')
+  expect(post).toHaveBeenLastCalledWith('/modules/generate', { output_language: 'en', custom_instructions: 'Explain IDS' }, { params: { document_id: 'doc' } })
+  await generateModulesFromSections('doc', ['section'], null, 'vi', 'Explain DLDFS')
+  expect(post).toHaveBeenLastCalledWith('/modules/generate', { section_ids: ['section'], output_language: 'vi', custom_instructions: 'Explain DLDFS' }, { params: { document_id: 'doc' } })
+})

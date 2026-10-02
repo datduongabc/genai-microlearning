@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { GenerateDialog } from "./GenerateDialog";
 import { Link } from "react-router-dom";
 import {
   apiErrorMessage,
@@ -23,7 +24,6 @@ interface SectionTreeProps {
   onGenerated: () => void;
   // Model giảng viên chọn ở đầu trang; chuỗi rỗng nghĩa là chưa chọn gì.
   modelAlias?: string;
-  outputLanguage?: "vi" | "en";
 }
 
 // A picked section already contains its sub-sections and sits inside its
@@ -66,8 +66,8 @@ export function SectionTree({
   modules,
   onGenerated,
   modelAlias = "",
-  outputLanguage = "vi",
 }: SectionTreeProps) {
+  const generateDialog = useRef<HTMLDialogElement>(null);
   const [sections, setSections] = useState<SectionInfo[] | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [busy, setBusy] = useState(false);
@@ -114,13 +114,13 @@ export function SectionTree({
     });
   }
 
-  async function handleGenerate() {
+  async function handleGenerate(language: "vi" | "en", instructions: string) {
     // Document order, not click order, so the jobs run top to bottom.
     const ids = (sections ?? []).filter((s) => selected.has(s.id)).map((s) => s.id);
     setBusy(true);
     setError(null);
     try {
-      await generateModulesFromSections(documentId, ids, modelAlias, outputLanguage);
+      await generateModulesFromSections(documentId, ids, modelAlias, language, instructions);
       setSelected(new Set());
       onGenerated();
       setSections(await listSections(documentId));
@@ -140,6 +140,7 @@ export function SectionTree({
 
   return (
     <div className="mt-3 rounded-[3px] border border-gray-200 p-4">
+      <GenerateDialog dialogRef={generateDialog} onGenerate={handleGenerate} />
       <p className="mb-3 text-xs text-gray-500">
         Mỗi mục được chọn sinh một mô-đun riêng, chỉ từ nội dung của mục đó.
       </p>
@@ -184,7 +185,7 @@ export function SectionTree({
       </ul>
       <div className="mt-4 flex items-center gap-3">
         <button
-          onClick={handleGenerate}
+          onClick={() => generateDialog.current?.showModal()}
           disabled={busy || selected.size === 0 || tooMany}
           className="rounded-[3px] bg-terracotta px-4 py-2 text-sm font-semibold text-white hover:bg-terracotta-dark disabled:opacity-60"
         >

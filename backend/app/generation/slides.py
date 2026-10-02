@@ -5,6 +5,7 @@ from pydantic import BaseModel, Field
 from app.generation.common import (
     IGNORE_EMBEDDED_INSTRUCTIONS,
     OutputLanguage,
+    custom_instructions_instruction,
     output_language_instruction,
 )
 from app.generation.objective import LearningObjective
@@ -43,7 +44,7 @@ class SlidesOutput(BaseModel):
 
 
 def generate_slides(
-    lo: LearningObjective, content: str, output_language: OutputLanguage = "vi",
+    lo: LearningObjective, content: str, output_language: OutputLanguage = "vi", custom_instructions: str = "",
 ) -> SlidesOutput:
     """One call, no self-check round: the schema caps the deck (2-8 slides, 1-3 bullets each), and the
     only source is the Content, which has already been checked."""
@@ -56,6 +57,6 @@ def generate_slides(
     # san (khong duoc them khai niem moi), nhat quan voi Planner/LO/Content.
     return complete_structured(
         prompt, SlidesOutput,
-        system_instruction=SLIDES_SYSTEM_INSTRUCTION + output_language_instruction(output_language),
+        system_instruction=SLIDES_SYSTEM_INSTRUCTION + output_language_instruction(output_language) + custom_instructions_instruction(custom_instructions, sourced=False),
         temperature=0.0,
     )

@@ -17,12 +17,12 @@ import {
   uploadDocument,
   type Course,
   type DocumentInfo,
-  type DocumentKind,
   type ModuleSummary,
   type MoodleCourseSearchResult,
 } from "../api";
 import { AppShell } from "../components/AppShell";
 import { ModelPicker } from "../components/ModelPicker";
+import { GenerateDialog } from "../components/GenerateDialog";
 import { SectionTree } from "../components/SectionTree";
 
 const STATUS_LABEL: Record<string, string> = {
@@ -75,7 +75,8 @@ export function CourseDetailPage() {
   // Model cho các lượt sinh bấm từ trang này, dùng chung cho cả tài liệu lẫn từng mục;
   // chuỗi rỗng nghĩa là chưa chọn gì. ModelPicker điền sẵn mặc định đã lưu của giảng viên.
   const [modelAlias, setModelAlias] = useState("");
-  const [outputLanguage, setOutputLanguage] = useState<"vi" | "en">("vi");
+  const generateDialog = useRef<HTMLDialogElement>(null);
+  const generateDocument = useRef<DocumentInfo | null>(null);
   const [modulesByDoc, setModulesByDoc] = useState<
     Record<string, ModuleSummary[]>
   >({});
@@ -87,8 +88,6 @@ export function CourseDetailPage() {
   // job (so a double-click cannot send two requests); after that, and after
   // a refresh or navigation, `doc.generating` from the server is the truth.
   const [startingIds, setStartingIds] = useState<Set<string>>(new Set());
-  // Chosen per upload: only a textbook gets an outline detected on the server.
-  const [kind, setKind] = useState<DocumentKind>("lecture");
   const [openOutlines, setOpenOutlines] = useState<Set<string>>(new Set());
 
   function toggleOutline(documentId: string) {
@@ -175,7 +174,7 @@ export function CourseDetailPage() {
       // (extract/chunk/embed, và với audio/video là phiên âm qua Gemini) chạy
       // nền qua job queue. Refresh 1 lần để thấy tài liệu mới ở trạng thái
       // uploaded; từ đó effect poll ở trên theo dõi tới khi xong.
-      await uploadDocument(courseId, file, kind);
+      await uploadDocument(courseId, file);
       await refresh();
     } catch (err) {
       setError(apiErrorMessage(err, "Tải tài liệu thất bại"));
@@ -185,13 +184,13 @@ export function CourseDetailPage() {
     }
   }
 
-  async function handleGenerate(doc: DocumentInfo) {
+  async function handleGenerate(doc: DocumentInfo, outputLanguage: "vi" | "en", customInstructions: string) {
     if (isGenerating(doc)) return;
     const documentId = doc.id;
     setStartingIds((ids) => new Set(ids).add(documentId));
     setError(null);
     try {
-      const { job_id } = await generateModule(documentId, modelAlias, outputLanguage);
+      const { job_id } = await generateModule(documentId, modelAlias, outputLanguage, customInstructions);
       const finalStatus = await pollJobStatus(() => getModuleJobStatus(job_id));
       if (finalStatus.status === "failed") {
         setError(finalStatus.last_error ?? "Sinh mô-đun thất bại");
@@ -229,20 +228,11 @@ export function CourseDetailPage() {
 
   return (
     <AppShell title="Tài liệu môn học">
+      <GenerateDialog dialogRef={generateDialog} onGenerate={(language, instructions) => {
+        if (generateDocument.current) void handleGenerate(generateDocument.current, language, instructions);
+      }} />
       {course && <MoodleLinkSection course={course} onLinked={refresh} />}
       <div className="flex flex-wrap items-center gap-4">
-        <label className="inline-flex items-center gap-2 text-sm text-gray-600">
-          Loại tài liệu
-          <select
-            value={kind}
-            onChange={(e) => setKind(e.target.value as DocumentKind)}
-            disabled={loading || uploadBusy}
-            className="h-10 rounded-[3px] border border-gray-300 bg-white px-2 text-sm disabled:opacity-60"
-          >
-            <option value="lecture">Bài giảng / slide</option>
-            <option value="textbook">Giáo trình</option>
-          </select>
-        </label>
         <label
           className={`inline-flex items-center gap-2 rounded-[3px] bg-terracotta px-5 py-2.5 text-sm font-semibold text-white ${
             loading || uploadBusy
@@ -265,17 +255,7 @@ export function CourseDetailPage() {
           dòng ghi chú dưới ô chọn còn đẩy ô chọn lệch lên so với các nút bên cạnh. */}
       <div className="mt-4">
         <ModelPicker value={modelAlias} onChange={setModelAlias} />
-        <label className="mt-3 flex items-center gap-3 text-sm">
-          Ngôn ngữ đầu ra
-          <select
-            value={outputLanguage}
-            onChange={(e) => setOutputLanguage(e.target.value as "vi" | "en")}
-            className="rounded-[3px] border border-gray-300 px-3 py-2"
-          >
-            <option value="vi">Tiếng Việt</option>
-            <option value="en">English</option>
-          </select>
-        </label>
+
       </div>
       {uploadBusy && (
         <p className="mt-2 text-xs text-gray-500">
@@ -312,7 +292,7 @@ export function CourseDetailPage() {
                   )}
                   {d.status === "embedded" && !hasOutline(d) && (
                     <button
-                      onClick={() => handleGenerate(d)}
+                      onClick={() => { generateDocument.current = d; generateDialog.current?.showModal(); }}
                       disabled={isGenerating(d)}
                       className="text-sm font-semibold text-terracotta hover:underline disabled:opacity-60"
                     >
@@ -342,7 +322,6 @@ export function CourseDetailPage() {
                   modules={modulesByDoc[d.id] ?? []}
                   onGenerated={refresh}
                   modelAlias={modelAlias}
-                  outputLanguage={outputLanguage}
                 />
               )}
               {listedModules(d).length > 0 && (

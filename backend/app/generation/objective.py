@@ -8,6 +8,7 @@ from app.generation.common import (
     IGNORE_EMBEDDED_INSTRUCTIONS,
     BloomLevel,
     OutputLanguage,
+    custom_instructions_instruction,
     format_source_chunks,
     output_language_instruction,
 )
@@ -123,7 +124,7 @@ class LearningObjective(BaseModel):
 
 
 def generate_learning_objective(
-    concept: Concept, context_chunks: list[Chunk], output_language: OutputLanguage = "vi",
+    concept: Concept, context_chunks: list[Chunk], output_language: OutputLanguage = "vi", custom_instructions: str = "",
 ) -> LearningObjective:
     """One call, no self-check round: the schema holds the shape (2-4 sub-objectives, a Bloom level
     from the table) and the Content and quiz checks downstream read the objective against the source."""
@@ -138,6 +139,6 @@ def generate_learning_objective(
     # cung 1 concept+context luon ra cung 1 ket luan.
     return complete_structured(
         prompt, LearningObjective,
-        system_instruction=LO_SYSTEM_INSTRUCTION + output_language_instruction(output_language),
+        system_instruction=LO_SYSTEM_INSTRUCTION + output_language_instruction(output_language) + custom_instructions_instruction(custom_instructions),
         temperature=0.0,
     )
