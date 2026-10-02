@@ -5,6 +5,7 @@ from types import SimpleNamespace
 from unittest.mock import patch
 
 import httpx
+import openai
 import pytest
 from litellm.exceptions import RateLimitError
 
@@ -69,6 +70,18 @@ def test_rate_limit_wait_stays_under_stuck_job_threshold(tmp_path, retry_after, 
     ) as sleep, pytest.raises(ValueError, match="han muc audio Groq"):
         readers.read_audio_video(str(path))
     assert [c.args[0] for c in sleep.call_args_list] == sleeps
+
+
+def test_openai_sdk_rate_limit_error_is_handled(tmp_path):
+    # litellm.transcription raises openai.RateLimitError, not litellm's class.
+    path = tmp_path / "lecture.mp3"
+    path.write_bytes(b"audio")
+    error = openai.RateLimitError("quota", response=httpx.Response(429, headers={"retry-after": "900"}, request=httpx.Request("POST", "http://x")), body=None)
+    with patch.object(readers, "transcribe_audio", side_effect=error), patch.object(
+        readers.time, "sleep"
+    ) as sleep, pytest.raises(ValueError, match="han muc audio Groq"):
+        readers.read_audio_video(str(path))
+    sleep.assert_not_called()
 
 
 @pytest.mark.parametrize("extension", ["wav", "mp4"])

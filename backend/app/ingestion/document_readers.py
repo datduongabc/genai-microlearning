@@ -14,6 +14,7 @@ import pytesseract
 from bs4 import BeautifulSoup
 from docx import Document as DocxDocument
 from litellm.exceptions import RateLimitError
+from openai import RateLimitError as OpenAIRateLimitError
 from PIL import Image
 from pptx import Presentation
 from pptx.enum.shapes import MSO_SHAPE_TYPE
@@ -405,7 +406,8 @@ def read_audio_video(path: str) -> list[DocumentUnit]:
                 try:
                     segments = transcribe_audio(piece)
                     break
-                except RateLimitError as exc:
+                # litellm.transcription raises the OpenAI SDK's class, not litellm's.
+                except (RateLimitError, OpenAIRateLimitError) as exc:
                     try:
                         wait = max(float(exc.response.headers.get("retry-after", 60)), 1)
                     except ValueError:
