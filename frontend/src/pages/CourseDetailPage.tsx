@@ -260,7 +260,7 @@ export function CourseDetailPage() {
       {uploadBusy && (
         <p className="mt-2 text-xs text-gray-500">
           Xử lý chạy nền (đọc tài liệu → chia đoạn → embedding; audio/video
-          phiên âm qua Gemini trước) — có thể mất một lúc, đặc biệt với
+          phiên âm qua Whisper trước) — có thể mất một lúc, đặc biệt với
           audio/video dài.
         </p>
       )}

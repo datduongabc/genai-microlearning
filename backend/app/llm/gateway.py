@@ -61,22 +61,18 @@ def complete(prompt: str, system_instruction: str | None = None, **kwargs) -> st
     return response.choices[0].message.content
 
 
-def transcribe_audio(audio_base64: str, audio_format: str, prompt: str) -> str:
-    """Phiên âm audio/video qua Gemini multimodal (litellm content type
-    `input_audio`, map sang Part.from_bytes của Gemini -- xem
-    litellm/llms/vertex_ai/gemini/transformation.py). Không dùng dịch vụ ASR
-    riêng (vd Speechmatics) -- giữ đúng triết lý "mọi lệnh gọi LLM qua
-    litellm, free-tier" đã áp dụng cho toàn bộ pipeline sinh nội dung, đổi
-    lại không có speaker diarization/confidence score chi tiết."""
-    messages = [{
-        "role": "user",
-        "content": [
-            {"type": "text", "text": prompt},
-            {"type": "input_audio", "input_audio": {"data": audio_base64, "format": audio_format}},
-        ],
-    }]
-    response = _completion(messages=messages)
-    return response.choices[0].message.content
+def transcribe_audio(path: str) -> list[dict]:
+    """Whisper segments through the gateway, independent of the chosen chat model."""
+    with open(path, "rb") as audio:
+        response = litellm.transcription(
+            model="openai/transcribe",
+            file=audio,
+            api_base=settings.llm_gateway_url,
+            api_key=settings.llm_gateway_key,
+            response_format="verbose_json",
+            max_retries=0,
+        )
+    return response.segments or []
 
 
 def complete_structured[T: BaseModel](

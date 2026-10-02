@@ -1,6 +1,6 @@
 """Xử lý tài liệu như 3 job step tuần tự (extract -> chunk -> embed) thay vì
 1 HTTP request đồng bộ (upload_document() cũ, documents.py) -- cần thiết để
-audio/video (transcribe qua Gemini, có thể mất vài phút) không giữ request
+audio/video (transcribe qua Whisper) không giữ request
 HTTP treo cả phiên, và để retry tự động khi gặp lỗi tạm thời (RateLimitError)
 thay vì người dùng phải tải lại file."""
 
