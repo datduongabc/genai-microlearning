@@ -1,9 +1,13 @@
 """Module editing uses one mocked model call and the real HTTP/database paths."""
 import copy
+import json
 import uuid
+from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 from fastapi.testclient import TestClient
+from pydantic import ValidationError
 
 from app.api import modules as modules_api
 from app.chat import service
@@ -257,3 +261,27 @@ def test_large_scope_content_edit_keeps_citations_outside_retrieved_chunks(lesso
     with SessionLocal() as db:
         stored = db.get(ModuleComponent, content_id).content
         assert stored["markdown"] == "Filler 42." and stored["source_locators"] == ["lesson.txt#42"]
+
+
+def test_recorded_quiz_reply_cannot_select_a_nonexistent_question(lesson, monkeypatch):
+    # Real gemini-fast output after content/example turns selected position 1 for quiz 1.
+    recorded = json.loads((Path(__file__).parent / "fixtures/quiz_chat_wrong_position.json").read_text())
+    ids, _ = lesson
+    with SessionLocal() as db:
+        slides_before = copy.deepcopy(db.get(ModuleComponent, ids["slides"]).content)
+    def completion(**kwargs):
+        response_model = kwargs["response_format"]
+        with pytest.raises(ValidationError):
+            response_model.model_validate(recorded)
+        corrected = {**recorded, "question_position": 0, "revised": {
+            key: recorded["revised"][key] for key in ("stem", "choices", "correct_index", "explanation")
+        }}
+        return SimpleNamespace(choices=[SimpleNamespace(message=SimpleNamespace(content=json.dumps(corrected)))])
+    monkeypatch.setattr("app.llm.gateway._completion", completion)
+    response = send(lesson, "Làm câu quiz 1 khó hơn")
+    assert response.status_code == 200, response.text
+    assert response.json()["edit_count"] == 1
+    with SessionLocal() as db:
+        assert db.get(Question, ids["question"]).stem == recorded["revised"]["stem"]
+        assert db.get(ModuleComponent, ids["quiz"]).content["ai_original"]["questions"][0]["stem"] == "Original question"
+        assert db.get(ModuleComponent, ids["slides"]).content == slides_before

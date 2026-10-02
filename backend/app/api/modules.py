@@ -14,7 +14,7 @@ from sqlalchemy.orm import Session, joinedload, selectinload
 from app.api.chat import ChatRequest, _get_or_create_session
 from app.api.deps import get_current_user
 from app.auth.rate_limit import limiter, user_or_address
-from app.chat.service import HISTORY_TURNS, module_edit_count, propose_module_edit
+from app.chat.service import HISTORY_TURNS, QuizQuestionEdit, module_edit_count, propose_module_edit
 from app.db import get_db
 from app.generation.common import OutputLanguage
 from app.generation.content import ContentOutput
@@ -27,7 +27,6 @@ from app.generation.module_generation_pipeline import (
     is_control,
     learning_objective_of,
 )
-from app.generation.quiz_graph import QuizQuestion
 from app.generation.slides import SlidesOutput
 from app.generation.study_packets import reference_scope_chunks, resolved_citations, small_reference
 from app.jobs.queue import enqueue_job
@@ -592,7 +591,7 @@ def chat_edit_module(
             # Use the same lock and original-preserving mutations as the manual editors.
             component = db.get(ModuleComponent, component.id, with_for_update=True)
             schemas = {"content": ContentOutput, "slides": SlidesOutput, "example": ExampleOutput,
-                       "quiz": QuizQuestion, "practice": QuizQuestion}
+                       "quiz": QuizQuestionEdit, "practice": QuizQuestionEdit}
             revised = schemas[edit.target].model_validate(edit.revised.model_dump())
             if edit.target in ("quiz", "practice"):
                 question = next((q for q in component.questions if q.position == edit.question_position), None)
