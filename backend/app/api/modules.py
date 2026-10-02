@@ -616,10 +616,11 @@ def chat_edit_module(
                 content = revised.model_dump()
                 if edit.target == "content":
                     sourced = resolve_citations(revised, chunks)
+                    shown = {str(c.id) for c in chunks}
                     if any(resolve_source_id(chunks, i) is None for i in revised.source_ids) or any(
                         c.chunk_id is None for c in sourced.claim_citations
-                    ) or any(component.content.get(k) and not getattr(sourced, k)
-                             for k in ("source_locators", "claim_citations")):
+                    ) or (any(c.chunk_id in shown for c in citations)
+                          and not (sourced.source_locators and sourced.claim_citations)):
                         raise ValueError("Citation outside source chunks")
                     content = sourced.model_dump()
                     content["markdown"] = content.pop("content")

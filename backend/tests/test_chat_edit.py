@@ -307,6 +307,34 @@ def test_content_edit_cannot_drop_existing_citations(lesson, monkeypatch):
         assert db.get(ModuleComponent, content_id).content == before
 
 
+def test_content_edit_of_legacy_ambiguous_citations_can_leave_them_uncited(lesson, monkeypatch):
+    ids, _ = lesson
+    with SessionLocal() as db:
+        document_id = db.get(Module, ids["module"]).document_id
+        db.add_all([Chunk(document_id=document_id, course_id=ids["course"], chunk_index=i,
+            content=f"Heading part {i}.", source_ref="lesson.html#Stack") for i in (1, 2)])
+        # Every chunk under one heading shares the locator, so the saved citation resolves to none.
+        content = ModuleComponent(module_id=ids["module"], type=ComponentType.content, content={
+            "markdown": "A stack is LIFO.", "source_locators": ["lesson.html#Stack"],
+            "claim_citations": [{"claim": "A stack is LIFO.", "locator": "lesson.html#Stack"}]})
+        db.add(content)
+        db.commit()
+        content_id = content.id
+    prompts = []
+
+    def fake(prompt, response_model, **kw):
+        prompts.append(prompt)
+        return response_model(target="content", question_number=None, revised={
+            "content": "Stack.", "source_ids": [], "claim_citations": []}, reply="Đã rút gọn nội dung.")
+
+    monkeypatch.setattr(service, "complete_structured", fake)
+    response = send(lesson, "Rút gọn nội dung")
+    assert response.status_code == 200, response.text
+    assert '"source_ids": [], "claim_citations": []' in prompts[0]
+    with SessionLocal() as db:
+        assert db.get(ModuleComponent, content_id).content["markdown"] == "Stack."
+
+
 def test_recorded_quiz_one_reply_edits_the_first_question(lesson, monkeypatch):
     # Adapted from a real gemini-fast output for "câu quiz 1" (key renamed to question_number, reply aligned).
     recorded = json.loads((Path(__file__).parent / "fixtures/quiz_chat_wrong_position.json").read_text())
