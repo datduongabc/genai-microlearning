@@ -1,5 +1,6 @@
 """FAQ / hỏi-đáp tương tác — chatbot RAG theo course, grounded qua retrieve()
-(pipeline duy nhất, dùng chung với Content/Slides/Quiz)."""
+(pipeline duy nhất, dùng chung với Content/Slides/Quiz); kèm chỉnh sửa
+mô-đun bằng chat (propose_module_edit), bám đoạn nguồn của mô-đun."""
 
 import json
 import uuid
