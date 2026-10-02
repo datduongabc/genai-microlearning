@@ -609,7 +609,8 @@ def chat_edit_module(
                     locators = {c.source_ref for c in scope_chunks}
                     if not set(revised.source_locators).issubset(locators) or any(
                         c.locator not in locators for c in revised.claim_citations
-                    ):
+                    ) or any(component.content.get(k) and not getattr(revised, k)
+                             for k in ("source_locators", "claim_citations")):
                         raise ValueError("Citation outside source chunks")
                     content["markdown"] = content.pop("content")
                 component.content = {**component.content, **content,

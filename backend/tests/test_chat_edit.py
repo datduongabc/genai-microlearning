@@ -262,8 +262,26 @@ def test_large_scope_content_edit_keeps_citations_outside_retrieved_chunks(lesso
         assert stored["markdown"] == "Filler 42." and stored["source_locators"] == ["lesson.txt#42"]
 
 
+def test_content_edit_cannot_drop_existing_citations(lesson, monkeypatch):
+    ids, _ = lesson
+    with SessionLocal() as db:
+        content = ModuleComponent(module_id=ids["module"], type=ComponentType.content, content={
+            "markdown": "A stack is LIFO.", "source_locators": ["lesson.txt"],
+            "claim_citations": [{"claim": "A stack is LIFO.", "locator": "lesson.txt"}]})
+        db.add(content)
+        db.commit()
+        content_id, before = content.id, copy.deepcopy(content.content)
+    monkeypatch.setattr(service, "complete_structured", lambda prompt, response_model, **kw: response_model(
+        target="content", question_number=None, revised={"content": "Stack.", "source_locators": [], "claim_citations": []},
+        reply="Đã rút gọn nội dung."))
+    response = send(lesson, "Rút gọn nội dung")
+    assert response.status_code == 422
+    with SessionLocal() as db:
+        assert db.get(ModuleComponent, content_id).content == before
+
+
 def test_recorded_quiz_one_reply_edits_the_first_question(lesson, monkeypatch):
-    # Real gemini-fast output for "câu quiz 1" carried 1, which previously meant zero-based position 1.
+    # Adapted from a real gemini-fast output for "câu quiz 1" (key renamed to question_number, reply aligned).
     recorded = json.loads((Path(__file__).parent / "fixtures/quiz_chat_wrong_position.json").read_text())
     ids, _ = lesson
     with SessionLocal() as db:

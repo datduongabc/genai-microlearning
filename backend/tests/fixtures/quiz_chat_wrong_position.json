@@ -18,5 +18,5 @@
     "correct_index": 1,
     "explanation": "According to Stack.txt#0, a stack is LIFO. Pushing A, B, then C puts C at the top. The first pop removes C, and the second pop removes the next item at the top, which is B."
   },
-  "reply": "Tôi đã cập nhật câu hỏi quiz thứ hai khó hơn dựa trên tình huống đẩy A rồi B rồi C và lấy ra hai lần."
+  "reply": "Tôi đã cập nhật câu hỏi quiz thứ nhất khó hơn dựa trên tình huống đẩy A rồi B rồi C và lấy ra hai lần."
 }
