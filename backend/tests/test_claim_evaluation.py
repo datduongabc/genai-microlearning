@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 from app.generation import claim_evaluation as ce
 from app.generation import study_packets as sp
 from app.models import Chunk, ComponentType, DocumentSection, Module, ModuleComponent
+from app.retrieval.search import ChunkScope
 from scripts import analyze_study, export_study_pair, run_claim_judge, run_judge
 from tests.test_run_judge import GATEWAY, _evaluation, _packet
 
@@ -309,8 +310,10 @@ def test_small_document_without_section_is_complete_reference(monkeypatch):
         assert evidence.chunk_ids == [str(c.id) for c in chunks]
 
         monkeypatch.setattr(sp, "REFERENCE_MAX_CHUNKS", 1)
-        monkeypatch.setattr(sp, "retrieve", lambda *a, **k: chunks[:1])
+        scopes = []
+        monkeypatch.setattr(sp, "retrieve", lambda *a, **k: scopes.append(k["scope"]) or chunks[:1])
         sources = sp.reference_chunks(db, module)
         evidence, _ = sp.study_evidence(db, module, sources)
         assert sources == ["First fact"]
+        assert scopes == [ChunkScope(document_id)]
         assert evidence.coverage == "unknown" and evidence.total_chunks is None

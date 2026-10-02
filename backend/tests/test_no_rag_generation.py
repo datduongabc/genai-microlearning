@@ -37,6 +37,7 @@ from app.models import (
     User,
     UserRole,
 )
+from app.retrieval.search import ChunkScope
 from scripts import export_study_pair
 from scripts.export_study_pair import model_that_made
 
@@ -139,7 +140,7 @@ def rag_module(monkeypatch):
         db.add(Job(job_type=JobType.module_generation, step="generate", status=JobStatus.done,
                    document_id=doc.id, module_id=module.id, payload={"model_alias": "groq-pro"}))
         db.commit()
-        ids = {"user": user.id, "course": course.id, "module": module.id}
+        ids = {"user": user.id, "course": course.id, "module": module.id, "document": doc.id}
     finally:
         db.close()
 
@@ -181,7 +182,9 @@ def test_both_packets_share_topic_objective_and_the_reference_the_judge_reads(ra
 def test_the_reference_is_an_independent_retrieval_with_the_query_the_rag_objective_was_made_from(rag_module, llm):
     _pair(rag_module)
 
-    assert rag_module.asked == [{"query": "Chủ đề X: tóm tắt của planner", "scope": None, "min_k": 8}]
+    assert rag_module.asked == [
+        {"query": "Chủ đề X: tóm tắt của planner", "scope": ChunkScope(rag_module.ids["document"]), "min_k": 8}
+    ]
 
 
 def test_the_control_is_never_checked_against_sources(rag_module, llm):

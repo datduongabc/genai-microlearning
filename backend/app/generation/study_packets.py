@@ -58,7 +58,10 @@ def reference_chunks(db: Session, module: Module) -> list[str]:
     all_chunks = reference_scope_chunks(db, module, section)
     if small_reference(all_chunks):
         return [c.content for c in all_chunks]
-    scope = ChunkScope(module.document_id, section.first_chunk_index, section.last_chunk_index) if section else None
+    scope = (
+        ChunkScope(module.document_id, section.first_chunk_index, section.last_chunk_index)
+        if section else ChunkScope(module.document_id)
+    )
     chunks = retrieve(db, module.course_id, concept_query_of(module, section), top_k=None, min_k=REFERENCE_MIN_K, scope=scope)
     return [c.content for c in chunks]
 
