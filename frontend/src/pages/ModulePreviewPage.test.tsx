@@ -446,3 +446,17 @@ it('hides the chat edit panel for research control modules', async () => {
   expect(await screen.findByText('Đối chứng (không RAG) - chỉ dùng cho nghiên cứu')).toBeInTheDocument()
   expect(screen.queryByRole('textbox', { name: 'Yêu cầu chỉnh sửa' })).not.toBeInTheDocument()
 })
+
+it('opens the editor on the chat-edited content instead of the stale draft', async () => {
+  const withContent = (markdown: string) => ({ ...baseModule, components: [
+    { id: 'content-1', type: 'content' as const, content: { markdown }, questions: [] },
+  ] })
+  vi.mocked(api.getModule).mockResolvedValueOnce(withContent('Bản gốc dài')).mockResolvedValue(withContent('Bản rút gọn'))
+  vi.mocked(api.chatEditModule).mockResolvedValue({ session_id: 'session-4', applied: true, reply: 'Đã rút gọn.', edit_count: 1 })
+  renderPage()
+  await userEvent.type(await screen.findByRole('textbox', { name: 'Yêu cầu chỉnh sửa' }), 'Rút gọn nội dung')
+  await userEvent.click(screen.getByRole('button', { name: 'Gửi yêu cầu' }))
+  expect(await screen.findByText('Bản rút gọn')).toBeInTheDocument()
+  await userEvent.click(screen.getByRole('button', { name: 'Sửa' }))
+  expect(screen.getByDisplayValue('Bản rút gọn')).toBeInTheDocument()
+})

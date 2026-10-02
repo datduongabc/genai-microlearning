@@ -573,7 +573,7 @@ def chat_edit_module(
     ).limit(HISTORY_TURNS).all()
     history = [{"role": r.role.value, "content": r.content} for r in reversed(history_rows)]
     section = db.get(DocumentSection, module.section_id) if module.section_id else None
-    chunks = reference_scope_chunks(db, module, section)
+    scope_chunks = chunks = reference_scope_chunks(db, module, section)
     if chunks and not small_reference(chunks):
         chunks = retrieve(db, module.course_id, message, top_k=8, scope=ChunkScope(
             module.document_id, chunks[0].chunk_index, chunks[-1].chunk_index))
@@ -607,7 +607,7 @@ def chat_edit_module(
                     raise ValueError("Question position only applies to quiz/practice")
                 content = revised.model_dump()
                 if edit.target == "content":
-                    locators = {c.source_ref for c in chunks}
+                    locators = {c.source_ref for c in scope_chunks}
                     if not set(revised.source_locators).issubset(locators) or any(
                         c.locator not in locators for c in revised.claim_citations
                     ):

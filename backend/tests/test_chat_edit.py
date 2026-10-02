@@ -232,3 +232,28 @@ def test_large_scope_sends_only_retrieved_document_chunks(lesson, monkeypatch):
     assert seen["course_id"] == ids["course"] and seen["query"] == "shorten slide 1"
     assert (seen["scope"].document_id, seen["scope"].first_chunk_index, seen["scope"].last_chunk_index) == (document_id, 0, 69)
     assert "A stack is LIFO." in prompts[0] and "Filler chunk" not in prompts[0]
+
+
+def test_large_scope_content_edit_keeps_citations_outside_retrieved_chunks(lesson, monkeypatch):
+    ids, _ = lesson
+    with SessionLocal() as db:
+        document_id = db.get(Module, ids["module"]).document_id
+        db.add_all([Chunk(document_id=document_id, course_id=ids["course"], chunk_index=i,
+            content=f"Filler chunk {i}.", source_ref=f"lesson.txt#{i}") for i in range(1, 70)])
+        content = ModuleComponent(module_id=ids["module"], type=ComponentType.content, content={
+            "markdown": "A stack is LIFO. Filler 42.", "source_locators": ["lesson.txt#42"],
+            "claim_citations": [{"claim": "Filler 42.", "locator": "lesson.txt#42"}]})
+        db.add(content)
+        db.commit()
+        content_id = content.id
+    monkeypatch.setattr(modules_api, "retrieve", lambda db, course_id, query, top_k, scope: db.query(Chunk).filter(
+        Chunk.document_id == document_id, Chunk.chunk_index == 0).all())
+    monkeypatch.setattr(service, "complete_structured", lambda prompt, response_model, **kw: response_model(
+        target="content", question_position=None, revised={"content": "Filler 42.",
+            "source_locators": ["lesson.txt#42"], "claim_citations": [{"claim": "Filler 42.", "locator": "lesson.txt#42"}]},
+        reply="Đã rút gọn nội dung."))
+    response = send(lesson, "shorten the content")
+    assert response.status_code == 200, response.text
+    with SessionLocal() as db:
+        stored = db.get(ModuleComponent, content_id).content
+        assert stored["markdown"] == "Filler 42." and stored["source_locators"] == ["lesson.txt#42"]

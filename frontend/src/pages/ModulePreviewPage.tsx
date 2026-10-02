@@ -516,7 +516,10 @@ function MarkdownFieldEditor({
       <SaveCancelRow
         editing={editing}
         saving={saving}
-        onEdit={() => setEditing(true)}
+        onEdit={() => {
+          setValue(original)
+          setEditing(true)
+        }}
         onSave={handleSave}
         onCancel={() => {
           setValue(original)
@@ -596,7 +599,10 @@ function SlidesEditor({
       <SaveCancelRow
         editing={editing}
         saving={saving}
-        onEdit={() => setEditing(true)}
+        onEdit={() => {
+          setSlides(originalSlides)
+          setEditing(true)
+        }}
         onSave={handleSave}
         onCancel={() => {
           setSlides(originalSlides)
@@ -664,7 +670,10 @@ function ExamplesEditor({
       <SaveCancelRow
         editing={editing}
         saving={saving}
-        onEdit={() => setEditing(true)}
+        onEdit={() => {
+          setExamples(original)
+          setEditing(true)
+        }}
         onSave={handleSave}
         onCancel={() => {
           setExamples(original)
@@ -750,7 +759,10 @@ function ExplanationEditor({
       <SaveCancelRow
         editing={editing}
         saving={saving}
-        onEdit={() => setEditing(true)}
+        onEdit={() => {
+          setItems(original)
+          setEditing(true)
+        }}
         onSave={handleSave}
         onCancel={() => {
           setItems(original)
