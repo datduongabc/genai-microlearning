@@ -1,6 +1,6 @@
 {
   "target": "quiz",
-  "question_position": 1,
+  "question_number": 1,
   "revised": {
     "common_misconceptions": [
       "Believing that the first item pushed is the first to be removed (FIFO behavior).",

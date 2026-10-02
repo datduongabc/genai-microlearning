@@ -582,7 +582,7 @@ def chat_edit_module(
             edit = propose_module_edit(message, module, chunks, history, generation.get("output_language", "vi"))
         applied = edit.target is not None
         if not applied:
-            if edit.revised is not None or edit.question_position is not None:
+            if edit.revised is not None or edit.question_number is not None:
                 raise ValueError("Clarification must not contain an edit")
         else:
             component = next((c for c in module.components if c.type.value == edit.target), None)
@@ -594,7 +594,7 @@ def chat_edit_module(
                        "quiz": QuizQuestionEdit, "practice": QuizQuestionEdit}
             revised = schemas[edit.target].model_validate(edit.revised.model_dump())
             if edit.target in ("quiz", "practice"):
-                question = next((q for q in component.questions if q.position == edit.question_position), None)
+                question = next((q for q in component.questions if q.position + 1 == edit.question_number), None)
                 if question is None:
                     raise ValueError("Question position not found")
                 _apply_question_update(module, component, question, QuestionUpdate(
@@ -602,8 +602,8 @@ def chat_edit_module(
                     explanation=revised.explanation,
                 ))
             else:
-                if edit.question_position is not None:
-                    raise ValueError("Question position only applies to quiz/practice")
+                if edit.question_number is not None:
+                    raise ValueError("Question number only applies to quiz/practice")
                 content = revised.model_dump()
                 if edit.target == "content":
                     locators = {c.source_ref for c in scope_chunks}

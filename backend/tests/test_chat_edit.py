@@ -7,7 +7,6 @@ from types import SimpleNamespace
 
 import pytest
 from fastapi.testclient import TestClient
-from pydantic import ValidationError
 
 from app.api import modules as modules_api
 from app.chat import service
@@ -81,7 +80,7 @@ def test_slide_edit_is_scoped_preserves_original_and_counts_only_applied_turns(l
     def fake(prompt, response_model, **kwargs):
         assert "A stack is LIFO." in prompt and str(ids["slides"]) in prompt
         assert "English" in kwargs["system_instruction"]
-        return response_model(target="slides", question_position=None, revised={"slides": [
+        return response_model(target="slides", question_number=None, revised={"slides": [
             {"title": "Stack", "bullets": ["LIFO"]}, original["slides"][1],
         ]}, reply="Đã rút gọn slide 1.")
     monkeypatch.setattr(service, "complete_structured", fake)
@@ -104,7 +103,7 @@ def test_slide_edit_is_scoped_preserves_original_and_counts_only_applied_turns(l
 def test_quiz_edit_snapshots_original_once(lesson, monkeypatch):
     ids, _ = lesson
     monkeypatch.setattr(service, "complete_structured", lambda prompt, response_model, **kw: response_model(
-        target="quiz", question_position=0, reply="Đã sửa câu 1.", revised={
+        target="quiz", question_number=1, reply="Đã sửa câu 1.", revised={
             "common_misconceptions": ["m1", "m2", "m3"], "stem": "Which stack item leaves first?",
             "reasoning": "LIFO", "choices": ["First", "Last", "Middle", "Random"],
             "correct_index": 1, "explanation": "A stack is LIFO.",
@@ -123,7 +122,7 @@ def test_quiz_edit_snapshots_original_once(lesson, monkeypatch):
 def test_unclear_turn_changes_nothing_but_is_persisted(lesson, monkeypatch):
     ids, _ = lesson
     monkeypatch.setattr(service, "complete_structured", lambda prompt, response_model, **kw: response_model(
-        target=None, question_position=None, revised=None, reply="Bạn muốn sửa phần nào?"))
+        target=None, question_number=None, revised=None, reply="Bạn muốn sửa phần nào?"))
     response = send(lesson, "hello")
     assert response.status_code == 200
     assert response.json()["applied"] is False and response.json()["edit_count"] == 0
@@ -141,8 +140,8 @@ def test_non_owner_gets_404(lesson):
 
 
 @pytest.mark.parametrize("result", [
-    {"target": "slides", "question_position": None, "revised": {"slides": []}},
-    {"target": "quiz", "question_position": 99, "revised": {"slides": [{"title": "a", "bullets": ["a"]}, {"title": "b", "bullets": ["b"]}]}},
+    {"target": "slides", "question_number": None, "revised": {"slides": []}},
+    {"target": "quiz", "question_number": 99, "revised": {"slides": [{"title": "a", "bullets": ["a"]}, {"title": "b", "bullets": ["b"]}]}},
 ])
 def test_invalid_model_output_is_atomic(lesson, monkeypatch, result):
     ids, _ = lesson
@@ -161,7 +160,7 @@ def test_sessions_are_module_scoped_and_follow_up_keeps_turn_order(lesson, monke
     prompts = []
     def fake(prompt, response_model, **kw):
         prompts.append(prompt)
-        return response_model(target=None, question_position=None, revised=None, reply="Bạn muốn sửa slide nào?")
+        return response_model(target=None, question_number=None, revised=None, reply="Bạn muốn sửa slide nào?")
     monkeypatch.setattr(service, "complete_structured", fake)
     first = send(lesson, "shorten it").json()
     assert send(lesson, "slide 1", session_id=first["session_id"]).status_code == 200
@@ -230,7 +229,7 @@ def test_large_scope_sends_only_retrieved_document_chunks(lesson, monkeypatch):
     prompts = []
     def fake(prompt, response_model, **kw):
         prompts.append(prompt)
-        return response_model(target=None, question_position=None, revised=None, reply="Bạn muốn sửa slide nào?")
+        return response_model(target=None, question_number=None, revised=None, reply="Bạn muốn sửa slide nào?")
     monkeypatch.setattr(service, "complete_structured", fake)
     assert send(lesson, "shorten slide 1").status_code == 200
     assert seen["course_id"] == ids["course"] and seen["query"] == "shorten slide 1"
@@ -253,7 +252,7 @@ def test_large_scope_content_edit_keeps_citations_outside_retrieved_chunks(lesso
     monkeypatch.setattr(modules_api, "retrieve", lambda db, course_id, query, top_k, scope: db.query(Chunk).filter(
         Chunk.document_id == document_id, Chunk.chunk_index == 0).all())
     monkeypatch.setattr(service, "complete_structured", lambda prompt, response_model, **kw: response_model(
-        target="content", question_position=None, revised={"content": "Filler 42.",
+        target="content", question_number=None, revised={"content": "Filler 42.",
             "source_locators": ["lesson.txt#42"], "claim_citations": [{"claim": "Filler 42.", "locator": "lesson.txt#42"}]},
         reply="Đã rút gọn nội dung."))
     response = send(lesson, "shorten the content")
@@ -263,21 +262,14 @@ def test_large_scope_content_edit_keeps_citations_outside_retrieved_chunks(lesso
         assert stored["markdown"] == "Filler 42." and stored["source_locators"] == ["lesson.txt#42"]
 
 
-def test_recorded_quiz_reply_cannot_select_a_nonexistent_question(lesson, monkeypatch):
-    # Real gemini-fast output after content/example turns selected position 1 for quiz 1.
+def test_recorded_quiz_one_reply_edits_the_first_question(lesson, monkeypatch):
+    # Real gemini-fast output for "câu quiz 1" carried 1, which previously meant zero-based position 1.
     recorded = json.loads((Path(__file__).parent / "fixtures/quiz_chat_wrong_position.json").read_text())
     ids, _ = lesson
     with SessionLocal() as db:
         slides_before = copy.deepcopy(db.get(ModuleComponent, ids["slides"]).content)
-    def completion(**kwargs):
-        response_model = kwargs["response_format"]
-        with pytest.raises(ValidationError):
-            response_model.model_validate(recorded)
-        corrected = {**recorded, "question_position": 0, "revised": {
-            key: recorded["revised"][key] for key in ("stem", "choices", "correct_index", "explanation")
-        }}
-        return SimpleNamespace(choices=[SimpleNamespace(message=SimpleNamespace(content=json.dumps(corrected)))])
-    monkeypatch.setattr("app.llm.gateway._completion", completion)
+    monkeypatch.setattr("app.llm.gateway._completion", lambda **kwargs: SimpleNamespace(
+        choices=[SimpleNamespace(message=SimpleNamespace(content=json.dumps(recorded)))]))
     response = send(lesson, "Làm câu quiz 1 khó hơn")
     assert response.status_code == 200, response.text
     assert response.json()["edit_count"] == 1
@@ -285,3 +277,20 @@ def test_recorded_quiz_reply_cannot_select_a_nonexistent_question(lesson, monkey
         assert db.get(Question, ids["question"]).stem == recorded["revised"]["stem"]
         assert db.get(ModuleComponent, ids["quiz"]).content["ai_original"]["questions"][0]["stem"] == "Original question"
         assert db.get(ModuleComponent, ids["slides"]).content == slides_before
+
+
+def test_quiz_number_two_edits_only_the_second_question(lesson, monkeypatch):
+    ids, _ = lesson
+    with SessionLocal() as db:
+        db.add(Question(component_id=ids["quiz"], position=1, stem="Second question",
+                        choices={"options": ["A", "B", "C", "D"]}, answer_key="0", explanation="Second"))
+        db.commit()
+    monkeypatch.setattr(service, "complete_structured", lambda prompt, response_model, **kw: response_model(
+        target="quiz", question_number=2, reply="Đã sửa câu 2.", revised={
+            "stem": "Harder second question", "choices": ["A", "B", "C", "D"],
+            "correct_index": 2, "explanation": "A stack is LIFO.",
+        }))
+    assert send(lesson, "Làm câu quiz 2 khó hơn").status_code == 200
+    with SessionLocal() as db:
+        stems = {q.position: q.stem for q in db.get(ModuleComponent, ids["quiz"]).questions}
+        assert stems == {0: "Original question", 1: "Harder second question"}
