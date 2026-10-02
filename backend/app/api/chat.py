@@ -41,14 +41,16 @@ class ChatResponse(BaseModel):
     message: ChatMessageResponse
 
 
-def _get_or_create_session(db: Session, course_id: uuid.UUID, session_id: uuid.UUID | None, title_seed: str) -> ChatSession:
+def _get_or_create_session(db: Session, course_id: uuid.UUID, session_id: uuid.UUID | None, title_seed: str,
+    module_id: uuid.UUID | None = None,
+) -> ChatSession:
     if session_id is not None:
         session = db.get(ChatSession, session_id)
-        if session is None or session.course_id != course_id:
+        if session is None or session.course_id != course_id or session.module_id != module_id:
             raise HTTPException(status_code=404, detail="Chat session not found")
         return session
     title = title_seed[:40] + ("..." if len(title_seed) > 40 else "")
-    session = ChatSession(course_id=course_id, title=title)
+    session = ChatSession(course_id=course_id, module_id=module_id, title=title)
     db.add(session)
     db.flush()
     return session
@@ -114,7 +116,7 @@ def get_chat_history(
     require_course_owner(db.get(Course, course_id), current_user)
 
     session = db.get(ChatSession, session_id)
-    if session is None or session.course_id != course_id:
+    if session is None or session.course_id != course_id or session.module_id is not None:
         raise HTTPException(status_code=404, detail="Chat session not found")
     return [
         ChatMessageResponse(id=m.id, role=m.role.value, content=m.content, citations=m.citations)

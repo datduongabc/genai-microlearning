@@ -10,12 +10,12 @@ import type { ModuleDetail } from '../api'
 // Keep the client and error handling real; replace the other server calls.
 vi.mock('../api', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../api')>()
-  return Object.fromEntries(
+  return { chatEditModule: vi.fn(), ...Object.fromEntries(
     Object.entries(actual).map(([name, value]) => [
       name,
       typeof value === 'function' && !['api', 'apiErrorMessage'].includes(name) ? vi.fn() : value,
     ]),
-  )
+  ) }
 })
 
 const baseModule: ModuleDetail = {
@@ -408,4 +408,55 @@ it('shows the Vietnamese deleted-course error and offers relinking immediately',
   expect(await screen.findByText(message)).toBeInTheDocument()
   expect(await screen.findByRole('link', { name: /vào trang course để liên kết trước/i })).toBeInTheDocument()
   expect(screen.queryByRole('button', { name: /push to moodle/i })).not.toBeInTheDocument()
+})
+
+it('refreshes the preview after an applied chat edit and shows the reply', async () => {
+  vi.mocked(api.getModule).mockResolvedValueOnce(baseModule).mockResolvedValue({ ...baseModule, title: 'Updated module' })
+  vi.mocked(api.chatEditModule).mockResolvedValue({ session_id: 'session-1', applied: true, reply: 'Đã sửa slide 1.', edit_count: 1 })
+  renderPage()
+  await userEvent.type(await screen.findByRole('textbox', { name: 'Yêu cầu chỉnh sửa' }), 'Rút gọn slide 1')
+  await userEvent.click(screen.getByRole('button', { name: 'Gửi yêu cầu' }))
+  expect(await screen.findByText('Đã sửa slide 1.')).toBeInTheDocument()
+  expect(await screen.findByText('Updated module')).toBeInTheDocument()
+})
+
+it('shows a clarification reply without refreshing the preview', async () => {
+  vi.mocked(api.getModule).mockResolvedValue(baseModule)
+  vi.mocked(api.chatEditModule).mockResolvedValue({ session_id: 'session-2', applied: false, reply: 'Bạn muốn sửa phần nào?', edit_count: 0 })
+  renderPage()
+  await userEvent.type(await screen.findByRole('textbox', { name: 'Yêu cầu chỉnh sửa' }), 'Sửa lại')
+  await userEvent.click(screen.getByRole('button', { name: 'Gửi yêu cầu' }))
+  expect(await screen.findByText('Bạn muốn sửa phần nào?')).toBeInTheDocument()
+  expect(api.getModule).toHaveBeenCalledTimes(1)
+})
+
+it('asks for a reload instead of a retry when the refresh after an applied chat edit fails', async () => {
+  vi.mocked(api.getModule).mockResolvedValueOnce(baseModule).mockRejectedValue(new Error('offline'))
+  vi.mocked(api.chatEditModule).mockResolvedValue({ session_id: 'session-3', applied: true, reply: 'Đã sửa slide 1.', edit_count: 1 })
+  renderPage()
+  await userEvent.type(await screen.findByRole('textbox', { name: 'Yêu cầu chỉnh sửa' }), 'Rút gọn slide 1')
+  await userEvent.click(screen.getByRole('button', { name: 'Gửi yêu cầu' }))
+  expect(await screen.findByText('Đã áp dụng chỉnh sửa nhưng không tải lại được mô-đun. Vui lòng tải lại trang.')).toBeInTheDocument()
+  expect(screen.queryByText('Chỉnh sửa thất bại. Vui lòng thử lại.')).not.toBeInTheDocument()
+})
+
+it('hides the chat edit panel for research control modules', async () => {
+  vi.mocked(api.getModule).mockResolvedValue({ ...baseModule, is_control: true })
+  renderPage()
+  expect(await screen.findByText('Đối chứng (không RAG) - chỉ dùng cho nghiên cứu')).toBeInTheDocument()
+  expect(screen.queryByRole('textbox', { name: 'Yêu cầu chỉnh sửa' })).not.toBeInTheDocument()
+})
+
+it('opens the editor on the chat-edited content instead of the stale draft', async () => {
+  const withContent = (markdown: string) => ({ ...baseModule, components: [
+    { id: 'content-1', type: 'content' as const, content: { markdown }, questions: [] },
+  ] })
+  vi.mocked(api.getModule).mockResolvedValueOnce(withContent('Bản gốc dài')).mockResolvedValue(withContent('Bản rút gọn'))
+  vi.mocked(api.chatEditModule).mockResolvedValue({ session_id: 'session-4', applied: true, reply: 'Đã rút gọn.', edit_count: 1 })
+  renderPage()
+  await userEvent.type(await screen.findByRole('textbox', { name: 'Yêu cầu chỉnh sửa' }), 'Rút gọn nội dung')
+  await userEvent.click(screen.getByRole('button', { name: 'Gửi yêu cầu' }))
+  expect(await screen.findByText('Bản rút gọn')).toBeInTheDocument()
+  await userEvent.click(screen.getByRole('button', { name: 'Sửa' }))
+  expect(screen.getByDisplayValue('Bản rút gọn')).toBeInTheDocument()
 })

@@ -1,0 +1,22 @@
+{
+  "target": "quiz",
+  "question_number": 1,
+  "revised": {
+    "common_misconceptions": [
+      "Believing that the first item pushed is the first to be removed (FIFO behavior).",
+      "Believing that popping twice after pushing A, B, and C will return the bottom items (A and B).",
+      "Believing that the middle item C or B is returned randomly."
+    ],
+    "stem": "If you push A then B then C onto a stack, and then perform two pop operations, what is returned by the second pop operation?",
+    "reasoning": "A stack operates on a LIFO (last in, first out) basis as stated in Stack.txt#0. Pushing A then B then C places C at the top, B in the middle, and A at the bottom. The first pop removes C. The second pop removes B. Therefore, the second pop operation returns B.",
+    "choices": [
+      "A",
+      "B",
+      "C",
+      "None of the above"
+    ],
+    "correct_index": 1,
+    "explanation": "According to Stack.txt#0, a stack is LIFO. Pushing A, B, then C puts C at the top. The first pop removes C, and the second pop removes the next item at the top, which is B."
+  },
+  "reply": "Tôi đã cập nhật câu hỏi quiz thứ nhất khó hơn dựa trên tình huống đẩy A rồi B rồi C và lấy ra hai lần."
+}
