@@ -1,0 +1,99 @@
+"""Source citations by ID: the model cites the short ID a chunk carries in the prompt, the server maps
+it back to the chunk, and a stored citation points at exactly one passage."""
+
+import types
+import uuid
+
+from app.generation.common import format_source_chunks, resolve_source_id
+from app.generation.content import ContentOutput, resolve_citations
+from app.generation.study_packets import resolved_citations
+from app.models import ComponentType
+
+
+def chunk(content="text", source_ref='{"heading": "Sorting"}'):
+    return types.SimpleNamespace(id=uuid.uuid4(), content=content, source_ref=source_ref)
+
+
+def test_every_chunk_carries_its_own_id_and_no_locator_in_the_prompt():
+    chunks = [chunk("one"), chunk("two")]
+
+    prompt = format_source_chunks(chunks)
+
+    assert "SOURCE CHUNK [S1]:" in prompt and "SOURCE CHUNK [S2]:" in prompt
+    assert "Sorting" not in prompt and "locator" not in prompt
+
+
+def test_an_id_maps_to_its_chunk_and_an_invented_one_to_nothing():
+    chunks = [chunk(), chunk()]
+
+    assert resolve_source_id(chunks, "S2") is chunks[1]
+    assert resolve_source_id(chunks, " [s1] ") is chunks[0]
+    for invented in ("S0", "S3", "S", "1", "", "chunk-1", '{"page": 1}', "S1 and S2"):
+        assert resolve_source_id(chunks, invented) is None
+
+
+def test_chunks_that_share_a_locator_are_still_cited_exactly():
+    """Every chunk under one heading shares its locator, which is what made them ambiguous."""
+    chunks = [chunk("a"), chunk("b")]
+    out = ContentOutput(content="x", source_ids=["S2"], claim_citations=[{"claim": "b", "source_id": "S2"}])
+
+    stored = resolve_citations(out, chunks)
+
+    assert stored.claim_citations[0].chunk_id == str(chunks[1].id)
+    assert stored.source_locators == ['{"heading": "Sorting"}']
+
+
+def test_an_id_the_model_invented_is_saved_without_a_chunk():
+    chunks = [chunk()]
+    out = ContentOutput(content="x", source_ids=["S5"], claim_citations=[{"claim": "c", "source_id": "S5"}])
+
+    stored = resolve_citations(out, chunks)
+
+    assert stored.claim_citations[0].chunk_id is None and stored.claim_citations[0].locator == "S5"
+    assert stored.source_locators == []
+
+
+class Rows:
+    """The rows a module's citations are resolved against."""
+
+    def __init__(self, chunks):
+        self.chunks = chunks
+
+    def query(self, _model):
+        return self
+
+    def filter(self, *_):
+        return self
+
+    def all(self):
+        return self.chunks
+
+
+def module_with(saved):
+    content = types.SimpleNamespace(type=ComponentType.content, content={"claim_citations": saved})
+    return types.SimpleNamespace(components=[content], document_id=1, course_id=1)
+
+
+def test_a_citation_with_a_chunk_id_resolves_even_when_chunks_share_a_locator():
+    chunks = [chunk("a"), chunk("b")]
+    saved = [{"claim": "b", "locator": chunks[1].source_ref, "chunk_id": str(chunks[1].id)}]
+
+    [citation] = resolved_citations(Rows(chunks), module_with(saved))
+
+    assert (citation.resolution, citation.chunk_content) == ("resolved", "b")
+
+
+def test_a_citation_without_a_chunk_is_missing_and_never_matched_by_its_locator():
+    chunks = [chunk("a", source_ref="S5")]
+    saved = [{"claim": "c", "locator": "S5", "chunk_id": None},
+             {"claim": "d", "locator": "x", "chunk_id": str(uuid.uuid4())}]
+
+    assert [c.resolution for c in resolved_citations(Rows(chunks), module_with(saved))] == ["missing", "missing"]
+
+
+def test_a_citation_saved_before_chunk_ids_still_resolves_by_locator():
+    chunks = [chunk("a", source_ref="p1"), chunk("b", source_ref="p2"), chunk("c", source_ref="p2")]
+    saved = [{"claim": "a", "locator": "p1"}, {"claim": "b", "locator": "p2"}, {"claim": "z", "locator": "p9"}]
+
+    assert [c.resolution for c in resolved_citations(Rows(chunks), module_with(saved))] == [
+        "resolved", "ambiguous", "missing"]

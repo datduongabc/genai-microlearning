@@ -56,7 +56,7 @@ OUTPUTS = {
         sub_objectives=SUB_OBJECTIVES,
     ),
     RelevanceCheck: RelevanceCheck(confidence="high", reason="đủ"),
-    ContentOutput: ContentOutput(content=LESSON, source_locators=[]),
+    ContentOutput: ContentOutput(content=LESSON, source_ids=[]),
     LessonText: LessonText(content=LESSON),
     SlidesOutput: SlidesOutput(slides=[Slide(title="S1", bullets=["b"]), Slide(title="S2", bullets=["b"])]),
     ExampleOutput: ExampleOutput(examples=[Example(context="bối cảnh", analysis="phân tích")] * 2),
@@ -204,7 +204,7 @@ def test_the_control_takes_the_title_objective_and_section_of_its_paired_module(
     assert any("ĐIỀU CẦN KIỂM: Khái niệm: tóm tắt\nMODE: practice" in c["prompt"] for c in control_calls)
 
 
-_SOURCE_CHUNKS = re.compile(r"SOURCE CHUNK \d+ .*?--- END SOURCE CHUNK DATA ---\n\n", re.DOTALL)
+_SOURCE_CHUNKS = re.compile(r"SOURCE CHUNK \[S\d+\]:.*?--- END SOURCE CHUNK DATA ---\n\n", re.DOTALL)
 _CITATIONS = re.compile(r"CLAIM_CITATIONS \(.*?\):\n.*?\n\n", re.DOTALL)
 
 

@@ -243,23 +243,50 @@ def test_large_scope_content_edit_keeps_citations_outside_retrieved_chunks(lesso
         document_id = db.get(Module, ids["module"]).document_id
         db.add_all([Chunk(document_id=document_id, course_id=ids["course"], chunk_index=i,
             content=f"Filler chunk {i}.", source_ref=f"lesson.txt#{i}") for i in range(1, 70)])
+        # Saved before citations carried a chunk id: only the locator is stored.
         content = ModuleComponent(module_id=ids["module"], type=ComponentType.content, content={
             "markdown": "A stack is LIFO. Filler 42.", "source_locators": ["lesson.txt#42"],
             "claim_citations": [{"claim": "Filler 42.", "locator": "lesson.txt#42"}]})
         db.add(content)
         db.commit()
         content_id = content.id
+        chunk_42 = str(db.query(Chunk).filter(Chunk.document_id == document_id, Chunk.chunk_index == 42).one().id)
     monkeypatch.setattr(modules_api, "retrieve", lambda db, course_id, query, top_k, scope: db.query(Chunk).filter(
         Chunk.document_id == document_id, Chunk.chunk_index == 0).all())
-    monkeypatch.setattr(service, "complete_structured", lambda prompt, response_model, **kw: response_model(
-        target="content", question_number=None, revised={"content": "Filler 42.",
-            "source_locators": ["lesson.txt#42"], "claim_citations": [{"claim": "Filler 42.", "locator": "lesson.txt#42"}]},
-        reply="Đã rút gọn nội dung."))
+    prompts = []
+
+    def fake(prompt, response_model, **kw):
+        prompts.append(prompt)
+        # The retrieved chunk is S1; the one the content already cites follows it as S2.
+        return response_model(
+            target="content", question_number=None, revised={"content": "Filler 42.",
+                "source_ids": ["S2"], "claim_citations": [{"claim": "Filler 42.", "source_id": "S2"}]},
+            reply="Đã rút gọn nội dung.")
+
+    monkeypatch.setattr(service, "complete_structured", fake)
     response = send(lesson, "shorten the content")
     assert response.status_code == 200, response.text
+    assert '"claim": "Filler 42.", "source_id": "S2"' in prompts[0]
     with SessionLocal() as db:
         stored = db.get(ModuleComponent, content_id).content
         assert stored["markdown"] == "Filler 42." and stored["source_locators"] == ["lesson.txt#42"]
+        assert stored["claim_citations"] == [{"claim": "Filler 42.", "locator": "lesson.txt#42", "chunk_id": chunk_42}]
+
+
+def test_content_edit_citing_an_id_outside_the_prompt_is_rejected(lesson, monkeypatch):
+    ids, _ = lesson
+    with SessionLocal() as db:
+        content = ModuleComponent(module_id=ids["module"], type=ComponentType.content, content={
+            "markdown": "A stack is LIFO.", "source_locators": [], "claim_citations": []})
+        db.add(content)
+        db.commit()
+        content_id, before = content.id, copy.deepcopy(content.content)
+    monkeypatch.setattr(service, "complete_structured", lambda prompt, response_model, **kw: response_model(
+        target="content", question_number=None, revised={"content": "Stack.", "source_ids": ["S7"],
+            "claim_citations": [{"claim": "Stack.", "source_id": "S7"}]}, reply="Đã rút gọn nội dung."))
+    assert send(lesson, "Rút gọn nội dung").status_code == 422
+    with SessionLocal() as db:
+        assert db.get(ModuleComponent, content_id).content == before
 
 
 def test_content_edit_cannot_drop_existing_citations(lesson, monkeypatch):
@@ -272,12 +299,40 @@ def test_content_edit_cannot_drop_existing_citations(lesson, monkeypatch):
         db.commit()
         content_id, before = content.id, copy.deepcopy(content.content)
     monkeypatch.setattr(service, "complete_structured", lambda prompt, response_model, **kw: response_model(
-        target="content", question_number=None, revised={"content": "Stack.", "source_locators": [], "claim_citations": []},
+        target="content", question_number=None, revised={"content": "Stack.", "source_ids": [], "claim_citations": []},
         reply="Đã rút gọn nội dung."))
     response = send(lesson, "Rút gọn nội dung")
     assert response.status_code == 422
     with SessionLocal() as db:
         assert db.get(ModuleComponent, content_id).content == before
+
+
+def test_content_edit_of_legacy_ambiguous_citations_can_leave_them_uncited(lesson, monkeypatch):
+    ids, _ = lesson
+    with SessionLocal() as db:
+        document_id = db.get(Module, ids["module"]).document_id
+        db.add_all([Chunk(document_id=document_id, course_id=ids["course"], chunk_index=i,
+            content=f"Heading part {i}.", source_ref="lesson.html#Stack") for i in (1, 2)])
+        # Every chunk under one heading shares the locator, so the saved citation resolves to none.
+        content = ModuleComponent(module_id=ids["module"], type=ComponentType.content, content={
+            "markdown": "A stack is LIFO.", "source_locators": ["lesson.html#Stack"],
+            "claim_citations": [{"claim": "A stack is LIFO.", "locator": "lesson.html#Stack"}]})
+        db.add(content)
+        db.commit()
+        content_id = content.id
+    prompts = []
+
+    def fake(prompt, response_model, **kw):
+        prompts.append(prompt)
+        return response_model(target="content", question_number=None, revised={
+            "content": "Stack.", "source_ids": [], "claim_citations": []}, reply="Đã rút gọn nội dung.")
+
+    monkeypatch.setattr(service, "complete_structured", fake)
+    response = send(lesson, "Rút gọn nội dung")
+    assert response.status_code == 200, response.text
+    assert '"source_ids": [], "claim_citations": []' in prompts[0]
+    with SessionLocal() as db:
+        assert db.get(ModuleComponent, content_id).content["markdown"] == "Stack."
 
 
 def test_recorded_quiz_one_reply_edits_the_first_question(lesson, monkeypatch):

@@ -41,7 +41,7 @@ class Step:
 STEPS = [
     Step("content", content, ContentOutput, ContentVerification, ["groundedness", "completeness", "scope"],
          lambda: content.generate_content(LO, CHUNKS),
-         ContentOutput(content="## Chọn biến mới\n...", source_locators=["{}"])),
+         ContentOutput(content="## Chọn biến mới\n...", source_ids=["S1"])),
 ]
 
 # Bước không có vòng tự kiểm: (tên, module, schema đầu ra, đầu ra giả, cách gọi).
@@ -97,7 +97,7 @@ def test_an_output_that_passes_every_check_is_returned_after_one_generation(step
 
     out, check = step.run()
 
-    assert out == step.output
+    assert out.content == step.output.content
     assert all(getattr(check, f"{c}_pass") for c in step.criteria)
     assert len(_generations(step)) == 1
 
@@ -137,7 +137,7 @@ def test_when_the_retry_also_fails_the_last_output_and_its_verdict_are_returned(
 
     out, check = step.run()
 
-    assert out == step.output
+    assert out.content == step.output.content
     assert getattr(check, f"{failing}_pass") is False
     assert len(_generations(step)) == 2
 
@@ -149,7 +149,7 @@ def test_content_without_self_check_is_written_once_and_never_checked(monkeypatc
 
     out, check = content.generate_content(LO, CHUNKS, self_check=False)
 
-    assert out == step.output and check is None
+    assert out.content == step.output.content and check is None
     assert [model for model, _ in step.asked] == [ContentOutput]
 
 
