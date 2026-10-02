@@ -107,7 +107,11 @@ def study_evidence(db: Session, module: Module, sources: list[str]) -> tuple[Ref
 
 
 def resolved_citations(db: Session, module: Module) -> list[StoredCitation] | None:
-    """Resolve saved Content locators within the module's document, without guessing ties."""
+    """Resolve saved Content citations within the module's document, without guessing ties.
+
+    A citation saved with a `chunk_id` points at exactly that chunk, so it is found or missing.
+    Modules saved before citations carried one hold only the locator the model copied, which is
+    matched against the chunks' locators and is ambiguous when several share it."""
     content = _component(module, ComponentType.content)
     saved = content.content.get("claim_citations") if content else None
     if saved is None:
@@ -115,9 +119,13 @@ def resolved_citations(db: Session, module: Module) -> list[StoredCitation] | No
     candidates = db.query(Chunk).filter(
         Chunk.document_id == module.document_id, Chunk.course_id == module.course_id,
     ).all()
+    by_id = {str(c.id): c for c in candidates}
     citations = []
     for item in saved:
-        matches = [c for c in candidates if c.source_ref and c.source_ref == item["locator"]]
+        if "chunk_id" in item:
+            matches = [by_id[item["chunk_id"]]] if item["chunk_id"] in by_id else []
+        else:
+            matches = [c for c in candidates if c.source_ref and c.source_ref == item["locator"]]
         chunk = matches[0] if len(matches) == 1 else None
         citations.append(StoredCitation(
             claim=item["claim"], locator=item["locator"],

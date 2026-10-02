@@ -8,6 +8,7 @@ from app.generation.common import (
     _checked,
     custom_instructions_instruction,
     output_language_instruction,
+    resolve_source_id,
     source_block,
     system_instruction,
 )
@@ -52,14 +53,17 @@ Nguồn: viết Content dựa trên các đoạn nguồn (SOURCE CHUNK) được
    cấp, vẫn giữ heading đó nhưng ghi rõ "Không đủ thông tin trong tài liệu
    nguồn cho phần này" — KHÔNG được bỏ qua heading hay tự bịa nội dung để
    lấp đầy.
-7. source_locators chỉ liệt kê locator của những chunk THỰC SỰ được dùng để
-   sinh content — không liệt kê locator của chunk bị bỏ qua vì không liên quan.
+7. Mỗi SOURCE CHUNK có một ID ngắn dạng [S1], [S2]... ngay đầu khối. source_ids
+   chỉ liệt kê ID (vd "S3") của những chunk THỰC SỰ được dùng để sinh content —
+   không liệt kê ID của chunk bị bỏ qua vì không liên quan.
 8. claim_citations: với MỖI khẳng định/bullet QUAN TRỌNG trong content (không
    cần từng câu nối/chuyển ý), tạo 1 mục claim_citations gồm `claim` (trích
    gần đúng nguyên văn khẳng định đó, đủ để định vị trong content) và
-   `locator` (locator của ĐÚNG 1 source chunk bảo chứng trực tiếp cho khẳng
-   định đó — không phải locator chung chung của cả content). Đây là cơ chế
-   cho phép người đọc kiểm tra TỪNG câu thay vì tin cả khối content.
+   `source_id` (ID của ĐÚNG 1 source chunk bảo chứng trực tiếp cho khẳng
+   định đó, vd "S3" — không phải ID chung chung của cả content). Chỉ dùng ID
+   có trong các SOURCE CHUNK đã cho, không tự bịa ID, không chép lại nội
+   dung hay vị trí của chunk. Đây là cơ chế cho phép người đọc kiểm tra TỪNG
+   câu thay vì tin cả khối content.
 """
 
 # Nhánh không RAG (nhóm đối chứng llm_no_rag): cùng nhiệm vụ, chỉ không có nguồn nào để bám.
@@ -80,22 +84,54 @@ NO_SOURCE_CONTENT_SYSTEM_INSTRUCTION = system_instruction(
 
 
 class LessonText(BaseModel):
-    """Content của nhánh không RAG: không có nguồn nên không có locator hay trích dẫn."""
+    """Content của nhánh không RAG: không có nguồn nên không có ID nguồn hay trích dẫn."""
 
     content: str = Field(description="Nội dung Markdown phân cấp")
 
 
 class ClaimCitation(BaseModel):
     claim: str = Field(description="Khẳng định/bullet cụ thể trong content (trích gần đúng nguyên văn)")
-    locator: str = Field(description="Locator của source chunk bảo chứng trực tiếp cho đúng khẳng định này")
+    source_id: str = Field(description='ID (vd "S3") của source chunk bảo chứng trực tiếp cho đúng khẳng định này')
 
 
 class ContentOutput(LessonText):
-    source_locators: list[str] = Field(description="Locator của chunk thực sự được dùng")
+    """Content as the model writes it: it cites source chunks by the ID the prompt gave them."""
+
+    source_ids: list[str] = Field(description='ID (vd "S3") của chunk thực sự được dùng')
     claim_citations: list[ClaimCitation] = Field(
         default_factory=list,
-        description="Trích dẫn cấp câu/khẳng định -- mỗi claim quan trọng gắn đúng 1 locator bảo chứng",
+        description="Trích dẫn cấp câu/khẳng định -- mỗi claim quan trọng gắn đúng 1 source_id bảo chứng",
     )
+
+
+class StoredClaimCitation(BaseModel):
+    claim: str
+    # The chunk's own source_ref, to display. An ID that named no chunk of the prompt is kept as the
+    # model wrote it, with no chunk_id, so it shows as a missing citation instead of a guessed one.
+    locator: str
+    chunk_id: str | None
+
+
+class SourcedContent(LessonText):
+    """Content as it is saved: every citation points at the exact chunk by id."""
+
+    source_locators: list[str]
+    claim_citations: list[StoredClaimCitation]
+
+
+def resolve_citations(content: ContentOutput, chunks: list[Chunk]) -> SourcedContent:
+    """Map the IDs the model cited back to the chunks of the prompt they were shown in, right after
+    the call, so nothing later depends on the model copying a locator."""
+    stored = []
+    for citation in content.claim_citations:
+        chunk = resolve_source_id(chunks, citation.source_id)
+        stored.append(StoredClaimCitation(
+            claim=citation.claim, locator=(chunk.source_ref or "") if chunk else citation.source_id,
+            chunk_id=str(chunk.id) if chunk else None,
+        ))
+    cited = (resolve_source_id(chunks, i) for i in content.source_ids)
+    locators = dict.fromkeys(c.source_ref for c in cited if c is not None and c.source_ref)
+    return SourcedContent(content=content.content, source_locators=list(locators), claim_citations=stored)
 
 
 # Tầng 3 (GD2): Content và Quiz/Practice là hai bước còn giữ vòng tự kiểm --
@@ -118,21 +154,22 @@ Chấm các tiêu chí sau:
 _CONTENT_VERIFY_SOURCE_RULES = """- groundedness_pass (chỉ khi có SOURCE CHUNK): kiểm tra THEO TỪNG MỤC trong
   CLAIM_CITATIONS được cung cấp bên dưới (không chỉ đọc lướt content rồi đánh
   giá cảm tính chung chung) -- với MỖI claim, mở ĐÚNG source chunk mà
-  `locator` của claim đó trỏ tới, và xác nhận claim THỰC SỰ được nội dung
+  `source_id` của claim đó trỏ tới, và xác nhận claim THỰC SỰ được nội dung
   CHÍNH XÁC chunk đó bảo chứng (không phải "nghe hợp lý"/"đúng về mặt kiến
-  thức chung", không phải chunk KHÁC trong toàn bộ context tình cờ nói tới).
+  thức chung", không phải chunk KHÁC trong toàn bộ context tình cờ nói tới). source_id
+  không có trong các SOURCE CHUNK cũng là fail.
   Đây là lỗi THẬT đã từng xảy ra: model tự điền thêm kiến thức phổ biến/đúng
   nhưng KHÔNG có trong đúng chunk đã trích dẫn (vd tự thêm công thức/định
   nghĩa chuẩn của 1 khái niệm liên quan mà nguồn chỉ nhắc tên chứ không giải
-  thích) -- claim nghe có vẻ đúng và cả content lẫn locator đều tồn tại KHÔNG
-  có nghĩa là claim đó thực sự đến từ đúng locator ấy, PHẢI đối chiếu trực
+  thích) -- claim nghe có vẻ đúng và cả content lẫn source_id đều tồn tại KHÔNG
+  có nghĩa là claim đó thực sự đến từ đúng chunk ấy, PHẢI đối chiếu trực
   tiếp. Nếu content có khẳng định KHÔNG nằm trong claim_citations, cũng phải
   kiểm tra tương tự với TOÀN BỘ source chunk. Với completeness_pass: heading
   dùng câu "không đủ thông tin" để né dù nguồn thực ra có đủ dữ kiện cho phần
   đó cũng là fail.
 
 Nếu vi phạm bất kỳ tiêu chí nào, đặt pass=false và nêu rõ lý do cụ thể, TRÍCH
-NGUYÊN VĂN claim bị lỗi và locator của nó (để dùng làm feedback sinh lại).
+NGUYÊN VĂN claim bị lỗi và source_id của nó (để dùng làm feedback sinh lại).
 """
 
 _CONTENT_VERIFY_NO_SOURCE_RULES = """
@@ -173,10 +210,10 @@ def _verify_content(
     sources = ""
     if context_chunks is not None:
         citations_text = "\n".join(
-            f'- claim="{c.claim}" -> locator="{c.locator}"' for c in content_out.claim_citations
+            f'- claim="{c.claim}" -> source_id="{c.source_id}"' for c in content_out.claim_citations
         ) or "(content không có claim_citations nào)"
         sources = (
-            f"CLAIM_CITATIONS (mỗi claim PHẢI đối chiếu ĐÚNG locator của chính nó, "
+            f"CLAIM_CITATIONS (mỗi claim PHẢI đối chiếu ĐÚNG chunk của source_id của chính nó, "
             f"không phải đối chiếu chung với toàn bộ source chunk):\n{citations_text}\n\n"
             f"{source_block(context_chunks)}"
         )
@@ -199,7 +236,7 @@ def _verify_content(
 def generate_content(
     lo: LearningObjective, context_chunks: list[Chunk] | None, self_check: bool = True,
     output_language: OutputLanguage = "vi", custom_instructions: str = "",
-) -> tuple[LessonText, ContentVerification | LessonVerification | None]:
+) -> tuple[LessonText | SourcedContent, ContentVerification | LessonVerification | None]:
     """`context_chunks=None` is the no-RAG arm: the same prompt without the source block, written from
     the model's own knowledge, and checked for completeness and scope only (there is nothing to hold
     it against). With `self_check` off the lesson is written once and nothing checks it (the check is
@@ -237,6 +274,7 @@ def generate_content(
     if sourced:
         criteria.insert(0, ("groundedness", "Groundedness"))
     # Hết lượt sinh lại thì trả bản cuối (best-effort), như câu hỏi.
-    return _checked(
+    out, check = _checked(
         generate, (lambda out: _verify_content(out, lo, context_chunks)) if self_check else None, criteria
     )
+    return (resolve_citations(out, context_chunks) if sourced else out), check

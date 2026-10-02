@@ -17,8 +17,8 @@ from app.api.deps import get_current_user
 from app.auth.rate_limit import limiter, user_or_address
 from app.chat.service import HISTORY_TURNS, QuizQuestionEdit, module_edit_count, propose_module_edit
 from app.db import get_db
-from app.generation.common import OutputLanguage
-from app.generation.content import ContentOutput
+from app.generation.common import OutputLanguage, resolve_source_id
+from app.generation.content import ContentOutput, resolve_citations
 from app.generation.example import ExampleOutput
 from app.generation.module_generation_pipeline import (
     IncompleteModuleError,
@@ -580,10 +580,15 @@ def chat_edit_module(
     if chunks and not small_reference(chunks):
         chunks = retrieve(db, module.course_id, message, top_k=8, scope=ChunkScope(
             module.document_id, chunks[0].chunk_index, chunks[-1].chunk_index))
+    # The passages the content already cites stay citable: the model sees them under IDs too.
+    citations = resolved_citations(db, module) or []
+    cited = {c.chunk_id for c in citations} - {str(c.id) for c in chunks}
+    chunks = [*chunks, *(c for c in scope_chunks if str(c.id) in cited)]
     generation = generation_payload_of(db, module.id)
     try:
         with using_model(generation.get("model_alias")):
-            edit = propose_module_edit(message, module, chunks, history, generation.get("output_language", "vi"))
+            edit = propose_module_edit(
+                message, module, chunks, history, generation.get("output_language", "vi"), citations)
         applied = edit.target is not None
         if not applied:
             if edit.revised is not None or edit.question_number is not None:
@@ -610,12 +615,13 @@ def chat_edit_module(
                     raise ValueError("Question number only applies to quiz/practice")
                 content = revised.model_dump()
                 if edit.target == "content":
-                    locators = {c.source_ref for c in scope_chunks}
-                    if not set(revised.source_locators).issubset(locators) or any(
-                        c.locator not in locators for c in revised.claim_citations
-                    ) or any(component.content.get(k) and not getattr(revised, k)
+                    sourced = resolve_citations(revised, chunks)
+                    if any(resolve_source_id(chunks, i) is None for i in revised.source_ids) or any(
+                        c.chunk_id is None for c in sourced.claim_citations
+                    ) or any(component.content.get(k) and not getattr(sourced, k)
                              for k in ("source_locators", "claim_citations")):
                         raise ValueError("Citation outside source chunks")
+                    content = sourced.model_dump()
                     content["markdown"] = content.pop("content")
                 component.content = {**component.content, **content,
                                      "ai_original": component.content.get("ai_original", component.content)}

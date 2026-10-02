@@ -37,24 +37,25 @@ def test_an_empty_rewrite_falls_back_to_the_question_as_asked(monkeypatch):
 
 
 def test_citations_the_model_invents_are_dropped_and_only_retrieved_chunks_are_kept(monkeypatch):
-    """Model có thể trả về một chunk_id trông hợp lý nhưng không nằm trong các đoạn đã truy hồi:
-    trích dẫn đó trỏ tới chỗ không tồn tại, hoặc tới đoạn model chưa hề đọc."""
+    """The model cites the short ID a chunk carries in the prompt. An ID that is not in the prompt
+    points at nothing, or at a passage the model never read, and is dropped, never guessed."""
     import types
     import uuid
 
     from app.chat import service
 
-    kept, other = uuid.uuid4(), uuid.uuid4()
-    chunks = [types.SimpleNamespace(id=kept, source_ref="{}", content="Heap là cây nhị phân hoàn chỉnh.")]
+    first, second = uuid.uuid4(), uuid.uuid4()
+    chunks = [
+        types.SimpleNamespace(id=first, source_ref='{"page": 1}', content="Heap là cây nhị phân hoàn chỉnh."),
+        types.SimpleNamespace(id=second, source_ref='{"page": 2}', content="Heap có hai loại."),
+    ]
 
     def fake(prompt, response_model, **kw):
-        assert str(kept) in prompt
-        return response_model(answer="Heap là cây nhị phân hoàn chỉnh.", citations=[
-            {"chunk_id": str(kept)}, {"chunk_id": str(other)}, {"chunk_id": "chunk-bịa"},
-        ])
+        assert "[S1]" in prompt and "[S2]" in prompt and str(first) not in prompt
+        return response_model(answer="Heap là cây nhị phân hoàn chỉnh.", source_ids=["S2", "[S2]", "S9", "chunk-bịa"])
 
     monkeypatch.setattr(service, "complete_structured", fake)
 
     result = answer_question("Heap là gì?", chunks, [])
 
-    assert [c.chunk_id for c in result.citations] == [str(kept)]
+    assert [(c.chunk_id, c.source_ref) for c in result.citations] == [(str(second), '{"page": 2}')]
