@@ -17,7 +17,7 @@ from app.api import admin as admin_api
 from app.auth.security import decode_token
 from app.db import SessionLocal
 from app.main import app
-from app.models import RefreshToken, User, UserRole
+from app.models import Course, MoodleCourseClaim, RefreshToken, User, UserRole
 from app.moodle import client as moodle_client
 from tests.auth_helpers import STRONG_PASSWORD, create_and_login, make_account
 
@@ -312,3 +312,140 @@ def test_disabling_ends_every_login_of_the_account(admin, lecturer):
         ).count()
 
     assert live == 0
+
+
+def _delete(admin, user_id):
+    return client.delete(f"/admin/users/{user_id}", headers=_bearer(admin))
+
+
+def _give_course(owner_id):
+    with SessionLocal() as db:
+        course = Course(name="Môn của giảng viên", owner_id=uuid.UUID(str(owner_id)))
+        db.add(course)
+        db.commit()
+        return course.id
+
+
+def _exists(user_id):
+    with SessionLocal() as db:
+        return db.get(User, uuid.UUID(str(user_id))) is not None
+
+
+def test_an_admin_deletes_a_lecturer_who_has_no_course_with_their_logins(admin, lecturer):
+    lecturer_id = lecturer["user"]["id"]
+    assert client.get("/admin/users", headers=_bearer(lecturer)).status_code == 404  # holds a live login
+
+    response = _delete(admin, lecturer_id)
+
+    assert response.status_code == 200
+    assert not _exists(lecturer_id)
+    assert lecturer["user"]["email"] not in {u["email"] for u in client.get("/admin/users", headers=_bearer(admin)).json()}
+    assert _login(lecturer["user"]["email"]).status_code == 401
+    assert client.post("/auth/refresh", json={"refresh_token": lecturer["refresh_token"]}).status_code == 401
+    with SessionLocal() as db:
+        assert db.query(RefreshToken).filter(RefreshToken.user_id == uuid.UUID(lecturer_id)).count() == 0
+
+
+def test_a_lecturer_with_a_course_is_refused_with_409_and_nothing_is_lost(admin, lecturer):
+    lecturer_id = lecturer["user"]["id"]
+    course_id = _give_course(lecturer_id)
+
+    response = _delete(admin, lecturer_id)
+
+    assert response.status_code == 409 and "môn học" in response.json()["detail"]
+    assert _exists(lecturer_id)
+    with SessionLocal() as db:
+        assert db.get(Course, course_id) is not None
+    assert _login(lecturer["user"]["email"]).status_code == 200
+
+
+def test_a_lecturer_whose_course_was_deleted_can_be_deleted(admin, lecturer):
+    lecturer_id = lecturer["user"]["id"]
+    course_id = _give_course(lecturer_id)
+    with SessionLocal() as db:
+        db.query(Course).filter(Course.id == course_id).delete()
+        db.commit()
+
+    assert _delete(admin, lecturer_id).status_code == 200
+
+
+def test_a_moodle_course_claim_does_not_stop_the_delete_and_the_moodle_side_is_untouched(admin, lecturer, monkeypatch):
+    lecturer_id = lecturer["user"]["id"]
+    claim = 987_000 + uuid.uuid4().int % 1000
+    with SessionLocal() as db:
+        db.add(MoodleCourseClaim(moodle_course_id=claim, owner_id=uuid.UUID(lecturer_id)))
+        db.commit()
+
+    def forbidden(*args, **kwargs):
+        raise AssertionError("deleting an account must not call Moodle")
+
+    monkeypatch.setattr(moodle_client, "find_users_by_email", forbidden)
+
+    assert _delete(admin, lecturer_id).status_code == 200
+    with SessionLocal() as db:
+        assert db.get(MoodleCourseClaim, claim) is None
+
+
+def test_the_list_says_how_many_courses_each_lecturer_has(admin, lecturer):
+    lecturer_id = lecturer["user"]["id"]
+    empty = make_account(_email("empty"))
+    _give_course(lecturer_id)
+    _give_course(lecturer_id)
+
+    users = {u["id"]: u for u in client.get("/admin/users", headers=_bearer(admin)).json()}
+
+    assert users[lecturer_id]["course_count"] == 2
+    assert users[str(empty.id)]["course_count"] == 0
+    assert users[admin["user"]["id"]]["course_count"] is None
+
+
+def test_an_admin_cannot_delete_themselves_or_another_admin(admin):
+    other = create_and_login(client, _email("admin-other"), role=UserRole.admin)
+
+    own = _delete(admin, admin["user"]["id"])
+    another = _delete(admin, other["user"]["id"])
+
+    assert own.status_code == 409 and another.status_code == 409
+    assert _exists(admin["user"]["id"]) and _exists(other["user"]["id"])
+
+
+def test_only_an_admin_can_delete_and_an_unknown_user_is_not_found(admin, lecturer):
+    victim = make_account(_email("victim"))
+
+    by_lecturer = _delete(lecturer, victim.id)
+    anonymous = client.delete(f"/admin/users/{victim.id}")
+    unknown = _delete(admin, uuid.uuid4())
+
+    assert by_lecturer.status_code == 404 and anonymous.status_code == 401 and unknown.status_code == 404
+    assert _exists(victim.id)
+
+
+def test_a_lecturer_cannot_delete_themselves(lecturer):
+    assert _delete(lecturer, lecturer["user"]["id"]).status_code == 404
+    assert _exists(lecturer["user"]["id"])
+
+
+def test_a_new_course_racing_the_delete_is_refused_by_the_database(admin, lecturer, monkeypatch):
+    # The count saw no course, then the lecturer added one before the delete ran: the foreign key
+    # still refuses, and the answer is the same 409 instead of an error.
+    lecturer_id = lecturer["user"]["id"]
+    monkeypatch.setattr(admin_api, "_course_counts", lambda db: {})
+    _give_course(lecturer_id)
+
+    response = _delete(admin, lecturer_id)
+
+    assert response.status_code == 409 and _exists(lecturer_id)
+
+
+def test_deleting_is_logged_without_a_secret(admin, lecturer, caplog):
+    caplog.set_level(logging.INFO)
+    lecturer_id = lecturer["user"]["id"]
+
+    _delete(admin, lecturer_id)
+
+    lines = [r.getMessage() for r in caplog.records if r.name == "app.audit"]
+    assert any(
+        "admin_delete_user" in line and f"actor_id={admin['user']['id']}" in line and lecturer_id in line
+        for line in lines
+    )
+    assert not any("hashed_password" in line or "token" in line for line in lines)

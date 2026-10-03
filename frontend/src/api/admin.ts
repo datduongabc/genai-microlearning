@@ -11,6 +11,8 @@ export interface AdminUser {
   created_at: string
   // Chỉ có với giảng viên: có đúng một tài khoản Moodle cùng email hay không.
   moodle_status: MoodleStatus | null
+  // Chỉ có với giảng viên: số môn học họ sở hữu. Có môn học thì không xóa được tài khoản, chỉ khóa.
+  course_count: number | null
 }
 
 export interface FailedJobInfo {
@@ -41,6 +43,10 @@ export async function createLecturer(name: string, email: string, password: stri
 export async function setUserActive(userId: string, active: boolean) {
   const { data } = await api.post<AdminUser>(`/admin/users/${userId}/${active ? 'enable' : 'disable'}`)
   return data
+}
+
+export async function deleteUser(userId: string) {
+  await api.delete(`/admin/users/${userId}`)
 }
 
 export async function resetUserPassword(userId: string, password: string) {

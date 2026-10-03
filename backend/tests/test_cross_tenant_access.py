@@ -150,6 +150,7 @@ ATTACKS = [
     ("POST", "/admin/users/{user}/disable", None, {}),
     ("POST", "/admin/users/{user}/enable", None, {}),
     ("POST", "/admin/users/{user}/password", None, {"json": {"password": "A pwned long phrase"}}),
+    ("DELETE", "/admin/users/{user}", None, {}),
     ("DELETE", "/courses/{course}", None, {}),
     ("POST", "/courses/{course}/link-moodle", None, {"json": {"moodle_course_id": 999}}),
     ("DELETE", "/courses/{course}/link-moodle", None, {}),

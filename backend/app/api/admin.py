@@ -1,5 +1,8 @@
 """The admin's endpoints: lecturer accounts and the failed jobs of every lecturer.
 
+An account is deleted only while it owns no course; one with courses is locked instead, so
+courses, modules and experiment data are never lost.
+
 Every route needs an admin (require_admin answers anyone else 404, like a missing thing). What an
 admin reaches in the database is narrower still (migration 0007): only failed jobs and the
 document file name and course name beside them, never what a lecturer wrote or uploaded."""
@@ -9,7 +12,8 @@ from concurrent.futures import ThreadPoolExecutor, wait
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel, Field
-from sqlalchemy import select, text
+from sqlalchemy import delete, select, text
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.api.deps import require_admin
@@ -21,7 +25,7 @@ from app.auth.rate_limit import limiter, user_or_address
 from app.auth.security import hash_password
 from app.db import get_db
 from app.jobs.queue import retry_failed_job
-from app.models import JobType, User, UserRole
+from app.models import JobType, RefreshToken, User, UserRole
 from app.moodle import client as moodle_client
 from app.moodle.errors import MOODLE_FAILURES
 
@@ -74,10 +78,18 @@ def _moodle_statuses(users: list[User]) -> dict[uuid.UUID, str]:
     return found
 
 
-def _user_out(user: User, moodle_status: str | None = None) -> dict:
+def _course_counts(db: Session) -> dict[uuid.UUID, int]:
+    """Courses per owner, from the view admin_course_counts: row level security hides every
+    lecturer's courses from the admin, and the view lets through only these counts."""
+    rows = db.execute(text("SELECT owner_id, course_count FROM admin_course_counts")).all()
+    return {owner_id: count for owner_id, count in rows}
+
+
+def _user_out(user: User, moodle_status: str | None = None, course_count: int | None = None) -> dict:
     return {
         "id": user.id, "email": user.email, "name": user.name, "role": user.role,
         "is_active": user.is_active, "created_at": user.created_at, "moodle_status": moodle_status,
+        "course_count": course_count,
     }
 
 
@@ -92,7 +104,11 @@ def _target(db: Session, user_id: uuid.UUID) -> User:
 def list_users(db: Session = Depends(get_db)):
     users = db.scalars(select(User).order_by(User.created_at.desc(), User.email)).all()
     moodle = _moodle_statuses(list(users))
-    return [_user_out(u, moodle.get(u.id)) for u in users]
+    counts = _course_counts(db)
+    return [
+        _user_out(u, moodle.get(u.id), counts.get(u.id, 0) if u.role == UserRole.teacher else None)
+        for u in users
+    ]
 
 
 @router.post("/users", status_code=status.HTTP_201_CREATED)
@@ -108,7 +124,7 @@ def create_lecturer(
     except AccountError as error:
         raise HTTPException(status_code=error.status_code, detail=error.detail) from error
     log_admin_event(audit.ADMIN_CREATE_USER, request, actor_id=admin.id, target_user_id=user.id)
-    return _user_out(user)
+    return _user_out(user, course_count=0)
 
 
 def _set_active(
@@ -154,6 +170,43 @@ def enable_user(
     request: Request, user_id: uuid.UUID, db: Session = Depends(get_db), admin: User = Depends(require_admin)
 ):
     return _set_active(request, db, admin, user_id, active=True)
+
+
+HAS_COURSES = (
+    "Không thể xóa giảng viên đang có môn học. Hãy khóa tài khoản để giữ nguyên môn học, "
+    "học liệu và dữ liệu thử nghiệm."
+)
+
+
+@router.delete("/users/{user_id}")
+def delete_lecturer(
+    request: Request, user_id: uuid.UUID, db: Session = Depends(get_db), admin: User = Depends(require_admin)
+):
+    """Deletes a lecturer account that owns no course (made by mistake, or never used). Their
+    logins go with it; a linked Moodle user stays, as Moodle is not touched."""
+    # Lock the row: a course being added for this lecturer at the same moment must not slip past
+    # the count below (the foreign key from courses refuses the delete in that case anyway).
+    user = db.scalar(select(User).where(User.id == user_id).with_for_update())
+    if user is None:
+        raise HTTPException(status_code=404, detail="User not found")
+    if user.id == admin.id:
+        raise HTTPException(status_code=409, detail="Không thể tự xóa tài khoản của chính mình.")
+    if user.role != UserRole.teacher:
+        raise HTTPException(status_code=409, detail="Chỉ có thể xóa tài khoản giảng viên, không xóa được admin.")
+    if _course_counts(db).get(user.id, 0) > 0:
+        raise HTTPException(status_code=409, detail=HAS_COURSES)
+    email = user.email
+    try:
+        db.execute(delete(RefreshToken).where(RefreshToken.user_id == user.id))
+        db.delete(user)
+        db.commit()
+    except IntegrityError as error:
+        db.rollback()
+        raise HTTPException(status_code=409, detail=HAS_COURSES) from error
+    log_admin_event(
+        audit.ADMIN_DELETE_USER, request, actor_id=admin.id, target_user_id=user_id, detail={"email": email}
+    )
+    return {"status": "deleted"}
 
 
 @router.post("/users/{user_id}/password")
