@@ -15,7 +15,7 @@ def _make_authed_user() -> tuple[str, uuid.UUID]:
     db = SessionLocal()
     try:
         user = User(
-            email=f"del-{suffix}@example.com", name="Test", hashed_password="x", role=UserRole.teacher
+            email=f"del-{suffix}@example.com", name="Test", hashed_password="x", role=UserRole.teacher, moodle_user_id=4242
         )
         db.add(user)
         db.commit()

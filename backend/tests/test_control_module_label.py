@@ -28,7 +28,7 @@ client = TestClient(app)
 @pytest.fixture
 def modules():
     with SessionLocal() as db:
-        user = User(email=f"control-{uuid.uuid4()}@example.com", name="T", hashed_password="x", role=UserRole.teacher)
+        user = User(email=f"control-{uuid.uuid4()}@example.com", name="T", hashed_password="x", role=UserRole.teacher, moodle_user_id=4242)
         db.add(user)
         db.flush()
         course = Course(name="Study", owner_id=user.id, moodle_course_id=123)
@@ -118,7 +118,7 @@ def test_detail_citations_resolve_within_document_and_require_owner(modules):
     # A real authenticated non-owner must also be refused.
     with SessionLocal() as db:
         outsider = User(email=f"outsider-{uuid.uuid4()}@example.com", name="Other",
-                        hashed_password="x", role=UserRole.teacher)
+                        hashed_password="x", role=UserRole.teacher, moodle_user_id=4242)
         db.add(outsider)
         db.commit()
         outsider_id = outsider.id

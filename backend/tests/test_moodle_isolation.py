@@ -29,7 +29,7 @@ def users():
     db = SessionLocal()
     try:
         made = [
-            User(email=f"iso-{i}-{uuid.uuid4().hex[:8]}@example.com", name="T", hashed_password="x", role=UserRole.teacher)
+            User(email=f"iso-{i}-{uuid.uuid4().hex[:8]}@example.com", name="T", hashed_password="x", role=UserRole.teacher, moodle_user_id=4242)
             for i in range(2)
         ]
         db.add_all(made)

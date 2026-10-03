@@ -30,6 +30,17 @@ describe('MoodleAccountPrompt', () => {
     expect(screen.getByRole('button', { name: 'Không' })).toBeInTheDocument()
   })
 
+  it('says so, and offers no link, when several Moodle users share the email', async () => {
+    vi.mocked(api.getMoodleAccount).mockResolvedValue({ email: 'lan@x.edu', status: 'ambiguous' })
+
+    render(<MoodleAccountPrompt />)
+
+    expect(await screen.findByRole('dialog')).toHaveTextContent(/nhiều tài khoản moodle cùng email/i)
+    expect(screen.queryByRole('button', { name: 'Có (khuyến nghị)' })).not.toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Đóng' }))
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
+
   it('stays away when the account is linked, or when Moodle cannot be asked', async () => {
     vi.mocked(api.getMoodleAccount).mockResolvedValueOnce({ email: 'lan@x.edu', status: 'linked' })
     const { unmount } = render(<MoodleAccountPrompt />)

@@ -5,6 +5,7 @@ admin reaches in the database is narrower still (migration 0007): only failed jo
 document file name and course name beside them, never what a lecturer wrote or uploaded."""
 
 import uuid
+from concurrent.futures import ThreadPoolExecutor, wait
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel, Field
@@ -27,6 +28,8 @@ from app.moodle.errors import MOODLE_FAILURES
 router = APIRouter(prefix="/admin", tags=["admin"], dependencies=[Depends(require_admin)])
 
 MAX_FAILED_JOBS = 200
+MOODLE_LOOKUP_WORKERS = 8
+MOODLE_LOOKUP_SECONDS = 10.0
 
 
 class CreateUserRequest(BaseModel):
@@ -45,18 +48,29 @@ class RetryJobsRequest(BaseModel):
     job_ids: list[uuid.UUID] = Field(min_length=1, max_length=MAX_FAILED_JOBS)
 
 
+def _moodle_status(email: str) -> str:
+    count = len(moodle_client.find_users_by_email([email])[email.strip().lower()])
+    return "not_found" if count == 0 else "linked" if count == 1 else "ambiguous"
+
+
 def _moodle_statuses(users: list[User]) -> dict[uuid.UUID, str]:
     """Per lecturer: "linked" (exactly one Moodle account with their email), "not_found",
-    "ambiguous" (several), or "unknown" for all of them when Moodle cannot be reached."""
+    "ambiguous" (several), or "unknown" when Moodle cannot be reached or does not answer in time.
+    The lookups run side by side and the whole list waits at most MOODLE_LOOKUP_SECONDS."""
     lecturers = [u for u in users if u.role == UserRole.teacher]
-    try:
-        ids_by_email = moodle_client.find_users_by_email([u.email for u in lecturers])
-    except MOODLE_FAILURES:
-        return {u.id: "unknown" for u in lecturers}
+    if not lecturers:
+        return {}
+    pool = ThreadPoolExecutor(max_workers=min(MOODLE_LOOKUP_WORKERS, len(lecturers)))
+    lookups = {u.id: pool.submit(_moodle_status, u.email) for u in lecturers}
+    done, _ = wait(lookups.values(), timeout=MOODLE_LOOKUP_SECONDS)
+    # The ones still running finish on their own (Moodle's own timeout); nobody waits for them.
+    pool.shutdown(wait=False, cancel_futures=True)
     found = {}
-    for user in lecturers:
-        count = len(ids_by_email.get(user.email.strip().lower(), []))
-        found[user.id] = "not_found" if count == 0 else "linked" if count == 1 else "ambiguous"
+    for user_id, lookup in lookups.items():
+        error = lookup.exception() if lookup in done else None
+        if error is not None and not isinstance(error, MOODLE_FAILURES):
+            raise error
+        found[user_id] = "unknown" if lookup not in done or error is not None else lookup.result()
     return found
 
 

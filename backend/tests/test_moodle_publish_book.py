@@ -64,7 +64,7 @@ class Published:
         self.moodle_course_id = random.randint(10**6, 10**9)
         db = SessionLocal()
         try:
-            user = User(email=f"book-{suffix}@example.com", name="T", hashed_password="x", role=UserRole.teacher)
+            user = User(email=f"book-{suffix}@example.com", name="T", hashed_password="x", role=UserRole.teacher, moodle_user_id=4242)
             db.add(user)
             db.flush()
             course = Course(name=f"Course {suffix}", owner_id=user.id, moodle_course_id=self.moodle_course_id)

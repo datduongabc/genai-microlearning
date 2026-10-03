@@ -29,7 +29,7 @@ def world():
     db = SessionLocal()
     try:
         user = User(
-            email=f"limits-{uuid.uuid4().hex[:8]}@example.com", name="T", hashed_password="x", role=UserRole.teacher
+            email=f"limits-{uuid.uuid4().hex[:8]}@example.com", name="T", hashed_password="x", role=UserRole.teacher, moodle_user_id=4242
         )
         db.add(user)
         db.flush()

@@ -243,6 +243,36 @@ describe('CourseDetailPage - delete document', () => {
       expect(screen.queryByText('syllabus.pdf')).not.toBeInTheDocument()
     })
   })
+
+  it('says the document is deleted, and only the reload failed, when the list cannot be reloaded afterwards', async () => {
+    vi.mocked(api.listCourses).mockResolvedValue([unlinkedCourse])
+    vi.mocked(api.listDocuments)
+      .mockResolvedValueOnce([sampleDocument])
+      .mockRejectedValueOnce(new Error('network down'))
+    vi.mocked(api.deleteDocument).mockResolvedValue(undefined)
+    vi.spyOn(window, 'confirm').mockReturnValue(true)
+
+    renderPage()
+    await userEvent.click(await screen.findByRole('button', { name: /^xóa$/i }))
+
+    expect(await screen.findByText(/đã xóa tài liệu "syllabus.pdf"/i)).toBeInTheDocument()
+    expect(await screen.findByText(/không tải lại được danh sách/i)).toBeInTheDocument()
+    expect(screen.getByText(/tài liệu đã được xóa/i)).toBeInTheDocument()
+    expect(screen.queryByText(/xóa tài liệu thất bại/i)).not.toBeInTheDocument()
+  })
+
+  it('shows the server error when deleting the document fails', async () => {
+    vi.mocked(api.listCourses).mockResolvedValue([unlinkedCourse])
+    vi.mocked(api.listDocuments).mockResolvedValue([sampleDocument])
+    vi.mocked(api.deleteDocument).mockRejectedValue(new Error('boom'))
+    vi.spyOn(window, 'confirm').mockReturnValue(true)
+
+    renderPage()
+    await userEvent.click(await screen.findByRole('button', { name: /^xóa$/i }))
+
+    expect(await screen.findByText(/xóa tài liệu thất bại/i)).toBeInTheDocument()
+    expect(screen.getByText('syllabus.pdf')).toBeInTheDocument()
+  })
 })
 
 describe('CourseDetailPage - upload availability', () => {
@@ -754,6 +784,20 @@ describe('CourseDetailPage - failed work and retry', () => {
     await waitFor(() => expect(screen.queryByText('Hết hạn mức')).not.toBeInTheDocument())
     expect(api.generateModule).not.toHaveBeenCalled() // the same job runs again, nothing is created
     expect(api.uploadDocument).not.toHaveBeenCalled() // and nothing is uploaded again
+  })
+
+  it('says the retry was sent, and only the reload failed, when the list cannot be reloaded afterwards', async () => {
+    vi.mocked(api.listDocuments)
+      .mockResolvedValueOnce([{ ...sampleDocument, failures: [sectionFailure] }])
+      .mockRejectedValueOnce(new Error('network down'))
+    vi.mocked(api.retryJob).mockResolvedValue({ id: 'job-s', status: 'queued' })
+
+    renderPage()
+    await userEvent.click(await screen.findByRole('button', { name: /thử lại/i }))
+
+    expect(await screen.findByText(/đã gửi yêu cầu thử lại\./i)).toBeInTheDocument()
+    expect(await screen.findByText(/không tải lại được danh sách/i)).toBeInTheDocument()
+    expect(screen.queryByText(/thử lại thất bại/i)).not.toBeInTheDocument()
   })
 
   it('says why a retry was refused and keeps the failure on screen', async () => {

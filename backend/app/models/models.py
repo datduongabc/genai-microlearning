@@ -99,6 +99,9 @@ class User(Base):
     # này. Không có khóa ngoại nào ràng buộc được nó, nên giá trị được kiểm ở biên API dựa
     # vào danh sách gateway đang phục vụ (app/llm/catalog.py).
     default_model_alias: Mapped[str | None] = mapped_column(nullable=True)
+    # Tài khoản Moodle giảng viên đã tự chọn liên kết (POST /moodle/account/link). NULL: chưa liên
+    # kết, kể cả khi Moodle có sẵn tài khoản cùng email.
+    moodle_user_id: Mapped[int | None] = mapped_column(nullable=True)
     created_at: Mapped[datetime] = created_at_column()
 
 

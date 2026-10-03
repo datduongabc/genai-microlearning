@@ -51,13 +51,11 @@ def clean_name(raw: str) -> str:
     return name
 
 
-def create_account(
-    db: Session, *, email: str, name: str, password: str, role: UserRole, edu_only: bool = True
-) -> User:
+def create_account(db: Session, *, email: str, name: str, password: str, role: UserRole) -> User:
     """Adds and commits the account. Raises AccountError for a non-edu email, a weak password or a
-    taken email. `edu_only=False` is for tests that need accounts at any address."""
+    taken email."""
     email = normalize_email(email)
-    if edu_only and not is_edu_email(email):
+    if not is_edu_email(email):
         raise AccountError(422, EDU_ONLY)
     name = clean_name(name)
     weakness = check_password(password, email=email, name=name)

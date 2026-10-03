@@ -1,6 +1,7 @@
-"""A lecturer is tied to their Moodle account by email: pushing a course enrols the Moodle user
-whose email matches theirs (case-insensitively) as its teacher, and a lecturer with no such
-account gets a clear error and nothing is pushed. Moodle itself is replaced by a recorder."""
+"""A lecturer is tied to the Moodle account they linked, the one with their email (compared
+case-insensitively): creating a Moodle course and publishing enrol that account as the course's
+teacher, and a lecturer who has not linked one, even when Moodle has a user with their email,
+gets a clear error and nothing is pushed. Moodle itself is replaced by a recorder."""
 
 import uuid
 
@@ -56,10 +57,15 @@ def _course(headers):
     return client.post("/courses", json={"name": "Lập trình"}, headers=headers).json()["id"]
 
 
-def test_the_course_teacher_is_the_moodle_account_with_the_lecturers_email(moodle):
+def _link_account(headers):
+    return client.post("/moodle/account/link", headers=headers)
+
+
+def test_the_course_teacher_is_the_moodle_account_the_lecturer_linked(moodle):
     email, headers = _lecturer()
     moodle["users"][email] = [31]
     moodle["users"]["someone-else@example.com"] = [99]
+    assert _link_account(headers).status_code == 200
     course_id = _course(headers)
 
     response = client.post(f"/courses/{course_id}/create-moodle", headers=headers)
@@ -71,6 +77,7 @@ def test_the_course_teacher_is_the_moodle_account_with_the_lecturers_email(moodl
 def test_the_email_match_ignores_case_on_either_side(moodle):
     email, headers = _lecturer(f"Mixed.Case-{uuid.uuid4().hex[:8]}@Example.com")
     moodle["users"][email.upper()] = [44]
+    assert _link_account(headers).status_code == 200
 
     response = client.post(f"/courses/{_course(headers)}/create-moodle", headers=headers)
 
@@ -78,47 +85,35 @@ def test_the_email_match_ignores_case_on_either_side(moodle):
     assert ("enrol", moodle["course_id"], 44) in moodle["calls"]
 
 
-def test_a_lecturer_without_a_moodle_account_gets_a_clear_error_and_nothing_is_pushed(moodle):
+def test_a_moodle_user_with_the_lecturers_email_is_not_linked_until_they_say_yes(moodle):
     email, headers = _lecturer()
-    moodle["users"]["someone-else@example.com"] = [99]
+    moodle["users"][email] = [31]
     course_id = _course(headers)
 
     response = client.post(f"/courses/{course_id}/create-moodle", headers=headers)
 
     assert response.status_code == 422
-    assert email in response.json()["detail"] and "Moodle" in response.json()["detail"]
+    assert "Liên kết tài khoản Moodle" in response.json()["detail"]
     assert moodle["calls"] == []  # no Moodle course made, so none is left behind
     courses = {c["id"]: c for c in client.get("/courses", headers=headers).json()}
     assert courses[course_id]["moodle_course_id"] is None
 
 
-def test_two_moodle_accounts_with_one_email_do_not_pick_a_teacher_by_guessing(moodle):
+def test_two_moodle_accounts_with_one_email_cannot_be_linked_so_nothing_is_pushed(moodle):
     email, headers = _lecturer()
     moodle["users"][email] = [31, 32]
 
+    assert _link_account(headers).status_code == 422
     response = client.post(f"/courses/{_course(headers)}/create-moodle", headers=headers)
 
     assert response.status_code == 422
-    assert moodle["calls"] == []
-
-
-def test_when_moodle_cannot_be_reached_nothing_is_pushed_and_the_error_says_so(moodle, monkeypatch):
-    _, headers = _lecturer()
-
-    def down(emails):
-        raise httpx.ConnectError("no route")
-
-    monkeypatch.setattr(moodle_client, "find_users_by_email", down)
-
-    response = client.post(f"/courses/{_course(headers)}/create-moodle", headers=headers)
-
-    assert response.status_code == 502
     assert moodle["calls"] == []
 
 
 def test_the_token_owner_is_not_enrolled_any_more(moodle):
     email, headers = _lecturer()
     moodle["users"][email] = [31]
+    _link_account(headers)
 
     client.post(f"/courses/{_course(headers)}/create-moodle", headers=headers)
 
@@ -141,20 +136,53 @@ def _publishable_module(headers):
         return module.id
 
 
-def test_publishing_a_module_needs_the_lecturers_moodle_account_too(moodle):
+def test_publishing_needs_the_linked_account_and_enrols_it_before_writing_anything(moodle):
     email, headers = _lecturer()
+    moodle["users"][email] = [31]
     module_id = _publishable_module(headers)
 
     refused = client.post(f"/modules/{module_id}/publish-to-moodle", json={"section_num": 0}, headers=headers)
 
-    assert refused.status_code == 422 and email in refused.json()["detail"]
+    assert refused.status_code == 422 and "Liên kết tài khoản Moodle" in refused.json()["detail"]
     assert moodle["calls"] == []
 
-    moodle["users"][email] = [31]
+    _link_account(headers)
     accepted = client.post(f"/modules/{module_id}/publish-to-moodle", json={"section_num": 0}, headers=headers)
 
     assert accepted.status_code == 200
-    assert ("book",) in moodle["calls"]
+    moodle_course_id = accepted.json()["moodle_course_id"]
+    assert moodle["calls"] == [("enrol", moodle_course_id, 31), ("book",)]
+
+
+def test_publishing_again_enrols_again_which_moodle_takes_as_no_change(moodle):
+    email, headers = _lecturer()
+    moodle["users"][email] = [31]
+    _link_account(headers)
+    module_id = _publishable_module(headers)
+
+    for _ in range(2):
+        response = client.post(f"/modules/{module_id}/publish-to-moodle", json={"section_num": 0}, headers=headers)
+        assert response.status_code == 200
+
+    assert [call[0] for call in moodle["calls"]] == ["enrol", "book", "enrol", "book"]
+
+
+def test_when_enrolling_fails_nothing_is_published_and_the_error_says_so(moodle, monkeypatch):
+    email, headers = _lecturer()
+    moodle["users"][email] = [31]
+    _link_account(headers)
+    module_id = _publishable_module(headers)
+
+    def down(course_id, user_id):
+        raise httpx.ConnectError("no route")
+
+    monkeypatch.setattr(moodle_client, "enrol_as_teacher", down)
+
+    response = client.post(f"/modules/{module_id}/publish-to-moodle", json={"section_num": 0}, headers=headers)
+
+    assert response.status_code == 502
+    assert "Moodle" in response.json()["detail"]
+    assert moodle["calls"] == []
 
 
 def test_make_account_helper_creates_a_lecturer_not_an_admin():

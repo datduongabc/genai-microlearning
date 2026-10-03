@@ -3,6 +3,8 @@ it is logged. Roles and the locked flag are read from the database on every requ
 takes effect with the token the person already holds."""
 
 import logging
+import threading
+import time
 import uuid
 
 import httpx
@@ -122,6 +124,31 @@ def test_when_moodle_cannot_be_reached_the_status_is_unknown_and_the_list_still_
 
     assert response.status_code == 200
     assert {u["email"]: u for u in response.json()}[email]["moodle_status"] == "unknown"
+
+
+def test_a_slow_moodle_lookup_is_unknown_and_does_not_hold_up_the_list(admin, monkeypatch):
+    slow, quick = _email("slow"), _email("quick")
+    for email in (slow, quick):
+        make_account(email)
+    release = threading.Event()
+
+    def lookup(emails):
+        if slow in emails:
+            release.wait(5)
+        return {e.lower(): [5] for e in emails}
+
+    monkeypatch.setattr(moodle_client, "find_users_by_email", lookup)
+    monkeypatch.setattr(admin_api, "MOODLE_LOOKUP_SECONDS", 0.5)
+
+    started = time.monotonic()
+    response = client.get("/admin/users", headers=_bearer(admin))
+    elapsed = time.monotonic() - started
+    release.set()
+
+    assert response.status_code == 200 and elapsed < 4
+    users = {u["email"]: u for u in response.json()}
+    assert users[slow]["moodle_status"] == "unknown"
+    assert users[quick]["moodle_status"] == "linked"
 
 
 def test_an_email_that_is_taken_or_a_weak_password_is_refused(admin):

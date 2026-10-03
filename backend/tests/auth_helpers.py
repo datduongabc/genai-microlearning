@@ -1,9 +1,10 @@
 """Making accounts and logging in through the real HTTP API, for tests that need a user.
 
-There is no public sign-up: accounts are made by an admin (or the create-admin command), so a
-test makes one the way they do, through create_account."""
+There is no public sign-up: accounts are made by an admin (or the create-admin command). A test
+inserts the row itself, since tests use example.com addresses all over and create_account takes
+only edu ones (that rule, and the rest of create_account, has tests of its own)."""
 
-from app.auth.accounts import create_account
+from app.auth.security import hash_password
 from app.db import SessionLocal
 from app.models import User, UserRole
 
@@ -14,10 +15,19 @@ def make_account(
     email: str, password: str = STRONG_PASSWORD, name: str = "Test", role: UserRole = UserRole.teacher
 ) -> User:
     with SessionLocal() as db:
-        # Tests use example.com addresses all over; the edu rule has tests of its own.
-        user = create_account(db, email=email, name=name, password=password, role=role, edu_only=False)
+        user = User(email=email.strip().lower(), name=name, hashed_password=hash_password(password), role=role)
+        db.add(user)
+        db.commit()
         db.refresh(user)  # the commit expired it, and it is read after the session is closed
         return user
+
+
+def link_moodle_account(user_id, moodle_user_id: int = 4242) -> None:
+    """Stores the lecturer's Moodle link, as their Yes in the pop-up would (POST /moodle/account/link),
+    for tests that are not about linking it."""
+    with SessionLocal() as db:
+        db.get(User, user_id).moodle_user_id = moodle_user_id
+        db.commit()
 
 
 def create_and_login(client, email: str, password: str = STRONG_PASSWORD, role: UserRole = UserRole.teacher) -> dict:

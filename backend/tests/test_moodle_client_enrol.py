@@ -1,7 +1,8 @@
 from app.moodle import client as moodle_client
 
-# The conftest stands in for it in every test; these tests are about the real one.
+# The conftest stands in for these in every test; these tests are about the real ones.
 REAL_FIND_USERS_BY_EMAIL = moodle_client.find_users_by_email
+REAL_ENROL_AS_TEACHER = moodle_client.enrol_as_teacher
 EDITING_TEACHER_ROLE_ID = 3  # Moodle's built-in "Teacher" (editingteacher) role
 
 
@@ -13,7 +14,7 @@ def test_enrol_as_teacher_enrols_the_given_moodle_user_in_the_given_course(monke
 
     monkeypatch.setattr(moodle_client, "call", fake_call)
 
-    moodle_client.enrol_as_teacher(course_id=7, user_id=42)
+    REAL_ENROL_AS_TEACHER(course_id=7, user_id=42)
 
     # Not the owner of the web service token: no call asks who that is.
     assert calls == [
@@ -31,7 +32,7 @@ def test_enrol_as_teacher_surfaces_moodle_errors(monkeypatch):
     monkeypatch.setattr(moodle_client, "call", fake_call)
 
     try:
-        moodle_client.enrol_as_teacher(course_id=7, user_id=42)
+        REAL_ENROL_AS_TEACHER(course_id=7, user_id=42)
     except moodle_client.MoodleError:
         return
     raise AssertionError("MoodleError should propagate to the caller")

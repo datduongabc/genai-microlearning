@@ -1,6 +1,6 @@
-"""The lecturer's own Moodle account, linked by their choice (the pop-up's "Yes"): the Moodle user
-with their email is linked, one is created when there is none, only an edu address is created,
-and a course cannot be linked before the account is."""
+"""The lecturer's own Moodle account, linked by their choice (the pop-up's "Yes") and remembered:
+the Moodle user with their email is linked, one is created when there is none, only an edu address
+is created, and a course cannot be linked before the account is, even when Moodle has their email."""
 
 import uuid
 
@@ -58,12 +58,27 @@ def test_other_addresses_are_refused(email):
     assert not is_edu_email(email)
 
 
-def test_the_account_is_not_linked_until_a_moodle_user_has_the_email(moodle):
+def test_the_account_is_not_linked_until_the_lecturer_says_yes_even_when_moodle_has_their_email(moodle):
     email, headers = _lecturer()
 
     assert client.get("/moodle/account", headers=headers).json() == {"email": email, "status": "not_linked"}
 
     moodle["users"][email.upper()] = [55]
+    assert client.get("/moodle/account", headers=headers).json() == {"email": email, "status": "not_linked"}
+
+    client.post("/moodle/account/link", headers=headers)
+    assert client.get("/moodle/account", headers=headers).json() == {"email": email, "status": "linked"}
+
+
+def test_the_link_is_remembered_so_it_holds_while_moodle_is_down(moodle, monkeypatch):
+    _, headers = _lecturer()
+    client.post("/moodle/account/link", headers=headers)
+
+    def down(emails):
+        raise httpx.ConnectError("no route")
+
+    monkeypatch.setattr(moodle_client, "find_users_by_email", down)
+
     assert client.get("/moodle/account", headers=headers).json()["status"] == "linked"
 
 
@@ -85,6 +100,7 @@ def test_yes_links_the_moodle_user_that_already_has_the_email_and_creates_nothin
     assert response.status_code == 200
     assert response.json() == {"email": email, "status": "linked", "created": False}
     assert moodle["created"] == []
+    assert client.get("/moodle/account", headers=headers).json()["status"] == "linked"
 
 
 def test_yes_creates_the_moodle_user_when_there_is_none_and_a_second_yes_does_not_duplicate(moodle):
@@ -134,7 +150,8 @@ def test_an_admin_has_no_moodle_account_to_link_and_a_stranger_is_turned_away(mo
 
 
 def test_a_course_cannot_be_linked_or_created_in_moodle_before_the_account_is(moodle):
-    _, headers = _lecturer()
+    email, headers = _lecturer()
+    moodle["users"][email] = [55]
     course_id = client.post("/courses", json={"name": "Lập trình"}, headers=headers).json()["id"]
     moodle_id = 1_000 + uuid.uuid4().int % 10**9  # unique: the claims table outlives the run
 

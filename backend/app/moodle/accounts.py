@@ -1,4 +1,5 @@
-"""Which Moodle account is a lecturer: the one with the same email, compared case-insensitively."""
+"""Which Moodle account is a lecturer: the one they linked, which has their email (compared
+case-insensitively)."""
 
 import secrets
 
@@ -10,36 +11,25 @@ from app.moodle import client
 
 
 class MoodleAccountMissing(Exception):
-    """No single Moodle account matches the lecturer's email."""
+    """The lecturer's Moodle account cannot be linked: several share the email, or none can be made."""
 
     def __init__(self, message: str):
         super().__init__(message)
         self.message = message
 
 
-def moodle_user_id(user: User) -> int:
-    """The id of the lecturer's Moodle account. Raises MoodleAccountMissing when there is none
-    (or more than one, which cannot tell who the teacher is), and lets Moodle errors through."""
-    ids = client.find_users_by_email([user.email])[user.email.strip().lower()]
-    if not ids:
-        raise MoodleAccountMissing(
-            f"Không tìm thấy tài khoản Moodle nào có email {user.email}. "
-            "Hãy liên kết tài khoản Moodle của bạn (nút \"Liên kết tài khoản Moodle\") rồi thử lại."
-        )
-    if len(ids) > 1:
-        raise MoodleAccountMissing(
-            f"Có nhiều tài khoản Moodle cùng email {user.email}, không xác định được giáo viên. "
-            "Hãy nhờ admin Moodle xử lý trùng email rồi thử lại."
-        )
-    return ids[0]
-
-
 def require_moodle_user_id(user: User) -> int:
-    """moodle_user_id for an endpoint: a missing account is a 422 the lecturer can act on."""
-    try:
-        return moodle_user_id(user)
-    except MoodleAccountMissing as missing:
-        raise HTTPException(status_code=422, detail=missing.message) from missing
+    """The Moodle account the lecturer chose to link (POST /moodle/account/link). One whose email
+    merely exists in Moodle is not linked until they say so: a 422 the lecturer can act on."""
+    if user.moodle_user_id is None:
+        raise HTTPException(
+            status_code=422,
+            detail=(
+                "Bạn chưa liên kết tài khoản Moodle. "
+                "Hãy bấm \"Liên kết tài khoản Moodle\" rồi thử lại."
+            ),
+        )
+    return user.moodle_user_id
 
 
 def _moodle_names(name: str) -> tuple[str, str]:

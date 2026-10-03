@@ -1,6 +1,7 @@
 """The lecturer's own Moodle account, which they choose to link: the one that already has their
-email (case-insensitive) is linked, and when there is none it is created. A lecturer must have it
-before linking a course (courses.py) or pushing (moodle.py)."""
+email (case-insensitive) is linked, and when there is none it is created. The link is stored
+(users.moodle_user_id), and a lecturer must have it before linking a course (courses.py) or
+pushing (moodle.py)."""
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
@@ -30,15 +31,19 @@ def _lecturer(user: User) -> User:
 def get_account(
     request: Request, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)
 ):
-    """Whether the lecturer's Moodle account is linked, i.e. whether exactly one Moodle user has
-    their email. The pop-up that recommends linking asks this."""
+    """Whether the lecturer has linked their Moodle account. The pop-up that recommends linking
+    asks this: "linked" only once they said Yes, "not_linked" before (even when Moodle already has
+    a user with their email), and "ambiguous" when several Moodle users share it, which Yes cannot
+    link."""
     user = _lecturer(current_user)
+    if user.moodle_user_id is not None:
+        return {"email": user.email, "status": "linked"}
     email = user.email.strip().lower()
     try:
         count = len(moodle_client.find_users_by_email([email])[email])
     except MOODLE_FAILURES as e:
         raise moodle_failure(e, db) from e
-    return {"email": user.email, "status": "not_linked" if count == 0 else "linked" if count == 1 else "ambiguous"}
+    return {"email": user.email, "status": "ambiguous" if count > 1 else "not_linked"}
 
 
 @router.post("/account/link")
@@ -46,13 +51,16 @@ def get_account(
 def link_account(
     request: Request, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)
 ):
-    """The "Yes" of the pop-up: link the Moodle user with the lecturer's email, or create it."""
+    """The "Yes" of the pop-up: link the Moodle user with the lecturer's email, or create it, and
+    remember which one it is."""
     user = _lecturer(current_user)
     try:
-        _, created = ensure_moodle_user(user)
+        moodle_user_id, created = ensure_moodle_user(user)
     except MoodleAccountMissing as refused:
         raise HTTPException(status_code=422, detail=refused.message) from refused
     except MOODLE_FAILURES as e:
         raise moodle_failure(e, db) from e
+    user.moodle_user_id = moodle_user_id
+    db.commit()
     log_auth_event(audit.MOODLE_ACCOUNT_LINKED, request, user_id=user.id, email=user.email, detail={"created": created})
     return {"email": user.email, "status": "linked", "created": created}

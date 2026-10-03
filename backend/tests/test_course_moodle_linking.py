@@ -20,7 +20,7 @@ def _make_authed_user() -> tuple[str, uuid.UUID]:
     db = SessionLocal()
     try:
         user = User(
-            email=f"user-{suffix}@example.com", name="Test", hashed_password="x", role=UserRole.teacher
+            email=f"user-{suffix}@example.com", name="Test", hashed_password="x", role=UserRole.teacher, moodle_user_id=4242
         )
         db.add(user)
         db.commit()
@@ -71,20 +71,41 @@ def test_cannot_link_another_users_course():
     assert response.status_code == 404
 
 
-def test_linking_an_existing_moodle_course_does_not_touch_its_enrolments(monkeypatch):
+def test_linking_an_existing_moodle_course_enrols_the_lecturers_linked_moodle_account(monkeypatch):
     token, _ = _make_authed_user()
     course_id = _make_course(token, uuid.uuid4().hex[:8])
+    moodle_id = _fresh_moodle_id()
     enrol_calls = []
     monkeypatch.setattr(moodle_client, "enrol_as_teacher", lambda cid, uid: enrol_calls.append((cid, uid)))
 
     response = client.post(
         f"/courses/{course_id}/link-moodle",
-        json={"moodle_course_id": _fresh_moodle_id()},
+        json={"moodle_course_id": moodle_id},
         headers={"Authorization": f"Bearer {token}"},
     )
 
     assert response.status_code == 200
-    assert enrol_calls == []  # it's someone's existing course; we only link, never enrol
+    assert enrol_calls == [(moodle_id, 4242)]  # 4242: the Moodle account the lecturer linked
+
+
+def test_linking_keeps_the_link_and_says_so_when_enrolment_fails(monkeypatch):
+    token, _ = _make_authed_user()
+    course_id = _make_course(token, uuid.uuid4().hex[:8])
+    headers = {"Authorization": f"Bearer {token}"}
+    moodle_id = _fresh_moodle_id()
+
+    def failing_enrol(cid, uid):
+        raise moodle_client.MoodleError("enrol_manual_enrol_users: instance disabled")
+
+    monkeypatch.setattr(moodle_client, "enrol_as_teacher", failing_enrol)
+
+    response = client.post(f"/courses/{course_id}/link-moodle", json={"moodle_course_id": moodle_id}, headers=headers)
+
+    assert response.status_code == 502
+    assert str(moodle_id) in response.json()["detail"]
+    # Publishing enrols again, so the link is kept rather than undone.
+    courses = {c["id"]: c["moodle_course_id"] for c in client.get("/courses", headers=headers).json()}
+    assert courses[course_id] == moodle_id
 
 
 def test_create_moodle_creates_a_new_course_when_not_yet_linked(monkeypatch):
@@ -113,7 +134,7 @@ def test_create_moodle_enrols_the_lecturers_own_moodle_account_as_teacher(monkey
     response = client.post(f"/courses/{course_id}/create-moodle", headers={"Authorization": f"Bearer {token}"})
 
     assert response.status_code == 200
-    assert enrol_calls == [(moodle_id, 4242)]  # 4242: the Moodle account conftest gives every email
+    assert enrol_calls == [(moodle_id, 4242)]  # 4242: the Moodle account the lecturer linked
 
 
 def test_create_moodle_keeps_the_link_when_enrolment_fails(monkeypatch):

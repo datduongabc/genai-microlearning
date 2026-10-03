@@ -160,10 +160,12 @@ def publish_to_moodle(
     if not chapters:
         raise HTTPException(status_code=422, detail="Mô-đun chưa có nội dung nào để đẩy lên Moodle.")
 
+    # The lecturer must have linked their Moodle account to see what is pushed, so nothing is
+    # written for one who has not.
+    teacher_id = require_moodle_user_id(current_user)
     try:
-        # The lecturer must have a Moodle account (same email) to see what is pushed, so
-        # nothing is written for one who has none.
-        require_moodle_user_id(current_user)
+        # Idempotent: the lecturer teaches the course they push to, however it was linked.
+        moodle_client.enrol_as_teacher(course.moodle_course_id, teacher_id)
         result = {
             "moodle_course_id": course.moodle_course_id,
             "book_cmid": moodle_client.create_book(

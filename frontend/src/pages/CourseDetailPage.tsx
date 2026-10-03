@@ -261,9 +261,22 @@ export function CourseDetailPage() {
     if (!confirmed) return;
 
     setDeletingDocId(doc.id);
+    setError(null);
+    setNotice(null);
     try {
       await deleteDocument(doc.id);
+    } catch (err) {
+      setError(apiErrorMessage(err, "Xóa tài liệu thất bại"));
+      setDeletingDocId(null);
+      return;
+    }
+    setNotice(`Đã xóa tài liệu "${doc.filename}".`);
+    try {
       await refresh();
+    } catch (err) {
+      setError(
+        `${apiErrorMessage(err, "Không tải lại được danh sách")}. Tài liệu đã được xóa, hãy tải lại trang để thấy danh sách mới.`,
+      );
     } finally {
       setDeletingDocId(null);
     }
@@ -275,9 +288,23 @@ export function CourseDetailPage() {
     setNotice(null);
     try {
       await retryJob(failure.job_id);
-      await refresh();
     } catch (err) {
       setError(apiErrorMessage(err, "Thử lại thất bại"));
+      setRetryingJobIds((ids) => {
+        const next = new Set(ids);
+        next.delete(failure.job_id);
+        return next;
+      });
+      return;
+    }
+    // The job is queued again whatever happens next: retrying it once more would be refused.
+    setNotice("Đã gửi yêu cầu thử lại.");
+    try {
+      await refresh();
+    } catch (err) {
+      setError(
+        `${apiErrorMessage(err, "Không tải lại được danh sách")}. Đã gửi yêu cầu thử lại, hãy tải lại trang để thấy trạng thái mới.`,
+      );
     } finally {
       setRetryingJobIds((ids) => {
         const next = new Set(ids);

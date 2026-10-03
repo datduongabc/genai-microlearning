@@ -108,10 +108,7 @@ def link_moodle_course(
     course = _get_owned_course(course_id, db, current_user)
     moodle_course_id = payload.moodle_course_id
     # The lecturer's own Moodle account comes first: linking a course is for someone who can see it.
-    try:
-        require_moodle_user_id(current_user)
-    except MOODLE_FAILURES as e:
-        raise moodle_failure(e, db) from e
+    teacher_id = require_moodle_user_id(current_user)
     # The same answer whether the course is somebody else's or does not exist at all, so
     # a stranger cannot tell which ids are taken.
     unavailable = HTTPException(status_code=404, detail="Không tìm thấy khóa học Moodle này")
@@ -140,7 +137,19 @@ def link_moodle_course(
         raise HTTPException(
             status_code=409, detail="This Moodle course is already linked to another course here"
         ) from e
-    return {"moodle_course_id": course.moodle_course_id}
+    # Enrolling an existing teacher again changes nothing in Moodle, so a course the lecturer
+    # already teaches is fine; one they do not shows up on their dashboard from now on.
+    try:
+        moodle_client.enrol_as_teacher(moodle_course_id, teacher_id)
+    except MoodleError as e:
+        raise HTTPException(
+            status_code=502,
+            detail=(
+                f"Moodle course {moodle_course_id} was linked, "
+                f"but enrolling you as its teacher failed: {e}"
+            ),
+        ) from e
+    return {"moodle_course_id": moodle_course_id}
 
 
 @router.post("/{course_id}/create-moodle")
@@ -155,12 +164,9 @@ def create_moodle_course(
     course = _get_owned_course(course_id, db, current_user)
     if course.moodle_course_id is not None:
         raise HTTPException(status_code=400, detail="Course already linked to a Moodle course")
-    # Before anything is created: the teacher is the lecturer's own Moodle account, found by
-    # email. Without one nothing is pushed, so no course is left behind in Moodle.
-    try:
-        teacher_id = require_moodle_user_id(current_user)
-    except MOODLE_FAILURES as e:
-        raise moodle_failure(e, db) from e
+    # Before anything is created: the teacher is the Moodle account the lecturer linked. Without
+    # one nothing is pushed, so no course is left behind in Moodle.
+    teacher_id = require_moodle_user_id(current_user)
     try:
         course.moodle_course_id = moodle_client.create_course(course.name)
     except MoodleError as e:
