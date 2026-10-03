@@ -81,7 +81,9 @@ def sparse_search(
     key = (course_id, scope)
     cached = _bm25_cache.get(key)
     if cached is None:
-        rows = _scoped(db.query(Chunk.id, Chunk.content).filter(Chunk.course_id == course_id), scope).all()
+        rows = _scoped(
+            db.query(Chunk.id, Chunk.content).filter(Chunk.course_id == course_id), scope
+        ).all()
         if not rows:
             return []
         bm25 = BM25Okapi([_tokenize(content) for _, content in rows])

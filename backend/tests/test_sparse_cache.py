@@ -54,7 +54,12 @@ def test_sparse_search_reuses_cache_across_sessions_after_commit_and_close():
     try:
         course_id, _ = _seed_course_with_chunks(
             seed_db,
-            ["binary search algorithm", "linked list structure", "hash table buckets", "quicksort partition pivot"],
+            [
+                "binary search algorithm",
+                "linked list structure",
+                "hash table buckets",
+                "quicksort partition pivot",
+            ],
         )
     finally:
         seed_db.close()
