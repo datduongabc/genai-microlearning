@@ -83,40 +83,76 @@ def create_course(name: str) -> int:
     return int(result[0]["id"])
 
 
+# Moodle's own front page is course 1; it is not a course anyone teaches.
+_SITE_COURSE_ID = 1
+
 # Moodle's built-in "Teacher" (editingteacher) role -- id 3 on every fresh install.
 _EDITING_TEACHER_ROLE_ID = 3
 
 
-def enrol_as_teacher(course_id: int) -> None:
-    """Enrol the account owning the web service token as the course's teacher.
+def find_users_by_email(emails: list[str]) -> dict[str, list[int]]:
+    """The Moodle user ids behind each email, compared case-insensitively. Keys are the emails
+    in lower case; an email nobody has maps to []. Moodle can hold several accounts with one
+    email, so what comes back is a list."""
+    wanted = list(dict.fromkeys(e.strip().lower() for e in emails))
+    found: dict[str, list[int]] = {email: [] for email in wanted}
+    if not wanted:
+        return found
+    for email in wanted:
+        # core_user_get_users matches the email without regard to case (core_user_get_users_by_field
+        # compares exactly, so it misses an account Moodle stores as "Lan@School.edu"). It treats _
+        # and % as wildcards, hence the exact comparison below.
+        result = call("core_user_get_users", criteria=[{"key": "email", "value": email}])
+        for user in result.get("users", []):
+            if str(user.get("email", "")).strip().lower() == email:
+                found[email].append(int(user["id"]))
+    return found
+
+
+def user_exists(user_id: int) -> bool:
+    """Whether Moodle still has this user; core_user_get_users leaves deleted ones out."""
+    result = call("core_user_get_users", criteria=[{"key": "id", "value": user_id}])
+    return any(int(user["id"]) == user_id for user in result.get("users", []))
+
+
+def create_user(email: str, firstname: str, lastname: str, password: str) -> int:
+    """Creates a Moodle user and returns its id. The email (lower case) doubles as the username,
+    which Moodle accepts and which is unique where the email is. Moodle refuses an email that
+    another account already has, so callers look the email up first (find_users_by_email)."""
+    result = call(
+        "core_user_create_users",
+        users=[{
+            "username": email, "password": password, "firstname": firstname, "lastname": lastname,
+            "email": email, "auth": "manual",
+        }],
+    )
+    return int(result[0]["id"])
+
+
+def enrol_as_teacher(course_id: int, user_id: int) -> None:
+    """Enrol the Moodle user as the course's teacher.
 
     Moodle's own "add a course" form enrols its creator, but the
     core_course_create_courses web service does not, and the dashboard
     (/my/) lists only courses the logged-in user is enrolled in -- so a
     course created here would otherwise exist yet never show up for the
-    teacher.
+    teacher. `user_id` is the lecturer's own Moodle account (found by email,
+    see app/moodle/accounts.py), not the account that owns the web service token.
     """
-    user_id = int(call("core_webservice_get_site_info")["userid"])
     call(
         "enrol_manual_enrol_users",
         enrolments=[{"roleid": _EDITING_TEACHER_ROLE_ID, "userid": user_id, "courseid": course_id}],
     )
 
 
-def search_courses(query: str, limit: int = 20) -> list[dict[str, Any]]:
-    """Search existing Moodle courses by name/shortname, so a teacher can
-    link an app Course to a course they already set up manually (e.g.
-    "CO3061") instead of always creating a brand new Moodle course."""
-    result = call(
-        "core_course_search_courses",
-        criterianame="search",
-        criteriavalue=query,
-        page=0,
-        perpage=limit,
-    )
+def list_courses() -> list[dict[str, Any]]:
+    """Every course created in Moodle (not the site's own front page), for the drop-down a
+    lecturer picks from when linking a course."""
+    result = call("core_course_get_courses")
     return [
         {"id": c["id"], "fullname": c["fullname"], "shortname": c["shortname"]}
-        for c in result["courses"]
+        for c in result
+        if c["id"] != _SITE_COURSE_ID
     ]
 
 

@@ -13,16 +13,19 @@ import {
   listDocuments,
   listModules,
   pollJobStatus,
-  searchMoodleCourses,
+  retryJob,
+  listMoodleCourses,
   unlinkMoodleCourse,
   uploadDocument,
   type Course,
+  type DocumentFailure,
   type DocumentInfo,
   type ModuleSummary,
-  type MoodleCourseSearchResult,
+  type MoodleCourse,
 } from "../api";
 import { AppShell } from "../components/AppShell";
 import { ModelPicker } from "../components/ModelPicker";
+import { MoodleAccountSection, type MoodleAccountState } from "../components/MoodleAccountSection";
 import { GenerateDialog } from "../components/GenerateDialog";
 import { ModuleListItem } from "../components/ModuleListItem";
 import { SectionTree } from "../components/SectionTree";
@@ -42,6 +45,35 @@ const DOCUMENT_POLL_INTERVAL_MS = 3000;
 
 function isPipelineActive(doc: DocumentInfo): boolean {
   return doc.status === "uploaded" || doc.status === "processing";
+}
+
+// The list can be narrowed to what needs attention. "Lỗi" also catches a ready document whose
+// module generation failed: that failure is on its document, not in its status.
+type StatusFilter = "all" | "processing" | "ready" | "failed";
+
+const FILTER_LABEL: Record<StatusFilter, string> = {
+  all: "Tất cả",
+  processing: "Đang xử lý",
+  ready: "Sẵn sàng",
+  failed: "Lỗi",
+};
+
+function matchesFilter(doc: DocumentInfo, filter: StatusFilter): boolean {
+  switch (filter) {
+    case "processing":
+      return doc.status === "uploaded" || doc.status === "processing" || doc.status === "chunked";
+    case "ready":
+      return doc.status === "embedded";
+    case "failed":
+      return doc.status === "failed" || doc.failures.length > 0;
+    default:
+      return true;
+  }
+}
+
+function failureTitle(failure: DocumentFailure): string {
+  if (failure.job_type === "document_pipeline") return "Xử lý tài liệu thất bại";
+  return failure.section_title ? `Sinh mô-đun cho mục "${failure.section_title}" thất bại` : "Sinh mô-đun thất bại";
 }
 
 const STATUS_COLOR: Record<string, string> = {
@@ -87,6 +119,11 @@ export function CourseDetailPage() {
   const [deletingDocId, setDeletingDocId] = useState<string | null>(null);
   const [deletingModuleId, setDeletingModuleId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // What went right but is worth saying (a delete that succeeded although the list could not
+  // be reloaded afterwards); shown apart from `error` so it does not read as a failure.
+  const [notice, setNotice] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [retryingJobIds, setRetryingJobIds] = useState<Set<string>>(new Set());
   // Only bridges the moment between clicking and the server reporting the
   // job (so a double-click cannot send two requests); after that, and after
   // a refresh or navigation, `doc.generating` from the server is the truth.
@@ -136,6 +173,7 @@ export function CourseDetailPage() {
   const pipelineActive = documents.some(isPipelineActive);
   const uploadBusy = uploading || pipelineActive;
   const generatingOnServer = documents.some((d) => d.generating);
+  const visibleDocuments = documents.filter((d) => matchesFilter(d, statusFilter));
   const shouldPoll = pipelineActive || generatingOnServer;
   const isGenerating = (doc: DocumentInfo) => doc.generating || startingIds.has(doc.id);
   // A textbook with a detected outline is generated section by section, so the
@@ -194,10 +232,9 @@ export function CourseDetailPage() {
     setError(null);
     try {
       const { job_id } = await generateModule(documentId, modelAlias, outputLanguage, customInstructions);
-      const finalStatus = await pollJobStatus(() => getModuleJobStatus(job_id));
-      if (finalStatus.status === "failed") {
-        setError(finalStatus.last_error ?? "Sinh mô-đun thất bại");
-      }
+      // A failed job needs no banner here: the refresh brings it back on the document, with its
+      // error and a retry button, and it is still there after a reload.
+      await pollJobStatus(() => getModuleJobStatus(job_id));
       await refresh();
     } catch (err) {
       if (axios.isAxiosError(err) && err.response?.status === 409) {
@@ -221,11 +258,56 @@ export function CourseDetailPage() {
     if (!confirmed) return;
 
     setDeletingDocId(doc.id);
+    setError(null);
+    setNotice(null);
     try {
       await deleteDocument(doc.id);
+    } catch (err) {
+      setError(apiErrorMessage(err, "Xóa tài liệu thất bại"));
+      setDeletingDocId(null);
+      return;
+    }
+    setNotice(`Đã xóa tài liệu "${doc.filename}".`);
+    try {
       await refresh();
+    } catch (err) {
+      setError(
+        `${apiErrorMessage(err, "Không tải lại được danh sách")}. Tài liệu đã được xóa, hãy tải lại trang để thấy danh sách mới.`,
+      );
     } finally {
       setDeletingDocId(null);
+    }
+  }
+
+  async function handleRetry(failure: DocumentFailure) {
+    setRetryingJobIds((ids) => new Set(ids).add(failure.job_id));
+    setError(null);
+    setNotice(null);
+    try {
+      await retryJob(failure.job_id);
+    } catch (err) {
+      setError(apiErrorMessage(err, "Thử lại thất bại"));
+      setRetryingJobIds((ids) => {
+        const next = new Set(ids);
+        next.delete(failure.job_id);
+        return next;
+      });
+      return;
+    }
+    // The job is queued again whatever happens next: retrying it once more would be refused.
+    setNotice("Đã gửi yêu cầu thử lại.");
+    try {
+      await refresh();
+    } catch (err) {
+      setError(
+        `${apiErrorMessage(err, "Không tải lại được danh sách")}. Đã gửi yêu cầu thử lại, hãy tải lại trang để thấy trạng thái mới.`,
+      );
+    } finally {
+      setRetryingJobIds((ids) => {
+        const next = new Set(ids);
+        next.delete(failure.job_id);
+        return next;
+      });
     }
   }
 
@@ -239,11 +321,23 @@ export function CourseDetailPage() {
 
     setDeletingModuleId(m.id);
     setError(null);
+    setNotice(null);
     try {
       await deleteModule(m.id);
-      await refresh();
     } catch (err) {
       setError(apiErrorMessage(err, "Xóa mô-đun thất bại"));
+      setDeletingModuleId(null);
+      return;
+    }
+    // The module is gone whatever happens next: a list that cannot be reloaded is a different
+    // problem, and saying the delete failed would send the lecturer to delete it again.
+    setNotice(`Đã xóa mô-đun "${m.title}".`);
+    try {
+      await refresh();
+    } catch (err) {
+      setError(
+        `${apiErrorMessage(err, "Không tải lại được danh sách")}. Mô-đun đã được xóa, hãy tải lại trang để thấy danh sách mới.`,
+      );
     } finally {
       setDeletingModuleId(null);
     }
@@ -287,13 +381,34 @@ export function CourseDetailPage() {
           audio/video dài.
         </p>
       )}
+      {notice && <p className="mt-3 text-sm text-green-800">{notice}</p>}
       {error && <p className="mt-3 text-sm text-red-700">{error}</p>}
+
+      {!loading && documents.length > 0 && (
+        <div className="mt-6 flex items-center gap-2">
+          <label htmlFor="document-status-filter" className="text-sm text-gray-600">
+            Trạng thái:
+          </label>
+          <select
+            id="document-status-filter"
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
+            className="rounded-[3px] border border-gray-300 px-2 py-1 text-sm"
+          >
+            {(Object.keys(FILTER_LABEL) as StatusFilter[]).map((value) => (
+              <option key={value} value={value}>
+                {FILTER_LABEL[value]}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
 
       {loading ? (
         <p className="mt-8 text-sm text-gray-500">Đang tải...</p>
       ) : (
-        <ul className="mt-8 flex flex-col divide-y divide-gray-200">
-          {documents.map((d) => (
+        <ul className="mt-4 flex flex-col divide-y divide-gray-200">
+          {visibleDocuments.map((d) => (
             <li key={d.id} className="py-5">
               <div className="flex items-center justify-between gap-4">
                 <div>
@@ -333,6 +448,29 @@ export function CourseDetailPage() {
                   </button>
                 </div>
               </div>
+              {d.failures.length > 0 && (
+                <ul className="mt-2 flex flex-col gap-2">
+                  {d.failures.map((f) => (
+                    <li
+                      key={f.job_id}
+                      className="flex flex-wrap items-start justify-between gap-3 rounded-[3px] border border-red-200 bg-red-50 px-3 py-2"
+                    >
+                      <div className="min-w-0 text-sm text-red-800">
+                        <div className="font-medium">{failureTitle(f)}</div>
+                        {f.error && <div className="mt-0.5 break-words text-xs">{f.error}</div>}
+                      </div>
+                      <button
+                        onClick={() => handleRetry(f)}
+                        disabled={retryingJobIds.has(f.job_id)}
+                        aria-label={`Thử lại: ${failureTitle(f)} (${d.filename})`}
+                        className="shrink-0 text-sm font-semibold text-terracotta hover:underline disabled:opacity-60"
+                      >
+                        {retryingJobIds.has(f.job_id) ? "Đang thử lại..." : "Thử lại"}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
               {d.kind === "textbook" && d.status === "embedded" && d.section_count === 0 && (
                 <p className="mt-2 text-xs text-gray-500">
                   Không nhận diện được mục lục của tài liệu này, nên sinh mô-đun từ toàn bộ tài liệu.
@@ -366,6 +504,9 @@ export function CourseDetailPage() {
           {documents.length === 0 && (
             <p className="py-4 text-sm text-gray-500">Chưa có tài liệu nào.</p>
           )}
+          {documents.length > 0 && visibleDocuments.length === 0 && (
+            <p className="py-4 text-sm text-gray-500">Không có tài liệu nào ở trạng thái này.</p>
+          )}
         </ul>
       )}
     </AppShell>
@@ -373,11 +514,35 @@ export function CourseDetailPage() {
 }
 
 function MoodleLinkSection({ course, onLinked }: { course: Course; onLinked: () => void }) {
-  const [query, setQuery] = useState("");
-  const [results, setResults] = useState<MoodleCourseSearchResult[]>([]);
-  const [searching, setSearching] = useState(false);
+  // What the "Tài khoản Moodle" section above got from the server; "unknown" until it answers,
+  // and the server refuses a course link without the account anyway.
+  const [account, setAccount] = useState<MoodleAccountState>("unknown");
+  const [courses, setCourses] = useState<MoodleCourse[]>([]);
+  const [chosen, setChosen] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const linked = course.moodle_course_id !== null;
+
+  // The courses to pick from, once the account is linked. Sets state only from promise
+  // callbacks, and drops an answer that arrives after the effect was cleaned up.
+  useEffect(() => {
+    if (linked || account !== "linked") return;
+    let cancelled = false;
+    listMoodleCourses().then(
+      (list) => {
+        if (!cancelled) {
+          setCourses(list);
+          setError(null);
+        }
+      },
+      (err) => {
+        if (!cancelled) setError(apiErrorMessage(err, "Không tải được danh sách course Moodle"));
+      },
+    );
+    return () => {
+      cancelled = true;
+    };
+  }, [linked, account]);
 
   async function handleUnlink() {
     // Chỉ xóa liên kết trong app -- KHÔNG đụng gì tới course/page/quiz thật
@@ -400,27 +565,17 @@ function MoodleLinkSection({ course, onLinked }: { course: Course; onLinked: () 
     }
   }
 
-  async function handleSearch() {
-    if (!query.trim()) return;
-    setSearching(true);
-    setError(null);
-    try {
-      setResults(await searchMoodleCourses(query.trim()));
-    } catch {
-      setError("Tìm kiếm course trên Moodle thất bại");
-    } finally {
-      setSearching(false);
-    }
-  }
-
-  async function handleLink(moodleCourseId: number) {
+  async function handleLink() {
+    if (!chosen) return;
     setBusy(true);
     setError(null);
     try {
-      await linkMoodleCourse(course.id, moodleCourseId);
+      await linkMoodleCourse(course.id, Number(chosen));
       onLinked();
     } catch (err) {
       setError(apiErrorMessage(err, "Liên kết course thất bại"));
+      // The server may have linked the course before enrolling failed.
+      await Promise.resolve(onLinked()).catch(() => {});
     } finally {
       setBusy(false);
     }
@@ -432,16 +587,22 @@ function MoodleLinkSection({ course, onLinked }: { course: Course; onLinked: () 
     try {
       await createMoodleCourseFor(course.id);
       onLinked();
-    } catch {
-      setError("Tạo course Moodle mới thất bại");
+    } catch (err) {
+      // The server explains a refusal such as "no Moodle account has your email".
+      setError(apiErrorMessage(err, "Tạo course Moodle mới thất bại"));
+      // The server may have created and linked the course before enrolling failed.
+      await Promise.resolve(onLinked()).catch(() => {});
     } finally {
       setBusy(false);
     }
   }
 
+  const accountSection = <MoodleAccountSection onStatus={setAccount} />;
+
   if (course.moodle_course_id !== null) {
     return (
       <div className="mb-6">
+        {accountSection}
         <div className="flex items-center justify-between text-sm text-gray-600">
           <p>
             Đã liên kết với Moodle course id <strong>{course.moodle_course_id}</strong>.
@@ -459,54 +620,60 @@ function MoodleLinkSection({ course, onLinked }: { course: Course; onLinked: () 
     );
   }
 
-  return (
-    <div className="mb-6 rounded-[3px] border border-gray-200 p-4">
-      <p className="mb-2 text-sm font-medium">Course này chưa liên kết với Moodle.</p>
-      {/* Trên điện thoại ô tìm kiếm chiếm trọn một hàng và hai nút xuống hàng dưới: ép cả ba vào
-          một hàng 390px thì nút "Tạo course Moodle mới" gãy thành bốn dòng. */}
-      <div className="flex flex-wrap gap-2">
-        <input
-          type="text"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-          placeholder="Tìm course Moodle có sẵn (vd: CO3061)"
-          className="min-w-0 flex-1 basis-full rounded-[3px] border border-gray-300 px-3 py-1.5 text-sm sm:basis-auto"
-        />
-        <button
-          onClick={handleSearch}
-          disabled={searching}
-          className="whitespace-nowrap rounded-[3px] border border-gray-300 px-3 py-1.5 text-sm hover:bg-gray-50 disabled:opacity-60"
-        >
-          {searching ? "Đang tìm..." : "Tìm"}
-        </button>
-        <button
-          onClick={handleCreateNew}
-          disabled={busy}
-          className="whitespace-nowrap rounded-[3px] bg-navy px-3 py-1.5 text-sm font-semibold text-[#f3f1ea] hover:bg-[#28394b] disabled:opacity-60"
-        >
-          Tạo course Moodle mới
-        </button>
+  if (account === "not_linked" || account === "ambiguous") {
+    return (
+      <div className="mb-6">
+        {accountSection}
+        <div className="rounded-[3px] border border-gray-200 p-4">
+          <p className="mb-2 text-sm font-medium">Course này chưa liên kết với Moodle.</p>
+          <p className="text-sm text-gray-600">
+            Bạn cần liên kết tài khoản Moodle của mình trước (nút "Liên kết tài khoản Moodle" ở trên): tài
+            khoản Moodle có cùng email sẽ được liên kết, nếu chưa có thì hệ thống tạo mới.
+          </p>
+          {error && <p className="mt-2 text-sm text-red-700">{error}</p>}
+        </div>
       </div>
-      {results.length > 0 && (
-        <ul className="mt-3 flex flex-col divide-y divide-gray-100">
-          {results.map((r) => (
-            <li key={r.id} className="flex items-center justify-between py-2">
-              <span className="text-sm">
-                {r.fullname} <span className="text-gray-500">({r.shortname})</span>
-              </span>
-              <button
-                onClick={() => handleLink(r.id)}
-                disabled={busy}
-                className="text-sm font-semibold text-terracotta hover:underline disabled:opacity-60"
-              >
-                Liên kết
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
-      {error && <p className="mt-2 text-sm text-red-700">{error}</p>}
+    );
+  }
+
+  return (
+    <div className="mb-6">
+      {accountSection}
+      <div className="rounded-[3px] border border-gray-200 p-4">
+        <p className="mb-2 text-sm font-medium">Course này chưa liên kết với Moodle.</p>
+        {/* Trên điện thoại ô chọn chiếm trọn một hàng và hai nút xuống hàng dưới: ép cả ba vào
+            một hàng 390px thì nút "Tạo course Moodle mới" gãy thành bốn dòng. */}
+        <div className="flex flex-wrap gap-2">
+          <select
+            aria-label="Course Moodle có sẵn"
+            value={chosen}
+            onChange={(e) => setChosen(e.target.value)}
+            className="min-w-0 flex-1 basis-full rounded-[3px] border border-gray-300 bg-white px-3 py-1.5 text-sm sm:basis-auto"
+          >
+            <option value="">Chọn course Moodle có sẵn…</option>
+            {courses.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.fullname} ({c.shortname})
+              </option>
+            ))}
+          </select>
+          <button
+            onClick={handleLink}
+            disabled={busy || !chosen}
+            className="whitespace-nowrap rounded-[3px] border border-gray-300 px-3 py-1.5 text-sm hover:bg-gray-50 disabled:opacity-60"
+          >
+            Liên kết
+          </button>
+          <button
+            onClick={handleCreateNew}
+            disabled={busy}
+            className="whitespace-nowrap rounded-[3px] bg-navy px-3 py-1.5 text-sm font-semibold text-[#f3f1ea] hover:bg-[#28394b] disabled:opacity-60"
+          >
+            Tạo course Moodle mới
+          </button>
+        </div>
+        {error && <p className="mt-2 text-sm text-red-700">{error}</p>}
+      </div>
     </div>
   );
 }

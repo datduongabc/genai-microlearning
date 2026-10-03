@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import Markdown, { type Components } from 'react-markdown'
 import { Link, useParams } from 'react-router-dom'
 import { AppShell } from '../components/AppShell'
+import { MoodleAccountSection } from '../components/MoodleAccountSection'
 import {
   api,
   apiErrorMessage,
@@ -242,6 +243,7 @@ function PublishToMoodleSection({
 
   return (
     <div className="mt-8 border-t border-gray-200 pt-6">
+      <MoodleAccountSection />
       {!addNewSection && sections.length > 0 && (
         <div className="mb-3">
           <label className="mr-2 text-sm text-gray-600">Section:</label>

@@ -73,19 +73,6 @@ def test_one_email_tried_over_and_over_is_slowed_by_the_address_limit_too():
     assert codes[10] == 429
 
 
-def test_sign_ups_are_limited_too():
-    email = f"rate-signup-{uuid.uuid4().hex[:8]}@example.com"
-
-    def attempt():
-        # Refused because it is too short, but the request reached the endpoint, so it counts.
-        return client.post("/auth/register", json={"email": email, "name": "Sign Up", "password": "ngan"})
-
-    codes = _codes(11, attempt)
-
-    assert codes[:10] == [422] * 10
-    assert codes[10] == 429
-
-
 CASES = [
     ("chat", 20, lambda h: client.post(f"/courses/{uuid.uuid4()}/chat", json={"message": "hi"}, headers=h)),
     ("generate", 10, lambda h: client.post("/modules/generate", params={"document_id": str(uuid.uuid4())}, headers=h)),

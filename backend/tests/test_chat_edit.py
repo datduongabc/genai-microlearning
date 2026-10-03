@@ -28,14 +28,14 @@ from app.models import (
     RefreshToken,
     User,
 )
-from tests.auth_helpers import register_and_login
+from tests.auth_helpers import create_and_login
 
 client = TestClient(app)
 
 
 @pytest.fixture
 def lesson():
-    login = register_and_login(client, f"chat-edit-{uuid.uuid4().hex}@example.com")
+    login = create_and_login(client, f"chat-edit-{uuid.uuid4().hex}@example.com")
     with SessionLocal() as db:
         course = Course(name="Chat edit", owner_id=uuid.UUID(login["user"]["id"]))
         db.add(course)
@@ -133,7 +133,7 @@ def test_unclear_turn_changes_nothing_but_is_persisted(lesson, monkeypatch):
 
 def test_non_owner_gets_404(lesson):
     ids, _ = lesson
-    other = register_and_login(client, f"other-chat-{uuid.uuid4().hex}@example.com")
+    other = create_and_login(client, f"other-chat-{uuid.uuid4().hex}@example.com")
     response = client.post(f"/modules/{ids['module']}/chat-edit", json={"message": "shorten slides"},
         headers={"Authorization": f"Bearer {other['access_token']}"})
     assert response.status_code == 404

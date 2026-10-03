@@ -11,7 +11,7 @@ export interface AuthState {
 }
 
 export interface AuthContextValue extends AuthState {
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<UserInfo>;
   logout: () => void;
 }
 
@@ -21,4 +21,9 @@ export function useAuth() {
   const ctx = useContext(AuthContext);
   if (!ctx) throw new Error("useAuth must be used within AuthProvider");
   return ctx;
+}
+
+// Where each role lands: the admin has no courses, and a lecturer has no admin page.
+export function homeFor(role: string | undefined) {
+  return role === "admin" ? "/admin" : "/courses";
 }

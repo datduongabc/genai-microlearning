@@ -3,21 +3,21 @@ import uuid
 from fastapi.testclient import TestClient
 
 from app.main import app
-from tests.auth_helpers import STRONG_PASSWORD
+from tests.auth_helpers import STRONG_PASSWORD, make_account
 
 client = TestClient(app)
 
 
-def _register_and_login(email: str) -> str:
-    client.post("/auth/register", json={"email": email, "name": "Test", "password": STRONG_PASSWORD})
+def _create_and_login(email: str) -> str:
+    make_account(email, name="Test")
     response = client.post("/auth/login", json={"email": email, "password": STRONG_PASSWORD})
     return response.json()["access_token"]
 
 
 def test_user_cannot_see_or_use_another_users_course():
     suffix = uuid.uuid4().hex[:8]
-    token_owner = _register_and_login(f"owner-{suffix}@example.com")
-    token_other = _register_and_login(f"other-{suffix}@example.com")
+    token_owner = _create_and_login(f"owner-{suffix}@example.com")
+    token_other = _create_and_login(f"other-{suffix}@example.com")
 
     course = client.post(
         "/courses", json={"name": f"Course {suffix}"}, headers={"Authorization": f"Bearer {token_owner}"}

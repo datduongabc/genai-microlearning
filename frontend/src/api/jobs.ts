@@ -1,21 +1,8 @@
 import { api } from './client'
 
-export interface FailedJobInfo {
-  id: string
-  job_type: 'document_pipeline' | 'module_generation'
-  step: string
-  attempts: number
-  max_attempts: number
-  last_error: string | null
-  created_at: string
-  document_filename: string
-  course_name: string
-  module_id: string | null
-}
-
-export async function listFailedJobs(jobType?: FailedJobInfo['job_type']) {
-  const { data } = await api.get<FailedJobInfo[]>('/jobs/failed', {
-    params: jobType ? { job_type: jobType } : undefined,
-  })
+// "Thử lại" của giảng viên trên công việc lỗi của chính mình (tài liệu hoặc sinh mô-đun): job cũ
+// chạy lại từ bước đã dừng, không tải lên lại và không tạo thêm mô-đun.
+export async function retryJob(jobId: string) {
+  const { data } = await api.post<{ id: string; status: string }>(`/jobs/${jobId}/retry`)
   return data
 }

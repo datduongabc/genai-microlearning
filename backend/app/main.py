@@ -6,7 +6,18 @@ from fastapi.responses import JSONResponse
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 
-from app.api import auth, chat, courses, documents, jobs, model_selection, modules, moodle
+from app.api import (
+    admin,
+    auth,
+    chat,
+    courses,
+    documents,
+    jobs,
+    model_selection,
+    modules,
+    moodle,
+    moodle_account,
+)
 from app.auth.rate_limit import limiter, user_or_address
 from app.config import Settings, settings
 from app.jobs.queue import start_worker, stop_worker
@@ -70,10 +81,12 @@ def create_app(app_settings: Settings = settings) -> FastAPI:
     api.add_middleware(SecurityHeadersMiddleware, production=production)
 
     api.include_router(auth.router)
+    api.include_router(admin.router)
     api.include_router(courses.router)
     api.include_router(documents.router)
     api.include_router(modules.router)
     api.include_router(moodle.router)
+    api.include_router(moodle_account.router)
     api.include_router(chat.router)
     api.include_router(jobs.router)
     api.include_router(model_selection.router)

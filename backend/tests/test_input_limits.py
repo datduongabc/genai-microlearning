@@ -29,7 +29,7 @@ def world():
     db = SessionLocal()
     try:
         user = User(
-            email=f"limits-{uuid.uuid4().hex[:8]}@example.com", name="T", hashed_password="x", role=UserRole.teacher
+            email=f"limits-{uuid.uuid4().hex[:8]}@example.com", name="T", hashed_password="x", role=UserRole.teacher, moodle_user_id=4242
         )
         db.add(user)
         db.flush()
@@ -106,13 +106,6 @@ def test_a_module_title_has_a_maximum(world):
     too_long = client.patch(f"/modules/{world['module']}", params={"title": "T" * 201}, headers=world["headers"])
 
     assert (ok.status_code, too_long.status_code) == (200, 422)
-
-
-@pytest.mark.parametrize("query", ["", "q" * 101])
-def test_a_moodle_search_needs_a_query_of_sane_length(world, query):
-    response = client.get("/courses/moodle/search", params={"q": query}, headers=world["headers"])
-
-    assert response.status_code == 422
 
 
 def test_more_sections_than_anyone_could_pick_are_refused_before_the_database_is_asked(world):

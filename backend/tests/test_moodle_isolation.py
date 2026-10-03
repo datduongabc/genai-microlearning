@@ -29,7 +29,7 @@ def users():
     db = SessionLocal()
     try:
         made = [
-            User(email=f"iso-{i}-{uuid.uuid4().hex[:8]}@example.com", name="T", hashed_password="x", role=UserRole.teacher)
+            User(email=f"iso-{i}-{uuid.uuid4().hex[:8]}@example.com", name="T", hashed_password="x", role=UserRole.teacher, moodle_user_id=4242)
             for i in range(2)
         ]
         db.add_all(made)
@@ -64,17 +64,17 @@ def _link(headers, course_id: str, moodle_id: int):
 
 def _search(headers, monkeypatch, *shown: int) -> list[int]:
     monkeypatch.setattr(
-        moodle_client, "search_courses",
-        lambda query, limit=20: [{"id": i, "fullname": f"Course {i}", "shortname": f"C{i}"} for i in shown],
+        moodle_client, "list_courses",
+        lambda: [{"id": i, "fullname": f"Course {i}", "shortname": f"C{i}"} for i in shown],
     )
-    return [c["id"] for c in client.get("/courses/moodle/search", params={"q": "x"}, headers=headers).json()]
+    return [c["id"] for c in client.get("/courses/moodle/courses", headers=headers).json()]
 
 
 def _nothing_exists_in_moodle(monkeypatch):
     monkeypatch.setattr(moodle_client, "get_course", lambda course_id: None)
 
 
-def test_the_search_leaves_out_a_course_another_user_has_linked(users, monkeypatch):
+def test_the_list_leaves_out_a_course_another_user_has_linked(users, monkeypatch):
     owner, stranger = users
     taken, free = _moodle_id(), _moodle_id()
     _link(owner, _course(owner), taken)
@@ -82,7 +82,7 @@ def test_the_search_leaves_out_a_course_another_user_has_linked(users, monkeypat
     assert _search(stranger, monkeypatch, taken, free) == [free]
 
 
-def test_the_search_still_leaves_it_out_after_its_owner_unlinked_or_deleted_the_course(users, monkeypatch):
+def test_the_list_still_leaves_it_out_after_its_owner_unlinked_or_deleted_the_course(users, monkeypatch):
     owner, stranger = users
     unlinked, deleted = _moodle_id(), _moodle_id()
     first, second = _course(owner), _course(owner)
@@ -136,7 +136,7 @@ def test_a_course_created_through_the_app_is_claimed_by_its_creator(users, monke
     owner, stranger = users
     created = _moodle_id()
     monkeypatch.setattr(moodle_client, "create_course", lambda name: created)
-    monkeypatch.setattr(moodle_client, "enrol_as_teacher", lambda course_id: None)
+    monkeypatch.setattr(moodle_client, "enrol_as_teacher", lambda course_id, user_id: None)
     client.post(f"/courses/{_course(owner)}/create-moodle", headers=owner)
 
     assert _link(stranger, _course(stranger), created).status_code == 404

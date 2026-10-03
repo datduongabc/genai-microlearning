@@ -13,7 +13,7 @@ from sqlalchemy.orm import Session
 
 from app.auth.security import generate_refresh_token, hash_refresh_token
 from app.config import settings
-from app.models import RefreshToken
+from app.models import RefreshToken, User
 
 
 class RefreshRejected(Exception):
@@ -53,6 +53,12 @@ def rotate_refresh_token(db: Session, raw_token: str, now: datetime | None = Non
     if stored.expires_at <= now:
         raise RefreshRejected("expired", stored.user_id)
 
+    # A locked account is read from the database now, like on every request: its refresh token
+    # must not buy it a new access token.
+    user = db.get(User, stored.user_id)
+    if user is None or not user.is_active:
+        raise RefreshRejected("disabled", stored.user_id)
+
     stored.revoked_at = now
     return stored.user_id, _issue(db, stored.user_id, stored.expires_at)
 
@@ -70,3 +76,12 @@ def end_session(db: Session, raw_token: str, now: datetime | None = None) -> uui
         stored.revoked_at = now
         db.commit()
     return stored.user_id
+
+
+def revoke_all(db: Session, user_id: uuid.UUID, now: datetime | None = None) -> None:
+    """Ends every login of the user: their refresh tokens stop working. Does not commit."""
+    now = now or datetime.now(UTC)
+    for stored in db.execute(
+        select(RefreshToken).where(RefreshToken.user_id == user_id, RefreshToken.revoked_at.is_(None))
+    ).scalars():
+        stored.revoked_at = now

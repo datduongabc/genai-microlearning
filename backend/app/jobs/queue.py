@@ -22,7 +22,7 @@ import uuid
 from datetime import UTC, datetime, timedelta
 
 from litellm.exceptions import RateLimitError
-from sqlalchemy import func
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.db import WorkerSessionLocal
@@ -79,6 +79,20 @@ def enqueue_job(
     db.add(job)
     db.flush()
     return job
+
+
+def retry_failed_job(db: Session, job_id: uuid.UUID) -> bool:
+    """Puts a failed job back in the queue, to run again from the step it stopped at: attempts
+    start over, it is due now, and nothing is uploaded or created again (the payload keeps the
+    work done so far, and a module is only made when a generation finishes). False when there is
+    nothing to retry for this caller: the job is not failed (someone retried it first), the
+    lecturer already generated again, or it is neither the caller's nor the caller an admin.
+
+    The one function behind both retry buttons, the lecturer's on their own jobs and the admin's
+    on any: the work is the database function retry_failed_job (migration 0007), which an admin
+    could not do with plain statements because row level security hides other lecturers' jobs from
+    them. The caller commits."""
+    return bool(db.scalar(select(func.retry_failed_job(job_id))))
 
 
 def claim_next_job(worker_id: str) -> Job | None:

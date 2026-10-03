@@ -1,0 +1,229 @@
+import { render, screen, waitFor, within } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { MemoryRouter } from 'react-router-dom'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { AdminPage } from './AdminPage'
+import * as api from '../api'
+import type { AdminUser, FailedJobInfo } from '../api'
+import * as AuthHookModule from '../auth/useAuth'
+
+vi.mock('../api', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../api')>()
+  return Object.fromEntries(
+    Object.entries(actual).map(([name, value]) => [
+      name,
+      typeof value === 'function' && name !== 'apiErrorMessage' ? vi.fn() : value,
+    ]),
+  )
+})
+
+const admin: AdminUser = {
+  id: 'admin-1', email: 'admin@example.com', name: 'Quản trị', role: 'admin', is_active: true,
+  created_at: '2026-01-01T00:00:00Z', moodle_status: null,
+}
+const lan: AdminUser = {
+  id: 'u-1', email: 'lan@example.com', name: 'Lan Nguyễn', role: 'teacher', is_active: true,
+  created_at: '2026-01-02T00:00:00Z', moodle_status: 'linked',
+}
+const minh: AdminUser = {
+  id: 'u-2', email: 'minh@example.com', name: 'Minh Trần', role: 'teacher', is_active: false,
+  created_at: '2026-01-03T00:00:00Z', moodle_status: 'not_found',
+}
+
+function failedJob(id: string, overrides: Partial<FailedJobInfo> = {}): FailedJobInfo {
+  return {
+    id, job_type: 'document_pipeline', step: 'extract', attempts: 5, max_attempts: 5, last_error: `error of ${id}`,
+    created_at: '2026-01-01T00:00:00Z', document_filename: `${id}.pdf`, course_name: 'AI 101',
+    owner_name: 'Lan Nguyễn', owner_email: 'lan@example.com', module_id: null, ...overrides,
+  }
+}
+
+function renderPage() {
+  return render(
+    <MemoryRouter>
+      <AdminPage />
+    </MemoryRouter>,
+  )
+}
+
+beforeEach(() => {
+  vi.clearAllMocks()
+  vi.spyOn(AuthHookModule, 'useAuth').mockReturnValue({
+    token: 't', refreshToken: 'r', user: { id: 'admin-1', email: 'admin@example.com', name: 'Quản trị', role: 'admin' },
+    login: vi.fn(), logout: vi.fn(),
+  })
+  vi.mocked(api.listUsers).mockResolvedValue([admin, lan, minh])
+  vi.mocked(api.listFailedJobs).mockResolvedValue([])
+})
+
+describe('AdminPage - accounts', () => {
+  it('lists every account with its state and Moodle link status', async () => {
+    renderPage()
+
+    const row = (await screen.findByText('lan@example.com')).closest('li')!
+    expect(within(row).getByText('Đang hoạt động')).toBeInTheDocument()
+    expect(within(row).getByText('Đã liên kết Moodle')).toBeInTheDocument()
+    const locked = screen.getByText('minh@example.com').closest('li')!
+    expect(within(locked).getByText('Đã khóa')).toBeInTheDocument()
+    expect(within(locked).getByText(/chưa có tài khoản moodle cùng email/i)).toBeInTheDocument()
+    // The admin themselves have no Moodle status.
+    expect(within(screen.getByText('admin@example.com').closest('li')!).queryByText(/moodle/i)).not.toBeInTheDocument()
+  })
+
+  it('creates a lecturer and reloads the list', async () => {
+    vi.mocked(api.createLecturer).mockResolvedValue({ ...lan, id: 'u-3', email: 'new@example.edu' })
+    renderPage()
+    await screen.findByText('lan@example.com')
+
+    await userEvent.type(screen.getByLabelText('Họ và tên'), 'Hoa Lê')
+    await userEvent.type(screen.getByLabelText('Email'), 'new@example.edu')
+    await userEvent.type(screen.getByLabelText('Mật khẩu ban đầu'), 'a long enough phrase')
+    await userEvent.click(screen.getByRole('button', { name: 'Tạo tài khoản' }))
+
+    await waitFor(() => expect(api.createLecturer).toHaveBeenCalledWith('Hoa Lê', 'new@example.edu', 'a long enough phrase'))
+    expect(await screen.findByText(/đã tạo tài khoản cho new@example.edu/i)).toBeInTheDocument()
+    expect(api.listUsers).toHaveBeenCalledTimes(2)
+  })
+
+  it('checks the form before sending and shows the server refusal in words', async () => {
+    renderPage()
+    await screen.findByText('lan@example.com')
+
+    await userEvent.click(screen.getByRole('button', { name: 'Tạo tài khoản' }))
+    expect(await screen.findByText('Vui lòng nhập họ và tên')).toBeInTheDocument()
+    expect(api.createLecturer).not.toHaveBeenCalled()
+  })
+
+  it('shows what the server said when the email is taken', async () => {
+    vi.mocked(api.createLecturer).mockRejectedValue(
+      Object.assign(new Error('x'), { isAxiosError: true, response: { status: 409, data: { detail: 'Email đã được đăng ký.' } } }),
+    )
+    renderPage()
+    await screen.findByText('lan@example.com')
+
+    await userEvent.type(screen.getByLabelText('Họ và tên'), 'Hoa Lê')
+    await userEvent.type(screen.getByLabelText('Email'), 'lan@example.edu')
+    await userEvent.type(screen.getByLabelText('Mật khẩu ban đầu'), 'a long enough phrase')
+    await userEvent.click(screen.getByRole('button', { name: 'Tạo tài khoản' }))
+
+    expect(await screen.findByText('Email đã được đăng ký.')).toBeInTheDocument()
+  })
+
+  it('locks an active account and unlocks a locked one', async () => {
+    vi.mocked(api.setUserActive).mockResolvedValue(lan)
+    renderPage()
+    const active = (await screen.findByText('lan@example.com')).closest('li')!
+    const locked = screen.getByText('minh@example.com').closest('li')!
+
+    await userEvent.click(within(active).getByRole('button', { name: 'Khóa' }))
+    await waitFor(() => expect(api.setUserActive).toHaveBeenCalledWith('u-1', false))
+    await userEvent.click(within(locked).getByRole('button', { name: 'Mở khóa' }))
+    await waitFor(() => expect(api.setUserActive).toHaveBeenCalledWith('u-2', true))
+  })
+
+  it('does not offer the admin a way to lock themselves', async () => {
+    renderPage()
+    const own = (await screen.findByText('admin@example.com')).closest('li')!
+
+    expect(within(own).getByRole('button', { name: 'Khóa' })).toBeDisabled()
+  })
+
+  it('sets a new password for a lecturer, after checking it', async () => {
+    vi.mocked(api.resetUserPassword).mockResolvedValue(undefined)
+    renderPage()
+    const row = (await screen.findByText('lan@example.com')).closest('li')!
+
+    await userEvent.click(within(row).getByRole('button', { name: 'Đặt lại mật khẩu' }))
+    await userEvent.type(screen.getByLabelText('Mật khẩu mới của lan@example.com'), 'short')
+    await userEvent.click(screen.getByRole('button', { name: 'Lưu mật khẩu mới' }))
+    expect(await screen.findByText(/tối thiểu 8 ký tự/i)).toBeInTheDocument()
+    expect(api.resetUserPassword).not.toHaveBeenCalled()
+
+    await userEvent.clear(screen.getByLabelText('Mật khẩu mới của lan@example.com'))
+    await userEvent.type(screen.getByLabelText('Mật khẩu mới của lan@example.com'), 'a brand new long phrase')
+    await userEvent.click(screen.getByRole('button', { name: 'Lưu mật khẩu mới' }))
+
+    await waitFor(() => expect(api.resetUserPassword).toHaveBeenCalledWith('u-1', 'a brand new long phrase'))
+    expect(await screen.findByText(/đã đặt lại mật khẩu cho lan@example.com/i)).toBeInTheDocument()
+  })
+
+  it('says so when the list cannot be loaded', async () => {
+    vi.mocked(api.listUsers).mockRejectedValue(new Error('down'))
+    renderPage()
+
+    expect(await screen.findByText(/không tải được danh sách tài khoản/i)).toBeInTheDocument()
+  })
+})
+
+describe('AdminPage - failed jobs', () => {
+  async function openFailures() {
+    renderPage()
+    await userEvent.click(await screen.findByRole('tab', { name: 'Theo dõi lỗi' }))
+  }
+
+  it('shows a friendly message when nothing failed', async () => {
+    await openFailures()
+
+    expect(await screen.findByText(/không có job nào thất bại/i)).toBeInTheDocument()
+  })
+
+  it('lists the failed jobs of every lecturer with who, course, file and error', async () => {
+    vi.mocked(api.listFailedJobs).mockResolvedValue([
+      failedJob('j1'),
+      failedJob('j2', { owner_name: 'Minh Trần', owner_email: 'minh@example.com', job_type: 'module_generation', step: 'generate' }),
+    ])
+    await openFailures()
+
+    expect(await screen.findByText('AI 101 / j1.pdf')).toBeInTheDocument()
+    expect(screen.getByText('Minh Trần (minh@example.com)')).toBeInTheDocument()
+    expect(screen.getByText('error of j2')).toBeInTheDocument()
+    expect(screen.getByText(/sinh mô-đun — generate/i)).toBeInTheDocument()
+  })
+
+  it('asks the server for one job type when the filter changes', async () => {
+    await openFailures()
+    await userEvent.selectOptions(await screen.findByLabelText('Loại job:'), 'module_generation')
+
+    await waitFor(() => expect(api.listFailedJobs).toHaveBeenLastCalledWith('module_generation'))
+  })
+
+  it('retries one job from its own button', async () => {
+    vi.mocked(api.listFailedJobs).mockResolvedValue([failedJob('j1'), failedJob('j2')])
+    vi.mocked(api.retryFailedJobs).mockResolvedValue({ retried: ['j1'], skipped: [] })
+    await openFailures()
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Thử lại j1.pdf' }))
+
+    await waitFor(() => expect(api.retryFailedJobs).toHaveBeenCalledWith(['j1']))
+    expect(await screen.findByText(/đã đưa 1 job vào hàng đợi/i)).toBeInTheDocument()
+  })
+
+  it('retries the picked jobs together, or all of them with select-all', async () => {
+    vi.mocked(api.listFailedJobs).mockResolvedValue([failedJob('j1'), failedJob('j2'), failedJob('j3')])
+    vi.mocked(api.retryFailedJobs).mockResolvedValue({ retried: ['j1', 'j3'], skipped: ['j2'] })
+    await openFailures()
+    await screen.findByText('AI 101 / j1.pdf')
+    expect(screen.getByRole('button', { name: 'Thử lại đã chọn' })).toBeDisabled()
+
+    await userEvent.click(screen.getByRole('checkbox', { name: 'Chọn j1.pdf' }))
+    await userEvent.click(screen.getByRole('checkbox', { name: 'Chọn j3.pdf' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Thử lại 2 job đã chọn' }))
+
+    await waitFor(() => expect(api.retryFailedJobs).toHaveBeenCalledWith(['j1', 'j3']))
+    expect(await screen.findByText(/1 job bị bỏ qua/i)).toBeInTheDocument()
+
+    await userEvent.click(screen.getByRole('checkbox', { name: 'Chọn tất cả' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Thử lại 3 job đã chọn' }))
+    await waitFor(() => expect(api.retryFailedJobs).toHaveBeenLastCalledWith(['j1', 'j2', 'j3']))
+  })
+
+  it('reloads the list after a retry so what ran again is gone', async () => {
+    vi.mocked(api.listFailedJobs).mockResolvedValueOnce([failedJob('j1')]).mockResolvedValue([])
+    vi.mocked(api.retryFailedJobs).mockResolvedValue({ retried: ['j1'], skipped: [] })
+    await openFailures()
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Thử lại j1.pdf' }))
+
+    expect(await screen.findByText(/không có job nào thất bại/i)).toBeInTheDocument()
+  })
+})
