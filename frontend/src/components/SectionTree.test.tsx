@@ -44,7 +44,7 @@ function renderTree(props: Partial<TreeProps> = {}) {
   const onGenerated = vi.fn()
   const tree = (extra: Partial<TreeProps> = {}) => (
     <MemoryRouter>
-      <SectionTree documentId="doc-1" documentGenerating={false} modules={[]} onGenerated={onGenerated} {...props} {...extra} />
+      <SectionTree documentId="doc-1" documentGenerating={false} modules={[]} onGenerated={onGenerated} onDeleteModule={vi.fn()} deletingModuleId={null} {...props} {...extra} />
     </MemoryRouter>
   )
   const view = render(tree())

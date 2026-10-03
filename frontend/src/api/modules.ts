@@ -132,6 +132,12 @@ export async function getModule(moduleId: string) {
   return data
 }
 
+// Cũng xóa bản đối chứng không RAG đi cặp (nếu có); Book/Quiz đã đẩy lên Moodle thì giữ nguyên.
+export async function deleteModule(moduleId: string) {
+  const { data } = await api.delete<{ status: string; deleted_module_ids: string[] }>(`/modules/${moduleId}`)
+  return data
+}
+
 export async function updateModuleTitle(moduleId: string, title: string) {
   const { data } = await api.patch(`/modules/${moduleId}`, null, { params: { title } })
   return data

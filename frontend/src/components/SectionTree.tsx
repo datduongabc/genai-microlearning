@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { GenerateDialog } from "./GenerateDialog";
-import { Link } from "react-router-dom";
+import { ModuleListItem } from "./ModuleListItem";
 import {
   apiErrorMessage,
   generateModulesFromSections,
@@ -22,6 +22,8 @@ interface SectionTreeProps {
   documentGenerating: boolean;
   modules: ModuleSummary[];
   onGenerated: () => void;
+  onDeleteModule: (module: ModuleSummary) => void;
+  deletingModuleId: string | null;
   // Model giảng viên chọn ở đầu trang; chuỗi rỗng nghĩa là chưa chọn gì.
   modelAlias?: string;
 }
@@ -65,6 +67,8 @@ export function SectionTree({
   documentGenerating,
   modules,
   onGenerated,
+  onDeleteModule,
+  deletingModuleId,
   modelAlias = "",
 }: SectionTreeProps) {
   const generateDialog = useRef<HTMLDialogElement>(null);
@@ -168,14 +172,12 @@ export function SectionTree({
               {own.length > 0 && (
                 <ul className="mt-1 flex flex-col gap-1 pl-6">
                   {own.map((m) => (
-                    <li key={m.id}>
-                      <Link to={`/modules/${m.id}`} className="text-sm hover:text-terracotta">
-                        → {m.title}
-                        {m.is_control && (
-                          <span className="ml-2 text-xs font-medium text-amber-600">Đối chứng (không RAG) - chỉ dùng cho nghiên cứu</span>
-                        )}
-                      </Link>
-                    </li>
+                    <ModuleListItem
+                      key={m.id}
+                      module={m}
+                      deleting={deletingModuleId === m.id}
+                      onDelete={onDeleteModule}
+                    />
                   ))}
                 </ul>
               )}
