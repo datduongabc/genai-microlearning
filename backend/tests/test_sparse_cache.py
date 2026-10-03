@@ -46,3 +46,37 @@ def test_sparse_search_result_reflects_chunk_added_after_cache_invalidation():
         assert any("quicksort" in c.content for c in fresh)
     finally:
         db.close()
+
+
+def test_sparse_search_reuses_cache_across_sessions_after_commit_and_close():
+    # A request commits and closes its session; the next request, in the same process, hits the cache.
+    seed_db = SessionLocal()
+    try:
+        course_id, _ = _seed_course_with_chunks(
+            seed_db,
+            [
+                "binary search algorithm",
+                "linked list structure",
+                "hash table buckets",
+                "quicksort partition pivot",
+            ],
+        )
+    finally:
+        seed_db.close()
+
+    first = SessionLocal()
+    try:
+        results = sparse_search(first, course_id, "quicksort pivot")
+        assert [c.content for c in results] == ["quicksort partition pivot"]
+        first.commit()  # expires every object the session loaded, as the chat endpoint's commit does
+    finally:
+        first.close()
+
+    second = SessionLocal()
+    try:
+        results = sparse_search(second, course_id, "hash buckets")
+        assert [c.content for c in results] == ["hash table buckets"]
+        assert all(c in second for c in results)
+        assert results[0].id is not None
+    finally:
+        second.close()

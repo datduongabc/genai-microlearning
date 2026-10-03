@@ -62,7 +62,11 @@ def dense_search(
 # TTL đoán mò -- tránh phục vụ index cũ sau khi tài liệu mới được thêm.
 # Khóa gồm cả phạm vi: một chương có corpus (và thống kê IDF) riêng, không
 # được dùng chung index với cả course.
-_bm25_cache: dict[tuple[UUID, ChunkScope | None], tuple[BM25Okapi, list[Chunk]]] = {}
+# Chỉ giữ id chunk, không giữ đối tượng ORM: cache sống lâu hơn Session đã
+# nạp chúng, và sau commit/close mọi thuộc tính của chúng là rỗng hoặc detached
+# (DetachedInstanceError ở request thứ hai). Chunk thắng được nạp lại bằng id
+# trong Session của chính lời gọi.
+_bm25_cache: dict[tuple[UUID, ChunkScope | None], tuple[BM25Okapi, list[UUID]]] = {}
 
 
 def invalidate_sparse_cache(course_id: UUID) -> None:
@@ -77,18 +81,25 @@ def sparse_search(
     key = (course_id, scope)
     cached = _bm25_cache.get(key)
     if cached is None:
-        chunks = _scoped(db.query(Chunk).filter(Chunk.course_id == course_id), scope).all()
-        if not chunks:
+        rows = _scoped(
+            db.query(Chunk.id, Chunk.content).filter(Chunk.course_id == course_id), scope
+        ).all()
+        if not rows:
             return []
-        corpus = [_tokenize(c.content) for c in chunks]
-        bm25 = BM25Okapi(corpus)
-        _bm25_cache[key] = (bm25, chunks)
+        bm25 = BM25Okapi([_tokenize(content) for _, content in rows])
+        chunk_ids = [chunk_id for chunk_id, _ in rows]
+        _bm25_cache[key] = (bm25, chunk_ids)
     else:
-        bm25, chunks = cached
+        bm25, chunk_ids = cached
 
     scores = bm25.get_scores(_tokenize(query))
-    ranked = sorted(zip(chunks, scores, strict=True), key=lambda pair: pair[1], reverse=True)
-    return [chunk for chunk, score in ranked[:top_k] if score > 0]
+    ranked = sorted(zip(chunk_ids, scores, strict=True), key=lambda pair: pair[1], reverse=True)
+    top_ids = [chunk_id for chunk_id, score in ranked[:top_k] if score > 0]
+    if not top_ids:
+        return []
+    by_id = {c.id: c for c in db.query(Chunk).filter(Chunk.id.in_(top_ids))}
+    # A chunk deleted since the index was built is simply absent from by_id.
+    return [by_id[chunk_id] for chunk_id in top_ids if chunk_id in by_id]
 
 
 def reciprocal_rank_fusion(rankings: list[list[Chunk]], k: int = RRF_K) -> list[Chunk]:
