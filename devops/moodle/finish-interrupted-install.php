@@ -8,6 +8,19 @@ define('CLI_SCRIPT', true);
 require('/var/www/html/config.php');
 require_once($CFG->libdir . '/adminlib.php');
 
+// 0. Roles never switched on. install_database.php sets 'rolesactive' right after the admin
+// password; until then Moodle is "still installing" and has_capability() answers false for
+// everybody, the site admin included. Logging in still works, but every web service call fails
+// with "Access control exception" (even core_webservice_get_site_info), and so does
+// everything else that checks a capability.
+if (during_initial_install()) {
+    set_config('rolesactive', 1);
+    purge_all_caches();
+    echo "roles activated (the earlier install stopped before it did)\n";
+} else {
+    echo "roles already active\n";
+}
+
 // 1. Admin still has the web-installer placeholder password and no email:
 // nobody can log in and web services fail with "User not fully set-up".
 $password = getenv('MOODLE_ADMIN_PASSWORD');
