@@ -369,21 +369,35 @@ def test_a_lecturer_whose_course_was_deleted_can_be_deleted(admin, lecturer):
     assert _delete(admin, lecturer_id).status_code == 200
 
 
-def test_a_moodle_course_claim_does_not_stop_the_delete_and_the_moodle_side_is_untouched(admin, lecturer, monkeypatch):
-    lecturer_id = lecturer["user"]["id"]
-    claim = 987_000 + uuid.uuid4().int % 1000
+def _give_moodle_claim(owner_id):
+    claim = 987_000_000 + uuid.uuid4().int % 1_000_000
     with SessionLocal() as db:
-        db.add(MoodleCourseClaim(moodle_course_id=claim, owner_id=uuid.UUID(lecturer_id)))
+        db.add(MoodleCourseClaim(moodle_course_id=claim, owner_id=uuid.UUID(str(owner_id))))
         db.commit()
+    return claim
 
+
+def test_a_lecturer_holding_a_moodle_course_claim_is_refused_and_keeps_it(admin, lecturer):
+    # The app course is gone but the Moodle course they created or linked is still theirs: deleting
+    # the account would free it for any other lecturer to link and push into.
+    lecturer_id = lecturer["user"]["id"]
+    claim = _give_moodle_claim(lecturer_id)
+
+    response = _delete(admin, lecturer_id)
+
+    assert response.status_code == 409 and "Moodle" in response.json()["detail"]
+    assert _exists(lecturer_id)
+    with SessionLocal() as db:
+        assert db.get(MoodleCourseClaim, claim).owner_id == uuid.UUID(lecturer_id)
+
+
+def test_deleting_does_not_call_moodle(admin, lecturer, monkeypatch):
     def forbidden(*args, **kwargs):
         raise AssertionError("deleting an account must not call Moodle")
 
     monkeypatch.setattr(moodle_client, "find_users_by_email", forbidden)
 
-    assert _delete(admin, lecturer_id).status_code == 200
-    with SessionLocal() as db:
-        assert db.get(MoodleCourseClaim, claim) is None
+    assert _delete(admin, lecturer["user"]["id"]).status_code == 200
 
 
 def test_the_list_says_how_many_courses_each_lecturer_has(admin, lecturer):
@@ -397,6 +411,18 @@ def test_the_list_says_how_many_courses_each_lecturer_has(admin, lecturer):
     assert users[lecturer_id]["course_count"] == 2
     assert users[str(empty.id)]["course_count"] == 0
     assert users[admin["user"]["id"]]["course_count"] is None
+
+
+def test_the_list_says_how_many_moodle_courses_each_lecturer_has_claimed(admin, lecturer):
+    lecturer_id = lecturer["user"]["id"]
+    empty = make_account(_email("empty"))
+    _give_moodle_claim(lecturer_id)
+
+    users = {u["id"]: u for u in client.get("/admin/users", headers=_bearer(admin)).json()}
+
+    assert users[lecturer_id]["moodle_course_count"] == 1
+    assert users[str(empty.id)]["moodle_course_count"] == 0
+    assert users[admin["user"]["id"]]["moodle_course_count"] is None
 
 
 def test_an_admin_cannot_delete_themselves_or_another_admin(admin):
