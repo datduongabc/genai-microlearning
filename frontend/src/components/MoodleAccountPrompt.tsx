@@ -1,30 +1,18 @@
 import { useEffect, useState } from "react";
-import { apiErrorMessage, getMoodleAccount, linkMoodleAccount, type MoodleAccountStatus } from "../api";
-
-// Asked once per browser session: "Không" is remembered until the tab is closed, and the
-// account can still be linked later from the course page.
-const DISMISSED_KEY = "moodle-account-prompt-dismissed";
-
-function wasDismissed(): boolean {
-  try {
-    return sessionStorage.getItem(DISMISSED_KEY) === "1";
-  } catch {
-    return false;
-  }
-}
-
-function remember() {
-  try {
-    sessionStorage.setItem(DISMISSED_KEY, "1");
-  } catch {
-    // Without storage the question is simply asked again next time.
-  }
-}
+import {
+  apiErrorMessage,
+  dismissMoodlePrompt,
+  getMoodleAccount,
+  linkMoodleAccount,
+  type MoodleAccountStatus,
+} from "../api";
 
 // Recommends a lecturer whose Moodle account is not linked yet to link it, even when Moodle
 // already has a user with their email: only their "Có" links it. When several Moodle users share
 // the email it says so instead, since none can be linked. Shown by the page shell only to
-// lecturers; renders nothing for anyone already linked or when Moodle is out of reach.
+// lecturers, and only while the server says to (`prompt`): once per lecturer, until they answer
+// "Có" or "Không", which the server keeps with their account. Afterwards the account is linked
+// from the course page's "Tài khoản Moodle" section. Renders nothing when Moodle is out of reach.
 export function MoodleAccountPrompt() {
   const [status, setStatus] = useState<Exclude<MoodleAccountStatus, "linked"> | null>(null);
   const open = status !== null;
@@ -32,11 +20,10 @@ export function MoodleAccountPrompt() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (wasDismissed()) return;
     let cancelled = false;
     Promise.resolve(getMoodleAccount()).then(
       (answer) => {
-        if (!cancelled && (answer?.status === "not_linked" || answer?.status === "ambiguous")) {
+        if (!cancelled && answer?.prompt && (answer.status === "not_linked" || answer.status === "ambiguous")) {
           setStatus(answer.status);
         }
       },
@@ -65,8 +52,9 @@ export function MoodleAccountPrompt() {
   }
 
   function handleNo() {
-    remember();
     setStatus(null);
+    // Should the answer not reach the server, the pop-up is simply asked again next time.
+    Promise.resolve(dismissMoodlePrompt()).catch(() => {});
   }
 
   return (

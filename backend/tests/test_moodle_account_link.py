@@ -9,8 +9,9 @@ import pytest
 from fastapi.testclient import TestClient
 
 from app.auth.accounts import is_edu_email
+from app.db import SessionLocal
 from app.main import app
-from app.models import UserRole
+from app.models import User, UserRole
 from app.moodle import client as moodle_client
 from tests.auth_helpers import create_and_login, make_account
 
@@ -61,13 +62,14 @@ def test_other_addresses_are_refused(email):
 def test_the_account_is_not_linked_until_the_lecturer_says_yes_even_when_moodle_has_their_email(moodle):
     email, headers = _lecturer()
 
-    assert client.get("/moodle/account", headers=headers).json() == {"email": email, "status": "not_linked"}
+    not_linked = {"email": email, "status": "not_linked", "prompt": True}
+    assert client.get("/moodle/account", headers=headers).json() == not_linked
 
     moodle["users"][email.upper()] = [55]
-    assert client.get("/moodle/account", headers=headers).json() == {"email": email, "status": "not_linked"}
+    assert client.get("/moodle/account", headers=headers).json() == not_linked
 
     client.post("/moodle/account/link", headers=headers)
-    assert client.get("/moodle/account", headers=headers).json() == {"email": email, "status": "linked"}
+    assert client.get("/moodle/account", headers=headers).json() == {"email": email, "status": "linked", "prompt": False}
 
 
 def test_a_stored_link_to_a_moodle_user_that_is_gone_is_cleared_and_yes_links_again(moodle, monkeypatch):
@@ -79,7 +81,8 @@ def test_a_stored_link_to_a_moodle_user_that_is_gone_is_cleared_and_yes_links_ag
         moodle_client, "user_exists", lambda user_id: any(user_id in ids for ids in moodle["users"].values())
     )
 
-    assert client.get("/moodle/account", headers=headers).json() == {"email": email, "status": "not_linked"}
+    # Only the status flips: the pop-up was answered (Yes) and does not come back.
+    assert client.get("/moodle/account", headers=headers).json() == {"email": email, "status": "not_linked", "prompt": False}
     course_id = client.post("/courses", json={"name": "Lập trình"}, headers=headers).json()["id"]
     assert client.post(f"/courses/{course_id}/create-moodle", headers=headers).status_code == 422
 
@@ -87,6 +90,44 @@ def test_a_stored_link_to_a_moodle_user_that_is_gone_is_cleared_and_yes_links_ag
 
     assert relinked.json()["created"] is True and moodle["users"][email] != [first_id]
     assert client.get("/moodle/account", headers=headers).json()["status"] == "linked"
+
+
+def test_no_answers_the_pop_up_for_good_and_the_account_can_still_be_linked_later(moodle):
+    email, headers = _lecturer()
+
+    dismissed = client.post("/moodle/account/prompt/dismiss", headers=headers)
+
+    assert dismissed.status_code == 200
+    assert client.get("/moodle/account", headers=headers).json() == {"email": email, "status": "not_linked", "prompt": False}
+    # A new login does not ask again: the answer is kept with the account, not in the browser.
+    client.post("/auth/login", json={"email": email, "password": "Tt7!kQm2#vXz"})
+    assert client.get("/moodle/account", headers=headers).json()["prompt"] is False
+    assert client.post("/moodle/account/link", headers=headers).status_code == 200
+    assert client.get("/moodle/account", headers=headers).json()["status"] == "linked"
+
+
+def test_answering_records_the_time_once_and_a_second_answer_keeps_the_first(moodle):
+    email, headers = _lecturer()
+
+    def prompted_at():
+        with SessionLocal() as db:
+            return db.query(User).filter(User.email == email).one().moodle_prompted_at
+
+    assert prompted_at() is None
+    client.post("/moodle/account/link", headers=headers)
+    first = prompted_at()
+    client.post("/moodle/account/prompt/dismiss", headers=headers)
+
+    assert first is not None and prompted_at() == first
+
+
+def test_several_moodle_users_with_the_email_still_get_the_pop_up_once(moodle):
+    email, headers = _lecturer()
+    moodle["users"][email] = [1, 2]
+
+    assert client.get("/moodle/account", headers=headers).json() == {"email": email, "status": "ambiguous", "prompt": True}
+    client.post("/moodle/account/prompt/dismiss", headers=headers)
+    assert client.get("/moodle/account", headers=headers).json()["prompt"] is False
 
 
 def test_a_stored_link_is_kept_while_moodle_cannot_be_asked(moodle, monkeypatch):
@@ -166,7 +207,9 @@ def test_an_admin_has_no_moodle_account_to_link_and_a_stranger_is_turned_away(mo
 
     assert client.get("/moodle/account", headers=headers).status_code == 404
     assert client.post("/moodle/account/link", headers=headers).status_code == 404
+    assert client.post("/moodle/account/prompt/dismiss", headers=headers).status_code == 404
     assert client.get("/moodle/account").status_code == 401
+    assert client.post("/moodle/account/prompt/dismiss").status_code == 401
     assert client.post("/moodle/account/link").status_code == 401
 
 

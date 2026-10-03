@@ -102,6 +102,9 @@ class User(Base):
     # Tài khoản Moodle giảng viên đã tự chọn liên kết (POST /moodle/account/link). NULL: chưa liên
     # kết, kể cả khi Moodle có sẵn tài khoản cùng email.
     moodle_user_id: Mapped[int | None] = mapped_column(nullable=True)
+    # Lúc giảng viên trả lời pop-up liên kết Moodle ("Có", "Không", hoặc tự liên kết). NULL: chưa
+    # trả lời, pop-up còn hiện; đã đặt thì pop-up không bao giờ hiện lại.
+    moodle_prompted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = created_at_column()
 
 
