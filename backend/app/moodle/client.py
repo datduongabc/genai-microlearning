@@ -109,6 +109,12 @@ def find_users_by_email(emails: list[str]) -> dict[str, list[int]]:
     return found
 
 
+def user_exists(user_id: int) -> bool:
+    """Whether Moodle still has this user; core_user_get_users leaves deleted ones out."""
+    result = call("core_user_get_users", criteria=[{"key": "id", "value": user_id}])
+    return any(int(user["id"]) == user_id for user in result.get("users", []))
+
+
 def create_user(email: str, firstname: str, lastname: str, password: str) -> int:
     """Creates a Moodle user and returns its id. The email (lower case) doubles as the username,
     which Moodle accepts and which is unique where the email is. Moodle refuses an email that

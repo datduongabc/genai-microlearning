@@ -77,6 +77,13 @@ def moodle_has_every_lecturer(monkeypatch):
 
 
 @pytest.fixture(autouse=True)
+def moodle_keeps_every_user(monkeypatch):
+    """A stored Moodle link is checked against Moodle. Tests that are not about that find every
+    linked Moodle user still there; the ones that are replace this."""
+    monkeypatch.setattr(moodle_client, "user_exists", lambda user_id: True)
+
+
+@pytest.fixture(autouse=True)
 def moodle_enrols_anyone(monkeypatch):
     """Linking a course and pushing to it enrol the lecturer's Moodle account as its teacher.
     Tests that are not about that let it succeed without a Moodle server; the ones that are

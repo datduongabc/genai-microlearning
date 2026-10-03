@@ -13,7 +13,7 @@ from app.db import get_db
 from app.generation.module_generation_pipeline import is_control
 from app.models import ComponentType, Course, Module, ModuleComponent, User
 from app.moodle import client as moodle_client
-from app.moodle.accounts import require_moodle_user_id
+from app.moodle.accounts import enrol_linked_teacher, require_moodle_user_id
 from app.moodle.errors import MOODLE_FAILURES, moodle_failure
 
 router = APIRouter(prefix="/modules", tags=["moodle"], dependencies=[Depends(get_current_user)])
@@ -162,10 +162,10 @@ def publish_to_moodle(
 
     # The lecturer must have linked their Moodle account to see what is pushed, so nothing is
     # written for one who has not.
-    teacher_id = require_moodle_user_id(current_user)
+    require_moodle_user_id(current_user)
     try:
         # Idempotent: the lecturer teaches the course they push to, however it was linked.
-        moodle_client.enrol_as_teacher(course.moodle_course_id, teacher_id)
+        enrol_linked_teacher(db, current_user, course.moodle_course_id)
         result = {
             "moodle_course_id": course.moodle_course_id,
             "book_cmid": moodle_client.create_book(

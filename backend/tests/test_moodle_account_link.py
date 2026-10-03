@@ -70,15 +70,36 @@ def test_the_account_is_not_linked_until_the_lecturer_says_yes_even_when_moodle_
     assert client.get("/moodle/account", headers=headers).json() == {"email": email, "status": "linked"}
 
 
-def test_the_link_is_remembered_so_it_holds_while_moodle_is_down(moodle, monkeypatch):
+def test_a_stored_link_to_a_moodle_user_that_is_gone_is_cleared_and_yes_links_again(moodle, monkeypatch):
+    email, headers = _lecturer()
+    client.post("/moodle/account/link", headers=headers)
+    first_id = moodle["users"][email][0]
+    del moodle["users"][email]  # a Moodle admin deleted it
+    monkeypatch.setattr(
+        moodle_client, "user_exists", lambda user_id: any(user_id in ids for ids in moodle["users"].values())
+    )
+
+    assert client.get("/moodle/account", headers=headers).json() == {"email": email, "status": "not_linked"}
+    course_id = client.post("/courses", json={"name": "Lập trình"}, headers=headers).json()["id"]
+    assert client.post(f"/courses/{course_id}/create-moodle", headers=headers).status_code == 422
+
+    relinked = client.post("/moodle/account/link", headers=headers)
+
+    assert relinked.json()["created"] is True and moodle["users"][email] != [first_id]
+    assert client.get("/moodle/account", headers=headers).json()["status"] == "linked"
+
+
+def test_a_stored_link_is_kept_while_moodle_cannot_be_asked(moodle, monkeypatch):
     _, headers = _lecturer()
     client.post("/moodle/account/link", headers=headers)
 
-    def down(emails):
+    def down(user_id):
         raise httpx.ConnectError("no route")
 
-    monkeypatch.setattr(moodle_client, "find_users_by_email", down)
+    monkeypatch.setattr(moodle_client, "user_exists", down)
+    assert client.get("/moodle/account", headers=headers).status_code == 502
 
+    monkeypatch.setattr(moodle_client, "user_exists", lambda user_id: True)
     assert client.get("/moodle/account", headers=headers).json()["status"] == "linked"
 
 

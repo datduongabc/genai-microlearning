@@ -13,7 +13,7 @@ from app.auth.rate_limit import limiter, user_or_address
 from app.db import get_db
 from app.models import User, UserRole
 from app.moodle import client as moodle_client
-from app.moodle.accounts import MoodleAccountMissing, ensure_moodle_user
+from app.moodle.accounts import MoodleAccountMissing, ensure_moodle_user, forget_if_gone
 from app.moodle.errors import MOODLE_FAILURES, moodle_failure
 
 router = APIRouter(prefix="/moodle", tags=["moodle"], dependencies=[Depends(get_current_user)])
@@ -32,14 +32,15 @@ def get_account(
     request: Request, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)
 ):
     """Whether the lecturer has linked their Moodle account. The pop-up that recommends linking
-    asks this: "linked" only once they said Yes, "not_linked" before (even when Moodle already has
-    a user with their email), and "ambiguous" when several Moodle users share it, which Yes cannot
+    asks this: "linked" only once they said Yes and while Moodle still has that user, "not_linked"
+    before (even when Moodle already has a user with their email) or once it is gone (the stale
+    link is cleared), and "ambiguous" when several Moodle users share the email, which Yes cannot
     link."""
     user = _lecturer(current_user)
-    if user.moodle_user_id is not None:
-        return {"email": user.email, "status": "linked"}
     email = user.email.strip().lower()
     try:
+        if user.moodle_user_id is not None and not forget_if_gone(db, user):
+            return {"email": user.email, "status": "linked"}
         count = len(moodle_client.find_users_by_email([email])[email])
     except MOODLE_FAILURES as e:
         raise moodle_failure(e, db) from e

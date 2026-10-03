@@ -11,7 +11,7 @@ from fastapi.testclient import TestClient
 
 from app.db import SessionLocal
 from app.main import app
-from app.models import ComponentType, Course, Document, Module, ModuleComponent
+from app.models import ComponentType, Course, Document, Module, ModuleComponent, User
 from app.moodle import client as moodle_client
 from tests.auth_helpers import create_and_login, make_account
 
@@ -183,6 +183,79 @@ def test_when_enrolling_fails_nothing_is_published_and_the_error_says_so(moodle,
     assert response.status_code == 502
     assert "Moodle" in response.json()["detail"]
     assert moodle["calls"] == []
+
+
+def _gone(moodle, monkeypatch, email):
+    """The lecturer's linked Moodle user is deleted in Moodle: enrolling them fails, and a lookup
+    no longer finds them."""
+    del moodle["users"][email]
+    monkeypatch.setattr(moodle_client, "user_exists", lambda user_id: False)
+
+    def refuse(course_id, user_id):
+        raise moodle_client.MoodleError("enrol_manual_enrol_users: User ID does not exist or is deleted!")
+
+    monkeypatch.setattr(moodle_client, "enrol_as_teacher", refuse)
+
+
+def _stored_link(email):
+    with SessionLocal() as db:
+        return db.query(User).filter(User.email == email.lower()).one().moodle_user_id
+
+
+def test_publishing_with_a_linked_moodle_user_that_is_gone_asks_to_link_again(moodle, monkeypatch):
+    email, headers = _lecturer()
+    moodle["users"][email] = [31]
+    _link_account(headers)
+    module_id = _publishable_module(headers)
+    _gone(moodle, monkeypatch, email)
+
+    response = client.post(f"/modules/{module_id}/publish-to-moodle", json={"section_num": 0}, headers=headers)
+
+    assert response.status_code == 422 and "liên kết lại" in response.json()["detail"]
+    assert moodle["calls"] == []
+    assert _stored_link(email) is None
+
+
+@pytest.mark.parametrize("action", ["link", "create"])
+def test_linking_or_creating_a_course_with_a_linked_moodle_user_that_is_gone_asks_to_link_again(
+    moodle, monkeypatch, action
+):
+    email, headers = _lecturer()
+    moodle["users"][email] = [31]
+    _link_account(headers)
+    course_id = _course(headers)
+    _gone(moodle, monkeypatch, email)
+
+    if action == "link":
+        response = client.post(
+            f"/courses/{course_id}/link-moodle", json={"moodle_course_id": moodle["course_id"]}, headers=headers
+        )
+    else:
+        response = client.post(f"/courses/{course_id}/create-moodle", headers=headers)
+
+    assert response.status_code == 422 and "liên kết lại" in response.json()["detail"]
+    assert _stored_link(email) is None
+
+
+def test_a_moodle_timeout_while_enrolling_on_link_is_a_clear_error_and_the_link_stays(moodle, monkeypatch):
+    email, headers = _lecturer()
+    moodle["users"][email] = [31]
+    _link_account(headers)
+    course_id = _course(headers)
+
+    def timeout(course_id, user_id):
+        raise httpx.ReadTimeout("timed out")
+
+    monkeypatch.setattr(moodle_client, "enrol_as_teacher", timeout)
+
+    response = client.post(
+        f"/courses/{course_id}/link-moodle", json={"moodle_course_id": moodle["course_id"]}, headers=headers
+    )
+
+    assert response.status_code == 502 and "was linked" in response.json()["detail"]
+    courses = {c["id"]: c["moodle_course_id"] for c in client.get("/courses", headers=headers).json()}
+    assert courses[course_id] == moodle["course_id"]
+    assert _stored_link(email) == 31
 
 
 def test_make_account_helper_creates_a_lecturer_not_an_admin():
