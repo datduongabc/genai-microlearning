@@ -140,6 +140,7 @@ ATTACKS = [
     ("POST", "/modules/{module}/chat-edit", None, {"json": {"message": "shorten slide 1"}}),
     ("GET", "/modules/{module}/slides.pptx", None, {}),
     ("PATCH", "/modules/{module}", {"title": "pwned"}, {}),
+    ("DELETE", "/modules/{module}", None, {}),
     ("PATCH", "/modules/{module}/components/{component}", None, {"json": {"content": {"markdown": "pwned"}}}),
     ("PATCH", "/modules/{module}/questions/{question}", None, {"json": {"stem": "pwned", "choices": ["A", "B"], "answer_key": 0, "explanation": "pwned"}}),
     ("POST", "/modules/{module}/publish-to-moodle", None, {"json": {"section_num": 0}}),

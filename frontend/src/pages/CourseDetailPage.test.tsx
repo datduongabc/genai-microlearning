@@ -501,3 +501,55 @@ describe('CourseDetailPage - textbooks', () => {
     expect(screen.queryByText(/không nhận diện được mục lục/i)).not.toBeInTheDocument()
   })
 })
+
+describe('CourseDetailPage - delete module', () => {
+  const module: ModuleSummary = {
+    id: 'module-1', title: 'Giới thiệu AI', learning_objective: null, bloom_level: null,
+    component_count: 6, section_id: null, is_control: false,
+  }
+
+  beforeEach(() => {
+    vi.mocked(api.listCourses).mockResolvedValue([unlinkedCourse])
+    vi.mocked(api.listDocuments).mockResolvedValue([sampleDocument])
+  })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  it('asks for confirmation and keeps the module when the user cancels', async () => {
+    vi.mocked(api.listModules).mockResolvedValue([module])
+    vi.spyOn(window, 'confirm').mockReturnValue(false)
+
+    renderPage()
+    await userEvent.click(await screen.findByRole('button', { name: /xóa mô-đun giới thiệu ai/i }))
+
+    expect(window.confirm).toHaveBeenCalled()
+    expect(api.deleteModule).not.toHaveBeenCalled()
+    expect(screen.getByText(/giới thiệu ai/i)).toBeInTheDocument()
+  })
+
+  it('deletes the module and refreshes the list when confirmed', async () => {
+    vi.mocked(api.listModules).mockResolvedValueOnce([module]).mockResolvedValueOnce([])
+    vi.mocked(api.deleteModule).mockResolvedValue({ status: 'deleted', deleted_module_ids: ['module-1'] })
+    vi.spyOn(window, 'confirm').mockReturnValue(true)
+
+    renderPage()
+    await userEvent.click(await screen.findByRole('button', { name: /xóa mô-đun giới thiệu ai/i }))
+
+    await waitFor(() => expect(api.deleteModule).toHaveBeenCalledWith('module-1'))
+    await waitFor(() => expect(screen.queryByText(/giới thiệu ai/i)).not.toBeInTheDocument())
+  })
+
+  it('shows the server error and keeps the module when deleting fails', async () => {
+    vi.mocked(api.listModules).mockResolvedValue([module])
+    vi.mocked(api.deleteModule).mockRejectedValue(new Error('boom'))
+    vi.spyOn(window, 'confirm').mockReturnValue(true)
+
+    renderPage()
+    await userEvent.click(await screen.findByRole('button', { name: /xóa mô-đun giới thiệu ai/i }))
+
+    expect(await screen.findByText(/xóa mô-đun thất bại/i)).toBeInTheDocument()
+    expect(screen.getByText(/giới thiệu ai/i)).toBeInTheDocument()
+  })
+})

@@ -1,6 +1,6 @@
 import { afterEach, expect, it, vi } from 'vitest'
 import { api } from './client'
-import { generateModule, generateModulesFromSections } from './modules'
+import { deleteModule, generateModule, generateModulesFromSections } from './modules'
 
 afterEach(() => vi.restoreAllMocks())
 
@@ -20,4 +20,10 @@ it('sends trimmed guidance with the selected language for documents and sections
   expect(post).toHaveBeenLastCalledWith('/modules/generate', { output_language: 'en', custom_instructions: 'Explain IDS' }, { params: { document_id: 'doc' } })
   await generateModulesFromSections('doc', ['section'], null, 'vi', 'Explain DLDFS')
   expect(post).toHaveBeenLastCalledWith('/modules/generate', { section_ids: ['section'], output_language: 'vi', custom_instructions: 'Explain DLDFS' }, { params: { document_id: 'doc' } })
+})
+
+it('deletes a module by id', async () => {
+  const del = vi.spyOn(api, 'delete').mockResolvedValue({ data: { status: 'deleted', deleted_module_ids: ['m'] } })
+  await deleteModule('m')
+  expect(del).toHaveBeenCalledWith('/modules/m')
 })

@@ -1,10 +1,11 @@
 import axios from "axios";
 import { useCallback, useEffect, useRef, useState, type ChangeEvent } from "react";
-import { Link, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import {
   apiErrorMessage,
   createMoodleCourseFor,
   deleteDocument,
+  deleteModule,
   generateModule,
   getModuleJobStatus,
   linkMoodleCourse,
@@ -23,6 +24,7 @@ import {
 import { AppShell } from "../components/AppShell";
 import { ModelPicker } from "../components/ModelPicker";
 import { GenerateDialog } from "../components/GenerateDialog";
+import { ModuleListItem } from "../components/ModuleListItem";
 import { SectionTree } from "../components/SectionTree";
 
 const STATUS_LABEL: Record<string, string> = {
@@ -83,6 +85,7 @@ export function CourseDetailPage() {
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [deletingDocId, setDeletingDocId] = useState<string | null>(null);
+  const [deletingModuleId, setDeletingModuleId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   // Only bridges the moment between clicking and the server reporting the
   // job (so a double-click cannot send two requests); after that, and after
@@ -226,6 +229,26 @@ export function CourseDetailPage() {
     }
   }
 
+  async function handleDeleteModule(m: ModuleSummary) {
+    const confirmed = window.confirm(
+      `Xóa vĩnh viễn mô-đun "${m.title}"? ${
+        m.is_control ? "" : "Bản đối chứng (không RAG) đi cặp với nó, nếu có, sẽ bị xóa theo. "
+      }Nội dung đã đẩy lên Moodle KHÔNG bị xóa. Không thể khôi phục.`,
+    );
+    if (!confirmed) return;
+
+    setDeletingModuleId(m.id);
+    setError(null);
+    try {
+      await deleteModule(m.id);
+      await refresh();
+    } catch (err) {
+      setError(apiErrorMessage(err, "Xóa mô-đun thất bại"));
+    } finally {
+      setDeletingModuleId(null);
+    }
+  }
+
   return (
     <AppShell title="Tài liệu môn học">
       <GenerateDialog dialogRef={generateDialog} onGenerate={(language, instructions) => {
@@ -321,23 +344,20 @@ export function CourseDetailPage() {
                   documentGenerating={d.generating}
                   modules={modulesByDoc[d.id] ?? []}
                   onGenerated={refresh}
+                  onDeleteModule={handleDeleteModule}
+                  deletingModuleId={deletingModuleId}
                   modelAlias={modelAlias}
                 />
               )}
               {listedModules(d).length > 0 && (
                 <ul className="mt-3 flex flex-col gap-1.5 pl-1">
                   {listedModules(d).map((m) => (
-                    <li key={m.id}>
-                      <Link
-                        to={`/modules/${m.id}`}
-                        className="text-sm hover:text-terracotta"
-                      >
-                        → {m.title}
-                        {m.is_control && (
-                          <span className="ml-2 text-xs font-medium text-amber-600">Đối chứng (không RAG) - chỉ dùng cho nghiên cứu</span>
-                        )}
-                      </Link>
-                    </li>
+                    <ModuleListItem
+                      key={m.id}
+                      module={m}
+                      deleting={deletingModuleId === m.id}
+                      onDelete={handleDeleteModule}
+                    />
                   ))}
                 </ul>
               )}

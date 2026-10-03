@@ -481,6 +481,40 @@ def update_module(
     return {"id": module.id, "title": module.title}
 
 
+@router.delete("/{module_id}")
+def delete_module(
+    module_id: uuid.UUID, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)
+):
+    """Xóa một module đã sinh cùng bản đối chứng không RAG đi cặp với nó (nếu có).
+
+    Components, câu hỏi, đánh giá, lịch sử chat-edit và job đã sinh module đều theo ON DELETE
+    CASCADE. Bảng không lưu module đã đẩy lên Moodle chưa (publish-to-moodle chỉ trả id), nên không
+    có tham chiếu cục bộ nào để dọn; Book/Quiz đã tạo trên Moodle giữ nguyên, giống như xóa khóa học.
+    """
+    module = _owned_module(db, module_id, current_user)
+    # Cùng khóa với /modules/generate: một lượt sinh bản đối chứng không được chen vào giữa lúc kiểm và lúc xóa.
+    _owned_document(db, module.document_id, current_user, lock=True)
+
+    # Job của bản đối chứng chỉ ghi module RAG đi cặp trong payload chứ không có khóa ngoại.
+    paired_jobs = db.query(Job).filter(
+        Job.job_type == JobType.module_generation, Job.payload["paired_module_id"].astext == str(module.id)
+    ).all()
+    if any(j.status in (JobStatus.queued, JobStatus.running) for j in paired_jobs):
+        raise HTTPException(
+            status_code=409, detail="Bản đối chứng của mô-đun này đang được sinh, vui lòng chờ xong rồi xóa."
+        )
+    control_ids = {j.module_id for j in paired_jobs if j.module_id is not None}
+    for control in db.query(Module).filter(Module.id.in_(control_ids)):
+        db.delete(control)
+    # Job đối chứng lỗi không có module để cascade, mà giữ lại thì nó mãi trỏ tới module không còn.
+    for job in paired_jobs:
+        if job.module_id is None:
+            db.delete(job)
+    db.delete(module)
+    db.commit()
+    return {"status": "deleted", "deleted_module_ids": [module_id, *sorted(control_ids)]}
+
+
 class ComponentUpdate(BaseModel):
     content: dict
 
