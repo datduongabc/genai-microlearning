@@ -201,6 +201,21 @@ def test_when_moodle_cannot_be_reached_the_answer_says_so(monkeypatch):
     assert client.post("/moodle/account/link", headers=headers).status_code == 502
 
 
+def test_when_moodle_refuses_the_connection_the_lecturer_is_told_to_contact_the_admin(monkeypatch):
+    _, headers = _lecturer()
+
+    def refused(emails):
+        raise moodle_client.MoodleError("core_user_get_users: Access control exception", "accessexception")
+
+    monkeypatch.setattr(moodle_client, "find_users_by_email", refused)
+
+    for response in (client.get("/moodle/account", headers=headers), client.post("/moodle/account/link", headers=headers)):
+        assert response.status_code == 502
+        detail = response.json()["detail"]
+        assert "quản trị viên" in detail
+        assert "core_user_get_users" not in detail and "Access control" not in detail
+
+
 def test_an_admin_has_no_moodle_account_to_link_and_a_stranger_is_turned_away(moodle):
     login = create_and_login(client, f"adm-{uuid.uuid4().hex[:8]}@example.edu", role=UserRole.admin)
     headers = {"Authorization": f"Bearer {login['access_token']}"}

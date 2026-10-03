@@ -90,8 +90,9 @@ php /var/www/html/admin/cli/upgrade.php --non-interactive --allow-unstable
 # Neu lan cai truoc bi kill giua chung (bang da tao nhung cac buoc cuoi cua
 # install_database.php chua chay), nhanh o tren van bao "da cai xong" -- admin
 # ket o mat khau giu cho (khong dang nhap duoc, Web Services loi "User not
-# fully set-up") va thieu cau hinh mac dinh (course moi khong co phuong thuc
-# ghi danh). Script nay la no-op tren site da on.
+# fully set-up"), thieu cau hinh mac dinh (course moi khong co phuong thuc
+# ghi danh) va chua bat vai tro (rolesactive=0: moi ham web service, ke ca cua
+# admin, bao "Access control exception"). Script nay la no-op tren site da on.
 php /usr/local/bin/finish-interrupted-install.php
 
 # Bat web service + REST va tao token backend dang cau hinh (MOODLE_TOKEN) neu chua co,
