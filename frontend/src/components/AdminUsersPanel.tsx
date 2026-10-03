@@ -38,19 +38,27 @@ export function AdminUsersPanel() {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [resetting, setResetting] = useState<string | null>(null);
 
-  const load = useCallback(async () => {
-    try {
-      setUsers(await listUsers());
-      setLoadError(null);
-    } catch (err) {
-      setLoadError(apiErrorMessage(err, "Không tải được danh sách tài khoản."));
-    }
-  }, []);
+  // Bumped to load the list again (after a change), so the effect below is the only loader.
+  const [reloads, setReloads] = useState(0);
+  const reload = useCallback(() => setReloads((count) => count + 1), []);
 
+  // Sets state only from promise callbacks, and drops an answer that arrives after a newer request.
   useEffect(() => {
-    // Sets state only from the promise callbacks inside load().
-    void load();
-  }, [load]);
+    let cancelled = false;
+    listUsers().then(
+      (list) => {
+        if (cancelled) return;
+        setUsers(list);
+        setLoadError(null);
+      },
+      (err) => {
+        if (!cancelled) setLoadError(apiErrorMessage(err, "Không tải được danh sách tài khoản."));
+      },
+    );
+    return () => {
+      cancelled = true;
+    };
+  }, [reloads]);
 
   async function handleToggleActive(user: AdminUser) {
     setBusyId(user.id);
@@ -59,7 +67,7 @@ export function AdminUsersPanel() {
     try {
       await setUserActive(user.id, !user.is_active);
       setNotice(user.is_active ? `Đã khóa tài khoản ${user.email}.` : `Đã mở khóa tài khoản ${user.email}.`);
-      await load();
+      reload();
     } catch (err) {
       setError(apiErrorMessage(err, "Đổi trạng thái tài khoản thất bại"));
     } finally {
@@ -70,10 +78,10 @@ export function AdminUsersPanel() {
   return (
     <div className="flex flex-col gap-8">
       <CreateLecturerForm
-        onCreated={async (created) => {
+        onCreated={(created) => {
           setError(null);
           setNotice(`Đã tạo tài khoản cho ${created.email}.`);
-          await load();
+          reload();
         }}
       />
 
@@ -147,7 +155,7 @@ export function AdminUsersPanel() {
   );
 }
 
-function CreateLecturerForm({ onCreated }: { onCreated: (user: AdminUser) => Promise<void> }) {
+function CreateLecturerForm({ onCreated }: { onCreated: (user: AdminUser) => void }) {
   const [error, setError] = useState<string | null>(null);
   const {
     register,
@@ -161,7 +169,7 @@ function CreateLecturerForm({ onCreated }: { onCreated: (user: AdminUser) => Pro
     try {
       const created = await createLecturer(values.name, values.email, values.password);
       reset();
-      await onCreated(created);
+      onCreated(created);
     } catch (err) {
       setError(apiErrorMessage(err, "Tạo tài khoản thất bại"));
     }

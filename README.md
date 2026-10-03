@@ -6,13 +6,17 @@ Sinh viên: Dương Nguyễn Tấn Đạt, ngành Khoa học Máy tính.
 Hệ thống nhận tài liệu môn học của giảng viên (PDF, PowerPoint, HTML, video), truy xuất bằng RAG, rồi sinh mô-đun Microlearning gồm bảy thành phần: Learning Objective, Content, Slides, Example, Practice, Quiz, Explanation.
 Mô-đun sau đó được xuất bản sang Moodle cho học viên học.
 
-Ứng dụng này chỉ dành cho giảng viên.
+Ứng dụng này dành cho giảng viên, cộng một vai trò admin để quản lý tài khoản giảng viên.
 Học viên không đăng nhập vào đây mà học trên Moodle.
 
 Trong trang xem trước, giảng viên có thể yêu cầu AI sửa một thành phần bằng ngôn ngữ tự nhiên, ví dụ “Rút gọn slide 3” hoặc “Làm câu quiz 2 khó hơn”. AI bám các đoạn nguồn của mô-đun và ngôn ngữ đầu ra đã chọn; yêu cầu chưa rõ sẽ được hỏi lại. Bản gốc AI được giữ trong `ai_original`, và số lượt chỉnh sửa đã áp dụng được hiển thị trên trang. Mô-đun đối chứng (không RAG) không hỗ trợ chỉnh sửa bằng chat.
 API: `POST /modules/{module_id}/chat-edit` nhận `{message, session_id?}`, trả `{session_id, reply, applied, edit_count}`. Lịch sử lưu trong bảng chat hiện có, tách khỏi hỏi-đáp môn học bằng `chat_sessions.module_id`; `chat_messages.applied_edit` đánh dấu lượt đã áp dụng. Chạy `alembic upgrade head` trước khi dùng.
 
 Sinh lại cho cùng một tài liệu hay mục luôn tạo mô-đun mới, không ghi đè mô-đun đã có; chỉ một lượt đang chạy mới chặn lượt sau. Giảng viên xóa một mô-đun đã sinh bằng `DELETE /modules/{module_id}` (nút “Xóa mô-đun” trên danh sách, có hộp xác nhận): endpoint xóa luôn bản đối chứng không RAG đi cặp và mọi dòng phụ thuộc (câu hỏi, đánh giá, lịch sử chat-edit, job), trả 409 khi bản đối chứng của nó đang được sinh, và 404 với mô-đun của người khác. Ứng dụng không lưu mô-đun nào đã đẩy lên Moodle, nên Book/Quiz đã tạo trên Moodle được giữ nguyên.
+
+Không có đăng ký công khai: tài khoản giảng viên do admin tạo trên trang Quản trị (`/admin`), nơi admin cũng khóa hoặc mở khóa tài khoản (khóa không xóa dữ liệu nào và có hiệu lực ngay, kể cả với token đang dùng), đặt lại mật khẩu, xem trạng thái liên kết Moodle của từng giảng viên và xem lỗi pipeline của mọi giảng viên để bấm "Thử lại" cho một hay nhiều job. Admin là vai trò riêng, không có môn học, và chỉ thấy job lỗi cùng tên tệp và tên môn học đi kèm, không thấy nội dung tài liệu, mô-đun hay chat. Admin đầu tiên chỉ tạo được bằng lệnh trên máy chủ: `docker exec -it -e PYTHONPATH=. do-an-backend uv run python scripts/create_admin.py admin@example.com --name "Admin"` (mật khẩu được hỏi tại chỗ). Giảng viên tự xem lỗi tài liệu và lỗi sinh mô-đun của mình ngay trên trang môn học, lọc danh sách tài liệu theo trạng thái và bấm "Thử lại" (`POST /jobs/{job_id}/retry`) để job cũ chạy lại từ bước đã dừng, không tải lên lại và không tạo thêm mô-đun.
+
+Giảng viên được nối với tài khoản Moodle bằng email (so sánh không phân biệt hoa thường): khi tạo course Moodle, người được ghi danh làm giáo viên là tài khoản Moodle có đúng email của giảng viên, không phải chủ của token web service. Không có tài khoản nào khớp thì không đẩy gì lên Moodle và giảng viên nhận thông báo rõ ràng, nên khi tạo giảng viên hãy dùng đúng email Moodle của họ. Hàm `core_user_get_users_by_field` vừa được thêm vào service `lms_bridge`, nên sau khi cập nhật hãy để Moodle nâng cấp plugin (số phiên bản đã tăng) trước khi dùng.
 
 ## Tài liệu
 

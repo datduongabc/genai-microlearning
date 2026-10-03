@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { apiErrorMessage, listFailedJobs, retryFailedJobs, type FailedJobInfo } from "../api";
 
 const JOB_TYPE_LABEL: Record<FailedJobInfo["job_type"], string> = {
@@ -16,22 +16,29 @@ export function AdminFailuresPanel() {
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
-  const load = useCallback(async (jobType: FailedJobInfo["job_type"] | "all") => {
-    try {
-      const list = await listFailedJobs(jobType === "all" ? undefined : jobType);
-      setJobs(list);
-      // What is no longer failed (retried here or by its lecturer) cannot stay picked.
-      setSelected((current) => new Set(list.filter((j) => current.has(j.id)).map((j) => j.id)));
-      setError(null);
-    } catch (err) {
-      setError(apiErrorMessage(err, "Không tải được danh sách lỗi."));
-    }
-  }, []);
+  // Bumped to load the list again (refresh button, after a retry), so the effect below is the only loader.
+  const [reloads, setReloads] = useState(0);
+  const reload = () => setReloads((count) => count + 1);
 
+  // Sets state only from promise callbacks, and drops an answer that arrives after a newer request.
   useEffect(() => {
-    // Loads once and again when the filter changes; state is set only from promise callbacks.
-    void load(filter);
-  }, [filter, load]);
+    let cancelled = false;
+    listFailedJobs(filter === "all" ? undefined : filter).then(
+      (list) => {
+        if (cancelled) return;
+        setJobs(list);
+        // What is no longer failed (retried here or by its lecturer) cannot stay picked.
+        setSelected((current) => new Set(list.filter((j) => current.has(j.id)).map((j) => j.id)));
+        setError(null);
+      },
+      (err) => {
+        if (!cancelled) setError(apiErrorMessage(err, "Không tải được danh sách lỗi."));
+      },
+    );
+    return () => {
+      cancelled = true;
+    };
+  }, [filter, reloads]);
 
   function toggle(id: string) {
     setSelected((current) => {
@@ -50,7 +57,7 @@ export function AdminFailuresPanel() {
       const skipped =
         result.skipped.length > 0 ? ` ${result.skipped.length} job bị bỏ qua vì không còn ở trạng thái lỗi.` : "";
       setNotice(`Đã đưa ${result.retried.length} job vào hàng đợi chạy lại.${skipped}`);
-      await load(filter);
+      reload();
     } catch (err) {
       setError(apiErrorMessage(err, "Thử lại thất bại"));
     } finally {
@@ -80,7 +87,7 @@ export function AdminFailuresPanel() {
         </div>
         <div className="flex items-center gap-2">
           <button
-            onClick={() => void load(filter)}
+            onClick={reload}
             className="rounded-[3px] border border-gray-300 px-3 py-1.5 text-sm hover:bg-gray-50"
           >
             Làm mới

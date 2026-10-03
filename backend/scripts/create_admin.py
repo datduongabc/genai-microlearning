@@ -44,7 +44,7 @@ def main() -> None:
             )
         except AccountError as error:
             sys.exit(error.detail)
-    print(f"đã tạo admin {user.email}")
+        print(f"đã tạo admin {user.email}")
 
 
 if __name__ == "__main__":
