@@ -71,17 +71,17 @@ describe('AdminPage - accounts', () => {
   })
 
   it('creates a lecturer and reloads the list', async () => {
-    vi.mocked(api.createLecturer).mockResolvedValue({ ...lan, id: 'u-3', email: 'new@example.com' })
+    vi.mocked(api.createLecturer).mockResolvedValue({ ...lan, id: 'u-3', email: 'new@example.edu' })
     renderPage()
     await screen.findByText('lan@example.com')
 
     await userEvent.type(screen.getByLabelText('Họ và tên'), 'Hoa Lê')
-    await userEvent.type(screen.getByLabelText('Email'), 'new@example.com')
+    await userEvent.type(screen.getByLabelText('Email'), 'new@example.edu')
     await userEvent.type(screen.getByLabelText('Mật khẩu ban đầu'), 'a long enough phrase')
     await userEvent.click(screen.getByRole('button', { name: 'Tạo tài khoản' }))
 
-    await waitFor(() => expect(api.createLecturer).toHaveBeenCalledWith('Hoa Lê', 'new@example.com', 'a long enough phrase'))
-    expect(await screen.findByText(/đã tạo tài khoản cho new@example.com/i)).toBeInTheDocument()
+    await waitFor(() => expect(api.createLecturer).toHaveBeenCalledWith('Hoa Lê', 'new@example.edu', 'a long enough phrase'))
+    expect(await screen.findByText(/đã tạo tài khoản cho new@example.edu/i)).toBeInTheDocument()
     expect(api.listUsers).toHaveBeenCalledTimes(2)
   })
 
@@ -102,7 +102,7 @@ describe('AdminPage - accounts', () => {
     await screen.findByText('lan@example.com')
 
     await userEvent.type(screen.getByLabelText('Họ và tên'), 'Hoa Lê')
-    await userEvent.type(screen.getByLabelText('Email'), 'lan@example.com')
+    await userEvent.type(screen.getByLabelText('Email'), 'lan@example.edu')
     await userEvent.type(screen.getByLabelText('Mật khẩu ban đầu'), 'a long enough phrase')
     await userEvent.click(screen.getByRole('button', { name: 'Tạo tài khoản' }))
 

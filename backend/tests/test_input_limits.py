@@ -108,13 +108,6 @@ def test_a_module_title_has_a_maximum(world):
     assert (ok.status_code, too_long.status_code) == (200, 422)
 
 
-@pytest.mark.parametrize("query", ["", "q" * 101])
-def test_a_moodle_search_needs_a_query_of_sane_length(world, query):
-    response = client.get("/courses/moodle/search", params={"q": query}, headers=world["headers"])
-
-    assert response.status_code == 422
-
-
 def test_more_sections_than_anyone_could_pick_are_refused_before_the_database_is_asked(world):
     ids = [str(uuid.uuid4()) for _ in range(51)]
 

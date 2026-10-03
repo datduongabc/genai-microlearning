@@ -200,7 +200,7 @@ function CreateLecturerForm({ onCreated }: { onCreated: (user: AdminUser) => voi
         </label>
       </div>
       <p className="text-xs text-gray-500">
-        Email phải trùng với email tài khoản Moodle của giảng viên để môn học được đẩy lên Moodle đúng người.
+        Chỉ chấp nhận email của trường (dạng x.edu hoặc x.edu.vn). Giảng viên tự liên kết tài khoản Moodle cùng email này khi đăng nhập lần đầu.
       </p>
       {error && <p className="text-sm text-red-700">{error}</p>}
       <div>

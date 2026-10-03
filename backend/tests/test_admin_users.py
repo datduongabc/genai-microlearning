@@ -23,7 +23,7 @@ client = TestClient(app)
 
 
 def _email(prefix: str) -> str:
-    return f"{prefix}-{uuid.uuid4().hex[:10]}@example.com"
+    return f"{prefix}-{uuid.uuid4().hex[:10]}@example.edu"
 
 
 def _bearer(login: dict) -> dict:
@@ -61,6 +61,21 @@ def test_an_admin_creates_a_lecturer_who_can_log_in(admin):
     assert created.json()["role"] == "teacher" and created.json()["is_active"] is True
     login = _login(email)
     assert login.status_code == 200 and login.json()["user"]["role"] == "teacher"
+
+
+@pytest.mark.parametrize("domain", ["gmail.com", "example.com", "edu.com"])
+def test_an_account_needs_an_edu_email_and_nothing_is_created_otherwise(admin, domain):
+    email = f"{uuid.uuid4().hex[:10]}@{domain}"
+
+    refused = _create(admin, email)
+
+    assert refused.status_code == 422 and "edu" in refused.json()["detail"]
+    assert _login(email).status_code == 401
+    assert email not in {u["email"] for u in client.get("/admin/users", headers=_bearer(admin)).json()}
+
+
+def test_an_edu_email_of_a_vietnamese_school_is_accepted(admin):
+    assert _create(admin, f"{uuid.uuid4().hex[:10]}@hcmut.edu.vn").status_code == 201
 
 
 def test_the_list_shows_every_account_with_its_state(admin):

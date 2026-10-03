@@ -1,6 +1,6 @@
 import { api } from './client'
 
-export interface MoodleCourseSearchResult {
+export interface MoodleCourse {
   id: number
   fullname: string
   shortname: string
@@ -11,8 +11,27 @@ export interface MoodleSection {
   name: string
 }
 
-export async function searchMoodleCourses(q: string) {
-  const { data } = await api.get<MoodleCourseSearchResult[]>('/courses/moodle/search', { params: { q } })
+// Every course that exists in Moodle (minus those already linked here or claimed by another lecturer).
+export async function listMoodleCourses() {
+  const { data } = await api.get<MoodleCourse[]>('/courses/moodle/courses')
+  return data
+}
+
+export type MoodleAccountStatus = 'not_linked' | 'linked' | 'ambiguous'
+
+export async function getMoodleAccount() {
+  const { data } = await api.get<{ email: string; status: MoodleAccountStatus }>('/moodle/account')
+  return data
+}
+
+// Raised on window when the lecturer links their Moodle account, so that whatever is waiting
+// for it (the course-linking panel) can reload without being told by its sibling.
+export const MOODLE_ACCOUNT_LINKED_EVENT = 'moodle-account-linked'
+
+// Links the Moodle user that has the lecturer's email, or creates it when there is none.
+export async function linkMoodleAccount() {
+  const { data } = await api.post<{ email: string; status: 'linked'; created: boolean }>('/moodle/account/link')
+  window.dispatchEvent(new Event(MOODLE_ACCOUNT_LINKED_EVENT))
   return data
 }
 

@@ -24,7 +24,7 @@ def remove_created_users():
     yield
     db = SessionLocal()
     try:
-        ids = [row.id for row in db.query(User.id).filter(User.email.like(f"{PREFIX}%@example.com"))]
+        ids = [row.id for row in db.query(User.id).filter(User.email.like(f"{PREFIX}%@example.edu"))]
         db.query(RefreshToken).filter(RefreshToken.user_id.in_(ids)).delete(synchronize_session=False)
         db.query(User).filter(User.id.in_(ids)).delete(synchronize_session=False)
         db.commit()
@@ -40,7 +40,7 @@ def admin():
 
 
 def _email() -> str:
-    return f"{PREFIX}{uuid.uuid4().hex[:10]}@example.com"
+    return f"{PREFIX}{uuid.uuid4().hex[:10]}@example.edu"
 
 
 def _register(email: str | None = None, password: str = STRONG_PASSWORD, name: str = "Test User", **extra):

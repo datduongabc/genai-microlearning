@@ -31,6 +31,19 @@ def normalize_email(raw: str) -> str:
         raise AccountError(422, "Email không hợp lệ.") from error
 
 
+def is_edu_email(email: str) -> bool:
+    """Whether the address is at an education domain: x.edu, or x.edu.vn and the like (a label
+    "edu" as the last, or the second to last followed by a two-letter country label). Only these are
+    accepted for accounts, here and in Moodle (README: Moodle's allowemailaddresses)."""
+    labels = email.strip().lower().rpartition("@")[2].split(".")
+    if len(labels) < 2 or not all(labels):
+        return False
+    return labels[-1] == "edu" or (len(labels) >= 3 and labels[-2] == "edu" and len(labels[-1]) == 2)
+
+
+EDU_ONLY = "Chỉ chấp nhận email của trường (tên miền dạng x.edu hoặc x.edu.vn)."
+
+
 def clean_name(raw: str) -> str:
     name = " ".join(raw.split())
     if not name:
@@ -38,9 +51,14 @@ def clean_name(raw: str) -> str:
     return name
 
 
-def create_account(db: Session, *, email: str, name: str, password: str, role: UserRole) -> User:
-    """Adds and commits the account. Raises AccountError for a weak password or a taken email."""
+def create_account(
+    db: Session, *, email: str, name: str, password: str, role: UserRole, edu_only: bool = True
+) -> User:
+    """Adds and commits the account. Raises AccountError for a non-edu email, a weak password or a
+    taken email. `edu_only=False` is for tests that need accounts at any address."""
     email = normalize_email(email)
+    if edu_only and not is_edu_email(email):
+        raise AccountError(422, EDU_ONLY)
     name = clean_name(name)
     weakness = check_password(password, email=email, name=name)
     if weakness is not None:

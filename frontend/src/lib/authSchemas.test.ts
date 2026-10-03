@@ -31,7 +31,7 @@ describe('loginSchema', () => {
 })
 
 describe('createLecturerSchema', () => {
-  const base = { name: 'Nguyen Van A', email: 'a@b.com', password: 'password123' }
+  const base = { name: 'Nguyen Van A', email: 'a@b.edu', password: 'password123' }
   const parse = (changes: object) => createLecturerSchema.safeParse({ ...base, ...changes })
   const paths = (result: ReturnType<typeof parse>) => (result.success ? [] : result.error.issues.map((i) => i.path[0]))
 
@@ -41,6 +41,20 @@ describe('createLecturerSchema', () => {
 
   it('rejects an invalid email', () => {
     expect(paths(parse({ email: 'not-an-email' }))).toEqual(['email'])
+  })
+
+  it('accepts the edu addresses of schools, as the server does', () => {
+    for (const email of ['a@hcmut.edu.vn', 'a@x.edu', 'a@Mail.HCMUT.EDU.VN']) {
+      expect(parse({ email }).success, email).toBe(true)
+    }
+  })
+
+  it('rejects an address that is not at an edu domain, with the reason', () => {
+    for (const email of ['a@gmail.com', 'a@example.com', 'a@edu.com', 'a@x.edu.com']) {
+      const result = parse({ email })
+      expect(paths(result), email).toEqual(['email'])
+      expect(!result.success && result.error.issues[0].message).toMatch(/email của trường/)
+    }
   })
 
   it('rejects an empty name', () => {

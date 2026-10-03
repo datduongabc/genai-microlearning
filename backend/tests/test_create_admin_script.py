@@ -21,7 +21,7 @@ def _run(email: str, password: str, *args: str) -> subprocess.CompletedProcess:
 
 
 def test_the_command_creates_an_admin_who_is_not_a_lecturer():
-    email = f"cli-admin-{uuid.uuid4().hex[:8]}@Example.com"
+    email = f"cli-admin-{uuid.uuid4().hex[:8]}@Example.edu"
 
     result = _run(email, "A long enough phrase", "--name", "Quản trị viên")
 
@@ -33,7 +33,7 @@ def test_the_command_creates_an_admin_who_is_not_a_lecturer():
 
 
 def test_the_command_refuses_a_weak_password_and_a_taken_email_and_never_prints_the_password():
-    email = f"cli-admin-{uuid.uuid4().hex[:8]}@example.com"
+    email = f"cli-admin-{uuid.uuid4().hex[:8]}@example.edu"
 
     weak = _run(email, "short")
     assert weak.returncode != 0 and "ít nhất 8 ký tự" in weak.stderr
@@ -42,3 +42,13 @@ def test_the_command_refuses_a_weak_password_and_a_taken_email_and_never_prints_
     taken = _run(email, "Another long phrase 1")
     assert taken.returncode != 0 and "đã được đăng ký" in taken.stderr
     assert "A long enough phrase" not in taken.stdout + taken.stderr + weak.stdout + weak.stderr
+
+
+def test_the_first_admin_needs_an_edu_email_too():
+    email = f"cli-admin-{uuid.uuid4().hex[:8]}@gmail.com"
+
+    result = _run(email, "A long enough phrase")
+
+    assert result.returncode != 0 and "edu" in result.stderr
+    with SessionLocal() as db:
+        assert db.query(User).filter(User.email == email).first() is None

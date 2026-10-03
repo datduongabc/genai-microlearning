@@ -1,4 +1,4 @@
-import { act, render, screen, waitFor } from '@testing-library/react'
+import { act, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { AxiosError, type AxiosResponse, type InternalAxiosRequestConfig } from 'axios'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
@@ -61,33 +61,48 @@ beforeEach(() => {
   vi.mocked(api.listModels).mockResolvedValue({ models: [], default: null })
 })
 
+const axiosFailure = (status: number, detail: string) => {
+  const config = { headers: {} } as InternalAxiosRequestConfig
+  const response = { status, statusText: '', data: { detail }, headers: {}, config }
+  return new AxiosError('failed', 'ERR_BAD_REQUEST', config, null, response as AxiosResponse)
+}
+
+const moodleCourses = [
+  { id: 6, fullname: 'Introduction to Artificial Intelligence', shortname: 'Intro2AI' },
+  { id: 7, fullname: 'Databases', shortname: 'DB' },
+]
+
 describe('CourseDetailPage - Moodle linking', () => {
-  it('shows a search box when the course is not linked to Moodle', async () => {
+  beforeEach(() => {
+    vi.mocked(api.getMoodleAccount).mockResolvedValue({ email: 'lan@x.edu', status: 'linked' })
+    vi.mocked(api.listMoodleCourses).mockResolvedValue(moodleCourses)
+  })
+
+  it('offers every Moodle course in a drop-down when the course is not linked to Moodle', async () => {
     vi.mocked(api.listCourses).mockResolvedValue([unlinkedCourse])
 
     renderPage()
 
     expect(await screen.findByText(/chưa liên kết với moodle/i)).toBeInTheDocument()
-    expect(screen.getByPlaceholderText(/tìm course moodle/i)).toBeInTheDocument()
+    const select = await screen.findByRole('combobox', { name: /course moodle/i })
+    await waitFor(() => expect(within(select).getAllByRole('option')).toHaveLength(3))
+    expect(within(select).getByRole('option', { name: 'Databases (DB)' })).toBeInTheDocument()
+    expect(screen.queryByPlaceholderText(/tìm course moodle/i)).not.toBeInTheDocument()
   })
 
-  it('lets the teacher search and link an existing Moodle course', async () => {
+  it('lets the teacher choose a Moodle course from the drop-down and link it', async () => {
     vi.mocked(api.listCourses)
       .mockResolvedValueOnce([unlinkedCourse])
       .mockResolvedValueOnce([{ ...unlinkedCourse, moodle_course_id: 6 }])
-    vi.mocked(api.searchMoodleCourses).mockResolvedValue([
-      { id: 6, fullname: 'Introduction to Artificial Intelligence', shortname: 'Intro2AI' },
-    ])
     vi.mocked(api.linkMoodleCourse).mockResolvedValue({ moodle_course_id: 6 })
 
     renderPage()
 
-    await userEvent.type(await screen.findByPlaceholderText(/tìm course moodle/i), 'Artificial')
-    await userEvent.click(screen.getByRole('button', { name: 'Tìm' }))
-
-    expect(await screen.findByText(/Introduction to Artificial Intelligence/i)).toBeInTheDocument()
-
-    await userEvent.click(screen.getByRole('button', { name: /liên kết/i }))
+    const select = await screen.findByRole('combobox', { name: /course moodle/i })
+    expect(screen.getByRole('button', { name: 'Liên kết' })).toBeDisabled()
+    await screen.findByRole('option', { name: /Intro2AI/ })
+    await userEvent.selectOptions(select, '6')
+    await userEvent.click(screen.getByRole('button', { name: 'Liên kết' }))
 
     await waitFor(() => {
       expect(api.linkMoodleCourse).toHaveBeenCalledWith('course-1', 6)
@@ -97,27 +112,29 @@ describe('CourseDetailPage - Moodle linking', () => {
 
   it('says what the server said when a Moodle course cannot be linked', async () => {
     vi.mocked(api.listCourses).mockResolvedValue([unlinkedCourse])
-    vi.mocked(api.searchMoodleCourses).mockResolvedValue([{ id: 6, fullname: 'Intro to AI', shortname: 'AI' }])
-    const config = { headers: {} } as InternalAxiosRequestConfig
-    const response = { status: 404, statusText: '', data: { detail: 'Không tìm thấy khóa học Moodle này' }, headers: {}, config }
-    vi.mocked(api.linkMoodleCourse).mockRejectedValue(new AxiosError('failed', 'ERR_BAD_REQUEST', config, null, response as AxiosResponse))
+    vi.mocked(api.linkMoodleCourse).mockRejectedValue(axiosFailure(404, 'Không tìm thấy khóa học Moodle này'))
 
     renderPage()
-    await userEvent.type(await screen.findByPlaceholderText(/tìm course moodle/i), 'Intro')
-    await userEvent.click(screen.getByRole('button', { name: 'Tìm' }))
-    await userEvent.click(await screen.findByRole('button', { name: /liên kết/i }))
+    await screen.findByRole('option', { name: /Intro2AI/ })
+    await userEvent.selectOptions(screen.getByRole('combobox', { name: /course moodle/i }), '6')
+    await userEvent.click(screen.getByRole('button', { name: 'Liên kết' }))
 
     expect(await screen.findByText('Không tìm thấy khóa học Moodle này')).toBeInTheDocument()
   })
 
-  it('shows why a new Moodle course was not created, such as no Moodle account for the lecturer email', async () => {
+  it('says so when the list of Moodle courses cannot be loaded', async () => {
     vi.mocked(api.listCourses).mockResolvedValue([unlinkedCourse])
-    const config = { headers: {} } as InternalAxiosRequestConfig
-    const detail = 'Không tìm thấy tài khoản Moodle nào có email lan@example.com. Hãy nhờ admin tạo tài khoản Moodle với đúng email này rồi thử lại.'
-    const response = { status: 422, statusText: '', data: { detail }, headers: {}, config }
-    vi.mocked(api.createMoodleCourseFor).mockRejectedValue(
-      new AxiosError('failed', 'ERR_BAD_REQUEST', config, null, response as AxiosResponse),
-    )
+    vi.mocked(api.listMoodleCourses).mockRejectedValue(axiosFailure(502, 'Moodle không phản hồi'))
+
+    renderPage()
+
+    expect(await screen.findByText('Moodle không phản hồi')).toBeInTheDocument()
+  })
+
+  it('shows why a new Moodle course was not created, such as an ambiguous Moodle account', async () => {
+    vi.mocked(api.listCourses).mockResolvedValue([unlinkedCourse])
+    const detail = 'Có nhiều tài khoản Moodle cùng email lan@x.edu, không xác định được giáo viên.'
+    vi.mocked(api.createMoodleCourseFor).mockRejectedValue(axiosFailure(422, detail))
 
     renderPage()
     await userEvent.click(await screen.findByRole('button', { name: /tạo course moodle mới/i }))
@@ -125,13 +142,30 @@ describe('CourseDetailPage - Moodle linking', () => {
     expect(await screen.findByText(detail)).toBeInTheDocument()
   })
 
-  it('shows the linked course id and no search box once linked', async () => {
+  it('asks the lecturer to link their Moodle account first and offers no course until they do', async () => {
+    vi.mocked(api.listCourses).mockResolvedValue([unlinkedCourse])
+    vi.mocked(api.getMoodleAccount).mockResolvedValue({ email: 'lan@x.edu', status: 'not_linked' })
+    vi.mocked(api.linkMoodleAccount).mockResolvedValue({ email: 'lan@x.edu', status: 'linked', created: true })
+
+    renderPage()
+
+    const button = await screen.findByRole('button', { name: 'Liên kết tài khoản Moodle' })
+    expect(screen.queryByRole('combobox', { name: /course moodle/i })).not.toBeInTheDocument()
+    expect(api.listMoodleCourses).not.toHaveBeenCalled()
+
+    await userEvent.click(button)
+
+    expect(await screen.findByRole('combobox', { name: /course moodle/i })).toBeInTheDocument()
+    expect(api.linkMoodleAccount).toHaveBeenCalledOnce()
+  })
+
+  it('shows the linked course id and no drop-down once linked', async () => {
     vi.mocked(api.listCourses).mockResolvedValue([{ ...unlinkedCourse, moodle_course_id: 6 }])
 
     renderPage()
 
     expect(await screen.findByText(/đã liên kết với moodle course id/i)).toBeInTheDocument()
-    expect(screen.queryByPlaceholderText(/tìm course moodle/i)).not.toBeInTheDocument()
+    expect(screen.queryByRole('combobox', { name: /course moodle/i })).not.toBeInTheDocument()
   })
 })
 

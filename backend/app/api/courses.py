@@ -1,6 +1,6 @@
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field, field_validator
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
@@ -69,21 +69,21 @@ def list_courses(db: Session = Depends(get_db), current_user: User = Depends(get
     ]
 
 
-@router.get("/moodle/search")
+@router.get("/moodle/courses")
 @limiter.limit("30/minute", key_func=user_or_address)
-def search_moodle_courses(
-    request: Request, q: str = Query(min_length=1, max_length=100), db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    """Search existing Moodle courses (e.g. a teacher's own "CO3061") so a
-    course can be linked instead of always auto-creating a new one.
+def list_moodle_courses(
+    request: Request, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)
+):
+    """Every course created in Moodle, for the drop-down the lecturer picks from when linking a
+    course here (they choose which one; nothing is linked until they do).
 
-    Excludes Moodle courses already linked to a course here -- the mapping
-    is 1-1, so an already-linked course must not be offered again for a
-    different course.
+    Leaves out the Moodle courses already linked to a course here -- the mapping is 1-1, so an
+    already-linked course must not be offered again for a different course.
     """
     try:
-        results = moodle_client.search_courses(q)
-    except MoodleError as e:
-        raise HTTPException(status_code=502, detail=f"Moodle search failed: {e}") from e
+        results = moodle_client.list_courses()
+    except MOODLE_FAILURES as e:
+        raise moodle_failure(e, db) from e
 
     # What is left out is what this user could not link anyway: their own links (the
     # mapping is 1-1) and every course another user has claimed, whether or not it is
@@ -107,6 +107,11 @@ def link_moodle_course(
 ):
     course = _get_owned_course(course_id, db, current_user)
     moodle_course_id = payload.moodle_course_id
+    # The lecturer's own Moodle account comes first: linking a course is for someone who can see it.
+    try:
+        require_moodle_user_id(current_user)
+    except MOODLE_FAILURES as e:
+        raise moodle_failure(e, db) from e
     # The same answer whether the course is somebody else's or does not exist at all, so
     # a stranger cannot tell which ids are taken.
     unavailable = HTTPException(status_code=404, detail="Không tìm thấy khóa học Moodle này")
@@ -145,7 +150,7 @@ def create_moodle_course(
     current_user: User = Depends(get_current_user),
 ):
     """Explicitly create a brand new Moodle course and link it -- for
-    courses that don't already exist in Moodle (see /moodle/search for
+    courses that don't already exist in Moodle (see /moodle/courses for
     linking to one that does)."""
     course = _get_owned_course(course_id, db, current_user)
     if course.moodle_course_id is not None:

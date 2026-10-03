@@ -83,6 +83,9 @@ def create_course(name: str) -> int:
     return int(result[0]["id"])
 
 
+# Moodle's own front page is course 1; it is not a course anyone teaches.
+_SITE_COURSE_ID = 1
+
 # Moodle's built-in "Teacher" (editingteacher) role -- id 3 on every fresh install.
 _EDITING_TEACHER_ROLE_ID = 3
 
@@ -95,14 +98,29 @@ def find_users_by_email(emails: list[str]) -> dict[str, list[int]]:
     found: dict[str, list[int]] = {email: [] for email in wanted}
     if not wanted:
         return found
-    result = call("core_user_get_users_by_field", field="email", values=wanted)
-    for user in result:
-        # Moodle already matches on the lower-cased value; this keeps a stray answer from
-        # attaching somebody to an email that is not theirs.
-        email = str(user.get("email", "")).strip().lower()
-        if email in found:
-            found[email].append(int(user["id"]))
+    for email in wanted:
+        # core_user_get_users matches the email without regard to case (core_user_get_users_by_field
+        # compares exactly, so it misses an account Moodle stores as "Lan@School.edu"). It treats _
+        # and % as wildcards, hence the exact comparison below.
+        result = call("core_user_get_users", criteria=[{"key": "email", "value": email}])
+        for user in result.get("users", []):
+            if str(user.get("email", "")).strip().lower() == email:
+                found[email].append(int(user["id"]))
     return found
+
+
+def create_user(email: str, firstname: str, lastname: str, password: str) -> int:
+    """Creates a Moodle user and returns its id. The email (lower case) doubles as the username,
+    which Moodle accepts and which is unique where the email is. Moodle refuses an email that
+    another account already has, so callers look the email up first (find_users_by_email)."""
+    result = call(
+        "core_user_create_users",
+        users=[{
+            "username": email, "password": password, "firstname": firstname, "lastname": lastname,
+            "email": email, "auth": "manual",
+        }],
+    )
+    return int(result[0]["id"])
 
 
 def enrol_as_teacher(course_id: int, user_id: int) -> None:
@@ -121,20 +139,14 @@ def enrol_as_teacher(course_id: int, user_id: int) -> None:
     )
 
 
-def search_courses(query: str, limit: int = 20) -> list[dict[str, Any]]:
-    """Search existing Moodle courses by name/shortname, so a teacher can
-    link an app Course to a course they already set up manually (e.g.
-    "CO3061") instead of always creating a brand new Moodle course."""
-    result = call(
-        "core_course_search_courses",
-        criterianame="search",
-        criteriavalue=query,
-        page=0,
-        perpage=limit,
-    )
+def list_courses() -> list[dict[str, Any]]:
+    """Every course created in Moodle (not the site's own front page), for the drop-down a
+    lecturer picks from when linking a course."""
+    result = call("core_course_get_courses")
     return [
         {"id": c["id"], "fullname": c["fullname"], "shortname": c["shortname"]}
-        for c in result["courses"]
+        for c in result
+        if c["id"] != _SITE_COURSE_ID
     ]
 
 

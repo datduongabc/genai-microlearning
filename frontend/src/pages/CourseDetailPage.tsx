@@ -14,14 +14,18 @@ import {
   listModules,
   pollJobStatus,
   retryJob,
-  searchMoodleCourses,
+  listMoodleCourses,
+  getMoodleAccount,
+  linkMoodleAccount,
+  MOODLE_ACCOUNT_LINKED_EVENT,
   unlinkMoodleCourse,
   uploadDocument,
   type Course,
   type DocumentFailure,
   type DocumentInfo,
   type ModuleSummary,
-  type MoodleCourseSearchResult,
+  type MoodleCourse,
+  type MoodleAccountStatus,
 } from "../api";
 import { AppShell } from "../components/AppShell";
 import { ModelPicker } from "../components/ModelPicker";
@@ -486,11 +490,45 @@ export function CourseDetailPage() {
 }
 
 function MoodleLinkSection({ course, onLinked }: { course: Course; onLinked: () => void }) {
-  const [query, setQuery] = useState("");
-  const [results, setResults] = useState<MoodleCourseSearchResult[]>([]);
-  const [searching, setSearching] = useState(false);
+  // "unknown" until the server answers; a failed or missing answer leaves it there, and the
+  // server refuses a link without the account anyway.
+  const [account, setAccount] = useState<MoodleAccountStatus | "unknown">("unknown");
+  const [courses, setCourses] = useState<MoodleCourse[]>([]);
+  const [chosen, setChosen] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [reloads, setReloads] = useState(0);
+  const linked = course.moodle_course_id !== null;
+
+  // The Moodle account first, then the courses to pick from. Sets state only from promise
+  // callbacks, and drops an answer that arrives after the effect was cleaned up.
+  useEffect(() => {
+    if (linked) return;
+    let cancelled = false;
+    const onAccountLinked = () => setReloads((n) => n + 1);
+    window.addEventListener(MOODLE_ACCOUNT_LINKED_EVENT, onAccountLinked);
+    Promise.resolve(getMoodleAccount())
+      .then((answer) => {
+        const status = answer?.status ?? "unknown";
+        if (!cancelled) setAccount(status);
+        return status === "not_linked" || status === "ambiguous" ? undefined : listMoodleCourses();
+      })
+      .then(
+        (list) => {
+          if (!cancelled && list) {
+            setCourses(list);
+            setError(null);
+          }
+        },
+        (err) => {
+          if (!cancelled) setError(apiErrorMessage(err, "Không tải được danh sách course Moodle"));
+        },
+      );
+    return () => {
+      cancelled = true;
+      window.removeEventListener(MOODLE_ACCOUNT_LINKED_EVENT, onAccountLinked);
+    };
+  }, [linked, reloads]);
 
   async function handleUnlink() {
     // Chỉ xóa liên kết trong app -- KHÔNG đụng gì tới course/page/quiz thật
@@ -513,24 +551,25 @@ function MoodleLinkSection({ course, onLinked }: { course: Course; onLinked: () 
     }
   }
 
-  async function handleSearch() {
-    if (!query.trim()) return;
-    setSearching(true);
-    setError(null);
-    try {
-      setResults(await searchMoodleCourses(query.trim()));
-    } catch {
-      setError("Tìm kiếm course trên Moodle thất bại");
-    } finally {
-      setSearching(false);
-    }
-  }
-
-  async function handleLink(moodleCourseId: number) {
+  async function handleLinkAccount() {
     setBusy(true);
     setError(null);
     try {
-      await linkMoodleCourse(course.id, moodleCourseId);
+      await linkMoodleAccount();
+      setAccount("linked");
+    } catch (err) {
+      setError(apiErrorMessage(err, "Liên kết tài khoản Moodle thất bại"));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleLink() {
+    if (!chosen) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await linkMoodleCourse(course.id, Number(chosen));
       onLinked();
     } catch (err) {
       setError(apiErrorMessage(err, "Liên kết course thất bại"));
@@ -573,26 +612,54 @@ function MoodleLinkSection({ course, onLinked }: { course: Course; onLinked: () 
     );
   }
 
+  if (account === "not_linked" || account === "ambiguous") {
+    return (
+      <div className="mb-6 rounded-[3px] border border-gray-200 p-4">
+        <p className="mb-2 text-sm font-medium">Course này chưa liên kết với Moodle.</p>
+        <p className="mb-3 text-sm text-gray-600">
+          {account === "not_linked"
+            ? "Bạn cần liên kết tài khoản Moodle của mình trước: tài khoản Moodle có cùng email sẽ được liên kết, nếu chưa có thì hệ thống tạo mới."
+            : "Có nhiều tài khoản Moodle cùng email của bạn nên không xác định được tài khoản để liên kết. Hãy nhờ admin Moodle xử lý trùng email."}
+        </p>
+        {account === "not_linked" && (
+          <button
+            onClick={handleLinkAccount}
+            disabled={busy}
+            className="whitespace-nowrap rounded-[3px] bg-navy px-3 py-1.5 text-sm font-semibold text-[#f3f1ea] hover:bg-[#28394b] disabled:opacity-60"
+          >
+            {busy ? "Đang liên kết..." : "Liên kết tài khoản Moodle"}
+          </button>
+        )}
+        {error && <p className="mt-2 text-sm text-red-700">{error}</p>}
+      </div>
+    );
+  }
+
   return (
     <div className="mb-6 rounded-[3px] border border-gray-200 p-4">
       <p className="mb-2 text-sm font-medium">Course này chưa liên kết với Moodle.</p>
-      {/* Trên điện thoại ô tìm kiếm chiếm trọn một hàng và hai nút xuống hàng dưới: ép cả ba vào
+      {/* Trên điện thoại ô chọn chiếm trọn một hàng và hai nút xuống hàng dưới: ép cả ba vào
           một hàng 390px thì nút "Tạo course Moodle mới" gãy thành bốn dòng. */}
       <div className="flex flex-wrap gap-2">
-        <input
-          type="text"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-          placeholder="Tìm course Moodle có sẵn (vd: CO3061)"
-          className="min-w-0 flex-1 basis-full rounded-[3px] border border-gray-300 px-3 py-1.5 text-sm sm:basis-auto"
-        />
+        <select
+          aria-label="Course Moodle có sẵn"
+          value={chosen}
+          onChange={(e) => setChosen(e.target.value)}
+          className="min-w-0 flex-1 basis-full rounded-[3px] border border-gray-300 bg-white px-3 py-1.5 text-sm sm:basis-auto"
+        >
+          <option value="">Chọn course Moodle có sẵn…</option>
+          {courses.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.fullname} ({c.shortname})
+            </option>
+          ))}
+        </select>
         <button
-          onClick={handleSearch}
-          disabled={searching}
+          onClick={handleLink}
+          disabled={busy || !chosen}
           className="whitespace-nowrap rounded-[3px] border border-gray-300 px-3 py-1.5 text-sm hover:bg-gray-50 disabled:opacity-60"
         >
-          {searching ? "Đang tìm..." : "Tìm"}
+          Liên kết
         </button>
         <button
           onClick={handleCreateNew}
@@ -602,24 +669,6 @@ function MoodleLinkSection({ course, onLinked }: { course: Course; onLinked: () 
           Tạo course Moodle mới
         </button>
       </div>
-      {results.length > 0 && (
-        <ul className="mt-3 flex flex-col divide-y divide-gray-100">
-          {results.map((r) => (
-            <li key={r.id} className="flex items-center justify-between py-2">
-              <span className="text-sm">
-                {r.fullname} <span className="text-gray-500">({r.shortname})</span>
-              </span>
-              <button
-                onClick={() => handleLink(r.id)}
-                disabled={busy}
-                className="text-sm font-semibold text-terracotta hover:underline disabled:opacity-60"
-              >
-                Liên kết
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
       {error && <p className="mt-2 text-sm text-red-700">{error}</p>}
     </div>
   );

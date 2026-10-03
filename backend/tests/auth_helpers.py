@@ -14,7 +14,8 @@ def make_account(
     email: str, password: str = STRONG_PASSWORD, name: str = "Test", role: UserRole = UserRole.teacher
 ) -> User:
     with SessionLocal() as db:
-        user = create_account(db, email=email, name=name, password=password, role=role)
+        # Tests use example.com addresses all over; the edu rule has tests of its own.
+        user = create_account(db, email=email, name=name, password=password, role=role, edu_only=False)
         db.refresh(user)  # the commit expired it, and it is read after the session is closed
         return user
 

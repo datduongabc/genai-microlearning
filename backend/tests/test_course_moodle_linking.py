@@ -178,20 +178,41 @@ def test_moodle_sections_returns_the_linked_courses_sections(monkeypatch):
     assert response.json() == [{"sectionnum": 0, "name": "General"}, {"sectionnum": 1, "name": "Week 1"}]
 
 
-def test_moodle_search_proxies_to_moodle_and_returns_matches(monkeypatch):
+def test_the_moodle_course_list_returns_every_course_to_pick_from(monkeypatch):
     token, _ = _make_authed_user()
     headers = {"Authorization": f"Bearer {token}"}
-    free_id = _fresh_moodle_id()
+    first, second = _fresh_moodle_id(), _fresh_moodle_id()
 
     monkeypatch.setattr(
         moodle_client,
-        "search_courses",
-        lambda query, limit=20: [{"id": free_id, "fullname": "Intro to AI", "shortname": "CO3061"}],
+        "list_courses",
+        lambda: [
+            {"id": first, "fullname": "Intro to AI", "shortname": "CO3061"},
+            {"id": second, "fullname": "Databases", "shortname": "CO2013"},
+        ],
     )
 
-    response = client.get("/courses/moodle/search", params={"q": "CO3061"}, headers=headers)
+    response = client.get("/courses/moodle/courses", headers=headers)
     assert response.status_code == 200
-    assert response.json() == [{"id": free_id, "fullname": "Intro to AI", "shortname": "CO3061"}]
+    assert response.json() == [
+        {"id": first, "fullname": "Intro to AI", "shortname": "CO3061"},
+        {"id": second, "fullname": "Databases", "shortname": "CO2013"},
+    ]
+
+
+def test_the_moodle_course_list_says_so_when_moodle_cannot_be_reached(monkeypatch):
+    import httpx
+
+    token, _ = _make_authed_user()
+
+    def down():
+        raise httpx.ConnectError("no route")
+
+    monkeypatch.setattr(moodle_client, "list_courses", down)
+
+    response = client.get("/courses/moodle/courses", headers={"Authorization": f"Bearer {token}"})
+
+    assert response.status_code == 502
 
 
 def test_a_moodle_course_can_only_be_linked_to_one_course_here():
@@ -215,7 +236,7 @@ def test_a_moodle_course_can_only_be_linked_to_one_course_here():
     assert courses[second_course_id] is None
 
 
-def test_moodle_search_excludes_courses_already_linked_elsewhere(monkeypatch):
+def test_the_moodle_course_list_excludes_courses_already_linked_elsewhere(monkeypatch):
     token, _ = _make_authed_user()
     headers = {"Authorization": f"Bearer {token}"}
     linked_course_id = _make_course(token, uuid.uuid4().hex[:8])
@@ -224,14 +245,14 @@ def test_moodle_search_excludes_courses_already_linked_elsewhere(monkeypatch):
 
     monkeypatch.setattr(
         moodle_client,
-        "search_courses",
-        lambda query, limit=20: [
+        "list_courses",
+        lambda: [
             {"id": linked_id, "fullname": "Already Linked", "shortname": "AL1"},
             {"id": free_id, "fullname": "Still Free", "shortname": "SF1"},
         ],
     )
 
-    response = client.get("/courses/moodle/search", params={"q": "x"}, headers=headers)
+    response = client.get("/courses/moodle/courses", headers=headers)
     assert response.status_code == 200
     ids = [c["id"] for c in response.json()]
     assert linked_id not in ids
