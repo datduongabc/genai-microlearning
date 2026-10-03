@@ -1,5 +1,6 @@
-"""Signing up and logging in: which passwords are accepted, what extreme input does, and
-that simultaneous sign-ups with one email create one account and never a server error."""
+"""Accounts are made by an admin, never by the person: which passwords are accepted, what extreme
+input does, that simultaneous creations with one email make one account and never a server error,
+and that the public sign-up is gone."""
 
 import concurrent.futures
 import uuid
@@ -11,10 +12,11 @@ from fastapi.testclient import TestClient
 from app.db import SessionLocal
 from app.main import app
 from app.models import RefreshToken, User, UserRole
-from tests.auth_helpers import STRONG_PASSWORD
+from tests.auth_helpers import STRONG_PASSWORD, admin_headers
 
 client = TestClient(app)
 PREFIX = "signup-"
+ADMIN = {}
 
 
 @pytest.fixture(autouse=True)
@@ -30,13 +32,22 @@ def remove_created_users():
         db.close()
 
 
+@pytest.fixture(autouse=True)
+def admin():
+    ADMIN["headers"] = admin_headers()
+    yield
+    ADMIN.clear()
+
+
 def _email() -> str:
     return f"{PREFIX}{uuid.uuid4().hex[:10]}@example.com"
 
 
 def _register(email: str | None = None, password: str = STRONG_PASSWORD, name: str = "Test User", **extra):
     email = email or _email()
-    response = client.post("/auth/register", json={"email": email, "name": name, "password": password, **extra})
+    response = client.post(
+        "/admin/users", json={"email": email, "name": name, "password": password, **extra}, headers=ADMIN["headers"]
+    )
     return response, email
 
 
@@ -44,15 +55,24 @@ def _login(email: str, password: str):
     return client.post("/auth/login", json={"email": email, "password": password})
 
 
-def test_a_strong_password_registers_and_can_log_in():
+def test_there_is_no_public_sign_up():
+    response = client.post(
+        "/auth/register", json={"email": _email(), "name": "Test User", "password": STRONG_PASSWORD}
+    )
+
+    assert response.status_code in (404, 405)
+
+
+def test_a_strong_password_creates_an_account_that_can_log_in():
     response, email = _register()
 
     assert response.status_code == 201
-    assert set(response.json()) == {"id", "email", "name", "role"}
+    assert response.json()["email"] == email
+    assert "hashed_password" not in response.json() and "password" not in response.json()
     assert _login(email, STRONG_PASSWORD).status_code == 200
 
 
-def test_a_role_asked_for_by_the_client_is_ignored():
+def test_a_role_asked_for_is_ignored_an_admin_only_makes_lecturers():
     response, _ = _register(role="admin")
 
     assert response.status_code == 201
@@ -123,16 +143,17 @@ def test_registering_an_existing_email_is_a_conflict_whatever_its_case():
     assert _register(email=email.upper())[0].status_code == 409
 
 
-def test_simultaneous_sign_ups_with_one_email_create_one_account_and_no_server_error():
+def test_simultaneous_creations_with_one_email_make_one_account_and_no_server_error():
     email = _email()
 
-    def sign_up(_):
+    def create(_):
         return TestClient(app).post(
-            "/auth/register", json={"email": email, "name": "Race", "password": STRONG_PASSWORD}
+            "/admin/users", json={"email": email, "name": "Race", "password": STRONG_PASSWORD},
+            headers=ADMIN["headers"],
         ).status_code
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=6) as pool:
-        codes = sorted(pool.map(sign_up, range(6)))
+        codes = sorted(pool.map(create, range(6)))
 
     assert codes == [201, 409, 409, 409, 409, 409]
     db = SessionLocal()
@@ -156,6 +177,21 @@ def test_a_wrong_password_and_an_unknown_email_are_indistinguishable():
     unknown = _login(_email(), "definitely-not-it-1")
 
     assert (wrong.status_code, wrong.json()) == (unknown.status_code, unknown.json()) == (401, wrong.json())
+
+
+def test_the_password_policy_applies_to_a_reset_by_the_admin_too():
+    created, email = _register()
+    user_id = created.json()["id"]
+
+    weak = client.post(f"/admin/users/{user_id}/password", json={"password": "short"}, headers=ADMIN["headers"])
+    ok = client.post(
+        f"/admin/users/{user_id}/password", json={"password": "A brand new long phrase"}, headers=ADMIN["headers"]
+    )
+
+    assert weak.status_code == 422
+    assert ok.status_code == 200
+    assert _login(email, STRONG_PASSWORD).status_code == 401
+    assert _login(email, "A brand new long phrase").status_code == 200
 
 
 def test_an_older_account_created_with_a_password_over_72_bytes_can_still_log_in():

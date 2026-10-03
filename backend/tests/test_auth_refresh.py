@@ -7,26 +7,26 @@ import uuid
 from fastapi.testclient import TestClient
 
 from app.main import app
-from tests.auth_helpers import STRONG_PASSWORD
+from tests.auth_helpers import STRONG_PASSWORD, make_account
 
 client = TestClient(app)
 
 
-def _register_and_login(email: str) -> dict:
-    client.post("/auth/register", json={"email": email, "name": "Test", "password": STRONG_PASSWORD})
+def _create_and_login(email: str) -> dict:
+    make_account(email, name="Test")
     response = client.post("/auth/login", json={"email": email, "password": STRONG_PASSWORD})
     return response.json()
 
 
 def test_login_returns_both_access_and_refresh_token():
-    data = _register_and_login(f"refresh-{uuid.uuid4().hex[:8]}@example.com")
+    data = _create_and_login(f"refresh-{uuid.uuid4().hex[:8]}@example.com")
     assert data["access_token"]
     assert data["refresh_token"]
     assert data["access_token"] != data["refresh_token"]
 
 
 def test_refresh_issues_a_new_working_access_token():
-    data = _register_and_login(f"refresh-{uuid.uuid4().hex[:8]}@example.com")
+    data = _create_and_login(f"refresh-{uuid.uuid4().hex[:8]}@example.com")
 
     refresh_resp = client.post("/auth/refresh", json={"refresh_token": data["refresh_token"]})
     assert refresh_resp.status_code == 200

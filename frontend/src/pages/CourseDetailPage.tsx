@@ -13,10 +13,12 @@ import {
   listDocuments,
   listModules,
   pollJobStatus,
+  retryJob,
   searchMoodleCourses,
   unlinkMoodleCourse,
   uploadDocument,
   type Course,
+  type DocumentFailure,
   type DocumentInfo,
   type ModuleSummary,
   type MoodleCourseSearchResult,
@@ -42,6 +44,35 @@ const DOCUMENT_POLL_INTERVAL_MS = 3000;
 
 function isPipelineActive(doc: DocumentInfo): boolean {
   return doc.status === "uploaded" || doc.status === "processing";
+}
+
+// The list can be narrowed to what needs attention. "Lỗi" also catches a ready document whose
+// module generation failed: that failure is on its document, not in its status.
+type StatusFilter = "all" | "processing" | "ready" | "failed";
+
+const FILTER_LABEL: Record<StatusFilter, string> = {
+  all: "Tất cả",
+  processing: "Đang xử lý",
+  ready: "Sẵn sàng",
+  failed: "Lỗi",
+};
+
+function matchesFilter(doc: DocumentInfo, filter: StatusFilter): boolean {
+  switch (filter) {
+    case "processing":
+      return doc.status === "uploaded" || doc.status === "processing" || doc.status === "chunked";
+    case "ready":
+      return doc.status === "embedded";
+    case "failed":
+      return doc.status === "failed" || doc.failures.length > 0;
+    default:
+      return true;
+  }
+}
+
+function failureTitle(failure: DocumentFailure): string {
+  if (failure.job_type === "document_pipeline") return "Xử lý tài liệu thất bại";
+  return failure.section_title ? `Sinh mô-đun cho mục "${failure.section_title}" thất bại` : "Sinh mô-đun thất bại";
 }
 
 const STATUS_COLOR: Record<string, string> = {
@@ -87,6 +118,11 @@ export function CourseDetailPage() {
   const [deletingDocId, setDeletingDocId] = useState<string | null>(null);
   const [deletingModuleId, setDeletingModuleId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // What went right but is worth saying (a delete that succeeded although the list could not
+  // be reloaded afterwards); shown apart from `error` so it does not read as a failure.
+  const [notice, setNotice] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [retryingJobIds, setRetryingJobIds] = useState<Set<string>>(new Set());
   // Only bridges the moment between clicking and the server reporting the
   // job (so a double-click cannot send two requests); after that, and after
   // a refresh or navigation, `doc.generating` from the server is the truth.
@@ -136,6 +172,7 @@ export function CourseDetailPage() {
   const pipelineActive = documents.some(isPipelineActive);
   const uploadBusy = uploading || pipelineActive;
   const generatingOnServer = documents.some((d) => d.generating);
+  const visibleDocuments = documents.filter((d) => matchesFilter(d, statusFilter));
   const shouldPoll = pipelineActive || generatingOnServer;
   const isGenerating = (doc: DocumentInfo) => doc.generating || startingIds.has(doc.id);
   // A textbook with a detected outline is generated section by section, so the
@@ -194,10 +231,9 @@ export function CourseDetailPage() {
     setError(null);
     try {
       const { job_id } = await generateModule(documentId, modelAlias, outputLanguage, customInstructions);
-      const finalStatus = await pollJobStatus(() => getModuleJobStatus(job_id));
-      if (finalStatus.status === "failed") {
-        setError(finalStatus.last_error ?? "Sinh mô-đun thất bại");
-      }
+      // A failed job needs no banner here: the refresh brings it back on the document, with its
+      // error and a retry button, and it is still there after a reload.
+      await pollJobStatus(() => getModuleJobStatus(job_id));
       await refresh();
     } catch (err) {
       if (axios.isAxiosError(err) && err.response?.status === 409) {
@@ -229,6 +265,24 @@ export function CourseDetailPage() {
     }
   }
 
+  async function handleRetry(failure: DocumentFailure) {
+    setRetryingJobIds((ids) => new Set(ids).add(failure.job_id));
+    setError(null);
+    setNotice(null);
+    try {
+      await retryJob(failure.job_id);
+      await refresh();
+    } catch (err) {
+      setError(apiErrorMessage(err, "Thử lại thất bại"));
+    } finally {
+      setRetryingJobIds((ids) => {
+        const next = new Set(ids);
+        next.delete(failure.job_id);
+        return next;
+      });
+    }
+  }
+
   async function handleDeleteModule(m: ModuleSummary) {
     const confirmed = window.confirm(
       `Xóa vĩnh viễn mô-đun "${m.title}"? ${
@@ -239,11 +293,23 @@ export function CourseDetailPage() {
 
     setDeletingModuleId(m.id);
     setError(null);
+    setNotice(null);
     try {
       await deleteModule(m.id);
-      await refresh();
     } catch (err) {
       setError(apiErrorMessage(err, "Xóa mô-đun thất bại"));
+      setDeletingModuleId(null);
+      return;
+    }
+    // The module is gone whatever happens next: a list that cannot be reloaded is a different
+    // problem, and saying the delete failed would send the lecturer to delete it again.
+    setNotice(`Đã xóa mô-đun "${m.title}".`);
+    try {
+      await refresh();
+    } catch (err) {
+      setError(
+        `${apiErrorMessage(err, "Không tải lại được danh sách")}. Mô-đun đã được xóa, hãy tải lại trang để thấy danh sách mới.`,
+      );
     } finally {
       setDeletingModuleId(null);
     }
@@ -287,13 +353,34 @@ export function CourseDetailPage() {
           audio/video dài.
         </p>
       )}
+      {notice && <p className="mt-3 text-sm text-green-800">{notice}</p>}
       {error && <p className="mt-3 text-sm text-red-700">{error}</p>}
+
+      {!loading && documents.length > 0 && (
+        <div className="mt-6 flex items-center gap-2">
+          <label htmlFor="document-status-filter" className="text-sm text-gray-600">
+            Trạng thái:
+          </label>
+          <select
+            id="document-status-filter"
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
+            className="rounded-[3px] border border-gray-300 px-2 py-1 text-sm"
+          >
+            {(Object.keys(FILTER_LABEL) as StatusFilter[]).map((value) => (
+              <option key={value} value={value}>
+                {FILTER_LABEL[value]}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
 
       {loading ? (
         <p className="mt-8 text-sm text-gray-500">Đang tải...</p>
       ) : (
-        <ul className="mt-8 flex flex-col divide-y divide-gray-200">
-          {documents.map((d) => (
+        <ul className="mt-4 flex flex-col divide-y divide-gray-200">
+          {visibleDocuments.map((d) => (
             <li key={d.id} className="py-5">
               <div className="flex items-center justify-between gap-4">
                 <div>
@@ -333,6 +420,29 @@ export function CourseDetailPage() {
                   </button>
                 </div>
               </div>
+              {d.failures.length > 0 && (
+                <ul className="mt-2 flex flex-col gap-2">
+                  {d.failures.map((f) => (
+                    <li
+                      key={f.job_id}
+                      className="flex flex-wrap items-start justify-between gap-3 rounded-[3px] border border-red-200 bg-red-50 px-3 py-2"
+                    >
+                      <div className="min-w-0 text-sm text-red-800">
+                        <div className="font-medium">{failureTitle(f)}</div>
+                        {f.error && <div className="mt-0.5 break-words text-xs">{f.error}</div>}
+                      </div>
+                      <button
+                        onClick={() => handleRetry(f)}
+                        disabled={retryingJobIds.has(f.job_id)}
+                        aria-label={`Thử lại: ${failureTitle(f)} (${d.filename})`}
+                        className="shrink-0 text-sm font-semibold text-terracotta hover:underline disabled:opacity-60"
+                      >
+                        {retryingJobIds.has(f.job_id) ? "Đang thử lại..." : "Thử lại"}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
               {d.kind === "textbook" && d.status === "embedded" && d.section_count === 0 && (
                 <p className="mt-2 text-xs text-gray-500">
                   Không nhận diện được mục lục của tài liệu này, nên sinh mô-đun từ toàn bộ tài liệu.
@@ -365,6 +475,9 @@ export function CourseDetailPage() {
           ))}
           {documents.length === 0 && (
             <p className="py-4 text-sm text-gray-500">Chưa có tài liệu nào.</p>
+          )}
+          {documents.length > 0 && visibleDocuments.length === 0 && (
+            <p className="py-4 text-sm text-gray-500">Không có tài liệu nào ở trạng thái này.</p>
           )}
         </ul>
       )}
@@ -432,8 +545,9 @@ function MoodleLinkSection({ course, onLinked }: { course: Course; onLinked: () 
     try {
       await createMoodleCourseFor(course.id);
       onLinked();
-    } catch {
-      setError("Tạo course Moodle mới thất bại");
+    } catch (err) {
+      // The server explains a refusal such as "no Moodle account has your email".
+      setError(apiErrorMessage(err, "Tạo course Moodle mới thất bại"));
     } finally {
       setBusy(false);
     }

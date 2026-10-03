@@ -1,5 +1,5 @@
-"""Vai trò student là mã chết: mọi lần đăng ký đều gán cứng teacher, và ứng dụng này
-chỉ dành cho giảng viên vì học viên học trên Moodle.
+"""Vai trò student là mã chết: học viên học trên Moodle nên không có tài khoản nào ở đây, chỉ
+có giảng viên và admin (migration 0007).
 
 Bỏ một giá trị khỏi enum của PostgreSQL không làm trực tiếp được, phải dựng lại kiểu,
 nên việc đó đáng có test riêng."""
@@ -45,7 +45,7 @@ def db_sau_migration():
     quan_tri.dispose()
 
 
-def test_enum_vai_tro_chi_con_teacher(db_sau_migration):
+def test_enum_vai_tro_chi_con_teacher_va_admin(db_sau_migration):
     with db_sau_migration.connect() as conn:
         gia_tri = {
             r[0] for r in conn.execute(text(
@@ -54,7 +54,7 @@ def test_enum_vai_tro_chi_con_teacher(db_sau_migration):
             ))
         }
 
-    assert gia_tri == {"teacher"}
+    assert gia_tri == {"teacher", "admin"}
 
 
 def test_cot_role_van_dung_kieu_userrole(db_sau_migration):

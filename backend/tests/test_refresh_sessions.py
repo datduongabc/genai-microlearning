@@ -15,7 +15,7 @@ from app.config import settings
 from app.db import SessionLocal
 from app.main import app
 from app.models import RefreshToken, User
-from tests.auth_helpers import STRONG_PASSWORD, register_and_login
+from tests.auth_helpers import STRONG_PASSWORD, create_and_login
 
 client = TestClient(app)
 
@@ -35,7 +35,7 @@ def account():
 
 
 def _login(email: str) -> dict:
-    return register_and_login(client, email)
+    return create_and_login(client, email)
 
 
 def _refresh(token: str):

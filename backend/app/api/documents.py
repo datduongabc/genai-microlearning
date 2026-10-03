@@ -10,6 +10,7 @@ from app.auth.rate_limit import limiter, user_or_address
 from app.config import settings
 from app.db import get_db
 from app.ingestion.document_readers import LEGACY_EXTENSIONS, SUPPORTED_EXTENSIONS
+from app.jobs.failures import open_failures
 from app.jobs.queue import enqueue_job
 from app.models import (
     Course,
@@ -164,6 +165,9 @@ def list_documents(
         .group_by(DocumentSection.document_id)
         .all()
     )
+    # Failed work stays on its document after a reload: a failed generation creates no module,
+    # so without this its error would only ever be a banner that the next refresh loses.
+    failures = open_failures(db, [d.id for d in docs])
     return [
         {
             "id": d.id,
@@ -174,6 +178,7 @@ def list_documents(
             "generating": d.id in generating_ids,
             "kind": d.kind,
             "section_count": section_counts.get(d.id, 0),
+            "failures": failures.get(d.id, []),
         }
         for d in docs
     ]

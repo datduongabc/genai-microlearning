@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
-import { useAuth } from "../auth/useAuth";
+import { homeFor, useAuth } from "../auth/useAuth";
 
 export function AppShell({
   title,
@@ -16,7 +16,7 @@ export function AppShell({
       {/* Lề 16px trên điện thoại và không cho chữ gãy dòng: ở 390px, lề 32px cộng đủ ba mục
           điều hướng là khoảng 440px, nên "HELLO LMS" và từng mục đều bị gãy làm hai dòng. */}
       <header className="flex items-center justify-between gap-4 border-b border-gray-200 px-4 py-4 sm:px-8">
-        <Link to="/courses" className="flex items-center gap-3">
+        <Link to={homeFor(user?.role)} className="flex items-center gap-3">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-navy p-1">
             <img
               src="/logo.png"
@@ -27,9 +27,6 @@ export function AppShell({
           <span className="whitespace-nowrap font-serif font-semibold">HELLO LMS</span>
         </Link>
         <div className="flex items-center gap-3 whitespace-nowrap text-sm text-gray-500 sm:gap-4">
-          <Link to="/monitoring" className="hover:text-terracotta">
-            Theo dõi lỗi
-          </Link>
           {/* Tên chỉ mang tính thông tin nên nhường chỗ trên màn hình nhỏ. */}
           <span className="hidden sm:inline">{user?.name}</span>
           <button onClick={logout} className="hover:text-terracotta">

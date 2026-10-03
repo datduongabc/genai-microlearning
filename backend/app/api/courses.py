@@ -11,6 +11,7 @@ from app.auth.rate_limit import limiter, user_or_address
 from app.db import get_db
 from app.models import Course, MoodleCourseClaim, User
 from app.moodle import client as moodle_client
+from app.moodle.accounts import require_moodle_user_id
 from app.moodle.client import MoodleError
 from app.moodle.errors import MOODLE_FAILURES, moodle_failure
 
@@ -149,6 +150,12 @@ def create_moodle_course(
     course = _get_owned_course(course_id, db, current_user)
     if course.moodle_course_id is not None:
         raise HTTPException(status_code=400, detail="Course already linked to a Moodle course")
+    # Before anything is created: the teacher is the lecturer's own Moodle account, found by
+    # email. Without one nothing is pushed, so no course is left behind in Moodle.
+    try:
+        teacher_id = require_moodle_user_id(current_user)
+    except MOODLE_FAILURES as e:
+        raise moodle_failure(e, db) from e
     try:
         course.moodle_course_id = moodle_client.create_course(course.name)
     except MoodleError as e:
@@ -158,7 +165,7 @@ def create_moodle_course(
     # enrolling fails a retry must not create a second, orphaned course.
     db.commit()
     try:
-        moodle_client.enrol_as_teacher(course.moodle_course_id)
+        moodle_client.enrol_as_teacher(course.moodle_course_id, teacher_id)
     except MoodleError as e:
         raise HTTPException(
             status_code=502,

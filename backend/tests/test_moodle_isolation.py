@@ -136,7 +136,7 @@ def test_a_course_created_through_the_app_is_claimed_by_its_creator(users, monke
     owner, stranger = users
     created = _moodle_id()
     monkeypatch.setattr(moodle_client, "create_course", lambda name: created)
-    monkeypatch.setattr(moodle_client, "enrol_as_teacher", lambda course_id: None)
+    monkeypatch.setattr(moodle_client, "enrol_as_teacher", lambda course_id, user_id: None)
     client.post(f"/courses/{_course(owner)}/create-moodle", headers=owner)
 
     assert _link(stranger, _course(stranger), created).status_code == 404

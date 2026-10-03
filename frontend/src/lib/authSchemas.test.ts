@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { loginSchema, registerSchema } from './authSchemas'
+import { createLecturerSchema, loginSchema, resetPasswordSchema } from './authSchemas'
 
 describe('loginSchema', () => {
   it('accepts a valid email and password', () => {
@@ -16,7 +16,7 @@ describe('loginSchema', () => {
     expect(loginSchema.safeParse({ email: 'a@b.com', password: '' }).success).toBe(false)
   })
 
-  // The rules for choosing a password belong to signing up. An account made under older
+  // The rules for choosing a password belong to creating an account. An account made under older
   // rules (a short password, or one over 72 characters) must still be able to sign in.
   it.each([
     ['a short one', 'short'],
@@ -30,27 +30,21 @@ describe('loginSchema', () => {
   })
 })
 
-describe('registerSchema', () => {
+describe('createLecturerSchema', () => {
   const base = { name: 'Nguyen Van A', email: 'a@b.com', password: 'password123' }
-  const parse = (changes: object) => registerSchema.safeParse({ ...base, confirmPassword: 'password123', ...changes })
+  const parse = (changes: object) => createLecturerSchema.safeParse({ ...base, ...changes })
   const paths = (result: ReturnType<typeof parse>) => (result.success ? [] : result.error.issues.map((i) => i.path[0]))
 
-  it('accepts matching passwords', () => {
-    const result = registerSchema.safeParse({ ...base, confirmPassword: 'password123' })
-    expect(result.success).toBe(true)
+  it('accepts a valid name, email and password', () => {
+    expect(parse({}).success).toBe(true)
   })
 
-  it('rejects mismatched confirmPassword and attaches the error to that field', () => {
-    const result = registerSchema.safeParse({ ...base, confirmPassword: 'different123' })
-    expect(result.success).toBe(false)
-    if (!result.success) {
-      expect(result.error.issues.some((i) => i.path.includes('confirmPassword'))).toBe(true)
-    }
+  it('rejects an invalid email', () => {
+    expect(paths(parse({ email: 'not-an-email' }))).toEqual(['email'])
   })
 
   it('rejects an empty name', () => {
-    const result = registerSchema.safeParse({ ...base, name: '', confirmPassword: 'password123' })
-    expect(result.success).toBe(false)
+    expect(parse({ name: '' }).success).toBe(false)
   })
 
   it('rejects a name of nothing but spaces, which the server would refuse', () => {
@@ -69,7 +63,7 @@ describe('registerSchema', () => {
   })
 
   it('rejects a password shorter than 8 characters', () => {
-    expect(paths(parse({ password: 'short', confirmPassword: 'short' }))).toEqual(['password'])
+    expect(paths(parse({ password: 'short' }))).toEqual(['password'])
   })
 
   it('counts a limit of 72 bytes, not characters, because that is what the server hashes', () => {
@@ -77,9 +71,16 @@ describe('registerSchema', () => {
     // 25 letters of 3 bytes each: 25 characters, 75 bytes.
     const vietnamese = 'ệ'.repeat(25)
 
-    expect(parse({ password: ascii, confirmPassword: ascii }).success).toBe(true)
-    expect(paths(parse({ password: 'a'.repeat(73), confirmPassword: 'a'.repeat(73) }))).toEqual(['password'])
+    expect(parse({ password: ascii }).success).toBe(true)
+    expect(paths(parse({ password: 'a'.repeat(73) }))).toEqual(['password'])
     expect(new TextEncoder().encode(vietnamese).length).toBeGreaterThan(72)
-    expect(paths(parse({ password: vietnamese, confirmPassword: vietnamese }))).toEqual(['password'])
+    expect(paths(parse({ password: vietnamese }))).toEqual(['password'])
+  })
+})
+
+describe('resetPasswordSchema', () => {
+  it('applies the same password rules', () => {
+    expect(resetPasswordSchema.safeParse({ password: 'a long enough phrase' }).success).toBe(true)
+    expect(resetPasswordSchema.safeParse({ password: 'short' }).success).toBe(false)
   })
 })

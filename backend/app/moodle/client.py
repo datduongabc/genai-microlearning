@@ -87,16 +87,34 @@ def create_course(name: str) -> int:
 _EDITING_TEACHER_ROLE_ID = 3
 
 
-def enrol_as_teacher(course_id: int) -> None:
-    """Enrol the account owning the web service token as the course's teacher.
+def find_users_by_email(emails: list[str]) -> dict[str, list[int]]:
+    """The Moodle user ids behind each email, compared case-insensitively. Keys are the emails
+    in lower case; an email nobody has maps to []. Moodle can hold several accounts with one
+    email, so what comes back is a list."""
+    wanted = list(dict.fromkeys(e.strip().lower() for e in emails))
+    found: dict[str, list[int]] = {email: [] for email in wanted}
+    if not wanted:
+        return found
+    result = call("core_user_get_users_by_field", field="email", values=wanted)
+    for user in result:
+        # Moodle already matches on the lower-cased value; this keeps a stray answer from
+        # attaching somebody to an email that is not theirs.
+        email = str(user.get("email", "")).strip().lower()
+        if email in found:
+            found[email].append(int(user["id"]))
+    return found
+
+
+def enrol_as_teacher(course_id: int, user_id: int) -> None:
+    """Enrol the Moodle user as the course's teacher.
 
     Moodle's own "add a course" form enrols its creator, but the
     core_course_create_courses web service does not, and the dashboard
     (/my/) lists only courses the logged-in user is enrolled in -- so a
     course created here would otherwise exist yet never show up for the
-    teacher.
+    teacher. `user_id` is the lecturer's own Moodle account (found by email,
+    see app/moodle/accounts.py), not the account that owns the web service token.
     """
-    user_id = int(call("core_webservice_get_site_info")["userid"])
     call(
         "enrol_manual_enrol_users",
         enrolments=[{"roleid": _EDITING_TEACHER_ROLE_ID, "userid": user_id, "courseid": course_id}],

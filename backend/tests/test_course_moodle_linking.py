@@ -75,7 +75,7 @@ def test_linking_an_existing_moodle_course_does_not_touch_its_enrolments(monkeyp
     token, _ = _make_authed_user()
     course_id = _make_course(token, uuid.uuid4().hex[:8])
     enrol_calls = []
-    monkeypatch.setattr(moodle_client, "enrol_as_teacher", lambda cid: enrol_calls.append(cid))
+    monkeypatch.setattr(moodle_client, "enrol_as_teacher", lambda cid, uid: enrol_calls.append((cid, uid)))
 
     response = client.post(
         f"/courses/{course_id}/link-moodle",
@@ -94,26 +94,26 @@ def test_create_moodle_creates_a_new_course_when_not_yet_linked(monkeypatch):
     moodle_id = _fresh_moodle_id()
 
     monkeypatch.setattr(moodle_client, "create_course", lambda name: moodle_id)
-    monkeypatch.setattr(moodle_client, "enrol_as_teacher", lambda cid: None)
+    monkeypatch.setattr(moodle_client, "enrol_as_teacher", lambda cid, uid: None)
 
     response = client.post(f"/courses/{course_id}/create-moodle", headers=headers)
     assert response.status_code == 200
     assert response.json()["moodle_course_id"] == moodle_id
 
 
-def test_create_moodle_enrols_the_bridge_user_as_teacher_so_the_course_shows_on_my_moodle(monkeypatch):
+def test_create_moodle_enrols_the_lecturers_own_moodle_account_as_teacher(monkeypatch):
     token, _ = _make_authed_user()
     course_id = _make_course(token, uuid.uuid4().hex[:8])
     moodle_id = _fresh_moodle_id()
     enrol_calls = []
 
     monkeypatch.setattr(moodle_client, "create_course", lambda name: moodle_id)
-    monkeypatch.setattr(moodle_client, "enrol_as_teacher", lambda cid: enrol_calls.append(cid))
+    monkeypatch.setattr(moodle_client, "enrol_as_teacher", lambda cid, uid: enrol_calls.append((cid, uid)))
 
     response = client.post(f"/courses/{course_id}/create-moodle", headers={"Authorization": f"Bearer {token}"})
 
     assert response.status_code == 200
-    assert enrol_calls == [moodle_id]
+    assert enrol_calls == [(moodle_id, 4242)]  # 4242: the Moodle account conftest gives every email
 
 
 def test_create_moodle_keeps_the_link_when_enrolment_fails(monkeypatch):
@@ -122,7 +122,7 @@ def test_create_moodle_keeps_the_link_when_enrolment_fails(monkeypatch):
     headers = {"Authorization": f"Bearer {token}"}
     moodle_id = _fresh_moodle_id()
 
-    def failing_enrol(cid):
+    def failing_enrol(cid, uid):
         raise moodle_client.MoodleError("enrol_manual_enrol_users: instance disabled")
 
     monkeypatch.setattr(moodle_client, "create_course", lambda name: moodle_id)

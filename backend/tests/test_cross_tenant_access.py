@@ -87,6 +87,7 @@ def world():
             "owner": owner.id, "stranger": stranger.id, "course": course.id, "stranger_course": stranger_course.id,
             "document": document.id, "module": module.id, "component": component.id, "session": session.id,
             "pipeline_job": pipeline_job.id, "failed_job": failed_job.id, "question": question.id,
+            "user": owner.id,
         }
     finally:
         db.close()
@@ -144,6 +145,11 @@ ATTACKS = [
     ("PATCH", "/modules/{module}/components/{component}", None, {"json": {"content": {"markdown": "pwned"}}}),
     ("PATCH", "/modules/{module}/questions/{question}", None, {"json": {"stem": "pwned", "choices": ["A", "B"], "answer_key": 0, "explanation": "pwned"}}),
     ("POST", "/modules/{module}/publish-to-moodle", None, {"json": {"section_num": 0}}),
+    ("POST", "/jobs/{failed_job}/retry", None, {}),
+    # The admin's routes, reached by a lecturer: not found, as if there were nothing there.
+    ("POST", "/admin/users/{user}/disable", None, {}),
+    ("POST", "/admin/users/{user}/enable", None, {}),
+    ("POST", "/admin/users/{user}/password", None, {"json": {"password": "A pwned long phrase"}}),
     ("DELETE", "/courses/{course}", None, {}),
     ("POST", "/courses/{course}/link-moodle", None, {"json": {"moodle_course_id": 999}}),
     ("DELETE", "/courses/{course}/link-moodle", None, {}),
@@ -172,7 +178,9 @@ def _send(spec, ids, headers):
     return client.request(method, _fill(path, ids), params=_fill(query, ids), headers=headers, **_fill(extra, ids))
 
 
-OWNER_RESOURCES = ("course", "document", "module", "component", "session", "pipeline_job", "failed_job", "question")
+OWNER_RESOURCES = (
+    "course", "document", "module", "component", "session", "pipeline_job", "failed_job", "question", "user"
+)
 
 
 def _ids_of_the_owner(world):
@@ -201,6 +209,7 @@ def test_nothing_of_the_owner_was_changed_by_the_attacks(world, layers):
     documents = client.get("/documents", params={"course_id": world["course"]}, headers=world["owner_headers"])
 
     assert module.status_code == 200
+    assert client.get("/courses", headers=world["owner_headers"]).status_code == 200  # still active
     assert module.json()["title"] == "Module of A"
     assert "secret A" in module.text
     assert [d["filename"] for d in documents.json()] == ["a.txt"]
@@ -209,14 +218,24 @@ def test_nothing_of_the_owner_was_changed_by_the_attacks(world, layers):
 
 def test_lists_only_ever_contain_the_callers_own_things(world, layers):
     courses = client.get("/courses", headers=world["stranger_headers"]).json()
-    failed = client.get("/jobs/failed", headers=world["stranger_headers"]).json()
+    documents_of_a = client.get("/documents", params={"course_id": world["course"]}, headers=world["stranger_headers"])
 
     assert [c["id"] for c in courses] == [str(world["stranger_course"])]
-    assert failed == []
-    assert any(j["id"] == str(world["failed_job"]) for j in client.get("/jobs/failed", headers=world["owner_headers"]).json())
+    assert documents_of_a.status_code == 404
 
 
-PUBLIC = {"/health", "/auth/register", "/auth/login", "/auth/refresh", "/auth/logout"}
+def test_a_lecturer_cannot_use_the_admin_pages(world, layers):
+    for headers in (world["owner_headers"], world["stranger_headers"]):
+        assert client.get("/admin/users", headers=headers).status_code == 404
+        assert client.get("/admin/jobs/failed", headers=headers).status_code == 404
+        assert client.post("/admin/jobs/retry", json={"job_ids": [str(world["failed_job"])]}, headers=headers).status_code == 404
+        created = client.post(
+            "/admin/users", json={"email": "x@example.com", "name": "X", "password": "A long phrase 1"}, headers=headers
+        )
+        assert created.status_code == 404
+
+
+PUBLIC = {"/health", "/auth/login", "/auth/refresh", "/auth/logout"}
 RESOURCE_QUERY = {"course_id", "document_id"}
 BODY_METHODS = {"POST", "PATCH", "PUT"}
 

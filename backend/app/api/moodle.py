@@ -13,6 +13,7 @@ from app.db import get_db
 from app.generation.module_generation_pipeline import is_control
 from app.models import ComponentType, Course, Module, ModuleComponent, User
 from app.moodle import client as moodle_client
+from app.moodle.accounts import require_moodle_user_id
 from app.moodle.errors import MOODLE_FAILURES, moodle_failure
 
 router = APIRouter(prefix="/modules", tags=["moodle"], dependencies=[Depends(get_current_user)])
@@ -160,6 +161,9 @@ def publish_to_moodle(
         raise HTTPException(status_code=422, detail="Mô-đun chưa có nội dung nào để đẩy lên Moodle.")
 
     try:
+        # The lecturer must have a Moodle account (same email) to see what is pushed, so
+        # nothing is written for one who has none.
+        require_moodle_user_id(current_user)
         result = {
             "moodle_course_id": course.moodle_course_id,
             "book_cmid": moodle_client.create_book(

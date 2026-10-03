@@ -26,9 +26,11 @@ EMBEDDING_DIM = 768
 
 
 class UserRole(str, enum.Enum):
-    # Chỉ có giảng viên đăng nhập ứng dụng này; học viên học trên Moodle sau khi
-    # giảng viên xuất bản, nên không có tài khoản nào ở đây.
+    # Giảng viên dùng ứng dụng; học viên học trên Moodle sau khi giảng viên xuất bản nên không
+    # có tài khoản nào ở đây. Admin là vai trò riêng, không phải giảng viên: chỉ quản lý tài
+    # khoản giảng viên và theo dõi lỗi, không có môn học nào.
     teacher = "teacher"
+    admin = "admin"
 
 
 class DocumentStatus(str, enum.Enum):
@@ -88,6 +90,9 @@ class User(Base):
     name: Mapped[str]
     hashed_password: Mapped[str]
     role: Mapped[UserRole] = mapped_column(Enum(UserRole))
+    # False: tài khoản bị khóa. Đọc lại từ DB ở mỗi request (get_current_user) nên khóa có hiệu
+    # lực ngay, kể cả với token đang dùng. Khóa không xóa dữ liệu nào.
+    is_active: Mapped[bool] = mapped_column(default=True, server_default="true")
     # Model giảng viên chọn sẵn cho các lượt sinh của mình. NULL nghĩa là chưa chọn, khi đó
     # dùng model trong cấu hình. Chỉ lưu alias của gateway, không lưu tên model thật: đổi
     # alias trỏ sang model khác là việc của devops/gateway/config.yaml, không phải của bảng

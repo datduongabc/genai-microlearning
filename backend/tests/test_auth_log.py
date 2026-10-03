@@ -10,7 +10,7 @@ from fastapi.testclient import TestClient
 from app.db import SessionLocal
 from app.main import app
 from app.models import RefreshToken, User
-from tests.auth_helpers import STRONG_PASSWORD
+from tests.auth_helpers import STRONG_PASSWORD, make_account
 
 client = TestClient(app)
 
@@ -30,7 +30,7 @@ def email():
 
 
 def _sign_up(address: str, password: str = STRONG_PASSWORD):
-    return client.post("/auth/register", json={"email": address, "name": "Audit User", "password": password})
+    return make_account(address, password, name="Audit User")
 
 
 def _log_in(address: str, password: str = STRONG_PASSWORD, **kwargs):
@@ -41,14 +41,13 @@ def _audit_lines(caplog) -> list[str]:
     return [r.getMessage() for r in caplog.records if r.name == "app.audit"]
 
 
-def test_signing_up_and_logging_in_are_logged_against_the_account(email, caplog):
+def test_logging_in_is_logged_against_the_account(email, caplog):
     caplog.set_level(logging.INFO, logger="app.audit")
     _sign_up(email)
     _log_in(email)
 
     lines = _audit_lines(caplog)
 
-    assert any("register" in line and email in line for line in lines)
     assert any("login_success" in line and email in line for line in lines)
 
 
@@ -64,20 +63,6 @@ def test_a_failed_login_is_logged_with_why_but_the_client_is_not_told(email, cap
     lines = _audit_lines(caplog)
     assert any("login_failed" in line and email in line and "wrong_password" in line for line in lines)
     assert any("login_failed" in line and stranger in line and "unknown_email" in line for line in lines)
-
-
-def test_a_refused_sign_up_is_logged_with_the_reason(email, caplog):
-    caplog.set_level(logging.INFO, logger="app.audit")
-    # Quá ngắn: đó là lý do từ chối duy nhất còn lại sau khi bỏ các quy tắc đoán
-    # mật khẩu yếu, xem app/auth/password_policy.py.
-    _sign_up(email, password="ngan")
-    _sign_up(email)
-    _sign_up(email)
-
-    lines = _audit_lines(caplog)
-
-    assert any("register_rejected" in line and "weak_password" in line for line in lines)
-    assert any("register_rejected" in line and "email_taken" in line for line in lines)
 
 
 def test_logout_and_a_refused_refresh_are_logged(email, caplog):

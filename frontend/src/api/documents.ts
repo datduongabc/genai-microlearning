@@ -2,6 +2,16 @@ import { api } from './client'
 
 export type DocumentKind = 'lecture' | 'textbook'
 
+// A failed job that still needs the lecturer: the document itself (document_pipeline) or one
+// module generation (module_generation, for a section of a textbook when section_id is set).
+export interface DocumentFailure {
+  job_id: string
+  job_type: 'document_pipeline' | 'module_generation'
+  section_id: string | null
+  section_title: string | null
+  error: string
+}
+
 export interface DocumentInfo {
   id: string
   filename: string
@@ -13,6 +23,8 @@ export interface DocumentInfo {
   kind: DocumentKind
   // Chapters and sections detected in a textbook; 0 means the whole document is used.
   section_count: number
+  // Open failures stay here after a reload: a failed generation makes no module to show them on.
+  failures: DocumentFailure[]
 }
 
 export interface SectionInfo {

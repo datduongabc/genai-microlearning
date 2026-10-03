@@ -28,7 +28,7 @@ from app.ingestion.embeddings import embed_text
 from app.jobs.queue import claim_next_job, execute_job_step, handle_job_error
 from app.main import app
 from app.models.models import Chunk, ComponentType, Document, DocumentStatus, JobStatus
-from tests.auth_helpers import STRONG_PASSWORD
+from tests.auth_helpers import STRONG_PASSWORD, make_account
 
 client = TestClient(app)
 
@@ -50,8 +50,8 @@ theo 2 cách: đệ quy (recursive) hoặc lặp (iterative) -- cách lặp thư
 overflow với mảng rất lớn."""
 
 
-def _register_and_login(email: str) -> str:
-    client.post("/auth/register", json={"email": email, "name": "Test", "password": STRONG_PASSWORD})
+def _create_and_login(email: str) -> str:
+    make_account(email, name="Test")
     response = client.post("/auth/login", json={"email": email, "password": STRONG_PASSWORD})
     return response.json()["access_token"]
 
@@ -126,7 +126,7 @@ def _drive_job_to_completion(job_id: uuid.UUID, timeout_seconds: int = 1800) -> 
 @pytest.mark.live_llm
 def test_generate_module_end_to_end_creates_all_components():
     suffix = uuid.uuid4().hex[:8]
-    token = _register_and_login(f"live-llm-{suffix}@example.com")
+    token = _create_and_login(f"live-llm-{suffix}@example.com")
     headers = {"Authorization": f"Bearer {token}"}
 
     course = client.post("/courses", json={"name": f"Live LLM test {suffix}"}, headers=headers).json()
@@ -173,6 +173,6 @@ def test_generate_module_end_to_end_creates_all_components():
     assert explanation["content"]["explanation_text"]
 
     # Không có user khác thấy được module này (đường ownership thật, không mock).
-    other_token = _register_and_login(f"live-llm-other-{suffix}@example.com")
+    other_token = _create_and_login(f"live-llm-other-{suffix}@example.com")
     forbidden = client.get(f"/modules/{module_id}", headers={"Authorization": f"Bearer {other_token}"})
     assert forbidden.status_code == 404

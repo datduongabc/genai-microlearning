@@ -11,7 +11,7 @@ from fastapi.testclient import TestClient
 
 from app.llm import catalog
 from app.main import app
-from tests.auth_helpers import STRONG_PASSWORD
+from tests.auth_helpers import STRONG_PASSWORD, make_account
 
 client = TestClient(app)
 
@@ -51,7 +51,7 @@ def gateway_gia_lap(monkeypatch):
 
 def _dang_nhap() -> dict:
     email = f"model-{uuid.uuid4().hex[:10]}@example.com"
-    client.post("/auth/register", json={"email": email, "name": "Test", "password": STRONG_PASSWORD})
+    make_account(email, name="Test")
     token = client.post("/auth/login", json={"email": email, "password": STRONG_PASSWORD}).json()["access_token"]
     return {"Authorization": f"Bearer {token}"}
 
