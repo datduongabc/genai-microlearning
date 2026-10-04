@@ -1,14 +1,22 @@
-import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { Link } from "react-router-dom";
 import { createCourse, deleteCourse, listCourses, type Course } from "../api";
 import { AppShell } from "../components/AppShell";
+import { createCourseSchema, type CreateCourseFormValues } from "../lib/formSchemas";
 
 export function CoursesPage() {
   const [courses, setCourses] = useState<Course[]>([]);
-  const [name, setName] = useState("");
   const [loading, setLoading] = useState(true);
-  const [creating, setCreating] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors, isSubmitting: creating },
+  } = useForm<CreateCourseFormValues>({ resolver: zodResolver(createCourseSchema) });
 
   const refresh = useCallback(async () => {
     setCourses(await listCourses());
@@ -30,17 +38,10 @@ export function CoursesPage() {
     };
   }, []);
 
-  async function handleCreate(e: FormEvent) {
-    e.preventDefault();
-    if (!name.trim()) return;
-    setCreating(true);
-    try {
-      await createCourse(name.trim());
-      setName("");
-      await refresh();
-    } finally {
-      setCreating(false);
-    }
+  async function handleCreate(values: CreateCourseFormValues) {
+    await createCourse(values.name);
+    reset();
+    await refresh();
   }
 
   async function handleDelete(course: Course) {
@@ -66,10 +67,9 @@ export function CoursesPage() {
 
   return (
     <AppShell title="Môn học">
-      <form onSubmit={handleCreate} className="mb-8 flex gap-3">
+      <form onSubmit={handleSubmit(handleCreate)} noValidate className="mb-8 flex flex-wrap gap-3">
         <input
-          value={name}
-          onChange={(e) => setName(e.target.value)}
+          {...register("name")}
           placeholder="Tên môn học mới"
           className="flex-1 border-0 border-b-[1.5px] border-gray-300 bg-transparent py-2 text-[15px] outline-none focus:border-terracotta"
         />
@@ -79,6 +79,7 @@ export function CoursesPage() {
         >
           {creating ? "Đang tạo..." : "Tạo môn học"}
         </button>
+        {errors.name && <p className="basis-full text-xs text-red-600">{errors.name.message}</p>}
       </form>
 
       {loading ? (

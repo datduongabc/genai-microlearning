@@ -67,3 +67,34 @@ describe('CoursesPage - delete', () => {
     })
   })
 })
+
+describe('CoursesPage - create', () => {
+  it('creates the course with the trimmed name, empties the field and reloads the list', async () => {
+    vi.mocked(api.listCourses)
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([course])
+    vi.mocked(api.createCourse).mockResolvedValue(course)
+
+    renderPage()
+
+    const field = await screen.findByPlaceholderText('Tên môn học mới')
+    await userEvent.type(field, '  AI 101  ')
+    await userEvent.click(screen.getByRole('button', { name: 'Tạo môn học' }))
+
+    await waitFor(() => expect(api.createCourse).toHaveBeenCalledWith('AI 101'))
+    expect(await screen.findByText('AI 101')).toBeInTheDocument()
+    expect(field).toHaveValue('')
+  })
+
+  it('asks for a name instead of sending a blank one', async () => {
+    vi.mocked(api.listCourses).mockResolvedValue([])
+
+    renderPage()
+
+    await userEvent.type(await screen.findByPlaceholderText('Tên môn học mới'), '   ')
+    await userEvent.click(screen.getByRole('button', { name: 'Tạo môn học' }))
+
+    expect(await screen.findByText('Vui lòng nhập tên môn học')).toBeInTheDocument()
+    expect(api.createCourse).not.toHaveBeenCalled()
+  })
+})

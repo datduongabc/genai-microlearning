@@ -1,5 +1,7 @@
 import axios from "axios";
-import { useCallback, useEffect, useRef, useState, type ChangeEvent } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useForm, useWatch } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { useParams } from "react-router-dom";
 import {
   apiErrorMessage,
@@ -27,6 +29,12 @@ import { AppShell } from "../components/AppShell";
 import { ModelPicker } from "../components/ModelPicker";
 import { MoodleAccountSection, type MoodleAccountState } from "../components/MoodleAccountSection";
 import { GenerateDialog } from "../components/GenerateDialog";
+import {
+  linkMoodleCourseSchema,
+  uploadDocumentSchema,
+  type LinkMoodleCourseFormValues,
+  type UploadDocumentFormValues,
+} from "../lib/formSchemas";
 import { ModuleListItem } from "../components/ModuleListItem";
 import { SectionTree } from "../components/SectionTree";
 
@@ -115,7 +123,6 @@ export function CourseDetailPage() {
     Record<string, ModuleSummary[]>
   >({});
   const [loading, setLoading] = useState(true);
-  const [uploading, setUploading] = useState(false);
   const [deletingDocId, setDeletingDocId] = useState<string | null>(null);
   const [deletingModuleId, setDeletingModuleId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -171,6 +178,8 @@ export function CourseDetailPage() {
   // server reports a document still uploaded/processing, and this polls until
   // that changes.
   const pipelineActive = documents.some(isPipelineActive);
+  const upload = useForm<UploadDocumentFormValues>({ resolver: zodResolver(uploadDocumentSchema) });
+  const uploading = upload.formState.isSubmitting;
   const uploadBusy = uploading || pipelineActive;
   const generatingOnServer = documents.some((d) => d.generating);
   const visibleDocuments = documents.filter((d) => matchesFilter(d, statusFilter));
@@ -205,11 +214,9 @@ export function CourseDetailPage() {
     wasGeneratingOnServer.current = generatingOnServer;
   }, [generatingOnServer, refresh]);
 
-  async function handleUpload(e: ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file || !courseId) return;
+  async function handleUpload({ file }: UploadDocumentFormValues) {
+    if (!courseId) return;
     setError(null);
-    setUploading(true);
     try {
       // Request trả về ngay (chỉ lưu file + enqueue job) -- xử lý thật
       // (extract/chunk/embed, và với audio/video là phiên âm qua Gemini) chạy
@@ -219,9 +226,6 @@ export function CourseDetailPage() {
       await refresh();
     } catch (err) {
       setError(apiErrorMessage(err, "Tải tài liệu thất bại"));
-    } finally {
-      setUploading(false);
-      e.target.value = "";
     }
   }
 
@@ -361,7 +365,13 @@ export function CourseDetailPage() {
           <input
             type="file"
             className="hidden"
-            onChange={handleUpload}
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              e.target.value = "";
+              if (!file) return;
+              upload.setValue("file", file);
+              void upload.handleSubmit(handleUpload, (errors) => setError(errors.file?.message ?? null))();
+            }}
             disabled={loading || uploadBusy}
             accept=".pdf,.pptx,.docx,.html,.htm,.txt,.vtt,.srt,.mp3,.wav,.m4a,.flac,.ogg,.aac,.mp4,.mkv,.webm,.mov,.avi"
           />
@@ -518,10 +528,14 @@ function MoodleLinkSection({ course, onLinked }: { course: Course; onLinked: () 
   // and the server refuses a course link without the account anyway.
   const [account, setAccount] = useState<MoodleAccountState>("unknown");
   const [courses, setCourses] = useState<MoodleCourse[]>([]);
-  const [chosen, setChosen] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const linked = course.moodle_course_id !== null;
+  const { register, handleSubmit, control } = useForm<LinkMoodleCourseFormValues>({
+    resolver: zodResolver(linkMoodleCourseSchema),
+    defaultValues: { moodleCourseId: "" },
+  });
+  const chosen = useWatch({ control, name: "moodleCourseId" });
 
   // The courses to pick from, once the account is linked. Sets state only from promise
   // callbacks, and drops an answer that arrives after the effect was cleaned up.
@@ -565,12 +579,11 @@ function MoodleLinkSection({ course, onLinked }: { course: Course; onLinked: () 
     }
   }
 
-  async function handleLink() {
-    if (!chosen) return;
+  async function handleLink({ moodleCourseId }: LinkMoodleCourseFormValues) {
     setBusy(true);
     setError(null);
     try {
-      await linkMoodleCourse(course.id, Number(chosen));
+      await linkMoodleCourse(course.id, Number(moodleCourseId));
       onLinked();
     } catch (err) {
       setError(apiErrorMessage(err, "Liên kết course thất bại"));
@@ -643,11 +656,14 @@ function MoodleLinkSection({ course, onLinked }: { course: Course; onLinked: () 
         <p className="mb-2 text-sm font-medium">Course này chưa liên kết với Moodle.</p>
         {/* Trên điện thoại ô chọn chiếm trọn một hàng và hai nút xuống hàng dưới: ép cả ba vào
             một hàng 390px thì nút "Tạo course Moodle mới" gãy thành bốn dòng. */}
-        <div className="flex flex-wrap gap-2">
+        <form
+          onSubmit={handleSubmit(handleLink, (errors) => setError(errors.moodleCourseId?.message ?? null))}
+          noValidate
+          className="flex flex-wrap gap-2"
+        >
           <select
             aria-label="Course Moodle có sẵn"
-            value={chosen}
-            onChange={(e) => setChosen(e.target.value)}
+            {...register("moodleCourseId")}
             className="min-w-0 flex-1 basis-full rounded-[3px] border border-gray-300 bg-white px-3 py-1.5 text-sm sm:basis-auto"
           >
             <option value="">Chọn course Moodle có sẵn…</option>
@@ -658,20 +674,21 @@ function MoodleLinkSection({ course, onLinked }: { course: Course; onLinked: () 
             ))}
           </select>
           <button
-            onClick={handleLink}
+            type="submit"
             disabled={busy || !chosen}
             className="whitespace-nowrap rounded-[3px] border border-gray-300 px-3 py-1.5 text-sm hover:bg-gray-50 disabled:opacity-60"
           >
             Liên kết
           </button>
           <button
+            type="button"
             onClick={handleCreateNew}
             disabled={busy}
             className="whitespace-nowrap rounded-[3px] bg-navy px-3 py-1.5 text-sm font-semibold text-[#f3f1ea] hover:bg-[#28394b] disabled:opacity-60"
           >
             Tạo course Moodle mới
           </button>
-        </div>
+        </form>
         {error && <p className="mt-2 text-sm text-red-700">{error}</p>}
       </div>
     </div>

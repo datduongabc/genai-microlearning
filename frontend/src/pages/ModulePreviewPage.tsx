@@ -1,8 +1,29 @@
 import { useCallback, useEffect, useState } from 'react'
+import { useForm, useWatch } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
 import Markdown, { type Components } from 'react-markdown'
 import { Link, useParams } from 'react-router-dom'
 import { AppShell } from '../components/AppShell'
 import { MoodleAccountSection } from '../components/MoodleAccountSection'
+import {
+  chatEditSchema,
+  examplesContentSchema,
+  explanationsContentSchema,
+  markdownContentSchema,
+  moduleTitleSchema,
+  publishToMoodleSchema,
+  questionEditSchema,
+  slidesContentSchema,
+  type ChatEditFormValues,
+  type ExamplesContentFormValues,
+  type ExplanationsContentFormValues,
+  type MarkdownContentFormValues,
+  type ModuleTitleFormValues,
+  type PublishToMoodleFormValues,
+  type QuestionEditFormValues,
+  type QuestionEditInput,
+  type SlidesContentFormValues,
+} from '../lib/formSchemas'
 import {
   api,
   apiErrorMessage,
@@ -130,30 +151,32 @@ export function ModulePreviewPage() {
 }
 
 function ModuleChatPanel({ module, onSaved }: { module: ModuleDetail; onSaved: () => Promise<void> }) {
-  const [message, setMessage] = useState('')
   const [sessionId, setSessionId] = useState<string>()
   const [turns, setTurns] = useState<{ message: string; reply: string }[]>([])
-  const [sending, setSending] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const {
+    register,
+    handleSubmit,
+    reset,
+    control,
+    formState: { errors, isSubmitting: sending },
+  } = useForm<ChatEditFormValues>({ resolver: zodResolver(chatEditSchema), defaultValues: { message: '' } })
+  const blank = !useWatch({ control, name: 'message' }).trim()
 
-  async function send() {
-    if (!message.trim() || sending) return
-    setSending(true)
+  async function send({ message }: ChatEditFormValues) {
     setError(null)
     let applied = false
     try {
-      const result = await chatEditModule(module.id, message.trim(), sessionId)
+      const result = await chatEditModule(module.id, message, sessionId)
       setSessionId(result.session_id)
-      setTurns((previous) => [...previous, { message: message.trim(), reply: result.reply }])
-      setMessage('')
+      setTurns((previous) => [...previous, { message, reply: result.reply }])
+      reset()
       applied = result.applied
       if (applied) await onSaved()
     } catch (err) {
       setError(applied
         ? 'Đã áp dụng chỉnh sửa nhưng không tải lại được mô-đun. Vui lòng tải lại trang.'
         : apiErrorMessage(err, 'Chỉnh sửa thất bại. Vui lòng thử lại.'))
-    } finally {
-      setSending(false)
     }
   }
 
@@ -167,11 +190,12 @@ function ModuleChatPanel({ module, onSaved }: { module: ModuleDetail; onSaved: (
         <p className="mt-1 whitespace-pre-wrap">{turn.reply}</p>
       </div>)}
     </div>
-    <form onSubmit={(e) => { e.preventDefault(); void send() }} className="mt-3 flex flex-col gap-2">
+    <form onSubmit={handleSubmit(send)} noValidate className="mt-3 flex flex-col gap-2">
       <label htmlFor="module-chat-message" className="text-sm">Yêu cầu chỉnh sửa</label>
-      <textarea id="module-chat-message" maxLength={4000} rows={3} value={message} disabled={sending}
-        onChange={(e) => setMessage(e.target.value)} className="w-full rounded border border-gray-300 p-3 text-sm outline-none focus:border-terracotta" />
-      <button type="submit" disabled={sending || !message.trim()}
+      <textarea id="module-chat-message" maxLength={4000} rows={3} disabled={sending}
+        {...register('message')} className="w-full rounded border border-gray-300 p-3 text-sm outline-none focus:border-terracotta" />
+      {errors.message && <p className="text-xs text-red-600">{errors.message.message}</p>}
+      <button type="submit" disabled={sending || blank}
         className="w-fit rounded-[3px] bg-terracotta px-4 py-2 text-sm font-semibold text-white disabled:opacity-60">
         {sending ? 'Đang chỉnh sửa...' : 'Gửi yêu cầu'}
       </button>
@@ -191,12 +215,19 @@ function PublishToMoodleSection({
   moodleCourseId: number | null
   onRefresh: () => Promise<void>
 }) {
-  const [publishing, setPublishing] = useState(false)
   const [result, setResult] = useState<PublishToMoodleResult | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [sections, setSections] = useState<MoodleSection[]>([])
-  const [sectionNum, setSectionNum] = useState(0)
-  const [addNewSection, setAddNewSection] = useState(false)
+  const {
+    register,
+    handleSubmit,
+    control,
+    formState: { isSubmitting: publishing },
+  } = useForm<PublishToMoodleFormValues>({
+    resolver: zodResolver(publishToMoodleSchema),
+    defaultValues: { sectionNum: 0, addNewSection: false },
+  })
+  const addNewSection = useWatch({ control, name: 'addNewSection' })
 
   useEffect(() => {
     if (moodleCourseId === null) return
@@ -209,8 +240,7 @@ function PublishToMoodleSection({
       })
   }, [courseId, moodleCourseId, onRefresh])
 
-  async function handlePublish() {
-    setPublishing(true)
+  async function handlePublish({ sectionNum, addNewSection }: PublishToMoodleFormValues) {
     setError(null)
     setResult(null)
     try {
@@ -221,8 +251,6 @@ function PublishToMoodleSection({
     } catch (err) {
       setError(apiErrorMessage(err, 'Push to Moodle thất bại'))
       await onRefresh().catch(() => {})
-    } finally {
-      setPublishing(false)
     }
   }
 
@@ -244,12 +272,12 @@ function PublishToMoodleSection({
   return (
     <div className="mt-8 border-t border-gray-200 pt-6">
       <MoodleAccountSection />
+      <form onSubmit={handleSubmit(handlePublish)} noValidate>
       {!addNewSection && sections.length > 0 && (
         <div className="mb-3">
           <label className="mr-2 text-sm text-gray-600">Section:</label>
           <select
-            value={sectionNum}
-            onChange={(e) => setSectionNum(Number(e.target.value))}
+            {...register('sectionNum', { valueAsNumber: true })}
             disabled={result !== null}
             className="rounded-[3px] border border-gray-300 px-2 py-1 text-sm"
           >
@@ -264,20 +292,20 @@ function PublishToMoodleSection({
       <label className="mb-3 flex items-center gap-2 text-sm text-gray-600">
         <input
           type="checkbox"
-          checked={addNewSection}
-          onChange={(e) => setAddNewSection(e.target.checked)}
+          {...register('addNewSection')}
           disabled={result !== null}
         />
         Thêm vào 1 section mới
       </label>
 
       <button
-        onClick={handlePublish}
+        type="submit"
         disabled={publishing || result !== null}
         className="rounded-[3px] bg-navy px-5 py-2.5 text-sm font-semibold text-[#f3f1ea] hover:bg-[#28394b] disabled:opacity-60"
       >
         {publishing ? 'Đang đẩy lên Moodle...' : result !== null ? 'Đã đẩy lên Moodle' : 'Push to Moodle'}
       </button>
+      </form>
 
       {result && (
         <p className="mt-3 text-sm text-green-700">
@@ -293,48 +321,55 @@ function PublishToMoodleSection({
 
 function ModuleHeader({ module, onSaved }: { module: ModuleDetail; onSaved: () => Promise<void> }) {
   const [editing, setEditing] = useState(false)
-  const [title, setTitle] = useState(module.title)
-  const [saving, setSaving] = useState(false)
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors, isSubmitting: saving },
+  } = useForm<ModuleTitleFormValues>({ resolver: zodResolver(moduleTitleSchema), defaultValues: { title: module.title } })
 
-  async function handleSave() {
-    setSaving(true)
-    try {
-      await updateModuleTitle(module.id, title)
-      await onSaved()
-      setEditing(false)
-    } finally {
-      setSaving(false)
-    }
+  async function handleSave({ title }: ModuleTitleFormValues) {
+    await updateModuleTitle(module.id, title)
+    await onSaved()
+    setEditing(false)
   }
 
   return (
     <div className="border-b border-gray-200 pb-6">
       {editing ? (
-        <div className="flex items-center gap-3">
+        <form onSubmit={handleSubmit(handleSave)} noValidate className="flex flex-wrap items-center gap-3">
           <input
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
+            {...register('title')}
+            aria-label="Tên mô-đun"
             className="flex-1 border-0 border-b-[1.5px] border-terracotta bg-transparent font-serif text-xl font-semibold outline-none"
           />
           <button
-            onClick={handleSave}
+            type="submit"
             disabled={saving}
             className="rounded-[3px] bg-terracotta px-4 py-1.5 text-xs font-semibold text-white hover:bg-terracotta-dark disabled:opacity-60"
           >
             {saving ? 'Đang lưu...' : 'Lưu'}
           </button>
           <button
+            type="button"
             onClick={() => {
-              setTitle(module.title)
+              reset({ title: module.title })
               setEditing(false)
             }}
             className="text-xs font-semibold text-gray-500 hover:text-gray-700"
           >
             Hủy
           </button>
-        </div>
+          {errors.title && <p className="basis-full text-xs text-red-600">{errors.title.message}</p>}
+        </form>
       ) : (
-        <button onClick={() => setEditing(true)} className="text-left hover:text-terracotta">
+        <button
+          onClick={() => {
+            reset({ title: module.title })
+            setEditing(true)
+          }}
+          className="text-left hover:text-terracotta"
+        >
           <h2 className="font-serif text-xl font-semibold">{module.title}</h2>
         </button>
       )}
@@ -487,26 +522,25 @@ function MarkdownFieldEditor({
 }) {
   const original = (component.content.markdown as string) ?? ''
   const [editing, setEditing] = useState(false)
-  const [value, setValue] = useState(original)
-  const [saving, setSaving] = useState(false)
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { isSubmitting: saving },
+  } = useForm<MarkdownContentFormValues>({ resolver: zodResolver(markdownContentSchema), defaultValues: { markdown: original } })
 
-  async function handleSave() {
-    setSaving(true)
-    try {
-      await updateComponentContent(moduleId, component.id, { ...component.content, markdown: value })
-      await onSaved()
-      setEditing(false)
-    } finally {
-      setSaving(false)
-    }
+  async function handleSave({ markdown }: MarkdownContentFormValues) {
+    await updateComponentContent(moduleId, component.id, { ...component.content, markdown })
+    await onSaved()
+    setEditing(false)
   }
 
   return (
     <div className="flex flex-col gap-3">
       {editing ? (
         <textarea
-          value={value}
-          onChange={(e) => setValue(e.target.value)}
+          aria-label="Nội dung"
+          {...register('markdown')}
           rows={10}
           className="w-full rounded border border-gray-300 p-3 font-mono text-sm outline-none focus:border-terracotta"
         />
@@ -519,12 +553,12 @@ function MarkdownFieldEditor({
         editing={editing}
         saving={saving}
         onEdit={() => {
-          setValue(original)
+          reset({ markdown: original })
           setEditing(true)
         }}
-        onSave={handleSave}
+        onSave={handleSubmit(handleSave)}
         onCancel={() => {
-          setValue(original)
+          reset({ markdown: original })
           setEditing(false)
         }}
       />
@@ -547,42 +581,45 @@ function SlidesEditor({
   onSaved: () => Promise<void>
 }) {
   const originalSlides = ((component.content.slides as Slide[]) ?? []).map((s) => ({ ...s }))
+  const formValues = (): SlidesContentFormValues => ({
+    slides: originalSlides.map((s) => ({ title: s.title, bulletsText: s.bullets.join('\n') })),
+  })
   const [editing, setEditing] = useState(false)
-  const [slides, setSlides] = useState<Slide[]>(originalSlides)
-  const [saving, setSaving] = useState(false)
+  const {
+    register,
+    handleSubmit,
+    reset,
+    control,
+    formState: { isSubmitting: saving },
+  } = useForm<SlidesContentFormValues>({ resolver: zodResolver(slidesContentSchema), defaultValues: formValues() })
+  const editedSlides = useWatch({ control, name: 'slides' })
 
-  async function handleSave() {
-    setSaving(true)
-    try {
-      await updateComponentContent(moduleId, component.id, { ...component.content, slides })
-      await onSaved()
-      setEditing(false)
-    } finally {
-      setSaving(false)
-    }
+  async function handleSave(values: SlidesContentFormValues) {
+    const slides = values.slides.map((s, i) => ({
+      ...originalSlides[i],
+      title: s.title,
+      bullets: s.bulletsText.split('\n'),
+    }))
+    await updateComponentContent(moduleId, component.id, { ...component.content, slides })
+    await onSaved()
+    setEditing(false)
   }
 
   return (
     <div className="flex flex-col gap-4">
-      {(editing ? slides : originalSlides).map((slide, i) => (
+      {originalSlides.map((slide, i) => (
         <div key={i} className="border-l-2 border-gray-200 pl-4">
           {editing ? (
             <>
               <input
-                value={slide.title}
-                onChange={(e) =>
-                  setSlides((prev) => prev.map((s, j) => (j === i ? { ...s, title: e.target.value } : s)))
-                }
+                aria-label={`Tiêu đề slide ${i + 1}`}
+                {...register(`slides.${i}.title`)}
                 className="w-full border-0 border-b border-gray-300 bg-transparent pb-1 font-semibold outline-none focus:border-terracotta"
               />
               <textarea
-                value={slide.bullets.join('\n')}
-                onChange={(e) =>
-                  setSlides((prev) =>
-                    prev.map((s, j) => (j === i ? { ...s, bullets: e.target.value.split('\n') } : s)),
-                  )
-                }
-                rows={Math.max(2, slide.bullets.length)}
+                aria-label={`Nội dung slide ${i + 1}`}
+                {...register(`slides.${i}.bulletsText`)}
+                rows={Math.max(2, (editedSlides[i]?.bulletsText ?? '').split('\n').length)}
                 className="mt-2 w-full rounded border border-gray-300 p-2 text-sm outline-none focus:border-terracotta"
               />
             </>
@@ -602,12 +639,12 @@ function SlidesEditor({
         editing={editing}
         saving={saving}
         onEdit={() => {
-          setSlides(originalSlides)
+          reset(formValues())
           setEditing(true)
         }}
-        onSave={handleSave}
+        onSave={handleSubmit(handleSave)}
         onCancel={() => {
-          setSlides(originalSlides)
+          reset(formValues())
           setEditing(false)
         }}
       />
@@ -625,28 +662,27 @@ function ExamplesEditor({
   onSaved: () => Promise<void>
 }) {
   const original = (component.content.examples as ExampleItem[] | undefined) ?? []
+  const formValues = (): ExamplesContentFormValues => ({
+    examples: original.map((e) => ({ context: e.context, analysis: e.analysis })),
+  })
   const [editing, setEditing] = useState(false)
-  const [examples, setExamples] = useState<ExampleItem[]>(original)
-  const [saving, setSaving] = useState(false)
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { isSubmitting: saving },
+  } = useForm<ExamplesContentFormValues>({ resolver: zodResolver(examplesContentSchema), defaultValues: formValues() })
 
-  function change(index: number, field: keyof ExampleItem, value: string) {
-    setExamples((current) => current.map((e, i) => (i === index ? { ...e, [field]: value } : e)))
-  }
-
-  async function handleSave() {
-    setSaving(true)
-    try {
-      await updateComponentContent(moduleId, component.id, { examples })
-      await onSaved()
-      setEditing(false)
-    } finally {
-      setSaving(false)
-    }
+  async function handleSave(values: ExamplesContentFormValues) {
+    const examples = original.map((e, i) => ({ ...e, ...values.examples[i] }))
+    await updateComponentContent(moduleId, component.id, { examples })
+    await onSaved()
+    setEditing(false)
   }
 
   return (
     <div className="flex flex-col gap-6">
-      {(editing ? examples : original).map((example, index) => (
+      {original.map((example, index) => (
         <div key={index} className="flex flex-col gap-3">
           <div className="text-sm font-semibold">Ví dụ {index + 1}</div>
           {(['context', 'analysis'] as const).map((field) => (
@@ -657,8 +693,7 @@ function ExamplesEditor({
               {editing ? (
                 <textarea
                   aria-label={`${field === 'context' ? 'Bối cảnh' : 'Phân tích'} ví dụ ${index + 1}`}
-                  value={example[field]}
-                  onChange={(e) => change(index, field, e.target.value)}
+                  {...register(`examples.${index}.${field}`)}
                   rows={4}
                   className="w-full rounded border border-gray-300 p-3 text-sm outline-none focus:border-terracotta"
                 />
@@ -673,12 +708,12 @@ function ExamplesEditor({
         editing={editing}
         saving={saving}
         onEdit={() => {
-          setExamples(original)
+          reset(formValues())
           setEditing(true)
         }}
-        onSave={handleSave}
+        onSave={handleSubmit(handleSave)}
         onCancel={() => {
-          setExamples(original)
+          reset(formValues())
           setEditing(false)
         }}
       />
@@ -700,28 +735,27 @@ function ExplanationEditor({
   onSaved: () => Promise<void>
 }) {
   const original = (component.content.items as ExplanationItem[] | undefined) ?? []
+  const formValues = (): ExplanationsContentFormValues => ({
+    items: original.map((item) => ({ reasoning: item.reasoning, explanation_text: item.explanation_text })),
+  })
   const [editing, setEditing] = useState(false)
-  const [items, setItems] = useState<ExplanationItem[]>(original)
-  const [saving, setSaving] = useState(false)
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { isSubmitting: saving },
+  } = useForm<ExplanationsContentFormValues>({ resolver: zodResolver(explanationsContentSchema), defaultValues: formValues() })
 
-  function change(index: number, field: 'reasoning' | 'explanation_text', value: string) {
-    setItems((current) => current.map((item, i) => (i === index ? { ...item, [field]: value } : item)))
-  }
-
-  async function handleSave() {
-    setSaving(true)
-    try {
-      await updateComponentContent(moduleId, component.id, { items })
-      await onSaved()
-      setEditing(false)
-    } finally {
-      setSaving(false)
-    }
+  async function handleSave(values: ExplanationsContentFormValues) {
+    const items = original.map((item, i) => ({ ...item, ...values.items[i] }))
+    await updateComponentContent(moduleId, component.id, { items })
+    await onSaved()
+    setEditing(false)
   }
 
   return (
     <div className="flex flex-col gap-6">
-      {(editing ? items : original).map((item, index) => (
+      {original.map((item, index) => (
         <div key={`${item.component}-${item.position}`} className="flex flex-col gap-3">
           <div className="text-sm font-semibold">{explanationLabel(item)}</div>
           <div>
@@ -731,8 +765,7 @@ function ExplanationEditor({
             {editing ? (
               <textarea
                 aria-label={`Lập luận ${explanationLabel(item)}`}
-                value={item.reasoning}
-                onChange={(e) => change(index, 'reasoning', e.target.value)}
+                {...register(`items.${index}.reasoning`)}
                 rows={4}
                 className="w-full rounded border border-gray-300 p-3 text-sm outline-none focus:border-terracotta"
               />
@@ -747,8 +780,7 @@ function ExplanationEditor({
             {editing ? (
               <textarea
                 aria-label={`Giải thích ${explanationLabel(item)}`}
-                value={item.explanation_text}
-                onChange={(e) => change(index, 'explanation_text', e.target.value)}
+                {...register(`items.${index}.explanation_text`)}
                 rows={4}
                 className="w-full rounded border border-gray-300 p-3 text-sm outline-none focus:border-terracotta"
               />
@@ -762,12 +794,12 @@ function ExplanationEditor({
         editing={editing}
         saving={saving}
         onEdit={() => {
-          setItems(original)
+          reset(formValues())
           setEditing(true)
         }}
-        onSave={handleSave}
+        onSave={handleSubmit(handleSave)}
         onCancel={() => {
-          setItems(original)
+          reset(formValues())
           setEditing(false)
         }}
       />
@@ -832,31 +864,43 @@ function QuestionEditor({ moduleId, question, explanation, onSaved }: {
   explanation: string
   onSaved: () => Promise<void>
 }) {
+  const formValues = (): QuestionEditInput => ({
+    stem: question.stem,
+    choices: question.choices.options,
+    answer_key: String(question.answer_key),
+    explanation,
+  })
   const [editing, setEditing] = useState(false)
-  const [draft, setDraft] = useState({ stem: question.stem, choices: question.choices.options, answer_key: Number(question.answer_key), explanation })
-  const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  async function save() {
-    setSaving(true)
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors, isSubmitting: saving },
+  } = useForm<QuestionEditInput, unknown, QuestionEditFormValues>({
+    resolver: zodResolver(questionEditSchema),
+    defaultValues: formValues(),
+  })
+  async function save(values: QuestionEditFormValues) {
     setError(null)
     try {
-      await updateQuestion(moduleId, question.id, draft)
+      await updateQuestion(moduleId, question.id, values)
       await onSaved()
       setEditing(false)
     } catch (err) {
       setError(apiErrorMessage(err, 'Lưu câu hỏi thất bại'))
-    } finally {
-      setSaving(false)
     }
   }
   return <div className="flex flex-col gap-3">
-    {editing ? <form onSubmit={(e) => { e.preventDefault(); void save() }} className="flex flex-col gap-3">
-      <label>Câu hỏi<textarea required aria-label="Câu hỏi" value={draft.stem} onChange={(e) => setDraft({ ...draft, stem: e.target.value })} className="w-full rounded border border-gray-300 p-2" /></label>
-      {draft.choices.map((choice, i) => <div key={i} className="flex items-center gap-2">
-        <input type="radio" name={`answer-${question.id}`} aria-label={`Đáp án ${String.fromCharCode(65 + i)}`} checked={draft.answer_key === i} onChange={() => setDraft({ ...draft, answer_key: i })} />
-        <input required aria-label={`Phương án ${String.fromCharCode(65 + i)}`} value={choice} onChange={(e) => setDraft({ ...draft, choices: draft.choices.map((c, j) => j === i ? e.target.value : c) })} className="w-full rounded border border-gray-300 p-2" />
+    {editing ? <form onSubmit={handleSubmit(save)} noValidate className="flex flex-col gap-3">
+      <label>Câu hỏi<textarea aria-label="Câu hỏi" {...register('stem')} className="w-full rounded border border-gray-300 p-2" /></label>
+      {errors.stem && <p className="text-xs text-red-600">{errors.stem.message}</p>}
+      {question.choices.options.map((_, i) => <div key={i} className="flex flex-wrap items-center gap-2">
+        <input type="radio" value={String(i)} aria-label={`Đáp án ${String.fromCharCode(65 + i)}`} {...register('answer_key')} />
+        <input aria-label={`Phương án ${String.fromCharCode(65 + i)}`} {...register(`choices.${i}`)} className="min-w-0 flex-1 rounded border border-gray-300 p-2" />
+        {errors.choices?.[i] && <p className="basis-full text-xs text-red-600">{errors.choices[i].message}</p>}
       </div>)}
-      <label>Giải thích<textarea aria-label="Giải thích" value={draft.explanation} onChange={(e) => setDraft({ ...draft, explanation: e.target.value })} className="w-full rounded border border-gray-300 p-2" /></label>
+      <label>Giải thích<textarea aria-label="Giải thích" {...register('explanation')} className="w-full rounded border border-gray-300 p-2" /></label>
       <div className="flex gap-3">
         <button type="submit" disabled={saving} className="text-sm font-semibold text-terracotta">{saving ? 'Đang lưu...' : 'Lưu'}</button>
         <button type="button" disabled={saving} onClick={() => setEditing(false)} className="text-sm text-gray-500">Hủy</button>
@@ -865,8 +909,8 @@ function QuestionEditor({ moduleId, question, explanation, onSaved }: {
       <p className="font-medium">{question.stem}</p>
       <ul className="flex flex-col gap-1 text-sm">{question.choices.options.map((choice, i) => <li key={i} className={String(i) === question.answer_key ? 'font-semibold text-green-700' : 'text-gray-700'}>{String.fromCharCode(65 + i)}. {choice}{String(i) === question.answer_key ? ' ✓' : ''}</li>)}</ul>
       {explanation && <p className="text-sm text-gray-500"><span className="font-semibold">Giải thích: </span>{explanation}</p>}
-      <SaveCancelRow editing={false} saving={saving} onSave={save} onCancel={() => setEditing(false)} onEdit={() => {
-        setDraft({ stem: question.stem, choices: question.choices.options, answer_key: Number(question.answer_key), explanation })
+      <SaveCancelRow editing={false} saving={saving} onSave={handleSubmit(save)} onCancel={() => setEditing(false)} onEdit={() => {
+        reset(formValues())
         setError(null)
         setEditing(true)
       }} />

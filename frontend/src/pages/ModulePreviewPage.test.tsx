@@ -1,4 +1,4 @@
-import { render, screen, waitFor, within } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -459,4 +459,216 @@ it('opens the editor on the chat-edited content instead of the stale draft', asy
   expect(await screen.findByText('Bản rút gọn')).toBeInTheDocument()
   await userEvent.click(screen.getByRole('button', { name: 'Sửa' }))
   expect(screen.getByDisplayValue('Bản rút gọn')).toBeInTheDocument()
+})
+
+describe('ModulePreviewPage - forms', () => {
+  const withComponent = (component: ModuleDetail['components'][number]): ModuleDetail => ({ ...baseModule, components: [component] })
+
+  it('asks for a request instead of sending a blank chat message', async () => {
+    vi.mocked(api.getModule).mockResolvedValue(baseModule)
+    renderPage()
+    const field = await screen.findByRole('textbox', { name: 'Yêu cầu chỉnh sửa' })
+    await userEvent.type(field, '   ')
+    expect(screen.getByRole('button', { name: 'Gửi yêu cầu' })).toBeDisabled()
+    fireEvent.submit(field.closest('form')!)
+    expect(await screen.findByText('Vui lòng nhập yêu cầu chỉnh sửa')).toBeInTheDocument()
+    expect(api.chatEditModule).not.toHaveBeenCalled()
+  })
+
+  it('sends the trimmed chat message with the session of the last turn and empties the field', async () => {
+    vi.mocked(api.getModule).mockResolvedValue(baseModule)
+    vi.mocked(api.chatEditModule)
+      .mockResolvedValueOnce({ session_id: 'session-1', applied: false, reply: 'Phần nào?', edit_count: 0 })
+      .mockResolvedValueOnce({ session_id: 'session-1', applied: false, reply: 'Rõ rồi.', edit_count: 0 })
+    renderPage()
+    const field = await screen.findByRole('textbox', { name: 'Yêu cầu chỉnh sửa' })
+    await userEvent.type(field, '  Sửa lại ')
+    await userEvent.click(screen.getByRole('button', { name: 'Gửi yêu cầu' }))
+    await screen.findByText('Phần nào?')
+    expect(api.chatEditModule).toHaveBeenLastCalledWith('module-1', 'Sửa lại', undefined)
+    expect(field).toHaveValue('')
+    await userEvent.type(field, 'Slide 3')
+    await userEvent.click(screen.getByRole('button', { name: 'Gửi yêu cầu' }))
+    await screen.findByText('Rõ rồi.')
+    expect(api.chatEditModule).toHaveBeenLastCalledWith('module-1', 'Slide 3', 'session-1')
+  })
+
+  it('keeps the chat message for another try when the edit fails', async () => {
+    vi.mocked(api.getModule).mockResolvedValue(baseModule)
+    vi.mocked(api.chatEditModule).mockRejectedValue(new Error('boom'))
+    renderPage()
+    const field = await screen.findByRole('textbox', { name: 'Yêu cầu chỉnh sửa' })
+    await userEvent.type(field, 'Sửa lại')
+    await userEvent.click(screen.getByRole('button', { name: 'Gửi yêu cầu' }))
+    expect(await screen.findByText('Chỉnh sửa thất bại. Vui lòng thử lại.')).toBeInTheDocument()
+    expect(field).toHaveValue('Sửa lại')
+  })
+
+  it('refuses a chat message over 4000 characters', async () => {
+    vi.mocked(api.getModule).mockResolvedValue(baseModule)
+    renderPage()
+    const field = await screen.findByRole('textbox', { name: 'Yêu cầu chỉnh sửa' })
+    fireEvent.change(field, { target: { value: 'a'.repeat(4001) } })
+    await userEvent.click(screen.getByRole('button', { name: 'Gửi yêu cầu' }))
+    expect(await screen.findByText('Yêu cầu tối đa 4000 ký tự')).toBeInTheDocument()
+    expect(api.chatEditModule).not.toHaveBeenCalled()
+  })
+
+  it('renames the module and goes back to the heading', async () => {
+    vi.mocked(api.getModule).mockResolvedValue(baseModule)
+    vi.mocked(api.updateModuleTitle).mockResolvedValue({ id: 'module-1', title: 'Tên mới' })
+    renderPage()
+    await userEvent.click(await screen.findByRole('heading', { name: 'Test Module' }))
+    const field = screen.getByRole('textbox', { name: 'Tên mô-đun' })
+    expect(field).toHaveValue('Test Module')
+    await userEvent.clear(field)
+    await userEvent.type(field, 'Tên mới')
+    vi.mocked(api.getModule).mockResolvedValue({ ...baseModule, title: 'Tên mới' })
+    await userEvent.click(screen.getByRole('button', { name: 'Lưu' }))
+    await waitFor(() => expect(api.updateModuleTitle).toHaveBeenCalledWith('module-1', 'Tên mới'))
+    expect(await screen.findByRole('heading', { name: 'Tên mới' })).toBeInTheDocument()
+  })
+
+  it('refuses a module title over 200 characters and puts the old one back on cancel', async () => {
+    vi.mocked(api.getModule).mockResolvedValue(baseModule)
+    renderPage()
+    await userEvent.click(await screen.findByRole('heading', { name: 'Test Module' }))
+    const field = screen.getByRole('textbox', { name: 'Tên mô-đun' })
+    fireEvent.change(field, { target: { value: 'a'.repeat(201) } })
+    await userEvent.click(screen.getByRole('button', { name: 'Lưu' }))
+    expect(await screen.findByText('Tên mô-đun tối đa 200 ký tự')).toBeInTheDocument()
+    expect(api.updateModuleTitle).not.toHaveBeenCalled()
+    await userEvent.click(screen.getByRole('button', { name: 'Hủy' }))
+    await userEvent.click(screen.getByRole('heading', { name: 'Test Module' }))
+    expect(screen.getByRole('textbox', { name: 'Tên mô-đun' })).toHaveValue('Test Module')
+  })
+
+  it('saves edited Markdown content and keeps the rest of the component content', async () => {
+    vi.mocked(api.getModule).mockResolvedValue(withComponent({ id: 'content-1', type: 'content', content: { markdown: 'Bản gốc', extra: 1 }, questions: [] }))
+    vi.mocked(api.updateComponentContent).mockResolvedValue({ id: 'content-1', content: {} })
+    renderPage()
+    await userEvent.click(await screen.findByRole('button', { name: 'Sửa' }))
+    const field = screen.getByRole('textbox', { name: 'Nội dung' })
+    expect(field).toHaveValue('Bản gốc')
+    await userEvent.clear(field)
+    await userEvent.type(field, 'Bản sửa')
+    await userEvent.click(screen.getByRole('button', { name: 'Lưu' }))
+    await waitFor(() => expect(api.updateComponentContent).toHaveBeenCalledWith('module-1', 'content-1', { markdown: 'Bản sửa', extra: 1 }))
+  })
+
+  it('discards an edit of the Markdown content on cancel', async () => {
+    vi.mocked(api.getModule).mockResolvedValue(withComponent({ id: 'content-1', type: 'content', content: { markdown: 'Bản gốc' }, questions: [] }))
+    renderPage()
+    await userEvent.click(await screen.findByRole('button', { name: 'Sửa' }))
+    await userEvent.type(screen.getByRole('textbox', { name: 'Nội dung' }), ' thêm')
+    await userEvent.click(screen.getByRole('button', { name: 'Hủy' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Sửa' }))
+    expect(screen.getByRole('textbox', { name: 'Nội dung' })).toHaveValue('Bản gốc')
+  })
+
+  it('saves edited slides, a line to a bullet, and keeps what else a slide holds', async () => {
+    vi.mocked(api.getModule).mockResolvedValue(withComponent({
+      id: 'slides-1',
+      type: 'slides',
+      content: { slides: [{ title: 'Một', bullets: ['a', 'b'], notes: 'n' }, { title: 'Hai', bullets: ['c'] }] },
+      questions: [],
+    }))
+    vi.mocked(api.updateComponentContent).mockResolvedValue({ id: 'slides-1', content: {} })
+    renderPage()
+    await userEvent.click(await screen.findByRole('button', { name: 'Sửa' }))
+    const title = screen.getByRole('textbox', { name: 'Tiêu đề slide 1' })
+    await userEvent.clear(title)
+    await userEvent.type(title, 'Một mới')
+    const bullets = screen.getByRole('textbox', { name: 'Nội dung slide 1' })
+    expect(bullets).toHaveValue('a\nb')
+    await userEvent.type(bullets, '{Enter}c')
+    await userEvent.click(screen.getByRole('button', { name: 'Lưu' }))
+    await waitFor(() => expect(api.updateComponentContent).toHaveBeenCalledWith('module-1', 'slides-1', {
+      slides: [{ title: 'Một mới', bullets: ['a', 'b', 'c'], notes: 'n' }, { title: 'Hai', bullets: ['c'] }],
+    }))
+  })
+
+  it('saves an edited example and keeps the others', async () => {
+    vi.mocked(api.getModule).mockResolvedValue(withComponent({
+      id: 'example-1',
+      type: 'example',
+      content: { examples: [{ context: 'C1', analysis: 'A1' }, { context: 'C2', analysis: 'A2' }] },
+      questions: [],
+    }))
+    vi.mocked(api.updateComponentContent).mockResolvedValue({ id: 'example-1', content: {} })
+    renderPage()
+    await userEvent.click(await screen.findByRole('button', { name: 'Sửa' }))
+    const field = screen.getByLabelText('Phân tích ví dụ 2')
+    await userEvent.clear(field)
+    await userEvent.type(field, 'A2 mới')
+    await userEvent.click(screen.getByRole('button', { name: 'Lưu' }))
+    await waitFor(() => expect(api.updateComponentContent).toHaveBeenCalledWith('module-1', 'example-1', {
+      examples: [{ context: 'C1', analysis: 'A1' }, { context: 'C2', analysis: 'A2 mới' }],
+    }))
+  })
+
+  describe('editing a question', () => {
+    const question = { id: 'q1', position: 0, stem: 'Original stem', choices: { options: ['A', 'B'] }, answer_key: '0', explanation: 'Original explanation' }
+    const quiz = withComponent({ id: 'quiz-1', type: 'quiz', content: {}, questions: [question] })
+
+    it('asks for the question before saving it', async () => {
+      vi.mocked(api.getModule).mockResolvedValue(quiz)
+      renderPage()
+      await userEvent.click(await screen.findByRole('button', { name: 'Sửa' }))
+      await userEvent.clear(screen.getByRole('textbox', { name: 'Câu hỏi' }))
+      await userEvent.click(screen.getByRole('button', { name: 'Lưu' }))
+      expect(await screen.findByText('Vui lòng nhập câu hỏi')).toBeInTheDocument()
+      expect(api.updateQuestion).not.toHaveBeenCalled()
+    })
+
+    it('asks for every choice before saving the question', async () => {
+      vi.mocked(api.getModule).mockResolvedValue(quiz)
+      renderPage()
+      await userEvent.click(await screen.findByRole('button', { name: 'Sửa' }))
+      await userEvent.clear(screen.getByRole('textbox', { name: 'Phương án B' }))
+      await userEvent.click(screen.getByRole('button', { name: 'Lưu' }))
+      expect(await screen.findByText('Vui lòng nhập phương án')).toBeInTheDocument()
+      expect(api.updateQuestion).not.toHaveBeenCalled()
+    })
+
+    it('starts the editor on the saved answer and says when the save fails', async () => {
+      vi.mocked(api.getModule).mockResolvedValue({ ...quiz, components: [{ ...quiz.components[0], questions: [{ ...question, answer_key: '1' }] }] })
+      vi.mocked(api.updateQuestion).mockRejectedValue(new Error('boom'))
+      renderPage()
+      await userEvent.click(await screen.findByRole('button', { name: 'Sửa' }))
+      expect(screen.getByRole('radio', { name: 'Đáp án B' })).toBeChecked()
+      expect(screen.getByRole('radio', { name: 'Đáp án A' })).not.toBeChecked()
+      await userEvent.click(screen.getByRole('button', { name: 'Lưu' }))
+      expect(await screen.findByText('Lưu câu hỏi thất bại')).toBeInTheDocument()
+      expect(api.updateQuestion).toHaveBeenCalledWith('module-1', 'q1', expect.objectContaining({ answer_key: 1 }))
+    })
+  })
+
+  describe('publishing to Moodle', () => {
+    const linked = { ...baseModule, moodle_course_id: 6 }
+    const sections = [{ sectionnum: 0, name: 'General' }, { sectionnum: 1, name: 'Tuần 1' }, { sectionnum: 2, name: 'Tuần 2' }]
+    const result = { moodle_course_id: 6, book_cmid: 1 }
+
+    it('pushes to the section picked from the drop-down', async () => {
+      vi.mocked(api.getModule).mockResolvedValue(linked)
+      vi.mocked(api.getMoodleSections).mockResolvedValue(sections)
+      vi.mocked(api.publishToMoodle).mockResolvedValue(result)
+      renderPage()
+      await userEvent.selectOptions(await screen.findByRole('combobox'), '2')
+      await userEvent.click(screen.getByRole('button', { name: /push to moodle/i }))
+      await waitFor(() => expect(api.publishToMoodle).toHaveBeenCalledWith('module-1', 2))
+    })
+
+    it('pushes to a new section, numbered after the existing ones, and hides the drop-down', async () => {
+      vi.mocked(api.getModule).mockResolvedValue(linked)
+      vi.mocked(api.getMoodleSections).mockResolvedValue(sections)
+      vi.mocked(api.publishToMoodle).mockResolvedValue(result)
+      renderPage()
+      await screen.findByRole('combobox')
+      await userEvent.click(screen.getByRole('checkbox', { name: /thêm vào 1 section mới/i }))
+      expect(screen.queryByRole('combobox')).not.toBeInTheDocument()
+      await userEvent.click(screen.getByRole('button', { name: /push to moodle/i }))
+      await waitFor(() => expect(api.publishToMoodle).toHaveBeenCalledWith('module-1', 3))
+    })
+  })
 })
