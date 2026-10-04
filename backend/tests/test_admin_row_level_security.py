@@ -137,6 +137,21 @@ def test_an_admin_cannot_change_anything_with_plain_statements(world):
         assert db.get(Job, world["failed"]).status == JobStatus.failed
 
 
+def test_the_course_count_view_gives_an_admin_only_a_number_per_owner(world):
+    with _as(world["admin"]) as db:
+        result = db.execute(text("SELECT * FROM admin_course_counts WHERE owner_id = :id"), {"id": world["owner"]})
+        row = result.mappings().one()
+        columns = set(result.keys())
+
+    assert row["course_count"] == 1 and columns == {"owner_id", "course_count"}
+
+
+@pytest.mark.parametrize("who", ["owner", "disabled_admin", None])
+def test_the_course_count_view_is_empty_for_anyone_who_is_not_an_active_admin(world, who):
+    with _as(world[who] if who else None) as db:
+        assert db.execute(text("SELECT count(*) FROM admin_course_counts")).scalar() == 0
+
+
 def test_the_internal_view_is_not_open_to_the_application_role(world):
     with _as(world["admin"]) as db, pytest.raises(DBAPIError):
         db.execute(text("SELECT * FROM open_failed_jobs"))

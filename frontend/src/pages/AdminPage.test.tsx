@@ -19,15 +19,15 @@ vi.mock('../api', async (importOriginal) => {
 
 const admin: AdminUser = {
   id: 'admin-1', email: 'admin@example.com', name: 'Quản trị', role: 'admin', is_active: true,
-  created_at: '2026-01-01T00:00:00Z', moodle_status: null,
+  created_at: '2026-01-01T00:00:00Z', moodle_status: null, course_count: null, moodle_course_count: null,
 }
 const lan: AdminUser = {
   id: 'u-1', email: 'lan@example.com', name: 'Lan Nguyễn', role: 'teacher', is_active: true,
-  created_at: '2026-01-02T00:00:00Z', moodle_status: 'linked',
+  created_at: '2026-01-02T00:00:00Z', moodle_status: 'linked', course_count: 2, moodle_course_count: 0,
 }
 const minh: AdminUser = {
   id: 'u-2', email: 'minh@example.com', name: 'Minh Trần', role: 'teacher', is_active: false,
-  created_at: '2026-01-03T00:00:00Z', moodle_status: 'not_found',
+  created_at: '2026-01-03T00:00:00Z', moodle_status: 'not_found', course_count: 0, moodle_course_count: 0,
 }
 
 function failedJob(id: string, overrides: Partial<FailedJobInfo> = {}): FailedJobInfo {
@@ -126,6 +126,71 @@ describe('AdminPage - accounts', () => {
     const own = (await screen.findByText('admin@example.com')).closest('li')!
 
     expect(within(own).getByRole('button', { name: 'Khóa' })).toBeDisabled()
+  })
+
+  it('deletes a lecturer without courses after a confirmation and reloads the list', async () => {
+    vi.mocked(api.deleteUser).mockResolvedValue(undefined)
+    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(true)
+    renderPage()
+    const row = (await screen.findByText('minh@example.com')).closest('li')!
+
+    await userEvent.click(within(row).getByRole('button', { name: 'Xóa' }))
+
+    expect(confirm).toHaveBeenCalledWith(expect.stringContaining('minh@example.com'))
+    await waitFor(() => expect(api.deleteUser).toHaveBeenCalledWith('u-2'))
+    expect(await screen.findByText('Đã xóa tài khoản minh@example.com.')).toBeInTheDocument()
+    expect(api.listUsers).toHaveBeenCalledTimes(2)
+  })
+
+  it('does not delete when the admin cancels the confirmation', async () => {
+    vi.spyOn(window, 'confirm').mockReturnValue(false)
+    renderPage()
+    const row = (await screen.findByText('minh@example.com')).closest('li')!
+
+    await userEvent.click(within(row).getByRole('button', { name: 'Xóa' }))
+
+    expect(api.deleteUser).not.toHaveBeenCalled()
+  })
+
+  it('explains and disables delete for a lecturer with courses, and offers none for an admin', async () => {
+    renderPage()
+    const withCourses = (await screen.findByText('lan@example.com')).closest('li')!
+    const own = screen.getByText('admin@example.com').closest('li')!
+
+    const button = within(withCourses).getByRole('button', { name: 'Xóa' })
+    expect(button).toBeDisabled()
+    expect(button).toHaveAttribute('title', expect.stringContaining('2 môn học'))
+    expect(within(withCourses).getByText(/2 môn học/)).toBeInTheDocument()
+    expect(within(own).queryByRole('button', { name: 'Xóa' })).not.toBeInTheDocument()
+  })
+
+  it('explains and disables delete for a lecturer who holds a Moodle course but no course here', async () => {
+    const hoa: AdminUser = {
+      id: 'u-3', email: 'hoa@example.com', name: 'Hoa Lê', role: 'teacher', is_active: true,
+      created_at: '2026-01-04T00:00:00Z', moodle_status: 'linked', course_count: 0, moodle_course_count: 1,
+    }
+    vi.mocked(api.listUsers).mockResolvedValue([admin, hoa])
+    renderPage()
+    const row = (await screen.findByText('hoa@example.com')).closest('li')!
+
+    const button = within(row).getByRole('button', { name: 'Xóa' })
+    expect(button).toBeDisabled()
+    expect(button).toHaveAttribute('title', expect.stringContaining('1 môn học Moodle'))
+    expect(within(row).getByText(/1 môn học Moodle/)).toBeInTheDocument()
+  })
+
+  it('shows what the server said when the delete is refused', async () => {
+    vi.mocked(api.deleteUser).mockRejectedValue({
+      isAxiosError: true,
+      response: { status: 409, data: { detail: 'Không thể xóa giảng viên đang có môn học.' } },
+    })
+    vi.spyOn(window, 'confirm').mockReturnValue(true)
+    renderPage()
+    const row = (await screen.findByText('minh@example.com')).closest('li')!
+
+    await userEvent.click(within(row).getByRole('button', { name: 'Xóa' }))
+
+    expect(await screen.findByText('Không thể xóa giảng viên đang có môn học.')).toBeInTheDocument()
   })
 
   it('sets a new password for a lecturer, after checking it', async () => {

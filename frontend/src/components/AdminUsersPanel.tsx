@@ -4,6 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import {
   apiErrorMessage,
   createLecturer,
+  deleteUser,
   listUsers,
   resetUserPassword,
   setUserActive,
@@ -27,8 +28,19 @@ const MOODLE_LABEL: Record<MoodleStatus, { text: string; color: string }> = {
 const inputClass =
   "rounded-[3px] border border-gray-300 px-3 py-1.5 text-sm outline-none focus:border-terracotta";
 
-// What the admin does with lecturers' accounts: create, lock and unlock, set a new password. A
-// lock never deletes anything, and there is no way to delete an account.
+// Why a lecturer's account cannot be deleted, or null when it was never used: courses and the
+// Moodle courses they linked or created stay theirs, so such an account can only be locked.
+function deleteBlocker(u: AdminUser): string | null {
+  const reasons = [
+    (u.course_count ?? 0) > 0 && `${u.course_count} môn học`,
+    (u.moodle_course_count ?? 0) > 0 && `${u.moodle_course_count} môn học Moodle đã liên kết hoặc tạo`,
+  ].filter(Boolean);
+  return reasons.length > 0 ? reasons.join(", ") : null;
+}
+
+// What the admin does with lecturers' accounts: create, lock and unlock, set a new password, and
+// delete an account that was never used. A lock never deletes anything; a lecturer with courses or
+// Moodle courses can only be locked, so courses, modules and experiment data are never lost.
 export function AdminUsersPanel() {
   const { user: me } = useAuth();
   const [users, setUsers] = useState<AdminUser[] | null>(null);
@@ -75,6 +87,26 @@ export function AdminUsersPanel() {
     }
   }
 
+  async function handleDelete(user: AdminUser) {
+    const confirmed = window.confirm(
+      `Xóa vĩnh viễn tài khoản "${user.name}" (${user.email})? Tài khoản chưa có môn học nào, kể cả trên Moodle. Các phiên đăng nhập của họ bị đóng và không thể khôi phục. Tài khoản Moodle liên kết (nếu có) sẽ KHÔNG bị xóa.`,
+    );
+    if (!confirmed) return;
+
+    setBusyId(user.id);
+    setError(null);
+    setNotice(null);
+    try {
+      await deleteUser(user.id);
+      setNotice(`Đã xóa tài khoản ${user.email}.`);
+      reload();
+    } catch (err) {
+      setError(apiErrorMessage(err, "Xóa tài khoản thất bại"));
+    } finally {
+      setBusyId(null);
+    }
+  }
+
   return (
     <div className="flex flex-col gap-8">
       <CreateLecturerForm
@@ -93,7 +125,9 @@ export function AdminUsersPanel() {
         !loadError && <p className="text-sm text-gray-500">Đang tải...</p>
       ) : (
         <ul className="flex flex-col divide-y divide-gray-200">
-          {users.map((u) => (
+          {users.map((u) => {
+            const blocker = u.role === "teacher" ? deleteBlocker(u) : null;
+            return (
             <li key={u.id} className="py-4">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="min-w-0">
@@ -110,6 +144,11 @@ export function AdminUsersPanel() {
                     <span className={u.is_active ? "text-green-700" : "text-red-700"}>
                       {u.is_active ? "Đang hoạt động" : "Đã khóa"}
                     </span>
+                    {blocker && (
+                      <span className="text-gray-500">
+                        {blocker} (chỉ có thể khóa, không xóa được)
+                      </span>
+                    )}
                     {u.moodle_status && (
                       <span className={MOODLE_LABEL[u.moodle_status].color}>
                         {MOODLE_LABEL[u.moodle_status].text}
@@ -134,6 +173,20 @@ export function AdminUsersPanel() {
                   >
                     {u.is_active ? "Khóa" : "Mở khóa"}
                   </button>
+                  {u.role === "teacher" && (
+                    <button
+                      onClick={() => handleDelete(u)}
+                      disabled={busyId === u.id || blocker !== null}
+                      title={
+                        blocker
+                          ? `Giảng viên đang có ${blocker} nên không thể xóa, chỉ có thể khóa tài khoản.`
+                          : undefined
+                      }
+                      className="text-red-700 hover:underline disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      Xóa
+                    </button>
+                  )}
                 </div>
               </div>
               {resetting === u.id && (
@@ -147,7 +200,8 @@ export function AdminUsersPanel() {
                 />
               )}
             </li>
-          ))}
+            );
+          })}
           {users.length === 0 && <p className="py-4 text-sm text-gray-500">Chưa có tài khoản nào.</p>}
         </ul>
       )}

@@ -19,6 +19,7 @@ REFRESH_REJECTED = "refresh_rejected"
 MOODLE_ACCOUNT_LINKED = "moodle_account_linked"
 
 ADMIN_CREATE_USER = "admin_create_user"
+ADMIN_DELETE_USER = "admin_delete_user"
 ADMIN_DISABLE_USER = "admin_disable_user"
 ADMIN_ENABLE_USER = "admin_enable_user"
 ADMIN_RESET_PASSWORD = "admin_reset_password"
