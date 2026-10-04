@@ -1,4 +1,4 @@
-import { act, render, screen, waitFor, within } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { AxiosError, type AxiosResponse, type InternalAxiosRequestConfig } from 'axios'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
@@ -108,6 +108,18 @@ describe('CourseDetailPage - Moodle linking', () => {
       expect(api.linkMoodleCourse).toHaveBeenCalledWith('course-1', 6)
     })
     expect(await screen.findByText(/đã liên kết với moodle course id/i)).toBeInTheDocument()
+  })
+
+  it('asks for a course to be chosen instead of linking nothing', async () => {
+    vi.mocked(api.listCourses).mockResolvedValue([unlinkedCourse])
+
+    renderPage()
+    const select = await screen.findByRole('combobox', { name: /course moodle/i })
+    await screen.findByRole('option', { name: /Intro2AI/ })
+    fireEvent.submit(select.closest('form')!)
+
+    expect(await screen.findByText('Vui lòng chọn một course Moodle')).toBeInTheDocument()
+    expect(api.linkMoodleCourse).not.toHaveBeenCalled()
   })
 
   it('says what the server said when a Moodle course cannot be linked', async () => {
@@ -419,6 +431,40 @@ describe('CourseDetailPage - upload availability', () => {
     await userEvent.upload(uploadInput(), new File(['x'], 'big.pdf', { type: 'application/pdf' }))
 
     expect(await screen.findByText('Đang có tài liệu khác được xử lý')).toBeInTheDocument()
+  })
+})
+
+describe('CourseDetailPage - upload form', () => {
+  function uploadInput() {
+    return document.querySelector('input[type="file"]') as HTMLInputElement
+  }
+
+  beforeEach(() => {
+    vi.mocked(api.listCourses).mockResolvedValue([unlinkedCourse])
+  })
+
+  it('sends the picked file to the server', async () => {
+    vi.mocked(api.uploadDocument).mockResolvedValue({ id: 'doc-2', status: 'uploaded', job_id: 'job-1' })
+    const file = new File(['x'], 'lecture.pdf', { type: 'application/pdf' })
+
+    renderPage()
+    await screen.findByText('Tải tài liệu lên')
+    await userEvent.upload(uploadInput(), file)
+
+    await waitFor(() => expect(api.uploadDocument).toHaveBeenCalledWith('course-1', file))
+  })
+
+  it('says a file is too big instead of sending it', async () => {
+    const file = new File(['x'], 'lecture.pdf', { type: 'application/pdf' })
+    Object.defineProperty(file, 'size', { value: 51 * 1024 * 1024 })
+
+    renderPage()
+    await screen.findByText('Tải tài liệu lên')
+    await userEvent.upload(uploadInput(), file)
+
+    expect(await screen.findByText('File vượt quá giới hạn 50MB')).toBeInTheDocument()
+    expect(api.uploadDocument).not.toHaveBeenCalled()
+    expect(uploadInput()).toBeEnabled()
   })
 })
 
