@@ -7,18 +7,14 @@ export interface UserInfo {
   role: string
 }
 
-export async function login(email: string, password: string) {
+// A lecturer's Moodle username and password, or an admin's email and local password.
+export async function login(username: string, password: string) {
   const { data } = await api.post<{
     access_token: string
     refresh_token: string
     token_type: string
     user: UserInfo
-  }>('/auth/login', { email, password })
-  return data
-}
-
-export async function register(name: string, email: string, password: string) {
-  const { data } = await api.post<UserInfo>('/auth/register', { name, email, password })
+  }>('/auth/login', { username, password })
   return data
 }
 

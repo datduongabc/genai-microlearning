@@ -640,8 +640,8 @@ function MoodleLinkSection({ course, onLinked }: { course: Course; onLinked: () 
         <div className="rounded-[3px] border border-gray-200 p-4">
           <p className="mb-2 text-sm font-medium">Course này chưa liên kết với Moodle.</p>
           <p className="text-sm text-gray-600">
-            Bạn cần liên kết tài khoản Moodle của mình trước: nhập tên đăng nhập và mật khẩu Moodle ở mục
-            "Tài khoản Moodle" ở trên. Tài khoản Moodle do admin tạo sẵn trên Moodle.
+            Bạn cần liên kết tài khoản Moodle của mình trước: đăng xuất rồi đăng nhập lại bằng tên đăng nhập và mật
+            khẩu Moodle. Tài khoản Moodle do admin tạo sẵn trên Moodle.
           </p>
           {error && <p className="mt-2 text-sm text-red-700">{error}</p>}
         </div>

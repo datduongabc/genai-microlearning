@@ -1,7 +1,7 @@
 from app.moodle import client as moodle_client
 
 # The conftest stands in for these in every test; these tests are about the real ones.
-REAL_FIND_USERS_BY_EMAIL = moodle_client.find_users_by_email
+REAL_VERIFY_LOGIN = moodle_client.verify_login
 REAL_ENROL_AS_TEACHER = moodle_client.enrol_as_teacher
 REAL_USER_EXISTS = moodle_client.user_exists
 EDITING_TEACHER_ROLE_ID = 3  # Moodle's built-in "Teacher" (editingteacher) role
@@ -39,29 +39,6 @@ def test_enrol_as_teacher_surfaces_moodle_errors(monkeypatch):
     raise AssertionError("MoodleError should propagate to the caller")
 
 
-def test_find_users_by_email_asks_for_each_lower_cased_email_once_and_matches_exactly_without_case(monkeypatch):
-    calls = []
-    # Moodle's own search is case-insensitive but treats _ and % as wildcards: it answers with
-    # neighbours too, and only an exact (case-folded) match may count.
-    users = {
-        "lan@example.com": [{"id": 11, "email": "Lan@Example.com"}, {"id": 99, "email": "lanx@example.com"}],
-        "twin@example.com": [{"id": 12, "email": "twin@example.com"}, {"id": 13, "email": "TWIN@example.com"}],
-        "none@example.com": [],
-    }
-
-    def fake_call(wsfunction, **params):
-        calls.append((wsfunction, params))
-        return {"users": users[params["criteria"][0]["value"]], "warnings": []}
-
-    monkeypatch.setattr(moodle_client, "call", fake_call)
-
-    found = REAL_FIND_USERS_BY_EMAIL(["LAN@example.com", "twin@example.com", "none@example.com", "lan@example.com"])
-
-    assert calls == [
-        ("core_user_get_users", {"criteria": [{"key": "email", "value": email}]})
-        for email in ("lan@example.com", "twin@example.com", "none@example.com")
-    ]
-    assert found == {"lan@example.com": [11], "twin@example.com": [12, 13], "none@example.com": []}
 
 
 def test_user_exists_looks_the_id_up_and_a_user_moodle_left_out_is_gone(monkeypatch):
@@ -79,10 +56,6 @@ def test_user_exists_looks_the_id_up_and_a_user_moodle_left_out_is_gone(monkeypa
     assert calls[0] == ("core_user_get_users", {"criteria": [{"key": "id", "value": 42}]})
 
 
-def test_find_users_by_email_with_no_emails_does_not_call_moodle(monkeypatch):
-    monkeypatch.setattr(moodle_client, "call", lambda *a, **k: (_ for _ in ()).throw(AssertionError("called")))
-
-    assert REAL_FIND_USERS_BY_EMAIL([]) == {}
 
 
 def test_verify_login_sends_the_credentials_to_the_bridge_function_and_returns_the_user_id(monkeypatch):
@@ -94,11 +67,24 @@ def test_verify_login_sends_the_credentials_to_the_bridge_function_and_returns_t
 
     monkeypatch.setattr(moodle_client, "call", fake_call)
 
-    assert moodle_client.verify_login("lan.nguyen", "Aa1!secret-pass") == 55
+    assert REAL_VERIFY_LOGIN("lan.nguyen", "Aa1!secret-pass") == 55
     assert calls == [("local_lms_bridge_verify_login", {"username": "lan.nguyen", "password": "Aa1!secret-pass"})]
 
 
 def test_verify_login_answers_none_when_moodle_says_the_credentials_are_wrong(monkeypatch):
     monkeypatch.setattr(moodle_client, "call", lambda wsfunction, **params: 0)
 
-    assert moodle_client.verify_login("lan.nguyen", "wrong") is None
+    assert REAL_VERIFY_LOGIN("lan.nguyen", "wrong") is None
+
+
+def test_get_user_answers_the_lower_cased_email_and_the_full_name_and_none_for_a_user_moodle_left_out(monkeypatch):
+    users = {
+        42: [{"id": 42, "email": "Lan@Hcmut.EDU.vn", "firstname": "Nguyễn Thị", "lastname": " Lan "}],
+        43: [],
+        44: [{"id": 99, "email": "other@x.edu"}],  # Moodle answers with a neighbour: not this id
+    }
+    monkeypatch.setattr(moodle_client, "call", lambda wsfunction, **params: {"users": users[params["criteria"][0]["value"]]})
+
+    assert moodle_client.get_user(42) == {"id": 42, "email": "lan@hcmut.edu.vn", "name": "Nguyễn Thị Lan"}
+    assert moodle_client.get_user(43) is None
+    assert moodle_client.get_user(44) is None

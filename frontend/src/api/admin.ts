@@ -1,6 +1,6 @@
 import { api } from './client'
 
-export type MoodleStatus = 'linked' | 'not_found' | 'ambiguous' | 'unknown'
+export type MoodleStatus = 'linked' | 'not_linked'
 
 export interface AdminUser {
   id: string
@@ -9,7 +9,7 @@ export interface AdminUser {
   role: 'teacher' | 'admin'
   is_active: boolean
   created_at: string
-  // Chỉ có với giảng viên: có đúng một tài khoản Moodle cùng email hay không.
+  // Chỉ có với giảng viên: đã có liên kết Moodle lưu trong tài khoản (đặt ở lần đăng nhập đầu bằng Moodle) hay chưa.
   moodle_status: MoodleStatus | null
   // Chỉ có với giảng viên: số môn học họ sở hữu. Có môn học thì không xóa được tài khoản, chỉ khóa.
   course_count: number | null
@@ -37,11 +37,6 @@ export async function listUsers() {
   return data
 }
 
-export async function createLecturer(name: string, email: string, password: string) {
-  const { data } = await api.post<AdminUser>('/admin/users', { name, email, password })
-  return data
-}
-
 export async function setUserActive(userId: string, active: boolean) {
   const { data } = await api.post<AdminUser>(`/admin/users/${userId}/${active ? 'enable' : 'disable'}`)
   return data
@@ -49,10 +44,6 @@ export async function setUserActive(userId: string, active: boolean) {
 
 export async function deleteUser(userId: string) {
   await api.delete(`/admin/users/${userId}`)
-}
-
-export async function resetUserPassword(userId: string, password: string) {
-  await api.post(`/admin/users/${userId}/password`, { password })
 }
 
 export async function listFailedJobs(jobType?: FailedJobInfo['job_type']) {

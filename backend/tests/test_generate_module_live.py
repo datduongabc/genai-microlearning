@@ -28,7 +28,7 @@ from app.ingestion.embeddings import embed_text
 from app.jobs.queue import claim_next_job, execute_job_step, handle_job_error
 from app.main import app
 from app.models.models import Chunk, ComponentType, Document, DocumentStatus, JobStatus
-from tests.auth_helpers import STRONG_PASSWORD, make_account
+from tests.auth_helpers import create_and_login
 
 client = TestClient(app)
 
@@ -51,9 +51,7 @@ overflow với mảng rất lớn."""
 
 
 def _create_and_login(email: str) -> str:
-    make_account(email, name="Test")
-    response = client.post("/auth/login", json={"email": email, "password": STRONG_PASSWORD})
-    return response.json()["access_token"]
+    return create_and_login(client, email)["access_token"]
 
 
 def _seed_embedded_document(course_id: uuid.UUID) -> uuid.UUID:

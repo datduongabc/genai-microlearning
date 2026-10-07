@@ -56,7 +56,7 @@ def test_the_eleventh_login_attempt_in_a_minute_is_refused():
     emails = iter(f"ratelimit-{run}-{i}@example.com" for i in range(11))
 
     def attempt():
-        return client.post("/auth/login", json={"email": next(emails), "password": STRONG_PASSWORD})
+        return client.post("/auth/login", json={"username": next(emails), "password": STRONG_PASSWORD})
 
     codes = _codes(11, attempt)
 
@@ -67,7 +67,7 @@ def test_the_eleventh_login_attempt_in_a_minute_is_refused():
 def test_one_email_tried_over_and_over_is_slowed_by_the_address_limit_too():
     email = f"ratelimit-same-{uuid.uuid4().hex[:8]}@example.com"
 
-    codes = _codes(11, lambda: client.post("/auth/login", json={"email": email, "password": STRONG_PASSWORD}))
+    codes = _codes(11, lambda: client.post("/auth/login", json={"username": email, "password": STRONG_PASSWORD}))
 
     assert codes[:10] == [401] * 10
     assert codes[10] == 429

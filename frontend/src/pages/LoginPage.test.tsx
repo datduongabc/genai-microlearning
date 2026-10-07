@@ -27,7 +27,7 @@ function refusal(status: number, data: unknown) {
 }
 
 async function fillAndSubmit(password = 'password123') {
-  await userEvent.type(screen.getByPlaceholderText('ten@hcmut.edu.vn'), 'teacher@example.com')
+  await userEvent.type(screen.getByPlaceholderText('Tên đăng nhập Moodle'), 'lan.nguyen')
   await userEvent.type(screen.getByPlaceholderText('••••••••'), password)
   await userEvent.click(screen.getByRole('button', { name: /đăng nhập/i }))
 }
@@ -50,7 +50,7 @@ describe('LoginPage', () => {
 
     await userEvent.click(screen.getByRole('button', { name: /đăng nhập/i }))
 
-    expect(await screen.findByText(/email không hợp lệ/i)).toBeInTheDocument()
+    expect(await screen.findByText(/vui lòng nhập tên đăng nhập/i)).toBeInTheDocument()
     expect(mockLogin).not.toHaveBeenCalled()
   })
 
@@ -58,12 +58,12 @@ describe('LoginPage', () => {
     mockLogin.mockResolvedValue(TEACHER)
     renderLoginPage()
 
-    await userEvent.type(screen.getByPlaceholderText('ten@hcmut.edu.vn'), 'teacher@example.com')
+    await userEvent.type(screen.getByPlaceholderText('Tên đăng nhập Moodle'), 'lan.nguyen')
     await userEvent.type(screen.getByPlaceholderText('••••••••'), 'password123')
     await userEvent.click(screen.getByRole('button', { name: /đăng nhập/i }))
 
     await waitFor(() => {
-      expect(mockLogin).toHaveBeenCalledWith('teacher@example.com', 'password123')
+      expect(mockLogin).toHaveBeenCalledWith('lan.nguyen', 'password123')
     })
   })
 
@@ -71,7 +71,7 @@ describe('LoginPage', () => {
     mockLogin.mockRejectedValue(new Error('network down'))
     renderLoginPage()
 
-    await userEvent.type(screen.getByPlaceholderText('ten@hcmut.edu.vn'), 'teacher@example.com')
+    await userEvent.type(screen.getByPlaceholderText('Tên đăng nhập Moodle'), 'lan.nguyen')
     await userEvent.type(screen.getByPlaceholderText('••••••••'), 'password123')
     await userEvent.click(screen.getByRole('button', { name: /đăng nhập/i }))
 
@@ -79,12 +79,12 @@ describe('LoginPage', () => {
   })
 
   it('shows what the server said when it refuses the login', async () => {
-    mockLogin.mockRejectedValue(refusal(401, { detail: 'Invalid email or password' }))
+    mockLogin.mockRejectedValue(refusal(401, { detail: 'Tên đăng nhập hoặc mật khẩu không đúng.' }))
     renderLoginPage()
 
     await fillAndSubmit()
 
-    expect(await screen.findByText('Invalid email or password')).toBeInTheDocument()
+    expect(await screen.findByText('Tên đăng nhập hoặc mật khẩu không đúng.')).toBeInTheDocument()
   })
 
   it('tells the person to slow down when the server limits their attempts', async () => {
@@ -102,13 +102,13 @@ describe('LoginPage', () => {
 
     await fillAndSubmit('old-pw')
 
-    await waitFor(() => expect(mockLogin).toHaveBeenCalledWith('teacher@example.com', 'old-pw'))
+    await waitFor(() => expect(mockLogin).toHaveBeenCalledWith('lan.nguyen', 'old-pw'))
   })
 
   it('tells the password manager which field is the username and which the current password', () => {
     renderLoginPage()
 
-    expect(screen.getByPlaceholderText('ten@hcmut.edu.vn')).toHaveAttribute('autocomplete', 'username')
+    expect(screen.getByPlaceholderText('Tên đăng nhập Moodle')).toHaveAttribute('autocomplete', 'username')
     expect(screen.getByPlaceholderText('••••••••')).toHaveAttribute('autocomplete', 'current-password')
   })
 
@@ -133,21 +133,25 @@ describe('LoginPage', () => {
     expect(link).toHaveAttribute('href', 'mailto:dat.duongtandat385@gmail.com')
   })
 
-  it('links to the sign-up page for a lecturer coming for the first time', () => {
+  it('has no sign-up: lecturers log in with their Moodle account', () => {
     renderLoginPage()
 
-    expect(screen.getByRole('link', { name: 'Đăng ký' })).toHaveAttribute('href', '/register')
+    expect(screen.queryByText(/đăng ký/i)).not.toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: /đăng ký/i })).not.toBeInTheDocument()
   })
 
-  it('tells a person who has just signed up that they can sign in', () => {
-    render(
-      <MemoryRouter initialEntries={[{ pathname: '/login', state: { justRegistered: true } }]}>
-        <Routes>
-          <Route path="/login" element={<LoginPage />} />
-        </Routes>
-      </MemoryRouter>,
-    )
+  it('says Moodle is not answering when it is down, so a lecturer knows to wait', async () => {
+    mockLogin.mockRejectedValue(refusal(503, { detail: 'Moodle tạm thời không phản hồi. Vui lòng thử lại sau ít phút.' }))
+    renderLoginPage()
 
-    expect(screen.getByText(/tạo tài khoản thành công/i)).toBeInTheDocument()
+    await fillAndSubmit()
+
+    expect(await screen.findByText(/moodle tạm thời không phản hồi/i)).toBeInTheDocument()
+  })
+
+  it('tells people to use their Moodle account, and an admin the email', () => {
+    renderLoginPage()
+
+    expect(screen.getByText(/giảng viên dùng tên đăng nhập và mật khẩu moodle/i)).toBeInTheDocument()
   })
 })

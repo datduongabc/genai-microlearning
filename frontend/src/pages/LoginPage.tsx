@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { apiErrorMessage } from "../api";
 import { homeFor, useAuth } from "../auth/useAuth";
 import { loginSchema, type LoginFormValues } from "../lib/authSchemas";
@@ -11,9 +11,6 @@ const SUPPORT_EMAIL = "dat.duongtandat385@gmail.com";
 export function LoginPage() {
   const { login } = useAuth();
   const navigate = useNavigate();
-  const location = useLocation();
-  const justRegistered = (location.state as { justRegistered?: boolean } | null)
-    ?.justRegistered;
 
   const [error, setError] = useState<string | null>(null);
 
@@ -26,7 +23,7 @@ export function LoginPage() {
   async function onSubmit(values: LoginFormValues) {
     setError(null);
     try {
-      const user = await login(values.email, values.password);
+      const user = await login(values.username, values.password);
       navigate(homeFor(user.role));
     } catch (err) {
       setError(apiErrorMessage(err, "Đăng nhập thất bại"));
@@ -78,15 +75,10 @@ export function LoginPage() {
               Đăng nhập
             </div>
             <h1 className="font-serif text-2xl font-semibold">
-              Nhập Email Và Mật Khẩu
+              Nhập Tài Khoản Moodle
             </h1>
           </div>
 
-          {justRegistered && (
-            <div className="rounded border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-800">
-              Tạo tài khoản thành công, vui lòng đăng nhập.
-            </div>
-          )}
           {error && (
             <div className="rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
               {error}
@@ -95,18 +87,23 @@ export function LoginPage() {
 
           <label className="flex flex-col gap-1.5">
             <span className="text-[11px] font-semibold uppercase tracking-wide text-gray-500">
-              Email
+              Tên đăng nhập
             </span>
             <input
-              type="email"
+              type="text"
               autoComplete="username"
-              placeholder="ten@hcmut.edu.vn"
+              autoCapitalize="none"
+              spellCheck={false}
+              placeholder="Tên đăng nhập Moodle"
               className="border-0 border-b-[1.5px] border-gray-300 bg-transparent py-2.5 text-[15px] outline-none focus:border-terracotta"
-              {...register("email")}
+              {...register("username")}
             />
-            {errors.email && (
-              <span className="text-xs text-red-600">{errors.email.message}</span>
+            {errors.username && (
+              <span className="text-xs text-red-600">{errors.username.message}</span>
             )}
+            <span className="text-xs text-gray-500">
+              Giảng viên dùng tên đăng nhập và mật khẩu Moodle. Admin dùng email.
+            </span>
           </label>
 
           <label className="flex flex-col gap-1.5">
@@ -133,17 +130,8 @@ export function LoginPage() {
             {isSubmitting ? "Đang đăng nhập..." : "Đăng nhập"}
           </button>
 
-          <div className="flex items-center gap-1.5 text-sm text-gray-500">
-            <span>Chưa có tài khoản?</span>
-            <Link
-              to="/register"
-              className="font-semibold text-terracotta hover:underline"
-            >
-              Đăng ký
-            </Link>
-          </div>
-
-          {/* Mật khẩu không tự đặt lại được: người quên mật khẩu nhờ admin đặt lại. */}
+          {/* Giảng viên đăng nhập bằng tài khoản Moodle, không có đăng ký riêng ở đây: mật khẩu của họ
+              nằm ở Moodle, nên quên mật khẩu cũng nhờ admin. */}
           <a
             href={`mailto:${SUPPORT_EMAIL}`}
             className="text-sm font-semibold text-terracotta hover:underline"

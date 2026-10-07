@@ -6,7 +6,6 @@ import { AdminPage } from "./pages/AdminPage";
 import { CourseDetailPage } from "./pages/CourseDetailPage";
 import { CoursesPage } from "./pages/CoursesPage";
 import { LoginPage } from "./pages/LoginPage";
-import { RegisterPage } from "./pages/RegisterPage";
 
 // Loaded only when a module is opened: its Markdown renderer is about a fifth of the bundle,
 // and no other page needs it before the first screen can be shown.
@@ -19,7 +18,6 @@ function App() {
     <AuthProvider>
       <Routes>
         <Route path="/login" element={<LoginPage />} />
-        <Route path="/register" element={<RegisterPage />} />
         <Route element={<ProtectedRoute role="admin" />}>
           <Route path="/admin" element={<AdminPage />} />
         </Route>

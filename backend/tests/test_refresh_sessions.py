@@ -15,7 +15,7 @@ from app.config import settings
 from app.db import SessionLocal
 from app.main import app
 from app.models import RefreshToken, User
-from tests.auth_helpers import STRONG_PASSWORD, create_and_login
+from tests.auth_helpers import create_and_login, start_session
 
 client = TestClient(app)
 
@@ -69,7 +69,10 @@ def _row(token: str) -> RefreshToken:
 
 
 def _second_login(email: str) -> str:
-    return client.post("/auth/login", json={"email": email, "password": STRONG_PASSWORD}).json()["refresh_token"]
+    with SessionLocal() as db:
+        user = db.query(User).filter(User.email == email).one()
+        db.expunge(user)
+    return start_session(user)["refresh_token"]
 
 
 def test_a_refresh_token_works_once_and_its_successor_carries_on(account):

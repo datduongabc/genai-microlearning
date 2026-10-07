@@ -9,24 +9,24 @@ import httpx
 import pytest
 from fastapi.testclient import TestClient
 
+from app.auth.security import decode_token, token_user_id
 from app.db import SessionLocal
 from app.main import app
 from app.models import ComponentType, Course, Document, Module, ModuleComponent, User
 from app.moodle import client as moodle_client
-from tests.auth_helpers import create_and_login, make_account
+from tests.auth_helpers import create_and_login, link_moodle_account, make_account
 
 client = TestClient(app)
 
 
 @pytest.fixture
 def moodle(monkeypatch):
-    """The Moodle accounts whose username and password are right and a record of what was written."""
+    """A record of what was written to Moodle."""
     # A Moodle course id is unique in the table and the test database outlives the run.
     created_id = 1_000 + uuid.uuid4().int % 10**9
     # Likewise the id of the Moodle user: two lecturers cannot link one.
-    state = {"logins": {}, "calls": [], "course_id": created_id, "user_id": 10_000 + uuid.uuid4().int % 10**9}
+    state = {"calls": [], "course_id": created_id, "user_id": 10_000 + uuid.uuid4().int % 10**9}
 
-    monkeypatch.setattr(moodle_client, "verify_login", lambda username, password: state["logins"].get((username, password)))
     monkeypatch.setattr(
         moodle_client, "create_course", lambda name: state["calls"].append(("create_course", name)) or created_id
     )
@@ -53,16 +53,14 @@ def _course(headers):
 
 
 def _link_account(moodle, headers):
-    """The lecturer links the Moodle account `moodle_user_id` by entering its username and password."""
-    moodle["logins"][("lan.nguyen", "Moodle-pass-1")] = moodle["user_id"]
-    return client.post(
-        "/moodle/account/link", json={"username": "lan.nguyen", "password": "Moodle-pass-1"}, headers=headers
-    )
+    """The lecturer has the Moodle link their first Moodle login stores (test_moodle_login.py tests that)."""
+    user_id = token_user_id(decode_token(headers["Authorization"].split()[1]))
+    link_moodle_account(user_id, moodle["user_id"])
 
 
 def test_the_course_teacher_is_the_moodle_account_the_lecturer_linked(moodle):
     _, headers = _lecturer()
-    assert _link_account(moodle, headers).status_code == 200
+    _link_account(moodle, headers)
     course_id = _course(headers)
 
     response = client.post(f"/courses/{course_id}/create-moodle", headers=headers)
@@ -78,7 +76,7 @@ def test_a_lecturer_who_has_not_linked_a_moodle_account_is_refused_and_nothing_i
     response = client.post(f"/courses/{course_id}/create-moodle", headers=headers)
 
     assert response.status_code == 422
-    assert "tên đăng nhập và mật khẩu Moodle" in response.json()["detail"]
+    assert "đăng nhập lại bằng tài khoản Moodle" in response.json()["detail"]
     assert moodle["calls"] == []  # no Moodle course made, so none is left behind
     courses = {c["id"]: c for c in client.get("/courses", headers=headers).json()}
     assert courses[course_id]["moodle_course_id"] is None
@@ -115,7 +113,7 @@ def test_publishing_needs_the_linked_account_and_enrols_it_before_writing_anythi
 
     refused = client.post(f"/modules/{module_id}/publish-to-moodle", json={"section_num": 0}, headers=headers)
 
-    assert refused.status_code == 422 and "tên đăng nhập và mật khẩu Moodle" in refused.json()["detail"]
+    assert refused.status_code == 422 and "đăng nhập lại bằng tài khoản Moodle" in refused.json()["detail"]
     assert moodle["calls"] == []
 
     _link_account(moodle, headers)

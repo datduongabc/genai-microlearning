@@ -1,6 +1,8 @@
 """The admin's endpoints: lecturer accounts and the failed jobs of every lecturer.
 
-An account is deleted only while it was never used: it owns no course and has claimed no Moodle
+Lecturer accounts come from Moodle (the lecturer's first login, app/auth/moodle_login.py), and their
+passwords live in Moodle, so the admin neither creates a lecturer nor sets a password: they see the
+lecturers, lock and unlock them, and delete one that was never used. An account is deleted only while it was never used: it owns no course and has claimed no Moodle
 course. One that has is locked instead, so courses, modules and experiment data are never lost.
 
 Every route needs an admin (require_admin answers anyone else 404, like a missing thing). What an
@@ -8,9 +10,8 @@ admin reaches in the database is narrower still (migration 0007): only failed jo
 document file name and course name beside them, never what a lecturer wrote or uploaded."""
 
 import uuid
-from concurrent.futures import ThreadPoolExecutor, wait
 
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
 from sqlalchemy import delete, func, select, text
 from sqlalchemy.exc import IntegrityError
@@ -18,56 +19,25 @@ from sqlalchemy.orm import Session
 
 from app.api.deps import require_admin
 from app.auth import audit, sessions
-from app.auth.accounts import AccountError, AccountRequest, create_account
 from app.auth.audit import log_admin_event
-from app.auth.password_policy import check_password
 from app.auth.rate_limit import limiter, user_or_address
-from app.auth.security import hash_password
 from app.db import get_db
 from app.jobs.queue import retry_failed_job
 from app.models import JobType, MoodleCourseClaim, RefreshToken, User, UserRole
-from app.moodle import client as moodle_client
-from app.moodle.errors import MOODLE_FAILURES
 
 router = APIRouter(prefix="/admin", tags=["admin"], dependencies=[Depends(require_admin)])
 
 MAX_FAILED_JOBS = 200
-MOODLE_LOOKUP_WORKERS = 8
-MOODLE_LOOKUP_SECONDS = 10.0
-
-
-class SetPasswordRequest(BaseModel):
-    password: str = Field(max_length=1024)
 
 
 class RetryJobsRequest(BaseModel):
     job_ids: list[uuid.UUID] = Field(min_length=1, max_length=MAX_FAILED_JOBS)
 
 
-def _moodle_status(email: str) -> str:
-    count = len(moodle_client.find_users_by_email([email])[email.strip().lower()])
-    return "not_found" if count == 0 else "linked" if count == 1 else "ambiguous"
-
-
 def _moodle_statuses(users: list[User]) -> dict[uuid.UUID, str]:
-    """Per lecturer: "linked" (exactly one Moodle account with their email), "not_found",
-    "ambiguous" (several), or "unknown" when Moodle cannot be reached or does not answer in time.
-    The lookups run side by side and the whole list waits at most MOODLE_LOOKUP_SECONDS."""
-    lecturers = [u for u in users if u.role == UserRole.teacher]
-    if not lecturers:
-        return {}
-    pool = ThreadPoolExecutor(max_workers=min(MOODLE_LOOKUP_WORKERS, len(lecturers)))
-    lookups = {u.id: pool.submit(_moodle_status, u.email) for u in lecturers}
-    done, _ = wait(lookups.values(), timeout=MOODLE_LOOKUP_SECONDS)
-    # The ones still running finish on their own (Moodle's own timeout); nobody waits for them.
-    pool.shutdown(wait=False, cancel_futures=True)
-    found = {}
-    for user_id, lookup in lookups.items():
-        error = lookup.exception() if lookup in done else None
-        if error is not None and not isinstance(error, MOODLE_FAILURES):
-            raise error
-        found[user_id] = "unknown" if lookup not in done or error is not None else lookup.result()
-    return found
+    """Per lecturer: "linked" when they hold a stored Moodle link (users.moodle_user_id, set at their
+    first Moodle login), else "not_linked". Read from the database, so it needs no call to Moodle."""
+    return {u.id: "linked" if u.moodle_user_id is not None else "not_linked" for u in users if u.role == UserRole.teacher}
 
 
 def _course_counts(db: Session) -> dict[uuid.UUID, int]:
@@ -115,22 +85,6 @@ def list_users(db: Session = Depends(get_db)):
         if u.role == UserRole.teacher else _user_out(u, moodle.get(u.id))
         for u in users
     ]
-
-
-@router.post("/users", status_code=status.HTTP_201_CREATED)
-@limiter.limit("30/minute", key_func=user_or_address)
-def create_lecturer(
-    request: Request, payload: AccountRequest, db: Session = Depends(get_db),
-    admin: User = Depends(require_admin),
-):
-    try:
-        user = create_account(
-            db, email=payload.email, name=payload.name, password=payload.password, role=UserRole.teacher
-        )
-    except AccountError as error:
-        raise HTTPException(status_code=error.status_code, detail=error.detail) from error
-    log_admin_event(audit.ADMIN_CREATE_USER, request, actor_id=admin.id, target_user_id=user.id)
-    return _user_out(user, course_count=0, moodle_course_count=0)
 
 
 def _set_active(
@@ -220,24 +174,6 @@ def delete_lecturer(
         audit.ADMIN_DELETE_USER, request, actor_id=admin.id, target_user_id=user_id, detail={"email": email}
     )
     return {"status": "deleted"}
-
-
-@router.post("/users/{user_id}/password")
-@limiter.limit("30/minute", key_func=user_or_address)
-def reset_password(
-    request: Request, user_id: uuid.UUID, payload: SetPasswordRequest, db: Session = Depends(get_db),
-    admin: User = Depends(require_admin),
-):
-    user = _target(db, user_id)
-    weakness = check_password(payload.password, email=user.email, name=user.name)
-    if weakness is not None:
-        raise HTTPException(status_code=422, detail=weakness)
-    user.hashed_password = hash_password(payload.password)
-    # A new password ends the old logins; the password itself is never logged.
-    sessions.revoke_all(db, user.id)
-    db.commit()
-    log_admin_event(audit.ADMIN_RESET_PASSWORD, request, actor_id=admin.id, target_user_id=user.id)
-    return {"status": "ok"}
 
 
 @router.get("/jobs/failed")

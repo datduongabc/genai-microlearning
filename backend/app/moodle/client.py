@@ -90,29 +90,20 @@ _SITE_COURSE_ID = 1
 _EDITING_TEACHER_ROLE_ID = 3
 
 
-def find_users_by_email(emails: list[str]) -> dict[str, list[int]]:
-    """The Moodle user ids behind each email, compared case-insensitively. Keys are the emails
-    in lower case; an email nobody has maps to []. Moodle can hold several accounts with one
-    email, so what comes back is a list."""
-    wanted = list(dict.fromkeys(e.strip().lower() for e in emails))
-    found: dict[str, list[int]] = {email: [] for email in wanted}
-    if not wanted:
-        return found
-    for email in wanted:
-        # core_user_get_users matches the email without regard to case (core_user_get_users_by_field
-        # compares exactly, so it misses an account Moodle stores as "Lan@School.edu"). It treats _
-        # and % as wildcards, hence the exact comparison below.
-        result = call("core_user_get_users", criteria=[{"key": "email", "value": email}])
-        for user in result.get("users", []):
-            if str(user.get("email", "")).strip().lower() == email:
-                found[email].append(int(user["id"]))
-    return found
+def get_user(user_id: int) -> dict[str, Any] | None:
+    """The Moodle user with this id as {"id", "email", "name"}, or None when Moodle has none
+    (core_user_get_users leaves deleted users out)."""
+    result = call("core_user_get_users", criteria=[{"key": "id", "value": user_id}])
+    for user in result.get("users", []):
+        if int(user["id"]) == user_id:
+            name = " ".join(f"{user.get('firstname', '')} {user.get('lastname', '')}".split())
+            return {"id": user_id, "email": str(user.get("email", "")).strip().lower(), "name": name}
+    return None
 
 
 def user_exists(user_id: int) -> bool:
-    """Whether Moodle still has this user; core_user_get_users leaves deleted ones out."""
-    result = call("core_user_get_users", criteria=[{"key": "id", "value": user_id}])
-    return any(int(user["id"]) == user_id for user in result.get("users", []))
+    """Whether Moodle still has this user."""
+    return get_user(user_id) is not None
 
 
 def verify_login(username: str, password: str) -> int | None:

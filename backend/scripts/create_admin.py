@@ -5,7 +5,7 @@ việc này: admin chỉ được tạo từ lệnh này, trên máy chủ.
 
 Mật khẩu được hỏi tại chỗ (không hiện trên màn hình). Chạy không có terminal thì đọc biến môi
 trường ADMIN_PASSWORD. Mật khẩu theo đúng chính sách của mọi tài khoản (app/auth/password_policy.py).
-Từ tài khoản admin này, các giảng viên được tạo trên trang Quản trị.
+Giảng viên không cần tạo: họ đăng nhập bằng tài khoản Moodle, lần đầu thì tài khoản của họ trong ứng dụng được tạo.
 """
 
 import argparse

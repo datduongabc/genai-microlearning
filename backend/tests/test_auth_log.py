@@ -9,7 +9,7 @@ from fastapi.testclient import TestClient
 
 from app.db import SessionLocal
 from app.main import app
-from app.models import RefreshToken, User
+from app.models import RefreshToken, User, UserRole
 from tests.auth_helpers import STRONG_PASSWORD, make_account
 
 client = TestClient(app)
@@ -30,11 +30,12 @@ def email():
 
 
 def _sign_up(address: str, password: str = STRONG_PASSWORD):
-    return make_account(address, password, name="Audit User")
+    # An admin, whose password is local: a lecturer's is checked by Moodle (test_moodle_login.py).
+    return make_account(address, password, name="Audit User", role=UserRole.admin)
 
 
 def _log_in(address: str, password: str = STRONG_PASSWORD, **kwargs):
-    return client.post("/auth/login", json={"email": address, "password": password}, **kwargs)
+    return client.post("/auth/login", json={"username": address, "password": password}, **kwargs)
 
 
 def _audit_lines(caplog) -> list[str]:
@@ -62,7 +63,7 @@ def test_a_failed_login_is_logged_with_why_but_the_client_is_not_told(email, cap
     assert wrong.json() == unknown.json()
     lines = _audit_lines(caplog)
     assert any("login_failed" in line and email in line and "wrong_password" in line for line in lines)
-    assert any("login_failed" in line and stranger in line and "unknown_email" in line for line in lines)
+    assert any("login_failed" in line and stranger in line and "moodle_credentials" in line for line in lines)
 
 
 def test_logout_and_a_refused_refresh_are_logged(email, caplog):

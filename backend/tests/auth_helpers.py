@@ -1,10 +1,12 @@
-"""Making accounts and logging in through the real HTTP API, for tests that need a user.
+"""Making accounts and sessions, for tests that need a user.
 
-Accounts are made by a lecturer signing up, an admin, or the create-admin command. A test
-inserts the row itself, since tests use example.com addresses all over and create_account takes
-only edu ones (that rule, and the rest of create_account, has tests of its own)."""
+A lecturer's account is made from Moodle at their first login (test_moodle_login.py), and an admin's
+by the create-admin command. A test inserts the row itself, since tests use example.com addresses all
+over, and gets a session the way a login does without going through it: lecturers log in through
+Moodle, which a test replaces only where the login is what is tested."""
 
-from app.auth.security import hash_password
+from app.auth import sessions
+from app.auth.security import create_access_token, hash_password
 from app.db import SessionLocal
 from app.models import User, UserRole
 
@@ -23,17 +25,34 @@ def make_account(
 
 
 def link_moodle_account(user_id, moodle_user_id: int = 4242) -> None:
-    """Stores the lecturer's Moodle link, as their Yes in the pop-up would (POST /moodle/account/link),
-    for tests that are not about linking it."""
+    """Stores the lecturer's Moodle link, as their first Moodle login would, for tests that are
+    not about linking it."""
     with SessionLocal() as db:
         db.get(User, user_id).moodle_user_id = moodle_user_id
         db.commit()
 
 
+def start_session(user: User) -> dict:
+    """What a successful login returns (access_token, refresh_token, user), for an existing account."""
+    with SessionLocal() as db:
+        refresh_token = sessions.start_session(db, user.id)
+        db.commit()
+    return {
+        "access_token": create_access_token(subject=user.id),
+        "refresh_token": refresh_token,
+        "token_type": "bearer",
+        "user": {"id": str(user.id), "email": user.email, "name": user.name, "role": user.role.value},
+    }
+
+
 def create_and_login(client, email: str, password: str = STRONG_PASSWORD, role: UserRole = UserRole.teacher) -> dict:
-    """Returns the login response body (access_token, refresh_token, user)."""
-    make_account(email, password, role=role)
-    return client.post("/auth/login", json={"email": email, "password": password}).json()
+    """Makes the account and returns the login response body (access_token, refresh_token, user).
+    An admin logs in for real, with the local password; a lecturer is given the session a Moodle
+    login would."""
+    user = make_account(email, password, role=role)
+    if role == UserRole.admin:
+        return client.post("/auth/login", json={"username": email, "password": password}).json()
+    return start_session(user)
 
 
 def admin_headers(email: str | None = None) -> dict:

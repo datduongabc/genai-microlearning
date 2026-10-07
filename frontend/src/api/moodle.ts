@@ -25,30 +25,20 @@ export async function getMoodleAccount() {
   return data
 }
 
-// Raised on window when the lecturer's Moodle account may have changed: they linked it, or the
-// server refused a Moodle action (422) because the link must be made again. Whatever shows the
-// account (the "Tài khoản Moodle" section) asks the server again.
+// Raised on window when the lecturer's Moodle account may have changed: the server refused a Moodle
+// action (422) because the link is gone and must be made again (by logging in with Moodle again).
+// Whatever shows the account (the "Tài khoản Moodle" section) asks the server again.
 export const MOODLE_ACCOUNT_CHANGED_EVENT = 'moodle-account-changed'
-
-function accountChanged() {
-  window.dispatchEvent(new Event(MOODLE_ACCOUNT_CHANGED_EVENT))
-}
 
 async function noticingRelink<T>(request: Promise<T>): Promise<T> {
   try {
     return await request
   } catch (err) {
-    if (axios.isAxiosError(err) && err.response?.status === 422) accountChanged()
+    if (axios.isAxiosError(err) && err.response?.status === 422) {
+      window.dispatchEvent(new Event(MOODLE_ACCOUNT_CHANGED_EVENT))
+    }
     throw err
   }
-}
-
-// Links the Moodle account with this username and password: the server asks Moodle whether they
-// are right (422 when not) and uses the password for that one check only.
-export async function linkMoodleAccount(username: string, password: string) {
-  const { data } = await api.post<{ email: string; status: 'linked' }>('/moodle/account/link', { username, password })
-  accountChanged()
-  return data
 }
 
 export async function linkMoodleCourse(courseId: string, moodleCourseId: number) {
