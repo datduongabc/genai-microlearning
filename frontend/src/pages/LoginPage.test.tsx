@@ -133,10 +133,21 @@ describe('LoginPage', () => {
     expect(link).toHaveAttribute('href', 'mailto:dat.duongtandat385@gmail.com')
   })
 
-  it('has no sign-up: accounts are made by an admin', () => {
+  it('links to the sign-up page for a lecturer coming for the first time', () => {
     renderLoginPage()
 
-    expect(screen.queryByText(/đăng ký/i)).not.toBeInTheDocument()
-    expect(screen.queryByRole('link', { name: /đăng ký/i })).not.toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Đăng ký' })).toHaveAttribute('href', '/register')
+  })
+
+  it('tells a person who has just signed up that they can sign in', () => {
+    render(
+      <MemoryRouter initialEntries={[{ pathname: '/login', state: { justRegistered: true } }]}>
+        <Routes>
+          <Route path="/login" element={<LoginPage />} />
+        </Routes>
+      </MemoryRouter>,
+    )
+
+    expect(screen.getByText(/tạo tài khoản thành công/i)).toBeInTheDocument()
   })
 })

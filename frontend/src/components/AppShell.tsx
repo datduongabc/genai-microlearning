@@ -1,7 +1,6 @@
 import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { homeFor, useAuth } from "../auth/useAuth";
-import { MoodleAccountPrompt } from "./MoodleAccountPrompt";
 
 export function AppShell({
   title,
@@ -39,7 +38,6 @@ export function AppShell({
         <h1 className="mb-8 font-serif text-2xl font-semibold">{title}</h1>
         {children}
       </main>
-      {user?.role === "teacher" && <MoodleAccountPrompt />}
     </div>
   );
 }

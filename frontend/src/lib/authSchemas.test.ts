@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { createLecturerSchema, loginSchema, resetPasswordSchema } from './authSchemas'
+import { createLecturerSchema, linkMoodleSchema, loginSchema, registerSchema, resetPasswordSchema } from './authSchemas'
 
 describe('loginSchema', () => {
   it('accepts a valid email and password', () => {
@@ -96,5 +96,35 @@ describe('resetPasswordSchema', () => {
   it('applies the same password rules', () => {
     expect(resetPasswordSchema.safeParse({ password: 'a long enough phrase' }).success).toBe(true)
     expect(resetPasswordSchema.safeParse({ password: 'short' }).success).toBe(false)
+  })
+})
+
+describe('registerSchema', () => {
+  const base = { name: 'Nguyen Van A', email: 'a@b.edu', password: 'password123', confirmPassword: 'password123' }
+  const parse = (changes: object) => registerSchema.safeParse({ ...base, ...changes })
+  const paths = (result: ReturnType<typeof parse>) => (result.success ? [] : result.error.issues.map((i) => i.path[0]))
+
+  it('accepts what an admin could create, with the password confirmed', () => {
+    expect(parse({}).success).toBe(true)
+  })
+
+  it('follows the same rules as the admin form for the email, the name and the password', () => {
+    expect(paths(parse({ email: 'a@gmail.com' }))).toEqual(['email'])
+    expect(paths(parse({ email: 'not-an-email' }))).toEqual(['email'])
+    expect(paths(parse({ name: '  ' }))).toEqual(['name'])
+    expect(paths(parse({ password: 'short', confirmPassword: 'short' }))).toEqual(['password'])
+    expect(paths(parse({ password: 'a'.repeat(73), confirmPassword: 'a'.repeat(73) }))).toEqual(['password'])
+  })
+
+  it('rejects a confirmation that differs', () => {
+    expect(paths(parse({ confirmPassword: 'password124' }))).toEqual(['confirmPassword'])
+  })
+})
+
+describe('linkMoodleSchema', () => {
+  it('needs both a username and a password, and no rule beyond that: Moodle decides', () => {
+    expect(linkMoodleSchema.safeParse({ username: 'lan.nguyen', password: 'x' }).success).toBe(true)
+    expect(linkMoodleSchema.safeParse({ username: '  ', password: 'x' }).success).toBe(false)
+    expect(linkMoodleSchema.safeParse({ username: 'lan', password: '' }).success).toBe(false)
   })
 })

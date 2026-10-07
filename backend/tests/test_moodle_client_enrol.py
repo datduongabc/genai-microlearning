@@ -85,22 +85,20 @@ def test_find_users_by_email_with_no_emails_does_not_call_moodle(monkeypatch):
     assert REAL_FIND_USERS_BY_EMAIL([]) == {}
 
 
-def test_create_user_sends_the_email_as_username_and_returns_the_new_id(monkeypatch):
+def test_verify_login_sends_the_credentials_to_the_bridge_function_and_returns_the_user_id(monkeypatch):
     calls = []
 
     def fake_call(wsfunction, **params):
         calls.append((wsfunction, params))
-        return [{"id": 55, "username": "lan@example.com"}]
+        return 55
 
     monkeypatch.setattr(moodle_client, "call", fake_call)
 
-    new_id = moodle_client.create_user("lan@example.com", "Lan", "Nguyen", "Aa1!secret-pass")
+    assert moodle_client.verify_login("lan.nguyen", "Aa1!secret-pass") == 55
+    assert calls == [("local_lms_bridge_verify_login", {"username": "lan.nguyen", "password": "Aa1!secret-pass"})]
 
-    assert new_id == 55
-    assert calls == [(
-        "core_user_create_users",
-        {"users": [{
-            "username": "lan@example.com", "password": "Aa1!secret-pass", "firstname": "Lan",
-            "lastname": "Nguyen", "email": "lan@example.com", "auth": "manual",
-        }]},
-    )]
+
+def test_verify_login_answers_none_when_moodle_says_the_credentials_are_wrong(monkeypatch):
+    monkeypatch.setattr(moodle_client, "call", lambda wsfunction, **params: 0)
+
+    assert moodle_client.verify_login("lan.nguyen", "wrong") is None

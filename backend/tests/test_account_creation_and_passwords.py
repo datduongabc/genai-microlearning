@@ -1,6 +1,6 @@
-"""Accounts are made by an admin, never by the person: which passwords are accepted, what extreme
-input does, that simultaneous creations with one email make one account and never a server error,
-and that the public sign-up is gone."""
+"""Accounts an admin creates: which passwords are accepted, what extreme input does, and that
+simultaneous creations with one email make one account and never a server error. Lecturers signing
+themselves up go through the same rules (test_self_sign_up.py)."""
 
 import concurrent.futures
 import uuid
@@ -53,14 +53,6 @@ def _register(email: str | None = None, password: str = STRONG_PASSWORD, name: s
 
 def _login(email: str, password: str):
     return client.post("/auth/login", json={"email": email, "password": password})
-
-
-def test_there_is_no_public_sign_up():
-    response = client.post(
-        "/auth/register", json={"email": _email(), "name": "Test User", "password": STRONG_PASSWORD}
-    )
-
-    assert response.status_code in (404, 405)
 
 
 def test_a_strong_password_creates_an_account_that_can_log_in():

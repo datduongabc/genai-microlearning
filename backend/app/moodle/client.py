@@ -115,18 +115,13 @@ def user_exists(user_id: int) -> bool:
     return any(int(user["id"]) == user_id for user in result.get("users", []))
 
 
-def create_user(email: str, firstname: str, lastname: str, password: str) -> int:
-    """Creates a Moodle user and returns its id. The email (lower case) doubles as the username,
-    which Moodle accepts and which is unique where the email is. Moodle refuses an email that
-    another account already has, so callers look the email up first (find_users_by_email)."""
-    result = call(
-        "core_user_create_users",
-        users=[{
-            "username": email, "password": password, "firstname": firstname, "lastname": lastname,
-            "email": email, "auth": "manual",
-        }],
-    )
-    return int(result[0]["id"])
+def verify_login(username: str, password: str) -> int | None:
+    """The Moodle user id when this username and password are right, None when they are not.
+    Asks local_lms_bridge_verify_login, which only checks the password the way Moodle's own login
+    form does (so Moodle's lockout counts a wrong attempt) and changes nothing about the user.
+    The password is sent once and not kept or logged anywhere here."""
+    user_id = int(call("local_lms_bridge_verify_login", username=username, password=password))
+    return user_id or None
 
 
 def enrol_as_teacher(course_id: int, user_id: int) -> None:
@@ -136,8 +131,9 @@ def enrol_as_teacher(course_id: int, user_id: int) -> None:
     core_course_create_courses web service does not, and the dashboard
     (/my/) lists only courses the logged-in user is enrolled in -- so a
     course created here would otherwise exist yet never show up for the
-    teacher. `user_id` is the lecturer's own Moodle account (found by email,
-    see app/moodle/accounts.py), not the account that owns the web service token.
+    teacher. `user_id` is the lecturer's own Moodle account (the one they linked with their
+    Moodle username and password, see app/api/moodle_account.py), not the account that owns the
+    web service token.
     """
     call(
         "enrol_manual_enrol_users",

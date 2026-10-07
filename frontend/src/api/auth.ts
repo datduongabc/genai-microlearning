@@ -17,6 +17,11 @@ export async function login(email: string, password: string) {
   return data
 }
 
+export async function register(name: string, email: string, password: string) {
+  const { data } = await api.post<UserInfo>('/auth/register', { name, email, password })
+  return data
+}
+
 export async function logout(refreshToken: string) {
   // Best-effort -- nếu API lỗi thì vẫn xóa auth local ở AuthContext.logout(),
   // không chặn người dùng đăng xuất được vì 1 request mạng thất bại.

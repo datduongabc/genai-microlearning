@@ -5,11 +5,12 @@ from pydantic import BaseModel, EmailStr, Field, field_validator
 from sqlalchemy.orm import Session
 
 from app.auth import audit, sessions
+from app.auth.accounts import AccountError, AccountRequest, create_account
 from app.auth.audit import log_auth_event
 from app.auth.rate_limit import limiter
 from app.auth.security import create_access_token, hash_password, verify_password
 from app.db import get_db
-from app.models import User
+from app.models import User, UserRole
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -55,6 +56,25 @@ ACCOUNT_DISABLED = "Tài khoản đã bị khóa. Hãy liên hệ admin để đ
 # Dummy hash so a login attempt against a nonexistent email takes the same
 # time as one against a real email — avoids leaking which emails are registered.
 DUMMY_HASH = hash_password(uuid4().hex)
+
+
+@router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
+@limiter.limit("10/minute")
+def register(request: Request, payload: AccountRequest, db: Session = Depends(get_db)):
+    """A lecturer signs themselves up for the first time. The same rules as when an admin creates
+    the account (edu email, password policy), and it works at once: no approval. Only a lecturer
+    can be made here, whatever the request says."""
+    try:
+        user = create_account(
+            db, email=payload.email, name=payload.name, password=payload.password, role=UserRole.teacher
+        )
+    except AccountError as error:
+        log_auth_event(
+            audit.REGISTER_REJECTED, request, email=payload.email.strip().lower(), detail={"reason": error.reason}
+        )
+        raise HTTPException(status_code=error.status_code, detail=error.detail) from error
+    log_auth_event(audit.REGISTER, request, user_id=user.id, email=user.email)
+    return UserResponse(id=str(user.id), email=user.email, name=user.name, role=user.role)
 
 
 @router.post("/login", response_model=Token)

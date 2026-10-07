@@ -12,11 +12,14 @@ from fastapi import Request
 
 logger = logging.getLogger("app.audit")
 
+REGISTER = "register"
+REGISTER_REJECTED = "register_rejected"
 LOGIN_SUCCESS = "login_success"
 LOGIN_FAILED = "login_failed"
 LOGOUT = "logout"
 REFRESH_REJECTED = "refresh_rejected"
 MOODLE_ACCOUNT_LINKED = "moodle_account_linked"
+MOODLE_ACCOUNT_LINK_REFUSED = "moodle_account_link_refused"
 
 ADMIN_CREATE_USER = "admin_create_user"
 ADMIN_DELETE_USER = "admin_delete_user"

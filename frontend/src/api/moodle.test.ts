@@ -3,7 +3,6 @@ import { afterEach, expect, it, vi } from 'vitest'
 import { api } from './client'
 import {
   createMoodleCourseFor,
-  dismissMoodlePrompt,
   linkMoodleAccount,
   linkMoodleCourse,
   MOODLE_ACCOUNT_CHANGED_EVENT,
@@ -49,14 +48,23 @@ it('other failures and successes of those calls leave the account alone', async 
   stop()
 })
 
-it('linking the account says it changed, and "Không" is sent to the server', async () => {
-  const post = vi.spyOn(api, 'post').mockResolvedValue({ data: {} })
+it('linking the account sends the username and password once and says the account changed', async () => {
+  const post = vi.spyOn(api, 'post').mockResolvedValue({ data: { email: 'lan@x.edu', status: 'linked' } })
   const { heard, stop } = listen()
 
-  await linkMoodleAccount()
-  await dismissMoodlePrompt()
+  await linkMoodleAccount('lan.nguyen', 'Moodle-pass-1')
 
+  expect(post).toHaveBeenCalledExactlyOnceWith('/moodle/account/link', { username: 'lan.nguyen', password: 'Moodle-pass-1' })
   expect(heard).toHaveBeenCalledOnce()
-  expect(post).toHaveBeenLastCalledWith('/moodle/account/prompt/dismiss')
+  stop()
+})
+
+it('a link the server refuses (wrong credentials) reaches the caller and changes nothing', async () => {
+  vi.spyOn(api, 'post').mockRejectedValue(failure(422))
+  const { heard, stop } = listen()
+
+  await expect(linkMoodleAccount('lan.nguyen', 'wrong')).rejects.toBeInstanceOf(AxiosError)
+
+  expect(heard).not.toHaveBeenCalled()
   stop()
 })

@@ -18,12 +18,10 @@ export async function listMoodleCourses() {
   return data
 }
 
-export type MoodleAccountStatus = 'not_linked' | 'linked' | 'ambiguous'
+export type MoodleAccountStatus = 'not_linked' | 'linked'
 
-// `prompt`: whether to show the pop-up that recommends linking. The server answers true only
-// once per lecturer, until they answer it.
 export async function getMoodleAccount() {
-  const { data } = await api.get<{ email: string; status: MoodleAccountStatus; prompt: boolean }>('/moodle/account')
+  const { data } = await api.get<{ email: string; status: MoodleAccountStatus }>('/moodle/account')
   return data
 }
 
@@ -45,16 +43,12 @@ async function noticingRelink<T>(request: Promise<T>): Promise<T> {
   }
 }
 
-// Links the Moodle user that has the lecturer's email, or creates it when there is none.
-export async function linkMoodleAccount() {
-  const { data } = await api.post<{ email: string; status: 'linked'; created: boolean }>('/moodle/account/link')
+// Links the Moodle account with this username and password: the server asks Moodle whether they
+// are right (422 when not) and uses the password for that one check only.
+export async function linkMoodleAccount(username: string, password: string) {
+  const { data } = await api.post<{ email: string; status: 'linked' }>('/moodle/account/link', { username, password })
   accountChanged()
   return data
-}
-
-// The pop-up's "Không": the server remembers it, and the pop-up is not shown again.
-export async function dismissMoodlePrompt() {
-  await api.post('/moodle/account/prompt/dismiss')
 }
 
 export async function linkMoodleCourse(courseId: string, moodleCourseId: number) {

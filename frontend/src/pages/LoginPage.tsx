@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { apiErrorMessage } from "../api";
 import { homeFor, useAuth } from "../auth/useAuth";
 import { loginSchema, type LoginFormValues } from "../lib/authSchemas";
@@ -11,6 +11,9 @@ const SUPPORT_EMAIL = "dat.duongtandat385@gmail.com";
 export function LoginPage() {
   const { login } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const justRegistered = (location.state as { justRegistered?: boolean } | null)
+    ?.justRegistered;
 
   const [error, setError] = useState<string | null>(null);
 
@@ -79,6 +82,11 @@ export function LoginPage() {
             </h1>
           </div>
 
+          {justRegistered && (
+            <div className="rounded border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-800">
+              Tạo tài khoản thành công, vui lòng đăng nhập.
+            </div>
+          )}
           {error && (
             <div className="rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
               {error}
@@ -125,7 +133,17 @@ export function LoginPage() {
             {isSubmitting ? "Đang đăng nhập..." : "Đăng nhập"}
           </button>
 
-          {/* Không có đăng ký công khai: tài khoản do admin tạo, nên quên mật khẩu cũng nhờ admin. */}
+          <div className="flex items-center gap-1.5 text-sm text-gray-500">
+            <span>Chưa có tài khoản?</span>
+            <Link
+              to="/register"
+              className="font-semibold text-terracotta hover:underline"
+            >
+              Đăng ký
+            </Link>
+          </div>
+
+          {/* Mật khẩu không tự đặt lại được: người quên mật khẩu nhờ admin đặt lại. */}
           <a
             href={`mailto:${SUPPORT_EMAIL}`}
             className="text-sm font-semibold text-terracotta hover:underline"

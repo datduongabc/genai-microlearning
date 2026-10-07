@@ -236,7 +236,7 @@ def test_a_lecturer_cannot_use_the_admin_pages(world, layers):
         assert created.status_code == 404
 
 
-PUBLIC = {"/health", "/auth/login", "/auth/refresh", "/auth/logout"}
+PUBLIC = {"/health", "/auth/register", "/auth/login", "/auth/refresh", "/auth/logout"}
 RESOURCE_QUERY = {"course_id", "document_id"}
 BODY_METHODS = {"POST", "PATCH", "PUT"}
 

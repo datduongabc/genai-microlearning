@@ -1,6 +1,6 @@
 """Making accounts and logging in through the real HTTP API, for tests that need a user.
 
-There is no public sign-up: accounts are made by an admin (or the create-admin command). A test
+Accounts are made by a lecturer signing up, an admin, or the create-admin command. A test
 inserts the row itself, since tests use example.com addresses all over and create_account takes
 only edu ones (that rule, and the rest of create_account, has tests of its own)."""
 

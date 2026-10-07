@@ -1,15 +1,17 @@
-"""The lecturer's own Moodle account, linked by their choice (the pop-up's "Yes") and remembered:
-the Moodle user with their email is linked, one is created when there is none, only an edu address
-is created, and a course cannot be linked before the account is, even when Moodle has their email."""
+"""The lecturer's own Moodle account, linked by entering its username and password: the app asks
+Moodle whether they are right and links only then, the Moodle password is never stored or logged,
+a wrong attempt is refused and counted, a stored link to a user Moodle no longer has is cleared, and
+a course cannot be linked before the account is. Moodle itself is replaced by a stand-in."""
 
+import logging
 import uuid
 
 import httpx
 import pytest
 from fastapi.testclient import TestClient
+from sqlalchemy import inspect
 
-from app.auth.accounts import is_edu_email
-from app.db import SessionLocal
+from app.db import SessionLocal, engine
 from app.main import app
 from app.models import User, UserRole
 from app.moodle import client as moodle_client
@@ -17,122 +19,181 @@ from tests.auth_helpers import create_and_login, make_account
 
 client = TestClient(app)
 
+MOODLE_PASSWORD = "Moodle-Sentinel-pw-91"
+
 
 @pytest.fixture
 def moodle(monkeypatch):
-    """Moodle's users by email and a record of the users created."""
-    state = {"users": {}, "created": [], "next_id": 7_000}
+    """The Moodle accounts whose (username, password) are right, mapped to their ids, and the calls made."""
+    # The id is unique per run: the test database outlives it, and two lecturers cannot link one user.
+    user_id = 10_000 + uuid.uuid4().int % 10**9
+    state = {"logins": {("lan.nguyen", MOODLE_PASSWORD): user_id}, "checked": [], "user_id": user_id}
 
-    def find_users_by_email(emails):
-        by_lower = {}
-        for email, ids in state["users"].items():
-            by_lower.setdefault(email.lower(), []).extend(ids)
-        return {e.strip().lower(): by_lower.get(e.strip().lower(), []) for e in emails}
+    def verify_login(username, password):
+        state["checked"].append((username, password))
+        return state["logins"].get((username, password))
 
-    def create_user(email, firstname, lastname, password):
-        state["next_id"] += 1
-        state["created"].append({"email": email, "firstname": firstname, "lastname": lastname, "password": password})
-        state["users"][email] = [state["next_id"]]
-        return state["next_id"]
+    def forbidden(*args, **kwargs):
+        raise AssertionError("the app must not create Moodle accounts")
 
-    monkeypatch.setattr(moodle_client, "find_users_by_email", find_users_by_email)
-    monkeypatch.setattr(moodle_client, "create_user", create_user)
+    monkeypatch.setattr(moodle_client, "verify_login", verify_login)
+    monkeypatch.setattr(moodle_client, "call", forbidden)
     return state
 
 
-def _lecturer(domain="example.edu", name="Nguyễn Thị Lan"):
+def _lecturer(domain="example.edu"):
     email = f"link-{uuid.uuid4().hex[:10]}@{domain}"
-    make_account(email, name=name)
+    make_account(email)
     login = client.post("/auth/login", json={"email": email, "password": "Tt7!kQm2#vXz"}).json()
     return email, {"Authorization": f"Bearer {login['access_token']}"}
 
 
-@pytest.mark.parametrize("email", ["a@hcmut.edu.vn", "a@x.edu", "a@Mail.HCMUT.EDU.VN", "a@x.ac.edu"])
-def test_edu_addresses_are_accepted(email):
-    assert is_edu_email(email)
+def _link(headers, username="lan.nguyen", password=MOODLE_PASSWORD):
+    return client.post("/moodle/account/link", json={"username": username, "password": password}, headers=headers)
 
 
-@pytest.mark.parametrize(
-    "email", ["a@gmail.com", "a@example.com", "a@edu.com", "a@edu", "a@x.edu.com", "a@school.edu.vn.evil.com", "a", ""]
-)
-def test_other_addresses_are_refused(email):
-    assert not is_edu_email(email)
+def _stored_link(email):
+    with SessionLocal() as db:
+        return db.query(User).filter(User.email == email).one().moodle_user_id
 
 
-def test_the_account_is_not_linked_until_the_lecturer_says_yes_even_when_moodle_has_their_email(moodle):
+def test_the_right_username_and_password_link_the_account(moodle):
+    email, headers = _lecturer()
+    assert client.get("/moodle/account", headers=headers).json() == {"email": email, "status": "not_linked"}
+
+    response = _link(headers)
+
+    assert response.status_code == 200
+    assert response.json() == {"email": email, "status": "linked"}
+    assert moodle["checked"] == [("lan.nguyen", MOODLE_PASSWORD)]
+    assert _stored_link(email) == moodle["user_id"]
+    assert client.get("/moodle/account", headers=headers).json() == {"email": email, "status": "linked"}
+
+
+def test_the_username_is_trimmed_before_it_is_checked(moodle):
+    _, headers = _lecturer()
+
+    assert _link(headers, username="  lan.nguyen ").status_code == 200
+    assert moodle["checked"][0][0] == "lan.nguyen"
+
+
+def test_a_wrong_password_links_nothing_and_says_so(moodle):
     email, headers = _lecturer()
 
-    not_linked = {"email": email, "status": "not_linked", "prompt": True}
-    assert client.get("/moodle/account", headers=headers).json() == not_linked
+    response = _link(headers, password="not-the-password")
 
-    moodle["users"][email.upper()] = [55]
-    assert client.get("/moodle/account", headers=headers).json() == not_linked
-
-    client.post("/moodle/account/link", headers=headers)
-    assert client.get("/moodle/account", headers=headers).json() == {"email": email, "status": "linked", "prompt": False}
+    assert response.status_code == 422
+    assert response.json()["detail"] == "Tên đăng nhập hoặc mật khẩu Moodle không đúng."
+    assert _stored_link(email) is None
+    assert client.get("/moodle/account", headers=headers).json()["status"] == "not_linked"
 
 
-def test_a_stored_link_to_a_moodle_user_that_is_gone_is_cleared_and_yes_links_again(moodle, monkeypatch):
+def test_an_unknown_moodle_user_is_refused_the_same_way_as_a_wrong_password(moodle):
     email, headers = _lecturer()
-    client.post("/moodle/account/link", headers=headers)
-    first_id = moodle["users"][email][0]
-    del moodle["users"][email]  # a Moodle admin deleted it
-    monkeypatch.setattr(
-        moodle_client, "user_exists", lambda user_id: any(user_id in ids for ids in moodle["users"].values())
-    )
 
-    # Only the status flips: the pop-up was answered (Yes) and does not come back.
-    assert client.get("/moodle/account", headers=headers).json() == {"email": email, "status": "not_linked", "prompt": False}
+    wrong = _link(headers, password="not-the-password")
+    unknown = _link(headers, username="nobody.here")
+
+    assert unknown.status_code == wrong.status_code == 422
+    assert unknown.json() == wrong.json()
+    assert _stored_link(email) is None
+
+
+@pytest.mark.parametrize("body", [{}, {"username": "lan.nguyen"}, {"password": "x"}, {"username": "", "password": "x"}, {"username": "lan", "password": ""}])
+def test_both_fields_are_needed(moodle, body):
+    _, headers = _lecturer()
+
+    assert client.post("/moodle/account/link", json=body, headers=headers).status_code == 422
+    assert moodle["checked"] == []
+
+
+def test_a_moodle_email_alone_links_nothing(moodle):
+    # Linking is by username and password, not by an account that happens to have the lecturer's email.
+    email, headers = _lecturer()
+
+    assert client.post("/moodle/account/link", headers=headers).status_code == 422
+    assert _stored_link(email) is None
+
+
+def test_the_moodle_password_is_never_stored_or_logged(moodle, caplog):
+    email, headers = _lecturer()
+    caplog.set_level(logging.DEBUG)
+
+    _link(headers)
+    _link(headers, password=MOODLE_PASSWORD + "-wrong")
+
+    assert MOODLE_PASSWORD not in caplog.text
+    with SessionLocal() as db:
+        user = db.query(User).filter(User.email == email).one()
+        assert MOODLE_PASSWORD not in repr({c.key: getattr(user, c.key) for c in inspect(User).column_attrs})
+    assert not [c for c in inspect(engine).get_columns("users") if "moodle" in c["name"] and "password" in c["name"]]
+
+
+def test_linking_and_a_refused_attempt_are_logged_without_the_password(moodle, caplog):
+    caplog.set_level(logging.INFO, logger="app.audit")
+    email, headers = _lecturer()
+
+    _link(headers, password="not-the-password")
+    _link(headers)
+
+    lines = [r.getMessage() for r in caplog.records if r.name == "app.audit"]
+    assert any("moodle_account_link_refused" in line and email in line for line in lines)
+    assert any("moodle_account_linked" in line and email in line for line in lines)
+    assert not any("not-the-password" in line or MOODLE_PASSWORD in line for line in lines)
+
+
+def test_a_moodle_account_another_lecturer_linked_cannot_be_linked_again(moodle):
+    first_email, first = _lecturer()
+    second_email, second = _lecturer()
+    assert _link(first).status_code == 200
+
+    refused = _link(second)
+
+    assert refused.status_code == 409
+    assert _stored_link(second_email) is None and _stored_link(first_email) == moodle["user_id"]
+    assert _link(first).status_code == 200  # the owner may confirm it again
+
+
+def test_linking_again_with_another_moodle_account_replaces_the_link(moodle):
+    email, headers = _lecturer()
+    moodle["logins"][("lan.second", "Second-pass-1")] = moodle["user_id"] + 1
+    _link(headers)
+
+    assert _link(headers, username="lan.second", password="Second-pass-1").status_code == 200
+    assert _stored_link(email) == moodle["user_id"] + 1
+
+
+@pytest.mark.rate_limits
+def test_attempts_are_rate_limited_per_lecturer(moodle):
+    _, headers = _lecturer()
+    _, other = _lecturer()
+
+    codes = [_link(headers, password=f"guess-{i}").status_code for i in range(6)]
+
+    assert codes[:5] == [422] * 5 and codes[5] == 429
+    assert _link(other).status_code == 200  # another lecturer has their own budget
+
+
+def test_a_stored_link_to_a_moodle_user_that_is_gone_is_cleared_and_can_be_made_again(moodle, monkeypatch):
+    email, headers = _lecturer()
+    _link(headers)
+    monkeypatch.setattr(moodle_client, "user_exists", lambda user_id: False)  # a Moodle admin deleted it
+
+    assert client.get("/moodle/account", headers=headers).json() == {"email": email, "status": "not_linked"}
+    assert _stored_link(email) is None
     course_id = client.post("/courses", json={"name": "Lập trình"}, headers=headers).json()["id"]
     assert client.post(f"/courses/{course_id}/create-moodle", headers=headers).status_code == 422
 
-    relinked = client.post("/moodle/account/link", headers=headers)
-
-    assert relinked.json()["created"] is True and moodle["users"][email] != [first_id]
+    monkeypatch.setattr(moodle_client, "user_exists", lambda user_id: True)
+    moodle["logins"][("lan.nguyen", MOODLE_PASSWORD)] = moodle["user_id"] + 2
+    assert _link(headers).status_code == 200
     assert client.get("/moodle/account", headers=headers).json()["status"] == "linked"
-
-
-def test_no_answers_the_pop_up_for_good_and_the_account_can_still_be_linked_later(moodle):
-    email, headers = _lecturer()
-
-    dismissed = client.post("/moodle/account/prompt/dismiss", headers=headers)
-
-    assert dismissed.status_code == 200
-    assert client.get("/moodle/account", headers=headers).json() == {"email": email, "status": "not_linked", "prompt": False}
-    # A new login does not ask again: the answer is kept with the account, not in the browser.
-    client.post("/auth/login", json={"email": email, "password": "Tt7!kQm2#vXz"})
-    assert client.get("/moodle/account", headers=headers).json()["prompt"] is False
-    assert client.post("/moodle/account/link", headers=headers).status_code == 200
-    assert client.get("/moodle/account", headers=headers).json()["status"] == "linked"
-
-
-def test_answering_records_the_time_once_and_a_second_answer_keeps_the_first(moodle):
-    email, headers = _lecturer()
-
-    def prompted_at():
-        with SessionLocal() as db:
-            return db.query(User).filter(User.email == email).one().moodle_prompted_at
-
-    assert prompted_at() is None
-    client.post("/moodle/account/link", headers=headers)
-    first = prompted_at()
-    client.post("/moodle/account/prompt/dismiss", headers=headers)
-
-    assert first is not None and prompted_at() == first
-
-
-def test_several_moodle_users_with_the_email_still_get_the_pop_up_once(moodle):
-    email, headers = _lecturer()
-    moodle["users"][email] = [1, 2]
-
-    assert client.get("/moodle/account", headers=headers).json() == {"email": email, "status": "ambiguous", "prompt": True}
-    client.post("/moodle/account/prompt/dismiss", headers=headers)
-    assert client.get("/moodle/account", headers=headers).json()["prompt"] is False
+    assert _stored_link(email) == moodle["user_id"] + 2
 
 
 def test_a_stored_link_is_kept_while_moodle_cannot_be_asked(moodle, monkeypatch):
     _, headers = _lecturer()
-    client.post("/moodle/account/link", headers=headers)
+    _link(headers)
 
     def down(user_id):
         raise httpx.ConnectError("no route")
@@ -144,76 +205,45 @@ def test_a_stored_link_is_kept_while_moodle_cannot_be_asked(moodle, monkeypatch)
     assert client.get("/moodle/account", headers=headers).json()["status"] == "linked"
 
 
-def test_two_moodle_users_with_one_email_are_reported_as_ambiguous(moodle):
-    email, headers = _lecturer()
-    moodle["users"][email] = [1, 2]
-
-    assert client.get("/moodle/account", headers=headers).json()["status"] == "ambiguous"
-    refused = client.post("/moodle/account/link", headers=headers)
-    assert refused.status_code == 422 and moodle["created"] == []
-
-
-def test_yes_links_the_moodle_user_that_already_has_the_email_and_creates_nothing(moodle):
-    email, headers = _lecturer()
-    moodle["users"][email.title()] = [55]
-
-    response = client.post("/moodle/account/link", headers=headers)
-
-    assert response.status_code == 200
-    assert response.json() == {"email": email, "status": "linked", "created": False}
-    assert moodle["created"] == []
-    assert client.get("/moodle/account", headers=headers).json()["status"] == "linked"
-
-
-def test_yes_creates_the_moodle_user_when_there_is_none_and_a_second_yes_does_not_duplicate(moodle):
-    email, headers = _lecturer(name="Nguyễn Thị Lan")
-
-    first = client.post("/moodle/account/link", headers=headers)
-    second = client.post("/moodle/account/link", headers=headers)
-
-    assert first.json() == {"email": email, "status": "linked", "created": True}
-    assert second.json() == {"email": email, "status": "linked", "created": False}
-    assert len(moodle["created"]) == 1
-    made = moodle["created"][0]
-    assert made["email"] == email and (made["firstname"], made["lastname"]) == ("Nguyễn Thị", "Lan")
-    assert len(made["password"]) >= 20 and "Lan" not in made["password"]
-    assert client.get("/moodle/account", headers=headers).json()["status"] == "linked"
-
-
-def test_a_lecturer_whose_email_is_not_edu_gets_no_moodle_account_created(moodle):
-    _, headers = _lecturer(domain="gmail.com")
-
-    response = client.post("/moodle/account/link", headers=headers)
-
-    assert response.status_code == 422 and "edu" in response.json()["detail"]
-    assert moodle["created"] == []
-
-
 def test_when_moodle_cannot_be_reached_the_answer_says_so(monkeypatch):
-    _, headers = _lecturer()
+    email, headers = _lecturer()
 
-    def down(emails):
+    def down(username, password):
         raise httpx.ConnectError("no route")
 
-    monkeypatch.setattr(moodle_client, "find_users_by_email", down)
+    monkeypatch.setattr(moodle_client, "verify_login", down)
 
-    assert client.get("/moodle/account", headers=headers).status_code == 502
-    assert client.post("/moodle/account/link", headers=headers).status_code == 502
+    response = _link(headers)
+    assert response.status_code == 502
+    assert _stored_link(email) is None
 
 
 def test_when_moodle_refuses_the_connection_the_lecturer_is_told_to_contact_the_admin(monkeypatch):
     _, headers = _lecturer()
 
-    def refused(emails):
-        raise moodle_client.MoodleError("core_user_get_users: Access control exception", "accessexception")
+    def refused(username, password):
+        raise moodle_client.MoodleError("local_lms_bridge_verify_login: Access control exception", "accessexception")
 
-    monkeypatch.setattr(moodle_client, "find_users_by_email", refused)
+    monkeypatch.setattr(moodle_client, "verify_login", refused)
 
-    for response in (client.get("/moodle/account", headers=headers), client.post("/moodle/account/link", headers=headers)):
-        assert response.status_code == 502
-        detail = response.json()["detail"]
-        assert "quản trị viên" in detail
-        assert "core_user_get_users" not in detail and "Access control" not in detail
+    response = _link(headers)
+    assert response.status_code == 502
+    detail = response.json()["detail"]
+    assert "quản trị viên" in detail
+    assert "verify_login" not in detail and "Access control" not in detail
+
+
+def test_the_app_creates_no_moodle_accounts():
+    assert not hasattr(moodle_client, "create_user")
+    from app.moodle import accounts
+
+    assert not hasattr(accounts, "ensure_moodle_user")
+    assert "/moodle/account/prompt/dismiss" not in app.openapi()["paths"]
+
+
+def test_the_prompt_flag_is_gone_from_the_users_table():
+    assert "moodle_prompted_at" not in {c["name"] for c in inspect(engine).get_columns("users")}
+    assert not hasattr(User, "moodle_prompted_at")
 
 
 def test_an_admin_has_no_moodle_account_to_link_and_a_stranger_is_turned_away(moodle):
@@ -221,16 +251,14 @@ def test_an_admin_has_no_moodle_account_to_link_and_a_stranger_is_turned_away(mo
     headers = {"Authorization": f"Bearer {login['access_token']}"}
 
     assert client.get("/moodle/account", headers=headers).status_code == 404
-    assert client.post("/moodle/account/link", headers=headers).status_code == 404
-    assert client.post("/moodle/account/prompt/dismiss", headers=headers).status_code == 404
+    assert _link(headers).status_code == 404
+    assert moodle["checked"] == []
     assert client.get("/moodle/account").status_code == 401
-    assert client.post("/moodle/account/prompt/dismiss").status_code == 401
-    assert client.post("/moodle/account/link").status_code == 401
+    assert client.post("/moodle/account/link", json={"username": "a", "password": "b"}).status_code == 401
 
 
 def test_a_course_cannot_be_linked_or_created_in_moodle_before_the_account_is(moodle):
-    email, headers = _lecturer()
-    moodle["users"][email] = [55]
+    _, headers = _lecturer()
     course_id = client.post("/courses", json={"name": "Lập trình"}, headers=headers).json()["id"]
     moodle_id = 1_000 + uuid.uuid4().int % 10**9  # unique: the claims table outlives the run
 
@@ -239,8 +267,8 @@ def test_a_course_cannot_be_linked_or_created_in_moodle_before_the_account_is(mo
 
     for refused in (linking, creating):
         assert refused.status_code == 422
-        assert "Liên kết tài khoản Moodle" in refused.json()["detail"]
+        assert "tên đăng nhập và mật khẩu Moodle" in refused.json()["detail"]
 
-    client.post("/moodle/account/link", headers=headers)
+    _link(headers)
     linked = client.post(f"/courses/{course_id}/link-moodle", json={"moodle_course_id": moodle_id}, headers=headers)
     assert linked.status_code == 200

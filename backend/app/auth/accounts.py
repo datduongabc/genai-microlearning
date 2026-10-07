@@ -1,7 +1,8 @@
-"""Creating accounts. There is no public sign-up: only an admin (app/api/admin.py) or the
-create-admin command (scripts/create_admin.py) calls this."""
+"""Creating accounts, with one set of rules for every way in: a lecturer signing up
+(POST /auth/register), an admin creating a lecturer (app/api/admin.py), and the create-admin
+command (scripts/create_admin.py). Only the last makes an admin."""
 
-from pydantic import EmailStr, TypeAdapter, ValidationError
+from pydantic import BaseModel, EmailStr, Field, TypeAdapter, ValidationError
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -12,14 +13,23 @@ from app.models import User, UserRole
 _EMAIL = TypeAdapter(EmailStr)
 
 
+class AccountRequest(BaseModel):
+    # Only caps on the size of the body: email, name and password are checked by create_account,
+    # which answers in words the person can act on instead of a schema error.
+    email: str = Field(max_length=254)
+    name: str = Field(max_length=100)
+    password: str = Field(max_length=1024)
+
+
 class AccountError(Exception):
     """An account cannot be made. `status_code` is the HTTP answer for it, `detail` is
-    written for the person who asked."""
+    written for the person who asked, and `reason` is a short label for the audit log."""
 
-    def __init__(self, status_code: int, detail: str):
+    def __init__(self, status_code: int, detail: str, reason: str):
         super().__init__(detail)
         self.status_code = status_code
         self.detail = detail
+        self.reason = reason
 
 
 def normalize_email(raw: str) -> str:
@@ -28,7 +38,7 @@ def normalize_email(raw: str) -> str:
     try:
         return _EMAIL.validate_python(raw.strip()).lower()
     except ValidationError as error:
-        raise AccountError(422, "Email không hợp lệ.") from error
+        raise AccountError(422, "Email không hợp lệ.", "invalid_email") from error
 
 
 def is_edu_email(email: str) -> bool:
@@ -47,7 +57,7 @@ EDU_ONLY = "Chỉ chấp nhận email của trường (tên miền dạng x.edu 
 def clean_name(raw: str) -> str:
     name = " ".join(raw.split())
     if not name:
-        raise AccountError(422, "Họ tên không được để trống")
+        raise AccountError(422, "Họ tên không được để trống", "empty_name")
     return name
 
 
@@ -56,13 +66,13 @@ def create_account(db: Session, *, email: str, name: str, password: str, role: U
     taken email."""
     email = normalize_email(email)
     if not is_edu_email(email):
-        raise AccountError(422, EDU_ONLY)
+        raise AccountError(422, EDU_ONLY, "not_edu_email")
     name = clean_name(name)
     weakness = check_password(password, email=email, name=name)
     if weakness is not None:
-        raise AccountError(422, weakness)
+        raise AccountError(422, weakness, "weak_password")
 
-    taken = AccountError(409, "Email đã được đăng ký.")
+    taken = AccountError(409, "Email đã được đăng ký.", "email_taken")
     if db.query(User.id).filter(User.email == email).first() is not None:
         raise taken
     user = User(email=email, name=name, hashed_password=hash_password(password), role=role)

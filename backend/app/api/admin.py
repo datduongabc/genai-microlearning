@@ -18,7 +18,7 @@ from sqlalchemy.orm import Session
 
 from app.api.deps import require_admin
 from app.auth import audit, sessions
-from app.auth.accounts import AccountError, create_account
+from app.auth.accounts import AccountError, AccountRequest, create_account
 from app.auth.audit import log_admin_event
 from app.auth.password_policy import check_password
 from app.auth.rate_limit import limiter, user_or_address
@@ -34,14 +34,6 @@ router = APIRouter(prefix="/admin", tags=["admin"], dependencies=[Depends(requir
 MAX_FAILED_JOBS = 200
 MOODLE_LOOKUP_WORKERS = 8
 MOODLE_LOOKUP_SECONDS = 10.0
-
-
-class CreateUserRequest(BaseModel):
-    # Only caps on the size of the body: email, name and password are checked by create_account,
-    # which answers in words the admin can act on instead of a schema error.
-    email: str = Field(max_length=254)
-    name: str = Field(max_length=100)
-    password: str = Field(max_length=1024)
 
 
 class SetPasswordRequest(BaseModel):
@@ -128,7 +120,7 @@ def list_users(db: Session = Depends(get_db)):
 @router.post("/users", status_code=status.HTTP_201_CREATED)
 @limiter.limit("30/minute", key_func=user_or_address)
 def create_lecturer(
-    request: Request, payload: CreateUserRequest, db: Session = Depends(get_db),
+    request: Request, payload: AccountRequest, db: Session = Depends(get_db),
     admin: User = Depends(require_admin),
 ):
     try:
