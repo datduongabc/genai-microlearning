@@ -27,6 +27,11 @@ GATEWAY_GIA_LAP = [
         "model_info": {"mode": "chat"},
     },
     {
+        "model_name": "groq-fast",
+        "litellm_params": {"model": "groq/openai/gpt-oss-20b"},
+        "model_info": {"mode": "chat", "generation": False},
+    },
+    {
         "model_name": "embed-default",
         "litellm_params": {"model": "gemini/gemini-embedding-001"},
         "model_info": {"mode": "embedding"},
@@ -108,6 +113,18 @@ def test_alias_gateway_khong_phuc_vu_thi_bi_tu_choi():
 
     assert phan_hoi.status_code == 422
     assert client.get("/models", headers=headers).json()["default"] is None
+
+
+def test_groq_fast_khong_sinh_duoc_mo_dun_nen_khong_co_trong_danh_sach_va_khong_dat_lam_mac_dinh_duoc():
+    headers = _dang_nhap()
+
+    body = client.get("/models", headers=headers).json()
+    dat = client.put("/models/default", json={"alias": "groq-fast"}, headers=headers)
+
+    assert "groq-fast" not in [m["alias"] for m in body["models"]]
+    assert dat.status_code == 422
+    assert client.get("/models", headers=headers).json()["default"] is None
+    assert "groq-fast" not in da_thu
 
 
 def test_khong_cho_chon_model_nhung_lam_mac_dinh_sinh_noi_dung():

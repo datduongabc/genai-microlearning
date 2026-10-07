@@ -103,13 +103,18 @@ model_list:
   # Groq: han muc mien phi rong rai hon Gemini cho viec SINH van ban, huu ich khi
   # Gemini het quota giua chung mot lan chay thi nghiem. Chi sinh van ban, khong
   # nhung duoc: bang model cua litellm khong co model groq nao o che do embedding.
+  # groq-fast KHÔNG sinh được mô-đun: Groq trả "json_validate_failed ... max completion tokens reached"
+  # cả 5 lần thử (đo ở bài kiểm thử đầu cuối R39), nên `generation: false` ẩn nó khỏi danh sách model
+  # giảng viên được chọn (backend/app/llm/catalog.py). Alias vẫn còn vì các script chấm điểm
+  # (scripts/run_judge.py, run_claim_judge.py) gọi nó trực tiếp qua gateway và đã dùng nó để chấm.
   - model_name: groq-fast
     litellm_params:
       model: groq/openai/gpt-oss-20b
       api_key: os.environ/GROQ_API_KEY
     model_info:
       display_name: GPT-OSS 20B qua Groq
-      note: nhanh, hạn mức miễn phí rộng
+      note: chỉ dùng để chấm điểm, không sinh mô-đun
+      generation: false
   - model_name: groq-pro
     litellm_params:
       model: groq/openai/gpt-oss-120b

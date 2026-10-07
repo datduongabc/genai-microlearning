@@ -41,6 +41,11 @@ GATEWAY_GIA_LAP = [
         "litellm_params": {"model": "groq/openai/gpt-oss-120b"},
         "model_info": {"mode": "chat"},
     },
+    {
+        "model_name": "groq-fast",
+        "litellm_params": {"model": "groq/openai/gpt-oss-20b"},
+        "model_info": {"mode": "chat", "generation": False},
+    },
 ]
 
 
@@ -135,6 +140,34 @@ def test_mac_dinh_da_luu_ma_gateway_da_bo_thi_sinh_bang_cau_hinh_he_thong():
     assert phan_hoi.status_code == 200, phan_hoi.text
     assert "model_alias" not in _payload_cua_job(doc_id)
     assert da_thu == []
+
+
+def test_mac_dinh_da_luu_la_groq_fast_thi_sinh_bang_cau_hinh_he_thong_va_danh_sach_khong_co_no():
+    """groq-fast không sinh nổi mô-đun nên bị ẩn khỏi danh sách chọn: một giảng viên đã lưu nó làm
+    mặc định từ trước không bị chặn bằng 422, lượt sinh lùi về cấu hình hệ thống."""
+    token, doc_id = _tai_lieu_cua_giang_vien(mac_dinh="groq-fast")
+    headers = {"Authorization": f"Bearer {token}"}
+
+    phan_hoi = client.post(f"/modules/generate?document_id={doc_id}", headers=headers)
+    body = client.get("/models", headers=headers).json()
+
+    assert phan_hoi.status_code == 200, phan_hoi.text
+    assert "model_alias" not in _payload_cua_job(doc_id)
+    assert da_thu == []
+    assert body["default"] == settings.llm_model
+    assert "groq-fast" not in [m["alias"] for m in body["models"]]
+
+
+def test_chon_groq_fast_luc_bam_sinh_bi_tu_choi_va_khong_tao_job():
+    token, doc_id = _tai_lieu_cua_giang_vien()
+
+    phan_hoi = client.post(
+        f"/modules/generate?document_id={doc_id}", json={"model_alias": "groq-fast"},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    assert phan_hoi.status_code == 422
+    assert _so_job(doc_id) == 0
 
 
 def test_mac_dinh_da_luu_ma_gateway_da_bo_thi_danh_sach_bao_mac_dinh_he_thong():

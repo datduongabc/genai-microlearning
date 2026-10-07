@@ -70,6 +70,12 @@ def to_choices(raw: list[dict]) -> list[ModelChoice]:
         # cả pipeline sinh nội dung chết bằng một lỗi chẳng liên quan gì tới việc chọn model.
         if thong_tin.get("mode") != "chat":
             continue
+        # Alias gateway khai `generation: false` là alias chỉ dùng cho việc khác (chấm điểm bằng
+        # scripts/run_judge.py, run_claim_judge.py đọc thẳng gateway) vì nó không sinh nổi một
+        # mô-đun: giảng viên không được chọn nó, kể cả làm mặc định, và mặc định cũ trỏ tới nó thì
+        # lùi về cấu hình hệ thống như mọi alias gateway đã bỏ (app/api/modules.py).
+        if thong_tin.get("generation") is False:
+            continue
         alias = muc["model_name"]
         # Nhà cung cấp là tiền tố của tên model, nên thêm model mới không phải khai lại nó.
         # Groq đi qua litellm dưới dạng "groq/openai/..." nên chỉ lấy đoạn đầu.
