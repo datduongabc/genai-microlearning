@@ -88,7 +88,9 @@ class User(Base):
     id: Mapped[uuid.UUID] = uuid_pk()
     email: Mapped[str] = mapped_column(unique=True)
     name: Mapped[str]
-    hashed_password: Mapped[str]
+    # Chỉ admin có mật khẩu cục bộ (scripts/create_admin.py). Mật khẩu của giảng viên nằm ở Moodle, nên
+    # tài khoản giảng viên để trống cột này (migration 0012).
+    hashed_password: Mapped[str | None] = mapped_column(nullable=True)
     role: Mapped[UserRole] = mapped_column(Enum(UserRole))
     # False: tài khoản bị khóa. Đọc lại từ DB ở mỗi request (get_current_user) nên khóa có hiệu
     # lực ngay, kể cả với token đang dùng. Khóa không xóa dữ liệu nào.
@@ -99,8 +101,9 @@ class User(Base):
     # này. Không có khóa ngoại nào ràng buộc được nó, nên giá trị được kiểm ở biên API dựa
     # vào danh sách gateway đang phục vụ (app/llm/catalog.py).
     default_model_alias: Mapped[str | None] = mapped_column(nullable=True)
-    # Tài khoản Moodle giảng viên đã liên kết bằng tên đăng nhập và mật khẩu Moodle (POST
-    # /moodle/account/link). NULL: chưa liên kết, kể cả khi Moodle có sẵn tài khoản cùng email.
+    # Người dùng Moodle của giảng viên, được đặt ở lần đăng nhập đầu bằng tài khoản Moodle
+    # (app/auth/moodle_login.py). NULL: chưa liên kết (một liên kết cũ đã bị xóa vì Moodle không còn
+    # người dùng đó), kể cả khi Moodle có sẵn tài khoản cùng email.
     moodle_user_id: Mapped[int | None] = mapped_column(nullable=True)
     created_at: Mapped[datetime] = created_at_column()
 

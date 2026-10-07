@@ -125,11 +125,12 @@ describe('LoginPage', () => {
     expect(await screen.findByText('Trang quản trị')).toBeInTheDocument()
   })
 
-  it('points a person who forgot their password to the admin, by email', () => {
+  it('tells a lecturer who forgot their password to reset it in Moodle, and offers the admin by email', () => {
     renderLoginPage()
 
-    const link = screen.getByRole('link', { name: 'Quên mật khẩu? Liên hệ admin để hỗ trợ' })
+    const link = screen.getByRole('link', { name: 'Liên hệ admin để hỗ trợ' })
 
+    expect(screen.getByText(/giảng viên đặt lại mật khẩu trên moodle/i)).toBeInTheDocument()
     expect(link).toHaveAttribute('href', 'mailto:dat.duongtandat385@gmail.com')
   })
 

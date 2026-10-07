@@ -16,8 +16,10 @@ STRONG_PASSWORD = "Tt7!kQm2#vXz"
 def make_account(
     email: str, password: str = STRONG_PASSWORD, name: str = "Test", role: UserRole = UserRole.teacher
 ) -> User:
+    # Only an admin has a local password; a lecturer's is Moodle's, so the app keeps none for them.
+    hashed = hash_password(password) if role == UserRole.admin else None
     with SessionLocal() as db:
-        user = User(email=email.strip().lower(), name=name, hashed_password=hash_password(password), role=role)
+        user = User(email=email.strip().lower(), name=name, hashed_password=hashed, role=role)
         db.add(user)
         db.commit()
         db.refresh(user)  # the commit expired it, and it is read after the session is closed

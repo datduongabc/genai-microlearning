@@ -5,7 +5,6 @@ user (users.moodle_user_id), or links an existing local account that has the sam
 Moodle password is used for that one check and is neither stored nor logged. Admins are not
 handled here: their password is local (scripts/create_admin.py)."""
 
-import secrets
 from dataclasses import dataclass
 
 import httpx
@@ -14,7 +13,6 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.auth.accounts import EDU_ONLY, is_edu_email
-from app.auth.security import hash_password
 from app.models import User, UserRole
 from app.moodle import client
 from app.moodle.errors import MOODLE_REFUSED
@@ -118,10 +116,9 @@ def _link_existing(db: Session, user: User, moodle_user_id: int) -> MoodleLogin:
 
 
 def _create(db: Session, email: str, name: str, moodle_user_id: int) -> MoodleLogin:
-    # Lecturers never log in with this password (their password is Moodle's), so it is random and nobody knows it.
+    # No password: a lecturer's is Moodle's, so the app keeps none for them.
     user = User(
-        email=email, name=(name or email.split("@")[0])[:MAX_NAME_LENGTH],
-        hashed_password=hash_password(secrets.token_urlsafe(32)), role=UserRole.teacher,
+        email=email, name=(name or email.split("@")[0])[:MAX_NAME_LENGTH], role=UserRole.teacher,
         moodle_user_id=moodle_user_id,
     )
     db.add(user)

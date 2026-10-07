@@ -130,14 +130,18 @@ export function LoginPage() {
             {isSubmitting ? "Đang đăng nhập..." : "Đăng nhập"}
           </button>
 
-          {/* Giảng viên đăng nhập bằng tài khoản Moodle, không có đăng ký riêng ở đây: mật khẩu của họ
-              nằm ở Moodle, nên quên mật khẩu cũng nhờ admin. */}
-          <a
-            href={`mailto:${SUPPORT_EMAIL}`}
-            className="text-sm font-semibold text-terracotta hover:underline"
-          >
-            Quên mật khẩu? Liên hệ admin để hỗ trợ
-          </a>
+          {/* Mật khẩu của giảng viên là mật khẩu Moodle: họ đặt lại ở Moodle (hoặc nhờ admin Moodle).
+              Mật khẩu cục bộ của admin do admin máy chủ đặt lại bằng lệnh, nên người dùng nào quên cũng
+              liên hệ admin. */}
+          <p className="text-sm text-gray-500">
+            Quên mật khẩu? Giảng viên đặt lại mật khẩu trên Moodle.{" "}
+            <a
+              href={`mailto:${SUPPORT_EMAIL}`}
+              className="font-semibold text-terracotta hover:underline"
+            >
+              Liên hệ admin để hỗ trợ
+            </a>
+          </p>
         </form>
       </div>
     </div>

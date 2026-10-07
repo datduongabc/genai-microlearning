@@ -82,7 +82,7 @@ def login(request: Request, payload: LoginRequest, db: Session = Depends(get_db)
 
 
 def _local_login(request: Request, db: Session, admin: User, password: str) -> User:
-    if not verify_password(password, admin.hashed_password):
+    if admin.hashed_password is None or not verify_password(password, admin.hashed_password):
         # The reason goes to the log only: the client hears the same thing either way.
         log_auth_event(
             audit.LOGIN_FAILED, request, user_id=admin.id, email=admin.email, detail={"reason": "wrong_password"}

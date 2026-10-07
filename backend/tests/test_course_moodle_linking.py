@@ -13,7 +13,7 @@ client = TestClient(app)
 
 def _make_authed_user() -> tuple[str, uuid.UUID]:
     """Create a user directly via the DB and mint a token for it, bypassing
-    /auth/register+/auth/login entirely -- these tests are about the course/
+    the login entirely -- these tests are about the course/
     Moodle-linking endpoints, not auth, and the auth HTTP endpoints are
     IP-rate-limited (10/min), which the whole suite shares."""
     suffix = uuid.uuid4().hex[:8]

@@ -14,6 +14,7 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import inspect
 
+from app.auth.security import hash_password
 from app.db import SessionLocal, engine
 from app.main import app
 from app.models import Course, MoodleCourseClaim, RefreshToken, User, UserRole
@@ -178,11 +179,32 @@ def test_an_existing_local_lecturer_with_the_same_email_is_linked_not_duplicated
 
 def test_a_local_lecturer_cannot_log_in_with_the_old_local_password_any_more(moodle):
     email = f"{PREFIX}{uuid.uuid4().hex[:8]}@hcmut.edu.vn"
-    make_account(email, STRONG_PASSWORD)
+    old = make_account(email)
+    with SessionLocal() as db:  # an account from before Moodle was the source still has its hash
+        db.query(User).filter(User.id == old.id).update({"hashed_password": hash_password(STRONG_PASSWORD)})
+        db.commit()
 
     response = _login(email, STRONG_PASSWORD)
 
     assert response.status_code == 401
+
+
+def test_a_lecturer_made_from_moodle_has_no_app_password_at_all(moodle):
+    username, known = _new_moodle_user(moodle)
+
+    assert _login(username).status_code == 200
+
+    assert _row(known["email"]).hashed_password is None
+
+
+def test_an_account_without_a_password_hash_cannot_be_logged_into_locally(moodle):
+    email = f"{PREFIX}admin-{uuid.uuid4().hex[:8]}@hcmut.edu.vn"
+    admin = make_account(email, STRONG_PASSWORD, role=UserRole.admin)
+    with SessionLocal() as db:
+        db.query(User).filter(User.id == admin.id).update({"hashed_password": None})
+        db.commit()
+
+    assert client.post("/auth/login", json={"username": email, "password": STRONG_PASSWORD}).status_code == 401
 
 
 def test_an_existing_account_linked_to_another_live_moodle_user_is_not_taken_over(moodle):
