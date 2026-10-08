@@ -132,7 +132,10 @@ def probe(alias: str) -> None:
         from app.llm.gateway import _completion, using_model
 
         with using_model(alias):
-            _completion(messages=[{"role": "user", "content": "ping"}], max_tokens=1)
+            _completion(
+                messages=[{"role": "user", "content": "ping"}], max_tokens=1,
+                extra_body={"disable_fallbacks": True},
+            )
     except ValueError as loi:
         raise ModelUnusable(alias, str(loi)) from loi
     # Trước tiên: gateway không với tới được thì mọi model đều hỏng như nhau, nên đổi model
@@ -140,6 +143,9 @@ def probe(alias: str) -> None:
     except openai.APIConnectionError as loi:
         raise GatewayUnavailable(str(loi)) from loi
     except openai.APIError as loi:
+        # Quota alone does not make the alias unusable: generation can use its backups.
+        if loi.status_code == 429:
+            return
         raise ModelUnusable(alias, _ly_do(loi)) from loi
 
 

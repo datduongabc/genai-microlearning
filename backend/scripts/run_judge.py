@@ -122,12 +122,10 @@ def main(argv: list[str] | None = None) -> None:
             code = anon_code(path)
             if (code, args.judge) in done:
                 continue
-            with gateway.capture_models() as calls:
-                evaluation = judge_module(study.packet.model_copy(update={"anon_id": code}))
+            evaluation = judge_module(study.packet.model_copy(update={"anon_id": code}))
             line = {
                 "anon_id": code, "pair_id": study.pair_id, "group": study.group,
                 "judge": args.judge, "judge_model": judge_model, "evaluation": evaluation.model_dump(),
-                "judge_generation_models": calls,
             }
             # Ghi và đẩy xuống đĩa từng dòng: bị ngắt thì những gói đã chấm vẫn còn.
             out.write(json.dumps(line, ensure_ascii=False) + "\n")

@@ -203,7 +203,7 @@ def test_guard_uses_all_actual_served_models_even_if_requested_alias_is_differen
     assert run_judge._refuse_same_family("claude-pro", [(Path("fallback.json"), study)]) == "anthropic/claude-sonnet-5"
 
 
-def test_runner_pins_requests_and_records_the_served_judge_model(tmp_path, monkeypatch):
+def test_runner_pins_requests_without_extra_judge_records(tmp_path, monkeypatch):
     from types import SimpleNamespace
 
     import litellm
@@ -224,4 +224,4 @@ def test_runner_pins_requests_and_records_the_served_judge_model(tmp_path, monke
     out = tmp_path / "result.jsonl"
     run_judge.main([str(tmp_path), "--judge", "claude-pro", "--out", str(out)])
     assert all(call["extra_body"]["disable_fallbacks"] for call in sent)
-    assert all(row["judge_generation_models"][0]["served_model"] == "claude-sonnet-5" for row in _lines(out))
+    assert all("judge_generation_models" not in row for row in _lines(out))

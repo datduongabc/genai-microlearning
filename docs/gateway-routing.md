@@ -53,6 +53,12 @@ models. `gateway.experiment_mode()` applies the same switch to one script scope.
 `run_claim_judge.py` enable it automatically. Pin the original RAG generation with
 the environment switch too: exporting cannot undo fallbacks in an existing module.
 
+The one-token model probe always disables fallbacks so it tests the selected
+alias's own credentials and credit. Authentication errors and insufficient credit
+still reject model selection with HTTP 422. A probe 429 is treated as usable,
+because normal generation can rely on router fallbacks. Experiment generation
+still refuses fallback and can fail on the same quota-limited model.
+
 ## Actual model records
 
 Migration `0011_module_generation_models` adds nullable JSONB
@@ -67,7 +73,7 @@ Study files keep each arm's records in `generation_models`, outside the blinded
 `packet`. `generator_model` remains the requested alias for compatibility with
 older study files. Judge runners check every recorded served model for same-family
 bias, falling back to alias lookup only for legacy files without records. Judge
-outputs retain their successful response records as `judge_generation_models`.
+runs remain pinned and keep their existing `judge_model` output field.
 An old RAG module and a newly pinned control may have different real models; the
 records expose this rather than claiming the chosen aliases prove equivalence.
 

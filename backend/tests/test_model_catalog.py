@@ -176,6 +176,7 @@ def test_thu_dung_model_da_chon_va_chi_xin_mot_token(ghi_lai_lenh_thu):
 
     assert ghi_lai_lenh_thu["model"] == "openai/groq-pro"
     assert ghi_lai_lenh_thu["max_tokens"] == 1
+    assert ghi_lai_lenh_thu["extra_body"]["disable_fallbacks"] is True
 
 
 def test_khoa_trong_hoac_sai_thi_bao_chua_co_khoa(monkeypatch):
@@ -190,16 +191,11 @@ def test_khoa_trong_hoac_sai_thi_bao_chua_co_khoa(monkeypatch):
     assert "api key" in bat.value.ly_do.lower()
 
 
-def test_het_han_muc_thi_bao_het_han_muc(monkeypatch):
-    """Đúng lỗi đã gặp: hạn mức ngày của Gemini cạn giữa chừng một lượt chạy."""
+def test_probe_429_is_usable_for_router_fallbacks(monkeypatch):
     monkeypatch.setattr(litellm, "completion", _nem(
         loi_litellm.RateLimitError(message="429", llm_provider="gemini", model="gemini-flash")
     ))
-
-    with pytest.raises(catalog.ModelUnusable) as bat:
-        catalog.probe("gemini-flash")
-
-    assert "hạn mức" in bat.value.ly_do
+    catalog.probe("gemini-flash")
 
 
 def test_khoa_trong_that_ra_500_chu_khong_phai_401_van_bao_dung_la_thieu_khoa(monkeypatch):
@@ -284,3 +280,35 @@ def test_pinned_balanced_probe_reports_an_unusable_choice(monkeypatch):
 
     with experiment_mode(), pytest.raises(catalog.ModelUnusable, match="single-model alias"):
         catalog.probe("gemini-balanced")
+
+
+@pytest.mark.parametrize("error", [
+    loi_litellm.AuthenticationError(message="invalid API key", llm_provider="anthropic", model="claude"),
+    loi_litellm.BadRequestError(message="credit balance too low", llm_provider="anthropic", model="claude"),
+])
+def test_unusable_primary_is_rejected_with_422_without_probing_fallback(error, monkeypatch):
+    from fastapi import HTTPException
+
+    from app.api.modules import _alias_dung_duoc
+
+    sent = []
+    def completion(**kwargs):
+        sent.append(kwargs)
+        raise error
+    monkeypatch.setattr(litellm, "completion", completion)
+    monkeypatch.setattr(catalog, "is_available", lambda alias: True)
+    with pytest.raises(HTTPException) as rejected:
+        _alias_dung_duoc("claude-pro")
+    assert rejected.value.status_code == 422
+    assert len(sent) == 1 and sent[0]["model"] == "openai/claude-pro"
+    assert sent[0]["extra_body"]["disable_fallbacks"] is True
+
+
+def test_quota_exhausted_primary_still_passes_generation_alias_validation(monkeypatch):
+    from app.api.modules import _alias_dung_duoc
+
+    monkeypatch.setattr(catalog, "is_available", lambda alias: True)
+    monkeypatch.setattr(litellm, "completion", _nem(
+        loi_litellm.RateLimitError(message="quota exhausted", llm_provider="gemini", model="gemini-fast")
+    ))
+    assert _alias_dung_duoc("gemini-fast") == "gemini-fast"

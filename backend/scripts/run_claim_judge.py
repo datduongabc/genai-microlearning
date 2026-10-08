@@ -54,17 +54,15 @@ def main(argv: list[str] | None = None) -> None:
             code = anon_code(path)
             if (code, args.judge) in done:
                 continue
-            with gateway.capture_models() as calls:
-                evaluation = assess_content(
-                    study.packet.content_markdown, study.packet.source_chunks, study.reference,
-                    study.claim_citations if study.group == "rag_llm" else None,
-                    judge_model=judge_model,
-                )
+            evaluation = assess_content(
+                study.packet.content_markdown, study.packet.source_chunks, study.reference,
+                study.claim_citations if study.group == "rag_llm" else None,
+                judge_model=judge_model,
+            )
             row = {
                 "anon_id": code, "pair_id": study.pair_id, "group": study.group,
                 "judge": args.judge, "judge_model": judge_model, "packet_sha256": fingerprint(study),
                 "claim_evaluation": evaluation.model_dump(),
-                "judge_generation_models": calls,
             }
             out.write(json.dumps(row, ensure_ascii=False) + "\n")
             out.flush()
