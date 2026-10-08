@@ -19,7 +19,6 @@ class create_book extends external_api {
 
     public static function execute_parameters(): external_function_parameters {
         return new external_function_parameters([
-            'actorid' => new external_value(PARAM_INT, 'Linked Moodle user whose capability authorizes this write'),
             'courseid' => new external_value(PARAM_INT, 'Ma khoa hoc trong Moodle'),
             'name'     => new external_value(PARAM_TEXT, 'Ten cua Book'),
             'chapters' => new external_multiple_structure(
@@ -31,6 +30,7 @@ class create_book extends external_api {
                     'subchapter' => new external_value(PARAM_INT, '1 neu la chuong con, nguoc lai 0'),
                 ])
             ),
+            'actorid' => new external_value(PARAM_INT, 'Linked Moodle user whose capability authorizes this write'),
             'sectionnum' => new external_value(PARAM_INT, 'Muc trong khoa hoc', VALUE_DEFAULT, 0),
         ]);
     }

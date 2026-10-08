@@ -22,7 +22,6 @@ class create_quiz extends external_api {
 
     public static function execute_parameters(): external_function_parameters {
         return new external_function_parameters([
-            'actorid' => new external_value(PARAM_INT, 'Linked Moodle user whose capability authorizes this write'),
             'courseid'  => new external_value(PARAM_INT, 'Ma khoa hoc trong Moodle'),
             'name'      => new external_value(PARAM_TEXT, 'Ten cua quiz'),
             'questions' => new external_multiple_structure(
@@ -35,6 +34,7 @@ class create_quiz extends external_api {
                     'explanation'   => new external_value(PARAM_RAW, 'Giai thich', VALUE_DEFAULT, ''),
                 ])
             ),
+            'actorid' => new external_value(PARAM_INT, 'Linked Moodle user whose capability authorizes this write'),
             'sectionnum' => new external_value(PARAM_INT, 'Muc trong khoa hoc', VALUE_DEFAULT, 0),
             'behaviour'  => new external_value(
                 PARAM_ALPHA,
