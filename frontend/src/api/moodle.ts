@@ -24,6 +24,7 @@ export interface MoodleAccount {
   email: string
   status: MoodleAccountStatus
   confirmation_url?: string
+  error?: string
 }
 
 export async function requestMoodleLink(email: string) {

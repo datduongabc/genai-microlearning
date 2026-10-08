@@ -81,9 +81,12 @@ def test_one_moodle_account_cannot_link_two_app_accounts(confirmed_link_service)
     assert request(second).status_code == 202
     confirmed_link_service['status'] = 'confirmed'
     assert client.get('/moodle/account', headers=first).json()['status'] == 'linked'
-    assert client.get('/moodle/account', headers=second).status_code == 409
+    conflict = client.get('/moodle/account', headers=second)
+    assert conflict.status_code == 200
+    assert conflict.json()['status'] == 'not_linked'
+    assert conflict.json()['error'] == 'Tài khoản Moodle đã liên kết với một tài khoản khác.'
     assert stored_link(second_id) is None
-    assert client.get('/moodle/account', headers=second).json()['status'] == 'not_linked'
+    assert 'error' not in client.get('/moodle/account', headers=second).json()
     assert request(second).status_code == 202
 
 

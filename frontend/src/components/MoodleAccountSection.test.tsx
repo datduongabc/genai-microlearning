@@ -88,3 +88,19 @@ it('polls pending consent and stops showing the request form once confirmed', as
     expect(get).toHaveBeenCalledTimes(2)
   } finally { vi.useRealTimers() }
 })
+
+it('offers the request form again when the confirmed Moodle account is already linked elsewhere', async () => {
+  vi.useFakeTimers()
+  try {
+    vi.spyOn(api, 'getMoodleAccount')
+      .mockResolvedValueOnce({ email: 'moodle@example.com', status: 'pending', confirmation_url: 'http://localhost:48081/confirm.php' })
+      .mockResolvedValue({ email: 'app@example.com', status: 'not_linked', error: 'Tài khoản Moodle đã liên kết với một tài khoản khác.' })
+    render(<MoodleAccountSection />)
+    await act(async () => { await Promise.resolve() })
+    expect(screen.getByText('Chờ xác nhận trong Moodle')).toBeInTheDocument()
+    await act(async () => { await vi.advanceTimersByTimeAsync(5000) })
+    expect(screen.getByText('Chưa liên kết')).toBeInTheDocument()
+    expect(screen.getByText('Tài khoản Moodle đã liên kết với một tài khoản khác.')).toBeInTheDocument()
+    expect(screen.getByLabelText('Email Moodle')).toBeInTheDocument()
+  } finally { vi.useRealTimers() }
+})

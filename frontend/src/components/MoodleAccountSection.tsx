@@ -29,7 +29,7 @@ export function MoodleAccountSection({ onStatus }: { onStatus?: (status: MoodleA
       (result) => {
         if (cancelled || version !== requestVersion.current) return;
         setAnswer(result);
-        setError(null);
+        setError(result.error ?? null);
       },
       (err) => {
         if (cancelled || version !== requestVersion.current) return;
