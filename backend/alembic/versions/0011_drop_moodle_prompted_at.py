@@ -1,7 +1,7 @@
 """Bỏ users.moodle_prompted_at: pop-up liên kết Moodle không còn.
 
-Giảng viên nhập tên đăng nhập và mật khẩu Moodle ở mục "Tài khoản Moodle" khi muốn liên kết, nên
-không còn gì để nhớ về việc đã trả lời pop-up hay chưa. Các liên kết đã lưu (users.moodle_user_id)
+Pop-up đã bị gỡ; việc liên kết sau này sẽ được xác nhận ngay trong Moodle, nên không còn gì để nhớ
+về việc đã trả lời pop-up hay chưa. Các liên kết đã lưu (users.moodle_user_id)
 giữ nguyên. Downgrade thêm lại cột, để trống.
 
 Revision ID: 0011_drop_moodle_prompted_at
