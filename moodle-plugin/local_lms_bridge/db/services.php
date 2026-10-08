@@ -24,7 +24,6 @@ $functions = [
         'type'         => 'write',
         'capabilities' => 'mod/quiz:addinstance',
     ],
-
 ];
 
 $services = [

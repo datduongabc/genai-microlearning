@@ -1,5 +1,6 @@
 """Local accounts with an admin flag and soft deletion."""
 import sqlalchemy as sa
+
 from alembic import op
 
 revision = '0013_local_accounts'
