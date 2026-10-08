@@ -80,8 +80,7 @@ class User(Base):
     id: Mapped[uuid.UUID] = uuid_pk()
     email: Mapped[str] = mapped_column(unique=True)
     name: Mapped[str]
-    # Local credentials for every account; NULL legacy hashes cannot authenticate.
-    hashed_password: Mapped[str | None] = mapped_column(nullable=True)
+    hashed_password: Mapped[str]
     is_admin: Mapped[bool] = mapped_column(default=False, server_default="false")
     deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     # False: tài khoản bị khóa. Đọc lại từ DB ở mỗi request (get_current_user) nên khóa có hiệu

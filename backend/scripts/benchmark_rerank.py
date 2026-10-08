@@ -144,7 +144,7 @@ def nap(db: Session, cac_mon: list[str]) -> None:
     if chu is None:
         chu = User(
             id=uuid.uuid4(), email="benchmark@example.com", name="Benchmark",
-            is_admin=False,
+            hashed_password="khong-dung-de-dang-nhap", is_admin=False,
         )
         db.add(chu)
         db.flush()

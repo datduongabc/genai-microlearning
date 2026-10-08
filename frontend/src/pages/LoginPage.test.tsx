@@ -40,6 +40,19 @@ function renderLoginPage() {
 }
 
 describe('LoginPage', () => {
+  it('tells a user who just signed up that the account was created, and not otherwise', () => {
+    const { unmount } = render(
+      <MemoryRouter initialEntries={[{ pathname: '/login', state: { justRegistered: true } }]}>
+        <LoginPage />
+      </MemoryRouter>,
+    )
+    expect(screen.getByText('Tài khoản đã được tạo. Hãy đăng nhập.')).toBeInTheDocument()
+    unmount()
+
+    renderLoginPage()
+    expect(screen.queryByText('Tài khoản đã được tạo. Hãy đăng nhập.')).not.toBeInTheDocument()
+  })
+
   it('shows validation errors instead of calling login when the form is invalid', async () => {
     renderLoginPage()
 

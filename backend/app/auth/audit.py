@@ -21,7 +21,6 @@ LOGIN_SUCCESS = "login_success"
 LOGIN_FAILED = "login_failed"
 LOGOUT = "logout"
 REFRESH_REJECTED = "refresh_rejected"
-MOODLE_ACCOUNT_LINKED = "moodle_account_linked"
 
 ADMIN_DELETE_USER = "admin_delete_user"
 ADMIN_DISABLE_USER = "admin_disable_user"

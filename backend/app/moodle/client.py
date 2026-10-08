@@ -90,20 +90,10 @@ _SITE_COURSE_ID = 1
 _EDITING_TEACHER_ROLE_ID = 3
 
 
-def get_user(user_id: int) -> dict[str, Any] | None:
-    """The Moodle user with this id as {"id", "email", "name"}, or None when Moodle has none
-    (core_user_get_users leaves deleted users out)."""
-    result = call("core_user_get_users", criteria=[{"key": "id", "value": user_id}])
-    for user in result.get("users", []):
-        if int(user["id"]) == user_id:
-            name = " ".join(f"{user.get('firstname', '')} {user.get('lastname', '')}".split())
-            return {"id": user_id, "email": str(user.get("email", "")).strip().lower(), "name": name}
-    return None
-
-
 def user_exists(user_id: int) -> bool:
-    """Whether Moodle still has this user."""
-    return get_user(user_id) is not None
+    """Whether Moodle still has this user; core_user_get_users leaves deleted ones out."""
+    result = call("core_user_get_users", criteria=[{"key": "id", "value": user_id}])
+    return any(int(user["id"]) == user_id for user in result.get("users", []))
 
 
 def enrol_as_teacher(course_id: int, user_id: int) -> None:

@@ -76,8 +76,8 @@ def register(request: Request, payload: RegisterRequest, db: Session = Depends(g
 @limiter.limit("10/minute")
 def login(request: Request, payload: LoginRequest, db: Session = Depends(get_db)):
     user = db.query(User).filter(func.lower(User.email) == payload.email).first()
-    password_ok = verify_password(payload.password, user.hashed_password if user and user.hashed_password else DUMMY_HASH)
-    if user is None or user.hashed_password is None or not password_ok or user.deleted_at is not None:
+    password_ok = verify_password(payload.password, user.hashed_password if user else DUMMY_HASH)
+    if user is None or not password_ok or user.deleted_at is not None:
         log_auth_event(audit.LOGIN_FAILED, request, email=payload.email, detail={"reason": "credentials"})
         raise HTTPException(status_code=401, detail=WRONG_CREDENTIALS)
     if not user.is_active:

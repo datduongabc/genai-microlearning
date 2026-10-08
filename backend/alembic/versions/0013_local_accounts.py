@@ -3,7 +3,7 @@ import sqlalchemy as sa
 from alembic import op
 
 revision = '0013_local_accounts'
-down_revision = '0012_lecturer_password_nullable'
+down_revision = '0011_drop_moodle_prompted_at'
 branch_labels = None
 depends_on = None
 

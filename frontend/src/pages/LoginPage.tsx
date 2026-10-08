@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { apiErrorMessage } from "../api";
 import { homeFor, useAuth } from "../auth/useAuth";
 import { loginSchema, type LoginFormValues } from "../lib/authSchemas";
@@ -11,6 +11,7 @@ const SUPPORT_EMAIL = "dat.duongtandat385@gmail.com";
 export function LoginPage() {
   const { login } = useAuth();
   const navigate = useNavigate();
+  const justRegistered = (useLocation().state as { justRegistered?: boolean } | null)?.justRegistered === true;
 
   const [error, setError] = useState<string | null>(null);
 
@@ -78,6 +79,12 @@ export function LoginPage() {
               Đăng nhập tài khoản
             </h1>
           </div>
+
+          {justRegistered && !error && (
+            <div className="rounded border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-700">
+              Tài khoản đã được tạo. Hãy đăng nhập.
+            </div>
+          )}
 
           {error && (
             <div className="rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">

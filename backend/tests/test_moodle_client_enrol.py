@@ -53,18 +53,3 @@ def test_user_exists_looks_the_id_up_and_a_user_moodle_left_out_is_gone(monkeypa
     assert REAL_USER_EXISTS(42) is True
     assert REAL_USER_EXISTS(43) is False
     assert calls[0] == ("core_user_get_users", {"criteria": [{"key": "id", "value": 42}]})
-
-
-
-
-def test_get_user_answers_the_lower_cased_email_and_the_full_name_and_none_for_a_user_moodle_left_out(monkeypatch):
-    users = {
-        42: [{"id": 42, "email": "Lan@Hcmut.EDU.vn", "firstname": "Nguyễn Thị", "lastname": " Lan "}],
-        43: [],
-        44: [{"id": 99, "email": "other@x.edu"}],  # Moodle answers with a neighbour: not this id
-    }
-    monkeypatch.setattr(moodle_client, "call", lambda wsfunction, **params: {"users": users[params["criteria"][0]["value"]]})
-
-    assert moodle_client.get_user(42) == {"id": 42, "email": "lan@hcmut.edu.vn", "name": "Nguyễn Thị Lan"}
-    assert moodle_client.get_user(43) is None
-    assert moodle_client.get_user(44) is None
