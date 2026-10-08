@@ -38,9 +38,23 @@ final class teacher_courses_test extends \advanced_testcase {
         $this->assertSame($before, $DB->count_records('user_enrolments'));
     }
 
-    public function test_inactive_or_unknown_identity_has_no_permissions(): void {
+    public function test_suspended_identity_still_exists_but_has_no_permissions(): void {
+        global $DB;
         $this->resetAfterTest();
         $user = $this->getDataGenerator()->create_user(['suspended' => 1]);
+        $course = $this->getDataGenerator()->create_course();
+        $teacherrole = $DB->get_field('role', 'id', ['shortname' => 'editingteacher']);
+        $this->getDataGenerator()->enrol_user($user->id, $course->id, $teacherrole);
+        $result = course_access::teacher_courses($user->id);
+        $this->assertTrue($result['exists']);
+        $this->assertTrue($result['suspended']);
+        $this->assertSame([], $result['courses']);
+    }
+
+    public function test_deleted_or_unknown_identity_does_not_exist(): void {
+        $this->resetAfterTest();
+        $user = $this->getDataGenerator()->create_user();
+        delete_user($user);
         foreach ([$user->id, -1] as $id) {
             $result = course_access::teacher_courses($id);
             $this->assertFalse($result['exists']);

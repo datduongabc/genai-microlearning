@@ -23,8 +23,9 @@ class teacher_courses extends external_api {
 
     public static function execute_returns(): external_single_structure {
         return new external_single_structure([
-            'exists' => new external_value(PARAM_BOOL, 'Account still active'),
-            'email' => new external_value(PARAM_RAW, 'Moodle email, empty if inactive'),
+            'exists' => new external_value(PARAM_BOOL, 'Account not deleted'),
+            'suspended' => new external_value(PARAM_BOOL, 'Account suspended, so it has no course access'),
+            'email' => new external_value(PARAM_RAW, 'Moodle email, empty if deleted'),
             'courses' => new external_multiple_structure(new external_single_structure([
                 'id' => new external_value(PARAM_INT, 'Course id'),
                 'fullname' => new external_value(PARAM_TEXT, 'Full course name'),

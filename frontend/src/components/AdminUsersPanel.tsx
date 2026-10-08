@@ -26,7 +26,7 @@ const inputClass =
 
 // Account activation preserves existing learning data and Moodle links.
 export function AdminUsersPanel() {
-  const [filter, setFilter] = useState("all");
+  const [filter, setFilter] = useState("active");
   const [users, setUsers] = useState<AdminUser[] | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -41,7 +41,7 @@ export function AdminUsersPanel() {
   // Sets state only from promise callbacks, and drops an answer that arrives after a newer request.
   useEffect(() => {
     let cancelled = false;
-    listUsers(filter === "all" ? undefined : filter === "active").then(
+    listUsers(filter === "active").then(
       (list) => {
         if (cancelled) return;
         setUsers(list);
@@ -85,7 +85,6 @@ export function AdminUsersPanel() {
       <label className="text-sm">
         Trạng thái tài khoản
         <select value={filter} onChange={(event) => setFilter(event.target.value)} className={`${inputClass} ml-2`}>
-          <option value="all">Tất cả</option>
           <option value="active">Đang hoạt động</option>
           <option value="inactive">Đã vô hiệu hóa</option>
         </select>

@@ -68,20 +68,6 @@ def call(wsfunction: str, **params: Any) -> Any:
     return result
 
 
-
-
-# Moodle's own front page is course 1; it is not a course anyone teaches.
-
-# Moodle's built-in "Teacher" (editingteacher) role -- id 3 on every fresh install.
-_EDITING_TEACHER_ROLE_ID = 3
-
-
-
-
-
-
-
-
 def get_course(course_id: int) -> dict[str, Any] | None:
     """The Moodle course with this id, or None when there is none."""
     try:

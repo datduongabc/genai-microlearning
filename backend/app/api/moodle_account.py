@@ -79,6 +79,10 @@ def get_account(request: Request, db: Session = Depends(get_db), current_user: U
                     db.commit()
                 except IntegrityError as error:
                     db.rollback()
+                    _lock_account(db, current_user)
+                    current_user.moodle_request_id = None
+                    current_user.moodle_request_email = None
+                    db.commit()
                     raise HTTPException(status_code=409, detail='Tài khoản Moodle đã liên kết với một tài khoản khác.') from error
         if current_user.moodle_user_id is not None:
             info = client.teacher_courses(current_user.moodle_user_id)

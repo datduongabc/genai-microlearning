@@ -163,7 +163,7 @@ def test_worker_khong_cham_duoc_vao_bang_nhay_cam(db_trang):
             ))
         }
 
-    assert cham_duoc & {"users", "chat_sessions", "chat_messages", "moodle_course_claims"} == set()
+    assert cham_duoc & {"users", "chat_sessions", "chat_messages"} == set()
 
 
 def test_worker_doc_duoc_han_token_nhung_khong_doc_duoc_chinh_token(db_trang):

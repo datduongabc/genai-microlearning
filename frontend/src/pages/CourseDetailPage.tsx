@@ -634,8 +634,6 @@ function MoodleLinkSection({ course, onLinked }: { course: Course; onLinked: () 
       {accountSection}
       <div className="rounded-[3px] border border-gray-200 p-4">
         <p className="mb-2 text-sm font-medium">Course này chưa liên kết với Moodle.</p>
-        {/* Trên điện thoại ô chọn chiếm trọn một hàng và hai nút xuống hàng dưới: ép cả ba vào
-            một hàng 390px thì nút "Tạo course Moodle mới" gãy thành bốn dòng. */}
         <form
           onSubmit={handleSubmit(handleLink, (errors) => setError(errors.moodleCourseId?.message ?? null))}
           noValidate
@@ -660,7 +658,6 @@ function MoodleLinkSection({ course, onLinked }: { course: Course; onLinked: () 
           >
             Liên kết
           </button>
-
         </form>
         {error && <p className="mt-2 text-sm text-red-700">{error}</p>}
       </div>

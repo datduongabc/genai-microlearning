@@ -64,6 +64,22 @@ def test_teacher_needs_an_app_link_to_a_currently_authorized_moodle_course(world
         assert generate(world, index).status_code == 200
 
 
+def test_suspended_moodle_teacher_uses_non_teacher_allowance_and_keeps_link(world, monkeypatch):
+    uid, cid, _ = world
+    with SessionLocal() as db:
+        db.get(User, uid).moodle_user_id = moodle_user_id = 10_000 + uuid.uuid4().int % 10**9
+        db.get(Course, cid).moodle_course_id = 101
+        db.commit()
+    monkeypatch.setattr(moodle, 'teacher_courses', lambda user_id: {
+        'exists': True, 'suspended': True, 'email': 'teacher@example.com', 'courses': [],
+    })
+    for index in range(3):
+        assert generate(world, index).status_code == 200
+    assert generate(world, 3).status_code == 429
+    with SessionLocal() as db:
+        assert db.get(User, uid).moodle_user_id == moodle_user_id
+
+
 def test_moodle_outage_uses_non_teacher_allowance(world, monkeypatch):
     uid, cid, _ = world
     with SessionLocal() as db:

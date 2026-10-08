@@ -83,6 +83,8 @@ def test_one_moodle_account_cannot_link_two_app_accounts(confirmed_link_service)
     assert client.get('/moodle/account', headers=first).json()['status'] == 'linked'
     assert client.get('/moodle/account', headers=second).status_code == 409
     assert stored_link(second_id) is None
+    assert client.get('/moodle/account', headers=second).json()['status'] == 'not_linked'
+    assert request(second).status_code == 202
 
 
 def test_link_request_requires_authentication_and_a_valid_email(confirmed_link_service):
@@ -104,6 +106,18 @@ def test_stale_identity_releases_link_but_a_moodle_outage_retains_it(confirmed_l
     monkeypatch.setattr(moodle_client, 'teacher_courses', lambda user_id: {'exists': False, 'email': '', 'courses': []})
     assert client.get('/moodle/account', headers=headers).json()['status'] == 'not_linked'
     assert stored_link(user_id) is None
+
+
+def test_suspended_moodle_identity_keeps_link(confirmed_link_service, monkeypatch):
+    user_id, headers = account()
+    assert request(headers).status_code == 202
+    confirmed_link_service['status'] = 'confirmed'
+    assert client.get('/moodle/account', headers=headers).json()['status'] == 'linked'
+    monkeypatch.setattr(moodle_client, 'teacher_courses', lambda user_id: {
+        'exists': True, 'suspended': True, 'email': confirmed_link_service['email'], 'courses': [],
+    })
+    assert client.get('/moodle/account', headers=headers).json()['status'] == 'linked'
+    assert stored_link(user_id) == confirmed_link_service['moodle_user_id']
 
 
 def test_unknown_moodle_email_creates_no_pending_request(confirmed_link_service, monkeypatch):

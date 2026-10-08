@@ -59,6 +59,9 @@ def test_outage_and_stale_identity_do_not_grant_course_access(linked, monkeypatc
         raise moodle.MoodleError('Moodle unavailable')
     monkeypatch.setattr(moodle, 'teacher_courses', unavailable)
     assert client.post(f'/courses/{cid}/link-moodle', headers=headers, json={'moodle_course_id': 72}).status_code == 502
+    monkeypatch.setattr(moodle, 'teacher_courses', lambda user_id: {**state, 'suspended': True, 'courses': []})
+    assert client.post(f'/courses/{cid}/link-moodle', headers=headers, json={'moodle_course_id': 72}).status_code == 403
+    assert client.get('/moodle/account', headers=headers).json()['status'] == 'linked'
     monkeypatch.setattr(moodle, 'teacher_courses', lambda user_id: {**state, 'exists': False, 'courses': []})
     assert client.post(f'/courses/{cid}/link-moodle', headers=headers, json={'moodle_course_id': 72}).status_code == 422
 

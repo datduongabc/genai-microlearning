@@ -110,7 +110,6 @@ def test_the_worker_can_do_what_the_pipelines_do_with_jobs_and_documents(world):
         "update courses set owner_id = owner_id",
         "select token_hash from refresh_tokens",
         "update refresh_tokens set revoked_at = now()",
-        "select * from moodle_course_claims",
         "select * from chat_messages",
         "select * from chat_sessions",
         "create table worker_should_not_create (x int)",

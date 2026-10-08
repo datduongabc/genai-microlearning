@@ -30,8 +30,8 @@ export interface FailedJobInfo {
   module_id: string | null
 }
 
-export async function listUsers(isActive?: boolean) {
-  const { data } = await api.get<AdminUser[]>('/admin/users', { params: isActive === undefined ? undefined : { is_active: isActive } })
+export async function listUsers(isActive: boolean) {
+  const { data } = await api.get<AdminUser[]>('/admin/users', { params: { is_active: isActive } })
   return data
 }
 

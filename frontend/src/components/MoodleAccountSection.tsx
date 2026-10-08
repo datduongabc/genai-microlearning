@@ -26,8 +26,16 @@ export function MoodleAccountSection({ onStatus }: { onStatus?: (status: MoodleA
     let cancelled = false;
     const version = requestVersion.current;
     Promise.resolve(getMoodleAccount()).then(
-      (result) => { if (!cancelled && version === requestVersion.current) setAnswer(result); },
-      () => { if (!cancelled && version === requestVersion.current) setAnswer(null); },
+      (result) => {
+        if (cancelled || version !== requestVersion.current) return;
+        setAnswer(result);
+        setError(null);
+      },
+      (err) => {
+        if (cancelled || version !== requestVersion.current) return;
+        setAnswer(null);
+        setError(apiErrorMessage(err, "Không kiểm tra được tài khoản Moodle."));
+      },
     );
     return () => { cancelled = true; };
   }, [reloads]);

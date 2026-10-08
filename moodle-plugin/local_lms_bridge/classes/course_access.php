@@ -7,9 +7,12 @@ defined('MOODLE_INTERNAL') || die();
 final class course_access {
     public static function teacher_courses(int $userid): array {
         global $DB;
-        $user = $DB->get_record('user', ['id' => $userid, 'deleted' => 0, 'suspended' => 0], 'id,email');
+        $user = $DB->get_record('user', ['id' => $userid, 'deleted' => 0], 'id,email,suspended');
         if (!$user) {
-            return ['exists' => false, 'email' => '', 'courses' => []];
+            return ['exists' => false, 'suspended' => false, 'email' => '', 'courses' => []];
+        }
+        if ($user->suspended) {
+            return ['exists' => true, 'suspended' => true, 'email' => $user->email, 'courses' => []];
         }
         $courses = get_user_capability_course('moodle/course:manageactivities', $userid, true, 'fullname,shortname') ?: [];
         $result = [];
@@ -19,7 +22,7 @@ final class course_access {
             }
             $result[] = ['id' => (int) $course->id, 'fullname' => $course->fullname, 'shortname' => $course->shortname];
         }
-        return ['exists' => true, 'email' => $user->email, 'courses' => $result];
+        return ['exists' => true, 'suspended' => false, 'email' => $user->email, 'courses' => $result];
     }
 
     public static function require_author(int $userid, \context_course $context): void {

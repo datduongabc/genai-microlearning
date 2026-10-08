@@ -106,6 +106,14 @@ describe('AdminPage - accounts', () => {
     expect(within(row).queryByRole('button', { name: 'Xóa' })).not.toBeInTheDocument()
   })
 
+  it('lists active accounts by default with only active and deactivated filters', async () => {
+    renderPage()
+    await screen.findByText('lan@example.com')
+    expect(api.listUsers).toHaveBeenLastCalledWith(true)
+    const options = within(screen.getByLabelText('Trạng thái tài khoản')).getAllByRole('option')
+    expect(options.map((option) => option.textContent)).toEqual(['Đang hoạt động', 'Đã vô hiệu hóa'])
+  })
+
   it('requests only deactivated accounts after changing the filter', async () => {
     renderPage()
     await screen.findByText('lan@example.com')
