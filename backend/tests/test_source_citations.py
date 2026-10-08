@@ -1,12 +1,19 @@
 """Source citations by ID: the model cites the short ID a chunk carries in the prompt, the server maps
 it back to the chunk, and a stored citation points at exactly one passage."""
 
+import json
 import types
 import uuid
 
+import pytest
+from jsonschema import Draft202012Validator
+
+from app.generation import content
 from app.generation.common import format_source_chunks, resolve_source_id
 from app.generation.content import ContentOutput, resolve_citations
+from app.generation.objective import LearningObjective
 from app.generation.study_packets import resolved_citations
+from app.llm import gateway
 from app.models import ComponentType
 
 
@@ -51,6 +58,104 @@ def test_an_id_the_model_invented_is_saved_without_a_chunk():
 
     assert stored.claim_citations[0].chunk_id is None and stored.claim_citations[0].locator == "S5"
     assert stored.source_locators == []
+
+
+LO = LearningObjective(
+    bloom_level="understand", verb="Explain", objective_text="Explain heap insertion",
+    sub_objectives=["Describe reheapUp", "Explain insertion complexity"],
+)
+
+
+@pytest.mark.parametrize("bad_field", ["source_ids", "claim_citations"])
+def test_unknown_ids_trigger_regeneration_even_when_the_critic_passes(monkeypatch, bad_field):
+    chunks = [chunk("reheapUp takes O(log n)")]
+    bad = ContentOutput(
+        content="reheapUp takes O(log n)", source_ids=["S1"],
+        claim_citations=[{"claim": "reheapUp takes O(log n)", "source_id": "S1"}],
+    )
+    if bad_field == "source_ids":
+        bad.source_ids = ["S33"]
+    else:
+        bad.claim_citations[0].source_id = "S33"
+    good = ContentOutput(
+        content=bad.content, source_ids=["S1"],
+        claim_citations=[{"claim": bad.content, "source_id": "S1"}],
+    )
+    generations = []
+
+    def complete(prompt, response_model, **kwargs):
+        if response_model is ContentOutput:
+            generations.append(prompt)
+            return bad if len(generations) == 1 else good
+        return content.ContentVerification(
+            groundedness_pass=True, groundedness_reason="supported",
+            completeness_pass=True, completeness_reason="complete",
+            scope_pass=True, scope_reason="in scope",
+        )
+
+    monkeypatch.setattr(content, "complete_structured", complete)
+
+    stored, check = content.generate_content(LO, chunks)
+
+    assert stored.claim_citations[0].chunk_id == str(chunks[0].id)
+    assert stored.source_locators == [chunks[0].source_ref]
+    assert len(generations) == 2
+    assert "S33" in generations[1] and "S1" in generations[1]
+    assert check.groundedness_pass
+
+
+@pytest.mark.parametrize("self_check", [True, False])
+def test_content_with_unknown_ids_is_never_returned_after_the_retry_budget(monkeypatch, self_check):
+    chunks = [chunk()]
+
+    def complete(prompt, response_model, **kwargs):
+        if response_model is ContentOutput:
+            return ContentOutput(
+                content="heap claim", source_ids=["S33"],
+                claim_citations=[{"claim": "heap claim", "source_id": "S33"}],
+            )
+        return content.ContentVerification(
+            groundedness_pass=True, groundedness_reason="supported",
+            completeness_pass=True, completeness_reason="complete",
+            scope_pass=True, scope_reason="in scope",
+        )
+
+    monkeypatch.setattr(content, "complete_structured", complete)
+
+    with pytest.raises(ValueError, match="S33"):
+        content.generate_content(LO, chunks, self_check=self_check)
+
+
+@pytest.mark.parametrize("count", [0, 1, 2])
+def test_the_gateway_schema_allows_only_ids_numbered_in_this_content_prompt(monkeypatch, count):
+    chunks = [chunk() for _ in range(count)]
+    requests = []
+    output = {"content": "heap claim", "source_ids": [], "claim_citations": []}
+    if count:
+        output["source_ids"] = [f"S{count}"]
+        output["claim_citations"] = [{"claim": "heap claim", "source_id": f"S{count}"}]
+
+    def completion(**kwargs):
+        requests.append(kwargs)
+        return types.SimpleNamespace(choices=[types.SimpleNamespace(
+            message=types.SimpleNamespace(content=json.dumps(output)),
+        )])
+
+    monkeypatch.setattr(gateway.litellm, "completion", completion)
+
+    stored, _ = content.generate_content(LO, chunks, self_check=False)
+
+    response_format = requests[0]["response_format"]
+    assert isinstance(response_format, dict)
+    validator = Draft202012Validator(response_format["json_schema"]["schema"])
+    assert validator.is_valid(output)
+    for source in ["S1", "S2", "S3", "S33"]:
+        expected = source in ["S1", "S2"][:count]
+        assert validator.is_valid({**output, "source_ids": [source]}) is expected
+        assert validator.is_valid({
+            **output, "claim_citations": [{"claim": "heap claim", "source_id": source}],
+        }) is expected
+    assert [c.chunk_id for c in stored.claim_citations] == ([str(chunks[-1].id)] if count else [])
 
 
 class Rows:

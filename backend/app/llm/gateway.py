@@ -76,16 +76,22 @@ def transcribe_audio(path: str) -> list[dict]:
 
 
 def complete_structured[T: BaseModel](
-    prompt: str, response_model: type[T], system_instruction: str | None = None, **kwargs
+    prompt: str, response_model: type[T], system_instruction: str | None = None,
+    response_format: dict | None = None, **kwargs
 ) -> T:
     """JSON-schema-constrained completion -- litellm maps `response_format`
     to each provider's native structured-output mechanism (Gemini's
-    response_schema, OpenAI's json_schema, ...)."""
+    response_schema, OpenAI's json_schema, ...). `response_format` can constrain
+    the schema for this call, while the reply is still parsed as `response_model`."""
     messages = []
     if system_instruction:
         messages.append({"role": "system", "content": system_instruction})
     messages.append({"role": "user", "content": prompt})
-    response = _completion(messages=messages, response_format=response_model, **kwargs)
+    response = _completion(
+        messages=messages,
+        response_format=response_format if response_format is not None else response_model,
+        **kwargs,
+    )
     # strict=False: model hay để lọt tab, xuống dòng trần vào giữa chuỗi JSON khi viết công thức, và
     # trình đọc nghiêm từ chối cả câu trả lời dù nó vẫn đọc được. Schema vẫn được kiểm đầy đủ ở bước sau.
     return response_model.model_validate(json.loads(response.choices[0].message.content, strict=False))
