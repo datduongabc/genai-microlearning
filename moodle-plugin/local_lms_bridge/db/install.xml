@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<XMLDB PATH="local/lms_bridge/db" VERSION="20261008" COMMENT="Moodle account confirmation requests"
+ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../lib/xmldb/xmldb.xsd">
+ <TABLES><TABLE NAME="local_lms_bridge_requests" COMMENT="Requests awaiting consent from their Moodle owner">
+ <FIELDS>
+  <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+  <FIELD NAME="requestid" TYPE="char" LENGTH="64" NOTNULL="true" SEQUENCE="false"/>
+  <FIELD NAME="integrationuserid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+  <FIELD NAME="appaccount" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false"/>
+  <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+  <FIELD NAME="appemail" TYPE="char" LENGTH="254" NOTNULL="true" SEQUENCE="false"/>
+  <FIELD NAME="appname" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false"/>
+  <FIELD NAME="status" TYPE="char" LENGTH="16" NOTNULL="true" SEQUENCE="false"/>
+  <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+  <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+ </FIELDS><KEYS><KEY NAME="primary" TYPE="primary" FIELDS="id"/></KEYS>
+ <INDEXES><INDEX NAME="requestid" UNIQUE="true" FIELDS="requestid"/></INDEXES>
+ </TABLE></TABLES></XMLDB>

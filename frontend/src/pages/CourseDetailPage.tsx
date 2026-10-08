@@ -5,7 +5,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useParams } from "react-router-dom";
 import {
   apiErrorMessage,
-  createMoodleCourseFor,
   deleteDocument,
   deleteModule,
   generateModule,
@@ -587,24 +586,6 @@ function MoodleLinkSection({ course, onLinked }: { course: Course; onLinked: () 
       onLinked();
     } catch (err) {
       setError(apiErrorMessage(err, "Liên kết course thất bại"));
-      // The server may have linked the course before enrolling failed.
-      await Promise.resolve(onLinked()).catch(() => {});
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function handleCreateNew() {
-    setBusy(true);
-    setError(null);
-    try {
-      await createMoodleCourseFor(course.id);
-      onLinked();
-    } catch (err) {
-      // The server explains a refusal such as "no Moodle account has your email".
-      setError(apiErrorMessage(err, "Tạo course Moodle mới thất bại"));
-      // The server may have created and linked the course before enrolling failed.
-      await Promise.resolve(onLinked()).catch(() => {});
     } finally {
       setBusy(false);
     }
@@ -633,7 +614,7 @@ function MoodleLinkSection({ course, onLinked }: { course: Course; onLinked: () 
     );
   }
 
-  if (account === "not_linked") {
+  if (account !== "linked") {
     return (
       <div className="mb-6">
         {accountSection}
@@ -665,7 +646,7 @@ function MoodleLinkSection({ course, onLinked }: { course: Course; onLinked: () 
             {...register("moodleCourseId")}
             className="min-w-0 flex-1 basis-full rounded-[3px] border border-gray-300 bg-white px-3 py-1.5 text-sm sm:basis-auto"
           >
-            <option value="">Chọn course Moodle có sẵn…</option>
+            <option value="">Chọn khóa học bạn có quyền quản lý hoạt động…</option>
             {courses.map((c) => (
               <option key={c.id} value={c.id}>
                 {c.fullname} ({c.shortname})
@@ -679,14 +660,7 @@ function MoodleLinkSection({ course, onLinked }: { course: Course; onLinked: () 
           >
             Liên kết
           </button>
-          <button
-            type="button"
-            onClick={handleCreateNew}
-            disabled={busy}
-            className="whitespace-nowrap rounded-[3px] bg-navy px-3 py-1.5 text-sm font-semibold text-[#f3f1ea] hover:bg-[#28394b] disabled:opacity-60"
-          >
-            Tạo course Moodle mới
-          </button>
+
         </form>
         {error && <p className="mt-2 text-sm text-red-700">{error}</p>}
       </div>

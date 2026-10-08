@@ -23,13 +23,13 @@ def test_create_book_asks_the_bridge_for_a_book_and_returns_its_course_module_id
 
     monkeypatch.setattr(moodle_client, "call", fake_call)
 
-    cmid = moodle_client.create_book(6, "Encapsulation", CHAPTERS, section_num=2)
+    cmid = moodle_client.create_book(6, "Encapsulation", CHAPTERS, section_num=2, actor_user_id=9)
 
     assert cmid == 77
     assert calls == [
         (
             "local_lms_bridge_create_book",
-            {"courseid": 6, "name": "Encapsulation", "chapters": CHAPTERS, "sectionnum": 2},
+            {"actorid": 9, "courseid": 6, "name": "Encapsulation", "chapters": CHAPTERS, "sectionnum": 2},
         )
     ]
 
@@ -38,7 +38,7 @@ def test_create_book_defaults_to_the_first_section(monkeypatch):
     calls: list[dict] = []
     monkeypatch.setattr(moodle_client, "call", lambda wsfunction, **params: calls.append(params) or 1)
 
-    moodle_client.create_book(6, "B", CHAPTERS)
+    moodle_client.create_book(6, "B", CHAPTERS, actor_user_id=9)
 
     assert calls[0]["sectionnum"] == 0
 
@@ -52,7 +52,7 @@ def test_the_chapters_are_sent_as_php_style_form_fields(monkeypatch):
 
     monkeypatch.setattr(httpx, "post", fake_post)
 
-    assert moodle_client.create_book(6, "B", CHAPTERS) == 5
+    assert moodle_client.create_book(6, "B", CHAPTERS, actor_user_id=9) == 5
 
     assert sent["wsfunction"] == "local_lms_bridge_create_book"
     assert sent["chapters[0][title]"] == "Mục tiêu học tập"
@@ -69,4 +69,4 @@ def test_a_moodle_error_reaches_the_caller(monkeypatch):
     monkeypatch.setattr(moodle_client, "call", fake_call)
 
     with pytest.raises(moodle_client.MoodleError):
-        moodle_client.create_book(999, "B", CHAPTERS)
+        moodle_client.create_book(999, "B", CHAPTERS, actor_user_id=9)

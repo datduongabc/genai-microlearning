@@ -19,7 +19,7 @@ def test_publish_to_moodle_refuses_when_course_not_linked():
     db = SessionLocal()
     try:
         user = User(
-            email=f"publish-{suffix}@example.com", name="Test", hashed_password="x", is_admin=False, moodle_user_id=4242
+            email=f"publish-{suffix}@example.com", name="Test", hashed_password="x", is_admin=False, moodle_user_id=10_000 + uuid.uuid4().int % 10**9
         )
         db.add(user)
         db.flush()

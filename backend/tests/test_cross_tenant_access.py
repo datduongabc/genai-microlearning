@@ -46,8 +46,8 @@ client = TestClient(app)
 def world():
     db = SessionLocal()
     try:
-        owner = User(email=f"tenant-a-{uuid.uuid4().hex[:8]}@example.com", name="A", hashed_password="x", is_admin=False, moodle_user_id=4242)
-        stranger = User(email=f"tenant-b-{uuid.uuid4().hex[:8]}@example.com", name="B", hashed_password="x", is_admin=False, moodle_user_id=4242)
+        owner = User(email=f"tenant-a-{uuid.uuid4().hex[:8]}@example.com", name="A", hashed_password="x", is_admin=False, moodle_user_id=10_000 + uuid.uuid4().int % 10**9)
+        stranger = User(email=f"tenant-b-{uuid.uuid4().hex[:8]}@example.com", name="B", hashed_password="x", is_admin=False, moodle_user_id=10_000 + uuid.uuid4().int % 10**9)
         db.add_all([owner, stranger])
         db.flush()
         course = Course(name="Course of A", owner_id=owner.id)
@@ -153,7 +153,6 @@ ATTACKS = [
     ("DELETE", "/courses/{course}", None, {}),
     ("POST", "/courses/{course}/link-moodle", None, {"json": {"moodle_course_id": 999}}),
     ("DELETE", "/courses/{course}/link-moodle", None, {}),
-    ("POST", "/courses/{course}/create-moodle", None, {}),
     ("GET", "/courses/{course}/moodle-sections", None, {}),
     ("POST", "/courses/{course}/chat", None, {"json": {"message": "hello"}}),
     ("GET", "/courses/{course}/chat/{session}/history", None, {}),

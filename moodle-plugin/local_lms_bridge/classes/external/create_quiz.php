@@ -22,6 +22,7 @@ class create_quiz extends external_api {
 
     public static function execute_parameters(): external_function_parameters {
         return new external_function_parameters([
+            'actorid' => new external_value(PARAM_INT, 'Linked Moodle user whose capability authorizes this write'),
             'courseid'  => new external_value(PARAM_INT, 'Ma khoa hoc trong Moodle'),
             'name'      => new external_value(PARAM_TEXT, 'Ten cua quiz'),
             'questions' => new external_multiple_structure(
@@ -48,7 +49,7 @@ class create_quiz extends external_api {
         return new external_value(PARAM_INT, 'Ma course module cua quiz vua tao');
     }
 
-    public static function execute(int $courseid, string $name, array $questions, int $sectionnum = 0,
+    public static function execute(int $courseid, string $name, array $questions, int $actorid, int $sectionnum = 0,
             string $behaviour = 'deferredfeedback'): int {
         global $CFG, $DB, $USER;
         require_once($CFG->dirroot . '/course/modlib.php');
@@ -56,6 +57,7 @@ class create_quiz extends external_api {
         require_once($CFG->dirroot . '/mod/quiz/locallib.php');
 
         $params = self::validate_parameters(self::execute_parameters(), [
+            'actorid' => $actorid,
             'courseid'   => $courseid,
             'name'       => $name,
             'questions'  => $questions,
@@ -72,6 +74,7 @@ class create_quiz extends external_api {
         $course = get_course($params['courseid']);
         $context = \context_course::instance($course->id);
         self::validate_context($context);
+        \local_lms_bridge\course_access::require_author($params['actorid'], $context);
         require_capability('mod/quiz:addinstance', $context);
 
         $module = $DB->get_record('modules', ['name' => 'quiz'], '*', MUST_EXIST);

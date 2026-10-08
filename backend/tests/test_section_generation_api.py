@@ -168,7 +168,10 @@ def test_more_sections_than_the_cap_are_refused_and_nothing_is_created(world):
     assert _jobs(world["book"]) == []
 
 
-def test_exactly_the_cap_is_accepted(world):
+def test_exactly_the_cap_is_accepted(world, monkeypatch):
+    # This tests request batch size; the separately tested daily limit is configurable.
+    from app.config import settings
+    monkeypatch.setattr(settings, "non_teacher_daily_generation_limit", MAX_SECTIONS_PER_REQUEST)
     response = _generate(world, world["book"], world["sections"][:MAX_SECTIONS_PER_REQUEST])
 
     assert response.status_code == 200

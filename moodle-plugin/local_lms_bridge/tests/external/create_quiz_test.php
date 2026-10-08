@@ -7,7 +7,7 @@ use PHPUnit\Framework\Attributes\CoversClass;
 #[CoversClass(create_quiz::class)]
 final class create_quiz_test extends \advanced_testcase {
     public function test_creation_persists_behaviour_and_during_attempt_feedback(): void {
-        global $DB;
+        global $DB, $USER;
         $this->resetAfterTest();
         $this->setAdminUser();
         $course = $this->getDataGenerator()->create_course();
@@ -21,8 +21,8 @@ final class create_quiz_test extends \advanced_testcase {
         foreach ([null, 'deferredfeedback', 'immediatefeedback'] as $index => $behaviour) {
             $name = 'Boundary ' . $index;
             $cmid = $behaviour === null
-                ? create_quiz::execute($course->id, $name, $questions)
-                : create_quiz::execute($course->id, $name, $questions, 0, $behaviour);
+                ? create_quiz::execute($course->id, $name, $questions, $USER->id)
+                : create_quiz::execute($course->id, $name, $questions, $USER->id, 0, $behaviour);
             $cm = get_coursemodule_from_id('quiz', $cmid, $course->id, false, MUST_EXIST);
             $quiz = $DB->get_record('quiz', ['id' => $cm->instance], '*', MUST_EXIST);
             $this->assertSame($behaviour ?? 'deferredfeedback', $quiz->preferredbehaviour);
@@ -41,13 +41,14 @@ final class create_quiz_test extends \advanced_testcase {
         $params = create_quiz::validate_parameters(create_quiz::execute_parameters(), [
             'courseid' => 1,
             'name' => 'Quiz',
+            'actorid' => 2,
             'questions' => [],
         ]);
         $this->assertSame('deferredfeedback', $params['behaviour']);
     }
 
     public function test_unknown_behaviour_is_rejected_before_creating_an_activity(): void {
-        global $DB;
+        global $DB, $USER;
         $this->resetAfterTest();
         $this->setAdminUser();
         $course = $this->getDataGenerator()->create_course();
@@ -55,7 +56,7 @@ final class create_quiz_test extends \advanced_testcase {
         $modulecount = $DB->count_records('course_modules');
 
         try {
-            create_quiz::execute($course->id, 'Invalid', [], 0, 'interactive');
+            create_quiz::execute($course->id, 'Invalid', [], $USER->id, 0, 'interactive');
             $this->fail('Unsupported behaviour was accepted');
         } catch (\invalid_parameter_exception $exception) {
             $this->assertEquals($quizcount, $DB->count_records('quiz'));

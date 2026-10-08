@@ -2,7 +2,6 @@ import { AxiosError, type AxiosResponse, type InternalAxiosRequestConfig } from 
 import { afterEach, expect, it, vi } from 'vitest'
 import { api } from './client'
 import {
-  createMoodleCourseFor,
   linkMoodleCourse,
   MOODLE_ACCOUNT_CHANGED_EVENT,
   publishToMoodle,
@@ -25,7 +24,6 @@ function listen() {
 it.each([
   ['publishing', () => publishToMoodle('m', 0)],
   ['linking a course', () => linkMoodleCourse('c', 6)],
-  ['creating a course', () => createMoodleCourseFor('c')],
 ])('a 422 answer to %s says the Moodle account may have changed, and the error still reaches the caller', async (_, send) => {
   vi.spyOn(api, 'post').mockRejectedValue(failure(422))
   const { heard, stop } = listen()

@@ -19,6 +19,7 @@ class create_book extends external_api {
 
     public static function execute_parameters(): external_function_parameters {
         return new external_function_parameters([
+            'actorid' => new external_value(PARAM_INT, 'Linked Moodle user whose capability authorizes this write'),
             'courseid' => new external_value(PARAM_INT, 'Ma khoa hoc trong Moodle'),
             'name'     => new external_value(PARAM_TEXT, 'Ten cua Book'),
             'chapters' => new external_multiple_structure(
@@ -38,11 +39,12 @@ class create_book extends external_api {
         return new external_value(PARAM_INT, 'Ma course module cua Book vua tao');
     }
 
-    public static function execute(int $courseid, string $name, array $chapters, int $sectionnum = 0): int {
+    public static function execute(int $courseid, string $name, array $chapters, int $actorid, int $sectionnum = 0): int {
         global $CFG, $DB;
         require_once($CFG->dirroot . '/course/modlib.php');
 
         $params = self::validate_parameters(self::execute_parameters(), [
+            'actorid' => $actorid,
             'courseid'   => $courseid,
             'name'       => $name,
             'chapters'   => $chapters,
@@ -52,6 +54,7 @@ class create_book extends external_api {
         $course = get_course($params['courseid']);
         $context = \context_course::instance($course->id);
         self::validate_context($context);
+        \local_lms_bridge\course_access::require_author($params['actorid'], $context);
         require_capability('moodle/course:manageactivities', $context);
 
         $module = $DB->get_record('modules', ['name' => 'book'], '*', MUST_EXIST);

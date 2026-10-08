@@ -45,7 +45,10 @@ def create_account(db: Session, *, email: str, name: str, password: str, is_admi
         raise AccountError(422, weakness)
 
     taken = AccountError(409, "Email đã được đăng ký.")
-    if db.query(User.id).filter(User.email == email).first() is not None:
+    existing = db.query(User).filter(User.email == email).first()
+    if existing is not None:
+        if not existing.is_active:
+            raise AccountError(409, "Email đã được đăng ký. Liên hệ admin để kích hoạt lại tài khoản cũ.")
         raise taken
     user = User(email=email, name=name, hashed_password=hash_password(password), is_admin=is_admin)
     db.add(user)

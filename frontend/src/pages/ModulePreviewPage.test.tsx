@@ -152,7 +152,7 @@ describe('ModulePreviewPage - publish to Moodle', () => {
     expect(api.publishToMoodle).toHaveBeenCalledTimes(1)
   })
 
-  it('shows an error and keeps the button enabled when publishing fails', async () => {
+  it('shows an error and hides publishing until access is checked again after failure', async () => {
     vi.mocked(api.getModule).mockResolvedValue({ ...baseModule, moodle_course_id: 6 })
     vi.mocked(api.getMoodleSections).mockResolvedValue([])
     vi.mocked(api.publishToMoodle).mockRejectedValue(new Error('boom'))
@@ -163,7 +163,7 @@ describe('ModulePreviewPage - publish to Moodle', () => {
     await userEvent.click(button)
 
     expect(await screen.findByText(/push to moodle thất bại/i)).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /push to moodle/i })).toBeEnabled()
+    expect(screen.queryByRole('button', { name: /push to moodle/i })).not.toBeInTheDocument()
   })
 })
 
@@ -671,4 +671,13 @@ describe('ModulePreviewPage - forms', () => {
       await waitFor(() => expect(api.publishToMoodle).toHaveBeenCalledWith('module-1', 3))
     })
   })
+})
+
+it('hides Moodle publishing when live permission lookup fails', async () => {
+  vi.mocked(api.getModule).mockResolvedValue({ ...baseModule, moodle_course_id: 72 })
+  vi.mocked(api.getMoodleSections).mockRejectedValue(new Error('Denied'))
+  vi.mocked(api.getMoodleAccount).mockResolvedValue({ email: 'teacher@example.com', status: 'linked' })
+  renderPage()
+  expect(await screen.findByText('Không tải được danh sách phần học Moodle')).toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: 'Push to Moodle' })).not.toBeInTheDocument()
 })

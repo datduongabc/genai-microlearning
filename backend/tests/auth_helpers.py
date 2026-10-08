@@ -1,4 +1,6 @@
 """Local accounts and real login sessions for HTTP tests."""
+import uuid
+
 from app.auth import sessions
 from app.auth.security import create_access_token, hash_password
 from app.db import SessionLocal
@@ -16,9 +18,9 @@ def make_account(email: str, password: str = STRONG_PASSWORD, name: str = "Test"
         return user
 
 
-def link_moodle_account(user_id, moodle_user_id: int = 4242) -> None:
+def link_moodle_account(user_id, moodle_user_id: int | None = None) -> None:
     with SessionLocal() as db:
-        db.get(User, user_id).moodle_user_id = moodle_user_id
+        db.get(User, user_id).moodle_user_id = moodle_user_id if moodle_user_id is not None else 10_000 + uuid.uuid4().int % 10**9
         db.commit()
 
 

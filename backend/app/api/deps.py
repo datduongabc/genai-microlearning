@@ -33,7 +33,7 @@ def get_current_user(
     user = db.get(User, user_id)
     # is_active is read here, from the database, on every request: a locked account is shut out
     # at once, with the access token it already holds, and the token carries no role either.
-    if user is None or not user.is_active or user.deleted_at is not None:
+    if user is None or not user.is_active:
         raise unauthorized
 
     # Set cho transaction HIỆN TẠI (đã mở sẵn từ câu query User ở trên) +

@@ -1,5 +1,5 @@
 """Rate limits: login attempts are limited per client address, and the endpoints that cost
-money (model calls, Moodle courses, uploads) per user, so people behind one address do not
+money (model calls, Moodle link requests, uploads) per user, so people behind one address do not
 share a bucket. The endpoint tests aim at courses that do not exist: the request is
 counted and then answered 404, so no model call or Moodle request is ever made. Every call
 uses a different id on purpose: a limit that counted per URL would never trip."""
@@ -85,7 +85,7 @@ def test_one_email_tried_over_and_over_is_slowed_by_the_address_limit_too():
 CASES = [
     ("chat", 20, lambda h: client.post(f"/courses/{uuid.uuid4()}/chat", json={"message": "hi"}, headers=h)),
     ("generate", 10, lambda h: client.post("/modules/generate", params={"document_id": str(uuid.uuid4())}, headers=h)),
-    ("create-moodle", 5, lambda h: client.post(f"/courses/{uuid.uuid4()}/create-moodle", headers=h)),
+    ("moodle-link-request", 10, lambda h: client.post("/moodle/account/link-requests", json={"email": "invalid"}, headers=h)),
     ("publish", 20, lambda h: client.post(f"/modules/{uuid.uuid4()}/publish-to-moodle", json={"section_num": 0}, headers=h)),
     ("upload", 20, lambda h: client.post(
         "/documents", params={"course_id": str(uuid.uuid4())}, files={"file": ("a.txt", b"x", "text/plain")}, headers=h
@@ -115,20 +115,20 @@ def test_one_users_limit_does_not_use_up_another_users(two_users):
 def test_a_refused_request_is_logged_with_who_it_was_and_which_path(two_users, caplog):
     caplog.set_level(logging.WARNING)
     mine, _ = two_users
-    _codes(6, lambda: client.post(f"/courses/{uuid.uuid4()}/create-moodle", headers=mine))
+    _codes(11, lambda: client.post("/moodle/account/link-requests", json={"email": "invalid"}, headers=mine))
 
     lines = [r.getMessage() for r in caplog.records if "rate_limited" in r.getMessage()]
 
     assert len(lines) == 1
-    assert "/create-moodle" in lines[0]
+    assert "/moodle/account/link-requests" in lines[0]
     assert "user:" in lines[0]
 
 
 def test_a_refused_request_says_how_to_retry(two_users):
     mine, _ = two_users
-    _codes(5, lambda: client.post(f"/courses/{uuid.uuid4()}/create-moodle", headers=mine))
+    _codes(10, lambda: client.post("/moodle/account/link-requests", json={"email": "invalid"}, headers=mine))
 
-    refused = client.post(f"/courses/{uuid.uuid4()}/create-moodle", headers=mine)
+    refused = client.post("/moodle/account/link-requests", json={"email": "invalid"}, headers=mine)
 
     assert refused.status_code == 429
     assert "error" in refused.json()

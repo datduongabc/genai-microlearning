@@ -12,16 +12,27 @@ export interface MoodleSection {
   name: string
 }
 
-// Every course that exists in Moodle (minus those already linked here or claimed by another lecturer).
+// Courses where the linked Moodle user can currently manage activities.
 export async function listMoodleCourses() {
   const { data } = await api.get<MoodleCourse[]>('/courses/moodle/courses')
   return data
 }
 
-export type MoodleAccountStatus = 'not_linked' | 'linked'
+export type MoodleAccountStatus = 'not_linked' | 'linked' | 'pending' | 'rejected' | 'expired'
+
+export interface MoodleAccount {
+  email: string
+  status: MoodleAccountStatus
+  confirmation_url?: string
+}
+
+export async function requestMoodleLink(email: string) {
+  const { data } = await api.post<MoodleAccount>('/moodle/account/link-requests', { email })
+  return data
+}
 
 export async function getMoodleAccount() {
-  const { data } = await api.get<{ email: string; status: MoodleAccountStatus }>('/moodle/account')
+  const { data } = await api.get<MoodleAccount>('/moodle/account')
   return data
 }
 
@@ -45,11 +56,6 @@ export async function linkMoodleCourse(courseId: string, moodleCourseId: number)
   const { data } = await noticingRelink(
     api.post<{ moodle_course_id: number }>(`/courses/${courseId}/link-moodle`, { moodle_course_id: moodleCourseId }),
   )
-  return data
-}
-
-export async function createMoodleCourseFor(courseId: string) {
-  const { data } = await noticingRelink(api.post<{ moodle_course_id: number }>(`/courses/${courseId}/create-moodle`))
   return data
 }
 

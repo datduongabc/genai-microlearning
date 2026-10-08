@@ -5,14 +5,11 @@ with questions (`core_question_add_question` does not exist;
 `mod_book`/`mod_quiz` only expose read-only WS functions). `create_book`
 and `create_quiz` below call `local_lms_bridge_create_book` /
 `local_lms_bridge_create_quiz` -- a small local plugin installed into the
-Moodle instance (moodle-plugin/local_lms_bridge/) that adds exactly
-those two functions, reusing Moodle's own production module/question-save
-code paths rather than reimplementing them. `create_course` uses the real
-core `core_course_create_courses` function directly -- no plugin needed
-for that one.
+Moodle instance (moodle-plugin/local_lms_bridge/). The plugin also handles
+native Moodle account confirmation and current capability-scoped course lookup.
+Accounts, courses and enrollment are managed in Moodle itself.
 """
 
-import uuid
 from typing import Any
 
 import httpx
@@ -71,57 +68,18 @@ def call(wsfunction: str, **params: Any) -> Any:
     return result
 
 
-def create_course(name: str) -> int:
-    result = call(
-        "core_course_create_courses",
-        courses=[{
-            "fullname": name,
-            "shortname": f"{name[:80]}-{uuid.uuid4().hex[:8]}",
-            "categoryid": 1,
-        }],
-    )
-    return int(result[0]["id"])
 
 
 # Moodle's own front page is course 1; it is not a course anyone teaches.
-_SITE_COURSE_ID = 1
 
 # Moodle's built-in "Teacher" (editingteacher) role -- id 3 on every fresh install.
 _EDITING_TEACHER_ROLE_ID = 3
 
 
-def user_exists(user_id: int) -> bool:
-    """Whether Moodle still has this user; core_user_get_users leaves deleted ones out."""
-    result = call("core_user_get_users", criteria=[{"key": "id", "value": user_id}])
-    return any(int(user["id"]) == user_id for user in result.get("users", []))
 
 
-def enrol_as_teacher(course_id: int, user_id: int) -> None:
-    """Enrol the Moodle user as the course's teacher.
-
-    Moodle's own "add a course" form enrols its creator, but the
-    core_course_create_courses web service does not, and the dashboard
-    (/my/) lists only courses the logged-in user is enrolled in -- so a
-    course created here would otherwise exist yet never show up for the
-    teacher. `user_id` is the lecturer's own Moodle account (the one they linked with their
-    confirmed identity, see app/api/moodle_account.py), not the account that owns the
-    web service token.
-    """
-    call(
-        "enrol_manual_enrol_users",
-        enrolments=[{"roleid": _EDITING_TEACHER_ROLE_ID, "userid": user_id, "courseid": course_id}],
-    )
 
 
-def list_courses() -> list[dict[str, Any]]:
-    """Every course created in Moodle (not the site's own front page), for the drop-down a
-    lecturer picks from when linking a course."""
-    result = call("core_course_get_courses")
-    return [
-        {"id": c["id"], "fullname": c["fullname"], "shortname": c["shortname"]}
-        for c in result
-        if c["id"] != _SITE_COURSE_ID
-    ]
 
 
 def get_course(course_id: int) -> dict[str, Any] | None:
@@ -146,7 +104,7 @@ def get_course_sections(course_id: int) -> list[dict[str, Any]]:
     return [{"sectionnum": s["section"], "name": s["name"]} for s in result]
 
 
-def create_book(course_id: int, name: str, chapters: list[dict[str, Any]], section_num: int = 0) -> int:
+def create_book(course_id: int, name: str, chapters: list[dict[str, Any]], section_num: int = 0, *, actor_user_id: int) -> int:
     """Returns the created Book's course module id (cmid).
 
     Each item in `chapters` needs: title (str), content (HTML str), subchapter (int, 1 when the
@@ -155,6 +113,7 @@ def create_book(course_id: int, name: str, chapters: list[dict[str, Any]], secti
     """
     return int(call(
         "local_lms_bridge_create_book",
+        actorid=actor_user_id,
         courseid=course_id,
         name=name,
         chapters=chapters,
@@ -168,6 +127,7 @@ def create_quiz(
     questions: list[dict[str, Any]],
     section_num: int = 0,
     behaviour: str = "deferredfeedback",
+    *, actor_user_id: int,
 ) -> int:
     """Returns the created quiz's course module id (cmid).
 
@@ -178,9 +138,23 @@ def create_quiz(
     """
     return int(call(
         "local_lms_bridge_create_quiz",
+        actorid=actor_user_id,
         courseid=course_id,
         name=name,
         questions=questions,
         sectionnum=section_num,
         behaviour=behaviour,
     ))
+
+
+def request_account_link(*, app_account: str, email: str, app_email: str, app_name: str) -> dict:
+    return call("local_lms_bridge_request_link", app_account=app_account, email=email,
+                app_email=app_email, app_name=app_name)
+
+
+def account_link_status(*, request_id: str, app_account: str) -> dict:
+    return call("local_lms_bridge_link_status", request_id=request_id, app_account=app_account)
+
+
+def teacher_courses(user_id: int) -> dict:
+    return call("local_lms_bridge_teacher_courses", user_id=user_id)

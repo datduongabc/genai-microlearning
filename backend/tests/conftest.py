@@ -67,15 +67,8 @@ def moodle_knows_every_course(monkeypatch):
 
 
 @pytest.fixture(autouse=True)
-def moodle_keeps_every_user(monkeypatch):
-    """A stored Moodle link is checked against Moodle. Tests that are not about that find every
-    linked Moodle user still there; the ones that are replace this."""
-    monkeypatch.setattr(moodle_client, "user_exists", lambda user_id: True)
-
-
-@pytest.fixture(autouse=True)
-def moodle_enrols_anyone(monkeypatch):
-    """Linking a course and pushing to it enrol the lecturer's Moodle account as its teacher.
-    Tests that are not about that let it succeed without a Moodle server; the ones that are
-    replace this."""
-    monkeypatch.setattr(moodle_client, "enrol_as_teacher", lambda course_id, user_id: None)
+def moodle_course_access(monkeypatch):
+    """No capabilities by default; Moodle permission tests provide their explicit grants."""
+    monkeypatch.setattr(moodle_client, "teacher_courses", lambda user_id: {
+        "exists": True, "email": "moodle@example.com", "courses": [],
+    })

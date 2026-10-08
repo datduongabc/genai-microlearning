@@ -218,6 +218,9 @@ function PublishToMoodleSection({
   const [result, setResult] = useState<PublishToMoodleResult | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [sections, setSections] = useState<MoodleSection[]>([])
+  const [authorizedCourse, setAuthorizedCourse] = useState<string | null>(null)
+  const courseScope = `${courseId}:${moodleCourseId}`
+  const canPublish = authorizedCourse === courseScope
   const {
     register,
     handleSubmit,
@@ -231,14 +234,23 @@ function PublishToMoodleSection({
 
   useEffect(() => {
     if (moodleCourseId === null) return
-    getMoodleSections(courseId)
-      .then(setSections)
-      .catch((err) => {
+    let cancelled = false
+    getMoodleSections(courseId).then(
+      (list) => {
+        if (cancelled) return
+        setSections(list)
+        setAuthorizedCourse(courseScope)
+      },
+      (err) => {
+        if (cancelled) return
+        setAuthorizedCourse(null)
         setSections([])
         setError(apiErrorMessage(err, 'Không tải được danh sách phần học Moodle'))
         void onRefresh().catch(() => {})
-      })
-  }, [courseId, moodleCourseId, onRefresh])
+      },
+    )
+    return () => { cancelled = true }
+  }, [courseId, moodleCourseId, courseScope, onRefresh])
 
   async function handlePublish({ sectionNum, addNewSection }: PublishToMoodleFormValues) {
     setError(null)
@@ -249,6 +261,7 @@ function PublishToMoodleSection({
       const target = addNewSection ? sections.length : sectionNum
       setResult(await publishToMoodle(moduleId, target))
     } catch (err) {
+      setAuthorizedCourse(null)
       setError(apiErrorMessage(err, 'Push to Moodle thất bại'))
       await onRefresh().catch(() => {})
     }
@@ -272,7 +285,7 @@ function PublishToMoodleSection({
   return (
     <div className="mt-8 border-t border-gray-200 pt-6">
       <MoodleAccountSection />
-      <form onSubmit={handleSubmit(handlePublish)} noValidate>
+      {canPublish && <form onSubmit={handleSubmit(handlePublish)} noValidate>
       {!addNewSection && sections.length > 0 && (
         <div className="mb-3">
           <label className="mr-2 text-sm text-gray-600">Section:</label>
@@ -305,7 +318,7 @@ function PublishToMoodleSection({
       >
         {publishing ? 'Đang đẩy lên Moodle...' : result !== null ? 'Đã đẩy lên Moodle' : 'Push to Moodle'}
       </button>
-      </form>
+      </form>}
 
       {result && (
         <p className="mt-3 text-sm text-green-700">

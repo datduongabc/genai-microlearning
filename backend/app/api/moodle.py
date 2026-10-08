@@ -13,7 +13,7 @@ from app.db import get_db
 from app.generation.module_generation_pipeline import is_control
 from app.models import ComponentType, Course, Module, ModuleComponent, User
 from app.moodle import client as moodle_client
-from app.moodle.accounts import enrol_linked_teacher, require_moodle_user_id
+from app.moodle.accounts import require_course_author, require_moodle_user_id
 from app.moodle.errors import MOODLE_FAILURES, moodle_failure
 
 router = APIRouter(prefix="/modules", tags=["moodle"], dependencies=[Depends(get_current_user)])
@@ -152,8 +152,8 @@ def publish_to_moodle(
     if course.moodle_course_id is None:
         raise HTTPException(
             status_code=400,
-            detail="Course is not linked to a Moodle course yet -- link or create one first "
-            "(POST /courses/{id}/link-moodle or /courses/{id}/create-moodle)",
+            detail="Course is not linked to a Moodle course yet -- link one first "
+            "(POST /courses/{id}/link-moodle)",
         )
 
     chapters = _build_book_chapters(module)
@@ -162,14 +162,14 @@ def publish_to_moodle(
 
     # The lecturer must have linked their Moodle account to see what is pushed, so nothing is
     # written for one who has not.
-    require_moodle_user_id(current_user)
+    actor_user_id = require_moodle_user_id(current_user)
     try:
-        # Idempotent: the lecturer teaches the course they push to, however it was linked.
-        enrol_linked_teacher(db, current_user, course.moodle_course_id)
+        # Re-check the linked user before any activity write.
+        require_course_author(db, current_user, course.moodle_course_id)
         result = {
             "moodle_course_id": course.moodle_course_id,
             "book_cmid": moodle_client.create_book(
-                course.moodle_course_id, _plain(module.title) or "Mô-đun", chapters, payload.section_num
+                course.moodle_course_id, _plain(module.title) or "Mô-đun", chapters, payload.section_num, actor_user_id=actor_user_id
             ),
         }
 
@@ -179,7 +179,7 @@ def publish_to_moodle(
             result["practice_cmid"] = moodle_client.create_quiz(
                 course.moodle_course_id, f"{_plain(module.title)} - Practice",
                 _build_questions(practice, _explanations(module, ComponentType.practice)), payload.section_num,
-                behaviour="immediatefeedback",
+                actor_user_id=actor_user_id, behaviour="immediatefeedback",
             )
 
         quiz = _component(module, ComponentType.quiz)
@@ -187,7 +187,7 @@ def publish_to_moodle(
             result["quiz_cmid"] = moodle_client.create_quiz(
                 course.moodle_course_id, f"{_plain(module.title)} - Quiz",
                 _build_questions(quiz, _explanations(module, ComponentType.quiz)), payload.section_num,
-                behaviour="deferredfeedback",
+                actor_user_id=actor_user_id, behaviour="deferredfeedback",
             )
     except MOODLE_FAILURES as e:
         raise moodle_failure(e, db, course) from e

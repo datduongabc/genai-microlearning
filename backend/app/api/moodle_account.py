@@ -1,25 +1,98 @@
-from fastapi import APIRouter, Depends, Request
+"""Request a Moodle identity link and activate it only after Moodle-session consent."""
+from urllib.parse import urlencode
+
+from fastapi import APIRouter, Depends, HTTPException, Request
+from pydantic import BaseModel, Field
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user
+from app.auth.accounts import AccountError, normalize_email
 from app.auth.rate_limit import limiter, user_or_address
+from app.config import settings
 from app.db import get_db
 from app.models import User
-from app.moodle.accounts import forget_if_gone
+from app.moodle import client
 from app.moodle.errors import MOODLE_FAILURES, moodle_failure
 
 router = APIRouter(prefix="/moodle", tags=["moodle"], dependencies=[Depends(get_current_user)])
 
 
-@router.get("/account")
-@limiter.limit("60/minute", key_func=user_or_address)
-def get_account(
-    request: Request, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)
-):
-    """"linked" while the lecturer has a stored Moodle link and Moodle still has that user,
-    "not_linked" otherwise (the stale link is cleared)."""
+class LinkRequest(BaseModel):
+    email: str = Field(min_length=1, max_length=254)
+
+
+def _lock_account(db: Session, user: User):
+    # A concurrent new request or deactivation must not let an old poll activate a link.
+    db.refresh(user, with_for_update=True)
+    if not user.is_active:
+        raise HTTPException(status_code=401, detail="Account unavailable")
+
+
+def _confirmation_url(request_id: str) -> str:
+    return settings.moodle_wwwroot.rstrip('/') + '/local/lms_bridge/confirm.php?' + urlencode({'request': request_id})
+
+
+@router.post('/account/link-requests', status_code=202)
+@limiter.limit('10/minute', key_func=user_or_address)
+def request_link(request: Request, payload: LinkRequest, db: Session = Depends(get_db),
+                 current_user: User = Depends(get_current_user)):
     try:
-        linked = current_user.moodle_user_id is not None and not forget_if_gone(db, current_user)
-    except MOODLE_FAILURES as e:
-        raise moodle_failure(e, db) from e
-    return {"email": current_user.email, "status": "linked" if linked else "not_linked"}
+        email = normalize_email(payload.email)
+    except AccountError as error:
+        raise HTTPException(status_code=error.status_code, detail=error.detail) from error
+    _lock_account(db, current_user)
+    if current_user.moodle_user_id is not None:
+        raise HTTPException(status_code=409, detail='Tài khoản đã liên kết Moodle.')
+    try:
+        result = client.request_account_link(app_account=str(current_user.id), email=email,
+                                             app_email=current_user.email, app_name=current_user.name)
+    except client.MoodleError as error:
+        if error.errorcode == 'invaliduser':
+            raise HTTPException(status_code=422, detail='Không tìm thấy tài khoản Moodle hoạt động với email này.') from error
+        raise moodle_failure(error, db) from error
+    except MOODLE_FAILURES as error:
+        raise moodle_failure(error, db) from error
+    current_user.moodle_request_id = result['request_id']
+    current_user.moodle_request_email = email
+    db.commit()
+    return {'status': 'pending', 'email': email, 'confirmation_url': _confirmation_url(result['request_id'])}
+
+
+@router.get('/account')
+@limiter.limit('60/minute', key_func=user_or_address)
+def get_account(request: Request, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    _lock_account(db, current_user)
+    status = 'not_linked'
+    email = current_user.email
+    try:
+        if current_user.moodle_user_id is None and current_user.moodle_request_id is not None:
+            result = client.account_link_status(request_id=current_user.moodle_request_id,
+                                                app_account=str(current_user.id))
+            status = result['status']
+            email = current_user.moodle_request_email
+            if status == 'confirmed':
+                current_user.moodle_user_id = int(result['moodle_user_id'])
+                current_user.moodle_request_id = None
+                current_user.moodle_request_email = None
+                try:
+                    db.commit()
+                except IntegrityError as error:
+                    db.rollback()
+                    raise HTTPException(status_code=409, detail='Tài khoản Moodle đã liên kết với một tài khoản khác.') from error
+        if current_user.moodle_user_id is not None:
+            info = client.teacher_courses(current_user.moodle_user_id)
+            if not info['exists']:
+                current_user.moodle_user_id = None
+                db.commit()
+                status = 'not_linked'
+                email = current_user.email
+            else:
+                status = 'linked'
+                email = info['email']
+    except MOODLE_FAILURES as error:
+        raise moodle_failure(error, db) from error
+    answer = {'status': status, 'email': email}
+    if status == 'pending':
+        answer['confirmation_url'] = _confirmation_url(current_user.moodle_request_id)
+    return answer

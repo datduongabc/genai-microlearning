@@ -22,7 +22,6 @@ LOGIN_FAILED = "login_failed"
 LOGOUT = "logout"
 REFRESH_REJECTED = "refresh_rejected"
 
-ADMIN_DELETE_USER = "admin_delete_user"
 ADMIN_DISABLE_USER = "admin_disable_user"
 ADMIN_ENABLE_USER = "admin_enable_user"
 ADMIN_RETRY_JOBS = "admin_retry_jobs"

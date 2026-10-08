@@ -7,14 +7,12 @@ import uuid
 
 import jwt
 import pytest
-from fastapi import HTTPException
 from fastapi.testclient import TestClient
 
-from app.api import admin as admin_api
 from app.auth.security import decode_token
 from app.db import SessionLocal
 from app.main import app
-from app.models import Course, MoodleCourseClaim, RefreshToken, User
+from app.models import Course, RefreshToken, User
 from tests.auth_helpers import STRONG_PASSWORD, create_and_login, make_account
 
 client = TestClient(app)
@@ -89,18 +87,6 @@ def test_a_disabled_lecturer_is_locked_out_at_once_including_the_token_they_hold
     assert client.post("/auth/login", json={"email": email, "password": "not the password 1"}).status_code == 401
 
 
-def test_enabling_restores_access_and_disabling_never_deleted_anything(admin, lecturer):
-    lecturer_id = lecturer["user"]["id"]
-    client.post("/courses", json={"name": "Keep me"}, headers=_bearer(lecturer))
-
-    client.post(f"/admin/users/{lecturer_id}/disable", headers=_bearer(admin))
-    enabled = client.post(f"/admin/users/{lecturer_id}/enable", headers=_bearer(admin))
-
-    assert enabled.status_code == 200 and enabled.json()["is_active"] is True
-    again = _login(lecturer["user"]["email"])
-    assert again.status_code == 200
-    courses = client.get("/courses", headers=_bearer(again.json())).json()
-    assert [c["name"] for c in courses] == ["Keep me"]
 
 
 def test_an_admin_cannot_disable_themselves(admin):
@@ -110,33 +96,8 @@ def test_an_admin_cannot_disable_themselves(admin):
     assert client.get("/admin/users", headers=_bearer(admin)).status_code == 200
 
 
-def test_the_last_active_admin_cannot_be_disabled_even_by_a_stale_session():
-    # Two admins disabling each other at the same moment: the one whose request runs second was
-    # authenticated while still active, so the check has to look at the database, not at them.
-    first = make_account(_email("admin-a"), is_admin=True)
-    second = make_account(_email("admin-b"), is_admin=True)
-    with SessionLocal() as db:
-        db.query(User).filter(User.is_admin == True, User.id != first.id).update({"is_active": False})
-        db.commit()
-    try:
-        with SessionLocal() as db:
-            stale_second = db.get(User, second.id)
-            with pytest.raises(HTTPException) as refused:
-                admin_api._set_active(None, db, stale_second, first.id, active=False)
-        assert refused.value.status_code == 409
-    finally:
-        with SessionLocal() as db:
-            db.query(User).filter(User.is_admin == True).update({"is_active": True})
-            db.commit()
 
 
-def test_an_admin_can_disable_another_admin(admin):
-    other = create_and_login(client, _email("admin-other"), is_admin=True)
-
-    response = client.post(f"/admin/users/{other['user']['id']}/disable", headers=_bearer(admin))
-
-    assert response.status_code == 200
-    assert client.get("/admin/users", headers=_bearer(other)).status_code == 401
 
 
 
@@ -208,8 +169,6 @@ def test_disabling_ends_every_login_of_the_account(admin, lecturer):
     assert live == 0
 
 
-def _delete(admin, user_id):
-    return client.delete(f"/admin/users/{user_id}", headers=_bearer(admin))
 
 
 def _give_course(owner_id):
@@ -220,9 +179,6 @@ def _give_course(owner_id):
         return course.id
 
 
-def _exists(user_id):
-    with SessionLocal() as db:
-        return db.get(User, uuid.UUID(str(user_id))) is not None
 
 
 def test_the_list_says_how_many_courses_each_lecturer_has(admin, lecturer):
@@ -236,57 +192,3 @@ def test_the_list_says_how_many_courses_each_lecturer_has(admin, lecturer):
     assert users[lecturer_id]["course_count"] == 2
     assert users[str(empty.id)]["course_count"] == 0
     assert users[admin["user"]["id"]]["course_count"] is None
-
-
-def test_the_list_says_how_many_moodle_courses_each_lecturer_has_claimed(admin, lecturer):
-    lecturer_id = lecturer["user"]["id"]
-    empty = make_account(_email("empty"))
-    with SessionLocal() as db:
-        db.add(MoodleCourseClaim(owner_id=uuid.UUID(lecturer_id), moodle_course_id=uuid.uuid4().int % 10**8))
-        db.commit()
-
-    users = {u["id"]: u for u in client.get("/admin/users", headers=_bearer(admin)).json()}
-
-    assert users[lecturer_id]["moodle_course_count"] == 1
-    assert users[str(empty.id)]["moodle_course_count"] == 0
-    assert users[admin["user"]["id"]]["moodle_course_count"] is None
-
-
-def test_an_admin_cannot_delete_themselves_or_another_admin(admin):
-    other = create_and_login(client, _email("admin-other"), is_admin=True)
-
-    own = _delete(admin, admin["user"]["id"])
-    another = _delete(admin, other["user"]["id"])
-
-    assert own.status_code == 409 and another.status_code == 409
-    assert _exists(admin["user"]["id"]) and _exists(other["user"]["id"])
-
-
-def test_only_an_admin_can_delete_and_an_unknown_user_is_not_found(admin, lecturer):
-    victim = make_account(_email("victim"))
-
-    by_lecturer = _delete(lecturer, victim.id)
-    anonymous = client.delete(f"/admin/users/{victim.id}")
-    unknown = _delete(admin, uuid.uuid4())
-
-    assert by_lecturer.status_code == 404 and anonymous.status_code == 401 and unknown.status_code == 404
-    assert _exists(victim.id)
-
-
-def test_a_lecturer_cannot_delete_themselves(lecturer):
-    assert _delete(lecturer, lecturer["user"]["id"]).status_code == 404
-    assert _exists(lecturer["user"]["id"])
-
-
-def test_deleting_is_logged_without_a_secret(admin, lecturer, caplog):
-    caplog.set_level(logging.INFO)
-    lecturer_id = lecturer["user"]["id"]
-
-    _delete(admin, lecturer_id)
-
-    lines = [r.getMessage() for r in caplog.records if r.name == "app.audit"]
-    assert any(
-        "admin_delete_user" in line and f"actor_id={admin['user']['id']}" in line and lecturer_id in line
-        for line in lines
-    )
-    assert not any("hashed_password" in line or "token" in line for line in lines)

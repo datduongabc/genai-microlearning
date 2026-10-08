@@ -1,11 +1,11 @@
-"""Open registration, local credentials and administrative soft deletion."""
+"""Open registration, local credentials."""
 import uuid
 
 from fastapi.testclient import TestClient
 
 from app.db import SessionLocal
 from app.main import app
-from app.models import Course, User
+from app.models import User
 from tests.auth_helpers import STRONG_PASSWORD, admin_headers
 
 client = TestClient(app)
@@ -27,26 +27,6 @@ def test_any_email_can_register_and_log_in_locally_without_moodle():
     with SessionLocal() as db:
         assert db.get(User, uuid.UUID(user_id)).moodle_user_id is None
     assert client.post('/auth/register', json={'email': email, 'name': 'Duplicate', 'password': STRONG_PASSWORD}).status_code == 409
-
-
-def test_soft_delete_preserves_course_but_ends_login_and_all_sessions():
-    email, user_id = register()
-    login = client.post('/auth/login', json={'email': email, 'password': STRONG_PASSWORD}).json()
-    headers = {'Authorization': 'Bearer ' + login['access_token']}
-    course = client.post('/courses', json={'name': 'Preserved course'}, headers=headers).json()
-    with SessionLocal() as db:
-        db.get(User, uuid.UUID(user_id)).moodle_user_id = 4242
-        db.commit()
-    admin = admin_headers()
-    assert client.delete('/admin/users/' + user_id, headers=admin).status_code == 200
-    with SessionLocal() as db:
-        user = db.get(User, uuid.UUID(user_id))
-        assert user.deleted_at is not None and user.moodle_user_id is None
-        assert db.get(Course, uuid.UUID(course['id'])) is not None
-    assert user_id not in [u['id'] for u in client.get('/admin/users', headers=admin).json()]
-    assert client.post('/auth/login', json={'email': email, 'password': STRONG_PASSWORD}).status_code in (401, 403)
-    assert client.get('/courses', headers=headers).status_code == 401
-    assert client.post('/auth/refresh', json={'refresh_token': login['refresh_token']}).status_code == 401
 
 
 def test_admin_creates_local_non_admin_without_link_and_cannot_create_admin():
