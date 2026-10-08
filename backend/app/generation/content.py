@@ -1,6 +1,7 @@
 """Content: the lesson text written from the retrieved passages and checked against them, or, in the
 no-RAG arm, written from the model's own knowledge with the same prompt minus the source block."""
 
+from litellm.utils import type_to_response_format_param
 from pydantic import BaseModel, Field
 
 from app.generation.common import (
@@ -10,6 +11,7 @@ from app.generation.common import (
     output_language_instruction,
     resolve_source_id,
     source_block,
+    source_id,
     system_instruction,
 )
 from app.generation.objective import LearningObjective
@@ -117,6 +119,11 @@ class SourcedContent(LessonText):
 
     source_locators: list[str]
     claim_citations: list[StoredClaimCitation]
+
+
+def _unknown_source_ids(content: ContentOutput, chunks: list[Chunk]) -> list[str]:
+    cited = [*content.source_ids, *(c.source_id for c in content.claim_citations)]
+    return list(dict.fromkeys(i for i in cited if resolve_source_id(chunks, i) is None))
 
 
 def resolve_citations(content: ContentOutput, chunks: list[Chunk]) -> SourcedContent:
@@ -228,9 +235,15 @@ def _verify_content(
         return complete_structured(
             prompt, LessonVerification, system_instruction=NO_SOURCE_CONTENT_VERIFY_SYSTEM_INSTRUCTION, temperature=0.0
         )
-    return complete_structured(
+    check = complete_structured(
         prompt, ContentVerification, system_instruction=CONTENT_VERIFY_SYSTEM_INSTRUCTION, temperature=0.0
     )
+    # The critic can approve an invented ID too; membership is a server check, not a judgement.
+    unknown = _unknown_source_ids(content_out, context_chunks)
+    if unknown:
+        check.groundedness_pass = False
+        check.groundedness_reason += f"; Unknown source IDs: {', '.join(unknown)}. Use only the supplied IDs."
+    return check
 
 
 def generate_content(
@@ -239,10 +252,29 @@ def generate_content(
 ) -> tuple[LessonText | SourcedContent, ContentVerification | LessonVerification | None]:
     """`context_chunks=None` is the no-RAG arm: the same prompt without the source block, written from
     the model's own knowledge, and checked for completeness and scope only (there is nothing to hold
-    it against). With `self_check` off the lesson is written once and nothing checks it (the check is
-    None): the arm of the self-check ablation."""
+    it against). With `self_check` off the lesson is written once without a model check (the check is
+    None): the arm of the self-check ablation. Source ID membership is always enforced."""
     sourced = context_chunks is not None
     sub_objectives_text = "\n".join(f"- {so}" for so in lo.sub_objectives)
+    allowed_ids = [source_id(i) for i in range(len(context_chunks))] if sourced else []
+    source_ids_rule = (
+        f"Allowed source_ids and claim_citations.source_id: "
+        f"{', '.join(allowed_ids) or '(none)'}. "
+        "Use only these IDs, never page numbers or IDs inferred from source text.\n"
+        if sourced else ""
+    )
+    response_format = None
+    if sourced:
+        # A fresh native schema per call: concurrent lessons can have different source sets.
+        response_format = type_to_response_format_param(ContentOutput)
+        schema = response_format["json_schema"]["schema"]
+        if allowed_ids:
+            schema["properties"]["source_ids"]["items"]["enum"] = allowed_ids
+            schema["$defs"]["ClaimCitation"]["properties"]["source_id"]["enum"] = allowed_ids
+        else:
+            # JSON Schema does not permit an empty enum; no sources means no citations.
+            schema["properties"]["source_ids"]["maxItems"] = 0
+            schema["properties"]["claim_citations"]["maxItems"] = 0
 
     def generate(feedback: str | None) -> LessonText:
         prompt = (
@@ -266,15 +298,18 @@ def generate_content(
                 + output_language_instruction(output_language) + custom_instructions_instruction(custom_instructions, sourced=False), temperature=0.0,
             )
         return complete_structured(
-            prompt, ContentOutput, system_instruction=CONTENT_SYSTEM_INSTRUCTION
-            + output_language_instruction(output_language) + custom_instructions_instruction(custom_instructions), temperature=0.0,
+            prompt, ContentOutput, system_instruction=CONTENT_SYSTEM_INSTRUCTION + "\n" + source_ids_rule
+            + output_language_instruction(output_language) + custom_instructions_instruction(custom_instructions),
+            response_format=response_format, temperature=0.0,
         )
 
     criteria = [("completeness", "Completeness"), ("scope", "Scope")]
     if sourced:
         criteria.insert(0, ("groundedness", "Groundedness"))
-    # Hết lượt sinh lại thì trả bản cuối (best-effort), như câu hỏi.
+    # Best-effort on semantic checks, but an unresolvable citation must not be published.
     out, check = _checked(
         generate, (lambda out: _verify_content(out, lo, context_chunks)) if self_check else None, criteria
     )
+    if sourced and (unknown := _unknown_source_ids(out, context_chunks)):
+        raise ValueError(f"Content cites unknown source IDs: {', '.join(unknown)}")
     return (resolve_citations(out, context_chunks) if sourced else out), check
