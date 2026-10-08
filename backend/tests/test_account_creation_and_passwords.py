@@ -1,6 +1,6 @@
-"""Local accounts, which only the create-admin command makes (lecturers are made from Moodle at their
-first login): which passwords are accepted, what extreme input does, that simultaneous creations with
-one email make one account and never a server error, and that the admin logs in with the password."""
+"""Local accounts, made by sign-up, by the admin or by the create-admin command: which passwords
+are accepted, what extreme input does, that simultaneous creations with one email make one account
+and never a server error, and that the admin logs in with the password."""
 
 import concurrent.futures
 import uuid
@@ -70,9 +70,9 @@ def test_the_admin_logs_in_with_the_email_in_any_case():
 
 
 def test_non_edu_email_gets_an_account():
-    refused, _ = _create(email=f"{PREFIX}{uuid.uuid4().hex[:8]}@gmail.com")
+    created, _ = _create(email=f"{PREFIX}{uuid.uuid4().hex[:8]}@gmail.com")
 
-    assert isinstance(refused, User)
+    assert isinstance(created, User)
 
 
 def test_a_short_password_is_refused_and_the_reason_is_given():

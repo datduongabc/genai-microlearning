@@ -1,4 +1,4 @@
-"""A lecturer is tied to the Moodle account they linked with its username and password: creating a
+"""A lecturer is tied to the Moodle account stored as their link: creating a
 Moodle course and publishing enrol that account as the course's teacher, and a lecturer who has not
 linked one, even when Moodle has a user with their email, gets a clear error and nothing is pushed.
 Moodle itself is replaced by a recorder."""
@@ -53,7 +53,7 @@ def _course(headers):
 
 
 def _link_account(moodle, headers):
-    """A stored Moodle link for legacy course-publishing tests."""
+    """Store this Moodle account as the lecturer's link."""
     user_id = token_user_id(decode_token(headers["Authorization"].split()[1]))
     link_moodle_account(user_id, moodle["user_id"])
 
