@@ -6,7 +6,7 @@ import pytest
 
 from app.db import SessionLocal
 from app.ingestion.embeddings import embed_texts
-from app.models import Chunk, Course, Document, DocumentStatus, User, UserRole
+from app.models import Chunk, Course, Document, DocumentStatus, User
 from app.retrieval import search as retrieval
 from app.retrieval.search import (
     ChunkScope,
@@ -32,7 +32,7 @@ def book():
     db = SessionLocal()
     try:
         user = User(
-            email=f"scope-{uuid.uuid4().hex[:8]}@example.com", name="T", hashed_password="x", role=UserRole.teacher
+            email=f"scope-{uuid.uuid4().hex[:8]}@example.com", name="T", hashed_password="x", is_admin=False
         )
         db.add(user)
         db.flush()

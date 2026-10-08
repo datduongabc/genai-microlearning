@@ -1,13 +1,10 @@
-"""Creating accounts. There is no public sign-up: only an admin (app/api/admin.py) or the
-create-admin command (scripts/create_admin.py) calls this."""
-
 from pydantic import EmailStr, TypeAdapter, ValidationError
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.auth.password_policy import check_password
 from app.auth.security import hash_password
-from app.models import User, UserRole
+from app.models import User
 
 _EMAIL = TypeAdapter(EmailStr)
 
@@ -31,19 +28,6 @@ def normalize_email(raw: str) -> str:
         raise AccountError(422, "Email không hợp lệ.") from error
 
 
-def is_edu_email(email: str) -> bool:
-    """Whether the address is at an education domain: x.edu, or x.edu.vn and the like (a label
-    "edu" as the last, or the second to last followed by a two-letter country label). Only these are
-    accepted for accounts, here and in Moodle (README: Moodle's allowemailaddresses)."""
-    labels = email.strip().lower().rpartition("@")[2].split(".")
-    if len(labels) < 2 or not all(labels):
-        return False
-    return labels[-1] == "edu" or (len(labels) >= 3 and labels[-2] == "edu" and len(labels[-1]) == 2)
-
-
-EDU_ONLY = "Chỉ chấp nhận email của trường (tên miền dạng x.edu hoặc x.edu.vn)."
-
-
 def clean_name(raw: str) -> str:
     name = " ".join(raw.split())
     if not name:
@@ -51,12 +35,10 @@ def clean_name(raw: str) -> str:
     return name
 
 
-def create_account(db: Session, *, email: str, name: str, password: str, role: UserRole) -> User:
-    """Adds and commits the account. Raises AccountError for a non-edu email, a weak password or a
+def create_account(db: Session, *, email: str, name: str, password: str, is_admin: bool = False) -> User:
+    """Adds and commits the account. Raises AccountError for a weak password or a
     taken email."""
     email = normalize_email(email)
-    if not is_edu_email(email):
-        raise AccountError(422, EDU_ONLY)
     name = clean_name(name)
     weakness = check_password(password, email=email, name=name)
     if weakness is not None:
@@ -65,7 +47,7 @@ def create_account(db: Session, *, email: str, name: str, password: str, role: U
     taken = AccountError(409, "Email đã được đăng ký.")
     if db.query(User.id).filter(User.email == email).first() is not None:
         raise taken
-    user = User(email=email, name=name, hashed_password=hash_password(password), role=role)
+    user = User(email=email, name=name, hashed_password=hash_password(password), is_admin=is_admin)
     db.add(user)
     try:
         db.flush()

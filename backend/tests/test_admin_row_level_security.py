@@ -28,7 +28,6 @@ from app.models import (
     Module,
     ModuleComponent,
     Question,
-    UserRole,
 )
 from tests.auth_helpers import make_account
 
@@ -36,8 +35,8 @@ from tests.auth_helpers import make_account
 @pytest.fixture(scope="module")
 def world():
     owner = make_account(f"rls-owner-{uuid.uuid4().hex[:8]}@example.com")
-    admin = make_account(f"rls-admin-{uuid.uuid4().hex[:8]}@example.com", role=UserRole.admin)
-    disabled_admin = make_account(f"rls-off-{uuid.uuid4().hex[:8]}@example.com", role=UserRole.admin)
+    admin = make_account(f"rls-admin-{uuid.uuid4().hex[:8]}@example.com", is_admin=True)
+    disabled_admin = make_account(f"rls-off-{uuid.uuid4().hex[:8]}@example.com", is_admin=True)
     with SessionLocal() as db:
         db.execute(text("UPDATE users SET is_active = false WHERE id = :id"), {"id": disabled_admin.id})
         course = Course(name="Môn của A", owner_id=owner.id)

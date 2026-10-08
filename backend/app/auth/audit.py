@@ -12,17 +12,19 @@ from fastapi import Request
 
 logger = logging.getLogger("app.audit")
 
+REGISTER_SUCCESS = "register_success"
+REGISTER_REJECTED = "register_rejected"
+ADMIN_CREATE_USER = "admin_create_user"
+ADMIN_RESET_PASSWORD = "admin_reset_password"
+
 LOGIN_SUCCESS = "login_success"
 LOGIN_FAILED = "login_failed"
 LOGOUT = "logout"
 REFRESH_REJECTED = "refresh_rejected"
-MOODLE_ACCOUNT_LINKED = "moodle_account_linked"
 
-ADMIN_CREATE_USER = "admin_create_user"
 ADMIN_DELETE_USER = "admin_delete_user"
 ADMIN_DISABLE_USER = "admin_disable_user"
 ADMIN_ENABLE_USER = "admin_enable_user"
-ADMIN_RESET_PASSWORD = "admin_reset_password"
 ADMIN_RETRY_JOBS = "admin_retry_jobs"
 
 MAX_USER_AGENT_CHARS = 200

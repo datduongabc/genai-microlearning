@@ -633,15 +633,14 @@ function MoodleLinkSection({ course, onLinked }: { course: Course; onLinked: () 
     );
   }
 
-  if (account === "not_linked" || account === "ambiguous") {
+  if (account === "not_linked") {
     return (
       <div className="mb-6">
         {accountSection}
         <div className="rounded-[3px] border border-gray-200 p-4">
           <p className="mb-2 text-sm font-medium">Course này chưa liên kết với Moodle.</p>
           <p className="text-sm text-gray-600">
-            Bạn cần liên kết tài khoản Moodle của mình trước (nút "Liên kết tài khoản Moodle" ở trên): tài
-            khoản Moodle có cùng email sẽ được liên kết, nếu chưa có thì hệ thống tạo mới.
+            Bạn cần liên kết tài khoản Moodle trước khi liên kết khóa học. Tài khoản ứng dụng sử dụng mật khẩu riêng.
           </p>
           {error && <p className="mt-2 text-sm text-red-700">{error}</p>}
         </div>

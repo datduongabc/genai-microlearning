@@ -14,10 +14,10 @@ function renderProtected(initialEntry: string) {
         <Route element={<ProtectedRoute />}>
           <Route path="/private" element={<div>Private content</div>} />
         </Route>
-        <Route element={<ProtectedRoute role="admin" />}>
+        <Route element={<ProtectedRoute adminOnly />}>
           <Route path="/admin-only" element={<div>Admin only content</div>} />
         </Route>
-        <Route element={<ProtectedRoute role="teacher" />}>
+        <Route element={<ProtectedRoute />}>
           <Route path="/teacher-only" element={<div>Teacher only content</div>} />
         </Route>
       </Routes>
@@ -29,7 +29,7 @@ function signedInAs(role: string) {
   vi.spyOn(AuthHookModule, 'useAuth').mockReturnValue({
     token: 'a-token',
     refreshToken: 'a-refresh-token',
-    user: { id: '1', email: 'a@b.com', name: 'A', role },
+    user: { id: '1', email: 'a@b.com', name: 'A', is_admin: role === 'admin' },
     login: vi.fn(),
     logout: vi.fn(),
   })
@@ -55,7 +55,7 @@ describe('ProtectedRoute', () => {
     vi.spyOn(AuthHookModule, 'useAuth').mockReturnValue({
       token: 'a-token',
       refreshToken: 'a-refresh-token',
-      user: { id: '1', email: 'a@b.com', name: 'A', role: 'teacher' },
+      user: { id: '1', email: 'a@b.com', name: 'A', is_admin: false },
       login: vi.fn(),
       logout: vi.fn(),
     })
@@ -65,7 +65,7 @@ describe('ProtectedRoute', () => {
     expect(screen.getByText('Private content')).toBeInTheDocument()
   })
 
-  it('keeps a lecturer out of the admin pages and an admin out of the lecturer pages', () => {
+  it('keeps a regular user out of administration and permits signed-in users elsewhere', () => {
     signedInAs('teacher')
     const { unmount } = renderProtected('/admin-only')
     expect(screen.getByText('Courses page')).toBeInTheDocument()
@@ -74,8 +74,7 @@ describe('ProtectedRoute', () => {
 
     signedInAs('admin')
     renderProtected('/teacher-only')
-    expect(screen.getByText('Admin page')).toBeInTheDocument()
-    expect(screen.queryByText('Teacher only content')).not.toBeInTheDocument()
+    expect(screen.getByText('Teacher only content')).toBeInTheDocument()
   })
 
   it('lets each role into its own pages', () => {

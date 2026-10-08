@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { apiErrorMessage } from "../api";
 import { homeFor, useAuth } from "../auth/useAuth";
 import { loginSchema, type LoginFormValues } from "../lib/authSchemas";
@@ -11,6 +11,7 @@ const SUPPORT_EMAIL = "dat.duongtandat385@gmail.com";
 export function LoginPage() {
   const { login } = useAuth();
   const navigate = useNavigate();
+  const justRegistered = (useLocation().state as { justRegistered?: boolean } | null)?.justRegistered === true;
 
   const [error, setError] = useState<string | null>(null);
 
@@ -24,7 +25,7 @@ export function LoginPage() {
     setError(null);
     try {
       const user = await login(values.email, values.password);
-      navigate(homeFor(user.role));
+      navigate(homeFor(user.is_admin));
     } catch (err) {
       setError(apiErrorMessage(err, "Đăng nhập thất bại"));
     }
@@ -75,9 +76,15 @@ export function LoginPage() {
               Đăng nhập
             </div>
             <h1 className="font-serif text-2xl font-semibold">
-              Nhập Email Và Mật Khẩu
+              Đăng nhập tài khoản
             </h1>
           </div>
+
+          {justRegistered && !error && (
+            <div className="rounded border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-700">
+              Tài khoản đã được tạo. Hãy đăng nhập.
+            </div>
+          )}
 
           {error && (
             <div className="rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
@@ -92,13 +99,18 @@ export function LoginPage() {
             <input
               type="email"
               autoComplete="username"
-              placeholder="ten@hcmut.edu.vn"
+              autoCapitalize="none"
+              spellCheck={false}
+              placeholder="ten@example.com"
               className="border-0 border-b-[1.5px] border-gray-300 bg-transparent py-2.5 text-[15px] outline-none focus:border-terracotta"
               {...register("email")}
             />
             {errors.email && (
               <span className="text-xs text-red-600">{errors.email.message}</span>
             )}
+            <span className="text-xs text-gray-500">
+              Dùng email và mật khẩu của tài khoản trong hệ thống.
+            </span>
           </label>
 
           <label className="flex flex-col gap-1.5">
@@ -125,13 +137,16 @@ export function LoginPage() {
             {isSubmitting ? "Đang đăng nhập..." : "Đăng nhập"}
           </button>
 
-          {/* Không có đăng ký công khai: tài khoản do admin tạo, nên quên mật khẩu cũng nhờ admin. */}
-          <a
-            href={`mailto:${SUPPORT_EMAIL}`}
-            className="text-sm font-semibold text-terracotta hover:underline"
-          >
-            Quên mật khẩu? Liên hệ admin để hỗ trợ
-          </a>
+          <p className="text-sm text-gray-500">
+            Quên mật khẩu?{" "}
+            <a
+              href={`mailto:${SUPPORT_EMAIL}`}
+              className="font-semibold text-terracotta hover:underline"
+            >
+              Liên hệ admin
+            </a>
+          </p>
+          <p className="text-sm">Chưa có tài khoản? <Link to="/register" className="text-terracotta hover:underline">Đăng ký</Link></p>
         </form>
       </div>
     </div>

@@ -23,7 +23,6 @@ export function useAuth() {
   return ctx;
 }
 
-// Where each role lands: the admin has no courses, and a lecturer has no admin page.
-export function homeFor(role: string | undefined) {
-  return role === "admin" ? "/admin" : "/courses";
+export function homeFor(isAdmin: boolean | undefined) {
+  return isAdmin ? "/admin" : "/courses";
 }

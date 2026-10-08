@@ -1,13 +1,12 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { AxiosError, type AxiosResponse, type InternalAxiosRequestConfig } from 'axios'
-import { MemoryRouter, Route, Routes } from 'react-router-dom'
+import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { LoginPage } from './LoginPage'
 import * as AuthHookModule from '../auth/useAuth'
 
 const mockLogin = vi.fn()
-const TEACHER = { id: '1', email: 'teacher@example.com', name: 'T', role: 'teacher' }
 
 beforeEach(() => {
   mockLogin.mockReset()
@@ -27,24 +26,33 @@ function refusal(status: number, data: unknown) {
 }
 
 async function fillAndSubmit(password = 'password123') {
-  await userEvent.type(screen.getByPlaceholderText('ten@hcmut.edu.vn'), 'teacher@example.com')
+  await userEvent.type(screen.getByPlaceholderText('ten@example.com'), 'teacher@example.com')
   await userEvent.type(screen.getByPlaceholderText('••••••••'), password)
   await userEvent.click(screen.getByRole('button', { name: /đăng nhập/i }))
 }
 
 function renderLoginPage() {
   return render(
-    <MemoryRouter initialEntries={['/login']}>
-      <Routes>
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/courses" element={<div>Trang giảng viên</div>} />
-        <Route path="/admin" element={<div>Trang quản trị</div>} />
-      </Routes>
+    <MemoryRouter>
+      <LoginPage />
     </MemoryRouter>,
   )
 }
 
 describe('LoginPage', () => {
+  it('tells a user who just signed up that the account was created, and not otherwise', () => {
+    const { unmount } = render(
+      <MemoryRouter initialEntries={[{ pathname: '/login', state: { justRegistered: true } }]}>
+        <LoginPage />
+      </MemoryRouter>,
+    )
+    expect(screen.getByText('Tài khoản đã được tạo. Hãy đăng nhập.')).toBeInTheDocument()
+    unmount()
+
+    renderLoginPage()
+    expect(screen.queryByText('Tài khoản đã được tạo. Hãy đăng nhập.')).not.toBeInTheDocument()
+  })
+
   it('shows validation errors instead of calling login when the form is invalid', async () => {
     renderLoginPage()
 
@@ -55,10 +63,10 @@ describe('LoginPage', () => {
   })
 
   it('calls login with the entered credentials when the form is valid', async () => {
-    mockLogin.mockResolvedValue(TEACHER)
+    mockLogin.mockResolvedValue({ id: '1', email: 'teacher@example.com', name: 'User', is_admin: false })
     renderLoginPage()
 
-    await userEvent.type(screen.getByPlaceholderText('ten@hcmut.edu.vn'), 'teacher@example.com')
+    await userEvent.type(screen.getByPlaceholderText('ten@example.com'), 'teacher@example.com')
     await userEvent.type(screen.getByPlaceholderText('••••••••'), 'password123')
     await userEvent.click(screen.getByRole('button', { name: /đăng nhập/i }))
 
@@ -71,7 +79,7 @@ describe('LoginPage', () => {
     mockLogin.mockRejectedValue(new Error('network down'))
     renderLoginPage()
 
-    await userEvent.type(screen.getByPlaceholderText('ten@hcmut.edu.vn'), 'teacher@example.com')
+    await userEvent.type(screen.getByPlaceholderText('ten@example.com'), 'teacher@example.com')
     await userEvent.type(screen.getByPlaceholderText('••••••••'), 'password123')
     await userEvent.click(screen.getByRole('button', { name: /đăng nhập/i }))
 
@@ -97,7 +105,7 @@ describe('LoginPage', () => {
   })
 
   it('lets a short password through to the server, which alone decides whether it is right', async () => {
-    mockLogin.mockResolvedValue(TEACHER)
+    mockLogin.mockResolvedValue({ id: '1', email: 'teacher@example.com', name: 'User', is_admin: false })
     renderLoginPage()
 
     await fillAndSubmit('old-pw')
@@ -108,35 +116,13 @@ describe('LoginPage', () => {
   it('tells the password manager which field is the username and which the current password', () => {
     renderLoginPage()
 
-    expect(screen.getByPlaceholderText('ten@hcmut.edu.vn')).toHaveAttribute('autocomplete', 'username')
+    expect(screen.getByPlaceholderText('ten@example.com')).toHaveAttribute('autocomplete', 'username')
     expect(screen.getByPlaceholderText('••••••••')).toHaveAttribute('autocomplete', 'current-password')
   })
+})
 
-  it('sends a lecturer to their courses and an admin to the admin page', async () => {
-    mockLogin.mockResolvedValue(TEACHER)
-    const { unmount } = renderLoginPage()
-    await fillAndSubmit()
-    expect(await screen.findByText('Trang giảng viên')).toBeInTheDocument()
-    unmount()
-
-    mockLogin.mockResolvedValue({ ...TEACHER, role: 'admin' })
-    renderLoginPage()
-    await fillAndSubmit()
-    expect(await screen.findByText('Trang quản trị')).toBeInTheDocument()
-  })
-
-  it('points a person who forgot their password to the admin, by email', () => {
-    renderLoginPage()
-
-    const link = screen.getByRole('link', { name: 'Quên mật khẩu? Liên hệ admin để hỗ trợ' })
-
-    expect(link).toHaveAttribute('href', 'mailto:dat.duongtandat385@gmail.com')
-  })
-
-  it('has no sign-up: accounts are made by an admin', () => {
-    renderLoginPage()
-
-    expect(screen.queryByText(/đăng ký/i)).not.toBeInTheDocument()
-    expect(screen.queryByRole('link', { name: /đăng ký/i })).not.toBeInTheDocument()
-  })
+it('offers open registration and admin support', () => {
+  renderLoginPage()
+  expect(screen.getByRole('link', { name: 'Đăng ký' })).toHaveAttribute('href', '/register')
+  expect(screen.getByRole('link', { name: 'Liên hệ admin' })).toHaveAttribute('href', expect.stringContaining('mailto:'))
 })

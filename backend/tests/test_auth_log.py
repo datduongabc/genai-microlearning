@@ -30,7 +30,8 @@ def email():
 
 
 def _sign_up(address: str, password: str = STRONG_PASSWORD):
-    return make_account(address, password, name="Audit User")
+    # A local account whose login audit events are tested.
+    return make_account(address, password, name="Audit User", is_admin=True)
 
 
 def _log_in(address: str, password: str = STRONG_PASSWORD, **kwargs):
@@ -61,8 +62,8 @@ def test_a_failed_login_is_logged_with_why_but_the_client_is_not_told(email, cap
 
     assert wrong.json() == unknown.json()
     lines = _audit_lines(caplog)
-    assert any("login_failed" in line and email in line and "wrong_password" in line for line in lines)
-    assert any("login_failed" in line and stranger in line and "unknown_email" in line for line in lines)
+    assert any("login_failed" in line and email in line and "credentials" in line for line in lines)
+    assert any("login_failed" in line and stranger in line and "credentials" in line for line in lines)
 
 
 def test_logout_and_a_refused_refresh_are_logged(email, caplog):

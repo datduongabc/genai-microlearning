@@ -12,7 +12,7 @@ from app.config import settings
 from app.db import SessionLocal
 from app.jobs import queue as job_queue
 from app.jobs.maintenance import purge_old_records
-from app.models import Job, JobStatus, JobType, RefreshToken, User, UserRole
+from app.models import Job, JobStatus, JobType, RefreshToken, User
 
 
 def _now() -> datetime:
@@ -53,7 +53,7 @@ def made():
             try:
                 user = User(
                     email=f"maint-{uuid.uuid4().hex[:8]}@example.com", name="T", hashed_password="x",
-                    role=UserRole.teacher,
+                    is_admin=False,
                 )
                 db.add(user)
                 db.commit()

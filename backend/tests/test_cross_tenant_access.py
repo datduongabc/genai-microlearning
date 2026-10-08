@@ -37,7 +37,6 @@ from app.models import (
     ModuleComponent,
     Question,
     User,
-    UserRole,
 )
 
 client = TestClient(app)
@@ -47,8 +46,8 @@ client = TestClient(app)
 def world():
     db = SessionLocal()
     try:
-        owner = User(email=f"tenant-a-{uuid.uuid4().hex[:8]}@example.com", name="A", hashed_password="x", role=UserRole.teacher, moodle_user_id=4242)
-        stranger = User(email=f"tenant-b-{uuid.uuid4().hex[:8]}@example.com", name="B", hashed_password="x", role=UserRole.teacher, moodle_user_id=4242)
+        owner = User(email=f"tenant-a-{uuid.uuid4().hex[:8]}@example.com", name="A", hashed_password="x", is_admin=False, moodle_user_id=4242)
+        stranger = User(email=f"tenant-b-{uuid.uuid4().hex[:8]}@example.com", name="B", hashed_password="x", is_admin=False, moodle_user_id=4242)
         db.add_all([owner, stranger])
         db.flush()
         course = Course(name="Course of A", owner_id=owner.id)
@@ -230,13 +229,11 @@ def test_a_lecturer_cannot_use_the_admin_pages(world, layers):
         assert client.get("/admin/users", headers=headers).status_code == 404
         assert client.get("/admin/jobs/failed", headers=headers).status_code == 404
         assert client.post("/admin/jobs/retry", json={"job_ids": [str(world["failed_job"])]}, headers=headers).status_code == 404
-        created = client.post(
-            "/admin/users", json={"email": "x@example.com", "name": "X", "password": "A long phrase 1"}, headers=headers
-        )
-        assert created.status_code == 404
+        # The admin gives other people's lecturer accounts a lock and nothing else of theirs.
+        assert client.post(f"/admin/users/{uuid.uuid4()}/disable", headers=headers).status_code == 404
 
 
-PUBLIC = {"/health", "/auth/login", "/auth/refresh", "/auth/logout"}
+PUBLIC = {"/auth/register", "/health", "/auth/login", "/auth/refresh", "/auth/logout"}
 RESOURCE_QUERY = {"course_id", "document_id"}
 BODY_METHODS = {"POST", "PATCH", "PUT"}
 

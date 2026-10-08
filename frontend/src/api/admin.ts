@@ -1,19 +1,19 @@
 import { api } from './client'
 
-export type MoodleStatus = 'linked' | 'not_found' | 'ambiguous' | 'unknown'
+export type MoodleStatus = 'linked' | 'not_linked'
 
 export interface AdminUser {
   id: string
   email: string
   name: string
-  role: 'teacher' | 'admin'
+  is_admin: boolean
   is_active: boolean
   created_at: string
-  // Chỉ có với giảng viên: có đúng một tài khoản Moodle cùng email hay không.
+  // Null với admin: tài khoản đã có liên kết Moodle lưu sẵn hay chưa.
   moodle_status: MoodleStatus | null
-  // Chỉ có với giảng viên: số môn học họ sở hữu. Có môn học thì không xóa được tài khoản, chỉ khóa.
+  // Null với admin: số môn học tài khoản sở hữu.
   course_count: number | null
-  // Chỉ có với giảng viên: số môn học Moodle họ đã liên kết hoặc tạo qua ứng dụng. Có thì cũng chỉ khóa.
+  // Null với admin: số môn học Moodle tài khoản đã liên kết hoặc tạo qua ứng dụng.
   moodle_course_count: number | null
 }
 
@@ -37,11 +37,6 @@ export async function listUsers() {
   return data
 }
 
-export async function createLecturer(name: string, email: string, password: string) {
-  const { data } = await api.post<AdminUser>('/admin/users', { name, email, password })
-  return data
-}
-
 export async function setUserActive(userId: string, active: boolean) {
   const { data } = await api.post<AdminUser>(`/admin/users/${userId}/${active ? 'enable' : 'disable'}`)
   return data
@@ -49,10 +44,6 @@ export async function setUserActive(userId: string, active: boolean) {
 
 export async function deleteUser(userId: string) {
   await api.delete(`/admin/users/${userId}`)
-}
-
-export async function resetUserPassword(userId: string, password: string) {
-  await api.post(`/admin/users/${userId}/password`, { password })
 }
 
 export async function listFailedJobs(jobType?: FailedJobInfo['job_type']) {
@@ -67,4 +58,12 @@ export async function retryFailedJobs(jobIds: string[]) {
     job_ids: jobIds,
   })
   return data
+}
+
+export async function createUser(name: string, email: string, password: string) {
+  const { data } = await api.post<AdminUser>('/admin/users', { name, email, password })
+  return data
+}
+export async function resetUserPassword(userId: string, password: string) {
+  await api.post(`/admin/users/${userId}/password`, { password })
 }

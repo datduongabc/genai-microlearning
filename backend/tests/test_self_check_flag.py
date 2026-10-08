@@ -31,7 +31,6 @@ from app.models import (
     Evaluation,
     ModuleComponent,
     User,
-    UserRole,
 )
 
 SUB_OBJECTIVES = ["Nêu định nghĩa", "Phân biệt hai trường hợp", "Giải thích vai trò"]
@@ -79,7 +78,7 @@ def document(monkeypatch):
     db = SessionLocal()
     try:
         user = User(email=f"sc-{uuid.uuid4().hex[:8]}@example.com", name="T", hashed_password="x",
-                    role=UserRole.teacher)
+                    is_admin=False)
         db.add(user)
         db.flush()
         course = Course(name="Self-check", owner_id=user.id)

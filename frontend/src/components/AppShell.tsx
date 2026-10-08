@@ -1,7 +1,6 @@
 import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { homeFor, useAuth } from "../auth/useAuth";
-import { MoodleAccountPrompt } from "./MoodleAccountPrompt";
 
 export function AppShell({
   title,
@@ -17,7 +16,7 @@ export function AppShell({
       {/* Lề 16px trên điện thoại và không cho chữ gãy dòng: ở 390px, lề 32px cộng đủ ba mục
           điều hướng là khoảng 440px, nên "HELLO LMS" và từng mục đều bị gãy làm hai dòng. */}
       <header className="flex items-center justify-between gap-4 border-b border-gray-200 px-4 py-4 sm:px-8">
-        <Link to={homeFor(user?.role)} className="flex items-center gap-3">
+        <Link to={homeFor(user?.is_admin)} className="flex items-center gap-3">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-navy p-1">
             <img
               src="/logo.png"
@@ -39,7 +38,6 @@ export function AppShell({
         <h1 className="mb-8 font-serif text-2xl font-semibold">{title}</h1>
         {children}
       </main>
-      {user?.role === "teacher" && <MoodleAccountPrompt />}
     </div>
   );
 }

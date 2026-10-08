@@ -5,7 +5,7 @@ from fastapi.testclient import TestClient
 from app.auth.security import create_access_token
 from app.db import SessionLocal
 from app.main import app
-from app.models import User, UserRole
+from app.models import User
 from app.moodle import client as moodle_client
 
 client = TestClient(app)
@@ -13,14 +13,14 @@ client = TestClient(app)
 
 def _make_authed_user() -> tuple[str, uuid.UUID]:
     """Create a user directly via the DB and mint a token for it, bypassing
-    /auth/register+/auth/login entirely -- these tests are about the course/
+    the login entirely -- these tests are about the course/
     Moodle-linking endpoints, not auth, and the auth HTTP endpoints are
     IP-rate-limited (10/min), which the whole suite shares."""
     suffix = uuid.uuid4().hex[:8]
     db = SessionLocal()
     try:
         user = User(
-            email=f"user-{suffix}@example.com", name="Test", hashed_password="x", role=UserRole.teacher, moodle_user_id=4242
+            email=f"user-{suffix}@example.com", name="Test", hashed_password="x", is_admin=False, moodle_user_id=4242
         )
         db.add(user)
         db.commit()

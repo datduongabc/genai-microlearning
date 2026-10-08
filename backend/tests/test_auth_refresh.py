@@ -7,15 +7,13 @@ import uuid
 from fastapi.testclient import TestClient
 
 from app.main import app
-from tests.auth_helpers import STRONG_PASSWORD, make_account
+from tests.auth_helpers import create_and_login
 
 client = TestClient(app)
 
 
 def _create_and_login(email: str) -> dict:
-    make_account(email, name="Test")
-    response = client.post("/auth/login", json={"email": email, "password": STRONG_PASSWORD})
-    return response.json()
+    return create_and_login(client, email)
 
 
 def test_login_returns_both_access_and_refresh_token():

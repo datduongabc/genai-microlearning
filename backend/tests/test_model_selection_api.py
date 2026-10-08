@@ -11,7 +11,7 @@ from fastapi.testclient import TestClient
 
 from app.llm import catalog
 from app.main import app
-from tests.auth_helpers import STRONG_PASSWORD, make_account
+from tests.auth_helpers import create_and_login
 
 client = TestClient(app)
 
@@ -51,8 +51,7 @@ def gateway_gia_lap(monkeypatch):
 
 def _dang_nhap() -> dict:
     email = f"model-{uuid.uuid4().hex[:10]}@example.com"
-    make_account(email, name="Test")
-    token = client.post("/auth/login", json={"email": email, "password": STRONG_PASSWORD}).json()["access_token"]
+    token = create_and_login(client, email)["access_token"]
     return {"Authorization": f"Bearer {token}"}
 
 
@@ -109,6 +108,18 @@ def test_alias_gateway_khong_phuc_vu_thi_bi_tu_choi():
 
     assert phan_hoi.status_code == 422
     assert client.get("/models", headers=headers).json()["default"] is None
+
+
+def test_groq_fast_khong_sinh_duoc_mo_dun_nen_khong_co_trong_danh_sach_va_khong_dat_lam_mac_dinh_duoc():
+    headers = _dang_nhap()
+
+    body = client.get("/models", headers=headers).json()
+    dat = client.put("/models/default", json={"alias": "groq-fast"}, headers=headers)
+
+    assert "groq-fast" not in [m["alias"] for m in body["models"]]
+    assert dat.status_code == 422
+    assert client.get("/models", headers=headers).json()["default"] is None
+    assert "groq-fast" not in da_thu
 
 
 def test_khong_cho_chon_model_nhung_lam_mac_dinh_sinh_noi_dung():

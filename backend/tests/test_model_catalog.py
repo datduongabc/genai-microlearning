@@ -30,6 +30,7 @@ def test_chi_moi_model_sinh_van_ban_duoc_dem_ra_chon():
     assert [c.alias for c in chon] == ["gemini-fast"]
 
 
+
 def test_model_khong_ro_che_do_thi_khong_dem_ra_chon():
     """Thà bỏ sót một model còn hơn đem một model nhúng ra cho chọn: bỏ sót thì giảng viên
     thấy thiếu và báo, còn chọn sai thì lỗi hiện ra ở chỗ khác hẳn."""

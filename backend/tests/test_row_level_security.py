@@ -27,7 +27,6 @@ from app.models import (
     ModuleComponent,
     Question,
     User,
-    UserRole,
 )
 
 # table -> predicate selecting the rows the owner made
@@ -50,8 +49,8 @@ TENANT_TABLES = {
 def world():
     db = SessionLocal()
     try:
-        owner = User(email=f"rls-a-{uuid.uuid4().hex[:8]}@example.com", name="A", hashed_password="x", role=UserRole.teacher)
-        stranger = User(email=f"rls-b-{uuid.uuid4().hex[:8]}@example.com", name="B", hashed_password="x", role=UserRole.teacher)
+        owner = User(email=f"rls-a-{uuid.uuid4().hex[:8]}@example.com", name="A", hashed_password="x", is_admin=False)
+        stranger = User(email=f"rls-b-{uuid.uuid4().hex[:8]}@example.com", name="B", hashed_password="x", is_admin=False)
         db.add_all([owner, stranger])
         db.flush()
         course = Course(name="Course of A", owner_id=owner.id)

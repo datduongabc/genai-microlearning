@@ -29,32 +29,24 @@ const passwordSchema = z
     message: `Mật khẩu tối đa ${MAX_PASSWORD_BYTES} byte (chữ có dấu chiếm 2 đến 3 byte)`,
   });
 
-// An edu address: x.edu, or x.edu.vn and the like. Mirrors is_edu_email in app/auth/accounts.py.
-export function isEduEmail(email: string): boolean {
-  const labels = email.trim().toLowerCase().split("@").pop()?.split(".") ?? [];
-  if (labels.length < 2 || labels.some((label) => label === "")) return false;
-  const last = labels[labels.length - 1];
-  return last === "edu" || (labels.length >= 3 && labels[labels.length - 2] === "edu" && last.length === 2);
-}
-
-export const EDU_ONLY_MESSAGE = "Chỉ chấp nhận email của trường (tên miền dạng x.edu hoặc x.edu.vn)";
-
-// The form with which an admin creates a lecturer's account (there is no public sign-up).
-export const createLecturerSchema = z.object({
+// Shared account fields for registration and admin creation.
+export const createUserSchema = z.object({
   name: z
     .string()
     .trim()
     .min(1, "Vui lòng nhập họ và tên")
     .max(MAX_NAME_LENGTH, `Họ và tên tối đa ${MAX_NAME_LENGTH} ký tự`),
-  email: z.email("Email không hợp lệ").refine(isEduEmail, {
-    message: EDU_ONLY_MESSAGE,
-    // Only for an address that is well formed: a typo gets one message, not two.
-    when: (payload) => payload.issues.length === 0,
-  }),
+  email: z.email("Email không hợp lệ"),
   password: passwordSchema,
 });
 
-export type CreateLecturerFormValues = z.infer<typeof createLecturerSchema>;
+export type CreateUserFormValues = z.infer<typeof createUserSchema>;
 
 // The new password an admin sets for a lecturer.
 export const resetPasswordSchema = z.object({ password: passwordSchema });
+
+export const registerSchema = createUserSchema.extend({ confirmPassword: z.string() }).refine(
+  (data) => data.password === data.confirmPassword,
+  { message: "Mật khẩu xác nhận không khớp", path: ["confirmPassword"] },
+);
+export type RegisterFormValues = z.infer<typeof registerSchema>;

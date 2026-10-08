@@ -18,43 +18,27 @@ export async function listMoodleCourses() {
   return data
 }
 
-export type MoodleAccountStatus = 'not_linked' | 'linked' | 'ambiguous'
+export type MoodleAccountStatus = 'not_linked' | 'linked'
 
-// `prompt`: whether to show the pop-up that recommends linking. The server answers true only
-// once per lecturer, until they answer it.
 export async function getMoodleAccount() {
-  const { data } = await api.get<{ email: string; status: MoodleAccountStatus; prompt: boolean }>('/moodle/account')
+  const { data } = await api.get<{ email: string; status: MoodleAccountStatus }>('/moodle/account')
   return data
 }
 
-// Raised on window when the lecturer's Moodle account may have changed: they linked it, or the
-// server refused a Moodle action (422) because the link must be made again. Whatever shows the
-// account (the "Tài khoản Moodle" section) asks the server again.
+// Raised on window when the lecturer's Moodle account may have changed: the server refused a Moodle
+// action (422) because the link is gone and must be made again (through account linking).
+// Whatever shows the account (the "Tài khoản Moodle" section) asks the server again.
 export const MOODLE_ACCOUNT_CHANGED_EVENT = 'moodle-account-changed'
-
-function accountChanged() {
-  window.dispatchEvent(new Event(MOODLE_ACCOUNT_CHANGED_EVENT))
-}
 
 async function noticingRelink<T>(request: Promise<T>): Promise<T> {
   try {
     return await request
   } catch (err) {
-    if (axios.isAxiosError(err) && err.response?.status === 422) accountChanged()
+    if (axios.isAxiosError(err) && err.response?.status === 422) {
+      window.dispatchEvent(new Event(MOODLE_ACCOUNT_CHANGED_EVENT))
+    }
     throw err
   }
-}
-
-// Links the Moodle user that has the lecturer's email, or creates it when there is none.
-export async function linkMoodleAccount() {
-  const { data } = await api.post<{ email: string; status: 'linked'; created: boolean }>('/moodle/account/link')
-  accountChanged()
-  return data
-}
-
-// The pop-up's "Không": the server remembers it, and the pop-up is not shown again.
-export async function dismissMoodlePrompt() {
-  await api.post('/moodle/account/prompt/dismiss')
 }
 
 export async function linkMoodleCourse(courseId: string, moodleCourseId: number) {

@@ -5,7 +5,7 @@ from fastapi.testclient import TestClient
 from app.auth.security import create_access_token
 from app.db import SessionLocal
 from app.main import app
-from app.models import Course, Document, Module, User, UserRole
+from app.models import Course, Document, Module, User
 
 client = TestClient(app)
 
@@ -19,7 +19,7 @@ def test_publish_to_moodle_refuses_when_course_not_linked():
     db = SessionLocal()
     try:
         user = User(
-            email=f"publish-{suffix}@example.com", name="Test", hashed_password="x", role=UserRole.teacher, moodle_user_id=4242
+            email=f"publish-{suffix}@example.com", name="Test", hashed_password="x", is_admin=False, moodle_user_id=4242
         )
         db.add(user)
         db.flush()

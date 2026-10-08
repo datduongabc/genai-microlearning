@@ -3,8 +3,6 @@ import { afterEach, expect, it, vi } from 'vitest'
 import { api } from './client'
 import {
   createMoodleCourseFor,
-  dismissMoodlePrompt,
-  linkMoodleAccount,
   linkMoodleCourse,
   MOODLE_ACCOUNT_CHANGED_EVENT,
   publishToMoodle,
@@ -46,17 +44,5 @@ it('other failures and successes of those calls leave the account alone', async 
   await linkMoodleCourse('c', 6)
 
   expect(heard).not.toHaveBeenCalled()
-  stop()
-})
-
-it('linking the account says it changed, and "Không" is sent to the server', async () => {
-  const post = vi.spyOn(api, 'post').mockResolvedValue({ data: {} })
-  const { heard, stop } = listen()
-
-  await linkMoodleAccount()
-  await dismissMoodlePrompt()
-
-  expect(heard).toHaveBeenCalledOnce()
-  expect(post).toHaveBeenLastCalledWith('/moodle/account/prompt/dismiss')
   stop()
 })

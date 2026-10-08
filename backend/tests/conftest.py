@@ -67,16 +67,6 @@ def moodle_knows_every_course(monkeypatch):
 
 
 @pytest.fixture(autouse=True)
-def moodle_has_every_lecturer(monkeypatch):
-    """Linking a lecturer's Moodle account finds the Moodle user with their email. Tests that are
-    not about that give every email exactly one account, 4242; the ones that are replace this."""
-    monkeypatch.setattr(
-        moodle_client, "find_users_by_email",
-        lambda emails: {e.strip().lower(): [4242] for e in emails},
-    )
-
-
-@pytest.fixture(autouse=True)
 def moodle_keeps_every_user(monkeypatch):
     """A stored Moodle link is checked against Moodle. Tests that are not about that find every
     linked Moodle user still there; the ones that are replace this."""

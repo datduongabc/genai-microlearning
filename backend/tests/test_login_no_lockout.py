@@ -33,7 +33,7 @@ def _log_in(address: str, password: str):
 
 
 def test_many_wrong_passwords_do_not_lock_the_right_one_out(email):
-    make_account(email, name="No Lock")
+    make_account(email, name="No Lock", is_admin=True)
 
     wrong = [_log_in(email, f"Wr0ng!Passw0rd-{i}").status_code for i in range(12)]
 

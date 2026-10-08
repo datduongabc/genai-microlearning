@@ -19,7 +19,6 @@ from app.models.models import (
     Question,
     RefreshToken,
     User,
-    UserRole,
 )
 
 __all__ = [
@@ -43,5 +42,4 @@ __all__ = [
     "Question",
     "RefreshToken",
     "User",
-    "UserRole",
 ]

@@ -5,7 +5,7 @@ from fastapi.testclient import TestClient
 from app.auth.security import create_access_token
 from app.db import SessionLocal
 from app.main import app
-from app.models import Chunk, Course, Document, Module, User, UserRole
+from app.models import Chunk, Course, Document, Module, User
 
 client = TestClient(app)
 
@@ -15,7 +15,7 @@ def _make_authed_user() -> tuple[str, uuid.UUID]:
     db = SessionLocal()
     try:
         user = User(
-            email=f"del-{suffix}@example.com", name="Test", hashed_password="x", role=UserRole.teacher, moodle_user_id=4242
+            email=f"del-{suffix}@example.com", name="Test", hashed_password="x", is_admin=False, moodle_user_id=4242
         )
         db.add(user)
         db.commit()

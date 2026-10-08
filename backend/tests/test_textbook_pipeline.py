@@ -19,7 +19,6 @@ from app.models import (
     Job,
     JobType,
     User,
-    UserRole,
 )
 
 
@@ -49,7 +48,7 @@ def make_document(tmp_path):
         db = SessionLocal()
         try:
             user = User(
-                email=f"book-{uuid.uuid4().hex[:8]}@example.com", name="T", hashed_password="x", role=UserRole.teacher
+                email=f"book-{uuid.uuid4().hex[:8]}@example.com", name="T", hashed_password="x", is_admin=False
             )
             db.add(user)
             db.flush()

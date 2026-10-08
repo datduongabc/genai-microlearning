@@ -23,7 +23,6 @@ from app.models import (
     Evaluation,
     Module,
     User,
-    UserRole,
 )
 
 OBJECTIVE = "OBJECTIVE-MARKER explain how a scheduler picks the next process"
@@ -182,7 +181,7 @@ def test_without_a_rewritten_query_there_is_nothing_to_search_with(judge):
 def document():
     db = SessionLocal()
     try:
-        user = User(email=f"crag-{uuid.uuid4().hex[:8]}@example.com", name="T", hashed_password="x", role=UserRole.teacher)
+        user = User(email=f"crag-{uuid.uuid4().hex[:8]}@example.com", name="T", hashed_password="x", is_admin=False)
         db.add(user)
         db.flush()
         course = Course(name="Corrective content", owner_id=user.id)

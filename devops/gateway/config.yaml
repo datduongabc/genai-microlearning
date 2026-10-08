@@ -103,13 +103,6 @@ model_list:
   # Groq: han muc mien phi rong rai hon Gemini cho viec SINH van ban, huu ich khi
   # Gemini het quota giua chung mot lan chay thi nghiem. Chi sinh van ban, khong
   # nhung duoc: bang model cua litellm khong co model groq nao o che do embedding.
-  - model_name: groq-fast
-    litellm_params:
-      model: groq/openai/gpt-oss-20b
-      api_key: os.environ/GROQ_API_KEY
-    model_info:
-      display_name: GPT-OSS 20B qua Groq
-      note: nhanh, hạn mức miễn phí rộng
   - model_name: groq-pro
     litellm_params:
       model: groq/openai/gpt-oss-120b

@@ -25,14 +25,6 @@ from app.db import Base
 EMBEDDING_DIM = 768
 
 
-class UserRole(str, enum.Enum):
-    # Giảng viên dùng ứng dụng; học viên học trên Moodle sau khi giảng viên xuất bản nên không
-    # có tài khoản nào ở đây. Admin là vai trò riêng, không phải giảng viên: chỉ quản lý tài
-    # khoản giảng viên và theo dõi lỗi, không có môn học nào.
-    teacher = "teacher"
-    admin = "admin"
-
-
 class DocumentStatus(str, enum.Enum):
     uploaded = "uploaded"
     processing = "processing"
@@ -89,7 +81,8 @@ class User(Base):
     email: Mapped[str] = mapped_column(unique=True)
     name: Mapped[str]
     hashed_password: Mapped[str]
-    role: Mapped[UserRole] = mapped_column(Enum(UserRole))
+    is_admin: Mapped[bool] = mapped_column(default=False, server_default="false")
+    deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     # False: tài khoản bị khóa. Đọc lại từ DB ở mỗi request (get_current_user) nên khóa có hiệu
     # lực ngay, kể cả với token đang dùng. Khóa không xóa dữ liệu nào.
     is_active: Mapped[bool] = mapped_column(default=True, server_default="true")
@@ -99,12 +92,8 @@ class User(Base):
     # này. Không có khóa ngoại nào ràng buộc được nó, nên giá trị được kiểm ở biên API dựa
     # vào danh sách gateway đang phục vụ (app/llm/catalog.py).
     default_model_alias: Mapped[str | None] = mapped_column(nullable=True)
-    # Tài khoản Moodle giảng viên đã tự chọn liên kết (POST /moodle/account/link). NULL: chưa liên
-    # kết, kể cả khi Moodle có sẵn tài khoản cùng email.
+    # Confirmed Moodle identity; local account creation never links it automatically.
     moodle_user_id: Mapped[int | None] = mapped_column(nullable=True)
-    # Lúc giảng viên trả lời pop-up liên kết Moodle ("Có", "Không", hoặc tự liên kết). NULL: chưa
-    # trả lời, pop-up còn hiện; đã đặt thì pop-up không bao giờ hiện lại.
-    moodle_prompted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = created_at_column()
 
 

@@ -6,7 +6,7 @@ import * as AuthHookModule from '../auth/useAuth'
 
 function renderShell(role: string) {
   vi.spyOn(AuthHookModule, 'useAuth').mockReturnValue({
-    token: 't', refreshToken: 'r', user: { id: '1', email: 'a@b.com', name: 'An', role },
+    token: 't', refreshToken: 'r', user: { id: '1', email: 'a@b.com', name: 'An', is_admin: role === 'admin' },
     login: vi.fn(), logout: vi.fn(),
   })
   return render(

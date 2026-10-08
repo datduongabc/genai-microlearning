@@ -6,7 +6,7 @@ import { AppShell } from "../components/AppShell";
 type Tab = "users" | "failures";
 
 const TABS: { id: Tab; label: string }[] = [
-  { id: "users", label: "Giảng viên" },
+  { id: "users", label: "Tài khoản" },
   { id: "failures", label: "Theo dõi lỗi" },
 ];
 

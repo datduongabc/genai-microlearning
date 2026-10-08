@@ -3,8 +3,8 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   apiErrorMessage,
-  createLecturer,
   deleteUser,
+  createUser,
   listUsers,
   resetUserPassword,
   setUserActive,
@@ -13,34 +13,21 @@ import {
 } from "../api";
 import { useAuth } from "../auth/useAuth";
 import {
-  createLecturerSchema,
+  createUserSchema,
   resetPasswordSchema,
-  type CreateLecturerFormValues,
+  type CreateUserFormValues,
 } from "../lib/authSchemas";
 
 const MOODLE_LABEL: Record<MoodleStatus, { text: string; color: string }> = {
   linked: { text: "Đã liên kết Moodle", color: "text-green-700" },
-  not_found: { text: "Chưa có tài khoản Moodle cùng email", color: "text-amber-700" },
-  ambiguous: { text: "Nhiều tài khoản Moodle trùng email", color: "text-red-700" },
-  unknown: { text: "Không kiểm tra được Moodle", color: "text-gray-500" },
+  not_linked: { text: "Chưa liên kết Moodle", color: "text-amber-700" },
 };
 
 const inputClass =
   "rounded-[3px] border border-gray-300 px-3 py-1.5 text-sm outline-none focus:border-terracotta";
 
-// Why a lecturer's account cannot be deleted, or null when it was never used: courses and the
-// Moodle courses they linked or created stay theirs, so such an account can only be locked.
-function deleteBlocker(u: AdminUser): string | null {
-  const reasons = [
-    (u.course_count ?? 0) > 0 && `${u.course_count} môn học`,
-    (u.moodle_course_count ?? 0) > 0 && `${u.moodle_course_count} môn học Moodle đã liên kết hoặc tạo`,
-  ].filter(Boolean);
-  return reasons.length > 0 ? reasons.join(", ") : null;
-}
-
-// What the admin does with lecturers' accounts: create, lock and unlock, set a new password, and
-// delete an account that was never used. A lock never deletes anything; a lecturer with courses or
-// Moodle courses can only be locked, so courses, modules and experiment data are never lost.
+// What the admin does with lecturers' accounts: create, lock and unlock, set a new password. A
+// soft deletion hides the account and preserves its learning data.
 export function AdminUsersPanel() {
   const { user: me } = useAuth();
   const [users, setUsers] = useState<AdminUser[] | null>(null);
@@ -88,28 +75,17 @@ export function AdminUsersPanel() {
   }
 
   async function handleDelete(user: AdminUser) {
-    const confirmed = window.confirm(
-      `Xóa vĩnh viễn tài khoản "${user.name}" (${user.email})? Tài khoản chưa có môn học nào, kể cả trên Moodle. Các phiên đăng nhập của họ bị đóng và không thể khôi phục. Tài khoản Moodle liên kết (nếu có) sẽ KHÔNG bị xóa.`,
-    );
-    if (!confirmed) return;
-
+    if (!window.confirm(`Xóa tài khoản "${user.name}" (${user.email})? Tài khoản sẽ không đăng nhập được; môn học và dữ liệu được giữ nguyên. Liên kết Moodle được giải phóng.`)) return;
     setBusyId(user.id);
     setError(null);
-    setNotice(null);
-    try {
-      await deleteUser(user.id);
-      setNotice(`Đã xóa tài khoản ${user.email}.`);
-      reload();
-    } catch (err) {
-      setError(apiErrorMessage(err, "Xóa tài khoản thất bại"));
-    } finally {
-      setBusyId(null);
-    }
+    try { await deleteUser(user.id); setNotice(`Đã xóa tài khoản ${user.email}.`); reload(); }
+    catch (err) { setError(apiErrorMessage(err, "Xóa tài khoản thất bại")); }
+    finally { setBusyId(null); }
   }
 
   return (
     <div className="flex flex-col gap-8">
-      <CreateLecturerForm
+      <CreateUserForm
         onCreated={(created) => {
           setError(null);
           setNotice(`Đã tạo tài khoản cho ${created.email}.`);
@@ -125,15 +101,13 @@ export function AdminUsersPanel() {
         !loadError && <p className="text-sm text-gray-500">Đang tải...</p>
       ) : (
         <ul className="flex flex-col divide-y divide-gray-200">
-          {users.map((u) => {
-            const blocker = u.role === "teacher" ? deleteBlocker(u) : null;
-            return (
+          {users.map((u) => (
             <li key={u.id} className="py-4">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="min-w-0">
                   <div className="font-medium">
                     {u.name}
-                    {u.role === "admin" && (
+                    {u.is_admin && (
                       <span className="ml-2 rounded-[3px] bg-navy px-1.5 py-0.5 text-[11px] font-semibold text-[#f3f1ea]">
                         Admin
                       </span>
@@ -144,11 +118,6 @@ export function AdminUsersPanel() {
                     <span className={u.is_active ? "text-green-700" : "text-red-700"}>
                       {u.is_active ? "Đang hoạt động" : "Đã khóa"}
                     </span>
-                    {blocker && (
-                      <span className="text-gray-500">
-                        {blocker} (chỉ có thể khóa, không xóa được)
-                      </span>
-                    )}
                     {u.moodle_status && (
                       <span className={MOODLE_LABEL[u.moodle_status].color}>
                         {MOODLE_LABEL[u.moodle_status].text}
@@ -157,6 +126,7 @@ export function AdminUsersPanel() {
                   </div>
                 </div>
                 <div className="flex shrink-0 items-center gap-4 text-sm">
+                  {!u.is_admin && <button onClick={() => handleDelete(u)} disabled={busyId === u.id} className="text-red-700 hover:underline">Xóa</button>}
                   <button
                     onClick={() => setResetting(resetting === u.id ? null : u.id)}
                     className="font-semibold text-terracotta hover:underline"
@@ -173,20 +143,6 @@ export function AdminUsersPanel() {
                   >
                     {u.is_active ? "Khóa" : "Mở khóa"}
                   </button>
-                  {u.role === "teacher" && (
-                    <button
-                      onClick={() => handleDelete(u)}
-                      disabled={busyId === u.id || blocker !== null}
-                      title={
-                        blocker
-                          ? `Giảng viên đang có ${blocker} nên không thể xóa, chỉ có thể khóa tài khoản.`
-                          : undefined
-                      }
-                      className="text-red-700 hover:underline disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                      Xóa
-                    </button>
-                  )}
                 </div>
               </div>
               {resetting === u.id && (
@@ -200,8 +156,7 @@ export function AdminUsersPanel() {
                 />
               )}
             </li>
-            );
-          })}
+          ))}
           {users.length === 0 && <p className="py-4 text-sm text-gray-500">Chưa có tài khoản nào.</p>}
         </ul>
       )}
@@ -209,19 +164,19 @@ export function AdminUsersPanel() {
   );
 }
 
-function CreateLecturerForm({ onCreated }: { onCreated: (user: AdminUser) => void }) {
+function CreateUserForm({ onCreated }: { onCreated: (user: AdminUser) => void }) {
   const [error, setError] = useState<string | null>(null);
   const {
     register,
     handleSubmit,
     reset,
     formState: { errors, isSubmitting },
-  } = useForm<CreateLecturerFormValues>({ resolver: zodResolver(createLecturerSchema) });
+  } = useForm<CreateUserFormValues>({ resolver: zodResolver(createUserSchema) });
 
-  async function onSubmit(values: CreateLecturerFormValues) {
+  async function onSubmit(values: CreateUserFormValues) {
     setError(null);
     try {
-      const created = await createLecturer(values.name, values.email, values.password);
+      const created = await createUser(values.name, values.email, values.password);
       reset();
       onCreated(created);
     } catch (err) {
@@ -235,7 +190,7 @@ function CreateLecturerForm({ onCreated }: { onCreated: (user: AdminUser) => voi
       noValidate
       className="flex flex-col gap-3 rounded-[3px] border border-gray-200 p-4"
     >
-      <h2 className="text-sm font-semibold">Tạo tài khoản giảng viên</h2>
+      <h2 className="text-sm font-semibold">Tạo tài khoản người dùng</h2>
       <div className="grid gap-3 sm:grid-cols-3">
         <label className="flex flex-col gap-1 text-xs text-gray-500">
           Họ và tên
@@ -254,7 +209,7 @@ function CreateLecturerForm({ onCreated }: { onCreated: (user: AdminUser) => voi
         </label>
       </div>
       <p className="text-xs text-gray-500">
-        Chỉ chấp nhận email của trường (dạng x.edu hoặc x.edu.vn). Giảng viên tự liên kết tài khoản Moodle cùng email này khi đăng nhập lần đầu.
+        Chấp nhận mọi địa chỉ email hợp lệ. Tài khoản được tạo với mật khẩu riêng và chưa liên kết Moodle.
       </p>
       {error && <p className="text-sm text-red-700">{error}</p>}
       <div>

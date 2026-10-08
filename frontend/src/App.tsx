@@ -5,6 +5,7 @@ import { ProtectedRoute } from "./auth/ProtectedRoute";
 import { AdminPage } from "./pages/AdminPage";
 import { CourseDetailPage } from "./pages/CourseDetailPage";
 import { CoursesPage } from "./pages/CoursesPage";
+import { RegisterPage } from "./pages/RegisterPage";
 import { LoginPage } from "./pages/LoginPage";
 
 // Loaded only when a module is opened: its Markdown renderer is about a fifth of the bundle,
@@ -18,10 +19,11 @@ function App() {
     <AuthProvider>
       <Routes>
         <Route path="/login" element={<LoginPage />} />
-        <Route element={<ProtectedRoute role="admin" />}>
+        <Route path="/register" element={<RegisterPage />} />
+        <Route element={<ProtectedRoute adminOnly />}>
           <Route path="/admin" element={<AdminPage />} />
         </Route>
-        <Route element={<ProtectedRoute role="teacher" />}>
+        <Route element={<ProtectedRoute />}>
           <Route path="/courses" element={<CoursesPage />} />
           <Route path="/courses/:courseId" element={<CourseDetailPage />} />
           <Route

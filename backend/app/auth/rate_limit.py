@@ -1,5 +1,5 @@
 """OWASP A07 (Identification & Authentication Failures) — chống brute-force
-trên /auth/login, /auth/register bằng rate limit theo IP."""
+trên /auth/login bằng rate limit theo IP."""
 
 from fastapi import Request
 from slowapi import Limiter

@@ -17,7 +17,7 @@ from sqlalchemy.exc import ProgrammingError
 
 from app.config import settings
 from app.db import SessionLocal, WorkerSessionLocal
-from app.models import Course, Document, DocumentStatus, User, UserRole
+from app.models import Course, Document, DocumentStatus, User
 
 
 @pytest.fixture(scope="module")
@@ -25,7 +25,7 @@ def world():
     db = SessionLocal()
     try:
         owners = [
-            User(email=f"worker-{i}-{uuid.uuid4().hex[:8]}@example.com", name="T", hashed_password="x", role=UserRole.teacher)
+            User(email=f"worker-{i}-{uuid.uuid4().hex[:8]}@example.com", name="T", hashed_password="x", is_admin=False)
             for i in range(2)
         ]
         db.add_all(owners)

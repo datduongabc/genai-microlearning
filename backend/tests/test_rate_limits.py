@@ -13,7 +13,7 @@ from fastapi.testclient import TestClient
 from app.auth.security import create_access_token
 from app.db import SessionLocal
 from app.main import app
-from app.models import Course, User, UserRole
+from app.models import Course, User
 from tests.auth_helpers import STRONG_PASSWORD
 
 pytestmark = pytest.mark.rate_limits
@@ -26,7 +26,7 @@ def two_users():
     db = SessionLocal()
     try:
         users = [
-            User(email=f"rate-{uuid.uuid4().hex[:8]}@example.com", name="T", hashed_password="x", role=UserRole.teacher)
+            User(email=f"rate-{uuid.uuid4().hex[:8]}@example.com", name="T", hashed_password="x", is_admin=False)
             for _ in range(2)
         ]
         db.add_all(users)
@@ -61,6 +61,15 @@ def test_the_eleventh_login_attempt_in_a_minute_is_refused():
     codes = _codes(11, attempt)
 
     assert codes[:10] == [401] * 10
+    assert codes[10] == 429
+
+
+def test_the_eleventh_registration_attempt_in_a_minute_is_refused():
+    emails = iter(f"registration-{uuid.uuid4().hex}@example.com" for _ in range(11))
+    codes = _codes(11, lambda: client.post("/auth/register", json={
+        "email": next(emails), "name": "New Account", "password": "short",
+    }))
+    assert codes[:10] == [422] * 10
     assert codes[10] == 429
 
 

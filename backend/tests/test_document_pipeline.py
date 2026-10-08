@@ -23,7 +23,6 @@ from app.models import (
     JobStatus,
     JobType,
     User,
-    UserRole,
 )
 
 SAMPLE_TEXT = (
@@ -39,7 +38,7 @@ def seed_document_with_file(tmp_path):
     created_doc_ids: list[uuid.UUID] = []
 
     def _seed(db):
-        user = User(email=f"test-{uuid.uuid4().hex[:8]}@example.com", name="T", hashed_password="x", role=UserRole.teacher)
+        user = User(email=f"test-{uuid.uuid4().hex[:8]}@example.com", name="T", hashed_password="x", is_admin=False)
         db.add(user)
         db.flush()
         course = Course(name="Document pipeline test", owner_id=user.id)

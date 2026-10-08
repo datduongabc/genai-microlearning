@@ -18,16 +18,16 @@ vi.mock('../api', async (importOriginal) => {
 })
 
 const admin: AdminUser = {
-  id: 'admin-1', email: 'admin@example.com', name: 'Quản trị', role: 'admin', is_active: true,
+  id: 'admin-1', email: 'admin@example.com', name: 'Quản trị', is_admin: true, is_active: true,
   created_at: '2026-01-01T00:00:00Z', moodle_status: null, course_count: null, moodle_course_count: null,
 }
 const lan: AdminUser = {
-  id: 'u-1', email: 'lan@example.com', name: 'Lan Nguyễn', role: 'teacher', is_active: true,
+  id: 'u-1', email: 'lan@example.com', name: 'Lan Nguyễn', is_admin: false, is_active: true,
   created_at: '2026-01-02T00:00:00Z', moodle_status: 'linked', course_count: 2, moodle_course_count: 0,
 }
 const minh: AdminUser = {
-  id: 'u-2', email: 'minh@example.com', name: 'Minh Trần', role: 'teacher', is_active: false,
-  created_at: '2026-01-03T00:00:00Z', moodle_status: 'not_found', course_count: 0, moodle_course_count: 0,
+  id: 'u-2', email: 'minh@example.com', name: 'Minh Trần', is_admin: false, is_active: false,
+  created_at: '2026-01-03T00:00:00Z', moodle_status: 'not_linked', course_count: 0, moodle_course_count: 0,
 }
 
 function failedJob(id: string, overrides: Partial<FailedJobInfo> = {}): FailedJobInfo {
@@ -49,7 +49,7 @@ function renderPage() {
 beforeEach(() => {
   vi.clearAllMocks()
   vi.spyOn(AuthHookModule, 'useAuth').mockReturnValue({
-    token: 't', refreshToken: 'r', user: { id: 'admin-1', email: 'admin@example.com', name: 'Quản trị', role: 'admin' },
+    token: 't', refreshToken: 'r', user: { id: 'admin-1', email: 'admin@example.com', name: 'Quản trị', is_admin: true },
     login: vi.fn(), logout: vi.fn(),
   })
   vi.mocked(api.listUsers).mockResolvedValue([admin, lan, minh])
@@ -65,48 +65,16 @@ describe('AdminPage - accounts', () => {
     expect(within(row).getByText('Đã liên kết Moodle')).toBeInTheDocument()
     const locked = screen.getByText('minh@example.com').closest('li')!
     expect(within(locked).getByText('Đã khóa')).toBeInTheDocument()
-    expect(within(locked).getByText(/chưa có tài khoản moodle cùng email/i)).toBeInTheDocument()
+    expect(within(locked).getByText('Chưa liên kết Moodle')).toBeInTheDocument()
     // The admin themselves have no Moodle status.
     expect(within(screen.getByText('admin@example.com').closest('li')!).queryByText(/moodle/i)).not.toBeInTheDocument()
   })
 
-  it('creates a lecturer and reloads the list', async () => {
-    vi.mocked(api.createLecturer).mockResolvedValue({ ...lan, id: 'u-3', email: 'new@example.edu' })
+  it('offers account creation and password reset without automatic Moodle linking', async () => {
     renderPage()
-    await screen.findByText('lan@example.com')
-
-    await userEvent.type(screen.getByLabelText('Họ và tên'), 'Hoa Lê')
-    await userEvent.type(screen.getByLabelText('Email'), 'new@example.edu')
-    await userEvent.type(screen.getByLabelText('Mật khẩu ban đầu'), 'a long enough phrase')
-    await userEvent.click(screen.getByRole('button', { name: 'Tạo tài khoản' }))
-
-    await waitFor(() => expect(api.createLecturer).toHaveBeenCalledWith('Hoa Lê', 'new@example.edu', 'a long enough phrase'))
-    expect(await screen.findByText(/đã tạo tài khoản cho new@example.edu/i)).toBeInTheDocument()
-    expect(api.listUsers).toHaveBeenCalledTimes(2)
-  })
-
-  it('checks the form before sending and shows the server refusal in words', async () => {
-    renderPage()
-    await screen.findByText('lan@example.com')
-
-    await userEvent.click(screen.getByRole('button', { name: 'Tạo tài khoản' }))
-    expect(await screen.findByText('Vui lòng nhập họ và tên')).toBeInTheDocument()
-    expect(api.createLecturer).not.toHaveBeenCalled()
-  })
-
-  it('shows what the server said when the email is taken', async () => {
-    vi.mocked(api.createLecturer).mockRejectedValue(
-      Object.assign(new Error('x'), { isAxiosError: true, response: { status: 409, data: { detail: 'Email đã được đăng ký.' } } }),
-    )
-    renderPage()
-    await screen.findByText('lan@example.com')
-
-    await userEvent.type(screen.getByLabelText('Họ và tên'), 'Hoa Lê')
-    await userEvent.type(screen.getByLabelText('Email'), 'lan@example.edu')
-    await userEvent.type(screen.getByLabelText('Mật khẩu ban đầu'), 'a long enough phrase')
-    await userEvent.click(screen.getByRole('button', { name: 'Tạo tài khoản' }))
-
-    expect(await screen.findByText('Email đã được đăng ký.')).toBeInTheDocument()
+    const row = (await screen.findByText('lan@example.com')).closest('li')!
+    expect(screen.getByRole('button', { name: 'Tạo tài khoản' })).toBeInTheDocument()
+    expect(within(row).getByRole('button', { name: 'Đặt lại mật khẩu' })).toBeInTheDocument()
   })
 
   it('locks an active account and unlocks a locked one', async () => {
@@ -152,21 +120,19 @@ describe('AdminPage - accounts', () => {
     expect(api.deleteUser).not.toHaveBeenCalled()
   })
 
-  it('explains and disables delete for a lecturer with courses, and offers none for an admin', async () => {
+  it('offers soft delete even with courses but protects admin accounts', async () => {
     renderPage()
     const withCourses = (await screen.findByText('lan@example.com')).closest('li')!
     const own = screen.getByText('admin@example.com').closest('li')!
 
     const button = within(withCourses).getByRole('button', { name: 'Xóa' })
-    expect(button).toBeDisabled()
-    expect(button).toHaveAttribute('title', expect.stringContaining('2 môn học'))
-    expect(within(withCourses).getByText(/2 môn học/)).toBeInTheDocument()
+    expect(button).toBeEnabled()
     expect(within(own).queryByRole('button', { name: 'Xóa' })).not.toBeInTheDocument()
   })
 
-  it('explains and disables delete for a lecturer who holds a Moodle course but no course here', async () => {
+  it('offers soft delete for an account with a Moodle link', async () => {
     const hoa: AdminUser = {
-      id: 'u-3', email: 'hoa@example.com', name: 'Hoa Lê', role: 'teacher', is_active: true,
+      id: 'u-3', email: 'hoa@example.com', name: 'Hoa Lê', is_admin: false, is_active: true,
       created_at: '2026-01-04T00:00:00Z', moodle_status: 'linked', course_count: 0, moodle_course_count: 1,
     }
     vi.mocked(api.listUsers).mockResolvedValue([admin, hoa])
@@ -174,9 +140,7 @@ describe('AdminPage - accounts', () => {
     const row = (await screen.findByText('hoa@example.com')).closest('li')!
 
     const button = within(row).getByRole('button', { name: 'Xóa' })
-    expect(button).toBeDisabled()
-    expect(button).toHaveAttribute('title', expect.stringContaining('1 môn học Moodle'))
-    expect(within(row).getByText(/1 môn học Moodle/)).toBeInTheDocument()
+    expect(button).toBeEnabled()
   })
 
   it('shows what the server said when the delete is refused', async () => {
@@ -191,25 +155,6 @@ describe('AdminPage - accounts', () => {
     await userEvent.click(within(row).getByRole('button', { name: 'Xóa' }))
 
     expect(await screen.findByText('Không thể xóa giảng viên đang có môn học.')).toBeInTheDocument()
-  })
-
-  it('sets a new password for a lecturer, after checking it', async () => {
-    vi.mocked(api.resetUserPassword).mockResolvedValue(undefined)
-    renderPage()
-    const row = (await screen.findByText('lan@example.com')).closest('li')!
-
-    await userEvent.click(within(row).getByRole('button', { name: 'Đặt lại mật khẩu' }))
-    await userEvent.type(screen.getByLabelText('Mật khẩu mới của lan@example.com'), 'short')
-    await userEvent.click(screen.getByRole('button', { name: 'Lưu mật khẩu mới' }))
-    expect(await screen.findByText(/tối thiểu 8 ký tự/i)).toBeInTheDocument()
-    expect(api.resetUserPassword).not.toHaveBeenCalled()
-
-    await userEvent.clear(screen.getByLabelText('Mật khẩu mới của lan@example.com'))
-    await userEvent.type(screen.getByLabelText('Mật khẩu mới của lan@example.com'), 'a brand new long phrase')
-    await userEvent.click(screen.getByRole('button', { name: 'Lưu mật khẩu mới' }))
-
-    await waitFor(() => expect(api.resetUserPassword).toHaveBeenCalledWith('u-1', 'a brand new long phrase'))
-    expect(await screen.findByText(/đã đặt lại mật khẩu cho lan@example.com/i)).toBeInTheDocument()
   })
 
   it('says so when the list cannot be loaded', async () => {

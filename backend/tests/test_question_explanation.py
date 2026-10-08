@@ -15,7 +15,7 @@ from app.generation.example import Example, ExampleOutput
 from app.generation.planner import Concept, PlannerOutput
 from app.generation.quiz_graph import QuizQuestion
 from app.generation.relevance import CorrectiveResult
-from app.models import Chunk, ComponentType, Course, Document, DocumentStatus, User, UserRole
+from app.models import Chunk, ComponentType, Course, Document, DocumentStatus, User
 
 REASONING = "REASONING-MARKER: B is right because the source says so; A, C and D each repeat a misconception."
 
@@ -63,7 +63,7 @@ def test_a_question_without_a_reasoning_is_not_valid():
 def document():
     db = SessionLocal()
     try:
-        user = User(email=f"expl-{uuid.uuid4().hex[:8]}@example.com", name="T", hashed_password="x", role=UserRole.teacher)
+        user = User(email=f"expl-{uuid.uuid4().hex[:8]}@example.com", name="T", hashed_password="x", is_admin=False)
         db.add(user)
         db.flush()
         course = Course(name="Explanation grounding", owner_id=user.id)

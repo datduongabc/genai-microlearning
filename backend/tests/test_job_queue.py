@@ -23,7 +23,7 @@ from app.jobs.queue import (
     is_terminal_error,
     sweep_stuck_jobs,
 )
-from app.models import Course, Document, DocumentStatus, Job, JobStatus, JobType, User, UserRole
+from app.models import Course, Document, DocumentStatus, Job, JobStatus, JobType, User
 
 
 @pytest.fixture
@@ -31,7 +31,7 @@ def seed_document():
     created_doc_ids: list[uuid.UUID] = []
 
     def _seed(db):
-        user = User(email=f"test-{uuid.uuid4().hex[:8]}@example.com", name="T", hashed_password="x", role=UserRole.teacher)
+        user = User(email=f"test-{uuid.uuid4().hex[:8]}@example.com", name="T", hashed_password="x", is_admin=False)
         db.add(user)
         db.flush()
         course = Course(name="Job queue test", owner_id=user.id)

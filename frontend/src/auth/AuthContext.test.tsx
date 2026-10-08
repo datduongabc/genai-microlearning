@@ -39,7 +39,7 @@ describe('AuthProvider', () => {
       access_token: 'tok-123',
       refresh_token: 'refresh-123',
       token_type: 'bearer',
-      user: { id: '1', email: 'a@b.com', name: 'A', role: 'teacher' },
+      user: { id: '1', email: 'a@b.com', name: 'A', is_admin: false },
     })
 
     render(
@@ -62,7 +62,7 @@ describe('AuthProvider', () => {
       access_token: 'tok-123',
       refresh_token: 'refresh-123',
       token_type: 'bearer',
-      user: { id: '1', email: 'a@b.com', name: 'A', role: 'teacher' },
+      user: { id: '1', email: 'a@b.com', name: 'A', is_admin: false },
     })
     vi.mocked(api.logout).mockResolvedValue(undefined)
 

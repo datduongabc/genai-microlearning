@@ -38,7 +38,6 @@ $services = [
             'core_webservice_get_site_info',
             'enrol_manual_enrol_users',
             'core_user_get_users',
-            'core_user_create_users',
         ],
         'restrictedusers' => 0,
         'enabled'         => 1,
