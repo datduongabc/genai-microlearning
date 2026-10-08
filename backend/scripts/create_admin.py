@@ -5,7 +5,7 @@ việc này: admin chỉ được tạo từ lệnh này, trên máy chủ.
 
 Mật khẩu được hỏi tại chỗ (không hiện trên màn hình). Chạy không có terminal thì đọc biến môi
 trường ADMIN_PASSWORD. Mật khẩu theo đúng chính sách của mọi tài khoản (app/auth/password_policy.py).
-Giảng viên không cần tạo: họ đăng nhập bằng tài khoản Moodle, lần đầu thì tài khoản của họ trong ứng dụng được tạo.
+Người dùng tự đăng ký hoặc được admin tạo tài khoản; không tự liên kết Moodle.
 """
 
 import argparse
@@ -15,7 +15,6 @@ import sys
 
 from app.auth.accounts import AccountError, create_account
 from app.db import RequestSessionLocal
-from app.models import UserRole
 
 
 def _password() -> str:
@@ -40,7 +39,7 @@ def main() -> None:
     with RequestSessionLocal() as db:
         try:
             user = create_account(
-                db, email=args.email, name=args.name, password=_password(), role=UserRole.admin
+                db, email=args.email, name=args.name, password=_password(), is_admin=True
             )
         except AccountError as error:
             sys.exit(error.detail)

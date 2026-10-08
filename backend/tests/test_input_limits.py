@@ -13,7 +13,7 @@ from app.auth.security import create_access_token
 from app.config import settings
 from app.db import SessionLocal
 from app.main import app
-from app.models import Course, Document, DocumentStatus, Module, User, UserRole
+from app.models import Course, Document, DocumentStatus, Module, User
 
 client = TestClient(app)
 ONE_MEGABYTE = 1024 * 1024
@@ -29,7 +29,7 @@ def world():
     db = SessionLocal()
     try:
         user = User(
-            email=f"limits-{uuid.uuid4().hex[:8]}@example.com", name="T", hashed_password="x", role=UserRole.teacher, moodle_user_id=4242
+            email=f"limits-{uuid.uuid4().hex[:8]}@example.com", name="T", hashed_password="x", is_admin=False, moodle_user_id=4242
         )
         db.add(user)
         db.flush()

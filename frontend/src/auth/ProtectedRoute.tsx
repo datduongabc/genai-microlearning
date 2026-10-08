@@ -1,11 +1,9 @@
 import { Navigate, Outlet } from "react-router-dom";
-import { homeFor, useAuth } from "./useAuth";
+import { useAuth } from "./useAuth";
 
-// `role` keeps someone out of the other role's pages. It only saves them a screen of errors:
-// the server decides what each role may do.
-export function ProtectedRoute({ role }: { role?: "admin" | "teacher" }) {
+export function ProtectedRoute({ adminOnly = false }: { adminOnly?: boolean }) {
   const { token, user } = useAuth();
   if (!token) return <Navigate to="/login" replace />;
-  if (role && user?.role !== role) return <Navigate to={homeFor(user?.role)} replace />;
+  if (adminOnly && !user?.is_admin) return <Navigate to="/courses" replace />;
   return <Outlet />;
 }

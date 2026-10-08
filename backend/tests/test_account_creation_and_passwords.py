@@ -12,8 +12,7 @@ from fastapi.testclient import TestClient
 from app.auth.accounts import AccountError, create_account
 from app.db import SessionLocal
 from app.main import app
-from app.models import RefreshToken, User, UserRole
-from app.moodle import client as moodle_client
+from app.models import RefreshToken, User
 from tests.auth_helpers import STRONG_PASSWORD
 
 client = TestClient(app)
@@ -33,12 +32,6 @@ def remove_created_users():
         db.close()
 
 
-@pytest.fixture(autouse=True)
-def moodle_knows_nobody(monkeypatch):
-    """A username that is not an admin goes to Moodle, which here has no such user."""
-    monkeypatch.setattr(moodle_client, "verify_login", lambda username, password: None)
-
-
 def _email() -> str:
     return f"{PREFIX}{uuid.uuid4().hex[:10]}@example.edu"
 
@@ -48,7 +41,7 @@ def _create(email: str | None = None, password: str = STRONG_PASSWORD, name: str
     email = email or _email()
     with SessionLocal() as db:
         try:
-            user = create_account(db, email=email, name=name, password=password, role=UserRole.admin)
+            user = create_account(db, email=email, name=name, password=password, is_admin=True)
         except AccountError as error:
             return error, email
         db.refresh(user)
@@ -57,15 +50,15 @@ def _create(email: str | None = None, password: str = STRONG_PASSWORD, name: str
 
 
 def _login(email: str, password: str):
-    return client.post("/auth/login", json={"username": email, "password": password})
+    return client.post("/auth/login", json={"email": email, "password": password})
 
 
 def test_a_strong_password_creates_an_account_that_can_log_in():
     user, email = _create()
 
-    assert isinstance(user, User) and user.email == email and user.role == UserRole.admin
+    assert isinstance(user, User) and user.email == email and user.is_admin == True
     login = _login(email, STRONG_PASSWORD)
-    assert login.status_code == 200 and login.json()["user"]["role"] == "admin"
+    assert login.status_code == 200 and login.json()["user"]["is_admin"] is True
     assert "hashed_password" not in login.text and STRONG_PASSWORD not in login.text
 
 
@@ -76,10 +69,10 @@ def test_the_admin_logs_in_with_the_email_in_any_case():
     assert _login(f"  {email} ", STRONG_PASSWORD).status_code == 200
 
 
-def test_only_an_edu_email_gets_an_account():
+def test_non_edu_email_gets_an_account():
     refused, _ = _create(email=f"{PREFIX}{uuid.uuid4().hex[:8]}@gmail.com")
 
-    assert isinstance(refused, AccountError) and refused.status_code == 422 and "edu" in refused.detail
+    assert isinstance(refused, User)
 
 
 def test_a_short_password_is_refused_and_the_reason_is_given():
@@ -178,7 +171,7 @@ def test_an_older_account_created_with_a_password_over_72_bytes_can_still_log_in
     legacy_hash = bcrypt.hashpw(password.encode("utf-8")[:72], bcrypt.gensalt()).decode("utf-8")
     email = _email()
     with SessionLocal() as db:
-        db.add(User(email=email, name="Legacy", hashed_password=legacy_hash, role=UserRole.admin))
+        db.add(User(email=email, name="Legacy", hashed_password=legacy_hash, is_admin=True))
         db.commit()
 
     assert _login(email, password).status_code == 200

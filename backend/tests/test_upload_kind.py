@@ -9,7 +9,7 @@ from app.auth.security import create_access_token
 from app.config import settings
 from app.db import SessionLocal
 from app.main import app
-from app.models import Course, Document, DocumentKind, User, UserRole
+from app.models import Course, Document, DocumentKind, User
 
 client = TestClient(app)
 
@@ -24,7 +24,7 @@ def world():
     db = SessionLocal()
     try:
         user = User(
-            email=f"kind-{uuid.uuid4().hex[:8]}@example.com", name="T", hashed_password="x", role=UserRole.teacher
+            email=f"kind-{uuid.uuid4().hex[:8]}@example.com", name="T", hashed_password="x", is_admin=False
         )
         db.add(user)
         db.flush()

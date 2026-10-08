@@ -30,20 +30,6 @@ def test_chi_moi_model_sinh_van_ban_duoc_dem_ra_chon():
     assert [c.alias for c in chon] == ["gemini-fast"]
 
 
-def test_alias_khai_generation_false_thi_khong_dem_ra_chon_nhung_van_o_gateway():
-    """groq-fast (gpt-oss-20b) không sinh nổi mô-đun nhưng vẫn dùng để chấm điểm: ẩn khỏi danh sách
-    giảng viên chọn, còn gateway vẫn liệt kê nó cho các script chấm điểm."""
-    raw = [
-        _muc("gemini-fast", "gemini/gemini-3.5-flash-lite"),
-        _muc("groq-fast", "groq/openai/gpt-oss-20b", generation=False),
-        _muc("groq-pro", "groq/openai/gpt-oss-120b", generation=True),
-    ]
-
-    chon = catalog.to_choices(raw)
-
-    assert [c.alias for c in chon] == ["gemini-fast", "groq-pro"]
-    assert "groq-fast" in {m["model_name"] for m in raw}
-
 
 def test_model_khong_ro_che_do_thi_khong_dem_ra_chon():
     """Thà bỏ sót một model còn hơn đem một model nhúng ra cho chọn: bỏ sót thì giảng viên

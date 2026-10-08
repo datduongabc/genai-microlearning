@@ -1,9 +1,3 @@
-"""Vai trò student là mã chết: học viên học trên Moodle nên không có tài khoản nào ở đây, chỉ
-có giảng viên và admin (migration 0007).
-
-Bỏ một giá trị khỏi enum của PostgreSQL không làm trực tiếp được, phải dựng lại kiểu,
-nên việc đó đáng có test riêng."""
-
 import os
 import subprocess
 import sys
@@ -45,23 +39,12 @@ def db_sau_migration():
     quan_tri.dispose()
 
 
-def test_enum_vai_tro_chi_con_teacher_va_admin(db_sau_migration):
+def test_local_accounts_have_a_boolean_admin_flag_and_soft_delete(db_sau_migration):
     with db_sau_migration.connect() as conn:
-        gia_tri = {
-            r[0] for r in conn.execute(text(
-                "select enumlabel from pg_enum e "
-                "join pg_type t on t.oid = e.enumtypid where t.typname = 'userrole'"
-            ))
-        }
-
-    assert gia_tri == {"teacher", "admin"}
-
-
-def test_cot_role_van_dung_kieu_userrole(db_sau_migration):
-    with db_sau_migration.connect() as conn:
-        kieu = conn.execute(text(
-            "select format_type(atttypid, atttypmod) from pg_attribute "
-            "where attrelid = 'users'::regclass and attname = 'role'"
-        )).scalar()
-
-    assert kieu == "userrole"
+        columns = dict(conn.execute(text("select attname, format_type(atttypid, atttypmod) "
+                                        "from pg_attribute where attrelid = 'users'::regclass "
+                                        "and attnum > 0 and not attisdropped")).all())
+        assert columns['is_admin'] == 'boolean'
+        assert columns['deleted_at'] == 'timestamp with time zone'
+        assert 'role' not in columns
+        assert not conn.execute(text("select 1 from pg_type where typname='userrole'")).first()

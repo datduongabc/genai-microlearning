@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { apiErrorMessage } from "../api";
 import { homeFor, useAuth } from "../auth/useAuth";
 import { loginSchema, type LoginFormValues } from "../lib/authSchemas";
@@ -23,8 +23,8 @@ export function LoginPage() {
   async function onSubmit(values: LoginFormValues) {
     setError(null);
     try {
-      const user = await login(values.username, values.password);
-      navigate(homeFor(user.role));
+      const user = await login(values.email, values.password);
+      navigate(homeFor(user.is_admin));
     } catch (err) {
       setError(apiErrorMessage(err, "Đăng nhập thất bại"));
     }
@@ -75,7 +75,7 @@ export function LoginPage() {
               Đăng nhập
             </div>
             <h1 className="font-serif text-2xl font-semibold">
-              Nhập Tài Khoản Moodle
+              Đăng nhập tài khoản
             </h1>
           </div>
 
@@ -87,22 +87,22 @@ export function LoginPage() {
 
           <label className="flex flex-col gap-1.5">
             <span className="text-[11px] font-semibold uppercase tracking-wide text-gray-500">
-              Tên đăng nhập
+              Email
             </span>
             <input
-              type="text"
+              type="email"
               autoComplete="username"
               autoCapitalize="none"
               spellCheck={false}
-              placeholder="Tên đăng nhập Moodle"
+              placeholder="ten@example.com"
               className="border-0 border-b-[1.5px] border-gray-300 bg-transparent py-2.5 text-[15px] outline-none focus:border-terracotta"
-              {...register("username")}
+              {...register("email")}
             />
-            {errors.username && (
-              <span className="text-xs text-red-600">{errors.username.message}</span>
+            {errors.email && (
+              <span className="text-xs text-red-600">{errors.email.message}</span>
             )}
             <span className="text-xs text-gray-500">
-              Giảng viên dùng tên đăng nhập và mật khẩu Moodle. Admin dùng email.
+              Dùng email và mật khẩu của tài khoản trong hệ thống.
             </span>
           </label>
 
@@ -130,18 +130,16 @@ export function LoginPage() {
             {isSubmitting ? "Đang đăng nhập..." : "Đăng nhập"}
           </button>
 
-          {/* Mật khẩu của giảng viên là mật khẩu Moodle: họ đặt lại ở Moodle (hoặc nhờ admin Moodle).
-              Mật khẩu cục bộ của admin do admin máy chủ đặt lại bằng lệnh, nên người dùng nào quên cũng
-              liên hệ admin. */}
           <p className="text-sm text-gray-500">
-            Quên mật khẩu? Giảng viên đặt lại mật khẩu trên Moodle.{" "}
+            Quên mật khẩu?{" "}
             <a
               href={`mailto:${SUPPORT_EMAIL}`}
               className="font-semibold text-terracotta hover:underline"
             >
-              Liên hệ admin để hỗ trợ
+              Liên hệ admin
             </a>
           </p>
+          <p className="text-sm">Chưa có tài khoản? <Link to="/register" className="text-terracotta hover:underline">Đăng ký</Link></p>
         </form>
       </div>
     </div>

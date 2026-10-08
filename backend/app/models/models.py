@@ -25,14 +25,6 @@ from app.db import Base
 EMBEDDING_DIM = 768
 
 
-class UserRole(str, enum.Enum):
-    # Giảng viên dùng ứng dụng; học viên học trên Moodle sau khi giảng viên xuất bản nên không
-    # có tài khoản nào ở đây. Admin là vai trò riêng, không phải giảng viên: chỉ quản lý tài
-    # khoản giảng viên và theo dõi lỗi, không có môn học nào.
-    teacher = "teacher"
-    admin = "admin"
-
-
 class DocumentStatus(str, enum.Enum):
     uploaded = "uploaded"
     processing = "processing"
@@ -88,10 +80,10 @@ class User(Base):
     id: Mapped[uuid.UUID] = uuid_pk()
     email: Mapped[str] = mapped_column(unique=True)
     name: Mapped[str]
-    # Chỉ admin có mật khẩu cục bộ (scripts/create_admin.py). Mật khẩu của giảng viên nằm ở Moodle, nên
-    # tài khoản giảng viên để trống cột này (migration 0012).
+    # Local credentials for every account; NULL legacy hashes cannot authenticate.
     hashed_password: Mapped[str | None] = mapped_column(nullable=True)
-    role: Mapped[UserRole] = mapped_column(Enum(UserRole))
+    is_admin: Mapped[bool] = mapped_column(default=False, server_default="false")
+    deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     # False: tài khoản bị khóa. Đọc lại từ DB ở mỗi request (get_current_user) nên khóa có hiệu
     # lực ngay, kể cả với token đang dùng. Khóa không xóa dữ liệu nào.
     is_active: Mapped[bool] = mapped_column(default=True, server_default="true")
@@ -101,9 +93,7 @@ class User(Base):
     # này. Không có khóa ngoại nào ràng buộc được nó, nên giá trị được kiểm ở biên API dựa
     # vào danh sách gateway đang phục vụ (app/llm/catalog.py).
     default_model_alias: Mapped[str | None] = mapped_column(nullable=True)
-    # Người dùng Moodle của giảng viên, được đặt ở lần đăng nhập đầu bằng tài khoản Moodle
-    # (app/auth/moodle_login.py). NULL: chưa liên kết (một liên kết cũ đã bị xóa vì Moodle không còn
-    # người dùng đó), kể cả khi Moodle có sẵn tài khoản cùng email.
+    # Confirmed Moodle identity; local account creation never links it automatically.
     moodle_user_id: Mapped[int | None] = mapped_column(nullable=True)
     created_at: Mapped[datetime] = created_at_column()
 

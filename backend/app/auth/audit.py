@@ -12,6 +12,11 @@ from fastapi import Request
 
 logger = logging.getLogger("app.audit")
 
+REGISTER_SUCCESS = "register_success"
+REGISTER_REJECTED = "register_rejected"
+ADMIN_CREATE_USER = "admin_create_user"
+ADMIN_RESET_PASSWORD = "admin_reset_password"
+
 LOGIN_SUCCESS = "login_success"
 LOGIN_FAILED = "login_failed"
 LOGOUT = "logout"

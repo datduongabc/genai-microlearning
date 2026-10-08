@@ -41,7 +41,6 @@ from app.models import (
     Module,
     ModuleComponent,
     User,
-    UserRole,
 )
 
 client = TestClient(app)
@@ -94,7 +93,7 @@ def document(monkeypatch):
     db = SessionLocal()
     try:
         user = User(email=f"nr-{uuid.uuid4().hex[:8]}@example.com", name="T", hashed_password="x",
-                    role=UserRole.teacher)
+                    is_admin=False)
         db.add(user)
         db.flush()
         course = Course(name="No-RAG", owner_id=user.id)

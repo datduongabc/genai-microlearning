@@ -24,12 +24,7 @@ $functions = [
         'type'         => 'write',
         'capabilities' => 'mod/quiz:addinstance',
     ],
-    'local_lms_bridge_verify_login' => [
-        'classname'    => 'local_lms_bridge\external\verify_login',
-        'methodname'   => 'execute',
-        'description'  => 'Kiem tra ten dang nhap va mat khau Moodle cua mot nguoi dung, tra ve ma nguoi dung.',
-        'type'         => 'write',
-    ],
+
 ];
 
 $services = [
@@ -37,7 +32,6 @@ $services = [
         'functions' => [
             'local_lms_bridge_create_book',
             'local_lms_bridge_create_quiz',
-            'local_lms_bridge_verify_login',
             'core_course_create_courses',
             'core_course_get_courses',
             'core_course_search_courses',

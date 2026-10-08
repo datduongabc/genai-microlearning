@@ -56,7 +56,7 @@ def rotate_refresh_token(db: Session, raw_token: str, now: datetime | None = Non
     # A locked account is read from the database now, like on every request: its refresh token
     # must not buy it a new access token.
     user = db.get(User, stored.user_id)
-    if user is None or not user.is_active:
+    if user is None or not user.is_active or user.deleted_at is not None:
         raise RefreshRejected("disabled", stored.user_id)
 
     stored.revoked_at = now

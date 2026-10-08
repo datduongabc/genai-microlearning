@@ -17,13 +17,12 @@ from app.models import (
     JobType,
     Module,
     User,
-    UserRole,
 )
 
 
 def _make_user(db) -> User:
     user = User(
-        email=f"sec-{uuid.uuid4().hex[:8]}@example.com", name="T", hashed_password="x", role=UserRole.teacher
+        email=f"sec-{uuid.uuid4().hex[:8]}@example.com", name="T", hashed_password="x", is_admin=False
     )
     db.add(user)
     db.flush()

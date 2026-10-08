@@ -20,12 +20,12 @@ describe('MoodleAccountSection', () => {
     expect(document.querySelector('input')).toBeNull()
   })
 
-  it('tells a lecturer whose account is not linked to log in again with Moodle, without a form', async () => {
+  it('shows that app and Moodle accounts are separate when not linked', async () => {
     vi.spyOn(api, 'getMoodleAccount').mockResolvedValue({ email: 'lan@x.edu', status: 'not_linked' })
     render(<MoodleAccountSection />)
 
     expect(await screen.findByText('Chưa liên kết')).toBeInTheDocument()
-    expect(screen.getByText(/đăng nhập lại bằng tài khoản moodle/i)).toBeInTheDocument()
+    expect(screen.getByText(/tài khoản trong ứng dụng và tài khoản moodle/i)).toBeInTheDocument()
     expect(document.querySelector('input[type=password]')).toBeNull()
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })

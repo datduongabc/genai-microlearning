@@ -26,7 +26,6 @@ from app.models import (
     ModuleComponent,
     Question,
     User,
-    UserRole,
 )
 
 client = TestClient(app)
@@ -66,8 +65,8 @@ def _add_module(db, course, doc, title, *, control_of=None) -> Module:
 def world():
     db = SessionLocal()
     try:
-        owner = User(email=f"del-{uuid.uuid4().hex[:8]}@example.com", name="A", hashed_password="x", role=UserRole.teacher)
-        stranger = User(email=f"del-{uuid.uuid4().hex[:8]}@example.com", name="B", hashed_password="x", role=UserRole.teacher)
+        owner = User(email=f"del-{uuid.uuid4().hex[:8]}@example.com", name="A", hashed_password="x", is_admin=False)
+        stranger = User(email=f"del-{uuid.uuid4().hex[:8]}@example.com", name="B", hashed_password="x", is_admin=False)
         db.add_all([owner, stranger])
         db.flush()
         course = Course(name="Deletion", owner_id=owner.id)

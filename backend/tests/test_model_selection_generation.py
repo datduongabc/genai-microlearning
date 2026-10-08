@@ -25,7 +25,6 @@ from app.models import (
     JobType,
     Module,
     User,
-    UserRole,
 )
 
 client = TestClient(app)
@@ -40,11 +39,6 @@ GATEWAY_GIA_LAP = [
         "model_name": "groq-pro",
         "litellm_params": {"model": "groq/openai/gpt-oss-120b"},
         "model_info": {"mode": "chat"},
-    },
-    {
-        "model_name": "groq-fast",
-        "litellm_params": {"model": "groq/openai/gpt-oss-20b"},
-        "model_info": {"mode": "chat", "generation": False},
     },
 ]
 
@@ -71,7 +65,7 @@ def _tai_lieu_cua_giang_vien(mac_dinh: str | None = None) -> tuple[str, uuid.UUI
     try:
         user = User(
             email=f"gen-{uuid.uuid4().hex[:10]}@example.com", name="T", hashed_password="x",
-            role=UserRole.teacher, default_model_alias=mac_dinh,
+            is_admin=False, default_model_alias=mac_dinh,
         )
         db.add(user)
         db.flush()
@@ -143,7 +137,7 @@ def test_mac_dinh_da_luu_ma_gateway_da_bo_thi_sinh_bang_cau_hinh_he_thong():
 
 
 def test_mac_dinh_da_luu_la_groq_fast_thi_sinh_bang_cau_hinh_he_thong_va_danh_sach_khong_co_no():
-    """groq-fast không sinh nổi mô-đun nên bị ẩn khỏi danh sách chọn: một giảng viên đã lưu nó làm
+    """groq-fast không sinh nổi mô-đun nên đã bỏ khỏi gateway: một giảng viên đã lưu nó làm
     mặc định từ trước không bị chặn bằng 422, lượt sinh lùi về cấu hình hệ thống."""
     token, doc_id = _tai_lieu_cua_giang_vien(mac_dinh="groq-fast")
     headers = {"Authorization": f"Bearer {token}"}

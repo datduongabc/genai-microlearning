@@ -23,7 +23,7 @@ from app.generation.planner import Concept, PlannerOutput
 from app.generation.quiz_graph import LENGTH_TELL_FEEDBACK, QuizQuestion, question_to_rebalance
 from app.generation.relevance import CorrectiveResult
 from app.main import app
-from app.models import Chunk, ComponentType, Course, Document, DocumentStatus, User, UserRole
+from app.models import Chunk, ComponentType, Course, Document, DocumentStatus, User
 
 client = TestClient(app)
 
@@ -92,7 +92,7 @@ def document():
     db = SessionLocal()
     try:
         user = User(email=f"shape-{uuid.uuid4().hex[:8]}@example.com", name="T", hashed_password="x",
-                    role=UserRole.teacher)
+                    is_admin=False)
         db.add(user)
         db.flush()
         course = Course(name="Module structure", owner_id=user.id)

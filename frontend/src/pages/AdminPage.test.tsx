@@ -18,15 +18,15 @@ vi.mock('../api', async (importOriginal) => {
 })
 
 const admin: AdminUser = {
-  id: 'admin-1', email: 'admin@example.com', name: 'Quản trị', role: 'admin', is_active: true,
+  id: 'admin-1', email: 'admin@example.com', name: 'Quản trị', is_admin: true, is_active: true,
   created_at: '2026-01-01T00:00:00Z', moodle_status: null, course_count: null, moodle_course_count: null,
 }
 const lan: AdminUser = {
-  id: 'u-1', email: 'lan@example.com', name: 'Lan Nguyễn', role: 'teacher', is_active: true,
+  id: 'u-1', email: 'lan@example.com', name: 'Lan Nguyễn', is_admin: false, is_active: true,
   created_at: '2026-01-02T00:00:00Z', moodle_status: 'linked', course_count: 2, moodle_course_count: 0,
 }
 const minh: AdminUser = {
-  id: 'u-2', email: 'minh@example.com', name: 'Minh Trần', role: 'teacher', is_active: false,
+  id: 'u-2', email: 'minh@example.com', name: 'Minh Trần', is_admin: false, is_active: false,
   created_at: '2026-01-03T00:00:00Z', moodle_status: 'not_linked', course_count: 0, moodle_course_count: 0,
 }
 
@@ -49,7 +49,7 @@ function renderPage() {
 beforeEach(() => {
   vi.clearAllMocks()
   vi.spyOn(AuthHookModule, 'useAuth').mockReturnValue({
-    token: 't', refreshToken: 'r', user: { id: 'admin-1', email: 'admin@example.com', name: 'Quản trị', role: 'admin' },
+    token: 't', refreshToken: 'r', user: { id: 'admin-1', email: 'admin@example.com', name: 'Quản trị', is_admin: true },
     login: vi.fn(), logout: vi.fn(),
   })
   vi.mocked(api.listUsers).mockResolvedValue([admin, lan, minh])
@@ -70,13 +70,11 @@ describe('AdminPage - accounts', () => {
     expect(within(screen.getByText('admin@example.com').closest('li')!).queryByText(/moodle/i)).not.toBeInTheDocument()
   })
 
-  it('has no way to create a lecturer or set a password: lecturers come from Moodle', async () => {
+  it('offers account creation and password reset without automatic Moodle linking', async () => {
     renderPage()
     const row = (await screen.findByText('lan@example.com')).closest('li')!
-
-    expect(screen.queryByRole('button', { name: 'Tạo tài khoản' })).not.toBeInTheDocument()
-    expect(screen.queryByLabelText('Mật khẩu ban đầu')).not.toBeInTheDocument()
-    expect(within(row).queryByRole('button', { name: 'Đặt lại mật khẩu' })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Tạo tài khoản' })).toBeInTheDocument()
+    expect(within(row).getByRole('button', { name: 'Đặt lại mật khẩu' })).toBeInTheDocument()
   })
 
   it('locks an active account and unlocks a locked one', async () => {
@@ -122,21 +120,19 @@ describe('AdminPage - accounts', () => {
     expect(api.deleteUser).not.toHaveBeenCalled()
   })
 
-  it('explains and disables delete for a lecturer with courses, and offers none for an admin', async () => {
+  it('offers soft delete even with courses but protects admin accounts', async () => {
     renderPage()
     const withCourses = (await screen.findByText('lan@example.com')).closest('li')!
     const own = screen.getByText('admin@example.com').closest('li')!
 
     const button = within(withCourses).getByRole('button', { name: 'Xóa' })
-    expect(button).toBeDisabled()
-    expect(button).toHaveAttribute('title', expect.stringContaining('2 môn học'))
-    expect(within(withCourses).getByText(/2 môn học/)).toBeInTheDocument()
+    expect(button).toBeEnabled()
     expect(within(own).queryByRole('button', { name: 'Xóa' })).not.toBeInTheDocument()
   })
 
-  it('explains and disables delete for a lecturer who holds a Moodle course but no course here', async () => {
+  it('offers soft delete for an account with a Moodle link', async () => {
     const hoa: AdminUser = {
-      id: 'u-3', email: 'hoa@example.com', name: 'Hoa Lê', role: 'teacher', is_active: true,
+      id: 'u-3', email: 'hoa@example.com', name: 'Hoa Lê', is_admin: false, is_active: true,
       created_at: '2026-01-04T00:00:00Z', moodle_status: 'linked', course_count: 0, moodle_course_count: 1,
     }
     vi.mocked(api.listUsers).mockResolvedValue([admin, hoa])
@@ -144,9 +140,7 @@ describe('AdminPage - accounts', () => {
     const row = (await screen.findByText('hoa@example.com')).closest('li')!
 
     const button = within(row).getByRole('button', { name: 'Xóa' })
-    expect(button).toBeDisabled()
-    expect(button).toHaveAttribute('title', expect.stringContaining('1 môn học Moodle'))
-    expect(within(row).getByText(/1 môn học Moodle/)).toBeInTheDocument()
+    expect(button).toBeEnabled()
   })
 
   it('shows what the server said when the delete is refused', async () => {

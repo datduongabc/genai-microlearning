@@ -18,7 +18,6 @@ from app.models import (
     Module,
     ModuleComponent,
     User,
-    UserRole,
 )
 
 APP_TABLES = sorted(Base.metadata.tables)
@@ -84,7 +83,7 @@ def world():
     db = SessionLocal()
     try:
         user = User(
-            email=f"schema-{uuid.uuid4().hex[:8]}@example.com", name="T", hashed_password="x", role=UserRole.teacher
+            email=f"schema-{uuid.uuid4().hex[:8]}@example.com", name="T", hashed_password="x", is_admin=False
         )
         db.add(user)
         db.flush()

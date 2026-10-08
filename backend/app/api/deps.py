@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.auth.security import decode_token, token_user_id
 from app.db import get_db
-from app.models import Course, User, UserRole
+from app.models import Course, User
 
 bearer_scheme = HTTPBearer(auto_error=False)
 
@@ -33,7 +33,7 @@ def get_current_user(
     user = db.get(User, user_id)
     # is_active is read here, from the database, on every request: a locked account is shut out
     # at once, with the access token it already holds, and the token carries no role either.
-    if user is None or not user.is_active:
+    if user is None or not user.is_active or user.deleted_at is not None:
         raise unauthorized
 
     # Set cho transaction HIỆN TẠI (đã mở sẵn từ câu query User ở trên) +
@@ -62,6 +62,6 @@ def require_course_owner(course: Course | None, user: User) -> Course:
 def require_admin(current_user: User = Depends(get_current_user)) -> User:
     """Admin endpoints answer 404 to anyone else, the same as for something that does not exist
     (see require_course_owner), so a lecturer learns nothing about what is there."""
-    if current_user.role != UserRole.admin:
+    if not current_user.is_admin:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
     return current_user

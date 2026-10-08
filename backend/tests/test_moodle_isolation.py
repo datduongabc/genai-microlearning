@@ -17,7 +17,7 @@ from fastapi.testclient import TestClient
 from app.auth.security import create_access_token
 from app.db import SessionLocal
 from app.main import app
-from app.models import Course, MoodleCourseClaim, User, UserRole
+from app.models import Course, MoodleCourseClaim, User
 from app.moodle import client as moodle_client
 
 client = TestClient(app)
@@ -29,7 +29,7 @@ def users():
     db = SessionLocal()
     try:
         made = [
-            User(email=f"iso-{i}-{uuid.uuid4().hex[:8]}@example.com", name="T", hashed_password="x", role=UserRole.teacher, moodle_user_id=4242)
+            User(email=f"iso-{i}-{uuid.uuid4().hex[:8]}@example.com", name="T", hashed_password="x", is_admin=False, moodle_user_id=4242)
             for i in range(2)
         ]
         db.add_all(made)

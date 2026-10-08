@@ -155,7 +155,7 @@ describe('CourseDetailPage - Moodle linking', () => {
     expect(await screen.findByText(detail)).toBeInTheDocument()
   })
 
-  it('asks the lecturer to log in with Moodle first and offers no course until the account is linked', async () => {
+  it('offers no Moodle course until the account is linked', async () => {
     vi.mocked(api.listCourses).mockResolvedValue([unlinkedCourse])
     vi.mocked(api.getMoodleAccount).mockResolvedValue({ email: 'lan@x.edu', status: 'not_linked' })
 
@@ -164,7 +164,7 @@ describe('CourseDetailPage - Moodle linking', () => {
     const account = await screen.findByRole('region', { name: 'Tài khoản Moodle' })
     expect(await within(account).findByText('Chưa liên kết')).toBeInTheDocument()
     expect(within(account).queryByLabelText('Mật khẩu Moodle')).not.toBeInTheDocument()
-    expect(screen.getAllByText(/đăng nhập lại bằng/i).length).toBeGreaterThan(0)
+    expect(screen.getByText(/Tài khoản ứng dụng sử dụng mật khẩu riêng/i)).toBeInTheDocument()
     expect(screen.queryByRole('combobox', { name: /course moodle/i })).not.toBeInTheDocument()
     expect(api.listMoodleCourses).not.toHaveBeenCalled()
   })
@@ -202,7 +202,7 @@ describe('CourseDetailPage - Moodle linking', () => {
     })
 
     expect(await within(account).findByText('Chưa liên kết')).toBeInTheDocument()
-    expect(within(account).getByText(/đăng nhập lại bằng tài khoản moodle/i)).toBeInTheDocument()
+    expect(within(account).getByText(/tài khoản trong ứng dụng và tài khoản moodle/i)).toBeInTheDocument()
   })
 
   it('reloads the course when linking fails after the server linked it, so it shows as linked', async () => {

@@ -26,7 +26,7 @@ export async function getMoodleAccount() {
 }
 
 // Raised on window when the lecturer's Moodle account may have changed: the server refused a Moodle
-// action (422) because the link is gone and must be made again (by logging in with Moodle again).
+// action (422) because the link is gone and must be made again (through account linking).
 // Whatever shows the account (the "Tài khoản Moodle" section) asks the server again.
 export const MOODLE_ACCOUNT_CHANGED_EVENT = 'moodle-account-changed'
 

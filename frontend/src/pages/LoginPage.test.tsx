@@ -1,13 +1,12 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { AxiosError, type AxiosResponse, type InternalAxiosRequestConfig } from 'axios'
-import { MemoryRouter, Route, Routes } from 'react-router-dom'
+import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { LoginPage } from './LoginPage'
 import * as AuthHookModule from '../auth/useAuth'
 
 const mockLogin = vi.fn()
-const TEACHER = { id: '1', email: 'teacher@example.com', name: 'T', role: 'teacher' }
 
 beforeEach(() => {
   mockLogin.mockReset()
@@ -27,19 +26,15 @@ function refusal(status: number, data: unknown) {
 }
 
 async function fillAndSubmit(password = 'password123') {
-  await userEvent.type(screen.getByPlaceholderText('Tên đăng nhập Moodle'), 'lan.nguyen')
+  await userEvent.type(screen.getByPlaceholderText('ten@example.com'), 'teacher@example.com')
   await userEvent.type(screen.getByPlaceholderText('••••••••'), password)
   await userEvent.click(screen.getByRole('button', { name: /đăng nhập/i }))
 }
 
 function renderLoginPage() {
   return render(
-    <MemoryRouter initialEntries={['/login']}>
-      <Routes>
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/courses" element={<div>Trang giảng viên</div>} />
-        <Route path="/admin" element={<div>Trang quản trị</div>} />
-      </Routes>
+    <MemoryRouter>
+      <LoginPage />
     </MemoryRouter>,
   )
 }
@@ -50,20 +45,20 @@ describe('LoginPage', () => {
 
     await userEvent.click(screen.getByRole('button', { name: /đăng nhập/i }))
 
-    expect(await screen.findByText(/vui lòng nhập tên đăng nhập/i)).toBeInTheDocument()
+    expect(await screen.findByText(/email không hợp lệ/i)).toBeInTheDocument()
     expect(mockLogin).not.toHaveBeenCalled()
   })
 
   it('calls login with the entered credentials when the form is valid', async () => {
-    mockLogin.mockResolvedValue(TEACHER)
+    mockLogin.mockResolvedValue({ id: '1', email: 'teacher@example.com', name: 'User', is_admin: false })
     renderLoginPage()
 
-    await userEvent.type(screen.getByPlaceholderText('Tên đăng nhập Moodle'), 'lan.nguyen')
+    await userEvent.type(screen.getByPlaceholderText('ten@example.com'), 'teacher@example.com')
     await userEvent.type(screen.getByPlaceholderText('••••••••'), 'password123')
     await userEvent.click(screen.getByRole('button', { name: /đăng nhập/i }))
 
     await waitFor(() => {
-      expect(mockLogin).toHaveBeenCalledWith('lan.nguyen', 'password123')
+      expect(mockLogin).toHaveBeenCalledWith('teacher@example.com', 'password123')
     })
   })
 
@@ -71,7 +66,7 @@ describe('LoginPage', () => {
     mockLogin.mockRejectedValue(new Error('network down'))
     renderLoginPage()
 
-    await userEvent.type(screen.getByPlaceholderText('Tên đăng nhập Moodle'), 'lan.nguyen')
+    await userEvent.type(screen.getByPlaceholderText('ten@example.com'), 'teacher@example.com')
     await userEvent.type(screen.getByPlaceholderText('••••••••'), 'password123')
     await userEvent.click(screen.getByRole('button', { name: /đăng nhập/i }))
 
@@ -79,12 +74,12 @@ describe('LoginPage', () => {
   })
 
   it('shows what the server said when it refuses the login', async () => {
-    mockLogin.mockRejectedValue(refusal(401, { detail: 'Tên đăng nhập hoặc mật khẩu không đúng.' }))
+    mockLogin.mockRejectedValue(refusal(401, { detail: 'Invalid email or password' }))
     renderLoginPage()
 
     await fillAndSubmit()
 
-    expect(await screen.findByText('Tên đăng nhập hoặc mật khẩu không đúng.')).toBeInTheDocument()
+    expect(await screen.findByText('Invalid email or password')).toBeInTheDocument()
   })
 
   it('tells the person to slow down when the server limits their attempts', async () => {
@@ -97,62 +92,24 @@ describe('LoginPage', () => {
   })
 
   it('lets a short password through to the server, which alone decides whether it is right', async () => {
-    mockLogin.mockResolvedValue(TEACHER)
+    mockLogin.mockResolvedValue({ id: '1', email: 'teacher@example.com', name: 'User', is_admin: false })
     renderLoginPage()
 
     await fillAndSubmit('old-pw')
 
-    await waitFor(() => expect(mockLogin).toHaveBeenCalledWith('lan.nguyen', 'old-pw'))
+    await waitFor(() => expect(mockLogin).toHaveBeenCalledWith('teacher@example.com', 'old-pw'))
   })
 
   it('tells the password manager which field is the username and which the current password', () => {
     renderLoginPage()
 
-    expect(screen.getByPlaceholderText('Tên đăng nhập Moodle')).toHaveAttribute('autocomplete', 'username')
+    expect(screen.getByPlaceholderText('ten@example.com')).toHaveAttribute('autocomplete', 'username')
     expect(screen.getByPlaceholderText('••••••••')).toHaveAttribute('autocomplete', 'current-password')
   })
+})
 
-  it('sends a lecturer to their courses and an admin to the admin page', async () => {
-    mockLogin.mockResolvedValue(TEACHER)
-    const { unmount } = renderLoginPage()
-    await fillAndSubmit()
-    expect(await screen.findByText('Trang giảng viên')).toBeInTheDocument()
-    unmount()
-
-    mockLogin.mockResolvedValue({ ...TEACHER, role: 'admin' })
-    renderLoginPage()
-    await fillAndSubmit()
-    expect(await screen.findByText('Trang quản trị')).toBeInTheDocument()
-  })
-
-  it('tells a lecturer who forgot their password to reset it in Moodle, and offers the admin by email', () => {
-    renderLoginPage()
-
-    const link = screen.getByRole('link', { name: 'Liên hệ admin để hỗ trợ' })
-
-    expect(screen.getByText(/giảng viên đặt lại mật khẩu trên moodle/i)).toBeInTheDocument()
-    expect(link).toHaveAttribute('href', 'mailto:dat.duongtandat385@gmail.com')
-  })
-
-  it('has no sign-up: lecturers log in with their Moodle account', () => {
-    renderLoginPage()
-
-    expect(screen.queryByText(/đăng ký/i)).not.toBeInTheDocument()
-    expect(screen.queryByRole('link', { name: /đăng ký/i })).not.toBeInTheDocument()
-  })
-
-  it('says Moodle is not answering when it is down, so a lecturer knows to wait', async () => {
-    mockLogin.mockRejectedValue(refusal(503, { detail: 'Moodle tạm thời không phản hồi. Vui lòng thử lại sau ít phút.' }))
-    renderLoginPage()
-
-    await fillAndSubmit()
-
-    expect(await screen.findByText(/moodle tạm thời không phản hồi/i)).toBeInTheDocument()
-  })
-
-  it('tells people to use their Moodle account, and an admin the email', () => {
-    renderLoginPage()
-
-    expect(screen.getByText(/giảng viên dùng tên đăng nhập và mật khẩu moodle/i)).toBeInTheDocument()
-  })
+it('offers open registration and admin support', () => {
+  renderLoginPage()
+  expect(screen.getByRole('link', { name: 'Đăng ký' })).toHaveAttribute('href', '/register')
+  expect(screen.getByRole('link', { name: 'Liên hệ admin' })).toHaveAttribute('href', expect.stringContaining('mailto:'))
 })

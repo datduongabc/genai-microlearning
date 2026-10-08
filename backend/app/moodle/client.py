@@ -106,15 +106,6 @@ def user_exists(user_id: int) -> bool:
     return get_user(user_id) is not None
 
 
-def verify_login(username: str, password: str) -> int | None:
-    """The Moodle user id when this username and password are right, None when they are not.
-    Asks local_lms_bridge_verify_login, which only checks the password the way Moodle's own login
-    form does (so Moodle's lockout counts a wrong attempt) and changes nothing about the user.
-    The password is sent once and not kept or logged anywhere here."""
-    user_id = int(call("local_lms_bridge_verify_login", username=username, password=password))
-    return user_id or None
-
-
 def enrol_as_teacher(course_id: int, user_id: int) -> None:
     """Enrol the Moodle user as the course's teacher.
 
@@ -123,7 +114,7 @@ def enrol_as_teacher(course_id: int, user_id: int) -> None:
     (/my/) lists only courses the logged-in user is enrolled in -- so a
     course created here would otherwise exist yet never show up for the
     teacher. `user_id` is the lecturer's own Moodle account (the one they linked with their
-    Moodle username and password, see app/api/moodle_account.py), not the account that owns the
+    confirmed identity, see app/api/moodle_account.py), not the account that owns the
     web service token.
     """
     call(

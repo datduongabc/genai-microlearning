@@ -35,7 +35,6 @@ from app.models import (
     ModuleComponent,
     Question,
     User,
-    UserRole,
 )
 from app.retrieval.search import ChunkScope
 from scripts import export_study_pair
@@ -105,7 +104,7 @@ def rag_module(monkeypatch):
     db = SessionLocal()
     try:
         user = User(email=f"study-{uuid.uuid4().hex[:8]}@example.com", name="T", hashed_password="x",
-                    role=UserRole.teacher)
+                    is_admin=False)
         db.add(user)
         db.flush()
         course = Course(name=COURSE_NAME, owner_id=user.id)

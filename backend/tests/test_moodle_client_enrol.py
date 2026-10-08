@@ -1,7 +1,6 @@
 from app.moodle import client as moodle_client
 
 # The conftest stands in for these in every test; these tests are about the real ones.
-REAL_VERIFY_LOGIN = moodle_client.verify_login
 REAL_ENROL_AS_TEACHER = moodle_client.enrol_as_teacher
 REAL_USER_EXISTS = moodle_client.user_exists
 EDITING_TEACHER_ROLE_ID = 3  # Moodle's built-in "Teacher" (editingteacher) role
@@ -56,25 +55,6 @@ def test_user_exists_looks_the_id_up_and_a_user_moodle_left_out_is_gone(monkeypa
     assert calls[0] == ("core_user_get_users", {"criteria": [{"key": "id", "value": 42}]})
 
 
-
-
-def test_verify_login_sends_the_credentials_to_the_bridge_function_and_returns_the_user_id(monkeypatch):
-    calls = []
-
-    def fake_call(wsfunction, **params):
-        calls.append((wsfunction, params))
-        return 55
-
-    monkeypatch.setattr(moodle_client, "call", fake_call)
-
-    assert REAL_VERIFY_LOGIN("lan.nguyen", "Aa1!secret-pass") == 55
-    assert calls == [("local_lms_bridge_verify_login", {"username": "lan.nguyen", "password": "Aa1!secret-pass"})]
-
-
-def test_verify_login_answers_none_when_moodle_says_the_credentials_are_wrong(monkeypatch):
-    monkeypatch.setattr(moodle_client, "call", lambda wsfunction, **params: 0)
-
-    assert REAL_VERIFY_LOGIN("lan.nguyen", "wrong") is None
 
 
 def test_get_user_answers_the_lower_cased_email_and_the_full_name_and_none_for_a_user_moodle_left_out(monkeypatch):

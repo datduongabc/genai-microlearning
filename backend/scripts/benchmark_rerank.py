@@ -56,7 +56,7 @@ from app.config import settings
 from app.ingestion.chunker import chunk_units, document_title
 from app.ingestion.document_readers import read_document
 from app.ingestion.embeddings import embed_texts
-from app.models.models import Chunk, Course, Document, DocumentKind, DocumentStatus, User, UserRole
+from app.models.models import Chunk, Course, Document, DocumentKind, DocumentStatus, User
 from app.retrieval.search import dense_search, hybrid_search, invalidate_sparse_cache, retrieve
 
 GOC = Path(__file__).resolve().parents[2]
@@ -144,7 +144,7 @@ def nap(db: Session, cac_mon: list[str]) -> None:
     if chu is None:
         chu = User(
             id=uuid.uuid4(), email="benchmark@example.com", name="Benchmark",
-            role=UserRole.teacher,
+            is_admin=False,
         )
         db.add(chu)
         db.flush()

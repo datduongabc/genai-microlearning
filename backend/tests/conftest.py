@@ -67,13 +67,6 @@ def moodle_knows_every_course(monkeypatch):
 
 
 @pytest.fixture(autouse=True)
-def moodle_accepts_no_login(monkeypatch):
-    """A lecturer logs in with their Moodle username and password. Tests that are not about that
-    reach no Moodle server: it accepts nobody; the ones that are replace this."""
-    monkeypatch.setattr(moodle_client, "verify_login", lambda username, password: None)
-
-
-@pytest.fixture(autouse=True)
 def moodle_keeps_every_user(monkeypatch):
     """A stored Moodle link is checked against Moodle. Tests that are not about that find every
     linked Moodle user still there; the ones that are replace this."""

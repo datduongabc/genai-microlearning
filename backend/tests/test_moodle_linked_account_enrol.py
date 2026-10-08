@@ -53,7 +53,7 @@ def _course(headers):
 
 
 def _link_account(moodle, headers):
-    """The lecturer has the Moodle link their first Moodle login stores (test_moodle_login.py tests that)."""
+    """A stored Moodle link for legacy course-publishing tests."""
     user_id = token_user_id(decode_token(headers["Authorization"].split()[1]))
     link_moodle_account(user_id, moodle["user_id"])
 
@@ -76,7 +76,7 @@ def test_a_lecturer_who_has_not_linked_a_moodle_account_is_refused_and_nothing_i
     response = client.post(f"/courses/{course_id}/create-moodle", headers=headers)
 
     assert response.status_code == 422
-    assert "đăng nhập lại bằng tài khoản Moodle" in response.json()["detail"]
+    assert "liên kết tài khoản Moodle" in response.json()["detail"]
     assert moodle["calls"] == []  # no Moodle course made, so none is left behind
     courses = {c["id"]: c for c in client.get("/courses", headers=headers).json()}
     assert courses[course_id]["moodle_course_id"] is None
@@ -113,7 +113,7 @@ def test_publishing_needs_the_linked_account_and_enrols_it_before_writing_anythi
 
     refused = client.post(f"/modules/{module_id}/publish-to-moodle", json={"section_num": 0}, headers=headers)
 
-    assert refused.status_code == 422 and "đăng nhập lại bằng tài khoản Moodle" in refused.json()["detail"]
+    assert refused.status_code == 422 and "liên kết tài khoản Moodle" in refused.json()["detail"]
     assert moodle["calls"] == []
 
     _link_account(moodle, headers)
@@ -225,4 +225,4 @@ def test_a_moodle_timeout_while_enrolling_on_link_is_a_clear_error_and_the_link_
 def test_make_account_helper_creates_a_lecturer_not_an_admin():
     user = make_account(f"helper-{uuid.uuid4().hex[:8]}@example.com")
 
-    assert user.role.value == "teacher" and user.is_active is True
+    assert not user.is_admin and user.is_active is True

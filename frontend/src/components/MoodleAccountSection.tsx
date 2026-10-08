@@ -9,11 +9,6 @@ const LABEL: Record<MoodleAccountState, string> = {
   unknown: "Không kiểm tra được Moodle",
 };
 
-// The lecturer's own Moodle account, always on screen where Moodle is used. Read only: it is linked
-// when they log in with their Moodle username and password (the server makes it then), so when it is
-// not, the way to link it is to log in again. Asks the server again whenever the account may have
-// changed (MOODLE_ACCOUNT_CHANGED_EVENT), e.g. when a Moodle action was refused because the link is
-// gone. `onStatus` tells the page what the server answered.
 export function MoodleAccountSection({ onStatus }: { onStatus?: (status: MoodleAccountState) => void }) {
   const [status, setStatus] = useState<MoodleAccountState>("unknown");
   const [reloads, setReloads] = useState(0);
@@ -48,8 +43,7 @@ export function MoodleAccountSection({ onStatus }: { onStatus?: (status: MoodleA
       </p>
       {status === "not_linked" && (
         <p className="mt-2 text-sm text-gray-600">
-          Tài khoản Moodle được liên kết khi bạn đăng nhập bằng tên đăng nhập và mật khẩu Moodle. Hãy đăng xuất rồi
-          đăng nhập lại bằng tài khoản Moodle để liên kết.
+          Tài khoản trong ứng dụng và tài khoản Moodle được quản lý riêng.
         </p>
       )}
     </section>

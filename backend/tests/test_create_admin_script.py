@@ -7,7 +7,7 @@ import uuid
 from pathlib import Path
 
 from app.db import SessionLocal
-from app.models import User, UserRole
+from app.models import User
 
 BACKEND = Path(__file__).resolve().parents[1]
 
@@ -29,7 +29,7 @@ def test_the_command_creates_an_admin_who_is_not_a_lecturer():
     assert email.lower() in result.stdout
     with SessionLocal() as db:
         user = db.query(User).filter(User.email == email.lower()).one()
-        assert user.role == UserRole.admin and user.is_active and user.name == "Quản trị viên"
+        assert user.is_admin == True and user.is_active and user.name == "Quản trị viên"
 
 
 def test_the_command_refuses_a_weak_password_and_a_taken_email_and_never_prints_the_password():
@@ -44,11 +44,11 @@ def test_the_command_refuses_a_weak_password_and_a_taken_email_and_never_prints_
     assert "A long enough phrase" not in taken.stdout + taken.stderr + weak.stdout + weak.stderr
 
 
-def test_the_first_admin_needs_an_edu_email_too():
+def test_the_admin_can_use_any_valid_email():
     email = f"cli-admin-{uuid.uuid4().hex[:8]}@gmail.com"
 
     result = _run(email, "A long enough phrase")
 
-    assert result.returncode != 0 and "edu" in result.stderr
+    assert result.returncode == 0
     with SessionLocal() as db:
-        assert db.query(User).filter(User.email == email).first() is None
+        assert db.query(User).filter(User.email == email).one().is_admin

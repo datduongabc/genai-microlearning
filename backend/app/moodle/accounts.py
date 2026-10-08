@@ -1,6 +1,3 @@
-"""Which Moodle account is a lecturer: the one linked at their first Moodle login
-(app/auth/moodle_login.py)."""
-
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
@@ -9,7 +6,7 @@ from app.moodle import client
 
 RELINK = (
     "Tài khoản Moodle đã liên kết của bạn không còn trên Moodle. "
-    "Hãy đăng xuất rồi đăng nhập lại bằng tài khoản Moodle để liên kết lại, rồi thử lại."
+    "Hãy liên kết lại tài khoản Moodle rồi thử lại."
 )
 
 
@@ -20,7 +17,7 @@ def require_moodle_user_id(user: User) -> int:
             status_code=422,
             detail=(
                 "Bạn chưa liên kết tài khoản Moodle. "
-                "Hãy đăng xuất rồi đăng nhập lại bằng tài khoản Moodle để liên kết, rồi thử lại."
+                "Hãy liên kết tài khoản Moodle rồi thử lại."
             ),
         )
     return user.moodle_user_id

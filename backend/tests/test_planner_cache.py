@@ -2,11 +2,11 @@ import uuid
 
 from app.db import SessionLocal
 from app.generation.module_generation_pipeline import _get_or_cache_planner
-from app.models import Course, Document, DocumentStatus, User, UserRole
+from app.models import Course, Document, DocumentStatus, User
 
 
 def _seed_document(db, planner_concepts=None):
-    user = User(email=f"test-{uuid.uuid4().hex[:8]}@example.com", name="T", hashed_password="x", role=UserRole.teacher)
+    user = User(email=f"test-{uuid.uuid4().hex[:8]}@example.com", name="T", hashed_password="x", is_admin=False)
     db.add(user)
     db.flush()
     course = Course(name="Planner cache test", owner_id=user.id)

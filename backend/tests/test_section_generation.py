@@ -25,7 +25,6 @@ from app.models import (
     JobType,
     Module,
     User,
-    UserRole,
 )
 from app.retrieval import search as retrieval
 from app.retrieval.search import ChunkScope
@@ -38,7 +37,7 @@ def textbook():
     db = SessionLocal()
     try:
         user = User(
-            email=f"gen-{uuid.uuid4().hex[:8]}@example.com", name="T", hashed_password="x", role=UserRole.teacher
+            email=f"gen-{uuid.uuid4().hex[:8]}@example.com", name="T", hashed_password="x", is_admin=False
         )
         db.add(user)
         db.flush()

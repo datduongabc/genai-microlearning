@@ -9,14 +9,14 @@ from pptx import Presentation
 from app.auth.security import create_access_token
 from app.db import SessionLocal
 from app.main import app
-from app.models import ComponentType, Course, Document, Module, ModuleComponent, User, UserRole
+from app.models import ComponentType, Course, Document, Module, ModuleComponent, User
 
 
 @pytest.fixture
 def module():
     with SessionLocal() as db:
         user = User(email=f"slides-{uuid.uuid4()}@example.com", name="T",
-                    hashed_password="x", role=UserRole.teacher)
+                    hashed_password="x", is_admin=False)
         db.add(user)
         db.flush()
         course = Course(name="Slides", owner_id=user.id)

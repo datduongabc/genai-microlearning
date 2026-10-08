@@ -27,11 +27,6 @@ GATEWAY_GIA_LAP = [
         "model_info": {"mode": "chat"},
     },
     {
-        "model_name": "groq-fast",
-        "litellm_params": {"model": "groq/openai/gpt-oss-20b"},
-        "model_info": {"mode": "chat", "generation": False},
-    },
-    {
         "model_name": "embed-default",
         "litellm_params": {"model": "gemini/gemini-embedding-001"},
         "model_info": {"mode": "embedding"},

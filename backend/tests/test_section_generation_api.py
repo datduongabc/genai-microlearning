@@ -23,7 +23,6 @@ from app.models import (
     JobType,
     Module,
     User,
-    UserRole,
 )
 
 client = TestClient(app)
@@ -38,7 +37,7 @@ def no_rate_limit(monkeypatch):
 
 def _make_user(db) -> User:
     user = User(
-        email=f"api-{uuid.uuid4().hex[:8]}@example.com", name="T", hashed_password="x", role=UserRole.teacher
+        email=f"api-{uuid.uuid4().hex[:8]}@example.com", name="T", hashed_password="x", is_admin=False
     )
     db.add(user)
     db.flush()

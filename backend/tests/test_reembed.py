@@ -7,7 +7,7 @@ import pytest
 
 from app.db import SessionLocal
 from app.ingestion.reembed import reembed_missing
-from app.models import Chunk, Course, Document, DocumentStatus, User, UserRole
+from app.models import Chunk, Course, Document, DocumentStatus, User
 from app.models.models import EMBEDDING_DIM
 
 KEPT = [1.0] + [0.0] * (EMBEDDING_DIM - 1)
@@ -18,7 +18,7 @@ def chunks():
     """Three chunks with a vector and 250 without, in one document."""
     db = SessionLocal()
     try:
-        user = User(email=f"reemb-{uuid.uuid4().hex[:8]}@example.com", name="T", hashed_password="x", role=UserRole.teacher)
+        user = User(email=f"reemb-{uuid.uuid4().hex[:8]}@example.com", name="T", hashed_password="x", is_admin=False)
         db.add(user)
         db.flush()
         course = Course(name="Re-embed", owner_id=user.id)

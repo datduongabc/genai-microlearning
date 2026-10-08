@@ -15,7 +15,7 @@ from fastapi.testclient import TestClient
 from app.config import settings
 from app.db import SessionLocal
 from app.main import app
-from app.models import User, UserRole
+from app.models import User
 
 client = TestClient(app)
 
@@ -25,7 +25,7 @@ def user_id():
     db = SessionLocal()
     try:
         user = User(
-            email=f"jwt-{uuid.uuid4().hex[:8]}@example.com", name="T", hashed_password="x", role=UserRole.teacher
+            email=f"jwt-{uuid.uuid4().hex[:8]}@example.com", name="T", hashed_password="x", is_admin=False
         )
         db.add(user)
         db.commit()

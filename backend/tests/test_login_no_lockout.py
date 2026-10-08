@@ -8,7 +8,7 @@ from fastapi.testclient import TestClient
 
 from app.db import SessionLocal
 from app.main import app
-from app.models import RefreshToken, User, UserRole
+from app.models import RefreshToken, User
 from tests.auth_helpers import STRONG_PASSWORD, make_account
 
 client = TestClient(app)
@@ -29,11 +29,11 @@ def email():
 
 
 def _log_in(address: str, password: str):
-    return client.post("/auth/login", json={"username": address, "password": password})
+    return client.post("/auth/login", json={"email": address, "password": password})
 
 
 def test_many_wrong_passwords_do_not_lock_the_right_one_out(email):
-    make_account(email, name="No Lock", role=UserRole.admin)
+    make_account(email, name="No Lock", is_admin=True)
 
     wrong = [_log_in(email, f"Wr0ng!Passw0rd-{i}").status_code for i in range(12)]
 
