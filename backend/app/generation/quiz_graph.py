@@ -281,12 +281,12 @@ def _verify_question(
     )
     if sourced:
         check = complete_structured(
-            prompt, GroundednessAnswerabilityCheck, system_instruction=GROUNDEDNESS_SYSTEM_INSTRUCTION
+            prompt, GroundednessAnswerabilityCheck, system_instruction=GROUNDEDNESS_SYSTEM_INSTRUCTION, small_step=True
         )
         result.groundedness_pass, result.groundedness_reason = check.groundedness_pass, check.groundedness_reason
     else:
         check = complete_structured(
-            prompt, AnswerabilityCheck, system_instruction=NO_SOURCE_QUESTION_CHECK_SYSTEM_INSTRUCTION
+            prompt, AnswerabilityCheck, system_instruction=NO_SOURCE_QUESTION_CHECK_SYSTEM_INSTRUCTION, small_step=True
         )
     result.answerability_pass, result.answerability_reason = check.answerability_pass, check.answerability_reason
     result.bloom_level_pass, result.bloom_level_reason = check.bloom_level_pass, check.bloom_level_reason

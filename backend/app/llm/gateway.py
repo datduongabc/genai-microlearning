@@ -19,6 +19,32 @@ from app.config import settings
 # ContextVar cũng là thứ duy nhất an toàn ở đây: worker chạy nhiều lượt sinh đồng thời,
 # mà một biến toàn cục thì lượt này sẽ đổi model của lượt kia.
 _model_da_chon: contextvars.ContextVar[str | None] = contextvars.ContextVar("_model_da_chon", default=None)
+_experiment: contextvars.ContextVar[bool] = contextvars.ContextVar("_experiment", default=False)
+_model_calls: contextvars.ContextVar[list[dict] | None] = contextvars.ContextVar("_model_calls", default=None)
+
+
+@contextlib.contextmanager
+def experiment_mode():
+    """Pin an evaluation run, including nested model selections, to its chosen alias."""
+    token = _experiment.set(True)
+    try:
+        yield
+    finally:
+        _experiment.reset(token)
+
+
+@contextlib.contextmanager
+def capture_models():
+    calls: list[dict] = []
+    token = _model_calls.set(calls)
+    try:
+        yield calls
+    finally:
+        _model_calls.reset(token)
+
+
+def recorded_models() -> list[dict]:
+    return list(_model_calls.get() or [])
 
 
 @contextlib.contextmanager
@@ -41,15 +67,40 @@ def active_model() -> str:
     return settings.llm_model
 
 
-def _completion(**kwargs):
+def _completion(*, small_step: bool = False, **kwargs):
+    alias = active_model()
+    routed_alias = alias
+    pinned = settings.llm_experiment_mode or _experiment.get()
+    extra_body = dict(kwargs.pop("extra_body", None) or {})
+    if pinned:
+        if alias == "gemini-balanced" or alias.endswith("-small"):
+            raise ValueError("Experiments require a single-model alias, not a routing profile")
+        extra_body["disable_fallbacks"] = True
+    elif small_step and alias in {"gemini-fast", "gemini-flash"}:
+        # These profiles alone permit Groq. Reserve output and schema tokens too;
+        # Content never opts in, even in the no-RAG arm with a short prompt.
+        schema = kwargs.get("response_format")
+        schema_text = json.dumps(schema.model_json_schema() if isinstance(schema, type) else schema)
+        input_tokens = litellm.token_counter(model="gpt-4o", messages=kwargs["messages"])
+        input_tokens += litellm.token_counter(model="gpt-4o", text=schema_text)
+        output_tokens = kwargs.get("max_tokens", 2048)
+        if output_tokens <= 2048 and input_tokens + output_tokens <= 6000:
+            routed_alias = f"{alias}-small"
+            kwargs["max_tokens"] = output_tokens
     # "openai/" only means "speak the OpenAI-compatible protocol to api_base";
     # the gateway decides which provider actually serves the alias.
-    return litellm.completion(
-        model=f"openai/{active_model()}",
+    response = litellm.completion(
+        model=f"openai/{routed_alias}",
         api_base=settings.llm_gateway_url,
         api_key=settings.llm_gateway_key,
+        extra_body=extra_body,
         **kwargs,
     )
+    calls = _model_calls.get()
+    served = getattr(response, "model", None)
+    if calls is not None and isinstance(served, str):
+        calls.append({"requested_alias": alias, "routed_alias": routed_alias, "served_model": served})
+    return response
 
 
 def complete(prompt: str, system_instruction: str | None = None, **kwargs) -> str:

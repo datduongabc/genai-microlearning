@@ -26,7 +26,7 @@ from app.generation.quiz_graph import (
 from app.generation.relevance import CorrectiveResult, corrective_retrieve
 from app.generation.scope_digest import build_scope_digest
 from app.generation.slides import generate_slides
-from app.llm.gateway import using_model
+from app.llm.gateway import capture_models, recorded_models, using_model
 from app.models import (
     Chunk,
     ComponentType,
@@ -291,6 +291,7 @@ def _retrieve_for_content(
     )
 
 
+@capture_models()
 def run_module_generation(
     db: Session, doc: Document, section: DocumentSection | None = None, self_check: bool = True,
     use_retrieval: bool = True, paired_module: Module | None = None,
@@ -409,6 +410,7 @@ def run_module_generation(
     if items:
         db.add(ModuleComponent(module_id=module.id, type=ComponentType.explanation, content={"items": items}))
 
+    module.generation_models = recorded_models()
     db.commit()
     db.refresh(module)
     return module

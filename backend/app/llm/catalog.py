@@ -14,7 +14,6 @@ import time
 from dataclasses import dataclass
 
 import httpx
-import litellm
 import openai
 from litellm.exceptions import AuthenticationError, RateLimitError
 
@@ -68,7 +67,7 @@ def to_choices(raw: list[dict]) -> list[ModelChoice]:
         # Chỉ nhận đúng mode "chat". Một alias không rõ mode thà bỏ sót còn hơn đem ra cho
         # chọn: bỏ sót thì giảng viên thấy thiếu và báo, còn chọn nhầm một model nhúng thì
         # cả pipeline sinh nội dung chết bằng một lỗi chẳng liên quan gì tới việc chọn model.
-        if thong_tin.get("mode") != "chat":
+        if thong_tin.get("mode") != "chat" or thong_tin.get("hidden"):
             continue
         alias = muc["model_name"]
         # Nhà cung cấp là tiền tố của tên model, nên thêm model mới không phải khai lại nó.
@@ -81,7 +80,7 @@ def to_choices(raw: list[dict]) -> list[ModelChoice]:
             note=thong_tin.get("note"),
         ))
     # Thứ tự cố định để danh sách trên giao diện không đổi chỗ giữa hai lần tải.
-    return sorted(chon, key=lambda c: (c.provider, c.alias))
+    return sorted({c.alias: c for c in chon}.values(), key=lambda c: (c.provider, c.alias))
 
 
 _lock = threading.Lock()
@@ -130,13 +129,12 @@ def probe(alias: str) -> None:
     "model hỏng", còn lỗi khóa lọt qua câu bắt tổng quát.
     """
     try:
-        litellm.completion(
-            model=f"openai/{alias}",
-            api_base=settings.llm_gateway_url,
-            api_key=settings.llm_gateway_key,
-            messages=[{"role": "user", "content": "ping"}],
-            max_tokens=1,
-        )
+        from app.llm.gateway import _completion, using_model
+
+        with using_model(alias):
+            _completion(messages=[{"role": "user", "content": "ping"}], max_tokens=1)
+    except ValueError as loi:
+        raise ModelUnusable(alias, str(loi)) from loi
     # Trước tiên: gateway không với tới được thì mọi model đều hỏng như nhau, nên đổi model
     # không giúp gì. Phải đứng trước câu bắt tổng quát vì nó cũng là một openai.APIError.
     except openai.APIConnectionError as loi:

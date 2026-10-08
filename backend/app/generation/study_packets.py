@@ -31,7 +31,7 @@ from app.generation.module_generation_pipeline import (
     learning_objective_of,
     run_module_generation,
 )
-from app.llm.gateway import using_model
+from app.llm.gateway import experiment_mode, using_model
 from app.models import Chunk, ComponentType, DocumentSection, Job, JobStatus, JobType, Module
 from app.retrieval.search import ChunkScope, retrieve
 
@@ -43,11 +43,13 @@ REFERENCE_MAX_CHARACTERS = 120_000
 
 class StudyFile(BaseModel):
     """Một tệp của thư mục nghiên cứu: gói đem chấm cùng những gì chỉ người nghiên cứu được biết.
-    `generator_model` là alias gateway đã sinh gói, để bước chấm từ chối mô hình chấm cùng hãng."""
+    `generator_model` giữ alias yêu cầu; `generation_models` ghi model thực sự phục vụ từng lượt."""
 
     pair_id: str
     group: Literal["rag_llm", "llm_no_rag"]
     generator_model: str
+    # Successful served models, outside the blinded packet. Empty for legacy exports.
+    generation_models: list[dict[str, str]] = []
     packet: ModuleContentInput
     reference: ReferenceEvidence = ReferenceEvidence()
     claim_citations: list[StoredCitation] | None = None
@@ -200,7 +202,7 @@ def _control_of(db: Session, module: Module, model_alias: str | None, self_check
     if existing is not None:
         return db.get(Module, existing.module_id)
     section = db.get(DocumentSection, module.section_id) if module.section_id else None
-    with using_model(model_alias):
+    with experiment_mode(), using_model(model_alias):
         control = run_module_generation(
             db, module.document, section, self_check=self_check, use_retrieval=False, paired_module=module,
             output_language=output_language, custom_instructions=custom_instructions,
@@ -214,7 +216,8 @@ def _control_of(db: Session, module: Module, model_alias: str | None, self_check
 
 
 def study_pair(
-    db: Session, module: Module, model_alias: str | None, self_check: bool = True
+    db: Session, module: Module, model_alias: str | None, self_check: bool = True,
+    generation_models: dict | None = None,
 ) -> tuple[ModuleContentInput, ModuleContentInput]:
     """(gói rag_llm, gói llm_no_rag). Bản đối chứng là một module sinh bằng chính pipeline RAG với
     `use_retrieval=False`, lưu như mọi module khác và dùng lại ở các lần xuất sau. `model_alias` là
@@ -225,4 +228,7 @@ def study_pair(
     learning_objective_of(module)
     sources = reference_chunks(db, module)
     rag = module_packet(module, sources)
-    return rag, module_packet(_control_of(db, module, model_alias, self_check), sources)
+    control = _control_of(db, module, model_alias, self_check)
+    if generation_models is not None:
+        generation_models.update(rag_llm=module.generation_models or [], llm_no_rag=control.generation_models or [])
+    return rag, module_packet(control, sources)

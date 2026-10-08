@@ -427,6 +427,7 @@ def get_module(
         "learning_objective": module.learning_objective,
         "bloom_level": module.bloom_level,
         "sub_objectives": module.sub_objectives,
+        "generation_models": module.generation_models,
         "course_id": module.course_id,
         "moodle_course_id": module.course.moodle_course_id,
         "is_control": control,

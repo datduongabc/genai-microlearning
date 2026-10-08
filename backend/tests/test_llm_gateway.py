@@ -174,3 +174,60 @@ def test_a_structured_reply_that_breaks_the_schema_is_still_rejected(monkeypatch
 
     with pytest.raises(ValueError):
         llm.complete_structured("kiểm tra", _Formula)
+
+
+def test_experiment_mode_pins_and_survives_nested_model_choices(captured):
+    with llm.experiment_mode():
+        with llm.using_model("gemini-fast"):
+            llm.complete("hello", small_step=True)
+        assert captured["model"] == "openai/gemini-fast"
+        assert captured["extra_body"]["disable_fallbacks"] is True
+    llm.complete("hello")
+    assert not captured.get("extra_body", {}).get("disable_fallbacks", False)
+
+
+def test_successful_calls_record_the_served_model_not_the_requested_alias(monkeypatch, captured):
+    def fake(**kwargs):
+        return SimpleNamespace(model="gemini-3.5-flash", choices=[
+            SimpleNamespace(message=SimpleNamespace(content='{"value": 42}')),
+        ])
+    monkeypatch.setattr(litellm, "completion", fake)
+    with llm.capture_models() as calls, llm.using_model("gemini-fast"):
+        assert llm.complete_structured("hello", _Answer).value == 42
+    assert calls == [{"requested_alias": "gemini-fast", "routed_alias": "gemini-fast",
+                      "served_model": "gemini-3.5-flash"}]
+    with llm.capture_models() as next_calls:
+        assert next_calls == []
+
+
+def test_only_bounded_small_steps_use_the_small_fallback_profile(captured):
+    with llm.using_model("gemini-fast"):
+        llm.complete("hello", small_step=True)
+        assert captured["model"] == "openai/gemini-fast-small"
+        assert captured["max_tokens"] == 2048
+        llm.complete("long prompt " * 10000, small_step=True)
+        assert captured["model"] == "openai/gemini-fast"
+        llm.complete("Content even without sources")
+        assert captured["model"] == "openai/gemini-fast"
+
+
+def test_environment_experiment_switch_disables_fallbacks(monkeypatch, captured):
+    monkeypatch.setattr(settings, "llm_experiment_mode", True)
+    with llm.using_model("gemini-fast"):
+        llm.complete("hello", small_step=True)
+    assert captured["model"] == "openai/gemini-fast"
+    assert captured["extra_body"]["disable_fallbacks"] is True
+
+
+def test_small_profile_respects_schema_and_output_budget(captured):
+    with llm.using_model("gemini-fast"):
+        llm.complete("hello", small_step=True, max_tokens=4096)
+        assert captured["model"] == "openai/gemini-fast"
+        llm.complete("hello", small_step=True, response_format={"description": "schema " * 10000})
+        assert captured["model"] == "openai/gemini-fast"
+
+
+def test_experiment_rejects_a_balanced_alias(captured):
+    with llm.experiment_mode(), llm.using_model("gemini-balanced"), pytest.raises(ValueError):
+        llm.complete("hello")
+    assert captured == {}

@@ -264,3 +264,23 @@ def test_gateway_qua_han_cho_cung_la_gateway_sap(monkeypatch):
 
     with pytest.raises(catalog.GatewayUnavailable):
         catalog.probe("groq-pro")
+
+
+def test_internal_profiles_are_hidden_and_balanced_alias_is_only_offered_once():
+    raw = [
+        {"model_name": alias, "litellm_params": {"model": model},
+         "model_info": {"mode": "chat", "hidden": hidden}}
+        for alias, model, hidden in (
+            ("gemini-fast-small", "gemini/gemini-3.5-flash-lite", True),
+            ("gemini-balanced", "gemini/gemini-3.5-flash-lite", False),
+            ("gemini-balanced", "gemini/gemini-3.5-flash", False),
+        )
+    ]
+    assert [choice.alias for choice in catalog.to_choices(raw)] == ["gemini-balanced"]
+
+
+def test_pinned_balanced_probe_reports_an_unusable_choice(monkeypatch):
+    from app.llm.gateway import experiment_mode
+
+    with experiment_mode(), pytest.raises(catalog.ModelUnusable, match="single-model alias"):
+        catalog.probe("gemini-balanced")

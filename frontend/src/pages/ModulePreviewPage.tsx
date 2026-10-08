@@ -387,6 +387,11 @@ function ModuleHeader({ module, onSaved }: { module: ModuleDetail; onSaved: () =
         </button>
       )}
 
+      {!!module.generation_models?.length && (
+        <p className="mt-3 text-xs text-gray-600">
+          Model sinh: {[...new Set(module.generation_models.map((call) => `${call.requested_alias} → ${call.served_model}`))].join(', ')}
+        </p>
+      )}
       {module.learning_objective && (
         <p className="mt-3 text-sm text-gray-600">
           <span className="font-semibold text-gray-800">Learning Objective: </span>

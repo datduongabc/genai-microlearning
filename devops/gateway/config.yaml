@@ -100,16 +100,89 @@ model_list:
       display_name: Claude Sonnet 5
       note: chất lượng cao hơn, chậm hơn
 
+<<<<<<< HEAD
   # Groq: han muc mien phi rong rai hon Gemini cho viec SINH van ban, huu ich khi
   # Gemini het quota giua chung mot lan chay thi nghiem. Chi sinh van ban, khong
   # nhung duoc: bang model cua litellm khong co model groq nao o che do embedding.
+=======
+  # Groq is only a small-step backup: 8,000 TPM cannot carry Content (20-66k tokens).
+>>>>>>> 951fad2 (feat: add size-aware gateway failover and served model records)
   - model_name: groq-pro
     litellm_params:
       model: groq/openai/gpt-oss-120b
+      tpm: 8000
       api_key: os.environ/GROQ_API_KEY
     model_info:
       display_name: GPT-OSS 120B qua Groq
-      note: hạn mức miễn phí rộng
+      note: miễn phí, chỉ phù hợp bước nhỏ (8.000 TPM)
+      max_input_tokens: 3952
+      max_output_tokens: 2048
+
+  # Internal small-step profiles keep the same primary model. Only bounded
+  # requests use these; Content, Slides and Example use the large-safe aliases.
+  - model_name: gemini-fast-small
+    litellm_params:
+      model: gemini/gemini-3.5-flash-lite
+      api_key: os.environ/GEMINI_API_KEY
+    model_info:
+      display_name: Gemini (bước nhỏ)
+      hidden: true
+  - model_name: gemini-flash-small
+    litellm_params:
+      model: gemini/gemini-3.5-flash
+      api_key: os.environ/GEMINI_API_KEY
+    model_info:
+      display_name: Gemini (bước nhỏ)
+      hidden: true
+
+  # Optional free-tier load balancing across two distinct deployments. The
+  # normal default stays gemini-fast; experiments must pick a single-model alias.
+  - model_name: gemini-balanced
+    litellm_params:
+      model: gemini/gemini-3.5-flash-lite
+      api_key: os.environ/GEMINI_API_KEY
+    model_info:
+      display_name: Gemini cân bằng tải
+      note: phân phối giữa Flash Lite và Flash; không dùng cho thí nghiệm
+  - model_name: gemini-balanced
+    litellm_params:
+      model: gemini/gemini-3.5-flash
+      api_key: os.environ/GEMINI_API_KEY
+    model_info:
+      display_name: Gemini cân bằng tải
+      note: phân phối giữa Flash Lite và Flash; không dùng cho thí nghiệm
+
+# LiteLLM owns retries, deployment cooldowns, load balancing and failover.
+# No paid provider is an automatic fallback: paid aliases remain opt-in.
+router_settings:
+  routing_strategy: simple-shuffle
+  num_retries: 1
+  retry_after: 1
+  timeout: 120
+  allowed_fails: 0
+  cooldown_time: 60
+  enable_pre_call_checks: true
+  optional_pre_call_checks: [enforce_model_rate_limits]
+  fallbacks:
+    - gemini-fast: [gemini-flash]
+    - gemini-flash: [gemini-fast]
+    - gemini-fast-small: [gemini-flash-small, groq-pro]
+    - gemini-flash-small: [gemini-fast-small, groq-pro]
+    - groq-pro: [gemini-fast, gemini-flash]
+    - openai-fast: [gemini-fast, gemini-flash]
+    - openai-pro: [gemini-fast, gemini-flash]
+    - claude-fast: [gemini-fast, gemini-flash]
+    - claude-pro: [gemini-fast, gemini-flash]
+  context_window_fallbacks:
+    - gemini-fast: [gemini-flash]
+    - gemini-flash: [gemini-fast]
+    - gemini-fast-small: [gemini-fast, gemini-flash]
+    - gemini-flash-small: [gemini-flash, gemini-fast]
+    - groq-pro: [gemini-fast, gemini-flash]
+    - openai-fast: [gemini-fast, gemini-flash]
+    - openai-pro: [gemini-fast, gemini-flash]
+    - claude-fast: [gemini-fast, gemini-flash]
+    - claude-pro: [gemini-fast, gemini-flash]
 
 general_settings:
   master_key: os.environ/LLM_GATEWAY_KEY

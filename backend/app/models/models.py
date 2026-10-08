@@ -280,6 +280,9 @@ class Module(Base):
     # trúc GD2): 2-3 mục tiêu thành phần của learning_objective, mỗi cái ép
     # Content phải có 1 heading riêng bao phủ đúng khía cạnh đó.
     sub_objectives: Mapped[list | None] = mapped_column(JSONB, nullable=True)
+    # Successful calls in order, with requested aliases and actual response models.
+    # NULL for old modules: their served models cannot be reconstructed from aliases.
+    generation_models: Mapped[list | None] = mapped_column(JSONB, nullable=True)
     created_at: Mapped[datetime] = created_at_column()
 
     document: Mapped["Document"] = relationship(back_populates="modules", overlaps="course,modules")
