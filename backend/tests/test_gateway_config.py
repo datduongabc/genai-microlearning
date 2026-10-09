@@ -201,3 +201,129 @@ def test_transcription_alias_routes_to_groq_whisper(gateway):
         "model": "groq/whisper-large-v3-turbo", "api_key": "os.environ/GROQ_API_KEY",
     }
     assert deployment["model_info"]["mode"] == "audio_transcription"
+
+
+def test_router_accepts_the_config_and_keeps_large_routes_off_groq(gateway, monkeypatch):
+    from litellm import Router
+
+    for name in (*PROVIDER_KEY_VARIABLES, "LLM_GATEWAY_KEY", "EMBEDDER_API_KEY"):
+        monkeypatch.setenv(name, "test-key")
+    router = Router(model_list=gateway["model_list"], **gateway["router_settings"])
+    balanced = router.get_model_list(model_name="gemini-balanced")
+    assert len(balanced) == 2
+    assert len({d["litellm_params"]["model"] for d in balanced}) == 2
+    assert router.routing_strategy == "simple-shuffle"
+    assert router.num_retries == 1
+    assert router.cooldown_time == 60
+    aliases = {d["model_name"] for d in gateway["model_list"]}
+    assert "groq-fast" not in aliases
+    for fallback_type in (router.fallbacks, router.context_window_fallbacks):
+        for mapping in fallback_type:
+            for alias, backups in mapping.items():
+                assert alias in aliases and set(backups) <= aliases
+                if not alias.endswith("-small"):
+                    assert "groq-pro" not in backups
+    groq = next(d for d in gateway["model_list"] if d["model_name"] == "groq-pro")
+    assert groq["litellm_params"]["tpm"] == 8000
+    assert groq["model_info"]["max_input_tokens"] + groq["model_info"]["max_output_tokens"] <= 6000
+    router.reset()
+
+
+def test_built_in_fallback_succeeds_and_experiment_flag_refuses_it(gateway, monkeypatch):
+    import asyncio
+
+    import litellm
+
+    for name in (*PROVIDER_KEY_VARIABLES, "LLM_GATEWAY_KEY", "EMBEDDER_API_KEY"):
+        monkeypatch.setenv(name, "test-key")
+    router = litellm.Router(model_list=gateway["model_list"], **gateway["router_settings"])
+    call = {"model": "gemini-fast", "messages": [{"role": "user", "content": "hello"}],
+            "mock_testing_fallbacks": True, "mock_response": "fallback reply", "num_retries": 0}
+    response = asyncio.run(router.acompletion(**call))
+    assert response.choices[0].message.content == "fallback reply"
+    assert "gemini-3.5-flash" in response.model
+    with pytest.raises(litellm.InternalServerError):
+        asyncio.run(router.acompletion(**call, disable_fallbacks=True))
+    router.reset()
+
+
+def test_context_window_failure_is_also_pinned_in_experiment_mode(gateway, monkeypatch):
+    import asyncio
+
+    import litellm
+
+    for name in (*PROVIDER_KEY_VARIABLES, "LLM_GATEWAY_KEY", "EMBEDDER_API_KEY"):
+        monkeypatch.setenv(name, "test-key")
+    router = litellm.Router(model_list=gateway["model_list"], **gateway["router_settings"])
+    call = {"model": "gemini-fast", "messages": [{"role": "user", "content": "hello"}],
+            "mock_testing_context_fallbacks": True, "mock_response": "context fallback", "num_retries": 0}
+    response = asyncio.run(router.acompletion(**call))
+    assert response.choices[0].message.content == "context fallback"
+    with pytest.raises(litellm.ContextWindowExceededError):
+        asyncio.run(router.acompletion(**call, disable_fallbacks=True))
+    router.reset()
+
+
+def test_large_input_selected_for_groq_is_rejected_before_provider_and_falls_back(gateway, monkeypatch):
+    import asyncio
+
+    import litellm
+
+    for name in (*PROVIDER_KEY_VARIABLES, "LLM_GATEWAY_KEY", "EMBEDDER_API_KEY"):
+        monkeypatch.setenv(name, "test-key")
+    router = litellm.Router(model_list=gateway["model_list"], **gateway["router_settings"])
+    response = asyncio.run(router.acompletion(
+        model="groq-pro", messages=[{"role": "user", "content": "large input " * 10000}],
+        mock_response="large-safe response", max_tokens=2048, num_retries=0,
+    ))
+    assert "gemini" in response.model
+    router.reset()
+
+
+def test_provider_429_uses_the_configured_fallback(gateway, monkeypatch):
+    import asyncio
+
+    import litellm
+
+    for name in (*PROVIDER_KEY_VARIABLES, "LLM_GATEWAY_KEY", "EMBEDDER_API_KEY"):
+        monkeypatch.setenv(name, "test-key")
+    attempts = []
+    async def provider(**kwargs):
+        attempts.append(kwargs["model"])
+        if kwargs["model"] == "gemini/gemini-3.5-flash-lite":
+            raise litellm.RateLimitError("quota exhausted", model=kwargs["model"], llm_provider="gemini")
+        return litellm.ModelResponse(model=kwargs["model"], choices=[
+            {"message": {"role": "assistant", "content": "quota fallback"}},
+        ])
+    monkeypatch.setattr(litellm, "acompletion", provider)
+    router = litellm.Router(model_list=gateway["model_list"], **gateway["router_settings"])
+    response = asyncio.run(router.acompletion(
+        model="gemini-fast", messages=[{"role": "user", "content": "hello"}], num_retries=0,
+    ))
+    assert response.model == "gemini/gemini-3.5-flash"
+    assert attempts == ["gemini/gemini-3.5-flash-lite", "gemini/gemini-3.5-flash"]
+    router.reset()
+
+
+def test_small_chain_reaches_groq_when_both_gemini_models_have_no_quota(gateway, monkeypatch):
+    import asyncio
+
+    import litellm
+
+    for name in (*PROVIDER_KEY_VARIABLES, "LLM_GATEWAY_KEY", "EMBEDDER_API_KEY"):
+        monkeypatch.setenv(name, "test-key")
+    async def provider(**kwargs):
+        if kwargs["model"].startswith("gemini/"):
+            raise litellm.RateLimitError("quota exhausted", model=kwargs["model"], llm_provider="gemini")
+        assert kwargs["reasoning_effort"] == "low"
+        return litellm.ModelResponse(model=kwargs["model"], choices=[
+            {"message": {"role": "assistant", "content": "small fallback"}},
+        ])
+    monkeypatch.setattr(litellm, "acompletion", provider)
+    router = litellm.Router(model_list=gateway["model_list"], **gateway["router_settings"])
+    response = asyncio.run(router.acompletion(
+        model="gemini-fast-small", messages=[{"role": "user", "content": "hello"}],
+        max_tokens=2048, num_retries=0,
+    ))
+    assert response.model == "groq/openai/gpt-oss-120b"
+    router.reset()

@@ -47,6 +47,8 @@ Tài khoản có ít nhất một khóa học ứng dụng liên kết với kh�
 
 Backend không bao giờ thấy khóa của nhà cung cấp mô hình.
 Nó chỉ biết địa chỉ gateway, một khóa nội bộ, và tên alias của mô hình.
+Chính sách fallback, cân bằng tải, ghim model cho thí nghiệm và model thực sự đã sinh: [gateway routing](docs/gateway-routing.md).
+
 
 ## Yêu cầu
 

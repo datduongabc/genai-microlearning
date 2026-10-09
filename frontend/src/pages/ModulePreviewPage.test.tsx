@@ -681,3 +681,12 @@ it('hides Moodle publishing when live permission lookup fails', async () => {
   expect(await screen.findByText('Không tải được danh sách phần học Moodle')).toBeInTheDocument()
   expect(screen.queryByRole('button', { name: 'Push to Moodle' })).not.toBeInTheDocument()
 })
+
+it('shows the served model when generation used a fallback', async () => {
+  vi.mocked(api.getModule).mockResolvedValue({
+    ...baseModule,
+    generation_models: [{ requested_alias: 'gemini-fast', routed_alias: 'gemini-fast', served_model: 'gemini-3.5-flash' }],
+  })
+  renderPage()
+  expect(await screen.findByText(/Model sinh: gemini-fast → gemini-3.5-flash/)).toBeInTheDocument()
+})

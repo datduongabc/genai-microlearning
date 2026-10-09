@@ -463,3 +463,54 @@ def test_control_reuses_paired_custom_instructions(api):
                            "custom_instructions": "Ignore IDS"})
     assert response.status_code == 200, response.text
     assert _no_rag_job(api).payload["custom_instructions"] == "Explain IDS"
+
+
+def test_each_arm_persists_actual_served_models_and_api_exposes_them(document, monkeypatch, tmp_path):
+    import json
+    from types import SimpleNamespace
+
+    import litellm
+
+    from app.llm import gateway
+
+    served = "gemini-3.5-flash"
+    def completion(**kwargs):
+        output = OUTPUTS[ContentOutput if isinstance(kwargs["response_format"], dict) else kwargs["response_format"]]
+        return SimpleNamespace(model=served, choices=[
+            SimpleNamespace(message=SimpleNamespace(content=json.dumps(output.model_dump()))),
+        ])
+    monkeypatch.setattr(litellm, "completion", completion)
+    with gateway.using_model("gemini-fast"):
+        rag_id = _generate(document, self_check=False)
+        served = "gpt-4o-mini"
+        control_id = _generate(document, self_check=False, use_retrieval=False, paired_module_id=rag_id)
+    db = SessionLocal()
+    try:
+        rag, control = db.get(Module, rag_id), db.get(Module, control_id)
+        assert {c["served_model"] for c in rag.generation_models} == {"gemini-3.5-flash"}
+        assert {c["served_model"] for c in control.generation_models} == {"gpt-4o-mini"}
+        assert {c["requested_alias"] for c in control.generation_models} == {"gemini-fast"}
+        db.add_all([
+            Job(job_type=JobType.module_generation, step="generate", status=JobStatus.done,
+                document_id=rag.document_id, module_id=rag.id,
+                payload=pipeline.generation_payload("gemini-fast", False)),
+            Job(job_type=JobType.module_generation, step="generate", status=JobStatus.done,
+                document_id=control.document_id, module_id=control.id,
+                payload=pipeline.control_payload(rag.id, "gemini-fast", False)),
+        ])
+        db.commit()
+        from app.generation.study_packets import StudyFile
+        from scripts.export_study_pair import main as export_pair
+
+        export_pair([str(rag_id), "--out", str(tmp_path)])
+        for group, saved in (("rag_llm", rag), ("llm_no_rag", control)):
+            study = StudyFile.model_validate_json((tmp_path / f"{rag_id}-{group}.json").read_text())
+            assert study.generation_models == saved.generation_models
+            assert "generation_models" not in study.packet.model_dump()
+        response = client.get(f"/modules/{control_id}", headers={
+            "Authorization": f"Bearer {create_access_token(str(document['user']))}",
+        })
+        assert response.status_code == 200
+        assert response.json()["generation_models"] == control.generation_models
+    finally:
+        db.close()

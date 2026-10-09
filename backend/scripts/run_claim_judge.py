@@ -49,7 +49,7 @@ def main(argv: list[str] | None = None) -> None:
             if row["judge"] == args.judge and row.get("judge_model") != judge_model:
                 raise SystemExit("Judge model changed; use a new output file")
     args.out.parent.mkdir(parents=True, exist_ok=True)
-    with args.out.open("a", encoding="utf-8") as out, gateway.using_model(args.judge):
+    with args.out.open("a", encoding="utf-8") as out, gateway.experiment_mode(), gateway.using_model(args.judge):
         for path, study in studies:
             code = anon_code(path)
             if (code, args.judge) in done:

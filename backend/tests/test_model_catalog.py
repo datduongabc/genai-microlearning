@@ -176,6 +176,7 @@ def test_thu_dung_model_da_chon_va_chi_xin_mot_token(ghi_lai_lenh_thu):
 
     assert ghi_lai_lenh_thu["model"] == "openai/groq-pro"
     assert ghi_lai_lenh_thu["max_tokens"] == 1
+    assert ghi_lai_lenh_thu["extra_body"]["disable_fallbacks"] is True
 
 
 def test_khoa_trong_hoac_sai_thi_bao_chua_co_khoa(monkeypatch):
@@ -190,16 +191,11 @@ def test_khoa_trong_hoac_sai_thi_bao_chua_co_khoa(monkeypatch):
     assert "api key" in bat.value.ly_do.lower()
 
 
-def test_het_han_muc_thi_bao_het_han_muc(monkeypatch):
-    """Đúng lỗi đã gặp: hạn mức ngày của Gemini cạn giữa chừng một lượt chạy."""
+def test_probe_429_is_usable_for_router_fallbacks(monkeypatch):
     monkeypatch.setattr(litellm, "completion", _nem(
         loi_litellm.RateLimitError(message="429", llm_provider="gemini", model="gemini-flash")
     ))
-
-    with pytest.raises(catalog.ModelUnusable) as bat:
-        catalog.probe("gemini-flash")
-
-    assert "hạn mức" in bat.value.ly_do
+    catalog.probe("gemini-flash")
 
 
 def test_khoa_trong_that_ra_500_chu_khong_phai_401_van_bao_dung_la_thieu_khoa(monkeypatch):
@@ -264,3 +260,105 @@ def test_gateway_qua_han_cho_cung_la_gateway_sap(monkeypatch):
 
     with pytest.raises(catalog.GatewayUnavailable):
         catalog.probe("groq-pro")
+
+
+def test_internal_profiles_are_hidden_and_balanced_alias_is_only_offered_once():
+    raw = [
+        {"model_name": alias, "litellm_params": {"model": model},
+         "model_info": {"mode": "chat", "hidden": hidden}}
+        for alias, model, hidden in (
+            ("gemini-fast-small", "gemini/gemini-3.5-flash-lite", True),
+            ("gemini-balanced", "gemini/gemini-3.5-flash-lite", False),
+            ("gemini-balanced", "gemini/gemini-3.5-flash", False),
+        )
+    ]
+    assert [choice.alias for choice in catalog.to_choices(raw)] == ["gemini-balanced"]
+
+
+def test_pinned_balanced_probe_reports_an_unusable_choice(monkeypatch):
+    from app.llm.gateway import experiment_mode
+
+    with experiment_mode(), pytest.raises(catalog.ModelUnusable, match="single-model alias"):
+        catalog.probe("gemini-balanced")
+
+
+@pytest.mark.parametrize("error", [
+    loi_litellm.AuthenticationError(message="invalid API key", llm_provider="anthropic", model="claude"),
+    loi_litellm.BadRequestError(message="credit balance too low", llm_provider="anthropic", model="claude"),
+])
+def test_unusable_primary_is_rejected_with_422_without_probing_fallback(error, monkeypatch):
+    from fastapi import HTTPException
+
+    from app.api.modules import _alias_dung_duoc
+
+    sent = []
+    def completion(**kwargs):
+        sent.append(kwargs)
+        raise error
+    monkeypatch.setattr(litellm, "completion", completion)
+    monkeypatch.setattr(catalog, "is_available", lambda alias: True)
+    with pytest.raises(HTTPException) as rejected:
+        _alias_dung_duoc("claude-pro")
+    assert rejected.value.status_code == 422
+    assert len(sent) == 1 and sent[0]["model"] == "openai/claude-pro"
+    assert sent[0]["extra_body"]["disable_fallbacks"] is True
+
+
+def test_quota_exhausted_primary_still_passes_generation_alias_validation(monkeypatch):
+    from app.api.modules import _alias_dung_duoc
+
+    monkeypatch.setattr(catalog, "is_available", lambda alias: True)
+    monkeypatch.setattr(litellm, "completion", _nem(
+        loi_litellm.RateLimitError(message="quota exhausted", llm_provider="gemini", model="gemini-fast")
+    ))
+    assert _alias_dung_duoc("gemini-fast") == "gemini-fast"
+
+
+@pytest.mark.parametrize("message", [
+    ("Error code: 429 - {'error': {'code': 'insufficient_quota', 'message': 'You exceeded your "
+     "current quota, please check your plan and billing details.'}}"),
+    "billing_hard_limit_reached",
+    "Not enough credit",
+    "Insufficient funds",
+])
+def test_credit_429_rejects_model_selection_with_422(message, monkeypatch):
+    from fastapi import HTTPException
+
+    from app.api.modules import _alias_dung_duoc
+
+    monkeypatch.setattr(catalog, "is_available", lambda alias: True)
+    monkeypatch.setattr(litellm, "completion", _nem(
+        loi_litellm.RateLimitError(message=message, llm_provider="openai", model="gpt-4o-mini")
+    ))
+    with pytest.raises(HTTPException) as rejected:
+        _alias_dung_duoc("openai-fast")
+    assert rejected.value.status_code == 422
+    assert "số dư" in rejected.value.detail
+
+
+@pytest.mark.parametrize("message", [
+    "RESOURCE_EXHAUSTED: quota exhausted. Received Model Group=gemini-balanced",
+    ("GeminiException - {'error': {'code': 429, 'status': 'RESOURCE_EXHAUSTED', 'message': 'You "
+     "exceeded your current quota, please check your plan and billing details. For more "
+     "information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits'}}"),
+    "No deployments available. Passed model=gemini-balanced",
+])
+def test_balanced_alias_in_rate_limit_error_does_not_mean_insufficient_balance(message, monkeypatch):
+    monkeypatch.setattr(litellm, "completion", _nem(
+        loi_litellm.RateLimitError(message=message, llm_provider="gemini", model="gemini-balanced")
+    ))
+    catalog.probe("gemini-balanced")
+
+
+def test_gemini_resource_exhausted_is_accepted_and_not_reported_as_missing_credit(monkeypatch):
+    from app.api.modules import _alias_dung_duoc
+
+    loi = loi_litellm.RateLimitError(
+        message="{'error': {'code': 429, 'status': 'RESOURCE_EXHAUSTED', 'message': 'You exceeded "
+        "your current quota, please check your plan and billing details.'}}",
+        llm_provider="gemini", model="gemini-fast",
+    )
+    monkeypatch.setattr(catalog, "is_available", lambda alias: True)
+    monkeypatch.setattr(litellm, "completion", _nem(loi))
+    assert _alias_dung_duoc("gemini-fast") == "gemini-fast"
+    assert "số dư" not in catalog._ly_do(loi)

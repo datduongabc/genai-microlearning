@@ -2,10 +2,13 @@
 LLM gateway (LiteLLM Proxy), which is the only place that holds provider API
 keys and maps a model alias to a real provider/model."""
 
+import json
 from types import SimpleNamespace
 
+import httpx
 import litellm
 import pytest
+from openai import OpenAI
 from pydantic import BaseModel
 
 from app.config import settings
@@ -174,3 +177,100 @@ def test_a_structured_reply_that_breaks_the_schema_is_still_rejected(monkeypatch
 
     with pytest.raises(ValueError):
         llm.complete_structured("kiểm tra", _Formula)
+
+
+def test_experiment_mode_pins_and_survives_nested_model_choices(captured):
+    with llm.experiment_mode():
+        with llm.using_model("gemini-fast"):
+            llm.complete("hello", small_step=True)
+        assert captured["model"] == "openai/gemini-fast"
+        assert captured["extra_body"]["disable_fallbacks"] is True
+    llm.complete("hello")
+    assert not captured.get("extra_body", {}).get("disable_fallbacks", False)
+
+
+def test_successful_calls_record_the_served_model_not_the_requested_alias(monkeypatch, captured):
+    def fake(**kwargs):
+        return SimpleNamespace(model="gemini-3.5-flash", choices=[
+            SimpleNamespace(message=SimpleNamespace(content='{"value": 42}')),
+        ])
+    monkeypatch.setattr(litellm, "completion", fake)
+    with llm.capture_models() as calls, llm.using_model("gemini-fast"):
+        assert llm.complete_structured("hello", _Answer).value == 42
+    assert calls == [{"requested_alias": "gemini-fast", "routed_alias": "gemini-fast",
+                      "served_model": "gemini-3.5-flash"}]
+    with llm.capture_models() as next_calls:
+        assert next_calls == []
+
+
+@pytest.mark.parametrize("alias,small_step,pinned,served", [
+    ("gemini-balanced", False, False, "gemini-3.5-flash"),
+    ("gemini-balanced", False, False, "gemini-3.5-flash-lite"),
+    ("gemini-fast", True, False, "openai/gpt-oss-120b"),
+    ("gemini-fast", False, True, "gemini-3.5-flash-lite"),
+])
+def test_served_model_survives_the_http_response(monkeypatch, alias, small_step, pinned, served):
+    """Exercise the SDK wire contract: the proxy returns aliases unless raw names are requested."""
+    sent = []
+
+    def proxy(request):
+        body = json.loads(request.content)
+        sent.append(body)
+        raw = body.get("metadata", {}).get("_complexity_router_return_raw_model_name") is True
+        return httpx.Response(200, json={
+            "id": "chatcmpl-test", "object": "chat.completion", "created": 0,
+            "model": served if raw else body["model"],
+            "choices": [{"index": 0, "finish_reason": "stop",
+                         "message": {"role": "assistant", "content": '{"value": 42}'}}],
+        })
+
+    monkeypatch.setattr(settings, "llm_experiment_mode", pinned)
+    with (
+        OpenAI(api_key="test-key", base_url="http://gateway.test/v1",
+               http_client=httpx.Client(transport=httpx.MockTransport(proxy))) as client,
+        llm.capture_models() as calls,
+        llm.using_model(alias),
+    ):
+        result = llm.complete_structured(
+            "hello", _Answer, small_step=small_step, client=client,
+            extra_body={"metadata": {"run": "test"}},
+        )
+
+    routed = f"{alias}-small" if small_step else alias
+    assert result.value == 42
+    assert calls == [{"requested_alias": alias, "routed_alias": routed, "served_model": served}]
+    assert sent[0]["metadata"]["run"] == "test"
+    assert sent[0].get("disable_fallbacks", False) is pinned
+
+
+def test_only_bounded_small_steps_use_the_small_fallback_profile(captured):
+    with llm.using_model("gemini-fast"):
+        llm.complete("hello", small_step=True)
+        assert captured["model"] == "openai/gemini-fast-small"
+        assert captured["max_tokens"] == 2048
+        llm.complete("long prompt " * 10000, small_step=True)
+        assert captured["model"] == "openai/gemini-fast"
+        llm.complete("Content even without sources")
+        assert captured["model"] == "openai/gemini-fast"
+
+
+def test_environment_experiment_switch_disables_fallbacks(monkeypatch, captured):
+    monkeypatch.setattr(settings, "llm_experiment_mode", True)
+    with llm.using_model("gemini-fast"):
+        llm.complete("hello", small_step=True)
+    assert captured["model"] == "openai/gemini-fast"
+    assert captured["extra_body"]["disable_fallbacks"] is True
+
+
+def test_small_profile_respects_schema_and_output_budget(captured):
+    with llm.using_model("gemini-fast"):
+        llm.complete("hello", small_step=True, max_tokens=4096)
+        assert captured["model"] == "openai/gemini-fast"
+        llm.complete("hello", small_step=True, response_format={"description": "schema " * 10000})
+        assert captured["model"] == "openai/gemini-fast"
+
+
+def test_experiment_rejects_a_balanced_alias(captured):
+    with llm.experiment_mode(), llm.using_model("gemini-balanced"), pytest.raises(ValueError):
+        llm.complete("hello")
+    assert captured == {}

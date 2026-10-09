@@ -9,12 +9,12 @@ các alias nhúng khỏi danh sách không cần khai thêm gì. Nhãn hiển th
 khóa `model_info` trong cấu hình gateway.
 """
 
+import re
 import threading
 import time
 from dataclasses import dataclass
 
 import httpx
-import litellm
 import openai
 from litellm.exceptions import AuthenticationError, RateLimitError
 
@@ -68,7 +68,7 @@ def to_choices(raw: list[dict]) -> list[ModelChoice]:
         # Chỉ nhận đúng mode "chat". Một alias không rõ mode thà bỏ sót còn hơn đem ra cho
         # chọn: bỏ sót thì giảng viên thấy thiếu và báo, còn chọn nhầm một model nhúng thì
         # cả pipeline sinh nội dung chết bằng một lỗi chẳng liên quan gì tới việc chọn model.
-        if thong_tin.get("mode") != "chat":
+        if thong_tin.get("mode") != "chat" or thong_tin.get("hidden"):
             continue
         alias = muc["model_name"]
         # Nhà cung cấp là tiền tố của tên model, nên thêm model mới không phải khai lại nó.
@@ -81,7 +81,7 @@ def to_choices(raw: list[dict]) -> list[ModelChoice]:
             note=thong_tin.get("note"),
         ))
     # Thứ tự cố định để danh sách trên giao diện không đổi chỗ giữa hai lần tải.
-    return sorted(chon, key=lambda c: (c.provider, c.alias))
+    return sorted({c.alias: c for c in chon}.values(), key=lambda c: (c.provider, c.alias))
 
 
 _lock = threading.Lock()
@@ -121,8 +121,8 @@ def probe(alias: str) -> None:
 
     Có trong danh sách chưa chắc đã dùng được, vì gateway liệt kê mọi alias dù khóa của
     nhà cung cấp đang trống. Không thử thì lượt sinh chạy mười phút rồi mới hỏng; thử thì
-    giảng viên biết ngay và chọn model khác. Một token là đủ để biết khóa và số dư còn
-    dùng được, mà không tốn hạn mức đáng kể.
+    giảng viên biết ngay lỗi khóa hoặc số dư và chọn model khác. Quy tắc chấp nhận lỗi
+    quota để dùng fallback nằm trong docs/gateway-routing.md.
 
     Bắt theo lớp cha của openai chứ không phải của litellm, và đó không phải tuỳ tiện:
     litellm.Timeout KHÔNG kế thừa litellm.APIConnectionError, và litellm.AuthenticationError
@@ -130,18 +130,23 @@ def probe(alias: str) -> None:
     "model hỏng", còn lỗi khóa lọt qua câu bắt tổng quát.
     """
     try:
-        litellm.completion(
-            model=f"openai/{alias}",
-            api_base=settings.llm_gateway_url,
-            api_key=settings.llm_gateway_key,
-            messages=[{"role": "user", "content": "ping"}],
-            max_tokens=1,
-        )
+        from app.llm.gateway import _completion, using_model
+
+        with using_model(alias):
+            _completion(
+                messages=[{"role": "user", "content": "ping"}], max_tokens=1,
+                extra_body={"disable_fallbacks": True},
+            )
+    except ValueError as loi:
+        raise ModelUnusable(alias, str(loi)) from loi
     # Trước tiên: gateway không với tới được thì mọi model đều hỏng như nhau, nên đổi model
     # không giúp gì. Phải đứng trước câu bắt tổng quát vì nó cũng là một openai.APIError.
     except openai.APIConnectionError as loi:
         raise GatewayUnavailable(str(loi)) from loi
     except openai.APIError as loi:
+        # Quota alone does not make the alias unusable: generation can use its backups.
+        if loi.status_code == 429 and not _LOI_SO_DU.search(str(loi)):
+            return
         raise ModelUnusable(alias, _ly_do(loi)) from loi
 
 
@@ -151,21 +156,23 @@ def probe(alias: str) -> None:
 # "credit", "balance", "billing".
 _TU_KHOA_KHOA = ("api_key", "api key", "credential", "unauthorized", "authentication")
 _TU_KHOA_HAN_MUC = ("rate limit", "quota", "resource_exhausted")
-_TU_KHOA_SO_DU = ("credit", "balance", "billing")
+# Only explicit credit signals: Gemini's free-tier quota 429 also says "plan and billing details".
+_LOI_SO_DU = re.compile(
+    r"\b(?:insufficient_quota|billing_hard_limit_reached|credits?|insufficient[ _]funds)\b",
+    re.IGNORECASE,
+)
 
 
 def _ly_do(loi: openai.APIError) -> str:
-    """Câu giải thích cho giảng viên. Chỉ quyết định lời văn, không quyết định mã trả về:
-    phân loại 422 hay 503 đã xong ở trên theo loại ngoại lệ, không theo chuỗi, vì chuỗi
-    của nhà cung cấp có thể đổi bất cứ lúc nào.
+    """Câu giải thích cho giảng viên, sau khi probe đã phân loại lỗi.
 
     Không khớp từ khoá nào thì trả một câu không đoán nguyên nhân. Đoán sai còn tệ hơn
     không nói: bảo "hết số dư" khi thực ra là thiếu khóa sẽ khiến người ta đi nạp tiền."""
     van_ban = str(loi).lower()
     if isinstance(loi, AuthenticationError) or any(k in van_ban for k in _TU_KHOA_KHOA):
         return "chưa có API key hợp lệ cho nhà cung cấp của model này"
+    if _LOI_SO_DU.search(van_ban):
+        return "tài khoản của nhà cung cấp đã hết số dư"
     if isinstance(loi, RateLimitError) or any(k in van_ban for k in _TU_KHOA_HAN_MUC):
         return "đã hết hạn mức hoặc đang bị giới hạn tốc độ, thử lại sau"
-    if any(k in van_ban for k in _TU_KHOA_SO_DU):
-        return "tài khoản của nhà cung cấp đã hết số dư"
     return "nhà cung cấp chưa phục vụ được model này"

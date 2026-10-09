@@ -189,3 +189,39 @@ def test_a_line_cut_mid_character_by_an_interrupted_run_is_trimmed_and_judged_ag
 
     assert len(judge) == 1
     assert sorted(line["anon_id"] for line in _lines(out)) == sorted(json.loads(x)["anon_id"] for x in complete)
+
+
+def test_guard_uses_all_actual_served_models_even_if_requested_alias_is_different(monkeypatch):
+    from pathlib import Path
+
+    monkeypatch.setattr(run_judge, "fetch_model_info", lambda: GATEWAY)
+    study = StudyFile(pair_id="pair", group="rag_llm", generator_model="gemini-fast", packet=_packet(),
+                      generation_models=[{"requested_alias": "gemini-fast", "routed_alias": "gemini-fast",
+                                          "served_model": "gpt-oss-120b"}])
+    with pytest.raises(SystemExit, match="thực sự"):
+        run_judge._refuse_same_family("openai-fast", [(Path("fallback.json"), study)])
+    assert run_judge._refuse_same_family("claude-pro", [(Path("fallback.json"), study)]) == "anthropic/claude-sonnet-5"
+
+
+def test_runner_pins_requests_without_extra_judge_records(tmp_path, monkeypatch):
+    from types import SimpleNamespace
+
+    import litellm
+
+    _write_pairs(tmp_path, pairs=1)
+    sent = []
+    def completion(**kwargs):
+        sent.append(kwargs)
+        return SimpleNamespace(model="claude-sonnet-5", choices=[
+            SimpleNamespace(message=SimpleNamespace(content="ok")),
+        ])
+    def evaluate(packet):
+        run_judge.gateway.complete("judge")
+        return _evaluation(packet.anon_id)
+    monkeypatch.setattr(litellm, "completion", completion)
+    monkeypatch.setattr(run_judge, "judge_module", evaluate)
+    monkeypatch.setattr(run_judge, "fetch_model_info", lambda: GATEWAY)
+    out = tmp_path / "result.jsonl"
+    run_judge.main([str(tmp_path), "--judge", "claude-pro", "--out", str(out)])
+    assert all(call["extra_body"]["disable_fallbacks"] for call in sent)
+    assert all("judge_generation_models" not in row for row in _lines(out))

@@ -140,5 +140,5 @@ def generate_learning_objective(
     return complete_structured(
         prompt, LearningObjective,
         system_instruction=LO_SYSTEM_INSTRUCTION + output_language_instruction(output_language) + custom_instructions_instruction(custom_instructions),
-        temperature=0.0,
+        temperature=0.0, small_step=True,
     )

@@ -70,6 +70,10 @@ def _refuse_same_family(judge: str, studies: list[tuple[Path, StudyFile]]) -> st
         raise SystemExit(f"Gateway không có alias chấm '{judge}'. Các alias hiện có: {', '.join(sorted(models))}")
     judge_family = model_family(models[judge])
     for path, study in studies:
+        if study.generation_models:
+            if any(model_family(call["served_model"]) == judge_family for call in study.generation_models):
+                raise SystemExit(f"{path.name}: mô hình chấm cùng hãng với model thực sự đã sinh gói")
+            continue
         if study.generator_model not in models:
             raise SystemExit(
                 f"{path.name}: gateway không có alias '{study.generator_model}' đã sinh gói này, nên không "
@@ -113,7 +117,7 @@ def main(argv: list[str] | None = None) -> None:
     done = _already_judged(args.out)
 
     args.out.parent.mkdir(parents=True, exist_ok=True)
-    with args.out.open("a", encoding="utf-8") as out, gateway.using_model(args.judge):
+    with args.out.open("a", encoding="utf-8") as out, gateway.experiment_mode(), gateway.using_model(args.judge):
         for path, study in studies:
             code = anon_code(path)
             if (code, args.judge) in done:

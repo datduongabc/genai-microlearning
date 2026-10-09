@@ -43,7 +43,7 @@ def check_relevance(objective_text: str, chunks: list[Chunk], purpose: str = CON
         f"{format_source_chunks(chunks)}\n\n"
         f"Chấm độ liên quan của các đoạn nguồn trên với Learning Objective."
     )
-    return complete_structured(prompt, RelevanceCheck, system_instruction=_INSTRUCTION.format(purpose=purpose))
+    return complete_structured(prompt, RelevanceCheck, system_instruction=_INSTRUCTION.format(purpose=purpose), small_step=True)
 
 
 @dataclass

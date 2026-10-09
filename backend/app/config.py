@@ -70,6 +70,8 @@ class Settings(BaseSettings):
     llm_gateway_key: str = Field(default="", repr=False)
     llm_model: str = "gemini-fast"
     non_teacher_daily_generation_limit: int = Field(default=3, ge=1)
+    # Pin the selected alias for evaluation; the gateway may still retry that model.
+    llm_experiment_mode: bool = False
     # The gateway alias that serves the embeddings (devops/gateway/config.yaml).
     embedding_model: str = "embed-default"
     # The reranker service of devops/docker-compose.yml, a cross-encoder in a container of its
