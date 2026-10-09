@@ -100,13 +100,8 @@ model_list:
       display_name: Claude Sonnet 5
       note: chất lượng cao hơn, chậm hơn
 
-<<<<<<< HEAD
-  # Groq: han muc mien phi rong rai hon Gemini cho viec SINH van ban, huu ich khi
-  # Gemini het quota giua chung mot lan chay thi nghiem. Chi sinh van ban, khong
-  # nhung duoc: bang model cua litellm khong co model groq nao o che do embedding.
-=======
   # Groq is only a small-step backup: 8,000 TPM cannot carry Content (20-66k tokens).
->>>>>>> 951fad2 (feat: add size-aware gateway failover and served model records)
+  # Text generation only: litellm's model table has no groq embedding model.
   - model_name: groq-pro
     litellm_params:
       model: groq/openai/gpt-oss-120b

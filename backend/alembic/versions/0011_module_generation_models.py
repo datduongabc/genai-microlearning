@@ -6,7 +6,7 @@ from sqlalchemy.dialects.postgresql import JSONB
 from alembic import op
 
 revision = "0011_module_generation_models"
-down_revision = "0010_admin_course_counts"
+down_revision = "0017_generation_daily_limit"
 branch_labels = None
 depends_on = None
 
