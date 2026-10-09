@@ -162,13 +162,20 @@ def test_generate_module_end_to_end_creates_all_components():
 
     for component_type in ("quiz", "practice"):
         component = next(c for c in detail["components"] if c["type"] == component_type)
-        assert len(component["questions"]) == 1
-        question = component["questions"][0]
-        assert question["stem"]
-        assert len(question["choices"]["options"]) >= 2
+        assert component["questions"]
+        for question in component["questions"]:
+            assert question["stem"]
+            assert len(question["choices"]["options"]) >= 2
 
     explanation = next(c for c in detail["components"] if c["type"] == "explanation")
-    assert explanation["content"]["explanation_text"]
+    items = explanation["content"]["items"]
+    assert items
+    assert all(item["explanation_text"] for item in items)
+    explained_questions = {(item["component"], item["position"]) for item in items}
+    for component in detail["components"]:
+        if component["type"] in ("quiz", "practice"):
+            for question in component["questions"]:
+                assert (component["type"], question["position"]) in explained_questions
 
     # Không có user khác thấy được module này (đường ownership thật, không mock).
     other_token = _create_and_login(f"live-llm-other-{suffix}@example.com")
