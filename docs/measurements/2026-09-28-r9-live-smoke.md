@@ -37,7 +37,7 @@ Kết quả xuất: cả hai gói có `reference.coverage = complete`, `total_ch
 | RAG+LLM | 14 | 0 | 0,0000 | 12 / 12 | 1,0000 |
 | LLM không RAG | 13 | 5 | 0,3846 | không áp dụng | không áp dụng |
 
-Model chấm: `groq/openai/gpt-oss-20b` (alias `groq-fast`), khác hãng với model sinh `gemini-fast`. Đây là **một cặp trên một mục một chunk và một tài liệu tự dựng**, không phải ước lượng quần thể. Nội dung không RAG dùng thêm kiến thức ngoài tài liệu nên bị đánh "không được hỗ trợ" là điều dự kiến, chứ không chứng minh claim sai; vài lý do của model chấm 20B còn đáng ngờ (ví dụ một claim về rehashing bị đánh không hỗ trợ dù chunk có nói), nên cần người kiểm mẫu trước khi dùng số này. Vì mục chỉ có một chunk, cả 12 trích dẫn cùng trỏ về chunk đó nên lượt này không thể lộ trích dẫn nhầm chunk; phần đó vẫn dựa vào kiểm thử xác định trong `tests/test_claim_evaluation.py`.
+Model chấm: `groq/openai/gpt-oss-20b` (alias `groq-fast`), khác hãng với model sinh `gemini-fast`. Đây là **một cặp trên một mục một chunk và một tài liệu tự dựng**, không phải ước lượng quần thể. Nội dung không RAG dùng thêm kiến thức ngoài tài liệu nên bị đánh "không được hỗ trợ" là điều dự kiến, chứ không chứng minh claim sai; vài lý do của model chấm 20B còn đáng ngờ (ví dụ một claim về rehashing bị đánh không hỗ trợ dù chunk có nói), nên cần người kiểm mẫu trước khi dùng số này. Vì mục chỉ có một chunk, cả 12 trích dẫn cùng trỏ về chunk đó nên lượt này không thể lộ trích dẫn nhầm chunk; phần đó vẫn dựa vào kiểm thử xác định trong `tests/integration/test_claim_evaluation.py`.
 
 ## Đối chiếu bổ sung 2026-09-30: ba trường hợp còn thiếu bằng chứng live
 

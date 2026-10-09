@@ -40,12 +40,12 @@ Nhánh `chore/git-init`. Đây là task rủi ro nhất vì một lần commit s
 - Create: `README.md`
 - Create: `docker-compose.yml`
 - Create: `devops/.env.example`
-- Create: `backend/tests/test_repo_hygiene.py`
+- Create: `backend/tests/unit/test_repo_hygiene.py`
 - Delete: `schema.sql`
 
 **Interfaces:**
 - Consumes: không có, đây là task đầu tiên
-- Produces: kho git có nhánh `main`, hàm test `_tracked_files()` trong `backend/tests/test_repo_hygiene.py` trả về `set[str]` các đường dẫn tương đối mà git đang theo dõi
+- Produces: kho git có nhánh `main`, hàm test `_tracked_files()` trong `backend/tests/unit/test_repo_hygiene.py` trả về `set[str]` các đường dẫn tương đối mà git đang theo dõi
 
 - [ ] **Step 1: Kiểm tra chưa có kho git và ghi lại hiện trạng**
 
@@ -123,74 +123,15 @@ Tạo `/d/do-an/.gitattributes`:
 
 - [ ] **Step 4: Viết test vệ sinh kho mã (test này phải fail trước)**
 
-Tạo `/d/do-an/backend/tests/test_repo_hygiene.py`:
+Tạo `/d/do-an/backend/tests/unit/test_repo_hygiene.py`:
 
-```python
-"""Kho mã không được chứa bí mật hay cây mã của bên thứ ba.
-
-Một lần commit tệp .env là khóa API nằm trong lịch sử git vĩnh viễn, nên việc này
-được kiểm tra tự động thay vì trông chờ vào trí nhớ của người commit."""
-
-import subprocess
-from pathlib import Path
-
-import pytest
-
-REPO_ROOT = Path(__file__).resolve().parents[2]
-
-
-def _tracked_files() -> set[str]:
-    result = subprocess.run(
-        ["git", "ls-files"], cwd=REPO_ROOT, capture_output=True, text=True, timeout=60
-    )
-    if result.returncode != 0:
-        pytest.skip("chưa có kho git")
-    return {line.strip() for line in result.stdout.splitlines() if line.strip()}
-
-
-def test_khong_co_tep_env_nao_duoc_theo_doi():
-    tracked = _tracked_files()
-
-    leaked = {p for p in tracked if Path(p).name == ".env" or p.endswith(".env")}
-
-    assert leaked == set(), f"tệp bí mật bị theo dõi: {sorted(leaked)}"
-
-
-def test_tep_env_example_van_duoc_theo_doi():
-    # Bản mẫu không chứa giá trị thật và là tài liệu duy nhất nói rõ cần biến nào.
-    assert "devops/.env.example" in _tracked_files()
-
-
-def test_ma_nguon_moodle_khong_nam_trong_kho():
-    tracked = _tracked_files()
-
-    assert not [p for p in tracked if p.startswith("moodle/")]
-
-
-def test_tai_lieu_mon_hoc_khong_nam_trong_kho():
-    tracked = _tracked_files()
-
-    assert not [p for p in tracked if p.startswith("documents/")]
-
-
-def test_khong_co_thu_muc_phu_thuoc_nao_duoc_theo_doi():
-    tracked = _tracked_files()
-    rac = [p for p in tracked if "/node_modules/" in p or "/.venv/" in p or "__pycache__" in p]
-
-    assert rac == []
-
-
-def test_kho_ma_khong_phinh_qua_muc():
-    # Toàn bộ mã nguồn của dự án vào khoảng vài nghìn tệp. Nếu vượt xa con số này
-    # thì gần như chắc chắn một thư mục phụ thuộc đã lọt vào.
-    assert len(_tracked_files()) < 2000
-```
+Mã kiểm thử và các bất biến cần giữ nằm trong [backend/tests/unit/test_repo_hygiene.py](../../backend/tests/unit/test_repo_hygiene.py); tham chiếu tệp này thay vì sao chép mã vào kế hoạch.
 
 - [ ] **Step 5: Chạy test để xác nhận nó bỏ qua vì chưa có git**
 
 ```bash
 cd /d/do-an/backend
-uv run pytest tests/test_repo_hygiene.py -v
+uv run pytest tests/unit/test_repo_hygiene.py -v
 ```
 
 Kỳ vọng: cả 6 test đều SKIPPED với lý do "chưa có kho git".
@@ -397,7 +338,7 @@ git log --oneline
 
 ```bash
 cd /d/do-an/backend
-uv run pytest tests/test_repo_hygiene.py -v
+uv run pytest tests/unit/test_repo_hygiene.py -v
 ```
 
 Kỳ vọng: 6 test PASSED, không còn SKIPPED.
@@ -407,7 +348,7 @@ Kỳ vọng: 6 test PASSED, không còn SKIPPED.
 ```bash
 cd /d/do-an
 git checkout -b chore/git-init
-git add backend/tests/test_repo_hygiene.py
+git add backend/tests/unit/test_repo_hygiene.py
 git commit -q -m "test: chặn tệp bí mật và cây mã bên thứ ba lọt vào kho"
 cd /d/do-an/backend && uv run ruff check .
 ```
@@ -428,7 +369,7 @@ Nhánh `fix/restore-alembic`. CI có bước `alembic upgrade head` nên đang �
 - Create: `backend/alembic/env.py`
 - Create: `backend/alembic/script.py.mako`
 - Create: `backend/alembic/versions/0001_initial_schema.py`
-- Create: `backend/tests/test_initial_migration.py`
+- Create: `backend/tests/integration/test_initial_migration.py`
 - Delete: `backend/tests/test_auth_tables_migration.py`
 - Delete: `backend/tests/test_embedding_column_migration.py`
 
@@ -469,141 +410,15 @@ Thiết kế RLS là dạng lan theo khóa học: bảng `courses` lọc theo `o
 
 - [ ] **Step 3: Viết test cho migration (phải fail trước)**
 
-Tạo `/d/do-an/backend/tests/test_initial_migration.py`:
+Tạo `/d/do-an/backend/tests/integration/test_initial_migration.py`:
 
-```python
-"""Chạy migration lên một cơ sở dữ liệu trắng phải dựng lại đúng schema mà các mô hình khai báo,
-kèm cả vai trò và Row Level Security.
-
-Alembic autogenerate không sinh ra vai trò, quyền hay policy RLS. Nếu chúng bị bỏ quên thì
-cách ly dữ liệu giữa các giảng viên biến mất mà không có lỗi nào báo ra, nên phải kiểm tra
-tường minh ở đây."""
-
-import os
-import subprocess
-import sys
-from pathlib import Path
-
-import pytest
-from sqlalchemy import create_engine, text
-
-import app.models  # noqa: F401  (đăng ký mọi bảng lên Base.metadata)
-from app.db import Base
-
-BACKEND = Path(__file__).resolve().parents[1]
-
-CAC_BANG_CO_RLS = {
-    "chat_messages", "chat_sessions", "chunks", "courses", "document_sections",
-    "documents", "evaluations", "jobs", "module_components", "modules", "questions",
-}
-
-
-@pytest.fixture(scope="module")
-def db_trang(tmp_path_factory):
-    """Một cơ sở dữ liệu trắng đã chạy `alembic upgrade head`."""
-    from app.config import settings
-
-    ten_db = "test_migration_tu_dau"
-    goc = settings.database_url.rsplit("/", 1)[0]
-    quan_tri = create_engine(f"{goc}/postgres", isolation_level="AUTOCOMMIT")
-    with quan_tri.connect() as conn:
-        conn.execute(text(f"DROP DATABASE IF EXISTS {ten_db}"))
-        conn.execute(text(f"CREATE DATABASE {ten_db}"))
-
-    url = f"{goc}/{ten_db}"
-    subprocess.run(
-        [sys.executable, "-m", "alembic", "upgrade", "head"],
-        cwd=BACKEND, check=True, capture_output=True, timeout=300,
-        env={**os.environ, "DATABASE_URL": url},
-    )
-    engine = create_engine(url)
-
-    yield engine
-
-    engine.dispose()
-    with quan_tri.connect() as conn:
-        conn.execute(text(f"DROP DATABASE IF EXISTS {ten_db}"))
-    quan_tri.dispose()
-
-
-def test_moi_bang_trong_mo_hinh_deu_duoc_tao(db_trang):
-    with db_trang.connect() as conn:
-        co_that = {
-            r[0] for r in conn.execute(
-                text("select tablename from pg_tables where schemaname='public'")
-            )
-        }
-
-    thieu = set(Base.metadata.tables) - co_that
-
-    assert thieu == set()
-
-
-def test_cot_embedding_dung_768_chieu(db_trang):
-    with db_trang.connect() as conn:
-        kieu = conn.execute(text(
-            "select format_type(atttypid, atttypmod) from pg_attribute "
-            "where attrelid = 'chunks'::regclass and attname = 'embedding'"
-        )).scalar()
-
-    assert kieu == "vector(768)"
-
-
-def test_hai_vai_tro_han_che_quyen_duoc_tao(db_trang):
-    with db_trang.connect() as conn:
-        vai_tro = {
-            r[0] for r in conn.execute(
-                text("select rolname from pg_roles where rolname in ('app_runtime','app_worker')")
-            )
-        }
-
-    assert vai_tro == {"app_runtime", "app_worker"}
-
-
-def test_moi_bang_da_tenant_deu_bat_row_level_security(db_trang):
-    with db_trang.connect() as conn:
-        da_bat = {
-            r[0] for r in conn.execute(
-                text("select relname from pg_class where relrowsecurity")
-            )
-        }
-
-    assert CAC_BANG_CO_RLS - da_bat == set()
-
-
-def test_moi_bang_da_tenant_deu_co_policy(db_trang):
-    with db_trang.connect() as conn:
-        co_policy = {r[0] for r in conn.execute(text("select tablename from pg_policies"))}
-
-    assert CAC_BANG_CO_RLS - co_policy == set()
-
-
-def test_policy_goc_loc_khoa_hoc_theo_nguoi_dang_dang_nhap(db_trang):
-    with db_trang.connect() as conn:
-        dieu_kien = conn.execute(text(
-            "select qual from pg_policies where tablename='courses'"
-        )).scalar()
-
-    assert "owner_id" in dieu_kien and "app.current_user_id" in dieu_kien
-
-
-def test_app_runtime_doc_ghi_duoc_bang_courses(db_trang):
-    with db_trang.connect() as conn:
-        quyen = {
-            r[0] for r in conn.execute(text(
-                "select privilege_type from information_schema.role_table_grants "
-                "where grantee='app_runtime' and table_name='courses'"
-            ))
-        }
-
-    assert {"SELECT", "INSERT", "UPDATE", "DELETE"} <= quyen
-```
+Mã kiểm thử và các bất biến cần giữ nằm trong [backend/tests/integration/test_initial_migration.py](../../backend/tests/integration/test_initial_migration.py); tham chiếu tệp này thay vì sao chép mã vào kế hoạch.
 
 - [ ] **Step 4: Chạy test để xác nhận nó fail**
 
 ```bash
 cd /d/do-an/backend
-uv run pytest tests/test_initial_migration.py -v
+uv run pytest tests/integration/test_initial_migration.py -v
 ```
 
 Kỳ vọng: FAIL ở bước fixture, vì `backend/alembic/` chưa tồn tại nên lệnh alembic thoát khác 0.
@@ -734,7 +549,7 @@ Trong hàm `downgrade()`, thêm ở đầu:
 
 ```bash
 cd /d/do-an/backend
-uv run pytest tests/test_initial_migration.py -v
+uv run pytest tests/integration/test_initial_migration.py -v
 ```
 
 Kỳ vọng: cả 7 test PASSED.
@@ -779,7 +594,7 @@ Kỳ vọng: ruff sạch, và toàn bộ test xanh trừ `test_moodle_bridge_ser
 ```bash
 cd /d/do-an
 git checkout -b fix/restore-alembic
-git add backend/alembic backend/alembic.ini backend/tests/test_initial_migration.py
+git add backend/alembic backend/alembic.ini backend/tests/integration/test_initial_migration.py
 git add -u backend/tests
 git commit -q -m "fix(db): khôi phục migrations thành một revision khởi tạo duy nhất
 
@@ -796,7 +611,7 @@ revision cũ bị xóa vì lịch sử đó không còn."
 
 Nhánh `fix/restore-moodle-plugin`. Backend vẫn gọi `local_lms_bridge_create_book` và `local_lms_bridge_create_quiz` nhưng mã plugin không còn, nên chức năng xuất bản hỏng ở mức mã nguồn.
 
-Test `backend/tests/test_moodle_bridge_service.py` đã tồn tại và đang đỏ. Nó đọc `moodle-plugin/local_lms_bridge/db/services.php` rồi so với các hàm mà `moodle_client.py` gọi. Đây chính là test dẫn đường, không cần viết test mới cho phần hợp đồng.
+Test `backend/tests/unit/test_moodle_bridge_service.py` đã tồn tại và đang đỏ. Nó đọc `moodle-plugin/local_lms_bridge/db/services.php` rồi so với các hàm mà `moodle_client.py` gọi. Đây chính là test dẫn đường, không cần viết test mới cho phần hợp đồng.
 
 **Files:**
 - Create: `moodle-plugin/local_lms_bridge/version.php`
@@ -814,7 +629,7 @@ Test `backend/tests/test_moodle_bridge_service.py` đã tồn tại và đang đ
 
 ```bash
 cd /d/do-an/backend
-uv run pytest tests/test_moodle_bridge_service.py -v
+uv run pytest tests/unit/test_moodle_bridge_service.py -v
 ```
 
 Kỳ vọng: các test đọc tệp plugin FAIL vì `moodle-plugin/local_lms_bridge/db/services.php` không tồn tại.
@@ -1119,7 +934,7 @@ class create_quiz extends external_api {
 
 ```bash
 cd /d/do-an/backend
-uv run pytest tests/test_moodle_bridge_service.py -v
+uv run pytest tests/unit/test_moodle_bridge_service.py -v
 ```
 
 Kỳ vọng: cả 5 test PASSED. Nếu `test_every_function_the_client_calls_is_allowed_by_the_bridge_service` vẫn đỏ thì thêm hàm còn thiếu vào mảng `functions` trong `db/services.php`.

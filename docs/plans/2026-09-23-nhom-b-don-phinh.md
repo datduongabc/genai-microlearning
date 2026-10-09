@@ -57,7 +57,7 @@ Bỏ giới hạn 72 byte sẽ khiến bcrypt âm thầm cắt đuôi mật kh�
 - Modify: `backend/tests/test_registration_and_passwords.py`
 - Modify: `backend/app/models/models.py:28-30`
 - Create: `backend/alembic/versions/0002_drop_student_role.py`
-- Create: `backend/tests/test_role_enum_migration.py`
+- Create: `backend/tests/integration/test_role_enum_migration.py`
 - Delete: `backend/tests/test_production_mode.py`
 - Delete: `backend/tests/test_config_secrets.py`
 
@@ -157,83 +157,15 @@ Kỳ vọng: tất cả PASS, trong đó có các test về 72 byte vẫn còn n
 
 - [ ] **Step 6: Viết test cho migration bỏ vai trò `student` (phải fail trước)**
 
-Tạo `backend/tests/test_role_enum_migration.py`:
+Tạo `backend/tests/integration/test_role_enum_migration.py`:
 
-```python
-"""Vai trò student là mã chết: mọi lần đăng ký đều gán cứng teacher, và ứng dụng này
-chỉ dành cho giảng viên vì học viên học trên Moodle.
-
-Bỏ một giá trị khỏi enum của PostgreSQL không làm trực tiếp được, phải dựng lại kiểu,
-nên việc đó đáng có test riêng."""
-
-import os
-import subprocess
-import sys
-from pathlib import Path
-
-import pytest
-from sqlalchemy import create_engine, text
-
-BACKEND = Path(__file__).resolve().parents[1]
-
-
-@pytest.fixture(scope="module")
-def db_sau_migration():
-    """Một cơ sở dữ liệu trắng đã chạy toàn bộ migration."""
-    from app.config import settings
-
-    ten_db = "test_role_enum"
-    goc = settings.database_url.rsplit("/", 1)[0]
-    quan_tri = create_engine(f"{goc}/postgres", isolation_level="AUTOCOMMIT")
-    with quan_tri.connect() as conn:
-        conn.execute(text(f"DROP DATABASE IF EXISTS {ten_db}"))
-        conn.execute(text(f"CREATE DATABASE {ten_db}"))
-
-    url = f"{goc}/{ten_db}"
-    ket_qua = subprocess.run(
-        [sys.executable, "-m", "alembic", "upgrade", "head"],
-        cwd=BACKEND, check=False, capture_output=True, text=True, timeout=300,
-        env={**os.environ, "DATABASE_URL": url},
-    )
-    if ket_qua.returncode != 0:
-        pytest.fail(f"alembic upgrade head thất bại:\n{ket_qua.stderr[-3000:]}")
-    engine = create_engine(url)
-
-    yield engine
-
-    engine.dispose()
-    with quan_tri.connect() as conn:
-        conn.execute(text(f"DROP DATABASE IF EXISTS {ten_db}"))
-    quan_tri.dispose()
-
-
-def test_enum_vai_tro_chi_con_teacher(db_sau_migration):
-    with db_sau_migration.connect() as conn:
-        gia_tri = {
-            r[0] for r in conn.execute(text(
-                "select enumlabel from pg_enum e "
-                "join pg_type t on t.oid = e.enumtypid where t.typname = 'userrole'"
-            ))
-        }
-
-    assert gia_tri == {"teacher"}
-
-
-def test_cot_role_van_dung_kieu_userrole(db_sau_migration):
-    with db_sau_migration.connect() as conn:
-        kieu = conn.execute(text(
-            "select format_type(atttypid, atttypmod) from pg_attribute "
-            "where attrelid = 'users'::regclass and attname = 'role'"
-        )).scalar()
-
-    assert kieu == "userrole"
-```
+Mã kiểm thử và các bất biến cần giữ nằm trong [backend/tests/integration/test_role_enum_migration.py](../../backend/tests/integration/test_role_enum_migration.py); tham chiếu tệp này thay vì sao chép mã vào kế hoạch.
 
 - [ ] **Step 7: Chạy test để xác nhận nó fail**
 
 ```bash
 cd /d/do-an/backend
-uv run pytest tests/test_role_enum_migration.py -v
+uv run pytest tests/integration/test_role_enum_migration.py -v
 ```
 
 Kỳ vọng: `test_enum_vai_tro_chi_con_teacher` FAIL vì tập giá trị là `{"teacher", "student"}`.
@@ -315,7 +247,7 @@ def downgrade() -> None:
 
 ```bash
 cd /d/do-an/backend
-uv run pytest tests/test_role_enum_migration.py -v
+uv run pytest tests/integration/test_role_enum_migration.py -v
 ```
 
 Kỳ vọng: cả hai test PASS.
@@ -341,7 +273,7 @@ cd /d/do-an/backend
 rm tests/test_production_mode.py tests/test_config_secrets.py
 ```
 
-Không xoá `tests/test_compose_topology.py`: xem mục "Ba chỗ kế hoạch này cố tình làm khác spec" ở trên.
+Không xoá `tests/unit/test_compose_topology.py`: xem mục "Ba chỗ kế hoạch này cố tình làm khác spec" ở trên.
 
 - [ ] **Step 13: Chạy toàn bộ test và lint**
 
@@ -533,7 +465,7 @@ npm run test
 npm run build
 ```
 
-Kỳ vọng: cả hai lệnh chạy xong không lỗi. `src/api.test.ts` vẫn nhập `from './api'` và giờ trỏ vào `src/api/index.ts`.
+Kỳ vọng: cả hai lệnh chạy xong không lỗi. Cách tổ chức các tầng test hiện tại được mô tả trong [README](../../README.md#phát-triển).
 
 - [ ] **Step 9: Kiểm thử thật bằng trình duyệt**
 

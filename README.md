@@ -95,18 +95,26 @@ Nếu mọi thao tác với Moodle báo "Moodle từ chối yêu cầu do cấu 
 
 ```bash
 cd backend
-uv run pytest
+uv run pytest tests/unit tests/integration tests/e2e
 uv run ruff check .
 uv run alembic upgrade head
 ```
 
 ```bash
 cd frontend
-npm run test
+npm run test -- src/test/unit src/test/integration
 npm run build
 ```
 
 Đây cũng đúng là những lệnh mà CI chạy, xem `.github/workflows/ci.yml`.
+`uv run pytest` và `npm run test` cũng tự tìm toàn bộ các tầng trên.
+
+- Backend `tests/unit`: thuật toán, cấu hình và xử lý dữ liệu cục bộ; không cần DB hay dịch vụ mạng.
+- Backend `tests/integration`: HTTP app, DB và các ranh giới với gateway, Moodle, OCR hoặc FFmpeg dùng hàm giả.
+- Backend `tests/e2e`: pipeline nhập tài liệu/sách chạy đầy đủ tới dữ liệu được lưu trong DB, với embedding ngoại tuyến. Test sinh module dùng LLM thật vẫn mang marker `live_llm`, mặc định không chạy trong CI; chỉ chạy riêng bằng `uv run pytest tests/e2e -m live_llm` khi đã cấu hình DB và gateway thử nghiệm.
+- Frontend `src/test/unit`: component và schema; `src/test/integration`: luồng trang, auth và API. Fixture jsdom chung ở `src/test/setup.ts`.
+
+Có thể chạy riêng một tầng bằng đường dẫn, ví dụ `uv run pytest tests/unit` hoặc `npm run test -- src/test/unit`. Các tầng backend cần DB phải dùng PostgreSQL/pgvector thử nghiệm đã chạy migration, với `DATABASE_URL`, `APP_RUNTIME_DATABASE_URL` và `APP_WORKER_DATABASE_URL` trỏ tới DB đó (như CI), vì test migration tạo và xoá DB tạm. Fixture dùng chung nằm ở `backend/tests/conftest.py`; fixture DB dùng chung cho self-check/ngôn ngữ nằm ở `backend/tests/integration/conftest.py`.
 CI còn có job `moodle-plugin` chạy php lint và PHPUnit cho `moodle-plugin/local_lms_bridge` trên một site Moodle 5.2 dựng sẵn trong job.
 
 ## Quy trình đóng góp
