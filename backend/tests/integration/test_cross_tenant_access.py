@@ -146,6 +146,7 @@ ATTACKS = [
     ("POST", "/modules/{module}/publish-to-moodle", None, {"json": {"section_num": 0}}),
     ("POST", "/jobs/{failed_job}/retry", None, {}),
     # The admin's routes, reached by a lecturer: not found, as if there were nothing there.
+    ("POST", "/admin/users/{user}/moodle-unlink", None, {}),
     ("POST", "/admin/users/{user}/disable", None, {}),
     ("POST", "/admin/users/{user}/enable", None, {}),
     ("POST", "/admin/users/{user}/password", None, {"json": {"password": "A pwned long phrase"}}),

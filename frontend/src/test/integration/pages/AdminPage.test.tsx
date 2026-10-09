@@ -19,7 +19,7 @@ vi.mock('../../../api', async (importOriginal) => {
 
 const admin: AdminUser = {
   id: 'admin-1', email: 'admin@example.com', name: 'Quản trị', is_admin: true, is_active: true,
-  created_at: '2026-01-01T00:00:00Z', moodle_status: null, course_count: null,
+  created_at: '2026-01-01T00:00:00Z', moodle_status: 'not_linked', course_count: null,
 }
 const lan: AdminUser = {
   id: 'u-1', email: 'lan@example.com', name: 'Lan Nguyễn', is_admin: false, is_active: true,
@@ -67,8 +67,8 @@ describe('AdminPage - accounts', () => {
     const locked = screen.getByText('minh@example.com').closest('li')!
     expect(within(locked).getByText('Đã vô hiệu hóa')).toBeInTheDocument()
     expect(within(locked).getByText('Chưa liên kết Moodle')).toBeInTheDocument()
-    // The admin themselves have no Moodle status.
-    expect(within(screen.getByText('admin@example.com').closest('li')!).queryByText(/moodle/i)).not.toBeInTheDocument()
+    // Admin accounts also show their stored Moodle link state.
+    expect(within(screen.getByText('admin@example.com').closest('li')!).getByText('Chưa liên kết Moodle')).toBeInTheDocument()
   })
 
   it('offers account creation and password reset without automatic Moodle linking', async () => {
@@ -204,4 +204,30 @@ describe('AdminPage - failed jobs', () => {
 
     expect(await screen.findByText(/không có job nào thất bại/i)).toBeInTheDocument()
   })
+})
+
+it('confirms admin Moodle unlink for the selected user and refreshes their status', async () => {
+  renderPage()
+  const row = (await screen.findByText('lan@example.com')).closest('li')!
+  const button = within(row).getByRole('button', { name: 'Hủy liên kết Moodle' })
+  expect(within(screen.getByText('minh@example.com').closest('li')!).queryByRole('button', { name: 'Hủy liên kết Moodle' })).not.toBeInTheDocument()
+  vi.spyOn(window, 'confirm').mockReturnValue(false)
+  await userEvent.click(button)
+  expect(api.unlinkUserMoodleAccount).not.toHaveBeenCalled()
+  vi.spyOn(window, 'confirm').mockReturnValue(true)
+  vi.mocked(api.listUsers).mockResolvedValue([admin, { ...lan, moodle_status: 'not_linked' }, minh])
+  await userEvent.click(button)
+  expect(window.confirm).toHaveBeenCalledWith(expect.stringContaining(lan.email))
+  expect(api.unlinkUserMoodleAccount).toHaveBeenCalledWith(lan.id)
+  expect(await within(row).findByText('Chưa liên kết Moodle')).toBeInTheDocument()
+  expect(within(row).queryByRole('button', { name: 'Hủy liên kết Moodle' })).not.toBeInTheDocument()
+})
+
+it('shows an admin unlink failure without changing the user link state', async () => {
+  vi.mocked(api.unlinkUserMoodleAccount).mockRejectedValueOnce(new Error('offline'))
+  renderPage()
+  const row = (await screen.findByText('lan@example.com')).closest('li')!
+  await userEvent.click(within(row).getByRole('button', { name: 'Hủy liên kết Moodle' }))
+  expect(await screen.findByText('Không hủy được liên kết Moodle.')).toBeInTheDocument()
+  expect(within(row).getByText('Đã liên kết Moodle')).toBeInTheDocument()
 })

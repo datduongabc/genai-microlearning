@@ -175,7 +175,7 @@ describe('CourseDetailPage - Moodle linking', () => {
 
     const account = await screen.findByRole('region', { name: 'Tài khoản Moodle' })
     expect(await within(account).findByText('Đã liên kết')).toBeInTheDocument()
-    expect(within(account).queryByRole('button')).not.toBeInTheDocument()
+    expect(within(account).getByRole('button', { name: 'Hủy liên kết Moodle' })).toBeInTheDocument()
     expect(within(account).queryByLabelText('Mật khẩu Moodle')).not.toBeInTheDocument()
   })
 

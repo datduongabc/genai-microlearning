@@ -25,6 +25,7 @@ REFRESH_REJECTED = "refresh_rejected"
 ADMIN_DISABLE_USER = "admin_disable_user"
 ADMIN_ENABLE_USER = "admin_enable_user"
 ADMIN_RETRY_JOBS = "admin_retry_jobs"
+ADMIN_UNLINK_MOODLE = "admin_unlink_moodle"
 
 MAX_USER_AGENT_CHARS = 200
 

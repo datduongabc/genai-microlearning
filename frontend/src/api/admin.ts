@@ -9,7 +9,7 @@ export interface AdminUser {
   is_admin: boolean
   is_active: boolean
   created_at: string
-  // Null với admin: tài khoản đã có liên kết Moodle lưu sẵn hay chưa.
+  // Tài khoản đã có liên kết Moodle lưu sẵn hay chưa.
   moodle_status: MoodleStatus | null
   // Null với admin: số môn học tài khoản sở hữu.
   course_count: number | null
@@ -60,4 +60,9 @@ export async function createUser(name: string, email: string, password: string) 
 }
 export async function resetUserPassword(userId: string, password: string) {
   await api.post(`/admin/users/${userId}/password`, { password })
+}
+
+
+export async function unlinkUserMoodleAccount(userId: string) {
+  await api.post(`/admin/users/${userId}/moodle-unlink`)
 }

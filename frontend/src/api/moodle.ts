@@ -82,3 +82,8 @@ export async function publishToMoodle(moduleId: string, sectionNum: number) {
   )
   return data
 }
+
+
+export async function unlinkMoodleAccount() {
+  await api.delete('/moodle/account')
+}

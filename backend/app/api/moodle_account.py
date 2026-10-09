@@ -13,6 +13,7 @@ from app.config import settings
 from app.db import get_db
 from app.models import User
 from app.moodle import client
+from app.moodle.accounts import unlink_account
 from app.moodle.errors import MOODLE_FAILURES, moodle_failure
 
 router = APIRouter(prefix="/moodle", tags=["moodle"], dependencies=[Depends(get_current_user)])
@@ -115,3 +116,9 @@ def get_account(request: Request, db: Session = Depends(get_db), current_user: U
     if notice:
         answer['error'] = notice
     return answer
+
+
+@router.delete('/account')
+def unlink_current_account(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    unlink_account(db, current_user)
+    return {'status': 'not_linked', 'email': current_user.email}
