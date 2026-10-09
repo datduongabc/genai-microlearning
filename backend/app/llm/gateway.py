@@ -9,6 +9,7 @@ import contextvars
 import json
 
 import litellm
+from litellm.constants import RETURN_RAW_MODEL_NAME_METADATA_KEY
 from pydantic import BaseModel
 
 from app.config import settings
@@ -72,6 +73,10 @@ def _completion(*, small_step: bool = False, **kwargs):
     routed_alias = alias
     pinned = settings.llm_experiment_mode or _experiment.get()
     extra_body = dict(kwargs.pop("extra_body", None) or {})
+    # Keep the provider model in the HTTP response instead of the proxy's routing alias.
+    extra_body["metadata"] = {
+        **extra_body.get("metadata", {}), RETURN_RAW_MODEL_NAME_METADATA_KEY: True,
+    }
     if pinned:
         if alias == "gemini-balanced" or alias.endswith("-small"):
             raise ValueError("Experiments require a single-model alias, not a routing profile")
