@@ -57,7 +57,7 @@ Bỏ giới hạn 72 byte sẽ khiến bcrypt âm thầm cắt đuôi mật kh�
 - Modify: `backend/tests/test_registration_and_passwords.py`
 - Modify: `backend/app/models/models.py:28-30`
 - Create: `backend/alembic/versions/0002_drop_student_role.py`
-- Create: `backend/tests/test_role_enum_migration.py`
+- Create: `backend/tests/integration/test_role_enum_migration.py`
 - Delete: `backend/tests/test_production_mode.py`
 - Delete: `backend/tests/test_config_secrets.py`
 
@@ -157,7 +157,7 @@ Kỳ vọng: tất cả PASS, trong đó có các test về 72 byte vẫn còn n
 
 - [ ] **Step 6: Viết test cho migration bỏ vai trò `student` (phải fail trước)**
 
-Tạo `backend/tests/test_role_enum_migration.py`:
+Tạo `backend/tests/integration/test_role_enum_migration.py`:
 
 ```python
 """Vai trò student là mã chết: mọi lần đăng ký đều gán cứng teacher, và ứng dụng này
@@ -233,7 +233,7 @@ def test_cot_role_van_dung_kieu_userrole(db_sau_migration):
 
 ```bash
 cd /d/do-an/backend
-uv run pytest tests/test_role_enum_migration.py -v
+uv run pytest tests/integration/test_role_enum_migration.py -v
 ```
 
 Kỳ vọng: `test_enum_vai_tro_chi_con_teacher` FAIL vì tập giá trị là `{"teacher", "student"}`.
@@ -315,7 +315,7 @@ def downgrade() -> None:
 
 ```bash
 cd /d/do-an/backend
-uv run pytest tests/test_role_enum_migration.py -v
+uv run pytest tests/integration/test_role_enum_migration.py -v
 ```
 
 Kỳ vọng: cả hai test PASS.
@@ -341,7 +341,7 @@ cd /d/do-an/backend
 rm tests/test_production_mode.py tests/test_config_secrets.py
 ```
 
-Không xoá `tests/test_compose_topology.py`: xem mục "Ba chỗ kế hoạch này cố tình làm khác spec" ở trên.
+Không xoá `tests/unit/test_compose_topology.py`: xem mục "Ba chỗ kế hoạch này cố tình làm khác spec" ở trên.
 
 - [ ] **Step 13: Chạy toàn bộ test và lint**
 

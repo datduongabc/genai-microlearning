@@ -53,7 +53,7 @@ jobs:
       - run: PGPASSWORD=postgres psql -h localhost -U postgres -d microlearning -c "CREATE EXTENSION IF NOT EXISTS vector;"
       - run: uv run alembic upgrade head
       - run: uv run ruff check .
-      - run: uv run pytest
+      - run: uv run pytest tests/unit tests/integration tests/e2e
 
   frontend:
     runs-on: ubuntu-latest
@@ -66,7 +66,7 @@ jobs:
         with:
           node-version: 24
       - run: npm ci
-      - run: npm run test
+      - run: npm run test -- src/test/unit src/test/integration
       - run: npm run build
 
   moodle-plugin:

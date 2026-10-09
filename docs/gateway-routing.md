@@ -82,8 +82,8 @@ An old RAG module and a newly pinned control may have different real models; the
 records expose this rather than claiming the chosen aliases prove equivalence.
 
 The deployment still needs valid runtime keys and available provider capacity.
-Offline regression coverage is in `backend/tests/test_gateway_config.py`,
-`backend/tests/test_llm_gateway.py` and `backend/tests/test_use_retrieval.py`;
+Offline regression coverage is in `backend/tests/unit/test_gateway_config.py`,
+`backend/tests/integration/test_llm_gateway.py` and `backend/tests/integration/test_use_retrieval.py`;
 it does not establish live provider availability.
 For live deployment verification, use a deliberately invalid primary credential
 and check a saved module's served model plus refusal to fall back in experiments.

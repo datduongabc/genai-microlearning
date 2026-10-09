@@ -40,12 +40,12 @@ Nhánh `chore/git-init`. Đây là task rủi ro nhất vì một lần commit s
 - Create: `README.md`
 - Create: `docker-compose.yml`
 - Create: `devops/.env.example`
-- Create: `backend/tests/test_repo_hygiene.py`
+- Create: `backend/tests/unit/test_repo_hygiene.py`
 - Delete: `schema.sql`
 
 **Interfaces:**
 - Consumes: không có, đây là task đầu tiên
-- Produces: kho git có nhánh `main`, hàm test `_tracked_files()` trong `backend/tests/test_repo_hygiene.py` trả về `set[str]` các đường dẫn tương đối mà git đang theo dõi
+- Produces: kho git có nhánh `main`, hàm test `_tracked_files()` trong `backend/tests/unit/test_repo_hygiene.py` trả về `set[str]` các đường dẫn tương đối mà git đang theo dõi
 
 - [ ] **Step 1: Kiểm tra chưa có kho git và ghi lại hiện trạng**
 
@@ -123,7 +123,7 @@ Tạo `/d/do-an/.gitattributes`:
 
 - [ ] **Step 4: Viết test vệ sinh kho mã (test này phải fail trước)**
 
-Tạo `/d/do-an/backend/tests/test_repo_hygiene.py`:
+Tạo `/d/do-an/backend/tests/unit/test_repo_hygiene.py`:
 
 ```python
 """Kho mã không được chứa bí mật hay cây mã của bên thứ ba.
@@ -190,7 +190,7 @@ def test_kho_ma_khong_phinh_qua_muc():
 
 ```bash
 cd /d/do-an/backend
-uv run pytest tests/test_repo_hygiene.py -v
+uv run pytest tests/unit/test_repo_hygiene.py -v
 ```
 
 Kỳ vọng: cả 6 test đều SKIPPED với lý do "chưa có kho git".
@@ -397,7 +397,7 @@ git log --oneline
 
 ```bash
 cd /d/do-an/backend
-uv run pytest tests/test_repo_hygiene.py -v
+uv run pytest tests/unit/test_repo_hygiene.py -v
 ```
 
 Kỳ vọng: 6 test PASSED, không còn SKIPPED.
@@ -407,7 +407,7 @@ Kỳ vọng: 6 test PASSED, không còn SKIPPED.
 ```bash
 cd /d/do-an
 git checkout -b chore/git-init
-git add backend/tests/test_repo_hygiene.py
+git add backend/tests/unit/test_repo_hygiene.py
 git commit -q -m "test: chặn tệp bí mật và cây mã bên thứ ba lọt vào kho"
 cd /d/do-an/backend && uv run ruff check .
 ```
@@ -428,7 +428,7 @@ Nhánh `fix/restore-alembic`. CI có bước `alembic upgrade head` nên đang �
 - Create: `backend/alembic/env.py`
 - Create: `backend/alembic/script.py.mako`
 - Create: `backend/alembic/versions/0001_initial_schema.py`
-- Create: `backend/tests/test_initial_migration.py`
+- Create: `backend/tests/integration/test_initial_migration.py`
 - Delete: `backend/tests/test_auth_tables_migration.py`
 - Delete: `backend/tests/test_embedding_column_migration.py`
 
@@ -469,7 +469,7 @@ Thiết kế RLS là dạng lan theo khóa học: bảng `courses` lọc theo `o
 
 - [ ] **Step 3: Viết test cho migration (phải fail trước)**
 
-Tạo `/d/do-an/backend/tests/test_initial_migration.py`:
+Tạo `/d/do-an/backend/tests/integration/test_initial_migration.py`:
 
 ```python
 """Chạy migration lên một cơ sở dữ liệu trắng phải dựng lại đúng schema mà các mô hình khai báo,
@@ -603,7 +603,7 @@ def test_app_runtime_doc_ghi_duoc_bang_courses(db_trang):
 
 ```bash
 cd /d/do-an/backend
-uv run pytest tests/test_initial_migration.py -v
+uv run pytest tests/integration/test_initial_migration.py -v
 ```
 
 Kỳ vọng: FAIL ở bước fixture, vì `backend/alembic/` chưa tồn tại nên lệnh alembic thoát khác 0.
@@ -734,7 +734,7 @@ Trong hàm `downgrade()`, thêm ở đầu:
 
 ```bash
 cd /d/do-an/backend
-uv run pytest tests/test_initial_migration.py -v
+uv run pytest tests/integration/test_initial_migration.py -v
 ```
 
 Kỳ vọng: cả 7 test PASSED.
@@ -779,7 +779,7 @@ Kỳ vọng: ruff sạch, và toàn bộ test xanh trừ `test_moodle_bridge_ser
 ```bash
 cd /d/do-an
 git checkout -b fix/restore-alembic
-git add backend/alembic backend/alembic.ini backend/tests/test_initial_migration.py
+git add backend/alembic backend/alembic.ini backend/tests/integration/test_initial_migration.py
 git add -u backend/tests
 git commit -q -m "fix(db): khôi phục migrations thành một revision khởi tạo duy nhất
 
@@ -796,7 +796,7 @@ revision cũ bị xóa vì lịch sử đó không còn."
 
 Nhánh `fix/restore-moodle-plugin`. Backend vẫn gọi `local_lms_bridge_create_book` và `local_lms_bridge_create_quiz` nhưng mã plugin không còn, nên chức năng xuất bản hỏng ở mức mã nguồn.
 
-Test `backend/tests/test_moodle_bridge_service.py` đã tồn tại và đang đỏ. Nó đọc `moodle-plugin/local_lms_bridge/db/services.php` rồi so với các hàm mà `moodle_client.py` gọi. Đây chính là test dẫn đường, không cần viết test mới cho phần hợp đồng.
+Test `backend/tests/unit/test_moodle_bridge_service.py` đã tồn tại và đang đỏ. Nó đọc `moodle-plugin/local_lms_bridge/db/services.php` rồi so với các hàm mà `moodle_client.py` gọi. Đây chính là test dẫn đường, không cần viết test mới cho phần hợp đồng.
 
 **Files:**
 - Create: `moodle-plugin/local_lms_bridge/version.php`
@@ -814,7 +814,7 @@ Test `backend/tests/test_moodle_bridge_service.py` đã tồn tại và đang đ
 
 ```bash
 cd /d/do-an/backend
-uv run pytest tests/test_moodle_bridge_service.py -v
+uv run pytest tests/unit/test_moodle_bridge_service.py -v
 ```
 
 Kỳ vọng: các test đọc tệp plugin FAIL vì `moodle-plugin/local_lms_bridge/db/services.php` không tồn tại.
@@ -1119,7 +1119,7 @@ class create_quiz extends external_api {
 
 ```bash
 cd /d/do-an/backend
-uv run pytest tests/test_moodle_bridge_service.py -v
+uv run pytest tests/unit/test_moodle_bridge_service.py -v
 ```
 
 Kỳ vọng: cả 5 test PASSED. Nếu `test_every_function_the_client_calls_is_allowed_by_the_bridge_service` vẫn đỏ thì thêm hàm còn thiếu vào mảng `functions` trong `db/services.php`.
