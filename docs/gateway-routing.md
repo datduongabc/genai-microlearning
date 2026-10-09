@@ -19,7 +19,7 @@ including the response schema and a 2,048-token output budget. Their backups are
 the other Gemini small profile, then `groq-pro`. Larger calls keep the ordinary
 alias. Content, including no-RAG Content and its self-check, never opts into the
 small profile. Slides, Example and question generation also keep the ordinary
-alias. `groq-fast` is removed.
+alias. The historical `groq-fast` alias is unavailable in the current configuration.
 
 Groq has an 8,000 TPM budget, so Content's 20–66k-token requests cannot fit. Its
 router deployment declares `tpm: 8000`, a conservative 3,952-token input ceiling
@@ -82,9 +82,11 @@ An old RAG module and a newly pinned control may have different real models; the
 records expose this rather than claiming the chosen aliases prove equivalence.
 
 The deployment still needs valid runtime keys and available provider capacity.
-Tests exercise the router's configuration and pinned/fallback behavior without
-provider calls; private live proof uses a deliberately invalid primary credential
-and verifies a saved module's served model plus refusal to fall back in experiments.
+Offline regression coverage is in `backend/tests/test_gateway_config.py`,
+`backend/tests/test_llm_gateway.py` and `backend/tests/test_use_retrieval.py`;
+it does not establish live provider availability.
+For live deployment verification, use a deliberately invalid primary credential
+and check a saved module's served model plus refusal to fall back in experiments.
 
 LiteLLM references: [fallbacks](https://docs.litellm.ai/docs/proxy/reliability),
 [router/load balancing and cooldowns](https://docs.litellm.ai/docs/routing).

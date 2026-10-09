@@ -121,8 +121,8 @@ def probe(alias: str) -> None:
 
     Có trong danh sách chưa chắc đã dùng được, vì gateway liệt kê mọi alias dù khóa của
     nhà cung cấp đang trống. Không thử thì lượt sinh chạy mười phút rồi mới hỏng; thử thì
-    giảng viên biết ngay và chọn model khác. Một token là đủ để biết khóa và số dư còn
-    dùng được, mà không tốn hạn mức đáng kể.
+    giảng viên biết ngay lỗi khóa hoặc số dư và chọn model khác. Quy tắc chấp nhận lỗi
+    quota để dùng fallback nằm trong docs/gateway-routing.md.
 
     Bắt theo lớp cha của openai chứ không phải của litellm, và đó không phải tuỳ tiện:
     litellm.Timeout KHÔNG kế thừa litellm.APIConnectionError, và litellm.AuthenticationError

@@ -4,10 +4,10 @@ Rubric này dùng chung cho mô hình chấm (`judge_module` trong `backend/app/
 
 ## 1. Thiết kế nghiên cứu
 
-- **Hai nhóm ghép cặp.** Với mỗi chủ đề có một module sinh bằng RAG (nhóm `rag_llm`) và một module sinh không RAG trên cùng Learning Objective, cùng model sinh (nhóm `llm_no_rag`). Khác biệt điểm trong một cặp vì vậy chỉ còn là do RAG.
+- **Hai nhóm ghép cặp.** Với mỗi chủ đề có một module sinh bằng RAG (nhóm `rag_llm`) và một module sinh không RAG trên cùng Learning Objective, cùng model sinh (nhóm `llm_no_rag`). Để không lẫn khác biệt giữa các model vào so sánh RAG, tuân theo [chế độ thí nghiệm và kiểm tra model thực sự đã sinh](gateway-routing.md#experiments).
 - **Cùng tài liệu đối chiếu.** Hai module của một cặp được chấm trên cùng một bộ đoạn nguồn; quy tắc phạm vi và độ phủ ở [mục 7](#7-r9-claim-không-có-căn-cứ-và-độ-chính-xác-trích-dẫn). Không lấy bộ đối chiếu từ những chunk mà bản RAG tự trích dẫn.
 - **Chấm mù.** Người chấm và mô hình chấm chỉ thấy mã ẩn danh (dạng `M-3fa9c2d1`), không thấy nhóm, tên môn, tên tệp hay tên model.
-- **Hai mô hình chấm khác hãng với model sinh.** Mô hình chấm chính là Claude Sonnet 5 (alias `claude-pro`), mô hình chấm thứ hai là gpt-oss-120b trên Groq (alias `groq-pro`). Model sinh là Gemini, nên cả hai mô hình chấm đều khác hãng: mô hình chấm thường ưu ái văn của chính họ nhà mình. `scripts/run_judge.py` từ chối chạy khi mô hình chấm cùng hãng với model đã sinh gói.
+- **Hai mô hình chấm khác hãng với model sinh.** Mô hình chấm chính là Claude Sonnet 5 (alias `claude-pro`), mô hình chấm thứ hai là gpt-oss-120b trên Groq (alias `groq-pro`). Với model sinh Gemini, cả hai mô hình chấm đều khác hãng: mô hình chấm thường ưu ái văn của chính họ nhà mình. Quy tắc kiểm tra hãng nằm trong [gateway routing](gateway-routing.md#actual-model-records).
 
 ## 2. Thang điểm chung
 

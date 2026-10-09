@@ -183,7 +183,7 @@ def module_packet(module: Module, sources: list[str]) -> ModuleContentInput:
 
 
 def _control_of(db: Session, module: Module, model_alias: str | None, self_check: bool) -> Module:
-    """Bản đối chứng của `module` với đúng model và cờ tự kiểm này: dùng lại bản đã sinh nếu có, không
+    """Bản đối chứng của `module` với đúng alias yêu cầu và cờ tự kiểm này: dùng lại bản đã sinh nếu có, không
     thì sinh mới và ghi một job đã xong mang payload như job đối chứng xếp qua API, để mọi nơi nhận ra
     đó là bản đối chứng."""
     paired_payload = generation_payload_of(db, module.id)
@@ -221,8 +221,8 @@ def study_pair(
 ) -> tuple[ModuleContentInput, ModuleContentInput]:
     """(gói rag_llm, gói llm_no_rag). Bản đối chứng là một module sinh bằng chính pipeline RAG với
     `use_retrieval=False`, lưu như mọi module khác và dùng lại ở các lần xuất sau. `model_alias` là
-    model đã sinh module RAG: bản đối chứng phải dùng đúng model đó, không thì khác biệt điểm lẫn cả
-    khác biệt giữa hai model. `self_check` cũng phải là cờ đã dùng khi sinh module RAG, vì cùng lý do."""
+    alias yêu cầu của module RAG. Điều kiện so sánh model sinh nằm trong docs/gateway-routing.md.
+    `self_check` phải là cờ đã dùng khi sinh module RAG để không lẫn khác biệt giữa hai chế độ."""
     if is_control(db, module.id):
         raise ValueError(f"Module {module.id} là bản đối chứng không RAG, không phải module RAG.")
     learning_objective_of(module)

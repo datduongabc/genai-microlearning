@@ -3,8 +3,9 @@
     PYTHONPATH=. uv run python scripts/export_study_pair.py <module_id> --out <thư mục> [--model <alias>]
 
 Bản không RAG là một module sinh bằng chính pipeline RAG với use_retrieval=False (được lưu như mọi
-module khác và dùng lại ở các lần xuất sau với cùng model), bằng đúng model đã sinh module RAG (đọc từ job sinh module), để khác biệt
-điểm chấm chỉ còn là RAG; --model chỉ dùng khi muốn ghi đè có chủ ý. Mỗi tệp là một StudyFile: gói
+module khác và dùng lại ở các lần xuất sau với cùng alias), với alias yêu cầu của module RAG
+(đọc từ job sinh module); --model chỉ dùng khi muốn ghi đè có chủ ý. Điều kiện ghim model và
+kiểm tra model thực sự đã sinh nằm trong docs/gateway-routing.md. Mỗi tệp là một StudyFile: gói
 nội dung (khóa "packet", không lộ nhóm hay nguồn) bọc trong mã cặp, tên nhóm và model đã sinh. Metadata đối chiếu và trích dẫn R9 cũng nằm ở lớp bọc ngoài; xem docs/rubric.md
 cho định dạng và quy trình chấm. Không đưa toàn bộ lớp bọc cho người chấm.
 
@@ -26,7 +27,7 @@ from app.models import Module
 
 
 def model_that_made(db, module_id: uuid.UUID) -> str | None:
-    # None nghĩa là module được sinh bằng model mặc định trong cấu hình, và bản đối chứng cũng vậy.
+    # Job cũ không lưu alias dùng mặc định hiện tại; không suy ra được model đã phục vụ.
     return generation_payload_of(db, module_id).get("model_alias")
 
 
@@ -60,7 +61,7 @@ def main(argv: list[str] | None = None) -> None:
     finally:
         db.close()
 
-    # Ghi tên alias thật chứ không để trống: bước chấm cần biết hãng của model đã sinh từng gói.
+    # Giữ alias cho gói cũ không có bản ghi model đã phục vụ.
     args.out.mkdir(parents=True, exist_ok=True)
     for group, packet, alias in (("rag_llm", rag, rag_alias), ("llm_no_rag", no_rag, no_rag_alias)):
         generator = alias or gateway.active_model()
