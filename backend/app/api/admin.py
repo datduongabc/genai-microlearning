@@ -16,6 +16,7 @@ from app.auth.security import hash_password
 from app.db import get_db
 from app.jobs.queue import retry_failed_job
 from app.models import JobType, User
+from app.moodle.accounts import unlink_account
 
 router = APIRouter(prefix="/admin", tags=["admin"], dependencies=[Depends(require_admin)])
 
@@ -173,3 +174,13 @@ def retry_jobs(
         detail={"job_ids": [str(j) for j in retried], "skipped": len(ids) - len(retried)},
     )
     return {"retried": retried, "skipped": [j for j in ids if j not in set(retried)]}
+
+
+@router.post("/users/{user_id}/moodle-unlink")
+def unlink_user_moodle_account(
+    request: Request, user_id: uuid.UUID, db: Session = Depends(get_db), admin: User = Depends(require_admin)
+):
+    user = _target(db, user_id)
+    unlink_account(db, user)
+    log_admin_event(audit.ADMIN_UNLINK_MOODLE, request, actor_id=admin.id, target_user_id=user.id)
+    return _user_out(user, "not_linked")

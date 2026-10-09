@@ -61,3 +61,8 @@ export async function createUser(name: string, email: string, password: string) 
 export async function resetUserPassword(userId: string, password: string) {
   await api.post(`/admin/users/${userId}/password`, { password })
 }
+
+
+export async function unlinkUserMoodleAccount(userId: string) {
+  await api.post(`/admin/users/${userId}/moodle-unlink`)
+}

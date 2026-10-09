@@ -35,3 +35,12 @@ def teacher_courses(db: Session, user: User) -> list[dict]:
 def require_course_author(db: Session, user: User, course_id: int) -> None:
     if not any(course["id"] == course_id for course in teacher_courses(db, user)):
         raise HTTPException(status_code=403, detail="Bạn không có quyền quản lý hoạt động trong khóa học Moodle này.")
+
+
+def unlink_account(db: Session, user: User) -> None:
+    """Drop only the app identity link, serialized with request creation and polling."""
+    db.refresh(user, with_for_update=True)
+    user.moodle_user_id = None
+    user.moodle_request_id = None
+    user.moodle_request_email = None
+    db.commit()

@@ -7,6 +7,7 @@ import {
   listUsers,
   resetUserPassword,
   setUserActive,
+  unlinkUserMoodleAccount,
   type AdminUser,
   type MoodleStatus,
 } from "../api";
@@ -72,6 +73,22 @@ export function AdminUsersPanel() {
     }
   }
 
+  async function handleUnlinkMoodle(user: AdminUser) {
+    if (!window.confirm(`Hủy liên kết tài khoản Moodle của ${user.email}? Các khóa học và nội dung trên Moodle được giữ nguyên. Người dùng cần liên kết lại tài khoản để tiếp tục đẩy nội dung lên Moodle.`)) return;
+    setBusyId(user.id);
+    setError(null);
+    setNotice(null);
+    try {
+      await unlinkUserMoodleAccount(user.id);
+      setNotice(`Đã hủy liên kết Moodle của ${user.email}.`);
+      reload();
+    } catch (err) {
+      setError(apiErrorMessage(err, "Không hủy được liên kết Moodle."));
+    } finally {
+      setBusyId(null);
+    }
+  }
+
   return (
     <div className="flex flex-col gap-8">
       <CreateUserForm
@@ -121,7 +138,12 @@ export function AdminUsersPanel() {
                     )}
                   </div>
                 </div>
-                <div className="flex shrink-0 items-center gap-4 text-sm">
+                <div className="flex shrink-0 flex-wrap items-center gap-4 text-sm">
+                  {u.moodle_status === "linked" && (
+                    <button disabled={busyId === u.id} onClick={() => void handleUnlinkMoodle(u)} className="text-red-700 hover:underline disabled:opacity-50">
+                      Hủy liên kết Moodle
+                    </button>
+                  )}
                   <button
                     onClick={() => setResetting(resetting === u.id ? null : u.id)}
                     className="font-semibold text-terracotta hover:underline"

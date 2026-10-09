@@ -156,13 +156,12 @@ def publish_to_moodle(
             "(POST /courses/{id}/link-moodle)",
         )
 
+    # An unlinked account cannot publish, even when its course link is retained.
+    actor_user_id = require_moodle_user_id(current_user)
     chapters = _build_book_chapters(module)
     if not chapters:
         raise HTTPException(status_code=422, detail="Mô-đun chưa có nội dung nào để đẩy lên Moodle.")
 
-    # The lecturer must have linked their Moodle account to see what is pushed, so nothing is
-    # written for one who has not.
-    actor_user_id = require_moodle_user_id(current_user)
     try:
         # Re-check the linked user before any activity write.
         require_course_author(db, current_user, course.moodle_course_id)
