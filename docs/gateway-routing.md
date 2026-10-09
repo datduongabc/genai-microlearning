@@ -25,7 +25,9 @@ Groq has an 8,000 TPM budget, so Content's 20–66k-token requests cannot fit. I
 router deployment declares `tpm: 8000`, a conservative 3,952-token input ceiling
 and a 2,048-token output ceiling; LiteLLM pre-call checks and provider 429s enforce
 capacity. A request that exceeds its input window can fall back to Gemini. The
-small profiles reserve room below the TPM ceiling; this is not a per-user quota.
+Groq deployment requests low reasoning effort so its bounded output allowance
+can include the JSON answer.
+The small profiles reserve room below the TPM ceiling; this is not a per-user quota.
 Account-wide traffic outside this gateway still consumes the provider's quota.
 
 LiteLLM retries once, cools failed deployments for 60 seconds, and applies both
@@ -55,7 +57,8 @@ the environment switch too: exporting cannot undo fallbacks in an existing modul
 
 The one-token model probe always disables fallbacks so it tests the selected
 alias's own credentials and credit. Authentication errors and insufficient credit
-still reject model selection with HTTP 422. A probe 429 is treated as usable,
+still reject model selection with HTTP 422, including credit/billing 429 errors
+such as OpenAI's `insufficient_quota`. Plain rate-limit 429s are treated as usable,
 because normal generation can rely on router fallbacks. Experiment generation
 still refuses fallback and can fail on the same quota-limited model.
 

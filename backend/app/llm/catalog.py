@@ -9,6 +9,7 @@ các alias nhúng khỏi danh sách không cần khai thêm gì. Nhãn hiển th
 khóa `model_info` trong cấu hình gateway.
 """
 
+import re
 import threading
 import time
 from dataclasses import dataclass
@@ -144,7 +145,7 @@ def probe(alias: str) -> None:
         raise GatewayUnavailable(str(loi)) from loi
     except openai.APIError as loi:
         # Quota alone does not make the alias unusable: generation can use its backups.
-        if loi.status_code == 429:
+        if loi.status_code == 429 and not _LOI_SO_DU.search(str(loi)):
             return
         raise ModelUnusable(alias, _ly_do(loi)) from loi
 
@@ -155,21 +156,20 @@ def probe(alias: str) -> None:
 # "credit", "balance", "billing".
 _TU_KHOA_KHOA = ("api_key", "api key", "credential", "unauthorized", "authentication")
 _TU_KHOA_HAN_MUC = ("rate limit", "quota", "resource_exhausted")
-_TU_KHOA_SO_DU = ("credit", "balance", "billing")
+# Whole words keep the routing alias gemini-balanced from looking like a balance error.
+_LOI_SO_DU = re.compile(r"\b(?:insufficient_quota|credits?|balance|billing)\b", re.IGNORECASE)
 
 
 def _ly_do(loi: openai.APIError) -> str:
-    """Câu giải thích cho giảng viên. Chỉ quyết định lời văn, không quyết định mã trả về:
-    phân loại 422 hay 503 đã xong ở trên theo loại ngoại lệ, không theo chuỗi, vì chuỗi
-    của nhà cung cấp có thể đổi bất cứ lúc nào.
+    """Câu giải thích cho giảng viên, sau khi probe đã phân loại lỗi.
 
     Không khớp từ khoá nào thì trả một câu không đoán nguyên nhân. Đoán sai còn tệ hơn
     không nói: bảo "hết số dư" khi thực ra là thiếu khóa sẽ khiến người ta đi nạp tiền."""
     van_ban = str(loi).lower()
     if isinstance(loi, AuthenticationError) or any(k in van_ban for k in _TU_KHOA_KHOA):
         return "chưa có API key hợp lệ cho nhà cung cấp của model này"
+    if _LOI_SO_DU.search(van_ban):
+        return "tài khoản của nhà cung cấp đã hết số dư"
     if isinstance(loi, RateLimitError) or any(k in van_ban for k in _TU_KHOA_HAN_MUC):
         return "đã hết hạn mức hoặc đang bị giới hạn tốc độ, thử lại sau"
-    if any(k in van_ban for k in _TU_KHOA_SO_DU):
-        return "tài khoản của nhà cung cấp đã hết số dư"
     return "nhà cung cấp chưa phục vụ được model này"

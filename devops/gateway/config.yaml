@@ -111,6 +111,9 @@ model_list:
     litellm_params:
       model: groq/openai/gpt-oss-120b
       tpm: 8000
+      # Reserve the bounded output allowance for the small step's JSON answer.
+      reasoning_effort: low
+      allowed_openai_params: [reasoning_effort]
       api_key: os.environ/GROQ_API_KEY
     model_info:
       display_name: GPT-OSS 120B qua Groq

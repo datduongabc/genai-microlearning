@@ -315,6 +315,7 @@ def test_small_chain_reaches_groq_when_both_gemini_models_have_no_quota(gateway,
     async def provider(**kwargs):
         if kwargs["model"].startswith("gemini/"):
             raise litellm.RateLimitError("quota exhausted", model=kwargs["model"], llm_provider="gemini")
+        assert kwargs["reasoning_effort"] == "low"
         return litellm.ModelResponse(model=kwargs["model"], choices=[
             {"message": {"role": "assistant", "content": "small fallback"}},
         ])

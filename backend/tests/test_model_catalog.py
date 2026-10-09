@@ -312,3 +312,35 @@ def test_quota_exhausted_primary_still_passes_generation_alias_validation(monkey
         loi_litellm.RateLimitError(message="quota exhausted", llm_provider="gemini", model="gemini-fast")
     ))
     assert _alias_dung_duoc("gemini-fast") == "gemini-fast"
+
+
+@pytest.mark.parametrize("message", [
+    "insufficient_quota",
+    "You exceeded your current quota, please check your plan and billing details",
+    "Not enough credit",
+    "Your balance is too low",
+])
+def test_credit_429_rejects_model_selection_with_422(message, monkeypatch):
+    from fastapi import HTTPException
+
+    from app.api.modules import _alias_dung_duoc
+
+    monkeypatch.setattr(catalog, "is_available", lambda alias: True)
+    monkeypatch.setattr(litellm, "completion", _nem(
+        loi_litellm.RateLimitError(message=message, llm_provider="openai", model="gpt-4o-mini")
+    ))
+    with pytest.raises(HTTPException) as rejected:
+        _alias_dung_duoc("openai-fast")
+    assert rejected.value.status_code == 422
+    assert "số dư" in rejected.value.detail
+
+
+@pytest.mark.parametrize("message", [
+    "RESOURCE_EXHAUSTED: quota exhausted. Received Model Group=gemini-balanced",
+    "No deployments available. Passed model=gemini-balanced",
+])
+def test_balanced_alias_in_rate_limit_error_does_not_mean_insufficient_balance(message, monkeypatch):
+    monkeypatch.setattr(litellm, "completion", _nem(
+        loi_litellm.RateLimitError(message=message, llm_provider="gemini", model="gemini-balanced")
+    ))
+    catalog.probe("gemini-balanced")
