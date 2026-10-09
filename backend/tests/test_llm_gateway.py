@@ -225,13 +225,16 @@ def test_served_model_survives_the_http_response(monkeypatch, alias, small_step,
         })
 
     monkeypatch.setattr(settings, "llm_experiment_mode", pinned)
-    with OpenAI(api_key="test-key", base_url="http://gateway.test/v1",
-                http_client=httpx.Client(transport=httpx.MockTransport(proxy))) as client:
-        with llm.capture_models() as calls, llm.using_model(alias):
-            result = llm.complete_structured(
-                "hello", _Answer, small_step=small_step, client=client,
-                extra_body={"metadata": {"run": "test"}},
-            )
+    with (
+        OpenAI(api_key="test-key", base_url="http://gateway.test/v1",
+               http_client=httpx.Client(transport=httpx.MockTransport(proxy))) as client,
+        llm.capture_models() as calls,
+        llm.using_model(alias),
+    ):
+        result = llm.complete_structured(
+            "hello", _Answer, small_step=small_step, client=client,
+            extra_body={"metadata": {"run": "test"}},
+        )
 
     routed = f"{alias}-small" if small_step else alias
     assert result.value == 42
