@@ -9,7 +9,7 @@ export interface AdminUser {
   is_admin: boolean
   is_active: boolean
   created_at: string
-  // Tài khoản đã có liên kết Moodle lưu sẵn hay chưa.
+  // Null với admin: tài khoản đã có liên kết Moodle lưu sẵn hay chưa.
   moodle_status: MoodleStatus | null
   // Null với admin: số môn học tài khoản sở hữu.
   course_count: number | null

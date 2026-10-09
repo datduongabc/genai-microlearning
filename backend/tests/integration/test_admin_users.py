@@ -65,7 +65,7 @@ def test_the_list_says_which_lecturers_have_a_stored_moodle_link(admin):
     # whose Moodle email differs from the app's is still linked.
     assert users[linked]["moodle_status"] == "linked"
     assert users[unlinked]["moodle_status"] == "not_linked"
-    assert all(u["moodle_status"] in ("linked", "not_linked") for u in users.values())
+    assert all(u["moodle_status"] is None for u in users.values() if u["is_admin"] is True)
 
 
 def test_a_disabled_lecturer_is_locked_out_at_once_including_the_token_they_hold(admin, lecturer):

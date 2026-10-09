@@ -28,8 +28,9 @@ class RetryJobsRequest(BaseModel):
 
 
 def _moodle_statuses(users: list[User]) -> dict[uuid.UUID, str]:
-    """Stored account links need no call to Moodle."""
-    return {u.id: "linked" if u.moodle_user_id is not None else "not_linked" for u in users}
+    """Per lecturer: "linked" when they hold a stored Moodle link (users.moodle_user_id, set at their
+    confirmed Moodle link), else "not_linked". Read from the database, so it needs no call to Moodle."""
+    return {u.id: "linked" if u.moodle_user_id is not None else "not_linked" for u in users if not u.is_admin}
 
 
 def _course_counts(db: Session) -> dict[uuid.UUID, int]:

@@ -19,7 +19,7 @@ vi.mock('../../../api', async (importOriginal) => {
 
 const admin: AdminUser = {
   id: 'admin-1', email: 'admin@example.com', name: 'Quản trị', is_admin: true, is_active: true,
-  created_at: '2026-01-01T00:00:00Z', moodle_status: 'not_linked', course_count: null,
+  created_at: '2026-01-01T00:00:00Z', moodle_status: null, course_count: null,
 }
 const lan: AdminUser = {
   id: 'u-1', email: 'lan@example.com', name: 'Lan Nguyễn', is_admin: false, is_active: true,
@@ -67,8 +67,8 @@ describe('AdminPage - accounts', () => {
     const locked = screen.getByText('minh@example.com').closest('li')!
     expect(within(locked).getByText('Đã vô hiệu hóa')).toBeInTheDocument()
     expect(within(locked).getByText('Chưa liên kết Moodle')).toBeInTheDocument()
-    // Admin accounts also show their stored Moodle link state.
-    expect(within(screen.getByText('admin@example.com').closest('li')!).getByText('Chưa liên kết Moodle')).toBeInTheDocument()
+    // The admin themselves have no Moodle status.
+    expect(within(screen.getByText('admin@example.com').closest('li')!).queryByText(/moodle/i)).not.toBeInTheDocument()
   })
 
   it('offers account creation and password reset without automatic Moodle linking', async () => {
