@@ -43,6 +43,7 @@ function renderPage() {
 
 beforeEach(() => {
   vi.clearAllMocks()
+  vi.mocked(api.getMoodleAccount).mockResolvedValue({ email: 'teacher@example.com', status: 'linked' })
 })
 
 it('shows citation labels and reveals the original chunk only when opened', async () => {
@@ -676,7 +677,6 @@ describe('ModulePreviewPage - forms', () => {
 it('hides Moodle publishing when live permission lookup fails', async () => {
   vi.mocked(api.getModule).mockResolvedValue({ ...baseModule, moodle_course_id: 72 })
   vi.mocked(api.getMoodleSections).mockRejectedValue(new Error('Denied'))
-  vi.mocked(api.getMoodleAccount).mockResolvedValue({ email: 'teacher@example.com', status: 'linked' })
   renderPage()
   expect(await screen.findByText('Không tải được danh sách phần học Moodle')).toBeInTheDocument()
   expect(screen.queryByRole('button', { name: 'Push to Moodle' })).not.toBeInTheDocument()
