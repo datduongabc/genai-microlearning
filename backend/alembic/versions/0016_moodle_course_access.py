@@ -1,6 +1,7 @@
 """Moodle capability replaces app course claims and exclusive mappings."""
-from alembic import op
 import sqlalchemy as sa
+
+from alembic import op
 
 revision = "0016_moodle_course_access"
 down_revision = "0015_account_activation"

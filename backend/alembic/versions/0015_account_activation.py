@@ -1,6 +1,7 @@
 """Replace account soft deletion with activation state alone."""
-from alembic import op
 import sqlalchemy as sa
+
+from alembic import op
 
 revision = "0015_account_activation"
 down_revision = "0014_moodle_confirmation"

@@ -1,5 +1,6 @@
 """Pending Moodle identity requests; only confirmed identities become active links."""
 import sqlalchemy as sa
+
 from alembic import op
 
 revision = '0014_moodle_confirmation'

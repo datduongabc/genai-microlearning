@@ -1,5 +1,6 @@
 """Durable per-account UTC daily module generation counters."""
 import sqlalchemy as sa
+
 from alembic import op
 
 revision = "0017_generation_daily_limit"
