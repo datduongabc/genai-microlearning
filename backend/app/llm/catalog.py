@@ -156,8 +156,11 @@ def probe(alias: str) -> None:
 # "credit", "balance", "billing".
 _TU_KHOA_KHOA = ("api_key", "api key", "credential", "unauthorized", "authentication")
 _TU_KHOA_HAN_MUC = ("rate limit", "quota", "resource_exhausted")
-# Whole words keep the routing alias gemini-balanced from looking like a balance error.
-_LOI_SO_DU = re.compile(r"\b(?:insufficient_quota|credits?|balance|billing)\b", re.IGNORECASE)
+# Only explicit credit signals: Gemini's free-tier quota 429 also says "plan and billing details".
+_LOI_SO_DU = re.compile(
+    r"\b(?:insufficient_quota|billing_hard_limit_reached|credits?|insufficient[ _]funds)\b",
+    re.IGNORECASE,
+)
 
 
 def _ly_do(loi: openai.APIError) -> str:

@@ -58,7 +58,8 @@ the environment switch too: exporting cannot undo fallbacks in an existing modul
 The one-token model probe always disables fallbacks so it tests the selected
 alias's own credentials and credit. Authentication errors and insufficient credit
 still reject model selection with HTTP 422, including credit/billing 429 errors
-such as OpenAI's `insufficient_quota`. Plain rate-limit 429s are treated as usable,
+such as OpenAI's `insufficient_quota` or `billing_hard_limit_reached`. Plain
+rate-limit 429s, including Gemini `RESOURCE_EXHAUSTED`, are treated as usable,
 because normal generation can rely on router fallbacks. Experiment generation
 still refuses fallback and can fail on the same quota-limited model.
 

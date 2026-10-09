@@ -315,10 +315,11 @@ def test_quota_exhausted_primary_still_passes_generation_alias_validation(monkey
 
 
 @pytest.mark.parametrize("message", [
-    "insufficient_quota",
-    "You exceeded your current quota, please check your plan and billing details",
+    ("Error code: 429 - {'error': {'code': 'insufficient_quota', 'message': 'You exceeded your "
+     "current quota, please check your plan and billing details.'}}"),
+    "billing_hard_limit_reached",
     "Not enough credit",
-    "Your balance is too low",
+    "Insufficient funds",
 ])
 def test_credit_429_rejects_model_selection_with_422(message, monkeypatch):
     from fastapi import HTTPException
@@ -337,6 +338,9 @@ def test_credit_429_rejects_model_selection_with_422(message, monkeypatch):
 
 @pytest.mark.parametrize("message", [
     "RESOURCE_EXHAUSTED: quota exhausted. Received Model Group=gemini-balanced",
+    ("GeminiException - {'error': {'code': 429, 'status': 'RESOURCE_EXHAUSTED', 'message': 'You "
+     "exceeded your current quota, please check your plan and billing details. For more "
+     "information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits'}}"),
     "No deployments available. Passed model=gemini-balanced",
 ])
 def test_balanced_alias_in_rate_limit_error_does_not_mean_insufficient_balance(message, monkeypatch):
@@ -344,3 +348,17 @@ def test_balanced_alias_in_rate_limit_error_does_not_mean_insufficient_balance(m
         loi_litellm.RateLimitError(message=message, llm_provider="gemini", model="gemini-balanced")
     ))
     catalog.probe("gemini-balanced")
+
+
+def test_gemini_resource_exhausted_is_accepted_and_not_reported_as_missing_credit(monkeypatch):
+    from app.api.modules import _alias_dung_duoc
+
+    loi = loi_litellm.RateLimitError(
+        message="{'error': {'code': 429, 'status': 'RESOURCE_EXHAUSTED', 'message': 'You exceeded "
+        "your current quota, please check your plan and billing details.'}}",
+        llm_provider="gemini", model="gemini-fast",
+    )
+    monkeypatch.setattr(catalog, "is_available", lambda alias: True)
+    monkeypatch.setattr(litellm, "completion", _nem(loi))
+    assert _alias_dung_duoc("gemini-fast") == "gemini-fast"
+    assert "số dư" not in catalog._ly_do(loi)
