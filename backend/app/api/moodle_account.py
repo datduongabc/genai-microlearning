@@ -65,13 +65,23 @@ def get_account(request: Request, db: Session = Depends(get_db), current_user: U
     _lock_account(db, current_user)
     status = 'not_linked'
     email = current_user.email
-    conflict = None
+    notice = None
     try:
         if current_user.moodle_user_id is None and current_user.moodle_request_id is not None:
-            result = client.account_link_status(request_id=current_user.moodle_request_id,
-                                                app_account=str(current_user.id))
+            try:
+                result = client.account_link_status(request_id=current_user.moodle_request_id,
+                                                    app_account=str(current_user.id))
+            except client.MoodleError as error:
+                if error.errorcode != 'invalidrequest':
+                    raise
+                current_user.moodle_request_id = None
+                current_user.moodle_request_email = None
+                db.commit()
+                result = {'status': 'not_linked'}
+                notice = 'Yêu cầu liên kết không còn hiệu lực trong Moodle, vui lòng gửi lại.'
+            else:
+                email = current_user.moodle_request_email
             status = result['status']
-            email = current_user.moodle_request_email
             if status == 'confirmed':
                 current_user.moodle_user_id = int(result['moodle_user_id'])
                 current_user.moodle_request_id = None
@@ -86,7 +96,7 @@ def get_account(request: Request, db: Session = Depends(get_db), current_user: U
                     db.commit()
                     status = 'not_linked'
                     email = current_user.email
-                    conflict = 'Tài khoản Moodle đã liên kết với một tài khoản khác.'
+                    notice = 'Tài khoản Moodle đã liên kết với một tài khoản khác.'
         if current_user.moodle_user_id is not None:
             info = client.teacher_courses(current_user.moodle_user_id)
             if not info['exists']:
@@ -102,6 +112,6 @@ def get_account(request: Request, db: Session = Depends(get_db), current_user: U
     answer = {'status': status, 'email': email}
     if status == 'pending':
         answer['confirmation_url'] = _confirmation_url(current_user.moodle_request_id)
-    if conflict:
-        answer['error'] = conflict
+    if notice:
+        answer['error'] = notice
     return answer

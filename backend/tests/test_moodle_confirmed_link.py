@@ -132,3 +132,30 @@ def test_unknown_moodle_email_creates_no_pending_request(confirmed_link_service,
     assert stored_link(user_id) is None
     with SessionLocal() as db:
         assert db.get(User, uuid.UUID(user_id)).moodle_request_id is None
+
+
+def test_request_unknown_to_moodle_is_cleared_so_a_new_request_can_be_sent(confirmed_link_service, monkeypatch):
+    user_id, headers = account()
+    assert request(headers).status_code == 202
+    def forgotten(**kwargs):
+        raise moodle_client.MoodleError('Invalid request', errorcode='invalidrequest')
+    monkeypatch.setattr(moodle_client, 'account_link_status', forgotten)
+    response = client.get('/moodle/account', headers=headers)
+    assert response.status_code == 200
+    assert response.json()['status'] == 'not_linked'
+    assert response.json()['error']
+    with SessionLocal() as db:
+        assert db.get(User, uuid.UUID(user_id)).moodle_request_id is None
+    assert 'error' not in client.get('/moodle/account', headers=headers).json()
+    assert request(headers).status_code == 202
+
+
+def test_moodle_failure_while_polling_keeps_the_pending_request(confirmed_link_service, monkeypatch):
+    user_id, headers = account()
+    assert request(headers).status_code == 202
+    def unavailable(**kwargs):
+        raise moodle_client.MoodleError('Unavailable')
+    monkeypatch.setattr(moodle_client, 'account_link_status', unavailable)
+    assert client.get('/moodle/account', headers=headers).status_code == 502
+    with SessionLocal() as db:
+        assert db.get(User, uuid.UUID(user_id)).moodle_request_id is not None
