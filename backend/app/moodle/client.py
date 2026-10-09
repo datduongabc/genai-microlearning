@@ -19,7 +19,7 @@ from app.config import settings
 
 
 class MoodleError(Exception):
-    """Moodle returned an exception envelope instead of a normal result."""
+    """Moodle returned an exception envelope or an invalid JSON response."""
 
     def __init__(self, message: str, errorcode: str | None = None):
         super().__init__(message)
