@@ -1,6 +1,6 @@
 """Chạy thật 3 step (extract -> chunk -> embed) trên 1 file .txt thật --
-không cần LLM/API ngoài (embed_texts dùng model cục bộ sentence-transformers,
-không tốn quota), verify pipeline đúng đầu-cuối không cần mock.
+không cần LLM/API ngoài; fixture offline_embeddings trong tests/conftest.py
+thay provider embedding, còn các bước pipeline và lưu DB chạy thật.
 
 Dọn Job/Document/Course/User tạo ra ở cuối mỗi test -- claim_next_job()
 (test_job_queue.py) quét TOÀN BỘ bảng jobs không lọc theo document/course,

@@ -1,5 +1,5 @@
-"""A textbook run through the real extract -> chunk -> embed steps (local
-embedding model, no external API) ends up with its outline in the database."""
+"""A textbook run through extract -> chunk -> embed stores its outline in the database.
+The embedding provider is replaced by offline_embeddings in tests/conftest.py."""
 
 import uuid
 

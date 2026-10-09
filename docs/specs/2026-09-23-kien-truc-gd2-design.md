@@ -276,7 +276,7 @@ Nó được gitignore, README ghi bước tải về và giải nén, và đư�
 
 Thư mục `documents/` nặng 151 MB gồm tài liệu môn học dùng để thử nghiệm.
 Nó được gitignore.
-Nếu kiểm thử cần dữ liệu thật thì giữ vài tệp nhỏ trong `backend/tests/fixtures/`.
+Nếu kiểm thử tích hợp cần dữ liệu thật thì giữ vài tệp nhỏ trong `backend/tests/integration/fixtures/`.
 
 Ngoài ra `.venv/`, `node_modules/`, `dist/`, `uploads/`, và `__pycache__/` đều được gitignore.
 

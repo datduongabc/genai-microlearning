@@ -533,7 +533,7 @@ npm run test
 npm run build
 ```
 
-Kỳ vọng: cả hai lệnh chạy xong không lỗi. `src/api.test.ts` vẫn nhập `from './api'` và giờ trỏ vào `src/api/index.ts`.
+Kỳ vọng: cả hai lệnh chạy xong không lỗi. Cách tổ chức các tầng test hiện tại được mô tả trong [README](../../README.md#phát-triển).
 
 - [ ] **Step 9: Kiểm thử thật bằng trình duyệt**
 
