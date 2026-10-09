@@ -21,7 +21,7 @@ MOODLE_REFUSED = (
 )
 DELETED_COURSE = (
     "Khóa học trên Moodle đã bị xóa hoặc không còn tồn tại. "
-    "Hãy liên kết lại hoặc tạo khóa học Moodle mới."
+    "Hãy nhờ admin Moodle kiểm tra khóa học rồi liên kết lại."
 )
 
 

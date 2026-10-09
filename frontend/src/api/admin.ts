@@ -13,8 +13,6 @@ export interface AdminUser {
   moodle_status: MoodleStatus | null
   // Null với admin: số môn học tài khoản sở hữu.
   course_count: number | null
-  // Null với admin: số môn học Moodle tài khoản đã liên kết hoặc tạo qua ứng dụng.
-  moodle_course_count: number | null
 }
 
 export interface FailedJobInfo {
@@ -32,18 +30,14 @@ export interface FailedJobInfo {
   module_id: string | null
 }
 
-export async function listUsers() {
-  const { data } = await api.get<AdminUser[]>('/admin/users')
+export async function listUsers(isActive: boolean) {
+  const { data } = await api.get<AdminUser[]>('/admin/users', { params: { is_active: isActive } })
   return data
 }
 
 export async function setUserActive(userId: string, active: boolean) {
   const { data } = await api.post<AdminUser>(`/admin/users/${userId}/${active ? 'enable' : 'disable'}`)
   return data
-}
-
-export async function deleteUser(userId: string) {
-  await api.delete(`/admin/users/${userId}`)
 }
 
 export async function listFailedJobs(jobType?: FailedJobInfo['job_type']) {

@@ -39,14 +39,14 @@ def moodle(monkeypatch):
     """Records every request the backend makes of Moodle, in order."""
     calls: list[tuple[str, dict]] = []
 
-    def create_book(course_id, name, chapters, section_num=0):
-        calls.append(("book", {"course_id": course_id, "name": name, "chapters": chapters, "section": section_num}))
+    def create_book(course_id, name, chapters, section_num=0, *, actor_user_id):
+        calls.append(("book", {"course_id": course_id, "name": name, "chapters": chapters, "section": section_num, "actor_user_id": actor_user_id}))
         return 101
 
-    def create_quiz(course_id, name, questions, section_num=0, behaviour="deferredfeedback"):
+    def create_quiz(course_id, name, questions, section_num=0, behaviour="deferredfeedback", *, actor_user_id):
         calls.append(("quiz", {
             "course_id": course_id, "name": name, "questions": questions, "section": section_num,
-            "behaviour": behaviour,
+            "behaviour": behaviour, "actor_user_id": actor_user_id,
         }))
         return 200 + len(calls)
 
@@ -63,7 +63,7 @@ class Published:
         self.moodle_course_id = random.randint(10**6, 10**9)
         db = SessionLocal()
         try:
-            user = User(email=f"book-{suffix}@example.com", name="T", hashed_password="x", is_admin=False, moodle_user_id=4242)
+            user = User(email=f"book-{suffix}@example.com", name="T", hashed_password="x", is_admin=False, moodle_user_id=random.randint(10**6, 10**9))
             db.add(user)
             db.flush()
             course = Course(name=f"Course {suffix}", owner_id=user.id, moodle_course_id=self.moodle_course_id)
@@ -114,8 +114,11 @@ class Published:
 
 
 @pytest.fixture
-def published():
+def published(monkeypatch):
     p = Published()
+    monkeypatch.setattr(moodle_client, "teacher_courses", lambda user_id: {
+        "exists": True, "email": "teacher@example.com", "courses": [{"id": p.moodle_course_id}],
+    })
     yield p
     p.cleanup()
 
@@ -179,6 +182,8 @@ def test_a_module_is_published_as_a_book_then_the_practice_quiz_then_the_quiz(pu
     ]
     assert {args["course_id"] for _, args in moodle} == {published.moodle_course_id}
     assert {args["section"] for _, args in moodle} == {3}
+    with SessionLocal() as db:
+        assert {args["actor_user_id"] for _, args in moodle} == {db.get(User, published.user_id).moodle_user_id}
 
 
 def test_the_response_names_each_activity_that_was_created(published, moodle):
@@ -368,7 +373,7 @@ def test_the_book_is_named_after_the_module_and_a_tag_in_the_title_is_not_passed
 
 
 def test_a_moodle_failure_is_reported_as_a_bad_gateway(published, monkeypatch):
-    def failing_book(course_id, name, chapters, section_num=0):
+    def failing_book(course_id, name, chapters, section_num=0, *, actor_user_id):
         raise moodle_client.MoodleError("local_lms_bridge_create_book: no such course")
 
     monkeypatch.setattr(moodle_client, "create_book", failing_book)
@@ -437,15 +442,14 @@ def test_question_edit_by_non_owner_returns_404(published):
 
 REAL_GET_COURSE = moodle_client.get_course
 
-DELETED = 'Khóa học trên Moodle đã bị xóa hoặc không còn tồn tại. Hãy liên kết lại hoặc tạo khóa học Moodle mới.'
+DELETED = 'Khóa học trên Moodle đã bị xóa hoặc không còn tồn tại. Hãy nhờ admin Moodle kiểm tra khóa học rồi liên kết lại.'
 UNREACHABLE = 'Không kết nối được tới Moodle, vui lòng thử lại sau.'
 GENERIC = 'Thao tác với Moodle thất bại, vui lòng thử lại sau.'
 
 
 @pytest.mark.parametrize('endpoint', ['publish', 'sections'])
 @pytest.mark.parametrize('check', ['missing', 'exists', 'timeout', 'invalidrecord'])
-def test_deleted_course_requires_confirmation_before_unlinking(monkeypatch, endpoint, check):
-    published = Published()
+def test_deleted_course_requires_confirmation_before_unlinking(monkeypatch, endpoint, check, published):
     module_id = published.module(components=[(ComponentType.content, {'markdown': 'Bài học'}, [])])
     probes = []
 
@@ -478,8 +482,7 @@ def test_deleted_course_requires_confirmation_before_unlinking(monkeypatch, endp
 
 @pytest.mark.parametrize('operation', ['publish', 'sections'])
 @pytest.mark.parametrize('error', [httpx.ConnectError('secret host'), moodle_client.MoodleError('secret detail')])
-def test_moodle_failures_are_human_readable(monkeypatch, operation, error):
-    published = Published()
+def test_moodle_failures_are_human_readable(monkeypatch, operation, error, published):
     module_id = published.module(components=[(ComponentType.content, {'markdown': 'Bài học'}, [])])
 
     def fail(*args, **kwargs):
@@ -491,3 +494,13 @@ def test_moodle_failures_are_human_readable(monkeypatch, operation, error):
                 client.get(f'/courses/{published.course_id}/moodle-sections', headers=published.headers))
     assert response.status_code == 502
     assert response.json()['detail'] == (UNREACHABLE if isinstance(error, httpx.HTTPError) else GENERIC)
+
+
+@pytest.mark.parametrize("exists", [True, False])
+def test_revoked_permission_or_stale_identity_prevents_all_activity_writes(published, moodle, monkeypatch, exists):
+    monkeypatch.setattr(moodle_client, "teacher_courses", lambda user_id: {
+        "exists": exists, "email": "teacher@example.com", "courses": [],
+    })
+    response = published.publish(full_module(published))
+    assert response.status_code == (403 if exists else 422)
+    assert moodle == []

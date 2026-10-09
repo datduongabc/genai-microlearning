@@ -57,7 +57,7 @@ class AccessTokenResponse(BaseModel):
 
 DUMMY_HASH = hash_password("Timing sentinel local login")
 WRONG_CREDENTIALS = "Email hoặc mật khẩu không đúng."
-ACCOUNT_DISABLED = "Tài khoản đã bị khóa. Vui lòng liên hệ admin."
+ACCOUNT_DISABLED = "Tài khoản đã bị vô hiệu hóa. Vui lòng liên hệ admin."
 
 
 @router.post("/register", response_model=UserResponse, status_code=201)
@@ -77,7 +77,7 @@ def register(request: Request, payload: RegisterRequest, db: Session = Depends(g
 def login(request: Request, payload: LoginRequest, db: Session = Depends(get_db)):
     user = db.query(User).filter(func.lower(User.email) == payload.email).first()
     password_ok = verify_password(payload.password, user.hashed_password if user else DUMMY_HASH)
-    if user is None or not password_ok or user.deleted_at is not None:
+    if user is None or not password_ok:
         log_auth_event(audit.LOGIN_FAILED, request, email=payload.email, detail={"reason": "credentials"})
         raise HTTPException(status_code=401, detail=WRONG_CREDENTIALS)
     if not user.is_active:

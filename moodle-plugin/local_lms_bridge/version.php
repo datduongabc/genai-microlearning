@@ -10,7 +10,7 @@ defined('MOODLE_INTERNAL') || die();
 $plugin->component = 'local_lms_bridge';
 // Moodle chi doc lai dinh nghia service khi so phien ban tang len. Tang so nay
 // moi lan doi db/services.php, neu khong Moodle se giu ban cu trong cache.
-$plugin->version   = 2026100800;
+$plugin->version   = 2026100802;
 // Moodle 5.2, xem moodle/public/version.php.
 $plugin->requires  = 2026042000;
 $plugin->maturity  = MATURITY_STABLE;

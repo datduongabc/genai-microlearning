@@ -1,10 +1,9 @@
-"""Local account administration, soft deletion and failed-job management."""
+"""Local account administration, activation and failed-job management."""
 import uuid
-from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
-from sqlalchemy import func, select, text
+from sqlalchemy import select, text
 from sqlalchemy.orm import Session
 
 from app.api.deps import require_admin
@@ -16,7 +15,7 @@ from app.auth.rate_limit import limiter, user_or_address
 from app.auth.security import hash_password
 from app.db import get_db
 from app.jobs.queue import retry_failed_job
-from app.models import JobType, MoodleCourseClaim, User
+from app.models import JobType, User
 
 router = APIRouter(prefix="/admin", tags=["admin"], dependencies=[Depends(require_admin)])
 
@@ -40,41 +39,33 @@ def _course_counts(db: Session) -> dict[uuid.UUID, int]:
     return {owner_id: count for owner_id, count in rows}
 
 
-def _claim_counts(db: Session) -> dict[uuid.UUID, int]:
-    """Moodle courses each lecturer linked or created through the app. A claim outlives the app
-    course, so a lecturer with no course left may still hold a Moodle course others must not reach."""
-    rows = db.execute(
-        select(MoodleCourseClaim.owner_id, func.count()).group_by(MoodleCourseClaim.owner_id)
-    ).all()
-    return {owner_id: count for owner_id, count in rows}
-
-
 def _user_out(
     user: User, moodle_status: str | None = None, course_count: int | None = None,
-    moodle_course_count: int | None = None,
 ) -> dict:
     return {
         "id": user.id, "email": user.email, "name": user.name, "is_admin": user.is_admin,
         "is_active": user.is_active, "created_at": user.created_at, "moodle_status": moodle_status,
-        "course_count": course_count, "moodle_course_count": moodle_course_count,
+        "course_count": course_count,
     }
 
 
 def _target(db: Session, user_id: uuid.UUID) -> User:
     user = db.get(User, user_id)
-    if user is None or user.deleted_at is not None:
+    if user is None:
         raise HTTPException(status_code=404, detail="User not found")
     return user
 
 
 @router.get("/users")
-def list_users(db: Session = Depends(get_db)):
-    users = db.scalars(select(User).where(User.deleted_at.is_(None)).order_by(User.created_at.desc(), User.email)).all()
+def list_users(is_active: bool | None = None, db: Session = Depends(get_db)):
+    query = select(User).order_by(User.created_at.desc(), User.email)
+    if is_active is not None:
+        query = query.where(User.is_active == is_active)
+    users = db.scalars(query).all()
     moodle = _moodle_statuses(list(users))
     courses = _course_counts(db)
-    claims = _claim_counts(db)
     return [
-        _user_out(u, moodle.get(u.id), courses.get(u.id, 0), claims.get(u.id, 0))
+        _user_out(u, moodle.get(u.id), courses.get(u.id, 0))
         if not u.is_admin else _user_out(u, moodle.get(u.id))
         for u in users
     ]
@@ -83,21 +74,11 @@ def list_users(db: Session = Depends(get_db)):
 def _set_active(
     request: Request, db: Session, admin: User, user_id: uuid.UUID, *, active: bool
 ) -> dict:
-    # Lock every admin row: two admins locking each other out at the same moment must not both
-    # find "another active admin" still there.
-    db.execute(select(User.id).where(User.is_admin.is_(True)).with_for_update()).all()
-    user = _target(db, user_id)
-    if not active:
-        if user.id == admin.id:
-            raise HTTPException(status_code=409, detail="Không thể tự khóa tài khoản của chính mình.")
-        if user.is_admin and user.is_active:
-            others = db.scalar(
-                select(User.id).where(
-                    User.is_admin.is_(True), User.is_active.is_(True), User.deleted_at.is_(None), User.id != user.id
-                ).limit(1)
-            )
-            if others is None:
-                raise HTTPException(status_code=409, detail="Không thể khóa admin hoạt động cuối cùng.")
+    user = db.scalar(select(User).where(User.id == user_id).with_for_update())
+    if user is None:
+        raise HTTPException(status_code=404, detail="User not found")
+    if not active and user.is_admin:
+        raise HTTPException(status_code=409, detail="Không thể vô hiệu hóa tài khoản admin.")
     user.is_active = active
     if not active:
         # Their access token stops working at once (get_current_user); this ends the logins that
@@ -125,23 +106,6 @@ def enable_user(
     return _set_active(request, db, admin, user_id, active=True)
 
 
-@router.delete("/users/{user_id}")
-def delete_user(request: Request, user_id: uuid.UUID, db: Session = Depends(get_db),
-                admin: User = Depends(require_admin)):
-    user = db.scalar(select(User).where(User.id == user_id, User.deleted_at.is_(None)).with_for_update())
-    if user is None:
-        raise HTTPException(status_code=404, detail="User not found")
-    if user.is_admin:
-        raise HTTPException(status_code=409, detail="Không thể xóa tài khoản admin.")
-    user.deleted_at = datetime.now(UTC)
-    user.is_active = False
-    user.moodle_user_id = None
-    sessions.revoke_all(db, user.id)
-    db.commit()
-    log_admin_event(audit.ADMIN_DELETE_USER, request, actor_id=admin.id, target_user_id=user_id)
-    return {"status": "deleted"}
-
-
 class CreateUserRequest(BaseModel):
     email: str = Field(max_length=254)
     name: str = Field(max_length=100)
@@ -161,7 +125,7 @@ def create_user(request: Request, payload: CreateUserRequest, db: Session = Depe
     except AccountError as error:
         raise HTTPException(status_code=error.status_code, detail=error.detail) from error
     log_admin_event(audit.ADMIN_CREATE_USER, request, actor_id=admin.id, target_user_id=user.id)
-    return _user_out(user, "not_linked", 0, 0)
+    return _user_out(user, "not_linked", 0)
 
 
 @router.post("/users/{user_id}/password")

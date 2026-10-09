@@ -44,7 +44,7 @@ def test_get_course_returns_the_matching_course(monkeypatch):
 def test_create_quiz_defaults_to_deferred_feedback_for_old_callers(monkeypatch):
     sent = _answer(monkeypatch, 5)
 
-    moodle_client.create_quiz(3, "Quiz", [])
+    moodle_client.create_quiz(3, "Quiz", [], actor_user_id=9)
 
     assert sent[0]["behaviour"] == "deferredfeedback"
 
@@ -52,7 +52,7 @@ def test_create_quiz_defaults_to_deferred_feedback_for_old_callers(monkeypatch):
 def test_create_quiz_sends_the_requested_behaviour_to_the_web_service(monkeypatch):
     sent = _answer(monkeypatch, 5)
 
-    moodle_client.create_quiz(3, "Practice", [], behaviour="immediatefeedback")
+    moodle_client.create_quiz(3, "Practice", [], behaviour="immediatefeedback", actor_user_id=9)
 
     assert sent[0]["wsfunction"] == "local_lms_bridge_create_quiz"
     assert sent[0]["behaviour"] == "immediatefeedback"

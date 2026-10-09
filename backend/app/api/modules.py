@@ -20,6 +20,7 @@ from app.db import get_db
 from app.generation.common import OutputLanguage, resolve_source_id
 from app.generation.content import ContentOutput, resolve_citations
 from app.generation.example import ExampleOutput
+from app.generation.limits import reserve_generations
 from app.generation.module_generation_pipeline import (
     IncompleteModuleError,
     control_payload,
@@ -133,7 +134,7 @@ def _owned_module(db: Session, module_id: uuid.UUID, current_user: User) -> Modu
 def _generate_for_sections(
     db: Session, doc: Document, section_ids: list[uuid.UUID] | None, model_alias: str | None = None,
     self_check: bool = True,
-    output_language: OutputLanguage = "vi", custom_instructions: str = "",
+    output_language: OutputLanguage = "vi", custom_instructions: str = "", *, current_user: User,
 ):
     if not section_ids:
         raise HTTPException(status_code=422, detail="Chọn ít nhất 1 mục để sinh mô-đun.")
@@ -170,6 +171,7 @@ def _generate_for_sections(
             detail="Có mục đang sinh mô-đun, vui lòng chờ xong rồi chọn lại.",
         )
 
+    reserve_generations(db, current_user, len(unique_ids))
     jobs = [
         enqueue_job(
             db, job_type=JobType.module_generation, step="generate", document_id=doc.id,
@@ -223,6 +225,7 @@ def _generate_without_retrieval(db: Session, doc: Document, body: GenerateReques
     if running is not None:
         raise HTTPException(status_code=409, detail="Mục này đang có 1 lượt sinh mô-đun khác đang chạy, vui lòng chờ.")
 
+    reserve_generations(db, current_user)
     job = enqueue_job(
         db, job_type=JobType.module_generation, step="generate", document_id=doc.id, section_id=paired.section_id,
         payload=control_payload(paired.id, alias, self_check, paired_payload.get("output_language", "vi"),
@@ -256,7 +259,7 @@ def generate_module(
     section_ids = body.section_ids if body is not None else None
     has_outline = db.query(DocumentSection.id).filter(DocumentSection.document_id == doc.id).first() is not None
     if has_outline:
-        return _generate_for_sections(db, doc, section_ids, alias, self_check, output_language, custom_instructions)
+        return _generate_for_sections(db, doc, section_ids, alias, self_check, output_language, custom_instructions, current_user=current_user)
     if section_ids:
         raise HTTPException(status_code=422, detail="Tài liệu này không có mục lục để chọn mục.")
 
@@ -285,6 +288,7 @@ def generate_module(
     # generate_module() thật đo được mất 10+ phút (17 lệnh gọi LLM tuần tự) --
     # chạy nền qua job queue thay vì giữ request HTTP chờ suốt, xem
     # app/services/module_generation_pipeline.py + job_queue.py.
+    reserve_generations(db, current_user)
     job = enqueue_job(
         db, job_type=JobType.module_generation, step="generate", document_id=document_id,
         payload=generation_payload(alias, self_check, output_language, custom_instructions),

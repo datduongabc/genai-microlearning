@@ -39,12 +39,12 @@ def db_sau_migration():
     quan_tri.dispose()
 
 
-def test_local_accounts_have_a_boolean_admin_flag_and_soft_delete(db_sau_migration):
+def test_local_accounts_have_a_boolean_admin_flag_without_deleted_state(db_sau_migration):
     with db_sau_migration.connect() as conn:
         columns = dict(conn.execute(text("select attname, format_type(atttypid, atttypmod) "
                                         "from pg_attribute where attrelid = 'users'::regclass "
                                         "and attnum > 0 and not attisdropped")).all())
         assert columns['is_admin'] == 'boolean'
-        assert columns['deleted_at'] == 'timestamp with time zone'
+        assert 'deleted_at' not in columns
         assert 'role' not in columns
         assert not conn.execute(text("select 1 from pg_type where typname='userrole'")).first()

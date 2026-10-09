@@ -3,7 +3,6 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   apiErrorMessage,
-  deleteUser,
   createUser,
   listUsers,
   resetUserPassword,
@@ -11,7 +10,6 @@ import {
   type AdminUser,
   type MoodleStatus,
 } from "../api";
-import { useAuth } from "../auth/useAuth";
 import {
   createUserSchema,
   resetPasswordSchema,
@@ -26,10 +24,9 @@ const MOODLE_LABEL: Record<MoodleStatus, { text: string; color: string }> = {
 const inputClass =
   "rounded-[3px] border border-gray-300 px-3 py-1.5 text-sm outline-none focus:border-terracotta";
 
-// What the admin does with lecturers' accounts: create, lock and unlock, set a new password. A
-// soft deletion hides the account and preserves its learning data.
+// Account activation preserves existing learning data and Moodle links.
 export function AdminUsersPanel() {
-  const { user: me } = useAuth();
+  const [filter, setFilter] = useState("active");
   const [users, setUsers] = useState<AdminUser[] | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -44,7 +41,7 @@ export function AdminUsersPanel() {
   // Sets state only from promise callbacks, and drops an answer that arrives after a newer request.
   useEffect(() => {
     let cancelled = false;
-    listUsers().then(
+    listUsers(filter === "active").then(
       (list) => {
         if (cancelled) return;
         setUsers(list);
@@ -57,30 +54,22 @@ export function AdminUsersPanel() {
     return () => {
       cancelled = true;
     };
-  }, [reloads]);
+  }, [reloads, filter]);
 
   async function handleToggleActive(user: AdminUser) {
+    if (!window.confirm(`${user.is_active ? "Vô hiệu hóa" : "Kích hoạt lại"} tài khoản ${user.email}? Dữ liệu và liên kết Moodle được giữ nguyên.`)) return;
     setBusyId(user.id);
     setError(null);
     setNotice(null);
     try {
       await setUserActive(user.id, !user.is_active);
-      setNotice(user.is_active ? `Đã khóa tài khoản ${user.email}.` : `Đã mở khóa tài khoản ${user.email}.`);
+      setNotice(user.is_active ? `Đã vô hiệu hóa tài khoản ${user.email}.` : `Đã kích hoạt lại tài khoản ${user.email}.`);
       reload();
     } catch (err) {
       setError(apiErrorMessage(err, "Đổi trạng thái tài khoản thất bại"));
     } finally {
       setBusyId(null);
     }
-  }
-
-  async function handleDelete(user: AdminUser) {
-    if (!window.confirm(`Xóa tài khoản "${user.name}" (${user.email})? Tài khoản sẽ không đăng nhập được; môn học và dữ liệu được giữ nguyên. Liên kết Moodle được giải phóng.`)) return;
-    setBusyId(user.id);
-    setError(null);
-    try { await deleteUser(user.id); setNotice(`Đã xóa tài khoản ${user.email}.`); reload(); }
-    catch (err) { setError(apiErrorMessage(err, "Xóa tài khoản thất bại")); }
-    finally { setBusyId(null); }
   }
 
   return (
@@ -93,6 +82,13 @@ export function AdminUsersPanel() {
         }}
       />
 
+      <label className="text-sm">
+        Trạng thái tài khoản
+        <select value={filter} onChange={(event) => setFilter(event.target.value)} className={`${inputClass} ml-2`}>
+          <option value="active">Đang hoạt động</option>
+          <option value="inactive">Đã vô hiệu hóa</option>
+        </select>
+      </label>
       {notice && <p className="text-sm text-green-800">{notice}</p>}
       {error && <p className="text-sm text-red-700">{error}</p>}
       {loadError && <p className="text-sm text-red-700">{loadError}</p>}
@@ -116,7 +112,7 @@ export function AdminUsersPanel() {
                   <div className="break-all text-sm text-gray-500">{u.email}</div>
                   <div className="mt-1 flex flex-wrap gap-x-4 gap-y-0.5 text-xs font-medium">
                     <span className={u.is_active ? "text-green-700" : "text-red-700"}>
-                      {u.is_active ? "Đang hoạt động" : "Đã khóa"}
+                      {u.is_active ? "Đang hoạt động" : "Đã vô hiệu hóa"}
                     </span>
                     {u.moodle_status && (
                       <span className={MOODLE_LABEL[u.moodle_status].color}>
@@ -126,7 +122,6 @@ export function AdminUsersPanel() {
                   </div>
                 </div>
                 <div className="flex shrink-0 items-center gap-4 text-sm">
-                  {!u.is_admin && <button onClick={() => handleDelete(u)} disabled={busyId === u.id} className="text-red-700 hover:underline">Xóa</button>}
                   <button
                     onClick={() => setResetting(resetting === u.id ? null : u.id)}
                     className="font-semibold text-terracotta hover:underline"
@@ -135,13 +130,13 @@ export function AdminUsersPanel() {
                   </button>
                   <button
                     onClick={() => handleToggleActive(u)}
-                    disabled={busyId === u.id || u.id === me?.id}
-                    title={u.id === me?.id ? "Không thể tự khóa tài khoản của mình" : undefined}
+                    disabled={busyId === u.id || u.is_admin}
+                    title={u.is_admin ? "Không thể vô hiệu hóa tài khoản admin" : undefined}
                     className={`hover:underline disabled:cursor-not-allowed disabled:opacity-50 ${
                       u.is_active ? "text-red-700" : "font-semibold text-green-700"
                     }`}
                   >
-                    {u.is_active ? "Khóa" : "Mở khóa"}
+                    {u.is_active ? "Vô hiệu hóa" : "Kích hoạt lại"}
                   </button>
                 </div>
               </div>

@@ -1,10 +1,11 @@
 import enum
 import uuid
-from datetime import datetime
+from datetime import date, datetime
 
 from pgvector.sqlalchemy import Vector
 from sqlalchemy import (
     CheckConstraint,
+    Date,
     DateTime,
     Enum,
     ForeignKey,
@@ -82,9 +83,7 @@ class User(Base):
     name: Mapped[str]
     hashed_password: Mapped[str]
     is_admin: Mapped[bool] = mapped_column(default=False, server_default="false")
-    deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
-    # False: tài khoản bị khóa. Đọc lại từ DB ở mỗi request (get_current_user) nên khóa có hiệu
-    # lực ngay, kể cả với token đang dùng. Khóa không xóa dữ liệu nào.
+    # Deactivation ends access immediately while preserving account data and Moodle identity.
     is_active: Mapped[bool] = mapped_column(default=True, server_default="true")
     # Model giảng viên chọn sẵn cho các lượt sinh của mình. NULL nghĩa là chưa chọn, khi đó
     # dùng model trong cấu hình. Chỉ lưu alias của gateway, không lưu tên model thật: đổi
@@ -93,7 +92,11 @@ class User(Base):
     # vào danh sách gateway đang phục vụ (app/llm/catalog.py).
     default_model_alias: Mapped[str | None] = mapped_column(nullable=True)
     # Confirmed Moodle identity; local account creation never links it automatically.
-    moodle_user_id: Mapped[int | None] = mapped_column(nullable=True)
+    moodle_user_id: Mapped[int | None] = mapped_column(nullable=True, unique=True)
+    generation_day: Mapped[date | None] = mapped_column(Date, nullable=True)
+    generation_count: Mapped[int] = mapped_column(default=0, server_default="0")
+    moodle_request_id: Mapped[str | None] = mapped_column(nullable=True)
+    moodle_request_email: Mapped[str | None] = mapped_column(nullable=True)
     created_at: Mapped[datetime] = created_at_column()
 
 
@@ -103,12 +106,8 @@ class Course(Base):
     id: Mapped[uuid.UUID] = uuid_pk()
     name: Mapped[str]
     owner_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), index=True)
-    # Set on first "Push to Moodle" (Week 11) so later pushes for this
-    # course reuse the same Moodle course instead of creating a new one
-    # each time. unique=True enforces a 1-1 mapping: one Moodle course must
-    # never be linked from more than one course here, or pushes from two
-    # different courses would collide inside the same Moodle course.
-    moodle_course_id: Mapped[int | None] = mapped_column(nullable=True, unique=True)
+    # Multiple app courses may use the same authorized Moodle course.
+    moodle_course_id: Mapped[int | None] = mapped_column(nullable=True)
     created_at: Mapped[datetime] = created_at_column()
 
     # passive_deletes=True: on `db.delete(course)`, let Postgres' ON DELETE
@@ -458,18 +457,5 @@ class RefreshToken(Base):
     # is refreshed.
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
-    created_at: Mapped[datetime] = created_at_column()
-
-
-class MoodleCourseClaim(Base):
-    """Who first linked or created each Moodle course through this app. The application
-    reaches Moodle with one account that sees every course, so this is what keeps one
-    user from listing, linking and pushing into another's. Kept when a course is unlinked
-    or deleted (see migration f3c8b5e1a7d4)."""
-
-    __tablename__ = "moodle_course_claims"
-
-    moodle_course_id: Mapped[int] = mapped_column(primary_key=True)
-    owner_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
     created_at: Mapped[datetime] = created_at_column()
 

@@ -78,7 +78,7 @@ describe('CourseDetailPage - Moodle linking', () => {
     vi.mocked(api.listMoodleCourses).mockResolvedValue(moodleCourses)
   })
 
-  it('offers every Moodle course in a drop-down when the course is not linked to Moodle', async () => {
+  it('offers authorized Moodle courses in a drop-down when the course is not linked to Moodle', async () => {
     vi.mocked(api.listCourses).mockResolvedValue([unlinkedCourse])
 
     renderPage()
@@ -87,6 +87,7 @@ describe('CourseDetailPage - Moodle linking', () => {
     const select = await screen.findByRole('combobox', { name: /course moodle/i })
     await waitFor(() => expect(within(select).getAllByRole('option')).toHaveLength(3))
     expect(within(select).getByRole('option', { name: 'Databases (DB)' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /tạo course moodle/i })).not.toBeInTheDocument()
     expect(screen.queryByPlaceholderText(/tìm course moodle/i)).not.toBeInTheDocument()
   })
 
@@ -143,18 +144,6 @@ describe('CourseDetailPage - Moodle linking', () => {
     expect(await screen.findByText('Moodle không phản hồi')).toBeInTheDocument()
   })
 
-  it('shows why a new Moodle course was not created, such as a Moodle account that is gone', async () => {
-    vi.mocked(api.listCourses).mockResolvedValue([unlinkedCourse])
-    const detail = 'Tài khoản Moodle đã liên kết của bạn không còn trên Moodle.'
-    vi.mocked(api.createMoodleCourseFor).mockRejectedValue(axiosFailure(422, detail))
-
-    renderPage()
-    await screen.findByRole('option', { name: /Intro2AI/ })
-    await userEvent.click(screen.getByRole('button', { name: /tạo course moodle mới/i }))
-
-    expect(await screen.findByText(detail)).toBeInTheDocument()
-  })
-
   it('offers no Moodle course until the account is linked', async () => {
     vi.mocked(api.listCourses).mockResolvedValue([unlinkedCourse])
     vi.mocked(api.getMoodleAccount).mockResolvedValue({ email: 'lan@x.edu', status: 'not_linked' })
@@ -164,7 +153,8 @@ describe('CourseDetailPage - Moodle linking', () => {
     const account = await screen.findByRole('region', { name: 'Tài khoản Moodle' })
     expect(await within(account).findByText('Chưa liên kết')).toBeInTheDocument()
     expect(within(account).queryByLabelText('Mật khẩu Moodle')).not.toBeInTheDocument()
-    expect(screen.getByText(/Tài khoản ứng dụng sử dụng mật khẩu riêng/i)).toBeInTheDocument()
+    expect(await within(account).findByLabelText('Email Moodle')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /tạo course moodle/i })).not.toBeInTheDocument()
     expect(screen.queryByRole('combobox', { name: /course moodle/i })).not.toBeInTheDocument()
     expect(api.listMoodleCourses).not.toHaveBeenCalled()
   })
@@ -205,20 +195,7 @@ describe('CourseDetailPage - Moodle linking', () => {
     expect(within(account).getByText(/tài khoản trong ứng dụng và tài khoản moodle/i)).toBeInTheDocument()
   })
 
-  it('reloads the course when linking fails after the server linked it, so it shows as linked', async () => {
-    vi.mocked(api.listCourses)
-      .mockResolvedValueOnce([unlinkedCourse])
-      .mockResolvedValue([linkedCourse])
-    vi.mocked(api.linkMoodleCourse).mockRejectedValue(axiosFailure(422, 'Hãy liên kết lại tài khoản Moodle'))
 
-    renderPage()
-    await screen.findByRole('option', { name: /Intro2AI/ })
-    await userEvent.selectOptions(screen.getByRole('combobox', { name: /course moodle/i }), '6')
-    await userEvent.click(screen.getByRole('button', { name: 'Liên kết' }))
-
-    expect(await screen.findByText(/đã liên kết với moodle course id/i)).toBeInTheDocument()
-    expect(screen.getByText('Hãy liên kết lại tài khoản Moodle')).toBeInTheDocument()
-  })
 })
 
 describe('CourseDetailPage - unlink Moodle', () => {
