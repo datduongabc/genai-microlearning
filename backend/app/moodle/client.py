@@ -10,6 +10,7 @@ native Moodle account confirmation and current capability-scoped course lookup.
 Accounts, courses and enrollment are managed in Moodle itself.
 """
 
+from json import JSONDecodeError
 from typing import Any
 
 import httpx
@@ -59,7 +60,10 @@ def call(wsfunction: str, **params: Any) -> Any:
     wwwroot_host = httpx.URL(settings.moodle_wwwroot).netloc.decode()
     response = httpx.post(url, data=form, headers={"Host": wwwroot_host}, timeout=30.0)
     response.raise_for_status()
-    result = response.json()
+    try:
+        result = response.json()
+    except JSONDecodeError as error:
+        raise MoodleError(f"{wsfunction}: Moodle returned an invalid JSON response") from error
 
     if isinstance(result, dict) and "exception" in result:
         raise MoodleError(

@@ -19,6 +19,7 @@ from app.db import SessionLocal
 from app.jobs.queue import (
     claim_next_job,
     enqueue_job,
+    execute_job_step,
     handle_job_error,
     is_terminal_error,
     sweep_stuck_jobs,
@@ -70,6 +71,92 @@ def test_is_terminal_error_classifies_correctly():
     assert is_terminal_error(TypeError("wrong type")) is True
     assert is_terminal_error(RuntimeError("network hiccup")) is False
     assert is_terminal_error(RateLimitError("quota exceeded", llm_provider="gemini", model="test-model")) is False
+
+
+@pytest.mark.parametrize("encrypted", [False, True], ids=["corrupted", "encrypted"])
+def test_unreadable_pdf_fails_on_first_extract_attempt(seed_document, tmp_path, encrypted):
+    import pymupdf
+
+    path = tmp_path / "broken.pdf"
+    if encrypted:
+        with pymupdf.open() as pdf:
+            pdf.new_page()
+            pdf.save(path, encryption=pymupdf.PDF_ENCRYPT_AES_256, user_pw="secret", owner_pw="owner")
+    else:
+        path.write_bytes(b"%PDF-1.7\ncorrupted document")
+    with SessionLocal() as db:
+        doc = seed_document(db)
+        doc_id = doc.id
+        job = enqueue_job(db, job_type=JobType.document_pipeline, step="extract",
+                          document_id=doc_id, payload={"storage_path": str(path)})
+        db.commit()
+        job_id = job.id
+        with pytest.raises(Exception) as failure:
+            execute_job_step(job)
+        handle_job_error(job_id, failure.value)
+        db.expire_all()
+        assert db.get(Job, job_id).status == JobStatus.failed
+        assert db.get(Job, job_id).attempts == 1
+        assert db.get(Job, job_id).last_error
+        assert db.get(Document, doc_id).status == DocumentStatus.failed
+
+
+def test_transient_embedder_failure_still_retries(seed_document, monkeypatch):
+    from app.ingestion import document_pipeline
+
+    def unavailable(texts):
+        from sqlalchemy import text
+
+        with SessionLocal() as probe:
+            assert not probe.execute(text(
+                "SELECT pid FROM pg_stat_activity WHERE datname = current_database() AND usename = 'app_worker' "
+                "AND xact_start IS NOT NULL"
+            )).all()
+        raise RuntimeError("embedding gateway unavailable")
+
+    monkeypatch.setattr(document_pipeline, "embed_texts", unavailable)
+    with SessionLocal() as db:
+        doc = seed_document(db)
+        job = enqueue_job(db, job_type=JobType.document_pipeline, step="embed", document_id=doc.id,
+                          payload={"chunks": [{"content": "lesson", "locator": {},
+                                               "chunk_index": 0, "course_id": str(doc.course_id),
+                                               "token_count": 1}]})
+        db.commit()
+        job_id = job.id
+        with pytest.raises(RuntimeError, match="embedding gateway unavailable") as failure:
+            execute_job_step(job)
+        handle_job_error(job_id, failure.value)
+        db.expire_all()
+        after = db.get(Job, job_id)
+        assert after.status == JobStatus.queued
+        assert after.attempts == 1
+        assert after.run_after > datetime.now(UTC)
+
+
+def test_extract_releases_database_reads_before_transcription(seed_document, monkeypatch, tmp_path):
+    from sqlalchemy import text
+
+    from app.ingestion import document_pipeline
+    from app.ingestion.document_readers import DocumentUnit
+
+    def transcribe(path, **kwargs):
+        with SessionLocal() as probe:
+            assert not probe.execute(text(
+                "SELECT pid FROM pg_stat_activity WHERE datname = current_database() AND usename = 'app_worker' "
+                "AND xact_start IS NOT NULL"
+            )).all()
+        return [DocumentUnit(text="Transcript")]
+
+    monkeypatch.setattr(document_pipeline, "read_document", transcribe)
+    with SessionLocal() as db:
+        doc = seed_document(db)
+        job = enqueue_job(db, job_type=JobType.document_pipeline, step="extract", document_id=doc.id,
+                          payload={"storage_path": str(tmp_path / "lecture.mp3")})
+        db.commit()
+        execute_job_step(job)
+        db.refresh(job)
+        assert job.step == "chunk"
+        assert job.status == JobStatus.queued
 
 
 def test_claim_next_job_only_returns_queued_and_due_jobs(seed_document):

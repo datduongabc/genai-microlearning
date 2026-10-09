@@ -8,16 +8,20 @@ import tempfile
 import time
 from dataclasses import dataclass, field
 from typing import Any
+from zipfile import BadZipFile
 
 import pymupdf
 import pytesseract
 from bs4 import BeautifulSoup
 from docx import Document as DocxDocument
+from docx.opc.exceptions import PackageNotFoundError as DocxPackageNotFoundError
 from litellm.exceptions import RateLimitError
+from lxml.etree import XMLSyntaxError
 from openai import RateLimitError as OpenAIRateLimitError
 from PIL import Image
 from pptx import Presentation
 from pptx.enum.shapes import MSO_SHAPE_TYPE
+from pptx.exc import PackageNotFoundError as PptxPackageNotFoundError
 
 from app.ingestion.pdf_layout import page_lines, title_candidates
 from app.llm.gateway import transcribe_audio
@@ -40,6 +44,8 @@ HEADING_RE = re.compile(r"^\s*(\d+(\.\d+)*)\.?\s+\S")
 def read_pdf(path: str) -> list[DocumentUnit]:
     doc = pymupdf.open(path)
     try:
+        if doc.needs_pass:
+            raise ValueError("PDF được mã hóa; hãy bỏ mật khẩu rồi tải lại tài liệu.")
         raw_units = []
         for page_index, page in enumerate(doc):
             page_text = "\n".join(page_lines(page))
@@ -428,9 +434,7 @@ def read_audio_video(path: str) -> list[DocumentUnit]:
     return units
 
 
-def read_document(path: str, *, course_id: str, source_id: str | None = None) -> list[DocumentUnit]:
-    if source_id is None:
-        source_id = os.path.basename(path)
+def _read_document_units(path: str) -> list[DocumentUnit]:
     ext = os.path.splitext(path)[1].lower()
 
     if ext == ".pdf":
@@ -447,6 +451,18 @@ def read_document(path: str, *, course_id: str, source_id: str | None = None) ->
         units = read_audio_video(path)
     else:
         raise ValueError(f"Dinh dang khong ho tro: {ext}")
+    return units
+
+
+def read_document(path: str, *, course_id: str, source_id: str | None = None) -> list[DocumentUnit]:
+    if source_id is None:
+        source_id = os.path.basename(path)
+    try:
+        units = _read_document_units(path)
+    except (pymupdf.FileDataError, BadZipFile, DocxPackageNotFoundError,
+            PptxPackageNotFoundError, XMLSyntaxError, UnicodeDecodeError) as error:
+        # The queue already treats ValueError as terminal; provider/network errors still retry.
+        raise ValueError(str(error)) from error
 
     for u in units:
         # Postgres text columns reject NUL bytes outright (DataError, not a

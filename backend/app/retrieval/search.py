@@ -181,6 +181,22 @@ def retrieve(
     toàn khái niệm. Verify thật: với min_k=2, Adaptive-k từng chỉ chọn 6/13
     chunk của 1 tài liệu và bỏ sót pseudocode BFS/DFS dù có sẵn trong nguồn."""
     candidates = hybrid_search(db, course_id, query, top_k=candidate_k, candidate_k=candidate_k, scope=scope)
+    return _reranked(query, candidates, top_k, min_k)
+
+
+def retrieve_for_generation(
+    db: Session, course_id: UUID, query: str, top_k: int | None = 8, candidate_k: int = 30,
+    min_k: int = 2, scope: ChunkScope | None = None,
+) -> list[Chunk]:
+    # Generation has no pending writes here. Keep passages loaded after the read session closes,
+    # so neither embedding (before the queries) nor reranking (after them) holds a transaction.
+    with Session(bind=db.get_bind()) as reads:
+        candidates = hybrid_search(reads, course_id, query, top_k=candidate_k,
+                                   candidate_k=candidate_k, scope=scope)
+    return _reranked(query, candidates, top_k, min_k)
+
+
+def _reranked(query: str, candidates: list[Chunk], top_k: int | None, min_k: int) -> list[Chunk]:
     scored = rerank_scored(query, candidates)
     if top_k is not None:
         return [c for c, _ in scored[:top_k]]

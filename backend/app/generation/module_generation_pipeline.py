@@ -40,7 +40,8 @@ from app.models import (
     ModuleComponent,
 )
 from app.models import Question as QuestionModel
-from app.retrieval.search import ChunkScope, expand_with_parent_context, retrieve
+from app.retrieval.search import ChunkScope, expand_with_parent_context
+from app.retrieval.search import retrieve_for_generation as retrieve
 
 
 def _get_or_cache_planner(
@@ -78,6 +79,8 @@ def _get_or_cache_planner(
         ]
         source_text = build_scope_digest(chunk_texts, PLANNER_MAX_INPUT_CHARS)
 
+    # Do not retain the source reads while waiting on the planner.
+    db.commit()
     planner_out = run_planner(source_text, output_language=output_language, custom_instructions=custom_instructions)
     holder.planner_concepts = [
         {**c.model_dump(), "output_language": output_language, "custom_instructions": custom_instructions.strip()} for c in planner_out.concepts
@@ -293,6 +296,22 @@ def _retrieve_for_content(
 
 @capture_models()
 def run_module_generation(
+    db: Session, doc: Document, section: DocumentSection | None = None,
+    self_check: bool = True, use_retrieval: bool = True, paired_module: Module | None = None,
+    output_language: OutputLanguage = "vi", custom_instructions: str = "",
+) -> Module:
+    # Keep read values in memory after each commit; expired attributes would silently reopen
+    # a transaction when a prompt reads them. Restore the caller's session setting afterwards.
+    expire_on_commit = db.expire_on_commit
+    db.expire_on_commit = False
+    try:
+        return _generate_module(db, doc, section, self_check, use_retrieval, paired_module,
+                                output_language, custom_instructions)
+    finally:
+        db.expire_on_commit = expire_on_commit
+
+
+def _generate_module(
     db: Session, doc: Document, section: DocumentSection | None = None, self_check: bool = True,
     use_retrieval: bool = True, paired_module: Module | None = None,
     output_language: OutputLanguage = "vi", custom_instructions: str = "",
@@ -327,7 +346,9 @@ def run_module_generation(
         top_concept = min(planner_out.concepts, key=lambda c: c.priority)
         title = top_concept.name
         query = f"{top_concept.name}: {top_concept.summary}"
+        db.commit()
         context_chunks = retrieve(db, doc.course_id, query, top_k=None, min_k=8, scope=scope)
+        db.commit()
         lo = generate_learning_objective(top_concept, context_chunks, output_language=output_language, custom_instructions=custom_instructions)
     else:
         if paired_module is None:
@@ -338,6 +359,8 @@ def run_module_generation(
         query = concept_query_of(paired_module, section)
         lo = learning_objective_of(paired_module)
 
+    db.commit()
+
     module = Module(
         document_id=doc.id,
         course_id=doc.course_id,
@@ -347,19 +370,18 @@ def run_module_generation(
         bloom_level=lo.bloom_level,
         sub_objectives=lo.sub_objectives,
     )
-    db.add(module)
-    db.flush()
 
     content_context = None
     if use_retrieval:
         corrected = _retrieve_for_content(db, doc, lo, context_chunks, scope)
         content_context = expand_with_parent_context(db, corrected.chunks, scope=scope)
+        db.commit()
     content_out, content_check = generate_content(
         lo, content_context, self_check=self_check, output_language=output_language, custom_instructions=custom_instructions,
     )
     # Nhánh không RAG giữ nguyên hình dạng thành phần Content: không có nguồn nên không có trích dẫn,
     # và không chấm độ liên quan (None).
-    db.add(ModuleComponent(
+    content_component = ModuleComponent(
         module_id=module.id, type=ComponentType.content,
         content={
             "markdown": content_out.content,
@@ -368,23 +390,19 @@ def run_module_generation(
             "relevance_confidence": corrected.confidence if use_retrieval else None,
             "relevance_retry_count": corrected.retries if use_retrieval else 0,
         },
-    ))
-    if use_retrieval:
-        _log_hallucination_check(db, module.id, "content_relevance_pass", corrected.confidence == "high")
-    if content_check is not None and use_retrieval:
-        _log_hallucination_check(db, module.id, "content_groundedness_pass", content_check.groundedness_pass)
+    )
 
     slides_out = generate_slides(lo, content_out.content, output_language=output_language, custom_instructions=custom_instructions)
-    db.add(ModuleComponent(
+    slides_component = ModuleComponent(
         module_id=module.id, type=ComponentType.slides,
         content={"slides": [s.model_dump() for s in slides_out.slides]},
-    ))
+    )
 
     example_out = generate_example(lo, content_out.content, context_chunks, output_language=output_language, custom_instructions=custom_instructions)
-    db.add(ModuleComponent(
+    example_component = ModuleComponent(
         module_id=module.id, type=ComponentType.example,
         content={"examples": [e.model_dump() for e in example_out.examples]},
-    ))
+    )
 
     lesson = None if use_retrieval else content_out.content
     asked = _generate_questions(
@@ -406,6 +424,16 @@ def run_module_generation(
             "component": a.type.value, "position": position,
             "reasoning": question.reasoning, "explanation_text": question.explanation,
         })
+    # Persist the complete result atomically, after every provider call has finished.
+    db.add(module)
+    db.flush()
+    for component in (content_component, slides_component, example_component):
+        component.module_id = module.id
+        db.add(component)
+    if use_retrieval:
+        _log_hallucination_check(db, module.id, "content_relevance_pass", corrected.confidence == "high")
+    if content_check is not None and use_retrieval:
+        _log_hallucination_check(db, module.id, "content_groundedness_pass", content_check.groundedness_pass)
     _save_questions(db, module.id, asked, self_check, use_retrieval)
     if items:
         db.add(ModuleComponent(module_id=module.id, type=ComponentType.explanation, content={"items": items}))

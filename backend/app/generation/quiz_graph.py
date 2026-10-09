@@ -30,7 +30,8 @@ from app.generation.common import (
 )
 from app.generation.objective import LearningObjective
 from app.llm.gateway import complete_structured
-from app.retrieval.search import ChunkScope, retrieve
+from app.retrieval.search import ChunkScope
+from app.retrieval.search import retrieve_for_generation as retrieve
 
 # Số đoạn truy hồi cho mỗi câu hỏi, theo đúng điều câu đó kiểm.
 QUESTION_TOP_K = 5

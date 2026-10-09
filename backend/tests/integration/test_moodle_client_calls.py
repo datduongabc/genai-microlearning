@@ -9,6 +9,7 @@ from app.moodle import client as moodle_client
 # conftest thay get_course bằng bản luôn trả "có khoá học" cho mọi test không nói về nó; test ở
 # đây nói về chính nó, nên giữ bản thật từ lúc nạp module.
 REAL_GET_COURSE = moodle_client.get_course
+REAL_TEACHER_COURSES = moodle_client.teacher_courses
 
 
 def _answer(monkeypatch, payload):
@@ -27,6 +28,41 @@ def test_an_exception_in_a_successful_http_answer_is_raised_as_a_moodle_error(mo
 
     with pytest.raises(moodle_client.MoodleError, match="Access control exception"):
         moodle_client.call("core_course_get_courses")
+
+
+@pytest.mark.parametrize("body", ["<html>upstream unavailable</html>", "", "{invalid json"])
+def test_non_json_answer_is_a_controlled_moodle_failure(monkeypatch, body):
+    from app.moodle.errors import MOODLE_FAILURES
+
+    monkeypatch.setattr(moodle_client.httpx, "post", lambda url, **kwargs:
+                        httpx.Response(200, text=body, request=httpx.Request("POST", url)))
+    with pytest.raises(MOODLE_FAILURES):
+        moodle_client.call("core_course_get_courses")
+
+
+def test_html_moodle_response_returns_502_from_the_api(monkeypatch):
+    import uuid
+
+    from fastapi.testclient import TestClient
+
+    from app.db import SessionLocal
+    from app.main import app
+    from app.models import User
+    from tests.auth_helpers import create_and_login
+
+    client = TestClient(app)
+    login = create_and_login(client, f"moodle-html-{uuid.uuid4().hex}@example.com")
+    with SessionLocal() as db:
+        db.get(User, uuid.UUID(login["user"]["id"])).moodle_user_id = 10_000 + uuid.uuid4().int % 10**9
+        db.commit()
+    monkeypatch.setattr(moodle_client, "teacher_courses", REAL_TEACHER_COURSES)
+    monkeypatch.setattr(moodle_client.httpx, "post", lambda url, **kwargs:
+                        httpx.Response(200, text="<html>unavailable</html>",
+                                       request=httpx.Request("POST", url)))
+    response = client.get("/courses/moodle/courses",
+                          headers={"Authorization": "Bearer " + login["access_token"]})
+    assert response.status_code == 502
+    assert response.json() == {"detail": "Thao tác với Moodle thất bại, vui lòng thử lại sau."}
 
 
 def test_get_course_is_none_when_moodle_has_no_course_with_that_id(monkeypatch):
@@ -56,4 +92,3 @@ def test_create_quiz_sends_the_requested_behaviour_to_the_web_service(monkeypatc
 
     assert sent[0]["wsfunction"] == "local_lms_bridge_create_quiz"
     assert sent[0]["behaviour"] == "immediatefeedback"
-
