@@ -19,6 +19,7 @@ from app.models.models import (
     RefreshToken,
     User,
 )
+from app.models.study import Rating, Study, StudyItem
 
 __all__ = [
     "ChatMessage",
@@ -38,6 +39,9 @@ __all__ = [
     "Module",
     "ModuleComponent",
     "Question",
+    "Rating",
     "RefreshToken",
+    "Study",
+    "StudyItem",
     "User",
 ]
