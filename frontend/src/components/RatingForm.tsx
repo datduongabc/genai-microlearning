@@ -28,13 +28,15 @@ export function RatingForm({
     defaultValues: rating ?? emptyRating(code),
   });
   const { fields, append, remove } = useFieldArray({ control, name: "hallucination_findings" });
-  // Unsaved input is not kept as a draft, so leaving it (another item, another page, a reload
-  // or closing the tab) asks first. Links are caught here because the form does not own them.
+  // Unsaved input is not kept as a draft, so leaving it (another item, another page, logging
+  // out, a reload or closing the tab) asks first. Links and the logout button are caught here
+  // because the form does not own them.
   useEffect(() => {
     if (!isDirty) return;
     const onUnload = (event: BeforeUnloadEvent) => event.preventDefault();
     const onClick = (event: MouseEvent) => {
-      if (!(event.target instanceof Element) || !event.target.closest("a[href]")) return;
+      if (!(event.target instanceof Element)) return;
+      if (!event.target.closest("a[href], [data-leaves-page]")) return;
       if (window.confirm(UNSAVED_PROMPT)) return;
       event.preventDefault();
       event.stopPropagation();

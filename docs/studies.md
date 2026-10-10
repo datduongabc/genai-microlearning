@@ -113,7 +113,8 @@ tiến độ "Đã chấm n/tổng". Trang chấm của một đơn vị hiện 
 nguồn, chủ đề, mục tiêu học tập, nội dung, slide, ví dụ, quiz cùng lời giải
 thích và bài luyện tập, rồi biểu mẫu chín tiêu chí của rubric. Nội dung đang
 nhập không được lưu nháp: khi biểu mẫu có thay đổi chưa lưu, chuyển sang gói
-khác, bấm một liên kết, tải lại hoặc đóng trang đều hỏi xác nhận trước.
+khác, bấm một liên kết, đăng xuất, tải lại hoặc đóng trang đều hỏi xác nhận
+trước. Nút Back/Forward của trình duyệt không hỏi xác nhận.
 
 ### Phân quyền ở database
 

@@ -140,8 +140,9 @@ it("keeps edits and progress unchanged after a failed save", async () => {
   expect(await screen.findByRole("alert")).toHaveTextContent("Không lưu được đánh giá.");
   expect(screen.getByLabelText("Ghi chú tổng quan")).toHaveValue("Cũ mới");
 });
-it("asks before a link discards unsaved input, and not once it is saved", async () => {
+it("asks before a link or logout discards unsaved input, and not once it is saved", async () => {
   const user = userEvent.setup();
+  const { logout } = auth.useAuth();
   const confirm = vi.spyOn(window, "confirm").mockReturnValue(false);
   const score = { score: 3, justification: "Đã chấm" };
   const rating = {
@@ -175,6 +176,9 @@ it("asks before a link discards unsaved input, and not once it is saved", async 
   await user.type(screen.getByLabelText("Ghi chú tổng quan"), " mới");
   await user.click(screen.getByRole("link", { name: "Nghiên cứu được mời" }));
   expect(confirm).toHaveBeenCalledTimes(1);
+  await user.click(screen.getByRole("button", { name: "Đăng xuất" }));
+  expect(confirm).toHaveBeenCalledTimes(2);
+  expect(logout).not.toHaveBeenCalled();
   expect(screen.getByLabelText("Ghi chú tổng quan")).toHaveValue("Cũ mới");
   const unload = new Event("beforeunload", { cancelable: true });
   window.dispatchEvent(unload);
@@ -185,8 +189,11 @@ it("asks before a link discards unsaved input, and not once it is saved", async 
   const afterSave = new Event("beforeunload", { cancelable: true });
   window.dispatchEvent(afterSave);
   expect(afterSave.defaultPrevented).toBe(false);
+  await user.click(screen.getByRole("button", { name: "Đăng xuất" }));
+  expect(confirm).toHaveBeenCalledTimes(2);
+  expect(logout).toHaveBeenCalledTimes(1);
   await user.click(screen.getByRole("link", { name: "Nghiên cứu được mời" }));
-  expect(confirm).toHaveBeenCalledTimes(1);
+  expect(confirm).toHaveBeenCalledTimes(2);
   expect(await screen.findByText("Danh sách")).toBeInTheDocument();
 });
 it("reports missing or revoked invitations", async () => {
