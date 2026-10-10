@@ -1,8 +1,10 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useFieldArray, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ratingSchema, emptyRating, rubric, type Rating } from "../lib/ratingSchema";
 import { apiErrorMessage } from "../api/client";
+
+const UNSAVED_PROMPT = "Đánh giá chưa lưu sẽ bị mất. Bạn vẫn muốn rời khỏi gói này?";
 
 export function RatingForm({
   code,
@@ -19,12 +21,31 @@ export function RatingForm({
     register,
     control,
     handleSubmit,
-    formState: { errors, isSubmitting },
+    reset,
+    formState: { errors, isSubmitting, isDirty },
   } = useForm<Rating>({
     resolver: zodResolver(ratingSchema),
     defaultValues: rating ?? emptyRating(code),
   });
   const { fields, append, remove } = useFieldArray({ control, name: "hallucination_findings" });
+  // Unsaved input is not kept as a draft, so leaving it (another item, another page, a reload
+  // or closing the tab) asks first. Links are caught here because the form does not own them.
+  useEffect(() => {
+    if (!isDirty) return;
+    const onUnload = (event: BeforeUnloadEvent) => event.preventDefault();
+    const onClick = (event: MouseEvent) => {
+      if (!(event.target instanceof Element) || !event.target.closest("a[href]")) return;
+      if (window.confirm(UNSAVED_PROMPT)) return;
+      event.preventDefault();
+      event.stopPropagation();
+    };
+    window.addEventListener("beforeunload", onUnload);
+    document.addEventListener("click", onClick, true);
+    return () => {
+      window.removeEventListener("beforeunload", onUnload);
+      document.removeEventListener("click", onClick, true);
+    };
+  }, [isDirty]);
   return (
     <form
       noValidate
@@ -34,6 +55,7 @@ export function RatingForm({
         setSaved(false);
         try {
           await onSave(values);
+          reset(values);
           setSaved(true);
         } catch (e) {
           setError(apiErrorMessage(e, "Không lưu được đánh giá."));

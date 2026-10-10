@@ -51,22 +51,10 @@ def upgrade():
     op.execute(f"CREATE POLICY ratings_own_insert ON ratings FOR INSERT TO app_runtime WITH CHECK ({own})")
     op.execute(f"CREATE POLICY ratings_own_update ON ratings FOR UPDATE TO app_runtime "
                f"USING ({own}) WITH CHECK ({own})")
+    # Takes the study lock that loading and invitation edits take, so a rating cannot slip in
+    # while items are being loaded and their codes reassigned.
     op.execute("""
-        CREATE FUNCTION lock_blind_study(p_study_id uuid) RETURNS text
-        LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, pg_temp AS $$
-        DECLARE study_state text;
-        BEGIN
-            SELECT status INTO study_state FROM studies
-            WHERE id = p_study_id AND study_invited(id) FOR UPDATE;
-            IF study_invited(p_study_id) IS NOT TRUE THEN RETURN NULL; END IF;
-            RETURN study_state;
-        END $$
-    """)
-    op.execute("REVOKE ALL ON FUNCTION lock_blind_study(uuid) FROM PUBLIC")
-    op.execute("GRANT EXECUTE ON FUNCTION lock_blind_study(uuid) TO app_runtime")
-    # Same study lock as loading and invitation edits; no rater UPDATE grant on studies.
-    op.execute("""
-        CREATE FUNCTION activate_rated_study() RETURNS trigger
+        CREATE FUNCTION guard_rating_write() RETURNS trigger
         LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, pg_temp AS $$
         DECLARE sid uuid; study_state text;
         BEGIN
@@ -85,19 +73,17 @@ def upgrade():
             IF study_state = 'closed' THEN
                 RAISE EXCEPTION 'Study is closed' USING ERRCODE = '23514';
             END IF;
-            UPDATE studies SET status = 'active' WHERE id = sid AND status = 'draft';
             RETURN NEW;
         END $$
     """)
-    op.execute("REVOKE ALL ON FUNCTION activate_rated_study() FROM PUBLIC")
-    op.execute("CREATE TRIGGER ratings_activate_study BEFORE INSERT OR UPDATE ON ratings "
-               "FOR EACH ROW EXECUTE FUNCTION activate_rated_study()")
+    op.execute("REVOKE ALL ON FUNCTION guard_rating_write() FROM PUBLIC")
+    op.execute("CREATE TRIGGER ratings_guard_write BEFORE INSERT OR UPDATE ON ratings "
+               "FOR EACH ROW EXECUTE FUNCTION guard_rating_write()")
 
 
 def downgrade():
-    op.execute("DROP TRIGGER ratings_activate_study ON ratings")
-    op.execute("DROP FUNCTION activate_rated_study()")
-    op.execute("DROP FUNCTION lock_blind_study(uuid)")
+    op.execute("DROP TRIGGER ratings_guard_write ON ratings")
+    op.execute("DROP FUNCTION guard_rating_write()")
     for action in ("read", "insert", "update"):
         op.execute(f"DROP POLICY ratings_own_{action} ON ratings")
     op.execute("DROP FUNCTION rating_item_invited(uuid)")

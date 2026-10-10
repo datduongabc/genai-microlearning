@@ -86,7 +86,7 @@ def test_blind_items_stable_distinct_orders_and_own_ratings(blind):
     assert mine == [{**own['study'], 'rated': 1, 'total': 8}]
     assert load(blind, sid, human_packets=[human_packet()]).status_code == 409
     with SessionLocal() as db:
-        assert db.get(Study, uuid.UUID(sid)).status == 'active'
+        assert db.get(Study, uuid.UUID(sid)).status == 'draft'
         assert len(db.scalars(select(Rating).where(Rating.user_id == blind['teacher'])).all()) == 1
 
 
@@ -162,4 +162,4 @@ def test_closed_study_and_revocation_protect_saved_ratings(blind):
         db.execute(text("SELECT set_config('app.current_user_id', :uid, true)"), {'uid': str(blind['teacher'])})
         assert db.scalars(select(Rating)).all() == []
         assert db.execute(text('SELECT * FROM blind_studies')).all() == []
-        assert db.scalar(text('SELECT lock_blind_study(:sid)'), {'sid': sid}) is None
+        assert db.execute(text('SELECT * FROM blind_study_items WHERE study_id=:sid'), {'sid': sid}).all() == []

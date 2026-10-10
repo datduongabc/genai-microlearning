@@ -217,12 +217,7 @@ export function BlindRatingPage() {
                       const items = current.items.map((i) =>
                         i.id === item.id ? { ...i, rating } : i,
                       );
-                      return {
-                        ...current,
-                        study: { ...current.study, status: "active" },
-                        items,
-                        rated: items.filter((i) => i.rating).length,
-                      };
+                      return { ...current, items, rated: items.filter((i) => i.rating).length };
                     });
                   }}
                 />

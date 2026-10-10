@@ -111,19 +111,14 @@ def my_items(study_id: uuid.UUID, db: Session = Depends(get_db), user: User = De
 @router.put("/mine/{study_id}/items/{item_id}/rating")
 def save_rating(study_id: uuid.UUID, item_id: uuid.UUID, body: ModuleEvaluation,
                 db: Session = Depends(get_db), user: User = Depends(get_current_user)):
-    # Keep the code/packet stable while validating and saving, sharing the admin load lock.
-    status = db.scalar(text("SELECT lock_blind_study(:id)"), {"id": study_id})
-    if status is None:
-        raise HTTPException(status_code=404, detail="Study not found")
     item = db.execute(text("SELECT anon_code FROM blind_study_items WHERE study_id=:sid AND id=:iid"),
                       {"sid": study_id, "iid": item_id}).mappings().first()
     if item is None:
-        raise HTTPException(status_code=404, detail="Item not found")
-    if status == "closed":
-        raise HTTPException(status_code=409, detail="Study is closed")
+        raise HTTPException(status_code=404, detail="Study item not found")
     if body.anon_id != item["anon_code"]:
         raise HTTPException(status_code=422, detail="Anonymous code does not match item")
-    # Upsert serializes competing saves; the DB trigger shares loading's study lock.
+    # Upsert serializes competing saves; the ratings trigger takes loading's study lock and
+    # refuses a closed study or a rater whose invitation was withdrawn meanwhile.
     values = body.model_dump(exclude={"anon_id"})
     statement = insert(Rating).values(study_item_id=item_id, user_id=user.id, rater_kind="human", **values)
     try:
@@ -132,7 +127,7 @@ def save_rating(study_id: uuid.UUID, item_id: uuid.UUID, body: ModuleEvaluation,
     except (IntegrityError, ProgrammingError) as exc:
         db.rollback()
         if getattr(exc.orig, "sqlstate", None) == "42501":
-            raise HTTPException(status_code=404, detail="Study not found") from exc
+            raise HTTPException(status_code=404, detail="Study item not found") from exc
         if getattr(exc.orig, "sqlstate", None) == "23514":
             raise HTTPException(status_code=409, detail="Study is closed") from exc
         raise
@@ -174,7 +169,7 @@ def get_study(study_id: uuid.UUID, db: Session = Depends(get_db)):
     return {**_study_out(study), "items": [_item_out(item) for item in _items(db, study_id)]}
 
 
-@router.post("/{study_id}/items", status_code=201, dependencies=[Depends(require_admin)])
+@router.post("/{study_id}/items", status_code=201)
 def load_items(study_id: uuid.UUID, body: LoadItems, db: Session = Depends(get_db),
                current_user: User = Depends(require_admin)):
     # Serialize draft loads before fetching items or swapping their deferred-unique codes.

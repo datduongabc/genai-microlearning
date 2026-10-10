@@ -103,14 +103,17 @@ Thân `PUT .../rating` được kiểm bằng `ModuleEvaluation` của
 `app/generation/evaluation.py`: tám tiêu chí, mỗi tiêu chí có `score` nguyên từ
 1 đến 5 và `justification`, cùng `hallucination_findings` (mỗi mục có `claim`,
 `field`, `reason`) và `overall_notes`. `anon_id` phải bằng mã ẩn danh của đơn
-vị, nếu không nhận 422. Gọi lại cùng đường dẫn sẽ sửa lượt chấm đã lưu. Lượt
-chấm đầu tiên chuyển nghiên cứu từ `draft` sang `active`, sau đó không nạp thêm
-đơn vị được nữa (409). Nghiên cứu `closed` từ chối lưu và sửa lượt chấm với 409.
+vị, nếu không nhận 422. Gọi lại cùng đường dẫn sẽ sửa lượt chấm đã lưu. Lưu
+lượt chấm không đổi trạng thái nghiên cứu; khi đã có lượt chấm thì không nạp
+thêm đơn vị được nữa (409). Nghiên cứu `closed` từ chối lưu và sửa lượt chấm
+với 409.
 
 Trang **Chấm nghiên cứu** (`/studies`) liệt kê các nghiên cứu được mời cùng
 tiến độ "Đã chấm n/tổng". Trang chấm của một đơn vị hiện mã ẩn danh, tài liệu
 nguồn, chủ đề, mục tiêu học tập, nội dung, slide, ví dụ, quiz cùng lời giải
-thích và bài luyện tập, rồi biểu mẫu chín tiêu chí của rubric.
+thích và bài luyện tập, rồi biểu mẫu chín tiêu chí của rubric. Nội dung đang
+nhập không được lưu nháp: khi biểu mẫu có thay đổi chưa lưu, chuyển sang gói
+khác, bấm một liên kết, tải lại hoặc đóng trang đều hỏi xác nhận trước.
 
 ### Phân quyền ở database
 
@@ -124,8 +127,8 @@ có quyền xóa. Thu hồi lời mời giữ nguyên các lượt chấm đã l
 người bị thu hồi không còn đọc hay sửa được chúng.
 
 Trigger trên `ratings` khóa hàng nghiên cứu (cùng khóa với việc nạp đơn vị),
-từ chối ghi vào nghiên cứu `closed`, không cho đổi đơn vị hay người chấm của
-một lượt chấm đã có, và chuyển nghiên cứu `draft` sang `active`.
+từ chối ghi vào nghiên cứu `closed` và không cho đổi đơn vị hay người chấm của
+một lượt chấm đã có.
 
 <a id="bao-toan-nguon"></a>
 

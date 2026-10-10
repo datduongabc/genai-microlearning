@@ -140,6 +140,55 @@ it("keeps edits and progress unchanged after a failed save", async () => {
   expect(await screen.findByRole("alert")).toHaveTextContent("Không lưu được đánh giá.");
   expect(screen.getByLabelText("Ghi chú tổng quan")).toHaveValue("Cũ mới");
 });
+it("asks before a link discards unsaved input, and not once it is saved", async () => {
+  const user = userEvent.setup();
+  const confirm = vi.spyOn(window, "confirm").mockReturnValue(false);
+  const score = { score: 3, justification: "Đã chấm" };
+  const rating = {
+    anon_id: "M01",
+    accuracy: score,
+    completeness: score,
+    consistency: score,
+    hallucination_score: score,
+    slide_quality: score,
+    quiz_quality: score,
+    bloom_fidelity: score,
+    query_alignment: score,
+    overall_notes: "Cũ",
+    hallucination_findings: [],
+  };
+  vi.mocked(api.myStudyItems).mockResolvedValue({
+    ...data,
+    rated: 1,
+    items: [{ ...item, rating }],
+  });
+  vi.mocked(api.saveRating).mockImplementation(async (_s, _i, body) => body);
+  render(
+    <MemoryRouter initialEntries={["/studies/s1/items/i1"]}>
+      <Routes>
+        <Route path="/studies/:studyId/items/:itemId" element={<BlindRatingPage />} />
+        <Route path="/studies" element={<p>Danh sách</p>} />
+      </Routes>
+    </MemoryRouter>,
+  );
+  await screen.findByText("Nội dung bài");
+  await user.type(screen.getByLabelText("Ghi chú tổng quan"), " mới");
+  await user.click(screen.getByRole("link", { name: "Nghiên cứu được mời" }));
+  expect(confirm).toHaveBeenCalledTimes(1);
+  expect(screen.getByLabelText("Ghi chú tổng quan")).toHaveValue("Cũ mới");
+  const unload = new Event("beforeunload", { cancelable: true });
+  window.dispatchEvent(unload);
+  expect(unload.defaultPrevented).toBe(true);
+
+  await user.click(screen.getByRole("button", { name: "Lưu đánh giá" }));
+  await screen.findByText("Đã lưu đánh giá.");
+  const afterSave = new Event("beforeunload", { cancelable: true });
+  window.dispatchEvent(afterSave);
+  expect(afterSave.defaultPrevented).toBe(false);
+  await user.click(screen.getByRole("link", { name: "Nghiên cứu được mời" }));
+  expect(confirm).toHaveBeenCalledTimes(1);
+  expect(await screen.findByText("Danh sách")).toBeInTheDocument();
+});
 it("reports missing or revoked invitations", async () => {
   vi.mocked(api.myStudyItems).mockRejectedValue(new Error("404"));
   blind();
