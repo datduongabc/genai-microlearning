@@ -4,6 +4,7 @@ from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace
 
+import httpx
 import litellm
 import pytest
 from sqlalchemy import select
@@ -42,8 +43,20 @@ def fake(monkeypatch):
     return sent
 
 
-def start(world, sid, alias="groq-pro"):
-    return client.post(f"/studies/{sid}/judge", headers=world["headers"], json={"model_alias": alias})
+def start(world, sid):
+    return client.post(f"/studies/{sid}/judge", headers=world["headers"])
+
+
+def run(jid, steps):
+    for _ in range(steps):
+        clear_reservation(jid)
+        step(jid)
+
+
+def judge_rows(sid):
+    with SessionLocal() as db:
+        return {r.study_item_id: r for r in db.scalars(
+            select(Rating).join(StudyItem).where(StudyItem.study_id == uuid.UUID(sid)))}
 
 
 def step(jid):
@@ -157,13 +170,70 @@ def test_transient_error_retries_same_item_then_records_exhaustion(world, fake, 
 def test_same_family_refusal_includes_actual_control_model(world, fake):
     sid = create_study(world)
     load(world, sid, module_ids=[str(world["rag"])])
-    assert start(world, sid, "gemini-fast").status_code == 422
     with SessionLocal() as db:
         item = db.scalar(select(StudyItem).where(StudyItem.study_id == uuid.UUID(sid), StudyItem.group == "llm_no_rag"))
         item.generation_models = [{"served_model": "openai/gpt-4o-mini"}]
         db.commit()
     assert start(world, sid).status_code == 422
     assert fake == []
+
+
+def test_human_packets_load_after_a_judge_run_and_the_rerun_grades_them(world, fake):
+    sid = create_study(world)
+    first = load(world, sid, module_ids=[str(world["rag"])]).json()
+    run(start(world, sid).json()["job_id"], 2)
+    before = judge_rows(sid)
+    assert len(before) == 2
+    with SessionLocal() as db:
+        db.query(Job).filter(Job.study_id == uuid.UUID(sid)).delete()
+        db.commit()
+    # Judge ratings do not freeze the study; the whole draft is still re-blinded on load.
+    response = load(world, sid, human_packets=[human_packet()])
+    assert response.status_code == 201, response.text
+    items = response.json()
+    assert sorted(i["anon_code"] for i in items) == ["M01", "M02", "M03"]
+    assert all(i["packet"]["anon_id"] == i["anon_code"] for i in items)
+    assert {i["id"] for i in first} < {i["id"] for i in items}
+    jid = start(world, sid).json()["job_id"]
+    run(jid, 3)
+    assert [r["status"] for r in status(world, sid, jid)["results"]] == ["done"] * 3
+    after = judge_rows(sid)
+    assert len(after) == 3
+    # Existing items keep their one row (upsert); the prompt carried each item's new code.
+    assert {item: row.id for item, row in before.items()}.items() <= {item: row.id for item, row in after.items()}.items()
+    sent_codes = [r["messages"][1]["content"].split("anon_id=")[1].split(")")[0] for r in fake[-3:]]
+    assert sorted(sent_codes) == ["M01", "M02", "M03"]
+
+
+def test_default_model_items_without_recorded_provenance_are_still_checked(world, fake, monkeypatch):
+    sid = create_study(world)
+    load(world, sid, module_ids=[str(world["rag"])])
+    with SessionLocal() as db:
+        for item in db.scalars(select(StudyItem).where(StudyItem.study_id == uuid.UUID(sid))):
+            item.generator_model = None
+            item.generation_models = None
+        db.commit()
+    # Legacy items fall back to the configured default generator instead of blocking the study.
+    assert start(world, sid).status_code == 202
+    monkeypatch.setattr(judge.gateway.settings, "llm_model", "openai-fast")
+    sid = create_study(world)
+    load(world, sid, human_packets=[human_packet()])
+    with SessionLocal() as db:
+        item = db.scalar(select(StudyItem).where(StudyItem.study_id == uuid.UUID(sid)))
+        item.group = "llm_no_rag"
+        db.commit()
+    assert start(world, sid).status_code == 422
+
+
+def test_unreachable_gateway_is_503_not_500(world, fake, monkeypatch):
+    sid = create_study(world)
+    load(world, sid, human_packets=[human_packet()])
+
+    def down():
+        raise httpx.ConnectError("gateway down")
+
+    monkeypatch.setattr(judge, "fetch_model_info", down)
+    assert start(world, sid).status_code == 503
 
 
 @pytest.mark.parametrize("headers_name,code", [(None, 401), ("teacher_headers", 404)])

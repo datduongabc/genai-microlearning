@@ -173,16 +173,13 @@ ATTACKS = [
     ("DELETE", "/admin/users/{user}", None, {}),
     ("GET", "/studies/{study}", None, {}),
     ("POST", "/studies/{study}/items", None, {"json": {"module_ids": ["{module}"]}}),
-<<<<<<< HEAD
     ("GET", "/studies/{study}/raters", None, {}),
     ("PUT", "/studies/{study}/raters", None, {"json": {"emails": []}}),
     # A study the owner was invited to rate, reached by a lecturer who was not.
     ("GET", "/studies/mine/{study}/items", None, {}),
     ("PUT", "/studies/mine/{study}/items/{study_item}/rating", None, {"json": RATING}),
-=======
     ("POST", "/studies/{study}/judge", None, {"json": {}}),
     ("GET", "/studies/{study}/judge/{failed_job}", None, {}),
->>>>>>> deb39a8 (feat(backend): run the LLM judge over a study and store its ratings)
     ("DELETE", "/courses/{course}", None, {}),
     ("POST", "/courses/{course}/link-moodle", None, {"json": {"moodle_course_id": 999}}),
     ("DELETE", "/courses/{course}/link-moodle", None, {}),

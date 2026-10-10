@@ -11,17 +11,11 @@ from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user, require_admin
 from app.db import get_db
-<<<<<<< HEAD
 from app.generation.evaluation import ModuleContentInput, ModuleEvaluation
-from app.models import Rating, Study, StudyItem, User
-from app.study.items import assign_codes, existing_pair, shuffle_for_rater
-=======
-from app.generation.evaluation import ModuleContentInput
 from app.jobs.queue import enqueue_job
 from app.models import Job, JobStatus, JobType, Rating, Study, StudyItem, User
-from app.study.items import assign_codes, existing_pair
-from app.study.judge import validate_judge
->>>>>>> deb39a8 (feat(backend): run the LLM judge over a study and store its ratings)
+from app.study.items import assign_codes, existing_pair, shuffle_for_rater
+from app.study.judge import JUDGE_ALIAS, validate_judge
 
 router = APIRouter(prefix="/studies", tags=["studies"])
 Nonempty = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=200)]
@@ -184,7 +178,9 @@ def load_items(study_id: uuid.UUID, body: LoadItems, db: Session = Depends(get_d
     study = db.scalar(select(Study).where(Study.id == study_id).with_for_update())
     if study is None:
         raise HTTPException(status_code=404, detail="Study not found")
-    rated = db.scalar(select(Rating.id).join(StudyItem).where(StudyItem.study_id == study_id).limit(1))
+    # Only human ratings freeze the item set: the judge can be rerun over items loaded later.
+    rated = db.scalar(select(Rating.id).join(StudyItem).where(
+        StudyItem.study_id == study_id, Rating.rater_kind == "human").limit(1))
     judging = db.scalar(select(Job.id).where(Job.study_id == study_id,
                         Job.status.in_([JobStatus.queued, JobStatus.running])).limit(1))
     if study.status != "draft" or rated is not None or judging is not None:
@@ -216,12 +212,8 @@ def load_items(study_id: uuid.UUID, body: LoadItems, db: Session = Depends(get_d
     return [_item_out(item) for item in _items(db, study_id)]
 
 
-class JudgeStudy(BaseModel):
-    model_alias: Nonempty = "groq-pro"
-
-
-@router.post("/{study_id}/judge", status_code=202)
-def judge_study(study_id: uuid.UUID, body: JudgeStudy, db: Session = Depends(get_db)):
+@router.post("/{study_id}/judge", status_code=202, dependencies=[Depends(require_admin)])
+def judge_study(study_id: uuid.UUID, db: Session = Depends(get_db)):
     study = db.scalar(select(Study).where(Study.id == study_id).with_for_update())
     if study is None:
         raise HTTPException(status_code=404, detail="Study not found")
@@ -233,17 +225,17 @@ def judge_study(study_id: uuid.UUID, body: JudgeStudy, db: Session = Depends(get
     if not items:
         raise HTTPException(status_code=409, detail="Study has no items")
     try:
-        model = validate_judge(body.model_alias, items)
+        model = validate_judge(items)
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
     job = enqueue_job(db, job_type=JobType.study_judge, step="judge", study_id=study_id,
-                      payload={"judge_alias": body.model_alias, "judge_model": model,
+                      payload={"judge_alias": JUDGE_ALIAS, "judge_model": model,
                                "item_ids": [str(item.id) for item in items], "cursor": 0, "results": []})
     db.commit()
     return {"job_id": job.id, "status": job.status}
 
 
-@router.get("/{study_id}/judge/{job_id}")
+@router.get("/{study_id}/judge/{job_id}", dependencies=[Depends(require_admin)])
 def judge_status(study_id: uuid.UUID, job_id: uuid.UUID, db: Session = Depends(get_db)):
     job = db.get(Job, job_id)
     if job is None or job.study_id != study_id or job.job_type != JobType.study_judge:

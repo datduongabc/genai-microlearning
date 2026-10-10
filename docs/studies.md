@@ -7,11 +7,7 @@ Phần thiết lập (tạo nghiên cứu, nạp đơn vị, mời người ch�
 thuộc các phần sau.
 
 Chạy migration `alembic upgrade head` để thêm revision `0018_study_model` và
-<<<<<<< HEAD
 `0019_blind_ratings`.
-=======
-`0019_study_judge` (LLM judge, xem [bên dưới](#llm-judge)).
->>>>>>> deb39a8 (feat(backend): run the LLM judge over a study and store its ratings)
 
 | API | Nội dung |
 | --- | --- |
@@ -19,13 +15,8 @@ Chạy migration `alembic upgrade head` để thêm revision `0018_study_model` 
 | `GET /studies` | Danh sách nghiên cứu |
 | `GET /studies/{id}` | Nghiên cứu cùng toàn bộ đơn vị, gồm nhóm dành cho admin |
 | `POST /studies/{id}/items` | JSON có `module_ids` và/hoặc `human_packets`; trả 201 với toàn bộ đơn vị sau khi gán lại mã |
-<<<<<<< HEAD
 | `GET /studies/{id}/raters` | Danh sách email người chấm được mời: `{"emails": [...]}` |
 | `PUT /studies/{id}/raters` | JSON `{"emails": [...]}` thay toàn bộ danh sách; danh sách rỗng thu hồi mọi lời mời |
-=======
-| `POST /studies/{id}/judge` | JSON `{"model_alias":"groq-pro"}` (mặc định `groq-pro`); trả 202 với `job_id` của job chấm nền |
-| `GET /studies/{id}/judge/{job_id}` | Tiến độ và kết quả từng đơn vị của job chấm |
->>>>>>> deb39a8 (feat(backend): run the LLM judge over a study and store its ratings)
 
 `module_ids` là danh sách UUID của module RAG đã có do admin hiện tại sở hữu.
 Cả module RAG và bản đối chứng phải thuộc môn học của admin đó; nguồn thuộc
@@ -76,7 +67,6 @@ nạp thêm nếu nghiên cứu đã rời `draft` hoặc đã có bất kỳ l�
 
 Các trường chấm của bảng `ratings` khớp `ModuleEvaluation` và
 [rubric dùng chung](rubric.md), không thêm cột điểm số thứ chín. `rater_kind`
-<<<<<<< HEAD
 là `human` kèm `user_id`, hoặc `llm_judge` không có `user_id`. Mỗi người và
 LLM judge có tối đa một lượt chấm trên một đơn vị. Bảng này độc lập với
 `evaluations` của pipeline.
@@ -140,11 +130,6 @@ người bị thu hồi không còn đọc hay sửa được chúng.
 Trigger trên `ratings` khóa hàng nghiên cứu (cùng khóa với việc nạp đơn vị),
 từ chối ghi vào nghiên cứu `closed` và không cho đổi đơn vị hay người chấm của
 một lượt chấm đã có.
-=======
-là `human` kèm `user_id`, hoặc `llm_judge` không có `user_id` nhưng có
-`judge_alias` và `judge_model`. Mỗi người có tối đa một lượt chấm trên một đơn
-vị; LLM judge có tối đa một lượt cho mỗi cặp (đơn vị, model chấm). Bảng này độc
-lập với `evaluations` của pipeline.
 
 <a id="llm-judge"></a>
 
@@ -157,21 +142,21 @@ tự chứa mà người chấm nhìn thấy, rồi ghi một hàng `llm_judge` 
 mỗi đơn vị: tám điểm kèm lý do, `hallucination_findings` và `overall_notes`.
 Rubric và prompt không đổi.
 
-- **Model chấm.** Mặc định `groq-pro` (gpt-oss-120b trên Groq). Alias khác
-  truyền qua `model_alias`. Alias không có trên gateway, alias định tuyến
-  (`gemini-balanced`, `*-small`), hoặc alias cùng hãng với model đã sinh bất kỳ
-  đơn vị nào đều bị từ chối 422, dùng chung phép kiểm hãng với
-  `scripts/run_judge.py` (`app/llm/judge.py`). Hãng của đơn vị lấy từ
+- **Model chấm.** Cố định là `groq-pro` (gpt-oss-120b trên Groq); request
+  không chọn được model khác. Nếu gateway không có alias này, hoặc nó cùng
+  hãng với model đã sinh bất kỳ đơn vị nào, request bị từ chối 422, dùng chung
+  phép kiểm hãng với `scripts/run_judge.py` (`app/llm/judge.py`). Gateway
+  không trả lời được thì nhận 503. Hãng của đơn vị lấy từ
   `study_items.generation_models` (model thực sự phục vụ), nếu thiếu thì từ
-  alias `generator_model`; hai cột này nằm ngoài gói nên không lộ cho người
-  chấm. Gói người soạn không có model sinh nên không bị kiểm.
+  alias `generator_model`, nếu cũng thiếu (đơn vị nạp trước revision 0019) thì
+  coi như alias mặc định của cấu hình; hai cột này nằm ngoài gói nên không lộ
+  cho người chấm. Gói người soạn không có model sinh nên không bị kiểm.
 - **Ghim model.** Lượt chấm chạy ở chế độ thí nghiệm (`disable_fallbacks`).
   `ratings.judge_model` là model gateway báo đã phục vụ; nếu nó khác model
   của alias lúc xếp job thì đơn vị bị ghi lỗi và không lưu điểm.
-- **Chạy lại.** Mỗi lần gọi là một job mới. Chấm lại cùng model thay hàng cũ
-  của cặp (đơn vị, model chấm) chứ không thêm hàng; model chấm khác tạo hàng
-  riêng. Khi một job chấm còn `queued`/`running`, lần gọi thứ hai và việc nạp
-  thêm đơn vị nhận 409.
+- **Chạy lại.** Mỗi lần gọi là một job mới chấm mọi đơn vị hiện có. Chấm lại
+  thay hàng `llm_judge` cũ của đơn vị chứ không thêm hàng. Khi một job chấm
+  còn `queued`/`running`, lần gọi thứ hai và việc nạp thêm đơn vị nhận 409.
 - **Lỗi từng đơn vị.** Lỗi tạm thời (hết quota, mạng) được thử lại có back-off
   trên đúng đơn vị đó; hết lượt thử hoặc lỗi không thử lại được (JSON sai
   rubric, gói quá lớn) được ghi vào `results` với `status: failed` và job chấm
@@ -188,12 +173,11 @@ Rubric và prompt không đổi.
 bị dọn theo lịch dọn job chung; điểm vẫn nằm trong `ratings`.
 
 ```sh
-curl -H "Authorization: Bearer $access_token" -H 'Content-Type: application/json' \
-  -d '{"model_alias":"groq-pro"}' "http://localhost:8000/studies/$study_id/judge"
+curl -X POST -H "Authorization: Bearer $access_token" \
+  "http://localhost:8000/studies/$study_id/judge"
 curl -H "Authorization: Bearer $access_token" \
   "http://localhost:8000/studies/$study_id/judge/$job_id"
 ```
->>>>>>> deb39a8 (feat(backend): run the LLM judge over a study and store its ratings)
 
 <a id="bao-toan-nguon"></a>
 
@@ -204,6 +188,5 @@ tài liệu hoặc môn học chứa module đang được tham chiếu trả HT
 khi xóa tệp tải lên; xung đột khóa ngoại lúc commit cũng rollback và trả 409.
 
 Các script R8 `export_study_pair.py`, `run_judge.py`, `analyze_study.py` và định
-dạng JSON của chúng giữ nguyên; `run_judge.py` vẫn ghi JSONL và không ghi vào
-`ratings`, vì tệp cặp của nó không gắn với đơn vị nghiên cứu nào. Nhập trực
-tiếp cặp JSON xuất sẵn chưa nằm trong API này.
+dạng JSON của chúng giữ nguyên. Nhập trực tiếp cặp JSON xuất sẵn chưa nằm
+trong API này.
