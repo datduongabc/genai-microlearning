@@ -6,8 +6,10 @@ import uuid
 from pathlib import Path
 
 from sqlalchemy import create_engine, inspect, text
+from sqlalchemy.orm import Session
 
 from app.config import settings
+from app.generation.module_generation_pipeline import control_payload, matching_control
 
 
 def test_study_migration_round_trip():
@@ -56,7 +58,17 @@ def test_study_migration_round_trip():
                                {"id": rag_id}) == "test"
             assert conn.scalar(text("SELECT paired_module_id FROM modules WHERE id=:id"),
                                {"id": control_id}) == rag_id
+            expected = control_payload(rag_id, "test", False)
+            assert conn.scalar(text("SELECT generation_payload FROM modules WHERE id=:id"),
+                               {"id": control_id}) == {
+                                   **expected, "custom_instructions": "",
+                               }
+            with Session(conn) as db:
+                assert matching_control(db, rag_id, expected).id == control_id
+                assert matching_control(db, rag_id, control_payload(rag_id, "test", False, "en")) is None
             conn.execute(text("DELETE FROM jobs"))
+            with Session(conn) as db:
+                assert matching_control(db, rag_id, expected).id == control_id
             conn.execute(text("DELETE FROM modules WHERE id=:id"), {"id": rag_id})
             assert conn.scalar(text("SELECT count(*) FROM modules WHERE id=:id"), {"id": control_id}) == 0
         assert set(inspect(engine).get_table_names()) - previous == {"studies", "study_items", "ratings"}

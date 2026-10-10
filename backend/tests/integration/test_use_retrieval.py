@@ -563,7 +563,7 @@ def test_legacy_default_alias_pair_imports_and_exports_without_regeneration(docu
         assert job.status == JobStatus.done
         control_id = job.module_id
         control = db.get(Module, control_id)
-        assert control.generation_payload == pipeline.control_payload(rag_id, None, False)
+        assert control.generation_payload == pipeline.normalize_generation_payload(pipeline.control_payload(rag_id, None, False))
         assert pipeline.matching_control(db, rag_id, pipeline.control_payload(rag_id, "other-model", False)) is None
         db.query(Job).filter(Job.document_id == document["doc"]).delete(synchronize_session=False)
         db.commit()

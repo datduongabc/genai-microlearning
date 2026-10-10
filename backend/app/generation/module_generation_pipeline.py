@@ -10,7 +10,8 @@ duy nhất cho "có đang sinh dở không", không cần 2 cơ chế song song)
 import uuid
 from dataclasses import dataclass
 
-from sqlalchemy import select
+from sqlalchemy import literal, select
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Session
 
 from app.db import WorkerSessionLocal
@@ -120,18 +121,27 @@ def concept_query_of(module: Module, section: DocumentSection | None) -> str:
     return f"{module.title}: {module.learning_objective or ''}"
 
 
+GENERATION_DEFAULTS = {
+    "self_check": True, "output_language": "vi", "custom_instructions": "", "use_retrieval": True,
+}
+
+
+def normalize_generation_payload(payload: dict) -> dict:
+    return {**GENERATION_DEFAULTS, **payload}
+
+
 def generation_payload_of(db: Session, module_id: uuid.UUID) -> dict:
     """Stored generation conditions, with a job fallback for legacy modules."""
     module = db.get(Module, module_id)
     if module is not None and module.generation_payload is not None:
-        return module.generation_payload
+        return normalize_generation_payload(module.generation_payload)
     job = (
         db.query(Job)
         .filter(Job.module_id == module_id, Job.job_type == JobType.module_generation)
         .order_by(Job.created_at.desc())
         .first()
     )
-    return (job.payload or {}) if job is not None else {}
+    return normalize_generation_payload((job.payload or {}) if job is not None else {})
 
 
 def generation_payload(
@@ -160,15 +170,18 @@ def control_payload(
 
 
 def matching_control(db: Session, module_id: uuid.UUID, payload: dict) -> Module | None:
+    payload = normalize_generation_payload(payload)
+    defaults = literal(GENERATION_DEFAULTS, type_=JSONB)
     control = db.scalar(select(Module).where(
-        Module.paired_module_id == module_id, Module.generation_payload == payload,
+        Module.paired_module_id == module_id,
+        defaults.op("||")(Module.generation_payload) == payload,
     ).order_by(Module.created_at.desc(), Module.id))
     if control is not None:
         return control
     job = db.scalar(select(Job).outerjoin(Module, Job.module_id == Module.id).where(
         Module.generation_payload.is_(None), Job.module_id.is_not(None),
         Job.job_type == JobType.module_generation, Job.status == JobStatus.done,
-        Job.payload == payload,
+        defaults.op("||")(Job.payload) == payload,
     ).order_by(Job.created_at.desc(), Job.id))
     if job is None:
         return None
@@ -390,7 +403,7 @@ def _generate_module(
         section_id=section.id if section is not None else None,
         title=title,
         paired_module_id=paired_module.id if paired_module is not None else None,
-        generation_payload=(
+        generation_payload=normalize_generation_payload(
             {**generation_payload(requested_model(), self_check, output_language, custom_instructions),
              "use_retrieval": True}
             if use_retrieval else

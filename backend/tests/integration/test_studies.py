@@ -363,3 +363,64 @@ def test_lecturer_deletion_detects_reference_without_study_read_access(world):
         assert db.get(Module, world["rag"]) is not None
         db.get(Course, world["course"]).owner_id = world["admin"]
         db.commit()
+
+
+
+@pytest.mark.parametrize("field", ["quiz", "practice"])
+@pytest.mark.parametrize("choices,index", [([], 0), (["X", "Y"], -1), (["X", "Y"], 2)])
+def test_invalid_answer_rejects_entire_load_without_reblinding(world, field, choices, index):
+    import copy
+
+    sid = create_study(world)
+    assert load(world, sid, human_packets=[human_packet()]).status_code == 201
+    before = client.get(f"/studies/{sid}", headers=world["headers"]).json()["items"]
+    invalid = copy.deepcopy(human_packet())
+    question = invalid["quiz"][0] if field == "quiz" else invalid["practice"]
+    question["choices"] = choices
+    question["correct_index"] = index
+    response = load(world, sid, module_ids=[str(world["rag"])],
+                    human_packets=[human_packet(), invalid])
+    assert response.status_code == 422, response.text
+    assert client.get(f"/studies/{sid}", headers=world["headers"]).json()["items"] == before
+
+
+
+def test_legacy_missing_defaults_import_and_export_reuse_after_backfill_and_purge(world, monkeypatch, tmp_path):
+    from app.generation.module_generation_pipeline import matching_control, normalize_generation_payload
+    from scripts.export_study_pair import main as export_pair
+
+    with SessionLocal() as db:
+        for key in ("rag", "control"):
+            job = db.scalar(select(Job).where(Job.module_id == world[key]))
+            job.payload = {name: value for name, value in job.payload.items()
+                           if name not in ("self_check", "output_language", "custom_instructions")}
+        db.commit()
+    assert load(world, create_study(world), module_ids=[str(world["rag"])]).status_code == 201
+    with SessionLocal() as db:
+        for key in ("rag", "control"):
+            job = db.scalar(select(Job).where(Job.module_id == world[key]))
+            module = db.get(Module, world[key])
+            module.generation_payload = normalize_generation_payload(job.payload)
+            if key == "control":
+                module.paired_module_id = world["rag"]
+        db.query(Job).filter(Job.module_id.in_([world["rag"], world["control"]])).delete(synchronize_session=False)
+        db.commit()
+        expected = control_payload(world["rag"], "test-model", True)
+        assert matching_control(db, world["rag"], expected).id == world["control"]
+        for payload in (
+            control_payload(world["rag"], "other-model", True),
+            control_payload(world["rag"], "test-model", False),
+            control_payload(world["rag"], "test-model", True, "en"),
+            control_payload(world["rag"], "test-model", True, "vi", "Different instructions"),
+        ):
+            assert matching_control(db, world["rag"], payload) is None
+    assert load(world, create_study(world), module_ids=[str(world["rag"])]).status_code == 201
+
+    def unexpected_generation(*args, **kwargs):
+        raise AssertionError("The backfilled control must be reused")
+
+    monkeypatch.setattr("app.generation.study_packets.run_module_generation", unexpected_generation)
+    for _ in range(2):
+        export_pair([str(world["rag"]), "--out", str(tmp_path)])
+    with SessionLocal() as db:
+        assert db.query(Module).filter(Module.paired_module_id == world["rag"]).count() == 1
