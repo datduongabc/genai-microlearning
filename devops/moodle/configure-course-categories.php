@@ -52,15 +52,15 @@ foreach ($names as $idnumber => [$vi, $en]) {
 $extra = array_filter($DB->get_records('course_categories', [], 'depth DESC'),
     fn($record) => !in_array($record->id, $keptids));
 foreach ($extra as $record) {
-    if ($DB->record_exists('course', ['category' => $record->id])
-            || $DB->record_exists('course_categories', ['parent' => $record->id])) {
-        throw new RuntimeException("Category {$record->id} is no longer empty");
-    }
     if ($DB->record_exists('course', ['category' => $record->id])) {
         throw new RuntimeException("Category {$record->id} contains courses; move them before removing it");
     }
 }
 foreach ($extra as $record) {
+    if ($DB->record_exists('course', ['category' => $record->id])
+            || $DB->record_exists('course_categories', ['parent' => $record->id])) {
+        throw new RuntimeException("Category {$record->id} is no longer empty");
+    }
     $category = \core_course_category::get($record->id, MUST_EXIST, true);
     if (!$category->can_delete_full()) {
         throw new RuntimeException("Cannot remove empty category {$record->id}");
