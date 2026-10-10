@@ -386,7 +386,10 @@ def test_invalid_answer_rejects_entire_load_without_reblinding(world, field, cho
 
 
 def test_legacy_missing_defaults_import_and_export_reuse_after_backfill_and_purge(world, monkeypatch, tmp_path):
-    from app.generation.module_generation_pipeline import matching_control, normalize_generation_payload
+    from app.generation.module_generation_pipeline import (
+        matching_control,
+        normalize_generation_payload,
+    )
     from scripts.export_study_pair import main as export_pair
 
     with SessionLocal() as db:
