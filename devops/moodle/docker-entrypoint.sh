@@ -100,7 +100,9 @@ php /usr/local/bin/finish-interrupted-install.php
 # trang quan tri. No-op tren site da co.
 php /usr/local/bin/configure-webservice.php
 
-php /usr/local/bin/configure-course-categories.php
+if ! php /usr/local/bin/configure-course-categories.php; then
+    echo "[moodle-entrypoint] Canh bao: cau hinh danh muc khoa hoc that bai (xem log tren), van start Apache." >&2
+fi
 
 chown -R www-data:www-data /var/www/moodledata
 

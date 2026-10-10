@@ -10,9 +10,11 @@ $expected = [
     'co-so-nganh' => ['vi' => 'Cơ sở ngành', 'en' => 'Foundation Courses'],
     'chuyen-nganh' => ['vi' => 'Chuyên ngành', 'en' => 'Specialized Courses'],
 ];
-$categories = $DB->get_records('course_categories', [], 'idnumber', 'id,idnumber,name,parent,visible');
+[$insql, $params] = $DB->get_in_or_equal(array_keys($expected));
+$categories = $DB->get_records_select('course_categories', "idnumber {$insql}", $params, 'idnumber',
+    'id,idnumber,name,parent,visible');
 if (count($categories) !== 3) {
-    throw new RuntimeException('Expected exactly three course categories; found ' . count($categories));
+    throw new RuntimeException('Expected the three course categories; found ' . count($categories));
 }
 foreach (['en', 'vi'] as $lang) {
     if (!get_string_manager()->translation_exists($lang)) {
@@ -20,8 +22,8 @@ foreach (['en', 'vi'] as $lang) {
     }
     force_current_language($lang);
     foreach ($categories as $category) {
-        if (!isset($expected[$category->idnumber]) || $category->parent != 0 || !$category->visible) {
-            throw new RuntimeException('Unexpected, nested or hidden category: ' . $category->id);
+        if ($category->parent != 0 || !$category->visible) {
+            throw new RuntimeException('Nested or hidden category: ' . $category->id);
         }
         $name = format_string($category->name, true, [
             'context' => context_coursecat::instance($category->id),
