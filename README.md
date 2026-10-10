@@ -6,6 +6,8 @@ Sinh viên: Dương Nguyễn Tấn Đạt, ngành Khoa học Máy tính.
 Hệ thống nhận tài liệu môn học của giảng viên (PDF, PowerPoint, HTML, video), truy xuất bằng RAG, rồi sinh mô-đun Microlearning gồm bảy thành phần: Learning Objective, Content, Slides, Example, Practice, Quiz, Explanation.
 Mô-đun sau đó được xuất bản sang Moodle cho học viên học.
 
+Khi bộ đọc nhận diện tài liệu hỏng hoặc sai định dạng, job báo lỗi ngay ở lần xử lý đầu và không tự thử lại; PDF có mật khẩu cần bỏ mật khẩu rồi tải lại. Lỗi tạm thời khi gọi gateway vẫn được tự thử lại với thời gian chờ tăng dần.
+
 Ứng dụng mở cho mọi người dùng; admin quản lý tài khoản và theo dõi lỗi. Quyền làm giáo viên trong Moodle được quản lý theo từng môn học trên Moodle.
 
 Trong trang xem trước, giảng viên có thể yêu cầu AI sửa một thành phần bằng ngôn ngữ tự nhiên, ví dụ “Rút gọn slide 3” hoặc “Làm câu quiz 2 khó hơn”. AI bám các đoạn nguồn của mô-đun và ngôn ngữ đầu ra đã chọn; yêu cầu chưa rõ sẽ được hỏi lại. Bản gốc AI được giữ trong `ai_original`, và số lượt chỉnh sửa đã áp dụng được hiển thị trên trang. Mô-đun đối chứng (không RAG) không hỗ trợ chỉnh sửa bằng chat.
@@ -22,6 +24,8 @@ Admin tạo tài khoản người dùng mà không tự liên kết Moodle; có 
 Mật khẩu ứng dụng và Moodle là riêng biệt. Ứng dụng không kiểm mật khẩu Moodle và không tạo người dùng Moodle. Nhập email trong “Tài khoản Moodle” để gửi yêu cầu, đăng nhập đúng tài khoản Moodle và xác nhận trên trang/thông báo Moodle (hết hạn sau một giờ); chỉ sau xác nhận ứng dụng mới lưu liên kết. Mỗi tài khoản Moodle chỉ liên kết với một tài khoản ứng dụng; đăng ký/tạo tài khoản ở đây luôn để liên kết trống. Không tự cấp vai trò giáo viên từ email hay từ đăng nhập. Có thể chọn “Hủy liên kết Moodle” trong phần tài khoản, hoặc nhờ admin hủy liên kết trên trang quản lý người dùng. Thao tác chỉ xóa liên kết tài khoản trong ứng dụng, giữ nguyên liên kết khóa học và mọi nội dung trên Moodle; cần liên kết lại tài khoản trước khi đẩy nội dung lên Moodle.
 
 Admin Moodle tạo khóa học và phân quyền trong Moodle. Ứng dụng chỉ liệt kê, liên kết và đẩy nội dung vào khóa học mà tài khoản Moodle đã liên kết hiện có quyền `moodle/course:manageactivities`; kiểm tra lại trước mỗi thao tác. Không tạo khóa học hay tự ghi danh từ ứng dụng. Nhiều khóa học ứng dụng có thể liên kết cùng một khóa học Moodle được phép. Nút đẩy nội dung ẩn khi kiểm tra quyền thất bại.
+
+Nếu Moodle trả về nội dung không phải JSON (ví dụ trang lỗi HTML), ứng dụng báo lỗi Moodle có kiểm soát để người dùng thử lại sau.
 
 Tài khoản có ít nhất một khóa học ứng dụng liên kết với khóa học Moodle mà họ hiện có quyền quản lý hoạt động được sinh mô-đun đầy đủ. Các tài khoản khác được sinh tối đa 3 mô-đun mỗi ngày UTC, cấu hình bằng `NON_TEACHER_DAILY_GENERATION_LIMIT` (số nguyên dương). Một batch tính từng mô-đun, bản đối chứng tính một lượt; retry job không tính lại. Không kiểm tra được Moodle thì áp dụng hạn mức; admin ứng dụng cũng tuân theo quy tắc này. Hạn mức lưu theo tài khoản, không đặt lại khi xóa khóa học.
 

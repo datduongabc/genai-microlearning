@@ -299,3 +299,115 @@ def test_the_job_step_without_a_section_generates_from_the_whole_document(textbo
         assert all(s is not None and s.document_id == textbook["doc"] for s in seen["retrieve_scopes"])
     finally:
         db.close()
+
+
+@pytest.mark.parametrize("mode", ["whole", "section", "cached", "control"])
+def test_every_generation_provider_call_releases_worker_transactions(textbook, monkeypatch, mode):
+    from sqlalchemy import select, text
+
+    from app.generation import content, example, objective, planner, quiz_graph, relevance, slides
+    from app.generation.content import ContentVerification, LessonText, LessonVerification
+    from app.generation.objective import LearningObjective
+    from app.generation.quiz_graph import AnswerabilityCheck, GroundednessAnswerabilityCheck
+    from app.ingestion import embeddings
+    from tests.conftest import _offline_embedding
+    from tests.integration.generation_helpers import OUTPUTS
+
+    calls = []
+
+    def assert_released(kind):
+        with SessionLocal() as probe:
+            assert not probe.execute(text(
+                "SELECT pid FROM pg_stat_activity WHERE datname = current_database() AND usename = 'app_worker' "
+                "AND xact_start IS NOT NULL"
+            )).all(), kind
+            probe.execute(text("SET LOCAL lock_timeout = '500ms'"))
+            probe.execute(select(Document).where(Document.id == textbook["doc"]).with_for_update())
+        calls.append(kind)
+
+    def fake_llm(prompt, response_model, **kwargs):
+        assert_released(response_model.__name__)
+        if response_model is LessonText:
+            return LessonText(content="## Bài học\nKhái niệm")
+        if response_model in (ContentVerification, LessonVerification):
+            if response_model is LessonVerification:
+                return LessonVerification(completeness_pass=True, completeness_reason="ok",
+                                          scope_pass=True, scope_reason="ok")
+            return ContentVerification(groundedness_pass=True, groundedness_reason="ok",
+                                       completeness_pass=True, completeness_reason="ok",
+                                       scope_pass=True, scope_reason="ok")
+        if response_model in (GroundednessAnswerabilityCheck, AnswerabilityCheck):
+            if response_model is AnswerabilityCheck:
+                return AnswerabilityCheck(answerability_pass=True, answerability_reason="ok",
+                                          bloom_level_pass=True, bloom_level_reason="ok")
+            return GroundednessAnswerabilityCheck(groundedness_pass=True, groundedness_reason="ok",
+                                                 answerability_pass=True, answerability_reason="ok",
+                                                 bloom_level_pass=True, bloom_level_reason="ok")
+        return OUTPUTS[response_model].model_copy(deep=True)
+
+    def fake_embedding(**kwargs):
+        assert_released("embedding")
+        return _offline_embedding(**kwargs)
+
+    def fake_rerank(query, chunks):
+        assert_released("rerank")
+        return [(chunk, 1.0) for chunk in chunks]
+
+    for step in (content, example, objective, planner, quiz_graph, relevance, slides):
+        monkeypatch.setattr(step, "complete_structured", fake_llm)
+    monkeypatch.setattr(embeddings.litellm, "embedding", fake_embedding)
+    monkeypatch.setattr(retrieval, "rerank_scored", fake_rerank)
+    with SessionLocal() as db:
+        payload = {}
+        if mode in ("cached", "control"):
+            db.get(Document, textbook["doc"]).planner_concepts = [
+                {**concept.model_dump(), "output_language": "vi"}
+                for concept in OUTPUTS[PlannerOutput].concepts
+            ]
+        if mode == "control":
+            lo = OUTPUTS[LearningObjective]
+            paired = Module(document_id=textbook["doc"], course_id=textbook["course"],
+                            title="Khái niệm", learning_objective=lo.objective_text,
+                            bloom_level=lo.bloom_level, sub_objectives=lo.sub_objectives)
+            db.add(paired)
+            db.flush()
+            payload = {"use_retrieval": False, "paired_module_id": str(paired.id)}
+        job = Job(job_type=JobType.module_generation, step="generate", status=JobStatus.running,
+                  document_id=textbook["doc"], section_id=textbook["section"] if mode == "section" else None,
+                  payload=payload)
+        db.add(job)
+        db.commit()
+        pipeline.run_module_generation_step(job)
+        db.refresh(job)
+        assert job.status == JobStatus.done
+        assert {"SlidesOutput", "ExampleOutput", "QuizQuestion"} <= set(calls)
+        if mode == "control":
+            assert {"LessonVerification", "AnswerabilityCheck"} <= set(calls)
+            assert not {"embedding", "rerank", "PlannerOutput"} & set(calls)
+        else:
+            assert {"LearningObjective", "RelevanceCheck", "ContentOutput", "ContentVerification",
+                    "GroundednessAnswerabilityCheck", "embedding", "rerank"} <= set(calls)
+            assert ("PlannerOutput" in calls) == (mode != "cached")
+
+
+def test_provider_failure_leaves_no_partial_module_and_keeps_retry_policy(textbook, seen, monkeypatch):
+    from app.jobs.queue import handle_job_error
+
+    def unavailable(*args, **kwargs):
+        raise RuntimeError("LLM gateway unavailable")
+
+    monkeypatch.setattr(pipeline, "generate_slides", unavailable)
+    with SessionLocal() as db:
+        job = Job(job_type=JobType.module_generation, step="generate", status=JobStatus.running,
+                  document_id=textbook["doc"])
+        db.add(job)
+        db.commit()
+        job_id = job.id
+        with pytest.raises(RuntimeError, match="LLM gateway unavailable") as failure:
+            pipeline.run_module_generation_step(job)
+        handle_job_error(job_id, failure.value)
+        db.refresh(job)
+        assert job.status == JobStatus.queued
+        assert job.attempts == 1
+        assert job.module_id is None
+        assert db.query(Module).filter(Module.document_id == textbook["doc"]).count() == 0

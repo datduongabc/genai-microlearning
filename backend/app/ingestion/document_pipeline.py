@@ -40,11 +40,12 @@ def _run_extract(job) -> None:
         if doc is None:
             raise ValueError(f"Document {current_job.document_id} not found")
         storage_path = current_job.payload["storage_path"]
+        course_id, filename = str(doc.course_id), doc.filename
 
         doc.status = DocumentStatus.processing
         db.commit()
 
-        units = read_document(storage_path, course_id=str(doc.course_id), source_id=doc.filename)
+        units = read_document(storage_path, course_id=course_id, source_id=filename)
         doc.raw_text = "\n\n".join(u.text for u in units)
 
         next_payload = {**current_job.payload, "units": [asdict(u) for u in units]}
