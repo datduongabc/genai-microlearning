@@ -136,7 +136,7 @@ Mọi thống kê nặng nằm ở script đọc từ cơ sở dữ liệu, khô
 
 ### Mô hình dữ liệu
 
-Bảng `studies` mô tả một nghiên cứu: tên, phiên bản rubric, trạng thái.
+Bảng `studies` mô tả một nghiên cứu: tên, phiên bản rubric, trạng thái và danh sách email người chấm được mời.
 
 Bảng `study_items` mô tả một đơn vị đem chấm.
 Mỗi hàng gồm nhóm thuộc một trong ba giá trị `human`, `llm_no_rag`, `rag_llm`, một mã ẩn danh dạng M01 hoặc M02, và một gói nội dung tự chứa dạng JSON.

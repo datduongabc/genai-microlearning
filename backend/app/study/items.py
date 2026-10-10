@@ -46,3 +46,10 @@ def existing_pair(db: Session, module_id: uuid.UUID, owner_id: uuid.UUID) -> lis
         StudyItem(group="rag_llm", module_id=module.id, packet=module_packet(module, sources).model_dump()),
         StudyItem(group="llm_no_rag", packet=module_packet(control, sources).model_dump()),
     ]
+
+
+def shuffle_for_rater(items: list, study_id: uuid.UUID, rater_id: uuid.UUID) -> list:
+    """Stable across reloads/processes, without modifying the canonical anonymous order."""
+    shuffled = list(items)
+    random.Random(f"{study_id}:{rater_id}").shuffle(shuffled)
+    return shuffled

@@ -1,13 +1,15 @@
 import { useState } from "react";
 import { AdminFailuresPanel } from "../components/AdminFailuresPanel";
 import { AdminUsersPanel } from "../components/AdminUsersPanel";
+import { AdminStudiesPanel } from "../components/AdminStudiesPanel";
 import { AppShell } from "../components/AppShell";
 
-type Tab = "users" | "failures";
+type Tab = "users" | "failures" | "studies";
 
 const TABS: { id: Tab; label: string }[] = [
   { id: "users", label: "Tài khoản" },
   { id: "failures", label: "Theo dõi lỗi" },
+  { id: "studies", label: "Nghiên cứu" },
 ];
 
 export function AdminPage() {
@@ -30,7 +32,7 @@ export function AdminPage() {
           </button>
         ))}
       </div>
-      {tab === "users" ? <AdminUsersPanel /> : <AdminFailuresPanel />}
+      {tab === "users" ? <AdminUsersPanel /> : tab === "failures" ? <AdminFailuresPanel /> : <AdminStudiesPanel />}
     </AppShell>
   );
 }

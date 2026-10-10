@@ -8,6 +8,9 @@ import { CoursesPage } from "./pages/CoursesPage";
 import { RegisterPage } from "./pages/RegisterPage";
 import { LoginPage } from "./pages/LoginPage";
 
+const StudiesPage = lazy(() => import("./pages/StudiesPage").then(m => ({ default: m.StudiesPage })));
+const BlindRatingPage = lazy(() => import("./pages/StudiesPage").then(m => ({ default: m.BlindRatingPage })));
+
 // Loaded only when a module is opened: its Markdown renderer is about a fifth of the bundle,
 // and no other page needs it before the first screen can be shown.
 const ModulePreviewPage = lazy(() =>
@@ -24,6 +27,9 @@ function App() {
           <Route path="/admin" element={<AdminPage />} />
         </Route>
         <Route element={<ProtectedRoute />}>
+          <Route path="/studies" element={<Suspense fallback={null}><StudiesPage /></Suspense>} />
+          <Route path="/studies/:studyId" element={<Suspense fallback={null}><BlindRatingPage /></Suspense>} />
+          <Route path="/studies/:studyId/items/:itemId" element={<Suspense fallback={null}><BlindRatingPage /></Suspense>} />
           <Route path="/courses" element={<CoursesPage />} />
           <Route path="/courses/:courseId" element={<CourseDetailPage />} />
           <Route
