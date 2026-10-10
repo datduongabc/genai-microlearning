@@ -100,6 +100,8 @@ php /usr/local/bin/finish-interrupted-install.php
 # trang quan tri. No-op tren site da co.
 php /usr/local/bin/configure-webservice.php
 
+php /usr/local/bin/configure-course-categories.php
+
 chown -R www-data:www-data /var/www/moodledata
 
 exec "$@"

@@ -22,6 +22,7 @@ RUN mkdir -p /var/www/moodledata \
 COPY devops/moodle/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 COPY devops/moodle/finish-interrupted-install.php /usr/local/bin/finish-interrupted-install.php
 COPY devops/moodle/configure-webservice.php /usr/local/bin/configure-webservice.php
+COPY devops/moodle/configure-course-categories.php /usr/local/bin/configure-course-categories.php
 COPY devops/moodle/restore-config.php /usr/local/bin/restore-config.php
 COPY devops/moodle/check-database.php /usr/local/bin/check-database.php
 
