@@ -514,3 +514,27 @@ def test_each_arm_persists_actual_served_models_and_api_exposes_them(document, m
         assert response.json()["generation_models"] == control.generation_models
     finally:
         db.close()
+
+
+
+def test_generation_persists_pairing_and_conditions_without_jobs(document, llm):
+    from app.llm.gateway import using_model
+
+    with using_model("test-model"):
+        rag_id = _generate(document, self_check=False, output_language="en", custom_instructions="Be brief")
+        control_id = _generate(document, self_check=False, use_retrieval=False,
+                               paired_module_id=rag_id, output_language="en", custom_instructions="Be brief")
+    with SessionLocal() as db:
+        rag = db.get(Module, rag_id)
+        control = db.get(Module, control_id)
+        assert rag.paired_module_id is None
+        assert rag.generation_payload == {
+            "model_alias": "test-model", "self_check": False, "use_retrieval": True,
+            "output_language": "en", "custom_instructions": "Be brief",
+        }
+        assert control.paired_module_id == rag_id
+        expected = pipeline.control_payload(rag_id, "test-model", False, "en", "Be brief")
+        assert control.generation_payload == expected
+        assert pipeline.generation_payload_of(db, rag_id) == rag.generation_payload
+        assert pipeline.matching_control(db, rag_id, expected).id == control_id
+        assert pipeline.is_control(db, control_id)

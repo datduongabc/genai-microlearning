@@ -8,9 +8,10 @@ from app.generation.module_generation_pipeline import (
     control_payload,
     generation_payload_of,
     learning_objective_of,
+    matching_control,
 )
 from app.generation.study_packets import module_packet, reference_chunks
-from app.models import Course, Job, JobStatus, JobType, Module, StudyItem
+from app.models import Course, Module, StudyItem
 
 
 def assign_codes(items: list[StudyItem]) -> None:
@@ -35,16 +36,10 @@ def existing_pair(db: Session, module_id: uuid.UUID, owner_id: uuid.UUID) -> lis
     learning_objective_of(module)
     expected = control_payload(module_id, payload.get("model_alias"), payload.get("self_check", True),
                                payload.get("output_language", "vi"), payload.get("custom_instructions", ""))
-    control_job = db.scalar(select(Job).where(
-        Job.job_type == JobType.module_generation, Job.status == JobStatus.done,
-        Job.module_id.is_not(None), Job.payload == expected,
-    ).order_by(Job.created_at.desc(), Job.id))
-    if control_job is None:
-        raise FileNotFoundError("Matching completed no-RAG control not found; generate it before loading the study")
-    control = db.scalar(select(Module).join(Course).where(
-        Module.id == control_job.module_id, Course.owner_id == owner_id,
-    ))
+    control = matching_control(db, module_id, expected)
     if control is None:
+        raise FileNotFoundError("Matching completed no-RAG control not found; generate it before loading the study")
+    if control.course.owner_id != owner_id:
         raise LookupError("Module not found")
     sources = reference_chunks(db, module)
     return [

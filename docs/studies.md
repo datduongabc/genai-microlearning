@@ -69,3 +69,5 @@ chiếu; muốn xóa nguồn phải xử lý nghiên cứu liên quan trước.
 Các script R8 `export_study_pair.py`, `run_judge.py`, `analyze_study.py` và định
 dạng JSON của chúng giữ nguyên. Nhập trực tiếp cặp JSON xuất sẵn chưa nằm
 trong API này.
+
+Generation conditions and control pairing are retained on modules independently of job cleanup; surviving generation jobs backfill legacy modules during migration. Study references block module, document, and course deletion with HTTP 409 before upload removal.

@@ -236,3 +236,19 @@ def test_generating_again_for_the_same_document_starts_a_new_run_beside_the_fini
     assert second.json()["job_id"] != first.json()["job_id"]
     after = {m["id"] for m in client.get("/modules", params={"document_id": world["doc"]}, headers=owner).json()}
     assert before < after and len(after) == len(before) + 1
+
+
+
+def test_deleting_module_removes_control_after_jobs_expire(world):
+    with SessionLocal() as db:
+        rag = db.get(Module, world["rag"])
+        control = db.get(Module, world["control"])
+        rag.generation_payload = {}
+        control.generation_payload = {"use_retrieval": False, "paired_module_id": str(rag.id)}
+        control.paired_module_id = rag.id
+        db.query(Job).filter(Job.module_id.in_([rag.id, control.id])).delete(synchronize_session=False)
+        db.commit()
+    response = client.delete(f"/modules/{world['rag']}", headers=_headers(world["owner"]))
+    assert response.status_code == 200, response.text
+    assert set(response.json()["deleted_module_ids"]) == {str(world["rag"]), str(world["control"])}
+    assert _rows_of(world["rag"]) == _rows_of(world["control"]) == 0

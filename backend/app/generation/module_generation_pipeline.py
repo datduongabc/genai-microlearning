@@ -10,6 +10,7 @@ duy nhất cho "có đang sinh dở không", không cần 2 cơ chế song song)
 import uuid
 from dataclasses import dataclass
 
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.db import WorkerSessionLocal
@@ -26,7 +27,7 @@ from app.generation.quiz_graph import (
 from app.generation.relevance import CorrectiveResult, corrective_retrieve
 from app.generation.scope_digest import build_scope_digest
 from app.generation.slides import generate_slides
-from app.llm.gateway import capture_models, recorded_models, using_model
+from app.llm.gateway import active_model, capture_models, recorded_models, using_model
 from app.models import (
     Chunk,
     ComponentType,
@@ -120,7 +121,10 @@ def concept_query_of(module: Module, section: DocumentSection | None) -> str:
 
 
 def generation_payload_of(db: Session, module_id: uuid.UUID) -> dict:
-    """Payload của job đã sinh module (model, cờ tự kiểm, nhánh); {} khi module không đến từ job nào."""
+    """Stored generation conditions, with a job fallback for legacy modules."""
+    module = db.get(Module, module_id)
+    if module is not None and module.generation_payload is not None:
+        return module.generation_payload
     job = (
         db.query(Job)
         .filter(Job.module_id == module_id, Job.job_type == JobType.module_generation)
@@ -153,6 +157,25 @@ def control_payload(
         **generation_payload(alias, self_check, output_language, custom_instructions),
         "use_retrieval": False, "paired_module_id": str(paired_module_id),
     }
+
+
+def matching_control(db: Session, module_id: uuid.UUID, payload: dict) -> Module | None:
+    control = db.scalar(select(Module).where(
+        Module.paired_module_id == module_id, Module.generation_payload == payload,
+    ).order_by(Module.created_at.desc(), Module.id))
+    if control is not None:
+        return control
+    job = db.scalar(select(Job).outerjoin(Module, Job.module_id == Module.id).where(
+        Module.generation_payload.is_(None), Job.module_id.is_not(None),
+        Job.job_type == JobType.module_generation, Job.status == JobStatus.done,
+        Job.payload == payload,
+    ).order_by(Job.created_at.desc(), Job.id))
+    if job is None:
+        return None
+    control = db.get(Module, job.module_id)
+    if control is None:
+        raise LookupError("Module not found")
+    return control
 
 
 def is_control(db: Session, module_id: uuid.UUID) -> bool:
@@ -366,6 +389,13 @@ def _generate_module(
         course_id=doc.course_id,
         section_id=section.id if section is not None else None,
         title=title,
+        paired_module_id=paired_module.id if paired_module is not None else None,
+        generation_payload=(
+            {**generation_payload(active_model(), self_check, output_language, custom_instructions),
+             "use_retrieval": True}
+            if use_retrieval else
+            control_payload(paired_module.id, active_model(), self_check, output_language, custom_instructions)
+        ),
         learning_objective=lo.objective_text,
         bloom_level=lo.bloom_level,
         sub_objectives=lo.sub_objectives,

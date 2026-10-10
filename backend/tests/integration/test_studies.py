@@ -1,5 +1,6 @@
 """Admin study loading uses real runtime-role HTTP requests and snapshot packets."""
 import uuid
+from datetime import UTC, datetime, timedelta
 
 import pytest
 from fastapi.testclient import TestClient
@@ -7,9 +8,11 @@ from sqlalchemy import select, text
 from sqlalchemy.exc import IntegrityError, ProgrammingError
 
 from app.auth.security import create_access_token
+from app.config import settings
 from app.db import RequestSessionLocal, SessionLocal
 from app.generation.evaluation import ModuleContentInput, ModuleEvaluation
 from app.generation.module_generation_pipeline import control_payload
+from app.jobs.maintenance import purge_old_records
 from app.main import app
 from app.models import (
     Chunk,
@@ -297,3 +300,66 @@ def test_database_enforces_source_and_rater_identity(world):
         db.add(Rating(study_item_id=item.id, rater_kind="llm_judge", **rating_values()))
         with pytest.raises(IntegrityError):
             db.commit()
+
+
+
+def test_loading_pair_survives_job_retention(world):
+    with SessionLocal() as db:
+        for key in ("rag", "control"):
+            module = db.get(Module, world[key])
+            job = db.scalar(select(Job).where(Job.module_id == module.id))
+            module.generation_payload = job.payload
+            if key == "control":
+                module.paired_module_id = world["rag"]
+            job.created_at = datetime.now(UTC) - timedelta(days=settings.done_job_retention_days + 1)
+        db.commit()
+    purge_old_records()
+    with SessionLocal() as db:
+        assert db.scalars(select(Job).where(Job.module_id.in_([world["rag"], world["control"]]))).all() == []
+    sid = create_study(world)
+    assert load(world, sid, module_ids=[str(world["rag"])]).status_code == 201
+    assert load(world, create_study(world), module_ids=[str(world["control"])]).status_code == 422
+
+
+@pytest.mark.parametrize("kind", ["modules", "documents", "courses"])
+def test_study_reference_blocks_deletion_before_file_removal(world, kind, monkeypatch):
+    from pathlib import Path
+
+    from app.api import documents
+
+    sid = create_study(world)
+    assert load(world, sid, module_ids=[str(world["rag"])]).status_code == 201
+    with SessionLocal() as db:
+        document_id = db.get(Module, world["rag"]).document_id
+    upload_dir = Path(".pytest_cache/study_uploads")
+    upload_dir.mkdir(parents=True, exist_ok=True)
+    upload = upload_dir / f"{document_id}.txt"
+    upload.write_text("retained upload")
+    monkeypatch.setattr(documents.settings, "upload_storage_dir", str(upload_dir))
+    target = {"modules": world["rag"], "documents": document_id, "courses": world["course"]}[kind]
+    try:
+        response = client.delete(f"/{kind}/{target}", headers=world["headers"])
+        assert response.status_code == 409, response.text
+        assert upload.read_text() == "retained upload"
+        with SessionLocal() as db:
+            assert db.get(Module, world["rag"]) is not None
+            assert db.get(Module, world["control"]) is not None
+            assert db.get(Document, document_id) is not None
+            assert db.get(Course, world["course"]) is not None
+    finally:
+        upload.unlink(missing_ok=True)
+
+
+
+def test_lecturer_deletion_detects_reference_without_study_read_access(world):
+    sid = create_study(world)
+    assert load(world, sid, module_ids=[str(world["rag"])]).status_code == 201
+    with SessionLocal() as db:
+        db.get(Course, world["course"]).owner_id = world["teacher"]
+        db.commit()
+    response = client.delete(f"/modules/{world['rag']}", headers=world["teacher_headers"])
+    assert response.status_code == 409, response.text
+    with SessionLocal() as db:
+        assert db.get(Module, world["rag"]) is not None
+        db.get(Course, world["course"]).owner_id = world["admin"]
+        db.commit()

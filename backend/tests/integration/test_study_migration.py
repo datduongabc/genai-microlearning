@@ -34,7 +34,31 @@ def test_study_migration_round_trip():
                                "ORDER BY tablename, policyname")
         with engine.connect() as conn:
             original_policies = conn.execute(source_policies).all()
+        user_id, course_id, doc_id, rag_id, control_id = [uuid.uuid4() for _ in range(5)]
+        with engine.begin() as conn:
+            conn.execute(text("INSERT INTO users (id, email, name, hashed_password) VALUES (:id, :email, 'T', 'x')"),
+                         {"id": user_id, "email": f"{user_id}@example.com"})
+            conn.execute(text("INSERT INTO courses (id, owner_id, name) VALUES (:id, :owner, 'T')"),
+                         {"id": course_id, "owner": user_id})
+            conn.execute(text("INSERT INTO documents (id, course_id, filename, status) VALUES (:id, :course, 'a.txt', 'embedded')"),
+                         {"id": doc_id, "course": course_id})
+            for module_id, payload in ((rag_id, '{"model_alias":"test","self_check":false}'),
+                                       (control_id, '{"model_alias":"test","self_check":false,"use_retrieval":false,'
+                                                    f'"paired_module_id":"{rag_id}"' + '}')):
+                conn.execute(text("INSERT INTO modules (id, document_id, course_id, title) VALUES (:id, :doc, :course, 'T')"),
+                             {"id": module_id, "doc": doc_id, "course": course_id})
+                conn.execute(text("INSERT INTO jobs (id, job_type, step, status, module_id, document_id, payload, attempts, max_attempts) "
+                                  "VALUES (:id, 'module_generation', 'done', 'done', :module, :doc, CAST(:payload AS jsonb), 0, 5)"),
+                             {"id": uuid.uuid4(), "module": module_id, "doc": doc_id, "payload": payload})
         migrate("head")
+        with engine.begin() as conn:
+            assert conn.scalar(text("SELECT generation_payload->>'model_alias' FROM modules WHERE id=:id"),
+                               {"id": rag_id}) == "test"
+            assert conn.scalar(text("SELECT paired_module_id FROM modules WHERE id=:id"),
+                               {"id": control_id}) == rag_id
+            conn.execute(text("DELETE FROM jobs"))
+            conn.execute(text("DELETE FROM modules WHERE id=:id"), {"id": rag_id})
+            assert conn.scalar(text("SELECT count(*) FROM modules WHERE id=:id"), {"id": control_id}) == 0
         assert set(inspect(engine).get_table_names()) - previous == {"studies", "study_items", "ratings"}
         with engine.connect() as conn:
             assert conn.execute(source_policies).all() == original_policies

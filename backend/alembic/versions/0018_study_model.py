@@ -24,6 +24,23 @@ def _created():
 
 
 def upgrade():
+    op.add_column("modules", sa.Column("generation_payload", postgresql.JSONB()))
+    op.add_column("modules", sa.Column("paired_module_id", sa.UUID(),
+                                      sa.ForeignKey("modules.id", ondelete="CASCADE")))
+    op.create_index("ix_modules_paired_module_id", "modules", ["paired_module_id"])
+    op.execute("""
+        UPDATE modules m SET generation_payload = j.payload
+        FROM (SELECT DISTINCT ON (module_id) module_id, payload
+              FROM jobs WHERE job_type = 'module_generation' AND module_id IS NOT NULL
+              ORDER BY module_id, created_at DESC, id) j
+        WHERE m.id = j.module_id
+    """)
+    op.execute("""
+        UPDATE modules m SET paired_module_id = source.id
+        FROM modules source
+        WHERE m.generation_payload->>'use_retrieval' = 'false'
+          AND m.generation_payload->>'paired_module_id' = source.id::text
+    """)
     op.create_table(
         "studies", _id(), sa.Column("name", sa.String(), nullable=False),
         sa.Column("rubric_version", sa.String(), nullable=False),
@@ -67,7 +84,24 @@ def upgrade():
         op.execute(f"CREATE POLICY {table}_admin ON {table} TO app_runtime "
                    "USING (current_user_is_admin()) WITH CHECK (current_user_is_admin())")
 
+    op.execute("""
+        CREATE FUNCTION modules_referenced_by_study(p_ids uuid[]) RETURNS boolean
+        LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public, pg_temp AS $$
+        SELECT EXISTS (
+            SELECT 1 FROM study_items i JOIN modules m ON m.id = i.module_id
+            JOIN courses c ON c.id = m.course_id
+            WHERE m.id = ANY(p_ids)
+              AND c.owner_id = NULLIF(current_setting('app.current_user_id', true), '')::uuid
+        ) $$
+    """)
+    op.execute("REVOKE ALL ON FUNCTION modules_referenced_by_study(uuid[]) FROM PUBLIC")
+    op.execute("GRANT EXECUTE ON FUNCTION modules_referenced_by_study(uuid[]) TO app_runtime")
+
 
 def downgrade():
+    op.execute("DROP FUNCTION modules_referenced_by_study(uuid[])")
+    op.drop_index("ix_modules_paired_module_id", table_name="modules")
+    op.drop_column("modules", "paired_module_id")
+    op.drop_column("modules", "generation_payload")
     for table in ("ratings", "study_items", "studies"):
         op.drop_table(table)

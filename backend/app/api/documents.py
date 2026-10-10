@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, UploadFile
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session, selectinload
 
+from app.api.deletion import check_study_references, commit_deletion
 from app.api.deps import get_current_user, require_course_owner
 from app.auth.rate_limit import limiter, user_or_address
 from app.config import settings
@@ -242,12 +243,14 @@ def delete_document(
     if doc is None or doc.course.owner_id != current_user.id:
         raise HTTPException(status_code=404, detail="Document not found")
 
+    check_study_references(db, db.scalars(select(Module.id).where(Module.document_id == document_id)))
+    db.delete(doc)
+    commit_deletion(db)
+
     upload_dir = Path(settings.upload_storage_dir)
     for leftover in upload_dir.glob(f"{document_id}.*"):
         leftover.unlink(missing_ok=True)
 
-    db.delete(doc)
-    db.commit()
     return {"status": "deleted"}
 
 
