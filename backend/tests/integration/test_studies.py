@@ -48,7 +48,7 @@ def world():
         teacher = User(email=f"study-teacher-{uuid.uuid4()}@example.com", name="Teacher", hashed_password="x")
         db.add_all([admin, teacher])
         db.flush()
-        course = Course(name="Secret course", owner_id=teacher.id)
+        course = Course(name="Secret course", owner_id=admin.id)
         db.add(course)
         db.flush()
         doc = Document(course_id=course.id, filename="secret.txt")
@@ -118,6 +118,48 @@ def test_create_list_get_and_load_three_groups_without_exposing_source_metadata(
     assert detail["status"] == "draft" and len(detail["items"]) == 3
     with SessionLocal() as db:
         assert db.scalar(select(Rating).join(StudyItem).where(StudyItem.study_id == uuid.UUID(sid))) is None
+
+
+@pytest.mark.parametrize("source", ["rag", "control"])
+def test_loading_another_owners_source_or_control_returns_not_found(world, source):
+    sid = create_study(world)
+    with SessionLocal() as db:
+        other_course = Course(name="Other owner's course", owner_id=world["teacher"])
+        db.add(other_course)
+        db.flush()
+        other_course_id = other_course.id
+        other_doc = Document(course_id=other_course_id, filename="other.txt")
+        db.add(other_doc)
+        db.flush()
+        module = db.get(Module, world[source])
+        original_document_id = module.document_id
+        module.course_id = other_course_id
+        module.document_id = other_doc.id
+        if source == "rag":
+            db.get(Course, world["course"]).owner_id = world["teacher"]
+        db.commit()
+    try:
+        response = load(world, sid, module_ids=[str(world["rag"])], human_packets=[human_packet()])
+        missing = load(world, sid, module_ids=[str(uuid.uuid4())])
+        assert response.status_code == missing.status_code == 404
+        assert response.json() == missing.json() == {"detail": "Module not found"}
+        assert client.get(f"/studies/{sid}", headers=world["headers"]).json()["items"] == []
+        with RequestSessionLocal() as db:
+            db.execute(text("SELECT set_config('app.current_user_id', :uid, true)"),
+                       {"uid": str(world["admin"])})
+            assert db.get(Module, world[source]) is None
+            assert db.scalars(select(ModuleComponent).where(ModuleComponent.module_id == world[source])).all() == []
+            if source == "rag":
+                assert db.scalars(select(Chunk).where(Chunk.course_id == world["course"])).all() == []
+    finally:
+        with SessionLocal() as db:
+            module = db.get(Module, world[source])
+            module.course_id = world["course"]
+            module.document_id = original_document_id
+            db.get(Course, world["course"]).owner_id = world["admin"]
+            db.flush()
+            db.query(Course).filter(Course.id == other_course_id).delete(synchronize_session=False)
+            db.commit()
 
 
 def test_every_endpoint_is_admin_only(world):
@@ -219,7 +261,7 @@ def test_loading_freezes_after_a_rating_or_leaving_draft(world):
     assert load(world, other, human_packets=[human_packet()]).status_code == 409
 
 
-def test_rls_denies_study_data_to_non_admin_and_source_reads_outside_import(world):
+def test_rls_denies_study_data_to_non_admin_and_other_owners(world):
     sid = create_study(world)
     load(world, sid, module_ids=[str(world["rag"])])
     with RequestSessionLocal() as db:
@@ -233,7 +275,7 @@ def test_rls_denies_study_data_to_non_admin_and_source_reads_outside_import(worl
     with RequestSessionLocal() as db:
         db.execute(text("SELECT set_config('app.current_user_id', :uid, true)"), {"uid": str(world["admin"])})
         assert db.get(Study, uuid.UUID(sid)) is not None
-        assert db.get(Module, world["rag"]) is None
+        assert db.get(Module, world["rag"]) is not None
 
 
 def test_database_enforces_source_and_rater_identity(world):

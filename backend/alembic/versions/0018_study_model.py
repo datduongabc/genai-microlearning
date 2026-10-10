@@ -13,7 +13,6 @@ SCORE_FIELDS = (
     "accuracy", "completeness", "consistency", "hallucination_score",
     "slide_quality", "quiz_quality", "bloom_fidelity", "query_alignment",
 )
-SOURCE_TABLES = ("modules", "documents", "chunks", "jobs")
 
 
 def _id():
@@ -68,21 +67,7 @@ def upgrade():
         op.execute(f"CREATE POLICY {table}_admin ON {table} TO app_runtime "
                    "USING (current_user_is_admin()) WITH CHECK (current_user_is_admin())")
 
-    # Only the study import transaction opts into reading its chosen source and control.
-    source = "NULLIF(current_setting('app.study_source_module', true), '')::uuid"
-    control = "NULLIF(current_setting('app.study_control_module', true), '')::uuid"
-    for table, condition in (
-        ("modules", f"id IN ({source}, {control})"),
-        ("documents", f"id IN (SELECT document_id FROM modules WHERE id = {source})"),
-        ("chunks", f"document_id IN (SELECT document_id FROM modules WHERE id = {source})"),
-        ("jobs", f"module_id IN ({source}, {control}) OR payload->>'paired_module_id' = ({source})::text"),
-    ):
-        op.execute(f"CREATE POLICY {table}_study_source ON {table} FOR SELECT TO app_runtime "
-                   f"USING (current_user_is_admin() AND ({condition}))")
-
 
 def downgrade():
-    for table in SOURCE_TABLES:
-        op.execute(f"DROP POLICY {table}_study_source ON {table}")
     for table in ("ratings", "study_items", "studies"):
         op.drop_table(table)

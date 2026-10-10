@@ -14,7 +14,9 @@ Chạy migration `alembic upgrade head` để thêm revision `0018_study_model`.
 | `GET /studies/{id}` | Nghiên cứu cùng toàn bộ đơn vị, gồm nhóm dành cho admin |
 | `POST /studies/{id}/items` | JSON có `module_ids` và/hoặc `human_packets`; trả 201 với toàn bộ đơn vị sau khi gán lại mã |
 
-`module_ids` là danh sách UUID của module RAG đã có. Mỗi UUID nạp một cặp:
+`module_ids` là danh sách UUID của module RAG đã có do admin hiện tại sở hữu.
+Cả module RAG và bản đối chứng phải thuộc môn học của admin đó; nguồn thuộc
+người khác nhận cùng lỗi 404 như module không tồn tại. Mỗi UUID nạp một cặp:
 `rag_llm` trỏ tới module thật và `llm_no_rag` chỉ giữ gói JSON tự chứa. Bản đối
 chứng phải đã sinh xong bằng nhánh `use_retrieval=False`, với `paired_module_id`
 và các điều kiện sinh khớp module RAG (alias, self-check, ngôn ngữ, chỉ dẫn).
@@ -25,9 +27,8 @@ không gọi bước sinh LLM.
 Gói được dựng bằng `module_packet` và `reference_chunks` hiện có trong
 `app/generation/study_packets.py`; hai nhóm dùng chung bộ tài liệu đối chiếu.
 Phạm vi lớn có thể cần lượt nhúng/truy hồi để chọn đoạn đối chiếu, như script
-xuất cặp hiện tại. Quyền đọc nguồn chỉ mở cho module đã chọn, bản đối chứng
-và tài liệu liên quan trong transaction nạp của admin; request khác không
-được quyền đọc thêm các môn của giảng viên.
+xuất cặp hiện tại. Quyền đọc module, tài liệu, đoạn nguồn và job giữ nguyên
+RLS theo chủ môn học; admin không được đọc nội dung của giảng viên khác.
 
 `human_packets` là danh sách JSON đúng schema `ModuleContentInput` trong
 `app/generation/evaluation.py`, gồm `anon_id`, `topic`, `bloom_level`,
@@ -54,8 +55,10 @@ nạp thêm nếu nghiên cứu đã rời `draft` hoặc đã có bất kỳ l�
 Bảng `ratings` chưa có API ghi trong phần này. Nó khớp rubric đang dùng trong
 `ModuleEvaluation`: tám trường điểm 1–5 kèm lý giải (`accuracy`, `completeness`,
 `consistency`, `hallucination_score`, `slide_quality`, `quiz_quality`,
-`bloom_fidelity`, `query_alignment`), tiêu chí thứ chín `overall_notes`, và
-`hallucination_findings`. `rater_kind` là `human` kèm `user_id`, hoặc
+`bloom_fidelity`, `query_alignment`), trong đó điểm hallucination kèm danh sách
+`hallucination_findings`, cộng ghi chú tổng thể `overall_notes` thành chín tiêu
+chí. Rubric giữ nguyên theo `evaluation.py` và `docs/rubric.md`; không thêm
+cột điểm số thứ chín. `rater_kind` là `human` kèm `user_id`, hoặc
 `llm_judge` không có `user_id`. Mỗi người và LLM judge có tối đa một lượt chấm
 trên một đơn vị. Bảng này độc lập với `evaluations` của pipeline.
 

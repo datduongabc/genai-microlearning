@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session
 from app.api.deps import require_admin
 from app.db import get_db
 from app.generation.evaluation import ModuleContentInput
-from app.models import Rating, Study, StudyItem
+from app.models import Rating, Study, StudyItem, User
 from app.study.items import assign_codes, existing_pair
 
 router = APIRouter(prefix="/studies", tags=["studies"], dependencies=[Depends(require_admin)])
@@ -71,7 +71,8 @@ def get_study(study_id: uuid.UUID, db: Session = Depends(get_db)):
 
 
 @router.post("/{study_id}/items", status_code=201)
-def load_items(study_id: uuid.UUID, body: LoadItems, db: Session = Depends(get_db)):
+def load_items(study_id: uuid.UUID, body: LoadItems, db: Session = Depends(get_db),
+               current_user: User = Depends(require_admin)):
     # Serialize draft loads before fetching items or swapping their deferred-unique codes.
     study = db.scalar(select(Study).where(Study.id == study_id).with_for_update())
     if study is None:
@@ -86,7 +87,7 @@ def load_items(study_id: uuid.UUID, body: LoadItems, db: Session = Depends(get_d
     additions = []
     try:
         for module_id in body.module_ids:
-            additions.extend(existing_pair(db, module_id))
+            additions.extend(existing_pair(db, module_id, current_user.id))
     except FileNotFoundError as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from exc
     except LookupError as exc:

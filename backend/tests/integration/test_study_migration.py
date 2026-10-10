@@ -28,9 +28,16 @@ def test_study_migration_round_trip():
     try:
         migrate("0011_module_generation_models")
         previous = set(inspect(engine).get_table_names())
+        source_policies = text("SELECT tablename, policyname, roles, cmd, qual, with_check "
+                               "FROM pg_policies WHERE tablename IN "
+                               "('courses', 'modules', 'module_components', 'documents', 'chunks', 'jobs') "
+                               "ORDER BY tablename, policyname")
+        with engine.connect() as conn:
+            original_policies = conn.execute(source_policies).all()
         migrate("head")
         assert set(inspect(engine).get_table_names()) - previous == {"studies", "study_items", "ratings"}
         with engine.connect() as conn:
+            assert conn.execute(source_policies).all() == original_policies
             for table in ("studies", "study_items", "ratings"):
                 assert conn.scalar(text("SELECT relrowsecurity FROM pg_class WHERE oid = to_regclass(:table)"), {"table": table})
                 assert conn.scalar(text("SELECT has_table_privilege('app_runtime', :table, 'SELECT,INSERT,UPDATE,DELETE')"), {"table": table})
