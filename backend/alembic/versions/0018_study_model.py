@@ -30,7 +30,7 @@ def upgrade():
     op.create_index("ix_modules_paired_module_id", "modules", ["paired_module_id"])
     op.execute("""
         UPDATE modules m SET generation_payload =
-            '{"self_check":true,"output_language":"vi","custom_instructions":"","use_retrieval":true}'::jsonb
+            '{"self_check": true,"output_language":"vi","custom_instructions":"","use_retrieval": true}'::jsonb
             || j.payload
         FROM (SELECT DISTINCT ON (module_id) module_id, payload
               FROM jobs WHERE job_type = 'module_generation' AND module_id IS NOT NULL

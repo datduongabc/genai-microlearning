@@ -35,7 +35,7 @@ class StudyItem(Base):
     study_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("studies.id", ondelete="CASCADE"), index=True)
     group: Mapped[str]
     anon_code: Mapped[str]
-    # RESTRICT preserves the provenance of RAG snapshots if the source is deleted.
+    # RESTRICT blocks source deletion while a RAG snapshot references it.
     module_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("modules.id", ondelete="RESTRICT"), index=True)
     packet: Mapped[dict] = mapped_column(JSONB)
     created_at: Mapped[datetime] = created_at_column()

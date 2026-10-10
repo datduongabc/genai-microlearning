@@ -192,7 +192,7 @@ def matching_control(db: Session, module_id: uuid.UUID, payload: dict) -> Module
 
 
 def is_control(db: Session, module_id: uuid.UUID) -> bool:
-    """Module có phải bản đối chứng không RAG (nhóm llm_no_rag) không, theo job đã sinh nó."""
+    """Nhận diện bản đối chứng theo điều kiện lưu trên module, dự phòng bằng job cho module cũ."""
     return generation_payload_of(db, module_id).get("use_retrieval", True) is False
 
 

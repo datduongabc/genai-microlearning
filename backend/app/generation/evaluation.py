@@ -2,8 +2,8 @@
 (ModuleContentInput) theo rubric chín tiêu chí ở docs/rubric.md, đúng rubric mà người chấm dùng, để
 so được độ đồng thuận giữa mô hình chấm và người.
 
-Không đọc module từ database: bản không RAG không bao giờ là một Module thật, nên đầu vào phải là
-một gói tự đủ, cùng một cấu trúc cho mọi nhóm. scripts/export_study_pair.py xuất cặp gói của một
+Không đọc module từ database: đầu vào là gói tự đủ theo hợp đồng nghiên cứu ở docs/studies.md,
+cùng một cấu trúc cho mọi nhóm. scripts/export_study_pair.py xuất cặp gói của một
 module, scripts/run_judge.py gọi judge_module cho cả thư mục gói, scripts/analyze_study.py tính
 thống kê trên kết quả.
 """

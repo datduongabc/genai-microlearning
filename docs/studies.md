@@ -24,6 +24,13 @@ Nếu chưa có bản đối chứng phù hợp, API trả 409; hãy sinh bản 
 bằng API sinh module hoặc `scripts/export_study_pair.py`. Nạp vào nghiên cứu
 không gọi bước sinh LLM.
 
+Điều kiện sinh và liên kết cặp được lưu trên module, độc lập với việc dọn job.
+Migration điền dữ liệu cho module cũ từ các job sinh còn tồn tại; module chưa
+được điền vẫn dùng job làm nguồn dự phòng. Các trường điều kiện bị thiếu dùng
+mặc định trong `normalize_generation_payload` của
+`app/generation/module_generation_pipeline.py`; alias được chọn tường minh
+phải khớp, còn alias bỏ trống vẫn biểu thị dùng cấu hình mặc định.
+
 Gói được dựng bằng `module_packet` và `reference_chunks` hiện có trong
 `app/generation/study_packets.py`; hai nhóm dùng chung bộ tài liệu đối chiếu.
 Phạm vi lớn có thể cần lượt nhúng/truy hồi để chọn đoạn đối chiếu, như script
@@ -33,7 +40,9 @@ RLS theo chủ môn học; admin không được đọc nội dung của giảng
 `human_packets` là danh sách JSON đúng schema `ModuleContentInput` trong
 `app/generation/evaluation.py`, gồm `anon_id`, `topic`, `bloom_level`,
 `learning_objective`, `sub_objectives`, `content_markdown`, `slides`, `examples`,
-`quiz`, `practice`, `source_chunks`. Ít nhất một câu quiz là bắt buộc. Admin
+`quiz`, `practice`, `source_chunks`. Ít nhất một câu quiz là bắt buộc. Mỗi câu
+quiz và practice phải có danh sách `choices` không rỗng và đáp án thỏa
+`0 <= correct_index < len(choices)`; packet vi phạm bị từ chối với 422. Admin
 chịu trách nhiệm soạn nội dung không tiết lộ nhóm, tên model hoặc tên nguồn.
 `anon_id` nhập vào luôn bị thay bằng mã do nghiên cứu gán.
 
@@ -52,22 +61,20 @@ hàng nghiên cứu để các lần nạp đồng thời không trùng mã. Mod
 packet không hợp lệ hoặc nguồn thiếu khiến cả lượt nạp bị từ chối. Không
 nạp thêm nếu nghiên cứu đã rời `draft` hoặc đã có bất kỳ lượt chấm nào.
 
-Bảng `ratings` chưa có API ghi trong phần này. Nó khớp rubric đang dùng trong
-`ModuleEvaluation`: tám trường điểm 1–5 kèm lý giải (`accuracy`, `completeness`,
-`consistency`, `hallucination_score`, `slide_quality`, `quiz_quality`,
-`bloom_fidelity`, `query_alignment`), trong đó điểm hallucination kèm danh sách
-`hallucination_findings`, cộng ghi chú tổng thể `overall_notes` thành chín tiêu
-chí. Rubric giữ nguyên theo `evaluation.py` và `docs/rubric.md`; không thêm
-cột điểm số thứ chín. `rater_kind` là `human` kèm `user_id`, hoặc
+Bảng `ratings` chưa có API ghi trong phần này. Các trường chấm khớp
+`ModuleEvaluation` và [rubric dùng chung](rubric.md), không thêm cột điểm số
+thứ chín. `rater_kind` là `human` kèm `user_id`, hoặc
 `llm_judge` không có `user_id`. Mỗi người và LLM judge có tối đa một lượt chấm
 trên một đơn vị. Bảng này độc lập với `evaluations` của pipeline.
 
+<a id="bao-toan-nguon"></a>
+
 Gói là snapshot: sửa module nguồn không sửa đơn vị nghiên cứu. Khóa ngoại
 `RESTRICT` bảo toàn module nguồn RAG và tài khoản người chấm đang được tham
-chiếu; muốn xóa nguồn phải xử lý nghiên cứu liên quan trước.
+chiếu; muốn xóa nguồn phải xử lý nghiên cứu liên quan trước. Xóa module,
+tài liệu hoặc môn học chứa module đang được tham chiếu trả HTTP 409 trước
+khi xóa tệp tải lên; xung đột khóa ngoại lúc commit cũng rollback và trả 409.
 
 Các script R8 `export_study_pair.py`, `run_judge.py`, `analyze_study.py` và định
 dạng JSON của chúng giữ nguyên. Nhập trực tiếp cặp JSON xuất sẵn chưa nằm
 trong API này.
-
-Generation conditions and control pairing are retained on modules independently of job cleanup; surviving generation jobs backfill legacy modules during migration. Study references block module, document, and course deletion with HTTP 409 before upload removal.

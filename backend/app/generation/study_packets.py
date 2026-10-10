@@ -184,9 +184,8 @@ def module_packet(module: Module, sources: list[str]) -> ModuleContentInput:
 
 
 def _control_of(db: Session, module: Module, model_alias: str | None, self_check: bool) -> Module:
-    """Bản đối chứng của `module` với đúng alias yêu cầu và cờ tự kiểm này: dùng lại bản đã sinh nếu có, không
-    thì sinh mới và ghi một job đã xong mang payload như job đối chứng xếp qua API, để mọi nơi nhận ra
-    đó là bản đối chứng."""
+    """Dùng lại bản đối chứng khớp điều kiện lưu trên module, dự phòng bằng job cho module cũ;
+    nếu chưa có thì sinh mới và ghi job đã xong như nhánh đối chứng qua API."""
     paired_payload = generation_payload_of(db, module.id)
     model_alias = model_alias or paired_payload.get("model_alias")
     output_language = paired_payload.get("output_language", "vi")

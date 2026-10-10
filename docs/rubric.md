@@ -1,6 +1,6 @@
 # Rubric đánh giá module Microlearning
 
-Rubric này dùng chung cho mô hình chấm (`judge_module` trong `backend/app/generation/evaluation.py`) và cho người chấm, để so được độ đồng thuận giữa hai bên. Mỗi module được chấm trên **9 tiêu chí**: 8 tiêu chí cho điểm từ 1 đến 5 và một danh sách các câu hallucination.
+Rubric này dùng chung cho mô hình chấm (`judge_module` trong `backend/app/generation/evaluation.py`) và cho người chấm, để so được độ đồng thuận giữa hai bên. Mỗi module được chấm trên **9 tiêu chí**: 8 tiêu chí cho điểm từ 1 đến 5 và ghi chú tổng quan `overall_notes`; `hallucination_findings` là danh sách phát hiện đi kèm điểm hallucination.
 
 ## 1. Thiết kế nghiên cứu
 
@@ -59,7 +59,7 @@ Liệt kê **từng** câu hoặc ý trong nội dung, quiz hay lời giải th�
 - **2**: nhiều câu không có căn cứ, rải rác khắp module.
 - **1**: phần lớn nội dung không có căn cứ trong nguồn.
 
-Tiêu chí thứ chín là chính danh sách này. Phân tích thống kê dùng nó dưới dạng nhị phân: module **có ít nhất một** hallucination hay không.
+Phân tích thống kê dùng danh sách này dưới dạng nhị phân: module **có ít nhất một** hallucination hay không.
 
 ### 3.5. Chất lượng slide (`slide_quality`)
 
@@ -92,6 +92,10 @@ Module có thực sự trả lời đúng **chủ đề gốc** được giao kh
 - **5**: toàn bộ module xoay quanh đúng chủ đề gốc.
 - **3**: có phần đáng kể nói về chủ đề lân cận.
 - **1**: module nói về chủ đề khác.
+
+### 3.9. Ghi chú tổng quan (`overall_notes`)
+
+Nhận xét tổng thể về ưu điểm và hạn chế của module, không cho thêm điểm số.
 
 ## 4. Bảng neo Bloom
 
