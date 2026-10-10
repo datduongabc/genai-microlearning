@@ -141,10 +141,10 @@ Bảng `studies` mô tả một nghiên cứu: tên, phiên bản rubric, trạn
 Bảng `study_items` mô tả một đơn vị đem chấm.
 Mỗi hàng gồm nhóm thuộc một trong ba giá trị `human`, `llm_no_rag`, `rag_llm`, một mã ẩn danh dạng M01 hoặc M02, và một gói nội dung tự chứa dạng JSON.
 Gói nội dung dùng đúng cấu trúc `ModuleContentInput` đã có sẵn trong `app/generation/evaluation.py`.
-Nhóm `rag_llm` có tham chiếu tới `module_id` thật, hai nhóm còn lại không có module tương ứng trong hệ thống nên gói nội dung bắt buộc phải tự chứa.
+Quy tắc tham chiếu module và nạp cặp đã sinh nằm trong [hướng dẫn R18](../studies.md).
 Thiết kế tự chứa này đã được tính từ trước trong `evaluation.py` và được giữ nguyên.
 
-Bảng `ratings` lưu một lượt chấm: tham chiếu tới `study_items`, người chấm là `user_id` hoặc giá trị `llm_judge`, chín điểm số kèm lý giải, và danh sách các claim bị coi là hallucination.
+Bảng `ratings` lưu một lượt chấm: tham chiếu tới `study_items`, định danh người hoặc mô hình chấm theo [hướng dẫn R18](../studies.md), và kết quả theo [rubric dùng chung](../rubric.md).
 Người chấm và mô hình chấm dùng chung một bảng, nhờ đó tính được độ đồng thuận giữa người và mô hình, vốn là một kết quả đáng giá cho chương đánh giá.
 
 Bảng `ratings` tách hẳn khỏi bảng `evaluations` đã có.
@@ -169,7 +169,7 @@ Kiểm định thống kê và khoảng tin cậy nằm ở script riêng.
 
 ### Chín tiêu chí rubric
 
-Rubric đã được cài đặt trong `evaluation.py` và giữ nguyên: accuracy, completeness, consistency, hallucination score kèm danh sách phát hiện, slide quality, quiz quality, bloom fidelity, query alignment, cùng phần ghi chú tổng quan.
+Rubric đã được cài đặt trong `evaluation.py`; định nghĩa tiêu chí nằm trong [rubric dùng chung](../rubric.md).
 Bộ tiêu chí này ánh xạ trực tiếp vào Nhiệm vụ 5 của đề tài.
 
 ## 5. Chọn mô hình và đường tới khóa API riêng

@@ -13,6 +13,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.api.chat import ChatRequest, _get_or_create_session
+from app.api.deletion import check_study_references, commit_deletion
 from app.api.deps import get_current_user
 from app.auth.rate_limit import limiter, user_or_address
 from app.chat.service import HISTORY_TURNS, QuizQuestionEdit, module_edit_count, propose_module_edit
@@ -500,7 +501,6 @@ def delete_module(
     # Cùng khóa với /modules/generate: một lượt sinh bản đối chứng không được chen vào giữa lúc kiểm và lúc xóa.
     _owned_document(db, module.document_id, current_user, lock=True)
 
-    # Job của bản đối chứng chỉ ghi module RAG đi cặp trong payload chứ không có khóa ngoại.
     paired_jobs = db.query(Job).filter(
         Job.job_type == JobType.module_generation, Job.payload["paired_module_id"].astext == str(module.id)
     ).all()
@@ -508,7 +508,12 @@ def delete_module(
         raise HTTPException(
             status_code=409, detail="Bản đối chứng của mô-đun này đang được sinh, vui lòng chờ xong rồi xóa."
         )
-    control_ids = {j.module_id for j in paired_jobs if j.module_id is not None}
+    control_ids = set(db.scalars(select(Module.id).where(Module.paired_module_id == module.id)))
+    control_ids.update(db.scalars(select(Module.id).where(
+        Module.generation_payload.is_(None),
+        Module.id.in_([j.module_id for j in paired_jobs if j.module_id is not None]),
+    )))
+    check_study_references(db, {module.id, *control_ids})
     for control in db.query(Module).filter(Module.id.in_(control_ids)):
         db.delete(control)
     # Job đối chứng lỗi không có module để cascade, mà giữ lại thì nó mãi trỏ tới module không còn.
@@ -516,7 +521,7 @@ def delete_module(
         if job.module_id is None:
             db.delete(job)
     db.delete(module)
-    db.commit()
+    commit_deletion(db)
     return {"status": "deleted", "deleted_module_ids": [module_id, *sorted(control_ids)]}
 
 

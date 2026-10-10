@@ -29,6 +29,7 @@ from app.generation.module_generation_pipeline import (
     generation_payload_of,
     is_control,
     learning_objective_of,
+    matching_control,
     run_module_generation,
 )
 from app.llm.gateway import experiment_mode, using_model
@@ -183,24 +184,16 @@ def module_packet(module: Module, sources: list[str]) -> ModuleContentInput:
 
 
 def _control_of(db: Session, module: Module, model_alias: str | None, self_check: bool) -> Module:
-    """Bản đối chứng của `module` với đúng alias yêu cầu và cờ tự kiểm này: dùng lại bản đã sinh nếu có, không
-    thì sinh mới và ghi một job đã xong mang payload như job đối chứng xếp qua API, để mọi nơi nhận ra
-    đó là bản đối chứng."""
+    """Dùng lại bản đối chứng khớp điều kiện lưu trên module, dự phòng bằng job cho module cũ;
+    nếu chưa có thì sinh mới và ghi job đã xong như nhánh đối chứng qua API."""
     paired_payload = generation_payload_of(db, module.id)
+    model_alias = model_alias or paired_payload.get("model_alias")
     output_language = paired_payload.get("output_language", "vi")
     custom_instructions = paired_payload.get("custom_instructions", "")
     payload = control_payload(module.id, model_alias, self_check, output_language, custom_instructions)
-    existing = (
-        db.query(Job)
-        .filter(
-            Job.job_type == JobType.module_generation, Job.status == JobStatus.done,
-            Job.module_id.is_not(None), Job.payload == payload,
-        )
-        .order_by(Job.created_at.desc())
-        .first()
-    )
+    existing = matching_control(db, module.id, payload)
     if existing is not None:
-        return db.get(Module, existing.module_id)
+        return existing
     section = db.get(DocumentSection, module.section_id) if module.section_id else None
     with experiment_mode(), using_model(model_alias):
         control = run_module_generation(

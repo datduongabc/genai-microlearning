@@ -66,12 +66,28 @@ def test_the_correct_answer_is_spelled_out_for_every_question():
     assert "Correct: Q" in prompt and "Correct: R" in prompt and "Correct: P" in prompt
 
 
-def test_an_answer_key_outside_the_choices_is_flagged_instead_of_crashing():
-    packet = _packet(quiz=[_question("CAU-HOI-1", 99, "x")])
-
-    assert "(invalid correct_index)" in _build_prompt(packet)
-
-
 def test_a_packet_without_any_quiz_question_is_rejected():
     with pytest.raises(ValidationError):
         _packet(quiz=[])
+
+
+
+@pytest.mark.parametrize("field", ["quiz", "practice"])
+@pytest.mark.parametrize("choices,index", [([], 0), (["X", "Y"], -1), (["X", "Y"], 2)])
+def test_packet_rejects_invalid_question_answers(field, choices, index):
+    packet = _packet().model_dump()
+    question = {"stem": "Q", "choices": choices, "correct_index": index}
+    packet[field] = [packet["quiz"][0], question] if field == "quiz" else question
+    with pytest.raises(ValidationError):
+        ModuleContentInput.model_validate(packet)
+
+
+@pytest.mark.parametrize("field", ["quiz", "practice"])
+@pytest.mark.parametrize("index", [0, 1])
+def test_packet_accepts_answers_at_both_choice_boundaries(field, index):
+    packet = _packet().model_dump()
+    question = {"stem": "Q", "choices": ["X", "Y"], "correct_index": index}
+    packet[field] = [question] if field == "quiz" else question
+    validated = ModuleContentInput.model_validate(packet)
+    answer = validated.quiz[0] if field == "quiz" else validated.practice
+    assert answer.choices[answer.correct_index] in ("X", "Y")

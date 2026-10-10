@@ -2,12 +2,14 @@ import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field, field_validator
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.api.deletion import check_study_references, commit_deletion
 from app.api.deps import get_current_user
 from app.auth.rate_limit import limiter, user_or_address
 from app.db import get_db
-from app.models import Course, User
+from app.models import Course, Module, User
 from app.moodle import client as moodle_client
 from app.moodle.accounts import require_course_author, teacher_courses
 from app.moodle.errors import MOODLE_FAILURES, moodle_failure
@@ -117,8 +119,9 @@ def delete_course(
     unlink_moodle_course above.
     """
     course = _get_owned_course(course_id, db, current_user)
+    check_study_references(db, db.scalars(select(Module.id).where(Module.course_id == course_id)))
     db.delete(course)
-    db.commit()
+    commit_deletion(db)
     return {"status": "deleted"}
 
 

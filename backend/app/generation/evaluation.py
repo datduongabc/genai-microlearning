@@ -2,22 +2,28 @@
 (ModuleContentInput) theo rubric chín tiêu chí ở docs/rubric.md, đúng rubric mà người chấm dùng, để
 so được độ đồng thuận giữa mô hình chấm và người.
 
-Không đọc module từ database: bản không RAG không bao giờ là một Module thật, nên đầu vào phải là
-một gói tự đủ, cùng một cấu trúc cho mọi nhóm. scripts/export_study_pair.py xuất cặp gói của một
+Không đọc module từ database: đầu vào là gói tự đủ theo hợp đồng nghiên cứu ở docs/studies.md,
+cùng một cấu trúc cho mọi nhóm. scripts/export_study_pair.py xuất cặp gói của một
 module, scripts/run_judge.py gọi judge_module cho cả thư mục gói, scripts/analyze_study.py tính
 thống kê trên kết quả.
 """
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 from app.llm.gateway import complete_structured
 
 
 class QuizQuestionInput(BaseModel):
     stem: str
-    choices: list[str]
-    correct_index: int
+    choices: list[str] = Field(min_length=1)
+    correct_index: int = Field(ge=0)
     explanation: str = ""
+
+    @model_validator(mode="after")
+    def valid_answer(self):
+        if self.correct_index >= len(self.choices):
+            raise ValueError("correct_index must reference a choice")
+        return self
 
 
 class SlideInput(BaseModel):
@@ -144,7 +150,7 @@ def _build_prompt(packet: ModuleContentInput) -> str:
     )
 
     def _question_block(q: QuizQuestionInput) -> str:
-        correct = q.choices[q.correct_index] if 0 <= q.correct_index < len(q.choices) else "(invalid correct_index)"
+        correct = q.choices[q.correct_index]
         return f"  {q.stem}\n    Choices: {q.choices}\n    Correct: {correct}\n    Explanation: {q.explanation}"
 
     examples_text = "\n".join(

@@ -36,6 +36,7 @@ from app.models import (
     Module,
     ModuleComponent,
     Question,
+    Study,
     User,
 )
 
@@ -81,12 +82,15 @@ def world():
             status=JobStatus.failed, last_error="secret error of A",
         )
         db.add_all([pipeline_job, failed_job])
+        study = Study(name="Admin study", rubric_version="v1")
+        db.add(study)
         db.commit()
         ids = {
             "owner": owner.id, "stranger": stranger.id, "course": course.id, "stranger_course": stranger_course.id,
             "document": document.id, "module": module.id, "component": component.id, "session": session.id,
             "pipeline_job": pipeline_job.id, "failed_job": failed_job.id, "question": question.id,
             "user": owner.id,
+            "study": study.id,
         }
     finally:
         db.close()
@@ -99,6 +103,7 @@ def world():
 
     db = SessionLocal()
     try:
+        db.query(Study).filter(Study.id == ids["study"]).delete(synchronize_session=False)
         db.query(Course).filter(Course.id.in_([ids["course"], ids["stranger_course"]])).delete(synchronize_session=False)
         db.query(User).filter(User.id.in_([ids["owner"], ids["stranger"]])).delete(synchronize_session=False)
         db.commit()
@@ -151,6 +156,8 @@ ATTACKS = [
     ("POST", "/admin/users/{user}/enable", None, {}),
     ("POST", "/admin/users/{user}/password", None, {"json": {"password": "A pwned long phrase"}}),
     ("DELETE", "/admin/users/{user}", None, {}),
+    ("GET", "/studies/{study}", None, {}),
+    ("POST", "/studies/{study}/items", None, {"json": {"module_ids": ["{module}"]}}),
     ("DELETE", "/courses/{course}", None, {}),
     ("POST", "/courses/{course}/link-moodle", None, {"json": {"moodle_course_id": 999}}),
     ("DELETE", "/courses/{course}/link-moodle", None, {}),
@@ -179,7 +186,7 @@ def _send(spec, ids, headers):
 
 
 OWNER_RESOURCES = (
-    "course", "document", "module", "component", "session", "pipeline_job", "failed_job", "question", "user"
+    "course", "document", "module", "component", "session", "pipeline_job", "failed_job", "question", "user", "study"
 )
 
 

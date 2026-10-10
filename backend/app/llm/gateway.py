@@ -61,8 +61,12 @@ def using_model(alias: str | None):
         _model_da_chon.reset(token)
 
 
+def requested_model() -> str | None:
+    return _model_da_chon.get()
+
+
 def active_model() -> str:
-    da_chon = _model_da_chon.get()
+    da_chon = requested_model()
     if da_chon:
         return da_chon
     return settings.llm_model
