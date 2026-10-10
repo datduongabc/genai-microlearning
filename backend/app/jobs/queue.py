@@ -69,11 +69,11 @@ def is_terminal_error(err: Exception) -> bool:
 def enqueue_job(
     db: Session, *, job_type: JobType, step: str,
     document_id: uuid.UUID | None = None, module_id: uuid.UUID | None = None,
-    section_id: uuid.UUID | None = None,
+    section_id: uuid.UUID | None = None, study_id: uuid.UUID | None = None,
     payload: dict | None = None, max_attempts: int = 5,
 ) -> Job:
     job = Job(
-        job_type=job_type, step=step, document_id=document_id, module_id=module_id,
+        job_type=job_type, step=step, study_id=study_id, document_id=document_id, module_id=module_id,
         section_id=section_id, payload=payload or {}, max_attempts=max_attempts,
     )
     db.add(job)
@@ -212,6 +212,9 @@ def execute_job_step(job: Job) -> None:
     elif job.job_type == JobType.module_generation:
         from app.generation.module_generation_pipeline import run_module_generation_step
         run_module_generation_step(job)
+    elif job.job_type == JobType.study_judge:
+        from app.study.judge import run_study_judge_step
+        run_study_judge_step(job)
     else:
         raise ValueError(f"Unknown job_type: {job.job_type}")
 

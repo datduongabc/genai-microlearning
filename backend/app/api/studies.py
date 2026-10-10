@@ -11,8 +11,10 @@ from sqlalchemy.orm import Session
 from app.api.deps import require_admin
 from app.db import get_db
 from app.generation.evaluation import ModuleContentInput
-from app.models import Rating, Study, StudyItem, User
+from app.jobs.queue import enqueue_job
+from app.models import Job, JobStatus, JobType, Rating, Study, StudyItem, User
 from app.study.items import assign_codes, existing_pair
+from app.study.judge import validate_judge
 
 router = APIRouter(prefix="/studies", tags=["studies"], dependencies=[Depends(require_admin)])
 Nonempty = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=200)]
@@ -78,7 +80,9 @@ def load_items(study_id: uuid.UUID, body: LoadItems, db: Session = Depends(get_d
     if study is None:
         raise HTTPException(status_code=404, detail="Study not found")
     rated = db.scalar(select(Rating.id).join(StudyItem).where(StudyItem.study_id == study_id).limit(1))
-    if study.status != "draft" or rated is not None:
+    judging = db.scalar(select(Job.id).where(Job.study_id == study_id,
+                        Job.status.in_([JobStatus.queued, JobStatus.running])).limit(1))
+    if study.status != "draft" or rated is not None or judging is not None:
         raise HTTPException(status_code=409, detail="Only an unrated draft study can load items")
     items = _items(db, study_id)
     existing = {item.module_id for item in items if item.module_id is not None}
@@ -105,3 +109,41 @@ def load_items(study_id: uuid.UUID, body: LoadItems, db: Session = Depends(get_d
         db.rollback()
         raise HTTPException(status_code=409, detail="Study items conflict with existing data") from exc
     return [_item_out(item) for item in _items(db, study_id)]
+
+
+class JudgeStudy(BaseModel):
+    model_alias: Nonempty = "groq-pro"
+
+
+@router.post("/{study_id}/judge", status_code=202)
+def judge_study(study_id: uuid.UUID, body: JudgeStudy, db: Session = Depends(get_db)):
+    study = db.scalar(select(Study).where(Study.id == study_id).with_for_update())
+    if study is None:
+        raise HTTPException(status_code=404, detail="Study not found")
+    busy = db.scalar(select(Job.id).where(Job.study_id == study_id,
+                     Job.status.in_([JobStatus.queued, JobStatus.running])).limit(1))
+    if busy is not None:
+        raise HTTPException(status_code=409, detail="A judge job is already running for this study")
+    items = _items(db, study_id)
+    if not items:
+        raise HTTPException(status_code=409, detail="Study has no items")
+    try:
+        model = validate_judge(body.model_alias, items)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    job = enqueue_job(db, job_type=JobType.study_judge, step="judge", study_id=study_id,
+                      payload={"judge_alias": body.model_alias, "judge_model": model,
+                               "item_ids": [str(item.id) for item in items], "cursor": 0, "results": []})
+    db.commit()
+    return {"job_id": job.id, "status": job.status}
+
+
+@router.get("/{study_id}/judge/{job_id}")
+def judge_status(study_id: uuid.UUID, job_id: uuid.UUID, db: Session = Depends(get_db)):
+    job = db.get(Job, job_id)
+    if job is None or job.study_id != study_id or job.job_type != JobType.study_judge:
+        raise HTTPException(status_code=404, detail="Judge job not found")
+    return {"job_id": job.id, "status": job.status, "judge_alias": job.payload["judge_alias"],
+            "judge_model": job.payload["judge_model"], "total": len(job.payload["item_ids"]),
+            "completed": job.payload.get("cursor", 0), "results": job.payload.get("results", []),
+            "last_error": job.last_error}

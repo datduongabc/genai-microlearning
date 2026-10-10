@@ -176,8 +176,8 @@ def _build_prompt(packet: ModuleContentInput) -> str:
     )
 
 
-def judge_module(packet: ModuleContentInput) -> ModuleEvaluation:
+def judge_module(packet: ModuleContentInput, **kwargs) -> ModuleEvaluation:
     prompt = _build_prompt(packet)
     return complete_structured(
-        prompt, ModuleEvaluation, system_instruction=_SYSTEM_INSTRUCTION, temperature=0.1
+        prompt, ModuleEvaluation, system_instruction=_SYSTEM_INSTRUCTION, temperature=0.1, **kwargs
     )

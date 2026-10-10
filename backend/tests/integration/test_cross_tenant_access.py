@@ -158,6 +158,8 @@ ATTACKS = [
     ("DELETE", "/admin/users/{user}", None, {}),
     ("GET", "/studies/{study}", None, {}),
     ("POST", "/studies/{study}/items", None, {"json": {"module_ids": ["{module}"]}}),
+    ("POST", "/studies/{study}/judge", None, {"json": {}}),
+    ("GET", "/studies/{study}/judge/{failed_job}", None, {}),
     ("DELETE", "/courses/{course}", None, {}),
     ("POST", "/courses/{course}/link-moodle", None, {"json": {"moodle_course_id": 999}}),
     ("DELETE", "/courses/{course}/link-moodle", None, {}),
