@@ -27,7 +27,7 @@ from app.generation.quiz_graph import (
 from app.generation.relevance import CorrectiveResult, corrective_retrieve
 from app.generation.scope_digest import build_scope_digest
 from app.generation.slides import generate_slides
-from app.llm.gateway import active_model, capture_models, recorded_models, using_model
+from app.llm.gateway import capture_models, recorded_models, requested_model, using_model
 from app.models import (
     Chunk,
     ComponentType,
@@ -391,10 +391,10 @@ def _generate_module(
         title=title,
         paired_module_id=paired_module.id if paired_module is not None else None,
         generation_payload=(
-            {**generation_payload(active_model(), self_check, output_language, custom_instructions),
+            {**generation_payload(requested_model(), self_check, output_language, custom_instructions),
              "use_retrieval": True}
             if use_retrieval else
-            control_payload(paired_module.id, active_model(), self_check, output_language, custom_instructions)
+            control_payload(paired_module.id, requested_model(), self_check, output_language, custom_instructions)
         ),
         learning_objective=lo.objective_text,
         bloom_level=lo.bloom_level,

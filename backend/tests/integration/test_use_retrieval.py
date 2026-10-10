@@ -538,3 +538,56 @@ def test_generation_persists_pairing_and_conditions_without_jobs(document, llm):
         assert pipeline.generation_payload_of(db, rag_id) == rag.generation_payload
         assert pipeline.matching_control(db, rag_id, expected).id == control_id
         assert pipeline.is_control(db, control_id)
+
+
+
+def test_legacy_default_alias_pair_imports_and_exports_without_regeneration(document, llm, tmp_path, monkeypatch):
+    from app.generation.study_packets import StudyFile
+    from app.llm.gateway import using_model
+    from app.models import Study
+    from scripts.export_study_pair import main as export_pair
+
+    with using_model(None):
+        rag_id = _generate(document, self_check=False)
+    with SessionLocal() as db:
+        rag = db.get(Module, rag_id)
+        rag.generation_payload = pipeline.generation_payload(None, False)
+        db.get(User, document["user"]).is_admin = True
+        db.commit()
+    response = _post(document, {"use_retrieval": False, "paired_module_id": str(rag_id)})
+    assert response.status_code == 200, response.text
+    job_id = uuid.UUID(response.json()["job_id"])
+    pipeline.run_module_generation_step(type("J", (), {"id": job_id})())
+    with SessionLocal() as db:
+        job = db.get(Job, job_id)
+        assert job.status == JobStatus.done
+        control_id = job.module_id
+        control = db.get(Module, control_id)
+        assert control.generation_payload == pipeline.control_payload(rag_id, None, False)
+        assert pipeline.matching_control(db, rag_id, pipeline.control_payload(rag_id, "other-model", False)) is None
+        db.query(Job).filter(Job.document_id == document["doc"]).delete(synchronize_session=False)
+        db.commit()
+
+    def unexpected_generation(*args, **kwargs):
+        raise AssertionError("A completed default-model control must be reused")
+
+    monkeypatch.setattr("app.generation.study_packets.run_module_generation", unexpected_generation)
+    headers = {"Authorization": f"Bearer {create_access_token(str(document['user']))}"}
+    response = client.post("/studies", headers=headers, json={"name": "Legacy pair", "rubric_version": "v1"})
+    assert response.status_code == 201, response.text
+    study_id = uuid.UUID(response.json()["id"])
+    try:
+        response = client.post(f"/studies/{study_id}/items", headers=headers,
+                               json={"module_ids": [str(rag_id)]})
+        assert response.status_code == 201, response.text
+        assert {item["group"] for item in response.json()} == {"rag_llm", "llm_no_rag"}
+        for _ in range(2):
+            export_pair([str(rag_id), "--out", str(tmp_path)])
+            exported = StudyFile.model_validate_json((tmp_path / f"{rag_id}-llm_no_rag.json").read_text())
+            assert exported.packet.learning_objective == OUTPUTS[LearningObjective].objective_text
+        with SessionLocal() as db:
+            assert [module.id for module in db.query(Module).filter(Module.paired_module_id == rag_id)] == [control_id]
+    finally:
+        with SessionLocal() as db:
+            db.query(Study).filter(Study.id == study_id).delete(synchronize_session=False)
+            db.commit()
