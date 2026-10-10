@@ -249,12 +249,12 @@ def rating_values():
         "quiz_quality", "bloom_fidelity", "query_alignment")}, overall_notes="Overall").model_dump(exclude={"anon_id"})
 
 
-def test_loading_freezes_after_a_rating_or_leaving_draft(world):
+def test_loading_freezes_after_a_human_rating_or_leaving_draft(world):
     sid = create_study(world)
     load(world, sid, human_packets=[human_packet()])
     with SessionLocal() as db:
         item = db.scalar(select(StudyItem).where(StudyItem.study_id == uuid.UUID(sid)))
-        db.add(Rating(study_item_id=item.id, rater_kind="llm_judge", **rating_values()))
+        db.add(Rating(study_item_id=item.id, rater_kind="human", user_id=world["admin"], **rating_values()))
         db.commit()
     assert load(world, sid, human_packets=[human_packet()]).status_code == 409
     other = create_study(world)

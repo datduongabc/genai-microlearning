@@ -14,7 +14,7 @@ Chạy migration `alembic upgrade head` để thêm revision `0018_study_model` 
 | `GET /studies` | Danh sách nghiên cứu |
 | `GET /studies/{id}` | Nghiên cứu cùng toàn bộ đơn vị, gồm nhóm dành cho admin |
 | `POST /studies/{id}/items` | JSON có `module_ids` và/hoặc `human_packets`; trả 201 với toàn bộ đơn vị sau khi gán lại mã |
-| `POST /studies/{id}/judge` | JSON `{"model_alias":"groq-pro"}` (mặc định `groq-pro`); trả 202 với `job_id` của job chấm nền |
+| `POST /studies/{id}/judge` | Không có body; trả 202 với `job_id` của job chấm nền |
 | `GET /studies/{id}/judge/{job_id}` | Tiến độ và kết quả từng đơn vị của job chấm |
 
 `module_ids` là danh sách UUID của module RAG đã có do admin hiện tại sở hữu.
@@ -62,14 +62,16 @@ nhóm nạp sau không luôn nhận dãy mã lớn hơn. Mã trong `packet.anon_
 `study_items.anon_code` luôn khớp nhau. Việc nạp là một transaction và khóa
 hàng nghiên cứu để các lần nạp đồng thời không trùng mã. Module RAG trùng,
 packet không hợp lệ hoặc nguồn thiếu khiến cả lượt nạp bị từ chối. Không
-nạp thêm nếu nghiên cứu đã rời `draft` hoặc đã có bất kỳ lượt chấm nào.
+nạp thêm nếu nghiên cứu đã rời `draft` hoặc đã có lượt chấm của người. Lượt
+chấm của LLM judge không khóa việc nạp: có thể nạp gói người soạn sau khi đã
+chạy judge, rồi chạy lại judge để chấm cả đơn vị mới.
 
 Các trường chấm của bảng `ratings` khớp `ModuleEvaluation` và
 [rubric dùng chung](rubric.md), không thêm cột điểm số thứ chín. `rater_kind`
 là `human` kèm `user_id`, hoặc `llm_judge` không có `user_id` nhưng có
-`judge_alias` và `judge_model`. Mỗi người có tối đa một lượt chấm trên một đơn
-vị; LLM judge có tối đa một lượt cho mỗi cặp (đơn vị, model chấm). Bảng này độc
-lập với `evaluations` của pipeline.
+`judge_alias` và `judge_model` ghi lại model đã chấm. Mỗi người và LLM judge có
+tối đa một lượt chấm trên một đơn vị. Bảng này độc lập với `evaluations` của
+pipeline.
 
 <a id="llm-judge"></a>
 
@@ -82,21 +84,21 @@ tự chứa mà người chấm nhìn thấy, rồi ghi một hàng `llm_judge` 
 mỗi đơn vị: tám điểm kèm lý do, `hallucination_findings` và `overall_notes`.
 Rubric và prompt không đổi.
 
-- **Model chấm.** Mặc định `groq-pro` (gpt-oss-120b trên Groq). Alias khác
-  truyền qua `model_alias`. Alias không có trên gateway, alias định tuyến
-  (`gemini-balanced`, `*-small`), hoặc alias cùng hãng với model đã sinh bất kỳ
-  đơn vị nào đều bị từ chối 422, dùng chung phép kiểm hãng với
-  `scripts/run_judge.py` (`app/llm/judge.py`). Hãng của đơn vị lấy từ
+- **Model chấm.** Cố định là `groq-pro` (gpt-oss-120b trên Groq); request
+  không chọn được model khác. Nếu gateway không có alias này, hoặc nó cùng
+  hãng với model đã sinh bất kỳ đơn vị nào, request bị từ chối 422, dùng chung
+  phép kiểm hãng với `scripts/run_judge.py` (`app/llm/judge.py`). Gateway
+  không trả lời được thì nhận 503. Hãng của đơn vị lấy từ
   `study_items.generation_models` (model thực sự phục vụ), nếu thiếu thì từ
-  alias `generator_model`; hai cột này nằm ngoài gói nên không lộ cho người
-  chấm. Gói người soạn không có model sinh nên không bị kiểm.
+  alias `generator_model`, nếu cũng thiếu (đơn vị nạp trước revision 0019) thì
+  coi như alias mặc định của cấu hình; hai cột này nằm ngoài gói nên không lộ
+  cho người chấm. Gói người soạn không có model sinh nên không bị kiểm.
 - **Ghim model.** Lượt chấm chạy ở chế độ thí nghiệm (`disable_fallbacks`).
   `ratings.judge_model` là model gateway báo đã phục vụ; nếu nó khác model
   của alias lúc xếp job thì đơn vị bị ghi lỗi và không lưu điểm.
-- **Chạy lại.** Mỗi lần gọi là một job mới. Chấm lại cùng model thay hàng cũ
-  của cặp (đơn vị, model chấm) chứ không thêm hàng; model chấm khác tạo hàng
-  riêng. Khi một job chấm còn `queued`/`running`, lần gọi thứ hai và việc nạp
-  thêm đơn vị nhận 409.
+- **Chạy lại.** Mỗi lần gọi là một job mới chấm mọi đơn vị hiện có. Chấm lại
+  thay hàng `llm_judge` cũ của đơn vị chứ không thêm hàng. Khi một job chấm
+  còn `queued`/`running`, lần gọi thứ hai và việc nạp thêm đơn vị nhận 409.
 - **Lỗi từng đơn vị.** Lỗi tạm thời (hết quota, mạng) được thử lại có back-off
   trên đúng đơn vị đó; hết lượt thử hoặc lỗi không thử lại được (JSON sai
   rubric, gói quá lớn) được ghi vào `results` với `status: failed` và job chấm
@@ -113,8 +115,8 @@ Rubric và prompt không đổi.
 bị dọn theo lịch dọn job chung; điểm vẫn nằm trong `ratings`.
 
 ```sh
-curl -H "Authorization: Bearer $access_token" -H 'Content-Type: application/json' \
-  -d '{"model_alias":"groq-pro"}' "http://localhost:8000/studies/$study_id/judge"
+curl -X POST -H "Authorization: Bearer $access_token" \
+  "http://localhost:8000/studies/$study_id/judge"
 curl -H "Authorization: Bearer $access_token" \
   "http://localhost:8000/studies/$study_id/judge/$job_id"
 ```

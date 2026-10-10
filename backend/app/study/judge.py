@@ -3,6 +3,7 @@ import json
 import uuid
 from datetime import UTC, datetime, timedelta
 
+import httpx
 import litellm
 from sqlalchemy import Float, cast, func, select, text
 from sqlalchemy.dialects.postgresql import insert
@@ -18,21 +19,29 @@ from app.generation.evaluation import (
 )
 from app.jobs.queue import is_terminal_error, jittered_backoff
 from app.llm import gateway
-from app.llm.catalog import fetch_model_info
+from app.llm.catalog import GatewayUnavailable, fetch_model_info
 from app.llm.judge import refuse_same_family
 from app.models import Job, JobStatus, JobType, Rating, StudyItem
 
+# Decided for the study: a different family from the Gemini models that generate the modules.
+JUDGE_ALIAS = "groq-pro"
 OUTPUT_TOKENS = 2048
 # Reserve 10% against tokenizer/provider differences within Groq's 8,000 TPM limit.
 GROQ_TOKEN_BUDGET = 7200
 GROQ_INTERVAL_SECONDS = 61
 
 
-def validate_judge(alias: str, items: list[StudyItem]) -> str:
-    return refuse_same_family(alias, [
-        (item.anon_code, item.generator_model, item.generation_models or [])
+def validate_judge(items: list[StudyItem]) -> str:
+    """The judge's real model; ValueError if it shares a family with any item's generator."""
+    try:
+        model_info = fetch_model_info()
+    except httpx.HTTPError as exc:
+        raise GatewayUnavailable(str(exc)) from exc
+    return refuse_same_family(JUDGE_ALIAS, [
+        # Items loaded before provenance was stored: assume the configured default generator.
+        (item.anon_code, item.generator_model or gateway.active_model(), item.generation_models or [])
         for item in items if item.group != "human"
-    ], fetch_model_info())
+    ], model_info)
 
 
 def check_packet_budget(packet: ModuleContentInput, judge_model: str) -> None:
@@ -56,9 +65,9 @@ def upsert_rating(db: Session, item: StudyItem, alias: str, served: str,
     statement = insert(Rating).values(study_item_id=item.id, rater_kind="llm_judge",
                                      judge_alias=alias, judge_model=served, **values)
     db.execute(statement.on_conflict_do_update(
-        index_elements=[Rating.study_item_id, Rating.judge_model],
+        index_elements=[Rating.study_item_id],
         index_where=Rating.rater_kind == "llm_judge",
-        set_={**values, "judge_alias": alias, "created_at": func.now()},
+        set_={**values, "judge_alias": alias, "judge_model": served, "created_at": func.now()},
     ))
 
 
@@ -94,10 +103,6 @@ def run_study_judge_step(queued: Job) -> None:
         try:
             if item is None or item.study_id != job.study_id:
                 raise ValueError("Study item no longer exists")
-            # The catalog may change while queued; fail closed rather than grading under a new alias.
-            current = validate_judge(alias, [item])
-            if current != expected:
-                raise ValueError("Judge alias mapping changed since enqueue; start a new judge job")
             packet = ModuleContentInput.model_validate(item.packet)
             check_packet_budget(packet, expected)
             if expected.startswith("groq/") and not reserve_groq_call(db, job, datetime.now(UTC)):

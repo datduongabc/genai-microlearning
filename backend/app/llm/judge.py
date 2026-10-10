@@ -24,8 +24,6 @@ def model_family(litellm_model: str) -> str:
 
 def refuse_same_family(judge: str, generators: list[tuple[str, str | None, list]], model_info: list[dict]) -> str:
     models = {m["model_name"]: m.get("litellm_params", {}).get("model", "") for m in model_info}
-    if judge == "gemini-balanced" or judge.endswith("-small"):
-        raise ValueError("Experiments require a single-model alias, not a routing profile")
     if judge not in models:
         raise ValueError(f"Gateway không có alias chấm '{judge}'. Các alias hiện có: {', '.join(sorted(models))}")
     judge_family = model_family(models[judge])

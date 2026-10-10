@@ -50,14 +50,15 @@ class Rating(Base):
         CheckConstraint("(rater_kind = 'human' AND user_id IS NOT NULL) OR "
                         "(rater_kind = 'llm_judge' AND user_id IS NULL)", name="ck_ratings_rater"),
         UniqueConstraint("study_item_id", "user_id", name="uq_ratings_user"),
-        Index("uq_ratings_llm_judge", "study_item_id", "judge_model", unique=True,
-              postgresql_where=text("rater_kind = 'llm_judge'"), postgresql_nulls_not_distinct=True),
+        Index("uq_ratings_llm_judge", "study_item_id", unique=True,
+              postgresql_where=text("rater_kind = 'llm_judge'")),
     )
 
     id: Mapped[uuid.UUID] = uuid_pk()
     study_item_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("study_items.id", ondelete="CASCADE"), index=True)
     user_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id", ondelete="RESTRICT"), index=True)
     rater_kind: Mapped[str]
+    # What actually graded an llm_judge row: the gateway alias and the model it reported serving.
     judge_alias: Mapped[str | None]
     judge_model: Mapped[str | None]
     # ModuleEvaluation's rubric: eight scored dimensions, then overall notes (criterion 9).
