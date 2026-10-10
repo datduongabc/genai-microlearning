@@ -1,11 +1,13 @@
-# R18: thiết lập nghiên cứu
+# R18: thiết lập nghiên cứu và chấm mù
 
-Phần đầu của R18 có ba bảng `studies`, `study_items`, `ratings` và một router
-`/studies`. Mọi endpoint hiện tại chỉ dành cho admin đang hoạt động; người chưa
-đăng nhập nhận 401, giảng viên nhận 404. RLS cũng chặn truy cập ba bảng từ tài
-khoản không phải admin. UI chấm mù, ghi điểm và trang kết quả thuộc các phần sau.
+R18 có ba bảng `studies`, `study_items`, `ratings` và một router `/studies`.
+Phần thiết lập (tạo nghiên cứu, nạp đơn vị, mời người chấm) chỉ dành cho admin
+đang hoạt động; người chưa đăng nhập nhận 401, giảng viên nhận 404. Phần
+[chấm mù](#cham-mu) dành cho tài khoản được mời. LLM judge và trang kết quả
+thuộc các phần sau.
 
-Chạy migration `alembic upgrade head` để thêm revision `0018_study_model`.
+Chạy migration `alembic upgrade head` để thêm revision `0018_study_model` và
+`0019_blind_ratings`.
 
 | API | Nội dung |
 | --- | --- |
@@ -13,6 +15,8 @@ Chạy migration `alembic upgrade head` để thêm revision `0018_study_model`.
 | `GET /studies` | Danh sách nghiên cứu |
 | `GET /studies/{id}` | Nghiên cứu cùng toàn bộ đơn vị, gồm nhóm dành cho admin |
 | `POST /studies/{id}/items` | JSON có `module_ids` và/hoặc `human_packets`; trả 201 với toàn bộ đơn vị sau khi gán lại mã |
+| `GET /studies/{id}/raters` | Danh sách email người chấm được mời: `{"emails": [...]}` |
+| `PUT /studies/{id}/raters` | JSON `{"emails": [...]}` thay toàn bộ danh sách; danh sách rỗng thu hồi mọi lời mời |
 
 `module_ids` là danh sách UUID của module RAG đã có do admin hiện tại sở hữu.
 Cả module RAG và bản đối chứng phải thuộc môn học của admin đó; nguồn thuộc
@@ -61,11 +65,67 @@ hàng nghiên cứu để các lần nạp đồng thời không trùng mã. Mod
 packet không hợp lệ hoặc nguồn thiếu khiến cả lượt nạp bị từ chối. Không
 nạp thêm nếu nghiên cứu đã rời `draft` hoặc đã có bất kỳ lượt chấm nào.
 
-Bảng `ratings` chưa có API ghi trong phần này. Các trường chấm khớp
-`ModuleEvaluation` và [rubric dùng chung](rubric.md), không thêm cột điểm số
-thứ chín. `rater_kind` là `human` kèm `user_id`, hoặc
-`llm_judge` không có `user_id`. Mỗi người và LLM judge có tối đa một lượt chấm
-trên một đơn vị. Bảng này độc lập với `evaluations` của pipeline.
+Các trường chấm của bảng `ratings` khớp `ModuleEvaluation` và
+[rubric dùng chung](rubric.md), không thêm cột điểm số thứ chín. `rater_kind`
+là `human` kèm `user_id`, hoặc `llm_judge` không có `user_id`. Mỗi người và
+LLM judge có tối đa một lượt chấm trên một đơn vị. Bảng này độc lập với
+`evaluations` của pipeline.
+
+<a id="cham-mu"></a>
+
+## Chấm mù
+
+Admin mời người chấm theo email, trên tab **Nghiên cứu** của trang quản trị
+hoặc bằng `PUT /studies/{id}/raters`. Mỗi email phải thuộc một tài khoản đang
+hoạt động (giảng viên khác, chuyên gia), nếu không cả yêu cầu bị từ chối với
+422. Email được chuẩn hóa về chữ thường, bỏ trùng và lưu ở cột
+`studies.rater_emails`, không thêm bảng thứ tư. Tối đa 100 người chấm mỗi
+nghiên cứu.
+
+| API | Nội dung |
+| --- | --- |
+| `GET /studies/mine` | Các nghiên cứu mà tài khoản hiện tại được mời, kèm tiến độ riêng `rated`/`total` |
+| `GET /studies/mine/{id}/items` | Nghiên cứu, các đơn vị theo thứ tự đã xáo cho người chấm này, và lượt chấm của chính họ trên từng đơn vị |
+| `PUT /studies/mine/{id}/items/{item_id}/rating` | Tạo hoặc sửa lượt chấm của mình; thân là `ModuleEvaluation` |
+
+Người chấm chỉ nhận `id`, `anon_code`, `packet` và lượt chấm của mình trên mỗi
+đơn vị; thông tin nghiên cứu chỉ gồm tên, phiên bản rubric, trạng thái và ngày
+tạo. Nhóm, `module_id`, danh sách người chấm và điểm của người khác không bao
+giờ có trong các phản hồi này. Tài khoản không được mời, đã bị thu hồi lời mời
+hoặc hỏi một nghiên cứu không tồn tại đều nhận cùng lỗi 404; tài khoản bị vô
+hiệu hóa nhận 401.
+
+Thứ tự đơn vị được xáo bằng hạt giống `study_id:user_id`, nên mỗi người chấm
+có một thứ tự riêng và tải lại trang giữ nguyên thứ tự đó. Mã `M01`, `M02`, ...
+không đổi theo người chấm.
+
+Thân `PUT .../rating` được kiểm bằng `ModuleEvaluation` của
+`app/generation/evaluation.py`: tám tiêu chí, mỗi tiêu chí có `score` nguyên từ
+1 đến 5 và `justification`, cùng `hallucination_findings` (mỗi mục có `claim`,
+`field`, `reason`) và `overall_notes`. `anon_id` phải bằng mã ẩn danh của đơn
+vị, nếu không nhận 422. Gọi lại cùng đường dẫn sẽ sửa lượt chấm đã lưu. Lượt
+chấm đầu tiên chuyển nghiên cứu từ `draft` sang `active`, sau đó không nạp thêm
+đơn vị được nữa (409). Nghiên cứu `closed` từ chối lưu và sửa lượt chấm với 409.
+
+Trang **Chấm nghiên cứu** (`/studies`) liệt kê các nghiên cứu được mời cùng
+tiến độ "Đã chấm n/tổng". Trang chấm của một đơn vị hiện mã ẩn danh, tài liệu
+nguồn, chủ đề, mục tiêu học tập, nội dung, slide, ví dụ, quiz cùng lời giải
+thích và bài luyện tập, rồi biểu mẫu chín tiêu chí của rubric.
+
+### Phân quyền ở database
+
+RLS trên `studies` và `study_items` vẫn chỉ cho admin: RLS lọc theo hàng nên
+không ẩn riêng được cột nhóm và `module_id`. Người chấm đọc qua hai view
+`blind_studies` và `blind_study_items`, chỉ gồm các cột được phép và chỉ trả
+hàng của nghiên cứu mà tài khoản đang hoạt động trong `app.current_user_id`
+được mời. Trên `ratings`, người chấm chỉ đọc, thêm và sửa được hàng `human`
+mang `user_id` của chính mình, trên đơn vị thuộc nghiên cứu họ được mời; không
+có quyền xóa. Thu hồi lời mời giữ nguyên các lượt chấm đã lưu cho admin, nhưng
+người bị thu hồi không còn đọc hay sửa được chúng.
+
+Trigger trên `ratings` khóa hàng nghiên cứu (cùng khóa với việc nạp đơn vị),
+từ chối ghi vào nghiên cứu `closed`, không cho đổi đơn vị hay người chấm của
+một lượt chấm đã có, và chuyển nghiên cứu `draft` sang `active`.
 
 <a id="bao-toan-nguon"></a>
 

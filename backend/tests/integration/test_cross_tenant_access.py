@@ -37,8 +37,10 @@ from app.models import (
     ModuleComponent,
     Question,
     Study,
+    StudyItem,
     User,
 )
+from tests.integration.test_studies import human_packet
 
 client = TestClient(app)
 
@@ -82,15 +84,19 @@ def world():
             status=JobStatus.failed, last_error="secret error of A",
         )
         db.add_all([pipeline_job, failed_job])
-        study = Study(name="Admin study", rubric_version="v1")
+        # The owner is an invited rater, so the study and its item are really there to be found.
+        study = Study(name="Admin study", rubric_version="v1", rater_emails=[owner.email.lower()])
         db.add(study)
+        db.flush()
+        study_item = StudyItem(study_id=study.id, group="human", anon_code="M01", packet={**human_packet(), "anon_id": "M01"})
+        db.add(study_item)
         db.commit()
         ids = {
             "owner": owner.id, "stranger": stranger.id, "course": course.id, "stranger_course": stranger_course.id,
             "document": document.id, "module": module.id, "component": component.id, "session": session.id,
             "pipeline_job": pipeline_job.id, "failed_job": failed_job.id, "question": question.id,
             "user": owner.id,
-            "study": study.id,
+            "study": study.id, "study_item": study_item.id,
         }
     finally:
         db.close()
@@ -131,6 +137,15 @@ def layers(request):
 
 
 # (method, path with named ids, query parameters, extra request arguments)
+_SCORE = {"score": 1, "justification": "pwned"}
+RATING = {
+    "anon_id": "M01", "overall_notes": "pwned", "hallucination_findings": [],
+    **{name: _SCORE for name in (
+        "accuracy", "completeness", "consistency", "hallucination_score", "slide_quality", "quiz_quality",
+        "bloom_fidelity", "query_alignment",
+    )},
+}
+
 ATTACKS = [
     ("GET", "/documents", {"course_id": "{course}"}, {}),
     ("POST", "/documents", {"course_id": "{course}"}, {"files": {"file": ("x.txt", b"hi", "text/plain")}}),
@@ -158,6 +173,11 @@ ATTACKS = [
     ("DELETE", "/admin/users/{user}", None, {}),
     ("GET", "/studies/{study}", None, {}),
     ("POST", "/studies/{study}/items", None, {"json": {"module_ids": ["{module}"]}}),
+    ("GET", "/studies/{study}/raters", None, {}),
+    ("PUT", "/studies/{study}/raters", None, {"json": {"emails": []}}),
+    # A study the owner was invited to rate, reached by a lecturer who was not.
+    ("GET", "/studies/mine/{study}/items", None, {}),
+    ("PUT", "/studies/mine/{study}/items/{study_item}/rating", None, {"json": RATING}),
     ("DELETE", "/courses/{course}", None, {}),
     ("POST", "/courses/{course}/link-moodle", None, {"json": {"moodle_course_id": 999}}),
     ("DELETE", "/courses/{course}/link-moodle", None, {}),
@@ -186,7 +206,8 @@ def _send(spec, ids, headers):
 
 
 OWNER_RESOURCES = (
-    "course", "document", "module", "component", "session", "pipeline_job", "failed_job", "question", "user", "study"
+    "course", "document", "module", "component", "session", "pipeline_job", "failed_job", "question", "user", "study",
+    "study_item",
 )
 
 
@@ -220,6 +241,9 @@ def test_nothing_of_the_owner_was_changed_by_the_attacks(world, layers):
     assert module.json()["title"] == "Module of A"
     assert "secret A" in module.text
     assert [d["filename"] for d in documents.json()] == ["a.txt"]
+    # The invited owner still finds the study that the stranger was told is not there, unrated.
+    study = client.get(f"/studies/mine/{world['study']}/items", headers=world["owner_headers"]).json()
+    assert [(item["id"], item["rating"]) for item in study["items"]] == [(str(world["study_item"]), None)]
     assert client.get("/courses", headers=world["owner_headers"]).json()[0]["id"] == str(world["course"])
 
 

@@ -17,6 +17,7 @@ class Study(Base):
     id: Mapped[uuid.UUID] = uuid_pk()
     name: Mapped[str]
     rubric_version: Mapped[str]
+    rater_emails: Mapped[list[str]] = mapped_column(JSONB, default=list, server_default="[]")
     status: Mapped[str] = mapped_column(default="draft", server_default="draft")
     created_at: Mapped[datetime] = created_at_column()
 

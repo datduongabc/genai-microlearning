@@ -29,6 +29,7 @@ export function AppShell({
         <div className="flex items-center gap-3 whitespace-nowrap text-sm text-gray-500 sm:gap-4">
           {/* Tên chỉ mang tính thông tin nên nhường chỗ trên màn hình nhỏ. */}
           <span className="hidden sm:inline">{user?.name}</span>
+          <Link to="/studies" className="hover:text-terracotta">Chấm nghiên cứu</Link>
           <button onClick={logout} className="hover:text-terracotta">
             Đăng xuất
           </button>
