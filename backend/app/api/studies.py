@@ -225,11 +225,12 @@ def judge_study(study_id: uuid.UUID, db: Session = Depends(get_db)):
     if not items:
         raise HTTPException(status_code=409, detail="Study has no items")
     try:
-        model = validate_judge(items)
+        model, max_input_tokens = validate_judge(items)
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
     job = enqueue_job(db, job_type=JobType.study_judge, step="judge", study_id=study_id,
                       payload={"judge_alias": JUDGE_ALIAS, "judge_model": model,
+                               "max_input_tokens": max_input_tokens,
                                "item_ids": [str(item.id) for item in items], "cursor": 0, "results": []})
     db.commit()
     return {"job_id": job.id, "status": job.status}

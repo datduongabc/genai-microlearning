@@ -1,5 +1,4 @@
 """One packet per durable queue step; retries never repeat already completed items."""
-import json
 import uuid
 from datetime import UTC, datetime, timedelta
 
@@ -26,35 +25,40 @@ from app.models import Job, JobStatus, JobType, Rating, StudyItem
 # Decided for the study: a different family from the Gemini models that generate the modules.
 JUDGE_ALIAS = "groq-pro"
 OUTPUT_TOKENS = 2048
-# Reserve 10% against tokenizer/provider differences within Groq's 8,000 TPM limit.
-GROQ_TOKEN_BUDGET = 7200
 GROQ_INTERVAL_SECONDS = 61
 
 
-def validate_judge(items: list[StudyItem]) -> str:
-    """The judge's real model; ValueError if it shares a family with any item's generator."""
+def validate_judge(items: list[StudyItem]) -> tuple[str, int | None]:
+    """The judge's real model and the gateway's input cap for it; ValueError if the judge
+    shares a family with any item's generator."""
     try:
         model_info = fetch_model_info()
     except httpx.HTTPError as exc:
         raise GatewayUnavailable(str(exc)) from exc
-    return refuse_same_family(JUDGE_ALIAS, [
+    model = refuse_same_family(JUDGE_ALIAS, [
         # Items loaded before provenance was stored: assume the configured default generator.
         (item.anon_code, item.generator_model or gateway.active_model(), item.generation_models or [])
         for item in items if item.group != "human"
     ], model_info)
+    declared = next(m for m in model_info if m["model_name"] == JUDGE_ALIAS).get("model_info") or {}
+    return model, declared.get("max_input_tokens")
 
 
-def check_packet_budget(packet: ModuleContentInput, judge_model: str) -> None:
-    if not judge_model.startswith("groq/"):
+def check_packet_budget(packet: ModuleContentInput, max_input_tokens: int | None) -> None:
+    if max_input_tokens is None:
         return
     messages = [{"role": "system", "content": _SYSTEM_INSTRUCTION},
                 {"role": "user", "content": _build_prompt(packet)}]
-    tokens = litellm.token_counter(model="gpt-4o", messages=messages)
-    tokens += litellm.token_counter(model="gpt-4o", text=json.dumps(ModuleEvaluation.model_json_schema()))
-    if tokens + OUTPUT_TOKENS > GROQ_TOKEN_BUDGET:
-        raise ValueError(f"Packet too large for Groq's 8,000 TPM: estimated {tokens} input/schema "
-                         f"+ {OUTPUT_TOKENS} reserved output tokens (safe budget {GROQ_TOKEN_BUDGET}); "
-                         "packet was not truncated")
+    # No model argument: the gateway's pre-call check counts with litellm's default tokenizer.
+    tokens = litellm.token_counter(messages=messages)
+    if tokens > max_input_tokens:
+        raise ValueError(f"Packet too large for the judge model: {tokens} input tokens exceed the "
+                         f"gateway's limit of {max_input_tokens}; packet was not truncated")
+
+
+def is_context_window_error(exc: Exception) -> bool:
+    # The gateway's own rejection reaches the client as a plain 400 that only names the error.
+    return isinstance(exc, litellm.BadRequestError) and "ContextWindowExceededError" in str(exc)
 
 
 def upsert_rating(db: Session, item: StudyItem, alias: str, served: str,
@@ -104,7 +108,7 @@ def run_study_judge_step(queued: Job) -> None:
             if item is None or item.study_id != job.study_id:
                 raise ValueError("Study item no longer exists")
             packet = ModuleContentInput.model_validate(item.packet)
-            check_packet_budget(packet, expected)
+            check_packet_budget(packet, payload["max_input_tokens"])
             if expected.startswith("groq/") and not reserve_groq_call(db, job, datetime.now(UTC)):
                 return
             with gateway.experiment_mode(), gateway.using_model(alias), gateway.capture_models() as calls:
@@ -118,7 +122,8 @@ def run_study_judge_step(queued: Job) -> None:
             db.rollback()
             job = db.get(Job, queued.id)
             message = str(exc)[:1000]
-            if not is_terminal_error(exc) and job.attempts + 1 < job.max_attempts:
+            terminal = is_terminal_error(exc) or is_context_window_error(exc)
+            if not terminal and job.attempts + 1 < job.max_attempts:
                 job.attempts += 1
                 job.last_error = message
                 _requeue(job, datetime.now(UTC) + timedelta(seconds=jittered_backoff(job.attempts)))
