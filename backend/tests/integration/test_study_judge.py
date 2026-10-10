@@ -167,6 +167,45 @@ def test_transient_error_retries_same_item_then_records_exhaustion(world, fake, 
     assert result["completed"] == 1 and result["results"][0]["status"] == "failed"
 
 
+def test_oversized_packet_fails_at_once_without_calling_or_reserving_groq(world, fake):
+    sid = create_study(world)
+    big = human_packet()
+    big["content_markdown"] = "Cookie là một mẩu dữ liệu nhỏ mà máy chủ gửi cho trình duyệt. " * 400
+    load(world, sid, human_packets=[big, human_packet()])
+    jid = start(world, sid).json()["job_id"]
+    step(jid)
+    result = status(world, sid, jid)
+    assert result["completed"] == 1 and result["results"][0]["status"] == "failed"
+    assert result["results"][0]["error"].startswith("Packet too large")
+    assert fake == []
+    with SessionLocal() as db:
+        job = db.get(Job, uuid.UUID(jid))
+        assert job.attempts == 0 and "groq_reserved_until" not in job.payload
+    step(jid)
+    result = status(world, sid, jid)
+    assert result["status"] == "done" and result["results"][1]["status"] == "done"
+
+
+def test_gateway_context_window_rejection_fails_the_item_without_retrying(world, fake, monkeypatch):
+    sid = create_study(world)
+    load(world, sid, human_packets=[human_packet()])
+    jid = start(world, sid).json()["job_id"]
+    calls = []
+
+    def rejected(*args, **kwargs):
+        calls.append(1)
+        raise litellm.BadRequestError(
+            "OpenAIException - litellm.ContextWindowExceededError: litellm._pre_call_checks: "
+            "Context Window exceeded for given call.", model="groq-pro", llm_provider="openai")
+
+    monkeypatch.setattr(judge, "judge_module", rejected)
+    step(jid)
+    result = status(world, sid, jid)
+    assert len(calls) == 1 and result["status"] == "done"
+    assert result["results"][0]["status"] == "failed"
+    assert "ContextWindowExceededError" in result["results"][0]["error"]
+
+
 def test_same_family_refusal_includes_actual_control_model(world, fake):
     sid = create_study(world)
     load(world, sid, module_ids=[str(world["rag"])])

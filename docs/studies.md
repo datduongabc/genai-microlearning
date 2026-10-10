@@ -103,9 +103,12 @@ Rubric và prompt không đổi.
   trên đúng đơn vị đó; hết lượt thử hoặc lỗi không thử lại được (JSON sai
   rubric, gói quá lớn) được ghi vào `results` với `status: failed` và job chấm
   tiếp đơn vị sau. Job kết thúc `done` kể cả khi có đơn vị lỗi; đọc `results`.
-- **Giới hạn Groq.** Bậc miễn phí cho 8.000 token/phút. Với model `groq/...`,
-  job ước lượng token của prompt, schema và 2.048 token đầu ra; vượt 7.200
-  thì đơn vị nhận lỗi `Packet too large ...`, gói không bao giờ bị cắt bớt.
+- **Giới hạn Groq.** Bậc miễn phí cho 8.000 token/phút, nên gateway khai
+  `max_input_tokens` 3.952 cho `groq-pro` và dành 2.048 token đầu ra. Job đọc
+  đúng giới hạn đó từ gateway lúc xếp job và đếm token của prompt như
+  gateway đếm; vượt thì đơn vị nhận lỗi `Packet too large ...` ngay, không
+  gọi Groq, không thử lại, và gói không bao giờ bị cắt bớt. Nếu gateway vẫn
+  từ chối vì vượt cửa sổ ngữ cảnh thì đơn vị cũng bị ghi lỗi mà không thử lại.
   Mọi job chấm dùng chung một lượt gọi Groq mỗi 61 giây, nên một nghiên cứu
   N đơn vị mất khoảng N phút.
 
