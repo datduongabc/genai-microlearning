@@ -43,8 +43,10 @@ def existing_pair(db: Session, module_id: uuid.UUID, owner_id: uuid.UUID) -> lis
         raise LookupError("Module not found")
     sources = reference_chunks(db, module)
     return [
-        StudyItem(group="rag_llm", module_id=module.id, packet=module_packet(module, sources).model_dump()),
-        StudyItem(group="llm_no_rag", packet=module_packet(control, sources).model_dump()),
+        StudyItem(group="rag_llm", module_id=module.id, packet=module_packet(module, sources).model_dump(),
+                  generator_model=payload.get("model_alias"), generation_models=module.generation_models),
+        StudyItem(group="llm_no_rag", packet=module_packet(control, sources).model_dump(),
+                  generator_model=expected.get("model_alias"), generation_models=control.generation_models),
     ]
 
 

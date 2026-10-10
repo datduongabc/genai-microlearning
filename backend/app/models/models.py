@@ -56,6 +56,7 @@ class ComponentType(str, enum.Enum):
 class JobType(str, enum.Enum):
     document_pipeline = "document_pipeline"
     module_generation = "module_generation"
+    study_judge = "study_judge"
 
 
 class JobStatus(str, enum.Enum):
@@ -416,6 +417,7 @@ class Job(Base):
     )
 
     id: Mapped[uuid.UUID] = uuid_pk()
+    study_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("studies.id", ondelete="CASCADE"), index=True)
     job_type: Mapped[JobType] = mapped_column(Enum(JobType))
     # Indexed: the duplicate-generation guard in modules.py filters on this
     # column directly (Job.document_id == document_id), not covered by the
