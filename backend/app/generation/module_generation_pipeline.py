@@ -18,6 +18,7 @@ from app.db import WorkerSessionLocal
 from app.generation.common import OutputLanguage
 from app.generation.content import generate_content
 from app.generation.example import generate_example
+from app.generation.inline_citations import MARKER
 from app.generation.objective import LearningObjective, generate_learning_objective
 from app.generation.planner import PLANNER_MAX_INPUT_CHARS, Concept, PlannerOutput, run_planner
 from app.generation.quiz_graph import (
@@ -429,25 +430,28 @@ def _generate_module(
         content={
             "markdown": content_out.content,
             "source_locators": getattr(content_out, "source_locators", []),
-            "claim_citations": [c.model_dump() for c in getattr(content_out, "claim_citations", [])],
+            **({"source_map": {k: v.model_dump() for k, v in content_out.source_map.items()},
+                "inline_citations": [c.model_dump() for c in content_out.inline_citations]}
+               if hasattr(content_out, "source_map") else {"claim_citations": []}),
             "relevance_confidence": corrected.confidence if use_retrieval else None,
             "relevance_retry_count": corrected.retries if use_retrieval else 0,
         },
     )
 
-    slides_out = generate_slides(lo, content_out.content, output_language=output_language, custom_instructions=custom_instructions)
+    lesson_text = MARKER.sub("", content_out.content)
+    slides_out = generate_slides(lo, lesson_text, output_language=output_language, custom_instructions=custom_instructions)
     slides_component = ModuleComponent(
         module_id=module.id, type=ComponentType.slides,
         content={"slides": [s.model_dump() for s in slides_out.slides]},
     )
 
-    example_out = generate_example(lo, content_out.content, context_chunks, output_language=output_language, custom_instructions=custom_instructions)
+    example_out = generate_example(lo, lesson_text, context_chunks, output_language=output_language, custom_instructions=custom_instructions)
     example_component = ModuleComponent(
         module_id=module.id, type=ComponentType.example,
         content={"examples": [e.model_dump() for e in example_out.examples]},
     )
 
-    lesson = None if use_retrieval else content_out.content
+    lesson = None if use_retrieval else lesson_text
     asked = _generate_questions(
         db, doc, lo, query, scope, self_check, lesson=lesson, output_language=output_language, custom_instructions=custom_instructions,
     )

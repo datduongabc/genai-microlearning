@@ -41,7 +41,7 @@ class Step:
 STEPS = [
     Step("content", content, ContentOutput, ContentVerification, ["groundedness", "completeness", "scope"],
          lambda: content.generate_content(LO, CHUNKS),
-         ContentOutput(content="## Chọn biến mới\n...", source_ids=["S1"])),
+         ContentOutput(content="## Chọn biến mới\n...")),
 ]
 
 # Bước không có vòng tự kiểm: (tên, module, schema đầu ra, đầu ra giả, cách gọi).

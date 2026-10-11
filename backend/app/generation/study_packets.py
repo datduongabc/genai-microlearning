@@ -22,6 +22,7 @@ from app.generation.evaluation import (
     QuizQuestionInput,
     SlideInput,
 )
+from app.generation.inline_citations import MARKER, derive_citations
 from app.generation.module_generation_pipeline import (
     IncompleteModuleError,
     concept_query_of,
@@ -117,6 +118,9 @@ def resolved_citations(db: Session, module: Module) -> list[StoredCitation] | No
     matched against the chunks' locators and is ambiguous when several share it."""
     content = _component(module, ComponentType.content)
     saved = content.content.get("claim_citations") if content else None
+    if content and "source_map" in content.content:
+        saved = [c.model_dump() for c in derive_citations(
+            content.content.get("markdown") or "", content.content["source_map"])]
     if saved is None:
         return None
     candidates = db.query(Chunk).filter(
@@ -132,6 +136,7 @@ def resolved_citations(db: Session, module: Module) -> list[StoredCitation] | No
         chunk = matches[0] if len(matches) == 1 else None
         citations.append(StoredCitation(
             claim=item["claim"], locator=item["locator"],
+            **{k: item[k] for k in ("source_id", "start", "end", "marker_start", "marker_end") if k in item},
             chunk_id=str(chunk.id) if chunk else None, chunk_content=chunk.content if chunk else None,
             resolution="resolved" if chunk else "ambiguous" if matches else "missing",
         ))
@@ -154,7 +159,7 @@ def _questions(module: Module, component_type: ComponentType) -> list[QuizQuesti
         for item in ((_original_content(explanation).get("items") or []) if explanation else [])
         if item.get("component") == component_type.value
     }
-    original = component.content.get("ai_original", {}) if component else {}
+    original = (component.content or {}).get("ai_original", {}) if component else {}
     if "content" in original and "questions" in original:
         return [QuizQuestionInput(
             stem=q["stem"], choices=list(q["choices"].get("options", [])),
@@ -185,7 +190,8 @@ def module_packet(module: Module, sources: list[str]) -> ModuleContentInput:
         bloom_level=module.bloom_level,
         learning_objective=module.learning_objective,
         sub_objectives=list(module.sub_objectives or []),
-        content_markdown=(_original_content(content).get("markdown") or "") if content else "",
+        # Blank marker characters so blinded packets hide source codes but preserve Content offsets.
+        content_markdown=MARKER.sub(lambda m: " " * len(m[0]), (_original_content(content).get("markdown") or "")) if content else "",
         slides=[SlideInput(**s) for s in ((_original_content(slides).get("slides") or []) if slides else [])],
         examples=[ExampleInput(**e) for e in ((_original_content(examples).get("examples") or []) if examples else [])],
         quiz=quiz,

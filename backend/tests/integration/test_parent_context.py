@@ -25,14 +25,14 @@ def _seed_document_with_chunks(db, texts: list[str]):
     return chunks
 
 
-def test_expand_with_parent_context_merges_neighboring_chunks():
+def test_expand_with_parent_context_returns_neighboring_physical_chunks():
     db = SessionLocal()
     try:
         chunks = _seed_document_with_chunks(db, ["A", "B", "C", "D", "E"])
         # matched child = chunk_index 2 ("C"), window=1 -> should pull in B, C, D only
         expanded = expand_with_parent_context(db, [chunks[2]], window=1)
-        assert len(expanded) == 1
-        assert expanded[0].content == "B\n\nC\n\nD"
+        assert [c.id for c in expanded] == [c.id for c in chunks[1:4]]
+        assert [c.content for c in expanded] == ["B", "C", "D"]
     finally:
         db.close()
 
@@ -43,7 +43,7 @@ def test_expand_with_parent_context_clamps_at_document_start():
         chunks = _seed_document_with_chunks(db, ["A", "B", "C"])
         # matched child = chunk_index 0 ("A"), window=2 -> can't go below 0
         expanded = expand_with_parent_context(db, [chunks[0]], window=2)
-        assert expanded[0].content == "A\n\nB\n\nC"
+        assert [c.content for c in expanded] == ["A", "B", "C"]
     finally:
         db.close()
 
@@ -52,10 +52,8 @@ def test_expand_with_parent_context_deduplicates_overlapping_windows():
     db = SessionLocal()
     try:
         chunks = _seed_document_with_chunks(db, ["A", "B", "C", "D", "E"])
-        # chunk_index 1 and 2, window=1 -> ranges [0,2] and [1,3] are distinct,
-        # so both should still produce separate parent windows (no accidental
-        # collapse to 1).
-        expanded = expand_with_parent_context(db, [chunks[1], chunks[2]], window=1)
-        assert len(expanded) == 2
+        expanded = expand_with_parent_context(db, [chunks[2], chunks[1]], window=1)
+        assert [c.id for c in expanded] == [c.id for c in chunks[:4]]
+        assert [c.content for c in expanded] == ["A", "B", "C", "D"]
     finally:
         db.close()

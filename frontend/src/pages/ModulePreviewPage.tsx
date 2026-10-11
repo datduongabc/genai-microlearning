@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import Markdown, { type Components } from 'react-markdown'
@@ -439,8 +439,8 @@ function ComponentCard({
       </h3>
       {component.type === 'content' && (
         <>
-          <MarkdownFieldEditor moduleId={moduleId} component={component} onSaved={onSaved} />
-          {citations && citations.length > 0 && (
+          <MarkdownFieldEditor moduleId={moduleId} component={component} citations={citations} onSaved={onSaved} />
+          {!component.content.source_map && citations && citations.length > 0 && (
             <ul className="mt-4 space-y-3 border-t border-gray-200 pt-4 text-sm">
               {citations.map((citation, i) => (
                 <li key={i}>
@@ -532,14 +532,41 @@ const MARKDOWN: Components = {
 function MarkdownFieldEditor({
   moduleId,
   component,
+  citations,
   onSaved,
 }: {
   moduleId: string
   component: ModuleComponentInfo
+  citations: ModuleDetail['claim_citations']
   onSaved: () => Promise<void>
 }) {
   const original = (component.content.markdown as string) ?? ''
+  const sourceDialog = useRef<HTMLDialogElement>(null)
+  const [openedSource, setOpenedSource] = useState<NonNullable<ModuleDetail['claim_citations']>[number] | null>(null)
+  const sources = new Map<string, { number: number; citation: NonNullable<ModuleDetail['claim_citations']>[number] }>()
+  for (const citation of citations ?? []) {
+    if (citation.source_id && !sources.has(citation.source_id)) {
+      sources.set(citation.source_id, { number: sources.size + 1, citation })
+    }
+  }
+  const rendered = component.content.source_map ? original.replace(/\[(S[0-9]+)\]/g, (marker, code: string) => {
+    const source = sources.get(code)
+    return source ? `[${source.number}](#citation-${code})` : marker
+  }) : original
+  const markdownComponents: Components = {
+    ...MARKDOWN,
+    a: ({ href, children }) => {
+      const source = sources.get((href ?? '').replace(/^#citation-/, ''))
+      return source && href?.startsWith('#citation-') ? (
+        <button type="button" aria-label={`Nguồn ${source.number}`} className="mx-0.5 align-super text-xs font-semibold text-terracotta hover:underline"
+          onClick={() => { setOpenedSource(source.citation); sourceDialog.current?.showModal() }}>
+          [{source.number}]
+        </button>
+      ) : <a href={href} className="text-terracotta underline">{children}</a>
+    },
+  }
   const [editing, setEditing] = useState(false)
+  const [saveError, setSaveError] = useState('')
   const {
     register,
     handleSubmit,
@@ -548,9 +575,14 @@ function MarkdownFieldEditor({
   } = useForm<MarkdownContentFormValues>({ resolver: zodResolver(markdownContentSchema), defaultValues: { markdown: original } })
 
   async function handleSave({ markdown }: MarkdownContentFormValues) {
-    await updateComponentContent(moduleId, component.id, { ...component.content, markdown })
-    await onSaved()
-    setEditing(false)
+    setSaveError('')
+    try {
+      await updateComponentContent(moduleId, component.id, { ...component.content, markdown })
+      await onSaved()
+      setEditing(false)
+    } catch (err) {
+      setSaveError(apiErrorMessage(err, 'Không thể lưu nội dung. Kiểm tra mã nguồn trích dẫn rồi thử lại.'))
+    }
   }
 
   return (
@@ -564,18 +596,30 @@ function MarkdownFieldEditor({
         />
       ) : (
         <div className="text-[15px] leading-relaxed">
-          <Markdown components={MARKDOWN}>{original}</Markdown>
+          <Markdown components={markdownComponents}>{rendered}</Markdown>
         </div>
       )}
+      <dialog ref={sourceDialog} aria-label="Nguồn trích dẫn" className="m-auto w-full max-w-2xl rounded-[3px] p-6 backdrop:bg-black/40">
+        <div className="mb-3 flex items-start justify-between gap-4">
+          <h4 className="font-semibold">{openedSource?.locator}</h4>
+          <button type="button" aria-label="Đóng nguồn" onClick={() => sourceDialog.current?.close()} className="text-sm text-terracotta">Đóng</button>
+        </div>
+        {openedSource && (openedSource.resolution === 'resolved' ? (
+          <p className="max-h-[60vh] overflow-y-auto whitespace-pre-wrap text-sm leading-relaxed">{openedSource.chunk_content}</p>
+        ) : <p className="text-sm text-gray-500">{openedSource?.resolution === 'ambiguous' ? 'trùng nhiều đoạn nguồn, không xác định được' : 'không tìm thấy đoạn nguồn'}</p>)}
+      </dialog>
+      {saveError && <p role="alert" className="text-sm text-red-600">{saveError}</p>}
       <SaveCancelRow
         editing={editing}
         saving={saving}
         onEdit={() => {
+          setSaveError('')
           reset({ markdown: original })
           setEditing(true)
         }}
         onSave={handleSubmit(handleSave)}
         onCancel={() => {
+          setSaveError('')
           reset({ markdown: original })
           setEditing(false)
         }}

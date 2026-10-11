@@ -262,8 +262,7 @@ def test_large_scope_content_edit_keeps_citations_outside_retrieved_chunks(lesso
         prompts.append(prompt)
         # The retrieved chunk is S1; the one the content already cites follows it as S2.
         return response_model(
-            target="content", question_number=None, revised={"content": "Filler 42.",
-                "source_ids": ["S2"], "claim_citations": [{"claim": "Filler 42.", "source_id": "S2"}]},
+            target="content", question_number=None, revised={"content": "Filler 42. [S2]"},
             reply="Đã rút gọn nội dung.")
 
     monkeypatch.setattr(service, "complete_structured", fake)
@@ -272,8 +271,11 @@ def test_large_scope_content_edit_keeps_citations_outside_retrieved_chunks(lesso
     assert '"claim": "Filler 42.", "source_id": "S2"' in prompts[0]
     with SessionLocal() as db:
         stored = db.get(ModuleComponent, content_id).content
-        assert stored["markdown"] == "Filler 42." and stored["source_locators"] == ["lesson.txt#42"]
-        assert stored["claim_citations"] == [{"claim": "Filler 42.", "locator": "lesson.txt#42", "chunk_id": chunk_42}]
+        assert stored["markdown"] == "Filler 42. [S2]" and stored["source_locators"] == ["lesson.txt#42"]
+        assert len(stored["inline_citations"]) == 1
+        assert stored["inline_citations"][0]["claim"] == "Filler 42."
+        assert stored["inline_citations"][0]["chunk_id"] == chunk_42
+        assert "claim_citations" not in stored
 
 
 def test_content_edit_citing_an_id_outside_the_prompt_is_rejected(lesson, monkeypatch):
@@ -285,14 +287,13 @@ def test_content_edit_citing_an_id_outside_the_prompt_is_rejected(lesson, monkey
         db.commit()
         content_id, before = content.id, copy.deepcopy(content.content)
     monkeypatch.setattr(service, "complete_structured", lambda prompt, response_model, **kw: response_model(
-        target="content", question_number=None, revised={"content": "Stack.", "source_ids": ["S7"],
-            "claim_citations": [{"claim": "Stack.", "source_id": "S7"}]}, reply="Đã rút gọn nội dung."))
+        target="content", question_number=None, revised={"content": "Stack. [S7]"}, reply="Đã rút gọn nội dung."))
     assert send(lesson, "Rút gọn nội dung").status_code == 422
     with SessionLocal() as db:
         assert db.get(ModuleComponent, content_id).content == before
 
 
-def test_content_edit_cannot_drop_existing_citations(lesson, monkeypatch):
+def test_content_edit_can_remove_a_sentence_and_its_citations(lesson, monkeypatch):
     ids, _ = lesson
     with SessionLocal() as db:
         content = ModuleComponent(module_id=ids["module"], type=ComponentType.content, content={
@@ -300,14 +301,14 @@ def test_content_edit_cannot_drop_existing_citations(lesson, monkeypatch):
             "claim_citations": [{"claim": "A stack is LIFO.", "locator": "lesson.txt"}]})
         db.add(content)
         db.commit()
-        content_id, before = content.id, copy.deepcopy(content.content)
+        content_id = content.id
     monkeypatch.setattr(service, "complete_structured", lambda prompt, response_model, **kw: response_model(
-        target="content", question_number=None, revised={"content": "Stack.", "source_ids": [], "claim_citations": []},
+        target="content", question_number=None, revised={"content": "Stack."},
         reply="Đã rút gọn nội dung."))
     response = send(lesson, "Rút gọn nội dung")
-    assert response.status_code == 422
+    assert response.status_code == 200
     with SessionLocal() as db:
-        assert db.get(ModuleComponent, content_id).content == before
+        assert db.get(ModuleComponent, content_id).content["inline_citations"] == []
 
 
 def test_content_edit_of_legacy_ambiguous_citations_can_leave_them_uncited(lesson, monkeypatch):
@@ -328,12 +329,12 @@ def test_content_edit_of_legacy_ambiguous_citations_can_leave_them_uncited(lesso
     def fake(prompt, response_model, **kw):
         prompts.append(prompt)
         return response_model(target="content", question_number=None, revised={
-            "content": "Stack.", "source_ids": [], "claim_citations": []}, reply="Đã rút gọn nội dung.")
+            "content": "Stack."}, reply="Đã rút gọn nội dung.")
 
     monkeypatch.setattr(service, "complete_structured", fake)
     response = send(lesson, "Rút gọn nội dung")
     assert response.status_code == 200, response.text
-    assert '"source_ids": [], "claim_citations": []' in prompts[0]
+    assert '"existing_citations": []' in prompts[0]
     with SessionLocal() as db:
         assert db.get(ModuleComponent, content_id).content["markdown"] == "Stack."
 
@@ -399,3 +400,56 @@ def test_manual_slide_edits_keep_original_and_study_packet_uses_it(lesson):
         module = db.get(Module, ids["module"])
         packet = module_packet(module, ["Reference"])
         assert [s.model_dump() for s in packet.slides] == original["slides"]
+
+
+def test_manual_content_edit_rederives_citations_and_cannot_replace_server_map(lesson):
+    ids, headers = lesson
+    with SessionLocal() as db:
+        module = db.get(Module, ids['module'])
+        chunk = db.query(Chunk).filter(Chunk.document_id == module.document_id).one()
+        source_map = {'S1': {'chunk_id': str(chunk.id), 'locator': 'lesson.txt'}}
+        component = ModuleComponent(module_id=module.id, type=ComponentType.content, content={
+            'markdown': 'Old fact. [S1]', 'source_map': source_map,
+            'inline_citations': [{'claim': 'Old fact.', 'source_id': 'S1', 'locator': 'lesson.txt',
+                                  'chunk_id': str(chunk.id), 'start': 0, 'end': 9, 'marker_start': 10, 'marker_end': 14}]})
+        db.add(component)
+        db.commit()
+        component_id = component.id
+    url = f'/modules/{ids["module"]}/components/{component_id}'
+    response = client.patch(url, headers=headers, json={'content': {
+        'markdown': 'New fact. [S1]', 'source_map': {'S1': {'chunk_id': str(uuid.uuid4()), 'locator': 'forged'}}}})
+    assert response.status_code == 200, response.text
+    saved = response.json()['content']
+    assert saved['source_map'] == source_map
+    assert [c['claim'] for c in saved['inline_citations']] == ['New fact.']
+    assert client.patch(url, headers=headers, json={'content': {'markdown': 'Bad. [S99]'}}).status_code == 422
+    response = client.patch(url, headers=headers, json={'content': {'markdown': 'Uncited replacement.'}})
+    assert response.status_code == 200
+    assert response.json()['content']['inline_citations'] == []
+    assert client.get(f'/modules/{ids["module"]}', headers=headers).json()['claim_citations'] == []
+
+
+def test_chat_remaps_old_codes_to_the_edit_prompt_and_rederives_saved_citations(lesson, monkeypatch):
+    ids, _ = lesson
+    with SessionLocal() as db:
+        module = db.get(Module, ids['module'])
+        second = Chunk(document_id=module.document_id, course_id=module.course_id, chunk_index=1,
+                       content='Insertion takes logarithmic time.', source_ref='p2')
+        db.add(second); db.flush()
+        component = ModuleComponent(module_id=module.id, type=ComponentType.content, content={
+            'markdown': 'Insertion takes logarithmic time. [S1]',
+            'source_map': {'S1': {'chunk_id': str(second.id), 'locator': 'p2'}}, 'inline_citations': []})
+        db.add(component); db.commit()
+        component_id, second_id = component.id, str(second.id)
+    def model(prompt, response_model, **kwargs):
+        assert 'Insertion takes logarithmic time. [S2]' in prompt
+        return response_model(target='content', question_number=None,
+            revised={'content': 'Insertion has logarithmic cost. [S2]'}, reply='Đã sửa nội dung.')
+    monkeypatch.setattr(service, 'complete_structured', model)
+    response = send(lesson, 'rewrite the content')
+    assert response.status_code == 200, response.text
+    with SessionLocal() as db:
+        saved = db.get(ModuleComponent, component_id).content
+        assert saved['inline_citations'][0]['chunk_id'] == second_id
+        assert saved['inline_citations'][0]['claim'] == 'Insertion has logarithmic cost.'
+        assert saved['source_map']['S2']['chunk_id'] == second_id

@@ -60,6 +60,11 @@ export interface ModuleDetail {
   chat_edit_count?: number
   claim_citations?: {
     claim: string
+    source_id?: string | null
+    start?: number | null
+    end?: number | null
+    marker_start?: number | null
+    marker_end?: number | null
     locator: string
     chunk_content: string | null
     resolution: 'resolved' | 'missing' | 'ambiguous'

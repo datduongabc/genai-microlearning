@@ -213,11 +213,10 @@ def test_pdf_and_mp3_in_one_course_keep_generation_citations_in_their_document(t
     monkeypatch.setattr(retrieval, "rerank_scored", lambda query, chunks: [(c, 1.0) for c in chunks])
     monkeypatch.setattr(pipeline, "corrective_retrieve", lambda objective, chunks, re_retrieve:
                         CorrectiveResult(re_retrieve("Sorting"), "high", 1))
+    from app.generation.content import ContentOutput, resolve_citations
     monkeypatch.setattr(pipeline, "generate_content", lambda lo, chunks, **kwargs: (
-        types.SimpleNamespace(content="content", source_locators=[], claim_citations=[
-            types.SimpleNamespace(model_dump=lambda c=c: {"claim": c.content, "locator": c.source_ref})
-            for c in chunks
-        ]), None,
+        resolve_citations(ContentOutput(content="\n".join(
+            f"{c.content} [S{i + 1}]" for i, c in enumerate(chunks))), chunks), None,
     ))
     question_sources = []
 

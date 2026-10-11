@@ -2,17 +2,24 @@
 no-RAG arm, written from the model's own knowledge with the same prompt minus the source block."""
 
 from litellm.utils import type_to_response_format_param
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from app.generation.common import (
     OutputLanguage,
     _checked,
     custom_instructions_instruction,
     output_language_instruction,
-    resolve_source_id,
     source_block,
     source_id,
     system_instruction,
+)
+from app.generation.inline_citations import (
+    CITATION_LIKE,
+    CitationSource,
+    InlineCitation,
+    derive_citations,
+    prompt_source_map,
+    unknown_source_codes,
 )
 from app.generation.objective import LearningObjective
 from app.llm.gateway import complete_structured
@@ -55,23 +62,20 @@ Nguồn: viết Content dựa trên các đoạn nguồn (SOURCE CHUNK) được
    cấp, vẫn giữ heading đó nhưng ghi rõ "Không đủ thông tin trong tài liệu
    nguồn cho phần này" — KHÔNG được bỏ qua heading hay tự bịa nội dung để
    lấp đầy.
-7. Mỗi SOURCE CHUNK có một ID ngắn dạng [S1], [S2]... ngay đầu khối. source_ids
-   chỉ liệt kê ID (vd "S3") của những chunk THỰC SỰ được dùng để sinh content —
-   không liệt kê ID của chunk bị bỏ qua vì không liên quan.
-8. claim_citations: với MỖI khẳng định/bullet QUAN TRỌNG trong content (không
-   cần từng câu nối/chuyển ý), tạo 1 mục claim_citations gồm `claim` (trích
-   gần đúng nguyên văn khẳng định đó, đủ để định vị trong content) và
-   `source_id` (ID của ĐÚNG 1 source chunk bảo chứng trực tiếp cho khẳng
-   định đó, vd "S3" — không phải ID chung chung của cả content). Chỉ dùng ID
-   có trong các SOURCE CHUNK đã cho, không tự bịa ID, không chép lại nội
-   dung hay vị trí của chunk. Đây là cơ chế cho phép người đọc kiểm tra TỪNG
-   câu thay vì tin cả khối content.
+7. Mỗi SOURCE CHUNK vật lý có mã riêng [S1], [S2]... Chèn mã trực tiếp trong
+   Content ngay SAU câu/khẳng định/bullet quan trọng mà đoạn đó bảo chứng.
+   Ví dụ: "Heap insertion takes O(log n). [S2]". Một câu có thể dùng nhiều
+   nguồn: "Combined fact. [S1][S3]". Mỗi cặp ngoặc chỉ chứa một mã.
+8. Chỉ dùng đúng mã có trong SOURCE CHUNK của lượt này. Không viết source_ids,
+   claim_citations, locator, URL hay chép lại câu trong một danh sách riêng.
+   Marker phải theo sát đúng câu, không gắn một mã ở cuối đoạn để trích cả đoạn.
+   Giữ nguyên dạng [S2] cho cả đầu ra tiếng Việt và tiếng Anh.
 """
 
 # Nhánh không RAG (nhóm đối chứng llm_no_rag): cùng nhiệm vụ, chỉ không có nguồn nào để bám.
 _CONTENT_NO_SOURCE_RULES = """
 Nguồn: không có tài liệu nguồn nào được cung cấp; viết Content từ kiến thức
-chuyên môn của chính bạn.
+chuyên môn của chính bạn. Không có nguồn nên KHÔNG viết mã trích dẫn [S1], [S2] hay URL nguồn.
 4. Không khẳng định một chi tiết cụ thể mà bạn không chắc chắn (tên công cụ,
    phiên bản, số liệu, năm) như thể đó là sự thật; khi không chắc, giữ ở mức
    khái niệm chung.
@@ -91,54 +95,28 @@ class LessonText(BaseModel):
     content: str = Field(description="Nội dung Markdown phân cấp")
 
 
-class ClaimCitation(BaseModel):
-    claim: str = Field(description="Khẳng định/bullet cụ thể trong content (trích gần đúng nguyên văn)")
-    source_id: str = Field(description='ID (vd "S3") của source chunk bảo chứng trực tiếp cho đúng khẳng định này')
-
-
 class ContentOutput(LessonText):
-    """Content as the model writes it: it cites source chunks by the ID the prompt gave them."""
+    """The model writes only Markdown with inline source codes."""
 
-    source_ids: list[str] = Field(description='ID (vd "S3") của chunk thực sự được dùng')
-    claim_citations: list[ClaimCitation] = Field(
-        default_factory=list,
-        description="Trích dẫn cấp câu/khẳng định -- mỗi claim quan trọng gắn đúng 1 source_id bảo chứng",
-    )
-
-
-class StoredClaimCitation(BaseModel):
-    claim: str
-    # The chunk's own source_ref, to display. An ID that named no chunk of the prompt is kept as the
-    # model wrote it, with no chunk_id, so it shows as a missing citation instead of a guessed one.
-    locator: str
-    chunk_id: str | None
+    model_config = ConfigDict(extra="forbid")
 
 
 class SourcedContent(LessonText):
-    """Content as it is saved: every citation points at the exact chunk by id."""
-
+    source_map: dict[str, CitationSource]
     source_locators: list[str]
-    claim_citations: list[StoredClaimCitation]
+    inline_citations: list[InlineCitation]
 
 
 def _unknown_source_ids(content: ContentOutput, chunks: list[Chunk]) -> list[str]:
-    cited = [*content.source_ids, *(c.source_id for c in content.claim_citations)]
-    return list(dict.fromkeys(i for i in cited if resolve_source_id(chunks, i) is None))
+    return unknown_source_codes(content.content, prompt_source_map(chunks))
 
 
 def resolve_citations(content: ContentOutput, chunks: list[Chunk]) -> SourcedContent:
-    """Map the IDs the model cited back to the chunks of the prompt they were shown in, right after
-    the call, so nothing later depends on the model copying a locator."""
-    stored = []
-    for citation in content.claim_citations:
-        chunk = resolve_source_id(chunks, citation.source_id)
-        stored.append(StoredClaimCitation(
-            claim=citation.claim, locator=(chunk.source_ref or "") if chunk else citation.source_id,
-            chunk_id=str(chunk.id) if chunk else None,
-        ))
-    cited = (resolve_source_id(chunks, i) for i in content.source_ids)
-    locators = dict.fromkeys(c.source_ref for c in cited if c is not None and c.source_ref)
-    return SourcedContent(content=content.content, source_locators=list(locators), claim_citations=stored)
+    """Resolve only codes from this prompt; locators and claims come from the server."""
+    mapping = prompt_source_map(chunks)
+    citations = derive_citations(content.content, mapping)
+    return SourcedContent(content=content.content, source_map=mapping, inline_citations=citations,
+                         source_locators=list(dict.fromkeys(c.locator for c in citations if c.locator)))
 
 
 # Tầng 3 (GD2): Content và Quiz/Practice là hai bước còn giữ vòng tự kiểm --
@@ -159,10 +137,10 @@ Chấm các tiêu chí sau:
 """
 
 _CONTENT_VERIFY_SOURCE_RULES = """- groundedness_pass (chỉ khi có SOURCE CHUNK): kiểm tra THEO TỪNG MỤC trong
-  CLAIM_CITATIONS được cung cấp bên dưới (không chỉ đọc lướt content rồi đánh
+  mã inline [S#] ngay sau câu trong Content (không chỉ đọc lướt content rồi đánh
   giá cảm tính chung chung) -- với MỖI claim, mở ĐÚNG source chunk mà
-  `source_id` của claim đó trỏ tới, và xác nhận claim THỰC SỰ được nội dung
-  CHÍNH XÁC chunk đó bảo chứng (không phải "nghe hợp lý"/"đúng về mặt kiến
+  mã inline của claim đó trỏ tới, và xác nhận claim THỰC SỰ được nội dung
+  CHÍNH XÁC tập chunk đã gắn trực tiếp cùng câu đó bảo chứng (không phải "nghe hợp lý"/"đúng về mặt kiến
   thức chung", không phải chunk KHÁC trong toàn bộ context tình cờ nói tới). source_id
   không có trong các SOURCE CHUNK cũng là fail.
   Đây là lỗi THẬT đã từng xảy ra: model tự điền thêm kiến thức phổ biến/đúng
@@ -170,7 +148,7 @@ _CONTENT_VERIFY_SOURCE_RULES = """- groundedness_pass (chỉ khi có SOURCE CHUN
   nghĩa chuẩn của 1 khái niệm liên quan mà nguồn chỉ nhắc tên chứ không giải
   thích) -- claim nghe có vẻ đúng và cả content lẫn source_id đều tồn tại KHÔNG
   có nghĩa là claim đó thực sự đến từ đúng chunk ấy, PHẢI đối chiếu trực
-  tiếp. Nếu content có khẳng định KHÔNG nằm trong claim_citations, cũng phải
+  tiếp. Nếu content có khẳng định KHÔNG có mã inline, cũng phải
   kiểm tra tương tự với TOÀN BỘ source chunk. Với completeness_pass: heading
   dùng câu "không đủ thông tin" để né dù nguồn thực ra có đủ dữ kiện cho phần
   đó cũng là fail.
@@ -216,14 +194,7 @@ def _verify_content(
     # Khối nguồn của bước kiểm gồm trích dẫn cấp khẳng định và các SOURCE CHUNK chúng trỏ tới.
     sources = ""
     if context_chunks is not None:
-        citations_text = "\n".join(
-            f'- claim="{c.claim}" -> source_id="{c.source_id}"' for c in content_out.claim_citations
-        ) or "(content không có claim_citations nào)"
-        sources = (
-            f"CLAIM_CITATIONS (mỗi claim PHẢI đối chiếu ĐÚNG chunk của source_id của chính nó, "
-            f"không phải đối chiếu chung với toàn bộ source chunk):\n{citations_text}\n\n"
-            f"{source_block(context_chunks)}"
-        )
+        sources = source_block(context_chunks)
     prompt = (
         f"LEARNING OBJECTIVE: {lo.objective_text}\n"
         f"SUB-OBJECTIVES: {lo.sub_objectives}\n\n"
@@ -258,24 +229,11 @@ def generate_content(
     sub_objectives_text = "\n".join(f"- {so}" for so in lo.sub_objectives)
     allowed_ids = [source_id(i) for i in range(len(context_chunks))] if sourced else []
     source_ids_rule = (
-        f"Allowed source_ids and claim_citations.source_id: "
-        f"{', '.join(allowed_ids) or '(none)'}. "
+        f"Allowed inline citation codes: "
+        f"{', '.join('[' + i + ']' for i in allowed_ids) or '(none)'}. "
         "Use only these IDs, never page numbers or IDs inferred from source text.\n"
         if sourced else ""
     )
-    response_format = None
-    if sourced:
-        # A fresh native schema per call: concurrent lessons can have different source sets.
-        response_format = type_to_response_format_param(ContentOutput)
-        schema = response_format["json_schema"]["schema"]
-        if allowed_ids:
-            schema["properties"]["source_ids"]["items"]["enum"] = allowed_ids
-            schema["$defs"]["ClaimCitation"]["properties"]["source_id"]["enum"] = allowed_ids
-        else:
-            # JSON Schema does not permit an empty enum; no sources means no citations.
-            schema["properties"]["source_ids"]["maxItems"] = 0
-            schema["properties"]["claim_citations"]["maxItems"] = 0
-
     def generate(feedback: str | None) -> LessonText:
         prompt = (
             f"LEARNING OBJECTIVE (Terminal): {lo.objective_text} (bloom_level={lo.bloom_level})\n"
@@ -300,7 +258,7 @@ def generate_content(
         return complete_structured(
             prompt, ContentOutput, system_instruction=CONTENT_SYSTEM_INSTRUCTION + "\n" + source_ids_rule
             + output_language_instruction(output_language) + custom_instructions_instruction(custom_instructions),
-            response_format=response_format, temperature=0.0,
+            response_format=type_to_response_format_param(ContentOutput), temperature=0.0,
         )
 
     criteria = [("completeness", "Completeness"), ("scope", "Scope")]
@@ -312,4 +270,6 @@ def generate_content(
     )
     if sourced and (unknown := _unknown_source_ids(out, context_chunks)):
         raise ValueError(f"Content cites unknown source IDs: {', '.join(unknown)}")
+    if not sourced and CITATION_LIKE.search(out.content):
+        raise ValueError("No-RAG Content must not contain citations")
     return (resolve_citations(out, context_chunks) if sourced else out), check
