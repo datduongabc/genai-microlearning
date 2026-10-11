@@ -167,10 +167,11 @@ def test_transient_error_retries_same_item_then_records_exhaustion(world, fake, 
     assert result["completed"] == 1 and result["results"][0]["status"] == "failed"
 
 
-def test_oversized_packet_fails_at_once_without_calling_or_reserving_groq(world, fake):
+def test_oversized_packet_fails_at_once_without_calling_or_reserving_groq(world, fake, monkeypatch):
+    monkeypatch.setattr("random.SystemRandom.shuffle", lambda self, items: None)
     sid = create_study(world)
     big = human_packet()
-    big["content_markdown"] = "Cookie là một mẩu dữ liệu nhỏ mà máy chủ gửi cho trình duyệt. " * 400
+    big["content_markdown"] = "Cookie là một mẩu dữ liệu nhỏ mà máy chủ gửi cho trình duyệt. " * 5000
     load(world, sid, human_packets=[big, human_packet()])
     jid = start(world, sid).json()["job_id"]
     step(jid)
@@ -184,6 +185,51 @@ def test_oversized_packet_fails_at_once_without_calling_or_reserving_groq(world,
     step(jid)
     result = status(world, sid, jid)
     assert result["status"] == "done" and result["results"][1]["status"] == "done"
+
+
+
+def test_whole_large_packet_is_judged_once_without_splitting_or_truncation(world, fake):
+    from app.generation.evaluation import _SYSTEM_INSTRUCTION, ModuleContentInput, _build_prompt
+
+    packet = human_packet()
+    packet["source_chunks"] = ["Heap source reference " * 2200 + "END OF FULL SOURCE"]
+    packet["content_markdown"] = "Full module lesson " * 1200 + "END OF FULL CONTENT"
+    model = ModuleContentInput.model_validate(packet)
+    tokens = litellm.token_counter(messages=[
+        {"role": "system", "content": _SYSTEM_INSTRUCTION},
+        {"role": "user", "content": _build_prompt(model)},
+    ])
+    assert 8000 < tokens < 128000
+    sid = create_study(world)
+    items = load(world, sid, human_packets=[packet]).json()
+    jid = start(world, sid).json()["job_id"]
+    step(jid)
+    assert status(world, sid, jid)["results"][0]["status"] == "done"
+    assert len(fake) == 1
+    delivered = fake[0]["messages"][1]["content"]
+    model.anon_id = items[0]["anon_code"]
+    assert delivered == _build_prompt(model)
+    assert "END OF FULL SOURCE" in delivered and "END OF FULL CONTENT" in delivered
+
+
+def test_worker_cannot_write_human_ratings_or_change_rating_identity(world, fake):
+    from sqlalchemy.exc import IntegrityError, ProgrammingError
+
+    sid = create_study(world)
+    items = load(world, sid, human_packets=[human_packet(), human_packet()]).json()
+    run(start(world, sid).json()["job_id"], 2)
+    values = _evaluation(items[0]["anon_code"]).model_dump(exclude={"anon_id"})
+    with WorkerSessionLocal() as db:
+        db.add(Rating(study_item_id=uuid.UUID(items[0]["id"]), user_id=world["teacher"],
+                      rater_kind="human", **values))
+        with pytest.raises(ProgrammingError, match="Study not found"):
+            db.commit()
+        db.rollback()
+        row = db.scalar(select(Rating).where(Rating.study_item_id == uuid.UUID(items[0]["id"])))
+        row.study_item_id = uuid.UUID(items[1]["id"])
+        with pytest.raises(IntegrityError, match="Rating identity cannot change"):
+            db.commit()
+        db.rollback()
 
 
 def test_gateway_context_window_rejection_fails_the_item_without_retrying(world, fake, monkeypatch):

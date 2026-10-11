@@ -27,8 +27,10 @@ def test_packet_over_the_gateway_input_cap_is_refused_without_truncation(monkeyp
     assert len(seen) == 2
 
 
-def test_small_packet_fits_the_groq_cap():
-    check_packet_budget(_packet(), 3952)
+def test_packet_above_the_old_free_tier_cap_fits_the_paid_groq_cap():
+    packet = _packet()
+    packet.content_markdown = "Whole module content " * 4000
+    check_packet_budget(packet, 128000)
 
 
 def test_vietnamese_packet_is_counted_like_the_gateway_not_like_gpt_4o():

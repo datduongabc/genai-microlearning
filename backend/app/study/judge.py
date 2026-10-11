@@ -25,6 +25,7 @@ from app.models import Job, JobStatus, JobType, Rating, StudyItem
 # Decided for the study: a different family from the Gemini models that generate the modules.
 JUDGE_ALIAS = "groq-pro"
 OUTPUT_TOKENS = 2048
+# One full-context call/minute stays below the paid 250K TPM budget.
 GROQ_INTERVAL_SECONDS = 61
 
 

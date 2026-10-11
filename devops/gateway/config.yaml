@@ -100,20 +100,21 @@ model_list:
       display_name: Claude Sonnet 5
       note: chất lượng cao hơn, chậm hơn
 
-  # Groq is only a small-step backup: 8,000 TPM cannot carry Content (20-66k tokens).
+  # Paid Groq tier: whole research packets are judged in one call.
+  # https://console.groq.com/docs/models (131,072 context; 250K TPM).
   # Text generation only: litellm's model table has no groq embedding model.
   - model_name: groq-pro
     litellm_params:
       model: groq/openai/gpt-oss-120b
-      tpm: 8000
-      # Reserve the bounded output allowance for the small step's JSON answer.
+      tpm: 250000
+      # Keep reasoning bounded so rubric JSON fits the output allowance.
       reasoning_effort: low
       allowed_openai_params: [reasoning_effort]
       api_key: os.environ/GROQ_API_KEY
     model_info:
       display_name: GPT-OSS 120B qua Groq
-      note: miễn phí, chỉ phù hợp bước nhỏ (8.000 TPM)
-      max_input_tokens: 3952
+      note: trả phí, chấm toàn bộ gói nghiên cứu (250.000 TPM)
+      max_input_tokens: 128000
       max_output_tokens: 2048
 
   # Internal small-step profiles keep the same primary model. Only bounded
@@ -151,7 +152,7 @@ model_list:
       note: phân phối giữa Flash Lite và Flash; không dùng cho thí nghiệm
 
 # LiteLLM owns retries, deployment cooldowns, load balancing and failover.
-# No paid provider is an automatic fallback: paid aliases remain opt-in.
+# OpenAI and Claude remain opt-in. Existing small-step Groq backups now use paid billing.
 router_settings:
   routing_strategy: simple-shuffle
   num_retries: 1

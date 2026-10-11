@@ -224,8 +224,8 @@ def test_router_accepts_the_config_and_keeps_large_routes_off_groq(gateway, monk
                 if not alias.endswith("-small"):
                     assert "groq-pro" not in backups
     groq = next(d for d in gateway["model_list"] if d["model_name"] == "groq-pro")
-    assert groq["litellm_params"]["tpm"] == 8000
-    assert groq["model_info"]["max_input_tokens"] + groq["model_info"]["max_output_tokens"] <= 6000
+    assert groq["litellm_params"]["tpm"] == 250000
+    assert groq["model_info"]["max_input_tokens"] + groq["model_info"]["max_output_tokens"] <= 131072
     router.reset()
 
 
@@ -264,6 +264,26 @@ def test_context_window_failure_is_also_pinned_in_experiment_mode(gateway, monke
     router.reset()
 
 
+
+def test_paid_groq_accepts_a_whole_packet_above_the_free_tier_budget(gateway, monkeypatch):
+    import asyncio
+
+    import litellm
+
+    for name in (*PROVIDER_KEY_VARIABLES, "LLM_GATEWAY_KEY", "EMBEDDER_API_KEY"):
+        monkeypatch.setenv(name, "test-key")
+    router = litellm.Router(model_list=gateway["model_list"], **gateway["router_settings"])
+    messages = [{"role": "user", "content": "full module packet " * 4000}]
+    assert litellm.token_counter(messages=messages) > 8000
+    response = asyncio.run(router.acompletion(
+        model="groq-pro", messages=messages, mock_response="whole packet rating",
+        max_tokens=2048, num_retries=0, disable_fallbacks=True,
+    ))
+    assert response.model == "openai/gpt-oss-120b"
+    assert response.choices[0].message.content == "whole packet rating"
+    router.reset()
+
+
 def test_large_input_selected_for_groq_is_rejected_before_provider_and_falls_back(gateway, monkeypatch):
     import asyncio
 
@@ -273,7 +293,7 @@ def test_large_input_selected_for_groq_is_rejected_before_provider_and_falls_bac
         monkeypatch.setenv(name, "test-key")
     router = litellm.Router(model_list=gateway["model_list"], **gateway["router_settings"])
     response = asyncio.run(router.acompletion(
-        model="groq-pro", messages=[{"role": "user", "content": "large input " * 10000}],
+        model="groq-pro", messages=[{"role": "user", "content": "large input " * 70000}],
         mock_response="large-safe response", max_tokens=2048, num_retries=0,
     ))
     assert "gemini" in response.model
