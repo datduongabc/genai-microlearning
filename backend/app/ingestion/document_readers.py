@@ -35,6 +35,7 @@ class DocumentUnit:
     locator: dict[str, Any] = field(default_factory=dict)
     course_id: str = ""
     source_id: str = ""
+    warnings: list[dict[str, Any]] = field(default_factory=list)
 
 
 MIN_TEXT_LEN_PER_PAGE = 20
@@ -51,11 +52,15 @@ def read_pdf(path: str) -> list[DocumentUnit]:
             page_text = "\n".join(page_lines(page))
             titles = title_candidates(page)
             extraction_method = "text_layer"
+            warnings = []
             if len(page_text.strip()) < MIN_TEXT_LEN_PER_PAGE:
                 try:
                     pix = page.get_pixmap(dpi=200)
                     img = Image.open(io.BytesIO(pix.tobytes("png")))
-                    page_text = pytesseract.image_to_string(img, lang="eng+vie")
+                    ocr_text = pytesseract.image_to_string(img, lang="eng+vie")
+                    if not ocr_text.strip():
+                        raise ValueError("OCR returned no readable text")
+                    page_text = ocr_text
                     extraction_method = "ocr"
                 except Exception as e:
                     # OCR is best-effort per page -- a single bad/scanned page
@@ -63,19 +68,32 @@ def read_pdf(path: str) -> list[DocumentUnit]:
                     # text already successfully extracted from every other
                     # page in the document.
                     logger.warning(f"[document_readers] OCR failed on page {page_index + 1} of {path}: {e}")
-                    page_text = ""
                     extraction_method = "ocr_failed"
+                    warnings.append({
+                        "code": "ocr_failed", "page": page_index + 1,
+                        "message": f"Không đọc được trang {page_index + 1} bằng OCR. "
+                                   "Nội dung trang này có thể thiếu; hãy kiểm tra hoặc tải lại "
+                                   "bản PDF có lớp chữ.",
+                    })
+
+            if warnings and not page_text.strip():
+                raw_units.append({
+                    "page": page_index + 1, "lines": [], "numbered": None,
+                    "titles": titles, "extraction_method": extraction_method,
+                    "warnings": warnings,
+                })
 
             lines_all = page_text.split("\n")
             current_lines, current_heading = [], None
 
             def flush():
                 if current_lines and "".join(current_lines).strip():
-                    stripped = [line.strip() for line in current_lines if line.strip()]
+                    stripped = [line.rstrip() for line in current_lines if line.strip()]
                     raw_units.append({
                         "page": page_index + 1, "lines": stripped, "numbered": current_heading,
                         "titles": titles,
                         "extraction_method": extraction_method,
+                        "warnings": warnings,
                     })
 
             for line in lines_all:
@@ -91,7 +109,8 @@ def read_pdf(path: str) -> list[DocumentUnit]:
     total = len(raw_units)
     if total == 0:
         return []
-    pages = {u["page"] for u in raw_units}
+    # Warning-only pages carry metadata, not slide titles or chunk boundaries.
+    pages = {u["page"] for u in raw_units if u["lines"]}
     page_counts: dict[str, int] = {}
     for page in pages:
         titles = next((u["titles"] for u in raw_units if u["page"] == page and u["titles"]), [])
@@ -110,6 +129,7 @@ def read_pdf(path: str) -> list[DocumentUnit]:
         units.append(DocumentUnit(
             text="\n".join(u["lines"]),
             locator={"page": u["page"], "heading": heading, "extraction_method": u["extraction_method"]},
+            warnings=u["warnings"],
         ))
     return units
 

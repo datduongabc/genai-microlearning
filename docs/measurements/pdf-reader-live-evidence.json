@@ -1,0 +1,56 @@
+{
+  "backend": "http://127.0.0.1:80453",
+  "frontend": "http://127.0.0.1:51453",
+  "documents": [
+    {
+      "filename": "unreadable-scan.pdf",
+      "status": "failed",
+      "extraction_warnings": [
+        {
+          "code": "ocr_failed",
+          "page": 1,
+          "message": "Không đọc được trang 1 bằng OCR. Nội dung trang này có thể thiếu; hãy kiểm tra hoặc tải lại bản PDF có lớp chữ."
+        },
+        {
+          "code": "ocr_failed",
+          "page": 2,
+          "message": "Không đọc được trang 2 bằng OCR. Nội dung trang này có thể thiếu; hãy kiểm tra hoặc tải lại bản PDF có lớp chữ."
+        }
+      ],
+      "failures": [
+        {
+          "job_id": "853b9819-8065-4411-8c9f-9c309040f160",
+          "job_type": "document_pipeline",
+          "section_id": null,
+          "section_title": null,
+          "error": "Không đọc được nội dung tài liệu; hãy tải lại bản có lớp chữ."
+        }
+      ]
+    },
+    {
+      "filename": "partial-scan.pdf",
+      "status": "embedded",
+      "extraction_warnings": [
+        {
+          "code": "ocr_failed",
+          "page": 2,
+          "message": "Không đọc được trang 2 bằng OCR. Nội dung trang này có thể thiếu; hãy kiểm tra hoặc tải lại bản PDF có lớp chữ."
+        }
+      ],
+      "failures": []
+    }
+  ],
+  "unreadable_job": {
+    "id": "853b9819-8065-4411-8c9f-9c309040f160",
+    "step": "extract",
+    "status": "failed",
+    "attempts": 1,
+    "last_error": "Không đọc được nội dung tài liệu; hãy tải lại bản có lớp chữ.",
+    "document_status": "failed"
+  },
+  "browser": {
+    "cdp": "Windows Chrome/154.0.8037.98",
+    "result": "CDP reachable; private WSL localhost frontend connection refused; no passing browser result"
+  },
+  "evidence_directory": "/mnt/d/firstmate/data/do-an-r53-pdf-reader-fit"
+}

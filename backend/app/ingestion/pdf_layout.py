@@ -1,20 +1,12 @@
-"""Dựng lại dòng chữ của một trang PDF từ vị trí các mảnh chữ và nét vẽ.
+"""Lecture-slide text, font decoding, and the measured DSA/OS layout repairs.
 
-PyMuPDF trả chữ theo khối mà trình soạn thảo đã ghi vào tệp. Với văn bản thường thì khối
-chính là đoạn văn, nhưng một công thức MathType bị ghi thành một khối cho mỗi phông (mọi chữ
-nghiêng một khối, mọi ký hiệu Symbol một khối khác) chồng lên cùng một vùng, còn gạch phân
-số và dấu căn là nét vẽ chứ không phải chữ. Đọc theo khối thì mỗi ký hiệu nằm một dòng, cả
-trang giải tích thành một cột ký tự rời mà truy hồi lẫn LLM đều không hiểu.
-
-Ở đây công thức được dựng lại theo hình học: mảnh nào cùng hàng thì nối, mảnh nhỏ lệch lên
-là chỉ số trên, mảnh nằm trên và dưới một gạch ngang là tử và mẫu. Văn bản thường không bị
-động tới: một vùng chỉ được dựng lại khi có dấu hiệu vỡ.
+The corpus still has fragmented code, superscripts and two fraction slides.
+Keep those repairs; avoid the unused radical, bracket and limit-operator machinery.
 """
 
 import bisect
 import re
 import statistics
-import unicodedata
 from dataclasses import dataclass
 
 import pymupdf
@@ -47,87 +39,12 @@ _SYMBOL = {
 }
 _SYMBOL.update({c: chr(c) for c in range(0x30, 0x3A)})
 
-# Mảnh ngoặc lớn (đỉnh, thân, đáy) của phông Symbol, và cùng các mảnh đó trong vùng mã riêng
-# của Adobe U+F8EB-U+F8FE mà TeX (CMEX) dùng. Mỗi mảnh đổi thành đúng dấu ngoặc; các mảnh
-# chồng nhau được gộp lại thành một dấu ở bước dựng hàng.
-_BRACKET_PIECES = {}
-for _code, _char in zip(range(0xE6, 0xF0), "((([[[{{{{"):
-    _BRACKET_PIECES[chr(0xF000 + _code)] = _char
-for _code, _char in zip(range(0xF6, 0xFF), ")))]]]}}}"):
-    _BRACKET_PIECES[chr(0xF000 + _code)] = _char
-for _code, _char in zip(range(0xF8EB, 0xF8FF), "((([[[{{{|)))]]]}}}"):
-    _BRACKET_PIECES[chr(_code)] = _char
-
 # Phông ký hiệu trang trí: gần như luôn là dấu đầu dòng, còn mã gốc của nó không mang nghĩa
 # gì khi đọc thành chữ.
 _DINGBAT_FONTS = ("wingdings", "webdings", "monotypesorts", "zapfdingbats", "dingbats")
 # Phông của ký hiệu toán: khối chứa chúng được phép nối với khối bên cạnh cùng hàng, vì đó
 # là các phần của cùng một công thức.
 _MATH_FONTS = ("symbol", "cmmi", "cmsy", "cmex", "cmr", "mt extra", "mt-extra", "cambria math", "math")
-
-
-# Toán tử có giới hạn đặt ngay dưới hoặc trên nó. Chữ thường không bao giờ có: chỉ số của dòng
-# phía trên nằm sát dưới một từ ở dòng dưới là chuyện thường gặp trên slide.
-_LIMIT_OPERATORS = {"lim", "∑", "∏", "∫", "max", "min", "sup", "inf", "Σ", "Π"}
-
-
-# Bảng mã VNI: dấu thanh và dấu mũ là một ký tự Latin-1 đứng ngay sau nguyên âm ("eá" là ế,
-# "oâ" là ô), vài chữ riêng dùng một ký tự đơn ("ö" là ư, "ñ" là đ). Tệp có kèm bảng chuyển mã
-# thì PyMuPDF đã ra đúng Unicode; tệp không kèm thì ra chuỗi này, và cả trang thành rác.
-_COMBINING = {"sac": "́", "huyen": "̀", "hoi": "̉", "nga": "̃", "nang": "̣"}
-_VNI_TONES = {"ù": "sac", "ø": "huyen", "û": "hoi", "õ": "nga", "ï": "nang"}
-_VNI_CIRCUMFLEX = {"â": None, "á": "sac", "à": "huyen", "å": "hoi", "ã": "nga", "ä": "nang"}
-_VNI_BREVE = {"ê": None, "é": "sac", "è": "huyen", "ú": "hoi", "ü": "nga", "ë": "nang"}
-# Chữ đứng một mình: ơ, ư, và nguyên âm i, y mang dấu thanh đã gói sẵn trong một ký tự.
-_VNI_SINGLE = {"ô": "ơ", "ö": "ư", "ñ": "đ", "í": "í", "ì": "ì", "æ": "ỉ", "ó": "ĩ", "ò": "ị", "î": "ỵ"}
-# Ký tự không bao giờ có trong tiếng Việt Unicode: gặp chúng trong phông VNI nghĩa là chữ chưa
-# được chuyển mã, còn không gặp thì PyMuPDF đã chuyển đúng và không được động vào.
-_VNI_ONLY = set("øûïåäëüñöæîØÛÏÅÄËÜÑÖÆÎ")
-
-
-def _vni_table() -> dict[str, str]:
-    def compose(base: str, *marks: str) -> str:
-        return unicodedata.normalize("NFC", base + "".join(marks))
-
-    table: dict[str, str] = {}
-    for lower in (False, True):
-        def case(s: str) -> str:
-            return s.lower() if lower else s.upper()
-
-        for vowel in "aeiouy":
-            for mark, tone in _VNI_TONES.items():
-                table[case(vowel + mark)] = case(compose(vowel, _COMBINING[tone]))
-        for vowel in "aeo":
-            for mark, tone in _VNI_CIRCUMFLEX.items():
-                table[case(vowel + mark)] = case(compose(vowel, "̂", *([_COMBINING[tone]] if tone else [])))
-        for mark, tone in _VNI_BREVE.items():
-            table[case("a" + mark)] = case(compose("a", "̆", *([_COMBINING[tone]] if tone else [])))
-        for vowel, horn in (("ô", "o"), ("ö", "u")):
-            for mark, tone in _VNI_TONES.items():
-                table[case(vowel + mark)] = case(compose(horn, "̛", _COMBINING[tone]))
-        for single, target in _VNI_SINGLE.items():
-            table[case(single)] = case(target)
-    return table
-
-
-_VNI = _vni_table()
-# Cặp hai ký tự phải khớp trước ký tự đơn trong cùng một lượt: "ôù" là ớ, còn đổi "ô" thành ơ
-# trước thì không còn nhận ra cặp đó nữa.
-_VNI_RE = re.compile("|".join(sorted(map(re.escape, _VNI), key=len, reverse=True)))
-
-
-def vni_to_unicode(text: str) -> str:
-    return _VNI_RE.sub(lambda m: _VNI[m.group(0)], text)
-
-
-def _vni_fonts(blocks: list[dict]) -> set[str]:
-    fonts = set()
-    for block in blocks:
-        for line in block["lines"]:
-            for span in line["spans"]:
-                if span["font"].lower().startswith("vni") and _VNI_ONLY & set(_span_text(span)):
-                    fonts.add(span["font"])
-    return fonts
 
 
 # rawdict mặc định kèm cả dữ liệu ảnh của trang, chậm gấp trăm lần trên slide nhiều hình mà ở
@@ -139,28 +56,22 @@ def _is_private(c: str) -> bool:
     return 0xE000 <= ord(c) <= 0xF8FF
 
 
-def map_font_text(text: str, font: str, vni_fonts: frozenset[str] = frozenset()) -> tuple[str, bool]:
-    """Đổi mã của phông ký hiệu và phông VNI sang Unicode. Trả thêm cờ cho biết đây có phải mảnh
-    ngoặc lớn."""
-    if font in vni_fonts:
-        return vni_to_unicode(text), False
+def map_font_text(text: str, font: str) -> str:
+    """Decode Symbol and dingbat glyphs used by the retained lecture slides."""
     name = font.lower()
     if any(f in name for f in _DINGBAT_FONTS):
-        return "".join("•" if _is_private(c) or not c.isspace() else c for c in text), False
+        return "".join("•" if _is_private(c) or not c.isspace() else c for c in text)
     base = name.split(",")[0].split("-")[0].removesuffix("mt")
     is_symbol = base == "symbol"
-    out, bracket = [], False
+    out = []
     for c in text:
         if is_symbol and ord(c) < 0x100:
             c = chr(0xF000 + ord(c))
-        if c in _BRACKET_PIECES:
-            out.append(_BRACKET_PIECES[c])
-            bracket = True
-        elif is_symbol and 0xF020 <= ord(c) <= 0xF0FF:
+        if is_symbol and 0xF020 <= ord(c) <= 0xF0FF:
             out.append(_SYMBOL.get(ord(c) - 0xF000, chr(ord(c) - 0xF000)))
         else:
             out.append(c)
-    return "".join(out), bracket
+    return "".join(out)
 
 
 def _overlap(a0: float, a1: float, b0: float, b1: float) -> float:
@@ -176,17 +87,13 @@ class _Piece:
     baseline: float
     size: float
     text: str
-    # Ngoặc lớn, gạch dọc và phân số cao hơn một dòng chữ: chúng thuộc hàng nào chúng cắt
-    # ngang qua giữa, chứ không xét theo mức chồng lên như chữ thường.
+    # A fraction crosses the row it belongs to rather than sharing its baseline.
     tall: bool = False
     # Tệp có ghi dấu cách ngay trước mảnh này: khoảng hở hình học giữa chữ nghiêng hay chữ
     # đậm không đủ tin để đoán ranh giới từ.
     space_before: bool = False
     # "^" cho chỉ số trên, "_" cho chỉ số dưới, rỗng cho chữ ở dòng chính.
     script: str = ""
-    # Vị trí dùng để xếp thứ tự thay cho x0: giới hạn "n→∞" canh giữa dưới "lim" nên bắt đầu
-    # lệch trái hơn chữ lim, mà phải được đọc ra sau nó.
-    anchor: float | None = None
 
     @property
     def height(self) -> float:
@@ -206,46 +113,22 @@ class _Rule:
     x0: float
     x1: float
     y: float
-    radical: bool = False
 
 
-def _strokes(page: pymupdf.Page) -> tuple[list[_Rule], list[tuple[float, float, float]]]:
-    """Gạch ngang (phân số, vạch trên của dấu căn) và gạch dọc (trị tuyệt đối) trên trang."""
-    rules: list[_Rule] = []
-    verticals: list[tuple[float, float, float]] = []
-    diagonals = []
+def _strokes(page: pymupdf.Page) -> list[_Rule]:
+    """Horizontal bars only: fractions occur on two slides in the retained corpus."""
+    rules = []
     for drawing in page.get_drawings():
         for item in drawing["items"]:
             if item[0] == "l":
                 p, q = item[1], item[2]
                 if abs(p.y - q.y) < 0.8 and abs(q.x - p.x) > 3:
                     rules.append(_Rule(min(p.x, q.x), max(p.x, q.x), (p.y + q.y) / 2))
-                elif abs(p.x - q.x) < 0.8 and abs(q.y - p.y) > 6:
-                    verticals.append((p.x, min(p.y, q.y), max(p.y, q.y)))
-                else:
-                    diagonals.append((p, q))
             elif item[0] == "re":
                 r = item[1]
                 if r.height < 1.5 and r.width > 3:
                     rules.append(_Rule(r.x0, r.x1, (r.y0 + r.y1) / 2))
-    # Vạch ngang mà đầu trái chạm một nét chéo đi xuống là vạch trên của dấu căn, không phải
-    # gạch phân số: nhầm thì dòng ngay trên dấu căn bị kéo xuống làm tử số.
-    for rule in rules:
-        for p, q in diagonals:
-            for top, bottom in ((p, q), (q, p)):
-                if abs(top.x - rule.x0) < 1.5 and abs(top.y - rule.y) < 1.5 and bottom.y > top.y + 3:
-                    rule.radical = True
-    # MathType vẽ một dấu căn hai ba lần (nét viền, mảng tô) lệch nhau vài điểm: không gộp thì
-    # mỗi bản thành một dấu căn lồng vào bản kia.
-    unique: list[_Rule] = []
-    for rule in sorted(rules, key=lambda r: (r.y, r.x0)):
-        twin = next((u for u in unique if abs(u.y - rule.y) < 2.5 and _overlap(u.x0, u.x1, rule.x0, rule.x1)
-                     >= 0.8 * min(u.x1 - u.x0, rule.x1 - rule.x0)), None)
-        if twin is not None:
-            twin.radical = twin.radical or rule.radical
-            continue
-        unique.append(rule)
-    return unique, verticals
+    return rules
 
 
 def _block_is_mathlike(block: dict) -> bool:
@@ -286,7 +169,7 @@ def _regions(blocks: list[dict]) -> list[list[int]]:
             same_row = _overlap(a[1], a[3], b[1], b[3]) >= 0.5 * min(a[3] - a[1], b[3] - b[1])
             gap = max(b[0] - a[2], a[0] - b[2])
             near = same_row and gap < max(sizes[i], sizes[j]) and (mathlike[i] or mathlike[j])
-            if touching or near:
+            if (touching or near) and (mathlike[i] or mathlike[j]):
                 parent[root(i)] = root(j)
     groups: dict[int, list[int]] = {}
     for i in range(len(blocks)):
@@ -324,7 +207,7 @@ def _join(pieces: list[_Piece]) -> str:
     nhau (ion A với "n+" ở trên, "(dd)" ở dưới) viết dưới trước trên sau, như quy ước LaTeX,
     thay vì xen kẽ từng mảnh theo tọa độ."""
     tokens: list[list[_Piece]] = []
-    for piece in sorted(pieces, key=lambda p: p.x0 if p.anchor is None else p.anchor):
+    for piece in sorted(pieces, key=lambda p: p.x0):
         if tokens and piece.script and tokens[-1][0].script:
             tokens[-1].append(piece)
         else:
@@ -346,24 +229,9 @@ def _join(pieces: list[_Piece]) -> str:
     return text
 
 
-_BIG_OPERATOR_CHARS = set("∫∑∏∮Σ")
-
-
-def _is_big_operator(text: str) -> bool:
-    return bool(text) and set(text) <= _BIG_OPERATOR_CHARS
-
-
-def _takes_limits(text: str) -> bool:
-    return text in _LIMIT_OPERATORS or _is_big_operator(text)
-
-
 def _small_pieces(pieces: list[_Piece]) -> set[int]:
-    """Mảnh nhỏ hơn hẳn chữ ngay cạnh nó là ứng viên chỉ số. So với chữ lân cận chứ không với
-    cỡ chữ chung của vùng: một vùng lớn gồm nhiều công thức có trung vị cỡ chữ thấp tới mức
-    chỉ số "+∞" của tích phân trông như chữ thường. Dấu ∫, ∑ luôn to hơn chữ nên không được
-    làm thước so, không thì chính chữ thường bên cạnh chúng bị coi là chỉ số."""
-    reference = [p for p in pieces if not p.tall and not _is_big_operator(p.text)]
-    operators = [p for p in pieces if not p.tall and _is_big_operator(p.text)]
+    """Find indices by comparing font size with nearby text."""
+    reference = [p for p in pieces if not p.tall]
     reference.sort(key=lambda p: p.x0)
     starts = [p.x0 for p in reference]
     small: set[int] = set()
@@ -378,13 +246,6 @@ def _small_pieces(pieces: list[_Piece]) -> set[int]:
                 break
             if q.x1 >= p.x0 - reach and _overlap(p.y0 - 0.3 * p.size, p.y1 + 0.3 * p.size, q.y0, q.y1) > 0:
                 biggest = max(biggest, q.size)
-        # Cận dưới dấu ∑ không chạm chữ thường nào, nên thước so của nó là chính toán tử.
-        for o in operators:
-            beside = _overlap(p.x0, p.x1, o.x0 - 0.5 * o.size, o.x1 + 0.5 * o.size) > 0
-            below = 0 <= p.y0 - o.y1 + 0.35 * o.size < 0.9 * o.size
-            above = 0 <= o.y0 - p.y1 + 0.35 * o.size < 0.9 * o.size
-            if beside and (below or above):
-                biggest = max(biggest, o.size)
         if p.size < 0.8 * biggest:
             small.add(id(p))
     return small
@@ -392,7 +253,7 @@ def _small_pieces(pieces: list[_Piece]) -> set[int]:
 
 def _rows(pieces: list[_Piece]) -> list[list[_Piece]]:
     """Xếp mảnh thành hàng. Chữ cỡ chính quyết định hàng; chữ nhỏ hơn nằm sát bên một hàng là
-    chỉ số của hàng đó; phân số và ngoặc thuộc hàng mà chúng cắt qua giữa."""
+    chỉ số của hàng đó; phân số thuộc hàng mà chúng cắt qua giữa."""
     small_ids = _small_pieces(pieces)
     normal = sorted((p for p in pieces if not p.tall and id(p) not in small_ids), key=lambda p: p.baseline)
     small = [p for p in pieces if not p.tall and id(p) in small_ids]
@@ -431,39 +292,24 @@ def _rows(pieces: list[_Piece]) -> list[list[_Piece]]:
         best = None
         for r in rows:
             size = r["size"]
-            # Giới hạn của lim, ∑, ∫: nằm hẳn dưới hoặc trên toán tử, canh giữa theo nó nên có thể
-            # rộng hơn và bắt đầu lệch trái hơn chính toán tử.
-            base = next((q for q in r["pieces"] if not q.script and _takes_limits(q.text)
-                         and _overlap(p.x0, p.x1, q.x0 - 0.5 * size, q.x1 + 0.5 * size) > 0
-                         and (0 <= p.y0 - q.y1 + 0.35 * size < 0.9 * size or 0 <= q.y0 - p.y1 + 0.35 * size < 0.9 * size)),
-                        None)
             neighbour = min(r["pieces"], key=lambda q: min(abs(p.x0 - q.x1), abs(q.x0 - p.x1)))
             touching = _overlap(p.y0, p.y1, r["y0"], r["y1"]) > 0
             adjacent = touching and min(abs(p.x0 - neighbour.x1), abs(neighbour.x0 - p.x1)) < 0.8 * size
-            if base is None and not adjacent:
+            if not adjacent:
                 continue
-            # Giới hạn được ưu tiên hơn mọi quan hệ kề bên: chữ "n" dưới "lim" còn nằm sát dòng
-            # văn bản ngay dưới nó, và gắn vào đó thì thành một chỉ số trên vô nghĩa.
-            score = (0 if base is not None else 1, 0 if r["main"] else 1, abs((r["y0"] + r["y1"]) / 2 - p.cy))
+            score = (0 if r["main"] else 1, abs((r["y0"] + r["y1"]) / 2 - p.cy))
             if best is None or score < best[0]:
-                best = (score, r, base, neighbour)
+                best = (score, r)
         if best is None:
             new_row(p)
             rows[-1]["main"] = False
             continue
-        _, row, base, neighbour = best
-        if base is not None:
-            p.script = "_" if p.cy > base.cy else "^"
-            p.anchor = base.x1 + p.x0 * 1e-4
-        else:
-            shift = row["baseline"] - p.baseline
-            if shift > 0.2 * row["size"]:
-                p.script = "^"
-            elif shift < -0.1 * row["size"]:
-                p.script = "_"
-            # Mảnh nối tiếp một giới hạn (dấu ∞ sau "n→") đi cùng giới hạn đó.
-            if neighbour.anchor is not None and p.script == neighbour.script:
-                p.anchor = neighbour.anchor + p.x0 * 1e-4
+        _, row = best
+        shift = row["baseline"] - p.baseline
+        if shift > 0.2 * row["size"]:
+            p.script = "^"
+        elif shift < -0.1 * row["size"]:
+            p.script = "_"
         row["pieces"].append(p)
     rows.sort(key=lambda r: r["y0"])
     return [r["pieces"] for r in rows]
@@ -476,27 +322,13 @@ def _group(pieces: list[_Piece]) -> str:
     return text if re.fullmatch(r"[\w.]+(\^[\w.]+)?", text) else f"({text})"
 
 
-def _merge_brackets(pieces: list[_Piece]) -> list[_Piece]:
-    brackets = sorted((p for p in pieces if p.tall and p.text in "()[]{}|"), key=lambda p: (round(p.x0), p.y0))
-    rest = [p for p in pieces if not (p.tall and p.text in "()[]{}|")]
-    groups: list[list[_Piece]] = []
-    for p in brackets:
-        last = groups[-1][-1] if groups else None
-        if last and abs(last.x0 - p.x0) < 2 and p.y0 - last.y1 < 3 and last.text == p.text:
-            groups[-1].append(p)
-        else:
-            groups.append([p])
-    for g in groups:
-        y0, y1 = min(p.y0 for p in g), max(p.y1 for p in g)
-        rest.append(_Piece(min(p.x0 for p in g), y0, max(p.x1 for p in g), y1, (y0 + y1) / 2, g[0].size, g[0].text,
-                           tall=True))
-    return rest
-
-
 def _is_fraction(rule: _Rule, above: list[_Piece], below: list[_Piece], size: float) -> bool:
     """Tử và mẫu canh giữa gạch phân số, và gạch không dài hơn vế rộng hơn bao nhiêu. Đường kẻ
     bảng, gạch chân hay nét chỉ của hộp chú thích thì dài hơn hẳn chữ nằm cạnh nó, hoặc lệch hẳn
     sang một bên."""
+    # A table header or prose row is not a numerator, even when centred over a rule.
+    if any(re.search(r"[^\W\d_]{4,}", p.text) for p in above + below):
+        return False
     width = rule.x1 - rule.x0
     centre = (rule.x0 + rule.x1) / 2
     widest = 0.0
@@ -508,23 +340,8 @@ def _is_fraction(rule: _Rule, above: list[_Piece], below: list[_Piece], size: fl
     return width <= widest + 2 * size
 
 
-def _absolute_bars(verticals, box, size: float) -> list[tuple[float, float, float]]:
-    """Gạch dọc của |x|: ngắn cỡ một hai dòng và luôn đi theo cặp ngang hàng nhau. Viền bảng thì
-    dài, còn nét của ngoặc vẽ tay chỉ có một."""
-    x0, y0, x1, y1 = box
-    inside = [
-        (x, ya, yb) for x, ya, yb in verticals
-        if x0 - 2 <= x <= x1 + 2 and y0 - 2 <= ya and yb <= y1 + 2 and yb - ya <= 3 * size
-    ]
-    return [
-        v for v in inside
-        if any(w is not v and abs(w[0] - v[0]) > 1 and _overlap(v[1], v[2], w[1], w[2]) >= 0.7 * (v[2] - v[1])
-               and abs(w[0] - v[0]) <= 15 * size for w in inside)
-    ]
-
-
 def _structures(pieces: list[_Piece], rules: list[_Rule]) -> list[_Piece]:
-    """Dấu căn và phân số, gạch ngắn trước: một phân số lồng trong phân số khác được dựng
+    """Phân số, gạch ngắn trước: một phân số lồng trong phân số khác được dựng
     xong rồi mới thành một mảnh của tử hay mẫu bên ngoài."""
     for rule in sorted(rules, key=lambda r: r.x1 - r.x0):
         within = [p for p in pieces if rule.x0 - 1 <= p.cx <= rule.x1 + 1]
@@ -532,14 +349,6 @@ def _structures(pieces: list[_Piece], rules: list[_Rule]) -> list[_Piece]:
             continue
         size = statistics.median(p.size for p in within)
         below = [p for p in within if rule.y < p.cy <= rule.y + 1.3 * size and p.y0 >= rule.y - 0.3 * size]
-        if rule.radical:
-            if not below:
-                continue
-            used = set(map(id, below))
-            pieces = [p for p in pieces if id(p) not in used]
-            pieces.append(_Piece(rule.x0 - 0.6 * size, rule.y, rule.x1, max(p.y1 for p in below),
-                                 statistics.median(p.baseline for p in below), size, "√" + _group(below)))
-            continue
         above = [p for p in within if rule.y - 1.3 * size <= p.cy < rule.y and p.y1 <= rule.y + 0.3 * size]
         if not above or not below or not _is_fraction(rule, above, below, size):
             continue
@@ -555,7 +364,7 @@ def _span_text(span: dict) -> str:
     return "".join(c["c"] for c in span["chars"])
 
 
-def _span_pieces(span: dict, vni_fonts: frozenset[str]) -> list[_Piece]:
+def _span_pieces(span: dict) -> list[_Piece]:
     """Tách một span thành từng từ theo vị trí ký tự. PyMuPDF gộp chữ cùng phông cùng cỡ vào
     một span ngay cả khi chúng nằm ở hai tầng khác nhau, như số 1 của tử số 1/a với chữ
     "arctan" ở dòng chính, nên không thể coi cả span là một mảnh."""
@@ -567,12 +376,12 @@ def _span_pieces(span: dict, vni_fonts: frozenset[str]) -> list[_Piece]:
     def flush() -> None:
         nonlocal current, space
         if current:
-            text, bracket = map_font_text("".join(c["c"] for c in current), span["font"], vni_fonts)
+            text = map_font_text("".join(c["c"] for c in current), span["font"])
             if text.strip():
                 pieces.append(_Piece(
                     min(c["bbox"][0] for c in current), min(c["bbox"][1] for c in current),
                     max(c["bbox"][2] for c in current), max(c["bbox"][3] for c in current),
-                    current[0]["origin"][1], size, text.strip(), tall=bracket, space_before=space,
+                    current[0]["origin"][1], size, text.strip(), space_before=space,
                 ))
                 space = False
         current = []
@@ -582,10 +391,8 @@ def _span_pieces(span: dict, vni_fonts: frozenset[str]) -> list[_Piece]:
             flush()
             space = True
             continue
-        is_bracket = map_font_text(ch["c"], span["font"])[1]
         if current and (
-            is_bracket or map_font_text(current[-1]["c"], span["font"])[1]
-            or abs(ch["origin"][1] - current[-1]["origin"][1]) > 0.1 * size
+            abs(ch["origin"][1] - current[-1]["origin"][1]) > 0.1 * size
             or ch["bbox"][0] - current[-1]["bbox"][2] > 0.25 * size
         ):
             flush()
@@ -594,7 +401,7 @@ def _span_pieces(span: dict, vni_fonts: frozenset[str]) -> list[_Piece]:
     return pieces
 
 
-def _line_text(spans: list[dict], vni_fonts: frozenset[str]) -> str:
+def _line_text(spans: list[dict]) -> str:
     """Một dòng PyMuPDF bình thường: chỉ đổi mã phông và đánh dấu chỉ số trên/dưới nằm trong dòng."""
     visible = [s for s in spans if _span_text(s).strip()]
     if not visible:
@@ -602,7 +409,7 @@ def _line_text(spans: list[dict], vni_fonts: frozenset[str]) -> str:
     base = max(visible, key=lambda s: s["size"])
     out = []
     for s in spans:
-        text = map_font_text(_span_text(s), s["font"], vni_fonts)[0]
+        text = map_font_text(_span_text(s), s["font"])
         if s is not base and text.strip() and s["size"] < 0.8 * base["size"] and len(text.strip()) <= 4:
             shift = base["origin"][1] - s["origin"][1]
             if shift > 0.2 * base["size"]:
@@ -610,7 +417,7 @@ def _line_text(spans: list[dict], vni_fonts: frozenset[str]) -> str:
             elif shift < -0.1 * base["size"]:
                 text = "_" + text.strip()
         out.append(text)
-    return "".join(out).strip()
+    return "".join(out).rstrip()
 
 
 def page_lines(page: pymupdf.Page) -> list[str]:
@@ -618,18 +425,16 @@ def page_lines(page: pymupdf.Page) -> list[str]:
     blocks = [b for b in page.get_text("rawdict", flags=_TEXT_FLAGS)["blocks"] if b["type"] == 0 and b["lines"]]
     if not blocks:
         return []
-    rules, verticals = _strokes(page)
-    vni_fonts = frozenset(_vni_fonts(blocks))
+    rules = _strokes(page) if any(_block_is_mathlike(b) for b in blocks) else []
     out: list[str] = []
+    previous = None
     for region in _regions(blocks):
         lines = [line for i in region for line in blocks[i]["lines"]]
         boxes = [line["bbox"] for line in lines]
         x0, y0 = min(b[0] for b in boxes), min(b[1] for b in boxes)
         x1, y1 = max(b[2] for b in boxes), max(b[3] for b in boxes)
         main_size = statistics.median(s["size"] for line in lines for s in line["spans"])
-        # Vạch trên của dấu căn nằm cao hơn chữ bên dưới nó, nên được nới lên một chút.
-        # Gạch phân số và vạch trên dấu căn thường dài hơn chữ một chút ở hai đầu, còn vạch dấu căn
-        # nằm cao hơn chữ bên dưới nó, nên nét chỉ cần nằm phần lớn trong vùng.
+        # A fraction bar can extend slightly beyond its numerator and denominator.
         region_rules = [
             r for r in rules
             if _overlap(r.x0, r.x1, x0, x1) >= 0.5 * (r.x1 - r.x0)
@@ -638,28 +443,45 @@ def page_lines(page: pymupdf.Page) -> list[str]:
         # Dòng cùng hàng mà không có ký hiệu toán nào là bố cục có chủ ý (chân trang Beamer ba ô,
         # bảng hai cột) chứ không phải công thức vỡ: trộn chúng lại thì chữ các ô đan vào nhau.
         math = any(_block_is_mathlike(blocks[i]) for i in region)
-        if not math or (not _is_shattered(boxes) and not region_rules):
-            previous = None
+        has_code = any(s["flags"] & pymupdf.TEXT_FONT_MONOSPACED for line in lines for s in line["spans"])
+        has_bullets = any(_line_text(line["spans"]).strip() in {"•", "▪", "❖"} for line in lines)
+        if (not math or has_bullets or (has_code and not region_rules)
+                or (not _is_shattered(boxes) and not region_rules)):
             for line in lines:
-                text = _line_text(line["spans"], vni_fonts)
+                text = _line_text(line["spans"])
                 # Chữ vẽ hai lần chồng khít (hiệu ứng bóng của tiêu đề slide) chỉ giữ một lần.
-                if text and not (previous and previous[0] == text and _overlap(
-                        previous[1][1], previous[1][3], line["bbox"][1], line["bbox"][3]) > 0):
-                    out.append(text)
-                    previous = (text, line["bbox"])
+                if not text:
+                    continue
+                box = line["bbox"]
+                base = max(line["spans"], key=lambda s: s["size"])
+                baseline, size = base["origin"][1], base["size"]
+                if previous:
+                    old_text, old_box, old_baseline, old_size = previous
+                    if (old_text == text and _overlap(old_box[1], old_box[3], box[1], box[3]) > 0
+                            and _overlap(old_box[0], old_box[2], box[0], box[2])
+                            > 0.8 * min(old_box[2] - old_box[0], box[2] - box[0])):
+                        continue
+                    gap = box[0] - old_box[2]
+                    if (abs(baseline - old_baseline) < 0.15 * max(size, old_size)
+                            and 0 <= gap < max(size, old_size)):
+                        out[-1] += (" " if gap > 0.12 * max(size, old_size) else "") + text
+                        box = (old_box[0], min(old_box[1], box[1]), box[2], max(old_box[3], box[3]))
+                        previous = (out[-1], box, baseline, size)
+                        continue
+                out.append(text)
+                previous = (text, box, baseline, size)
             continue
+        previous = None
         pieces: list[_Piece] = []
         for line in lines:
             for s in line["spans"]:
-                for piece in _span_pieces(s, vni_fonts):
+                for piece in _span_pieces(s):
                     # Chữ vẽ hai lần chồng khít chỉ giữ một lần.
                     if any(q.text == piece.text and _overlap(q.x0, q.x1, piece.x0, piece.x1) > 0.8 * (piece.x1 - piece.x0)
                            and _overlap(q.y0, q.y1, piece.y0, piece.y1) > 0.8 * piece.height for q in pieces):
                         continue
                     pieces.append(piece)
-        for x, ya, yb in _absolute_bars(verticals, (x0, y0, x1, y1), main_size):
-            pieces.append(_Piece(x - 0.5, ya, x + 0.5, yb, (ya + yb) / 2, main_size, "|", tall=True))
-        pieces = _structures(_merge_brackets(pieces), region_rules)
+        pieces = _structures(pieces, region_rules)
         for row in _rows(pieces):
             text = _join(row).strip()
             if text:
@@ -673,7 +495,6 @@ def title_candidates(page: pymupdf.Page) -> list[str]:
     blocks = [b for b in page.get_text("rawdict", flags=_TEXT_FLAGS)["blocks"] if b["type"] == 0 and b["lines"]]
     if not blocks:
         return []
-    vni_fonts = frozenset(_vni_fonts(blocks))
 
     def is_math(span: dict) -> bool:
         return any(f in span["font"].lower() for f in _MATH_FONTS)
@@ -689,7 +510,7 @@ def title_candidates(page: pymupdf.Page) -> list[str]:
     found: list[tuple[float, float, float, str]] = []
     for block in blocks:
         for line in block["lines"]:
-            text = _line_text(line["spans"], vni_fonts)
+            text = _line_text(line["spans"])
             size = max(s["size"] for s in line["spans"])
             visible = [c for c in text if not c.isspace()]
             letters = sum(c.isalpha() for c in visible)
