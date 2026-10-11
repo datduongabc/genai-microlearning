@@ -129,6 +129,7 @@ class Document(Base):
         Enum(DocumentStatus), default=DocumentStatus.uploaded
     )
     raw_text: Mapped[str | None] = mapped_column(Text, nullable=True)
+    extraction_warnings: Mapped[list] = mapped_column(JSONB, default=list, server_default="[]")
     # Cache cua run_planner() -- kien truc da ghi ro "1 lenh goi/tai lieu"
     # nhung implementation truoc day goi lai MOI LAN /modules/generate duoc
     # goi cho cung document, du khong can thiet. Ngoai ton lenh goi LLM thua,

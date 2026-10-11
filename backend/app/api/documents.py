@@ -170,6 +170,7 @@ def list_documents(
             "module_count": len(d.modules),
             "generating": d.id in generating_ids,
             "failures": failures.get(d.id, []),
+            "extraction_warnings": d.extraction_warnings,
         }
         for d in docs
     ]

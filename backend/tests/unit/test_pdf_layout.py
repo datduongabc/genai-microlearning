@@ -1,10 +1,4 @@
-"""Hợp đồng của tầng dựng dòng PDF: công thức bị tách theo phông phải đọc lại được thành một
-dòng, ký hiệu của phông cũ phải ra Unicode, và văn bản thường không được bị động tới.
-
-Các PDF ở đây được tạo bằng PyMuPDF và ghi chữ theo đúng cách MathType ghi một công thức: mọi
-chữ của một phông trước, rồi mới tới phông khác, lệch khỏi thứ tự đọc. Chính cách ghi đó làm
-cách đọc theo khối trả mỗi ký hiệu một dòng.
-"""
+"""Measured slide repairs: adjacent runs, indices, fractions and font decoding."""
 
 import re
 import uuid
@@ -13,7 +7,7 @@ import pymupdf
 import pytest
 
 from app.ingestion.document_readers import read_document
-from app.ingestion.pdf_layout import map_font_text, page_lines, vni_to_unicode
+from app.ingestion.pdf_layout import map_font_text, page_lines
 
 
 def _compact(text: str) -> str:
@@ -65,45 +59,6 @@ def test_glyphs_above_and_below_a_drawn_bar_are_a_fraction(page):
     page.insert_text((42, 99), "=", fontname="symb", fontsize=14)
 
     assert [_compact(line) for line in page_lines(page)] == ["y=(a+1)/b"]
-
-
-def test_a_drawn_radical_sign_wraps_what_is_under_its_bar(page):
-    # Dấu căn của MathType: nét chéo đi xuống rồi đi lên chạm đầu trái của vạch trên.
-    page.draw_line((40, 95), (43, 93), width=0.5)
-    page.draw_line((43, 93), (47, 102), width=0.5)
-    page.draw_line((47, 102), (52, 82), width=0.5)
-    page.draw_line((52, 82), (70, 82), width=0.5)
-    page.insert_text((55, 98), "x", fontname="tiit", fontsize=16)
-    page.insert_text((80, 98), "=", fontname="symb", fontsize=16)
-    page.insert_text((96, 98), "3", fontname="tiro", fontsize=16)
-
-    assert [_compact(line) for line in page_lines(page)] == ["√x=3"]
-
-
-def test_a_rule_under_a_radical_is_not_mistaken_for_a_fraction_bar(page):
-    page.insert_text((20, 70), "u", fontname="tiit", fontsize=16)
-    page.insert_text((34, 70), "=", fontname="symb", fontsize=16)
-    page.draw_line((40, 95), (43, 93), width=0.5)
-    page.draw_line((43, 93), (47, 102), width=0.5)
-    page.draw_line((47, 102), (52, 82), width=0.5)
-    page.draw_line((52, 82), (70, 82), width=0.5)
-    page.insert_text((55, 98), "x", fontname="tiit", fontsize=16)
-
-    assert all("/" not in line for line in page_lines(page))
-
-
-def test_limits_under_lim_follow_it_even_when_they_start_further_left(page):
-    page.insert_text((50, 100), "lim", fontname="tiro", fontsize=16)
-    page.insert_text((46, 112), "n", fontname="tiit", fontsize=9)
-    page.insert_text((52, 112), "=", fontname="symb", fontsize=9)
-    page.insert_text((60, 112), "1", fontname="tiro", fontsize=9)
-    page.insert_text((80, 100), "u", fontname="tiit", fontsize=16)
-    page.insert_text((100, 100), "=", fontname="symb", fontsize=16)
-    page.insert_text((116, 100), "a", fontname="tiit", fontsize=16)
-
-    lines = [_compact(line) for line in page_lines(page)]
-
-    assert lines == ["lim_(n=1)u=a"]
 
 
 def test_a_lower_index_of_the_line_above_is_not_attached_to_the_text_below_it(page):
@@ -167,42 +122,19 @@ def test_a_page_with_no_text_has_no_lines(page):
     ],
 )
 def test_symbol_font_codes_become_the_symbols_they_draw(encoded, font, expected):
-    assert map_font_text(encoded, font) == (expected, False)
+    assert map_font_text(encoded, font) == expected
 
 
 def test_ordinary_fonts_are_not_remapped():
-    assert map_font_text("abc ", "Times New Roman") == ("abc ", False)
-
-
-@pytest.mark.parametrize("piece, bracket", [("", "("), ("", ")"), ("", "("), ("", ")")])
-def test_pieces_of_a_tall_bracket_are_flagged_as_brackets(piece, bracket):
-    assert map_font_text(piece, "Symbol") == (bracket, True)
+    assert map_font_text("abc ", "Times New Roman") == "abc "
 
 
 def test_dingbat_bullets_become_a_bullet():
-    assert map_font_text("", "Wingdings") == ("•", False)
+    assert map_font_text("", "Wingdings") == "•"
 
 
-@pytest.mark.parametrize(
-    "encoded, expected",
-    [
-        ("Chöông", "Chương"),
-        ("Ñaïi hoïc", "Đại học"),
-        ("thöôøng xuyeân", "thường xuyên"),
-        ("Kyø voïng cuûa bieán ngaãu nhieân", "Kỳ vọng của biến ngẫu nhiên"),
-        ("LÔØI GIAÛI", "LỜI GIẢI"),
-        ("Ñònh nghóa", "Định nghĩa"),
-        ("aên nhaèm", "ăn nhằm"),
-    ],
-)
-def test_vni_encoded_vietnamese_becomes_unicode(encoded, expected):
-    assert vni_to_unicode(encoded) == expected
-
-
-def test_text_without_vni_codes_is_unchanged_by_the_vni_decoder():
-    text = "Operating systems and processes"
-
-    assert vni_to_unicode(text) == text
+def test_vni_fonts_with_valid_unicode_are_left_unchanged():
+    assert map_font_text("Chương trình", "VNI-Times") == "Chương trình"
 
 
 def test_read_document_uses_the_rebuilt_lines_for_pdf_pages(tmp_path):

@@ -1,0 +1,56 @@
+{
+  "embedding": {
+    "model_id": "onnx-community/Qwen3-Embedding-0.6B-ONNX",
+    "model_sha": "c25a394dd583836952667c12f008335071b3f43d",
+    "model_dtype": "float32",
+    "served_model_name": "onnx-community/Qwen3-Embedding-0.6B-ONNX",
+    "model_type": {
+      "embedding": {
+        "pooling": "last_token"
+      }
+    },
+    "max_concurrent_requests": 512,
+    "max_input_length": 1024,
+    "max_batch_tokens": 1024,
+    "max_batch_requests": 8,
+    "max_client_batch_size": 128,
+    "auto_truncate": true,
+    "tokenization_workers": 1,
+    "version": "1.9.4",
+    "sha": "e80ef225ed0e6cb1717ce632a6a84b6cf211bb67",
+    "docker_label": "sha-e80ef22"
+  },
+  "reranker": {
+    "model_id": "BAAI/bge-reranker-base",
+    "model_sha": "2cfc18c9415c912f9d8155881c133215df768a70",
+    "model_dtype": "float32",
+    "served_model_name": "BAAI/bge-reranker-base",
+    "model_type": {
+      "reranker": {
+        "id2label": {
+          "0": "LABEL_0"
+        },
+        "label2id": {
+          "LABEL_0": 0
+        }
+      }
+    },
+    "max_concurrent_requests": 512,
+    "max_input_length": 512,
+    "max_batch_tokens": 16384,
+    "max_batch_requests": 8,
+    "max_client_batch_size": 64,
+    "auto_truncate": true,
+    "tokenization_workers": 1,
+    "version": "1.9.4",
+    "sha": "e80ef225ed0e6cb1717ce632a6a84b6cf211bb67",
+    "docker_label": "sha-e80ef22"
+  },
+  "embedding_dimensions": 768,
+  "retrieval": {
+    "top_k": 10,
+    "candidate_k": 30,
+    "rerank_raw_scores": false,
+    "rerank_truncate": true
+  }
+}

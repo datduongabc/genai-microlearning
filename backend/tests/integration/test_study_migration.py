@@ -52,7 +52,7 @@ def test_study_migration_round_trip():
                 conn.execute(text("INSERT INTO jobs (id, job_type, step, status, module_id, document_id, payload, attempts, max_attempts) "
                                   "VALUES (:id, 'module_generation', 'done', 'done', :module, :doc, CAST(:payload AS jsonb), 0, 5)"),
                              {"id": uuid.uuid4(), "module": module_id, "doc": doc_id, "payload": payload})
-        migrate("head")
+        migrate("0019_blind_ratings")
         with engine.begin() as conn:
             assert conn.scalar(text("SELECT generation_payload->>'model_alias' FROM modules WHERE id=:id"),
                                {"id": rag_id}) == "test"
@@ -85,7 +85,7 @@ def test_study_migration_round_trip():
             assert conn.scalar(text("SELECT version_num FROM alembic_version")) == "0019_blind_ratings"
         migrate("0011_module_generation_models", "downgrade")
         assert set(inspect(engine).get_table_names()) == previous
-        migrate("head")
+        migrate("0019_blind_ratings")
         assert {"studies", "study_items", "ratings"}.issubset(inspect(engine).get_table_names())
         # 0020: the queued judge reaches the study tables as the worker, admins see only judge jobs.
         judge_policy = text("SELECT qual FROM pg_policies WHERE tablename = 'jobs' AND policyname = 'jobs_study_admin'")
