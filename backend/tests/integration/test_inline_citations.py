@@ -75,9 +75,9 @@ def test_blinded_packet_hides_codes_and_keeps_real_content_offsets():
     from app.generation.study_packets import module_packet
     from app.models import Question
     component = ModuleComponent(type=ComponentType.content, content={"markdown": "Fact. [S1][S2]\nUncited."})
-    quiz = ModuleComponent(type=ComponentType.quiz, questions=[Question(position=0, stem="Q?",
+    quiz = ModuleComponent(type=ComponentType.quiz, content={}, questions=[Question(position=0, stem="Q?",
         choices={"options": ["A", "B", "C", "D"]}, answer_key="0", explanation="E")])
-    practice = ModuleComponent(type=ComponentType.practice, questions=[Question(position=0, stem="P?",
+    practice = ModuleComponent(type=ComponentType.practice, content={}, questions=[Question(position=0, stem="P?",
         choices={"options": ["A", "B", "C", "D"]}, answer_key="0", explanation="E")])
     module = Module(title="Topic", bloom_level="understand", learning_objective="Explain", sub_objectives=[],
                     components=[component, quiz, practice])
@@ -91,3 +91,33 @@ def test_malformed_source_markers_are_rejected_instead_of_becoming_uncited_text(
     chunks = [types.SimpleNamespace(id=uuid.uuid4(), content='fact', source_ref='p1')]
     with pytest.raises(ValueError, match='source'):
         resolve_citations(ContentOutput(content='Fact. '+marker), chunks)
+
+
+def test_study_packet_and_citations_use_original_while_preview_uses_saved_edits():
+    from app.generation.study_packets import module_packet
+    from app.models import Question
+
+    engine = create_engine("sqlite://")
+    Chunk.__table__.create(engine)
+    with Session(engine) as db:
+        doc, course = uuid.uuid4(), uuid.uuid4()
+        chunk = Chunk(document_id=doc, course_id=course, chunk_index=0,
+                      content="Original fact.", source_ref="p1")
+        db.add(chunk)
+        db.flush()
+        original = {"markdown": "Original fact. [S1]", "source_map": {
+            "S1": {"chunk_id": str(chunk.id), "locator": "p1"}}}
+        content = ModuleComponent(type=ComponentType.content, content={
+            "markdown": "Teacher replacement.", "source_map": original["source_map"],
+            "ai_original": original})
+        questions = [ModuleComponent(type=kind, content={}, questions=[Question(position=0, stem="Q?",
+            choices={"options": ["A", "B"]}, answer_key="0", explanation="E")])
+            for kind in [ComponentType.quiz, ComponentType.practice]]
+        module = Module(document_id=doc, course_id=course, title="Topic", bloom_level="understand",
+                        learning_objective="Explain", sub_objectives=[], components=[content, *questions])
+        packet = module_packet(module, [chunk.content])
+        [citation] = resolved_citations(db, module, use_ai_original=True)
+        assert citation.claim == "Original fact."
+        assert packet.content_markdown[citation.start:citation.end] == citation.claim
+        assert citation.chunk_content == "Original fact."
+        assert resolved_citations(db, module) == []

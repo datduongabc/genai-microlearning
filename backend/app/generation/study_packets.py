@@ -107,20 +107,23 @@ def study_evidence(db: Session, module: Module, sources: list[str]) -> tuple[Ref
         chunk_ids=[str(c.id) for c in chunks] if complete else [],
         total_chunks=len(chunks) if complete or section else None,
     )
-    return reference, resolved_citations(db, module)
+    return reference, resolved_citations(db, module, use_ai_original=True)
 
 
-def resolved_citations(db: Session, module: Module) -> list[StoredCitation] | None:
+def resolved_citations(
+    db: Session, module: Module, *, use_ai_original: bool = False,
+) -> list[StoredCitation] | None:
     """Resolve saved Content citations within the module's document, without guessing ties.
 
     A citation saved with a `chunk_id` points at exactly that chunk, so it is found or missing.
     Modules saved before citations carried one hold only the locator the model copied, which is
     matched against the chunks' locators and is ambiguous when several share it."""
     content = _component(module, ComponentType.content)
-    saved = content.content.get("claim_citations") if content else None
-    if content and "source_map" in content.content:
+    original = (_original_content(content) if use_ai_original else content.content) if content else {}
+    saved = original.get("claim_citations")
+    if "source_map" in original:
         saved = [c.model_dump() for c in derive_citations(
-            content.content.get("markdown") or "", content.content["source_map"])]
+            original.get("markdown") or "", original["source_map"])]
     if saved is None:
         return None
     candidates = db.query(Chunk).filter(
@@ -159,7 +162,7 @@ def _questions(module: Module, component_type: ComponentType) -> list[QuizQuesti
         for item in ((_original_content(explanation).get("items") or []) if explanation else [])
         if item.get("component") == component_type.value
     }
-    original = (component.content or {}).get("ai_original", {}) if component else {}
+    original = component.content.get("ai_original", {}) if component else {}
     if "content" in original and "questions" in original:
         return [QuizQuestionInput(
             stem=q["stem"], choices=list(q["choices"].get("options", [])),
