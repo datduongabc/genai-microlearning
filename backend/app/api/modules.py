@@ -525,6 +525,20 @@ def delete_module(
     return {"status": "deleted", "deleted_module_ids": [module_id, *sorted(control_ids)]}
 
 
+def _ai_original(component: ModuleComponent) -> dict:
+    if "ai_original" in component.content:
+        return component.content["ai_original"]
+    if component.type not in (ComponentType.quiz, ComponentType.practice):
+        return component.content
+    return {
+        "content": component.content,
+        "questions": [{
+            "id": str(q.id), "position": q.position, "stem": q.stem, "choices": q.choices,
+            "answer_key": q.answer_key, "explanation": q.explanation,
+        } for q in component.questions],
+    }
+
+
 class ComponentUpdate(BaseModel):
     content: dict
 
@@ -539,8 +553,7 @@ def update_component(
     if component is None or component.module_id != module_id:
         raise HTTPException(status_code=404, detail="Component not found")
     content = {k: v for k, v in payload.content.items() if k != "ai_original"}
-    if "ai_original" in component.content:
-        content["ai_original"] = component.content["ai_original"]
+    content["ai_original"] = _ai_original(component)
     component.content = content
     db.commit()
     return {"id": component.id, "content": component.content}
@@ -578,21 +591,14 @@ def _apply_question_update(module: Module, component: ModuleComponent, question:
     explanation = next((c for c in module.components if c.type == ComponentType.explanation), None)
     items = explanation.content.get("items", []) if explanation is not None else []
     # Keep the whole untouched component once; the publisher reads only the live question rows.
-    if "ai_original" not in component.content:
-        component.content = {**component.content, "ai_original": {
-            "content": component.content,
-            "questions": [{
-                "id": str(q.id), "position": q.position, "stem": q.stem, "choices": q.choices,
-                "answer_key": q.answer_key,
-                "explanation": q.explanation,
-            } for q in component.questions],
-        }}
+    component.content = {**component.content, "ai_original": _ai_original(component)}
     question.stem = payload.stem
     question.choices = {"options": payload.choices}
     question.answer_key = str(payload.answer_key)
     question.explanation = payload.explanation
     if explanation is not None:
-        explanation.content = {**explanation.content, "items": [
+        explanation.content = {**explanation.content,
+            "ai_original": explanation.content.get("ai_original", explanation.content), "items": [
             {**item, "explanation_text": payload.explanation}
             if item.get("component") == component.type.value and item.get("position") == question.position
             else item for item in items

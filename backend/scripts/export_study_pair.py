@@ -52,9 +52,10 @@ def main(argv: list[str] | None = None) -> None:
         rag_alias = model_that_made(db, module.id)
         no_rag_alias = args.model or rag_alias
         generation_models = {}
+        content_versions = {}
         try:
             with gateway.experiment_mode():
-                rag, no_rag = study_pair(db, module, no_rag_alias, self_check_of(db, module.id), generation_models)
+                rag, no_rag = study_pair(db, module, no_rag_alias, self_check_of(db, module.id), generation_models, content_versions)
             reference, citations = study_evidence(db, module, rag.source_chunks)
         except ValueError as loi:
             raise SystemExit(str(loi)) from loi
@@ -68,6 +69,7 @@ def main(argv: list[str] | None = None) -> None:
         study = StudyFile(
             pair_id=str(args.module_id), group=group, generator_model=generator, packet=packet,
             generation_models=generation_models.get(group, []),
+            content_sources=content_versions[group],
             reference=reference, claim_citations=citations if group == "rag_llm" else None,
         )
         path = args.out / f"{args.module_id}-{group}.json"

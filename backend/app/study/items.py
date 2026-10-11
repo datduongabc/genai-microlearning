@@ -10,7 +10,7 @@ from app.generation.module_generation_pipeline import (
     learning_objective_of,
     matching_control,
 )
-from app.generation.study_packets import module_packet, reference_chunks
+from app.generation.study_packets import content_sources, module_packet, reference_chunks
 from app.models import Course, Module, StudyItem
 
 
@@ -43,8 +43,10 @@ def existing_pair(db: Session, module_id: uuid.UUID, owner_id: uuid.UUID) -> lis
         raise LookupError("Module not found")
     sources = reference_chunks(db, module)
     return [
-        StudyItem(group="rag_llm", module_id=module.id, packet=module_packet(module, sources).model_dump()),
-        StudyItem(group="llm_no_rag", packet=module_packet(control, sources).model_dump()),
+        StudyItem(group="rag_llm", module_id=module.id, packet=module_packet(module, sources).model_dump(),
+                  content_sources=content_sources(module)),
+        StudyItem(group="llm_no_rag", packet=module_packet(control, sources).model_dump(),
+                  content_sources=content_sources(control)),
     ]
 
 

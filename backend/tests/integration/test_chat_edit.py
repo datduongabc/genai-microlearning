@@ -205,13 +205,16 @@ def test_control_module_rejects_chat_edit(lesson, monkeypatch):
         assert db.query(ChatSession).filter(ChatSession.course_id == ids["course"]).count() == 0
 
 
-def test_manual_component_edit_does_not_snapshot_original(lesson):
+def test_manual_component_edit_snapshots_original(lesson):
     ids, headers = lesson
+    with SessionLocal() as db:
+        original = copy.deepcopy(db.get(ModuleComponent, ids["slides"]).content)
     response = client.patch(f"/modules/{ids['module']}/components/{ids['slides']}", headers=headers,
         json={"content": {"slides": [{"title": "Manual", "bullets": ["x"]}]}})
     assert response.status_code == 200, response.text
     with SessionLocal() as db:
-        assert db.get(ModuleComponent, ids["slides"]).content == {"slides": [{"title": "Manual", "bullets": ["x"]}]}
+        assert db.get(ModuleComponent, ids["slides"]).content == {
+            "slides": [{"title": "Manual", "bullets": ["x"]}], "ai_original": original}
 
 
 def test_large_scope_sends_only_retrieved_document_chunks(lesson, monkeypatch):
@@ -367,3 +370,34 @@ def test_quiz_number_two_edits_only_the_second_question(lesson, monkeypatch):
     with SessionLocal() as db:
         stems = {q.position: q.stem for q in db.get(ModuleComponent, ids["quiz"]).questions}
         assert stems == {0: "Original question", 1: "Harder second question"}
+
+
+def test_manual_slide_edits_keep_original_and_study_packet_uses_it(lesson):
+    from app.generation.study_packets import content_sources, module_packet
+
+    ids, headers = lesson
+    with SessionLocal() as db:
+        original = copy.deepcopy(db.get(ModuleComponent, ids["slides"]).content)
+        module = db.get(Module, ids["module"])
+        module.bloom_level = "apply"
+        module.learning_objective = "Use a stack"
+        practice = ModuleComponent(module_id=ids["module"], type=ComponentType.practice, content={})
+        db.add(practice)
+        db.flush()
+        db.add(Question(component_id=practice.id, position=0, stem="Practice",
+                        choices={"options": ["A", "B"]}, answer_key="0", explanation="AI"))
+        db.commit()
+    for title in ["Teacher first", "Teacher second"]:
+        response = client.patch(f"/modules/{ids['module']}/components/{ids['slides']}",
+                                headers=headers, json={"content": {
+                                    "slides": [{"title": title, "bullets": ["Teacher bullet"]}],
+                                    "ai_original": {"forged": True},
+                                }})
+        assert response.status_code == 200, response.text
+        assert response.json()["content"]["ai_original"] == original
+    with SessionLocal() as db:
+        module = db.get(Module, ids["module"])
+        packet = module_packet(module, ["Reference"])
+        assert [s.model_dump() for s in packet.slides] == original["slides"]
+        assert content_sources(module)["slides"] == "ai_original"
+        assert "content_sources" not in packet.model_dump()

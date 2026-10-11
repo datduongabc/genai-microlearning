@@ -39,6 +39,7 @@ class StudyItem(Base):
     # RESTRICT blocks source deletion while a RAG snapshot references it.
     module_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("modules.id", ondelete="RESTRICT"), index=True)
     packet: Mapped[dict] = mapped_column(JSONB)
+    content_sources: Mapped[dict] = mapped_column(JSONB, default=dict, server_default="{}")
     created_at: Mapped[datetime] = created_at_column()
 
 

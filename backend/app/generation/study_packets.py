@@ -51,6 +51,7 @@ class StudyFile(BaseModel):
     generator_model: str
     # Successful served models, outside the blinded packet. Empty for legacy exports.
     generation_models: list[dict[str, str]] = []
+    content_sources: dict[str, Literal["ai_original", "current_unedited"]] = {}
     packet: ModuleContentInput
     reference: ReferenceEvidence = ReferenceEvidence()
     claim_citations: list[StoredCitation] | None = None
@@ -142,14 +143,38 @@ def _component(module: Module, component_type: ComponentType):
     return next((c for c in module.components if c.type == component_type), None)
 
 
+def content_sources(module: Module) -> dict[str, str]:
+    """Researcher-only audit of the component versions included in a snapshot."""
+    return {c.type.value: "ai_original" if "ai_original" in c.content else "current_unedited"
+            for c in module.components}
+
+
+def _original_content(component) -> dict:
+    if component is None:
+        return {}
+    original = component.content.get("ai_original", component.content)
+    if component.type in (ComponentType.quiz, ComponentType.practice) and "content" in original:
+        return original["content"]
+    return original
+
+
 def _questions(module: Module, component_type: ComponentType) -> list[QuizQuestionInput]:
     component = _component(module, component_type)
     explanation = _component(module, ComponentType.explanation)
     edited = {
         int(item["position"]): item.get("explanation_text") or ""
-        for item in ((explanation.content.get("items") or []) if explanation else [])
+        for item in ((_original_content(explanation).get("items") or []) if explanation else [])
         if item.get("component") == component_type.value
     }
+    original = component.content.get("ai_original", {}) if component else {}
+    if "content" in original and "questions" in original:
+        return [QuizQuestionInput(
+            stem=q["stem"], choices=list(q["choices"].get("options", [])),
+            correct_index=int(q["answer_key"]),
+            explanation=(edited.get(int(q["position"]))
+                         if explanation and "ai_original" in explanation.content else None)
+                        or q.get("explanation") or "",
+        ) for q in original["questions"]]
     return [
         QuizQuestionInput(
             stem=q.stem, choices=list(q.choices.get("options", [])), correct_index=int(q.answer_key),
@@ -174,9 +199,9 @@ def module_packet(module: Module, sources: list[str]) -> ModuleContentInput:
         bloom_level=module.bloom_level,
         learning_objective=module.learning_objective,
         sub_objectives=list(module.sub_objectives or []),
-        content_markdown=(content.content.get("markdown") or "") if content else "",
-        slides=[SlideInput(**s) for s in ((slides.content.get("slides") or []) if slides else [])],
-        examples=[ExampleInput(**e) for e in ((examples.content.get("examples") or []) if examples else [])],
+        content_markdown=(_original_content(content).get("markdown") or "") if content else "",
+        slides=[SlideInput(**s) for s in ((_original_content(slides).get("slides") or []) if slides else [])],
+        examples=[ExampleInput(**e) for e in ((_original_content(examples).get("examples") or []) if examples else [])],
         quiz=quiz,
         practice=practice[0],
         source_chunks=sources,
@@ -210,7 +235,7 @@ def _control_of(db: Session, module: Module, model_alias: str | None, self_check
 
 def study_pair(
     db: Session, module: Module, model_alias: str | None, self_check: bool = True,
-    generation_models: dict | None = None,
+    generation_models: dict | None = None, content_versions: dict | None = None,
 ) -> tuple[ModuleContentInput, ModuleContentInput]:
     """(gói rag_llm, gói llm_no_rag). Bản đối chứng là một module sinh bằng chính pipeline RAG với
     `use_retrieval=False`, lưu như mọi module khác và dùng lại ở các lần xuất sau. `model_alias` là
@@ -224,4 +249,6 @@ def study_pair(
     control = _control_of(db, module, model_alias, self_check)
     if generation_models is not None:
         generation_models.update(rag_llm=module.generation_models or [], llm_no_rag=control.generation_models or [])
+    if content_versions is not None:
+        content_versions.update(rag_llm=content_sources(module), llm_no_rag=content_sources(control))
     return rag, module_packet(control, sources)

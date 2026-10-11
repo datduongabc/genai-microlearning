@@ -227,7 +227,11 @@ def test_export_persists_shared_reference_and_only_rag_citations(tmp_path, monke
     monkeypatch.setattr(export_study_pair, "SessionLocal", ExportSession)
     monkeypatch.setattr(export_study_pair, "model_that_made", lambda *a: "gemini-fast")
     monkeypatch.setattr(export_study_pair, "self_check_of", lambda *a: True)
-    monkeypatch.setattr(export_study_pair, "study_pair", lambda *a: (_packet(), _packet()))
+    def pair(*args):
+        args[-1].update(rag_llm={"content": "ai_original"},
+                        llm_no_rag={"content": "current_unedited"})
+        return _packet(), _packet()
+    monkeypatch.setattr(export_study_pair, "study_pair", pair)
     monkeypatch.setattr(export_study_pair, "study_evidence", lambda *a: (reference(), [citation]))
     export_study_pair.main([str(module.id), "--out", str(tmp_path)])
     rag, control = [sp.StudyFile.model_validate_json(
@@ -235,6 +239,8 @@ def test_export_persists_shared_reference_and_only_rag_citations(tmp_path, monke
     ) for group in ("rag_llm", "llm_no_rag")]
     assert rag.reference == control.reference == reference()
     assert rag.claim_citations == [citation] and control.claim_citations is None
+    assert rag.content_sources == {"content": "ai_original"}
+    assert control.content_sources == {"content": "current_unedited"}
 
 
 def test_r8_analysis_cli_includes_separate_r9_results(tmp_path, judge, monkeypatch):
