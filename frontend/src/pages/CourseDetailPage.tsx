@@ -429,6 +429,11 @@ export function CourseDetailPage() {
                   </button>
                 </div>
               </div>
+              {d.extraction_warnings?.map((warning) => (
+                <p key={`${warning.code}-${warning.page}`} className="mt-2 text-sm text-amber-800">
+                  {warning.message}
+                </p>
+              ))}
               {d.failures.length > 0 && (
                 <ul className="mt-2 flex flex-col gap-2">
                   {d.failures.map((f) => (

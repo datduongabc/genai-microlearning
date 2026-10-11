@@ -18,6 +18,7 @@ export interface DocumentInfo {
   generating: boolean
   // Open failures stay here after a reload: a failed generation makes no module to show them on.
   failures: DocumentFailure[]
+  extraction_warnings?: { code: string; page: number; message: string }[]
 }
 
 export async function listDocuments(courseId: string) {

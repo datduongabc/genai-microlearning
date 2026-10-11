@@ -799,3 +799,22 @@ describe('CourseDetailPage - failed work and retry', () => {
     expect(screen.getAllByText('Hết hạn mức')).toHaveLength(1)
   })
 })
+
+describe('CourseDetailPage - OCR warnings', () => {
+  beforeEach(() => {
+    vi.mocked(api.getMoodleAccount).mockResolvedValue({ email: 'lan@x.edu', status: 'not_linked' })
+  })
+  it('keeps an OCR page warning on an embedded document after remounting', async () => {
+    vi.mocked(api.listCourses).mockResolvedValue([unlinkedCourse])
+    vi.mocked(api.listDocuments).mockResolvedValue([{
+      ...sampleDocument,
+      extraction_warnings: [{ code: 'ocr_failed', page: 2, message: 'Không đọc được trang 2 bằng OCR.' }],
+    }])
+    const first = renderPage()
+    expect(await screen.findByText('Không đọc được trang 2 bằng OCR.')).toBeInTheDocument()
+    expect(screen.getByText('syllabus.pdf')).toBeInTheDocument()
+    first.unmount()
+    renderPage()
+    expect(await screen.findByText('Không đọc được trang 2 bằng OCR.')).toBeInTheDocument()
+  })
+})
