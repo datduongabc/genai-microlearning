@@ -15,7 +15,6 @@ from app.main import app
 from app.models import (
     Chunk,
     Document,
-    DocumentSection,
     DocumentStatus,
     Job,
     JobStatus,
@@ -43,10 +42,10 @@ def _document(course_id, status=DocumentStatus.embedded, filename="bai-giang.txt
         return doc.id
 
 
-def _job(document_id, job_type, status, *, section_id=None, error="lỗi", step=None, payload=None, created_at=None):
+def _job(document_id, job_type, status, *, error="lỗi", step=None, payload=None, created_at=None):
     with SessionLocal() as db:
         job = Job(
-            job_type=job_type, document_id=document_id, section_id=section_id, status=status,
+            job_type=job_type, document_id=document_id, status=status,
             step=step or ("extract" if job_type == JobType.document_pipeline else "generate"),
             attempts=5, last_error=error, payload=payload or {},
         )
@@ -57,14 +56,6 @@ def _job(document_id, job_type, status, *, section_id=None, error="lỗi", step=
         return job.id
 
 
-def _section(document_id, title="Chương 1", position=0):
-    with SessionLocal() as db:
-        section = DocumentSection(
-            document_id=document_id, title=title, level=1, position=position, first_chunk_index=0, last_chunk_index=0
-        )
-        db.add(section)
-        db.commit()
-        return section.id
 
 
 def _listed(lecturer):
@@ -81,15 +72,14 @@ def test_a_failed_document_shows_its_error_and_the_job_to_retry(lecturer):
 
     assert listed["status"] == "failed"
     assert listed["failures"] == [{
-        "job_id": str(job), "job_type": "document_pipeline", "section_id": None, "section_title": None,
+        "job_id": str(job), "job_type": "document_pipeline",
         "error": "Không đọc được tệp PDF này",
     }]
 
 
 def test_a_failed_generation_stays_on_its_document_after_a_reload(lecturer):
     doc = _document(lecturer["course"], filename="giao-trinh.pdf")
-    section = _section(doc, "Chương 3: Kế thừa")
-    job = _job(doc, JobType.module_generation, JobStatus.failed, section_id=section, error="Gateway hết hạn mức")
+    job = _job(doc, JobType.module_generation, JobStatus.failed, error="Gateway hết hạn mức")
 
     first = _listed(lecturer)["giao-trinh.pdf"]
     reloaded = _listed(lecturer)["giao-trinh.pdf"]
@@ -97,7 +87,6 @@ def test_a_failed_generation_stays_on_its_document_after_a_reload(lecturer):
     assert first["status"] == "embedded" and first["module_count"] == 0  # no module, and no trace but the job
     assert first["failures"] == reloaded["failures"]
     assert first["failures"][0]["job_id"] == str(job)
-    assert first["failures"][0]["section_title"] == "Chương 3: Kế thừa"
     assert first["failures"][0]["error"] == "Gateway hết hạn mức"
 
 
@@ -118,10 +107,9 @@ def test_only_failed_jobs_show_and_a_document_without_failures_has_an_empty_list
 
 def test_a_failure_that_was_generated_again_is_not_shown(lecturer):
     doc = _document(lecturer["course"], filename="again.pdf")
-    section = _section(doc)
-    _job(doc, JobType.module_generation, JobStatus.failed, section_id=section,
+    _job(doc, JobType.module_generation, JobStatus.failed,
          created_at=datetime.now(UTC) - timedelta(hours=1))
-    _job(doc, JobType.module_generation, JobStatus.running, section_id=section)
+    _job(doc, JobType.module_generation, JobStatus.running)
 
     assert _listed(lecturer)["again.pdf"]["failures"] == []
 
@@ -201,10 +189,9 @@ def test_something_that_is_not_failed_cannot_be_retried(lecturer):
 
 def test_a_failure_that_was_generated_again_cannot_be_retried_into_a_duplicate(lecturer):
     doc = _document(lecturer["course"])
-    section = _section(doc)
-    old = _job(doc, JobType.module_generation, JobStatus.failed, section_id=section,
+    old = _job(doc, JobType.module_generation, JobStatus.failed,
                created_at=datetime.now(UTC) - timedelta(hours=1))
-    _job(doc, JobType.module_generation, JobStatus.queued, section_id=section)
+    _job(doc, JobType.module_generation, JobStatus.queued)
 
     assert client.post(f"/jobs/{old}/retry", headers=lecturer["headers"]).status_code == 409
 

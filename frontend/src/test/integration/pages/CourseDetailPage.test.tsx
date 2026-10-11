@@ -36,8 +36,8 @@ const sampleDocument: DocumentInfo = {
   created_at: '2026-01-01T00:00:00Z',
   module_count: 0,
   generating: false,
-  kind: 'lecture',
-  section_count: 0,
+
+
   failures: [],
 }
 
@@ -56,7 +56,6 @@ function renderPage() {
 beforeEach(() => {
   vi.clearAllMocks()
   vi.mocked(api.listDocuments).mockResolvedValue([])
-  vi.mocked(api.listSections).mockResolvedValue([])
   // Ô chọn model gọi API này ngay khi trang mở, như listDocuments ở trên.
   vi.mocked(api.listModels).mockResolvedValue({ models: [], default: null })
 })
@@ -447,8 +446,7 @@ describe('CourseDetailPage - module generation availability', () => {
     learning_objective: null,
     bloom_level: null,
     is_control: false, component_count: 6,
-    section_id: null,
-  }
+    }
 
   beforeEach(() => {
     vi.mocked(api.listCourses).mockResolvedValue([unlinkedCourse])
@@ -559,96 +557,10 @@ describe('CourseDetailPage - module generation availability', () => {
   })
 })
 
-describe('CourseDetailPage - textbooks', () => {
-  const textbook: DocumentInfo = { ...sampleDocument, id: 'book-1', filename: 'dsa.pdf', kind: 'textbook', section_count: 3 }
-
-  function uploadInput() {
-    return document.querySelector('input[type="file"]') as HTMLInputElement
-  }
-
-  beforeEach(() => {
-    vi.mocked(api.listCourses).mockResolvedValue([unlinkedCourse])
-  })
-
-  it('uploads with the default kind and offers no kind select', async () => {
-    vi.mocked(api.listDocuments).mockResolvedValue([])
-    vi.mocked(api.uploadDocument).mockResolvedValue({ id: 'doc-2', status: 'uploaded', job_id: 'job-1' })
-    renderPage()
-    await waitFor(() => expect(uploadInput()).toBeEnabled())
-    expect(screen.queryByLabelText(/loại tài liệu/i)).not.toBeInTheDocument()
-    await userEvent.upload(uploadInput(), new File(['x'], 'dsa.pdf', { type: 'application/pdf' }))
-    await waitFor(() => expect(api.uploadDocument).toHaveBeenCalledWith('course-1', expect.any(File)))
-  })
-
-  it('offers the outline instead of whole-document generation for a textbook with sections', async () => {
-    vi.mocked(api.listDocuments).mockResolvedValue([textbook])
-
-    renderPage()
-
-    expect(await screen.findByRole('button', { name: /mục lục \(3\)/i })).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: /\+ sinh mô-đun/i })).not.toBeInTheDocument()
-  })
-
-  it('opens and closes the outline tree when the teacher asks for it', async () => {
-    vi.mocked(api.listDocuments).mockResolvedValue([textbook])
-    vi.mocked(api.listSections).mockResolvedValue([
-      { id: 's1', parent_id: null, title: 'Sorting', level: 1, page_start: 1, page_end: 9, module_count: 0, generating: false },
-    ])
-
-    renderPage()
-    await userEvent.click(await screen.findByRole('button', { name: /mục lục \(3\)/i }))
-
-    expect(await screen.findByRole('checkbox', { name: /Sorting/ })).toBeInTheDocument()
-    expect(api.listSections).toHaveBeenCalledWith('book-1')
-
-    await userEvent.click(screen.getByRole('button', { name: /ẩn mục lục/i }))
-
-    expect(screen.queryByRole('checkbox', { name: /Sorting/ })).not.toBeInTheDocument()
-  })
-
-  it('does not list a module twice while the outline shows it under its section', async () => {
-    vi.mocked(api.listDocuments).mockResolvedValue([textbook])
-    vi.mocked(api.listModules).mockResolvedValue([
-      { id: 'm1', title: 'Merge sort', learning_objective: null, bloom_level: null, is_control: true, component_count: 6, section_id: 's1' },
-    ])
-    vi.mocked(api.listSections).mockResolvedValue([
-      { id: 's1', parent_id: null, title: 'Sorting', level: 1, page_start: 1, page_end: 9, module_count: 1, generating: false },
-    ])
-
-    renderPage()
-    expect(await screen.findAllByRole('link', { name: /Merge sort/ })).toHaveLength(1)
-    expect(screen.getByText('Đối chứng (không RAG) - chỉ dùng cho nghiên cứu')).toBeInTheDocument()
-
-    await userEvent.click(screen.getByRole('button', { name: /mục lục \(3\)/i }))
-
-    await screen.findByRole('checkbox', { name: /Sorting/ })
-    expect(screen.getAllByRole('link', { name: /Merge sort/ })).toHaveLength(1)
-  })
-
-  it('explains when no outline could be detected and keeps whole-document generation', async () => {
-    vi.mocked(api.listDocuments).mockResolvedValue([{ ...textbook, section_count: 0 }])
-
-    renderPage()
-
-    expect(await screen.findByText(/không nhận diện được mục lục/i)).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /\+ sinh mô-đun/i })).toBeEnabled()
-  })
-
-  it('leaves a lecture exactly as before', async () => {
-    vi.mocked(api.listDocuments).mockResolvedValue([sampleDocument])
-
-    renderPage()
-
-    expect(await screen.findByRole('button', { name: /\+ sinh mô-đun/i })).toBeEnabled()
-    expect(screen.queryByRole('button', { name: /mục lục/i })).not.toBeInTheDocument()
-    expect(screen.queryByText(/không nhận diện được mục lục/i)).not.toBeInTheDocument()
-  })
-})
-
 describe('CourseDetailPage - delete module', () => {
   const module: ModuleSummary = {
     id: 'module-1', title: 'Giới thiệu AI', learning_objective: null, bloom_level: null,
-    component_count: 6, section_id: null, is_control: false,
+    component_count: 6, is_control: false,
   }
 
   beforeEach(() => {
@@ -722,7 +634,7 @@ describe('CourseDetailPage - filter the documents by status', () => {
     ...sampleDocument, id, filename, status, failures,
   })
   const generationFailure = {
-    job_id: 'job-g', job_type: 'module_generation' as const, section_id: null, section_title: null, error: 'quota',
+    job_id: 'job-g', job_type: 'module_generation' as const, error: 'quota',
   }
 
   beforeEach(() => {
@@ -799,12 +711,10 @@ describe('CourseDetailPage - filter the documents by status', () => {
 
 describe('CourseDetailPage - failed work and retry', () => {
   const pipelineFailure = {
-    job_id: 'job-p', job_type: 'document_pipeline' as const, section_id: null, section_title: null,
-    error: 'Không đọc được tệp PDF',
+    job_id: 'job-p', job_type: 'document_pipeline' as const, error: 'Không đọc được tệp PDF',
   }
-  const sectionFailure = {
-    job_id: 'job-s', job_type: 'module_generation' as const, section_id: 'sec-1', section_title: 'Chương 2',
-    error: 'Hết hạn mức',
+  const generationFailure = {
+    job_id: 'job-s', job_type: 'module_generation' as const, error: 'Hết hạn mức',
   }
 
   beforeEach(() => {
@@ -823,20 +733,20 @@ describe('CourseDetailPage - failed work and retry', () => {
   })
 
   it('keeps a failed generation visible on its document after a reload', async () => {
-    vi.mocked(api.listDocuments).mockResolvedValue([{ ...sampleDocument, failures: [sectionFailure] }])
+    vi.mocked(api.listDocuments).mockResolvedValue([{ ...sampleDocument, failures: [generationFailure] }])
 
     const first = renderPage()
-    expect(await screen.findByText('Sinh mô-đun cho mục "Chương 2" thất bại')).toBeInTheDocument()
+    expect(await screen.findByText('Sinh mô-đun thất bại')).toBeInTheDocument()
     expect(screen.getByText('Hết hạn mức')).toBeInTheDocument()
     first.unmount()
 
     renderPage()
-    expect(await screen.findByText('Sinh mô-đun cho mục "Chương 2" thất bại')).toBeInTheDocument()
+    expect(await screen.findByText('Sinh mô-đun thất bại')).toBeInTheDocument()
   })
 
   it('retries the failed job from the lecturer screen and reloads the list', async () => {
     vi.mocked(api.listDocuments)
-      .mockResolvedValueOnce([{ ...sampleDocument, failures: [sectionFailure] }])
+      .mockResolvedValueOnce([{ ...sampleDocument, failures: [generationFailure] }])
       .mockResolvedValue([{ ...sampleDocument, generating: true, failures: [] }])
     vi.mocked(api.retryJob).mockResolvedValue({ id: 'job-s', status: 'queued' })
 
@@ -851,7 +761,7 @@ describe('CourseDetailPage - failed work and retry', () => {
 
   it('says the retry was sent, and only the reload failed, when the list cannot be reloaded afterwards', async () => {
     vi.mocked(api.listDocuments)
-      .mockResolvedValueOnce([{ ...sampleDocument, failures: [sectionFailure] }])
+      .mockResolvedValueOnce([{ ...sampleDocument, failures: [generationFailure] }])
       .mockRejectedValueOnce(new Error('network down'))
     vi.mocked(api.retryJob).mockResolvedValue({ id: 'job-s', status: 'queued' })
 
@@ -864,7 +774,7 @@ describe('CourseDetailPage - failed work and retry', () => {
   })
 
   it('says why a retry was refused and keeps the failure on screen', async () => {
-    vi.mocked(api.listDocuments).mockResolvedValue([{ ...sampleDocument, failures: [sectionFailure] }])
+    vi.mocked(api.listDocuments).mockResolvedValue([{ ...sampleDocument, failures: [generationFailure] }])
     vi.mocked(api.retryJob).mockRejectedValue(new Error('boom'))
 
     renderPage()
@@ -877,7 +787,7 @@ describe('CourseDetailPage - failed work and retry', () => {
   it('does not raise a transient banner for a failed generation: the failure lives on the document', async () => {
     vi.mocked(api.listDocuments)
       .mockResolvedValueOnce([sampleDocument])
-      .mockResolvedValue([{ ...sampleDocument, failures: [{ ...sectionFailure, section_id: null, section_title: null }] }])
+      .mockResolvedValue([{ ...sampleDocument, failures: [generationFailure] }])
     vi.mocked(api.generateModule).mockResolvedValue({ job_id: 'job-1', status: 'queued' })
     vi.mocked(api.pollJobStatus).mockResolvedValue({
       id: 'job-1', step: 'generate', status: 'failed', attempts: 5, last_error: 'Hết hạn mức',

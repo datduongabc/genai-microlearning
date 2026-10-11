@@ -115,3 +115,25 @@ def test_kiem_dinh_so_adaptive_k_voi_hybrid_lay_co_dinh_tam_chunk():
 def test_doc_thoi_gian_cho_tu_loi_tu_choi_cua_groq():
     assert _giay_phai_cho("Please try again in 1m2.5s. Need more tokens?") == pytest.approx(63.5)
     assert _giay_phai_cho("Please try again in 7.2s.") == pytest.approx(8.2)
+
+
+def test_partial_run_drops_old_subjects_from_aggregate(tmp_path, monkeypatch):
+    """A rerun of one subject must not carry excluded historical subjects into the report."""
+    import json
+    from types import SimpleNamespace
+
+    import benchmark_rerank as benchmark
+
+    monkeypatch.setattr(benchmark, 'THU_MUC_KET_QUA', tmp_path)
+    (tmp_path / benchmark.TEP_TRUY_VAN).write_text('[]')
+    old = [
+        {'course': course, 'thu_hang': {name: rank for name in benchmark.CAU_HINH}}
+        for course, rank in [('web-programming', 1), ('advanced-programming', None), ('chemistry1', None)]
+    ]
+    (tmp_path / benchmark.TEP_THU_HANG).write_text(json.dumps(old))
+    db = SimpleNamespace(query=lambda model: SimpleNamespace(all=list))
+    benchmark.danh_gia(db, ['dsa'])
+    result = json.loads((tmp_path / benchmark.TEP_KET_QUA).read_text())
+    assert result['dense']['chung']['recall@1'] == 1
+    assert set(result['dense']['tung_mon']) == {'web-programming'}
+    assert {row['course'] for row in json.loads((tmp_path / benchmark.TEP_THU_HANG).read_text())} == {'web-programming'}

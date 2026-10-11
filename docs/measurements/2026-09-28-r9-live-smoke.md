@@ -1,5 +1,7 @@
 # R9 live smoke trên Docker, 2026-09-28
 
+> Bằng chứng lịch sử: từ migration `0021_remove_textbook_scope`, hệ thống không còn xử lý giáo trình hoặc sinh theo mục. Gói đối chiếu mới dùng toàn tài liệu; các module thử sinh theo mục trong báo cáo này không còn tái lập được phạm vi cũ.
+
 Chạy mã của nhánh R9 trong `/tmp/r9-live` của container `do-an-backend`, kết nối stack Docker đang chạy. Không thay image backend hoặc volume. Module RAG đã có: `811cb907-ab7f-471d-986c-1c8fcb095f5a` (HEURISTIC FUNCTION). Job đối chứng không RAG `77f0e322-ea8e-4459-a449-ece3d9149110` sinh bằng `gemini-fast` qua hàng đợi chuẩn, tạo module `fccde642-8c88-45a4-831d-accc7c3d3889`. Probe một token của `gemini-fast` và `groq-fast` đều thành công. Hai gói xuất ra cùng bộ đối chiếu `complete` gồm 13/13 chunk của toàn tài liệu, vì module không có `section_id` và tài liệu nằm trong giới hạn 64 chunk, 120.000 ký tự.
 
 Lệnh chính trong container (với `DATABASE_URL` nhận từ `APP_WORKER_DATABASE_URL` chỉ cho bước xuất):

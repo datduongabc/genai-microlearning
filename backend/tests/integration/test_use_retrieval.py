@@ -32,7 +32,6 @@ from app.models import (
     Chunk,
     Course,
     Document,
-    DocumentSection,
     DocumentStatus,
     Evaluation,
     Job,
@@ -196,7 +195,7 @@ def test_the_control_takes_the_title_objective_and_section_of_its_paired_module(
     db = SessionLocal()
     try:
         rag, control = db.get(Module, rag_id), db.get(Module, control_id)
-        for field in ("document_id", "section_id", "title", "learning_objective", "bloom_level", "sub_objectives"):
+        for field in ("document_id", "title", "learning_objective", "bloom_level", "sub_objectives"):
             assert getattr(rag, field) == getattr(control, field)
     finally:
         db.close()
@@ -359,7 +358,6 @@ def test_a_no_rag_job_is_queued_with_the_paired_module_model_and_self_check(api)
         "self_check": False, "output_language": "vi", "model_alias": "groq-pro", "use_retrieval": False,
         "paired_module_id": str(api["module"]),
     }
-    assert job.section_id is None
 
 
 def test_an_explicit_self_check_overrides_the_paired_one(api):
@@ -369,23 +367,6 @@ def test_an_explicit_self_check_overrides_the_paired_one(api):
     assert _no_rag_job(api).payload["self_check"] is True
 
 
-def test_a_no_rag_job_follows_the_section_of_its_paired_module(api):
-    db = SessionLocal()
-    try:
-        section = DocumentSection(document_id=api["doc"], title="Mục 1", level=1, position=0,
-                                  first_chunk_index=0, last_chunk_index=2)
-        db.add(section)
-        db.flush()
-        db.get(Module, api["module"]).section_id = section.id
-        db.commit()
-        section_id = section.id
-    finally:
-        db.close()
-
-    response = _post(api, {"use_retrieval": False, "paired_module_id": str(api["module"])})
-
-    assert response.status_code == 200, response.text
-    assert _no_rag_job(api).section_id == section_id
 
 
 @pytest.mark.parametrize("body", [

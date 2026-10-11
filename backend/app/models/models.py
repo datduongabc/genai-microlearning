@@ -4,7 +4,6 @@ from datetime import date, datetime
 
 from pgvector.sqlalchemy import Vector
 from sqlalchemy import (
-    CheckConstraint,
     Date,
     DateTime,
     Enum,
@@ -32,11 +31,6 @@ class DocumentStatus(str, enum.Enum):
     chunked = "chunked"
     embedded = "embedded"
     failed = "failed"
-
-
-class DocumentKind(str, enum.Enum):
-    lecture = "lecture"
-    textbook = "textbook"
 
 
 class ChatRole(str, enum.Enum):
@@ -134,13 +128,6 @@ class Document(Base):
     status: Mapped[DocumentStatus] = mapped_column(
         Enum(DocumentStatus), default=DocumentStatus.uploaded
     )
-    # The upload UI no longer asks and always sends lecture; textbook-specific
-    # processing is deferred. Only a textbook gets an outline detected and
-    # offered for picking sections. Slides and short notes keep working on
-    # the whole document.
-    kind: Mapped[DocumentKind] = mapped_column(
-        Enum(DocumentKind), default=DocumentKind.lecture, server_default=DocumentKind.lecture.value
-    )
     raw_text: Mapped[str | None] = mapped_column(Text, nullable=True)
     # Cache cua run_planner() -- kien truc da ghi ro "1 lenh goi/tai lieu"
     # nhung implementation truoc day goi lai MOI LAN /modules/generate duoc
@@ -210,41 +197,6 @@ class Chunk(Base):
     document: Mapped["Document"] = relationship(back_populates="chunks")
 
 
-class DocumentSection(Base):
-    """One chapter or section of a textbook, with the run of chunks it covers.
-
-    A section is a row (not JSON on documents) so modules and jobs can point at
-    it, the database can enforce that they belong to the same document, and the
-    UI can show per-section state.
-    """
-
-    __tablename__ = "document_sections"
-    __table_args__ = (
-        # Target of the composite FKs on modules and jobs.
-        UniqueConstraint("id", "document_id", name="uq_document_sections_id_document_id"),
-        UniqueConstraint("document_id", "position", name="uq_document_sections_document_id_position"),
-        CheckConstraint("level BETWEEN 1 AND 3", name="ck_document_sections_level"),
-        CheckConstraint("first_chunk_index <= last_chunk_index", name="ck_document_sections_chunk_range"),
-    )
-
-    id: Mapped[uuid.UUID] = uuid_pk()
-    document_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("documents.id", ondelete="CASCADE"))
-    parent_id: Mapped[uuid.UUID | None] = mapped_column(
-        ForeignKey("document_sections.id", ondelete="CASCADE"), nullable=True, index=True
-    )
-    title: Mapped[str]
-    level: Mapped[int]
-    position: Mapped[int]
-    page_start: Mapped[int | None] = mapped_column(nullable=True)
-    page_end: Mapped[int | None] = mapped_column(nullable=True)
-    first_chunk_index: Mapped[int]
-    last_chunk_index: Mapped[int]
-    # Same reason as documents.planner_concepts: the Planner must give the same
-    # concepts every time for the same section.
-    planner_concepts: Mapped[list | None] = mapped_column(JSONB, nullable=True)
-    created_at: Mapped[datetime] = created_at_column()
-
-
 class Module(Base):
     __tablename__ = "modules"
     # Same guarantee as Chunk: course_id must match the document's course.
@@ -253,12 +205,6 @@ class Module(Base):
             ["document_id", "course_id"],
             ["documents.id", "documents.course_id"],
             name="modules_document_course_fkey",
-            ondelete="CASCADE",
-        ),
-        ForeignKeyConstraint(
-            ["section_id", "document_id"],
-            ["document_sections.id", "document_sections.document_id"],
-            name="modules_section_document_fkey",
             ondelete="CASCADE",
         ),
     )
@@ -271,9 +217,6 @@ class Module(Base):
     # a read-path optimization, it's load-bearing for every RLS-checked query
     # against this table under the restricted app_runtime role.
     course_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("courses.id", ondelete="CASCADE"), index=True)
-    # NULL means the module was generated from the whole document. The composite
-    # FK above keeps a module from pointing at a section of another document.
-    section_id: Mapped[uuid.UUID | None] = mapped_column(nullable=True, index=True)
     title: Mapped[str]
     learning_objective: Mapped[str | None] = mapped_column(Text, nullable=True)
     bloom_level: Mapped[str | None] = mapped_column(nullable=True)
@@ -408,12 +351,6 @@ class Job(Base):
     __tablename__ = "jobs"
     __table_args__ = (
         Index("ix_jobs_status_run_after", "status", "run_after"),
-        ForeignKeyConstraint(
-            ["section_id", "document_id"],
-            ["document_sections.id", "document_sections.document_id"],
-            name="jobs_section_document_fkey",
-            ondelete="CASCADE",
-        ),
     )
 
     id: Mapped[uuid.UUID] = uuid_pk()
@@ -425,8 +362,6 @@ class Job(Base):
     document_id: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey("documents.id", ondelete="CASCADE"), nullable=True, index=True
     )
-    # The section a module_generation job works on; NULL for whole-document jobs.
-    section_id: Mapped[uuid.UUID | None] = mapped_column(nullable=True, index=True)
     # Chỉ có giá trị từ sau khi step tạo Module xong (module_generation) --
     # NULL trước đó, không phải lỗi.
     module_id: Mapped[uuid.UUID | None] = mapped_column(

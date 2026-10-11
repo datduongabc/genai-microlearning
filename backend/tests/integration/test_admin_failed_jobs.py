@@ -13,7 +13,6 @@ from app.main import app
 from app.models import (
     Course,
     Document,
-    DocumentSection,
     DocumentStatus,
     Job,
     JobStatus,
@@ -35,7 +34,7 @@ def _lecturer() -> uuid.UUID:
     return make_account(f"jobs-{uuid.uuid4().hex[:10]}@example.com").id
 
 
-def _failed(owner_id, job_type=JobType.document_pipeline, *, error="boom", status=JobStatus.failed, section=False,
+def _failed(owner_id, job_type=JobType.document_pipeline, *, error="boom", status=JobStatus.failed,
             created_at=None, document=None):
     """A document of `owner_id` with one job. Returns (job id, document id)."""
     with SessionLocal() as db:
@@ -53,19 +52,8 @@ def _failed(owner_id, job_type=JobType.document_pipeline, *, error="boom", statu
             document_id = document.id
         else:
             document_id = document
-        section_id = None
-        if section:
-            row = db.query(DocumentSection).filter(DocumentSection.document_id == document_id).first()
-            if row is None:
-                row = DocumentSection(
-                    document_id=document_id, title="Chương 1", level=1, position=0,
-                    first_chunk_index=0, last_chunk_index=0,
-                )
-                db.add(row)
-                db.flush()
-            section_id = row.id
         job = Job(
-            job_type=job_type, document_id=document_id, section_id=section_id,
+            job_type=job_type, document_id=document_id,
             step="extract" if job_type == JobType.document_pipeline else "generate",
             status=status, attempts=5, max_attempts=5, last_error=error,
             payload={"units": ["SECRET PAYLOAD"]},
@@ -130,27 +118,11 @@ def test_filters_by_job_type(admin):
 
 def test_a_failure_that_was_generated_again_is_no_longer_listed(admin):
     owner = _lecturer()
-    old, document = _failed(owner, JobType.module_generation, section=True, created_at=datetime.now(UTC) - timedelta(hours=1))
-    newer, _ = _failed(owner, JobType.module_generation, section=True, status=JobStatus.running, document=document)
-    # A failure of another section of the same document is a separate thing.
-    with SessionLocal() as db:
-        other_section = DocumentSection(
-            document_id=document, title="Chương 2", level=1, position=1, first_chunk_index=0, last_chunk_index=0
-        )
-        db.add(other_section)
-        db.flush()
-        other_failure = Job(
-            job_type=JobType.module_generation, document_id=document, section_id=other_section.id, step="generate",
-            status=JobStatus.failed, last_error="other section",
-        )
-        db.add(other_failure)
-        db.commit()
-        other_id = other_failure.id
-
+    old, document = _failed(owner, JobType.module_generation, created_at=datetime.now(UTC) - timedelta(hours=1))
+    newer, _ = _failed(owner, JobType.module_generation, status=JobStatus.running, document=document)
     jobs = _failed_ids(admin)
 
     assert str(old) not in jobs and str(newer) not in jobs
-    assert str(other_id) in jobs
 
 
 def test_retry_puts_the_picked_jobs_back_in_the_queue_from_where_they_stopped(admin):
@@ -194,8 +166,8 @@ def test_retry_skips_what_is_not_failed_or_does_not_exist_and_retries_the_rest(a
 
 def test_retry_does_not_touch_a_failure_its_lecturer_already_generated_again(admin):
     owner = _lecturer()
-    old, document = _failed(owner, JobType.module_generation, section=True, created_at=datetime.now(UTC) - timedelta(hours=1))
-    _failed(owner, JobType.module_generation, section=True, status=JobStatus.queued, document=document)
+    old, document = _failed(owner, JobType.module_generation, created_at=datetime.now(UTC) - timedelta(hours=1))
+    _failed(owner, JobType.module_generation, status=JobStatus.queued, document=document)
 
     response = client.post("/admin/jobs/retry", json={"job_ids": [str(old)]}, headers=admin)
 

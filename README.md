@@ -6,6 +6,10 @@ Sinh viên: Dương Nguyễn Tấn Đạt, ngành Khoa học Máy tính.
 Hệ thống nhận tài liệu môn học của giảng viên (PDF, PowerPoint, HTML, video), truy xuất bằng RAG, rồi sinh mô-đun Microlearning gồm bảy thành phần: Learning Objective, Content, Slides, Example, Practice, Quiz, Explanation.
 Mô-đun sau đó được xuất bản sang Moodle cho học viên học.
 
+Mọi tài liệu được xử lý như bài giảng thông thường: không chọn loại giáo trình, không phát hiện mục lục và không sinh theo chương/mục. Đợt đánh giá chỉ dùng bốn thư mục trong `docs/documents`: `dsa`, `operating-system`, `program-fundamentals`, `web-programming`.
+
+Model sinh cho đợt đánh giá được chọn tường minh: `claude-fast` (Claude Haiku 5.5) hoặc `openai-fast` (GPT-6 Luna); một tập nhỏ dùng `claude-pro` (Claude Sonnet 5.5) hoặc `openai-pro` (GPT-6.1 Sol). Bật `LLM_EXPERIMENT_MODE=true` để ghim model; model trả phí không nằm trong chuỗi fallback. Embedding giữ `embed-default`, Qwen3-Embedding-0.6B chạy tại chỗ. Xem [gateway routing](docs/gateway-routing.md).
+
 Khi bộ đọc nhận diện tài liệu hỏng hoặc sai định dạng, job báo lỗi ngay ở lần xử lý đầu và không tự thử lại; PDF có mật khẩu cần bỏ mật khẩu rồi tải lại. Lỗi tạm thời khi gọi gateway vẫn được tự thử lại với thời gian chờ tăng dần.
 
 Ứng dụng mở cho mọi người dùng; admin quản lý tài khoản và theo dõi lỗi. Quyền làm giáo viên trong Moodle được quản lý theo từng môn học trên Moodle.

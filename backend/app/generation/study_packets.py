@@ -34,7 +34,7 @@ from app.generation.module_generation_pipeline import (
     run_module_generation,
 )
 from app.llm.gateway import experiment_mode, using_model
-from app.models import Chunk, ComponentType, DocumentSection, Job, JobStatus, JobType, Module
+from app.models import Chunk, ComponentType, Job, JobStatus, JobType, Module
 from app.retrieval.search import ChunkScope, retrieve
 
 # Cùng số đoạn tối thiểu mà pipeline RAG lấy khi đặt Learning Objective.
@@ -58,30 +58,15 @@ class StudyFile(BaseModel):
 
 
 def reference_chunks(db: Session, module: Module) -> list[str]:
-    section = db.get(DocumentSection, module.section_id) if module.section_id else None
-    all_chunks = reference_scope_chunks(db, module, section)
+    all_chunks = reference_scope_chunks(db, module)
     if small_reference(all_chunks):
         return [c.content for c in all_chunks]
-    scope = (
-        ChunkScope(module.document_id, section.first_chunk_index, section.last_chunk_index)
-        if section else ChunkScope(module.document_id)
-    )
-    chunks = retrieve(db, module.course_id, concept_query_of(module, section), top_k=None, min_k=REFERENCE_MIN_K, scope=scope)
+    scope = ChunkScope(module.document_id)
+    chunks = retrieve(db, module.course_id, concept_query_of(module), top_k=None, min_k=REFERENCE_MIN_K, scope=scope)
     return [c.content for c in chunks]
 
 
-def section_chunks(db: Session, module: Module, section: DocumentSection) -> list[Chunk]:
-    return db.query(Chunk).filter(
-        Chunk.document_id == module.document_id, Chunk.course_id == module.course_id,
-        Chunk.chunk_index >= section.first_chunk_index, Chunk.chunk_index <= section.last_chunk_index,
-    ).order_by(Chunk.chunk_index).all()
-
-
-def reference_scope_chunks(db: Session, module: Module, section: DocumentSection | None) -> list[Chunk]:
-    if section:
-        return section_chunks(db, module, section)
-    if module.section_id is not None:
-        return []
+def reference_scope_chunks(db: Session, module: Module) -> list[Chunk]:
     return db.query(Chunk).filter(
         Chunk.document_id == module.document_id, Chunk.course_id == module.course_id,
     ).order_by(Chunk.chunk_index).all()
@@ -99,13 +84,12 @@ def study_evidence(db: Session, module: Module, sources: list[str]) -> tuple[Ref
     Repeated locators are ambiguous: never choose an arbitrary chunk or a supporting neighbour.
     Legacy Content without claim_citations stays missing, distinct from a recorded empty list.
     """
-    section = db.get(DocumentSection, module.section_id) if module.section_id else None
-    chunks = reference_scope_chunks(db, module, section)
+    chunks = reference_scope_chunks(db, module)
     complete = small_reference(chunks) and sources == [c.content for c in chunks]
     reference = ReferenceEvidence(
-        coverage="complete" if complete else "partial" if section else "unknown",
+        coverage="complete" if complete else "unknown",
         chunk_ids=[str(c.id) for c in chunks] if complete else [],
-        total_chunks=len(chunks) if complete or section else None,
+        total_chunks=len(chunks) if complete else None,
     )
     return reference, resolved_citations(db, module, use_ai_original=True)
 
@@ -214,15 +198,14 @@ def _control_of(db: Session, module: Module, model_alias: str | None, self_check
     existing = matching_control(db, module.id, payload)
     if existing is not None:
         return existing
-    section = db.get(DocumentSection, module.section_id) if module.section_id else None
     with experiment_mode(), using_model(model_alias):
         control = run_module_generation(
-            db, module.document, section, self_check=self_check, use_retrieval=False, paired_module=module,
+            db, module.document, self_check=self_check, use_retrieval=False, paired_module=module,
             output_language=output_language, custom_instructions=custom_instructions,
         )
     db.add(Job(
         job_type=JobType.module_generation, step="generate", status=JobStatus.done, document_id=control.document_id,
-        section_id=control.section_id, module_id=control.id, payload=payload,
+        module_id=control.id, payload=payload,
     ))
     db.commit()
     return control

@@ -20,21 +20,19 @@ from app.generation.content import generate_content
 from app.generation.example import generate_example
 from app.generation.inline_citations import MARKER
 from app.generation.objective import LearningObjective, generate_learning_objective
-from app.generation.planner import PLANNER_MAX_INPUT_CHARS, Concept, PlannerOutput, run_planner
+from app.generation.planner import Concept, PlannerOutput, run_planner
 from app.generation.quiz_graph import (
     LENGTH_TELL_FEEDBACK,
     generate_quiz_question,
     question_to_rebalance,
 )
 from app.generation.relevance import CorrectiveResult, corrective_retrieve
-from app.generation.scope_digest import build_scope_digest
 from app.generation.slides import generate_slides
 from app.llm.gateway import capture_models, recorded_models, requested_model, using_model
 from app.models import (
     Chunk,
     ComponentType,
     Document,
-    DocumentSection,
     Evaluation,
     Job,
     JobStatus,
@@ -48,7 +46,7 @@ from app.retrieval.search import retrieve_for_generation as retrieve
 
 
 def _get_or_cache_planner(
-    db: Session, doc: Document, section: DocumentSection | None = None,
+    db: Session, doc: Document,
     output_language: OutputLanguage = "vi", custom_instructions: str = "",
 ) -> PlannerOutput:
     """run_planner() tu nhan thiet ke "1 lenh goi/tai lieu" nhung truoc day
@@ -56,36 +54,18 @@ def _get_or_cache_planner(
     that gay dao dong bloom_level giua cac lan sinh (xac nhan qua bai test
     lap lai 18 tai lieu that: 3/17 doi ket qua). Cache 1 lan, tai su dung
     moi lan sau.
-
-    Voi 1 muc cua giao trinh, cache nam tren chinh muc do (moi muc la 1 nguon
-    khac nhau) va Planner doc ban tom luoc trai deu ca muc, khong phai 8000
-    ky tu dau cua ca cuon sach."""
-    holder = section if section is not None else doc
+    """
     if (
-        holder.planner_concepts
-        and holder.planner_concepts[0].get("output_language") == output_language
-        and holder.planner_concepts[0].get("custom_instructions", "") == custom_instructions
+        doc.planner_concepts
+        and doc.planner_concepts[0].get("output_language") == output_language
+        and doc.planner_concepts[0].get("custom_instructions", "") == custom_instructions
     ):
-        return PlannerOutput(concepts=[Concept(**c) for c in holder.planner_concepts])
-
-    if section is None:
-        source_text = doc.raw_text
-    else:
-        chunk_texts = [
-            text
-            for (text,) in db.query(Chunk.content)
-            .filter(
-                Chunk.document_id == doc.id,
-                Chunk.chunk_index.between(section.first_chunk_index, section.last_chunk_index),
-            )
-            .order_by(Chunk.chunk_index)
-        ]
-        source_text = build_scope_digest(chunk_texts, PLANNER_MAX_INPUT_CHARS)
+        return PlannerOutput(concepts=[Concept(**c) for c in doc.planner_concepts])
 
     # Do not retain the source reads while waiting on the planner.
     db.commit()
-    planner_out = run_planner(source_text, output_language=output_language, custom_instructions=custom_instructions)
-    holder.planner_concepts = [
+    planner_out = run_planner(doc.raw_text, output_language=output_language, custom_instructions=custom_instructions)
+    doc.planner_concepts = [
         {**c.model_dump(), "output_language": output_language, "custom_instructions": custom_instructions.strip()} for c in planner_out.concepts
     ]
     db.commit()
@@ -112,11 +92,10 @@ def learning_objective_of(module: Module) -> LearningObjective:
     )
 
 
-def concept_query_of(module: Module, section: DocumentSection | None) -> str:
+def concept_query_of(module: Module) -> str:
     """Câu truy vấn pipeline RAG đã dùng cho module: "tên khái niệm: tóm tắt" của Planner. Không tìm
     lại được khái niệm (Planner đã chạy lại, đổi tên) thì dùng tên module cùng Learning Objective."""
-    holder = section if section is not None else module.document
-    for concept in holder.planner_concepts or []:
+    for concept in module.document.planner_concepts or []:
         if concept.get("name") == module.title:
             return f"{concept['name']}: {concept['summary']}"
     return f"{module.title}: {module.learning_objective or ''}"
@@ -333,7 +312,7 @@ def _retrieve_for_content(
 
 @capture_models()
 def run_module_generation(
-    db: Session, doc: Document, section: DocumentSection | None = None,
+    db: Session, doc: Document,
     self_check: bool = True, use_retrieval: bool = True, paired_module: Module | None = None,
     output_language: OutputLanguage = "vi", custom_instructions: str = "",
 ) -> Module:
@@ -342,14 +321,14 @@ def run_module_generation(
     expire_on_commit = db.expire_on_commit
     db.expire_on_commit = False
     try:
-        return _generate_module(db, doc, section, self_check, use_retrieval, paired_module,
+        return _generate_module(db, doc, self_check, use_retrieval, paired_module,
                                 output_language, custom_instructions)
     finally:
         db.expire_on_commit = expire_on_commit
 
 
 def _generate_module(
-    db: Session, doc: Document, section: DocumentSection | None = None, self_check: bool = True,
+    db: Session, doc: Document, self_check: bool = True,
     use_retrieval: bool = True, paired_module: Module | None = None,
     output_language: OutputLanguage = "vi", custom_instructions: str = "",
 ) -> Module:
@@ -357,9 +336,6 @@ def _generate_module(
     Explanation. Nguyên logic chuyển từ _run_generate_module() cũ
     (app/api/modules.py) -- chỉ đổi return type (Module object, không phải
     dict HTTP response, vì caller giờ là job executor).
-
-    Với `section` (1 chương/mục của giáo trình), mọi bước đều chỉ thấy các
-    chunk của mục đó thay vì cả tài liệu.
 
     Chỉ Content và từng câu Quiz/Practice có vòng model tự kiểm (sinh lại một lần khi trượt); LO,
     Slides và Example sinh một lượt, ràng buộc còn lại nằm ở schema. `self_check=False` tắt cả hai
@@ -372,14 +348,10 @@ def _generate_module(
     trừ khối SOURCE CHUNK, và câu hỏi (kèm lời giải) đọc Content thay cho đoạn truy hồi. Các bước
     tự kiểm bỏ những tiêu chí cần nguồn để đối chiếu (groundedness)."""
     # Every source must belong to the module's document, where citations resolve.
-    # A chosen section further confines retrieval, parent context and questions.
-    scope = (
-        ChunkScope(doc.id, section.first_chunk_index, section.last_chunk_index)
-        if section is not None else ChunkScope(doc.id)
-    )
+    scope = ChunkScope(doc.id)
     context_chunks = None
     if use_retrieval:
-        planner_out = _get_or_cache_planner(db, doc, section, output_language, custom_instructions)
+        planner_out = _get_or_cache_planner(db, doc, output_language, custom_instructions)
         top_concept = min(planner_out.concepts, key=lambda c: c.priority)
         title = top_concept.name
         query = f"{top_concept.name}: {top_concept.summary}"
@@ -390,10 +362,10 @@ def _generate_module(
     else:
         if paired_module is None:
             raise ValueError("Sinh không RAG cần module RAG đi cặp để lấy Learning Objective.")
-        if paired_module.document_id != doc.id or paired_module.section_id != (section.id if section else None):
-            raise ValueError("Module đi cặp không thuộc đúng tài liệu và mục đang sinh.")
+        if paired_module.document_id != doc.id:
+            raise ValueError("Module đi cặp không thuộc đúng tài liệu đang sinh.")
         title = paired_module.title
-        query = concept_query_of(paired_module, section)
+        query = concept_query_of(paired_module)
         lo = learning_objective_of(paired_module)
 
     db.commit()
@@ -401,7 +373,6 @@ def _generate_module(
     module = Module(
         document_id=doc.id,
         course_id=doc.course_id,
-        section_id=section.id if section is not None else None,
         title=title,
         paired_module_id=paired_module.id if paired_module is not None else None,
         generation_payload=normalize_generation_payload(
@@ -501,12 +472,6 @@ def run_module_generation_step(job: Job) -> None:
         if not doc.raw_text:
             raise ValueError("Document chưa được parse (raw_text rỗng)")
 
-        section = None
-        if current_job.section_id is not None:
-            section = db.get(DocumentSection, current_job.section_id)
-            if section is None:
-                raise ValueError(f"Section {current_job.section_id} not found")
-
         # Model giảng viên đã chọn nằm trong payload, vì request đã trả về từ lâu trước
         # khi worker bắt đầu. Bọc cả lượt sinh một lần ở đây thay vì truyền alias xuống
         # từng hàm: một lượt đi qua mười chỗ gọi LLM rải khắp generation và retrieval.
@@ -522,7 +487,7 @@ def run_module_generation_step(job: Job) -> None:
                 raise ValueError(f"Paired module {paired_id} not found")
         with using_model(current_job.payload.get("model_alias")):
             module = run_module_generation(
-                db, doc, section, self_check=self_check, use_retrieval=use_retrieval, paired_module=paired_module,
+                db, doc, self_check=self_check, use_retrieval=use_retrieval, paired_module=paired_module,
                 output_language=current_job.payload.get("output_language", "vi"),
                 custom_instructions=current_job.payload.get("custom_instructions", ""),
             )

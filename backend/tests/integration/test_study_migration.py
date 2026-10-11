@@ -72,7 +72,8 @@ def test_study_migration_round_trip():
             conn.execute(text("DELETE FROM modules WHERE id=:id"), {"id": rag_id})
             assert conn.scalar(text("SELECT count(*) FROM modules WHERE id=:id"), {"id": control_id}) == 0
         assert set(inspect(engine).get_table_names()) - previous == {"studies", "study_items", "ratings"}
-        # 0020 only adds judge permissions; downgrade preserves blind rating.
+        assert previous - set(inspect(engine).get_table_names()) == {"document_sections"}
+        # Downgrade judge permissions while preserving blind rating.
         migrate("0019_blind_ratings", "downgrade")
         assert "judge_model" not in {c["name"] for c in inspect(engine).get_columns("ratings")}
         with engine.connect() as conn:

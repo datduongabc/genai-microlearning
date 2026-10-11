@@ -76,7 +76,7 @@ Mẫu 20 câu là quá nhỏ để kết luận, nên cần đo lại trên tậ
 
 ### Giữ nguyên
 
-Pipeline xử lý tài liệu: đọc PDF, PPTX, DOCX, HTML, audio và video, chia chunk theo định dạng, nhúng qua gateway, phát hiện chương mục.
+Pipeline xử lý tài liệu: đọc PDF, PPTX, DOCX, HTML, audio và video, chia chunk theo định dạng, nhúng qua gateway. Mọi tài liệu dùng phạm vi bài giảng thông thường; không phát hiện mục lục hoặc sinh theo chương/mục.
 Đây là Nhiệm vụ 2 của đề tài.
 
 Truy xuất: dense cộng BM25 cộng RRF với k bằng 60.
@@ -212,7 +212,7 @@ Hai thứ đã làm thêm so với đoạn trên: giảng viên có một mặc 
 │ api/    auth · courses · documents · modules · moodle      │
 │         jobs · chat │ [MỚI] studies                        │
 ├────────────────────────────────────────────────────────────┤
-│ ingestion/   readers → chunker → embeddings → outline      │
+│ ingestion/   readers → chunker → embeddings                │
 │ retrieval/   dense + BM25 + RRF ( + rerank: chờ đo lại )   │
 │ generation/  planner → LO → content → slides → example     │
 │                     → quiz/practice → explanation          │
@@ -223,7 +223,7 @@ Hai thứ đã làm thêm so với đoạn trên: giảng viên có một mặc 
 │ core/        config · db · llm gateway · job queue         │
 ├────────────────────────────────────────────────────────────┤
 │ Postgres + pgvector, RLS ba vai trò                        │
-│   giữ:  users courses documents chunks document_sections   │
+│   giữ:  users courses documents chunks                     │
 │         modules module_components questions evaluations    │
 │         jobs refresh_tokens moodle_course_claims chat_*    │
 │   MỚI:  studies · study_items · ratings                    │
@@ -378,7 +378,7 @@ Nếu khởi tạo kho và thêm tất cả tệp thì commit đầu tiên sẽ 
 Việc đầu tiên của `chore/git-init` vì vậy là tạo `.gitignore` rồi kiểm tra `git status` trước khi commit.
 
 Hạn mức gói miễn phí của Gemini là 1.000 yêu cầu nhúng mỗi ngày tính theo từng chunk, và 20 yêu cầu sinh mỗi ngày với các mô hình thế hệ mới.
-Hạn mức này đủ cho phát triển hằng ngày nhưng không đủ để nạp một giáo trình lớn hoặc chạy nhiều nhánh thí nghiệm trong cùng một ngày.
+Hạn mức này đủ cho phát triển hằng ngày nhưng không đủ để nạp một tài liệu lớn hoặc chạy nhiều nhánh thí nghiệm trong cùng một ngày.
 Nếu cần chạy nghiên cứu quy mô lớn thì phải bật thanh toán.
 
 Số đo reranker hiện chỉ dựa trên 20 câu hỏi, nên quyết định giữ hay bỏ phải chờ lần đo lại.

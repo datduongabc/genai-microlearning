@@ -344,3 +344,20 @@ def test_small_chain_never_reaches_paid_groq_when_both_gemini_models_have_no_quo
         ))
     assert attempts and all(model.startswith("gemini/") for model in attempts)
     router.reset()
+
+
+def test_evaluation_paid_aliases_are_current_and_explicit_only(gateway):
+    expected = {
+        "claude-fast": "anthropic/claude-haiku-5-5",
+        "claude-pro": "anthropic/claude-sonnet-5-5",
+        "openai-fast": "openai/gpt-6-luna",
+        "openai-pro": "openai/gpt-6.1-sol",
+    }
+    for alias, model in expected.items():
+        deployments = [d for d in gateway["model_list"] if d["model_name"] == alias]
+        assert len(deployments) == 1
+        assert deployments[0]["litellm_params"]["model"] == model
+    for setting in ("fallbacks", "context_window_fallbacks"):
+        for chain in gateway["router_settings"][setting]:
+            assert not set(expected) & chain.keys()
+            assert not set(expected) & {alias for aliases in chain.values() for alias in aliases}

@@ -20,7 +20,6 @@ from app.models import (
     ComponentType,
     Course,
     Document,
-    DocumentSection,
     DocumentStatus,
     Job,
     JobStatus,
@@ -46,7 +45,7 @@ def world():
         db.add(document)
         db.flush()
         db.add(Chunk(document_id=document.id, course_id=course.id, chunk_index=0, content="secret chunk"))
-        db.add(DocumentSection(document_id=document.id, title="S", level=1, position=0, first_chunk_index=0, last_chunk_index=0))
+
         module = Module(document_id=document.id, course_id=course.id, title="Module of A")
         db.add(module)
         db.flush()
@@ -82,7 +81,7 @@ def _as(user_id):
     return db
 
 
-TABLES = ("courses", "documents", "chunks", "document_sections", "modules", "module_components",
+TABLES = ("courses", "documents", "chunks", "modules", "module_components",
           "questions", "evaluations", "chat_sessions", "chat_messages", "jobs")
 
 

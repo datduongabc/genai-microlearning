@@ -66,35 +66,8 @@ def test_read_transcript_file_txt_splits_by_paragraph(tmp_path):
     assert units[0].locator == {"paragraph_index": 0}
 
 
-def test_read_html_records_the_heading_level_of_each_heading_unit(tmp_path):
-    html = "<html><body><h1>Chapter</h1><p>a</p><h2>Section</h2><p>b</p><h3>Sub</h3><p>c</p></body></html>"
-    path = tmp_path / "book.html"
-    path.write_text(html, encoding="utf-8")
-
-    units = read_html(str(path))
-
-    assert [(u.locator["heading"], u.locator["heading_level"]) for u in units] == [
-        ("Chapter", 1),
-        ("Section", 2),
-        ("Sub", 3),
-    ]
 
 
-def test_read_docx_records_the_heading_level_of_each_heading_unit(tmp_path):
-    doc = DocxDocument()
-    doc.add_heading("Chapter", level=1)
-    doc.add_paragraph("a")
-    doc.add_heading("Section", level=2)
-    doc.add_paragraph("b")
-    path = tmp_path / "book.docx"
-    doc.save(str(path))
-
-    units = read_docx(str(path))
-
-    assert [(u.locator["heading"], u.locator["heading_level"]) for u in units] == [
-        ("Chapter", 1),
-        ("Section", 2),
-    ]
 
 
 # --- OCR và bảng --------------------------------------------------------------

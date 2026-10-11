@@ -1,4 +1,4 @@
-"""Planner: one call per document (or section) that picks and ranks its core concepts."""
+"""Planner: one call per document that picks and ranks its core concepts."""
 
 from pydantic import BaseModel, Field
 

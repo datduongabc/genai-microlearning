@@ -17,7 +17,6 @@ from app.models import (
     ComponentType,
     Course,
     Document,
-    DocumentSection,
     DocumentStatus,
     Evaluation,
     Job,
@@ -34,7 +33,6 @@ TENANT_TABLES = {
     "courses": "id = :course",
     "documents": "id = :document",
     "chunks": "document_id = :document",
-    "document_sections": "document_id = :document",
     "modules": "id = :module",
     "module_components": "module_id = :module",
     "questions": "component_id = :component",
@@ -60,7 +58,7 @@ def world():
         db.add(document)
         db.flush()
         db.add(Chunk(document_id=document.id, course_id=course.id, chunk_index=0, content="x"))
-        db.add(DocumentSection(document_id=document.id, title="S", level=1, position=0, first_chunk_index=0, last_chunk_index=0))
+
         module = Module(document_id=document.id, course_id=course.id, title="M")
         db.add(module)
         db.flush()

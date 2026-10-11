@@ -6,8 +6,19 @@ Phần thiết lập (tạo nghiên cứu, nạp đơn vị, mời người ch�
 [chấm mù](#cham-mu) dành cho tài khoản được mời. [LLM judge](#llm-judge)
 ghi điểm vào cùng bảng; trang kết quả thuộc phần sau.
 
-Chạy migration `alembic upgrade head` để thêm revision `0018_study_model`,
-`0019_blind_ratings` và `0020_study_judge`.
+Chạy migration `alembic upgrade head` để thêm revision `0018_study_model` và
+`0019_blind_ratings`, `0020_study_judge` và `0021_remove_textbook_scope`.
+
+Tất cả gói đối chiếu dùng phạm vi toàn tài liệu. Migration `0021` giữ module,
+job, thành phần, câu hỏi, liên kết cặp và đơn vị nghiên cứu, nhưng bỏ dữ liệu
+chương/mục. Module cũ sinh theo mục không còn tái lập được phạm vi đối chiếu
+cũ; các hàng hiện có chỉ là dữ liệu thử, chưa dùng cho đánh giá chính thức.
+Downgrade dựng lại cấu trúc mục rỗng, không khôi phục dữ liệu mục đã bỏ.
+
+Đợt đánh giá chỉ dùng `dsa`, `operating-system`, `program-fundamentals`,
+`web-programming` trong `docs/documents`. Script `benchmark_rerank.py` cũng
+chỉ nhận bốn môn này và bỏ dữ liệu môn khác khỏi kết quả gộp mới; các tệp đo
+lịch sử được giữ làm bằng chứng của những lần đo trước.
 
 | API | Nội dung |
 | --- | --- |

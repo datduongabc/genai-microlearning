@@ -8,7 +8,7 @@ from urllib.parse import quote
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import Response
 from pptx import Presentation
-from pydantic import BaseModel, Field, StringConstraints, ValidationError
+from pydantic import BaseModel, ConfigDict, Field, StringConstraints, ValidationError
 from sqlalchemy import select
 from sqlalchemy.orm import Session, joinedload, selectinload
 
@@ -41,7 +41,6 @@ from app.models import (
     ChatRole,
     ComponentType,
     Document,
-    DocumentSection,
     Job,
     JobStatus,
     JobType,
@@ -54,16 +53,9 @@ from app.retrieval.search import ChunkScope, retrieve
 
 router = APIRouter(prefix="/modules", tags=["modules"], dependencies=[Depends(get_current_user)])
 
-# Each module costs about 19 LLM calls, so this caps how many one click can push
-# into the free tier's rate limit. Mirrored by MAX_SECTIONS_PER_REQUEST in
-# frontend/src/components/SectionTree.tsx.
-MAX_SECTIONS_PER_REQUEST = 5
-
 
 class GenerateRequest(BaseModel):
-    # Far more than anyone can pick (see MAX_SECTIONS_PER_REQUEST): the cap only keeps a
-    # huge list away from the queries that check it.
-    section_ids: list[uuid.UUID] | None = Field(default=None, max_length=50)
+    model_config = ConfigDict(extra="forbid")
     # Model cho riêng lượt sinh này, ghi đè mặc định của giảng viên. Bỏ trống thì dùng
     # mặc định của họ, không có mặc định thì dùng cấu hình hệ thống.
     model_alias: str | None = None
@@ -72,7 +64,7 @@ class GenerateRequest(BaseModel):
     output_language: OutputLanguage = "vi"
     custom_instructions: Annotated[str, StringConstraints(strip_whitespace=True, max_length=1000)] = ""
     # False: sinh bản đối chứng không RAG (nhóm llm_no_rag) của module RAG `paired_module_id`, trên
-    # đúng Learning Objective và mục của nó. Model và cờ tự kiểm bỏ trống thì theo module RAG đó.
+    # đúng Learning Objective và tài liệu của nó. Model và cờ tự kiểm bỏ trống thì theo module RAG đó.
     use_retrieval: bool = True
     paired_module_id: uuid.UUID | None = None
 
@@ -133,61 +125,9 @@ def _owned_module(db: Session, module_id: uuid.UUID, current_user: User) -> Modu
     return module
 
 
-def _generate_for_sections(
-    db: Session, doc: Document, section_ids: list[uuid.UUID] | None, model_alias: str | None = None,
-    self_check: bool = True,
-    output_language: OutputLanguage = "vi", custom_instructions: str = "", *, current_user: User,
-):
-    if not section_ids:
-        raise HTTPException(status_code=422, detail="Chọn ít nhất 1 mục để sinh mô-đun.")
-    unique_ids = list(dict.fromkeys(section_ids))
-    if len(unique_ids) > MAX_SECTIONS_PER_REQUEST:
-        raise HTTPException(
-            status_code=422, detail=f"Chỉ được chọn tối đa {MAX_SECTIONS_PER_REQUEST} mục mỗi lần."
-        )
-
-    found = set(
-        db.scalars(
-            select(DocumentSection.id).where(
-                DocumentSection.document_id == doc.id, DocumentSection.id.in_(unique_ids)
-            )
-        )
-    )
-    if found != set(unique_ids):
-        raise HTTPException(status_code=404, detail="Section not found")
-
-    already_running = (
-        db.query(Job.id)
-        .filter(
-            Job.job_type == JobType.module_generation,
-            Job.section_id.in_(unique_ids),
-            Job.status.in_([JobStatus.queued, JobStatus.running]),
-        )
-        .first()
-    )
-    if already_running is not None:
-        # All or nothing: a partial batch would leave the teacher unsure which
-        # of the picked sections were actually started.
-        raise HTTPException(
-            status_code=409,
-            detail="Có mục đang sinh mô-đun, vui lòng chờ xong rồi chọn lại.",
-        )
-
-    reserve_generations(db, current_user, len(unique_ids))
-    jobs = [
-        enqueue_job(
-            db, job_type=JobType.module_generation, step="generate", document_id=doc.id,
-            section_id=section_id, payload=generation_payload(model_alias, self_check, output_language, custom_instructions),
-        )
-        for section_id in unique_ids
-    ]
-    db.commit()
-    return {"jobs": [{"section_id": j.section_id, "job_id": j.id} for j in jobs]}
-
-
 def _generate_without_retrieval(db: Session, doc: Document, body: GenerateRequest, current_user: User):
     """Một job sinh bản đối chứng không RAG (nhóm llm_no_rag) của module RAG `paired_module_id`: cùng
-    Learning Objective, cùng mục, và theo mặc định cùng model và cờ tự kiểm đã sinh module RAG đó,
+    Learning Objective, cùng tài liệu, và theo mặc định cùng model và cờ tự kiểm đã sinh module RAG đó,
     để khác biệt giữa hai bản chỉ còn là RAG."""
     if body.use_retrieval:
         raise HTTPException(status_code=422, detail="paired_module_id chỉ dùng khi use_retrieval=false.")
@@ -195,10 +135,6 @@ def _generate_without_retrieval(db: Session, doc: Document, body: GenerateReques
         raise HTTPException(
             status_code=422,
             detail="Sinh không RAG cần paired_module_id: module RAG đi cặp để lấy Learning Objective.",
-        )
-    if body.section_ids:
-        raise HTTPException(
-            status_code=422, detail="Sinh không RAG dùng đúng mục của module đi cặp, không chọn section_ids.",
         )
     paired = _owned_module(db, body.paired_module_id, current_user)
     if paired.document_id != doc.id:
@@ -219,17 +155,16 @@ def _generate_without_retrieval(db: Session, doc: Document, body: GenerateReques
         db.query(Job.id)
         .filter(
             Job.job_type == JobType.module_generation, Job.document_id == doc.id,
-            Job.section_id.is_(None) if paired.section_id is None else Job.section_id == paired.section_id,
             Job.status.in_([JobStatus.queued, JobStatus.running]),
         )
         .first()
     )
     if running is not None:
-        raise HTTPException(status_code=409, detail="Mục này đang có 1 lượt sinh mô-đun khác đang chạy, vui lòng chờ.")
+        raise HTTPException(status_code=409, detail="Tài liệu này đang có 1 lượt sinh mô-đun khác đang chạy, vui lòng chờ.")
 
     reserve_generations(db, current_user)
     job = enqueue_job(
-        db, job_type=JobType.module_generation, step="generate", document_id=doc.id, section_id=paired.section_id,
+        db, job_type=JobType.module_generation, step="generate", document_id=doc.id,
         payload=control_payload(paired.id, alias, self_check, paired_payload.get("output_language", "vi"),
                                 paired_payload.get("custom_instructions", "")),
     )
@@ -258,25 +193,16 @@ def generate_module(
 
     output_language = body.output_language if body is not None else "vi"
     custom_instructions = body.custom_instructions if body is not None else ""
-    section_ids = body.section_ids if body is not None else None
-    has_outline = db.query(DocumentSection.id).filter(DocumentSection.document_id == doc.id).first() is not None
-    if has_outline:
-        return _generate_for_sections(db, doc, section_ids, alias, self_check, output_language, custom_instructions, current_user=current_user)
-    if section_ids:
-        raise HTTPException(status_code=422, detail="Tài liệu này không có mục lục để chọn mục.")
-
     # Bảng jobs giờ là nguồn sự thật DUY NHẤT cho "có đang sinh dở không" --
     # trước đây có 1 lock RIÊNG trong bộ nhớ (_generating_document_ids) cho
     # việc này; job queue tự nhiên thay thế nó, tránh 2 cơ chế song song có
     # thể lệch nhau. Chặn double-submit cùng document_id (double-click, đa
     # tab, hoặc UI mất state "đang sinh" sau khi remount page rồi bấm lại -
-    # bug thật đã gặp và verify sống trong session này). Chỉ tính job sinh cả
-    # tài liệu (section_id NULL): job theo mục có khóa chống trùng riêng.
+    # bug thật đã gặp và verify sống trong session này).
     existing = (
         db.query(Job)
         .filter(
             Job.job_type == JobType.module_generation, Job.document_id == document_id,
-            Job.section_id.is_(None),
             Job.status.in_([JobStatus.queued, JobStatus.running]),
         )
         .first()
@@ -335,7 +261,6 @@ def list_modules(
             "learning_objective": m.learning_objective,
             "bloom_level": m.bloom_level,
             "component_count": len(m.components),
-            "section_id": m.section_id,
             "is_control": is_control(db, m.id),
         }
         for m in modules
@@ -645,8 +570,7 @@ def chat_edit_module(
         ChatMessage.created_at.desc(), ChatMessage.id.desc(),
     ).limit(HISTORY_TURNS).all()
     history = [{"role": r.role.value, "content": r.content} for r in reversed(history_rows)]
-    section = db.get(DocumentSection, module.section_id) if module.section_id else None
-    scope_chunks = chunks = reference_scope_chunks(db, module, section)
+    scope_chunks = chunks = reference_scope_chunks(db, module)
     if chunks and not small_reference(chunks):
         chunks = retrieve(db, module.course_id, message, top_k=8, scope=ChunkScope(
             module.document_id, chunks[0].chunk_index, chunks[-1].chunk_index))
