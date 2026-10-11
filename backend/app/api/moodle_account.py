@@ -48,16 +48,14 @@ def request_link(request: Request, payload: LinkRequest, db: Session = Depends(g
     try:
         result = client.request_account_link(app_account=str(current_user.id), email=email,
                                              app_email=current_user.email, app_name=current_user.name)
-    except client.MoodleError as error:
-        if error.errorcode == 'invaliduser':
-            raise HTTPException(status_code=422, detail='Không tìm thấy tài khoản Moodle hoạt động với email này.') from error
-        raise moodle_failure(error, db) from error
     except MOODLE_FAILURES as error:
         raise moodle_failure(error, db) from error
     current_user.moodle_request_id = result['request_id']
     current_user.moodle_request_email = email
     db.commit()
-    return {'status': 'pending', 'email': email, 'confirmation_url': _confirmation_url(result['request_id'])}
+    return {'status': 'pending', 'email': email,
+            'message': 'Nếu có tài khoản Moodle phù hợp, hãy đăng nhập Moodle để xác nhận liên kết.',
+            'confirmation_url': _confirmation_url(result['request_id'])}
 
 
 @router.get('/account')

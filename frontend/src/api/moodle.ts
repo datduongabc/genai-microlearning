@@ -23,6 +23,7 @@ export type MoodleAccountStatus = 'not_linked' | 'linked' | 'pending' | 'rejecte
 export interface MoodleAccount {
   email: string
   status: MoodleAccountStatus
+  message?: string
   confirmation_url?: string
   error?: string
 }

@@ -17,7 +17,7 @@ client = TestClient(app)
 def confirmed_link_service(monkeypatch):
     state = {'status': 'pending', 'moodle_user_id': 10_000 + uuid.uuid4().int % 10**9, 'email': 'teacher@moodle.example'}
     monkeypatch.setattr(moodle_client, 'request_account_link', lambda **kwargs: {
-        'request_id': uuid.uuid4().hex, 'confirmation_url': 'http://moodle.example/local/lms_bridge/confirm.php',
+        'request_id': uuid.uuid4().hex + uuid.uuid4().hex, 'confirmation_url': 'http://moodle.example/local/lms_bridge/confirm.php',
     }, raising=False)
     monkeypatch.setattr(moodle_client, 'account_link_status', lambda **kwargs: state.copy(), raising=False)
     monkeypatch.setattr(moodle_client, 'teacher_courses', lambda user_id: {
@@ -123,15 +123,35 @@ def test_suspended_moodle_identity_keeps_link(confirmed_link_service, monkeypatc
     assert stored_link(user_id) == confirmed_link_service['moodle_user_id']
 
 
-def test_unknown_moodle_email_creates_no_pending_request(confirmed_link_service, monkeypatch):
-    def unknown(**kwargs):
-        raise moodle_client.MoodleError('Unknown', errorcode='invaliduser')
-    monkeypatch.setattr(moodle_client, 'request_account_link', unknown)
-    user_id, headers = account()
-    assert request(headers).status_code == 422
-    assert stored_link(user_id) is None
-    with SessionLocal() as db:
-        assert db.get(User, uuid.UUID(user_id)).moodle_request_id is None
+def test_matching_and_unmatched_requests_have_the_same_public_response(confirmed_link_service):
+    import re
+    from urllib.parse import parse_qs, urlparse
+
+    responses = []
+    for email in ['teacher@moodle.example', 'unknown@moodle.example']:
+        user_id, headers = account()
+        response = client.post('/moodle/account/link-requests', headers=headers, json={'email': email})
+        assert response.status_code == 202
+        body = response.json()
+        assert set(body) == {'status', 'email', 'message', 'confirmation_url'}
+        assert body['email'] == email
+        url = urlparse(body.pop('confirmation_url'))
+        assert re.fullmatch(r'[a-f0-9]{64}', parse_qs(url.query)['request'][0])
+        body.pop('email')
+        responses.append((body, url.scheme, url.netloc, url.path))
+        polled = client.get('/moodle/account', headers=headers)
+        assert polled.json()['status'] == 'pending'
+        assert polled.json()['email'] == email
+        assert stored_link(user_id) is None
+        confirmed_link_service['status'] = 'expired'
+        assert client.get('/moodle/account', headers=headers).json()['status'] == 'expired'
+        assert stored_link(user_id) is None
+        confirmed_link_service['status'] = 'pending'
+    assert responses[0] == responses[1]
+    assert responses[0][0] == {
+        'status': 'pending',
+        'message': 'Nếu có tài khoản Moodle phù hợp, hãy đăng nhập Moodle để xác nhận liên kết.',
+    }
 
 
 def test_request_unknown_to_moodle_is_cleared_so_a_new_request_can_be_sent(confirmed_link_service, monkeypatch):
@@ -159,3 +179,13 @@ def test_moodle_failure_while_polling_keeps_the_pending_request(confirmed_link_s
     assert client.get('/moodle/account', headers=headers).status_code == 502
     with SessionLocal() as db:
         assert db.get(User, uuid.UUID(user_id)).moodle_request_id is not None
+
+
+@pytest.mark.rate_limits
+def test_generic_link_requests_keep_the_rate_limit(confirmed_link_service):
+    _, headers = account()
+    for _ in range(10):
+        assert client.post('/moodle/account/link-requests', headers=headers,
+                           json={'email': 'unknown@moodle.example'}).status_code == 202
+    assert client.post('/moodle/account/link-requests', headers=headers,
+                       json={'email': 'unknown@moodle.example'}).status_code == 429

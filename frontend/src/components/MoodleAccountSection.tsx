@@ -89,6 +89,7 @@ export function MoodleAccountSection({ onStatus }: { onStatus?: (status: MoodleA
           {unlinking ? "Đang hủy liên kết..." : "Hủy liên kết Moodle"}
         </button>
       )}
+      {status === "pending" && <p className="mt-2 text-sm text-gray-600">Nếu có tài khoản Moodle phù hợp, hãy đăng nhập Moodle để xác nhận liên kết.</p>}
       {status === "pending" && answer?.confirmation_url && (
         <a href={answer.confirmation_url} target="_blank" rel="noopener noreferrer" className="mt-2 inline-block text-sm text-terracotta underline">
           Mở Moodle để xác nhận
@@ -96,7 +97,7 @@ export function MoodleAccountSection({ onStatus }: { onStatus?: (status: MoodleA
       )}
       {status !== "linked" && status !== "unknown" && (
         <form onSubmit={(event) => { void handleSubmit(submit)(event); }} noValidate className="mt-3 flex flex-col gap-2">
-          <p className="text-sm text-gray-600">Tài khoản trong ứng dụng và tài khoản Moodle được quản lý riêng. Nhập email Moodle, rồi đăng nhập Moodle để xác nhận yêu cầu. Liên kết chỉ hoạt động sau khi bạn xác nhận.</p>
+          <p className="text-sm text-gray-600">Tài khoản trong ứng dụng và tài khoản Moodle được quản lý riêng. Nhập email Moodle. Nếu có tài khoản Moodle phù hợp, hãy đăng nhập Moodle để xác nhận yêu cầu. Liên kết chỉ hoạt động sau khi bạn xác nhận.</p>
           <label className="text-sm">Email Moodle
             <input type="email" autoComplete="email" {...register("email")} className="ml-2 rounded border border-gray-300 px-3 py-1.5" />
           </label>

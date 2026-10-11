@@ -9,24 +9,30 @@ final class link_requests {
         global $DB, $USER;
         $users = $DB->get_records_sql('SELECT id FROM {user} WHERE LOWER(email) = :email AND deleted = 0 AND suspended = 0',
             ['email' => strtolower(trim($email))]);
-        if (count($users) !== 1) {
-            throw new \moodle_exception('invaliduser', 'local_lms_bridge');
-        }
+        // Unmatched and ambiguous emails get the same opaque request and expiry.
+        $userid = count($users) === 1 ? reset($users)->id : 0;
         $request = (object) [
             'requestid' => bin2hex(random_bytes(32)), 'integrationuserid' => $USER->id,
-            'appaccount' => $appaccount, 'userid' => reset($users)->id,
+            'appaccount' => $appaccount, 'userid' => $userid,
             'appemail' => $appemail, 'appname' => $appname, 'status' => 'pending',
             'timecreated' => time(), 'timemodified' => time(),
         ];
         $DB->insert_record('local_lms_bridge_requests', $request);
         $url = new \moodle_url('/local/lms_bridge/confirm.php', ['request' => $request->requestid]);
+        if ($userid) {
+            self::notify($request, $url);
+        }
+        return ['request_id' => $request->requestid, 'status' => 'pending'];
+    }
+
+    private static function notify(\stdClass $request, \moodle_url $url): void {
         $message = new \core\message\message();
         $message->component = 'local_lms_bridge';
         $message->name = 'accountlink';
         $message->userfrom = \core_user::get_noreply_user();
         $message->userto = $request->userid;
         $message->subject = get_string('linksubject', 'local_lms_bridge');
-        $message->fullmessage = get_string('linkmessage', 'local_lms_bridge', (object) ['name' => $appname, 'email' => $appemail]);
+        $message->fullmessage = get_string('linkmessage', 'local_lms_bridge', (object) ['name' => $request->appname, 'email' => $request->appemail]);
         $message->fullmessageformat = FORMAT_PLAIN;
         $message->fullmessagehtml = '';
         $message->smallmessage = $message->fullmessage;
@@ -34,7 +40,6 @@ final class link_requests {
         $message->contexturl = $url->out(false);
         $message->contexturlname = $message->subject;
         message_send($message);
-        return ['request_id' => $request->requestid, 'status' => 'pending'];
     }
 
     private static function get(string $requestid): \stdClass {
@@ -58,7 +63,8 @@ final class link_requests {
             throw new \moodle_exception('invalidrequest', 'local_lms_bridge');
         }
         $active = $DB->record_exists('user', ['id' => $request->userid, 'deleted' => 0, 'suspended' => 0]);
-        return ['status' => $active ? $request->status : 'rejected',
+        // Only confirmation may expose identity; pending requests all age identically.
+        return ['status' => $request->status === 'confirmed' && !$active ? 'rejected' : $request->status,
             'moodle_user_id' => $active && $request->status === 'confirmed' ? (int) $request->userid : 0];
     }
 
