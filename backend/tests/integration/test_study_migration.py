@@ -72,6 +72,9 @@ def test_study_migration_round_trip():
             conn.execute(text("DELETE FROM modules WHERE id=:id"), {"id": rag_id})
             assert conn.scalar(text("SELECT count(*) FROM modules WHERE id=:id"), {"id": control_id}) == 0
         assert set(inspect(engine).get_table_names()) - previous == {"studies", "study_items", "ratings"}
+        # 0020 only adds judge permissions; downgrade preserves blind rating.
+        migrate("0019_blind_ratings", "downgrade")
+        assert "judge_model" not in {c["name"] for c in inspect(engine).get_columns("ratings")}
         with engine.connect() as conn:
             assert conn.execute(source_policies).all() == original_policies
             for table in ("studies", "study_items", "ratings"):
@@ -83,6 +86,14 @@ def test_study_migration_round_trip():
         assert set(inspect(engine).get_table_names()) == previous
         migrate("head")
         assert {"studies", "study_items", "ratings"}.issubset(inspect(engine).get_table_names())
+        # 0020: the queued judge reaches the study tables as the worker, admins see only judge jobs.
+        judge_policy = text("SELECT qual FROM pg_policies WHERE tablename = 'jobs' AND policyname = 'jobs_study_admin'")
+        with engine.connect() as conn:
+            assert "study_judge" in conn.scalar(judge_policy)
+            assert conn.scalar(text("SELECT has_table_privilege('app_worker', 'ratings', 'SELECT,INSERT,UPDATE')"))
+            assert not conn.scalar(text("SELECT has_table_privilege('app_worker', 'ratings', 'DELETE')"))
+            assert conn.scalar(text("SELECT has_table_privilege('app_worker', 'study_items', 'SELECT')"))
+            assert not conn.scalar(text("SELECT has_table_privilege('app_worker', 'study_items', 'UPDATE')"))
     finally:
         engine.dispose()
         with admin.connect() as conn:

@@ -5,9 +5,12 @@ Demo and normal use enable failover by default. The backend default remains
 selection, retries, cooldowns, rate checks and fallback chains. Provider keys are
 read only by the gateway from the runtime environment.
 
-Large-safe aliases (`gemini-fast`, `gemini-flash`, OpenAI and Claude aliases) fall
+Large-safe aliases (`gemini-fast`, `gemini-flash`, `groq-pro`, OpenAI and Claude aliases) fall
 back to the other free Gemini models. Paid providers are never automatic backups;
-select their aliases explicitly to use them. No fallbacks apply to embeddings or
+select their aliases explicitly to use them. `groq-pro` is paid: it is the study
+judge alias and a lecturer opt-in model, billed when a lecturer selects it. Modules
+generated with it share the judge's family, so studies containing them are refused
+for judging. No fallbacks apply to embeddings or
 transcription. The two Gemini aliases back up each other, with LiteLLM's bounded
 fallback attempts preventing an endless cycle. If neither free model can serve a
 large request, generation fails rather than sending it to Groq or a paid model.
@@ -15,20 +18,24 @@ large request, generation fails rather than sending it to Groq or a paid model.
 Planner, Learning Objective, relevance checks and question checks can use the
 internal `gemini-fast-small` / `gemini-flash-small` profiles. The backend selects
 these profiles only for Gemini requests with at most 6,000 estimated tokens,
-including the response schema and a 2,048-token output budget. Their backups are
-the other Gemini small profile, then `groq-pro`. Larger calls keep the ordinary
+including the response schema and a 2,048-token output budget. Their only backup is
+the other Gemini small profile. Larger calls keep the ordinary
 alias. Content, including no-RAG Content and its self-check, never opts into the
 small profile. Slides, Example and question generation also keep the ordinary
 alias. The historical `groq-fast` alias is unavailable in the current configuration.
 
-Groq has an 8,000 TPM budget, so Content's 20–66k-token requests cannot fit. Its
-router deployment declares `tpm: 8000`, a conservative 3,952-token input ceiling
-and a 2,048-token output ceiling; LiteLLM pre-call checks and provider 429s enforce
-capacity. A request that exceeds its input window can fall back to Gemini. The
-Groq deployment requests low reasoning effort so its bounded output allowance
-can include the JSON answer.
-The small profiles reserve room below the TPM ceiling; this is not a per-user quota.
-Account-wide traffic outside this gateway still consumes the provider's quota.
+Groq's `groq-pro` deployment now uses the paid Developer plan, declared as
+`tpm: 250000`, `max_input_tokens: 128000` and `max_output_tokens: 2048`. The
+[model's context is 131,072 tokens](https://console.groq.com/docs/models), so
+this leaves room for the bounded output and response schema. A whole study
+packet of roughly 9.6–12.6k tokens fits in one call; the former 3,952-token cap
+was a gateway setting for the 8,000 TPM free plan, not the model's context.
+Billing must be enabled; account-specific limits and traffic outside this
+gateway can still cause 429s. LiteLLM pre-call checks and provider limits enforce
+capacity. Oversized normal calls can fall back to Gemini; the study judge pins
+Groq with fallbacks disabled and records a per-item error without truncation.
+The deployment requests low reasoning effort so the output allowance can
+include the JSON answer.
 
 LiteLLM retries once, cools failed deployments for 60 seconds, and applies both
 ordinary and context-window fallbacks. `routing_strategy: simple-shuffle` spreads

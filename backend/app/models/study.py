@@ -39,6 +39,9 @@ class StudyItem(Base):
     # RESTRICT blocks source deletion while a RAG snapshot references it.
     module_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("modules.id", ondelete="RESTRICT"), index=True)
     packet: Mapped[dict] = mapped_column(JSONB)
+    # Provenance stays outside the blinded packet. NULL means legacy/unknown.
+    generator_model: Mapped[str | None]
+    generation_models: Mapped[list | None] = mapped_column(JSONB)
     created_at: Mapped[datetime] = created_at_column()
 
 
@@ -56,6 +59,9 @@ class Rating(Base):
     study_item_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("study_items.id", ondelete="CASCADE"), index=True)
     user_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id", ondelete="RESTRICT"), index=True)
     rater_kind: Mapped[str]
+    # What actually graded an llm_judge row: the gateway alias and the model it reported serving.
+    judge_alias: Mapped[str | None]
+    judge_model: Mapped[str | None]
     # ModuleEvaluation's rubric: eight scored dimensions, then overall notes (criterion 9).
     accuracy: Mapped[dict] = mapped_column(JSONB)
     completeness: Mapped[dict] = mapped_column(JSONB)

@@ -3,11 +3,11 @@
 R18 có ba bảng `studies`, `study_items`, `ratings` và một router `/studies`.
 Phần thiết lập (tạo nghiên cứu, nạp đơn vị, mời người chấm) chỉ dành cho admin
 đang hoạt động; người chưa đăng nhập nhận 401, giảng viên nhận 404. Phần
-[chấm mù](#cham-mu) dành cho tài khoản được mời. LLM judge và trang kết quả
-thuộc các phần sau.
+[chấm mù](#cham-mu) dành cho tài khoản được mời. [LLM judge](#llm-judge)
+ghi điểm vào cùng bảng; trang kết quả thuộc phần sau.
 
-Chạy migration `alembic upgrade head` để thêm revision `0018_study_model` và
-`0019_blind_ratings`.
+Chạy migration `alembic upgrade head` để thêm revision `0018_study_model`,
+`0019_blind_ratings` và `0020_study_judge`.
 
 | API | Nội dung |
 | --- | --- |
@@ -16,6 +16,8 @@ Chạy migration `alembic upgrade head` để thêm revision `0018_study_model` 
 | `GET /studies/{id}` | Nghiên cứu cùng toàn bộ đơn vị, gồm nhóm dành cho admin |
 | `POST /studies/{id}/items` | JSON có `module_ids` và/hoặc `human_packets`; trả 201 với toàn bộ đơn vị sau khi gán lại mã |
 | `GET /studies/{id}/raters` | Danh sách email người chấm được mời: `{"emails": [...]}` |
+| `POST /studies/{id}/judge` | Không có body; trả 202 với `job_id` của job chấm nền |
+| `GET /studies/{id}/judge/{job_id}` | Tiến độ và kết quả từng đơn vị của job chấm |
 | `PUT /studies/{id}/raters` | JSON `{"emails": [...]}` thay toàn bộ danh sách; danh sách rỗng thu hồi mọi lời mời |
 
 `module_ids` là danh sách UUID của module RAG đã có do admin hiện tại sở hữu.
@@ -63,12 +65,15 @@ nhóm nạp sau không luôn nhận dãy mã lớn hơn. Mã trong `packet.anon_
 `study_items.anon_code` luôn khớp nhau. Việc nạp là một transaction và khóa
 hàng nghiên cứu để các lần nạp đồng thời không trùng mã. Module RAG trùng,
 packet không hợp lệ hoặc nguồn thiếu khiến cả lượt nạp bị từ chối. Không
-nạp thêm nếu nghiên cứu đã rời `draft` hoặc đã có bất kỳ lượt chấm nào.
+nạp thêm nếu nghiên cứu đã rời `draft`, đã có lượt chấm của người hoặc đang
+chạy judge. Lượt chấm judge không khóa việc nạp sau khi job đã xong; chạy lại
+judge để chấm cả các đơn vị mới.
 
 Các trường chấm của bảng `ratings` khớp `ModuleEvaluation` và
 [rubric dùng chung](rubric.md), không thêm cột điểm số thứ chín. `rater_kind`
 là `human` kèm `user_id`, hoặc `llm_judge` không có `user_id`. Mỗi người và
-LLM judge có tối đa một lượt chấm trên một đơn vị. Bảng này độc lập với
+LLM judge có tối đa một lượt chấm trên một đơn vị; `judge_alias` và `judge_model`
+lưu alias cùng model thực sự đã phục vụ. Bảng này độc lập với
 `evaluations` của pipeline.
 
 <a id="cham-mu"></a>
@@ -104,7 +109,7 @@ Thân `PUT .../rating` được kiểm bằng `ModuleEvaluation` của
 1 đến 5 và `justification`, cùng `hallucination_findings` (mỗi mục có `claim`,
 `field`, `reason`) và `overall_notes`. `anon_id` phải bằng mã ẩn danh của đơn
 vị, nếu không nhận 422. Gọi lại cùng đường dẫn sẽ sửa lượt chấm đã lưu. Lưu
-lượt chấm không đổi trạng thái nghiên cứu; khi đã có lượt chấm thì không nạp
+lượt chấm không đổi trạng thái nghiên cứu; khi đã có lượt chấm của người thì không nạp
 thêm đơn vị được nữa (409). Nghiên cứu `closed` từ chối lưu và sửa lượt chấm
 với 409.
 
@@ -130,6 +135,63 @@ người bị thu hồi không còn đọc hay sửa được chúng.
 Trigger trên `ratings` khóa hàng nghiên cứu (cùng khóa với việc nạp đơn vị),
 từ chối ghi vào nghiên cứu `closed` và không cho đổi đơn vị hay người chấm của
 một lượt chấm đã có.
+
+<a id="llm-judge"></a>
+
+## LLM judge
+
+`POST /studies/{id}/judge` xếp một job `study_judge` vào hàng đợi nền hiện có
+và trả về ngay; request không chờ LLM. Job chấm lần lượt mọi đơn vị của nghiên
+cứu bằng `judge_module` trong `app/generation/evaluation.py`, trên chính gói
+tự chứa mà người chấm nhìn thấy, rồi ghi một hàng `llm_judge` vào `ratings` cho
+mỗi đơn vị: tám điểm kèm lý do, `hallucination_findings` và `overall_notes`.
+Rubric và prompt không đổi.
+
+- **Model chấm.** Cố định là `groq-pro` (gpt-oss-120b trên Groq); request
+  không chọn được model khác. Nếu gateway không có alias này, hoặc nó cùng
+  hãng với model đã sinh bất kỳ đơn vị nào, request bị từ chối 422, dùng chung
+  phép kiểm hãng với `scripts/run_judge.py` (`app/llm/judge.py`). Gateway
+  không trả lời được thì nhận 503. Hãng của đơn vị lấy từ
+  `study_items.generation_models` (model thực sự phục vụ), nếu thiếu thì từ
+  alias `generator_model`, nếu cũng thiếu (đơn vị nạp trước revision 0020) thì
+  coi như alias mặc định của cấu hình; hai cột này nằm ngoài gói nên không lộ
+  cho người chấm. Gói người soạn không có model sinh nên không bị kiểm.
+- **Ghim model.** Lượt chấm chạy ở chế độ thí nghiệm (`disable_fallbacks`).
+  `ratings.judge_model` là model gateway báo đã phục vụ; nếu nó khác model
+  của alias lúc xếp job thì đơn vị bị ghi lỗi và không lưu điểm.
+- **Chạy lại.** Mỗi lần gọi là một job mới chấm mọi đơn vị hiện có. Chấm lại
+  thay hàng `llm_judge` cũ của đơn vị chứ không thêm hàng. Khi một job chấm
+  còn `queued`/`running`, lần gọi thứ hai và việc nạp thêm đơn vị nhận 409.
+- **Lỗi từng đơn vị.** Lỗi tạm thời (hết quota, mạng) được thử lại có back-off
+  trên đúng đơn vị đó; hết lượt thử hoặc lỗi không thử lại được (JSON sai
+  rubric, gói quá lớn) được ghi vào `results` với `status: failed` và job chấm
+  tiếp đơn vị sau. Job kết thúc `done` kể cả khi có đơn vị lỗi; đọc `results`.
+- **Giới hạn Groq.** Dùng bậc **trả phí**, với `tpm: 250000` và
+  `max_input_tokens: 128000`, chừa chỗ cho schema và 2.048 token đầu ra trong
+  [cửa sổ 131.072 token](https://console.groq.com/docs/models). Toàn bộ gói
+  (nguồn, nội dung, slide, ví dụ, quiz và practice) được chấm **trong một lệnh
+  gọi**, không tách thành phần. Job đọc giới hạn từ gateway và đếm prompt như
+  gateway; vượt giới hạn thì ghi `Packet too large ...`, không gọi Groq, không
+  thử lại và không cắt gói. Lỗi cửa sổ ngữ cảnh từ gateway cũng không thử lại.
+  Gateway giữ lưu lượng dưới `tpm` đã khai báo; hạn mức tài khoản và lưu lượng
+  khác vẫn có thể gây 429, được thử lại có back-off. Phải bật billing trên tài khoản Groq; bậc miễn phí
+  8.000 TPM không đủ cho gói toàn module khoảng 9.600–12.600 token.
+
+Migration 0020 giữ trigger khóa nghiên cứu, cấm sửa danh tính lượt chấm và
+cấm ghi khi `closed`. Chỉ vai trò `app_worker` được bỏ qua kiểm lời mời khi
+đang ghi hàng `llm_judge`; ghi hàng `human` vẫn phải qua kiểm lời mời/admin.
+
+`GET /studies/{id}/judge/{job_id}` trả `status`, `judge_alias`, `judge_model`,
+`total`, `completed`, `results` (mỗi phần tử có `item_id`, `status`, và
+`judge_model` hoặc `error`) và `last_error` của lượt thử gần nhất. Job đã xong
+bị dọn theo lịch dọn job chung; điểm vẫn nằm trong `ratings`.
+
+```sh
+curl -X POST -H "Authorization: Bearer $access_token" \
+  "http://localhost:8000/studies/$study_id/judge"
+curl -H "Authorization: Bearer $access_token" \
+  "http://localhost:8000/studies/$study_id/judge/$job_id"
+```
 
 <a id="bao-toan-nguon"></a>
 

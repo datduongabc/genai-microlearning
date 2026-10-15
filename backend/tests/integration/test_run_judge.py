@@ -9,6 +9,7 @@ import json
 import pytest
 
 from app.generation.study_packets import StudyFile
+from app.llm.judge import model_family
 from scripts import run_judge
 from tests.integration.judge_helpers import GATEWAY, _evaluation, _packet
 
@@ -102,7 +103,7 @@ def test_the_family_is_the_maker_not_the_host(tmp_path, judge):
     ("groq/llama-3.3-70b-versatile", "meta"),
 ])
 def test_model_family(model, family):
-    assert run_judge.model_family(model) == family
+    assert model_family(model) == family
 
 
 def test_an_unknown_judge_alias_is_refused(tmp_path, judge):

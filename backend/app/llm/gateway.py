@@ -86,7 +86,7 @@ def _completion(*, small_step: bool = False, **kwargs):
             raise ValueError("Experiments require a single-model alias, not a routing profile")
         extra_body["disable_fallbacks"] = True
     elif small_step and alias in {"gemini-fast", "gemini-flash"}:
-        # These profiles alone permit Groq. Reserve output and schema tokens too;
+        # Reserve output and schema tokens too;
         # Content never opts in, even in the no-RAG arm with a short prompt.
         schema = kwargs.get("response_format")
         schema_text = json.dumps(schema.model_json_schema() if isinstance(schema, type) else schema)
