@@ -235,6 +235,8 @@ def expand_with_parent_context(
         lo_idx = max(0, child.chunk_index - window)
         hi_idx = child.chunk_index + window
         if scope is not None:
+            # The window must not reach into the neighbouring section, or the
+            # first and last chunk of a section would pull its text in.
             lo_idx = max(lo_idx, scope.first_chunk_index)
             hi_idx = min(hi_idx, scope.last_chunk_index)
         for sibling in chunks_by_doc.get(child.document_id, []):
