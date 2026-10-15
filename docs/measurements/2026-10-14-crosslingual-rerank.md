@@ -91,13 +91,46 @@ Qwen embedder peak: 3.20 GiB. Peaks were measured independently; their sum is no
 | Fresh uploaded heap, original Vietnamese reheap comparison | Refusal, no citation | Correct Vietnamese answer, both definitions cited |
 | Same uploaded heap, English reheap comparison | Correct, both cited | Correct, both cited |
 | Uploaded Vietnamese binary-search note | Pilot source control above | Correct Vietnamese answer, citation persisted in history |
-| Heap max/min question on fresh uploaded heap | — | **Still refuses** (gold ranks 14/16; known limitation accepted by the captain on 2026-10-15) |
+| Heap max/min question on fresh uploaded heap | — | **Still refuses** (gold ranks 14/16; known limitation accepted by the project owner on 2026-10-15) |
 
 Original reheap question after Jina (5.14 s): “ReheapUp … phần tử cuối cùng lên trên cây … ReheapDown … đẩy gốc xuống dưới cây”. Citations point to heap.pdf pages 10–11 and 12–13; source UUIDs are the same uploaded chunks used by the baseline. English control takes 6.15 s; Vietnamese binary-search control takes 1.40 s. Persisted history contains the original question and the same citation list as the returned assistant message.
 
 ### Known limitation: Vietnamese max/min comparison
 
-“Đống cực đại và đống cực tiểu khác nhau ở quan hệ khóa giữa nút cha và nút con như thế nào?” still returns “Tài liệu môn học không đề cập nội dung này”. In the mixed-document pilot, max/min gold chunks #2/#3 rank 9/4, so all-gold@8 is 7/8 rather than the exploratory research result of 8/8. In the real uploaded heap-only course they rank **14/16**, scores 0.051005293/0.0496394. The exact same texts score 0.05297768/0.058730803 in the pilot request. The query is byte-identical. Different candidate pools/batches produce different scores; the cause is not established. Do not infer model/runtime equivalence from the research result alone. A controlled answer probe at budgets eight and nine still refuses. Production remains at the authorized budget eight; no answer instructions, embedding model or generation floors were changed to hide this failure. The original O1 reheap comparison is fixed; cross-language recall remains imperfect. Firstmate authorized shipping Jina and the eight-chunk chat budget with this limitation recorded. On 2026-10-15 the captain explicitly accepted this known limitation (Vietnamese max/min comparison still refuses, gold ranks 14/16) and approved shipping the Jina reranker as-is (firstmate inbox 010). No further max/min tuning is included in this change.
+“Đống cực đại và đống cực tiểu khác nhau ở quan hệ khóa giữa nút cha và nút con như thế nào?” still returns “Tài liệu môn học không đề cập nội dung này”. In the mixed-document pilot, max/min gold chunks #2/#3 rank 9/4, so all-gold@8 is 7/8 rather than the exploratory research result of 8/8. In the real uploaded heap-only course they rank **14/16**, scores 0.051005293/0.0496394. The exact same texts score 0.05297768/0.058730803 in the pilot request. The query is byte-identical. Different candidate pools/batches produce different scores; the cause is not established. Do not infer model/runtime equivalence from the research result alone. A controlled answer probe at budgets eight and nine still refuses. Production remains at the authorized budget eight; no answer instructions, embedding model or generation floors were changed to hide this failure. The original O1 reheap comparison is fixed; cross-language recall remains imperfect. Firstmate authorized shipping Jina and the eight-chunk chat budget with this limitation recorded. On 2026-10-15 the project owner explicitly accepted this known limitation (Vietnamese max/min comparison still refuses, gold ranks 14/16) and approved shipping the Jina reranker as-is (firstmate inbox 010). No further max/min tuning is included in this change.
+
+### Fresh original-source live checks — 2026-10-15
+
+Repeated the previously untested provider-backed scenarios on a fresh private stack using
+real HTTP registration/login, course creation, upload, background ingestion, chat, and history.
+The original English **heap.pdf slide deck** (not a synthetic replacement) has SHA-256
+`c7e30f1026a43309ffe6c486e14873a3e2b7b60864f67309bc3140cf37b742b4` and produced 26 chunks.
+The stack used the committed Qwen3/Jina pipeline and an actual `gemini-fast` request;
+each answer records served model `gemini-3.5-flash-lite`. Provider credentials were loaded
+directly at runtime from the authorized environment file and are absent from the evidence.
+There was no stand-in for the answer call. All task containers and the task network were removed.
+
+| Live question | Actual result | Citations | Required-source ranks |
+|---|---|---:|---|
+| Sự khác nhau giữa vun đống lên và vun đống xuống là gì? | Correct Vietnamese comparison: move the final element up versus move the root down to restore the heap | 3 | ReheapUp #5 rank 1 (0.07460802), ReheapDown #6 rank 6 (0.06550622) |
+| Thuật toán vun đống lên (ReheapUp) khôi phục tính chất đống bằng cách nào? | Correct Vietnamese explanation of moving the element upward to its proper position | 2 | Source passages and scores in artifact |
+| Hàng đợi ưu tiên dùng đống để phục vụ phần tử theo thứ tự nào? | Correct Vietnamese answer: priority order, arrival order for ties | 1 | Source passages and scores in artifact |
+| Đống cực đại và đống cực tiểu khác nhau ở quan hệ khóa giữa nút cha và nút con như thế nào? | **Tested: refusal without citations**, reproducing the accepted limitation | 0 | Max #2 rank 7 (0.057059567), min #3 rank 13 (0.05024043) |
+| What is the difference between reheap up and reheap down? | Correct English comparison | 4 | ReheapUp #5 rank 5, ReheapDown #6 rank 2 |
+| Tìm kiếm nhị phân hoạt động như thế nào? (separate Vietnamese source control) | Correct Vietnamese answer from the uploaded Vietnamese note | 1 | Source rank 1 |
+
+Returned citations matched the persisted assistant history for all six requests. The reheap
+comparison cites the actual uploaded English definitions (pages 10–13), and its explanation
+matches their directions of movement. The max/min gold passages explicitly define max-heap
+keys as greater than or equal to descendants and min-heap keys as less than or equal to
+descendants; only the max definition reached the eight-chunk context. Fresh ranks **7/13**
+differ from the earlier **14/16** measurement, while the refusal persists. These are separate
+observations; the older scores above are retained as historical evidence.
+
+[2026-10-15-crosslingual-live.json](2026-10-15-crosslingual-live.json) records the exact upload
+provenance, six real answers, citations/history, served models, and full dense/BM25/RRF/rerank
+chunks and scores. This closes the two earlier untested live-evidence rows; it does not extend
+the accepted scope to solve the max/min limitation.
 
 ## Automated checks and artifacts
 
@@ -110,7 +143,7 @@ Original reheap question after Jina (5.14 s): “ReheapUp … phần tử cuối
 | Docker build and TEI health | Pinned INT8 checksum verified; healthy `/rerank` |
 | Compose `config --no-interpolate --quiet`, explicit private project | Pass |
 
-The deterministic regression guards budget and citation persistence; actual model interpretation is checked by the development pilot/live runs above. The full-suite warnings are the existing AnyIO deprecation, short-key JWT test warning, and deletion SAWarning. No no-mistakes pipeline was started, and no push or PR was attempted.
+The deterministic regression guards budget and citation persistence; actual model interpretation is checked by the development pilot/live runs above. The full-suite warnings are the existing AnyIO deprecation, short-key JWT test warning, and deletion SAWarning. The initial no-mistakes run validated and published this branch; a documentation follow-up records the fresh live checks below.
 
 - [2026-10-14-crosslingual-benchmark.json](2026-10-14-crosslingual-benchmark.json): all 200 question/source labels, before/after candidate scores, source refs, metrics and memory.
 - [2026-10-14-crosslingual-pilot.json](2026-10-14-crosslingual-pilot.json): exact pilot questions, both languages, required sources and scored retrieval.
