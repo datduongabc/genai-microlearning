@@ -159,9 +159,7 @@ def _questions(module: Module, component_type: ComponentType) -> list[QuizQuesti
         return [QuizQuestionInput(
             stem=q["stem"], choices=list(q["choices"].get("options", [])),
             correct_index=int(q["answer_key"]),
-            explanation=(edited.get(int(q["position"]))
-                         if explanation and "ai_original" in explanation.content else None)
-                        or q.get("explanation") or "",
+            explanation=q.get("explanation") or "",
         ) for q in original["questions"]]
     return [
         QuizQuestionInput(

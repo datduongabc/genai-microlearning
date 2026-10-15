@@ -77,3 +77,20 @@ def test_original_explanation_component_is_used_for_unedited_questions():
                            "ai_original": {"items": [{"component": "quiz", "position": 0,
                                                        "explanation_text": "AI override"}]}}
     assert module_packet(module, []).quiz[0].explanation == "AI override"
+
+
+def test_legacy_quiz_edit_then_other_question_edit_keeps_ai_explanation():
+    module = lesson()
+    quiz, practice, explanation = module.components[3], module.components[4], module.components[-1]
+    quiz_question = quiz.questions[0]
+    quiz.content = {**quiz.content, "ai_original": {"content": quiz.content, "questions": [vars(quiz_question).copy()]}}
+    quiz_question.explanation = "Teacher quiz explanation"
+    explanation.content = {"items": [{"component": "quiz", "position": 0,
+                                      "explanation_text": "Teacher quiz explanation"}]}
+    modules._apply_question_update(module, practice, practice.questions[0], modules.QuestionUpdate(
+        stem="Teacher practice", choices=["New A", "New B"], answer_key=1,
+        explanation="Teacher practice explanation"))
+    packet = module_packet(module, [])
+    assert packet.quiz[0].explanation == "AI explanation"
+    assert packet.practice.explanation == "AI explanation"
+    assert packet.practice.stem == "AI question"
