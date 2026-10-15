@@ -143,12 +143,7 @@ def _component(module: Module, component_type: ComponentType):
 
 
 def _original_content(component) -> dict:
-    if component is None:
-        return {}
-    original = component.content.get("ai_original", component.content)
-    if component.type in (ComponentType.quiz, ComponentType.practice) and "content" in original:
-        return original["content"]
-    return original
+    return component.content.get("ai_original", component.content)
 
 
 def _questions(module: Module, component_type: ComponentType) -> list[QuizQuestionInput]:
