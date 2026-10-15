@@ -5,7 +5,7 @@ Demo and normal use enable failover by default. The backend default remains
 selection, retries, cooldowns, rate checks and fallback chains. Provider keys are
 read only by the gateway from the runtime environment.
 
-Large-safe aliases (`gemini-fast`, `gemini-flash`, OpenAI and Claude aliases) fall
+Large-safe aliases (`gemini-fast`, `gemini-flash`, `groq-pro`, OpenAI and Claude aliases) fall
 back to the other free Gemini models. Paid providers are never automatic backups;
 select their aliases explicitly to use them. `groq-pro` is paid: it is the study
 judge alias and a lecturer opt-in model, billed when a lecturer selects it. Modules
