@@ -28,10 +28,7 @@ from app.generation.evaluation import judge_module
 from app.generation.study_packets import StudyFile
 from app.llm import gateway
 from app.llm.catalog import fetch_model_info
-from app.llm.judge import (
-    model_family,  # noqa: F401 (legacy CLI import)
-    refuse_same_family,
-)
+from app.llm.judge import refuse_same_family
 
 
 def anon_code(path: Path) -> str:
