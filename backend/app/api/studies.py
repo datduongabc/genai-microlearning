@@ -46,7 +46,7 @@ def _items(db: Session, study_id: uuid.UUID) -> list[StudyItem]:
 
 def _item_out(item: StudyItem) -> dict:
     return {"id": item.id, "anon_code": item.anon_code, "group": item.group,
-            "module_id": item.module_id, "packet": item.packet, "content_sources": item.content_sources}
+            "module_id": item.module_id, "packet": item.packet}
 
 
 @router.post("", status_code=201, dependencies=[Depends(require_admin)])

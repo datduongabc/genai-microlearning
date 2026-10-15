@@ -78,9 +78,7 @@ def test_study_migration_round_trip():
                 assert conn.scalar(text("SELECT relrowsecurity FROM pg_class WHERE oid = to_regclass(:table)"), {"table": table})
                 assert conn.scalar(text("SELECT has_table_privilege('app_runtime', :table, 'SELECT,INSERT,UPDATE,DELETE')"), {"table": table})
                 assert not conn.scalar(text("SELECT has_table_privilege('app_worker', :table, 'SELECT')"), {"table": table})
-            assert conn.scalar(text("SELECT version_num FROM alembic_version")) == "0020_study_content_sources"
-        assert "content_sources" in {c["name"] for c in inspect(engine).get_columns("study_items")}
-        assert "content_sources" not in {c["name"] for c in inspect(engine).get_columns("blind_study_items")}
+            assert conn.scalar(text("SELECT version_num FROM alembic_version")) == "0019_blind_ratings"
         migrate("0011_module_generation_models", "downgrade")
         assert set(inspect(engine).get_table_names()) == previous
         migrate("head")

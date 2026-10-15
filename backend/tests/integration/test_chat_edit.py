@@ -373,7 +373,7 @@ def test_quiz_number_two_edits_only_the_second_question(lesson, monkeypatch):
 
 
 def test_manual_slide_edits_keep_original_and_study_packet_uses_it(lesson):
-    from app.generation.study_packets import content_sources, module_packet
+    from app.generation.study_packets import module_packet
 
     ids, headers = lesson
     with SessionLocal() as db:
@@ -399,5 +399,3 @@ def test_manual_slide_edits_keep_original_and_study_packet_uses_it(lesson):
         module = db.get(Module, ids["module"])
         packet = module_packet(module, ["Reference"])
         assert [s.model_dump() for s in packet.slides] == original["slides"]
-        assert content_sources(module)["slides"] == "ai_original"
-        assert "content_sources" not in packet.model_dump()

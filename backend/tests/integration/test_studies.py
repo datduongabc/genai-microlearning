@@ -429,7 +429,7 @@ def test_legacy_missing_defaults_import_and_export_reuse_after_backfill_and_purg
         assert db.query(Module).filter(Module.paired_module_id == world["rag"]).count() == 1
 
 
-def test_edited_ai_pair_import_and_cli_export_use_original_with_private_audit(world, tmp_path):
+def test_edited_ai_pair_import_and_cli_export_use_original(world, tmp_path):
     from scripts.export_study_pair import main as export_pair
 
     originals = {}
@@ -447,17 +447,8 @@ def test_edited_ai_pair_import_and_cli_export_use_original_with_private_audit(wo
     for item in items:
         key = "rag" if item["group"] == "rag_llm" else "control"
         assert item["packet"]["content_markdown"] == originals[key]
-        assert item["content_sources"]["content"] == "ai_original"
-        assert "content_sources" not in item["packet"]
     export_pair([str(world["rag"]), "--out", str(tmp_path)])
     import json
     for group, key in [("rag_llm", "rag"), ("llm_no_rag", "control")]:
         exported = json.loads((tmp_path / f"{world['rag']}-{group}.json").read_text())
         assert exported["packet"]["content_markdown"] == originals[key]
-        assert exported["content_sources"]["content"] == "ai_original"
-        assert "content_sources" not in exported["packet"]
-    with SessionLocal() as db:
-        from sqlalchemy import text
-        columns = db.execute(text("SELECT column_name FROM information_schema.columns "
-                                  "WHERE table_name = 'blind_study_items'")).scalars().all()
-        assert "content_sources" not in columns
