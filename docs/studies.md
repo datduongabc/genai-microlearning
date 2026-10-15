@@ -173,9 +173,8 @@ Rubric và prompt không đổi.
   gọi**, không tách thành phần. Job đọc giới hạn từ gateway và đếm prompt như
   gateway; vượt giới hạn thì ghi `Packet too large ...`, không gọi Groq, không
   thử lại và không cắt gói. Lỗi cửa sổ ngữ cảnh từ gateway cũng không thử lại.
-  Các job vẫn dùng chung tối đa một lượt gọi mỗi 61 giây để giữ tải bảo thủ
-  dưới hạn mức trả phí. Hạn mức tài khoản và lưu lượng khác vẫn có thể gây 429,
-  được thử lại có back-off. Phải bật billing trên tài khoản Groq; bậc miễn phí
+  Gateway giữ lưu lượng dưới `tpm` đã khai báo; hạn mức tài khoản và lưu lượng
+  khác vẫn có thể gây 429, được thử lại có back-off. Phải bật billing trên tài khoản Groq; bậc miễn phí
   8.000 TPM không đủ cho gói toàn module khoảng 9.600–12.600 token.
 
 Migration 0020 giữ trigger khóa nghiên cứu, cấm sửa danh tính lượt chấm và

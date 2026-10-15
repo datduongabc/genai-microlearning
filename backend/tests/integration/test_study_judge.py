@@ -1,7 +1,6 @@
 """Runtime-role requests and real worker transactions with a fake gateway completion."""
 import uuid
-from concurrent.futures import ThreadPoolExecutor
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 from types import SimpleNamespace
 
 import httpx
@@ -49,7 +48,6 @@ def start(world, sid):
 
 def run(jid, steps):
     for _ in range(steps):
-        clear_reservation(jid)
         step(jid)
 
 
@@ -73,13 +71,6 @@ def status(world, sid, jid):
     return client.get(f"/studies/{sid}/judge/{jid}", headers=world["headers"]).json()
 
 
-def clear_reservation(jid):
-    with SessionLocal() as db:
-        job = db.get(Job, uuid.UUID(jid))
-        job.payload = {**job.payload, "groq_reserved_until": 0}
-        db.commit()
-
-
 def test_enqueue_parse_all_scores_pin_served_model_and_upsert(world, fake):
     sid = create_study(world)
     items = load(world, sid, module_ids=[str(world["rag"])]).json()
@@ -90,7 +81,6 @@ def test_enqueue_parse_all_scores_pin_served_model_and_upsert(world, fake):
     assert start(world, sid).status_code == 409
     assert load(world, sid, human_packets=[human_packet()]).status_code == 409
     step(jid)
-    clear_reservation(jid)
     step(jid)
     result = status(world, sid, jid)
     assert result["status"] == "done" and result["completed"] == 2
@@ -114,7 +104,6 @@ def test_enqueue_parse_all_scores_pin_served_model_and_upsert(world, fake):
         db.commit()
     second = start(world, sid).json()["job_id"]
     step(second)
-    clear_reservation(second)
     step(second)
     with SessionLocal() as db:
         assert {r.id for r in db.scalars(select(Rating))} == row_ids
@@ -135,7 +124,6 @@ def test_per_item_error_does_not_abort_later_items(world, fake, monkeypatch):
 
     monkeypatch.setattr(judge, "judge_module", evaluate)
     step(jid)
-    clear_reservation(jid)
     step(jid)
     result = status(world, sid, jid)
     assert result["status"] == "done"
@@ -161,13 +149,12 @@ def test_transient_error_retries_same_item_then_records_exhaustion(world, fake, 
     with SessionLocal() as db:
         job = db.get(Job, uuid.UUID(jid))
         assert job.attempts == 1 and job.run_after > datetime.now(UTC)
-    clear_reservation(jid)
     step(jid)
     result = status(world, sid, jid)
     assert result["completed"] == 1 and result["results"][0]["status"] == "failed"
 
 
-def test_oversized_packet_fails_at_once_without_calling_or_reserving_groq(world, fake, monkeypatch):
+def test_oversized_packet_fails_at_once_without_calling_groq(world, fake, monkeypatch):
     monkeypatch.setattr("random.SystemRandom.shuffle", lambda self, items: None)
     sid = create_study(world)
     big = human_packet()
@@ -181,7 +168,7 @@ def test_oversized_packet_fails_at_once_without_calling_or_reserving_groq(world,
     assert fake == []
     with SessionLocal() as db:
         job = db.get(Job, uuid.UUID(jid))
-        assert job.attempts == 0 and "groq_reserved_until" not in job.payload
+        assert job.attempts == 0
     step(jid)
     result = status(world, sid, jid)
     assert result["status"] == "done" and result["results"][1]["status"] == "done"
@@ -327,22 +314,4 @@ def test_judge_endpoints_are_admin_only(world, fake, headers_name, code):
     headers = world[headers_name] if headers_name else {}
     assert client.post(f"/studies/{sid}/judge", headers=headers, json={}).status_code == code
     assert client.get(f"/studies/{sid}/judge/{uuid.uuid4()}", headers=headers).status_code == code
-    assert fake == []
-
-
-def test_reservation_serializes_concurrent_workers(world, fake):
-    jobs = []
-    for _ in range(2):
-        sid = create_study(world)
-        load(world, sid, human_packets=[human_packet()])
-        jobs.append(start(world, sid).json()["job_id"])
-
-    def reserve(jid):
-        with WorkerSessionLocal() as db:
-            return judge.reserve_groq_call(db, db.get(Job, uuid.UUID(jid)), datetime.now(UTC))
-
-    with ThreadPoolExecutor(max_workers=2) as pool:
-        assert sorted(pool.map(reserve, jobs)) == [False, True]
-    with SessionLocal() as db:
-        assert any(db.get(Job, uuid.UUID(jid)).run_after > datetime.now(UTC) + timedelta(seconds=50) for jid in jobs)
     assert fake == []

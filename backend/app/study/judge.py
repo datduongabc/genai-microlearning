@@ -4,7 +4,7 @@ from datetime import UTC, datetime, timedelta
 
 import httpx
 import litellm
-from sqlalchemy import Float, cast, func, select, text
+from sqlalchemy import func
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
@@ -20,13 +20,11 @@ from app.jobs.queue import is_terminal_error, jittered_backoff
 from app.llm import gateway
 from app.llm.catalog import GatewayUnavailable, fetch_model_info
 from app.llm.judge import refuse_same_family
-from app.models import Job, JobStatus, JobType, Rating, StudyItem
+from app.models import Job, JobStatus, Rating, StudyItem
 
 # Decided for the study: a different family from the Gemini models that generate the modules.
 JUDGE_ALIAS = "groq-pro"
 OUTPUT_TOKENS = 2048
-# One full-context call/minute stays below the paid 250K TPM budget.
-GROQ_INTERVAL_SECONDS = 61
 
 
 def validate_judge(items: list[StudyItem]) -> tuple[str, int | None]:
@@ -83,20 +81,6 @@ def _requeue(job: Job, when: datetime) -> None:
     job.locked_by = None
 
 
-def reserve_groq_call(db: Session, job: Job, now: datetime) -> bool:
-    # Serialize reservations across all worker threads/processes, including after restart.
-    db.execute(text("SELECT pg_advisory_xact_lock(181903)"))
-    reserved_until = db.scalar(select(func.max(cast(Job.payload["groq_reserved_until"].astext, Float)))
-                               .where(Job.job_type == JobType.study_judge))
-    if reserved_until and now.timestamp() < reserved_until:
-        _requeue(job, datetime.fromtimestamp(reserved_until, UTC))
-        db.commit()
-        return False
-    job.payload = {**job.payload, "groq_reserved_until": now.timestamp() + GROQ_INTERVAL_SECONDS}
-    db.commit()
-    return True
-
-
 def run_study_judge_step(queued: Job) -> None:
     with WorkerSessionLocal() as db:
         job = db.get(Job, queued.id)
@@ -110,8 +94,6 @@ def run_study_judge_step(queued: Job) -> None:
                 raise ValueError("Study item no longer exists")
             packet = ModuleContentInput.model_validate(item.packet)
             check_packet_budget(packet, payload["max_input_tokens"])
-            if expected.startswith("groq/") and not reserve_groq_call(db, job, datetime.now(UTC)):
-                return
             with gateway.experiment_mode(), gateway.using_model(alias), gateway.capture_models() as calls:
                 evaluation = judge_module(packet, max_tokens=OUTPUT_TOKENS, max_retries=0, timeout=120)
             if len(calls) != 1 or calls[0]["served_model"].split("/")[-1] != expected.split("/")[-1]:

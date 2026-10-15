@@ -6,9 +6,9 @@ selection, retries, cooldowns, rate checks and fallback chains. Provider keys ar
 read only by the gateway from the runtime environment.
 
 Large-safe aliases (`gemini-fast`, `gemini-flash`, OpenAI and Claude aliases) fall
-back to the other free Gemini models. OpenAI and Claude are never automatic backups; select their aliases explicitly
-to use them. Groq now uses the paid tier for whole-packet study judging; the
-existing small-step fallback to Groq can also incur usage charges. No fallbacks apply to embeddings or
+back to the other free Gemini models. Paid providers, including Groq's paid tier
+for whole-packet study judging, are never automatic backups; select their aliases
+explicitly to use them. No fallbacks apply to embeddings or
 transcription. The two Gemini aliases back up each other, with LiteLLM's bounded
 fallback attempts preventing an endless cycle. If neither free model can serve a
 large request, generation fails rather than sending it to Groq or a paid model.
@@ -16,8 +16,8 @@ large request, generation fails rather than sending it to Groq or a paid model.
 Planner, Learning Objective, relevance checks and question checks can use the
 internal `gemini-fast-small` / `gemini-flash-small` profiles. The backend selects
 these profiles only for Gemini requests with at most 6,000 estimated tokens,
-including the response schema and a 2,048-token output budget. Their backups are
-the other Gemini small profile, then `groq-pro`. Larger calls keep the ordinary
+including the response schema and a 2,048-token output budget. Their only backup is
+the other Gemini small profile. Larger calls keep the ordinary
 alias. Content, including no-RAG Content and its self-check, never opts into the
 small profile. Slides, Example and question generation also keep the ordinary
 alias. The historical `groq-fast` alias is unavailable in the current configuration.

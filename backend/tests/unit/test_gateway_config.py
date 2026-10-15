@@ -221,8 +221,7 @@ def test_router_accepts_the_config_and_keeps_large_routes_off_groq(gateway, monk
         for mapping in fallback_type:
             for alias, backups in mapping.items():
                 assert alias in aliases and set(backups) <= aliases
-                if not alias.endswith("-small"):
-                    assert "groq-pro" not in backups
+                assert "groq-pro" not in backups
     groq = next(d for d in gateway["model_list"] if d["model_name"] == "groq-pro")
     assert groq["litellm_params"]["tpm"] == 250000
     assert groq["model_info"]["max_input_tokens"] + groq["model_info"]["max_output_tokens"] <= 131072
@@ -325,25 +324,23 @@ def test_provider_429_uses_the_configured_fallback(gateway, monkeypatch):
     router.reset()
 
 
-def test_small_chain_reaches_groq_when_both_gemini_models_have_no_quota(gateway, monkeypatch):
+def test_small_chain_never_reaches_paid_groq_when_both_gemini_models_have_no_quota(gateway, monkeypatch):
     import asyncio
 
     import litellm
 
     for name in (*PROVIDER_KEY_VARIABLES, "LLM_GATEWAY_KEY", "EMBEDDER_API_KEY"):
         monkeypatch.setenv(name, "test-key")
+    attempts = []
     async def provider(**kwargs):
-        if kwargs["model"].startswith("gemini/"):
-            raise litellm.RateLimitError("quota exhausted", model=kwargs["model"], llm_provider="gemini")
-        assert kwargs["reasoning_effort"] == "low"
-        return litellm.ModelResponse(model=kwargs["model"], choices=[
-            {"message": {"role": "assistant", "content": "small fallback"}},
-        ])
+        attempts.append(kwargs["model"])
+        raise litellm.RateLimitError("quota exhausted", model=kwargs["model"], llm_provider="gemini")
     monkeypatch.setattr(litellm, "acompletion", provider)
     router = litellm.Router(model_list=gateway["model_list"], **gateway["router_settings"])
-    response = asyncio.run(router.acompletion(
-        model="gemini-fast-small", messages=[{"role": "user", "content": "hello"}],
-        max_tokens=2048, num_retries=0,
-    ))
-    assert response.model == "groq/openai/gpt-oss-120b"
+    with pytest.raises(litellm.RateLimitError):
+        asyncio.run(router.acompletion(
+            model="gemini-fast-small", messages=[{"role": "user", "content": "hello"}],
+            max_tokens=2048, num_retries=0,
+        ))
+    assert attempts and all(model.startswith("gemini/") for model in attempts)
     router.reset()

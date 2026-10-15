@@ -152,7 +152,7 @@ model_list:
       note: phân phối giữa Flash Lite và Flash; không dùng cho thí nghiệm
 
 # LiteLLM owns retries, deployment cooldowns, load balancing and failover.
-# OpenAI and Claude remain opt-in. Existing small-step Groq backups now use paid billing.
+# OpenAI, Claude and paid Groq are opt-in; generation never falls back to them.
 router_settings:
   routing_strategy: simple-shuffle
   num_retries: 1
@@ -165,8 +165,8 @@ router_settings:
   fallbacks:
     - gemini-fast: [gemini-flash]
     - gemini-flash: [gemini-fast]
-    - gemini-fast-small: [gemini-flash-small, groq-pro]
-    - gemini-flash-small: [gemini-fast-small, groq-pro]
+    - gemini-fast-small: [gemini-flash-small]
+    - gemini-flash-small: [gemini-fast-small]
     - groq-pro: [gemini-fast, gemini-flash]
     - openai-fast: [gemini-fast, gemini-flash]
     - openai-pro: [gemini-fast, gemini-flash]
