@@ -7,10 +7,10 @@ read only by the gateway from the runtime environment.
 
 Large-safe aliases (`gemini-fast`, `gemini-flash`, OpenAI and Claude aliases) fall
 back to the other free Gemini models. Paid providers are never automatic backups;
-select the OpenAI and Claude aliases explicitly to use them. Groq's paid tier is
-for whole-packet study judging only: `groq-pro` is hidden from the lecturer model
-catalog, so it cannot be chosen for generation, and a previously saved `groq-pro`
-default falls back to the system default. No fallbacks apply to embeddings or
+select their aliases explicitly to use them. `groq-pro` is paid: it is the study
+judge alias and a lecturer opt-in model, billed when a lecturer selects it. Modules
+generated with it share the judge's family, so studies containing them are refused
+for judging. No fallbacks apply to embeddings or
 transcription. The two Gemini aliases back up each other, with LiteLLM's bounded
 fallback attempts preventing an endless cycle. If neither free model can serve a
 large request, generation fails rather than sending it to Groq or a paid model.

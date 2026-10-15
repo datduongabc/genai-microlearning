@@ -90,24 +90,6 @@ def test_dat_mac_dinh_roi_xem_lai_thi_thay():
     assert client.get("/models", headers=headers).json()["default"] == "groq-pro"
 
 
-def test_alias_an_khong_chon_duoc_va_mac_dinh_da_luu_lui_ve_he_thong(monkeypatch):
-    from app.config import settings
-
-    headers = _dang_nhap()
-    assert client.put("/models/default", json={"alias": "groq-pro"}, headers=headers).status_code == 200
-    an = [
-        {**m, "model_info": {**m["model_info"], "hidden": True}} if m["model_name"] == "groq-pro" else m
-        for m in GATEWAY_GIA_LAP
-    ]
-    monkeypatch.setattr(catalog, "fetch_model_info", lambda: an)
-    catalog.clear_cache()
-
-    body = client.get("/models", headers=headers).json()
-    assert [m["alias"] for m in body["models"]] == ["gemini-fast"]
-    assert body["default"] == settings.llm_model
-    assert client.put("/models/default", json={"alias": "groq-pro"}, headers=headers).status_code == 422
-
-
 def test_xoa_mac_dinh_bang_cach_dat_ve_null():
     headers = _dang_nhap()
     client.put("/models/default", json={"alias": "groq-pro"}, headers=headers)

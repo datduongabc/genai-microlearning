@@ -344,12 +344,3 @@ def test_small_chain_never_reaches_paid_groq_when_both_gemini_models_have_no_quo
         ))
     assert attempts and all(model.startswith("gemini/") for model in attempts)
     router.reset()
-
-
-def test_paid_groq_is_hidden_from_the_lecturer_catalog(gateway):
-    from app.llm import catalog
-
-    raw = [{**d, "model_info": {"mode": "chat", **(d.get("model_info") or {})}} for d in gateway["model_list"]]
-    offered = {choice.alias for choice in catalog.to_choices(raw)}
-    assert "groq-pro" not in offered
-    assert "gemini-fast" in offered

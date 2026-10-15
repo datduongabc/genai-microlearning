@@ -12,7 +12,7 @@ GATEWAY = [
     {"model_name": "gemini-fast", "litellm_params": {"model": "gemini/gemini-flash-lite-latest"}},
     {"model_name": "claude-pro", "litellm_params": {"model": "anthropic/claude-sonnet-5"}},
     {"model_name": "groq-pro", "litellm_params": {"model": "groq/openai/gpt-oss-120b"},
-     "model_info": {"max_input_tokens": 128000, "hidden": True}},
+     "model_info": {"max_input_tokens": 128000}},
     {"model_name": "openai-fast", "litellm_params": {"model": "openai/gpt-4o-mini"}},
 ]
 

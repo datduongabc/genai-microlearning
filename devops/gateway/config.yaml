@@ -100,8 +100,8 @@ model_list:
       display_name: Claude Sonnet 5
       note: chất lượng cao hơn, chậm hơn
 
-  # Paid Groq tier, study judge only: whole research packets are judged in one call.
-  # Hidden from the lecturer catalog; the judge reaches it through its pinned alias.
+  # Paid Groq tier: the study judge alias (whole packets in one call) and a lecturer
+  # opt-in model. Modules generated with it are excluded from judging (same family).
   # https://console.groq.com/docs/models (131,072 context; 250K TPM).
   # Text generation only: litellm's model table has no groq embedding model.
   - model_name: groq-pro
@@ -117,7 +117,6 @@ model_list:
       note: trả phí, chấm toàn bộ gói nghiên cứu (250.000 TPM)
       max_input_tokens: 128000
       max_output_tokens: 2048
-      hidden: true
 
   # Internal small-step profiles keep the same primary model. Only bounded
   # requests use these; Content, Slides and Example use the large-safe aliases.
@@ -154,7 +153,7 @@ model_list:
       note: phân phối giữa Flash Lite và Flash; không dùng cho thí nghiệm
 
 # LiteLLM owns retries, deployment cooldowns, load balancing and failover.
-# OpenAI and Claude are opt-in; paid Groq is judge-only. Generation never falls back to them.
+# OpenAI, Claude and paid Groq are opt-in; generation never falls back to them.
 router_settings:
   routing_strategy: simple-shuffle
   num_retries: 1
