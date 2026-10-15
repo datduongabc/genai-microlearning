@@ -1,16 +1,16 @@
 """Cross-encoder reranking (mục 2 kiến trúc): chấm lại các chunk ứng viên theo câu hỏi.
 
-The model (BAAI/bge-reranker-base) runs in a container of its own, the reranker service of
+The model (Jina v2 multilingual INT8) runs in a container of its own, the reranker service of
 devops/docker-compose.yml (Text Embeddings Inference), and is called over HTTP: loading it in the
 backend pulled torch into the backend image. Measured to be worth keeping in
-docs/measurements/2026-09-26-rerank-qwen3.md."""
+docs/measurements/2026-10-14-crosslingual-rerank.md."""
 
 import httpx
 
 from app.config import settings
 from app.models import Chunk
 
-# 30 candidates of up to 512 tokens each take a few seconds on CPU.
+# 30 candidates take a few seconds on CPU.
 TIMEOUT_SECONDS = 60
 
 
@@ -21,10 +21,8 @@ def rerank_scored(query: str, chunks: list[Chunk]) -> list[tuple[Chunk, float]]:
         return []
     response = httpx.post(
         f"{settings.reranker_url}/rerank",
-        # raw_scores false: the service puts the logit through a sigmoid, as sentence-transformers'
-        # CrossEncoder did, so Adaptive-k sees scores on the same 0-1 scale it was tuned on.
-        # truncate: a query and a chunk together can pass the model's 512 tokens; they are cut
-        # there, as before, instead of the whole request being refused.
+        # Sigmoid scores for Adaptive-k; a model change can still change their distribution.
+        # truncate: cut pairs at the model's context limit rather than refuse the request.
         json={"query": query, "texts": [c.content for c in chunks], "raw_scores": False, "truncate": True},
         timeout=TIMEOUT_SECONDS,
     )

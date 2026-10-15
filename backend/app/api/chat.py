@@ -84,7 +84,7 @@ def post_chat_message(
     history = [{"role": r.role.value, "content": r.content} for r in reversed(history_rows)]
 
     retrieval_query = condense_query(message, history)
-    context_chunks = retrieve(db, course_id, retrieval_query, top_k=5)
+    context_chunks = retrieve(db, course_id, retrieval_query, top_k=8)
     answer = answer_question(message, context_chunks, history)
 
     assistant_message = ChatMessage(

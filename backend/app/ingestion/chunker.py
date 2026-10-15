@@ -9,9 +9,9 @@ from app.ingestion.document_readers import DocumentUnit
 
 # Kích thước đo bằng token ước lượng (estimate_tokens), không bằng ký tự: cùng 1000 ký tự,
 # văn bản tiếng Anh là khoảng 250 token còn slide toán tiếng Việt là hơn 500, nên một ngưỡng
-# ký tự chung làm chunk toán dài gấp đôi chunk tiếng Anh. Trần là giới hạn 512 token của
-# reranker (bge-reranker-base cắt cặp câu hỏi và đoạn văn ở đó): chừa khoảng 50 token cho câu
-# hỏi và chừng 40 token cho dòng ngữ cảnh gắn thêm sau khi cắt.
+# ký tự chung làm chunk toán dài gấp đôi chunk tiếng Anh. Ngân sách được đặt theo trần
+# 512 token của BGE-base trước đây, chừa khoảng 50 token cho câu hỏi và 40 cho ngữ cảnh.
+# Giữ ngân sách này khi đổi sang Jina để không đổi corpus đã nhúng.
 MAX_CONTENT_TOKENS = 340
 
 # Recursive splitting (DOCX, HTML, .txt) -- mục 1 kiến trúc: overlap 10-20%.

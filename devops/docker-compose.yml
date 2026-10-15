@@ -119,39 +119,22 @@ services:
       # Lan dau con phai tai model.
       start_period: 15m
 
-  # Cross-encoder cham lai cac chunk ung vien cua moi lan truy xuat. Do lai tren 250 cau
-  # hoi cua 5 mon voi nhung Qwen3: dua chunk dung len dau nhieu hon co y nghia, khong mon
-  # nao kem di, xem docs/measurements/2026-09-26-rerank-qwen3.md. Chay trong container
-  # rieng de anh backend khong phai mang torch. Ban ONNX cua chinh kho BAAI, chay tren CPU.
-  # Chi backend goi toi no, nen khong mo cong nao ra may that.
+  # Shared reranker for chat and generation: Jina AI v2 multilingual INT8.
+  # CC-BY-NC-4.0: non-commercial research/thesis use; commercial use needs licensing.
+  # Exact model revision and graph checksum are in devops/reranker/prepare_model.py.
+  # Evidence: docs/measurements/2026-10-14-crosslingual-rerank.md.
   reranker:
-    image: ghcr.io/huggingface/text-embeddings-inference:cpu-1.9.4
+    build: ./devops/reranker
     container_name: do-an-reranker
-    command:
-      - --model-id
-      - BAAI/bge-reranker-base
-      # Ghim commit nhu embedder: diem cua model khac thi Adaptive-k cat o cho khac.
-      - --revision
-      - 2cfc18c9415c912f9d8155881c133215df768a70
-      # Backend gui toi 30 ung vien mot lan (candidate_k trong retrieval/search.py); mac
-      # dinh 32 thi sat nguong.
-      - --max-client-batch-size
-      - "64"
-    # ONNX Runtime mo mot luong cho moi nhan CPU no thay, va RAM tang theo: tren may 20
-    # nhan no giu khoang 6 GB, gioi han 4 nhan thi khoang 2,2 GB ma van cham 30 ung vien
-    # trong khoang 5,5 giay, nhanh ngang 8 nhan. May it hon 4 nhan dat RERANKER_CPUS
-    # trong .env, vi Docker tu choi so nhan lon hon so may co.
+    # Model/tokenizer are baked into the image; no Hub download at startup.
+    # TEI still serves /rerank, so chat and generation share the existing HTTP client.
     cpus: ${RERANKER_CPUS:-4}
-    volumes:
-      # Tai model mot lan (khoang 1,1 GB) roi giu lai qua cac lan tao lai container.
-      - reranker_models:/data
     healthcheck:
       test: ["CMD", "curl", "-fsS", "http://127.0.0.1:80/health"]
       interval: 10s
       timeout: 5s
       retries: 6
-      # Lan dau con phai tai model.
-      start_period: 15m
+      start_period: 2m
 
   gateway:
     build: ./devops/gateway
@@ -257,7 +240,6 @@ services:
 volumes:
   db_data:
   embedder_models:
-  reranker_models:
   moodle_data:
   caddy_data:
   caddy_config:
