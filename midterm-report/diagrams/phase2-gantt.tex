@@ -1,0 +1,16 @@
+\documentclass[tikz,border=7pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usetikzlibrary{arrows.meta,positioning,shapes.geometric,fit,backgrounds,calc}
+\begin{document}
+\begin{tikzpicture}[font=\sffamily\small,x=.65cm,y=.68cm]
+\foreach \x in {1,...,12} {\draw[gray!30] (\x,0) -- (\x,-8.6); \node at (\x+.5,.4) {\x};}
+\node[anchor=east] at (0,.4) {Week};
+\foreach \row/\start/\end/\name in {1/1/2/Corpus and ownership,2/2/3/Retrieval and labels,3/3/4/Paid-model pilot,4/4/6/Held-out generation,5/5/7/Rating and audits,6/7/8/Analysis,7/8/10/UI and recovery,8/10/12/Final report and demo} {
+ \node[anchor=east] at (.75,-\row) {\name};
+ \filldraw[fill=blue!20,draw=blue!60] (\start,-\row-.22) rectangle (\end+1,-\row+.22);
+}
+\node[anchor=west] at (1,-9.2) {26 Oct 2026};\node[anchor=east] at (13,-9.2) {17 Jan 2027};
+\node[anchor=west] at (1,-10) {Target defense/demo: 18 Jan 2027};
+\end{tikzpicture}
+\end{document}

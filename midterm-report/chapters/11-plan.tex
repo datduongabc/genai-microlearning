@@ -1,0 +1,52 @@
+\clearpage\section{Design synthesis and Phase 2 plan}\label{sec:plan}
+\subsection{Design outcomes}
+The design connects an instructor-owned course workspace, asynchronous document processing, local multilingual retrieval, seven-part generation, physical inline citations, preservation of the AI original, Moodle publication and blinded evaluation. Its central invariants are ownership isolation, stable source identity, consistent question/explanation edits and separation of teaching content from evaluation snapshots.
+
+Exploratory comparisons guide Qwen3 embedding, multilingual Jina reranking, bounded context and lightweight PDF extraction. Phase 2 will integrate the specified services and test these choices on held-out computing documents under fixed model conditions.
+\par
+Table~\ref{tab:11-plan-1} presents designed subsystems and their validation targets.
+\begin{table}[H]\centering\small\caption{Designed subsystems and their validation targets.}\label{tab:11-plan-1}
+\begin{tabularx}{\linewidth}{|p{3.0cm}|Y|Y|}\hline
+Subsystem & Design specification & Phase 2 validation\\\hline
+Authoring & Owned courses, asynchronous jobs, seven-part modules and editing & Complete instructor task flow and recovery\\\hline
+Retrieval & Qwen3, BM25/RRF, Jina INT8, bounded adaptive context & Multilingual evidence coverage and resource use\\\hline
+Citations and originals & Physical source map, inline spans and immutable AI snapshot & Claim/source alignment and edit consistency\\\hline
+Moodle boundary & Confirmed actor, course capabilities and activity mapping & Permission loss and partial-write recovery\\\hline
+Interface & Fifteen screens with role-specific navigation and source review & Accessibility and task-based usability\\\hline
+Evaluation & Paired conditions, blinded snapshots and independent judging & Rubric agreement, citation support and cost\\\hline
+\end{tabularx}\end{table}
+\subsection{Dependency-driven schedule}
+The twelve-week planning baseline runs from 26 October 2026 to 17 January 2027. The target defense/demo milestone is 18 January 2027; the faculty schedule determines the final appointment. Table~\ref{tab:schedule} and Figure~\ref{fig:gantt} align work windows with their exit criteria.
+\begin{longtable}{|p{2.0cm}|p{6.9cm}|p{5.0cm}|}\caption{Phase 2 work packages and exit criteria.}\label{tab:schedule}\\\hline
+Window & Work package & Exit criterion\\\hline\endfirsthead
+\hline Window & Work package & Exit criterion\\\hline\endhead
+26 Oct--8 Nov & Develop ownership, ingestion, physical citation mapping and AI-original preservation; prepare corpus and raters & Consistent source scope and frozen experiment protocol\\\hline
+2--15 Nov & Develop retrieval/gateway orchestration; label gold queries and prepare human packets & Calibrated retrieval labels, rubric and reference packets\\\hline
+9--22 Nov & Pilot paid-model paired generation and measure failure/cost & Refined workload and fixed held-out settings\\\hline
+16 Nov--6 Dec & Generate held-out pairs and bounded retrieval/self-check ablations & Complete raw packets and attempt records\\\hline
+23 Nov--13 Dec & Conduct blinded rating, independent judging and claim audits & Agreement sample and documented adjudication\\\hline
+7--20 Dec & Analyze quality, source support, retrieval and cost & Effect sizes, uncertainty and subject-level error analysis\\\hline
+14 Dec--3 Jan & Develop interface and publication recovery; conduct usability/security scenarios & Task observations and safe recovery evidence\\\hline
+28 Dec--17 Jan & Prepare demonstration, final report and evaluation package & Reproducible experiment artifacts and final analysis\\\hline
+\end{longtable}
+\diagram{phase2-gantt}{Phase 2 planning baseline, with a target defense milestone after week twelve.}{gantt}
+\subsection{Engineering priorities}
+Physical source identity and original preservation precede formal data collection. Model, prompt and corpus versions remain fixed within a comparison. Publication recovery records external activity IDs and per-step outcomes. Source-quality checks identify missing or malformed pages. User feedback and security scenarios guide the final interface and deployment configuration.
+
+\subsection{Risks and mitigations}
+Table~\ref{tab:risks} records the main limitations that can affect delivery or validity. Each trigger has a mitigation and an observable follow-up.
+\begin{longtable}{|p{3.0cm}|p{5.0cm}|p{5.9cm}|}\caption{Phase 2 risks, mitigations and checks.}\label{tab:risks}\\\hline
+Risk & Trigger / consequence & Mitigation and verification\\\hline\endfirsthead
+\hline Risk & Trigger / consequence & Mitigation and verification\\\hline\endhead
+Reranker license & Jina's noncommercial license may restrict deployment & Review intended use before release; retain a licensed alternative and compare retrieval on the same frozen labels.\\\hline
+Provider drift and cost & Model retirement, rate changes or fallback changes the comparison & Pin served model and prompt; disable experimental fallback; reconcile all attempts against a fixed budget.\\\hline
+Rater recruitment & Missing ratings or weak calibration reduce precision & Recruit before held-out generation; use the sample-size rule in Section~\ref{sec:conditions}; report shortfalls and agreement.\\\hline
+Moodle compatibility & Plugin/API changes or partial writes block safe publication & Test a supported Moodle/plugin pair; recheck capabilities; persist external IDs and exercise recovery without duplicate activities.\\\hline
+Extraction gaps & OCR, code layout or late-document topics are omitted & Audit page coverage and locators; retain native text when OCR is empty; test code/formula fidelity and planner-prefix coverage.\\\hline
+Evaluation validity & Generated origin labels and correlated claims inflate apparent quality & Add independent human questions and multi-relevance labels; split by document; bootstrap by document/pair; calibrate claim extraction.\\\hline
+Security and privacy & Injected source text, token theft or provider disclosure & Deny-by-default scope; cookie refresh protection; renderer sanitization; consent/retention review; adversarial end-to-end probes.\\\hline
+\end{longtable}
+\subsection{Conclusion}
+Phase 1 defines the complete authoring workflow (O1) through the requirements and use cases in Sections~\ref{sec:requirements} and~\ref{sec:usecases}. The architecture, data model and generation contracts meet O2 by specifying scoped retrieval, explicit context budgets and structured parts (Sections~\ref{sec:architecture}--\ref{sec:generation}). Physical citation mapping and first-edit preservation meet O3 (Section~\ref{sec:data}); capability-checked Moodle publication meets O4 (Section~\ref{sec:security}). The paired, blinded protocol and its sample-size rule address O5 (Section~\ref{sec:evaluation}).
+
+The preliminary measurements favor instructed Qwen3 embedding and Jina reranking on the frozen computing corpus, while exposing extraction and label limitations. The design contribution is the connection between pedagogically structured authoring, physical evidence, controlled editing and LMS publication. Phase 2 will test the integrated workflow, independent content quality and usability under fixed experimental conditions; student learning effects remain a separate research question.
