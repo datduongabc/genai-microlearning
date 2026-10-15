@@ -14,12 +14,11 @@ from app.generation.common import (
     system_instruction,
 )
 from app.generation.inline_citations import (
-    CITATION_LIKE,
+    MARKER,
     CitationSource,
     InlineCitation,
     derive_citations,
     prompt_source_map,
-    unknown_source_codes,
 )
 from app.generation.objective import LearningObjective
 from app.llm.gateway import complete_structured
@@ -105,10 +104,6 @@ class SourcedContent(LessonText):
     source_map: dict[str, CitationSource]
     source_locators: list[str]
     inline_citations: list[InlineCitation]
-
-
-def _unknown_source_ids(content: ContentOutput, chunks: list[Chunk]) -> list[str]:
-    return unknown_source_codes(content.content, prompt_source_map(chunks))
 
 
 def resolve_citations(content: ContentOutput, chunks: list[Chunk]) -> SourcedContent:
@@ -206,15 +201,9 @@ def _verify_content(
         return complete_structured(
             prompt, LessonVerification, system_instruction=NO_SOURCE_CONTENT_VERIFY_SYSTEM_INSTRUCTION, temperature=0.0
         )
-    check = complete_structured(
+    return complete_structured(
         prompt, ContentVerification, system_instruction=CONTENT_VERIFY_SYSTEM_INSTRUCTION, temperature=0.0
     )
-    # The critic can approve an invented ID too; membership is a server check, not a judgement.
-    unknown = _unknown_source_ids(content_out, context_chunks)
-    if unknown:
-        check.groundedness_pass = False
-        check.groundedness_reason += f"; Unknown source IDs: {', '.join(unknown)}. Use only the supplied IDs."
-    return check
 
 
 def generate_content(
@@ -264,12 +253,18 @@ def generate_content(
     criteria = [("completeness", "Completeness"), ("scope", "Scope")]
     if sourced:
         criteria.insert(0, ("groundedness", "Groundedness"))
+    def citation_error(out: LessonText) -> str | None:
+        if not sourced:
+            return "No-RAG Content must not contain citations" if MARKER.search(out.content) else None
+        try:
+            derive_citations(out.content, prompt_source_map(context_chunks))
+        except ValueError as exc:
+            return f"{exc}. Use only {', '.join('[' + i + ']' for i in allowed_ids) or 'no codes'}."
+        return None
+
     # Best-effort on semantic checks, but an unresolvable citation must not be published.
     out, check = _checked(
-        generate, (lambda out: _verify_content(out, lo, context_chunks)) if self_check else None, criteria
+        generate, (lambda out: _verify_content(out, lo, context_chunks)) if self_check else None, criteria,
+        reject=citation_error,
     )
-    if sourced and (unknown := _unknown_source_ids(out, context_chunks)):
-        raise ValueError(f"Content cites unknown source IDs: {', '.join(unknown)}")
-    if not sourced and CITATION_LIKE.search(out.content):
-        raise ValueError("No-RAG Content must not contain citations")
     return (resolve_citations(out, context_chunks) if sourced else out), check

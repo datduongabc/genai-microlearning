@@ -144,19 +144,27 @@ def failed_criteria(check, criteria: list[tuple[str, str]]) -> list[str]:
 
 
 def _checked[T, C](
-    generate: Callable[[str | None], T], verify: Callable[[T], C] | None, criteria: list[tuple[str, str]]
+    generate: Callable[[str | None], T], verify: Callable[[T], C] | None, criteria: list[tuple[str, str]],
+    reject: Callable[[T], str | None] | None = None,
 ) -> tuple[T, C | None]:
     """Sinh, tự kiểm, sinh lại một lần với đúng lý do trượt; hết lượt thì trả bản cuối và kết quả
-    kiểm của nó. `criteria`: (tên trường, nhãn trong lý do). `verify=None` (tắt tự kiểm): sinh một
-    lượt, không có kết quả kiểm."""
-    if verify is None:
-        return generate(None), None
+    kiểm của nó. `criteria`: (tên trường, nhãn trong lý do). `verify=None` (tắt tự kiểm): không có
+    kết quả kiểm. `reject`: lỗi cứng do máy chủ kiểm (vd trích dẫn không giải được), luôn được sinh
+    lại một lần kể cả khi tắt tự kiểm; vẫn lỗi sau lượt sinh lại thì ném ValueError."""
     feedback: str | None = None
     for _ in range(MAX_CORRECTION_RETRY + 1):
         out = generate(feedback)
+        error = reject(out) if reject else None
+        if error:
+            feedback = error
+            continue
+        if verify is None:
+            return out, None
         check = verify(out)
         failed = failed_criteria(check, criteria)
         if not failed:
             return out, check
         feedback = "; ".join(failed)
+    if error:
+        raise ValueError(error)
     return out, check

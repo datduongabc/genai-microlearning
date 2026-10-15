@@ -89,11 +89,38 @@ def test_unknown_ids_trigger_regeneration_even_when_the_critic_passes(monkeypatc
 
 
 @pytest.mark.parametrize("self_check", [True, False])
-def test_content_with_unknown_ids_is_never_returned_after_the_retry_budget(monkeypatch, self_check):
-    chunks = [chunk()]
+@pytest.mark.parametrize("bad", ["heap claim. [S1, S2]", "heap claim.\n[S1]"])
+def test_malformed_markers_are_sent_back_through_the_correction_retry(monkeypatch, self_check, bad):
+    chunks = [chunk("heap claim")]
+    generations = []
 
     def complete(prompt, response_model, **kwargs):
         if response_model is ContentOutput:
+            generations.append(prompt)
+            return ContentOutput(content=bad if len(generations) == 1 else "heap claim. [S1]")
+        return content.ContentVerification(
+            groundedness_pass=True, groundedness_reason="supported",
+            completeness_pass=True, completeness_reason="complete",
+            scope_pass=True, scope_reason="in scope",
+        )
+
+    monkeypatch.setattr(content, "complete_structured", complete)
+
+    stored, check = content.generate_content(LO, chunks, self_check=self_check)
+
+    assert len(generations) == 2 and "[S1]" in generations[1].split("LƯU Ý")[1]
+    assert stored.inline_citations[0].chunk_id == str(chunks[0].id)
+    assert (check is not None) == self_check
+
+
+@pytest.mark.parametrize("self_check", [True, False])
+def test_content_with_unknown_ids_is_never_returned_after_the_retry_budget(monkeypatch, self_check):
+    chunks = [chunk()]
+    generations = []
+
+    def complete(prompt, response_model, **kwargs):
+        if response_model is ContentOutput:
+            generations.append(prompt)
             return ContentOutput(content="heap claim. [S33]")
         return content.ContentVerification(
             groundedness_pass=True, groundedness_reason="supported",
@@ -105,6 +132,28 @@ def test_content_with_unknown_ids_is_never_returned_after_the_retry_budget(monke
 
     with pytest.raises(ValueError, match="S33"):
         content.generate_content(LO, chunks, self_check=self_check)
+    assert len(generations) == 2
+
+
+@pytest.mark.parametrize("self_check", [True, False])
+def test_no_rag_content_keeps_bracketed_text_but_retries_real_markers(monkeypatch, self_check):
+    outputs = iter(["Use an [S3 bucket] for storage. [S3]", "Use an [S3 bucket] for storage."])
+    generations = []
+
+    def complete(prompt, response_model, **kwargs):
+        if response_model is content.LessonText:
+            generations.append(prompt)
+            return content.LessonText(content=next(outputs))
+        return content.LessonVerification(
+            completeness_pass=True, completeness_reason="complete", scope_pass=True, scope_reason="in scope",
+        )
+
+    monkeypatch.setattr(content, "complete_structured", complete)
+
+    out, _ = content.generate_content(LO, None, self_check=self_check)
+
+    assert out.content == "Use an [S3 bucket] for storage."
+    assert len(generations) == 2 and "citations" in generations[1]
 
 
 @pytest.mark.parametrize("count", [0, 1, 2])

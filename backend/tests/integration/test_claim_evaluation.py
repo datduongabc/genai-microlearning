@@ -319,23 +319,24 @@ def test_small_document_without_section_is_complete_reference(monkeypatch):
         assert evidence.coverage == "unknown" and evidence.total_chunks is None
 
 
-def test_inline_sentence_checks_joint_cited_evidence_but_extracts_uncited_claims(monkeypatch):
+def test_each_inline_code_is_checked_against_its_own_chunk_and_uncited_claims_are_extracted(monkeypatch):
     calls = []
     def complete(prompt, model, **kwargs):
         data = json.loads(prompt)
         calls.append((model, data))
         if model is ce.ClaimExtraction:
             return ce.ClaimExtraction(claims=[
-                ce.ExtractedClaim(text='A and B.', start=0, end=8),
+                ce.ExtractedClaim(text='A holds.', start=0, end=8),
                 ce.ExtractedClaim(text='Uncited C.', start=19, end=29)])
-        return ce.SupportVerdict(supported=data['evidence'] == ['A', 'B'], reason='joint evidence')
+        return ce.SupportVerdict(supported='A' in data['evidence'], reason='own chunk')
     monkeypatch.setattr(ce, 'complete_structured', complete)
-    citations = [ce.StoredCitation(claim='A and B.', source_id=f'S{i+1}', start=0, end=8,
+    citations = [ce.StoredCitation(claim='A holds.', source_id=f'S{i+1}', start=0, end=8,
         locator=f'p{i}', chunk_id=str(i), chunk_content=text, resolution='resolved')
-        for i, text in enumerate(['A', 'B'])]
-    result = ce.assess_content('A and B. [S1][S2]\n  Uncited C.', ['A', 'B'], reference(2), citations)
+        for i, text in enumerate(['A', 'irrelevant'])]
+    result = ce.assess_content('A holds. [S1][S2]\n  Uncited C.', ['A', 'irrelevant'], reference(2), citations)
     assert result.total_claims == 2
-    assert result.citation_count == 2 and result.correct_citations == 2
-    assert calls[0][1]['content'] == 'A and B. [S1][S2]\n  Uncited C.'
-    assert calls[-1][1]['evidence'] == ['A', 'B']
-    assert len(calls) == 4  # extraction, both claims independently, one joint citation check
+    assert result.citation_count == 2 and result.correct_citations == 1
+    assert [c.supported for c in result.citations] == [True, False]
+    assert calls[0][1]['content'] == 'A holds. [S1][S2]\n  Uncited C.'
+    assert [c[1]['evidence'] for c in calls[-2:]] == [['A'], ['irrelevant']]
+    assert len(calls) == 5  # extraction, both claims independently, one check per inline code
