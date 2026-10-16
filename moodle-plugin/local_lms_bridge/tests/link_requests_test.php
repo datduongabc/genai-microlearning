@@ -69,27 +69,47 @@ final class link_requests_test extends \advanced_testcase {
         $user = $this->getDataGenerator()->create_user();
         $request = $this->request_for($user);
         $DB->set_field('user', 'suspended', 1, ['id' => $user->id]);
+        $this->assertSame('pending', link_requests::status($request['request_id'], 'app-account-1')['status']);
         $this->setUser($user);
         $this->expectException(\moodle_exception::class);
         link_requests::confirm($request['request_id'], true);
     }
 
-    public function test_email_lookup_refuses_unknown_accounts(): void {
-        $this->resetAfterTest();
-        $this->setAdminUser();
-        $this->expectException(\moodle_exception::class);
-        link_requests::create('account', 'unknown@example.com', 'app@example.com', 'User');
-    }
-
-    public function test_email_lookup_refuses_ambiguous_accounts(): void {
+    public function test_unmatched_requests_are_indistinguishable_and_expire(): void {
         global $DB;
         $this->resetAfterTest();
         $this->setAdminUser();
+        $user = $this->getDataGenerator()->create_user();
+        $suspended = $this->getDataGenerator()->create_user(['suspended' => 1]);
         $first = $this->getDataGenerator()->create_user();
         $second = $this->getDataGenerator()->create_user();
         $DB->set_field('user', 'email', $first->email, ['id' => $second->id]);
+        $emails = [$user->email, 'unknown@example.com', $suspended->email, $first->email];
+        $usercount = $DB->count_records('user');
+        $ids = [];
+        foreach ($emails as $email) {
+            $request = link_requests::create('app', $email, 'app@example.com', 'User');
+            $this->assertSame(['request_id', 'status'], array_keys($request));
+            $this->assertSame('pending', $request['status']);
+            $this->assertMatchesRegularExpression('/^[a-f0-9]{64}$/', $request['request_id']);
+            $ids[] = $request['request_id'];
+            $this->assertSame(['status' => 'pending', 'moodle_user_id' => 0],
+                link_requests::status($request['request_id'], 'app'));
+            $DB->set_field('local_lms_bridge_requests', 'timecreated', time() - 3600,
+                ['requestid' => $request['request_id']]);
+            $this->assertSame(['status' => 'expired', 'moodle_user_id' => 0],
+                link_requests::status($request['request_id'], 'app'));
+        }
+        $this->assertCount(4, array_unique($ids));
+        $this->assertEquals($usercount, $DB->count_records('user'));
+    }
+
+    public function test_unmatched_request_cannot_be_confirmed_even_by_admin(): void {
+        $this->resetAfterTest();
+        $this->setAdminUser();
+        $request = link_requests::create('app', 'unknown@example.com', 'app@example.com', 'User');
         $this->expectException(\moodle_exception::class);
-        link_requests::create('app', $first->email, 'app@example.com', 'User');
+        link_requests::confirm($request['request_id'], true);
     }
 
     public function test_status_is_bound_to_the_integration_user_too(): void {
