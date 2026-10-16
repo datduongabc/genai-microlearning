@@ -453,3 +453,32 @@ def test_chat_remaps_old_codes_to_the_edit_prompt_and_rederives_saved_citations(
         assert saved['inline_citations'][0]['chunk_id'] == second_id
         assert saved['inline_citations'][0]['claim'] == 'Insertion has logarithmic cost.'
         assert saved['source_map']['S2']['chunk_id'] == second_id
+
+
+def test_manual_slide_edits_keep_original_and_study_packet_uses_it(lesson):
+    from app.generation.study_packets import module_packet
+
+    ids, headers = lesson
+    with SessionLocal() as db:
+        original = copy.deepcopy(db.get(ModuleComponent, ids["slides"]).content)
+        module = db.get(Module, ids["module"])
+        module.bloom_level = "apply"
+        module.learning_objective = "Use a stack"
+        practice = ModuleComponent(module_id=ids["module"], type=ComponentType.practice, content={})
+        db.add(practice)
+        db.flush()
+        db.add(Question(component_id=practice.id, position=0, stem="Practice",
+                        choices={"options": ["A", "B"]}, answer_key="0", explanation="AI"))
+        db.commit()
+    for title in ["Teacher first", "Teacher second"]:
+        response = client.patch(f"/modules/{ids['module']}/components/{ids['slides']}",
+                                headers=headers, json={"content": {
+                                    "slides": [{"title": title, "bullets": ["Teacher bullet"]}],
+                                    "ai_original": {"forged": True},
+                                }})
+        assert response.status_code == 200, response.text
+        assert response.json()["content"]["ai_original"] == original
+    with SessionLocal() as db:
+        module = db.get(Module, ids["module"])
+        packet = module_packet(module, ["Reference"])
+        assert [s.model_dump() for s in packet.slides] == original["slides"]
