@@ -26,8 +26,8 @@ function refusal(status: number, data: unknown) {
 }
 
 async function fillAndSubmit(password = 'password123') {
-  await userEvent.type(screen.getByPlaceholderText('ten@example.com'), 'teacher@example.com')
-  await userEvent.type(screen.getByPlaceholderText('••••••••'), password)
+  await userEvent.type(screen.getByPlaceholderText('ten@truong.edu.vn'), 'teacher@example.com')
+  await userEvent.type(screen.getByPlaceholderText('Tối thiểu 8 ký tự'), password)
   await userEvent.click(screen.getByRole('button', { name: /đăng nhập/i }))
 }
 
@@ -46,11 +46,11 @@ describe('LoginPage', () => {
         <LoginPage />
       </MemoryRouter>,
     )
-    expect(screen.getByText('Tài khoản đã được tạo. Hãy đăng nhập.')).toBeInTheDocument()
+    expect(screen.getByText('✓ Đã tạo tài khoản. Mời đăng nhập.')).toBeInTheDocument()
     unmount()
 
     renderLoginPage()
-    expect(screen.queryByText('Tài khoản đã được tạo. Hãy đăng nhập.')).not.toBeInTheDocument()
+    expect(screen.queryByText('✓ Đã tạo tài khoản. Mời đăng nhập.')).not.toBeInTheDocument()
   })
 
   it('shows validation errors instead of calling login when the form is invalid', async () => {
@@ -66,8 +66,8 @@ describe('LoginPage', () => {
     mockLogin.mockResolvedValue({ id: '1', email: 'teacher@example.com', name: 'User', is_admin: false })
     renderLoginPage()
 
-    await userEvent.type(screen.getByPlaceholderText('ten@example.com'), 'teacher@example.com')
-    await userEvent.type(screen.getByPlaceholderText('••••••••'), 'password123')
+    await userEvent.type(screen.getByPlaceholderText('ten@truong.edu.vn'), 'teacher@example.com')
+    await userEvent.type(screen.getByPlaceholderText('Tối thiểu 8 ký tự'), 'password123')
     await userEvent.click(screen.getByRole('button', { name: /đăng nhập/i }))
 
     await waitFor(() => {
@@ -79,8 +79,8 @@ describe('LoginPage', () => {
     mockLogin.mockRejectedValue(new Error('network down'))
     renderLoginPage()
 
-    await userEvent.type(screen.getByPlaceholderText('ten@example.com'), 'teacher@example.com')
-    await userEvent.type(screen.getByPlaceholderText('••••••••'), 'password123')
+    await userEvent.type(screen.getByPlaceholderText('ten@truong.edu.vn'), 'teacher@example.com')
+    await userEvent.type(screen.getByPlaceholderText('Tối thiểu 8 ký tự'), 'password123')
     await userEvent.click(screen.getByRole('button', { name: /đăng nhập/i }))
 
     expect(await screen.findByText(/đăng nhập thất bại/i)).toBeInTheDocument()
@@ -116,13 +116,13 @@ describe('LoginPage', () => {
   it('tells the password manager which field is the username and which the current password', () => {
     renderLoginPage()
 
-    expect(screen.getByPlaceholderText('ten@example.com')).toHaveAttribute('autocomplete', 'username')
-    expect(screen.getByPlaceholderText('••••••••')).toHaveAttribute('autocomplete', 'current-password')
+    expect(screen.getByPlaceholderText('ten@truong.edu.vn')).toHaveAttribute('autocomplete', 'username')
+    expect(screen.getByPlaceholderText('Tối thiểu 8 ký tự')).toHaveAttribute('autocomplete', 'current-password')
   })
 })
 
 it('offers open registration and admin support', () => {
   renderLoginPage()
   expect(screen.getByRole('link', { name: 'Đăng ký' })).toHaveAttribute('href', '/register')
-  expect(screen.getByRole('link', { name: 'Liên hệ admin' })).toHaveAttribute('href', expect.stringContaining('mailto:'))
+  expect(screen.getByRole('link', { name: 'Quên mật khẩu?' })).toHaveAttribute('href', expect.stringContaining('mailto:'))
 })

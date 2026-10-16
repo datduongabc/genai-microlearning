@@ -176,6 +176,7 @@ it("asks before a link or logout discards unsaved input, and not once it is save
   await user.type(screen.getByLabelText("Ghi chú tổng quan"), " mới");
   await user.click(screen.getByRole("link", { name: "Nghiên cứu được mời" }));
   expect(confirm).toHaveBeenCalledTimes(1);
+  await user.click(screen.getByRole("button", { name: /Giảng viên/ }));
   await user.click(screen.getByRole("button", { name: "Đăng xuất" }));
   expect(confirm).toHaveBeenCalledTimes(2);
   expect(logout).not.toHaveBeenCalled();
@@ -189,6 +190,7 @@ it("asks before a link or logout discards unsaved input, and not once it is save
   const afterSave = new Event("beforeunload", { cancelable: true });
   window.dispatchEvent(afterSave);
   expect(afterSave.defaultPrevented).toBe(false);
+  await user.click(screen.getByRole("button", { name: /Giảng viên/ }));
   await user.click(screen.getByRole("button", { name: "Đăng xuất" }));
   expect(confirm).toHaveBeenCalledTimes(2);
   expect(logout).toHaveBeenCalledTimes(1);

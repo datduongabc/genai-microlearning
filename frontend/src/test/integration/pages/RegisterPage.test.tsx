@@ -21,8 +21,9 @@ function refusal(status: number, data: unknown) {
 async function fill({ name = 'Nguyen Van A', password = 'a-long-passphrase', confirm = undefined as string | undefined } = {}) {
   confirm ??= password
   await userEvent.type(screen.getByPlaceholderText('Nguyễn Văn A'), name)
-  await userEvent.type(screen.getByPlaceholderText('ten@example.com'), 'teacher@example.com')
-  const [passwordField, confirmField] = screen.getAllByPlaceholderText('••••••••')
+  await userEvent.type(screen.getByPlaceholderText('ten@truong.edu.vn'), 'teacher@example.com')
+  const passwordField = screen.getByLabelText('Mật khẩu')
+  const confirmField = screen.getByLabelText('Nhập lại mật khẩu')
   await userEvent.type(passwordField, password)
   await userEvent.type(confirmField, confirm)
   await userEvent.click(screen.getByRole('button', { name: /tạo tài khoản/i }))
@@ -77,7 +78,8 @@ describe('RegisterPage', () => {
   })
 
   it('tells the password manager to offer a new password rather than a saved one', () => {
-    const [passwordField, confirmField] = screen.getAllByPlaceholderText('••••••••')
+    const passwordField = screen.getByLabelText('Mật khẩu')
+  const confirmField = screen.getByLabelText('Nhập lại mật khẩu')
 
     expect(passwordField).toHaveAttribute('autocomplete', 'new-password')
     expect(confirmField).toHaveAttribute('autocomplete', 'new-password')
