@@ -142,14 +142,25 @@ def _component(module: Module, component_type: ComponentType):
     return next((c for c in module.components if c.type == component_type), None)
 
 
+def _original_content(component) -> dict:
+    return component.content.get("ai_original", component.content)
+
+
 def _questions(module: Module, component_type: ComponentType) -> list[QuizQuestionInput]:
     component = _component(module, component_type)
     explanation = _component(module, ComponentType.explanation)
     edited = {
         int(item["position"]): item.get("explanation_text") or ""
-        for item in ((explanation.content.get("items") or []) if explanation else [])
+        for item in ((_original_content(explanation).get("items") or []) if explanation else [])
         if item.get("component") == component_type.value
     }
+    original = component.content.get("ai_original", {}) if component else {}
+    if "content" in original and "questions" in original:
+        return [QuizQuestionInput(
+            stem=q["stem"], choices=list(q["choices"].get("options", [])),
+            correct_index=int(q["answer_key"]),
+            explanation=q.get("explanation") or "",
+        ) for q in original["questions"]]
     return [
         QuizQuestionInput(
             stem=q.stem, choices=list(q.choices.get("options", [])), correct_index=int(q.answer_key),
@@ -174,9 +185,9 @@ def module_packet(module: Module, sources: list[str]) -> ModuleContentInput:
         bloom_level=module.bloom_level,
         learning_objective=module.learning_objective,
         sub_objectives=list(module.sub_objectives or []),
-        content_markdown=(content.content.get("markdown") or "") if content else "",
-        slides=[SlideInput(**s) for s in ((slides.content.get("slides") or []) if slides else [])],
-        examples=[ExampleInput(**e) for e in ((examples.content.get("examples") or []) if examples else [])],
+        content_markdown=(_original_content(content).get("markdown") or "") if content else "",
+        slides=[SlideInput(**s) for s in ((_original_content(slides).get("slides") or []) if slides else [])],
+        examples=[ExampleInput(**e) for e in ((_original_content(examples).get("examples") or []) if examples else [])],
         quiz=quiz,
         practice=practice[0],
         source_chunks=sources,

@@ -204,3 +204,8 @@ khi xóa tệp tải lên; xung đột khóa ngoại lúc commit cũng rollback 
 Các script R8 `export_study_pair.py`, `run_judge.py`, `analyze_study.py` và định
 dạng JSON của chúng giữ nguyên. Nhập trực tiếp cặp JSON xuất sẵn chưa nằm
 trong API này.
+
+Khi nhập cặp AI vào nghiên cứu hoặc xuất bằng CLI, mỗi component đã sửa dùng
+`ai_original` đã lưu, gồm cả các hàng câu hỏi và lời giải gốc. Component chưa có
+snapshot dùng nội dung hiện tại. Các lần sửa trước khi có cơ chế giữ bản gốc
+không thể khôi phục nếu chưa lưu snapshot.

@@ -427,3 +427,28 @@ def test_legacy_missing_defaults_import_and_export_reuse_after_backfill_and_purg
         export_pair([str(world["rag"]), "--out", str(tmp_path)])
     with SessionLocal() as db:
         assert db.query(Module).filter(Module.paired_module_id == world["rag"]).count() == 1
+
+
+def test_edited_ai_pair_import_and_cli_export_use_original(world, tmp_path):
+    from scripts.export_study_pair import main as export_pair
+
+    originals = {}
+    with SessionLocal() as db:
+        for key in ("rag", "control"):
+            module = db.get(Module, world[key])
+            component = next(c for c in module.components if c.type == ComponentType.content)
+            originals[key] = component.content["markdown"]
+            component.content = {"markdown": "Teacher replacement", "ai_original": component.content}
+        db.commit()
+    sid = create_study(world)
+    response = load(world, sid, module_ids=[str(world["rag"])])
+    assert response.status_code == 201, response.text
+    items = client.get(f"/studies/{sid}", headers=world["headers"]).json()["items"]
+    for item in items:
+        key = "rag" if item["group"] == "rag_llm" else "control"
+        assert item["packet"]["content_markdown"] == originals[key]
+    export_pair([str(world["rag"]), "--out", str(tmp_path)])
+    import json
+    for group, key in [("rag_llm", "rag"), ("llm_no_rag", "control")]:
+        exported = json.loads((tmp_path / f"{world['rag']}-{group}.json").read_text())
+        assert exported["packet"]["content_markdown"] == originals[key]
