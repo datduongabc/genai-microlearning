@@ -37,6 +37,7 @@ Component & Configuration\\\hline\endfirsthead
 \hline Component & Configuration\\\hline\endhead
 Qwen3 embedding & ONNX revision \hashcode{c25a394dd583836952667c12f008335071b3f43d}; last-token pooling; 768 dimensions after truncation and normalization\\\hline
 BGE-M3 embedding & Revision \hashcode{5617a9f61b028005a4858fdac845db406aefb181}; CLS pooling; 1,024 dimensions\\\hline
+Gemini embedding & Gemini embedding-001 API; 768 dimensions; \code{RETRIEVAL_DOCUMENT}/\code{RETRIEVAL_QUERY} for chunks/questions; no title field; unit normalization\\\hline
 BGE reranker & Revision \hashcode{2cfc18c9415c912f9d8155881c133215df768a70}; 512 input-token limit\\\hline
 Jina reranker & 8-bit integer (INT8) ONNX weights, SHA-256 \hashcode{c5220cf8fe023f8aa0ed2a3eb787d4451a7f17cf53f6b787e35718dd4b8815c3}; 1,024 input-token limit\\\hline
 Local serving & TEI CPU 1.9.4; 50 texts per embedding HTTP request; model-token input cap 1,024; reranking one query with 30 candidates per request\\\hline
