@@ -6,7 +6,7 @@ Phần thiết lập (tạo nghiên cứu, nạp đơn vị, mời người ch�
 [chấm mù](#cham-mu) dành cho tài khoản được mời. [LLM judge](#llm-judge)
 ghi điểm vào cùng bảng; trang kết quả thuộc phần sau.
 
-Chạy migration `alembic upgrade head` để thêm revision `0018_study_model` và
+Chạy migration `alembic upgrade head` để thêm revision `0018_study_model`,
 `0019_blind_ratings`, `0020_study_judge` và `0021_remove_textbook_scope`.
 
 Tất cả gói đối chiếu dùng phạm vi toàn tài liệu. Migration `0021` giữ module,
