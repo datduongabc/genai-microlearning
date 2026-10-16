@@ -22,6 +22,7 @@ from app.generation.evaluation import (
     QuizQuestionInput,
     SlideInput,
 )
+from app.generation.inline_citations import MARKER, derive_citations
 from app.generation.module_generation_pipeline import (
     IncompleteModuleError,
     concept_query_of,
@@ -106,17 +107,23 @@ def study_evidence(db: Session, module: Module, sources: list[str]) -> tuple[Ref
         chunk_ids=[str(c.id) for c in chunks] if complete else [],
         total_chunks=len(chunks) if complete or section else None,
     )
-    return reference, resolved_citations(db, module)
+    return reference, resolved_citations(db, module, use_ai_original=True)
 
 
-def resolved_citations(db: Session, module: Module) -> list[StoredCitation] | None:
+def resolved_citations(
+    db: Session, module: Module, *, use_ai_original: bool = False,
+) -> list[StoredCitation] | None:
     """Resolve saved Content citations within the module's document, without guessing ties.
 
     A citation saved with a `chunk_id` points at exactly that chunk, so it is found or missing.
     Modules saved before citations carried one hold only the locator the model copied, which is
     matched against the chunks' locators and is ambiguous when several share it."""
     content = _component(module, ComponentType.content)
-    saved = content.content.get("claim_citations") if content else None
+    original = (_original_content(content) if use_ai_original else content.content) if content else {}
+    saved = original.get("claim_citations")
+    if "source_map" in original:
+        saved = [c.model_dump() for c in derive_citations(
+            original.get("markdown") or "", original["source_map"])]
     if saved is None:
         return None
     candidates = db.query(Chunk).filter(
@@ -132,6 +139,7 @@ def resolved_citations(db: Session, module: Module) -> list[StoredCitation] | No
         chunk = matches[0] if len(matches) == 1 else None
         citations.append(StoredCitation(
             claim=item["claim"], locator=item["locator"],
+            **{k: item[k] for k in ("source_id", "start", "end", "marker_start", "marker_end") if k in item},
             chunk_id=str(chunk.id) if chunk else None, chunk_content=chunk.content if chunk else None,
             resolution="resolved" if chunk else "ambiguous" if matches else "missing",
         ))
@@ -185,7 +193,8 @@ def module_packet(module: Module, sources: list[str]) -> ModuleContentInput:
         bloom_level=module.bloom_level,
         learning_objective=module.learning_objective,
         sub_objectives=list(module.sub_objectives or []),
-        content_markdown=(_original_content(content).get("markdown") or "") if content else "",
+        # Blank marker characters so blinded packets hide source codes but preserve Content offsets.
+        content_markdown=MARKER.sub(lambda m: " " * len(m[0]), (_original_content(content).get("markdown") or "")) if content else "",
         slides=[SlideInput(**s) for s in ((_original_content(slides).get("slides") or []) if slides else [])],
         examples=[ExampleInput(**e) for e in ((_original_content(examples).get("examples") or []) if examples else [])],
         quiz=quiz,

@@ -18,9 +18,10 @@ from app.api.deps import get_current_user
 from app.auth.rate_limit import limiter, user_or_address
 from app.chat.service import HISTORY_TURNS, QuizQuestionEdit, module_edit_count, propose_module_edit
 from app.db import get_db
-from app.generation.common import OutputLanguage, resolve_source_id
+from app.generation.common import OutputLanguage
 from app.generation.content import ContentOutput, resolve_citations
 from app.generation.example import ExampleOutput
+from app.generation.inline_citations import MARKER, citation_content
 from app.generation.limits import reserve_generations
 from app.generation.module_generation_pipeline import (
     IncompleteModuleError,
@@ -553,6 +554,25 @@ def update_component(
     if component is None or component.module_id != module_id:
         raise HTTPException(status_code=404, detail="Component not found")
     content = {k: v for k, v in payload.content.items() if k != "ai_original"}
+    if component.type == ComponentType.content:
+        markdown = content.get("markdown")
+        if not isinstance(markdown, str):
+            raise HTTPException(status_code=422, detail="Content Markdown is required")
+        for key in ("source_map", "inline_citations", "claim_citations", "source_locators"):
+            content.pop(key, None)
+        if "source_map" in component.content:
+            try:
+                # The client may send metadata copied before an edit, but cannot replace the source map.
+                content.update(citation_content(markdown, component.content["source_map"]))
+            except ValueError as exc:
+                raise HTTPException(status_code=422, detail=str(exc)) from exc
+        else:
+            if MARKER.search(markdown):
+                raise HTTPException(status_code=422, detail="Content without a source map must not contain citations")
+            # Keep legacy display on unchanged text; changed text cannot retain copied old claims.
+            unchanged = markdown == component.content.get("markdown")
+            content["claim_citations"] = component.content.get("claim_citations", []) if unchanged else []
+            content["source_locators"] = component.content.get("source_locators", []) if unchanged else []
     content["ai_original"] = _ai_original(component)
     component.content = content
     db.commit()
@@ -666,15 +686,10 @@ def chat_edit_module(
                 content = revised.model_dump()
                 if edit.target == "content":
                     sourced = resolve_citations(revised, chunks)
-                    shown = {str(c.id) for c in chunks}
-                    if any(resolve_source_id(chunks, i) is None for i in revised.source_ids) or any(
-                        c.chunk_id is None for c in sourced.claim_citations
-                    ) or (any(c.chunk_id in shown for c in citations)
-                          and not (sourced.source_locators and sourced.claim_citations)):
-                        raise ValueError("Citation outside source chunks")
                     content = sourced.model_dump()
                     content["markdown"] = content.pop("content")
-                component.content = {**component.content, **content,
+                prior = {k: v for k, v in component.content.items() if edit.target != "content" or k != "claim_citations"}
+                component.content = {**prior, **content,
                                      "ai_original": component.content.get("ai_original", component.content)}
     except (ValidationError, ValueError) as exc:
         db.rollback()

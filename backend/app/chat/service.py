@@ -20,6 +20,7 @@ from app.generation.common import (
 )
 from app.generation.content import ContentOutput
 from app.generation.example import ExampleOutput
+from app.generation.inline_citations import MARKER
 from app.generation.slides import SlidesOutput
 from app.llm.gateway import complete, complete_structured
 from app.models import ChatMessage, ChatSession, Chunk, Module
@@ -129,8 +130,11 @@ ExampleOutput hoặc QuizQuestionEdit tương ứng; không trả về cả quiz
 QuizQuestionEdit chỉ gồm stem, choices (4 phương án), correct_index (0..3), explanation.
 Trả question_number của câu đó trong COMPONENTS; không lấy số từ lịch sử hay tình huống.
 Chỉ dùng kiến thức trong SOURCE CHUNK của tài liệu gốc; không bổ sung kiến thức ngoài nguồn.
-Chỉ dùng source_ids/claim_citations có source_id (vd "S2") thật ghi ở đầu SOURCE CHUNK.
-COMPONENTS ghi sẵn source_id của các trích dẫn hiện có; giữ các trích dẫn còn đúng.
+Content chỉ gồm content là Markdown: chèn mã inline [S2] ngay sau câu được nguồn bảo chứng.
+Một câu có thể trích nhiều mã [S1][S2]. Không trả source_ids, claim_citations, URL hay locator.
+Chỉ dùng đúng mã thật ghi ở đầu SOURCE CHUNK của lượt chỉnh sửa này.
+COMPONENTS có các mã đã đổi theo prompt này; giữ mã khi câu còn đúng và bỏ mã của câu đã bỏ.
+existing_citations của module cũ là gợi ý; chuyển trích dẫn còn đúng thành mã inline trong Content.
 Nếu yêu cầu mơ hồ, ngoài mô-đun, cần kiến thức ngoài nguồn, hoặc sửa nhiều
 thành phần/câu hỏi, trả target=null, question_number=null, revised=null
 và reply hỏi làm rõ. Không tự đoán thành phần hay vị trí.
@@ -147,15 +151,25 @@ def propose_module_edit(message: str, module: Module, chunks: list[Chunk], histo
     # The existing citations are shown by the IDs the passages carry in this prompt.
     ids = {str(c.id): source_id(i) for i, c in enumerate(chunks)}
     cited = [{"claim": c.claim, "source_id": ids[c.chunk_id]} for c in citations or [] if c.chunk_id in ids]
-    components = [{
-        "id": str(c.id), "type": c.type.value,
-        "content": {**{k: v for k, v in c.content.items() if k in ("markdown", "slides", "examples")},
-                    **({"source_ids": list(dict.fromkeys(x["source_id"] for x in cited)),
-                        "claim_citations": cited} if c.type.value == "content" else {})},
-        "questions": [{"id": str(q.id), "question_number": q.position + 1, "stem": q.stem,
-                       "choices": q.choices, "answer_key": q.answer_key, "explanation": q.explanation}
-                      for q in c.questions],
-    } for c in module.components if c.type.value != "explanation"]
+    components = []
+    for component in module.components:
+        if component.type.value == "explanation":
+            continue
+        content = {k: v for k, v in component.content.items() if k in ("markdown", "slides", "examples")}
+        if component.type.value == "content":
+            mapping = component.content.get("source_map", {})
+            def remap(marker):
+                saved = mapping.get(marker[1], {})
+                code = ids.get(saved.get("chunk_id"))
+                return f"[{code}]" if code else ""
+            content["markdown"] = MARKER.sub(remap, content.get("markdown") or "")
+            content["existing_citations"] = cited
+        components.append({
+            "id": str(component.id), "type": component.type.value, "content": content,
+            "questions": [{"id": str(q.id), "question_number": q.position + 1, "stem": q.stem,
+                           "choices": q.choices, "answer_key": q.answer_key, "explanation": q.explanation}
+                          for q in component.questions],
+        })
     prompt = (f"MODULE: {module.title}\nOBJECTIVE: {module.learning_objective}\n"
               f"COMPONENTS: {json.dumps(components, ensure_ascii=False)}\n"
               f"HISTORY: {json.dumps(history, ensure_ascii=False)}\n"

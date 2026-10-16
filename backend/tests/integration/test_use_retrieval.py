@@ -55,7 +55,7 @@ OUTPUTS = {
         sub_objectives=SUB_OBJECTIVES,
     ),
     RelevanceCheck: RelevanceCheck(confidence="high", reason="đủ"),
-    ContentOutput: ContentOutput(content=LESSON, source_ids=[]),
+    ContentOutput: ContentOutput(content=LESSON),
     LessonText: LessonText(content=LESSON),
     SlidesOutput: SlidesOutput(slides=[Slide(title="S1", bullets=["b"]), Slide(title="S2", bullets=["b"])]),
     ExampleOutput: ExampleOutput(examples=[Example(context="bối cảnh", analysis="phân tích")] * 2),
@@ -167,14 +167,15 @@ def test_without_retrieval_nothing_is_ever_searched(document, llm, monkeypatch):
     assert llm and not {c["model"] for c in llm} & RAG_ONLY
 
 
-def test_both_arms_store_the_same_components_with_the_same_shape(document, llm):
+def test_both_arms_store_the_same_components_with_citation_metadata_only_in_rag(document, llm):
     rag_id, control_id, _, _ = _pair(document, llm)
 
     db = SessionLocal()
     try:
         def components(module_id):
             rows = db.query(ModuleComponent).filter(ModuleComponent.module_id == module_id).all()
-            return sorted((c.type.value, sorted(c.content), len(c.questions)) for c in rows)
+            return sorted((c.type.value, sorted(set(c.content) - {"source_map", "inline_citations", "claim_citations"}),
+                           len(c.questions)) for c in rows)
 
         assert components(rag_id) == components(control_id)
         assert [t for t, _, _ in components(rag_id)] == [

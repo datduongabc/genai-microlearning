@@ -153,7 +153,7 @@ def test_generate_module_end_to_end_creates_all_components():
 
     content = next(c for c in detail["components"] if c["type"] == "content")
     assert content["content"]["markdown"]
-    assert content["content"]["claim_citations"], "Content must cite at least one claim"
+    assert content["content"]["inline_citations"], "Content must cite at least one claim"
 
     slides = next(c for c in detail["components"] if c["type"] == "slides")
     assert slides["content"]["slides"]

@@ -690,3 +690,41 @@ it('shows the served model when generation used a fallback', async () => {
   renderPage()
   expect(await screen.findByText(/Model sinh: gemini-fast → gemini-3.5-flash/)).toBeInTheDocument()
 })
+
+it('renders numbered inline citations in reading order and opens the exact chunk', async () => {
+  vi.mocked(api.getModule).mockResolvedValue({
+    ...baseModule,
+    claim_citations: [
+      { claim: 'Fact.', source_id: 'S2', locator: 'page 2', chunk_content: 'Second physical chunk', resolution: 'resolved' },
+      { claim: 'Fact.', source_id: 'S1', locator: 'page 1', chunk_content: 'First physical chunk', resolution: 'resolved' },
+    ],
+    components: [{ id: 'content-1', type: 'content', questions: [], content: {
+      markdown: '- Fact. [S2][S1]\n- Repeated source. [S2]', source_map: {},
+    } }],
+  } as ModuleDetail)
+  renderPage()
+  const buttons = await screen.findAllByRole('button', { name: 'Nguồn 1' })
+  expect(buttons).toHaveLength(2)
+  expect(screen.getByRole('button', { name: 'Nguồn 2' })).toHaveTextContent('[2]')
+  await userEvent.click(buttons[0])
+  expect(screen.getByRole('dialog')).toHaveTextContent('Second physical chunk')
+  expect(screen.getByRole('dialog')).not.toHaveTextContent('First physical chunk')
+  await userEvent.click(screen.getByRole('button', { name: 'Đóng nguồn' }))
+  await userEvent.click(screen.getByRole('button', { name: 'Nguồn 2' }))
+  expect(screen.getByRole('dialog')).toHaveTextContent('First physical chunk')
+})
+
+it('keeps the Content editor open and reports a rejected source marker', async () => {
+  vi.mocked(api.getModule).mockResolvedValue({ ...baseModule, components: [
+    { id: 'content-1', type: 'content', content: { markdown: 'Original. [S1]', source_map: {} }, questions: [] },
+  ] })
+  vi.mocked(api.updateComponentContent).mockRejectedValue(new Error('Content cites unknown source IDs: S99'))
+  renderPage()
+  const section = (await screen.findByText('Nội dung')).closest('section')!
+  await userEvent.click(within(section).getByRole('button', { name: 'Sửa' }))
+  const field = within(section).getByRole('textbox', { name: 'Nội dung' })
+  fireEvent.change(field, { target: { value: 'Revised. [S99]' } })
+  await userEvent.click(within(section).getByRole('button', { name: 'Lưu' }))
+  expect(await within(section).findByRole('alert')).toHaveTextContent(/không thể lưu/i)
+  expect(field).toHaveValue('Revised. [S99]')
+})

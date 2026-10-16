@@ -207,22 +207,11 @@ def _reranked(query: str, candidates: list[Chunk], top_k: int | None, min_k: int
 def expand_with_parent_context(
     db: Session, chunks: list[Chunk], window: int = 2, scope: ChunkScope | None = None
 ) -> list[Chunk]:
-    """Parent-Child Retrieval (mục 3.2 kiến trúc, GD2 must-have): mở rộng
-    từng chunk đã truy xuất được (child, chính xác để tìm kiếm) thành 1
-    "parent window" gồm `window` chunk liền kề trước/sau trong CÙNG tài liệu
-    (theo chunk_index, không phải created_at -- xem comment ở Chunk model),
-    gộp lại thành 1 khối văn bản liên tục. Dùng khi sinh Content/Slides để
-    không bị mất mạch ngữ cảnh khi câu/công thức liên quan bị cắt sang chunk
-    khác cạnh nó (vấn đề "orphan equations/references").
+    """Add neighbouring physical chunks in document order, within the requested scope.
 
-    Không sửa đổi chunk gốc trong bộ nhớ/DB -- trả về danh sách Chunk MỚI
-    (transient, không add vào session) mà content đã là văn bản parent gộp,
-    dùng trực tiếp được với format_source_chunks() như chunk thường.
-
-    Lưu ý phạm vi: cửa sổ nhỏ (mặc định ±2 chunk) chỉ nối liền ngữ cảnh NGAY
-    CẠNH chunk đã khớp -- không giúp tìm lại nội dung liên quan nhưng nằm ở
-    vị trí XA trong cùng tài liệu (đó là việc của top_k rộng hơn ở tầng gọi,
-    không phải của hàm này)."""
+    Every returned chunk retains its own ID, text and locator: one evidence unit per
+    source code, including neighbours added for parent context. Overlaps appear once.
+    """
     if not chunks:
         return []
 
@@ -241,8 +230,7 @@ def expand_with_parent_context(
     for c in all_doc_chunks:
         chunks_by_doc.setdefault(c.document_id, []).append(c)
 
-    expanded: list[Chunk] = []
-    seen_ranges: set[tuple] = set()
+    expanded: dict = {}
     for child in chunks:
         lo_idx = max(0, child.chunk_index - window)
         hi_idx = child.chunk_index + window
@@ -251,18 +239,9 @@ def expand_with_parent_context(
             # first and last chunk of a section would pull its text in.
             lo_idx = max(lo_idx, scope.first_chunk_index)
             hi_idx = min(hi_idx, scope.last_chunk_index)
-        key = (child.document_id, lo_idx, hi_idx)
-        if key in seen_ranges:
-            continue  # 2 child gần nhau có thể cho ra cùng 1 parent window -- tránh lặp
-        seen_ranges.add(key)
-
-        siblings = [
-            s for s in chunks_by_doc.get(child.document_id, [])
-            if lo_idx <= s.chunk_index <= hi_idx
-        ]
-        merged_text = "\n\n".join(s.content for s in siblings)
-        expanded.append(Chunk(
-            id=child.id, document_id=child.document_id, course_id=child.course_id,
-            chunk_index=child.chunk_index, content=merged_text, source_ref=child.source_ref,
-        ))
-    return expanded
+        for sibling in chunks_by_doc.get(child.document_id, []):
+            if lo_idx <= sibling.chunk_index <= hi_idx:
+                expanded[sibling.id] = sibling
+    # Preserve document relevance order, and physical reading order within each document.
+    doc_order = {doc_id: i for i, doc_id in enumerate(dict.fromkeys(c.document_id for c in chunks))}
+    return sorted(expanded.values(), key=lambda c: (doc_order[c.document_id], c.chunk_index))

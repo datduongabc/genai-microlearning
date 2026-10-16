@@ -122,13 +122,13 @@ def test_parent_context_does_not_cross_the_scope_boundary(book):
         at_start = expand_with_parent_context(db, [chunks[3]], window=2, scope=scope)
         at_end = expand_with_parent_context(db, [chunks[5]], window=2, scope=scope)
 
-        assert at_start[0].content == "\n\n".join(TEXTS[3:6])
-        assert at_end[0].content == "\n\n".join(TEXTS[3:6])
+        assert [c.content for c in at_start] == TEXTS[3:6]
+        assert [c.content for c in at_end] == TEXTS[3:6]
     finally:
         db.close()
 
 
-def test_two_chunks_that_expand_to_the_same_clamped_window_give_one_parent(book):
+def test_two_chunks_that_expand_to_the_same_clamped_window_return_each_physical_chunk_once(book):
     db = SessionLocal()
     try:
         chunks = db.query(Chunk).filter(Chunk.document_id == book["doc"]).order_by(Chunk.chunk_index).all()
@@ -136,7 +136,7 @@ def test_two_chunks_that_expand_to_the_same_clamped_window_give_one_parent(book)
 
         expanded = expand_with_parent_context(db, [chunks[3], chunks[5]], window=2, scope=scope)
 
-        assert len(expanded) == 1
+        assert [c.id for c in expanded] == [c.id for c in chunks[3:6]]
     finally:
         db.close()
 

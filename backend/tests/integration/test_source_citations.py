@@ -42,22 +42,17 @@ def test_an_id_maps_to_its_chunk_and_an_invented_one_to_nothing():
 def test_chunks_that_share_a_locator_are_still_cited_exactly():
     """Every chunk under one heading shares its locator, which is what made them ambiguous."""
     chunks = [chunk("a"), chunk("b")]
-    out = ContentOutput(content="x", source_ids=["S2"], claim_citations=[{"claim": "b", "source_id": "S2"}])
+    out = ContentOutput(content="b [S2]")
 
     stored = resolve_citations(out, chunks)
 
-    assert stored.claim_citations[0].chunk_id == str(chunks[1].id)
+    assert stored.inline_citations[0].chunk_id == str(chunks[1].id)
     assert stored.source_locators == ['{"heading": "Sorting"}']
 
 
-def test_an_id_the_model_invented_is_saved_without_a_chunk():
-    chunks = [chunk()]
-    out = ContentOutput(content="x", source_ids=["S5"], claim_citations=[{"claim": "c", "source_id": "S5"}])
-
-    stored = resolve_citations(out, chunks)
-
-    assert stored.claim_citations[0].chunk_id is None and stored.claim_citations[0].locator == "S5"
-    assert stored.source_locators == []
+def test_an_id_the_model_invented_is_rejected():
+    with pytest.raises(ValueError, match="S5"):
+        resolve_citations(ContentOutput(content="c [S5]"), [chunk()])
 
 
 LO = LearningObjective(
@@ -66,21 +61,10 @@ LO = LearningObjective(
 )
 
 
-@pytest.mark.parametrize("bad_field", ["source_ids", "claim_citations"])
-def test_unknown_ids_trigger_regeneration_even_when_the_critic_passes(monkeypatch, bad_field):
+def test_unknown_ids_trigger_regeneration_even_when_the_critic_passes(monkeypatch):
     chunks = [chunk("reheapUp takes O(log n)")]
-    bad = ContentOutput(
-        content="reheapUp takes O(log n)", source_ids=["S1"],
-        claim_citations=[{"claim": "reheapUp takes O(log n)", "source_id": "S1"}],
-    )
-    if bad_field == "source_ids":
-        bad.source_ids = ["S33"]
-    else:
-        bad.claim_citations[0].source_id = "S33"
-    good = ContentOutput(
-        content=bad.content, source_ids=["S1"],
-        claim_citations=[{"claim": bad.content, "source_id": "S1"}],
-    )
+    bad = ContentOutput(content="reheapUp takes O(log n). [S33]")
+    good = ContentOutput(content="reheapUp takes O(log n). [S1]")
     generations = []
 
     def complete(prompt, response_model, **kwargs):
@@ -97,7 +81,7 @@ def test_unknown_ids_trigger_regeneration_even_when_the_critic_passes(monkeypatc
 
     stored, check = content.generate_content(LO, chunks)
 
-    assert stored.claim_citations[0].chunk_id == str(chunks[0].id)
+    assert stored.inline_citations[0].chunk_id == str(chunks[0].id)
     assert stored.source_locators == [chunks[0].source_ref]
     assert len(generations) == 2
     assert "S33" in generations[1] and "S1" in generations[1]
@@ -105,15 +89,39 @@ def test_unknown_ids_trigger_regeneration_even_when_the_critic_passes(monkeypatc
 
 
 @pytest.mark.parametrize("self_check", [True, False])
-def test_content_with_unknown_ids_is_never_returned_after_the_retry_budget(monkeypatch, self_check):
-    chunks = [chunk()]
+@pytest.mark.parametrize("bad", ["heap claim. [S1, S2]", "heap claim.\n[S1]"])
+def test_malformed_markers_are_sent_back_through_the_correction_retry(monkeypatch, self_check, bad):
+    chunks = [chunk("heap claim")]
+    generations = []
 
     def complete(prompt, response_model, **kwargs):
         if response_model is ContentOutput:
-            return ContentOutput(
-                content="heap claim", source_ids=["S33"],
-                claim_citations=[{"claim": "heap claim", "source_id": "S33"}],
-            )
+            generations.append(prompt)
+            return ContentOutput(content=bad if len(generations) == 1 else "heap claim. [S1]")
+        return content.ContentVerification(
+            groundedness_pass=True, groundedness_reason="supported",
+            completeness_pass=True, completeness_reason="complete",
+            scope_pass=True, scope_reason="in scope",
+        )
+
+    monkeypatch.setattr(content, "complete_structured", complete)
+
+    stored, check = content.generate_content(LO, chunks, self_check=self_check)
+
+    assert len(generations) == 2 and "[S1]" in generations[1].split("LƯU Ý")[1]
+    assert stored.inline_citations[0].chunk_id == str(chunks[0].id)
+    assert (check is not None) == self_check
+
+
+@pytest.mark.parametrize("self_check", [True, False])
+def test_content_with_unknown_ids_is_never_returned_after_the_retry_budget(monkeypatch, self_check):
+    chunks = [chunk()]
+    generations = []
+
+    def complete(prompt, response_model, **kwargs):
+        if response_model is ContentOutput:
+            generations.append(prompt)
+            return ContentOutput(content="heap claim. [S33]")
         return content.ContentVerification(
             groundedness_pass=True, groundedness_reason="supported",
             completeness_pass=True, completeness_reason="complete",
@@ -124,16 +132,35 @@ def test_content_with_unknown_ids_is_never_returned_after_the_retry_budget(monke
 
     with pytest.raises(ValueError, match="S33"):
         content.generate_content(LO, chunks, self_check=self_check)
+    assert len(generations) == 2
+
+
+@pytest.mark.parametrize("self_check", [True, False])
+def test_no_rag_content_keeps_bracketed_text_but_retries_real_markers(monkeypatch, self_check):
+    outputs = iter(["Use an [S3 bucket] for storage. [S3]", "Use an [S3 bucket] for storage."])
+    generations = []
+
+    def complete(prompt, response_model, **kwargs):
+        if response_model is content.LessonText:
+            generations.append(prompt)
+            return content.LessonText(content=next(outputs))
+        return content.LessonVerification(
+            completeness_pass=True, completeness_reason="complete", scope_pass=True, scope_reason="in scope",
+        )
+
+    monkeypatch.setattr(content, "complete_structured", complete)
+
+    out, _ = content.generate_content(LO, None, self_check=self_check)
+
+    assert out.content == "Use an [S3 bucket] for storage."
+    assert len(generations) == 2 and "citations" in generations[1]
 
 
 @pytest.mark.parametrize("count", [0, 1, 2])
-def test_the_gateway_schema_allows_only_ids_numbered_in_this_content_prompt(monkeypatch, count):
+def test_the_gateway_schema_accepts_only_content_and_the_server_maps_inline_codes(monkeypatch, count):
     chunks = [chunk() for _ in range(count)]
     requests = []
-    output = {"content": "heap claim", "source_ids": [], "claim_citations": []}
-    if count:
-        output["source_ids"] = [f"S{count}"]
-        output["claim_citations"] = [{"claim": "heap claim", "source_id": f"S{count}"}]
+    output = {"content": f"heap claim. [S{count}]" if count else "heap claim"}
 
     def completion(**kwargs):
         requests.append(kwargs)
@@ -149,13 +176,10 @@ def test_the_gateway_schema_allows_only_ids_numbered_in_this_content_prompt(monk
     assert isinstance(response_format, dict)
     validator = Draft202012Validator(response_format["json_schema"]["schema"])
     assert validator.is_valid(output)
-    for source in ["S1", "S2", "S3", "S33"]:
-        expected = source in ["S1", "S2"][:count]
-        assert validator.is_valid({**output, "source_ids": [source]}) is expected
-        assert validator.is_valid({
-            **output, "claim_citations": [{"claim": "heap claim", "source_id": source}],
-        }) is expected
-    assert [c.chunk_id for c in stored.claim_citations] == ([str(chunks[-1].id)] if count else [])
+    assert not validator.is_valid({**output, "source_ids": ["S1"]})
+    assert set(response_format["json_schema"]["schema"]["properties"]) == {"content"}
+    assert [c.chunk_id for c in stored.inline_citations] == ([str(chunks[-1].id)] if count else [])
+
 
 
 class Rows:
