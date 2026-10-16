@@ -21,7 +21,7 @@ from app.db import get_db
 from app.generation.common import OutputLanguage
 from app.generation.content import ContentOutput, resolve_citations
 from app.generation.example import ExampleOutput
-from app.generation.inline_citations import citation_content
+from app.generation.inline_citations import MARKER, citation_content
 from app.generation.limits import reserve_generations
 from app.generation.module_generation_pipeline import (
     IncompleteModuleError,
@@ -558,16 +558,17 @@ def update_component(
         markdown = content.get("markdown")
         if not isinstance(markdown, str):
             raise HTTPException(status_code=422, detail="Content Markdown is required")
-        try:
-            # The client may send metadata copied before an edit, but cannot replace the source map.
-            derived = citation_content(markdown, component.content.get("source_map", {}))
-        except ValueError as exc:
-            raise HTTPException(status_code=422, detail=str(exc)) from exc
         for key in ("source_map", "inline_citations", "claim_citations", "source_locators"):
             content.pop(key, None)
         if "source_map" in component.content:
-            content.update(derived)
+            try:
+                # The client may send metadata copied before an edit, but cannot replace the source map.
+                content.update(citation_content(markdown, component.content["source_map"]))
+            except ValueError as exc:
+                raise HTTPException(status_code=422, detail=str(exc)) from exc
         else:
+            if MARKER.search(markdown):
+                raise HTTPException(status_code=422, detail="Content without a source map must not contain citations")
             # Keep legacy display on unchanged text; changed text cannot retain copied old claims.
             unchanged = markdown == component.content.get("markdown")
             content["claim_citations"] = component.content.get("claim_citations", []) if unchanged else []

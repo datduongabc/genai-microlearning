@@ -429,6 +429,22 @@ def test_manual_content_edit_rederives_citations_and_cannot_replace_server_map(l
     assert client.get(f'/modules/{ids["module"]}', headers=headers).json()['claim_citations'] == []
 
 
+def test_manual_edit_of_map_less_content_keeps_bracketed_text_and_rejects_real_markers(lesson):
+    ids, headers = lesson
+    with SessionLocal() as db:
+        component = ModuleComponent(module_id=ids['module'], type=ComponentType.content,
+                                    content={'markdown': 'Store files in an [S3 bucket].'})
+        db.add(component)
+        db.commit()
+        component_id = component.id
+    url = f'/modules/{ids["module"]}/components/{component_id}'
+    response = client.patch(url, headers=headers, json={'content': {
+        'markdown': 'Store logs in an [S3 bucket] at [s3://logs].'}})
+    assert response.status_code == 200, response.text
+    assert response.json()['content']['markdown'] == 'Store logs in an [S3 bucket] at [s3://logs].'
+    assert client.patch(url, headers=headers, json={'content': {'markdown': 'Fact. [S1]'}}).status_code == 422
+
+
 def test_chat_remaps_old_codes_to_the_edit_prompt_and_rederives_saved_citations(lesson, monkeypatch):
     ids, _ = lesson
     with SessionLocal() as db:
