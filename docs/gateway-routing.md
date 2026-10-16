@@ -7,8 +7,9 @@ read only by the gateway from the runtime environment.
 
 The two free Gemini aliases back up each other, with LiteLLM's bounded fallback
 attempts preventing an endless cycle. If neither free model can serve a large
-request, generation fails. Paid generation aliases are explicit-only and have no
-ordinary or context-window fallback chains:
+request, generation fails. Paid generation aliases are selected explicitly and are
+never fallback targets. Outside experiment mode their ordinary and context-window
+failures fall back to the free `gemini-fast`, then `gemini-flash`:
 
 | Alias | Provider model ID | Evaluation use |
 | --- | --- | --- |
@@ -80,9 +81,9 @@ alias's own credentials and credit. Authentication errors and insufficient credi
 still reject model selection with HTTP 422, including credit/billing 429 errors
 such as OpenAI's `insufficient_quota` or `billing_hard_limit_reached`. Plain
 rate-limit 429s, including Gemini `RESOURCE_EXHAUSTED`, are treated as usable,
-because a transient rate limit may clear on retry. Free Gemini generation can
-use router fallbacks; paid aliases and experiment generation fail if their selected
-model remains unavailable.
+because normal generation, including paid aliases, can rely on router fallbacks
+to free Gemini. Experiment generation still refuses fallback and can fail on the
+same quota-limited model.
 
 ## Actual model records
 

@@ -67,6 +67,7 @@ GOC_TAI_LIEU = Path(os.environ.get("BENCHMARK_DOCUMENTS") or GOC / "docs" / "doc
 THU_MUC_KET_QUA = Path(os.environ.get("BENCHMARK_KET_QUA") or GOC / "docs" / "measurements")
 
 # Chỉ bốn môn của đợt đánh giá; lấy toàn bộ tệp theo thứ tự cố định.
+# Kết quả cũ đo trên tập tệp bị giới hạn mỗi môn nên không so sánh trực tiếp được với lần đo này.
 MON = {"dsa": None, "operating-system": None, "program-fundamentals": None, "web-programming": None}
 
 TRUY_VAN_MOI_MON = 50

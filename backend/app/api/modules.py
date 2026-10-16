@@ -8,7 +8,7 @@ from urllib.parse import quote
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import Response
 from pptx import Presentation
-from pydantic import BaseModel, ConfigDict, Field, StringConstraints, ValidationError
+from pydantic import BaseModel, Field, StringConstraints, ValidationError, model_validator
 from sqlalchemy import select
 from sqlalchemy.orm import Session, joinedload, selectinload
 
@@ -55,7 +55,13 @@ router = APIRouter(prefix="/modules", tags=["modules"], dependencies=[Depends(ge
 
 
 class GenerateRequest(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    @model_validator(mode="before")
+    @classmethod
+    def _reject_section_ids(cls, data):
+        if isinstance(data, dict) and "section_ids" in data:
+            raise ValueError("Sinh mô-đun theo mục đã bị gỡ bỏ: không còn nhận section_ids, mô-đun luôn sinh cho cả tài liệu.")
+        return data
+
     # Model cho riêng lượt sinh này, ghi đè mặc định của giảng viên. Bỏ trống thì dùng
     # mặc định của họ, không có mặc định thì dùng cấu hình hệ thống.
     model_alias: str | None = None

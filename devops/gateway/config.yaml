@@ -169,12 +169,20 @@ router_settings:
     - gemini-fast-small: [gemini-flash-small]
     - gemini-flash-small: [gemini-fast-small]
     - groq-pro: [gemini-fast, gemini-flash]
+    - openai-fast: [gemini-fast, gemini-flash]
+    - openai-pro: [gemini-fast, gemini-flash]
+    - claude-fast: [gemini-fast, gemini-flash]
+    - claude-pro: [gemini-fast, gemini-flash]
   context_window_fallbacks:
     - gemini-fast: [gemini-flash]
     - gemini-flash: [gemini-fast]
     - gemini-fast-small: [gemini-fast, gemini-flash]
     - gemini-flash-small: [gemini-flash, gemini-fast]
     - groq-pro: [gemini-fast, gemini-flash]
+    - openai-fast: [gemini-fast, gemini-flash]
+    - openai-pro: [gemini-fast, gemini-flash]
+    - claude-fast: [gemini-fast, gemini-flash]
+    - claude-pro: [gemini-fast, gemini-flash]
 
 general_settings:
   master_key: os.environ/LLM_GATEWAY_KEY
