@@ -1,6 +1,6 @@
 """Đo xem tầng rerank có đáng giữ không.
 
-Câu hỏi cần trả lời: cross-encoder bge-reranker-base (nay chạy ở service reranker
+Câu hỏi cần trả lời: cross-encoder (nay chạy ở service reranker
 riêng, xem devops/docker-compose.yml) cải thiện truy hồi bao nhiêu so với hybrid
 search không rerank, và so với dense search đơn thuần?
 
@@ -72,6 +72,7 @@ THU_MUC_KET_QUA = Path(os.environ.get("BENCHMARK_KET_QUA") or GOC / "docs" / "me
 # viên Việt Nam: đo trên tiếng Anh thì chưa đủ để quyết giữ hay đổi reranker.
 MON = {
     "dsa": 5, "operating-system": 7, "advanced-programming": 11,
+    "program-fundamentals": 7, "web-programming": 7,
     "calculus1": 8, "chemistry1": 9,
 }
 

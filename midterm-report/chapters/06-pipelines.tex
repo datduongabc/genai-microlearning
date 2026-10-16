@@ -29,7 +29,7 @@ The gateway's \code{embed-default} alias routes embedding to local Qwen3-Embeddi
 \subsubsection{Scope, candidates and ranking}\label{sec:retrieval-policy}
 Module queries are filtered by the authorized course and selected document; course Q\&A uses the authorized course as its boundary. Dense cosine search and BM25 each return ranked candidates; RRF combines their positions with damping constant 60\citep{bm25,rrf}. A scoped BM25 cache stores chunk IDs and is invalidated after ingestion or deletion.
 
-Jina multilingual INT8 reranks up to 30 candidates. LO and Content use adaptive-$k$ with floor eight. Practice/Quiz retrieval for each sub-objective uses fixed $k=4$. Module-edit chat uses fixed $k=8$, while course Q\&A uses fixed $k=5$. Adaptive selection finds the largest adjacent gap within the leading 90\%, adds five and enforces floor eight\citep{adaptive}. A flat score distribution retains the search window. Dense bypass provides a fallback when reranking is unavailable.
+Jina multilingual INT8 reranks up to 30 candidates. LO and Content use adaptive-$k$ with floor eight. Practice/Quiz retrieval for each sub-objective uses fixed $k=4$. Module-edit chat and course Q\&A use fixed $k=8$. Adaptive selection finds the largest adjacent gap within the leading 90\%, adds five and enforces floor eight\citep{adaptive}. A flat score distribution retains the search window. Dense bypass provides a fallback when reranking is unavailable.
 \subsubsection{Physical evidence and corrective retrieval}
 Neighbor expansion supplies up to two physical chunks on either side of a hit. Each passage keeps its own ID and locator and receives a separate source code in the prompt. The saved source map and evaluation packets resolve those same physical units.
 
