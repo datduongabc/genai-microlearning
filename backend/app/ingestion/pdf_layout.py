@@ -420,7 +420,7 @@ def _line_text(spans: list[dict]) -> str:
     return "".join(out).rstrip()
 
 
-def page_lines(page: pymupdf.Page) -> list[str]:
+def page_lines(page: pymupdf.Page, *, code_lines: set[int] | None = None) -> list[str]:
     """Các dòng chữ của trang theo thứ tự đọc, công thức đã được dựng lại thành một dòng."""
     blocks = [b for b in page.get_text("rawdict", flags=_TEXT_FLAGS)["blocks"] if b["type"] == 0 and b["lines"]]
     if not blocks:
@@ -471,8 +471,16 @@ def page_lines(page: pymupdf.Page) -> list[str]:
                         out[-1] += (" " if gap > 0.12 * em else "") + text.lstrip()
                         box = (old_box[0], min(old_box[1], box[1]), box[2], max(old_box[3], box[3]))
                         previous = (out[-1], box, baseline, size, owner)
+                        if code_lines is not None and any(
+                            s["flags"] & pymupdf.TEXT_FONT_MONOSPACED for s in line["spans"]
+                        ):
+                            code_lines.add(len(out) - 1)
                         continue
                 out.append(text)
+                if code_lines is not None and any(
+                    s["flags"] & pymupdf.TEXT_FONT_MONOSPACED for s in line["spans"]
+                ):
+                    code_lines.add(len(out) - 1)
                 previous = (text, box, baseline, size, owner)
             continue
         previous = None

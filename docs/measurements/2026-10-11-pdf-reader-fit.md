@@ -9,7 +9,7 @@ File hashes and final measurements are in [pdf-reader-files.json](pdf-reader-fil
 
 The extraction, locator, retrieval and suite results below describe the pre-review
 parser, including the rebase run. They are historical measurements, not final results
-for the corrected listing joins and title normalization. These changes can alter chunks
+for the corrected listing joins, code/heading boundary and title normalization. These changes can alter chunks
 and rankings; the old retrieval comparison does not establish current retrieval quality.
 A full corpus and retrieval replay remains required before using these numbers to
 characterize the corrected parser. Focused corpus evidence is recorded separately

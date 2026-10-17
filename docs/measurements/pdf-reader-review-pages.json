@@ -1,5 +1,5 @@
 {
-  "scope": "Focused corrected-parser pages; full corpus and retrieval not rerun",
+  "scope": "Focused corrected-parser pages and code/heading boundary; full corpus and retrieval not rerun",
   "pages": [
     {
       "file": "dsa/lists-part1.pdf",
@@ -36,213 +36,19 @@
           "page": 15,
           "heading": "Array List: Implementation in C++ with Integer",
           "extraction_method": "text_layer"
-        },
-        {
-          "page": 15,
-          "heading": "1 class IntArrayList : public IList <int >",
-          "extraction_method": "text_layer"
-        },
-        {
-          "page": 15,
-          "heading": "2 {",
-          "extraction_method": "text_layer"
-        },
-        {
-          "page": 15,
-          "heading": "3 // ...",
-          "extraction_method": "text_layer"
-        },
-        {
-          "page": 15,
-          "heading": "5 private:",
-          "extraction_method": "text_layer"
-        },
-        {
-          "page": 15,
-          "heading": "6 void checkIndex (int index );",
-          "extraction_method": "text_layer"
-        },
-        {
-          "page": 15,
-          "heading": "7 void ensureCapacity (int capacity );",
-          "extraction_method": "text_layer"
-        },
-        {
-          "page": 15,
-          "heading": "8 };",
-          "extraction_method": "text_layer"
         }
       ],
       "chunk_locators": [
         {
           "spans": [
             {
-              "page": 14,
-              "heading": "9 virtual void add(int element );",
-              "extraction_method": "text_layer"
-            },
-            {
-              "page": 14,
-              "heading": "10 virtual void add(int index , int element );",
-              "extraction_method": "text_layer"
-            },
-            {
-              "page": 14,
-              "heading": "11 virtual int removeAt(int index );",
-              "extraction_method": "text_layer"
-            },
-            {
-              "page": 14,
-              "heading": "12 virtual bool removeItem(int item );",
-              "extraction_method": "text_layer"
-            },
-            {
-              "page": 14,
-              "heading": "13 virtual bool empty ();",
-              "extraction_method": "text_layer"
-            },
-            {
-              "page": 14,
-              "heading": "14 virtual int size ();",
-              "extraction_method": "text_layer"
-            },
-            {
-              "page": 14,
-              "heading": "15 virtual void clear ();",
-              "extraction_method": "text_layer"
-            },
-            {
-              "page": 14,
-              "heading": "16 virtual int get(int index );",
-              "extraction_method": "text_layer"
-            },
-            {
-              "page": 14,
-              "heading": "17 virtual void set(int index , int element );",
-              "extraction_method": "text_layer"
-            },
-            {
-              "page": 14,
-              "heading": "18 virtual int indexOf(int item );",
-              "extraction_method": "text_layer"
-            },
-            {
-              "page": 14,
-              "heading": "19 virtual bool contains(int item );",
-              "extraction_method": "text_layer"
-            },
-            {
-              "page": 14,
-              "heading": "20 virtual string toString ();",
-              "extraction_method": "text_layer"
-            },
-            {
-              "page": 14,
-              "heading": "21 virtual void dump ();",
-              "extraction_method": "text_layer"
-            },
-            {
-              "page": 14,
-              "heading": "22 };",
-              "extraction_method": "text_layer"
-            },
-            {
               "page": 15,
               "heading": "Array List: Implementation in C++ with Integer",
               "extraction_method": "text_layer"
             },
             {
-              "page": 15,
-              "heading": "1 class IntArrayList : public IList <int >",
-              "extraction_method": "text_layer"
-            },
-            {
-              "page": 15,
-              "heading": "2 {",
-              "extraction_method": "text_layer"
-            },
-            {
-              "page": 15,
-              "heading": "3 // ...",
-              "extraction_method": "text_layer"
-            },
-            {
-              "page": 15,
-              "heading": "5 private:",
-              "extraction_method": "text_layer"
-            },
-            {
-              "page": 15,
-              "heading": "6 void checkIndex (int index );",
-              "extraction_method": "text_layer"
-            },
-            {
-              "page": 15,
-              "heading": "7 void ensureCapacity (int capacity );",
-              "extraction_method": "text_layer"
-            }
-          ]
-        },
-        {
-          "spans": [
-            {
-              "page": 15,
-              "heading": "8 };",
-              "extraction_method": "text_layer"
-            },
-            {
               "page": 16,
               "heading": "Array List: Implementation in C++ with Integer",
-              "extraction_method": "text_layer"
-            },
-            {
-              "page": 16,
-              "heading": "1 IntArrayList :: IntArrayList ()",
-              "extraction_method": "text_layer"
-            },
-            {
-              "page": 16,
-              "heading": "2 {",
-              "extraction_method": "text_layer"
-            },
-            {
-              "page": 16,
-              "heading": "3 this ->capacity = 10;",
-              "extraction_method": "text_layer"
-            },
-            {
-              "page": 16,
-              "heading": "4 this ->data = new int[this ->capacity ];",
-              "extraction_method": "text_layer"
-            },
-            {
-              "page": 16,
-              "heading": "5 this ->count = 0;",
-              "extraction_method": "text_layer"
-            },
-            {
-              "page": 16,
-              "heading": "6 }",
-              "extraction_method": "text_layer"
-            },
-            {
-              "page": 16,
-              "heading": "8 IntArrayList ::~ IntArrayList ()",
-              "extraction_method": "text_layer"
-            },
-            {
-              "page": 16,
-              "heading": "9 {",
-              "extraction_method": "text_layer"
-            },
-            {
-              "page": 16,
-              "heading": "10 delete [] this ->data;",
-              "extraction_method": "text_layer"
-            },
-            {
-              "page": 16,
-              "heading": "11 }",
               "extraction_method": "text_layer"
             }
           ]
@@ -284,109 +90,19 @@
           "page": 34,
           "heading": "Insertion: Implementation in C++",
           "extraction_method": "text_layer"
-        },
-        {
-          "page": 34,
-          "heading": "1 class IntSLinkedList : public IList <int > {",
-          "extraction_method": "text_layer"
-        },
-        {
-          "page": 34,
-          "heading": "2 // Declaration of attributes .",
-          "extraction_method": "text_layer"
-        },
-        {
-          "page": 34,
-          "heading": "3 // Declaration of constructor , destructor .",
-          "extraction_method": "text_layer"
-        },
-        {
-          "page": 34,
-          "heading": "4 // Declaration of nested classes .",
-          "extraction_method": "text_layer"
-        },
-        {
-          "page": 34,
-          "heading": "5 public:",
-          "extraction_method": "text_layer"
-        },
-        {
-          "page": 34,
-          "heading": "6 virtual void add(int element );",
-          "extraction_method": "text_layer"
-        },
-        {
-          "page": 34,
-          "heading": "7 virtual void add(int index , int element );",
-          "extraction_method": "text_layer"
-        },
-        {
-          "page": 34,
-          "heading": "8 };",
-          "extraction_method": "text_layer"
         }
       ],
       "chunk_locators": [
         {
           "spans": [
             {
+              "page": 33,
+              "heading": null,
+              "extraction_method": "text_layer"
+            },
+            {
               "page": 34,
               "heading": "Insertion: Implementation in C++",
-              "extraction_method": "text_layer"
-            },
-            {
-              "page": 34,
-              "heading": "1 class IntSLinkedList : public IList <int > {",
-              "extraction_method": "text_layer"
-            },
-            {
-              "page": 34,
-              "heading": "2 // Declaration of attributes .",
-              "extraction_method": "text_layer"
-            },
-            {
-              "page": 34,
-              "heading": "3 // Declaration of constructor , destructor .",
-              "extraction_method": "text_layer"
-            },
-            {
-              "page": 34,
-              "heading": "4 // Declaration of nested classes .",
-              "extraction_method": "text_layer"
-            },
-            {
-              "page": 34,
-              "heading": "5 public:",
-              "extraction_method": "text_layer"
-            },
-            {
-              "page": 34,
-              "heading": "6 virtual void add(int element );",
-              "extraction_method": "text_layer"
-            },
-            {
-              "page": 34,
-              "heading": "7 virtual void add(int index , int element );",
-              "extraction_method": "text_layer"
-            },
-            {
-              "page": 34,
-              "heading": "8 };",
-              "extraction_method": "text_layer"
-            },
-            {
-              "page": 35,
-              "heading": "Insert an item into a linked list",
-              "extraction_method": "text_layer"
-            },
-            {
-              "page": 35,
-              "heading": "1 Case 1: Empty list",
-              "extraction_method": "text_layer"
-            },
-            {
-              "page": 35,
-              "heading": "2 Case 2: Non-empty list",
               "extraction_method": "text_layer"
             }
           ]
@@ -427,89 +143,19 @@
           "page": 49,
           "heading": "Removal: Implementation in C++",
           "extraction_method": "text_layer"
-        },
-        {
-          "page": 49,
-          "heading": "1 class IntSLinkedList : public IList <int > {",
-          "extraction_method": "text_layer"
-        },
-        {
-          "page": 49,
-          "heading": "2 // Declaration of attributes , constructor , destructor .",
-          "extraction_method": "text_layer"
-        },
-        {
-          "page": 49,
-          "heading": "3 // Declaration of nested classes .",
-          "extraction_method": "text_layer"
-        },
-        {
-          "page": 49,
-          "heading": "4 public:",
-          "extraction_method": "text_layer"
-        },
-        {
-          "page": 49,
-          "heading": "5 virtual int removeAt(int index );",
-          "extraction_method": "text_layer"
-        },
-        {
-          "page": 49,
-          "heading": "6 virtual bool removeItem(int item );",
-          "extraction_method": "text_layer"
-        },
-        {
-          "page": 49,
-          "heading": "7 };",
-          "extraction_method": "text_layer"
         }
       ],
       "chunk_locators": [
         {
           "spans": [
             {
-              "page": 48,
-              "heading": "Insert 18 at index 2.",
-              "extraction_method": "text_layer"
-            },
-            {
               "page": 49,
               "heading": "Removal: Implementation in C++",
               "extraction_method": "text_layer"
             },
             {
-              "page": 49,
-              "heading": "1 class IntSLinkedList : public IList <int > {",
-              "extraction_method": "text_layer"
-            },
-            {
-              "page": 49,
-              "heading": "2 // Declaration of attributes , constructor , destructor .",
-              "extraction_method": "text_layer"
-            },
-            {
-              "page": 49,
-              "heading": "3 // Declaration of nested classes .",
-              "extraction_method": "text_layer"
-            },
-            {
-              "page": 49,
-              "heading": "4 public:",
-              "extraction_method": "text_layer"
-            },
-            {
-              "page": 49,
-              "heading": "5 virtual int removeAt(int index );",
-              "extraction_method": "text_layer"
-            },
-            {
-              "page": 49,
-              "heading": "6 virtual bool removeItem(int item );",
-              "extraction_method": "text_layer"
-            },
-            {
-              "page": 49,
-              "heading": "7 };",
+              "page": 50,
+              "heading": "Removal: Delete the ﬁrst element",
               "extraction_method": "text_layer"
             }
           ]
@@ -553,119 +199,19 @@
           "page": 64,
           "heading": "Search and other methods: Implementation in C++",
           "extraction_method": "text_layer"
-        },
-        {
-          "page": 64,
-          "heading": "1 class IntSLinkedList : public IList <int > {",
-          "extraction_method": "text_layer"
-        },
-        {
-          "page": 64,
-          "heading": "2 // Declaration of attributes .",
-          "extraction_method": "text_layer"
-        },
-        {
-          "page": 64,
-          "heading": "3 // Declaration of constructor , destructor .",
-          "extraction_method": "text_layer"
-        },
-        {
-          "page": 64,
-          "heading": "4 // Declaration of nested classes .",
-          "extraction_method": "text_layer"
-        },
-        {
-          "page": 64,
-          "heading": "5 public:",
-          "extraction_method": "text_layer"
-        },
-        {
-          "page": 64,
-          "heading": "6 virtual int get(int index );",
-          "extraction_method": "text_layer"
-        },
-        {
-          "page": 64,
-          "heading": "7 virtual void set(int index , int element );",
-          "extraction_method": "text_layer"
-        },
-        {
-          "page": 64,
-          "heading": "8 virtual int indexOf(int item );",
-          "extraction_method": "text_layer"
-        },
-        {
-          "page": 64,
-          "heading": "9 virtual bool contains(int item );",
-          "extraction_method": "text_layer"
-        },
-        {
-          "page": 64,
-          "heading": "10 };",
-          "extraction_method": "text_layer"
         }
       ],
       "chunk_locators": [
         {
           "spans": [
             {
+              "page": 63,
+              "heading": null,
+              "extraction_method": "text_layer"
+            },
+            {
               "page": 64,
               "heading": "Search and other methods: Implementation in C++",
-              "extraction_method": "text_layer"
-            },
-            {
-              "page": 64,
-              "heading": "1 class IntSLinkedList : public IList <int > {",
-              "extraction_method": "text_layer"
-            },
-            {
-              "page": 64,
-              "heading": "2 // Declaration of attributes .",
-              "extraction_method": "text_layer"
-            },
-            {
-              "page": 64,
-              "heading": "3 // Declaration of constructor , destructor .",
-              "extraction_method": "text_layer"
-            },
-            {
-              "page": 64,
-              "heading": "4 // Declaration of nested classes .",
-              "extraction_method": "text_layer"
-            },
-            {
-              "page": 64,
-              "heading": "5 public:",
-              "extraction_method": "text_layer"
-            },
-            {
-              "page": 64,
-              "heading": "6 virtual int get(int index );",
-              "extraction_method": "text_layer"
-            },
-            {
-              "page": 64,
-              "heading": "7 virtual void set(int index , int element );",
-              "extraction_method": "text_layer"
-            },
-            {
-              "page": 64,
-              "heading": "8 virtual int indexOf(int item );",
-              "extraction_method": "text_layer"
-            },
-            {
-              "page": 64,
-              "heading": "9 virtual bool contains(int item );",
-              "extraction_method": "text_layer"
-            },
-            {
-              "page": 64,
-              "heading": "10 };",
-              "extraction_method": "text_layer"
-            },
-            {
-              "page": 65,
-              "heading": "Searching",
               "extraction_method": "text_layer"
             }
           ]

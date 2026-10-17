@@ -49,7 +49,8 @@ def read_pdf(path: str) -> list[DocumentUnit]:
             raise ValueError("PDF được mã hóa; hãy bỏ mật khẩu rồi tải lại tài liệu.")
         raw_units = []
         for page_index, page in enumerate(doc):
-            page_text = "\n".join(page_lines(page))
+            code_lines: set[int] = set()
+            page_text = "\n".join(page_lines(page, code_lines=code_lines))
             titles = title_candidates(page)
             extraction_method = "text_layer"
             warnings = []
@@ -61,6 +62,7 @@ def read_pdf(path: str) -> list[DocumentUnit]:
                     if not ocr_text.strip():
                         raise ValueError("OCR returned no readable text")
                     page_text = ocr_text
+                    code_lines.clear()
                     extraction_method = "ocr"
                 except Exception as e:
                     # OCR is best-effort per page -- a single bad/scanned page
@@ -96,8 +98,8 @@ def read_pdf(path: str) -> list[DocumentUnit]:
                         "warnings": warnings,
                     })
 
-            for line in lines_all:
-                if HEADING_RE.match(line):
+            for line_index, line in enumerate(lines_all):
+                if line_index not in code_lines and HEADING_RE.match(line):
                     flush()
                     current_lines, current_heading = [line], line.strip()
                 else:
