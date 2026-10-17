@@ -45,7 +45,6 @@ def world():
         db.add(document)
         db.flush()
         db.add(Chunk(document_id=document.id, course_id=course.id, chunk_index=0, content="secret chunk"))
-
         module = Module(document_id=document.id, course_id=course.id, title="Module of A")
         db.add(module)
         db.flush()

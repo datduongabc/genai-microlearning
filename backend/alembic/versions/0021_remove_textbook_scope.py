@@ -31,6 +31,9 @@ def _failed_jobs_view(section_scope=False):
 
 
 def upgrade():
+    op.execute("UPDATE jobs SET status = 'failed', "
+               "last_error = 'Sinh theo mục đã bị gỡ bỏ; hãy sinh lại cho cả tài liệu.' "
+               "WHERE section_id IS NOT NULL AND status IN ('queued', 'running')")
     _failed_jobs_view()
     # Detach first: deleting a section would otherwise cascade to its modules/jobs.
     for table in ("modules", "jobs"):

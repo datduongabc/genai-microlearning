@@ -173,7 +173,6 @@ export function CourseDetailPage() {
   const visibleDocuments = documents.filter((d) => matchesFilter(d, statusFilter));
   const shouldPoll = pipelineActive || generatingOnServer;
   const isGenerating = (doc: DocumentInfo) => doc.generating || startingIds.has(doc.id);
-  const listedModules = (doc: DocumentInfo) => modulesByDoc[doc.id] ?? [];
   useEffect(() => {
     if (!shouldPoll || !courseId) return;
     const timer = setInterval(async () => {
@@ -453,9 +452,9 @@ export function CourseDetailPage() {
                   ))}
                 </ul>
               )}
-              {listedModules(d).length > 0 && (
+              {(modulesByDoc[d.id] ?? []).length > 0 && (
                 <ul className="mt-3 flex flex-col gap-1.5 pl-1">
-                  {listedModules(d).map((m) => (
+                  {(modulesByDoc[d.id] ?? []).map((m) => (
                     <ModuleListItem
                       key={m.id}
                       module={m}

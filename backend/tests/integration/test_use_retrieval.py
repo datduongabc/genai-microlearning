@@ -367,12 +367,9 @@ def test_an_explicit_self_check_overrides_the_paired_one(api):
     assert _no_rag_job(api).payload["self_check"] is True
 
 
-
-
 @pytest.mark.parametrize("body", [
     {"use_retrieval": False},
     {"paired_module_id": "PAIRED"},
-    {"use_retrieval": False, "paired_module_id": "PAIRED", "section_ids": [str(uuid.uuid4())]},
 ])
 def test_an_inconsistent_no_rag_request_is_refused(api, body):
     body = {k: (str(api["module"]) if v == "PAIRED" else v) for k, v in body.items()}

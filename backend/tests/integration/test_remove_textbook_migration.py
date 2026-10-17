@@ -24,7 +24,7 @@ def test_remove_textbook_scope_preserves_study_data_and_view_access():
         assert result.returncode == 0, result.stderr
 
     ids = {key: uuid.uuid4() for key in ('owner', 'course', 'doc', 'section', 'rag', 'control',
-                                        'component', 'question', 'job', 'study', 'item')}
+                                        'component', 'question', 'job', 'queued', 'study', 'item')}
     with admin.connect() as conn:
         conn.execute(text(f"CREATE DATABASE {name}"))
     try:
@@ -46,6 +46,8 @@ def test_remove_textbook_scope_preserves_study_data_and_view_access():
                               "VALUES (:question,:component,'Q','{\"options\":[\"A\",\"B\"]}','0',0)"), ids)
             conn.execute(text("INSERT INTO jobs (id,job_type,document_id,section_id,module_id,step,status,payload,attempts,max_attempts) "
                               "VALUES (:job,'module_generation',:doc,:section,:rag,'generate','failed','{}',5,5)"), ids)
+            conn.execute(text("INSERT INTO jobs (id,job_type,document_id,section_id,step,status,payload,attempts,max_attempts) "
+                              "VALUES (:queued,'module_generation',:doc,:section,'generate','queued','{}',0,5)"), ids)
             conn.execute(text("INSERT INTO studies (id,name,rubric_version) VALUES (:study,'Study','v1')"), ids)
             conn.execute(text("INSERT INTO study_items (id,study_id,\"group\",anon_code,module_id,packet) "
                               "VALUES (:item,:study,'rag_llm','M01',:rag,'{}')"), ids)
@@ -61,9 +63,12 @@ def test_remove_textbook_scope_preserves_study_data_and_view_access():
             assert not {'kind', 'section_id'} & {c['name'] for c in inspect(engine).get_columns(table)}
         with engine.begin() as conn:
             assert conn.execute(access_sql).one() == original_access
+            assert conn.execute(text("SELECT status, last_error FROM jobs WHERE id=:queued"), ids).one() == (
+                'failed', 'Sinh theo mục đã bị gỡ bỏ; hãy sinh lại cho cả tài liệu.')
             for table, rows in original_rows.items():
                 expected = [{k: v for k, v in row.items() if k != 'section_id'} for row in rows]
-                assert conn.execute(text(f"SELECT * FROM {table}")).mappings().all() == expected
+                actual = conn.execute(text(f"SELECT * FROM {table} WHERE id <> :queued"), ids).mappings().all()
+                assert actual == [row for row in expected if row['id'] != ids['queued']]
             assert conn.scalar(text("SELECT count(*) FROM open_failed_jobs WHERE id=:job"), ids) == 1
             conn.execute(text("INSERT INTO jobs (id,job_type,document_id,step,status,payload,attempts,max_attempts,created_at) "
                               "VALUES (:id,'module_generation',:doc,'generate','queued','{}',0,5,now()+interval '1 second')"),

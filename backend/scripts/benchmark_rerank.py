@@ -68,7 +68,7 @@ THU_MUC_KET_QUA = Path(os.environ.get("BENCHMARK_KET_QUA") or GOC / "docs" / "me
 
 # Chỉ bốn môn của đợt đánh giá; lấy toàn bộ tệp theo thứ tự cố định.
 # Kết quả cũ đo trên tập tệp bị giới hạn mỗi môn nên không so sánh trực tiếp được với lần đo này.
-MON = {"dsa": None, "operating-system": None, "program-fundamentals": None, "web-programming": None}
+MON = ("dsa", "operating-system", "program-fundamentals", "web-programming")
 
 TRUY_VAN_MOI_MON = 50
 # Chunk quá ngắn không đủ chi tiết để đặt một câu hỏi chỉ nó trả lời được, nên
@@ -129,8 +129,7 @@ def _tep_ket_qua(ten: str) -> Path:
 
 
 def _cac_tep(mon: str) -> list[Path]:
-    tep = sorted(p for p in (GOC_TAI_LIEU / mon).iterdir() if p.is_file())
-    return tep[: MON[mon]]
+    return sorted(p for p in (GOC_TAI_LIEU / mon).iterdir() if p.is_file())
 
 
 # --- pha 1: nạp tài liệu -----------------------------------------------------

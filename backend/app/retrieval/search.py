@@ -60,8 +60,8 @@ def dense_search(
 # lại từ đầu mỗi lần dù corpus không đổi. Invalidate tường minh khi có chunk
 # mới (invalidate_sparse_cache(), gọi từ documents.py sau khi upload) thay vì
 # TTL đoán mò -- tránh phục vụ index cũ sau khi tài liệu mới được thêm.
-# Khóa gồm cả phạm vi: một chương có corpus (và thống kê IDF) riêng, không
-# được dùng chung index với cả course.
+# Khóa gồm cả phạm vi: một tài liệu hay một khoảng chunk có corpus (và thống
+# kê IDF) riêng, không được dùng chung index với cả course.
 # Chỉ giữ id chunk, không giữ đối tượng ORM: cache sống lâu hơn Session đã
 # nạp chúng, và sau commit/close mọi thuộc tính của chúng là rỗng hoặc detached
 # (DetachedInstanceError ở request thứ hai). Chunk thắng được nạp lại bằng id

@@ -36,8 +36,6 @@ const sampleDocument: DocumentInfo = {
   created_at: '2026-01-01T00:00:00Z',
   module_count: 0,
   generating: false,
-
-
   failures: [],
 }
 
@@ -446,7 +444,7 @@ describe('CourseDetailPage - module generation availability', () => {
     learning_objective: null,
     bloom_level: null,
     is_control: false, component_count: 6,
-    }
+  }
 
   beforeEach(() => {
     vi.mocked(api.listCourses).mockResolvedValue([unlinkedCourse])
