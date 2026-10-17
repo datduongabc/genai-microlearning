@@ -174,7 +174,7 @@ it("asks before a link or logout discards unsaved input, and not once it is save
   );
   await screen.findByText("Nội dung bài");
   await user.type(screen.getByLabelText("Ghi chú tổng quan"), " mới");
-  await user.click(screen.getByRole("link", { name: "Nghiên cứu được mời" }));
+  await user.click(screen.getByRole("link", { name: "Chấm nghiên cứu" }));
   expect(confirm).toHaveBeenCalledTimes(1);
   await user.click(screen.getByRole("button", { name: /Giảng viên/ }));
   await user.click(screen.getByRole("button", { name: "Đăng xuất" }));
@@ -194,7 +194,7 @@ it("asks before a link or logout discards unsaved input, and not once it is save
   await user.click(screen.getByRole("button", { name: "Đăng xuất" }));
   expect(confirm).toHaveBeenCalledTimes(2);
   expect(logout).toHaveBeenCalledTimes(1);
-  await user.click(screen.getByRole("link", { name: "Nghiên cứu được mời" }));
+  await user.click(screen.getByRole("link", { name: "Chấm nghiên cứu" }));
   expect(confirm).toHaveBeenCalledTimes(2);
   expect(await screen.findByText("Danh sách")).toBeInTheDocument();
 });

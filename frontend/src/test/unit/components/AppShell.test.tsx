@@ -19,7 +19,7 @@ beforeEach(() => {
 })
 function renderShell(admin = false, route = '/courses') {
   vi.spyOn(AuthHookModule, 'useAuth').mockReturnValue({
-    token: 't', refreshToken: 'r', user: { id: '1', email: 'a@b.com', name: 'An', is_admin: admin },
+    token: 't', refreshToken: 'r', user: { id: '1', email: 'a@b.com', name: 'Nguyễn Văn An', is_admin: admin },
     login: vi.fn(), logout,
   })
   return render(<MemoryRouter initialEntries={[route]}><AppShell title="Trang">content</AppShell></MemoryRouter>)
@@ -34,14 +34,18 @@ describe('AppShell', () => {
     expect(screen.queryByRole('link', { name: 'Quản trị' })).not.toBeInTheDocument()
     expect(screen.queryByText(/Moodle/)).not.toBeInTheDocument()
     expect(screen.getByRole('main')).toHaveTextContent('content')
+    expect(document.querySelector('.avatar')).toHaveTextContent('NA')
   })
   it('gives admins their home and admin navigation', async () => {
     renderShell(true, '/admin')
     expect(screen.getByRole('link', { name: /genailms/i })).toHaveAttribute('href', '/admin')
     expect(screen.getByRole('link', { name: 'Quản trị' })).toHaveAttribute('aria-current', 'page')
-    expect(screen.queryByRole('link', { name: 'Môn học' })).not.toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Môn học' })).toHaveAttribute('href', '/courses')
     await userEvent.click(screen.getByRole('button', { name: /Quản trị viên/ }))
     expect(api.getMoodleAccount).not.toHaveBeenCalled()
+    expect(screen.getByText('a@b.com')).toBeInTheDocument()
+    expect(screen.getAllByRole('button')).toHaveLength(2)
+    expect(screen.getAllByRole('separator')).toHaveLength(1)
     await userEvent.click(screen.getByRole('button', { name: 'Đăng xuất' }))
     expect(logout).toHaveBeenCalledOnce()
   })
@@ -52,6 +56,7 @@ describe('AppShell', () => {
     await userEvent.keyboard('{Enter}')
     await screen.findByText('moodle@school.edu')
     expect(trigger).toHaveAttribute('aria-expanded', 'true')
+    expect(trigger).toHaveFocus()
     await userEvent.keyboard('{Home}')
     expect(screen.getByRole('button', { name: 'Hủy liên kết Moodle…' })).toHaveFocus()
     await userEvent.keyboard('{ArrowDown}')
@@ -82,6 +87,10 @@ describe('AppShell', () => {
     await waitFor(() => expect(api.unlinkMoodleAccount).toHaveBeenCalledOnce())
     expect(changed).toHaveBeenCalledOnce()
     expect(await screen.findByRole('button', { name: 'Yêu cầu liên kết' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Đăng xuất' })).toHaveFocus()
+    await userEvent.keyboard('{Escape}')
+    expect(screen.getByRole('button', { name: /Giảng viên/ })).toHaveFocus()
+    expect(screen.queryByRole('region', { name: 'Tài khoản' })).not.toBeInTheDocument()
     window.removeEventListener(api.MOODLE_ACCOUNT_CHANGED_EVENT, changed)
   })
   it('keeps the linked account visible and reports unlink failures', async () => {
