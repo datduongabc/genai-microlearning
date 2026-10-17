@@ -217,6 +217,7 @@ export function BlindRatingPage() {
                 <RatingForm
                   key={item.id}
                   code={item.anon_code}
+                  bloomLevel={item.packet.bloom_level}
                   rating={item.rating}
                   onSave={async (values) => {
                     const rating = await saveRating(studyId!, item.id, values);

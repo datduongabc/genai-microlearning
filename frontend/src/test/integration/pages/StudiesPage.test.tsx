@@ -245,6 +245,14 @@ it("admin edits invited emails and can remove all raters", async () => {
   await waitFor(() => expect(api.setRaters).toHaveBeenLastCalledWith("s1", []));
 });
 
+it("shows the declared Bloom level only beside the bloom_fidelity criterion", async () => {
+  blind();
+  const criterion = (await screen.findByText(/7\. Độ khớp mức Bloom/)).closest("details")!;
+  expect(within(criterion).getByText("Mức Bloom đặt ra: Hiểu")).toBeInTheDocument();
+  expect(screen.getAllByText(/Mức Bloom đặt ra/)).toHaveLength(1);
+  expect(within(screen.getByRole("tabpanel")).queryByText(/Hiểu|understand/)).not.toBeInTheDocument();
+});
+
 it("opens sources first and switches packet tabs with arrow keys", async () => {
   blind();
   expect(await screen.findByText("Nguồn đối chiếu")).toBeVisible();

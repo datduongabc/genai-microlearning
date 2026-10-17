@@ -5,13 +5,19 @@ import { ratingSchema, emptyRating, rubric, type Rating } from "../lib/ratingSch
 import { apiErrorMessage } from "../api/client";
 
 const UNSAVED_PROMPT = "Đánh giá chưa lưu sẽ bị mất. Bạn vẫn muốn rời khỏi gói này?";
+const BLOOM_LABELS: Record<string, string> = {
+  remember: "Nhớ", understand: "Hiểu", apply: "Áp dụng",
+  analyze: "Phân tích", evaluate: "Đánh giá", create: "Sáng tạo",
+};
 
 export function RatingForm({
   code,
+  bloomLevel,
   rating,
   onSave,
 }: {
   code: string;
+  bloomLevel: string;
   rating: Rating | null;
   onSave: (values: Rating) => Promise<void>;
 }) {
@@ -85,6 +91,8 @@ export function RatingForm({
             {i + 1}. {criterion.label}
           </summary>
           <fieldset><legend className="sr-only">{criterion.label}</legend>
+          {/* bloom_fidelity is judged against the declared level, so it is shown here only, not in the packet. */}
+          {criterion.key === "bloom_fidelity" && <p className="small muted">Mức Bloom đặt ra: {BLOOM_LABELS[bloomLevel] ?? bloomLevel}</p>}
           <details className="rubric-guide"><summary>{criterion.question}</summary><p>{criterion.guide}</p></details>
           <Controller control={control} name={`${criterion.key}.score`} render={({ field }) => (
             <div className="scores" role="radiogroup" aria-label={`Điểm ${criterion.label}`}>

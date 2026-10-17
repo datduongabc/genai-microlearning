@@ -79,7 +79,7 @@ Các câu quiz có đúng độ khó theo mức Bloom khai báo không; phương
 
 ### 3.7. Độ khớp mức Bloom (`bloom_fidelity`)
 
-Mức Bloom khai báo có khớp với mức **thực tế** mà nội dung, quiz và bài luyện tập đòi hỏi không. Đối chiếu theo bảng neo ở mục 4.
+Mức Bloom khai báo có khớp với mức **thực tế** mà nội dung, quiz và bài luyện tập đòi hỏi không. Đối chiếu theo bảng neo ở mục 4. Trang chấm mù hiện mức Bloom khai báo ngay cạnh tiêu chí này ("Mức Bloom đặt ra"), không hiện trong gói.
 
 - **5**: khớp hoàn toàn mức khai báo.
 - **3**: lệch một mức ở một phần (ví dụ khai báo Apply nhưng một nửa số câu chỉ đòi Remember).
@@ -114,7 +114,7 @@ Cùng bảng mà pipeline sinh dùng (`BLOOM_VERB_TABLE` và `BLOOM_LEVEL_ANCHOR
 
 1. **Chấm mù.** Mỗi gói chỉ mang mã ẩn danh. Không đoán và không ghi nhận xét về việc module có thể do nguồn nào sinh ra. Các gói được đưa theo thứ tự đã xáo trộn; chấm từng gói độc lập, không so hai gói với nhau.
 2. **Đọc tài liệu nguồn trước.** Mỗi gói kèm các đoạn tài liệu nguồn. `accuracy` và hallucination chỉ đối chiếu với các đoạn này, không với hiểu biết riêng của bạn.
-3. **Đọc hết module** (chủ đề, Learning Objective và các mục tiêu con, nội dung, slide, ví dụ, từng câu quiz cùng lời giải, bài luyện tập) rồi mới cho điểm.
+3. **Đọc hết module** (chủ đề, Learning Objective và các mục tiêu con, nội dung, slide, ví dụ, từng câu quiz cùng lời giải, bài luyện tập) rồi mới cho điểm. Mức Bloom khai báo chỉ hiện cạnh tiêu chí `bloom_fidelity`; dùng nó khi chấm `bloom_fidelity` và độ khó quiz.
 4. **Cho điểm nguyên từ 1 đến 5** theo các mức neo ở mục 3. Không chắc giữa hai mức thì chọn mức trung gian 2 hoặc 4.
 5. **Ghi lại hallucination** trong cột `hallucination_notes`: mỗi câu không có căn cứ một dòng, kèm vị trí. Cột này không vào thống kê điểm nhưng giúp đối chiếu với danh sách của mô hình chấm.
 6. **Hiệu chuẩn trước khi chấm thật.** Chấm thử hai gói không nằm trong mẫu, rồi đối chiếu với người nghiên cứu để thống nhất cách hiểu các mức neo. Không sửa điểm của gói thật sau khi đã xem điểm của mô hình chấm.
