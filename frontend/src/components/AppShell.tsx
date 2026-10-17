@@ -87,7 +87,7 @@ export function AppShell({ title, children }: { title: string; children: ReactNo
             <button className="menu-item danger" disabled={busy} onClick={() => void unlink()}><AccountIcon kind="unlink" />{busy ? "Đang hủy liên kết…" : "Hủy liên kết Moodle…"}</button>
           </> : account && <MoodleAccountSection onStatus={linked} />)}
           {error && <p role="alert" className="account-info text-red-700">{error}</p>}
-          <hr />
+          {(!user?.is_admin && account || error) && <hr />}
           <button className="menu-item" onClick={logout} data-leaves-page><AccountIcon kind="logout" />Đăng xuất</button>
         </div>}
         <button className="account-trigger" ref={trigger} aria-label={`Tài khoản ${user?.name}, ${user?.is_admin ? "Quản trị viên" : "Giảng viên"}`} aria-expanded={open} aria-controls="account-menu" onClick={() => { setError(null); setAccount(null); setOpen(!open); }}>

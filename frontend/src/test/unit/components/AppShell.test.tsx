@@ -45,6 +45,7 @@ describe('AppShell', () => {
     expect(api.getMoodleAccount).not.toHaveBeenCalled()
     expect(screen.getByText('a@b.com')).toBeInTheDocument()
     expect(screen.getAllByRole('button')).toHaveLength(2)
+    expect(screen.getAllByRole('separator')).toHaveLength(1)
     await userEvent.click(screen.getByRole('button', { name: 'Đăng xuất' }))
     expect(logout).toHaveBeenCalledOnce()
   })
