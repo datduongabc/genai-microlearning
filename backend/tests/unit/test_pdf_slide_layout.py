@@ -57,3 +57,43 @@ def test_footer_touching_the_last_code_line_does_not_reorder_the_code(page):
     page.insert_text((150, 100), "    run();", fontname="cour", fontsize=12)
     page.insert_text((150, 130), "}", fontname="cour", fontsize=12)
     assert page_lines(page) == ["Slide footer with long text", "if (ready) {", "    run();", "}"]
+
+
+def _words(page, x, y, text, fontname, fontsize=8):
+    # Beamer listings draw every word as its own run.
+    for word in text.split():
+        page.insert_text((x, y), word, fontname=fontname, fontsize=fontsize)
+        x += pymupdf.get_text_length(word + " ", fontname=fontname, fontsize=fontsize)
+
+
+def test_a_numbered_listing_keeps_each_line_number_with_its_code(page):
+    for y, number, code in [(100, "5", "public:"), (110, "6", "virtual int get(int index);")]:
+        page.insert_text((21, y), number, fontsize=6)
+        _words(page, 50, y, code, "cour")
+    assert page_lines(page) == ["5 public:", "6 virtual int get(int index);"]
+
+
+def test_a_cost_comment_in_its_own_column_stays_on_its_code_line(page):
+    for y, code, cost in [(100, "currentMax = a[0]", "//2"), (111, "i = 1", "//2")]:
+        page.insert_text((60, y), code, fontname="cour", fontsize=9)
+        page.insert_text((218, y), cost, fontname="coit", fontsize=9)
+    assert page_lines(page) == ["currentMax = a[0] //2", "i = 1 //2"]
+
+
+def test_a_number_in_a_separate_table_column_is_not_joined_to_the_next_cell(page):
+    page.insert_text((50, 100), "1", fontsize=10)
+    page.insert_text((250, 100), "FCFS", fontsize=10)
+    assert page_lines(page) == ["1", "FCFS"]
+
+
+def test_an_italic_code_comment_reaching_the_slide_navigation_keeps_the_code_together(page):
+    for y, text in [(108, "Array implementation"), (116, "How to store?"), (150, "Operations")]:
+        page.insert_text((300, y), text, fontsize=6)
+    page.insert_text((10, 18), "Removal: Implementation in C++", fontsize=11)
+    _words(page, 21, 102, "1 class List {", "cour")
+    _words(page, 21, 112, "2 // Declaration of attributes, constructor and destructor.", "coit")
+    _words(page, 21, 122, "3 public:", "cour")
+    assert page_lines(page) == [
+        "Array implementation", "How to store?", "Operations", "Removal: Implementation in C++",
+        "1 class List {", "2 // Declaration of attributes, constructor and destructor.", "3 public:",
+    ]

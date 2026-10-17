@@ -1,7 +1,7 @@
-"""Lecture-slide text, font decoding, and the measured DSA/OS layout repairs.
+"""Đọc chữ slide bài giảng: đổi mã phông và các sửa bố cục đã đo trên slide DSA/HĐH.
 
-The corpus still has fragmented code, superscripts and two fraction slides.
-Keep those repairs; avoid the unused radical, bracket and limit-operator machinery.
+Bộ tài liệu còn mã nguồn bị tách mảnh, chỉ số trên và hai slide có phân số; chỉ giữ các
+sửa cho những trường hợp đó.
 """
 
 import bisect
@@ -138,12 +138,13 @@ def _block_is_mathlike(block: dict) -> bool:
     spans = [s for line in block["lines"] for s in line["spans"]]
     if any(any(f in s["font"].lower() for f in _MATH_FONTS) for s in spans):
         return True
-    # MathType soạn bằng Arial hay Times thì không có phông toán nào; dấu hiệu còn lại là các
-    # biến in nghiêng đứng riêng lẻ (x, y, dx). Mã nguồn dùng phông đơn cách không nghiêng, chú
-    # thích là chữ thường, nên không bị bắt nhầm.
+    # Công thức soạn bằng Arial hay Times thì không có phông toán nào; dấu hiệu còn lại là các
+    # biến in nghiêng đứng riêng lẻ (x, y, dx). Mã nguồn dùng phông đơn cách, kể cả chú thích
+    # nghiêng như "//" hay "of", nên không được tính.
     italic_fragments = sum(
         1 for s in spans
-        if 0 < len(_span_text(s).strip()) <= 3 and (s["flags"] & pymupdf.TEXT_FONT_ITALIC or "italic" in s["font"].lower())
+        if 0 < len(_span_text(s).strip()) <= 3 and not s["flags"] & pymupdf.TEXT_FONT_MONOSPACED
+        and (s["flags"] & pymupdf.TEXT_FONT_ITALIC or "italic" in s["font"].lower())
     )
     return italic_fragments >= 2
 
@@ -204,8 +205,7 @@ def _wrap(body: str) -> str:
 def _join(pieces: list[_Piece]) -> str:
     """Nối một hàng trái sang phải. Các mảnh chỉ số liền nhau là một cụm chỉ số: "^α", "^+",
     "^1" thành "^(α+1)", vì "x^α+1" đọc ra một biểu thức khác. Chỉ số dưới và trên chồng lên
-    nhau (ion A với "n+" ở trên, "(dd)" ở dưới) viết dưới trước trên sau, như quy ước LaTeX,
-    thay vì xen kẽ từng mảnh theo tọa độ."""
+    nhau viết dưới trước trên sau, như quy ước LaTeX, thay vì xen kẽ từng mảnh theo tọa độ."""
     tokens: list[list[_Piece]] = []
     for piece in sorted(pieces, key=lambda p: p.x0):
         if tokens and piece.script and tokens[-1][0].script:
@@ -366,8 +366,8 @@ def _span_text(span: dict) -> str:
 
 def _span_pieces(span: dict) -> list[_Piece]:
     """Tách một span thành từng từ theo vị trí ký tự. PyMuPDF gộp chữ cùng phông cùng cỡ vào
-    một span ngay cả khi chúng nằm ở hai tầng khác nhau, như số 1 của tử số 1/a với chữ
-    "arctan" ở dòng chính, nên không thể coi cả span là một mảnh."""
+    một span ngay cả khi chúng nằm ở hai tầng khác nhau, như tử số của một phân số với chữ ở
+    dòng chính, nên không thể coi cả span là một mảnh."""
     size = span["size"]
     pieces: list[_Piece] = []
     current: list[dict] = []
@@ -444,11 +444,12 @@ def page_lines(page: pymupdf.Page) -> list[str]:
         # bảng hai cột) chứ không phải công thức vỡ: trộn chúng lại thì chữ các ô đan vào nhau.
         math = any(_block_is_mathlike(blocks[i]) for i in region)
         has_code = any(s["flags"] & pymupdf.TEXT_FONT_MONOSPACED for line in lines for s in line["spans"])
-        has_bullets = any(_line_text(line["spans"]).strip() in {"•", "▪", "❖"} for line in lines)
+        owners = [i for i in region for _ in blocks[i]["lines"]]
+        texts = [_line_text(line["spans"]) for line in lines]
+        has_bullets = any(text.strip() in {"•", "▪", "❖"} for text in texts)
         if (not math or has_bullets or (has_code and not region_rules)
                 or (not _is_shattered(boxes) and not region_rules)):
-            for line in lines:
-                text = _line_text(line["spans"])
+            for owner, line, text in zip(owners, lines, texts):
                 # Chữ vẽ hai lần chồng khít (hiệu ứng bóng của tiêu đề slide) chỉ giữ một lần.
                 if not text:
                     continue
@@ -456,20 +457,23 @@ def page_lines(page: pymupdf.Page) -> list[str]:
                 base = max(line["spans"], key=lambda s: s["size"])
                 baseline, size = base["origin"][1], base["size"]
                 if previous:
-                    old_text, old_box, old_baseline, old_size = previous
+                    old_text, old_box, old_baseline, old_size, old_owner = previous
                     if (old_text == text and _overlap(old_box[1], old_box[3], box[1], box[3]) > 0
                             and _overlap(old_box[0], old_box[2], box[0], box[2])
                             > 0.8 * min(old_box[2] - old_box[0], box[2] - box[0])):
                         continue
                     gap = box[0] - old_box[2]
-                    if (abs(baseline - old_baseline) < 0.15 * max(size, old_size)
-                            and 0 <= gap < max(size, old_size)):
-                        out[-1] += (" " if gap > 0.12 * max(size, old_size) else "") + text
+                    em = max(size, old_size)
+                    listing = owner == old_owner and any(
+                        s["flags"] & pymupdf.TEXT_FONT_MONOSPACED for s in line["spans"]
+                    ) and ((old_text.strip().isdigit() and gap < 4 * em) or text.lstrip().startswith("//"))
+                    if abs(baseline - old_baseline) < 0.15 * em and 0 <= gap and (gap < em or listing):
+                        out[-1] += (" " if gap > 0.12 * em else "") + text.lstrip()
                         box = (old_box[0], min(old_box[1], box[1]), box[2], max(old_box[3], box[3]))
-                        previous = (out[-1], box, baseline, size)
+                        previous = (out[-1], box, baseline, size, owner)
                         continue
                 out.append(text)
-                previous = (text, box, baseline, size)
+                previous = (text, box, baseline, size, owner)
             continue
         previous = None
         pieces: list[_Piece] = []
@@ -510,7 +514,7 @@ def title_candidates(page: pymupdf.Page) -> list[str]:
     found: list[tuple[float, float, float, str]] = []
     for block in blocks:
         for line in block["lines"]:
-            text = _line_text(line["spans"])
+            text = _line_text(line["spans"]).strip()
             size = max(s["size"] for s in line["spans"])
             visible = [c for c in text if not c.isspace()]
             letters = sum(c.isalpha() for c in visible)

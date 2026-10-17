@@ -2,9 +2,18 @@
 
 Measured all 48 PDFs (2,145 pages) in dsa, operating-system, program-fundamentals,
 and web-programming. The baseline is `760483b9825d646d785e78ef3c56989998142088`.
-PDFs were opened read-only from the authorized corpus at
-`/mnt/d/firstmate/projects/do-an/docs/documents`; none is committed here.
+PDFs were opened read-only from a local copy of `docs/documents`; none is committed here.
 File hashes and final measurements are in [pdf-reader-files.json](pdf-reader-files.json); the pre-change run is preserved in [pdf-reader-baseline-files.json](pdf-reader-baseline-files.json).
+
+## Review correction status
+
+The extraction, locator, retrieval and suite results below describe the pre-review
+parser, including the rebase run. They are historical measurements, not final results
+for the corrected listing joins and title normalization. These changes can alter chunks
+and rankings; the old retrieval comparison does not establish current retrieval quality.
+A full corpus and retrieval replay remains required before using these numbers to
+characterize the corrected parser. Focused corpus evidence is recorded separately
+in `pdf-reader-review-pages.json`.
 
 ## Method and limits
 
@@ -238,17 +247,15 @@ no text, heading-frequency denominator or chunk locator. Warnings persist in
 `documents.extraction_warnings` after completed job payloads are cleared and are
 returned by the document list API and rendered next to the document in the course.
 An entirely unreadable document persists its warnings before failing with a clear
-message. Migration `0020_extraction_warnings` adds the JSONB column with `[]` for
+message. Migration `0022_extraction_warnings` adds the JSONB column with `[]` for
 existing documents.
 
-Private HTTP smoke used localhost backend/frontend ports 80453/51453, separate
-PostgreSQL and local models. On a three-page PDF with valid text on pages 1/3 and
-an OCR-failing page 2, the actual upload job completed (`embedded`) and a fresh
-`GET /documents` retained page 2's warning. An all-unreadable two-page upload failed
-with both warnings and the readable-content error. The host deliberately lacked
-Tesseract for these failure scenarios; corpus measurement used the container with
-Tesseract and both languages installed. Logs and HTTP snapshots are stored under
-`/mnt/d/firstmate/data/do-an-r53-pdf-reader-fit/`.
+An isolated HTTP smoke used separate PostgreSQL and local model services. A
+three-page upload with valid text on pages 1/3 and an OCR-failing page 2 completed
+as `embedded`; a fresh `GET /documents` retained page 2's warning. An unreadable
+two-page upload failed with both warnings and the readable-content error. The
+failure environment lacked Tesseract; corpus measurement used Tesseract with
+both languages installed. These are historical observations, not a current smoke run.
 
 | Test scenario | Result / evidence |
 | --- | --- |
@@ -256,11 +263,6 @@ Tesseract and both languages installed. Logs and HTTP snapshots are stored under
 | Short text layer with failed OCR | Existing short text is retained and warning attached. |
 | Refresh after completed extraction | Backend integration test checks cleared job payload; frontend remount test checks visible warning. |
 | Entirely unreadable upload | Private HTTP job fails with warnings for pages 1/2; no silent ready/empty document. |
-| Browser smoke | `chrome-devtools-axi` could not establish its private bridge. One authorized Windows Chrome/CDP fallback reached CDP but the WSL localhost frontend refused the Windows browser connection. No passing browser screenshot is claimed; HTTP evidence and the frontend DOM regression cover the changed flow. |
-
-Live HTTP scenarios were already driven and recorded. A later pipeline Test step
-can run automated suites and one short smoke check of the warning flow; it need not
-repeat a full private stack and all scenarios.
 
 ## Retrieval before/after
 
@@ -344,7 +346,7 @@ result metadata, persistent API/UI warning, explicit indentation, adjacent text
 runs, identical table cells, overlapping footer/code order, and warning-only pages
 changing heading frequency. The existing study-migration round-trip test now targets
 its own `0019_blind_ratings` revision rather than assuming the repository head is
-always that revision. Suite logs are kept in the task evidence directory.
+always that revision. 
 
 The supplied self-adjusting PDF includes scanned paper pages with a damaged text
 layer and complex expressions. The measurements include it as provided. Neither
@@ -354,81 +356,32 @@ this change.
 
 ## Reproduce
 
-Install the repository's existing backend/frontend dependencies. Use the four-subject
-PDF directory (ignored by git). Every database/service below is a private task instance;
-do not use the live `do-an` stack. The OCR container is the existing backend image
-with Tesseract `eng`/`vie`; the models are the same pinned defaults in
-`devops/docker-compose.yml`:
+Use the repository's existing backend dependencies, a read-only four-subject PDF
+copy, and Tesseract with `eng+vie`. Set `PDFS` to that copy and `OUTPUT` to a
+repository-local output directory. The baseline must be available in local git history.
 
 ```sh
-TASK_DATA=/mnt/d/firstmate/data/do-an-r53-pdf-reader-fit
-PDFS=/mnt/d/firstmate/projects/do-an/docs/documents
+PDFS="$PWD/docs/documents"
+OUTPUT="$PWD/.pdf-reader-evidence"
 BASELINE=760483b9825d646d785e78ef3c56989998142088
-
-docker run --rm -d --name fm-do-an-r53-db \
-  -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=microlearning \
-  -p 127.0.0.1:55453:5432 pgvector/pgvector:pg16
-docker run --rm -d --name fm-do-an-r53-ocr \
-  --entrypoint sleep do-an-backend:latest infinity
-docker run --rm -d --name fm-do-an-r53-embedder --cpus 2 \
-  -p 127.0.0.1:58453:80 -v "$TASK_DATA/embedder-models:/data" \
-  ghcr.io/huggingface/text-embeddings-inference:cpu-1.9.4 \
-  --model-id onnx-community/Qwen3-Embedding-0.6B-ONNX \
-  --revision c25a394dd583836952667c12f008335071b3f43d \
-  --pooling last-token --max-batch-tokens 1024 --max-client-batch-size 128
-docker run --rm -d --name fm-do-an-r53-reranker --cpus 2 \
-  -p 127.0.0.1:58454:80 -v "$TASK_DATA/reranker-models:/data" \
-  ghcr.io/huggingface/text-embeddings-inference:cpu-1.9.4 \
-  --model-id BAAI/bge-reranker-base \
-  --revision 2cfc18c9415c912f9d8155881c133215df768a70 \
-  --max-client-batch-size 64
-
-# After PostgreSQL, /health on both models, and Tesseract are ready:
+mkdir -p "$OUTPUT"
 backend/.venv/bin/python docs/measurements/measure_pdf_reader.py \
-  --documents "$PDFS" --baseline-ref "$BASELINE" --current-ref "$BASELINE" \
-  --output "$TASK_DATA/before-ocr" --ocr-container fm-do-an-r53-ocr \
-  --ocr-cache "$TASK_DATA/ocr-cache"
+  --documents "$PDFS" --baseline-ref "$BASELINE" --output "$OUTPUT/current"
 backend/.venv/bin/python docs/measurements/ablate_pdf_repairs.py \
-  --documents "$PDFS" --baseline-ref "$BASELINE" \
-  --output "$TASK_DATA/repair-ablations.json"
-backend/.venv/bin/python docs/measurements/measure_pdf_reader.py \
-  --documents "$PDFS" --baseline-ref "$BASELINE" \
-  --output "$TASK_DATA/after-final" --ocr-container fm-do-an-r53-ocr \
-  --ocr-cache "$TASK_DATA/ocr-cache"
-
-export DATABASE_URL=postgresql+psycopg://postgres:postgres@127.0.0.1:55453/microlearning
-export APP_RUNTIME_DATABASE_URL=postgresql+psycopg://app_runtime:app_runtime_dev_password@127.0.0.1:55453/microlearning
-export APP_WORKER_DATABASE_URL=postgresql+psycopg://app_worker:app_worker_dev_password@127.0.0.1:55453/microlearning
-export SECRET_KEY=r53-test-secret-with-at-least-32-characters
-(cd backend && .venv/bin/alembic upgrade head && .venv/bin/pytest)
-backend/.venv/bin/ruff check backend docs/measurements/measure_pdf_reader.py \
-  docs/measurements/replay_pdf_retrieval.py docs/measurements/ablate_pdf_repairs.py
-(cd frontend && npm test -- --run && npm run build)
-
-docker exec fm-do-an-r53-db createdb -U postgres r53_before
-docker exec fm-do-an-r53-db createdb -U postgres r53_after
-DATABASE_URL=postgresql+psycopg://postgres:postgres@127.0.0.1:55453/r53_before \
-  sh -c 'cd backend && .venv/bin/alembic upgrade head'
-DATABASE_URL=postgresql+psycopg://postgres:postgres@127.0.0.1:55453/r53_after \
-  sh -c 'cd backend && .venv/bin/alembic upgrade head'
-export LLM_GATEWAY_URL=http://127.0.0.1:58453/v1
-export LLM_GATEWAY_KEY=task-private
-export EMBEDDING_MODEL=Qwen3-Embedding-0.6B
-export RERANKER_URL=http://127.0.0.1:58454
-BENCHMARK_DATABASE_URL=postgresql+psycopg://postgres:postgres@127.0.0.1:55453/r53_before \
-  backend/.venv/bin/python docs/measurements/replay_pdf_retrieval.py \
-  --documents "$PDFS" --queries docs/measurements/pdf-reader-queries.json \
-  --reader-ref "$BASELINE" --ocr-container fm-do-an-r53-ocr \
-  --cache "$TASK_DATA/ocr-cache" --output "$TASK_DATA/retrieval-before.json"
-BENCHMARK_DATABASE_URL=postgresql+psycopg://postgres:postgres@127.0.0.1:55453/r53_after \
-  backend/.venv/bin/python docs/measurements/replay_pdf_retrieval.py \
-  --documents "$PDFS" --queries docs/measurements/pdf-reader-queries.json \
-  --ocr-container fm-do-an-r53-ocr --cache "$TASK_DATA/ocr-cache" \
-  --output "$TASK_DATA/retrieval-after.json"
-
-docker stop fm-do-an-r53-db fm-do-an-r53-ocr \
-  fm-do-an-r53-embedder fm-do-an-r53-reranker
+  --documents "$PDFS" --baseline-ref "$BASELINE" --output "$OUTPUT/ablations.json"
 ```
+
+For retrieval, provision disposable pgvector databases for before/after and migrate
+each with Alembic from `backend`. Supply `BENCHMARK_DATABASE_URL`, `LLM_GATEWAY_URL`,
+`LLM_GATEWAY_KEY`, and `RERANKER_URL` from that environment. Keep Qwen3 Embedding
+0.6B (768 dimensions, revision `c25a394dd583836952667c12f008335071b3f43d`) and
+BAAI bge-reranker-base (revision `2cfc18c9415c912f9d8155881c133215df768a70`),
+using the service versions in [pdf-reader-services.json](pdf-reader-services.json).
+Run `replay_pdf_retrieval.py` with `--documents`, `--queries`, `--cache`, and `--output`
+pointing to the corpus, `docs/measurements/pdf-reader-queries.json`, a local cache,
+and a local result file. Repeat against the other database with
+`--reader-ref "$BASELINE"` and a distinct output file. Use fresh databases and
+stop disposable services afterwards.
 
 The replay calls the existing `backend/scripts/benchmark_rerank.py` ingestion,
 ranking and metric functions. It expands the old capped subject sample to all
@@ -439,7 +392,7 @@ not a statistical quality evaluation. A file/page's relevant chunks may differ
 in count after extraction repairs. The embedding service is called directly using
 its existing OpenAI-compatible protocol; this bypasses proxy routing only for this
 measurement and does not change weights, pooling, vector dimension (768) or search
-parameters. Real model vectors are cached by content in this task-only directory;
+parameters. Real model vectors are cached by content in the configured output directory;
 use a fresh cache if changing models. Actual `/info` model identifiers, SHAs, pooling and service versions are captured
 in [pdf-reader-services.json](pdf-reader-services.json). No fake embeddings or reranker scores are
 used in the retrieval evidence (automated tests separately use their existing
@@ -452,8 +405,7 @@ warning migration now follows `0021_remove_textbook_scope` as
 `0022_extraction_warnings`, preserving one Alembic head. Removed this branch's
 obsolete study-test revision pins so the existing test exercises the current schema.
 
-Re-ran the extraction command above with `--output "$TASK_DATA/rebased"` and
-`--ocr-container fm-r53-refresh-ocr`. All 48 hashes and all 2,145 pages match;
+Re-ran extraction with Tesseract in an isolated container. All 48 hashes and all 2,145 pages match;
 every non-timing per-file metric, code-order count, warning page, chunk count,
 and locator comparison is identical to the earlier final run. The fresh per-file
 results are in [pdf-reader-rebased-files.json](pdf-reader-rebased-files.json).
@@ -463,11 +415,9 @@ Paired mean extraction times are plain 1.163, original 3.221, revised 2.420 ms/p
 Fresh targeted checks: 37 PDF/format unit tests, 12 reader/OCR/pipeline/migration
 integration tests, and 48 document-page frontend tests passed. Alembic upgraded a
 fresh private database through the new single head; Ruff and whitespace checks
-passed. Logs remain in the task evidence directory under `rebased-*`.
+passed. 
 
-Also reran both retrieval commands above against fresh private `r53_before` and
-`r53_after` databases, substituting `fm-r53-refresh-ocr` and writing
-`$TASK_DATA/rebased-retrieval-{before,after}.json`. Both output JSON objects are
+Also reran retrieval against fresh isolated before/after databases. Both output JSON objects are
 identical to the committed before/after evidence: all 24 probe ranks, metrics,
 model identifiers and subject chunk counts reproduce exactly. Dense and
 production reranked results remain unchanged; the documented two unreranked

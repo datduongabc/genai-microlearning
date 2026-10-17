@@ -82,6 +82,20 @@ function failureTitle(failure: DocumentFailure): string {
   return "Sinh mô-đun thất bại";
 }
 
+const WARNING_LABEL: Record<string, string> = {
+  ocr_failed: "Không đọc được bằng OCR",
+};
+
+function extractionWarningLines(warnings: DocumentInfo["extraction_warnings"]) {
+  const pagesByCode = new Map<string, number[]>();
+  for (const w of warnings) pagesByCode.set(w.code, [...(pagesByCode.get(w.code) ?? []), w.page]);
+  return [...pagesByCode].map(([code, pages]) => ({
+    code,
+    text: `${WARNING_LABEL[code] ?? code} ${pages.length > 1 ? "các trang" : "trang"} ${pages.sort((a, b) => a - b).join(", ")}. `
+      + "Nội dung có thể thiếu; hãy kiểm tra hoặc tải lại bản PDF có lớp chữ.",
+  }));
+}
+
 const STATUS_COLOR: Record<string, string> = {
   uploaded: "text-gray-500",
   processing: "text-amber-600",
@@ -429,9 +443,9 @@ export function CourseDetailPage() {
                   </button>
                 </div>
               </div>
-              {d.extraction_warnings?.map((warning) => (
-                <p key={`${warning.code}-${warning.page}`} className="mt-2 text-sm text-amber-800">
-                  {warning.message}
+              {extractionWarningLines(d.extraction_warnings).map((warning) => (
+                <p key={warning.code} className="mt-2 text-sm text-amber-800">
+                  {warning.text}
                 </p>
               ))}
               {d.failures.length > 0 && (

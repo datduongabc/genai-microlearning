@@ -43,7 +43,7 @@ def _run_extract(job) -> None:
         db.commit()
 
         units = read_document(storage_path, course_id=course_id, source_id=filename)
-        doc.raw_text = "\n\n".join(u.text for u in units)
+        doc.raw_text = "\n\n".join(u.text for u in units if u.text)
         # Persist before rejecting an unreadable document, and keep them after job cleanup.
         doc.extraction_warnings = list({
             (w["code"], w.get("page")): w for u in units for w in u.warnings
