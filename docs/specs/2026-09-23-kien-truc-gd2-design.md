@@ -76,7 +76,7 @@ Mẫu 20 câu là quá nhỏ để kết luận, nên cần đo lại trên tậ
 
 ### Giữ nguyên
 
-Pipeline xử lý tài liệu: đọc PDF, PPTX, DOCX, HTML, audio và video, chia chunk theo định dạng, nhúng qua gateway. Mọi tài liệu dùng phạm vi bài giảng thông thường; không phát hiện mục lục hoặc sinh theo chương/mục.
+Pipeline xử lý tài liệu: đọc PDF, PPTX, DOCX, HTML, audio và video, chia chunk theo định dạng, nhúng qua gateway. Phạm vi xử lý tài liệu hiện tại xem [README](../../README.md).
 Đây là Nhiệm vụ 2 của đề tài.
 
 Truy xuất: dense cộng BM25 cộng RRF với k bằng 60.

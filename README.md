@@ -6,9 +6,9 @@ Sinh viên: Dương Nguyễn Tấn Đạt, ngành Khoa học Máy tính.
 Hệ thống nhận tài liệu môn học của giảng viên (PDF, PowerPoint, HTML, video), truy xuất bằng RAG, rồi sinh mô-đun Microlearning gồm bảy thành phần: Learning Objective, Content, Slides, Example, Practice, Quiz, Explanation.
 Mô-đun sau đó được xuất bản sang Moodle cho học viên học.
 
-Mọi tài liệu được xử lý như bài giảng thông thường: không chọn loại giáo trình, không phát hiện mục lục và không sinh theo chương/mục. Đợt đánh giá chỉ dùng bốn thư mục trong `docs/documents`: `dsa`, `operating-system`, `program-fundamentals`, `web-programming`.
+Mọi tài liệu được xử lý như bài giảng thông thường: không chọn loại giáo trình, không phát hiện mục lục và không sinh theo chương/mục. API sinh mô-đun trả 422 nếu request còn gửi `section_ids`; hãy bỏ trường này để sinh cho cả tài liệu. Đợt đánh giá chỉ dùng bốn thư mục trong `docs/documents`: `dsa`, `operating-system`, `program-fundamentals`, `web-programming`.
 
-Model sinh cho đợt đánh giá được chọn tường minh: `claude-fast` (Claude Haiku 5.5) hoặc `openai-fast` (GPT-6 Luna); một tập nhỏ dùng `claude-pro` (Claude Sonnet 5.5) hoặc `openai-pro` (GPT-6.1 Sol). Bật `LLM_EXPERIMENT_MODE=true` để ghim model; model trả phí không nằm trong chuỗi fallback. Embedding giữ `embed-default`, Qwen3-Embedding-0.6B chạy tại chỗ. Xem [gateway routing](docs/gateway-routing.md).
+Model trả phí cho đợt đánh giá được chọn tường minh và ghim bằng `LLM_EXPERIMENT_MODE=true`; xem lựa chọn model, embedding và chính sách fallback tại [gateway routing](docs/gateway-routing.md).
 
 Khi bộ đọc nhận diện tài liệu hỏng hoặc sai định dạng, job báo lỗi ngay ở lần xử lý đầu và không tự thử lại; PDF có mật khẩu cần bỏ mật khẩu rồi tải lại. Lỗi tạm thời khi gọi gateway vẫn được tự thử lại với thời gian chờ tăng dần.
 
@@ -17,7 +17,7 @@ Khi bộ đọc nhận diện tài liệu hỏng hoặc sai định dạng, job 
 Trong trang xem trước, giảng viên có thể yêu cầu AI sửa một thành phần bằng ngôn ngữ tự nhiên, ví dụ “Rút gọn slide 3” hoặc “Làm câu quiz 2 khó hơn”. AI bám các đoạn nguồn của mô-đun và ngôn ngữ đầu ra đã chọn; yêu cầu chưa rõ sẽ được hỏi lại. Bản gốc AI được giữ trong `ai_original`, và số lượt chỉnh sửa đã áp dụng được hiển thị trên trang. Mô-đun đối chứng (không RAG) không hỗ trợ chỉnh sửa bằng chat.
 API: `POST /modules/{module_id}/chat-edit` nhận `{message, session_id?}`, trả `{session_id, reply, applied, edit_count}`. Lịch sử lưu trong bảng chat hiện có, tách khỏi hỏi-đáp môn học bằng `chat_sessions.module_id`; `chat_messages.applied_edit` đánh dấu lượt đã áp dụng. Chạy `alembic upgrade head` trước khi dùng.
 
-Sinh lại cho cùng một tài liệu hay mục luôn tạo mô-đun mới, không ghi đè mô-đun đã có; chỉ một lượt đang chạy mới chặn lượt sau. Giảng viên xóa một mô-đun đã sinh bằng `DELETE /modules/{module_id}` (nút “Xóa mô-đun” trên danh sách, có hộp xác nhận): khi được phép, endpoint xóa luôn bản đối chứng không RAG đi cặp và mọi dòng phụ thuộc (câu hỏi, đánh giá, lịch sử chat-edit, job), trả 409 khi bản đối chứng của nó đang được sinh, và 404 với mô-đun của người khác. Nguồn đang được nghiên cứu tham chiếu có [ràng buộc xóa riêng](docs/studies.md#bao-toan-nguon). Ứng dụng không lưu mô-đun nào đã đẩy lên Moodle, nên Book/Quiz đã tạo trên Moodle được giữ nguyên.
+Sinh lại cho cùng một tài liệu luôn tạo mô-đun mới, không ghi đè mô-đun đã có; chỉ một lượt đang chạy mới chặn lượt sau. Giảng viên xóa một mô-đun đã sinh bằng `DELETE /modules/{module_id}` (nút “Xóa mô-đun” trên danh sách, có hộp xác nhận): khi được phép, endpoint xóa luôn bản đối chứng không RAG đi cặp và mọi dòng phụ thuộc (câu hỏi, đánh giá, lịch sử chat-edit, job), trả 409 khi bản đối chứng của nó đang được sinh, và 404 với mô-đun của người khác. Nguồn đang được nghiên cứu tham chiếu có [ràng buộc xóa riêng](docs/studies.md#bao-toan-nguon). Ứng dụng không lưu mô-đun nào đã đẩy lên Moodle, nên Book/Quiz đã tạo trên Moodle được giữ nguyên.
 
 
 
@@ -31,7 +31,7 @@ Admin Moodle tạo khóa học và phân quyền trong Moodle. Ứng dụng ch�
 
 Nếu Moodle trả về nội dung không phải JSON (ví dụ trang lỗi HTML), ứng dụng báo lỗi Moodle có kiểm soát để người dùng thử lại sau.
 
-Tài khoản có ít nhất một khóa học ứng dụng liên kết với khóa học Moodle mà họ hiện có quyền quản lý hoạt động được sinh mô-đun đầy đủ. Các tài khoản khác được sinh tối đa 3 mô-đun mỗi ngày UTC, cấu hình bằng `NON_TEACHER_DAILY_GENERATION_LIMIT` (số nguyên dương). Một batch tính từng mô-đun, bản đối chứng tính một lượt; retry job không tính lại. Không kiểm tra được Moodle thì áp dụng hạn mức; admin ứng dụng cũng tuân theo quy tắc này. Hạn mức lưu theo tài khoản, không đặt lại khi xóa khóa học.
+Tài khoản có ít nhất một khóa học ứng dụng liên kết với khóa học Moodle mà họ hiện có quyền quản lý hoạt động được sinh mô-đun đầy đủ. Các tài khoản khác được sinh tối đa 3 mô-đun mỗi ngày UTC, cấu hình bằng `NON_TEACHER_DAILY_GENERATION_LIMIT` (số nguyên dương). Mỗi mô-đun tính một lượt, kể cả bản đối chứng; retry job không tính lại. Không kiểm tra được Moodle thì áp dụng hạn mức; admin ứng dụng cũng tuân theo quy tắc này. Hạn mức lưu theo tài khoản, không đặt lại khi xóa khóa học.
 
 
 ## Tài liệu
@@ -120,7 +120,7 @@ npm run build
 
 - Backend `tests/unit`: thuật toán, cấu hình và xử lý dữ liệu cục bộ; không cần DB hay dịch vụ mạng.
 - Backend `tests/integration`: HTTP app, DB và các ranh giới với gateway, Moodle, OCR hoặc FFmpeg dùng hàm giả.
-- Backend `tests/e2e`: pipeline nhập tài liệu/sách chạy đầy đủ tới dữ liệu được lưu trong DB, với embedding ngoại tuyến. Test sinh module dùng LLM thật vẫn mang marker `live_llm`, mặc định không chạy trong CI; chỉ chạy riêng bằng `uv run pytest tests/e2e -m live_llm` khi đã cấu hình DB và gateway thử nghiệm.
+- Backend `tests/e2e`: pipeline nhập tài liệu chạy đầy đủ tới dữ liệu được lưu trong DB, với embedding ngoại tuyến. Test sinh module dùng LLM thật vẫn mang marker `live_llm`, mặc định không chạy trong CI; chỉ chạy riêng bằng `uv run pytest tests/e2e -m live_llm` khi đã cấu hình DB và gateway thử nghiệm.
 - Frontend `src/test/unit`: component và schema; `src/test/integration`: luồng trang, auth và API. Fixture jsdom chung ở `src/test/setup.ts`.
 
 Có thể chạy riêng một tầng bằng đường dẫn, ví dụ `uv run pytest tests/unit` hoặc `npm run test -- src/test/unit`. Các tầng backend cần DB phải dùng PostgreSQL/pgvector thử nghiệm đã chạy migration, với `DATABASE_URL`, `APP_RUNTIME_DATABASE_URL` và `APP_WORKER_DATABASE_URL` trỏ tới DB đó (như CI), vì test migration tạo và xoá DB tạm. Fixture dùng chung nằm ở `backend/tests/conftest.py`; fixture DB dùng chung cho self-check/ngôn ngữ nằm ở `backend/tests/integration/conftest.py`.

@@ -11,16 +11,15 @@ request, generation fails. Paid generation aliases are selected explicitly and a
 never fallback targets. Outside experiment mode their ordinary and context-window
 failures fall back to the free `gemini-fast`, then `gemini-flash`:
 
-| Alias | Provider model ID | Evaluation use |
-| --- | --- | --- |
-| `claude-fast` | `anthropic/claude-haiku-5-5` | Leading cheap generation model |
-| `openai-fast` | `openai/gpt-6-luna` | Alternative cheap generation model |
-| `claude-pro` | `anthropic/claude-sonnet-5-5` | Strong model for a small subset |
-| `openai-pro` | `openai/gpt-6.1-sol` | Alternative strong model |
+| Alias | Evaluation use |
+| --- | --- |
+| `claude-fast` | Leading cheap generation model |
+| `openai-fast` | Alternative cheap generation model |
+| `claude-pro` | Strong model for a small subset |
+| `openai-pro` | Alternative strong model |
 
-IDs verified on 2026-10-11 against the official [Claude model list](https://platform.claude.com/docs/en/models/overview),
-[GPT-6 Luna](https://developers.openai.com/api/docs/models/gpt-6-luna) and
-[GPT-6.1 Sol](https://developers.openai.com/api/docs/models/gpt-6.1-sol) documentation.
+Exact provider model IDs and display names are defined in
+[`devops/gateway/config.yaml`](../devops/gateway/config.yaml).
 No paid API call is required to validate configuration. Provider availability and
 credit still require explicit deployment verification. Embeddings remain local
 Qwen3-Embedding-0.6B through `embed-default`. No fallbacks apply to embeddings or transcription.
