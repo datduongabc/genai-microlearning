@@ -92,6 +92,9 @@ body { background: var(--bg-canvas); font-size:16px; line-height:24px; }
 .auth-submit { height:40px; border-radius:6px; background:var(--accent-default); color:white; font-size:15px; line-height:22px; font-weight:600; }
 .auth-submit:hover { background:var(--accent-hover); }
 .auth-submit:disabled { opacity:.6; }
+.forgot { position:relative; }
+.forgot .tip { display:none; position:absolute; top:calc(100% + 8px); right:0; z-index:5; width:190px; padding:8px 12px; border-radius:6px; background:var(--bg-navy); color:var(--text-on-dark); box-shadow:var(--shadow-overlay); }
+.forgot:hover .tip, .forgot:focus-within .tip { display:block; }
 .auth-footer { text-align:center; color:var(--text-secondary); }
 .auth-footer a { color:var(--accent-default); font-weight:600; text-decoration:underline; text-underline-offset:2px; }
 @media(max-width:1000px) { .auth-brand { width:40%; padding:32px; } .auth-area { padding:32px; } }

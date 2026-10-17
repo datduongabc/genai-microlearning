@@ -80,7 +80,10 @@ export function LoginPage() {
           <div className="auth-field">
             <div className="flex items-center justify-between text-sm">
               <label htmlFor="login-password" className="font-medium">Mật khẩu</label>
-              <a href={`mailto:${SUPPORT_EMAIL}`} title="Liên hệ quản trị viên để đặt lại mật khẩu." className="text-terracotta underline underline-offset-2">Quên mật khẩu?</a>
+              <span className="forgot">
+                <a href={`mailto:${SUPPORT_EMAIL}`} aria-describedby="forgot-tip" className="text-terracotta underline underline-offset-2">Quên mật khẩu?</a>
+                <span id="forgot-tip" role="tooltip" className="tip">Liên hệ quản trị viên để đặt lại mật khẩu.</span>
+              </span>
             </div>
             <input
               id="login-password"

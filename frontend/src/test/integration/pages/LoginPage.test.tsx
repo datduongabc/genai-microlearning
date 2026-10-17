@@ -125,4 +125,5 @@ it('offers open registration and admin support', () => {
   renderLoginPage()
   expect(screen.getByRole('link', { name: 'Đăng ký' })).toHaveAttribute('href', '/register')
   expect(screen.getByRole('link', { name: 'Quên mật khẩu?' })).toHaveAttribute('href', expect.stringContaining('mailto:'))
+  expect(screen.getByRole('link', { name: 'Quên mật khẩu?' })).toHaveAccessibleDescription('Liên hệ quản trị viên để đặt lại mật khẩu.')
 })
