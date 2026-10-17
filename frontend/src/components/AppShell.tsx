@@ -89,7 +89,7 @@ export function AppShell({ title, children }: { title: string; children: ReactNo
           <button className="menu-item" onClick={logout} data-leaves-page><AccountIcon kind="logout" />Đăng xuất</button>
         </div>}
         <button className="account-trigger" ref={trigger} aria-label={`Tài khoản ${user?.name}, ${user?.is_admin ? "Quản trị viên" : "Giảng viên"}`} aria-expanded={open} aria-controls="account-menu" onClick={() => { setError(null); setAccount(null); setOpen(!open); }}>
-          <span className="avatar" aria-hidden="true">{user && initials(user.name).toUpperCase()}</span>
+          <span className="avatar" aria-hidden="true">{user && initials(user.name)}</span>
           <span className="min-w-0 flex-1"><span className="block truncate font-semibold">{user?.name}</span><span className="brand-sub">{user?.is_admin ? "Quản trị viên" : "Giảng viên"}</span></span>
           <svg className="shell-icon account-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
         </button>

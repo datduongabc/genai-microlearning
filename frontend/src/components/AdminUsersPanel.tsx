@@ -143,7 +143,10 @@ export function AdminUsersPanel({ counts, onChange }: { counts: AdminCounts | nu
                 }}>
                   <button aria-label={`Thao tác ${u.email}`} aria-expanded={menu === u.id}
                     onClick={() => setMenu(menu === u.id ? null : u.id)}>⋯</button>
-                  {menu === u.id && <div className="user-actions-menu" onClick={() => setMenu(null)}>
+                  {menu === u.id && <div className="user-actions-menu" onClick={(e) => {
+                    setMenu(null);
+                    e.currentTarget.parentElement?.querySelector("button")?.focus();
+                  }}>
                     <button onClick={() => setResetting(resetting === u.id ? null : u.id)}>Đặt lại mật khẩu</button>
                     {u.moodle_status === "linked" && <button disabled={busyId === u.id} onClick={() => void handleUnlinkMoodle(u)}>Hủy liên kết Moodle</button>}
                     <button disabled={busyId === u.id || u.is_admin} onClick={() => void handleToggleActive(u)}

@@ -10,4 +10,8 @@ describe('initials', () => {
   it('takes one letter from a single word', () => {
     expect(initials('Admin')).toBe('A')
   })
+
+  it('uppercases lowercase names', () => {
+    expect(initials('lê minh quân')).toBe('LQ')
+  })
 })

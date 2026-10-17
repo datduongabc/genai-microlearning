@@ -95,6 +95,16 @@ describe('AdminPage - accounts', () => {
     expect(within(row).getByLabelText('Mật khẩu mới của lan@example.com')).toBeInTheDocument()
   })
 
+  it('returns focus to the row menu button after an item is chosen with the keyboard', async () => {
+    renderPage()
+    const row = (await screen.findByText('lan@example.com')).closest('li')!
+    await userEvent.click(menuButton(row))
+    within(row).getByRole('button', { name: 'Đặt lại mật khẩu' }).focus()
+    await userEvent.keyboard('{Enter}')
+    expect(within(row).getByLabelText('Mật khẩu mới của lan@example.com')).toBeInTheDocument()
+    expect(menuButton(row)).toHaveFocus()
+  })
+
   it('keeps one row menu open at a time and closes it with Escape or a press outside', async () => {
     renderPage()
     const row = (await screen.findByText('lan@example.com')).closest('li')!
@@ -118,6 +128,13 @@ describe('AdminPage - accounts', () => {
     renderPage()
     const row = (await screen.findByText('lan@example.com')).closest('li')!
     expect(within(row).getByText('LN')).toBeInTheDocument()
+  })
+
+  it('shows uppercase initials for a lowercase name', async () => {
+    vi.mocked(api.listUsers).mockResolvedValue([{ ...lan, name: 'lê minh quân' }])
+    renderPage()
+    const row = (await screen.findByText('lan@example.com')).closest('li')!
+    expect(within(row).getByText('LQ')).toBeInTheDocument()
   })
 
   it('labels the accounts tab and the deactivated filter with full counts and refreshes them after a change', async () => {
