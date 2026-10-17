@@ -295,9 +295,9 @@ def test_database_enforces_source_and_rater_identity(world):
         with pytest.raises(IntegrityError):
             db.commit()
         db.rollback()
-        db.add(Rating(study_item_id=item.id, rater_kind="llm_judge", **rating_values()))
+        db.add(Rating(study_item_id=item.id, rater_kind="llm_judge", judge_family="openai", **rating_values()))
         db.commit()
-        db.add(Rating(study_item_id=item.id, rater_kind="llm_judge", **rating_values()))
+        db.add(Rating(study_item_id=item.id, rater_kind="llm_judge", judge_family="openai", **rating_values()))
         with pytest.raises(IntegrityError):
             db.commit()
 

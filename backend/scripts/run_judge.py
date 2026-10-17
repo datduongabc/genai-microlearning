@@ -1,21 +1,11 @@
-"""Chấm một thư mục gói nghiên cứu bằng LLM chấm theo rubric chín tiêu chí (docs/rubric.md).
+"""Chấm mỗi gói bằng hai hãng khác nhau và khác hãng sinh.
 
-    PYTHONPATH=. uv run python scripts/run_judge.py <thư mục gói> --judge <alias> --out <tệp .jsonl>
+    PYTHONPATH=. uv run python scripts/run_judge.py <folder> --out <ratings.jsonl>
 
-Thư mục là đầu ra của scripts/export_study_pair.py, mỗi tệp một StudyFile. Mỗi gói ra một dòng JSON
-trong tệp kết quả: mã ẩn danh, mã cặp, nhóm, mô hình chấm và bản chấm đầy đủ. scripts/analyze_study.py
-đọc tệp này.
-
-Mô hình chấm phải khác hãng với mô hình đã sinh gói, vì mô hình chấm thường ưu ái văn của chính họ nhà
-mình (self-preference bias). Hãng là nơi làm ra model chứ không phải nơi phục vụ nó: gpt-oss chạy trên
-Groq vẫn là model của OpenAI. Kiểm cho mọi gói trước khi gọi lượt nào, để một thư mục lẫn gói không
-hợp lệ không tốn tiền nửa chừng rồi mới dừng.
-
-Chạy lại với cùng tệp kết quả thì chỉ chấm những gói mô hình chấm này còn thiếu: lượt chấm bị
-ngắt giữa chừng (hết hạn mức, mất mạng) không phải gọi lại cho phần đã xong. Mô hình chấm khác ghi vào
-cùng tệp thì chấm đủ mọi gói; scripts/analyze_study.py tách các dòng theo mô hình chấm.
-
-Tốn một lượt gọi LLM thật cho mỗi gói, qua gateway; điều kiện chạy miễn phí ở docs/rubric.md, mục 6.
+Ưu tiên Claude, OpenAI, Gemini; khi hết quota thử các hãng Groq đã ghim.
+Ghi alias và model thực sự phục vụ từng lượt. Chạy lại giữ điểm đã xong,
+chỉ gọi cho phần thiếu. Hết ứng viên thì báo mã gói và số lượt còn thiếu.
+--judge chỉ đổi thứ tự ưu tiên, không bỏ yêu cầu hai hãng hoặc kiểm hãng.
 """
 
 import argparse
@@ -28,7 +18,13 @@ from app.generation.evaluation import judge_module
 from app.generation.study_packets import StudyFile
 from app.llm import gateway
 from app.llm.catalog import fetch_model_info
-from app.llm.judge import refuse_same_family
+from app.llm.judge import (
+    JUDGE_POOL,
+    eligible_judges,
+    is_quota_error,
+    model_family,
+    refuse_same_family,
+)
 
 
 def anon_code(path: Path) -> str:
@@ -75,29 +71,67 @@ def main(argv: list[str] | None = None) -> None:
     sys.stdout.reconfigure(encoding="utf-8")
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("packets", type=Path, help="thư mục các tệp gói .json")
-    parser.add_argument("--judge", required=True, help="alias gateway của mô hình chấm, ví dụ claude-pro")
+    parser.add_argument("--judge", help="ưu tiên alias này; vẫn cần đủ hai hãng chấm khác hãng sinh")
     parser.add_argument("--out", type=Path, required=True, help="tệp .jsonl ghi kết quả")
     args = parser.parse_args(argv)
 
     studies = _load(args.packets)
-    judge_model = _refuse_same_family(args.judge, studies)
-    done = _already_judged(args.out)
-
+    catalog = fetch_model_info()
+    if args.judge:
+        _refuse_same_family(args.judge, studies)
+        if args.judge not in JUDGE_POOL:
+            raise SystemExit(f"Judge must be in the cross-family pool: {JUDGE_POOL}")
+    _already_judged(args.out)  # Repair an interrupted final JSONL write before resuming.
     args.out.parent.mkdir(parents=True, exist_ok=True)
-    with args.out.open("a", encoding="utf-8") as out, gateway.experiment_mode(), gateway.using_model(args.judge):
+    pending = []
+    with args.out.open("a", encoding="utf-8") as out, gateway.experiment_mode():
         for path, study in studies:
             code = anon_code(path)
-            if (code, args.judge) in done:
-                continue
-            evaluation = judge_module(study.packet.model_copy(update={"anon_id": code}))
-            line = {
-                "anon_id": code, "pair_id": study.pair_id, "group": study.group,
-                "judge": args.judge, "judge_model": judge_model, "evaluation": evaluation.model_dump(),
-            }
-            # Ghi và đẩy xuống đĩa từng dòng: bị ngắt thì những gói đã chấm vẫn còn.
-            out.write(json.dumps(line, ensure_ascii=False) + "\n")
-            out.flush()
-            print(f"{path.name} -> {code}")
+            generators = [] if study.group == "human" else [
+                (path.name, study.generator_model, study.generation_models)]
+            # Resume by actual served model, including substitutes, rather than requested alias.
+            rows = [json.loads(line) for line in args.out.read_text(encoding="utf-8").splitlines() if line.strip()]
+            eligible = {model_family(c["model"]) for c in eligible_judges(generators, catalog)}
+            rated = [row["judge_model"] for row in rows if row["anon_id"] == code
+                     and model_family(row["judge_model"]) in eligible]
+            candidates = eligible_judges(generators, catalog, rated)
+            if args.judge:
+                # Explicit requests retain the shared guard, even if other judges could be used.
+                refuse_same_family(args.judge, generators, catalog)
+                candidates.sort(key=lambda c: c["alias"] != args.judge)
+            for candidate in candidates:
+                if len({model_family(m) for m in rated}) >= 2:
+                    break
+                alias, expected = candidate["alias"], candidate["model"]
+                if model_family(expected) in {model_family(m) for m in rated}:
+                    continue
+                try:
+                    from app.study.judge import check_packet_budget
+                    packet = study.packet.model_copy(update={"anon_id": code})
+                    check_packet_budget(packet, candidate["max_input_tokens"])
+                    with gateway.using_model(alias), gateway.capture_models() as calls:
+                        evaluation = judge_module(packet, max_retries=0)
+                    if evaluation.anon_id != code:
+                        raise ValueError("Judge returned a different anonymous item code")
+                    if len(calls) != 1 or calls[0]["served_model"].split("/")[-1] != expected.split("/")[-1]:
+                        raise ValueError("Gateway did not report the pinned judge model")
+                except Exception as exc:
+                    if not is_quota_error(exc):
+                        raise
+                    print(f"{code}: {alias} quota exhausted", file=sys.stderr)
+                    continue
+                served = calls[0]["served_model"]
+                line = {"anon_id": code, "pair_id": study.pair_id, "group": study.group,
+                        "judge": alias, "judge_model": served, "evaluation": evaluation.model_dump()}
+                out.write(json.dumps(line, ensure_ascii=False) + "\n")
+                out.flush()
+                rated.append(served)
+                print(f"{path.name} -> {code}: {alias} ({served})")
+            missing = max(0, 2 - len({model_family(m) for m in rated}))
+            if missing:
+                pending.append(f"{code}: missing {missing}/2 ratings (rerun to resume)")
+    if pending:
+        raise SystemExit("\n".join(pending))
 
 
 if __name__ == "__main__":

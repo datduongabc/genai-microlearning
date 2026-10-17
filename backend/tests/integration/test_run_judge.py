@@ -1,4 +1,4 @@
-"""Chạy LLM chấm trên một thư mục gói nghiên cứu: mỗi gói ra đúng một dòng kết quả, và từ chối trước
+"""Chạy LLM chấm trên một thư mục gói nghiên cứu: mỗi gói ra hai dòng kết quả, và từ chối trước
 khi tốn lượt gọi nào khi mô hình chấm cùng hãng với mô hình đã sinh gói, vì mô hình chấm ưu ái văn
 của chính họ nhà mình.
 
@@ -26,10 +26,17 @@ def judge(monkeypatch):
     """Mô hình chấm giả: điểm cố định, ghi lại gói nó được xem và model đang được dùng."""
     seen: list[dict] = []
 
-    def fake(packet):
+    def fake(packet, **kwargs):
+        run_judge.gateway.complete("judge")
         seen.append({"packet": packet, "alias": run_judge.gateway.active_model()})
         return _evaluation(packet.anon_id)
 
+    from types import SimpleNamespace
+    def completion(**kwargs):
+        alias = run_judge.gateway.active_model()
+        model = next(m["litellm_params"]["model"] for m in GATEWAY if m["model_name"] == alias)
+        return SimpleNamespace(model=model, choices=[SimpleNamespace(message=SimpleNamespace(content="ok"))])
+    monkeypatch.setattr("litellm.completion", completion)
     monkeypatch.setattr(run_judge, "judge_module", fake)
     monkeypatch.setattr(run_judge, "fetch_model_info", lambda: GATEWAY)
     return seen
@@ -39,26 +46,26 @@ def _lines(path) -> list[dict]:
     return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines()]
 
 
-def test_every_packet_gives_exactly_one_line(tmp_path, judge):
+def test_every_packet_gives_exactly_two_cross_family_lines(tmp_path, judge):
     _write_pairs(tmp_path, pairs=3)
     out = tmp_path / "ket-qua" / "claude-pro.jsonl"
 
     run_judge.main([str(tmp_path), "--judge", "claude-pro", "--out", str(out)])
 
     lines = _lines(out)
-    assert len(lines) == 6 == len(judge)
+    assert len(lines) == 12 == len(judge)
     assert {(line["pair_id"], line["group"]) for line in lines} == {
         (f"cap-{n}", g) for n in range(3) for g in ("rag_llm", "llm_no_rag")
     }
-    assert all(line["judge"] == "claude-pro" and line["evaluation"]["accuracy"]["score"] == 4 for line in lines)
+    assert {line["judge"] for line in lines} == {"claude-pro", "openai-pro"}
 
 
 def test_the_calls_go_to_the_judge_named_on_the_command_line(tmp_path, judge):
     _write_pairs(tmp_path, pairs=1)
 
-    run_judge.main([str(tmp_path), "--judge", "groq-pro", "--out", str(tmp_path / "o.jsonl")])
+    run_judge.main([str(tmp_path), "--judge", "openai-pro", "--out", str(tmp_path / "o.jsonl")])
 
-    assert {call["alias"] for call in judge} == {"groq-pro"}
+    assert {call["alias"] for call in judge} == {"claude-pro", "openai-pro"}
 
 
 def test_the_judge_sees_an_anonymous_code_that_does_not_name_the_group(tmp_path, judge):
@@ -90,7 +97,7 @@ def test_the_family_is_the_maker_not_the_host(tmp_path, judge):
     _write_pairs(tmp_path, pairs=1, generator="openai-fast")
 
     with pytest.raises(SystemExit):
-        run_judge.main([str(tmp_path), "--judge", "groq-pro", "--out", str(tmp_path / "o.jsonl")])
+        run_judge.main([str(tmp_path), "--judge", "openai-pro", "--out", str(tmp_path / "o.jsonl")])
 
     assert judge == []
 
@@ -128,20 +135,20 @@ def test_a_rerun_only_judges_the_packets_still_missing(tmp_path, judge):
 
     run_judge.main([str(tmp_path), "--judge", "claude-pro", "--out", str(out)])
 
-    assert len(judge) == 1
+    assert len(judge) == 5
     assert sorted(line["anon_id"] for line in _lines(out)) == sorted(json.loads(x)["anon_id"] for x in first)
 
 
-def test_a_second_judge_on_the_same_output_file_judges_every_packet(tmp_path, judge):
+def test_completed_pairs_are_not_rejudged_when_preference_changes(tmp_path, judge):
     _write_pairs(tmp_path, pairs=2)
     out = tmp_path / "o.jsonl"
     run_judge.main([str(tmp_path), "--judge", "claude-pro", "--out", str(out)])
     judge.clear()
 
-    run_judge.main([str(tmp_path), "--judge", "groq-pro", "--out", str(out)])
+    run_judge.main([str(tmp_path), "--judge", "openai-pro", "--out", str(out)])
 
-    assert len(judge) == 4
-    assert sorted(line["judge"] for line in _lines(out)) == ["claude-pro"] * 4 + ["groq-pro"] * 4
+    assert len(judge) == 0
+    assert sorted(line["judge"] for line in _lines(out)) == ["claude-pro"] * 4 + ["openai-pro"] * 4
 
 
 def test_a_line_cut_mid_character_by_an_interrupted_run_is_trimmed_and_judged_again(tmp_path, judge):
@@ -156,7 +163,7 @@ def test_a_line_cut_mid_character_by_an_interrupted_run_is_trimmed_and_judged_ag
 
     run_judge.main([str(tmp_path), "--judge", "claude-pro", "--out", str(out)])
 
-    assert len(judge) == 1
+    assert len(judge) == 5
     assert sorted(line["anon_id"] for line in _lines(out)) == sorted(json.loads(x)["anon_id"] for x in complete)
 
 
@@ -181,10 +188,10 @@ def test_runner_pins_requests_without_extra_judge_records(tmp_path, monkeypatch)
     sent = []
     def completion(**kwargs):
         sent.append(kwargs)
-        return SimpleNamespace(model="claude-sonnet-5", choices=[
+        return SimpleNamespace(model=next(m["litellm_params"]["model"] for m in GATEWAY if m["model_name"] == run_judge.gateway.active_model()), choices=[
             SimpleNamespace(message=SimpleNamespace(content="ok")),
         ])
-    def evaluate(packet):
+    def evaluate(packet, **kwargs):
         run_judge.gateway.complete("judge")
         return _evaluation(packet.anon_id)
     monkeypatch.setattr(litellm, "completion", completion)
@@ -194,3 +201,37 @@ def test_runner_pins_requests_without_extra_judge_records(tmp_path, monkeypatch)
     run_judge.main([str(tmp_path), "--judge", "claude-pro", "--out", str(out)])
     assert all(call["extra_body"]["disable_fallbacks"] for call in sent)
     assert all("judge_generation_models" not in row for row in _lines(out))
+
+
+def test_quota_without_substitute_is_resumable(tmp_path, judge, monkeypatch):
+    import litellm
+    _write_pairs(tmp_path, pairs=1)
+    out = tmp_path / 'ratings.jsonl'
+    real = run_judge.judge_module
+    def quota(packet, **kwargs):
+        if run_judge.gateway.active_model() != 'claude-pro':
+            raise litellm.RateLimitError('quota', model='gpt', llm_provider='openai')
+        return real(packet, **kwargs)
+    monkeypatch.setattr(run_judge, 'judge_module', quota)
+    with pytest.raises(SystemExit, match='missing 1/2 ratings'):
+        run_judge.main([str(tmp_path), '--out', str(out)])
+    assert len(_lines(out)) == 2
+    monkeypatch.setattr(run_judge, 'judge_module', real)
+    run_judge.main([str(tmp_path), '--out', str(out)])
+    assert len(_lines(out)) == 4
+    assert len(judge) == 4
+
+
+def test_quota_uses_groq_substitute_and_records_actual_model(tmp_path, judge, monkeypatch):
+    import litellm
+    _write_pairs(tmp_path, pairs=1)
+    out = tmp_path / 'ratings.jsonl'
+    real = run_judge.judge_module
+    def quota(packet, **kwargs):
+        if run_judge.gateway.active_model() == 'openai-pro':
+            raise litellm.RateLimitError('quota', model='gpt', llm_provider='openai')
+        return real(packet, **kwargs)
+    monkeypatch.setattr(run_judge, 'judge_module', quota)
+    run_judge.main([str(tmp_path), '--out', str(out)])
+    assert {r['judge'] for r in _lines(out)} == {'claude-pro', 'groq-llama'}
+    assert {model_family(r['judge_model']) for r in _lines(out)} == {'anthropic', 'meta'}

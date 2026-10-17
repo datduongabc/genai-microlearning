@@ -24,7 +24,8 @@ No paid API call is required to validate configuration. Provider availability an
 credit still require explicit deployment verification. Embeddings remain local
 Qwen3-Embedding-0.6B through `embed-default`. No fallbacks apply to embeddings or transcription.
 
-`groq-pro` is paid: it is the study judge alias and a lecturer opt-in model.
+`groq-pro` is a paid lecturer opt-in model, excluded from the judge pool.
+Studies use two cross-family judges with quota substitutes; see [rubric](rubric.md#1-thiết-kế-nghiên-cứu).
 Modules generated with it share the judge family and are refused for judging.
 Its fallback targets are free Gemini models; it is never an automatic backup.
 
@@ -45,8 +46,8 @@ packet of roughly 9.6–12.6k tokens fits in one call; the former 3,952-token ca
 was a gateway setting for the 8,000 TPM free plan, not the model's context.
 Billing must be enabled; account-specific limits and traffic outside this
 gateway can still cause 429s. LiteLLM pre-call checks and provider limits enforce
-capacity. Oversized normal calls can fall back to Gemini; the study judge pins
-Groq with fallbacks disabled and records a per-item error without truncation.
+capacity. Oversized normal calls can fall back to Gemini; study judges pin
+each chosen alias with fallbacks disabled and keep incomplete ratings resumable without truncation.
 The deployment requests low reasoning effort so the output allowance can
 include the JSON answer.
 

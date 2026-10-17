@@ -15,7 +15,7 @@ from app.generation.evaluation import ModuleContentInput, ModuleEvaluation
 from app.jobs.queue import enqueue_job
 from app.models import Job, JobStatus, JobType, Rating, Study, StudyItem, User
 from app.study.items import assign_codes, existing_pair, shuffle_for_rater
-from app.study.judge import JUDGE_ALIAS, validate_judge
+from app.study.judge import validate_judge
 
 router = APIRouter(prefix="/studies", tags=["studies"])
 Nonempty = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=200)]
@@ -225,12 +225,11 @@ def judge_study(study_id: uuid.UUID, db: Session = Depends(get_db)):
     if not items:
         raise HTTPException(status_code=409, detail="Study has no items")
     try:
-        model, max_input_tokens = validate_judge(items)
+        model_info = validate_judge(items)
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
     job = enqueue_job(db, job_type=JobType.study_judge, step="judge", study_id=study_id,
-                      payload={"judge_alias": JUDGE_ALIAS, "judge_model": model,
-                               "max_input_tokens": max_input_tokens,
+                      payload={"model_info": model_info,
                                "item_ids": [str(item.id) for item in items], "cursor": 0, "results": []})
     db.commit()
     return {"job_id": job.id, "status": job.status}
@@ -241,7 +240,8 @@ def judge_status(study_id: uuid.UUID, job_id: uuid.UUID, db: Session = Depends(g
     job = db.get(Job, job_id)
     if job is None or job.study_id != study_id or job.job_type != JobType.study_judge:
         raise HTTPException(status_code=404, detail="Judge job not found")
-    return {"job_id": job.id, "status": job.status, "judge_alias": job.payload["judge_alias"],
-            "judge_model": job.payload["judge_model"], "total": len(job.payload["item_ids"]),
+    return {"job_id": job.id, "status": job.status, "required_ratings_per_item": 2,
+            "pending_item_ids": job.payload["item_ids"][job.payload.get("cursor", 0):],
+            "total": len(job.payload["item_ids"]),
             "completed": job.payload.get("cursor", 0), "results": job.payload.get("results", []),
             "last_error": job.last_error}

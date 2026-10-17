@@ -7,7 +7,8 @@ Rubric này dùng chung cho mô hình chấm (`judge_module` trong `backend/app/
 - **Hai nhóm ghép cặp.** Với mỗi chủ đề có một module sinh bằng RAG (nhóm `rag_llm`) và một module sinh không RAG trên cùng Learning Objective, cùng model sinh (nhóm `llm_no_rag`). Để không lẫn khác biệt giữa các model vào so sánh RAG, tuân theo [chế độ thí nghiệm và kiểm tra model thực sự đã sinh](gateway-routing.md#experiments).
 - **Cùng tài liệu đối chiếu.** Hai module của một cặp được chấm trên cùng một bộ đoạn nguồn; quy tắc phạm vi và độ phủ ở [mục 7](#7-r9-claim-không-có-căn-cứ-và-độ-chính-xác-trích-dẫn). Không lấy bộ đối chiếu từ những chunk mà bản RAG tự trích dẫn.
 - **Chấm mù.** Người chấm và mô hình chấm chỉ thấy mã ẩn danh (dạng `M-3fa9c2d1`), không thấy nhóm, tên môn, tên tệp hay tên model.
-- **Hai mô hình chấm khác hãng với model sinh.** Mô hình chấm chính là alias `claude-pro` (model hiện tại trong [cấu hình gateway](../devops/gateway/config.yaml)), mô hình chấm thứ hai là gpt-oss-120b trên Groq (alias `groq-pro`). Với model sinh Gemini, cả hai mô hình chấm đều khác hãng: mô hình chấm thường ưu ái văn của chính họ nhà mình. Quy tắc kiểm tra hãng nằm trong [gateway routing](gateway-routing.md#actual-model-records).
+- **Hai mô hình chấm khác hãng với model sinh và khác hãng nhau.** Ưu tiên `claude-pro` (Anthropic), `openai-pro` (GPT-6.1 Sol, OpenAI), `gemini-fast` (Google); bỏ hãng thực sự đã sinh gói theo guard chung `app/llm/judge.py`. Gói Claude dùng OpenAI + Gemini; gói OpenAI dùng Claude + Gemini; gói Gemini dùng Claude + OpenAI. `gemini-fast` trỏ tới `gemini-3.5-flash-lite`, model miễn phí đã xác minh trên [bảng giá Google](https://ai.google.dev/gemini-api/docs/pricing); `gemini-3.5-flash` của alias `gemini-flash` chưa có trong danh sách chính thức nên không dùng làm judge.
+- **Hết quota (429).** Thử hãng còn đủ điều kiện theo thứ tự pool, sau các alias ưu tiên là `groq-llama` (Meta), `groq-qwen` (Alibaba), `groq-minimax` (MiniMax), model ID trong [gateway](../devops/gateway/config.yaml) đã đối chiếu [danh sách Groq](https://console.groq.com/docs/models) ngày 2026-10-17. Llama/MiniMax có thể cần quyền Enterprise; Qwen/MiniMax là preview, khả dụng tùy tài khoản. Không dùng GPT-OSS trong pool. Mỗi lượt ghim model, tắt fallback gateway và lưu alias/model thực sự chấm. Nếu hết ứng viên thì giữ lượt còn thiếu để chạy tiếp, không coi một lượt là đủ hai; không xóa điểm đã lưu.
 
 ## 2. Thang điểm chung
 
@@ -129,18 +130,19 @@ M-3fa9c2d1,4,3,5,4,4,3,5,5,"nội dung: câu về năm 1998 không có trong ngu
 
 ## 6. Quy trình chạy và phân tích
 
-Chạy trong thư mục `backend/`. R8 gọi LLM một lượt mỗi gói; R9 gọi một lượt tách claim khi Content không rỗng, một lượt kiểm mỗi claim khi có nguồn hợp lệ, rồi một lượt kiểm mỗi trích dẫn đã giải được chunk có nội dung. Hiện phát triển và validation chỉ dùng kiểm thử xác định hoặc route miễn phí được xác minh, đủ ngữ cảnh và quota; API trả phí để sau khi hoàn thành toàn bộ dự án. Bước xuất có thể sinh bản không RAG nếu chưa có sẵn, nên cũng cần route miễn phí. Kết quả và giới hạn của các lượt live đã chạy nằm trong [báo cáo smoke R9](measurements/2026-09-28-r9-live-smoke.md).
+Chạy trong thư mục `backend/`. R8 cần hai lượt thành công mỗi gói (có thể thêm lượt thử khi hết quota); R9 gọi một lượt tách claim khi Content không rỗng, một lượt kiểm mỗi claim khi có nguồn hợp lệ, rồi một lượt kiểm mỗi trích dẫn đã giải được chunk có nội dung. Hiện phát triển và validation chỉ dùng kiểm thử xác định hoặc route miễn phí được xác minh, đủ ngữ cảnh và quota; API trả phí để sau khi hoàn thành toàn bộ dự án. Bước xuất có thể sinh bản không RAG nếu chưa có sẵn, nên cũng cần route miễn phí. Kết quả và giới hạn của các lượt live đã chạy nằm trong [báo cáo smoke R9](measurements/2026-09-28-r9-live-smoke.md).
 
 ```bash
 # 1. Xuất cặp gói của từng module RAG đã sinh (một lần cho mỗi module).
 PYTHONPATH=. uv run python scripts/export_study_pair.py <module_id> --out study/packets
 
-# 2. Chấm bằng hai mô hình chấm khác hãng với model sinh. Bị ngắt thì chạy lại
+# 2. Chấm nghiên cứu bằng pool ở mục 1 (có model trả phí). Kiểm thử dùng mock.
+#    Hai model khác hãng với model sinh và nhau. Bị ngắt thì chạy lại
 #    đúng lệnh đó: chỉ những gói còn thiếu được chấm tiếp.
-PYTHONPATH=. uv run python scripts/run_judge.py study/packets --judge <verified-free-alias> --out study/rubric.jsonl
+PYTHONPATH=. uv run python scripts/run_judge.py study/packets --out study/rubric.jsonl
 
 # 3. R9: tách claim độc lập từ Content và chấm các trích dẫn được máy chủ giải.
-PYTHONPATH=. uv run python scripts/run_claim_judge.py study/packets --judge <verified-free-alias> --out study/claims.jsonl
+PYTHONPATH=. uv run python scripts/run_claim_judge.py study/packets --out study/claims.jsonl
 
 # 4. Phân tích cùng R8, kèm điểm người chấm nếu có.
 PYTHONPATH=. uv run python scripts/analyze_study.py study/rubric.jsonl \
