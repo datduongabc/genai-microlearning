@@ -4,13 +4,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { ratingSchema, emptyRating, rubric, type Rating } from "../lib/ratingSchema";
 import { apiErrorMessage } from "../api/client";
 
-const prompts = [
-  "Thông tin có khớp tài liệu nguồn không?", "Đã đủ ý cần thiết để đạt mục tiêu chưa?",
-  "Quiz, lời giải và ví dụ có khớp nhau không?", "Có khẳng định nào không có căn cứ trong nguồn?",
-  "Slide có đúng, đủ và ngắn gọn không?", "Quiz có hợp lý và đo đúng mục tiêu không?",
-  "Nội dung có khớp mức Bloom không?", "Nội dung có bám chủ đề được giao không?",
-];
-
 const UNSAVED_PROMPT = "Đánh giá chưa lưu sẽ bị mất. Bạn vẫn muốn rời khỏi gói này?";
 
 export function RatingForm({
@@ -24,6 +17,7 @@ export function RatingForm({
 }) {
   const [error, setError] = useState("");
   const [saved, setSaved] = useState(false);
+  const [opened, setOpened] = useState<ReadonlySet<string>>(() => new Set([rubric[0].key]));
   const {
     register,
     control,
@@ -70,19 +64,28 @@ export function RatingForm({
         } catch (e) {
           setError(apiErrorMessage(e, "Không lưu được đánh giá."));
         }
-      })}
+      }, (invalid) => setOpened((prev) => new Set([...prev, ...rubric.filter((c) => invalid[c.key]).map((c) => c.key)])))}
       className="rating-form ui-card"
     >
       <header className="rubric-header"><h2>Rubric</h2>
         <details className="scale-help"><summary>Thang điểm</summary><p>1 không đạt · 2 phần lớn chưa đạt · 3 đạt một phần · 4 đạt với lỗi nhỏ · 5 đạt hoàn toàn. Đọc nguồn trước, chấm độc lập từng gói. Mỗi điểm cần nhận xét.</p></details>
       </header>
       {rubric.map((criterion, i) => (
-        <details key={criterion.key} className="criterion" open={i === 0 || !!errors[criterion.key] || undefined}>
+        <details key={criterion.key} className="criterion" open={opened.has(criterion.key)}
+          onToggle={(e) => {
+            const open = e.currentTarget.open;
+            setOpened((prev) => {
+              if (prev.has(criterion.key) === open) return prev;
+              const next = new Set(prev);
+              if (open) next.add(criterion.key); else next.delete(criterion.key);
+              return next;
+            });
+          }}>
           <summary><span className="pill-score">{values[criterion.key]?.score || "–"}</span>
             {i + 1}. {criterion.label}
           </summary>
           <fieldset><legend className="sr-only">{criterion.label}</legend>
-          <details className="rubric-guide"><summary>{prompts[i]}</summary><p>{criterion.guide}</p></details>
+          <details className="rubric-guide"><summary>{criterion.question}</summary><p>{criterion.guide}</p></details>
           <Controller control={control} name={`${criterion.key}.score`} render={({ field }) => (
             <div className="scores" role="radiogroup" aria-label={`Điểm ${criterion.label}`}>
               {[1, 2, 3, 4, 5].map((n) => <label key={n}>

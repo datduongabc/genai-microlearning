@@ -123,7 +123,7 @@ export function AdminUsersPanel() {
                   {u.moodle_status === null ? "—" : u.moodle_status === "linked" ? "↗ Đã liên kết" : "Chưa liên kết"}
                 </span>
                 <details className="user-actions"><summary aria-label={`Thao tác ${u.email}`}>⋯</summary>
-                  <div className="user-actions-menu">
+                  <div className="user-actions-menu" onClick={(e) => e.currentTarget.closest("details")?.removeAttribute("open")}>
                     <button onClick={() => setResetting(resetting === u.id ? null : u.id)}>Đặt lại mật khẩu</button>
                     {u.moodle_status === "linked" && <button disabled={busyId === u.id} onClick={() => void handleUnlinkMoodle(u)}>Hủy liên kết Moodle</button>}
                     <button disabled={busyId === u.id || u.is_admin} onClick={() => void handleToggleActive(u)}

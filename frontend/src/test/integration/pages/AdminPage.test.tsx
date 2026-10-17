@@ -79,6 +79,17 @@ describe('AdminPage - accounts', () => {
     expect(within(row).getByRole('button', { name: 'Đặt lại mật khẩu' })).toBeInTheDocument()
   })
 
+  it('closes the row action menu after an action is chosen', async () => {
+    renderPage()
+    const row = (await screen.findByText('lan@example.com')).closest('li')!
+    await userEvent.click(within(row).getByText('⋯'))
+    const menu = within(row).getByText('⋯').closest('details')!
+    expect(menu).toHaveAttribute('open')
+    await userEvent.click(within(row).getByRole('button', { name: 'Đặt lại mật khẩu' }))
+    expect(menu).not.toHaveAttribute('open')
+    expect(within(row).getByLabelText('Mật khẩu mới của lan@example.com')).toBeInTheDocument()
+  })
+
   it('deactivates and reactivates an account after confirmation', async () => {
     vi.mocked(api.setUserActive).mockResolvedValue(lan)
     renderPage()
@@ -225,6 +236,7 @@ it('confirms admin Moodle unlink for the selected user and refreshes their statu
   expect(api.unlinkUserMoodleAccount).not.toHaveBeenCalled()
   vi.spyOn(window, 'confirm').mockReturnValue(true)
   vi.mocked(api.listUsers).mockResolvedValue([admin, { ...lan, moodle_status: 'not_linked' }, minh])
+  await userEvent.click(within(row).getByText('⋯'))
   await userEvent.click(button)
   expect(window.confirm).toHaveBeenCalledWith(expect.stringContaining(lan.email))
   expect(api.unlinkUserMoodleAccount).toHaveBeenCalledWith(lan.id)

@@ -116,6 +116,19 @@ it("renders the whole anonymous packet and saves/edits all rubric criteria", asy
     ),
   );
 });
+it("keeps a criterion opened by a failed save open while its comment is typed", async () => {
+  const user = userEvent.setup();
+  blind();
+  const criterion = (await screen.findByText(/3\. Tính nhất quán/)).closest("details")!;
+  expect(criterion).not.toHaveAttribute("open");
+  await user.click(screen.getByRole("button", { name: "Lưu đánh giá" }));
+  await waitFor(() => expect(criterion).toHaveAttribute("open"));
+  await user.click(within(criterion).getByRole("radio", { name: "4" }));
+  await user.type(within(criterion).getByRole("textbox", { name: /Nhận xét/ }), "C");
+  await waitFor(() => expect(within(criterion).queryByRole("alert")).not.toBeInTheDocument());
+  expect(criterion).toHaveAttribute("open");
+  expect(within(criterion).getByText("Quiz, lời giải và ví dụ có khớp nhau không?")).toBeInTheDocument();
+});
 it("keeps edits and progress unchanged after a failed save", async () => {
   const score = { score: 3, justification: "Đã chấm" };
   const rating = {
