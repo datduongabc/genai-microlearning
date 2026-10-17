@@ -37,6 +37,7 @@ const sampleDocument: DocumentInfo = {
   module_count: 0,
   generating: false,
   failures: [],
+  extraction_warnings: [],
 }
 
 function renderPage() {
@@ -804,17 +805,27 @@ describe('CourseDetailPage - OCR warnings', () => {
   beforeEach(() => {
     vi.mocked(api.getMoodleAccount).mockResolvedValue({ email: 'lan@x.edu', status: 'not_linked' })
   })
+  const ocrWarning = (page: number) => ({ code: 'ocr_failed', page, message: `Không đọc được trang ${page} bằng OCR.` })
+
   it('keeps an OCR page warning on an embedded document after remounting', async () => {
     vi.mocked(api.listCourses).mockResolvedValue([unlinkedCourse])
-    vi.mocked(api.listDocuments).mockResolvedValue([{
-      ...sampleDocument,
-      extraction_warnings: [{ code: 'ocr_failed', page: 2, message: 'Không đọc được trang 2 bằng OCR.' }],
-    }])
+    vi.mocked(api.listDocuments).mockResolvedValue([{ ...sampleDocument, extraction_warnings: [ocrWarning(2)] }])
     const first = renderPage()
-    expect(await screen.findByText('Không đọc được trang 2 bằng OCR.')).toBeInTheDocument()
+    expect(await screen.findByText(/Không đọc được bằng OCR trang 2\./)).toBeInTheDocument()
     expect(screen.getByText('syllabus.pdf')).toBeInTheDocument()
     first.unmount()
     renderPage()
-    expect(await screen.findByText('Không đọc được trang 2 bằng OCR.')).toBeInTheDocument()
+    expect(await screen.findByText(/Không đọc được bằng OCR trang 2\./)).toBeInTheDocument()
+  })
+
+  it('lists every failed page of a document on one warning line', async () => {
+    vi.mocked(api.listCourses).mockResolvedValue([unlinkedCourse])
+    vi.mocked(api.listDocuments).mockResolvedValue([{
+      ...sampleDocument, extraction_warnings: [ocrWarning(9), ocrWarning(2), ocrWarning(5)],
+    }])
+    renderPage()
+    expect(await screen.findByText(/Không đọc được bằng OCR các trang 2, 5, 9\./)).toBeInTheDocument()
+    expect(screen.getAllByText(/Không đọc được bằng OCR/)).toHaveLength(1)
+    expect(screen.queryByText(/Không đọc được trang \d+ bằng OCR/)).not.toBeInTheDocument()
   })
 })

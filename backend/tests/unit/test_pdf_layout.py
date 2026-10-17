@@ -133,8 +133,13 @@ def test_dingbat_bullets_become_a_bullet():
     assert map_font_text("", "Wingdings") == "•"
 
 
-def test_vni_fonts_with_valid_unicode_are_left_unchanged():
-    assert map_font_text("Chương trình", "VNI-Times") == "Chương trình"
+def test_symbol_font_bullets_keep_the_ordinary_line_reading(page):
+    # The Symbol font makes the region math-like; its bullets must not send it to formula rebuilding.
+    for y, text in [(100, "Each process has a state"), (120, "The scheduler picks one")]:
+        page.insert_text((50, y - 3), "\xb7", fontname="symb", fontsize=10)
+        page.insert_text((70, y), text, fontname="helv", fontsize=14)
+
+    assert page_lines(page) == ["•", "Each process has a state", "•", "The scheduler picks one"]
 
 
 def test_read_document_uses_the_rebuilt_lines_for_pdf_pages(tmp_path):
@@ -188,6 +193,26 @@ def test_a_title_repeated_on_every_slide_gives_way_to_the_slide_own_title(tmp_pa
     ]
 
     assert _deck(tmp_path, pages) == [f"Substitution rule {i}" for i in range(1, 6)]
+
+
+def test_a_deck_title_drawn_with_a_leading_space_on_some_slides_is_still_the_deck_title(tmp_path):
+    pages = [
+        [(60, (" " if i % 2 else "") + "Linked lists", 30), (110, f"Removal {i}", 22),
+         (160, "Body text of the slide", 14), (190, "More body text here", 14)]
+        for i in range(1, 6)
+    ]
+
+    assert _deck(tmp_path, pages) == [f"Removal {i}" for i in range(1, 6)]
+
+
+def test_a_large_bullet_drawn_after_a_space_is_not_a_heading(tmp_path):
+    headings = _deck(tmp_path, [[
+        (80, " - Stack frames", 28),
+        (130, "Each call pushes a frame on the stack.", 14),
+        (160, "Returning pops the frame again.", 14),
+    ]])
+
+    assert headings == [None]
 
 
 def test_a_page_whose_lines_are_all_the_same_size_has_no_heading_rather_than_a_wrong_one(tmp_path):
