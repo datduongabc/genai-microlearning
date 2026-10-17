@@ -10,7 +10,7 @@ Mọi tài liệu được xử lý như bài giảng thông thường: không c
 
 Model trả phí cho đợt đánh giá được chọn tường minh và ghim bằng `LLM_EXPERIMENT_MODE=true`; xem lựa chọn model, embedding và chính sách fallback tại [gateway routing](docs/gateway-routing.md).
 
-Khi bộ đọc nhận diện tài liệu hỏng hoặc sai định dạng, job báo lỗi ngay ở lần xử lý đầu và không tự thử lại; PDF có mật khẩu cần bỏ mật khẩu rồi tải lại. Lỗi tạm thời khi gọi gateway vẫn được tự thử lại với thời gian chờ tăng dần.
+Khi bộ đọc nhận diện tài liệu hỏng hoặc sai định dạng, job báo lỗi ngay ở lần xử lý đầu và không tự thử lại; PDF có mật khẩu cần bỏ mật khẩu rồi tải lại. Trang PDF gần như không có lớp chữ được đọc bằng OCR; trang OCR không đọc được hiện cảnh báo theo số trang dưới tài liệu trong trang môn học (cần `alembic upgrade head`), và tài liệu không đọc được chữ nào bị báo lỗi để tải lại bản có lớp chữ. Lỗi tạm thời khi gọi gateway vẫn được tự thử lại với thời gian chờ tăng dần.
 
 Ứng dụng mở cho mọi người dùng; admin quản lý tài khoản và theo dõi lỗi. Quyền làm giáo viên trong Moodle được quản lý theo từng môn học trên Moodle.
 
