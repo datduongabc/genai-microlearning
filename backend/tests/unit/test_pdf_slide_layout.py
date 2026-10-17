@@ -3,6 +3,7 @@
 import pymupdf
 import pytest
 
+from app.ingestion.chunker import chunk_units
 from app.ingestion.document_readers import read_pdf
 from app.ingestion.pdf_layout import page_lines
 
@@ -66,11 +67,24 @@ def _words(page, x, y, text, fontname, fontsize=8):
         x += pymupdf.get_text_length(word + " ", fontname=fontname, fontsize=fontsize)
 
 
-def test_a_numbered_listing_keeps_each_line_number_with_its_code(page):
+def test_a_numbered_listing_keeps_each_line_number_with_its_code(page, tmp_path):
     for y, number, code in [(100, "5", "public:"), (110, "6", "virtual int get(int index);")]:
         page.insert_text((21, y), number, fontsize=6)
         _words(page, 50, y, code, "cour")
     assert page_lines(page) == ["5 public:", "6 virtual int get(int index);"]
+    page.insert_text((21, 50), "Array List implementation", fontsize=22)
+    path = tmp_path / "listing.pdf"
+    page.parent.save(path)
+    units = read_pdf(str(path))
+    assert len(units) == 1
+    assert units[0].locator["heading"] == "Array List implementation"
+    assert "5 public:\n6 virtual int get(int index);" in units[0].text
+    chunks = chunk_units(units, title="Lists")
+    assert chunks
+    for chunk in chunks:
+        assert all(span["heading"] == "Array List implementation"
+                   for span in chunk.locator.get("spans", [chunk.locator]))
+        assert chunk.content.startswith("Lists › Array List implementation")
 
 
 def test_a_cost_comment_in_its_own_column_stays_on_its_code_line(page):
@@ -96,4 +110,25 @@ def test_an_italic_code_comment_reaching_the_slide_navigation_keeps_the_code_tog
     assert page_lines(page) == [
         "Array implementation", "How to store?", "Operations", "Removal: Implementation in C++",
         "1 class List {", "2 // Declaration of attributes, constructor and destructor.", "3 public:",
+    ]
+
+
+@pytest.mark.parametrize("fontname", ["helv", "cour"])
+def test_numbered_prose_heading_on_a_listing_page_is_preserved(page, tmp_path, fontname):
+    page.insert_text((21, 50), "List operations", fontsize=22)
+    page.insert_text((21, 80), "3. Removal", fontsize=14)
+    page.insert_text((21, 110), "1", fontsize=6)
+    _words(page, 50, 110, "public:", "cour")
+    page.insert_text((21, 140), "4. Summary", fontsize=14)
+    page.insert_text((21, 170), "The list retains its remaining elements.", fontname=fontname, fontsize=10)
+    path = tmp_path / "sections.pdf"
+    page.parent.save(path)
+    units = read_pdf(str(path))
+    assert [unit.locator["heading"] for unit in units] == [
+        "List operations", "3. Removal", "4. Summary",
+    ]
+    assert "1 public:" in units[1].text
+    assert [span["heading"] for chunk in chunk_units(units)
+            for span in chunk.locator.get("spans", [chunk.locator])] == [
+        "List operations", "3. Removal", "4. Summary",
     ]
