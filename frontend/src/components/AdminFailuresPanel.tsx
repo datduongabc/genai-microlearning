@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { apiErrorMessage, listFailedJobs, retryFailedJobs, type FailedJobInfo } from "../api";
 
 const JOB_TYPE_LABEL: Record<FailedJobInfo["job_type"], string> = {
@@ -9,6 +9,7 @@ const JOB_TYPE_LABEL: Record<FailedJobInfo["job_type"], string> = {
 // The failed jobs of every lecturer: job data, the document's file name and the course name,
 // never what is inside them. Retry one, or pick several and retry them together.
 export function AdminFailuresPanel() {
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [jobs, setJobs] = useState<FailedJobInfo[] | null>(null);
   const [filter, setFilter] = useState<FailedJobInfo["job_type"] | "all">("all");
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -69,34 +70,13 @@ export function AdminFailuresPanel() {
 
   return (
     <div>
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <label htmlFor="job-type-filter" className="text-sm text-gray-600">
-            Loại job:
-          </label>
-          <select
-            id="job-type-filter"
-            value={filter}
-            onChange={(e) => setFilter(e.target.value as FailedJobInfo["job_type"] | "all")}
-            className="rounded-[3px] border border-gray-300 px-2 py-1 text-sm"
-          >
-            <option value="all">Tất cả</option>
-            <option value="document_pipeline">Xử lý tài liệu</option>
-            <option value="module_generation">Sinh mô-đun</option>
-          </select>
+      <div className="admin-toolbar">
+        <div className="segmented" role="group" aria-label="Loại job">
+          {(["all", "document_pipeline", "module_generation"] as const).map((type) => <button key={type}
+            aria-pressed={filter === type} onClick={() => setFilter(type)}>{type === "all" ? "Tất cả" : JOB_TYPE_LABEL[type]}</button>)}
         </div>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={reload}
-            className="rounded-[3px] border border-gray-300 px-3 py-1.5 text-sm hover:bg-gray-50"
-          >
-            Làm mới
-          </button>
-          <button
-            onClick={() => handleRetry([...selected])}
-            disabled={retrying || selected.size === 0}
-            className="rounded-[3px] bg-terracotta px-3 py-1.5 text-sm font-semibold text-white hover:bg-terracotta-dark disabled:opacity-60"
-          >
+        <div className="flex gap-3"><button onClick={reload} className="ui-button" aria-label="Làm mới">↻</button>
+          <button onClick={() => handleRetry([...selected])} disabled={retrying || selected.size === 0} className="ui-button primary">
             {selected.size === 0 ? "Thử lại đã chọn" : `Thử lại ${selected.size} job đã chọn`}
           </button>
         </div>
@@ -112,68 +92,33 @@ export function AdminFailuresPanel() {
           Không có job nào thất bại — mọi thứ đang chạy tốt.
         </p>
       ) : (
-        <>
-          <label className="mb-2 flex items-center gap-2 text-sm text-gray-600">
-            <input
-              type="checkbox"
-              className="size-4 accent-terracotta"
-              checked={allPicked}
-              onChange={() => setSelected(allPicked ? new Set() : new Set(jobs.map((j) => j.id)))}
-            />
-            Chọn tất cả
-          </label>
-          <ul className="flex flex-col divide-y divide-gray-200">
-            {jobs.map((job) => (
-              <li key={job.id} className="py-4">
-                <div className="flex items-start gap-3">
-                  <input
-                    type="checkbox"
-                    className="mt-1 size-4 accent-terracotta"
-                    aria-label={`Chọn ${job.document_filename}`}
-                    checked={selected.has(job.id)}
-                    onChange={() => toggle(job.id)}
-                  />
-                  <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center justify-between gap-3">
-                      <div className="min-w-0">
-                        <span className="rounded-[3px] bg-red-50 px-2 py-0.5 text-xs font-semibold text-red-700">
-                          {JOB_TYPE_LABEL[job.job_type]} — {job.step}
-                        </span>
-                        <div className="mt-1 break-words text-sm font-medium">
-                          {job.course_name} / {job.document_filename}
-                        </div>
-                        <div className="text-xs text-gray-500">
-                          {job.owner_name} ({job.owner_email})
-                        </div>
-                      </div>
-                      <div className="flex shrink-0 items-center gap-4">
-                        <div className="text-right text-xs text-gray-500">
-                          <div>{new Date(job.created_at).toLocaleString("vi-VN")}</div>
-                          <div>
-                            {job.attempts}/{job.max_attempts} lần thử
-                          </div>
-                        </div>
-                        <button
-                          onClick={() => handleRetry([job.id])}
-                          disabled={retrying}
-                          aria-label={`Thử lại ${job.document_filename}`}
-                          className="text-sm font-semibold text-terracotta hover:underline disabled:opacity-60"
-                        >
-                          Thử lại
-                        </button>
-                      </div>
-                    </div>
-                    {job.last_error && (
-                      <pre className="mt-2 overflow-x-auto rounded-[3px] bg-gray-50 p-2 text-xs whitespace-pre-wrap text-gray-700">
-                        {job.last_error}
-                      </pre>
-                    )}
-                  </div>
-                </div>
-              </li>
-            ))}
-          </ul>
-        </>
+        <div className="jobs-table ui-card">
+          <table><thead><tr>
+            <th><input type="checkbox" aria-label="Chọn tất cả" checked={allPicked}
+              onChange={() => setSelected(allPicked ? new Set() : new Set(jobs.map((j) => j.id)))} /></th>
+            <th>Tài liệu</th><th>Loại job</th><th>Người dùng</th><th>Thời gian</th><th>Lỗi</th><th><span className="sr-only">Thao tác</span></th>
+          </tr></thead><tbody>
+            {jobs.map((job) => <Fragment key={job.id}>
+              <tr>
+                <td><input type="checkbox" aria-label={`Chọn ${job.document_filename}`} checked={selected.has(job.id)} onChange={() => toggle(job.id)} /></td>
+                <td><div className="font-semibold truncate" title={job.document_filename}>{job.document_filename}</div><div className="small muted truncate" title={job.course_name}>{job.course_name}</div></td>
+                <td className="small">{JOB_TYPE_LABEL[job.job_type]}</td>
+                <td className="small">{job.owner_name}</td>
+                <td className="small muted">{new Date(job.created_at).toLocaleString("vi-VN")}</td>
+                <td><p className="small muted truncate font-mono">{job.last_error || "—"}</p></td>
+                <td><div className="flex gap-2">
+                  <button className="ui-button" aria-label={`Thử lại ${job.document_filename}`} disabled={retrying} onClick={() => handleRetry([job.id])}>↻</button>
+                  <button className="expand-job" aria-label={`Chi tiết ${job.document_filename}`} aria-expanded={expanded.has(job.id)}
+                    aria-controls={`job-${job.id}`} onClick={() => setExpanded((current) => { const next = new Set(current); if (!next.delete(job.id)) next.add(job.id); return next; })}>{expanded.has(job.id) ? "⌃" : "⌄"}</button>
+                </div></td>
+              </tr>
+              {expanded.has(job.id) && <tr id={`job-${job.id}`}><td colSpan={7} className="job-detail">
+                {job.last_error && <pre>{job.last_error}</pre>}
+                <p className="small muted">Bước: {job.step} · {job.attempts}/{job.max_attempts} lần thử · {job.owner_email}</p>
+              </td></tr>}
+            </Fragment>)}
+          </tbody></table>
+        </div>
       )}
     </div>
   );

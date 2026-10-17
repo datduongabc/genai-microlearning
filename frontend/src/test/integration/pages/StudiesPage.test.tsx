@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { beforeEach, expect, it, vi } from "vitest";
@@ -79,16 +79,20 @@ it("renders the whole anonymous packet and saves/edits all rubric criteria", asy
   const user = userEvent.setup();
   vi.mocked(api.saveRating).mockImplementation(async (_s, _i, body) => body);
   blind();
-  expect(await screen.findByText("Nội dung bài")).toBeInTheDocument();
-  for (const text of ["Nguồn đối chiếu", "Mục tiêu con", "Ý chính", "Bối cảnh", "Phân tích"])
+  expect(await screen.findByText("Nguồn đối chiếu")).toBeInTheDocument();
+  for (const [tab, text] of [["Mục tiêu", "Mục tiêu con"], ["Nội dung", "Nội dung bài"], ["Slide", "Ý chính"], ["Ví dụ", "Bối cảnh"], ["Luyện tập", "Câu hỏi"], ["Quiz", "Câu hỏi"]]) {
+    await user.click(screen.getByRole("tab", { name: tab }));
     expect(screen.getByText(text)).toBeInTheDocument();
+  }
+  await user.click(screen.getByRole("tab", { name: "Giải thích đáp án" }));
   expect(screen.getAllByText("Lời giải")).toHaveLength(2);
   await user.click(screen.getByRole("button", { name: "Lưu đánh giá" }));
   expect(api.saveRating).not.toHaveBeenCalled();
-  for (const select of screen.getAllByRole("combobox", { name: /Điểm/ }))
-    await user.selectOptions(select, "4");
+  for (const group of screen.getAllByRole("radiogroup", { name: /Điểm/ }))
+    await user.click(within(group).getByRole("radio", { name: "4" }));
   for (const field of screen.getAllByRole("textbox", { name: /Nhận xét/ }))
     await user.type(field, "Có căn cứ");
+  await user.click(screen.getByText("Ghi chú chung (tùy chọn)"));
   await user.type(screen.getByLabelText("Ghi chú tổng quan"), "Tổng quan");
   await user.click(screen.getByRole("button", { name: "Thêm claim không có căn cứ" }));
   await user.type(screen.getByLabelText("Claim 1"), "Khẳng định");
@@ -102,7 +106,7 @@ it("renders the whole anonymous packet and saves/edits all rubric criteria", asy
   ]);
   expect(body.overall_notes).toBe("Tổng quan");
   expect(screen.getByText("Đã chấm 1/1")).toBeInTheDocument();
-  await user.selectOptions(screen.getByLabelText("Điểm Độ chính xác"), "2");
+  await user.click(within(screen.getByRole("radiogroup", { name: "Điểm Độ chính xác" })).getByRole("radio", { name: "2" }));
   await user.click(screen.getByRole("button", { name: "Lưu đánh giá" }));
   await waitFor(() =>
     expect(api.saveRating).toHaveBeenLastCalledWith(
@@ -134,7 +138,8 @@ it("keeps edits and progress unchanged after a failed save", async () => {
   });
   vi.mocked(api.saveRating).mockRejectedValue(new Error("offline"));
   blind();
-  await screen.findByText("Nội dung bài");
+  await screen.findByText("Nguồn đối chiếu");
+  await userEvent.click(screen.getByText("Ghi chú chung (tùy chọn)"));
   await userEvent.type(screen.getByLabelText("Ghi chú tổng quan"), " mới");
   await userEvent.click(screen.getByRole("button", { name: "Lưu đánh giá" }));
   expect(await screen.findByRole("alert")).toHaveTextContent("Không lưu được đánh giá.");
@@ -172,7 +177,8 @@ it("asks before a link or logout discards unsaved input, and not once it is save
       </Routes>
     </MemoryRouter>,
   );
-  await screen.findByText("Nội dung bài");
+  await screen.findByText("Nguồn đối chiếu");
+  await user.click(screen.getByText("Ghi chú chung (tùy chọn)"));
   await user.type(screen.getByLabelText("Ghi chú tổng quan"), " mới");
   await user.click(screen.getByRole("link", { name: "Chấm nghiên cứu" }));
   expect(confirm).toHaveBeenCalledTimes(1);
@@ -207,14 +213,32 @@ it("reports missing or revoked invitations", async () => {
 it("admin edits invited emails and can remove all raters", async () => {
   vi.mocked(api.setRaters).mockImplementation(async (_s, emails) => ({ emails }));
   render(<AdminStudiesPanel />);
-  await userEvent.selectOptions(await screen.findByLabelText("Nghiên cứu"), "s1");
-  const input = await screen.findByLabelText("Email người chấm (mỗi dòng một email)");
-  await waitFor(() => expect(input).toHaveValue("lan@example.com"));
-  await userEvent.clear(input);
-  await userEvent.type(input, "bad");
-  await userEvent.click(screen.getByRole("button", { name: "Lưu người chấm" }));
+  await userEvent.click(await screen.findByRole("button", { name: /Nghiên cứu/ }));
+  const input = await screen.findByLabelText("Người chấm");
+  await screen.findByRole("button", { name: "Bỏ lan@example.com" });
+  await userEvent.type(input, "bad{Enter}");
+  expect(await screen.findByRole("alert")).toHaveTextContent("Email không hợp lệ");
   expect(api.setRaters).not.toHaveBeenCalled();
   await userEvent.clear(input);
+  await userEvent.type(input, "minh@example.com{Enter}");
+  await screen.findByRole("button", { name: "Bỏ minh@example.com" });
+  await userEvent.click(screen.getByRole("button", { name: /Nghiên cứu/ }));
+  expect(screen.getByLabelText("Người chấm")).toBeVisible();
   await userEvent.click(screen.getByRole("button", { name: "Lưu người chấm" }));
-  await waitFor(() => expect(api.setRaters).toHaveBeenCalledWith("s1", []));
+  await waitFor(() => expect(api.setRaters).toHaveBeenCalledWith("s1", ["lan@example.com", "minh@example.com"]));
+  await userEvent.click(screen.getByRole("button", { name: "Bỏ lan@example.com" }));
+  await userEvent.click(screen.getByRole("button", { name: "Bỏ minh@example.com" }));
+  await userEvent.click(screen.getByRole("button", { name: "Lưu người chấm" }));
+  await waitFor(() => expect(api.setRaters).toHaveBeenLastCalledWith("s1", []));
+});
+
+it("opens sources first and switches packet tabs with arrow keys", async () => {
+  blind();
+  expect(await screen.findByText("Nguồn đối chiếu")).toBeVisible();
+  expect(screen.queryByText("Nội dung bài")).not.toBeInTheDocument();
+  screen.getByRole("tab", { name: /Đoạn nguồn/ }).focus();
+  await userEvent.keyboard("{ArrowRight}{ArrowRight}");
+  expect(screen.getByRole("tab", { name: "Nội dung" })).toHaveFocus();
+  expect(screen.getByText("Nội dung bài")).toBeVisible();
+  expect(screen.queryByText("Nguồn đối chiếu")).not.toBeInTheDocument();
 });

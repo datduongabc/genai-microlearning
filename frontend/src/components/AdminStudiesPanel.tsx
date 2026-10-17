@@ -1,132 +1,83 @@
 import { useEffect, useState } from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
 import { getRaters, listStudies, setRaters, type Study } from "../api/studies";
 import { apiErrorMessage } from "../api/client";
-import { raterTextSchema } from "../lib/ratingSchema";
+import { raterEmailsSchema } from "../lib/ratingSchema";
 
 export function AdminStudiesPanel() {
-  const [studies, setStudies] = useState<Study[]>([]);
+  const [studies, setStudies] = useState<Study[] | null>(null);
   const [studyId, setStudyId] = useState("");
   const [loadedId, setLoadedId] = useState("");
+  const [emails, setEmails] = useState<string[]>([]);
+  const [input, setInput] = useState("");
+  const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
-  const {
-    register,
-    reset,
-    handleSubmit,
-    formState: { errors, isSubmitting },
-  } = useForm<z.input<typeof raterTextSchema>, unknown, z.output<typeof raterTextSchema>>({
-    resolver: zodResolver(raterTextSchema),
-    defaultValues: { emailsText: "" },
-  });
   useEffect(() => {
     let active = true;
-    listStudies()
-      .then((data) => {
-        if (active) setStudies(data);
-      })
-      .catch(() => {
-        if (active) setError("Không tải được nghiên cứu.");
-      });
-    return () => {
-      active = false;
-    };
+    listStudies().then((data) => { if (active) setStudies(data); })
+      .catch(() => { if (active) setError("Không tải được nghiên cứu."); });
+    return () => { active = false; };
   }, []);
   useEffect(() => {
     let active = true;
     if (!studyId) return;
-    getRaters(studyId)
-      .then((data) => {
-        if (active) {
-          reset({ emailsText: data.emails.join("\n") });
-          setLoadedId(studyId);
-        }
-      })
-      .catch(() => {
-        if (active) setError("Không tải được người chấm.");
-      });
-    return () => {
-      active = false;
-    };
-  }, [studyId, reset]);
-  return (
-    <section>
-      <h2 className="mb-4 text-lg font-semibold">Người chấm nghiên cứu</h2>
-      <p className="mb-4 text-sm text-gray-600">
-        Mời tài khoản đang hoạt động bằng email. Danh sách mới thay thế toàn bộ danh sách hiện tại;
-        để trống để thu hồi mọi lời mời.
-      </p>
-      <label className="block">
-        Nghiên cứu
-        <select
-          aria-label="Nghiên cứu"
-          value={studyId}
-          disabled={isSubmitting}
-          onChange={(e) => {
-            setStudyId(e.target.value);
-            setError("");
-            setMessage("");
-            setLoadedId("");
-          }}
-          className="mt-2 mb-4 block w-full rounded border p-2"
-        >
-          <option value="">Chọn nghiên cứu</option>
-          {studies.map((s) => (
-            <option key={s.id} value={s.id}>
-              {s.name}
-            </option>
-          ))}
-        </select>
-      </label>
-      {error && (
-        <p role="alert" className="mb-3 text-red-700">
-          {error}
-        </p>
-      )}
-      {studyId && loadedId === studyId && (
-        <form
-          noValidate
-          onSubmit={handleSubmit(async (values) => {
-            setError("");
-            setMessage("");
-            try {
-              const data = await setRaters(studyId, values.emails);
-              reset({ emailsText: data.emails.join("\n") });
-              setMessage("Đã lưu người chấm.");
-            } catch (e) {
-              setError(apiErrorMessage(e, "Không lưu được người chấm."));
-            }
-          })}
-        >
-          <label className="block">
-            Email người chấm (mỗi dòng một email)
-            <textarea
-              {...register("emailsText")}
-              className="mt-2 block w-full rounded border p-3"
-              rows={5}
-            />
-          </label>
-          {Object.keys(errors).length > 0 && (
-            <p role="alert" className="text-red-700">
-              Mỗi dòng phải là một email hợp lệ, tối đa 100 người chấm.
-            </p>
-          )}
-          <button
-            disabled={isSubmitting}
-            className="mt-4 rounded bg-navy px-4 py-2 text-white disabled:opacity-50"
-          >
-            Lưu người chấm
-          </button>
-          {message && (
-            <p role="status" className="mt-3">
-              {message}
-            </p>
-          )}
-        </form>
-      )}
-      {studies.length === 0 && !error && <p>Chưa có nghiên cứu.</p>}
-    </section>
-  );
+    getRaters(studyId).then((data) => {
+      if (active) { setEmails(data.emails); setLoadedId(studyId); }
+    }).catch(() => { if (active) setError("Không tải được người chấm."); });
+    return () => { active = false; };
+  }, [studyId]);
+
+  function pendingEmails() {
+    const email = input.trim().toLowerCase();
+    return email && !emails.includes(email) ? [...emails, email] : emails;
+  }
+  function addEmail() {
+    const next = pendingEmails();
+    if (!raterEmailsSchema.safeParse({ emails: next }).success) {
+      setError("Email không hợp lệ, tối đa 100 người chấm.");
+      return;
+    }
+    setEmails(next); setInput(""); setError(""); setMessage("");
+  }
+  const selected = studies?.find((s) => s.id === studyId);
+  return <section className="studies-layout">
+    <nav aria-label="Nghiên cứu" className="study-list">
+      {studies?.map((study) => <button key={study.id} disabled={busy}
+        aria-pressed={studyId === study.id} className="ui-card"
+        onClick={() => { if (studyId === study.id) return; setStudyId(study.id); setLoadedId(""); setInput(""); setError(""); setMessage(""); }}>
+        {study.name}<span aria-hidden="true">›</span>
+      </button>)}
+      {!studies && !error && <p>Đang tải…</p>}
+      {studies?.length === 0 && <p>Chưa có nghiên cứu.</p>}
+    </nav>
+    <div className="ui-card study-detail">
+      {selected ? <><h2>{selected.name}</h2><p className="small muted">Rubric {selected.rubric_version}</p></>
+        : <p>Chọn nghiên cứu</p>}
+      {error && <p role="alert">{error}</p>}
+      {studyId && loadedId !== studyId && !error && <p>Đang tải người chấm…</p>}
+      {studyId && loadedId === studyId && <form noValidate onSubmit={async (event) => {
+        event.preventDefault();
+        const next = pendingEmails();
+        if (!raterEmailsSchema.safeParse({ emails: next }).success) { setError("Email không hợp lệ, tối đa 100 người chấm."); return; }
+        setBusy(true); setError(""); setMessage("");
+        try {
+          const data = await setRaters(studyId, next);
+          setEmails(data.emails); setInput(""); setMessage("Đã lưu người chấm.");
+        } catch (e) { setError(apiErrorMessage(e, "Không lưu được người chấm.")); }
+        finally { setBusy(false); }
+      }}>
+        <label htmlFor="rater-email" className="text-label font-medium">Người chấm</label>
+        <div className="rater-chips">
+          {emails.map((email) => <span className="rater-chip" key={email}>{email}
+            <button type="button" aria-label={`Bỏ ${email}`} disabled={busy} onClick={() => { setEmails(emails.filter((e) => e !== email)); setMessage(""); }}>×</button>
+          </span>)}
+          <input id="rater-email" type="email" autoComplete="off" placeholder="Nhập email rồi Enter" value={input} disabled={busy}
+            onChange={(e) => { setInput(e.target.value); setMessage(""); }}
+            onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addEmail(); } }} />
+        </div>
+        <button disabled={busy} className="ui-button primary mt-4">{busy ? "Đang lưu…" : "Lưu người chấm"}</button>
+        {message && <p role="status" className="mt-3">{message}</p>}
+      </form>}
+    </div>
+  </section>;
 }
