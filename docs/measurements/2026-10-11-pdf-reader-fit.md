@@ -444,3 +444,31 @@ use a fresh cache if changing models. Actual `/info` model identifiers, SHAs, po
 in [pdf-reader-services.json](pdf-reader-services.json). No fake embeddings or reranker scores are
 used in the retrieval evidence (automated tests separately use their existing
 stable offline fixtures).
+
+## Rebase validation (2026-10-17)
+
+Rebased onto current main after the four-subject/textbook removal landed. The
+warning migration now follows `0021_remove_textbook_scope` as
+`0022_extraction_warnings`, preserving one Alembic head. Removed this branch's
+obsolete study-test revision pins so the existing test exercises the current schema.
+
+Re-ran the extraction command above with `--output "$TASK_DATA/rebased"` and
+`--ocr-container fm-r53-refresh-ocr`. All 48 hashes and all 2,145 pages match;
+every non-timing per-file metric, code-order count, warning page, chunk count,
+and locator comparison is identical to the earlier final run. The fresh per-file
+results are in [pdf-reader-rebased-files.json](pdf-reader-rebased-files.json).
+Paired mean extraction times are plain 1.163, original 3.221, revised 2.420 ms/page
+(24.9% less than original); timing varies with host load.
+
+Fresh targeted checks: 37 PDF/format unit tests, 12 reader/OCR/pipeline/migration
+integration tests, and 48 document-page frontend tests passed. Alembic upgraded a
+fresh private database through the new single head; Ruff and whitespace checks
+passed. Logs remain in the task evidence directory under `rebased-*`.
+
+Also reran both retrieval commands above against fresh private `r53_before` and
+`r53_after` databases, substituting `fm-r53-refresh-ocr` and writing
+`$TASK_DATA/rebased-retrieval-{before,after}.json`. Both output JSON objects are
+identical to the committed before/after evidence: all 24 probe ranks, metrics,
+model identifiers and subject chunk counts reproduce exactly. Dense and
+production reranked results remain unchanged; the documented two unreranked
+hybrid regressions remain visible.
