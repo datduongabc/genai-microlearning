@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { apiErrorMessage, getMoodleAccount, requestMoodleLink, unlinkMoodleAccount, MOODLE_ACCOUNT_CHANGED_EVENT,
+import { apiErrorMessage, getMoodleAccount, requestMoodleLink, MOODLE_ACCOUNT_CHANGED_EVENT,
   type MoodleAccount, type MoodleAccountStatus } from "../api";
 
 export type MoodleAccountState = MoodleAccountStatus | "unknown";
@@ -14,7 +14,6 @@ const LABEL: Record<MoodleAccountState, string> = {
 
 export function MoodleAccountSection({ onStatus }: { onStatus?: (status: MoodleAccountState) => void }) {
   const [answer, setAnswer] = useState<MoodleAccount | null>(null);
-  const [unlinking, setUnlinking] = useState(false);
   const [reloads, setReloads] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const requestVersion = useRef(0);
@@ -62,21 +61,6 @@ export function MoodleAccountSection({ onStatus }: { onStatus?: (status: MoodleA
     catch (err) { setError(apiErrorMessage(err, "Không gửi được yêu cầu liên kết Moodle.")); }
   }
 
-  async function unlink() {
-    if (!window.confirm("Hủy liên kết tài khoản Moodle? Các khóa học và nội dung trên Moodle được giữ nguyên. Bạn cần liên kết lại tài khoản để tiếp tục đẩy nội dung lên Moodle.")) return;
-    requestVersion.current += 1;
-    setUnlinking(true);
-    setError(null);
-    try {
-      await unlinkMoodleAccount();
-      setReloads((n) => n + 1);
-    } catch (err) {
-      setError(apiErrorMessage(err, "Không hủy được liên kết Moodle."));
-    } finally {
-      setUnlinking(false);
-    }
-  }
-
   return (
     <section aria-label="Tài khoản Moodle" className="mb-4 rounded-[3px] border border-gray-200 p-4">
       <p className="text-sm">
@@ -84,11 +68,6 @@ export function MoodleAccountSection({ onStatus }: { onStatus?: (status: MoodleA
         <span className={status === "linked" ? "text-green-700" : "text-gray-600"}>{LABEL[status]}</span>
       </p>
       {answer?.email && <p className="mt-1 text-sm text-gray-600">{answer.email}</p>}
-      {status === "linked" && (
-        <button type="button" disabled={unlinking} onClick={() => void unlink()} className="mt-2 text-sm text-red-700 hover:underline disabled:opacity-60">
-          {unlinking ? "Đang hủy liên kết..." : "Hủy liên kết Moodle"}
-        </button>
-      )}
       {status === "pending" && <p className="mt-2 text-sm text-gray-600">Nếu có tài khoản Moodle phù hợp, hãy đăng nhập Moodle để xác nhận liên kết.</p>}
       {status === "pending" && answer?.confirmation_url && (
         <a href={answer.confirmation_url} target="_blank" rel="noopener noreferrer" className="mt-2 inline-block text-sm text-terracotta underline">

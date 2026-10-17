@@ -11,6 +11,12 @@ function NavIcon({ kind }: { kind: "book" | "rating" | "admin" }) {
   </svg>;
 }
 
+function AccountIcon({ kind }: { kind: "link" | "unlink" | "logout" }) {
+  return <svg className="shell-icon account-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    {kind === "logout" ? <><path d="M9 5H4v14h5M9 12h11m-4-4 4 4-4 4" /></> : <><path d="m10 13 4-4M8 16l-1 1a4 4 0 0 1-6-6l4-4a4 4 0 0 1 6 0m2 1 1-1a4 4 0 0 1 6 6l-4 4a4 4 0 0 1-6 0" />{kind === "unlink" && <path d="m3 3 18 18" />}</>}
+  </svg>;
+}
+
 export function AppShell({ title, children }: { title: string; children: ReactNode }) {
   const { user, logout } = useAuth();
   const [open, setOpen] = useState(false);
@@ -24,7 +30,6 @@ export function AppShell({ title, children }: { title: string; children: ReactNo
   useEffect(() => {
     if (!open) return;
     let cancelled = false;
-    panel.current?.querySelector<HTMLButtonElement>("button")?.focus();
     if (!user?.is_admin) getMoodleAccount().then(result => { if (!cancelled) setAccount(result); }, () => { if (!cancelled) setError("Không kiểm tra được tài khoản Moodle."); });
     const outside = (event: PointerEvent) => { if (!container.current?.contains(event.target as Node)) setOpen(false); };
     document.addEventListener("pointerdown", outside);
@@ -38,6 +43,9 @@ export function AppShell({ title, children }: { title: string; children: ReactNo
     getMoodleAccount().then(setAccount, () => setError("Không kiểm tra được tài khoản Moodle."));
   }, []);
 
+  const words = user?.name.trim().split(/\s+/) ?? [];
+  const initials = ((words[0]?.[0] ?? "") + (words.length > 1 ? words.at(-1)![0] : "")).toUpperCase();
+
   function close() { setOpen(false); trigger.current?.focus(); }
   async function unlink() {
     if (!window.confirm("Hủy liên kết Moodle? Bạn sẽ không xuất bản lên Moodle được cho đến khi liên kết lại.")) return;
@@ -45,17 +53,18 @@ export function AppShell({ title, children }: { title: string; children: ReactNo
     try {
       await unlinkMoodleAccount();
       setAccount({ status: "not_linked", email: "" });
+      panel.current?.querySelector<HTMLButtonElement>("[data-leaves-page]")?.focus();
       window.dispatchEvent(new Event(MOODLE_ACCOUNT_CHANGED_EVENT));
     } catch (err) { setError(apiErrorMessage(err, "Không hủy được liên kết Moodle.")); }
     finally { setBusy(false); }
   }
 
   return <div className="min-h-screen bg-cream">
-    <a className="sr-only focus:not-sr-only" href="#main-content">Đến nội dung chính</a>
+    <a className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded focus:bg-white focus:px-3 focus:py-2" href="#main-content">Đến nội dung chính</a>
     <aside className="sidebar" aria-label="Thanh bên">
       <Link to={homeFor(user?.is_admin)}><Brand /></Link>
       <nav className="shell-nav" aria-label="Điều hướng chính">
-        {!user?.is_admin && <NavLink to="/courses"><NavIcon kind="book" />Môn học</NavLink>}
+        <NavLink to="/courses"><NavIcon kind="book" />Môn học</NavLink>
         <NavLink to="/studies"><NavIcon kind="rating" />Chấm nghiên cứu</NavLink>
         {user?.is_admin && <NavLink to="/admin"><NavIcon kind="admin" />Quản trị</NavLink>}
       </nav>
@@ -71,17 +80,20 @@ export function AppShell({ title, children }: { title: string; children: ReactNo
         }
       }}>
         {open && <div className="account-menu" id="account-menu" ref={panel} role="region" aria-label="Tài khoản">
+          <div className="account-info"><strong>{user?.name}</strong><div className="text-gray-600">{user?.email}</div></div>
+          <hr />
           {!user?.is_admin && (account?.status === "linked" ? <>
-            <div className="account-info">Moodle đã liên kết<div className="text-gray-600">{account.email}</div></div>
-            <button className="danger" disabled={busy} onClick={() => void unlink()}>{busy ? "Đang hủy liên kết…" : "Hủy liên kết Moodle…"}</button>
+            <div className="account-info"><AccountIcon kind="link" />Moodle đã liên kết<div className="text-gray-600">{account.email}</div></div>
+            <button className="menu-item danger" disabled={busy} onClick={() => void unlink()}><AccountIcon kind="unlink" />{busy ? "Đang hủy liên kết…" : "Hủy liên kết Moodle…"}</button>
           </> : account && <MoodleAccountSection onStatus={linked} />)}
           {error && <p role="alert" className="account-info text-red-700">{error}</p>}
-          <button onClick={logout} data-leaves-page>Đăng xuất</button>
+          <hr />
+          <button className="menu-item" onClick={logout} data-leaves-page><AccountIcon kind="logout" />Đăng xuất</button>
         </div>}
-        <button className="account-trigger" ref={trigger} aria-expanded={open} aria-controls="account-menu" onClick={() => { setError(null); setAccount(null); setOpen(!open); }}>
-          <span className="avatar" aria-hidden="true">{user?.name.split(/\s+/).map(word => word[0]).slice(-2).join("")}</span>
+        <button className="account-trigger" ref={trigger} aria-label={`Tài khoản ${user?.name}, ${user?.is_admin ? "Quản trị viên" : "Giảng viên"}`} aria-expanded={open} aria-controls="account-menu" onClick={() => { setError(null); setAccount(null); setOpen(!open); }}>
+          <span className="avatar" aria-hidden="true">{initials}</span>
           <span className="min-w-0 flex-1"><span className="block truncate font-semibold">{user?.name}</span><span className="brand-sub">{user?.is_admin ? "Quản trị viên" : "Giảng viên"}</span></span>
-          <span aria-hidden="true">⌃</span>
+          <svg className="shell-icon account-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
         </button>
       </div>
     </aside>

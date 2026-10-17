@@ -17,7 +17,7 @@ describe('MoodleAccountSection', () => {
 
     expect(await screen.findByText('Đã liên kết')).toBeInTheDocument()
     await waitFor(() => expect(onStatus).toHaveBeenLastCalledWith('linked'))
-    expect(screen.getByRole('button', { name: 'Hủy liên kết Moodle' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Hủy liên kết Moodle' })).not.toBeInTheDocument()
     expect(document.querySelector('input')).toBeNull()
   })
 
@@ -104,34 +104,4 @@ it('offers the request form again when the confirmed Moodle account is already l
     expect(screen.getByText('Tài khoản Moodle đã liên kết với một tài khoản khác.')).toBeInTheDocument()
     expect(screen.getByLabelText('Email Moodle')).toBeInTheDocument()
   } finally { vi.useRealTimers() }
-})
-
-it('confirms unlink, refreshes the section and offers linking again', async () => {
-  vi.spyOn(api, 'getMoodleAccount')
-    .mockResolvedValueOnce({ email: 'moodle@example.com', status: 'linked' })
-    .mockResolvedValue({ email: 'app@example.com', status: 'not_linked' })
-  const unlink = vi.spyOn(api, 'unlinkMoodleAccount').mockResolvedValue(undefined)
-  const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false)
-  const onStatus = vi.fn()
-  render(<MoodleAccountSection onStatus={onStatus} />)
-  const button = await screen.findByRole('button', { name: 'Hủy liên kết Moodle' })
-  await userEvent.click(button)
-  expect(unlink).not.toHaveBeenCalled()
-  expect(screen.getByText('Đã liên kết')).toBeInTheDocument()
-  confirm.mockReturnValue(true)
-  await userEvent.click(button)
-  expect(confirm).toHaveBeenCalledWith(expect.stringContaining('khóa học và nội dung trên Moodle được giữ nguyên'))
-  expect(await screen.findByText('Chưa liên kết')).toBeInTheDocument()
-  expect(screen.getByLabelText('Email Moodle')).toBeInTheDocument()
-  expect(onStatus).toHaveBeenLastCalledWith('not_linked')
-})
-
-it('keeps the linked state and shows an unlink error', async () => {
-  vi.spyOn(api, 'getMoodleAccount').mockResolvedValue({ email: 'moodle@example.com', status: 'linked' })
-  vi.spyOn(api, 'unlinkMoodleAccount').mockRejectedValue(new Error('offline'))
-  vi.spyOn(window, 'confirm').mockReturnValue(true)
-  render(<MoodleAccountSection />)
-  await userEvent.click(await screen.findByRole('button', { name: 'Hủy liên kết Moodle' }))
-  expect(await screen.findByText('Không hủy được liên kết Moodle.')).toBeInTheDocument()
-  expect(screen.getByText('Đã liên kết')).toBeInTheDocument()
 })

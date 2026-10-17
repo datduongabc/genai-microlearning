@@ -79,7 +79,7 @@ describe('RegisterPage', () => {
 
   it('tells the password manager to offer a new password rather than a saved one', () => {
     const passwordField = screen.getByLabelText('Mật khẩu')
-  const confirmField = screen.getByLabelText('Nhập lại mật khẩu')
+    const confirmField = screen.getByLabelText('Nhập lại mật khẩu')
 
     expect(passwordField).toHaveAttribute('autocomplete', 'new-password')
     expect(confirmField).toHaveAttribute('autocomplete', 'new-password')
