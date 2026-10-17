@@ -4,6 +4,7 @@ import { homeFor, useAuth } from "../auth/useAuth";
 import { apiErrorMessage, getMoodleAccount, unlinkMoodleAccount, MOODLE_ACCOUNT_CHANGED_EVENT, type MoodleAccount } from "../api";
 import { Brand } from "./AuthLayout";
 import { MoodleAccountSection, type MoodleAccountState } from "./MoodleAccountSection";
+import { initials } from "../lib/initials";
 
 function NavIcon({ kind }: { kind: "book" | "rating" | "admin" }) {
   return <svg className="shell-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -42,9 +43,6 @@ export function AppShell({ title, children }: { title: string; children: ReactNo
     setAccount(null);
     getMoodleAccount().then(setAccount, () => setError("Không kiểm tra được tài khoản Moodle."));
   }, []);
-
-  const words = user?.name.trim().split(/\s+/) ?? [];
-  const initials = ((words[0]?.[0] ?? "") + (words.length > 1 ? words.at(-1)![0] : "")).toUpperCase();
 
   function close() { setOpen(false); trigger.current?.focus(); }
   async function unlink() {
@@ -91,7 +89,7 @@ export function AppShell({ title, children }: { title: string; children: ReactNo
           <button className="menu-item" onClick={logout} data-leaves-page><AccountIcon kind="logout" />Đăng xuất</button>
         </div>}
         <button className="account-trigger" ref={trigger} aria-label={`Tài khoản ${user?.name}, ${user?.is_admin ? "Quản trị viên" : "Giảng viên"}`} aria-expanded={open} aria-controls="account-menu" onClick={() => { setError(null); setAccount(null); setOpen(!open); }}>
-          <span className="avatar" aria-hidden="true">{initials}</span>
+          <span className="avatar" aria-hidden="true">{user && initials(user.name).toUpperCase()}</span>
           <span className="min-w-0 flex-1"><span className="block truncate font-semibold">{user?.name}</span><span className="brand-sub">{user?.is_admin ? "Quản trị viên" : "Giảng viên"}</span></span>
           <svg className="shell-icon account-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
         </button>

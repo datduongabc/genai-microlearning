@@ -12,6 +12,8 @@ export function AdminStudiesPanel() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
+  // Bumped on every pick, so picking the same study again retries a failed load.
+  const [picks, setPicks] = useState(0);
   useEffect(() => {
     let active = true;
     listStudies().then((data) => { if (active) setStudies(data); })
@@ -25,15 +27,16 @@ export function AdminStudiesPanel() {
       if (active) { setEmails(data.emails); setLoadedId(studyId); }
     }).catch(() => { if (active) setError("Không tải được người chấm."); });
     return () => { active = false; };
-  }, [studyId]);
+  }, [studyId, picks]);
 
-  function pendingEmails() {
-    const email = input.trim().toLowerCase();
-    return email && !emails.includes(email) ? [...emails, email] : emails;
+  // Typed or pasted text may hold a whole list, separated by spaces, new lines, commas or semicolons.
+  function withTyped(text: string) {
+    return [...new Set([...emails, ...text.toLowerCase().split(/[\s,;]+/).filter(Boolean)])];
   }
-  function addEmail() {
-    const next = pendingEmails();
+  function addEmails(text: string) {
+    const next = withTyped(text);
     if (!raterEmailsSchema.safeParse({ emails: next }).success) {
+      setInput(text.trim().replace(/\s+/g, " "));
       setError("Email không hợp lệ, tối đa 100 người chấm.");
       return;
     }
@@ -44,7 +47,7 @@ export function AdminStudiesPanel() {
     <nav aria-label="Nghiên cứu" className="study-list">
       {studies?.map((study) => <button key={study.id} disabled={busy}
         aria-pressed={studyId === study.id} className="ui-card"
-        onClick={() => { if (studyId === study.id) return; setStudyId(study.id); setLoadedId(""); setInput(""); setError(""); setMessage(""); }}>
+        onClick={() => { if (loadedId === study.id) return; setStudyId(study.id); setPicks((n) => n + 1); setLoadedId(""); setInput(""); setError(""); setMessage(""); }}>
         {study.name}<span aria-hidden="true">›</span>
       </button>)}
       {!studies && !error && <p>Đang tải…</p>}
@@ -57,7 +60,7 @@ export function AdminStudiesPanel() {
       {studyId && loadedId !== studyId && !error && <p>Đang tải người chấm…</p>}
       {studyId && loadedId === studyId && <form noValidate onSubmit={async (event) => {
         event.preventDefault();
-        const next = pendingEmails();
+        const next = withTyped(input);
         if (!raterEmailsSchema.safeParse({ emails: next }).success) { setError("Email không hợp lệ, tối đa 100 người chấm."); return; }
         setBusy(true); setError(""); setMessage("");
         try {
@@ -69,11 +72,18 @@ export function AdminStudiesPanel() {
         <label htmlFor="rater-email" className="text-label font-medium">Người chấm</label>
         <div className="rater-chips">
           {emails.map((email) => <span className="rater-chip" key={email}>{email}
-            <button type="button" aria-label={`Bỏ ${email}`} disabled={busy} onClick={() => { setEmails(emails.filter((e) => e !== email)); setMessage(""); }}>×</button>
+            <button type="button" aria-label={`Bỏ ${email}`} disabled={busy} onClick={() => { setEmails(emails.filter((e) => e !== email)); setError(""); setMessage(""); }}>×</button>
           </span>)}
           <input id="rater-email" type="email" autoComplete="off" placeholder="Nhập email rồi Enter" value={input} disabled={busy}
             onChange={(e) => { setInput(e.target.value); setMessage(""); }}
-            onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addEmail(); } }} />
+            onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addEmails(input); } }}
+            onPaste={(e) => {
+              // An email field drops the new lines of a pasted list, so a list is split here instead.
+              const pasted = e.clipboardData.getData("text/plain");
+              if (!/[\s,;]/.test(pasted.trim())) return;
+              e.preventDefault();
+              addEmails(`${input} ${pasted}`);
+            }} />
         </div>
         <button disabled={busy} className="ui-button primary mt-4">{busy ? "Đang lưu…" : "Lưu người chấm"}</button>
         {message && <p role="status" className="mt-3">{message}</p>}

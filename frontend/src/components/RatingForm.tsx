@@ -125,7 +125,10 @@ export function RatingForm({
         </details>
       ))}
       <section className="criterion space-y-3">
-        <h3 className="font-semibold">Danh sách claim không có căn cứ</h3>
+        <div className="claims-header"><h3 className="font-semibold">Khẳng định không có căn cứ ({fields.length})</h3>
+          <button type="button" onClick={() => append({ claim: "", field: "content", reason: "" })}
+            className="link-button" aria-label="Thêm khẳng định không có căn cứ">+ Thêm</button>
+        </div>
         {fields.map((field, i) => (
           <fieldset key={field.id} className="space-y-2 rounded border p-3">
             <legend>Phát hiện {i + 1}</legend>
@@ -164,13 +167,6 @@ export function RatingForm({
             </button>
           </fieldset>
         ))}
-        <button
-          type="button"
-          onClick={() => append({ claim: "", field: "content", reason: "" })}
-          className="rounded border px-3 py-2"
-        >
-          Thêm claim không có căn cứ
-        </button>
       </section>
       <details className="criterion rating-notes"><summary>Ghi chú chung (tùy chọn)</summary>
       <label className="mt-3 block font-semibold">
@@ -190,7 +186,7 @@ export function RatingForm({
       <footer className="rating-footer"><span>Còn {rubric.filter((c) => !values[c.key]?.score || !values[c.key]?.justification?.trim()).length} tiêu chí</span>
       <button
         disabled={isSubmitting}
-        className="rounded bg-navy px-5 py-3 text-white disabled:opacity-50"
+        className="ui-button primary"
       >
         Lưu đánh giá
       </button>

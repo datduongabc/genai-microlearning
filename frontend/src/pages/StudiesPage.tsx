@@ -187,7 +187,7 @@ export function BlindRatingPage() {
       ) : (
         <>
           <div className="rating-context">
-            <div><div className="small muted mb-2"><Link to="/studies">Nghiên cứu được mời</Link> / {data.study.name}</div>
+            <div><nav aria-label="Đường dẫn" className="small muted mb-2"><Link to="/studies">Chấm nghiên cứu</Link> / {data.study.name}{item && ` / ${item.anon_code}`}</nav>
               {item && <p>{item.packet.topic}</p>}
             </div>
             <div className="rating-progress"><span className="small muted">Đã chấm {data.rated}/{data.total}</span>

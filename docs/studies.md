@@ -117,7 +117,7 @@ Trang **Chấm nghiên cứu** (`/studies`) liệt kê các nghiên cứu đư�
 tiến độ "Đã chấm n/tổng". Trang chấm của một đơn vị hiện mã ẩn danh và chủ đề
 ở đầu trang; gói chấm chia thành các tab, mở sẵn tab đoạn nguồn: đoạn nguồn,
 mục tiêu học tập, nội dung, slide, ví dụ, bài luyện tập, quiz và giải thích
-đáp án, mỗi lần chỉ hiện một tab. Bên cạnh là biểu mẫu chín tiêu chí của rubric;
+đáp án, mỗi lần chỉ hiện một tab. Bên cạnh là biểu mẫu tám tiêu chí chấm điểm của rubric cùng danh sách khẳng định không có căn cứ;
 mức Bloom khai báo chỉ hiện cạnh tiêu chí `bloom_fidelity`, không hiện trong gói. Nội dung đang
 nhập không được lưu nháp: khi biểu mẫu có thay đổi chưa lưu, chuyển sang gói
 khác, bấm một liên kết, đăng xuất, tải lại hoặc đóng trang đều hỏi xác nhận

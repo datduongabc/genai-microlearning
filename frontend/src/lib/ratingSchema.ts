@@ -101,12 +101,3 @@ export function emptyRating(code: string): Rating {
 export const raterEmailsSchema = z.object({
   emails: z.array(z.email("Email không hợp lệ")).max(100),
 });
-export const raterTextSchema = z
-  .object({ emailsText: z.string() })
-  .transform(({ emailsText }) => ({
-    emails: emailsText
-      .split(/\n/)
-      .map((s) => s.trim().toLowerCase())
-      .filter(Boolean),
-  }))
-  .pipe(raterEmailsSchema);

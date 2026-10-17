@@ -27,6 +27,6 @@ export function Tabs({ tabs, selected, onSelect, label, children }: {
           buttons?.[next].scrollIntoView?.({ block: "nearest", inline: "nearest" });
         }}>{tab.label}</button>)}
     </div>
-    <div role="tabpanel" id={`${id}-panel`} aria-labelledby={`${id}-${selected}`}>{children}</div>
+    <div role="tabpanel" tabIndex={0} id={`${id}-panel`} aria-labelledby={`${id}-${selected}`}>{children}</div>
   </>;
 }

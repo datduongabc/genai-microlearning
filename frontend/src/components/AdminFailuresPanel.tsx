@@ -1,5 +1,5 @@
 import { Fragment, useEffect, useState } from "react";
-import { apiErrorMessage, listFailedJobs, retryFailedJobs, type FailedJobInfo } from "../api";
+import { apiErrorMessage, listFailedJobs, retryFailedJobs, type AdminCounts, type FailedJobInfo } from "../api";
 
 const JOB_TYPE_LABEL: Record<FailedJobInfo["job_type"], string> = {
   document_pipeline: "Xử lý tài liệu",
@@ -8,7 +8,7 @@ const JOB_TYPE_LABEL: Record<FailedJobInfo["job_type"], string> = {
 
 // The failed jobs of every lecturer: job data, the document's file name and the course name,
 // never what is inside them. Retry one, or pick several and retry them together.
-export function AdminFailuresPanel() {
+export function AdminFailuresPanel({ counts, onChange }: { counts: AdminCounts | null; onChange: () => void }) {
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [jobs, setJobs] = useState<FailedJobInfo[] | null>(null);
   const [filter, setFilter] = useState<FailedJobInfo["job_type"] | "all">("all");
@@ -19,7 +19,10 @@ export function AdminFailuresPanel() {
 
   // Bumped to load the list again (refresh button, after a retry), so the effect below is the only loader.
   const [reloads, setReloads] = useState(0);
-  const reload = () => setReloads((count) => count + 1);
+  const reload = () => {
+    setReloads((count) => count + 1);
+    onChange();
+  };
 
   // Sets state only from promise callbacks, and drops an answer that arrives after a newer request.
   useEffect(() => {
@@ -43,6 +46,14 @@ export function AdminFailuresPanel() {
 
   function toggle(id: string) {
     setSelected((current) => {
+      const next = new Set(current);
+      if (!next.delete(id)) next.add(id);
+      return next;
+    });
+  }
+
+  function toggleExpanded(id: string) {
+    setExpanded((current) => {
       const next = new Set(current);
       if (!next.delete(id)) next.add(id);
       return next;
@@ -73,7 +84,8 @@ export function AdminFailuresPanel() {
       <div className="admin-toolbar">
         <div className="segmented" role="group" aria-label="Loại job">
           {(["all", "document_pipeline", "module_generation"] as const).map((type) => <button key={type}
-            aria-pressed={filter === type} onClick={() => setFilter(type)}>{type === "all" ? "Tất cả" : JOB_TYPE_LABEL[type]}</button>)}
+            aria-pressed={filter === type} onClick={() => setFilter(type)}>{type === "all" ? "Tất cả" : JOB_TYPE_LABEL[type]}
+            {type !== "all" && counts && ` (${counts.failed_jobs[type] ?? 0})`}</button>)}
         </div>
         <div className="flex gap-3"><button onClick={reload} className="ui-button" aria-label="Làm mới">↻</button>
           <button onClick={() => handleRetry([...selected])} disabled={retrying || selected.size === 0} className="ui-button primary">
@@ -109,7 +121,7 @@ export function AdminFailuresPanel() {
                 <td><div className="flex gap-2">
                   <button className="ui-button" aria-label={`Thử lại ${job.document_filename}`} disabled={retrying} onClick={() => handleRetry([job.id])}>↻</button>
                   <button className="expand-job" aria-label={`Chi tiết ${job.document_filename}`} aria-expanded={expanded.has(job.id)}
-                    aria-controls={`job-${job.id}`} onClick={() => setExpanded((current) => { const next = new Set(current); if (!next.delete(job.id)) next.add(job.id); return next; })}>{expanded.has(job.id) ? "⌃" : "⌄"}</button>
+                    aria-controls={expanded.has(job.id) ? `job-${job.id}` : undefined} onClick={() => toggleExpanded(job.id)}>{expanded.has(job.id) ? "⌃" : "⌄"}</button>
                 </div></td>
               </tr>
               {expanded.has(job.id) && <tr id={`job-${job.id}`}><td colSpan={7} className="job-detail">

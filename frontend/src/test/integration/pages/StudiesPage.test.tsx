@@ -94,7 +94,9 @@ it("renders the whole anonymous packet and saves/edits all rubric criteria", asy
     await user.type(field, "Có căn cứ");
   await user.click(screen.getByText("Ghi chú chung (tùy chọn)"));
   await user.type(screen.getByLabelText("Ghi chú tổng quan"), "Tổng quan");
-  await user.click(screen.getByRole("button", { name: "Thêm claim không có căn cứ" }));
+  expect(screen.getByRole("heading", { name: "Khẳng định không có căn cứ (0)" })).toBeInTheDocument();
+  await user.click(screen.getByRole("button", { name: "Thêm khẳng định không có căn cứ" }));
+  expect(screen.getByRole("heading", { name: "Khẳng định không có căn cứ (1)" })).toBeInTheDocument();
   await user.type(screen.getByLabelText("Claim 1"), "Khẳng định");
   await user.type(screen.getByLabelText("Lý do 1"), "Không có nguồn");
   await user.click(screen.getByRole("button", { name: "Lưu đánh giá" }));
@@ -193,7 +195,7 @@ it("asks before a link or logout discards unsaved input, and not once it is save
   await screen.findByText("Nguồn đối chiếu");
   await user.click(screen.getByText("Ghi chú chung (tùy chọn)"));
   await user.type(screen.getByLabelText("Ghi chú tổng quan"), " mới");
-  await user.click(screen.getByRole("link", { name: "Chấm nghiên cứu" }));
+  await user.click(within(screen.getByRole("navigation", { name: "Đường dẫn" })).getByRole("link", { name: "Chấm nghiên cứu" }));
   expect(confirm).toHaveBeenCalledTimes(1);
   await user.click(screen.getByRole("button", { name: /Giảng viên/ }));
   await user.click(screen.getByRole("button", { name: "Đăng xuất" }));
@@ -213,7 +215,7 @@ it("asks before a link or logout discards unsaved input, and not once it is save
   await user.click(screen.getByRole("button", { name: "Đăng xuất" }));
   expect(confirm).toHaveBeenCalledTimes(2);
   expect(logout).toHaveBeenCalledTimes(1);
-  await user.click(screen.getByRole("link", { name: "Chấm nghiên cứu" }));
+  await user.click(within(screen.getByRole("navigation", { name: "Đường dẫn" })).getByRole("link", { name: "Chấm nghiên cứu" }));
   expect(confirm).toHaveBeenCalledTimes(2);
   expect(await screen.findByText("Danh sách")).toBeInTheDocument();
 });
@@ -245,12 +247,91 @@ it("admin edits invited emails and can remove all raters", async () => {
   await waitFor(() => expect(api.setRaters).toHaveBeenLastCalledWith("s1", []));
 });
 
+it("saves a typed email that was not yet added with Enter", async () => {
+  vi.mocked(api.setRaters).mockImplementation(async (_s, emails) => ({ emails }));
+  render(<AdminStudiesPanel />);
+  await userEvent.click(await screen.findByRole("button", { name: /Nghiên cứu/ }));
+  await userEvent.type(await screen.findByLabelText("Người chấm"), "Minh@Example.com");
+  await userEvent.click(screen.getByRole("button", { name: "Lưu người chấm" }));
+  await waitFor(() => expect(api.setRaters).toHaveBeenCalledWith("s1", ["lan@example.com", "minh@example.com"]));
+  expect(await screen.findByRole("status")).toHaveTextContent("Đã lưu người chấm.");
+});
+
+it("adds a pasted list of emails as chips without duplicates", async () => {
+  render(<AdminStudiesPanel />);
+  await userEvent.click(await screen.findByRole("button", { name: /Nghiên cứu/ }));
+  const input = await screen.findByLabelText("Người chấm");
+  await screen.findByRole("button", { name: "Bỏ lan@example.com" });
+  input.focus();
+  await userEvent.paste("Lan@example.com\nminh@example.com, an@example.com;minh@example.com");
+  expect(screen.getAllByRole("button", { name: /^Bỏ / }).map((b) => b.getAttribute("aria-label"))).toEqual([
+    "Bỏ lan@example.com", "Bỏ minh@example.com", "Bỏ an@example.com",
+  ]);
+  expect(input).toHaveValue("");
+});
+
+it("keeps a pasted list with a bad email in the field and clears the error when a chip is removed", async () => {
+  render(<AdminStudiesPanel />);
+  await userEvent.click(await screen.findByRole("button", { name: /Nghiên cứu/ }));
+  const input = await screen.findByLabelText("Người chấm");
+  await screen.findByRole("button", { name: "Bỏ lan@example.com" });
+  input.focus();
+  await userEvent.paste("minh@example.com\nbad");
+  expect(await screen.findByRole("alert")).toHaveTextContent("Email không hợp lệ");
+  expect(screen.queryByRole("button", { name: "Bỏ minh@example.com" })).not.toBeInTheDocument();
+  expect(input).toHaveValue("minh@example.com bad");
+  await userEvent.click(screen.getByRole("button", { name: "Bỏ lan@example.com" }));
+  expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+});
+
+it("loads the raters again when the same study is picked after a failed load", async () => {
+  vi.mocked(api.getRaters).mockRejectedValueOnce(new Error("offline"));
+  render(<AdminStudiesPanel />);
+  const pick = await screen.findByRole("button", { name: /Nghiên cứu/ });
+  await userEvent.click(pick);
+  expect(await screen.findByRole("alert")).toHaveTextContent("Không tải được người chấm.");
+  await userEvent.click(pick);
+  expect(await screen.findByRole("button", { name: "Bỏ lan@example.com" })).toBeInTheDocument();
+  expect(api.getRaters).toHaveBeenCalledTimes(2);
+});
+
 it("shows the declared Bloom level only beside the bloom_fidelity criterion", async () => {
   blind();
   const criterion = (await screen.findByText(/7\. Độ khớp mức Bloom/)).closest("details")!;
   expect(within(criterion).getByText("Mức Bloom đặt ra: Hiểu")).toBeInTheDocument();
   expect(screen.getAllByText(/Mức Bloom đặt ra/)).toHaveLength(1);
-  expect(within(screen.getByRole("tabpanel")).queryByText(/Hiểu|understand/)).not.toBeInTheDocument();
+  for (const tab of screen.getAllByRole("tab")) {
+    await userEvent.click(tab);
+    expect(within(screen.getByRole("tabpanel")).queryByText(/Mức Bloom|Hiểu|understand/)).not.toBeInTheDocument();
+  }
+});
+
+it("shows the study and the anonymous code in the breadcrumb", async () => {
+  blind();
+  const trail = await screen.findByRole("navigation", { name: "Đường dẫn" });
+  expect(trail).toHaveTextContent("Chấm nghiên cứu / Nghiên cứu / M01");
+});
+
+it("counts the criteria still missing a score or a comment beside the save button", async () => {
+  const user = userEvent.setup();
+  blind();
+  expect(await screen.findByText("Còn 8 tiêu chí")).toBeInTheDocument();
+  const accuracy = screen.getByRole("radiogroup", { name: "Điểm Độ chính xác" });
+  await user.click(within(accuracy).getByRole("radio", { name: "5" }));
+  expect(screen.getByText("Còn 8 tiêu chí")).toBeInTheDocument();
+  await user.type(screen.getByRole("textbox", { name: "Nhận xét Độ chính xác" }), "Khớp nguồn");
+  expect(screen.getByText("Còn 7 tiêu chí")).toBeInTheDocument();
+});
+
+it("keeps the correct answer out of the Quiz tab and shows it under Giải thích đáp án", async () => {
+  const user = userEvent.setup();
+  blind();
+  await user.click(await screen.findByRole("tab", { name: "Quiz" }));
+  expect(within(screen.getByRole("tabpanel")).getByText("Câu hỏi")).toBeInTheDocument();
+  expect(screen.queryByText(/Đáp án đúng/)).not.toBeInTheDocument();
+  expect(screen.queryByText("Lời giải")).not.toBeInTheDocument();
+  await user.click(screen.getByRole("tab", { name: "Giải thích đáp án" }));
+  expect(screen.getAllByText(/Đáp án đúng/)).toHaveLength(2);
 });
 
 it("opens sources first and switches packet tabs with arrow keys", async () => {
