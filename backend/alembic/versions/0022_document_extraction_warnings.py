@@ -5,8 +5,8 @@ from sqlalchemy.dialects import postgresql
 
 from alembic import op
 
-revision = "0020_extraction_warnings"
-down_revision = "0019_blind_ratings"
+revision = "0022_extraction_warnings"
+down_revision = "0021_remove_textbook_scope"
 branch_labels = None
 depends_on = None
 
