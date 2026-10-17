@@ -33,6 +33,7 @@ export function AppShell({ title, children }: { title: string; children: ReactNo
 
   const linked = useCallback((status: MoodleAccountState) => {
     if (status !== "linked") return;
+    if (document.activeElement === document.body || panel.current?.contains(document.activeElement)) panel.current?.querySelector<HTMLButtonElement>("[data-leaves-page]")?.focus();
     setAccount(null);
     getMoodleAccount().then(setAccount, () => setError("Không kiểm tra được tài khoản Moodle."));
   }, []);
