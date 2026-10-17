@@ -5,15 +5,28 @@ Demo and normal use enable failover by default. The backend default remains
 selection, retries, cooldowns, rate checks and fallback chains. Provider keys are
 read only by the gateway from the runtime environment.
 
-Large-safe aliases (`gemini-fast`, `gemini-flash`, `groq-pro`, OpenAI and Claude aliases) fall
-back to the other free Gemini models. Paid providers are never automatic backups;
-select their aliases explicitly to use them. `groq-pro` is paid: it is the study
-judge alias and a lecturer opt-in model, billed when a lecturer selects it. Modules
-generated with it share the judge's family, so studies containing them are refused
-for judging. No fallbacks apply to embeddings or
-transcription. The two Gemini aliases back up each other, with LiteLLM's bounded
-fallback attempts preventing an endless cycle. If neither free model can serve a
-large request, generation fails rather than sending it to Groq or a paid model.
+The two free Gemini aliases back up each other, with LiteLLM's bounded fallback
+attempts preventing an endless cycle. If neither free model can serve a large
+request, generation fails. Paid generation aliases are selected explicitly and are
+never fallback targets. Outside experiment mode their ordinary and context-window
+failures fall back to the free `gemini-fast`, then `gemini-flash`:
+
+| Alias | Evaluation use |
+| --- | --- |
+| `claude-fast` | Leading cheap generation model |
+| `openai-fast` | Alternative cheap generation model |
+| `claude-pro` | Strong model for a small subset |
+| `openai-pro` | Alternative strong model |
+
+Exact provider model IDs and display names are defined in
+[`devops/gateway/config.yaml`](../devops/gateway/config.yaml).
+No paid API call is required to validate configuration. Provider availability and
+credit still require explicit deployment verification. Embeddings remain local
+Qwen3-Embedding-0.6B through `embed-default`. No fallbacks apply to embeddings or transcription.
+
+`groq-pro` is paid: it is the study judge alias and a lecturer opt-in model.
+Modules generated with it share the judge family and are refused for judging.
+Its fallback targets are free Gemini models; it is never an automatic backup.
 
 Planner, Learning Objective, relevance checks and question checks can use the
 internal `gemini-fast-small` / `gemini-flash-small` profiles. The backend selects
@@ -67,8 +80,9 @@ alias's own credentials and credit. Authentication errors and insufficient credi
 still reject model selection with HTTP 422, including credit/billing 429 errors
 such as OpenAI's `insufficient_quota` or `billing_hard_limit_reached`. Plain
 rate-limit 429s, including Gemini `RESOURCE_EXHAUSTED`, are treated as usable,
-because normal generation can rely on router fallbacks. Experiment generation
-still refuses fallback and can fail on the same quota-limited model.
+because normal generation, including paid aliases, can rely on router fallbacks
+to free Gemini. Experiment generation still refuses fallback and can fail on the
+same quota-limited model.
 
 ## Actual model records
 

@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 
 from app.generation import claim_evaluation as ce
 from app.generation import study_packets as sp
-from app.models import Chunk, ComponentType, DocumentSection, Module, ModuleComponent
+from app.models import Chunk, ComponentType, Module, ModuleComponent
 from app.retrieval.search import ChunkScope
 from scripts import analyze_study, export_study_pair, run_claim_judge, run_judge
 from tests.integration.judge_helpers import GATEWAY, _evaluation, _packet
@@ -249,19 +249,11 @@ def test_r8_analysis_cli_includes_separate_r9_results(tmp_path, judge, monkeypat
     assert result["judges"]["groq-pro"]["means"]["rag_llm"]["accuracy"] == 4
 
 
-def test_small_section_reference_and_citation_identities_in_isolated_sqlite(monkeypatch):
+def test_document_reference_and_citation_identities_in_isolated_sqlite(monkeypatch):
     engine = create_engine("sqlite://")
     Chunk.__table__.create(engine)
     with Session(engine) as db:
         document_id, course_id = uuid.uuid4(), uuid.uuid4()
-        # Only Chunk queries need persistence here. Section metadata is supplied
-        # at the lookup boundary: its PostgreSQL JSONB schema is not SQLite DDL.
-        section = DocumentSection(id=uuid.uuid4(), document_id=document_id, title="Section",
-                                  first_chunk_index=0, last_chunk_index=1)
-        def get_section(model, identity):
-            assert model is DocumentSection and identity == section.id
-            return section
-        monkeypatch.setattr(db, "get", get_section)
         chunks = [Chunk(document_id=document_id, course_id=course_id, chunk_index=i, content=text, source_ref=locator)
             for i, (text, locator) in enumerate([("Fact", "p1"), ("Other", "p2"), ("Outside", "p3")])]
         db.add_all(chunks)
@@ -269,22 +261,23 @@ def test_small_section_reference_and_citation_identities_in_isolated_sqlite(monk
         content = ModuleComponent(type=ComponentType.content, content={"claim_citations": [
             {"claim": "Fact", "locator": "p2"}, {"claim": "Outside", "locator": "p3"},
             {"claim": "Absent", "locator": "bad"}]})
-        module = Module(document_id=document_id, course_id=course_id, section_id=section.id, components=[content])
-        monkeypatch.setattr(sp, "retrieve", lambda *a, **k: pytest.fail("small section must not retrieve"))
+        module = Module(document_id=document_id, course_id=course_id, components=[content])
+        monkeypatch.setattr(sp, "retrieve", lambda *a, **k: pytest.fail("small document must not retrieve"))
         sources = sp.reference_chunks(db, module)
         evidence, citations = sp.study_evidence(db, module, sources)
-        assert sources == ["Fact", "Other"] and evidence.coverage == "complete"
-        assert evidence.chunk_ids == [str(c.id) for c in chunks[:2]]
+        assert sources == ["Fact", "Other", "Outside"] and evidence.coverage == "complete"
+        assert evidence.chunk_ids == [str(c.id) for c in chunks]
         assert citations[0].chunk_id == str(chunks[1].id) and citations[0].chunk_content == "Other"
         assert citations[1].chunk_id == str(chunks[2].id) and citations[2].resolution == "missing"
         chunks[2].source_ref = "p2"
         db.flush()
         assert sp.study_evidence(db, module, sources)[1][0].resolution == "ambiguous"
+        monkeypatch.setattr(sp, "concept_query_of", lambda module: "query")
         monkeypatch.setattr(sp, "REFERENCE_MAX_CHUNKS", 1)
         monkeypatch.setattr(sp, "retrieve", lambda *a, **k: chunks[:1])
         sources = sp.reference_chunks(db, module)
         evidence, _ = sp.study_evidence(db, module, sources)
-        assert sources == ["Fact"] and evidence.coverage == "partial" and evidence.total_chunks == 2
+        assert sources == ["Fact"] and evidence.coverage == "unknown" and evidence.total_chunks is None
 
 
 def test_small_document_without_section_is_complete_reference(monkeypatch):
@@ -297,7 +290,7 @@ def test_small_document_without_section_is_complete_reference(monkeypatch):
         db.add_all(chunks)
         db.add(Chunk(document_id=uuid.uuid4(), course_id=course_id, chunk_index=0, content="Other document"))
         db.flush()
-        module = Module(document_id=document_id, course_id=course_id, section_id=None, components=[])
+        module = Module(document_id=document_id, course_id=course_id,  components=[])
         monkeypatch.setattr(sp, "concept_query_of", lambda *a: "query")
         monkeypatch.setattr(sp, "retrieve", lambda *a, **k: pytest.fail("small document must not retrieve"))
 

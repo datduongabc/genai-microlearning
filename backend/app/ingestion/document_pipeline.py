@@ -6,7 +6,6 @@ thay vì người dùng phải tải lại file."""
 
 import json
 import os
-import uuid
 from dataclasses import asdict
 
 from app.db import WorkerSessionLocal
@@ -14,10 +13,8 @@ from app.ingestion.chunker import Chunk as ChunkerChunk
 from app.ingestion.chunker import chunk_units, document_title
 from app.ingestion.document_readers import DocumentUnit, read_document
 from app.ingestion.embeddings import embed_texts
-from app.ingestion.outline import OutlineEntry, extract_outline
-from app.ingestion.section_ranges import SectionSpec, assign_chunk_ranges, chunk_anchor
 from app.models import Chunk as ChunkModel
-from app.models import Document, DocumentKind, DocumentSection, DocumentStatus, Job, JobStatus
+from app.models import Document, DocumentStatus, Job, JobStatus
 from app.retrieval.search import invalidate_sparse_cache
 
 
@@ -49,11 +46,6 @@ def _run_extract(job) -> None:
         doc.raw_text = "\n\n".join(u.text for u in units)
 
         next_payload = {**current_job.payload, "units": [asdict(u) for u in units]}
-        # Only a textbook is offered for picking sections; slides and notes keep
-        # the whole-document flow and never pay for outline detection.
-        if doc.kind == DocumentKind.textbook:
-            next_payload["outline"] = [asdict(e) for e in extract_outline(storage_path, units)]
-
         current_job.step = "chunk"
         current_job.status = JobStatus.queued
         current_job.payload = next_payload
@@ -76,14 +68,6 @@ def _run_chunk(job) -> None:
 
         next_payload = {**current_job.payload, "chunks": [asdict(c) for c in chunks]}
         del next_payload["units"]
-        outline = [OutlineEntry(**e) for e in next_payload.pop("outline", [])]
-        if outline:
-            sections = assign_chunk_ranges(
-                outline,
-                [chunk_anchor(c.locator) for c in chunks],
-                anchors_are_pages=current_job.payload["storage_path"].lower().endswith(".pdf"),
-            )
-            next_payload["sections"] = [asdict(s) for s in sections]
         current_job.step = "embed"
         current_job.status = JobStatus.queued
         current_job.payload = next_payload
@@ -119,27 +103,6 @@ def _run_embed(job) -> None:
                 source_ref=json.dumps(c.locator, ensure_ascii=False),
                 embedding=embedding,
             ))
-
-        # Parents come before their children in position order, so each parent
-        # already has an id when a child needs it. Everything commits together
-        # with the chunks the ranges refer to.
-        section_ids: dict[int, uuid.UUID] = {}
-        for raw in current_job.payload.get("sections", []):
-            spec = SectionSpec(**raw)
-            section = DocumentSection(
-                document_id=doc.id,
-                parent_id=section_ids.get(spec.parent_position),
-                title=spec.title,
-                level=spec.level,
-                position=spec.position,
-                page_start=spec.page_start,
-                page_end=spec.page_end,
-                first_chunk_index=spec.first_chunk_index,
-                last_chunk_index=spec.last_chunk_index,
-            )
-            db.add(section)
-            db.flush()
-            section_ids[spec.position] = section.id
 
         course_id = doc.course_id
         storage_path = current_job.payload.get("storage_path")

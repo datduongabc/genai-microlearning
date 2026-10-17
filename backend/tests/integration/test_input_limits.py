@@ -108,16 +108,6 @@ def test_a_module_title_has_a_maximum(world):
     assert (ok.status_code, too_long.status_code) == (200, 422)
 
 
-def test_more_sections_than_anyone_could_pick_are_refused_before_the_database_is_asked(world):
-    ids = [str(uuid.uuid4()) for _ in range(51)]
-
-    response = client.post(
-        "/modules/generate", params={"document_id": world["document"]}, json={"section_ids": ids}, headers=world["headers"]
-    )
-
-    assert response.status_code == 422
-
-
 def test_a_json_body_over_one_megabyte_is_refused_with_413(world):
     response = client.post("/courses", json={"name": "N" * (ONE_MEGABYTE + 1)}, headers=world["headers"])
 

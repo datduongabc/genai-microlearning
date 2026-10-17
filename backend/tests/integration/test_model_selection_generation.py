@@ -19,7 +19,6 @@ from app.main import app
 from app.models import (
     Course,
     Document,
-    DocumentKind,
     DocumentStatus,
     Job,
     JobType,
@@ -74,7 +73,7 @@ def _tai_lieu_cua_giang_vien(mac_dinh: str | None = None) -> tuple[str, uuid.UUI
         db.flush()
         doc = Document(
             course_id=course.id, filename="a.pdf", status=DocumentStatus.embedded,
-            kind=DocumentKind.lecture, raw_text="noi dung da parse",
+             raw_text="noi dung da parse",
         )
         db.add(doc)
         db.commit()

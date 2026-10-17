@@ -35,7 +35,6 @@ import {
   type UploadDocumentFormValues,
 } from "../lib/formSchemas";
 import { ModuleListItem } from "../components/ModuleListItem";
-import { SectionTree } from "../components/SectionTree";
 
 const STATUS_LABEL: Record<string, string> = {
   uploaded: "Đã tải lên",
@@ -80,7 +79,7 @@ function matchesFilter(doc: DocumentInfo, filter: StatusFilter): boolean {
 
 function failureTitle(failure: DocumentFailure): string {
   if (failure.job_type === "document_pipeline") return "Xử lý tài liệu thất bại";
-  return failure.section_title ? `Sinh mô-đun cho mục "${failure.section_title}" thất bại` : "Sinh mô-đun thất bại";
+  return "Sinh mô-đun thất bại";
 }
 
 const STATUS_COLOR: Record<string, string> = {
@@ -113,7 +112,7 @@ export function CourseDetailPage() {
   const { courseId } = useParams<{ courseId: string }>();
   const [course, setCourse] = useState<Course | null>(null);
   const [documents, setDocuments] = useState<DocumentInfo[]>([]);
-  // Model cho các lượt sinh bấm từ trang này, dùng chung cho cả tài liệu lẫn từng mục;
+  // Model cho các lượt sinh bấm từ trang này, dùng chung cho tài liệu;
   // chuỗi rỗng nghĩa là chưa chọn gì. ModelPicker điền sẵn mặc định đã lưu của giảng viên.
   const [modelAlias, setModelAlias] = useState("");
   const generateDialog = useRef<HTMLDialogElement>(null);
@@ -134,16 +133,6 @@ export function CourseDetailPage() {
   // job (so a double-click cannot send two requests); after that, and after
   // a refresh or navigation, `doc.generating` from the server is the truth.
   const [startingIds, setStartingIds] = useState<Set<string>>(new Set());
-  const [openOutlines, setOpenOutlines] = useState<Set<string>>(new Set());
-
-  function toggleOutline(documentId: string) {
-    setOpenOutlines((current) => {
-      const next = new Set(current);
-      if (!next.delete(documentId)) next.add(documentId);
-      return next;
-    });
-  }
-
   const refresh = useCallback(async () => {
     if (!courseId) return;
     await loadCoursePage(courseId, { setCourse, setDocuments, setModulesByDoc });
@@ -184,15 +173,6 @@ export function CourseDetailPage() {
   const visibleDocuments = documents.filter((d) => matchesFilter(d, statusFilter));
   const shouldPoll = pipelineActive || generatingOnServer;
   const isGenerating = (doc: DocumentInfo) => doc.generating || startingIds.has(doc.id);
-  // A textbook with a detected outline is generated section by section, so the
-  // whole-document button gives way to the outline.
-  const hasOutline = (doc: DocumentInfo) => doc.kind === "textbook" && doc.section_count > 0;
-  // While the outline is open it shows each module under its own section, so
-  // only the modules that belong to no section are listed here.
-  const listedModules = (doc: DocumentInfo) => {
-    const modules = modulesByDoc[doc.id] ?? [];
-    return openOutlines.has(doc.id) ? modules.filter((m) => m.section_id === null) : modules;
-  };
   useEffect(() => {
     if (!shouldPoll || !courseId) return;
     const timer = setInterval(async () => {
@@ -429,15 +409,7 @@ export function CourseDetailPage() {
                   </div>
                 </div>
                 <div className="flex shrink-0 items-center gap-4">
-                  {d.status === "embedded" && hasOutline(d) && (
-                    <button
-                      onClick={() => toggleOutline(d.id)}
-                      className="text-sm font-semibold text-terracotta hover:underline"
-                    >
-                      {openOutlines.has(d.id) ? "Ẩn mục lục" : `Mục lục (${d.section_count})`}
-                    </button>
-                  )}
-                  {d.status === "embedded" && !hasOutline(d) && (
+                  {d.status === "embedded" && (
                     <button
                       onClick={() => { generateDocument.current = d; generateDialog.current?.showModal(); }}
                       disabled={isGenerating(d)}
@@ -480,25 +452,9 @@ export function CourseDetailPage() {
                   ))}
                 </ul>
               )}
-              {d.kind === "textbook" && d.status === "embedded" && d.section_count === 0 && (
-                <p className="mt-2 text-xs text-gray-500">
-                  Không nhận diện được mục lục của tài liệu này, nên sinh mô-đun từ toàn bộ tài liệu.
-                </p>
-              )}
-              {openOutlines.has(d.id) && (
-                <SectionTree
-                  documentId={d.id}
-                  documentGenerating={d.generating}
-                  modules={modulesByDoc[d.id] ?? []}
-                  onGenerated={refresh}
-                  onDeleteModule={handleDeleteModule}
-                  deletingModuleId={deletingModuleId}
-                  modelAlias={modelAlias}
-                />
-              )}
-              {listedModules(d).length > 0 && (
+              {(modulesByDoc[d.id] ?? []).length > 0 && (
                 <ul className="mt-3 flex flex-col gap-1.5 pl-1">
-                  {listedModules(d).map((m) => (
+                  {(modulesByDoc[d.id] ?? []).map((m) => (
                     <ModuleListItem
                       key={m.id}
                       module={m}

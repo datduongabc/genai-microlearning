@@ -2,7 +2,7 @@ import uuid
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, HTTPException, Request, UploadFile
-from sqlalchemy import func, select
+from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 
 from app.api.deletion import check_study_references, commit_deletion
@@ -16,8 +16,6 @@ from app.jobs.queue import enqueue_job
 from app.models import (
     Course,
     Document,
-    DocumentKind,
-    DocumentSection,
     DocumentStatus,
     Job,
     JobStatus,
@@ -43,7 +41,7 @@ _VIDEO_EXTENSIONS = {".mp4", ".mkv", ".webm", ".mov", ".avi"}
 @limiter.limit("20/minute", key_func=user_or_address)
 def upload_document(
     request: Request, course_id: uuid.UUID, file: UploadFile,
-    kind: DocumentKind = DocumentKind.lecture, db: Session = Depends(get_db),
+    db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     # FOR UPDATE serialises concurrent uploads to the same course: the second
@@ -93,7 +91,7 @@ def upload_document(
                 detail=size_error,
             )
 
-    doc = Document(course_id=course_id, filename=file.filename, status=DocumentStatus.uploaded, kind=kind)
+    doc = Document(course_id=course_id, filename=file.filename, status=DocumentStatus.uploaded)
     db.add(doc)
     db.flush()
 
@@ -160,12 +158,6 @@ def list_documents(
             )
         )
     )
-    section_counts = dict(
-        db.query(DocumentSection.document_id, func.count(DocumentSection.id))
-        .filter(DocumentSection.document_id.in_([d.id for d in docs]))
-        .group_by(DocumentSection.document_id)
-        .all()
-    )
     # Failed work stays on its document after a reload: a failed generation creates no module,
     # so without this its error would only ever be a banner that the next refresh loses.
     failures = open_failures(db, [d.id for d in docs])
@@ -177,57 +169,9 @@ def list_documents(
             "created_at": d.created_at,
             "module_count": len(d.modules),
             "generating": d.id in generating_ids,
-            "kind": d.kind,
-            "section_count": section_counts.get(d.id, 0),
             "failures": failures.get(d.id, []),
         }
         for d in docs
-    ]
-
-
-@router.get("/{document_id}/sections")
-def list_sections(
-    document_id: uuid.UUID, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)
-):
-    doc = db.get(Document, document_id)
-    if doc is None or doc.course.owner_id != current_user.id:
-        raise HTTPException(status_code=404, detail="Document not found")
-
-    sections = (
-        db.query(DocumentSection)
-        .filter(DocumentSection.document_id == document_id)
-        .order_by(DocumentSection.position)
-        .all()
-    )
-    module_counts = dict(
-        db.query(Module.section_id, func.count(Module.id))
-        .filter(Module.document_id == document_id, Module.section_id.isnot(None))
-        .group_by(Module.section_id)
-        .all()
-    )
-    # Same source of truth as the document list: the jobs table.
-    generating_ids = set(
-        db.scalars(
-            select(Job.section_id).where(
-                Job.job_type == JobType.module_generation,
-                Job.status.in_((JobStatus.queued, JobStatus.running)),
-                Job.document_id == document_id,
-                Job.section_id.isnot(None),
-            )
-        )
-    )
-    return [
-        {
-            "id": s.id,
-            "parent_id": s.parent_id,
-            "title": s.title,
-            "level": s.level,
-            "page_start": s.page_start,
-            "page_end": s.page_end,
-            "module_count": module_counts.get(s.id, 0),
-            "generating": s.id in generating_ids,
-        }
-        for s in sections
     ]
 
 

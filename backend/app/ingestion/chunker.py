@@ -147,8 +147,7 @@ def _chunk_recursive(units: list[DocumentUnit], chunks: list[Chunk], first_unit_
         length_function=estimate_tokens,
         separators=["\n\n", "\n", ". ", " ", ""],
     )
-    # Positions are kept against the ORIGINAL unit list (empty units included):
-    # the outline of a DOCX/HTML textbook refers to units by that position.
+    # Keep source unit positions stable even when empty units are skipped.
     kept = [(first_unit_index + i, u) for i, u in enumerate(units) if u.text.strip()]
     text = "\n\n".join(u.text for _, u in kept)
     if not text.strip():

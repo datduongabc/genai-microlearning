@@ -8,7 +8,7 @@ from app.auth.rate_limit import limiter
 from app.auth.security import create_access_token
 from app.db import SessionLocal
 from app.main import app
-from app.models import Course, Document, DocumentKind, DocumentStatus, User
+from app.models import Course, Document, DocumentStatus, User
 from app.moodle import client as moodle
 
 client = TestClient(app)
@@ -24,7 +24,7 @@ def world(monkeypatch):
         course = Course(name='Quota course', owner_id=user.id)
         db.add(course)
         db.flush()
-        documents = [Document(course_id=course.id, filename=f'{i}.txt', kind=DocumentKind.lecture,
+        documents = [Document(course_id=course.id, filename=f'{i}.txt',
                               status=DocumentStatus.embedded, raw_text='Parsed text') for i in range(5)]
         db.add_all(documents)
         db.commit()
@@ -137,23 +137,6 @@ def test_concurrent_documents_cannot_overdraw_daily_allowance(world):
         assert db.get(User, world[0]).generation_count == 3
 
 
-def test_batch_counts_distinct_modules_and_refuses_entire_over_quota_batch(world):
-    from app.models import DocumentSection
-    uid, _, docs = world
-    with SessionLocal() as db:
-        sections = [DocumentSection(document_id=docs[0], title=f'Section {i}', level=1, position=i,
-                                    first_chunk_index=i, last_chunk_index=i) for i in range(4)]
-        db.add_all(sections)
-        db.commit()
-        ids = [str(section.id) for section in sections]
-    headers = {'Authorization': 'Bearer ' + create_access_token(uid)}
-    response = client.post('/modules/generate', params={'document_id': str(docs[0])}, headers=headers,
-                           json={'section_ids': ids})
-    assert response.status_code == 429
-    response = client.post('/modules/generate', params={'document_id': str(docs[0])}, headers=headers,
-                           json={'section_ids': [ids[0], ids[0], ids[1], ids[2]]})
-    assert response.status_code == 200 and len(response.json()['jobs']) == 3
-    assert generate(world, 1).status_code == 429
 
 
 def test_control_generation_consumes_one_module_allowance(world):

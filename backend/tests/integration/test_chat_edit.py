@@ -28,6 +28,7 @@ from app.models import (
     RefreshToken,
     User,
 )
+from app.retrieval.search import ChunkScope
 from tests.auth_helpers import create_and_login
 
 client = TestClient(app)
@@ -236,7 +237,7 @@ def test_large_scope_sends_only_retrieved_document_chunks(lesson, monkeypatch):
     monkeypatch.setattr(service, "complete_structured", fake)
     assert send(lesson, "shorten slide 1").status_code == 200
     assert seen["course_id"] == ids["course"] and seen["query"] == "shorten slide 1"
-    assert (seen["scope"].document_id, seen["scope"].first_chunk_index, seen["scope"].last_chunk_index) == (document_id, 0, 69)
+    assert seen["scope"] == ChunkScope(document_id)
     assert "A stack is LIFO." in prompts[0] and "Filler chunk" not in prompts[0]
 
 

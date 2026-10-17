@@ -26,7 +26,6 @@ CHUOI_LAN = {
     "chunks": ["course_id", "FROM courses"],
     "documents": ["course_id", "FROM courses"],
     "modules": ["course_id", "FROM courses"],
-    "document_sections": ["document_id", "FROM documents"],
     "evaluations": ["module_id", "FROM modules"],
     "module_components": ["module_id", "FROM modules"],
     "questions": ["component_id", "FROM module_components"],

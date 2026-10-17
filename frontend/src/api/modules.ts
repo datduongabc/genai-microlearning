@@ -7,8 +7,6 @@ export interface ModuleSummary {
   learning_objective: string | null
   bloom_level: string | null
   component_count: number
-  // The textbook section the module was generated from; null for a whole document.
-  section_id: string | null
 }
 
 export interface QuestionInfo {
@@ -96,21 +94,6 @@ export async function generateModule(documentId: string, modelAlias?: string | n
     params: { document_id: documentId },
   })
   return data as { job_id: string; status: string }
-}
-
-export async function generateModulesFromSections(
-  documentId: string,
-  sectionIds: string[],
-  modelAlias?: string | null,
-  outputLanguage: "vi" | "en" = "vi",
-  customInstructions = "",
-) {
-  const { data } = await api.post(
-    '/modules/generate',
-    { section_ids: sectionIds, ...modelBody(modelAlias), output_language: outputLanguage, ...(customInstructions.trim() ? { custom_instructions: customInstructions.trim() } : {}) },
-    { params: { document_id: documentId } },
-  )
-  return data as { jobs: { section_id: string; job_id: string }[] }
 }
 
 export async function getModuleJobStatus(jobId: string) {

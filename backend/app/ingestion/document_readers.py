@@ -202,15 +202,11 @@ def read_html(path: str) -> list[DocumentUnit]:
     for tag in soup(["script", "style", "nav", "header", "footer", "aside"]):
         tag.decompose()
     units = []
-    current_lines, current_heading, current_level = [], None, None
+    current_lines, current_heading = [], None
 
     def flush():
         if current_lines and "\n".join(current_lines).strip():
             locator = {"heading": current_heading}
-            # Only units that open with a heading carry a level: the outline
-            # of a textbook is built from exactly those units.
-            if current_level is not None:
-                locator["heading_level"] = current_level
             units.append(DocumentUnit(text="\n".join(current_lines).strip(), locator=locator))
 
     body = soup.body or soup
@@ -218,7 +214,6 @@ def read_html(path: str) -> list[DocumentUnit]:
         if el.name in HEADING_TAGS:
             flush()
             current_heading = _clean_html_text(el)
-            current_level = int(el.name[1])
             current_lines = [current_heading]
         else:
             text = _clean_html_text(el)
@@ -228,23 +223,15 @@ def read_html(path: str) -> list[DocumentUnit]:
     return units
 
 
-def _docx_heading_level(style_name: str) -> int:
-    # "Heading 2" -> 2; a bare "Heading" style has no number and is a top-level heading.
-    last = style_name.split()[-1]
-    return int(last) if last.isdigit() else 1
-
-
 def read_docx(path: str) -> list[DocumentUnit]:
     doc = DocxDocument(path)
     units: list[DocumentUnit] = []
 
-    current_lines, current_heading, current_level = [], None, None
+    current_lines, current_heading = [], None
 
     def flush_para():
         if current_lines and "\n".join(current_lines).strip():
             locator = {"heading": current_heading}
-            if current_level is not None:
-                locator["heading_level"] = current_level
             units.append(DocumentUnit(text="\n".join(current_lines).strip(), locator=locator))
 
     for para in doc.paragraphs:
@@ -254,7 +241,6 @@ def read_docx(path: str) -> list[DocumentUnit]:
         if para.style.name.startswith("Heading"):
             flush_para()
             current_lines, current_heading = [text], text
-            current_level = _docx_heading_level(para.style.name)
         else:
             current_lines.append(text)
     flush_para()

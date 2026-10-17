@@ -16,7 +16,7 @@ hạn theo ngày: hỏng ở pha sau mà phải nhúng lại từ đầu là m�
     uv run python scripts/benchmark_rerank.py sinh-truy-van
     uv run python scripts/benchmark_rerank.py danh-gia
 
-Thêm --mon để chạy lại một môn mà không đụng vào hai môn kia; kết quả của các môn
+Thêm --mon để chạy lại một môn mà không đụng vào các môn còn lại; kết quả của các môn
 không chạy được giữ nguyên và bảng tổng tính lại từ toàn bộ thứ hạng đã lưu.
 
 Pha sinh truy vấn ghi tệp sau từng câu và chạy lại thì chỉ hỏi những chunk chưa có
@@ -57,7 +57,7 @@ from app.config import settings
 from app.ingestion.chunker import chunk_units, document_title
 from app.ingestion.document_readers import read_document
 from app.ingestion.embeddings import embed_texts
-from app.models.models import Chunk, Course, Document, DocumentKind, DocumentStatus, User
+from app.models.models import Chunk, Course, Document, DocumentStatus, User
 from app.retrieval.search import dense_search, hybrid_search, invalidate_sparse_cache, retrieve
 
 GOC = Path(__file__).resolve().parents[2]
@@ -66,15 +66,9 @@ GOC = Path(__file__).resolve().parents[2]
 GOC_TAI_LIEU = Path(os.environ.get("BENCHMARK_DOCUMENTS") or GOC / "docs" / "documents")
 THU_MUC_KET_QUA = Path(os.environ.get("BENCHMARK_KET_QUA") or GOC / "docs" / "measurements")
 
-# Số tệp đầu tiên theo thứ tự bảng chữ cái của mỗi môn, lấy theo thứ tự cố định để lặp lại
-# được. Ba môn tiếng Anh cắt bớt cho vừa hạn mức nhúng một ngày. Hai môn tiếng Việt thêm sau
-# (nạp riêng bằng --mon) vì bge-reranker-base thiên về tiếng Anh, mà hệ thống dành cho giảng
-# viên Việt Nam: đo trên tiếng Anh thì chưa đủ để quyết giữ hay đổi reranker.
-MON = {
-    "dsa": 5, "operating-system": 7, "advanced-programming": 11,
-    "program-fundamentals": 7, "web-programming": 7,
-    "calculus1": 8, "chemistry1": 9,
-}
+# Chỉ bốn môn của đợt đánh giá; lấy toàn bộ tệp theo thứ tự cố định.
+# Kết quả cũ đo trên tập tệp bị giới hạn mỗi môn nên không so sánh trực tiếp được với lần đo này.
+MON = ("dsa", "operating-system", "program-fundamentals", "web-programming")
 
 TRUY_VAN_MOI_MON = 50
 # Chunk quá ngắn không đủ chi tiết để đặt một câu hỏi chỉ nó trả lời được, nên
@@ -135,8 +129,7 @@ def _tep_ket_qua(ten: str) -> Path:
 
 
 def _cac_tep(mon: str) -> list[Path]:
-    tep = sorted(p for p in (GOC_TAI_LIEU / mon).iterdir() if p.is_file())
-    return tep[: MON[mon]]
+    return sorted(p for p in (GOC_TAI_LIEU / mon).iterdir() if p.is_file())
 
 
 # --- pha 1: nạp tài liệu -----------------------------------------------------
@@ -169,7 +162,7 @@ def nap(db: Session, cac_mon: list[str]) -> None:
             cac_chunk = chunk_units(units, title=document_title(tep.name))
             tai_lieu = Document(
                 id=uuid.uuid4(), course_id=khoa.id, filename=tep.name,
-                status=DocumentStatus.embedded, kind=DocumentKind.lecture,
+                status=DocumentStatus.embedded,
             )
             db.add(tai_lieu)
             db.flush()
@@ -231,7 +224,7 @@ def sinh_truy_van(db: Session, cac_mon: list[str]) -> None:
     cu = json.loads(tep.read_text(encoding="utf-8")) if tep.exists() else []
     # Giữ truy vấn của những môn không chạy lần này, để chạy lại một môn không xoá mất
     # công sinh câu hỏi của các môn kia.
-    truy_van = [t for t in cu if t["course"] not in cac_mon]
+    truy_van = [t for t in cu if t["course"] in MON and t["course"] not in cac_mon]
 
     def ghi() -> None:
         tep.write_text(json.dumps(truy_van, ensure_ascii=False, indent=2), encoding="utf-8")
@@ -350,7 +343,7 @@ def danh_gia(db: Session, cac_mon: list[str]) -> None:
     # đẩy chunk đúng xuống ở những câu nào -- mà đó mới là thứ cần để tìm nguyên nhân.
     tep_chi_tiet = _tep_ket_qua(TEP_THU_HANG)
     cu = json.loads(tep_chi_tiet.read_text(encoding="utf-8")) if tep_chi_tiet.exists() else []
-    chi_tiet = [d for d in cu if d["course"] not in cac_mon]
+    chi_tiet = [d for d in cu if d["course"] in MON and d["course"] not in cac_mon]
 
     for chi_so, t in enumerate(truy_van, start=1):
         course_id = uuid.UUID(t["course_id"])

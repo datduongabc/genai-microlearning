@@ -1,5 +1,4 @@
-"""Module generation from one section of a textbook, with every LLM-backed
-step replaced by a fake that records what the pipeline asked for."""
+"""Document generation, transaction release and tenant scope with offline providers."""
 
 import types
 import uuid
@@ -17,8 +16,6 @@ from app.models import (
     Chunk,
     Course,
     Document,
-    DocumentKind,
-    DocumentSection,
     DocumentStatus,
     Job,
     JobStatus,
@@ -27,13 +24,12 @@ from app.models import (
     User,
 )
 from app.retrieval import search as retrieval
-from app.retrieval.search import ChunkScope
 
 CHUNK_TEXTS = [f"CHUNK-{i} " + "filler text " * 20 for i in range(6)]
 
 
 @pytest.fixture
-def textbook():
+def document_world():
     db = SessionLocal()
     try:
         user = User(
@@ -41,14 +37,13 @@ def textbook():
         )
         db.add(user)
         db.flush()
-        course = Course(name="Section generation", owner_id=user.id)
+        course = Course(name="Document generation", owner_id=user.id)
         db.add(course)
         db.flush()
         doc = Document(
             course_id=course.id,
             filename="book.pdf",
             status=DocumentStatus.embedded,
-            kind=DocumentKind.textbook,
             raw_text="the whole book",
         )
         db.add(doc)
@@ -57,18 +52,14 @@ def textbook():
             Chunk(document_id=doc.id, course_id=course.id, chunk_index=i, content=text)
             for i, text in enumerate(CHUNK_TEXTS)
         )
-        section = DocumentSection(
-            document_id=doc.id, title="Sorting", level=1, position=0, first_chunk_index=2, last_chunk_index=4
-        )
-        db.add(section)
         db.commit()
-        ids = {"user": user.id, "course": course.id, "doc": doc.id, "section": section.id}
+        ids = {"user": user.id, "course": course.id, "doc": doc.id}
     finally:
         db.close()
 
     yield ids
 
-    # Deleting the course cascades to the document, sections, modules and jobs.
+    # Deleting the course cascades to the document, modules and jobs.
     db = SessionLocal()
     try:
         db.query(Course).filter(Course.id == ids["course"]).delete(synchronize_session=False)
@@ -134,66 +125,20 @@ def seen(monkeypatch):
     return record
 
 
-def test_generation_for_a_section_only_uses_that_sections_chunks(textbook, seen):
+
+
+
+
+
+
+def test_generation_from_the_whole_document_stays_in_that_document(document_world, seen):
     db = SessionLocal()
     try:
-        doc = db.get(Document, textbook["doc"])
-        section = db.get(DocumentSection, textbook["section"])
-        scope = ChunkScope(doc.id, 2, 4)
-
-        module = pipeline.run_module_generation(db, doc, section)
-
-        assert module.section_id == section.id
-        assert seen["retrieve_scopes"]
-        assert all(s == scope for s in seen["retrieve_scopes"])
-        assert seen["expand_scopes"] == [scope]
-        assert seen["quiz_scopes"] and all(s == scope for s in seen["quiz_scopes"])
-    finally:
-        db.close()
-
-
-def test_the_planner_reads_only_the_section(textbook, seen):
-    db = SessionLocal()
-    try:
-        pipeline.run_module_generation(
-            db, db.get(Document, textbook["doc"]), db.get(DocumentSection, textbook["section"])
-        )
-
-        planner_input = seen["planner_inputs"][0]
-        assert "CHUNK-2" in planner_input
-        assert "CHUNK-4" in planner_input
-        assert "CHUNK-1" not in planner_input
-        assert "CHUNK-5" not in planner_input
-    finally:
-        db.close()
-
-
-def test_the_planner_result_is_cached_on_the_section_not_the_document(textbook, seen):
-    db = SessionLocal()
-    try:
-        doc = db.get(Document, textbook["doc"])
-        section = db.get(DocumentSection, textbook["section"])
-
-        pipeline.run_module_generation(db, doc, section)
-        pipeline.run_module_generation(db, doc, section)
-
-        assert len(seen["planner_inputs"]) == 1
-        db.refresh(section)
-        db.refresh(doc)
-        assert section.planner_concepts is not None
-        assert doc.planner_concepts is None
-    finally:
-        db.close()
-
-
-def test_generation_from_the_whole_document_stays_in_that_document(textbook, seen):
-    db = SessionLocal()
-    try:
-        doc = db.get(Document, textbook["doc"])
+        doc = db.get(Document, document_world["doc"])
 
         module = pipeline.run_module_generation(db, doc)
+        assert module.document_id == doc.id
 
-        assert module.section_id is None
         assert seen["retrieve_scopes"]
         assert all(s is not None and s.document_id == doc.id for s in seen["retrieve_scopes"])
         assert all(s is not None and s.document_id == doc.id for s in seen["expand_scopes"])
@@ -205,7 +150,7 @@ def test_generation_from_the_whole_document_stays_in_that_document(textbook, see
         db.close()
 
 
-def test_pdf_and_mp3_in_one_course_keep_generation_citations_in_their_document(textbook, seen, monkeypatch):
+def test_pdf_and_mp3_in_one_course_keep_generation_citations_in_their_document(document_world, seen, monkeypatch):
     # Reproduced live: a PDF module cited the MP3's chunk, which its resolver could not find.
     # Keep retrieval, parent expansion and resolution real; only external model calls are faked.
     monkeypatch.setattr(pipeline, "retrieve", retrieval.retrieve)
@@ -227,7 +172,7 @@ def test_pdf_and_mp3_in_one_course_keep_generation_citations_in_their_document(t
     monkeypatch.setattr(pipeline, "generate_quiz_question", question)
     db = SessionLocal()
     try:
-        pdf = db.get(Document, textbook["doc"])
+        pdf = db.get(Document, document_world["doc"])
         mp3 = Document(course_id=pdf.course_id, filename="lecture.mp3", raw_text="Sorting",
                        status=DocumentStatus.embedded)
         db.add(mp3)
@@ -248,19 +193,20 @@ def test_pdf_and_mp3_in_one_course_keep_generation_citations_in_their_document(t
             assert citations and all(c.resolution == "resolved" for c in citations)
             assert question_sources and all(c.document_id == doc.id for c in question_sources)
     finally:
-        retrieval.invalidate_sparse_cache(textbook["course"])
+        retrieval.invalidate_sparse_cache(document_world["course"])
         db.close()
 
 
-def test_the_job_step_generates_for_the_section_the_job_names(textbook, seen):
+
+
+def test_the_job_step_without_a_section_generates_from_the_whole_document(document_world, seen):
     db = SessionLocal()
     try:
         job = Job(
             job_type=JobType.module_generation,
             step="generate",
             status=JobStatus.running,
-            document_id=textbook["doc"],
-            section_id=textbook["section"],
+            document_id=document_world["doc"],
         )
         db.add(job)
         db.commit()
@@ -271,37 +217,13 @@ def test_the_job_step_generates_for_the_section_the_job_names(textbook, seen):
         db.expire_all()
         finished = db.get(Job, job_id)
         assert finished.status == JobStatus.done
-        assert db.get(Module, finished.module_id).section_id == textbook["section"]
+        assert all(s is not None and s.document_id == document_world["doc"] for s in seen["retrieve_scopes"])
     finally:
         db.close()
 
 
-def test_the_job_step_without_a_section_generates_from_the_whole_document(textbook, seen):
-    db = SessionLocal()
-    try:
-        job = Job(
-            job_type=JobType.module_generation,
-            step="generate",
-            status=JobStatus.running,
-            document_id=textbook["doc"],
-        )
-        db.add(job)
-        db.commit()
-        job_id = job.id
-
-        pipeline.run_module_generation_step(job)
-
-        db.expire_all()
-        finished = db.get(Job, job_id)
-        assert finished.status == JobStatus.done
-        assert db.get(Module, finished.module_id).section_id is None
-        assert all(s is not None and s.document_id == textbook["doc"] for s in seen["retrieve_scopes"])
-    finally:
-        db.close()
-
-
-@pytest.mark.parametrize("mode", ["whole", "section", "cached", "control"])
-def test_every_generation_provider_call_releases_worker_transactions(textbook, monkeypatch, mode):
+@pytest.mark.parametrize("mode", ["whole" , "cached", "control"])
+def test_every_generation_provider_call_releases_worker_transactions(document_world, monkeypatch, mode):
     from sqlalchemy import select, text
 
     from app.generation import content, example, objective, planner, quiz_graph, relevance, slides
@@ -321,7 +243,7 @@ def test_every_generation_provider_call_releases_worker_transactions(textbook, m
                 "AND xact_start IS NOT NULL"
             )).all(), kind
             probe.execute(text("SET LOCAL lock_timeout = '500ms'"))
-            probe.execute(select(Document).where(Document.id == textbook["doc"]).with_for_update())
+            probe.execute(select(Document).where(Document.id == document_world["doc"]).with_for_update())
         calls.append(kind)
 
     def fake_llm(prompt, response_model, **kwargs):
@@ -359,20 +281,20 @@ def test_every_generation_provider_call_releases_worker_transactions(textbook, m
     with SessionLocal() as db:
         payload = {}
         if mode in ("cached", "control"):
-            db.get(Document, textbook["doc"]).planner_concepts = [
+            db.get(Document, document_world["doc"]).planner_concepts = [
                 {**concept.model_dump(), "output_language": "vi"}
                 for concept in OUTPUTS[PlannerOutput].concepts
             ]
         if mode == "control":
             lo = OUTPUTS[LearningObjective]
-            paired = Module(document_id=textbook["doc"], course_id=textbook["course"],
+            paired = Module(document_id=document_world["doc"], course_id=document_world["course"],
                             title="Khái niệm", learning_objective=lo.objective_text,
                             bloom_level=lo.bloom_level, sub_objectives=lo.sub_objectives)
             db.add(paired)
             db.flush()
             payload = {"use_retrieval": False, "paired_module_id": str(paired.id)}
         job = Job(job_type=JobType.module_generation, step="generate", status=JobStatus.running,
-                  document_id=textbook["doc"], section_id=textbook["section"] if mode == "section" else None,
+                  document_id=document_world["doc"],
                   payload=payload)
         db.add(job)
         db.commit()
@@ -389,7 +311,7 @@ def test_every_generation_provider_call_releases_worker_transactions(textbook, m
             assert ("PlannerOutput" in calls) == (mode != "cached")
 
 
-def test_provider_failure_leaves_no_partial_module_and_keeps_retry_policy(textbook, seen, monkeypatch):
+def test_provider_failure_leaves_no_partial_module_and_keeps_retry_policy(document_world, seen, monkeypatch):
     from app.jobs.queue import handle_job_error
 
     def unavailable(*args, **kwargs):
@@ -398,7 +320,7 @@ def test_provider_failure_leaves_no_partial_module_and_keeps_retry_policy(textbo
     monkeypatch.setattr(pipeline, "generate_slides", unavailable)
     with SessionLocal() as db:
         job = Job(job_type=JobType.module_generation, step="generate", status=JobStatus.running,
-                  document_id=textbook["doc"])
+                  document_id=document_world["doc"])
         db.add(job)
         db.commit()
         job_id = job.id
@@ -409,4 +331,4 @@ def test_provider_failure_leaves_no_partial_module_and_keeps_retry_policy(textbo
         assert job.status == JobStatus.queued
         assert job.attempts == 1
         assert job.module_id is None
-        assert db.query(Module).filter(Module.document_id == textbook["doc"]).count() == 0
+        assert db.query(Module).filter(Module.document_id == document_world["doc"]).count() == 0

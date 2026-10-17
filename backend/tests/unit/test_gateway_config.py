@@ -344,3 +344,42 @@ def test_small_chain_never_reaches_paid_groq_when_both_gemini_models_have_no_quo
         ))
     assert attempts and all(model.startswith("gemini/") for model in attempts)
     router.reset()
+
+
+PAID_ALIASES = {"claude-fast", "claude-pro", "openai-fast", "openai-pro", "groq-pro"}
+
+
+def test_evaluation_paid_aliases_are_current_and_never_fallback_targets(gateway):
+    expected = {
+        "claude-fast": "anthropic/claude-haiku-5-5",
+        "claude-pro": "anthropic/claude-sonnet-5-5",
+        "openai-fast": "openai/gpt-6-luna",
+        "openai-pro": "openai/gpt-6.1-sol",
+    }
+    for alias, model in expected.items():
+        deployments = [d for d in gateway["model_list"] if d["model_name"] == alias]
+        assert len(deployments) == 1
+        assert deployments[0]["litellm_params"]["model"] == model
+    for setting in ("fallbacks", "context_window_fallbacks"):
+        chains = {alias: backups for chain in gateway["router_settings"][setting] for alias, backups in chain.items()}
+        for alias in expected:
+            assert chains[alias] == ["gemini-fast", "gemini-flash"]
+        assert not PAID_ALIASES & {backup for backups in chains.values() for backup in backups}
+
+
+def test_paid_alias_falls_back_to_free_gemini_and_experiment_flag_refuses_it(gateway, monkeypatch):
+    import asyncio
+
+    import litellm
+
+    for name in (*PROVIDER_KEY_VARIABLES, "LLM_GATEWAY_KEY", "EMBEDDER_API_KEY"):
+        monkeypatch.setenv(name, "test-key")
+    router = litellm.Router(model_list=gateway["model_list"], **gateway["router_settings"])
+    for flag in ("mock_testing_fallbacks", "mock_testing_context_fallbacks"):
+        call = {"model": "claude-fast", "messages": [{"role": "user", "content": "hello"}],
+                flag: True, "mock_response": "free reply", "num_retries": 0}
+        response = asyncio.run(router.acompletion(**call))
+        assert response.model.startswith("gemini")
+        with pytest.raises((litellm.InternalServerError, litellm.ContextWindowExceededError)):
+            asyncio.run(router.acompletion(**call, disable_fallbacks=True))
+    router.reset()

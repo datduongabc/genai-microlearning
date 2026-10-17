@@ -22,8 +22,8 @@ def _tokenize(text: str) -> list[str]:
 
 @dataclass(frozen=True)
 class ChunkScope:
-    """Limits retrieval to one contiguous run of chunks of one document, e.g.
-    the chapter a teacher picked from a textbook. Frozen so it can key a cache."""
+    """Limits retrieval to a document and an optional contiguous chunk range.
+    Frozen so it can key a cache."""
 
     document_id: UUID
     first_chunk_index: int = 0
@@ -60,8 +60,8 @@ def dense_search(
 # lại từ đầu mỗi lần dù corpus không đổi. Invalidate tường minh khi có chunk
 # mới (invalidate_sparse_cache(), gọi từ documents.py sau khi upload) thay vì
 # TTL đoán mò -- tránh phục vụ index cũ sau khi tài liệu mới được thêm.
-# Khóa gồm cả phạm vi: một chương có corpus (và thống kê IDF) riêng, không
-# được dùng chung index với cả course.
+# Khóa gồm cả phạm vi: một tài liệu hay một khoảng chunk có corpus (và thống
+# kê IDF) riêng, không được dùng chung index với cả course.
 # Chỉ giữ id chunk, không giữ đối tượng ORM: cache sống lâu hơn Session đã
 # nạp chúng, và sau commit/close mọi thuộc tính của chúng là rỗng hoặc detached
 # (DetachedInstanceError ở request thứ hai). Chunk thắng được nạp lại bằng id
@@ -235,8 +235,7 @@ def expand_with_parent_context(
         lo_idx = max(0, child.chunk_index - window)
         hi_idx = child.chunk_index + window
         if scope is not None:
-            # The window must not reach into the neighbouring section, or the
-            # first and last chunk of a section would pull its text in.
+            # Keep the parent window within the caller's requested chunk range.
             lo_idx = max(lo_idx, scope.first_chunk_index)
             hi_idx = min(hi_idx, scope.last_chunk_index)
         for sibling in chunks_by_doc.get(child.document_id, []):
