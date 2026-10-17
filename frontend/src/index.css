@@ -95,7 +95,7 @@ body { background: var(--bg-canvas); font-size:16px; line-height:24px; }
 .auth-footer { text-align:center; color:var(--text-secondary); }
 .auth-footer a { color:var(--accent-default); font-weight:600; text-decoration:underline; text-underline-offset:2px; }
 @media(max-width:1000px) { .auth-brand { width:40%; padding:32px; } .auth-area { padding:32px; } }
-@media(max-width:700px) { .auth-brand { display:none; } .auth-area { padding:24px; } }
+@media(max-width:700px) { .sidebar { position:static; width:auto; } .shell-main { margin-left:0; padding:24px 16px 48px; } .account-menu { bottom:auto; top:calc(100% + 8px); } .auth-brand { display:none; } .auth-area { padding:24px; } }
 
 
 .account-menu :focus-visible { outline-color:var(--border-focus); }

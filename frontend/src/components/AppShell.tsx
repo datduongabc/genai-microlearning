@@ -1,9 +1,9 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { Link, NavLink } from "react-router-dom";
 import { homeFor, useAuth } from "../auth/useAuth";
 import { apiErrorMessage, getMoodleAccount, unlinkMoodleAccount, MOODLE_ACCOUNT_CHANGED_EVENT, type MoodleAccount } from "../api";
 import { Brand } from "./AuthLayout";
-import { MoodleAccountSection } from "./MoodleAccountSection";
+import { MoodleAccountSection, type MoodleAccountState } from "./MoodleAccountSection";
 
 function NavIcon({ kind }: { kind: "book" | "rating" | "admin" }) {
   return <svg className="shell-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -31,6 +31,12 @@ export function AppShell({ title, children }: { title: string; children: ReactNo
     return () => { cancelled = true; document.removeEventListener("pointerdown", outside); };
   }, [open, user?.is_admin]);
 
+  const linked = useCallback((status: MoodleAccountState) => {
+    if (status !== "linked") return;
+    setAccount(null);
+    getMoodleAccount().then(setAccount, () => setError("Không kiểm tra được tài khoản Moodle."));
+  }, []);
+
   function close() { setOpen(false); trigger.current?.focus(); }
   async function unlink() {
     if (!window.confirm("Hủy liên kết Moodle? Bạn sẽ không xuất bản lên Moodle được cho đến khi liên kết lại.")) return;
@@ -54,7 +60,7 @@ export function AppShell({ title, children }: { title: string; children: ReactNo
       </nav>
       <div className="account" ref={container} onKeyDown={event => {
         if (event.key === "Escape") { event.preventDefault(); close(); }
-        if (open && ["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) {
+        if (open && !(event.target as HTMLElement).matches("input, textarea, select") && ["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) {
           const items = Array.from(panel.current?.querySelectorAll<HTMLButtonElement>('button:not(:disabled)') ?? []);
           if (!items.length) return;
           event.preventDefault();
@@ -67,7 +73,7 @@ export function AppShell({ title, children }: { title: string; children: ReactNo
           {!user?.is_admin && (account?.status === "linked" ? <>
             <div className="account-info">Moodle đã liên kết<div className="text-gray-600">{account.email}</div></div>
             <button className="danger" disabled={busy} onClick={() => void unlink()}>{busy ? "Đang hủy liên kết…" : "Hủy liên kết Moodle…"}</button>
-          </> : account && <MoodleAccountSection />)}
+          </> : account && <MoodleAccountSection onStatus={linked} />)}
           {error && <p role="alert" className="account-info text-red-700">{error}</p>}
           <button onClick={logout} data-leaves-page>Đăng xuất</button>
         </div>}

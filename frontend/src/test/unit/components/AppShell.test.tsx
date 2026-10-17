@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -8,7 +8,7 @@ import * as api from '../../../api'
 
 vi.mock('../../../api', async importOriginal => ({
   ...await importOriginal<typeof import('../../../api')>(),
-  getMoodleAccount: vi.fn(), unlinkMoodleAccount: vi.fn(),
+  getMoodleAccount: vi.fn(), unlinkMoodleAccount: vi.fn(), requestMoodleLink: vi.fn(),
 }))
 const logout = vi.fn()
 beforeEach(() => {
@@ -92,5 +92,30 @@ describe('AppShell', () => {
     await userEvent.click(await screen.findByRole('button', { name: 'Hủy liên kết Moodle…' }))
     expect(await screen.findByRole('alert')).toHaveTextContent('Không hủy được liên kết Moodle.')
     expect(screen.getByText('moodle@school.edu')).toBeInTheDocument()
+  })
+  it('keeps native keyboard editing in the Moodle email field', async () => {
+    vi.mocked(api.getMoodleAccount).mockResolvedValue({ status: 'not_linked', email: '' })
+    renderShell()
+    await userEvent.click(screen.getByRole('button', { name: /Giảng viên/ }))
+    const input = await screen.findByLabelText('Email Moodle')
+    await userEvent.type(input, 'gv@truong.edu.vn{Home}')
+    expect(input).toHaveFocus()
+    for (const key of ['Home', 'End', 'ArrowUp', 'ArrowDown']) expect(fireEvent.keyDown(input, { key })).toBe(true)
+    expect(input).toHaveFocus()
+  })
+  it('hands a pending account that becomes linked to the menu unlink action', async () => {
+    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(true)
+    vi.mocked(api.getMoodleAccount).mockResolvedValue({ status: 'pending', email: 'moodle@school.edu' })
+    renderShell()
+    await userEvent.click(screen.getByRole('button', { name: /Giảng viên/ }))
+    expect(await screen.findByText('Chờ xác nhận trong Moodle')).toBeInTheDocument()
+    vi.mocked(api.getMoodleAccount).mockResolvedValue({ status: 'linked', email: 'moodle@school.edu' })
+    act(() => { window.dispatchEvent(new Event(api.MOODLE_ACCOUNT_CHANGED_EVENT)) })
+    const unlink = await screen.findByRole('button', { name: 'Hủy liên kết Moodle…' })
+    expect(screen.queryByRole('button', { name: 'Hủy liên kết Moodle' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('region', { name: 'Tài khoản Moodle' })).not.toBeInTheDocument()
+    await userEvent.click(unlink)
+    expect(confirm).toHaveBeenCalledWith('Hủy liên kết Moodle? Bạn sẽ không xuất bản lên Moodle được cho đến khi liên kết lại.')
+    await waitFor(() => expect(api.unlinkMoodleAccount).toHaveBeenCalledOnce())
   })
 })
