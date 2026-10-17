@@ -114,9 +114,11 @@ thêm đơn vị được nữa (409). Nghiên cứu `closed` từ chối lưu v
 với 409.
 
 Trang **Chấm nghiên cứu** (`/studies`) liệt kê các nghiên cứu được mời cùng
-tiến độ "Đã chấm n/tổng". Trang chấm của một đơn vị hiện mã ẩn danh, tài liệu
-nguồn, chủ đề, mục tiêu học tập, nội dung, slide, ví dụ, quiz cùng lời giải
-thích và bài luyện tập, rồi biểu mẫu chín tiêu chí của rubric. Nội dung đang
+tiến độ "Đã chấm n/tổng". Trang chấm của một đơn vị hiện mã ẩn danh và chủ đề
+ở đầu trang; gói chấm chia thành các tab, mở sẵn tab đoạn nguồn: đoạn nguồn,
+mục tiêu học tập, nội dung, slide, ví dụ, bài luyện tập, quiz và giải thích
+đáp án, mỗi lần chỉ hiện một tab. Mức Bloom không hiện cho người chấm. Bên cạnh
+là biểu mẫu chín tiêu chí của rubric. Nội dung đang
 nhập không được lưu nháp: khi biểu mẫu có thay đổi chưa lưu, chuyển sang gói
 khác, bấm một liên kết, đăng xuất, tải lại hoặc đóng trang đều hỏi xác nhận
 trước. Nút Back/Forward của trình duyệt không hỏi xác nhận.
