@@ -1,22 +1,29 @@
 import { useEffect, useState } from "react";
-import { useFieldArray, useForm } from "react-hook-form";
+import { Controller, useFieldArray, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ratingSchema, emptyRating, rubric, type Rating } from "../lib/ratingSchema";
 import { apiErrorMessage } from "../api/client";
 
 const UNSAVED_PROMPT = "Đánh giá chưa lưu sẽ bị mất. Bạn vẫn muốn rời khỏi gói này?";
+const BLOOM_LABELS: Record<string, string> = {
+  remember: "Nhớ", understand: "Hiểu", apply: "Áp dụng",
+  analyze: "Phân tích", evaluate: "Đánh giá", create: "Sáng tạo",
+};
 
 export function RatingForm({
   code,
+  bloomLevel,
   rating,
   onSave,
 }: {
   code: string;
+  bloomLevel: string;
   rating: Rating | null;
   onSave: (values: Rating) => Promise<void>;
 }) {
   const [error, setError] = useState("");
   const [saved, setSaved] = useState(false);
+  const [opened, setOpened] = useState<ReadonlySet<string>>(() => new Set([rubric[0].key]));
   const {
     register,
     control,
@@ -27,6 +34,7 @@ export function RatingForm({
     resolver: zodResolver(ratingSchema),
     defaultValues: rating ?? emptyRating(code),
   });
+  const values = useWatch({ control });
   const { fields, append, remove } = useFieldArray({ control, name: "hallucination_findings" });
   // Unsaved input is not kept as a draft, so leaving it (another item, another page, logging
   // out, a reload or closing the tab) asks first. Links and the logout button are caught here
@@ -62,34 +70,39 @@ export function RatingForm({
         } catch (e) {
           setError(apiErrorMessage(e, "Không lưu được đánh giá."));
         }
-      })}
-      className="mt-8 space-y-6"
+      }, (invalid) => setOpened((prev) => new Set([...prev, ...rubric.filter((c) => invalid[c.key]).map((c) => c.key)])))}
+      className="rating-form ui-card"
     >
-      <h2 className="text-xl font-semibold">Rubric đánh giá</h2>
-      <p className="text-sm text-gray-600">
-        Chấm độc lập, không đoán nguồn nội dung. Điểm 1: không đạt; 2: phần lớn chưa đạt; 3: đạt một
-        phần; 4: đạt với lỗi nhỏ; 5: đạt hoàn toàn. Mỗi điểm cần nhận xét.
-      </p>
+      <header className="rubric-header"><h2>Rubric</h2>
+        <details className="scale-help"><summary>Thang điểm</summary><p>1 không đạt · 2 phần lớn chưa đạt · 3 đạt một phần · 4 đạt với lỗi nhỏ · 5 đạt hoàn toàn. Đọc nguồn trước, chấm độc lập từng gói. Mỗi điểm cần nhận xét.</p></details>
+      </header>
       {rubric.map((criterion, i) => (
-        <fieldset key={criterion.key} className="rounded border border-gray-200 bg-white p-4">
-          <legend className="px-1 font-semibold">
+        <details key={criterion.key} className="criterion" open={opened.has(criterion.key)}
+          onToggle={(e) => {
+            const open = e.currentTarget.open;
+            setOpened((prev) => {
+              if (prev.has(criterion.key) === open) return prev;
+              const next = new Set(prev);
+              if (open) next.add(criterion.key); else next.delete(criterion.key);
+              return next;
+            });
+          }}>
+          <summary><span className="pill-score">{values[criterion.key]?.score || "–"}</span>
             {i + 1}. {criterion.label}
-          </legend>
-          <p className="mb-3 text-sm text-gray-600">{criterion.guide}</p>
-          <label className="block">
-            Điểm {criterion.label}
-            <select
-              {...register(`${criterion.key}.score`, { valueAsNumber: true })}
-              className="ml-3 rounded border p-2"
-            >
-              <option value="">Chọn điểm</option>
-              {[1, 2, 3, 4, 5].map((n) => (
-                <option key={n} value={n}>
-                  {n}
-                </option>
-              ))}
-            </select>
-          </label>
+          </summary>
+          <fieldset><legend className="sr-only">{criterion.label}</legend>
+          {/* bloom_fidelity is judged against the declared level, so it is shown here only, not in the packet. */}
+          {criterion.key === "bloom_fidelity" && <p className="small muted">Mức Bloom đặt ra: {BLOOM_LABELS[bloomLevel] ?? bloomLevel}</p>}
+          <details className="rubric-guide"><summary>{criterion.question}</summary><p>{criterion.guide}</p></details>
+          <Controller control={control} name={`${criterion.key}.score`} render={({ field }) => (
+            <div className="scores" role="radiogroup" aria-label={`Điểm ${criterion.label}`}>
+              {[1, 2, 3, 4, 5].map((n) => <label key={n}>
+                <input type="radio" name={field.name} value={n} checked={field.value === n}
+                  ref={n === 1 ? field.ref : undefined} onBlur={field.onBlur} onChange={() => field.onChange(n)} />
+                <span>{n}</span>
+              </label>)}
+            </div>
+          )} />
           {errors[criterion.key]?.score && (
             <p role="alert" className="text-red-700">
               Vui lòng chọn điểm nguyên từ 1 đến 5.
@@ -108,13 +121,14 @@ export function RatingForm({
               {errors[criterion.key]?.justification?.message}
             </p>
           )}
-        </fieldset>
+          </fieldset>
+        </details>
       ))}
-      <section className="space-y-3">
-        <h3 className="font-semibold">Danh sách claim không có căn cứ</h3>
-        <p className="text-sm">
-          Không tìm thấy claim nào: để danh sách rỗng và chấm Hallucination = 5.
-        </p>
+      <section className="criterion space-y-3">
+        <div className="claims-header"><h3 className="font-semibold">Khẳng định không có căn cứ ({fields.length})</h3>
+          <button type="button" onClick={() => append({ claim: "", field: "content", reason: "" })}
+            className="link-button" aria-label="Thêm khẳng định không có căn cứ">+ Thêm</button>
+        </div>
         {fields.map((field, i) => (
           <fieldset key={field.id} className="space-y-2 rounded border p-3">
             <legend>Phát hiện {i + 1}</legend>
@@ -153,15 +167,9 @@ export function RatingForm({
             </button>
           </fieldset>
         ))}
-        <button
-          type="button"
-          onClick={() => append({ claim: "", field: "content", reason: "" })}
-          className="rounded border px-3 py-2"
-        >
-          Thêm claim không có căn cứ
-        </button>
       </section>
-      <label className="block font-semibold">
+      <details className="criterion rating-notes"><summary>Ghi chú chung (tùy chọn)</summary>
+      <label className="mt-3 block font-semibold">
         Ghi chú tổng quan
         <textarea
           {...register("overall_notes")}
@@ -169,17 +177,20 @@ export function RatingForm({
           rows={3}
         />
       </label>
+      </details>
       {error && (
         <p role="alert" className="text-red-700">
           {error}
         </p>
       )}
+      <footer className="rating-footer"><span>Còn {rubric.filter((c) => !values[c.key]?.score || !values[c.key]?.justification?.trim()).length} tiêu chí</span>
       <button
         disabled={isSubmitting}
-        className="rounded bg-navy px-5 py-3 text-white disabled:opacity-50"
+        className="ui-button primary"
       >
         Lưu đánh giá
       </button>
+      </footer>
       {saved && <p role="status">Đã lưu đánh giá.</p>}
     </form>
   );

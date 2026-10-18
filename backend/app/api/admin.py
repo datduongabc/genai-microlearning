@@ -3,7 +3,7 @@ import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
-from sqlalchemy import select, text
+from sqlalchemy import func, select, text
 from sqlalchemy.orm import Session
 
 from app.api.deps import require_admin
@@ -156,6 +156,17 @@ def list_failed_jobs(job_type: JobType | None = None, db: Session = Depends(get_
         params["job_type"] = job_type.value
     rows = db.execute(text(query + " ORDER BY created_at DESC LIMIT :limit"), params).mappings().all()
     return [dict(row) for row in rows]
+
+
+@router.get("/counts")
+def admin_counts(db: Session = Depends(get_db)):
+    """Totals for the admin tab and filter labels, counted in full whatever filter or cap the
+    lists use."""
+    users, inactive = db.execute(
+        select(func.count(), func.count().filter(User.is_active.is_(False))).select_from(User)
+    ).one()
+    failed = db.execute(text("SELECT job_type, count(*) FROM admin_failed_jobs GROUP BY job_type")).all()
+    return {"users": users, "inactive_users": inactive, "failed_jobs": dict(failed)}
 
 
 @router.post("/jobs/retry")

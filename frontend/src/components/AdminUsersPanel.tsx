@@ -8,25 +8,19 @@ import {
   resetUserPassword,
   setUserActive,
   unlinkUserMoodleAccount,
+  type AdminCounts,
   type AdminUser,
-  type MoodleStatus,
 } from "../api";
 import {
   createUserSchema,
   resetPasswordSchema,
   type CreateUserFormValues,
 } from "../lib/authSchemas";
-
-const MOODLE_LABEL: Record<MoodleStatus, { text: string; color: string }> = {
-  linked: { text: "Đã liên kết Moodle", color: "text-green-700" },
-  not_linked: { text: "Chưa liên kết Moodle", color: "text-amber-700" },
-};
-
-const inputClass =
-  "rounded-[3px] border border-gray-300 px-3 py-1.5 text-sm outline-none focus:border-terracotta";
+import { initials } from "../lib/initials";
 
 // Account activation preserves existing learning data and Moodle links.
-export function AdminUsersPanel() {
+export function AdminUsersPanel({ counts, onChange }: { counts: AdminCounts | null; onChange: () => void }) {
+  const [creating, setCreating] = useState(false);
   const [filter, setFilter] = useState("active");
   const [users, setUsers] = useState<AdminUser[] | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -34,10 +28,24 @@ export function AdminUsersPanel() {
   const [error, setError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [resetting, setResetting] = useState<string | null>(null);
+  const [menu, setMenu] = useState<string | null>(null);
 
   // Bumped to load the list again (after a change), so the effect below is the only loader.
   const [reloads, setReloads] = useState(0);
-  const reload = useCallback(() => setReloads((count) => count + 1), []);
+  const reload = useCallback(() => {
+    setReloads((count) => count + 1);
+    onChange();
+  }, [onChange]);
+
+  // One row menu at a time; a press anywhere outside the open one closes it.
+  useEffect(() => {
+    if (!menu) return;
+    const close = (event: PointerEvent) => {
+      if (!(event.target instanceof Element && event.target.closest(".user-actions"))) setMenu(null);
+    };
+    document.addEventListener("pointerdown", close);
+    return () => document.removeEventListener("pointerdown", close);
+  }, [menu]);
 
   // Sets state only from promise callbacks, and drops an answer that arrives after a newer request.
   useEffect(() => {
@@ -90,22 +98,23 @@ export function AdminUsersPanel() {
   }
 
   return (
-    <div className="flex flex-col gap-8">
-      <CreateUserForm
+    <div className="admin-users">
+      <div className="admin-toolbar">
+        <div role="group" aria-label="Trạng thái tài khoản" className="segmented">
+          <button aria-pressed={filter === "active"} onClick={() => setFilter("active")}>Đang hoạt động</button>
+          <button aria-pressed={filter === "inactive"} onClick={() => setFilter("inactive")}>Đã vô hiệu hóa{counts && ` (${counts.inactive_users})`}</button>
+        </div>
+        <button className="ui-button primary" aria-expanded={creating} onClick={() => setCreating(!creating)}>{creating ? "Đóng" : "+ Tạo tài khoản"}</button>
+      </div>
+      {creating && <CreateUserForm
         onCreated={(created) => {
+          setCreating(false);
           setError(null);
           setNotice(`Đã tạo tài khoản cho ${created.email}.`);
           reload();
         }}
-      />
+      />}
 
-      <label className="text-sm">
-        Trạng thái tài khoản
-        <select value={filter} onChange={(event) => setFilter(event.target.value)} className={`${inputClass} ml-2`}>
-          <option value="active">Đang hoạt động</option>
-          <option value="inactive">Đã vô hiệu hóa</option>
-        </select>
-      </label>
       {notice && <p className="text-sm text-green-800">{notice}</p>}
       {error && <p className="text-sm text-red-700">{error}</p>}
       {loadError && <p className="text-sm text-red-700">{loadError}</p>}
@@ -113,53 +122,38 @@ export function AdminUsersPanel() {
       {users === null ? (
         !loadError && <p className="text-sm text-gray-500">Đang tải...</p>
       ) : (
-        <ul className="flex flex-col divide-y divide-gray-200">
+        <ul className="account-table ui-card">
+          <li className="account-row table-heading"><span>Người dùng</span><span>Moodle</span><span /></li>
           {users.map((u) => (
-            <li key={u.id} className="py-4">
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <div className="font-medium">
-                    {u.name}
-                    {u.is_admin && (
-                      <span className="ml-2 rounded-[3px] bg-navy px-1.5 py-0.5 text-[11px] font-semibold text-[#f3f1ea]">
-                        Admin
-                      </span>
-                    )}
-                  </div>
-                  <div className="break-all text-sm text-gray-500">{u.email}</div>
-                  <div className="mt-1 flex flex-wrap gap-x-4 gap-y-0.5 text-xs font-medium">
-                    <span className={u.is_active ? "text-green-700" : "text-red-700"}>
-                      {u.is_active ? "Đang hoạt động" : "Đã vô hiệu hóa"}
-                    </span>
-                    {u.moodle_status && (
-                      <span className={MOODLE_LABEL[u.moodle_status].color}>
-                        {MOODLE_LABEL[u.moodle_status].text}
-                      </span>
-                    )}
-                  </div>
+            <li key={u.id}>
+              <div className="account-row">
+                <div className="flex min-w-0 items-center gap-3">
+                  <span className={`avatar${u.is_admin ? " admin" : ""}`} aria-hidden="true">{initials(u.name)}</span>
+                  <div className="min-w-0"><div className="flex flex-wrap items-center gap-2 font-semibold">{u.name}
+                    {u.is_admin && <span className="admin-badge">Admin</span>}
+                  </div><div className="small muted break-all">{u.email}</div></div>
                 </div>
-                <div className="flex shrink-0 flex-wrap items-center gap-4 text-sm">
-                  {u.moodle_status === "linked" && (
-                    <button disabled={busyId === u.id} onClick={() => void handleUnlinkMoodle(u)} className="text-red-700 hover:underline disabled:opacity-50">
-                      Hủy liên kết Moodle
+                <span className={`small ${u.moodle_status === "linked" ? "success-text" : "muted"}`}>
+                  {u.moodle_status === null ? "—" : u.moodle_status === "linked" ? "↗ Đã liên kết" : "Chưa liên kết"}
+                </span>
+                <div className="user-actions" onKeyDown={(e) => {
+                  if (e.key !== "Escape" || menu !== u.id) return;
+                  setMenu(null);
+                  e.currentTarget.querySelector("button")?.focus();
+                }}>
+                  <button aria-label={`Thao tác ${u.email}`} aria-expanded={menu === u.id}
+                    onClick={() => setMenu(menu === u.id ? null : u.id)}>⋯</button>
+                  {menu === u.id && <div className="user-actions-menu" onClick={(e) => {
+                    setMenu(null);
+                    e.currentTarget.parentElement?.querySelector("button")?.focus();
+                  }}>
+                    <button onClick={() => setResetting(resetting === u.id ? null : u.id)}>Đặt lại mật khẩu</button>
+                    {u.moodle_status === "linked" && <button disabled={busyId === u.id} onClick={() => void handleUnlinkMoodle(u)}>Hủy liên kết Moodle</button>}
+                    <button disabled={busyId === u.id || u.is_admin} onClick={() => void handleToggleActive(u)}
+                      title={u.is_admin ? "Không thể vô hiệu hóa tài khoản admin" : undefined} className="danger-text">
+                      {u.is_active ? "Vô hiệu hóa" : "Kích hoạt lại"}
                     </button>
-                  )}
-                  <button
-                    onClick={() => setResetting(resetting === u.id ? null : u.id)}
-                    className="font-semibold text-terracotta hover:underline"
-                  >
-                    Đặt lại mật khẩu
-                  </button>
-                  <button
-                    onClick={() => handleToggleActive(u)}
-                    disabled={busyId === u.id || u.is_admin}
-                    title={u.is_admin ? "Không thể vô hiệu hóa tài khoản admin" : undefined}
-                    className={`hover:underline disabled:cursor-not-allowed disabled:opacity-50 ${
-                      u.is_active ? "text-red-700" : "font-semibold text-green-700"
-                    }`}
-                  >
-                    {u.is_active ? "Vô hiệu hóa" : "Kích hoạt lại"}
-                  </button>
+                  </div>}
                 </div>
               </div>
               {resetting === u.id && (
@@ -205,29 +199,26 @@ function CreateUserForm({ onCreated }: { onCreated: (user: AdminUser) => void })
     <form
       onSubmit={handleSubmit(onSubmit)}
       noValidate
-      className="flex flex-col gap-3 rounded-[3px] border border-gray-200 p-4"
+      className="ui-card flex flex-col gap-4 p-6"
     >
-      <h2 className="text-sm font-semibold">Tạo tài khoản người dùng</h2>
+      <h2 className="text-h2 font-semibold">Tạo tài khoản người dùng</h2>
       <div className="grid gap-3 sm:grid-cols-3">
         <label className="flex flex-col gap-1 text-xs text-gray-500">
           Họ và tên
-          <input type="text" autoComplete="off" className={inputClass} {...register("name")} />
+          <input type="text" autoComplete="off" className="auth-input" {...register("name")} />
           {errors.name && <span className="text-red-600">{errors.name.message}</span>}
         </label>
         <label className="flex flex-col gap-1 text-xs text-gray-500">
           Email
-          <input type="email" autoComplete="off" className={inputClass} {...register("email")} />
+          <input type="email" autoComplete="off" className="auth-input" {...register("email")} />
           {errors.email && <span className="text-red-600">{errors.email.message}</span>}
         </label>
         <label className="flex flex-col gap-1 text-xs text-gray-500">
           Mật khẩu ban đầu
-          <input type="password" autoComplete="new-password" className={inputClass} {...register("password")} />
+          <input type="password" autoComplete="new-password" className="auth-input" {...register("password")} />
           {errors.password && <span className="text-red-600">{errors.password.message}</span>}
         </label>
       </div>
-      <p className="text-xs text-gray-500">
-        Chấp nhận mọi địa chỉ email hợp lệ. Tài khoản được tạo với mật khẩu riêng và chưa liên kết Moodle.
-      </p>
       {error && <p className="text-sm text-red-700">{error}</p>}
       <div>
         <button
@@ -268,7 +259,7 @@ function ResetPasswordForm({ user, onDone }: { user: AdminUser; onDone: (message
           autoComplete="new-password"
           aria-label={`Mật khẩu mới của ${user.email}`}
           placeholder="Mật khẩu mới"
-          className={`${inputClass} min-w-0 flex-1`}
+          className="auth-input min-w-0 flex-1"
           {...register("password")}
         />
         <button

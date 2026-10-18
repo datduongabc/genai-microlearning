@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import Markdown from "react-markdown";
 import { AppShell } from "../components/AppShell";
+import { Tabs } from "../components/Tabs";
 import { RatingForm } from "../components/RatingForm";
 import {
   myStudies,
@@ -50,7 +51,7 @@ export function StudiesPage() {
   );
 }
 
-function Question({ question }: { question: PacketQuestion }) {
+function Question({ question, explanation = false }: { question: PacketQuestion; explanation?: boolean }) {
   return (
     <div className="my-4">
       <p className="font-semibold">{question.stem}</p>
@@ -58,44 +59,48 @@ function Question({ question }: { question: PacketQuestion }) {
         {question.choices.map((choice, i) => (
           <li key={i}>
             {choice}
-            {i === question.correct_index && <strong> (Đáp án đúng)</strong>}
+            {explanation && i === question.correct_index && <strong> (Đáp án đúng)</strong>}
           </li>
         ))}
       </ol>
-      <p className="mt-2">
+      {explanation && <p className="mt-2">
         <strong>Lời giải thích: </strong>
         {question.explanation}
-      </p>
+      </p>}
     </div>
   );
 }
 function Packet({ item }: { item: BlindItem }) {
   const p = item.packet;
+  const [tab, setTab] = useState("sources");
+  const tabs = [
+    { id: "sources", label: `Đoạn nguồn (${p.source_chunks.length})` },
+    { id: "objectives", label: "Mục tiêu" }, { id: "content", label: "Nội dung" },
+    { id: "slides", label: "Slide" }, { id: "examples", label: "Ví dụ" },
+    { id: "practice", label: "Luyện tập" }, { id: "quiz", label: "Quiz" },
+    { id: "answers", label: "Giải thích đáp án" },
+  ];
   return (
-    <article className="space-y-6 rounded border bg-white p-5">
-      <section>
-        <h2 className="font-semibold">Tài liệu nguồn</h2>
+    <article className="packet ui-card">
+      <Tabs tabs={tabs} selected={tab} onSelect={setTab} label="Thành phần gói chấm">
+      {tab === "sources" && <section>
+        <h2 className="sr-only">Tài liệu nguồn</h2>
         {p.source_chunks.map((source, i) => (
-          <p className="mt-3 whitespace-pre-wrap" key={i}>
+          <p className="source-passage whitespace-pre-wrap" key={i}>
             {source}
           </p>
         ))}
-      </section>
-      <section>
-        <h2 className="font-semibold">Chủ đề</h2>
-        <p>{p.topic}</p>
-      </section>
-      <section>
+      </section>}
+      {tab === "objectives" && <section>
         <h2 className="font-semibold">Mục tiêu học tập</h2>
         <p>{p.learning_objective}</p>
-        <p>Mức Bloom: {p.bloom_level}</p>
         <ul className="ml-5 list-disc">
           {p.sub_objectives.map((objective, i) => (
             <li key={i}>{objective}</li>
           ))}
         </ul>
-      </section>
-      <section>
+      </section>}
+      {tab === "content" && <section>
         <h2 className="font-semibold">Nội dung</h2>
         <div className="space-y-3 break-words">
           <Markdown
@@ -108,8 +113,8 @@ function Packet({ item }: { item: BlindItem }) {
             {p.content_markdown}
           </Markdown>
         </div>
-      </section>
-      <section>
+      </section>}
+      {tab === "slides" && <section>
         <h2 className="font-semibold">Slides</h2>
         {p.slides.map((slide, i) => (
           <div key={i} className="mt-3">
@@ -121,8 +126,8 @@ function Packet({ item }: { item: BlindItem }) {
             </ul>
           </div>
         ))}
-      </section>
-      <section>
+      </section>}
+      {tab === "examples" && <section>
         <h2 className="font-semibold">Ví dụ</h2>
         {p.examples.map((example, i) => (
           <div key={i} className="mt-3">
@@ -130,17 +135,22 @@ function Packet({ item }: { item: BlindItem }) {
             <p>{example.analysis}</p>
           </div>
         ))}
-      </section>
-      <section>
+      </section>}
+      {tab === "quiz" && <section>
         <h2 className="font-semibold">Quiz</h2>
         {p.quiz.map((question, i) => (
           <Question key={i} question={question} />
         ))}
-      </section>
-      <section>
+      </section>}
+      {tab === "practice" && <section>
         <h2 className="font-semibold">Bài luyện tập</h2>
         <Question question={p.practice} />
-      </section>
+      </section>}
+      {tab === "answers" && <section><h2 className="font-semibold">Giải thích đáp án</h2>
+        <h3>Luyện tập</h3><Question question={p.practice} explanation />
+        <h3>Quiz</h3>{p.quiz.map((question, i) => <Question key={i} question={question} explanation />)}
+      </section>}
+      </Tabs>
     </article>
   );
 }
@@ -168,9 +178,6 @@ export function BlindRatingPage() {
   const item = data?.items.find((i) => i.id === itemId);
   return (
     <AppShell title={item ? `Chấm mù · ${item.anon_code}` : "Chấm mù"}>
-      <Link to="/studies" className="text-terracotta">
-        Nghiên cứu được mời
-      </Link>
       {error ? (
         <p role="alert" className="mt-4">
           Không tải được nghiên cứu. Lời mời có thể đã bị thu hồi.
@@ -179,36 +186,38 @@ export function BlindRatingPage() {
         <p>Đang tải…</p>
       ) : (
         <>
-          <h2 className="mt-5 text-lg font-semibold">{data.study.name}</h2>
-          <p className="my-3">
-            Đã chấm {data.rated}/{data.total}
-          </p>
-          <p className="text-sm text-gray-600">
-            Rubric: {data.study.rubric_version}. Đọc tài liệu nguồn trước, rồi đọc toàn bộ gói.
-            Không đoán nhóm hay nguồn sinh nội dung.
-          </p>
-          <nav aria-label="Gói chấm" className="my-5 flex flex-wrap gap-3">
+          <div className="rating-context">
+            <div><nav aria-label="Đường dẫn" className="small muted mb-2"><Link to="/studies">Chấm nghiên cứu</Link> / {data.study.name}{item && ` / ${item.anon_code}`}</nav>
+              {item && <p>{item.packet.topic}</p>}
+            </div>
+            <div className="rating-progress"><span className="small muted">Đã chấm {data.rated}/{data.total}</span>
+              <progress aria-label="Tiến độ chấm" value={data.rated} max={data.total || 1} />
+            </div>
+          </div>
+          <nav aria-label="Gói chấm" className="rating-items">
             {data.items.map((i) => (
               <Link
                 key={i.id}
                 aria-current={i.id === itemId ? "page" : undefined}
                 to={`/studies/${studyId}/items/${i.id}`}
-                className="rounded border bg-white px-3 py-2 aria-[current=page]:border-terracotta aria-[current=page]:font-semibold aria-[current=page]:text-terracotta"
+                className="rating-item"
               >
                 {i.anon_code}
-                {i.rating ? " · Đã chấm" : ""}
+                {i.rating && <><span aria-hidden="true" className="success-text mr-2">✓</span><span className="sr-only"> · Đã chấm</span></>}
               </Link>
             ))}
           </nav>
           {item ? (
             <>
-              <Packet item={item} />
+              <div className="rating-columns">
+              <Packet key={item.id} item={item} />
               {data.study.status === "closed" ? (
                 <p>Nghiên cứu đã đóng.</p>
               ) : (
                 <RatingForm
                   key={item.id}
                   code={item.anon_code}
+                  bloomLevel={item.packet.bloom_level}
                   rating={item.rating}
                   onSave={async (values) => {
                     const rating = await saveRating(studyId!, item.id, values);
@@ -222,6 +231,7 @@ export function BlindRatingPage() {
                   }}
                 />
               )}
+              </div>
             </>
           ) : itemId ? (
             <p role="alert">Không tìm thấy gói chấm.</p>

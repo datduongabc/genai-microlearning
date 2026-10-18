@@ -30,6 +30,18 @@ export interface FailedJobInfo {
   module_id: string | null
 }
 
+// Full totals for the tab and filter labels, whatever filter or cap the lists use.
+export interface AdminCounts {
+  users: number
+  inactive_users: number
+  failed_jobs: Partial<Record<FailedJobInfo['job_type'], number>>
+}
+
+export async function getAdminCounts() {
+  const { data } = await api.get<AdminCounts>('/admin/counts')
+  return data
+}
+
 export async function listUsers(isActive: boolean) {
   const { data } = await api.get<AdminUser[]>('/admin/users', { params: { is_active: isActive } })
   return data

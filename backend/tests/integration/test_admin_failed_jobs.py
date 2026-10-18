@@ -116,6 +116,22 @@ def test_filters_by_job_type(admin):
     assert str(gen_job) in jobs and str(doc_job) not in jobs
 
 
+def test_counts_every_open_failure_per_type_beyond_the_list_cap(admin, monkeypatch):
+    monkeypatch.setattr("app.api.admin.MAX_FAILED_JOBS", 1)
+    before = client.get("/admin/counts", headers=admin).json()["failed_jobs"]
+    owner = _lecturer()
+    _failed(owner, JobType.document_pipeline)
+    _failed(owner, JobType.document_pipeline)
+    _failed(owner, JobType.module_generation)
+    _failed(owner, JobType.module_generation, status=JobStatus.done)
+
+    after = client.get("/admin/counts", headers=admin).json()["failed_jobs"]
+
+    assert len(_failed_ids(admin)) == 1
+    assert after.get("document_pipeline", 0) - before.get("document_pipeline", 0) == 2
+    assert after.get("module_generation", 0) - before.get("module_generation", 0) == 1
+
+
 def test_a_failure_that_was_generated_again_is_no_longer_listed(admin):
     owner = _lecturer()
     old, document = _failed(owner, JobType.module_generation, created_at=datetime.now(UTC) - timedelta(hours=1))

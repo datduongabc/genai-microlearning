@@ -68,6 +68,20 @@ def test_the_list_says_which_lecturers_have_a_stored_moodle_link(admin):
     assert all(u["moodle_status"] is None for u in users.values() if u["is_admin"] is True)
 
 
+def test_the_counts_cover_every_account_whatever_the_list_filter(admin):
+    before = client.get("/admin/counts", headers=_bearer(admin)).json()
+    make_account(_email("active"))
+    disabled = make_account(_email("disabled"))
+    assert client.post(f"/admin/users/{disabled.id}/disable", headers=_bearer(admin)).status_code == 200
+
+    after = client.get("/admin/counts", headers=_bearer(admin)).json()
+
+    assert after["users"] - before["users"] == 2
+    assert after["inactive_users"] - before["inactive_users"] == 1
+    listed = client.get("/admin/users", params={"is_active": False}, headers=_bearer(admin)).json()
+    assert after["inactive_users"] == len(listed)
+
+
 def test_a_disabled_lecturer_is_locked_out_at_once_including_the_token_they_hold(admin, lecturer):
     lecturer_id = lecturer["user"]["id"]
     email = lecturer["user"]["email"]
@@ -117,6 +131,7 @@ def test_a_lecturer_gets_not_found_from_every_admin_route(lecturer):
         client.post(f"/admin/users/{other}/disable", headers=_bearer(lecturer)),
         client.post(f"/admin/users/{other}/enable", headers=_bearer(lecturer)),
         client.get("/admin/jobs/failed", headers=_bearer(lecturer)),
+        client.get("/admin/counts", headers=_bearer(lecturer)),
         client.post("/admin/jobs/retry", json={"job_ids": [other]}, headers=_bearer(lecturer)),
     ]
 
