@@ -57,7 +57,7 @@ def test_remove_textbook_scope_preserves_study_data_and_view_access():
             original_access = conn.execute(access_sql).one()
             tracked = ('modules', 'module_components', 'questions', 'jobs', 'study_items')
             original_rows = {table: conn.execute(text(f"SELECT * FROM {table}")).mappings().all() for table in tracked}
-        migrate("head")
+        migrate("0021_remove_textbook_scope")
         assert 'document_sections' not in inspect(engine).get_table_names()
         for table in ('documents', 'modules', 'jobs'):
             assert not {'kind', 'section_id'} & {c['name'] for c in inspect(engine).get_columns(table)}
@@ -76,7 +76,7 @@ def test_remove_textbook_scope_preserves_study_data_and_view_access():
             assert conn.scalar(text("SELECT count(*) FROM open_failed_jobs WHERE id=:job"), ids) == 0
         migrate("0020_study_judge", "downgrade")
         assert 'document_sections' in inspect(engine).get_table_names()
-        migrate("head")
+        migrate("0021_remove_textbook_scope")
         with engine.connect() as conn:
             assert conn.scalar(text("SELECT module_id FROM study_items WHERE id=:item"), ids) == ids['rag']
             assert conn.scalar(text("SELECT paired_module_id FROM modules WHERE id=:control"), ids) == ids['rag']
