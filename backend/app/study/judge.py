@@ -77,8 +77,10 @@ def judge_pair(packets: dict, generators: list, catalog: list[dict], rated: dict
 
     Returns the number of aliases still missing for the pair and the skipped candidates' errors."""
     candidates = eligible_judges(generators, catalog)
-    # Finish aliases already started on a member before opening new ones.
-    candidates.sort(key=lambda c: not any(c["alias"] in aliases for aliases in rated.values()))
+    # Count complete aliases first, then finish started aliases before opening new ones.
+    candidates.sort(key=lambda c: (
+        not all(c["alias"] in rated[key] for key in packets),
+        not any(c["alias"] in rated[key] for key in packets)))
     done, errors = 0, []
     for candidate in candidates:
         if done >= 2:
@@ -92,7 +94,8 @@ def judge_pair(packets: dict, generators: list, catalog: list[dict], rated: dict
                     rate(key, packet, candidate)
                     rated[key].add(alias)
         except Exception as exc:
-            if not (is_quota_error(exc) or is_context_window_error(exc) or isinstance(
+            if not (is_quota_error(exc) or is_context_window_error(exc)
+                    or isinstance(exc, litellm.APIError) and exc.status_code == 403 or isinstance(
                     exc, PacketTooLarge | litellm.NotFoundError | litellm.PermissionDeniedError)):
                 raise
             errors.append(f"{alias}: {str(exc)[:200]}")

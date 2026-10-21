@@ -232,8 +232,57 @@ def test_quota_on_the_second_member_moves_the_whole_pair_to_the_same_substitute(
     assert len(pairs(by_judge['groq-llama'])) == 1
     assert len(by_judge['openai-pro']) == 1  # The half-finished alias is kept, not deleted.
     judge.clear()
+    monkeypatch.setattr(run_judge, 'judge_module', real)  # Quota recovers before the rerun.
     run_judge.main([str(tmp_path), '--out', str(out)])
     assert judge == []
+    assert load_judgements([str(out)]) == by_judge
+
+
+@pytest.mark.parametrize('status', [403, 500])
+def test_http_quota_then_denied_candidate_uses_substitute_but_server_errors_stay_pending(
+        tmp_path, monkeypatch, status):
+    import httpx
+    from openai import OpenAI
+
+    from app.config import settings
+
+    _write_pairs(tmp_path, pairs=1, generator='claude-pro')
+    out = tmp_path / 'ratings.jsonl'
+    sent = []
+
+    def proxy(request):
+        body = json.loads(request.content)
+        alias = body['model']
+        sent.append(alias)
+        code = 429 if alias == 'gemini-fast' else status if alias == 'groq-llama' else 200
+        if code != 200:
+            return httpx.Response(code, json={'error': {'message': 'candidate unavailable',
+                                                       'type': 'provider_error', 'code': str(code)}})
+        anon_id = body['messages'][-1]['content'].split('anon_id=')[1].split(')')[0]
+        model = next(m['litellm_params']['model'] for m in GATEWAY if m['model_name'] == alias)
+        return httpx.Response(200, json={
+            'id': 'chatcmpl-test', 'object': 'chat.completion', 'created': 0, 'model': model,
+            'choices': [{'index': 0, 'finish_reason': 'stop', 'message': {
+                'role': 'assistant', 'content': _evaluation(anon_id).model_dump_json()}}],
+        })
+
+    real = run_judge.judge_module
+    monkeypatch.setattr(settings, 'llm_gateway_url', 'http://gateway.test/v1')
+    monkeypatch.setattr(settings, 'llm_gateway_key', 'test-key')
+    monkeypatch.setattr(run_judge, 'fetch_model_info', lambda: GATEWAY)
+    with OpenAI(api_key='test-key', base_url=settings.llm_gateway_url,
+                http_client=httpx.Client(transport=httpx.MockTransport(proxy))) as client:
+        monkeypatch.setattr(run_judge, 'judge_module', lambda packet, **kw: real(packet, client=client, **kw))
+        if status == 500:
+            with pytest.raises(SystemExit, match='rating pending'):
+                run_judge.main([str(tmp_path), '--out', str(out)])
+        else:
+            run_judge.main([str(tmp_path), '--out', str(out)])
+
+    assert sent == ['openai-pro', 'openai-pro', 'gemini-fast', 'groq-llama'] + (
+        ['groq-qwen', 'groq-qwen'] if status == 403 else [])
+    assert {r['judge'] for r in _lines(out)} == (
+        {'openai-pro', 'groq-qwen'} if status == 403 else {'openai-pro'})
 
 
 def test_a_packet_over_a_candidate_budget_uses_the_next_candidate(tmp_path, judge, monkeypatch):
