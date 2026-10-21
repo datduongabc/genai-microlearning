@@ -92,7 +92,8 @@ def judge_pair(packets: dict, generators: list, catalog: list[dict], rated: dict
                     rate(key, packet, candidate)
                     rated[key].add(alias)
         except Exception as exc:
-            if not (is_quota_error(exc) or isinstance(exc, PacketTooLarge)):
+            if not (is_quota_error(exc) or is_context_window_error(exc) or isinstance(
+                    exc, PacketTooLarge | litellm.NotFoundError | litellm.PermissionDeniedError)):
                 raise
             errors.append(f"{alias}: {str(exc)[:200]}")
             continue
@@ -102,7 +103,8 @@ def judge_pair(packets: dict, generators: list, catalog: list[dict], rated: dict
 
 def is_context_window_error(exc: Exception) -> bool:
     # The gateway's own rejection reaches the client as a plain 400 that only names the error.
-    return isinstance(exc, litellm.BadRequestError) and "ContextWindowExceededError" in str(exc)
+    return isinstance(exc, litellm.ContextWindowExceededError) or (
+        isinstance(exc, litellm.BadRequestError) and "ContextWindowExceededError" in str(exc))
 
 
 def upsert_rating(db: Session, item: StudyItem, alias: str, served: str,
@@ -169,8 +171,7 @@ def run_study_judge_step(queued: Job) -> None:
             db.rollback()
             job = db.get(Job, queued.id)
             message = str(exc)[:1000]
-            terminal = is_terminal_error(exc) or is_context_window_error(exc)
-            if not terminal and job.attempts + 1 < job.max_attempts:
+            if not is_terminal_error(exc) and job.attempts + 1 < job.max_attempts:
                 job.attempts += 1
                 job.last_error = message
                 _requeue(job, datetime.now(UTC) + timedelta(seconds=jittered_backoff(job.attempts)))

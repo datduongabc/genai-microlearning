@@ -288,7 +288,7 @@ def test_worker_cannot_write_human_ratings_or_change_rating_identity(world, fake
         db.rollback()
 
 
-def test_gateway_context_window_rejection_fails_the_item_without_retrying(world, fake, monkeypatch):
+def test_gateway_context_window_rejection_skips_each_candidate_without_retrying(world, fake, monkeypatch):
     sid = create_study(world)
     load(world, sid, human_packets=[human_packet()])
     jid = start(world, sid).json()["job_id"]
@@ -303,7 +303,7 @@ def test_gateway_context_window_rejection_fails_the_item_without_retrying(world,
     monkeypatch.setattr(judge, "judge_module", rejected)
     step(jid)
     result = status(world, sid, jid)
-    assert len(calls) == 1 and result["status"] == "done"
+    assert len(calls) == len(judge.eligible_judges([], GATEWAY)) and result["status"] == "done"
     assert result["completed"] == 0 and result["results"][0]["status"] == "pending"
     assert "ContextWindowExceededError" in result["results"][0]["error"]
 
