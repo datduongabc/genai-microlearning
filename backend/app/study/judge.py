@@ -1,4 +1,4 @@
-"""One packet per durable queue step; retries never repeat already completed items."""
+"""Process a pair per durable queue step; preserve saved ratings across retries."""
 import uuid
 from collections.abc import Callable
 from datetime import UTC, datetime, timedelta

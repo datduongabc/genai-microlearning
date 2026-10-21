@@ -51,7 +51,7 @@ JUDGE_POOL = ("claude-pro", "openai-pro", "gemini-fast", "groq-llama", "groq-qwe
 
 
 def eligible_judges(generators: list[tuple[str, str | None, list]], model_info: list[dict]) -> list[dict]:
-    """Use the same provenance guard for initial selection and quota substitutes."""
+    """Use the same provenance guard for initial selection and substitutes."""
     candidates = []
     for alias in JUDGE_POOL:
         if not any(m["model_name"] == alias for m in model_info):

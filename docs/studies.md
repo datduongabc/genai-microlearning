@@ -82,8 +82,9 @@ judge để chấm cả các đơn vị mới.
 
 Các trường chấm của bảng `ratings` khớp `ModuleEvaluation` và
 [rubric dùng chung](rubric.md), không thêm cột điểm số thứ chín. `rater_kind`
-là `human` kèm `user_id`, hoặc `llm_judge` không có `user_id`. Mỗi người và
-LLM judge có tối đa một lượt chấm trên một đơn vị; `judge_alias` và `judge_model`
+là `human` kèm `user_id`, hoặc `llm_judge` không có `user_id`. Mỗi người có
+tối đa một lượt chấm trên một đơn vị; mỗi hãng LLM có tối đa một hàng theo
+unique index `(study_item_id, judge_family)`. `judge_alias` và `judge_model`
 lưu alias cùng model thực sự đã phục vụ. Bảng này độc lập với
 `evaluations` của pipeline.
 
@@ -156,15 +157,18 @@ một lượt chấm đã có.
 `POST /studies/{id}/judge` xếp một job `study_judge` vào hàng đợi nền hiện có
 và trả về ngay; request không chờ LLM. Job chấm lần lượt mọi đơn vị của nghiên
 cứu bằng `judge_module` trong `app/generation/evaluation.py`, trên chính gói
-tự chứa mà người chấm nhìn thấy, rồi ghi hai hàng `llm_judge` thuộc hai hãng vào `ratings` cho
-mỗi đơn vị: tám điểm kèm lý do, `hallucination_findings` và `overall_notes`.
+tự chứa mà người chấm nhìn thấy, với mục tiêu hoàn tất hai alias chấm chung cho
+mỗi cặp theo [rubric mục 1](rubric.md#1-thiết-kế-nghiên-cứu). Mỗi lượt lưu một
+hàng `llm_judge` vào `ratings`: tám điểm kèm lý do, `hallucination_findings` và
+`overall_notes`. Lượt của alias bị bỏ dở giữa cặp vẫn được giữ, nên một đơn vị
+có thể có thêm điểm ngoài hai alias chung đã hoàn tất.
 Rubric và prompt không đổi.
 
 - **Model chấm.** Pool, thứ tự ưu tiên và hãng ở [rubric mục 1](rubric.md#1-thiết-kế-nghiên-cứu). Mỗi đơn vị chọn hai hãng khác nhau và khác tất cả model thực sự sinh gói; dùng guard chung với CLI. Provenance lấy từ `generation_models`, rồi `generator_model`, rồi alias mặc định cho dữ liệu cũ. Gói người soạn không có hãng sinh. Gateway không trả lời nhận 503; thiếu hai hãng hợp lệ nhận 422 trước khi xếp job.
 - **Ghim model.** Chạy thí nghiệm (`disable_fallbacks`); lưu `judge_alias`, `judge_model` và `judge_family`. Sai model được ghim thì không lưu điểm.
-- **Theo cặp.** Migration 0022 thêm `study_items.pair_id` (id module RAG, chung cho hai đơn vị của cặp) và đổi unique index thành `(study_item_id, judge_family)`. Hai đơn vị của một cặp được chấm trong cùng một bước bằng cùng hai alias; alias dự phòng của một đơn vị cũng chấm đơn vị kia, nên phân tích ghép cặp theo alias không mất cặp. Lượt của alias bị bỏ dở giữa cặp vẫn được giữ và được thử hoàn tất trước ở lần chạy sau. Đơn vị nạp trước 0022 không có `pair_id` được chấm riêng.
+- **Theo cặp.** Migration 0022 thêm `study_items.pair_id` (id module RAG, chung cho hai đơn vị của cặp). Mỗi bước xử lý cả cặp theo quy tắc ở [rubric mục 1](rubric.md#1-thiết-kế-nghiên-cứu); lượt của alias bị bỏ dở được thử hoàn tất trước ở lần chạy sau. Đơn vị nạp trước 0022 không có `pair_id` được chấm riêng.
 - **Chạy lại.** Giữ điểm đã hoàn tất, chỉ chấm phần thiếu. Job đang chạy ngăn xếp trùng và nạp thêm đơn vị.
-- **Hết quota, vượt ngân sách.** 429, gói vượt `max_input_tokens`, hoặc ứng viên không dùng được (404, 403, vượt cửa sổ ngữ cảnh) thì thử ứng viên hợp lệ kế tiếp cho cả cặp. Nếu không đủ hai alias, hoặc lỗi khác không thử lại được hay đã hết retry, đơn vị được ghi `status: pending` kèm `error` trong `results` và job chấm tiếp đơn vị sau; job kết thúc `done`. `POST /studies/{id}/judge` tạo job mới chỉ chấm phần còn thiếu.
+- **Lỗi từng đơn vị.** Các lỗi được thay ứng viên theo [rubric mục 1](rubric.md#1-thiết-kế-nghiên-cứu). Lỗi tạm thời khác được retry có back-off trên bước hiện tại. Nếu không đủ hai alias, hoặc lỗi khác không thử lại được hay đã hết retry, đơn vị được ghi `status: pending` kèm `error` trong `results` và job chấm tiếp đơn vị sau; job kết thúc `done`. `POST /studies/{id}/judge` tạo job mới chỉ chấm phần còn thiếu.
 - **Ngân sách.** Đếm toàn prompt theo `max_input_tokens` của alias; không chia hoặc cắt gói. Không có cam kết miễn phí cho toàn pool: không gọi API trả phí trong kiểm thử, mọi provider được mock.
 
 Migration 0020 giữ trigger khóa nghiên cứu, cấm sửa danh tính lượt chấm và
@@ -191,9 +195,8 @@ chiếu; muốn xóa nguồn phải xử lý nghiên cứu liên quan trước. 
 tài liệu hoặc môn học chứa module đang được tham chiếu trả HTTP 409 trước
 khi xóa tệp tải lên; xung đột khóa ngoại lúc commit cũng rollback và trả 409.
 
-Các script R8 `export_study_pair.py`, `run_judge.py`, `analyze_study.py` và định
-dạng JSON của chúng giữ nguyên. Nhập trực tiếp cặp JSON xuất sẵn chưa nằm
-trong API này.
+Quy trình CLI R8 và định dạng kết quả ở [rubric mục 6](rubric.md#6-quy-trình-chạy-và-phân-tích).
+Nhập trực tiếp cặp JSON xuất sẵn chưa nằm trong API này.
 
 Khi nhập cặp AI vào nghiên cứu hoặc xuất bằng CLI, mỗi component đã sửa dùng
 `ai_original` đã lưu, gồm cả các hàng câu hỏi và lời giải gốc. Component chưa có

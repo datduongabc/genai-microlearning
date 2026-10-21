@@ -25,8 +25,8 @@ credit still require explicit deployment verification. Embeddings remain local
 Qwen3-Embedding-0.6B through `embed-default`. No fallbacks apply to embeddings or transcription.
 
 `groq-pro` is a paid lecturer opt-in model, excluded from the judge pool.
-Studies use two cross-family judges with quota substitutes; see [rubric](rubric.md#1-thiết-kế-nghiên-cứu).
-Modules generated with it share the judge family and are refused for judging.
+Judge selection, including for modules generated with `groq-pro`, follows the
+[rubric](rubric.md#1-thiết-kế-nghiên-cứu).
 Its fallback targets are free Gemini models; it is never an automatic backup.
 
 Planner, Learning Objective, relevance checks and question checks can use the

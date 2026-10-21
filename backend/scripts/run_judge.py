@@ -2,8 +2,8 @@
 
     PYTHONPATH=. uv run python scripts/run_judge.py <folder> --out <ratings.jsonl>
 
-Ưu tiên Claude, OpenAI, Gemini; khi hết quota hoặc gói vượt ngân sách thử các
-hãng Groq đã ghim. Hai gói của một cặp dùng cùng hai alias chấm. Ghi alias và
+Pool và quy tắc thay ứng viên ở docs/rubric.md, mục 1.
+Hai gói của một cặp cần hoàn tất cùng hai alias chấm. Ghi alias và
 model thực sự phục vụ từng lượt. Chạy lại giữ điểm đã xong, chỉ gọi cho phần
 thiếu. Cặp lỗi hoặc hết ứng viên được báo cuối lượt; các cặp sau vẫn được chấm.
 """
