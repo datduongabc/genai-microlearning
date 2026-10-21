@@ -10,6 +10,7 @@ depends_on = None
 
 
 def upgrade():
+    op.add_column("study_items", sa.Column("pair_id", sa.UUID(), nullable=True))
     op.add_column("ratings", sa.Column("judge_family", sa.String()))
     op.execute("""UPDATE ratings SET judge_family = CASE
         WHEN judge_model ILIKE '%gpt%' THEN 'openai'
@@ -30,3 +31,4 @@ def downgrade():
     op.create_index("uq_ratings_llm_judge", "ratings", ["study_item_id"], unique=True,
                     postgresql_where=sa.text("rater_kind = 'llm_judge'"))
     op.drop_column("ratings", "judge_family")
+    op.drop_column("study_items", "pair_id")

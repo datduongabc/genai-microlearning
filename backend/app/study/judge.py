@@ -1,5 +1,6 @@
 """One packet per durable queue step; retries never repeat already completed items."""
 import uuid
+from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
 
 import httpx
@@ -30,20 +31,32 @@ def item_generators(item: StudyItem) -> list:
         (item.anon_code, item.generator_model or gateway.active_model(), item.generation_models or [])]
 
 
+def pair_groups(items: list[StudyItem]) -> list[list[StudyItem]]:
+    groups: dict = {}
+    for item in items:
+        groups.setdefault(item.pair_id or item.id, []).append(item)
+    return list(groups.values())
+
+
 def validate_judge(items: list[StudyItem]) -> list[dict]:
     try:
         model_info = fetch_model_info()
     except httpx.HTTPError as exc:
         raise GatewayUnavailable(str(exc)) from exc
-    for item in items:
-        candidates = eligible_judges(item_generators(item), model_info)
+    for members in pair_groups(items):
+        candidates = eligible_judges([g for m in members for g in item_generators(m)], model_info)
         if len({model_family(c["model"]) for c in candidates}) < 2:
-            raise ValueError(f"{item.anon_code}: thiếu hai hãng chấm khác hãng sinh; chưa chấm")
+            codes = ", ".join(m.anon_code for m in members)
+            raise ValueError(f"{codes}: thiếu hai hãng chấm khác hãng sinh; chưa chấm")
     # Persist only routing/provenance fields, never provider credentials from /model/info.
     return [{"model_name": m["model_name"],
              "litellm_params": {"model": m.get("litellm_params", {}).get("model", "")},
              "model_info": {"max_input_tokens": (m.get("model_info") or {}).get("max_input_tokens")}}
             for m in model_info]
+
+
+class PacketTooLarge(ValueError):
+    pass
 
 
 def check_packet_budget(packet: ModuleContentInput, max_input_tokens: int | None) -> None:
@@ -54,8 +67,37 @@ def check_packet_budget(packet: ModuleContentInput, max_input_tokens: int | None
     # No model argument: the gateway's pre-call check counts with litellm's default tokenizer.
     tokens = litellm.token_counter(messages=messages)
     if tokens > max_input_tokens:
-        raise ValueError(f"Packet too large for the judge model: {tokens} input tokens exceed the "
+        raise PacketTooLarge(f"Packet too large for the judge model: {tokens} input tokens exceed the "
                          f"gateway's limit of {max_input_tokens}; packet was not truncated")
+
+
+def judge_pair(packets: dict, generators: list, catalog: list[dict], rated: dict[object, set[str]],
+               rate: Callable[[object, ModuleContentInput, dict], None]) -> tuple[int, list[str]]:
+    """Rate every member of a pair with the same two judge aliases, so paired analysis keeps the pair.
+
+    Returns the number of aliases still missing for the pair and the skipped candidates' errors."""
+    candidates = eligible_judges(generators, catalog)
+    # Finish aliases already started on a member before opening new ones.
+    candidates.sort(key=lambda c: not any(c["alias"] in aliases for aliases in rated.values()))
+    done, errors = 0, []
+    for candidate in candidates:
+        if done >= 2:
+            break
+        alias = candidate["alias"]
+        try:
+            for packet in packets.values():
+                check_packet_budget(packet, candidate["max_input_tokens"])
+            for key, packet in packets.items():
+                if alias not in rated[key]:
+                    rate(key, packet, candidate)
+                    rated[key].add(alias)
+        except Exception as exc:
+            if not (is_quota_error(exc) or isinstance(exc, PacketTooLarge)):
+                raise
+            errors.append(f"{alias}: {str(exc)[:200]}")
+            continue
+        done += 1
+    return max(0, 2 - done), errors
 
 
 def is_context_window_error(exc: Exception) -> bool:
@@ -91,48 +133,36 @@ def run_study_judge_step(queued: Job) -> None:
         payload = job.payload
         cursor = payload.get("cursor", 0)
         item = db.get(StudyItem, uuid.UUID(payload["item_ids"][cursor]))
-        alias = None
         try:
             if item is None or item.study_id != job.study_id:
                 raise ValueError("Study item no longer exists")
-            packet = ModuleContentInput.model_validate(item.packet)
-            existing = list(db.scalars(select(Rating).where(
-                Rating.study_item_id == item.id, Rating.rater_kind == "llm_judge")))
-            # Only count prior ratings still valid against the full generation provenance.
-            catalog = payload.get("model_info") or validate_judge([item])
-            allowed = {model_family(c["model"]) for c in eligible_judges(item_generators(item), catalog)}
-            rated = [r.judge_model for r in existing if r.judge_model and model_family(r.judge_model) in allowed]
-            errors = []
-            for candidate in eligible_judges(item_generators(item), catalog, rated):
-                if len({model_family(m) for m in rated}) >= 2:
-                    break
+            members = [item] if item.pair_id is None else list(db.scalars(select(StudyItem).where(
+                StudyItem.study_id == item.study_id, StudyItem.pair_id == item.pair_id).order_by(StudyItem.anon_code)))
+            by_id = {m.id: m for m in members}
+            packets = {m.id: ModuleContentInput.model_validate(m.packet) for m in members}
+            rated = {m.id: set() for m in members}
+            for r in db.scalars(select(Rating).where(Rating.study_item_id.in_(by_id), Rating.rater_kind == "llm_judge")):
+                rated[r.study_item_id].add(r.judge_alias)
+            catalog = payload.get("model_info") or validate_judge(members)
+
+            def rate(item_id, packet, candidate):
                 alias, expected = candidate["alias"], candidate["model"]
-                if model_family(expected) in {model_family(m) for m in rated}:
-                    continue
-                check_packet_budget(packet, candidate["max_input_tokens"])
-                try:
-                    with gateway.experiment_mode(), gateway.using_model(alias), gateway.capture_models() as calls:
-                        evaluation = judge_module(packet, max_tokens=OUTPUT_TOKENS, max_retries=0, timeout=120)
-                except Exception as exc:
-                    if not is_quota_error(exc):
-                        raise
-                    errors.append(f"{alias}: {str(exc)[:200]}")
-                    continue
+                with gateway.experiment_mode(), gateway.using_model(alias), gateway.capture_models() as calls:
+                    evaluation = judge_module(packet, max_tokens=OUTPUT_TOKENS, max_retries=0, timeout=120)
                 if len(calls) != 1 or calls[0]["served_model"].split("/")[-1] != expected.split("/")[-1]:
                     raise ValueError("Gateway did not report the pinned judge model; rating was not saved")
-                served = calls[0]["served_model"]
-                upsert_rating(db, item, alias, served, evaluation)
-                db.commit()  # Preserve the first rating when the second hits quota or the worker stops.
-                rated.append(served)
-            missing = max(0, 2 - len({model_family(m) for m in rated}))
+                upsert_rating(db, by_id[item_id], alias, calls[0]["served_model"], evaluation)
+                db.commit()  # Preserve each rating when a later one hits quota or the worker stops.
+
+            missing, errors = judge_pair(packets, [g for m in members for g in item_generators(m)],
+                                         catalog, rated, rate)
             if missing:
-                job.last_error = f"{item.anon_code}: missing {missing}/2 ratings; " + "; ".join(errors)
-                job.status = JobStatus.failed  # A new study judge job resumes from saved ratings.
-                job.locked_at = None
-                job.locked_by = None
-                db.commit()
-                return
-            result = {"item_id": str(item.id), "status": "done", "judge_models": rated}
+                result = {"item_id": str(item.id), "status": "pending",
+                          "error": f"{item.anon_code}: missing {missing}/2 ratings; " + "; ".join(errors)}
+            else:
+                result = {"item_id": str(item.id), "status": "done", "judge_models": sorted(db.scalars(
+                    select(Rating.judge_model).where(Rating.study_item_id == item.id,
+                                                     Rating.rater_kind == "llm_judge")))}
         except Exception as exc:
             db.rollback()
             job = db.get(Job, queued.id)
@@ -144,16 +174,11 @@ def run_study_judge_step(queued: Job) -> None:
                 _requeue(job, datetime.now(UTC) + timedelta(seconds=jittered_backoff(job.attempts)))
                 db.commit()
                 return
-            job.status = JobStatus.failed
-            job.last_error = f"{item.anon_code if item else payload['item_ids'][cursor]}: rating pending ({alias}): {message}"
-            job.locked_at = None
-            job.locked_by = None
-            db.commit()
-            return
+            result = {"item_id": payload["item_ids"][cursor], "status": "pending", "error": message}
         job.payload = {**job.payload, "cursor": cursor + 1,
                        "results": [*job.payload.get("results", []), result]}
         job.attempts = 0
-        job.last_error = None
+        job.last_error = result.get("error")
         if cursor + 1 == len(payload["item_ids"]):
             job.status = JobStatus.done
             job.locked_at = None

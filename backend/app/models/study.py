@@ -39,6 +39,8 @@ class StudyItem(Base):
     # RESTRICT blocks source deletion while a RAG snapshot references it.
     module_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("modules.id", ondelete="RESTRICT"), index=True)
     packet: Mapped[dict] = mapped_column(JSONB)
+    # Both members of a RAG/no-RAG pair share the RAG module id, so judges rate them alike.
+    pair_id: Mapped[uuid.UUID | None]
     # Provenance stays outside the blinded packet. NULL means legacy/unknown.
     generator_model: Mapped[str | None]
     generation_models: Mapped[list | None] = mapped_column(JSONB)

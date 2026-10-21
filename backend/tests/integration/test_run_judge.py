@@ -50,7 +50,7 @@ def test_every_packet_gives_exactly_two_cross_family_lines(tmp_path, judge):
     _write_pairs(tmp_path, pairs=3)
     out = tmp_path / "ket-qua" / "claude-pro.jsonl"
 
-    run_judge.main([str(tmp_path), "--judge", "claude-pro", "--out", str(out)])
+    run_judge.main([str(tmp_path), "--out", str(out)])
 
     lines = _lines(out)
     assert len(lines) == 12 == len(judge)
@@ -60,19 +60,11 @@ def test_every_packet_gives_exactly_two_cross_family_lines(tmp_path, judge):
     assert {line["judge"] for line in lines} == {"claude-pro", "openai-pro"}
 
 
-def test_the_calls_go_to_the_judge_named_on_the_command_line(tmp_path, judge):
-    _write_pairs(tmp_path, pairs=1)
-
-    run_judge.main([str(tmp_path), "--judge", "openai-pro", "--out", str(tmp_path / "o.jsonl")])
-
-    assert {call["alias"] for call in judge} == {"claude-pro", "openai-pro"}
-
-
 def test_the_judge_sees_an_anonymous_code_that_does_not_name_the_group(tmp_path, judge):
     _write_pairs(tmp_path, pairs=2)
     out = tmp_path / "o.jsonl"
 
-    run_judge.main([str(tmp_path), "--judge", "claude-pro", "--out", str(out)])
+    run_judge.main([str(tmp_path), "--out", str(out)])
 
     codes = [call["packet"].anon_id for call in judge]
     assert len(set(codes)) == 4
@@ -80,26 +72,13 @@ def test_the_judge_sees_an_anonymous_code_that_does_not_name_the_group(tmp_path,
     assert {line["anon_id"] for line in _lines(out)} == set(codes)
 
 
-def test_a_judge_of_the_same_family_as_the_generator_is_refused_before_any_call(tmp_path, judge):
-    _write_pairs(tmp_path, pairs=1, generator="gemini-fast")
-    out = tmp_path / "o.jsonl"
-
-    with pytest.raises(SystemExit) as refused:
-        run_judge.main([str(tmp_path), "--judge", "gemini-fast", "--out", str(out)])
-
-    assert refused.value.code not in (0, None)
-    assert "google" in str(refused.value.code)
-    assert judge == [] and not out.exists()
-
-
-def test_the_family_is_the_maker_not_the_host(tmp_path, judge):
-    """gpt-oss chạy trên Groq vẫn là model của OpenAI: chấm gói do GPT-4o mini sinh là cùng họ."""
+def test_a_judge_of_the_same_family_as_the_generator_is_never_called(tmp_path, judge):
+    """gpt-oss chạy trên Groq vẫn là model của OpenAI; gói do GPT-4o mini sinh không được OpenAI chấm."""
     _write_pairs(tmp_path, pairs=1, generator="openai-fast")
 
-    with pytest.raises(SystemExit):
-        run_judge.main([str(tmp_path), "--judge", "openai-pro", "--out", str(tmp_path / "o.jsonl")])
+    run_judge.main([str(tmp_path), "--out", str(tmp_path / "o.jsonl")])
 
-    assert judge == []
+    assert {call["alias"] for call in judge} == {"claude-pro", "gemini-fast"}
 
 
 @pytest.mark.parametrize(("model", "family"), [
@@ -113,39 +92,29 @@ def test_model_family(model, family):
     assert model_family(model) == family
 
 
-def test_an_unknown_judge_alias_is_refused(tmp_path, judge):
-    _write_pairs(tmp_path, pairs=1)
-
-    with pytest.raises(SystemExit) as refused:
-        run_judge.main([str(tmp_path), "--judge", "khong-co", "--out", str(tmp_path / "o.jsonl")])
-
-    assert "khong-co" in str(refused.value.code)
-    assert judge == []
-
-
 def test_a_rerun_only_judges_the_packets_still_missing(tmp_path, judge):
     """Một lượt chấm trả tiền bị ngắt giữa chừng (hết hạn mức, mất mạng) thì chạy lại không trả tiền
     lần nữa cho những gói đã chấm xong."""
     _write_pairs(tmp_path, pairs=2)
     out = tmp_path / "o.jsonl"
-    run_judge.main([str(tmp_path), "--judge", "claude-pro", "--out", str(out)])
+    run_judge.main([str(tmp_path), "--out", str(out)])
     first = out.read_text(encoding="utf-8").splitlines()
     out.write_text("\n".join(first[:3]) + "\n", encoding="utf-8")
     judge.clear()
 
-    run_judge.main([str(tmp_path), "--judge", "claude-pro", "--out", str(out)])
+    run_judge.main([str(tmp_path), "--out", str(out)])
 
     assert len(judge) == 5
     assert sorted(line["anon_id"] for line in _lines(out)) == sorted(json.loads(x)["anon_id"] for x in first)
 
 
-def test_completed_pairs_are_not_rejudged_when_preference_changes(tmp_path, judge):
+def test_completed_pairs_are_not_rejudged(tmp_path, judge):
     _write_pairs(tmp_path, pairs=2)
     out = tmp_path / "o.jsonl"
-    run_judge.main([str(tmp_path), "--judge", "claude-pro", "--out", str(out)])
+    run_judge.main([str(tmp_path), "--out", str(out)])
     judge.clear()
 
-    run_judge.main([str(tmp_path), "--judge", "openai-pro", "--out", str(out)])
+    run_judge.main([str(tmp_path), "--out", str(out)])
 
     assert len(judge) == 0
     assert sorted(line["judge"] for line in _lines(out)) == ["claude-pro"] * 4 + ["openai-pro"] * 4
@@ -155,28 +124,28 @@ def test_a_line_cut_mid_character_by_an_interrupted_run_is_trimmed_and_judged_ag
     """Dòng ghi dở cắt đôi một ký tự tiếng Việt nhiều byte: chạy lại không hỏng mà chấm lại gói đó."""
     _write_pairs(tmp_path, pairs=2)
     out = tmp_path / "o.jsonl"
-    run_judge.main([str(tmp_path), "--judge", "claude-pro", "--out", str(out)])
+    run_judge.main([str(tmp_path), "--out", str(out)])
     complete = out.read_bytes().splitlines(keepends=True)
     cut = complete[3][: complete[3].index("ổn".encode()) + 1]
     out.write_bytes(b"".join(complete[:3]) + cut)
     judge.clear()
 
-    run_judge.main([str(tmp_path), "--judge", "claude-pro", "--out", str(out)])
+    run_judge.main([str(tmp_path), "--out", str(out)])
 
     assert len(judge) == 5
     assert sorted(line["anon_id"] for line in _lines(out)) == sorted(json.loads(x)["anon_id"] for x in complete)
 
 
-def test_guard_uses_all_actual_served_models_even_if_requested_alias_is_different(monkeypatch):
-    from pathlib import Path
-
-    monkeypatch.setattr(run_judge, "fetch_model_info", lambda: GATEWAY)
+def test_guard_uses_all_actual_served_models_even_if_requested_alias_is_different(tmp_path, judge):
+    """Gói xin gemini-fast nhưng GPT-OSS thực sự sinh: không chấm bằng OpenAI, vẫn chấm bằng Gemini."""
     study = StudyFile(pair_id="pair", group="rag_llm", generator_model="gemini-fast", packet=_packet(),
                       generation_models=[{"requested_alias": "gemini-fast", "routed_alias": "gemini-fast",
                                           "served_model": "gpt-oss-120b"}])
-    with pytest.raises(SystemExit, match="thực sự"):
-        run_judge._refuse_same_family("openai-fast", [(Path("fallback.json"), study)])
-    assert run_judge._refuse_same_family("claude-pro", [(Path("fallback.json"), study)]) == "anthropic/claude-sonnet-5"
+    (tmp_path / "fallback.json").write_text(study.model_dump_json(), encoding="utf-8")
+
+    run_judge.main([str(tmp_path), "--out", str(tmp_path / "o.jsonl")])
+
+    assert {call["alias"] for call in judge} == {"claude-pro", "gemini-fast"}
 
 
 def test_runner_pins_requests_without_extra_judge_records(tmp_path, monkeypatch):
@@ -198,7 +167,7 @@ def test_runner_pins_requests_without_extra_judge_records(tmp_path, monkeypatch)
     monkeypatch.setattr(run_judge, "judge_module", evaluate)
     monkeypatch.setattr(run_judge, "fetch_model_info", lambda: GATEWAY)
     out = tmp_path / "result.jsonl"
-    run_judge.main([str(tmp_path), "--judge", "claude-pro", "--out", str(out)])
+    run_judge.main([str(tmp_path), "--out", str(out)])
     assert all(call["extra_body"]["disable_fallbacks"] for call in sent)
     assert all("judge_generation_models" not in row for row in _lines(out))
 
@@ -235,3 +204,67 @@ def test_quota_uses_groq_substitute_and_records_actual_model(tmp_path, judge, mo
     run_judge.main([str(tmp_path), '--out', str(out)])
     assert {r['judge'] for r in _lines(out)} == {'claude-pro', 'groq-llama'}
     assert {model_family(r['judge_model']) for r in _lines(out)} == {'anthropic', 'meta'}
+
+
+def _quota():
+    import litellm
+    return litellm.RateLimitError('quota', model='gpt', llm_provider='openai')
+
+
+def test_quota_on_the_second_member_moves_the_whole_pair_to_the_same_substitute(tmp_path, judge, monkeypatch):
+    from scripts.analyze_study import load_judgements, pairs
+    _write_pairs(tmp_path, pairs=1)
+    out = tmp_path / 'ratings.jsonl'
+    real = run_judge.judge_module
+    openai_calls = []
+    def quota(packet, **kwargs):
+        if run_judge.gateway.active_model() == 'openai-pro':
+            openai_calls.append(packet.anon_id)
+            if len(openai_calls) > 1:
+                raise _quota()
+        return real(packet, **kwargs)
+    monkeypatch.setattr(run_judge, 'judge_module', quota)
+
+    run_judge.main([str(tmp_path), '--out', str(out)])
+
+    by_judge = load_judgements([str(out)])
+    assert len(pairs(by_judge['claude-pro'])) == 1
+    assert len(pairs(by_judge['groq-llama'])) == 1
+    assert len(by_judge['openai-pro']) == 1  # The half-finished alias is kept, not deleted.
+    judge.clear()
+    run_judge.main([str(tmp_path), '--out', str(out)])
+    assert judge == []
+
+
+def test_a_packet_over_a_candidate_budget_uses_the_next_candidate(tmp_path, judge, monkeypatch):
+    small = [{**m, 'model_info': {'max_input_tokens': 10}} if m['model_name'] == 'openai-pro' else m
+             for m in GATEWAY]
+    monkeypatch.setattr(run_judge, 'fetch_model_info', lambda: small)
+    _write_pairs(tmp_path, pairs=1)
+    out = tmp_path / 'ratings.jsonl'
+
+    run_judge.main([str(tmp_path), '--out', str(out)])
+
+    assert {r['judge'] for r in _lines(out)} == {'claude-pro', 'groq-llama'}
+    assert 'openai-pro' not in {call['alias'] for call in judge}
+
+
+def test_a_failing_pair_is_reported_and_later_pairs_are_still_judged(tmp_path, judge, monkeypatch):
+    _write_pairs(tmp_path, pairs=2)
+    out = tmp_path / 'ratings.jsonl'
+    real = run_judge.judge_module
+    broken = run_judge.anon_code(tmp_path / 'cap-0-rag_llm.json')
+    def invalid(packet, **kwargs):
+        if packet.anon_id == broken:
+            raise ValueError('invalid rubric response')
+        return real(packet, **kwargs)
+    monkeypatch.setattr(run_judge, 'judge_module', invalid)
+
+    with pytest.raises(SystemExit, match='invalid rubric response'):
+        run_judge.main([str(tmp_path), '--out', str(out)])
+
+    assert [r['pair_id'] for r in _lines(out)].count('cap-1') == 4
+    assert len(_lines(out)) == 5
+    monkeypatch.setattr(run_judge, 'judge_module', real)
+    run_judge.main([str(tmp_path), '--out', str(out)])
+    assert len(_lines(out)) == 8

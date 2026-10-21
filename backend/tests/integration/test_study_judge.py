@@ -140,8 +140,10 @@ def test_quota_without_substitute_preserves_first_rating_and_resumes(world, fake
     monkeypatch.setattr(judge, 'judge_module', evaluate)
     step(jid)
     result = status(world, sid, jid)
-    assert result['status'] == 'failed' and result['completed'] == 0
-    assert 'missing 1/2' in result['last_error']
+    assert result['status'] == 'done' and result['completed'] == 0
+    assert result['results'][0]['status'] == 'pending'
+    assert 'missing 1/2' in result['results'][0]['error']
+    assert result['pending_item_ids'] == [result['results'][0]['item_id']]
     assert len(fake) == 1
     with SessionLocal() as db:
         saved = db.scalar(select(Rating)).id
@@ -156,17 +158,68 @@ def test_quota_without_substitute_preserves_first_rating_and_resumes(world, fake
         assert db.query(Rating).count() == 2
 
 
-def test_invalid_rubric_stays_pending_without_advancing(world, fake, monkeypatch):
+def test_invalid_rubric_stays_pending_and_later_items_are_judged(world, fake, monkeypatch):
     sid = create_study(world)
-    load(world, sid, human_packets=[human_packet(), human_packet()])
+    items = load(world, sid, human_packets=[human_packet(), human_packet()]).json()
     jid = start(world, sid).json()['job_id']
-    def invalid(*args, **kwargs):
-        raise ValueError('invalid rubric response')
+    real = judge.judge_module
+    def invalid(packet, **kwargs):
+        if packet.anon_id == items[0]['anon_code']:
+            raise ValueError('invalid rubric response')
+        return real(packet, **kwargs)
     monkeypatch.setattr(judge, 'judge_module', invalid)
-    step(jid)
+    run(jid, 2)
     result = status(world, sid, jid)
-    assert result['status'] == 'failed' and result['completed'] == 0
-    assert 'invalid rubric response' in result['last_error']
+    assert result['status'] == 'done' and result['completed'] == 1
+    assert [r['status'] for r in result['results']] == ['pending', 'done']
+    assert 'invalid rubric response' in result['results'][0]['error']
+    assert result['pending_item_ids'] == [items[0]['id']]
+    monkeypatch.setattr(judge, 'judge_module', real)
+    with SessionLocal() as db:
+        db.query(Job).filter(Job.study_id == uuid.UUID(sid)).delete()
+        db.commit()
+    fake.clear()
+    jid = start(world, sid).json()['job_id']
+    run(jid, 2)
+    assert status(world, sid, jid)['completed'] == 2
+    assert len(fake) == 2  # Only the pending item was judged again.
+
+
+def test_quota_on_the_second_member_moves_the_whole_pair_to_the_same_substitute(world, fake, monkeypatch):
+    sid = create_study(world)
+    load(world, sid, module_ids=[str(world['rag'])])
+    jid = start(world, sid).json()['job_id']
+    real = judge.judge_module
+    openai_calls = []
+    def evaluate(packet, **kwargs):
+        if judge.gateway.active_model() == 'openai-pro':
+            openai_calls.append(packet.anon_id)
+            if len(openai_calls) > 1:
+                raise litellm.RateLimitError('quota', llm_provider='openai', model='gpt')
+        return real(packet, **kwargs)
+    monkeypatch.setattr(judge, 'judge_module', evaluate)
+    run(jid, 2)
+    assert status(world, sid, jid)['completed'] == 2
+    with SessionLocal() as db:
+        aliases = [{r.judge_alias for r in db.scalars(select(Rating).where(Rating.study_item_id == item.id))}
+                   for item in db.scalars(select(StudyItem).where(StudyItem.study_id == uuid.UUID(sid)))]
+    assert len(aliases) == 2
+    assert aliases[0] & aliases[1] == {'claude-pro', 'groq-llama'}
+    assert sorted(len(a) for a in aliases) == [2, 3]  # The half-finished openai-pro rating is kept.
+
+
+def test_a_packet_over_a_candidate_budget_uses_the_next_candidate(world, fake, monkeypatch):
+    small = [{**m, 'model_info': {'max_input_tokens': 10}} if m['model_name'] == 'claude-pro' else m
+             for m in GATEWAY]
+    monkeypatch.setattr(judge, 'fetch_model_info', lambda: small)
+    sid = create_study(world)
+    load(world, sid, human_packets=[human_packet()])
+    jid = start(world, sid).json()['job_id']
+    step(jid)
+    assert status(world, sid, jid)['completed'] == 1
+    assert all(r['model'] != 'openai/claude-pro' for r in fake)
+    with SessionLocal() as db:
+        assert {r.judge_alias for r in db.scalars(select(Rating))} == {'openai-pro', 'gemini-fast'}
 
 
 def test_whole_large_packet_is_judged_once_without_splitting_or_truncation(world, fake):
@@ -228,9 +281,9 @@ def test_gateway_context_window_rejection_fails_the_item_without_retrying(world,
     monkeypatch.setattr(judge, "judge_module", rejected)
     step(jid)
     result = status(world, sid, jid)
-    assert len(calls) == 1 and result["status"] == "failed"
-    assert result["completed"] == 0
-    assert "ContextWindowExceededError" in result["last_error"]
+    assert len(calls) == 1 and result["status"] == "done"
+    assert result["completed"] == 0 and result["results"][0]["status"] == "pending"
+    assert "ContextWindowExceededError" in result["results"][0]["error"]
 
 
 def test_same_family_refusal_includes_actual_control_model(world, fake):

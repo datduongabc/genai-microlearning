@@ -47,9 +47,9 @@ def existing_pair(db: Session, module_id: uuid.UUID, owner_id: uuid.UUID) -> lis
     alias = payload.get("model_alias") or gateway.active_model()
     return [
         StudyItem(group="rag_llm", module_id=module.id, packet=module_packet(module, sources).model_dump(),
-                  generator_model=alias, generation_models=module.generation_models),
+                  pair_id=module.id, generator_model=alias, generation_models=module.generation_models),
         StudyItem(group="llm_no_rag", packet=module_packet(control, sources).model_dump(),
-                  generator_model=alias, generation_models=control.generation_models),
+                  pair_id=module.id, generator_model=alias, generation_models=control.generation_models),
     ]
 
 

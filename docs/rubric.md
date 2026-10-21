@@ -8,7 +8,7 @@ Rubric này dùng chung cho mô hình chấm (`judge_module` trong `backend/app/
 - **Cùng tài liệu đối chiếu.** Hai module của một cặp được chấm trên cùng một bộ đoạn nguồn; quy tắc phạm vi và độ phủ ở [mục 7](#7-r9-claim-không-có-căn-cứ-và-độ-chính-xác-trích-dẫn). Không lấy bộ đối chiếu từ những chunk mà bản RAG tự trích dẫn.
 - **Chấm mù.** Người chấm và mô hình chấm chỉ thấy mã ẩn danh (dạng `M-3fa9c2d1`), không thấy nhóm, tên môn, tên tệp hay tên model.
 - **Hai mô hình chấm khác hãng với model sinh và khác hãng nhau.** Ưu tiên `claude-pro` (Anthropic), `openai-pro` (GPT-6.1 Sol, OpenAI), `gemini-fast` (Google); bỏ hãng thực sự đã sinh gói theo guard chung `app/llm/judge.py`. Gói Claude dùng OpenAI + Gemini; gói OpenAI dùng Claude + Gemini; gói Gemini dùng Claude + OpenAI. `gemini-fast` trỏ tới `gemini-3.5-flash-lite`, model miễn phí đã xác minh trên [bảng giá Google](https://ai.google.dev/gemini-api/docs/pricing); `gemini-3.5-flash` của alias `gemini-flash` chưa có trong danh sách chính thức nên không dùng làm judge.
-- **Hết quota (429).** Thử hãng còn đủ điều kiện theo thứ tự pool, sau các alias ưu tiên là `groq-llama` (Meta), `groq-qwen` (Alibaba), `groq-minimax` (MiniMax), model ID trong [gateway](../devops/gateway/config.yaml) đã đối chiếu [danh sách Groq](https://console.groq.com/docs/models) ngày 2026-10-17. Llama/MiniMax có thể cần quyền Enterprise; Qwen/MiniMax là preview, khả dụng tùy tài khoản. Không dùng GPT-OSS trong pool. Mỗi lượt ghim model, tắt fallback gateway và lưu alias/model thực sự chấm. Nếu hết ứng viên thì giữ lượt còn thiếu để chạy tiếp, không coi một lượt là đủ hai; không xóa điểm đã lưu.
+- **Hết quota (429) hoặc vượt ngân sách.** Hai gói của một cặp luôn dùng cùng hai alias chấm; alias dự phòng cho một gói cũng chấm gói kia. Thử hãng còn đủ điều kiện theo thứ tự pool, sau các alias ưu tiên là `groq-llama` (Meta), `groq-qwen` (Alibaba), `groq-minimax` (MiniMax), model ID trong [gateway](../devops/gateway/config.yaml) đã đối chiếu [danh sách Groq](https://console.groq.com/docs/models) ngày 2026-10-17. Llama/MiniMax có thể cần quyền Enterprise; Qwen/MiniMax là preview, khả dụng tùy tài khoản. Không dùng GPT-OSS trong pool. Mỗi lượt ghim model, tắt fallback gateway và lưu alias/model thực sự chấm. Nếu hết ứng viên thì giữ lượt còn thiếu để chạy tiếp, không coi một lượt là đủ hai; không xóa điểm đã lưu.
 
 ## 2. Thang điểm chung
 
@@ -142,7 +142,7 @@ PYTHONPATH=. uv run python scripts/export_study_pair.py <module_id> --out study/
 PYTHONPATH=. uv run python scripts/run_judge.py study/packets --out study/rubric.jsonl
 
 # 3. R9: tách claim độc lập từ Content và chấm các trích dẫn được máy chủ giải.
-PYTHONPATH=. uv run python scripts/run_claim_judge.py study/packets --out study/claims.jsonl
+PYTHONPATH=. uv run python scripts/run_claim_judge.py study/packets --judge <verified-free-alias> --out study/claims.jsonl
 
 # 4. Phân tích cùng R8, kèm điểm người chấm nếu có.
 PYTHONPATH=. uv run python scripts/analyze_study.py study/rubric.jsonl \

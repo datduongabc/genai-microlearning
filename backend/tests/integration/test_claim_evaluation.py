@@ -1,6 +1,7 @@
 """Deterministic R9 tests; no network or existing database."""
 import json
 import uuid
+from types import SimpleNamespace
 
 import pytest
 from sqlalchemy import create_engine
@@ -207,7 +208,8 @@ def test_resume_refuses_alias_repointed_to_another_model(tmp_path, judge, monkey
     run_claim_judge.main(args)
     judge.clear()
     models = [dict(m) for m in GATEWAY]
-    models[2] = {"model_name": "groq-pro", "litellm_params": {"model": "groq/openai/gpt-oss-20b"}}
+    models[next(i for i, m in enumerate(models) if m["model_name"] == "groq-pro")] = {
+        "model_name": "groq-pro", "litellm_params": {"model": "groq/openai/gpt-oss-20b"}}
     monkeypatch.setattr(run_judge, "fetch_model_info", lambda: models)
     with pytest.raises(SystemExit, match="Judge model changed"):
         run_claim_judge.main(args)
@@ -240,13 +242,19 @@ def test_export_persists_shared_reference_and_only_rag_citations(tmp_path, monke
 def test_r8_analysis_cli_includes_separate_r9_results(tmp_path, judge, monkeypatch):
     write_pair(tmp_path)
     rubric, claims, report = [tmp_path / f"{name}.jsonl" for name in ("r8", "r9", "report")]
-    monkeypatch.setattr(run_judge, "judge_module", lambda packet: _evaluation(packet.anon_id))
-    run_judge.main([str(tmp_path), "--judge", "groq-pro", "--out", str(rubric)])
+    def evaluate(packet, **kwargs):
+        run_judge.gateway.complete("judge")
+        return _evaluation(packet.anon_id)
+    monkeypatch.setattr(run_judge, "judge_module", evaluate)
+    monkeypatch.setattr("litellm.completion", lambda **kwargs: SimpleNamespace(
+        model=next(m["litellm_params"]["model"] for m in GATEWAY if m["model_name"] == run_judge.gateway.active_model()),
+        choices=[SimpleNamespace(message=SimpleNamespace(content="ok"))]))
+    run_judge.main([str(tmp_path), "--out", str(rubric)])
     run_claim_judge.main([str(tmp_path), "--judge", "groq-pro", "--out", str(claims)])
     analyze_study.main([str(rubric), "--claims", str(claims), "--out", str(report)])
     result = json.loads(report.read_text())
     assert result["claims"]["groq-pro"]["rag_llm"]["unsupported_rate"] == .5
-    assert result["judges"]["groq-pro"]["means"]["rag_llm"]["accuracy"] == 4
+    assert result["judges"]["claude-pro"]["means"]["rag_llm"]["accuracy"] == 4
 
 
 def test_document_reference_and_citation_identities_in_isolated_sqlite(monkeypatch):

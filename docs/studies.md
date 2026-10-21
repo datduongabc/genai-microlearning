@@ -162,16 +162,17 @@ Rubric và prompt không đổi.
 
 - **Model chấm.** Pool, thứ tự ưu tiên và hãng ở [rubric mục 1](rubric.md#1-thiết-kế-nghiên-cứu). Mỗi đơn vị chọn hai hãng khác nhau và khác tất cả model thực sự sinh gói; dùng guard chung với CLI. Provenance lấy từ `generation_models`, rồi `generator_model`, rồi alias mặc định cho dữ liệu cũ. Gói người soạn không có hãng sinh. Gateway không trả lời nhận 503; thiếu hai hãng hợp lệ nhận 422 trước khi xếp job.
 - **Ghim model.** Chạy thí nghiệm (`disable_fallbacks`); lưu `judge_alias`, `judge_model` và `judge_family`. Sai model được ghim thì không lưu điểm.
-- **Chạy lại.** Migration 0022 đổi unique index thành `(study_item_id, judge_family)`. Giữ điểm đã hoàn tất, chỉ chấm phần thiếu; tối đa hai hãng hợp lệ trên mỗi đơn vị. Job đang chạy ngăn xếp trùng và nạp thêm đơn vị.
-- **Hết quota.** 429 thử ứng viên hợp lệ kế tiếp. Nếu không đủ hai lượt, job `failed` giữ cursor tại đơn vị thiếu, `last_error` ghi mã và số lượt thiếu. `POST /studies/{id}/judge` tạo job mới tiếp tục từ điểm đã lưu. Các lỗi khác cũng giữ cursor khi hết retry; không ghi `done` cho một lượt thiếu.
+- **Theo cặp.** Migration 0022 thêm `study_items.pair_id` (id module RAG, chung cho hai đơn vị của cặp) và đổi unique index thành `(study_item_id, judge_family)`. Hai đơn vị của một cặp được chấm trong cùng một bước bằng cùng hai alias; alias dự phòng của một đơn vị cũng chấm đơn vị kia, nên phân tích ghép cặp theo alias không mất cặp. Lượt của alias bị bỏ dở giữa cặp vẫn được giữ và được thử hoàn tất trước ở lần chạy sau. Đơn vị nạp trước 0022 không có `pair_id` được chấm riêng.
+- **Chạy lại.** Giữ điểm đã hoàn tất, chỉ chấm phần thiếu. Job đang chạy ngăn xếp trùng và nạp thêm đơn vị.
+- **Hết quota, vượt ngân sách.** 429 hoặc gói vượt `max_input_tokens` của một ứng viên thì thử ứng viên hợp lệ kế tiếp cho cả cặp. Nếu không đủ hai alias, hoặc lỗi khác không thử lại được hay đã hết retry, đơn vị được ghi `status: pending` kèm `error` trong `results` và job chấm tiếp đơn vị sau; job kết thúc `done`. `POST /studies/{id}/judge` tạo job mới chỉ chấm phần còn thiếu.
 - **Ngân sách.** Đếm toàn prompt theo `max_input_tokens` của alias; không chia hoặc cắt gói. Không có cam kết miễn phí cho toàn pool: không gọi API trả phí trong kiểm thử, mọi provider được mock.
 
 Migration 0020 giữ trigger khóa nghiên cứu, cấm sửa danh tính lượt chấm và
 cấm ghi khi `closed`. Chỉ vai trò `app_worker` được bỏ qua kiểm lời mời khi
 đang ghi hàng `llm_judge`; ghi hàng `human` vẫn phải qua kiểm lời mời/admin.
 
-`GET /studies/{id}/judge/{job_id}` trả `status`, `required_ratings_per_item`, `pending_item_ids`,
-`total`, `completed`, `results` (mỗi phần tử có `item_id`, `status`, và
+`GET /studies/{id}/judge/{job_id}` trả `status`, `required_ratings_per_item`, `pending_item_ids`
+(đơn vị `pending` và chưa tới lượt), `total`, `completed` (số đơn vị `done`), `results` (mỗi phần tử có `item_id`, `status`, và
 `judge_models` hoặc `error`) và `last_error` của lượt thử gần nhất. Job đã xong
 bị dọn theo lịch dọn job chung; điểm vẫn nằm trong `ratings`.
 

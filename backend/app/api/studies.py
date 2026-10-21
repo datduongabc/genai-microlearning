@@ -240,8 +240,10 @@ def judge_status(study_id: uuid.UUID, job_id: uuid.UUID, db: Session = Depends(g
     job = db.get(Job, job_id)
     if job is None or job.study_id != study_id or job.job_type != JobType.study_judge:
         raise HTTPException(status_code=404, detail="Judge job not found")
+    results = job.payload.get("results", [])
     return {"job_id": job.id, "status": job.status, "required_ratings_per_item": 2,
-            "pending_item_ids": job.payload["item_ids"][job.payload.get("cursor", 0):],
+            "pending_item_ids": [r["item_id"] for r in results if r["status"] != "done"]
+            + job.payload["item_ids"][len(results):],
             "total": len(job.payload["item_ids"]),
-            "completed": job.payload.get("cursor", 0), "results": job.payload.get("results", []),
+            "completed": sum(r["status"] == "done" for r in results), "results": results,
             "last_error": job.last_error}
