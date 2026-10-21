@@ -157,12 +157,14 @@ def run_study_judge_step(queued: Job) -> None:
             missing, errors = judge_pair(packets, [g for m in members for g in item_generators(m)],
                                          catalog, rated, rate)
             if missing:
-                result = {"item_id": str(item.id), "status": "pending",
-                          "error": f"{item.anon_code}: missing {missing}/2 ratings; " + "; ".join(errors)}
+                outcomes = {str(m.id): {"item_id": str(m.id), "status": "pending",
+                                        "error": f"{m.anon_code}: missing {missing}/2 ratings; " + "; ".join(errors)}
+                            for m in members}
             else:
-                result = {"item_id": str(item.id), "status": "done", "judge_models": sorted(db.scalars(
-                    select(Rating.judge_model).where(Rating.study_item_id == item.id,
-                                                     Rating.rater_kind == "llm_judge")))}
+                outcomes = {str(m.id): {"item_id": str(m.id), "status": "done", "judge_models": sorted(db.scalars(
+                    select(Rating.judge_model).where(Rating.study_item_id == m.id,
+                                                     Rating.rater_kind == "llm_judge")))} for m in members}
+            result = outcomes[str(item.id)]
         except Exception as exc:
             db.rollback()
             job = db.get(Job, queued.id)
@@ -175,8 +177,9 @@ def run_study_judge_step(queued: Job) -> None:
                 db.commit()
                 return
             result = {"item_id": payload["item_ids"][cursor], "status": "pending", "error": message}
-        job.payload = {**job.payload, "cursor": cursor + 1,
-                       "results": [*job.payload.get("results", []), result]}
+            outcomes = {}
+        results = [outcomes.get(r["item_id"], r) for r in job.payload.get("results", [])]
+        job.payload = {**job.payload, "cursor": cursor + 1, "results": [*results, result]}
         job.attempts = 0
         job.last_error = result.get("error")
         if cursor + 1 == len(payload["item_ids"]):

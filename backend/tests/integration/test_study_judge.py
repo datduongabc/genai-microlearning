@@ -208,6 +208,28 @@ def test_quota_on_the_second_member_moves_the_whole_pair_to_the_same_substitute(
     assert sorted(len(a) for a in aliases) == [2, 3]  # The half-finished openai-pro rating is kept.
 
 
+def test_a_pending_first_member_is_refreshed_when_its_sibling_step_completes_the_pair(world, fake, monkeypatch):
+    sid = create_study(world)
+    items = load(world, sid, module_ids=[str(world['rag'])]).json()
+    jid = start(world, sid).json()['job_id']
+    real = judge.judge_module
+    def quota(packet, **kwargs):
+        if judge.gateway.active_model() != 'claude-pro':
+            raise litellm.RateLimitError('quota', llm_provider='openai', model='gpt')
+        return real(packet, **kwargs)
+    monkeypatch.setattr(judge, 'judge_module', quota)
+    step(jid)
+    first = status(world, sid, jid)
+    assert [r['status'] for r in first['results']] == ['pending']
+    assert first['pending_item_ids'] == [i['id'] for i in items]
+    monkeypatch.setattr(judge, 'judge_module', real)
+    step(jid)
+    result = status(world, sid, jid)
+    assert result['status'] == 'done' and result['completed'] == 2
+    assert [r['status'] for r in result['results']] == ['done', 'done']
+    assert result['pending_item_ids'] == [] and result['last_error'] is None
+
+
 def test_a_packet_over_a_candidate_budget_uses_the_next_candidate(world, fake, monkeypatch):
     small = [{**m, 'model_info': {'max_input_tokens': 10}} if m['model_name'] == 'claude-pro' else m
              for m in GATEWAY]

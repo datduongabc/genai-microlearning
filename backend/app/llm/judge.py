@@ -50,10 +50,8 @@ def refuse_same_family(judge: str, generators: list[tuple[str, str | None, list]
 JUDGE_POOL = ("claude-pro", "openai-pro", "gemini-fast", "groq-llama", "groq-qwen", "groq-minimax")
 
 
-def eligible_judges(generators: list[tuple[str, str | None, list]], model_info: list[dict],
-                    rated_models: list[str] | tuple = ()) -> list[dict]:
+def eligible_judges(generators: list[tuple[str, str | None, list]], model_info: list[dict]) -> list[dict]:
     """Use the same provenance guard for initial selection and quota substitutes."""
-    used = {model_family(model) for model in rated_models}
     candidates = []
     for alias in JUDGE_POOL:
         if not any(m["model_name"] == alias for m in model_info):
@@ -61,8 +59,6 @@ def eligible_judges(generators: list[tuple[str, str | None, list]], model_info: 
         try:
             model = refuse_same_family(alias, generators, model_info)
         except ValueError:
-            continue
-        if model_family(model) in used:
             continue
         declared = next(m for m in model_info if m["model_name"] == alias).get("model_info") or {}
         candidates.append({"alias": alias, "model": model,

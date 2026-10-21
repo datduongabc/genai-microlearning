@@ -15,11 +15,11 @@ def test_preferred_pair_excludes_generator(generator, pair):
     assert len({model_family(c['model']) for c in candidates[:2]}) == 2
 
 
-def test_substitute_excludes_all_generator_and_completed_families():
+def test_substitute_excludes_all_generator_families():
     candidates = eligible_judges([('M1', 'gemini-fast', [
         {'served_model': 'openai/gpt-6.1-sol'}, {'served_model': 'gemini/gemini-test'},
-    ])], GATEWAY, ['anthropic/claude-sonnet-5'])
-    assert [c['alias'] for c in candidates] == ['groq-llama', 'groq-qwen']
+    ])], GATEWAY)
+    assert [c['alias'] for c in candidates] == ['claude-pro', 'groq-llama', 'groq-qwen']
     with pytest.raises(ValueError, match='cùng hãng'):
         refuse_same_family('openai-pro', [('M1', 'gemini-fast', [
             {'served_model': 'groq/openai/gpt-oss-120b'}])], GATEWAY)
