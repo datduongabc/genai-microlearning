@@ -7,17 +7,12 @@ a configuration change, not a code change.
 import contextlib
 import contextvars
 import json
-import logging
-import os
-import time
 
 import litellm
 from litellm.constants import RETURN_RAW_MODEL_NAME_METADATA_KEY
 from pydantic import BaseModel
 
 from app.config import settings
-
-logger = logging.getLogger(__name__)
 
 # Model do giảng viên chọn cho riêng một lượt sinh. Để trong ContextVar chứ không truyền
 # qua tham số: một lượt sinh đi qua mười chỗ gọi rải khắp generation, chat và ingestion,
@@ -128,7 +123,6 @@ def complete(prompt: str, system_instruction: str | None = None, **kwargs) -> st
 
 def transcribe_audio(path: str) -> list[dict]:
     """Whisper segments through the gateway, independent of the chosen chat model."""
-    started = time.monotonic()
     with open(path, "rb") as audio:
         response = litellm.transcription(
             model="openai/transcribe",
@@ -139,8 +133,6 @@ def transcribe_audio(path: str) -> list[dict]:
             max_retries=0,
             timeout=180,
         )
-    logger.info("ASR upload_bytes=%d response_seconds=%.3f segments=%d",
-                os.path.getsize(path), time.monotonic() - started, len(response.segments or []))
     return response.segments or []
 
 

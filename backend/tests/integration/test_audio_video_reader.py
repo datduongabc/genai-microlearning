@@ -237,7 +237,8 @@ def test_failed_window_preparation_is_terminal_before_its_upload(tmp_path):
     with patch.object(readers.subprocess, 'run', side_effect=subprocess.CalledProcessError(1, 'ffmpeg')), patch.object(
         readers, 'transcribe_audio'
     ) as transcribe, pytest.raises(ValueError, match='09:58.*ffmpeg'):
-        readers._transcribe_window('input.mp4', str(tmp_path), 1, 598, 602, readers.time.monotonic() + 600)
+        readers._transcribe_window('input.mp4', str(tmp_path), 1, 598, 602, readers.time.monotonic() + 600,
+                                   threading.Event())
     transcribe.assert_not_called()
 
 
@@ -267,3 +268,33 @@ def test_unmatched_overlap_keeps_text_in_absolute_timestamp_order():
     ])
     assert [u.locator['start_ms'] for u in units] == sorted(u.locator['start_ms'] for u in units)
     assert {u.text for u in units} == {'earlier ending', 'different wording'}
+
+
+def test_common_phrase_earlier_in_the_previous_segment_is_not_trimmed():
+    units = readers._merge_audio_segments([
+        (0, 600, [{'start': 580, 'end': 600,
+                   'text': 'chúng ta có thể thấy rằng mô hình này hoạt động tốt'}]),
+        (598, 602, [{'start': 1, 'end': 4, 'text': 'chúng ta sẽ xem ví dụ tiếp theo'}]),
+    ])
+    assert units[-1].text == 'chúng ta sẽ xem ví dụ tiếp theo'
+    assert units[-1].locator == {'start_ms': 599000, 'end_ms': 602000}
+
+
+def test_failed_window_cancels_queued_siblings_before_upload(tmp_path):
+    path = tmp_path / 'lecture.mp4'
+    path.write_bytes(b'input')
+    uploaded = []
+    def transcribe(piece):
+        uploaded.append(Path(piece).stem)
+        raise openai.BadRequestError('bad audio', response=httpx.Response(
+            400, request=httpx.Request('POST', 'http://x')), body=None)
+    with (
+        ThreadPoolExecutor(max_workers=1) as pool,
+        patch.object(readers, '_ASR_EXECUTOR', pool),
+        patch.object(readers, '_duration_seconds', return_value=3600),
+        patch.object(readers.subprocess, 'run', side_effect=_fake_ffmpeg),
+        patch.object(readers, 'transcribe_audio', side_effect=transcribe),
+        pytest.raises(ValueError, match='00:00.*BadRequestError'),
+    ):
+        readers.read_audio_video(str(path))
+    assert uploaded == ['part000']

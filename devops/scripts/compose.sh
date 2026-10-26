@@ -12,4 +12,4 @@ case "$embedder_device" in
     cpu) set -- -f "$repo_dir/devops/docker-compose.yml" "$@" ;;
     *) printf '%s\n' 'EMBEDDER_DEVICE must be auto, cpu or gpu' >&2; exit 2 ;;
 esac
-exec docker compose --project-directory "$repo_dir" --env-file "${DO_AN_ENV_FILE:-$repo_dir/devops/.env}" "$@"
+exec docker compose --project-directory "$repo_dir" --env-file "$repo_dir/devops/.env" "$@"

@@ -1,7 +1,7 @@
 # Used by scripts/compose.sh on the measured RTX 3050 Ti (compute capability 8.6).
 services:
   embedder:
-    image: ${EMBEDDER_GPU_IMAGE:-ghcr.io/huggingface/text-embeddings-inference:86-1.9.4}
+    image: ghcr.io/huggingface/text-embeddings-inference:86-1.9.4
     gpus: all
     command:
       - --model-id

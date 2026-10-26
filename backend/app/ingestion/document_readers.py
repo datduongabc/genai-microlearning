@@ -5,6 +5,7 @@ import os
 import re
 import subprocess
 import tempfile
+import threading
 import time
 from concurrent.futures import ThreadPoolExecutor, wait
 from dataclasses import dataclass, field
@@ -24,7 +25,6 @@ from pptx import Presentation
 from pptx.enum.shapes import MSO_SHAPE_TYPE
 from pptx.exc import PackageNotFoundError as PptxPackageNotFoundError
 
-from app.config import settings
 from app.ingestion.pdf_layout import page_lines, title_candidates
 from app.llm.gateway import transcribe_audio
 
@@ -359,7 +359,7 @@ _MAX_AUDIO_SECONDS = 7000
 _AUDIO_SEGMENT_SECONDS = 600
 _AUDIO_OVERLAP_SECONDS = 2
 # Shared across document jobs: four uploads per process, not four per document.
-_ASR_EXECUTOR = ThreadPoolExecutor(max_workers=settings.media_asr_concurrency)
+_ASR_EXECUTOR = ThreadPoolExecutor(max_workers=4)
 
 
 def _audio_windows(duration: float) -> list[tuple[float, float]]:
@@ -446,12 +446,12 @@ def _merge_audio_segments(pieces: list[tuple[float, float, list[dict]]]) -> list
         normalize = lambda text: [re.sub(r"\W", "", word).casefold() for word in text.split()]
         old_words, new_words = normalize(previous), normalize(prefix)
         # A final short utterance ("Yeah") or a truncated word can follow the
-        # shared phrase. Match multi-word prefixes inside the overlap as well.
+        # shared phrase, so a multi-word match may end up to two words early.
         # ponytail: exact words only; word-level alignment if paraphrased overlaps matter.
         duplicate = next((n for n in range(min(len(old_words), len(new_words)), 0, -1)
                           if old_words[-n:] == new_words[:n] or (n >= 2 and any(
                               old_words[i:i + n] == new_words[:n]
-                              for i in range(len(old_words) - n + 1)))), 0)
+                              for i in range(max(0, len(old_words) - n - 2), len(old_words) - n + 1)))), 0)
         previous_end = max((u.locator["end_ms"] for u in units), default=0)
         for unit in incoming:
             words = unit.text.split()
@@ -467,15 +467,22 @@ def _merge_audio_segments(pieces: list[tuple[float, float, list[dict]]]) -> list
 
 
 def _transcribe_window(path: str, tmp: str, index: int, start: float,
-                       length: float, deadline: float) -> list[dict]:
+                       length: float, deadline: float, failed: threading.Event) -> list[dict]:
+    # The document already failed; a queued window must not spend ASR quota.
+    if failed.is_set():
+        return []
     try:
-        piece = _transcode_to_mp3(path, tmp, start=start, duration=length, index=index)
-    except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as exc:
-        minutes, seconds = divmod(int(start), 60)
-        raise ValueError(f"Khong the xu ly doan {minutes:02d}:{seconds:02d}: ffmpeg that bai") from exc
-    if os.path.getsize(piece) > _AUDIO_UPLOAD_BYTES:
-        raise ValueError("Audio vuot gioi han 24 MB sau khi chia")
-    return _transcribe_piece(piece, start, deadline)
+        try:
+            piece = _transcode_to_mp3(path, tmp, start=start, duration=length, index=index)
+        except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as exc:
+            minutes, seconds = divmod(int(start), 60)
+            raise ValueError(f"Khong the xu ly doan {minutes:02d}:{seconds:02d}: ffmpeg that bai") from exc
+        if os.path.getsize(piece) > _AUDIO_UPLOAD_BYTES:
+            raise ValueError("Audio vuot gioi han 24 MB sau khi chia")
+        return _transcribe_piece(piece, start, deadline)
+    except Exception:
+        failed.set()
+        raise
 
 
 def read_audio_video(path: str) -> list[DocumentUnit]:
@@ -491,7 +498,9 @@ def read_audio_video(path: str) -> list[DocumentUnit]:
     with tempfile.TemporaryDirectory() as tmp:
         windows = _audio_windows(duration)
         deadline = time.monotonic() + _RATE_LIMIT_WAIT_SECONDS
-        futures = [_ASR_EXECUTOR.submit(_transcribe_window, path, tmp, index, start, length, deadline)
+        failed = threading.Event()
+        futures = [_ASR_EXECUTOR.submit(_transcribe_window, path, tmp, index, start, length,
+                                        deadline, failed)
                    for index, (start, length) in enumerate(windows)]
         # All readers must finish before the TemporaryDirectory removes their input.
         wait(futures)
