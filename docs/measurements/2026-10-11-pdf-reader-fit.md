@@ -12,8 +12,8 @@ figure extraction improvements beyond the original rules are a separate follow-u
 Owner decisions applied: retain the VNI decoder; retain only this summary and the
 measurement scripts in git; warn on a document only when both its text layer and
 OCR leave a page completely empty; use Tesseract `vie+eng` at 200 dpi.
-Raw per-file JSON, page text diffs, model responses and logs stay under the task's
-private evidence directory `/mnt/d/firstmate/data/do-an-r53-pdf-reader-fit/`.
+Raw per-file JSON, page text diffs, model responses and logs stay outside git in a
+private evidence directory (`$EVIDENCE_DIR` below).
 
 ## Extraction measurement
 
@@ -173,15 +173,13 @@ existing hybrid/rerank candidate budget is unchanged. No generated queries, fake
 embeddings or substitute reranker scores are used. These few probes check usable
 content and locators, not statistically significant retrieval or formula accuracy.
 
-Each cell is the original-reader replay (420 chunks). Retrieval is scoped per
-course, and the replay caches real model vectors by chunk text. Calculus chunks are
-now identical to the original reader, so the calculus rows apply unchanged to the
-revised reader: dense calculus Recall@1 stays 0.833. The replay was not rerun after
-the formula rules were restored. The earlier revision's OS chunks gave the same
-ranks as the original on every OS probe in every mode. The current OS text differs
-from that revision only by line order on nine pages (page numbers and Gantt-chart
-labels in CPU Scheduling and Synchronization Tools). No OS rank is claimed for the
-current revision beyond that.
+The final reader (formula rules restored) was replayed on 2026-10-26 with the same
+probes, pinned models and retrieval parameters as the recorded original-reader
+replay. Both index 420 chunks (calculus 276, OS 144). Every probe has the same rank
+in every mode and the same gold-chunk count, so every metric below is identical
+for the original and final readers. Dense calculus Recall@1 is 0.833 for both.
+
+Each cell is original = final (measured).
 
 | Mode / subject | Recall@1 | Recall@3 | Recall@5 | Recall@10 | MRR@10 | nDCG@10 |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -196,27 +194,27 @@ current revision beyond that.
 | hybrid+rerank / operating-system | 0.667 | 1.000 | 1.000 | 1.000 | 0.833 | 0.877 |
 
 Probe numbers follow the fixed order in `PROBES` in the replay script. "Removed"
-is the superseded revision without formula rules. Calculus ranks for the current
-revision equal the original column.
+is the superseded revision without formula rules; "final" is the measured
+replay of this change.
 
-| Probe / source page | Dense original/removed | Hybrid original/removed | Reranked original/removed | Gold chunks |
+| Probe / source page | Dense original/removed/final | Hybrid original/removed/final | Reranked original/removed/final | Gold chunks |
 | --- | --- | --- | --- | --- |
-| Q1: calculus 1/1. Giới hạn dãy số.pdf:4 | 1/1 | 1/1 | 1/1 | 1 |
-| Q2: calculus 1/2. Giới hạn và liên tục hàm một biến.pdf:8 | 1/1 | 1/1 | 1/1 | 1 |
-| Q3: calculus 1/3. Đạo hàm và vi phân.pdf:8 | 1/1 | 6/5 | 1/1 | 1 |
-| Q4: calculus 1/4. Tích phân xác định.pdf:4 | 1/2 | 3/3 | 3/3 | 2 |
-| Q5: calculus 1/5. Tích phân bất định.pdf:4 | 1/1 | 2/3 | 2/2 | 2 |
-| Q6: calculus 1/6. Tích phân suy rộng.pdf:4 | 4/4 | 3/3 | 2/2 | 1 |
-| Q7: operating-system/Chapter 2_Operating System Structures.pdf:4 | 1/1 | 1/1 | 1/1 | 1 |
-| Q8: operating-system/Chapter 3_Processes.pdf:8 | 1/1 | 1/1 | 2/2 | 1 |
-| Q9: operating-system/Chapter 4_Threads & Concurency.pdf:8 | 2/2 | 2/2 | 2/2 | 1 |
-| Q10: operating-system/Chapter 5_CPU Scheduling.pdf:8 | 7/7 | 7/7 | 1/1 | 1 |
-| Q11: operating-system/Chapter 5_CPU Scheduling.pdf:20 | 2/2 | 1/1 | 1/1 | 1 |
-| Q12: operating-system/Chapter 6_Synchronization Tools.pdf:8 | 3/3 | 1/1 | 1/1 | 1 |
+| Q1: calculus 1/1. Giới hạn dãy số.pdf:4 | 1/1/1 | 1/1/1 | 1/1/1 | 1 |
+| Q2: calculus 1/2. Giới hạn và liên tục hàm một biến.pdf:8 | 1/1/1 | 1/1/1 | 1/1/1 | 1 |
+| Q3: calculus 1/3. Đạo hàm và vi phân.pdf:8 | 1/1/1 | 6/5/6 | 1/1/1 | 1 |
+| Q4: calculus 1/4. Tích phân xác định.pdf:4 | 1/2/1 | 3/3/3 | 3/3/3 | 2 |
+| Q5: calculus 1/5. Tích phân bất định.pdf:4 | 1/1/1 | 2/3/2 | 2/2/2 | 2 |
+| Q6: calculus 1/6. Tích phân suy rộng.pdf:4 | 4/4/4 | 3/3/3 | 2/2/2 | 1 |
+| Q7: operating-system/Chapter 2_Operating System Structures.pdf:4 | 1/1/1 | 1/1/1 | 1/1/1 | 1 |
+| Q8: operating-system/Chapter 3_Processes.pdf:8 | 1/1/1 | 1/1/1 | 2/2/2 | 1 |
+| Q9: operating-system/Chapter 4_Threads & Concurency.pdf:8 | 2/2/2 | 2/2/2 | 2/2/2 | 1 |
+| Q10: operating-system/Chapter 5_CPU Scheduling.pdf:8 | 7/7/7 | 7/7/7 | 1/1/1 | 1 |
+| Q11: operating-system/Chapter 5_CPU Scheduling.pdf:20 | 2/2/2 | 1/1/1 | 1/1/1 | 1 |
+| Q12: operating-system/Chapter 6_Synchronization Tools.pdf:8 | 3/3/3 | 1/1/1 | 1/1/1 | 1 |
 
 The superseded revision worsened dense Q4 (definite-integral construction) from
-rank 1 to 2 and moved unreranked hybrid Q3/Q5. Restoring the formula rules
-returns all calculus ranks to the original values without changing embedding or
+rank 1 to 2 and moved unreranked hybrid Q3/Q5. The final reader returns every
+calculus and OS rank to the original value without changing embedding or
 reranker models.
 
 
@@ -227,6 +225,7 @@ reranker models.
 | Full backend suite on a fresh private database, before the formula rules were restored | 1,158 passed; one live-LLM test deselected |
 | Focused PDF layout, slide-layout, OCR-warning and document-reader tests after restoring the formula rules | 55 passed |
 | Extraction measurement after restoring the formula rules | Calculus identical to the original rules on 411 / 411 pages |
+| Retrieval replay of the final reader, 12 probes, pinned models | Every rank and metric identical to the original reader |
 | Course document-page frontend tests | 49 passed |
 | Ruff on changed Python files, whitespace checks | Passed after the restore |
 
@@ -239,69 +238,70 @@ Historical private HTTP smoke (October 11) used separate DB/backend/frontend/mod
 services. A mixed readable/unreadable upload completed with a persistent page-2
 warning after job payload cleanup; an entirely unreadable upload failed with both
 page warnings. Browser bridge/CDP access failed, so no passing browser screenshot
-is claimed. Frontend DOM tests covered persistent warnings. Those live scenarios
-were already driven and recorded; pipeline Test should run automated suites and
-one short changed-flow smoke rather than rebuilding and repeating the entire stack.
+is claimed. Frontend DOM tests covered persistent warnings.
 
 ## Reproduce the current measurements
 
 Run from the repository root with the existing backend environment. The corpus is
 ignored by git; `PDFS` must point to its current copy. Raw outputs go outside git.
-Commands below create only private task containers; remove them afterwards.
+Commands below create only private, throwaway containers; remove them afterwards.
+Set `EVIDENCE_DIR` to a private output directory, `PDFS` to the corpus copy, and
+choose free local ports for `DB_PORT`, `EMBED_PORT` and `RERANK_PORT`.
 
 ```sh
-TASK_DATA=/mnt/d/firstmate/data/do-an-r53-pdf-reader-fit
-PDFS=/mnt/d/firstmate/projects/do-an/docs/documents
+EVIDENCE_DIR=<private-evidence-dir>
+PDFS=<corpus-dir>
+DB_PORT=<db-port> EMBED_PORT=<embedder-port> RERANK_PORT=<reranker-port>
 BASELINE=760483b9825d646d785e78ef3c56989998142088
 
-docker run --rm -d --name fm-r53-oct26-ocr --entrypoint sleep do-an-backend:latest infinity
+docker run --rm -d --name pdf-ocr --entrypoint sleep do-an-backend:latest infinity
 backend/.venv/bin/python docs/measurements/measure_pdf_reader.py \
-  --documents "$PDFS" --baseline-ref "$BASELINE" --output "$TASK_DATA/oct26" \
-  --ocr-container fm-r53-oct26-ocr --ocr-cache "$TASK_DATA/oct26-ocr-cache"
+  --documents "$PDFS" --baseline-ref "$BASELINE" --output "$EVIDENCE_DIR/extraction" \
+  --ocr-container pdf-ocr --ocr-cache "$EVIDENCE_DIR/ocr-cache"
 backend/.venv/bin/python docs/measurements/ablate_pdf_repairs.py \
-  --documents "$PDFS" --baseline-ref "$BASELINE" --output "$TASK_DATA/oct26-ablations.json"
+  --documents "$PDFS" --baseline-ref "$BASELINE" --output "$EVIDENCE_DIR/ablations.json"
 
-docker run --rm -d --name fm-r53-oct26-db \
+docker run --rm -d --name pdf-db \
   -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=microlearning \
-  -p 127.0.0.1:55453:5432 pgvector/pgvector:pg16
-docker run --rm -d --name fm-r53-oct26-embedder --cpus 2 \
-  -p 127.0.0.1:58453:80 -v "$TASK_DATA/embedder-models:/data" \
+  -p 127.0.0.1:$DB_PORT:5432 pgvector/pgvector:pg16
+docker run --rm -d --name pdf-embedder --cpus 2 \
+  -p 127.0.0.1:$EMBED_PORT:80 -v "$EVIDENCE_DIR/embedder-models:/data" \
   ghcr.io/huggingface/text-embeddings-inference:cpu-1.9.4 \
   --model-id onnx-community/Qwen3-Embedding-0.6B-ONNX \
   --revision c25a394dd583836952667c12f008335071b3f43d \
   --pooling last-token --max-batch-tokens 1024 --max-client-batch-size 128
-docker run --rm -d --name fm-r53-oct26-reranker --cpus 2 \
-  -p 127.0.0.1:58454:80 -v "$TASK_DATA/reranker-models:/data" \
+docker run --rm -d --name pdf-reranker --cpus 2 \
+  -p 127.0.0.1:$RERANK_PORT:80 -v "$EVIDENCE_DIR/reranker-models:/data" \
   ghcr.io/huggingface/text-embeddings-inference:cpu-1.9.4 \
   --model-id BAAI/bge-reranker-base \
   --revision 2cfc18c9415c912f9d8155881c133215df768a70 --max-client-batch-size 64
 # Wait for PostgreSQL and both model /health endpoints.
-export APP_RUNTIME_DATABASE_URL=postgresql+psycopg://app_runtime:app_runtime_dev_password@127.0.0.1:55453/microlearning
-export APP_WORKER_DATABASE_URL=postgresql+psycopg://app_worker:app_worker_dev_password@127.0.0.1:55453/microlearning
-export SECRET_KEY=r53-test-secret-with-at-least-32-characters
-export LLM_GATEWAY_URL=http://127.0.0.1:58453/v1
-export LLM_GATEWAY_KEY=task-private
+export APP_RUNTIME_DATABASE_URL=postgresql+psycopg://app_runtime:app_runtime_dev_password@127.0.0.1:$DB_PORT/microlearning
+export APP_WORKER_DATABASE_URL=postgresql+psycopg://app_worker:app_worker_dev_password@127.0.0.1:$DB_PORT/microlearning
+export SECRET_KEY=<test-secret-of-at-least-32-characters>
+export LLM_GATEWAY_URL=http://127.0.0.1:$EMBED_PORT/v1
+export LLM_GATEWAY_KEY=<local-placeholder>
 export EMBEDDING_MODEL=Qwen3-Embedding-0.6B
-export RERANKER_URL=http://127.0.0.1:58454
-for db in r53_oct26_before r53_oct26_after; do
-  docker exec fm-r53-oct26-db createdb -U postgres "$db"
-  export DATABASE_URL="postgresql+psycopg://postgres:postgres@127.0.0.1:55453/$db"
+export RERANKER_URL=http://127.0.0.1:$RERANK_PORT
+for db in replay_before replay_after; do
+  docker exec pdf-db createdb -U postgres "$db"
+  export DATABASE_URL="postgresql+psycopg://postgres:postgres@127.0.0.1:$DB_PORT/$db"
   (cd backend && .venv/bin/alembic upgrade head)
 done
-export BENCHMARK_DATABASE_URL=postgresql+psycopg://postgres:postgres@127.0.0.1:55453/r53_oct26_before
+export BENCHMARK_DATABASE_URL=postgresql+psycopg://postgres:postgres@127.0.0.1:$DB_PORT/replay_before
 backend/.venv/bin/python docs/measurements/replay_pdf_retrieval.py \
-  --documents "$PDFS" --reader-ref "$BASELINE" --ocr-container fm-r53-oct26-ocr \
-  --cache "$TASK_DATA/oct26-ocr-cache" --output "$TASK_DATA/oct26-retrieval-before.json"
-export BENCHMARK_DATABASE_URL=postgresql+psycopg://postgres:postgres@127.0.0.1:55453/r53_oct26_after
+  --documents "$PDFS" --reader-ref "$BASELINE" --ocr-container pdf-ocr \
+  --cache "$EVIDENCE_DIR/ocr-cache" --output "$EVIDENCE_DIR/retrieval-before.json"
+export BENCHMARK_DATABASE_URL=postgresql+psycopg://postgres:postgres@127.0.0.1:$DB_PORT/replay_after
 backend/.venv/bin/python docs/measurements/replay_pdf_retrieval.py \
-  --documents "$PDFS" --ocr-container fm-r53-oct26-ocr \
-  --cache "$TASK_DATA/oct26-ocr-cache" --output "$TASK_DATA/oct26-retrieval-after.json"
-export DATABASE_URL=postgresql+psycopg://postgres:postgres@127.0.0.1:55453/microlearning
+  --documents "$PDFS" --ocr-container pdf-ocr \
+  --cache "$EVIDENCE_DIR/ocr-cache" --output "$EVIDENCE_DIR/retrieval-after.json"
+export DATABASE_URL=postgresql+psycopg://postgres:postgres@127.0.0.1:$DB_PORT/microlearning
 (cd backend && .venv/bin/alembic upgrade head && .venv/bin/pytest -m 'not live_llm' -q)
 backend/.venv/bin/ruff check backend docs/measurements/*.py
 git diff --check
-docker stop fm-r53-oct26-db fm-r53-oct26-ocr fm-r53-oct26-embedder fm-r53-oct26-reranker
+docker stop pdf-db pdf-ocr pdf-embedder pdf-reranker
 ```
 
-Only real model vectors are cached by text in the task directory. Use a fresh
+Only real model vectors are cached by text in the evidence directory. Use a fresh
 vector cache if changing models; this replay intentionally keeps models fixed.
