@@ -4,7 +4,10 @@ The current corpus contains 11 PDFs / 681 pages: six calculus 1 PDFs (411 pages)
 and five operating-system PDFs (270 pages). Advanced programming and scientific
 socialism are PPTX; machine learning is audio/video. Only PDFs are measured here.
 This replaces the earlier four-subject corpus measurement as the current evidence.
-Formula/figure extraction improvements are a separate follow-up, outside this change.
+The owner made this corpus the reference source on 2026-10-26. Calculus 1 is
+therefore in scope again, and the formula rules stay: limit/big-operator attachment,
+large brackets, radicals, absolute-value bars and math-region rebuilding. Formula and
+figure extraction improvements beyond the original rules are a separate follow-up.
 
 Owner decisions applied: retain the VNI decoder; retain only this summary and the
 measurement scripts in git; warn on a document only when both its text layer and
@@ -22,26 +25,28 @@ A fragment is a nonempty line with at most three non-whitespace characters; genu
 short labels and formula terms count too. Changed characters count replaced,
 inserted or deleted characters after removing whitespace, using the larger edit
 length, not Levenshtein distance. These are structural diagnostics, not annotated
-text accuracy or formula correctness.
+text accuracy or formula correctness. Revised calculus text is identical to the
+original rules on all 411 pages; the revised OS changes are the code, bullet, table
+and reading-order repairs described below.
 
 | Subject | Pages | Lines P/L/R | Fragments P/L/R | Fragment rate P/L/R | ms/page P/L/R |
 | --- | ---: | --- | --- | --- | --- |
-| calculus 1 | 411 | 9326 / 5564 / 5679 | 2975 / 585 / 626 | 31.90% / 10.51% / 11.02% | 3.910 / 9.975 / 9.917 |
-| operating-system | 270 | 3440 / 3381 / 3366 | 587 / 501 / 486 | 17.06% / 14.82% / 14.44% | 0.906 / 2.341 / 1.669 |
+| calculus 1 | 411 | 9326 / 5564 / 5564 | 2975 / 585 / 585 | 31.90% / 10.51% / 10.51% | 4.679 / 10.109 / 10.802 |
+| operating-system | 270 | 3440 / 3381 / 3366 | 587 / 501 / 486 | 17.06% / 14.82% / 14.44% | 0.801 / 2.061 / 1.464 |
 
 | PDF | Pages | Fragment rate P/L/R | Changed chars P→L / P→R / L→R | ms/page P/L/R | Chunks L/R |
 | --- | ---: | --- | --- | --- | --- |
-| calculus 1/1. Giới hạn dãy số.pdf | 77 | 31.30% / 6.07% / 6.24% | 2933 / 3001 / 567 | 5.270 / 12.016 / 12.330 | 52 / 52 |
-| calculus 1/2. Giới hạn và liên tục hàm một biến.pdf | 54 | 23.66% / 6.38% / 7.00% | 1334 / 1596 / 582 | 2.910 / 7.887 / 7.880 | 37 / 36 |
-| calculus 1/3. Đạo hàm và vi phân.pdf | 107 | 23.93% / 6.84% / 7.42% | 3319 / 3491 / 483 | 3.587 / 10.013 / 9.571 | 74 / 74 |
-| calculus 1/4. Tích phân xác định.pdf | 36 | 32.71% / 18.33% / 18.41% | 602 / 615 / 77 | 2.404 / 6.815 / 5.905 | 20 / 20 |
-| calculus 1/5. Tích phân bất định.pdf | 68 | 38.84% / 9.03% / 10.88% | 2733 / 2734 / 273 | 3.692 / 10.487 / 10.687 | 48 / 48 |
-| calculus 1/6. Tích phân suy rộng.pdf | 69 | 39.48% / 20.54% / 20.11% | 2145 / 2398 / 662 | 4.674 / 10.419 / 10.689 | 45 / 45 |
-| operating-system/Chapter 2_Operating System Structures.pdf | 38 | 9.64% / 9.64% / 9.64% | 159 / 159 / 0 | 0.986 / 2.549 / 1.616 | 20 / 20 |
-| operating-system/Chapter 3_Processes.pdf | 61 | 12.05% / 12.05% / 10.22% | 145 / 145 / 0 | 0.889 / 2.257 / 1.837 | 32 / 32 |
-| operating-system/Chapter 4_Threads & Concurency.pdf | 47 | 10.11% / 10.11% / 9.53% | 124 / 124 / 0 | 0.804 / 2.004 / 1.215 | 25 / 25 |
-| operating-system/Chapter 5_CPU Scheduling.pdf | 62 | 26.78% / 19.83% / 20.35% | 427 / 385 / 49 | 0.923 / 2.435 / 1.779 | 34 / 34 |
-| operating-system/Chapter 6_Synchronization Tools.pdf | 62 | 17.26% / 16.50% / 16.14% | 398 / 251 / 147 | 0.935 / 2.457 / 1.772 | 33 / 33 |
+| calculus 1/1. Giới hạn dãy số.pdf | 77 | 31.30% / 6.07% / 6.07% | 2933 / 2933 / 0 | 6.958 / 9.970 / 10.587 | 52 / 52 |
+| calculus 1/2. Giới hạn và liên tục hàm một biến.pdf | 54 | 23.66% / 6.38% / 6.38% | 1334 / 1334 / 0 | 4.444 / 10.324 / 14.562 | 37 / 37 |
+| calculus 1/3. Đạo hàm và vi phân.pdf | 107 | 23.93% / 6.84% / 6.84% | 3319 / 3319 / 0 | 6.443 / 14.726 / 14.527 | 74 / 74 |
+| calculus 1/4. Tích phân xác định.pdf | 36 | 32.71% / 18.33% / 18.33% | 602 / 602 / 0 | 1.688 / 4.829 / 4.790 | 20 / 20 |
+| calculus 1/5. Tích phân bất định.pdf | 68 | 38.84% / 9.03% / 9.03% | 2733 / 2733 / 0 | 2.717 / 7.766 / 7.887 | 48 / 48 |
+| calculus 1/6. Tích phân suy rộng.pdf | 69 | 39.48% / 20.54% / 20.54% | 2145 / 2145 / 0 | 3.076 / 7.998 / 8.334 | 45 / 45 |
+| operating-system/Chapter 2_Operating System Structures.pdf | 38 | 9.64% / 9.64% / 9.64% | 159 / 159 / 0 | 0.825 / 2.008 / 1.307 | 20 / 20 |
+| operating-system/Chapter 3_Processes.pdf | 61 | 12.05% / 12.05% / 10.22% | 145 / 145 / 0 | 0.767 / 1.955 / 1.326 | 32 / 32 |
+| operating-system/Chapter 4_Threads & Concurency.pdf | 47 | 10.11% / 10.11% / 9.53% | 124 / 124 / 0 | 0.756 / 1.883 / 1.214 | 25 / 25 |
+| operating-system/Chapter 5_CPU Scheduling.pdf | 62 | 26.78% / 19.83% / 20.35% | 427 / 429 / 18 | 0.800 / 2.157 / 1.616 | 34 / 34 |
+| operating-system/Chapter 6_Synchronization Tools.pdf | 62 | 17.26% / 16.50% / 16.14% | 398 / 279 / 119 | 0.853 / 2.240 / 1.731 | 33 / 33 |
 
 ## Fonts, bullets, code and reading order
 
@@ -98,29 +103,35 @@ program fundamentals and web programming. Removing the whole reconstruction path
 added 580 short-line fragments across 243 changed pages. This supported retaining
 region joining and ordinary superscript/subscript repairs for algorithm indices
 and fragmented code. Horizontal fraction bars repaired two useful slides (DSA
-search-hash page 13 and OS Virtual Memory page 46); prose table rows are now excluded
-from fraction rebuilding. Code indentation, baseline run joining and overlap-aware
-shadow deduplication remain useful: current OS code retention rises from 602 to
-605 of 605 lines, with no OS stroke-ablation changes.
+search-hash page 13 and OS Virtual Memory page 46). Code indentation, baseline run
+joining and overlap-aware shadow deduplication remain useful: current OS code
+retention rises from 602 to 605 of 605 lines, with no OS stroke-ablation changes.
+
+An earlier revision removed the formula-specific rules because the original corpus
+had no formula-heavy subject. On the current corpus that revision raised the
+calculus fragment rate from 10.51% to 11.02%. Dense calculus Recall@1 fell from
+0.833 to 0.667. Calculus is in scope again, so those rules are kept. Two slide
+heuristics from that revision were narrowed for the same reason. First, a prose
+word in a numerator no longer blocks fraction rebuilding: that guard split real
+fractions such as `(arctan x)/x` and "Tổng hữu hạn các VCB" over its denominator
+on 30 calculus pages. Second, touching blocks are grouped as in the original rules,
+except that a code block is not grouped with a touching footer or caption unless
+one of them is math-like. That keeps listing order without separating formula pieces.
 
 | Feature | Decision | Original corpus evidence | Current corpus ablation against original rules |
 | --- | --- | --- | --- |
 | Symbol/dingbat remapping | Keep | 68 Symbol mapping spans / 69 characters | 20 Symbol and 898 dingbat characters remapped |
 | VNI decoder | Keep, explicit owner decision D1 | 37 already-Unicode VNI-font characters; zero legacy decoding hits | No VNI hits; behavioral tests cover legacy and already-Unicode text |
-| Radical geometry | Remove | Zero changed pages | Zero changed pages |
-| Large-bracket reconstruction | Remove | Zero encoded bracket hits; two table pages changed by border artifacts | 10 changed pages, 16 changed non-whitespace characters, +6 fragments |
-| Vertical/absolute-value bars | Remove | Two recursion table pages, five characters from table borders | Zero changed pages |
-| Limit/big-operator attachment | Remove | One self-adjusting page, 26 characters; incorrect `min` attachment | 126 changed pages, 1,365 characters, −4 fragments |
-| Region joining, scripts and horizontal fractions | Keep existing bounded repair | 243 changed pages / 580 extra fragments without rebuilding; two useful fractions | Without strokes, 0 OS pages change; calculus remains formula-sensitive |
+| Radical geometry | Keep, calculus in scope | Zero changed pages | Zero changed pages |
+| Large-bracket reconstruction | Keep, calculus in scope | Zero encoded bracket hits; two table pages changed by border artifacts | Removing it changes 10 pages, 16 non-whitespace characters, +6 fragments |
+| Vertical/absolute-value bars | Keep, calculus in scope | Two recursion table pages, five characters from table borders | Zero changed pages |
+| Limit/big-operator attachment | Keep, calculus in scope | One self-adjusting page, 26 characters; incorrect `min` attachment | Removing it changes 126 pages, 1,365 characters, −4 fragments |
+| Region joining, scripts and horizontal fractions | Keep | 243 changed pages / 580 extra fragments without rebuilding; two useful fractions | Without strokes, 0 OS pages change; calculus remains formula-sensitive |
 
-The combined removed-feature ablation changes 131 current pages / 1,379 characters
-and adds one fragment. Calculus has returned after the original simplification
-was scoped: its revised fragment rate is 11.02% versus 10.51% with the original
-rules. These numbers do not establish that the removed formula rules bring no
-benefit on calculus. The change retains the previously selected simplification;
-restoring or replacing formula/figure reconstruction belongs to the separate
-follow-up. VNI decoding is restored per D1 rather than inferred unnecessary from
-an absent corpus hit.
+Removing all formula-specific features together would change 131 current pages /
+1,379 characters. With them kept, revised calculus text is identical to the
+original rules on every page. VNI decoding is kept per D1 rather than inferred
+unnecessary from an absent corpus hit.
 
 ## OCR warnings and source boundaries
 
@@ -140,9 +151,10 @@ The measurement cache keys include the language order and rendered image bytes.
 
 Chunking rules and page-number locators are unchanged. Every file has identical
 covered source pages before/after, with no invented page numbers. Total chunks
-are 420 → 419 (calculus 276 → 275; OS 144 → 144); extracted text/title changes can
-shift chunk boundaries. Warning-only pages are explicitly excluded from chunk
-locators. This is preservation of the chunking contract, not identical chunk text.
+are 420 → 420 (calculus 276 → 276; OS 144 → 144). Calculus chunk content and
+locators are identical to the original reader. OS chunk text changes where code,
+bullets and reading order are repaired. Warning-only pages are explicitly excluded
+from chunk locators.
 
 ## Retrieval replay
 
@@ -161,43 +173,50 @@ existing hybrid/rerank candidate budget is unchanged. No generated queries, fake
 embeddings or substitute reranker scores are used. These few probes check usable
 content and locators, not statistically significant retrieval or formula accuracy.
 
-Each cell is original → revised. Indexed chunks match the extraction measurement: 420 → 419.
+Each cell is the original-reader replay (420 chunks). Retrieval is scoped per
+course, and the replay caches real model vectors by chunk text. Calculus chunks are
+now identical to the original reader, so the calculus rows apply unchanged to the
+revised reader: dense calculus Recall@1 stays 0.833. The replay was not rerun after
+the formula rules were restored. The earlier revision's OS chunks gave the same
+ranks as the original on every OS probe in every mode. The current OS text differs
+from that revision only by line order on nine pages (page numbers and Gantt-chart
+labels in CPU Scheduling and Synchronization Tools). No OS rank is claimed for the
+current revision beyond that.
 
 | Mode / subject | Recall@1 | Recall@3 | Recall@5 | Recall@10 | MRR@10 | nDCG@10 |
 | --- | --- | --- | --- | --- | --- | --- |
-| dense / all | 0.583 → 0.500 | 0.833 → 0.833 | 0.917 → 0.917 | 1.000 → 1.000 | 0.727 → 0.686 | 0.794 → 0.763 |
-| dense / calculus 1 | 0.833 → 0.667 | 0.833 → 0.833 | 1.000 → 1.000 | 1.000 → 1.000 | 0.875 → 0.792 | 0.905 → 0.844 |
-| dense / operating-system | 0.333 → 0.333 | 0.833 → 0.833 | 0.833 → 0.833 | 1.000 → 1.000 | 0.579 → 0.579 | 0.683 → 0.683 |
-| hybrid / all | 0.500 → 0.500 | 0.833 → 0.833 | 0.833 → 0.917 | 1.000 → 1.000 | 0.665 → 0.654 | 0.746 → 0.738 |
-| hybrid / calculus 1 | 0.333 → 0.333 | 0.833 → 0.833 | 0.833 → 1.000 | 1.000 → 1.000 | 0.556 → 0.533 | 0.665 → 0.648 |
-| hybrid / operating-system | 0.667 → 0.667 | 0.833 → 0.833 | 0.833 → 0.833 | 1.000 → 1.000 | 0.774 → 0.774 | 0.827 → 0.827 |
-| hybrid+rerank / all | 0.583 → 0.583 | 1.000 → 1.000 | 1.000 → 1.000 | 1.000 → 1.000 | 0.778 → 0.778 | 0.835 → 0.835 |
-| hybrid+rerank / calculus 1 | 0.500 → 0.500 | 1.000 → 1.000 | 1.000 → 1.000 | 1.000 → 1.000 | 0.722 → 0.722 | 0.794 → 0.794 |
-| hybrid+rerank / operating-system | 0.667 → 0.667 | 1.000 → 1.000 | 1.000 → 1.000 | 1.000 → 1.000 | 0.833 → 0.833 | 0.877 → 0.877 |
+| dense / all | 0.583 | 0.833 | 0.917 | 1.000 | 0.727 | 0.794 |
+| dense / calculus 1 | 0.833 | 0.833 | 1.000 | 1.000 | 0.875 | 0.905 |
+| dense / operating-system | 0.333 | 0.833 | 0.833 | 1.000 | 0.579 | 0.683 |
+| hybrid / all | 0.500 | 0.833 | 0.833 | 1.000 | 0.665 | 0.746 |
+| hybrid / calculus 1 | 0.333 | 0.833 | 0.833 | 1.000 | 0.556 | 0.665 |
+| hybrid / operating-system | 0.667 | 0.833 | 0.833 | 1.000 | 0.774 | 0.827 |
+| hybrid+rerank / all | 0.583 | 1.000 | 1.000 | 1.000 | 0.778 | 0.835 |
+| hybrid+rerank / calculus 1 | 0.500 | 1.000 | 1.000 | 1.000 | 0.722 | 0.794 |
+| hybrid+rerank / operating-system | 0.667 | 1.000 | 1.000 | 1.000 | 0.833 | 0.877 |
 
-Probe numbers follow the fixed order in `PROBES` in the replay script.
+Probe numbers follow the fixed order in `PROBES` in the replay script. "Removed"
+is the superseded revision without formula rules. Calculus ranks for the current
+revision equal the original column.
 
-| Probe / source page | Dense L/R | Hybrid L/R | Reranked L/R | Gold chunks L/R |
+| Probe / source page | Dense original/removed | Hybrid original/removed | Reranked original/removed | Gold chunks |
 | --- | --- | --- | --- | --- |
-| Q1: calculus 1/1. Giới hạn dãy số.pdf:4 | 1/1 | 1/1 | 1/1 | 1/1 |
-| Q2: calculus 1/2. Giới hạn và liên tục hàm một biến.pdf:8 | 1/1 | 1/1 | 1/1 | 1/1 |
-| Q3: calculus 1/3. Đạo hàm và vi phân.pdf:8 | 1/1 | 6/5 | 1/1 | 1/1 |
-| Q4: calculus 1/4. Tích phân xác định.pdf:4 | 1/2 | 3/3 | 3/3 | 2/2 |
-| Q5: calculus 1/5. Tích phân bất định.pdf:4 | 1/1 | 2/3 | 2/2 | 2/2 |
-| Q6: calculus 1/6. Tích phân suy rộng.pdf:4 | 4/4 | 3/3 | 2/2 | 1/1 |
-| Q7: operating-system/Chapter 2_Operating System Structures.pdf:4 | 1/1 | 1/1 | 1/1 | 1/1 |
-| Q8: operating-system/Chapter 3_Processes.pdf:8 | 1/1 | 1/1 | 2/2 | 1/1 |
-| Q9: operating-system/Chapter 4_Threads & Concurency.pdf:8 | 2/2 | 2/2 | 2/2 | 1/1 |
-| Q10: operating-system/Chapter 5_CPU Scheduling.pdf:8 | 7/7 | 7/7 | 1/1 | 1/1 |
-| Q11: operating-system/Chapter 5_CPU Scheduling.pdf:20 | 2/2 | 1/1 | 1/1 | 1/1 |
-| Q12: operating-system/Chapter 6_Synchronization Tools.pdf:8 | 3/3 | 1/1 | 1/1 | 1/1 |
+| Q1: calculus 1/1. Giới hạn dãy số.pdf:4 | 1/1 | 1/1 | 1/1 | 1 |
+| Q2: calculus 1/2. Giới hạn và liên tục hàm một biến.pdf:8 | 1/1 | 1/1 | 1/1 | 1 |
+| Q3: calculus 1/3. Đạo hàm và vi phân.pdf:8 | 1/1 | 6/5 | 1/1 | 1 |
+| Q4: calculus 1/4. Tích phân xác định.pdf:4 | 1/2 | 3/3 | 3/3 | 2 |
+| Q5: calculus 1/5. Tích phân bất định.pdf:4 | 1/1 | 2/3 | 2/2 | 2 |
+| Q6: calculus 1/6. Tích phân suy rộng.pdf:4 | 4/4 | 3/3 | 2/2 | 1 |
+| Q7: operating-system/Chapter 2_Operating System Structures.pdf:4 | 1/1 | 1/1 | 1/1 | 1 |
+| Q8: operating-system/Chapter 3_Processes.pdf:8 | 1/1 | 1/1 | 2/2 | 1 |
+| Q9: operating-system/Chapter 4_Threads & Concurency.pdf:8 | 2/2 | 2/2 | 2/2 | 1 |
+| Q10: operating-system/Chapter 5_CPU Scheduling.pdf:8 | 7/7 | 7/7 | 1/1 | 1 |
+| Q11: operating-system/Chapter 5_CPU Scheduling.pdf:20 | 2/2 | 1/1 | 1/1 | 1 |
+| Q12: operating-system/Chapter 6_Synchronization Tools.pdf:8 | 3/3 | 1/1 | 1/1 | 1 |
 
-Production hybrid+rerank ranks are identical across all 12 probes. Dense worsens
-on Q4 (definite-integral construction), rank 1 → 2. Unreranked hybrid improves
-on Q3 (absolute-value derivative), rank 6 → 5, and worsens on Q5 (antiderivative
-definition), rank 2 → 3. Hybrid aggregate MRR@10 falls 0.665 → 0.654 and nDCG@10
-0.746 → 0.738, while Recall@5 rises 0.833 → 0.917. All remaining ranks are
-unchanged. These mixed results are retained, without changing embedding or
+The superseded revision worsened dense Q4 (definite-integral construction) from
+rank 1 to 2 and moved unreranked hybrid Q3/Q5. Restoring the formula rules
+returns all calculus ranks to the original values without changing embedding or
 reranker models.
 
 
@@ -205,11 +224,11 @@ reranker models.
 
 | Check (2026-10-26) | Result |
 | --- | --- |
-| Full backend suite on a fresh private database | 1,158 passed; one live-LLM test deselected |
-| Final focused OCR/layout tests after adding the language/render check | 29 passed |
-| PDF slide-layout tests | 12 passed in the preceding 40-test focused run |
+| Full backend suite on a fresh private database, before the formula rules were restored | 1,158 passed; one live-LLM test deselected |
+| Focused PDF layout, slide-layout, OCR-warning and document-reader tests after restoring the formula rules | 55 passed |
+| Extraction measurement after restoring the formula rules | Calculus identical to the original rules on 411 / 411 pages |
 | Course document-page frontend tests | 49 passed |
-| Ruff, whitespace checks | Passed |
+| Ruff on changed Python files, whitespace checks | Passed after the restore |
 
 The backend suite covers persistence through finished-job payload cleanup, API
 warnings, unreadable uploads, chunk locators and migration ordering. The final

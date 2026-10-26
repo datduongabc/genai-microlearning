@@ -20,14 +20,6 @@ def test_code_written_in_separate_adjacent_runs_is_joined(page):
     assert page_lines(page) == ["end list"]
 
 
-def test_table_rules_are_not_rebuilt_as_fractions(page):
-    page.insert_text((50, 90), "Efficiency", fontsize=14)
-    page.insert_text((50, 110), "logarithmic", fontsize=14)
-    page.insert_text((113, 90), "a", fontname="symb", fontsize=14)
-    page.draw_line((45, 95), (120, 95))
-    assert page_lines(page) == ["Efficiency α", "logarithmic"]
-
-
 def test_same_letter_in_distinct_table_cells_is_kept(page):
     page.insert_text((50, 100), "F")
     page.insert_text((250, 100), "F")
