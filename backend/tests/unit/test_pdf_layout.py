@@ -13,7 +13,7 @@ import pymupdf
 import pytest
 
 from app.ingestion.document_readers import read_document
-from app.ingestion.pdf_layout import map_font_text, page_lines
+from app.ingestion.pdf_layout import map_font_text, page_lines, vni_to_unicode
 
 
 def _compact(text: str) -> str:
@@ -65,6 +65,19 @@ def test_glyphs_above_and_below_a_drawn_bar_are_a_fraction(page):
     page.insert_text((42, 99), "=", fontname="symb", fontsize=14)
 
     assert [_compact(line) for line in page_lines(page)] == ["y=(a+1)/b"]
+
+
+def test_a_bulleted_fraction_over_a_drawn_bar_is_still_a_fraction(page):
+    page.insert_text((15, 99), "\xb7", fontname="symb", fontsize=14)
+    page.insert_text((60, 90), "a", fontname="tiit", fontsize=14)
+    page.insert_text((80, 90), "1", fontname="tiro", fontsize=14)
+    page.insert_text((70, 90), "+", fontname="symb", fontsize=14)
+    page.draw_line((55, 95), (95, 95), width=1)
+    page.insert_text((72, 110), "b", fontname="tiit", fontsize=14)
+    page.insert_text((30, 99), "y", fontname="tiit", fontsize=14)
+    page.insert_text((42, 99), "=", fontname="symb", fontsize=14)
+
+    assert page_lines(page) == ["• y = (a + 1)/b"]
 
 
 def test_a_named_function_over_a_drawn_bar_is_still_a_fraction(page):
@@ -193,6 +206,28 @@ def test_pieces_of_a_tall_bracket_are_flagged_as_brackets(piece, bracket):
 
 def test_dingbat_bullets_become_a_bullet():
     assert map_font_text("", "Wingdings") == ("•", False)
+
+
+@pytest.mark.parametrize(
+    "encoded, expected",
+    [
+        ("Chöông", "Chương"),
+        ("Ñaïi hoïc", "Đại học"),
+        ("thöôøng xuyeân", "thường xuyên"),
+        ("Kyø voïng cuûa bieán ngaãu nhieân", "Kỳ vọng của biến ngẫu nhiên"),
+        ("LÔØI GIAÛI", "LỜI GIẢI"),
+        ("Ñònh nghóa", "Định nghĩa"),
+        ("aên nhaèm", "ăn nhằm"),
+    ],
+)
+def test_vni_encoded_vietnamese_becomes_unicode(encoded, expected):
+    assert vni_to_unicode(encoded) == expected
+
+
+def test_text_without_vni_codes_is_unchanged_by_the_vni_decoder():
+    text = "Operating systems and processes"
+
+    assert vni_to_unicode(text) == text
 
 
 def test_symbol_font_bullets_keep_the_ordinary_line_reading(page):

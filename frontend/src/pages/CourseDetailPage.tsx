@@ -83,7 +83,7 @@ function failureTitle(failure: DocumentFailure): string {
 }
 
 const WARNING_LABEL: Record<string, string> = {
-  ocr_failed: "Không đọc được bằng OCR",
+  ocr_failed: "OCR không đọc được",
 };
 
 function extractionWarningLines(warnings: DocumentInfo["extraction_warnings"]) {

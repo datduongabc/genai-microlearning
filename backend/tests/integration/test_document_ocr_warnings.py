@@ -9,7 +9,7 @@ from fastapi.testclient import TestClient
 from app.auth.security import create_access_token
 from app.db import SessionLocal
 from app.ingestion.document_pipeline import run_document_pipeline_step
-from app.jobs.queue import enqueue_job
+from app.jobs.queue import enqueue_job, execute_job_step, handle_job_error
 from app.main import app
 from app.models import Course, Document, DocumentStatus, Job, JobType, User
 
@@ -87,9 +87,20 @@ def test_warning_survives_successful_embedding_and_a_fresh_document_list(world):
     assert doc["failures"] == []
 
 
-def test_a_completely_unreadable_document_keeps_warnings_before_failing(world):
+def test_a_completely_unreadable_document_keeps_warnings_and_shows_why_it_failed(world):
     _doc_id, job_id = _upload(world, "")
-    with pytest.raises(ValueError, match="Không đọc được nội dung"):
-        _step(job_id)
-    warnings = _documents(world)[0]["extraction_warnings"]
-    assert [warning["page"] for warning in warnings] == [1, 2]
+    db = SessionLocal()
+    try:
+        # What the worker loop does with a step that raises.
+        with pytest.raises(ValueError) as failure:
+            execute_job_step(db.get(Job, job_id))
+    finally:
+        db.close()
+    handle_job_error(job_id, failure.value)
+
+    doc = _documents(world)[0]
+    assert doc["status"] == "failed"
+    assert [warning["page"] for warning in doc["extraction_warnings"]] == [1, 2]
+    assert [f["error"] for f in doc["failures"]] == [
+        "Không đọc được nội dung tài liệu; hãy tải lại bản có lớp chữ."
+    ]

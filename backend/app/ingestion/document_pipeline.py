@@ -45,9 +45,7 @@ def _run_extract(job) -> None:
         units = read_document(storage_path, course_id=course_id, source_id=filename)
         doc.raw_text = "\n\n".join(u.text for u in units if u.text)
         # Persist before rejecting an unreadable document, and keep them after job cleanup.
-        doc.extraction_warnings = list({
-            (w["code"], w.get("page")): w for u in units for w in u.warnings
-        }.values())
+        doc.extraction_warnings = [w for u in units for w in u.warnings]
         if not doc.raw_text.strip():
             db.commit()
             raise ValueError("Không đọc được nội dung tài liệu; hãy tải lại bản có lớp chữ.")

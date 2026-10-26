@@ -53,7 +53,6 @@ def read_pdf(path: str) -> list[DocumentUnit]:
             page_text = "\n".join(page_lines(page, code_lines=code_lines))
             titles = title_candidates(page)
             extraction_method = "text_layer"
-            warnings = []
             if len(page_text.strip()) < MIN_TEXT_LEN_PER_PAGE:
                 try:
                     pix = page.get_pixmap(dpi=200)
@@ -70,21 +69,12 @@ def read_pdf(path: str) -> list[DocumentUnit]:
                     # text already successfully extracted from every other
                     # page in the document.
                     logger.warning(f"[document_readers] OCR failed on page {page_index + 1} of {path}: {e}")
-                    extraction_method = "ocr_failed"
                     if not page_text.strip():
-                        warnings.append({
-                            "code": "ocr_failed", "page": page_index + 1,
-                            "message": f"Không đọc được trang {page_index + 1} bằng OCR. "
-                                       "Nội dung trang này có thể thiếu; hãy kiểm tra hoặc tải lại "
-                                       "bản PDF có lớp chữ.",
+                        raw_units.append({
+                            "page": page_index + 1, "lines": [], "numbered": None,
+                            "titles": titles, "extraction_method": "ocr_failed",
+                            "warnings": [{"code": "ocr_failed", "page": page_index + 1}],
                         })
-
-            if warnings and not page_text.strip():
-                raw_units.append({
-                    "page": page_index + 1, "lines": [], "numbered": None,
-                    "titles": titles, "extraction_method": extraction_method,
-                    "warnings": warnings,
-                })
 
             lines_all = page_text.split("\n")
             current_lines, current_heading = [], None
@@ -96,7 +86,6 @@ def read_pdf(path: str) -> list[DocumentUnit]:
                         "page": page_index + 1, "lines": stripped, "numbered": current_heading,
                         "titles": titles,
                         "extraction_method": extraction_method,
-                        "warnings": warnings,
                     })
 
             for line_index, line in enumerate(lines_all):
@@ -132,7 +121,7 @@ def read_pdf(path: str) -> list[DocumentUnit]:
         units.append(DocumentUnit(
             text="\n".join(u["lines"]),
             locator={"page": u["page"], "heading": heading, "extraction_method": u["extraction_method"]},
-            warnings=u["warnings"],
+            warnings=u.get("warnings", []),
         ))
     return units
 

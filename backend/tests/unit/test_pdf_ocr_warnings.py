@@ -37,9 +37,8 @@ def test_failed_ocr_records_the_page_and_logs_it_without_changing_valid_chunks(
     failed = units[1]
     assert failed.text == ""
     assert failed.locator["extraction_method"] == "ocr_failed"
-    assert failed.warnings[0]["page"] == 2
-    assert failed.warnings[0]["code"] == "ocr_failed"
-    assert "2" in failed.warnings[0]["message"]
+    assert failed.warnings == [{"code": "ocr_failed", "page": 2}]
+    assert units[0].warnings == []
     assert "page 2" in caplog.text
     chunks = chunk_units(units)
     assert len(chunks) == 1
@@ -55,6 +54,7 @@ def test_failed_ocr_keeps_the_small_existing_text_layer(tmp_path, monkeypatch):
     units = read_pdf(_pdf(tmp_path, ["Short title"]))
 
     assert units[0].text == "Short title"
+    assert units[0].locator["extraction_method"] == "text_layer"
     assert units[0].warnings == []
 
 

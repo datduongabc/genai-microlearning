@@ -614,16 +614,18 @@ def _line_text(spans: list[dict], vni_fonts: frozenset[str]) -> str:
             elif shift < -0.1 * base["size"]:
                 text = "_" + text.strip()
         out.append(text)
-    return "".join(out).rstrip()
+    text = "".join(out).rstrip()
+    # Chỉ thụt lề của mã nguồn mang nghĩa; khoảng trắng đầu dòng chữ thường bỏ đi.
+    return text if any(s["flags"] & pymupdf.TEXT_FONT_MONOSPACED for s in visible) else text.lstrip()
 
 
 def page_lines(page: pymupdf.Page, *, code_lines: set[int] | None = None) -> list[str]:
     """Các dòng chữ của trang theo thứ tự đọc, công thức đã được dựng lại thành một dòng."""
     blocks = [b for b in page.get_text("rawdict", flags=_TEXT_FLAGS)["blocks"] if b["type"] == 0 and b["lines"]]
-    vni_fonts = frozenset(_vni_fonts(blocks))
     if not blocks:
         return []
     rules, verticals = _strokes(page) if any(_block_is_mathlike(b) for b in blocks) else ([], [])
+    vni_fonts = frozenset(_vni_fonts(blocks))
     out: list[str] = []
     previous = None
     for region in _regions(blocks):
@@ -647,7 +649,7 @@ def page_lines(page: pymupdf.Page, *, code_lines: set[int] | None = None) -> lis
         owners = [i for i in region for _ in blocks[i]["lines"]]
         texts = [_line_text(line["spans"], vni_fonts) for line in lines]
         has_bullets = any(text.strip() in {"•", "▪", "❖"} for text in texts)
-        if (not math or has_bullets or (has_code and not region_rules)
+        if (not math or ((has_bullets or has_code) and not region_rules)
                 or (not _is_shattered(boxes) and not region_rules)):
             for owner, line, text in zip(owners, lines, texts):
                 # Chữ vẽ hai lần chồng khít (hiệu ứng bóng của tiêu đề slide) chỉ giữ một lần.
@@ -707,9 +709,9 @@ def title_candidates(page: pymupdf.Page) -> list[str]:
     """Các dòng to hơn hẳn chữ thân bài, dòng to nhất trước. Trên slide, tiêu đề là dòng cỡ chữ
     lớn nhất chứ không phải dòng đầu tiên: PyMuPDF hay trả chân trang hoặc số trang ra trước."""
     blocks = [b for b in page.get_text("rawdict", flags=_TEXT_FLAGS)["blocks"] if b["type"] == 0 and b["lines"]]
-    vni_fonts = frozenset(_vni_fonts(blocks))
     if not blocks:
         return []
+    vni_fonts = frozenset(_vni_fonts(blocks))
 
     def is_math(span: dict) -> bool:
         return any(f in span["font"].lower() for f in _MATH_FONTS)

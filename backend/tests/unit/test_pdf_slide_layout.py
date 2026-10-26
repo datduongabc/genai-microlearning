@@ -42,6 +42,13 @@ def test_pdf_reader_keeps_explicit_code_indentation(tmp_path):
     assert "\n    run();\n" in read_pdf(str(path))[0].text
 
 
+def test_leading_spaces_of_prose_and_table_cells_are_dropped_but_code_keeps_them(page):
+    page.insert_text((50, 80), "    Priority", fontname="helv", fontsize=12)
+    page.insert_text((50, 120), "    run();", fontname="cour", fontsize=12)
+
+    assert page_lines(page) == ["Priority", "    run();"]
+
+
 def test_footer_touching_the_last_code_line_does_not_reorder_the_code(page):
     # A footer is emitted before the body by Office PDFs. Its bounding box can
     # touch the closing brace; grouping ordinary overlaps moved that brace first.
