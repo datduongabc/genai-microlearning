@@ -392,8 +392,12 @@ def _duration_seconds(path: str) -> float:
     return float(result.stdout)
 
 
-def _transcribe_piece(path: str, offset: float, deadline: float) -> list[dict]:
+def _transcribe_piece(path: str, offset: float, deadline: float,
+                      failed: threading.Event) -> list[dict]:
     for attempt in range(3):
+        # A sibling already failed the document; never spend ASR quota on it.
+        if failed.is_set():
+            return []
         try:
             if time.monotonic() >= deadline:
                 raise TimeoutError("Audio transcription deadline expired")
@@ -421,7 +425,7 @@ def _transcribe_piece(path: str, offset: float, deadline: float) -> list[dict]:
                     f"Phien am doan {minutes:02d}:{seconds:02d} that bai: {reason}; "
                     "tai lieu chua duoc nhap, vui long thu lai sau."
                 ) from exc
-            time.sleep(delay)
+            failed.wait(delay)
     raise AssertionError("unreachable")
 
 
@@ -468,7 +472,6 @@ def _merge_audio_segments(pieces: list[tuple[float, float, list[dict]]]) -> list
 
 def _transcribe_window(path: str, tmp: str, index: int, start: float,
                        length: float, deadline: float, failed: threading.Event) -> list[dict]:
-    # The document already failed; a queued window must not spend ASR quota.
     if failed.is_set():
         return []
     try:
@@ -479,7 +482,7 @@ def _transcribe_window(path: str, tmp: str, index: int, start: float,
             raise ValueError(f"Khong the xu ly doan {minutes:02d}:{seconds:02d}: ffmpeg that bai") from exc
         if os.path.getsize(piece) > _AUDIO_UPLOAD_BYTES:
             raise ValueError("Audio vuot gioi han 24 MB sau khi chia")
-        return _transcribe_piece(piece, start, deadline)
+        return _transcribe_piece(piece, start, deadline, failed)
     except Exception:
         failed.set()
         raise

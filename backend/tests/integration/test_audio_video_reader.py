@@ -115,10 +115,11 @@ def _rate_limit(retry_after="2"):
     openai.APIConnectionError(request=httpx.Request("POST", "http://x")),
 ])
 def test_failed_segment_retries_without_resending_successful_segments(error):
+    failed = threading.Event()
     with patch.object(readers, "transcribe_audio", side_effect=[error, [
         {"start": 0, "end": 2, "text": "speech"}
-    ]]), patch.object(readers.time, "sleep") as sleep:
-        result = readers._transcribe_piece("part.mp3", 598, readers.time.monotonic() + 600)
+    ]]), patch.object(failed, "wait", return_value=False) as sleep:
+        result = readers._transcribe_piece("part.mp3", 598, readers.time.monotonic() + 600, failed)
     assert result[0]['text'] == 'speech'
     assert sleep.call_count == 1
 
@@ -163,7 +164,7 @@ def test_queued_segment_does_not_upload_after_document_deadline():
     with patch.object(readers, "transcribe_audio") as transcribe, pytest.raises(
         ValueError, match="09:58.*TimeoutError"
     ):
-        readers._transcribe_piece("part.mp3", 598, readers.time.monotonic() - 1)
+        readers._transcribe_piece("part.mp3", 598, readers.time.monotonic() - 1, threading.Event())
     transcribe.assert_not_called()
 
 
@@ -183,19 +184,18 @@ def test_retry_does_not_repeat_a_successful_sibling(tmp_path):
         return [{"start": 3, "end": 4, "text": name}]
     with patch.object(readers, "_duration_seconds", return_value=700), patch.object(
         readers.subprocess, "run", side_effect=_fake_ffmpeg
-    ), patch.object(readers, "transcribe_audio", side_effect=transcribe), patch.object(
-        readers.time, "sleep"
-    ):
+    ), patch.object(readers, "transcribe_audio", side_effect=transcribe):
         units = readers.read_audio_video(str(path))
     assert calls == {'part000': 1, 'part001': 2}
     assert [u.text for u in units] == ['part000', 'part001']
 
 
 def test_permanently_failed_segment_stops_after_three_attempts():
+    failed = threading.Event()
     with patch.object(readers, "transcribe_audio", side_effect=_rate_limit('1')) as transcribe, patch.object(
-        readers.time, "sleep"
+        failed, "wait", return_value=False
     ), pytest.raises(ValueError, match="09:58.*han muc audio Groq"):
-        readers._transcribe_piece('part.mp3', 598, readers.time.monotonic() + 600)
+        readers._transcribe_piece('part.mp3', 598, readers.time.monotonic() + 600, failed)
     assert transcribe.call_count == 3
 
 
@@ -298,3 +298,30 @@ def test_failed_window_cancels_queued_siblings_before_upload(tmp_path):
     ):
         readers.read_audio_video(str(path))
     assert uploaded == ['part000']
+
+
+def test_sibling_sleeping_on_backoff_never_reuploads_after_document_failure(tmp_path):
+    path = tmp_path / 'lecture.mp4'
+    path.write_bytes(b'input')
+    uploaded, backing_off = [], threading.Event()
+    def transcribe(piece):
+        name = Path(piece).stem
+        uploaded.append(name)
+        if name == 'part000':
+            backing_off.set()
+            raise _rate_limit('30')
+        assert backing_off.wait(5)
+        raise openai.BadRequestError('bad audio', response=httpx.Response(
+            400, request=httpx.Request('POST', 'http://x')), body=None)
+    with (
+        ThreadPoolExecutor(max_workers=2) as pool,
+        ThreadPoolExecutor(max_workers=1) as caller,
+        patch.object(readers, '_ASR_EXECUTOR', pool),
+        patch.object(readers, '_duration_seconds', return_value=700),
+        patch.object(readers.subprocess, 'run', side_effect=_fake_ffmpeg),
+        patch.object(readers, 'transcribe_audio', side_effect=transcribe),
+    ):
+        future = caller.submit(readers.read_audio_video, str(path))
+        with pytest.raises(ValueError, match='09:58.*BadRequestError'):
+            future.result(timeout=5)
+    assert sorted(uploaded) == ['part000', 'part001']
