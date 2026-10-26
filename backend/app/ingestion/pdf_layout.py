@@ -1,12 +1,9 @@
-"""Đọc chữ slide bài giảng: đổi mã phông và các sửa bố cục đã đo trên slide DSA/HĐH.
-
-Bộ tài liệu còn mã nguồn bị tách mảnh, chỉ số trên và hai slide có phân số; chỉ giữ các
-sửa cho những trường hợp đó.
-"""
+"""Đọc chữ slide: đổi mã phông, giữ bố cục mã nguồn và nối các mảnh chữ bị tách."""
 
 import bisect
 import re
 import statistics
+import unicodedata
 from dataclasses import dataclass
 
 import pymupdf
@@ -47,6 +44,65 @@ _DINGBAT_FONTS = ("wingdings", "webdings", "monotypesorts", "zapfdingbats", "din
 _MATH_FONTS = ("symbol", "cmmi", "cmsy", "cmex", "cmr", "mt extra", "mt-extra", "cambria math", "math")
 
 
+# Bảng mã VNI: dấu thanh và dấu mũ là một ký tự Latin-1 đứng ngay sau nguyên âm ("eá" là ế,
+# "oâ" là ô), vài chữ riêng dùng một ký tự đơn ("ö" là ư, "ñ" là đ). Tệp có kèm bảng chuyển mã
+# thì PyMuPDF đã ra đúng Unicode; tệp không kèm thì ra chuỗi này, và cả trang thành rác.
+_COMBINING = {"sac": "́", "huyen": "̀", "hoi": "̉", "nga": "̃", "nang": "̣"}
+_VNI_TONES = {"ù": "sac", "ø": "huyen", "û": "hoi", "õ": "nga", "ï": "nang"}
+_VNI_CIRCUMFLEX = {"â": None, "á": "sac", "à": "huyen", "å": "hoi", "ã": "nga", "ä": "nang"}
+_VNI_BREVE = {"ê": None, "é": "sac", "è": "huyen", "ú": "hoi", "ü": "nga", "ë": "nang"}
+# Chữ đứng một mình: ơ, ư, và nguyên âm i, y mang dấu thanh đã gói sẵn trong một ký tự.
+_VNI_SINGLE = {"ô": "ơ", "ö": "ư", "ñ": "đ", "í": "í", "ì": "ì", "æ": "ỉ", "ó": "ĩ", "ò": "ị", "î": "ỵ"}
+# Ký tự không bao giờ có trong tiếng Việt Unicode: gặp chúng trong phông VNI nghĩa là chữ chưa
+# được chuyển mã, còn không gặp thì PyMuPDF đã chuyển đúng và không được động vào.
+_VNI_ONLY = set("øûïåäëüñöæîØÛÏÅÄËÜÑÖÆÎ")
+
+
+def _vni_table() -> dict[str, str]:
+    def compose(base: str, *marks: str) -> str:
+        return unicodedata.normalize("NFC", base + "".join(marks))
+
+    table: dict[str, str] = {}
+    for lower in (False, True):
+        def case(s: str) -> str:
+            return s.lower() if lower else s.upper()
+
+        for vowel in "aeiouy":
+            for mark, tone in _VNI_TONES.items():
+                table[case(vowel + mark)] = case(compose(vowel, _COMBINING[tone]))
+        for vowel in "aeo":
+            for mark, tone in _VNI_CIRCUMFLEX.items():
+                table[case(vowel + mark)] = case(compose(vowel, "̂", *([_COMBINING[tone]] if tone else [])))
+        for mark, tone in _VNI_BREVE.items():
+            table[case("a" + mark)] = case(compose("a", "̆", *([_COMBINING[tone]] if tone else [])))
+        for vowel, horn in (("ô", "o"), ("ö", "u")):
+            for mark, tone in _VNI_TONES.items():
+                table[case(vowel + mark)] = case(compose(horn, "̛", _COMBINING[tone]))
+        for single, target in _VNI_SINGLE.items():
+            table[case(single)] = case(target)
+    return table
+
+
+_VNI = _vni_table()
+# Cặp hai ký tự phải khớp trước ký tự đơn trong cùng một lượt: "ôù" là ớ, còn đổi "ô" thành ơ
+# trước thì không còn nhận ra cặp đó nữa.
+_VNI_RE = re.compile("|".join(sorted(map(re.escape, _VNI), key=len, reverse=True)))
+
+
+def vni_to_unicode(text: str) -> str:
+    return _VNI_RE.sub(lambda m: _VNI[m.group(0)], text)
+
+
+def _vni_fonts(blocks: list[dict]) -> set[str]:
+    fonts = set()
+    for block in blocks:
+        for line in block["lines"]:
+            for span in line["spans"]:
+                if span["font"].lower().startswith("vni") and _VNI_ONLY & set(_span_text(span)):
+                    fonts.add(span["font"])
+    return fonts
+
+
 # rawdict mặc định kèm cả dữ liệu ảnh của trang, chậm gấp trăm lần trên slide nhiều hình mà ở
 # đây chỉ cần chữ.
 _TEXT_FLAGS = pymupdf.TEXTFLAGS_RAWDICT & ~pymupdf.TEXT_PRESERVE_IMAGES
@@ -56,8 +112,10 @@ def _is_private(c: str) -> bool:
     return 0xE000 <= ord(c) <= 0xF8FF
 
 
-def map_font_text(text: str, font: str) -> str:
-    """Decode Symbol and dingbat glyphs used by the retained lecture slides."""
+def map_font_text(text: str, font: str, vni_fonts: frozenset[str] = frozenset()) -> str:
+    """Decode VNI, Symbol and dingbat glyphs used by lecture slides."""
+    if font in vni_fonts:
+        return vni_to_unicode(text)
     name = font.lower()
     if any(f in name for f in _DINGBAT_FONTS):
         return "".join("•" if _is_private(c) or not c.isspace() else c for c in text)
@@ -116,7 +174,7 @@ class _Rule:
 
 
 def _strokes(page: pymupdf.Page) -> list[_Rule]:
-    """Horizontal bars only: fractions occur on two slides in the retained corpus."""
+    """Horizontal bars used by the existing fraction repair."""
     rules = []
     for drawing in page.get_drawings():
         for item in drawing["items"]:
@@ -364,7 +422,7 @@ def _span_text(span: dict) -> str:
     return "".join(c["c"] for c in span["chars"])
 
 
-def _span_pieces(span: dict) -> list[_Piece]:
+def _span_pieces(span: dict, vni_fonts: frozenset[str]) -> list[_Piece]:
     """Tách một span thành từng từ theo vị trí ký tự. PyMuPDF gộp chữ cùng phông cùng cỡ vào
     một span ngay cả khi chúng nằm ở hai tầng khác nhau, như tử số của một phân số với chữ ở
     dòng chính, nên không thể coi cả span là một mảnh."""
@@ -376,7 +434,7 @@ def _span_pieces(span: dict) -> list[_Piece]:
     def flush() -> None:
         nonlocal current, space
         if current:
-            text = map_font_text("".join(c["c"] for c in current), span["font"])
+            text = map_font_text("".join(c["c"] for c in current), span["font"], vni_fonts)
             if text.strip():
                 pieces.append(_Piece(
                     min(c["bbox"][0] for c in current), min(c["bbox"][1] for c in current),
@@ -401,7 +459,7 @@ def _span_pieces(span: dict) -> list[_Piece]:
     return pieces
 
 
-def _line_text(spans: list[dict]) -> str:
+def _line_text(spans: list[dict], vni_fonts: frozenset[str]) -> str:
     """Một dòng PyMuPDF bình thường: chỉ đổi mã phông và đánh dấu chỉ số trên/dưới nằm trong dòng."""
     visible = [s for s in spans if _span_text(s).strip()]
     if not visible:
@@ -409,7 +467,7 @@ def _line_text(spans: list[dict]) -> str:
     base = max(visible, key=lambda s: s["size"])
     out = []
     for s in spans:
-        text = map_font_text(_span_text(s), s["font"])
+        text = map_font_text(_span_text(s), s["font"], vni_fonts)
         if s is not base and text.strip() and s["size"] < 0.8 * base["size"] and len(text.strip()) <= 4:
             shift = base["origin"][1] - s["origin"][1]
             if shift > 0.2 * base["size"]:
@@ -423,6 +481,7 @@ def _line_text(spans: list[dict]) -> str:
 def page_lines(page: pymupdf.Page, *, code_lines: set[int] | None = None) -> list[str]:
     """Các dòng chữ của trang theo thứ tự đọc, công thức đã được dựng lại thành một dòng."""
     blocks = [b for b in page.get_text("rawdict", flags=_TEXT_FLAGS)["blocks"] if b["type"] == 0 and b["lines"]]
+    vni_fonts = frozenset(_vni_fonts(blocks))
     if not blocks:
         return []
     rules = _strokes(page) if any(_block_is_mathlike(b) for b in blocks) else []
@@ -445,7 +504,7 @@ def page_lines(page: pymupdf.Page, *, code_lines: set[int] | None = None) -> lis
         math = any(_block_is_mathlike(blocks[i]) for i in region)
         has_code = any(s["flags"] & pymupdf.TEXT_FONT_MONOSPACED for line in lines for s in line["spans"])
         owners = [i for i in region for _ in blocks[i]["lines"]]
-        texts = [_line_text(line["spans"]) for line in lines]
+        texts = [_line_text(line["spans"], vni_fonts) for line in lines]
         has_bullets = any(text.strip() in {"•", "▪", "❖"} for text in texts)
         if (not math or has_bullets or (has_code and not region_rules)
                 or (not _is_shattered(boxes) and not region_rules)):
@@ -487,7 +546,7 @@ def page_lines(page: pymupdf.Page, *, code_lines: set[int] | None = None) -> lis
         pieces: list[_Piece] = []
         for line in lines:
             for s in line["spans"]:
-                for piece in _span_pieces(s):
+                for piece in _span_pieces(s, vni_fonts):
                     # Chữ vẽ hai lần chồng khít chỉ giữ một lần.
                     if any(q.text == piece.text and _overlap(q.x0, q.x1, piece.x0, piece.x1) > 0.8 * (piece.x1 - piece.x0)
                            and _overlap(q.y0, q.y1, piece.y0, piece.y1) > 0.8 * piece.height for q in pieces):
@@ -505,6 +564,7 @@ def title_candidates(page: pymupdf.Page) -> list[str]:
     """Các dòng to hơn hẳn chữ thân bài, dòng to nhất trước. Trên slide, tiêu đề là dòng cỡ chữ
     lớn nhất chứ không phải dòng đầu tiên: PyMuPDF hay trả chân trang hoặc số trang ra trước."""
     blocks = [b for b in page.get_text("rawdict", flags=_TEXT_FLAGS)["blocks"] if b["type"] == 0 and b["lines"]]
+    vni_fonts = frozenset(_vni_fonts(blocks))
     if not blocks:
         return []
 
@@ -522,7 +582,7 @@ def title_candidates(page: pymupdf.Page) -> list[str]:
     found: list[tuple[float, float, float, str]] = []
     for block in blocks:
         for line in block["lines"]:
-            text = _line_text(line["spans"]).strip()
+            text = _line_text(line["spans"], vni_fonts).strip()
             size = max(s["size"] for s in line["spans"])
             visible = [c for c in text if not c.isspace()]
             letters = sum(c.isalpha() for c in visible)

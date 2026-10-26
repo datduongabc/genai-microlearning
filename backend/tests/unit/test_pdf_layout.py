@@ -222,3 +222,24 @@ def test_a_page_whose_lines_are_all_the_same_size_has_no_heading_rather_than_a_w
     ]])
 
     assert headings == [None]
+
+
+def test_vni_decoder_requires_evidence_of_legacy_encoding(monkeypatch, page):
+    from app.ingestion import pdf_layout
+
+    page.insert_text((50, 80), "Vieät Nam", fontname="helv")
+    original = pymupdf.Page.get_text
+
+    def legacy_text(self, *args, **kwargs):
+        result = original(self, *args, **kwargs)
+        if args and args[0] == "rawdict":
+            for block in result["blocks"]:
+                for line in block.get("lines", []):
+                    for span in line["spans"]:
+                        span["font"] = "VNI-Times"
+        return result
+
+    monkeypatch.setattr(pymupdf.Page, "get_text", legacy_text)
+    assert page_lines(page) == ["Việt Nam"]
+    assert pdf_layout.map_font_text("Hòa bình", "VNI-Times") == "Hòa bình"
+    assert pdf_layout.vni_to_unicode("TRÖÔØNG ÑAÏI HOÏC") == "TRƯỜNG ĐẠI HỌC"

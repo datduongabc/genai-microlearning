@@ -1,4 +1,4 @@
-"""Compare every PDF of the four retained subjects with a pinned reader baseline.
+"""Compare every PDF of the available PDF subjects with a pinned reader baseline.
 
 Run from the repository root with backend/.venv/bin/python. Output goes to --output;
 PDFs are opened read-only. Character changes count replaced/inserted/deleted characters
@@ -23,11 +23,16 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "backend"))
 
 import pymupdf
-
 from app.ingestion import document_readers, pdf_layout
 from app.ingestion.chunker import chunk_units, document_title
 
-SUBJECTS = ("dsa", "operating-system", "program-fundamentals", "web-programming")
+
+def pdf_subjects(documents):
+    subjects = sorted(p.name for p in documents.iterdir() if p.is_dir() and any(p.glob("*.pdf")))
+    if not subjects:
+        raise ValueError(f"No PDF subjects in {documents}")
+    return subjects
+
 BULLET = re.compile(r"^[\s]*[•▪◦❖➢\uf06e\uf075]|^\s*[-–*o]\s")
 
 
@@ -70,7 +75,7 @@ def main():
     parser.add_argument("--baseline-ref", default="760483b9825d646d785e78ef3c56989998142088")
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--current-ref", help="Use a git reader snapshot instead of the worktree")
-    parser.add_argument("--ocr-container", help="Run Tesseract eng+vie in this private container")
+    parser.add_argument("--ocr-container", help="Run Tesseract with the reader language order in this private container")
     parser.add_argument("--ocr-cache", type=Path)
     parser.add_argument("--repeats", type=int, default=3)
     args = parser.parse_args()
@@ -88,7 +93,7 @@ def main():
             buffer = io.BytesIO()
             image.save(buffer, format="PNG")
             data = buffer.getvalue()
-            cached = (args.ocr_cache / (hashlib.sha256(data).hexdigest() + ".txt")) if args.ocr_cache else None
+            cached = (args.ocr_cache / (hashlib.sha256(lang.encode() + b"\0" + data).hexdigest() + ".txt")) if args.ocr_cache else None
             if cached and cached.exists():
                 return cached.read_text()
             result = subprocess.run(["docker", "exec", "-i", args.ocr_container, "tesseract",
@@ -100,7 +105,7 @@ def main():
             return result
         document_readers.pytesseract.image_to_string = ocr
     results, details = [], []
-    for subject in SUBJECTS:
+    for subject in pdf_subjects(args.documents):
         paths = sorted((args.documents / subject).glob("*.pdf"))
         if not paths:
             raise ValueError(f"No PDFs for {subject}")
@@ -226,7 +231,7 @@ def main():
     (args.output / "pdf-reader-files.json").write_text(json.dumps({
         "baseline_ref": args.baseline_ref, "pymupdf": pymupdf.VersionBind,
         "current_ref": args.current_ref or "worktree",
-        "ocr": "tesseract eng+vie" if args.ocr_container else "host pytesseract",
+        "ocr": "tesseract (reader language order)" if args.ocr_container else "host pytesseract",
         "repeats": args.repeats, "files": results}, ensure_ascii=False, indent=2) + "\n")
     (args.output / "pdf-reader-page-diffs.json").write_text(
         json.dumps(details, ensure_ascii=False, indent=2) + "\n")
