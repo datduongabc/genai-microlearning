@@ -542,7 +542,10 @@ def _apply_question_update(module: Module, component: ModuleComponent, question:
     explanation = next((c for c in module.components if c.type == ComponentType.explanation), None)
     items = explanation.content.get("items", []) if explanation is not None else []
     # Keep the whole untouched component once; the publisher reads only the live question rows.
-    component.content = {**component.content, "ai_original": _ai_original(component)}
+    component.content = {**component.content, "ai_original": _ai_original(component), "questions": [
+        {**q, "passed": True, "fail_reason": None} if i == question.position else q
+        for i, q in enumerate(component.content.get("questions", []))
+    ]}
     question.stem = payload.stem
     question.choices = {"options": payload.choices}
     question.answer_key = str(payload.answer_key)

@@ -192,9 +192,9 @@ Chấm các tiêu chí sau:
   Với mỗi phương án: is_correct nếu có thể bảo vệ là đúng theo stem và nguồn;
   distinct_pass=false nếu trùng ý/diễn đạt lại key HOẶC một nhiễu khác;
   plausible_pass=false nếu nhiễu vô lý, lạc đề hoặc quá dễ loại trừ.
-  reason phải chỉ rõ vì sao đúng/sai và bằng chứng nguồn. Hai cách diễn đạt
-  Abstraction (ẩn cài đặt, chỉ hiển thị tính năng thiết yếu) ĐỀU đúng dù key
-  chỉ đánh dấu một. KHÔNG hợp lý hóa key bằng reasoning có sẵn.
+  reason phải chỉ rõ vì sao đúng/sai và bằng chứng nguồn. Phương án là cách
+  diễn đạt lại hoặc phát biểu tương đương với key cũng ĐÚNG (is_correct=true),
+  dù key chỉ đánh dấu một. KHÔNG hợp lý hóa key bằng reasoning có sẵn.
 - wording_pass: fail nếu đoán được key qua độ dài, mức chi tiết, lặp từ từ
   stem, ngữ pháp, hoặc nhiễu dùng từ tuyệt đối mà không cần hiểu bài.
 - answerability_pass: câu hỏi có ĐÚNG 1 đáp án đúng duy nhất, không mâu thuẫn

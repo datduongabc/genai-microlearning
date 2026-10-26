@@ -134,7 +134,7 @@ def test_only_the_failed_question_is_regenerated_once(monkeypatch, repair):
         assert "D also describes abstraction" in asked[1].state["fail_reason"]
 
 
-def test_exhausted_failure_does_not_complete_generation_job(monkeypatch):
+def test_exhausted_failure_still_completes_the_generation_job_with_its_module(monkeypatch):
     job = SimpleNamespace(id=uuid.uuid4(), document_id=uuid.uuid4(), payload={}, status=JobStatus.running)
     module = SimpleNamespace(id=uuid.uuid4(), components=[SimpleNamespace(
         type=ComponentType.quiz, content={"questions": [{"passed": False, "fail_reason": "C and D are correct"}]})])
@@ -152,6 +152,5 @@ def test_exhausted_failure_does_not_complete_generation_job(monkeypatch):
     monkeypatch.setattr(pipeline, "WorkerSessionLocal", DB)
     monkeypatch.setattr(pipeline, "run_module_generation", lambda *a, **kw: module)
     pipeline.run_module_generation_step(job)
-    assert job.status is JobStatus.failed
+    assert job.status is JobStatus.done
     assert job.module_id == module.id
-    assert "C and D are correct" in job.last_error

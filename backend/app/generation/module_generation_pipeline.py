@@ -497,15 +497,7 @@ def run_module_generation_step(job: Job) -> None:
             )
 
         current_job.module_id = module.id
-        failures = [
-            f"{c.type.value} {i + 1}: {q.get('fail_reason') or 'Không đạt quiz quality gate'}"
-            for c in module.components if c.type in (ComponentType.quiz, ComponentType.practice)
-            for i, q in enumerate(c.content.get("questions", [])) if not q.get("passed", False)
-        ]
-        current_job.status = JobStatus.failed if failures else JobStatus.done
-        current_job.last_error = "; ".join(failures) if failures else None
-        current_job.locked_at = None
-        current_job.locked_by = None
+        current_job.status = JobStatus.done
         db.commit()
     finally:
         db.close()

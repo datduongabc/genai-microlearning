@@ -223,12 +223,13 @@ def test_the_job_step_without_a_section_generates_from_the_whole_document(docume
 
         db.expire_all()
         finished = db.get(Job, job_id)
-        assert finished.status == (JobStatus.done if quality_pass else JobStatus.failed)
+        assert finished.status == JobStatus.done
+        assert db.query(Module).filter(Module.document_id == document_world["doc"]).count() == 1
         if not quality_pass:
-            assert "C and D both describe abstraction" in finished.last_error
             module = db.get(Module, finished.module_id)
             checked = [c for c in module.components if c.type.value in ("quiz", "practice")]
-            assert all(not q["passed"] and q["correction_retry_count"] == 1
+            assert all(not q["passed"] and q["fail_reason"] == "C and D both describe abstraction"
+                       and q["correction_retry_count"] == 1
                        for c in checked for q in c.content["questions"])
         assert all(s is not None and s.document_id == document_world["doc"] for s in seen["retrieve_scopes"])
     finally:
