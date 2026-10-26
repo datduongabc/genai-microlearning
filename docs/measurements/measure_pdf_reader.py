@@ -23,6 +23,7 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "backend"))
 
 import pymupdf
+
 from app.ingestion import document_readers, pdf_layout
 from app.ingestion.chunker import chunk_units, document_title
 
