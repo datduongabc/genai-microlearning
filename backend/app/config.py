@@ -74,6 +74,7 @@ class Settings(BaseSettings):
     llm_experiment_mode: bool = False
     # The gateway alias that serves the embeddings (devops/gateway/config.yaml).
     embedding_model: str = "embed-default"
+    media_asr_concurrency: int = Field(default=4, ge=1, le=8)
     # The reranker service of devops/docker-compose.yml, a cross-encoder in a container of its
     # own so the backend image carries no torch. Not behind the gateway: it holds no provider key.
     reranker_url: str = "http://localhost:8082"
