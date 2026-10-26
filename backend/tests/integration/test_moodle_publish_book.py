@@ -391,6 +391,40 @@ def test_the_practice_gets_immediate_feedback_and_the_quiz_keeps_deferred_feedba
     assert behaviour == {"Practice": "immediatefeedback", "Quiz": "deferredfeedback"}
 
 
+def _failing_module(p: Published) -> uuid.UUID:
+    return p.module(components=[
+        (ComponentType.content, {"markdown": "Nội dung"}, []),
+        (ComponentType.quiz, {"questions": [
+            {"passed": True}, {"passed": False, "fail_reason": "C and D both describe abstraction"},
+        ]}, [(QUIZ_STEM, "e1"), (QUIZ_STEM_2, "e2")]),
+    ])
+
+
+def test_a_module_with_a_question_that_failed_the_gate_is_refused_naming_it(published, moodle):
+    response = published.publish(_failing_module(published))
+
+    assert response.status_code == 422
+    assert "quiz 2: C and D both describe abstraction" in response.json()["detail"]
+    assert "quiz 1" not in response.json()["detail"]
+    assert moodle == []
+
+
+def test_a_failing_question_once_edited_no_longer_blocks_publishing(published, moodle):
+    module_id = _failing_module(published)
+    detail = client.get(f"/modules/{module_id}", headers=published.headers).json()
+    question = next(c for c in detail["components"] if c["type"] == "quiz")["questions"][1]
+    response = client.patch(f'/modules/{module_id}/questions/{question["id"]}', headers=published.headers, json={
+        "stem": "FIXED", "choices": ["A", "B", "C", "D"], "answer_key": 2, "explanation": "only C",
+    })
+    assert response.status_code == 200
+
+    assert published.publish(module_id).status_code == 200
+    assert [q["stem"] for q in _quizzes(moodle)[0]["questions"]] == [QUIZ_STEM, "FIXED"]
+    with SessionLocal() as db:
+        quiz = next(c for c in db.get(Module, module_id).components if c.type == ComponentType.quiz)
+        assert quiz.content["ai_original"]["content"]["questions"][1]["passed"] is False
+
+
 @pytest.mark.parametrize("kind", ["quiz", "practice"])
 def test_question_edits_keep_ai_original_and_publish_the_latest_version(published, moodle, kind):
     module_id = full_module(published)

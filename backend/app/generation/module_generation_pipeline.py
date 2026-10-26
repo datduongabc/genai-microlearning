@@ -220,9 +220,13 @@ def _generate_questions(
             self_check=self_check, lesson=lesson,
             output_language=output_language, custom_instructions=custom_instructions,
         )
-        # Lần sinh lại không ra câu nào thì giữ câu cũ: một bộ lộ đáp án qua độ dài vẫn hơn một bộ thiếu câu.
+        # Keep the evidence even if a rebalance cannot produce a replacement.
         if redone.get("question") is not None:
             stale.state = redone
+        if question_to_rebalance([a.state["question"] for a in made]) is not None:
+            stale.state = {**stale.state, "passed": False, "fail_reason": "; ".join(
+                r for r in (stale.state.get("fail_reason"), LENGTH_TELL_FEEDBACK) if r
+            )}
     return asked
 
 

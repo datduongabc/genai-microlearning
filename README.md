@@ -12,6 +12,8 @@ Model trả phí cho đợt đánh giá được chọn tường minh và ghim b
 
 Khi bộ đọc nhận diện tài liệu hỏng hoặc sai định dạng, job báo lỗi ngay ở lần xử lý đầu và không tự thử lại; PDF có mật khẩu cần bỏ mật khẩu rồi tải lại. Lỗi tạm thời khi gọi gateway vẫn được tự thử lại với thời gian chờ tăng dần.
 
+Quiz và Practice dùng chung gate chất lượng: kiểm key duy nhất, từng phương án nhiễu, trùng ý, dấu hiệu lộ đáp án, Bloom của sub-objective và bằng chứng nguồn. Chỉ câu trượt được sinh lại một lần trong vòng tự kiểm; nếu vẫn trượt, giữ câu và lý do trong mô-đun để xem xét; job sinh vẫn hoàn tất với một mô-đun, nhưng mô-đun không được đẩy lên Moodle cho đến khi giảng viên sửa (thủ công hoặc qua chat) mọi câu trượt. Tắt `self_check` chỉ bỏ kiểm bằng model; kiểm key, trùng phương án và bẫy độ dài/từ tuyệt đối vẫn chạy. Gate mở rộng dùng lại lượt kiểm hiện có: mô-đun bốn câu vẫn thường cần 15 lượt model (10 khi tắt tự kiểm), tối đa 30 theo các giới hạn sửa hiện có, gồm một lần cân bằng độ dài cả bộ.
+
 Ứng dụng mở cho mọi người dùng; admin quản lý tài khoản và theo dõi lỗi. Quyền làm giáo viên trong Moodle được quản lý theo từng môn học trên Moodle.
 
 Trong trang xem trước, giảng viên có thể yêu cầu AI sửa một thành phần bằng ngôn ngữ tự nhiên, ví dụ “Rút gọn slide 3” hoặc “Làm câu quiz 2 khó hơn”. AI bám các đoạn nguồn của mô-đun và ngôn ngữ đầu ra đã chọn; yêu cầu chưa rõ sẽ được hỏi lại. Bản gốc AI được giữ trong `ai_original`, và số lượt chỉnh sửa đã áp dụng được hiển thị trên trang. Mô-đun đối chứng (không RAG) không hỗ trợ chỉnh sửa bằng chat.

@@ -1,0 +1,12 @@
+{
+  "stem": "Which option describes abstraction in OOP?",
+  "choices": [
+    "Bundle an object's data with its methods",
+    "Derive a new class from an existing class",
+    "Hide implementation details and expose essential features",
+    "Show essential functionality while concealing implementation"
+  ],
+  "correct_index": 2,
+  "reasoning": "C describes abstraction; D describes the same principle in other words.",
+  "explanation": "C hides implementation details. D also hides implementation details."
+}
