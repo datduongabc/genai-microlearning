@@ -1,4 +1,4 @@
-"""Replay the existing retrieval benchmark on all four PDF subjects.
+"""Replay the existing retrieval benchmark on all available PDF subjects.
 
 Use the benchmark's ingestion, rankings and metrics with fixed file/page labels.
 Archived queries name chunk UUIDs in an old database, so they cannot label a new
@@ -18,7 +18,27 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "backend"))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from measure_pdf_reader import SUBJECTS, baseline_module
+from measure_pdf_reader import baseline_module, pdf_subjects
+
+# Fixed page-labelled prose probes for the 2026-10-26 corpus. PDF page numbers are one-based.
+PROBES = {
+    "calculus 1": [
+        ("1. Giới hạn dãy số.pdf", 4, "Dãy số là ánh xạ từ tập hợp nào đến tập hợp nào?"),
+        ("2. Giới hạn và liên tục hàm một biến.pdf", 8, "Hai dãy cùng hội tụ về a nhưng giá trị hàm tiến tới hai giới hạn khác nhau cho biết điều gì?"),
+        ("3. Đạo hàm và vi phân.pdf", 8, "Vì sao hàm giá trị tuyệt đối không có đạo hàm tại không?"),
+        ("4. Tích phân xác định.pdf", 4, "Tổng tích phân được xây dựng bằng cách chia đoạn và chọn điểm như thế nào?"),
+        ("5. Tích phân bất định.pdf", 4, "Hàm F được gọi là nguyên hàm của f khi thỏa điều kiện nào?"),
+        ("6. Tích phân suy rộng.pdf", 4, "Tích phân suy rộng hội tụ của hàm không âm có ý nghĩa hình học gì?"),
+    ],
+    "operating-system": [
+        ("Chapter 2_Operating System Structures.pdf", 4, "What operating system services ensure efficient resource sharing, protection and security?"),
+        ("Chapter 3_Processes.pdf", 8, "What are the five process states and what does each state mean?"),
+        ("Chapter 4_Threads & Concurency.pdf", 8, "How does concurrency differ from parallelism on a single processor?"),
+        ("Chapter 5_CPU Scheduling.pdf", 8, "What is the difference between turnaround time and waiting time in CPU scheduling?"),
+        ("Chapter 5_CPU Scheduling.pdf", 20, "How does the time quantum affect round robin scheduling and context switches?"),
+        ("Chapter 6_Synchronization Tools.pdf", 8, "How can concurrent fork calls create a race condition on next_available_pid?"),
+    ],
+}
 
 
 def load_benchmark():
@@ -36,14 +56,15 @@ def main():
     sys.stdout.reconfigure(encoding="utf-8", line_buffering=True)
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--documents", type=Path, required=True)
-    parser.add_argument("--queries", type=Path, required=True)
+    parser.add_argument("--queries", type=Path, help="Override the fixed current-corpus prose probes")
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--reader-ref", help="Git reader snapshot; omit for the worktree")
     parser.add_argument("--ocr-container", required=True)
     parser.add_argument("--cache", type=Path, required=True)
     args = parser.parse_args()
     benchmark = load_benchmark()
-    benchmark.MON = dict.fromkeys(SUBJECTS, None)  # [:None] indexes every file, not the old capped sample.
+    subjects = pdf_subjects(args.documents)
+    benchmark.MON = dict.fromkeys(subjects, None)  # [:None] indexes every file, not the old capped sample.
     benchmark.GOC_TAI_LIEU = args.documents
     args.cache.mkdir(parents=True, exist_ok=True)
     if args.reader_ref:
@@ -59,7 +80,7 @@ def main():
         buffer = io.BytesIO()
         image.save(buffer, format="PNG")
         data = buffer.getvalue()
-        cached = args.cache / (hashlib.sha256(data).hexdigest() + ".txt")
+        cached = args.cache / (hashlib.sha256(lang.encode() + b"\0" + data).hexdigest() + ".txt")
         if not cached.exists():
             text = subprocess.run(["docker", "exec", "-i", args.ocr_container, "tesseract",
                                    "stdin", "stdout", "-l", lang], input=data, capture_output=True,
@@ -84,11 +105,14 @@ def main():
         return [vectors[key] for key in keys]
 
     benchmark.embed_texts = cached_embed
-    queries = json.loads(args.queries.read_text())
+    queries = json.loads(args.queries.read_text()) if args.queries else [
+        {"subject": subject, "file": filename, "page": page, "query": query}
+        for subject in subjects for filename, page, query in PROBES[subject]
+    ]
     detail = []
     with benchmark._phien() as db:
-        benchmark.nap(db, list(SUBJECTS))
-        courses = {c.name: c for c in db.query(benchmark.Course).filter(benchmark.Course.name.in_(SUBJECTS))}
+        benchmark.nap(db, subjects)
+        courses = {c.name: c for c in db.query(benchmark.Course).filter(benchmark.Course.name.in_(subjects))}
         chunks = {name: db.query(benchmark.Chunk).filter(benchmark.Chunk.course_id == course.id).all()
                   for name, course in courses.items()}
         documents = {d.id: d.filename for d in db.query(benchmark.Document)}
@@ -105,7 +129,7 @@ def main():
             detail.append({**query, "ranks": ranks, "gold_chunks": len(gold)})
             print(course.name, query["query"], ranks, flush=True)
         metrics = {mode: {subject: benchmark._chi_so([d["ranks"][mode] for d in detail
-                                                    if d["subject"] == subject]) for subject in SUBJECTS}
+                                                    if d["subject"] == subject]) for subject in subjects}
                    for mode in benchmark.CAU_HINH}
         for mode, metric in metrics.items():
             metric["all"] = benchmark._chi_so([d["ranks"][mode] for d in detail])

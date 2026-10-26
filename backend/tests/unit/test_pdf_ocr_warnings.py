@@ -55,7 +55,7 @@ def test_failed_ocr_keeps_the_small_existing_text_layer(tmp_path, monkeypatch):
     units = read_pdf(_pdf(tmp_path, ["Short title"]))
 
     assert units[0].text == "Short title"
-    assert units[0].warnings[0]["page"] == 1
+    assert units[0].warnings == []
 
 
 def test_an_empty_warning_page_does_not_enter_a_chunk_locator():
@@ -77,3 +77,17 @@ def test_warning_only_pages_do_not_change_existing_slide_headings(tmp_path, monk
                         ["Repeated deck title", f"Slide {page.number + 1}"] if page.number < 3 else [])
     units = read_pdf(_pdf(tmp_path, ["A complete page of teaching content."] * 4 + [""] * 12))
     assert [u.locator["heading"] for u in units[:3]] == ["Slide 1", "Slide 2", "Slide 3"]
+
+
+def test_ocr_uses_vietnamese_first_at_200_dpi(tmp_path, monkeypatch):
+    calls = []
+
+    def ocr(img, lang):
+        calls.append((img.size, lang))
+        return "Readable OCR text"
+
+    monkeypatch.setattr("app.ingestion.document_readers.pytesseract.image_to_string", ocr)
+    units = read_pdf(_pdf(tmp_path, [""]))
+    assert calls == [((1653, 2339), "vie+eng")]
+    assert units[0].text == "Readable OCR text"
+    assert units[0].warnings == []

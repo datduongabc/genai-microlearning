@@ -58,7 +58,7 @@ def read_pdf(path: str) -> list[DocumentUnit]:
                 try:
                     pix = page.get_pixmap(dpi=200)
                     img = Image.open(io.BytesIO(pix.tobytes("png")))
-                    ocr_text = pytesseract.image_to_string(img, lang="eng+vie")
+                    ocr_text = pytesseract.image_to_string(img, lang="vie+eng")
                     if not ocr_text.strip():
                         raise ValueError("OCR returned no readable text")
                     page_text = ocr_text
@@ -71,12 +71,13 @@ def read_pdf(path: str) -> list[DocumentUnit]:
                     # page in the document.
                     logger.warning(f"[document_readers] OCR failed on page {page_index + 1} of {path}: {e}")
                     extraction_method = "ocr_failed"
-                    warnings.append({
-                        "code": "ocr_failed", "page": page_index + 1,
-                        "message": f"Không đọc được trang {page_index + 1} bằng OCR. "
-                                   "Nội dung trang này có thể thiếu; hãy kiểm tra hoặc tải lại "
-                                   "bản PDF có lớp chữ.",
-                    })
+                    if not page_text.strip():
+                        warnings.append({
+                            "code": "ocr_failed", "page": page_index + 1,
+                            "message": f"Không đọc được trang {page_index + 1} bằng OCR. "
+                                       "Nội dung trang này có thể thiếu; hãy kiểm tra hoặc tải lại "
+                                       "bản PDF có lớp chữ.",
+                        })
 
             if warnings and not page_text.strip():
                 raw_units.append({

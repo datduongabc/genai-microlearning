@@ -9,7 +9,7 @@ import json
 from pathlib import Path
 
 import pymupdf
-from measure_pdf_reader import SUBJECTS, baseline_module, changed_chars, stats
+from measure_pdf_reader import baseline_module, changed_chars, pdf_subjects, stats
 
 
 def disable(module, feature):
@@ -48,7 +48,7 @@ def main():
         disable(variant, feature)
         variants[feature] = variant
     results = []
-    for subject in SUBJECTS:
+    for subject in pdf_subjects(args.documents):
         paths = sorted((args.documents / subject).glob("*.pdf"))
         if not paths:
             raise ValueError(f"No PDFs for {subject}")
