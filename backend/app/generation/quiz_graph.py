@@ -2,8 +2,8 @@
 
 Mỗi câu: truy hồi top-5 đoạn theo đúng điều cần kiểm (sub-objective) -> Question Generator
 (misconception CoT + Bloom's + JSON schema) -> kiểm câu vừa sinh (Syntax/IWF heuristic, và khi bật
-tự kiểm thì model chấm Groundedness, Answerability, Bloom's) -> trượt thì sinh lại đúng một lần với
-lý do trượt. Vòng sinh-kiểm-sinh lại là `_checked` dùng chung với Content. Nhánh không RAG dùng
+tự kiểm thì model chấm Groundedness, Answerability, Bloom's, Distractors, Wording) -> trượt thì
+sinh lại đúng một lần với lý do trượt. Vòng sinh-kiểm-sinh lại là `_checked` dùng chung với Content. Nhánh không RAG dùng
 đúng hàm này, chỉ thay đoạn truy hồi bằng bài học (Content) đã viết.
 Không chấm độ liên quan riêng cho từng câu: Corrective RAG chỉ chạy một lần trước Content.
 
