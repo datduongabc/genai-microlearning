@@ -1,4 +1,10 @@
-"""Measured slide repairs: adjacent runs, indices, fractions and font decoding."""
+"""Hợp đồng của tầng dựng dòng PDF: công thức bị tách theo phông phải đọc lại được thành một
+dòng, ký hiệu của phông cũ phải ra Unicode, và văn bản thường không được bị động tới.
+
+Các PDF ở đây được tạo bằng PyMuPDF và ghi chữ theo đúng cách MathType ghi một công thức: mọi
+chữ của một phông trước, rồi mới tới phông khác, lệch khỏi thứ tự đọc. Chính cách ghi đó làm
+cách đọc theo khối trả mỗi ký hiệu một dòng.
+"""
 
 import re
 import uuid
@@ -59,6 +65,57 @@ def test_glyphs_above_and_below_a_drawn_bar_are_a_fraction(page):
     page.insert_text((42, 99), "=", fontname="symb", fontsize=14)
 
     assert [_compact(line) for line in page_lines(page)] == ["y=(a+1)/b"]
+
+
+def test_a_named_function_over_a_drawn_bar_is_still_a_fraction(page):
+    page.insert_text((20, 99), "lim", fontname="tiro", fontsize=14)
+    page.insert_text((60, 90), "arctan", fontname="tiro", fontsize=14)
+    page.insert_text((102, 90), "x", fontname="tiit", fontsize=14)
+    page.draw_line((55, 95), (112, 95), width=1)
+    page.insert_text((80, 110), "x", fontname="tiit", fontsize=14)
+    page.insert_text((120, 99), "=", fontname="symb", fontsize=14)
+    page.insert_text((135, 99), "1", fontname="tiro", fontsize=14)
+
+    assert [_compact(line) for line in page_lines(page)] == ["lim(arctanx)/x=1"]
+
+
+def test_a_drawn_radical_sign_wraps_what_is_under_its_bar(page):
+    # Dấu căn của MathType: nét chéo đi xuống rồi đi lên chạm đầu trái của vạch trên.
+    page.draw_line((40, 95), (43, 93), width=0.5)
+    page.draw_line((43, 93), (47, 102), width=0.5)
+    page.draw_line((47, 102), (52, 82), width=0.5)
+    page.draw_line((52, 82), (70, 82), width=0.5)
+    page.insert_text((55, 98), "x", fontname="tiit", fontsize=16)
+    page.insert_text((80, 98), "=", fontname="symb", fontsize=16)
+    page.insert_text((96, 98), "3", fontname="tiro", fontsize=16)
+
+    assert [_compact(line) for line in page_lines(page)] == ["√x=3"]
+
+
+def test_a_rule_under_a_radical_is_not_mistaken_for_a_fraction_bar(page):
+    page.insert_text((20, 70), "u", fontname="tiit", fontsize=16)
+    page.insert_text((34, 70), "=", fontname="symb", fontsize=16)
+    page.draw_line((40, 95), (43, 93), width=0.5)
+    page.draw_line((43, 93), (47, 102), width=0.5)
+    page.draw_line((47, 102), (52, 82), width=0.5)
+    page.draw_line((52, 82), (70, 82), width=0.5)
+    page.insert_text((55, 98), "x", fontname="tiit", fontsize=16)
+
+    assert all("/" not in line for line in page_lines(page))
+
+
+def test_limits_under_lim_follow_it_even_when_they_start_further_left(page):
+    page.insert_text((50, 100), "lim", fontname="tiro", fontsize=16)
+    page.insert_text((46, 112), "n", fontname="tiit", fontsize=9)
+    page.insert_text((52, 112), "=", fontname="symb", fontsize=9)
+    page.insert_text((60, 112), "1", fontname="tiro", fontsize=9)
+    page.insert_text((80, 100), "u", fontname="tiit", fontsize=16)
+    page.insert_text((100, 100), "=", fontname="symb", fontsize=16)
+    page.insert_text((116, 100), "a", fontname="tiit", fontsize=16)
+
+    lines = [_compact(line) for line in page_lines(page)]
+
+    assert lines == ["lim_(n=1)u=a"]
 
 
 def test_a_lower_index_of_the_line_above_is_not_attached_to_the_text_below_it(page):
@@ -122,15 +179,20 @@ def test_a_page_with_no_text_has_no_lines(page):
     ],
 )
 def test_symbol_font_codes_become_the_symbols_they_draw(encoded, font, expected):
-    assert map_font_text(encoded, font) == expected
+    assert map_font_text(encoded, font) == (expected, False)
 
 
 def test_ordinary_fonts_are_not_remapped():
-    assert map_font_text("abc ", "Times New Roman") == "abc "
+    assert map_font_text("abc ", "Times New Roman") == ("abc ", False)
+
+
+@pytest.mark.parametrize("piece, bracket", [("", "("), ("", ")"), ("", "("), ("", ")")])
+def test_pieces_of_a_tall_bracket_are_flagged_as_brackets(piece, bracket):
+    assert map_font_text(piece, "Symbol") == (bracket, True)
 
 
 def test_dingbat_bullets_become_a_bullet():
-    assert map_font_text("", "Wingdings") == "•"
+    assert map_font_text("", "Wingdings") == ("•", False)
 
 
 def test_symbol_font_bullets_keep_the_ordinary_line_reading(page):
@@ -241,5 +303,5 @@ def test_vni_decoder_requires_evidence_of_legacy_encoding(monkeypatch, page):
 
     monkeypatch.setattr(pymupdf.Page, "get_text", legacy_text)
     assert page_lines(page) == ["Việt Nam"]
-    assert pdf_layout.map_font_text("Hòa bình", "VNI-Times") == "Hòa bình"
+    assert pdf_layout.map_font_text("Hòa bình", "VNI-Times") == ("Hòa bình", False)
     assert pdf_layout.vni_to_unicode("TRÖÔØNG ÑAÏI HOÏC") == "TRƯỜNG ĐẠI HỌC"

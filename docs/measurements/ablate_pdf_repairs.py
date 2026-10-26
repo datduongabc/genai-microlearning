@@ -1,4 +1,4 @@
-"""Measure each removed PDF repair against the pinned original reader, on every slide.
+"""Measure what disabling each formula or VNI repair changes against the pinned original reader.
 
 Run from the repository root. Each ablation disables one repair only; the combined
 ablation disables all five. This tests contribution on this corpus, not other PDFs.
