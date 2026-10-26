@@ -7,15 +7,18 @@ lý do trượt. Vòng sinh-kiểm-sinh lại là `_checked` dùng chung với C
 đúng hàm này, chỉ thay đoạn truy hồi bằng bài học (Content) đã viết.
 Không chấm độ liên quan riêng cho từng câu: Corrective RAG chỉ chạy một lần trước Content.
 
-Practice tái dùng NGUYÊN hàm này (mode="practice"): ngưỡng chấp nhận thấp hơn, syntax-check không
-chặn, không tốn hạ tầng riêng.
+Practice tái dùng NGUYÊN hàm và gate này (mode="practice"), không tốn hạ tầng riêng.
 """
 
+import re
+import unicodedata
 import uuid
 from dataclasses import dataclass, field
+from difflib import SequenceMatcher
+from itertools import combinations
 from typing import Literal, TypedDict
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy.orm import Session
 
 from app.generation.common import (
@@ -76,9 +79,21 @@ class QuizQuestion(BaseModel):
     )
 
 
-class GroundednessAnswerabilityCheck(BaseModel):
-    groundedness_pass: bool = Field(description="Câu hỏi/đáp án có được bảo chứng hoàn toàn bởi nguồn không")
-    groundedness_reason: str
+class OptionCheck(BaseModel):
+    model_config = ConfigDict(extra="forbid", strict=True)
+
+    is_correct: bool = Field(description="Phương án có thể bảo vệ là đúng theo stem và nguồn, độc lập với key")
+    distinct_pass: bool = Field(description="Không diễn đạt lại/trùng ý với BẤT KỲ phương án nào khác")
+    plausible_pass: bool = Field(description="Nếu là nhiễu: sai nhưng hợp lý, không loại được bằng mẹo/kiến thức ngoài bài")
+    reason: str = Field(min_length=1, description="Vì sao đúng/sai theo nguồn; chỉ rõ phương án trùng ý hoặc nhiễu quá rõ")
+
+
+class AnswerabilityCheck(BaseModel):
+    """One strict review, including an independent verdict for every option in index order."""
+
+    model_config = ConfigDict(extra="forbid", strict=True)
+
+    option_checks: list[OptionCheck] = Field(min_length=4, max_length=4)
     answerability_pass: bool = Field(
         description="Đúng 1 đáp án đúng, không mâu thuẫn nội tại, không có 2 phương án cùng hợp lý"
     )
@@ -88,17 +103,13 @@ class GroundednessAnswerabilityCheck(BaseModel):
         "kiểm chứng độc lập với bước sinh, vì chỉ yêu cầu qua prompt không đảm bảo model tuân thủ đúng"
     )
     bloom_level_reason: str
+    wording_pass: bool = Field(description="Không lộ key qua độ dài, chi tiết, ngữ pháp, lặp từ hoặc cách diễn đạt")
+    wording_reason: str
 
 
-class AnswerabilityCheck(BaseModel):
-    """Bản kiểm của nhánh không RAG: không có nguồn nên không chấm groundedness."""
-
-    answerability_pass: bool = Field(
-        description="Đúng 1 đáp án đúng, không mâu thuẫn nội tại, không có 2 phương án cùng hợp lý"
-    )
-    answerability_reason: str
-    bloom_level_pass: bool = Field(description="Câu hỏi có THỰC SỰ đúng cấp độ Bloom's đã khai báo không")
-    bloom_level_reason: str
+class GroundednessAnswerabilityCheck(AnswerabilityCheck):
+    groundedness_pass: bool = Field(description="Câu hỏi/đáp án có được bảo chứng hoàn toàn bởi nguồn không")
+    groundedness_reason: str = Field(description="Dẫn ID SOURCE CHUNK và chi tiết bảo chứng key; fail khi thiếu bằng chứng")
 
 
 class QuizResult(TypedDict, total=False):
@@ -127,8 +138,9 @@ Quy trình BẮT BUỘC (đúng thứ tự):
 1. Phân tích 3 quan niệm sai/lỗi phổ biến (common_misconceptions) mà học viên
    ở đúng bloom_level của Learning Objective hay mắc phải về điều cần kiểm —
    PHẢI phân tích trước, không được nghĩ ra distractor rồi mới gán lý do.
-2. Viết `stem` kiểm tra ĐÚNG bloom_level của Learning Objective — không cao
-   hơn/thấp hơn. Dùng ĐÚNG mô tả hành vi của cấp độ đó (được cung cấp trong
+2. Viết `stem` kiểm tra ĐÚNG hành vi nhận thức của điều cần kiểm (target
+   sub-objective); không tự nâng lên mức Bloom của Learning Objective tổng thể.
+   Dùng ĐÚNG mô tả hành vi của cấp độ đó (được cung cấp trong
    prompt bên dưới, không tự suy luận) để quyết định dạng câu hỏi — không chỉ
    dựa vào tên cấp độ suông (vd Learning Objective ở mức "understand" thì câu
    hỏi không được yêu cầu "phân tích"/"đánh giá").
@@ -144,8 +156,8 @@ Quy trình BẮT BUỘC (đúng thứ tự):
    đúng dài/chi tiết hơn hẳn distractor (dễ đoán). KHÔNG dùng từ mang tính
    tuyệt đối ("luôn luôn", "không bao giờ", "tất cả", "duy nhất") trong bất
    kỳ phương án nào — dễ bị loại trừ mà không cần hiểu bài.
-6. Nếu mode="practice", câu hỏi tập trung vào luyện tập/củng cố (được phép
-   đơn giản hơn quiz một chút), không phải đánh giá chính thức.
+6. Nếu mode="practice", câu hỏi tập trung vào luyện tập/củng cố; vẫn phải
+   đúng Bloom của target và qua cùng gate chất lượng như quiz.
 """
 
 _QUESTION_SOURCE_RULES = """8. Tài liệu là các đoạn nguồn (SOURCE CHUNK): CHỈ được dùng thông tin THỰC SỰ
@@ -175,6 +187,16 @@ _QUESTION_CHECK_BODY = """Bạn là bộ kiểm tra Answerability & Bloom's Fide
 đã sinh, dựa trên tài liệu được cung cấp.
 
 Chấm các tiêu chí sau:
+- option_checks: kiểm ĐỘC LẬP từng phương án 0, 1, 2, 3 theo đúng thứ tự,
+  trước khi nhìn key/reasoning. Không tin lời giải của generator là bằng chứng.
+  Với mỗi phương án: is_correct nếu có thể bảo vệ là đúng theo stem và nguồn;
+  distinct_pass=false nếu trùng ý/diễn đạt lại key HOẶC một nhiễu khác;
+  plausible_pass=false nếu nhiễu vô lý, lạc đề hoặc quá dễ loại trừ.
+  reason phải chỉ rõ vì sao đúng/sai và bằng chứng nguồn. Hai cách diễn đạt
+  Abstraction (ẩn cài đặt, chỉ hiển thị tính năng thiết yếu) ĐỀU đúng dù key
+  chỉ đánh dấu một. KHÔNG hợp lý hóa key bằng reasoning có sẵn.
+- wording_pass: fail nếu đoán được key qua độ dài, mức chi tiết, lặp từ từ
+  stem, ngữ pháp, hoặc nhiễu dùng từ tuyệt đối mà không cần hiểu bài.
 - answerability_pass: câu hỏi có ĐÚNG 1 đáp án đúng duy nhất, không mâu thuẫn
   nội tại, và KHÔNG có 2 phương án cùng hợp lý (gây khó phân biệt) không?
   `reasoning` đi kèm (viết trước khi có các phương án) nêu đáp án đúng là gì:
@@ -182,8 +204,10 @@ Chấm các tiêu chí sau:
   phương án nhiễu phải đúng là những kiểu sai nó dự tính — nếu phương án được
   chọn làm đáp án khác với lập luận thì đặt fail.
 - bloom_level_pass: câu hỏi có THỰC SỰ đòi hỏi đúng hành vi nhận thức của cấp
-  độ Bloom's đã khai báo không (xem mô tả hành vi cụ thể được cung cấp cùng
-  câu hỏi) — KHÔNG chỉ dựa vào việc prompt sinh câu hỏi CÓ NHẮC ĐẾN tên cấp độ
+  độ Bloom's của ĐIỀU CẦN KIỂM không: suy ra hành vi từ động từ của target,
+  không nâng target lên mức mục tiêu tổng thể (target có thể thấp hơn).
+  Dùng các neo hành vi được cung cấp cùng
+  câu hỏi — KHÔNG chỉ dựa vào việc prompt sinh câu hỏi CÓ NHẮC ĐẾN tên cấp độ
   đó; câu hỏi hoàn toàn có thể lặp lại đúng tên cấp độ trong lời dẫn nhưng
   thực chất đòi hỏi hành vi nhận thức khác (thường bị lệch cao hơn khai báo,
   hoặc dễ dàng mặc định ở mức "understand" dù nguồn/LO hỗ trợ cấp cao hơn) —
@@ -218,9 +242,30 @@ NO_SOURCE_QUESTION_CHECK_SYSTEM_INSTRUCTION = system_instruction(
 
 def _syntax_iwf_check(question: QuizQuestion) -> list[str]:
     issues = []
-    lengths = [len(c) for c in question.choices]
+    if len(question.choices) != 4 or not 0 <= question.correct_index < len(question.choices):
+        issues.append("Key/phương án không hợp lệ: cần 4 phương án và correct_index trong 0..3")
+        return issues
+    normalized = [" ".join(re.findall(r"\w+|!=|==|<=|>=|[<>+*/%-]", unicodedata.normalize("NFKC", c).casefold()))
+                  for c in question.choices]
+    if any(not c for c in normalized):
+        issues.append("Phương án rỗng")
+    for i, j in combinations(range(4), 2):
+        a, b = normalized[i], normalized[j]
+        # Conservative lexical similarity only; semantic paraphrases belong to the model review.
+        # Preserve negation, numeric and operator changes (often the point of a distractor).
+        meaningful = r"\b(?:not|no|never|không|chẳng|chưa)\b|\d+|!=|==|<=|>=|[<>+*/%-]"
+        near = (min(len(a.split()), len(b.split())) >= 5
+                and re.findall(meaningful, a) == re.findall(meaningful, b)
+                and SequenceMatcher(None, a, b).ratio() >= 0.94)
+        if a == b or near:
+            issues.append(f"Phương án {i} và {j} trùng/gần trùng nội dung")
+    lengths = [len(c.strip()) for c in question.choices]
     if min(lengths) > 0 and max(lengths) > 2 * min(lengths):
         issues.append("Độ dài phương án chênh lệch quá lớn (có thể lộ đáp án)")
+    key_length = lengths[question.correct_index]
+    other_longest = max(n for i, n in enumerate(lengths) if i != question.correct_index)
+    if key_length >= 1.5 * max(1, other_longest) and key_length - other_longest >= 12:
+        issues.append("Đáp án đúng dài vượt trội so với mọi nhiễu (lộ đáp án)")
     for i, choice in enumerate(question.choices):
         lowered = choice.lower()
         if any(w in lowered for w in ABSOLUTE_WORDS):
@@ -239,9 +284,13 @@ class QuestionCheck:
     answerability_reason: str = ""
     bloom_level_pass: bool = True
     bloom_level_reason: str = ""
+    distractors_pass: bool = True
+    distractors_reason: str = ""
+    wording_pass: bool = True
+    wording_reason: str = ""
     syntax_pass: bool = True
     syntax_reason: str = ""
-    # Mọi lỗi cú pháp tìm thấy, kể cả ở practice nơi chúng không chặn câu.
+    # Mọi lỗi cú pháp tìm thấy, ở cả quiz và practice.
     syntax_issues: list[str] = field(default_factory=list)
 
 
@@ -249,6 +298,8 @@ QUESTION_CRITERIA = [
     ("groundedness", "Groundedness"),
     ("answerability", "Answerability"),
     ("bloom_level", "Bloom's level"),
+    ("distractors", "Distractors"),
+    ("wording", "Wording"),
     ("syntax", "Syntax/IWF"),
 ]
 
@@ -256,15 +307,13 @@ QUESTION_CRITERIA = [
 def _verify_question(
     q: QuizQuestion, lo: LearningObjective, material: str, mode: Literal["quiz", "practice"], self_check: bool,
     sourced: bool = True,
+    target: str = "",
 ) -> QuestionCheck:
     syntax_issues = _syntax_iwf_check(q)
-    # Practice: syntax-check không chặn (chỉ ghi lại), độ nghiêm ngặt thấp hơn quiz
-    # (mục "Điểm khác biệt: ngưỡng chấp nhận thấp hơn Quiz").
-    blocking = syntax_issues if mode == "quiz" else []
     result = QuestionCheck(
-        syntax_pass=not blocking, syntax_reason="; ".join(blocking), syntax_issues=syntax_issues
+        syntax_pass=not syntax_issues, syntax_reason="; ".join(syntax_issues), syntax_issues=syntax_issues
     )
-    if not self_check:
+    if not self_check or not 0 <= q.correct_index < len(q.choices):
         return result
 
     bloom_level = lo.bloom_level
@@ -276,7 +325,10 @@ def _verify_question(
         f"reasoning: {q.reasoning}\n"
         f"correct_index: {q.correct_index} (đáp án: {q.choices[q.correct_index]})\n"
         f"explanation: {q.explanation}\n\n"
+        f"ĐIỀU CẦN KIỂM (target sub-objective): {target or lo.objective_text}\n"
+        f"LEARNING OBJECTIVE TỔNG THỂ: {lo.objective_text}\n"
         f"BLOOM_LEVEL ĐÃ KHAI BÁO: {bloom_level}\n"
+        f"NEO HÀNH VI BLOOM: {BLOOM_LEVEL_ANCHORS}\n"
         f"MÔ TẢ HÀNH VI CẤP ĐỘ {bloom_level}: {BLOOM_LEVEL_ANCHORS[bloom_level]}\n\n"
         f"Kiểm tra các tiêu chí đã nêu cho câu hỏi trên."
     )
@@ -290,6 +342,18 @@ def _verify_question(
             prompt, AnswerabilityCheck, system_instruction=NO_SOURCE_QUESTION_CHECK_SYSTEM_INSTRUCTION, small_step=True
         )
     result.answerability_pass, result.answerability_reason = check.answerability_pass, check.answerability_reason
+    correct = [i for i, option in enumerate(check.option_checks) if option.is_correct]
+    if correct != [q.correct_index]:
+        result.answerability_pass = False
+        result.answerability_reason = (
+            f"Key={q.correct_index}; các phương án có thể đúng={correct}. "
+            + "; ".join(f"{i}: {o.reason}" for i, o in enumerate(check.option_checks))
+        )
+    bad_options = [f"{i}: {o.reason}" for i, o in enumerate(check.option_checks)
+                   if not o.distinct_pass or (i != q.correct_index and not o.plausible_pass)]
+    result.distractors_pass = not bad_options
+    result.distractors_reason = "; ".join(bad_options)
+    result.wording_pass, result.wording_reason = check.wording_pass, check.wording_reason
     result.bloom_level_pass, result.bloom_level_reason = check.bloom_level_pass, check.bloom_level_reason
     return result
 
@@ -339,6 +403,8 @@ def generate_quiz_question(
             f"LEARNING OBJECTIVE: {lo.objective_text} (bloom_level={bloom_level})\n"
             f"MÔ TẢ HÀNH VI CẤP ĐỘ {bloom_level} (dùng để quyết định dạng câu hỏi, không tự suy luận khác): "
             f"{BLOOM_LEVEL_ANCHORS[bloom_level]}\n"
+            f"Target có thể ở cấp thấp hơn LO; bám động từ của target, không tự nâng cấp. "
+            f"NEO HÀNH VI BLOOM: {BLOOM_LEVEL_ANCHORS}\n"
             f"ĐIỀU CẦN KIỂM: {query}\n"
             f"MODE: {mode}\n\n"
             f"{material}"
@@ -353,7 +419,7 @@ def generate_quiz_question(
         )
 
     question, check = _checked(
-        generate, lambda q: _verify_question(q, lo, material, mode, self_check, sourced), QUESTION_CRITERIA
+        generate, lambda q: _verify_question(q, lo, material, mode, self_check, sourced, query), QUESTION_CRITERIA
     )
     failed = failed_criteria(check, QUESTION_CRITERIA)
     return {

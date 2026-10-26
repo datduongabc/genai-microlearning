@@ -7,7 +7,7 @@ from app.generation import content, example, objective, planner, quiz_graph, sli
 from app.generation import module_generation_pipeline as pipeline
 from app.generation.module_generation_pipeline import generation_payload
 from app.models import Document
-from tests.integration.generation_helpers import OUTPUTS
+from tests.integration.generation_helpers import OUTPUTS, passing_check
 
 
 @pytest.mark.parametrize(
@@ -58,7 +58,7 @@ def test_language_reaches_steps_through_the_pipeline(request, monkeypatch, guida
         if response_model in OUTPUTS:
             seen.append((response_model.__name__, system_instruction))
             return OUTPUTS[response_model]
-        return response_model(**{name: True if name.endswith("_pass") else "ok" for name in response_model.model_fields})
+        return passing_check(response_model)
     from app.generation import relevance
     for step in (planner, objective, content, slides, example, quiz_graph, relevance):
         monkeypatch.setattr(step, "complete_structured", llm)

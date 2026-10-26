@@ -220,9 +220,13 @@ def _generate_questions(
             self_check=self_check, lesson=lesson,
             output_language=output_language, custom_instructions=custom_instructions,
         )
-        # Lần sinh lại không ra câu nào thì giữ câu cũ: một bộ lộ đáp án qua độ dài vẫn hơn một bộ thiếu câu.
+        # Keep the evidence even if a rebalance cannot produce a replacement.
         if redone.get("question") is not None:
             stale.state = redone
+        if question_to_rebalance([a.state["question"] for a in made]) is not None:
+            stale.state = {**stale.state, "passed": False, "fail_reason": "; ".join(
+                r for r in (stale.state.get("fail_reason"), LENGTH_TELL_FEEDBACK) if r
+            )}
     return asked
 
 
@@ -493,7 +497,15 @@ def run_module_generation_step(job: Job) -> None:
             )
 
         current_job.module_id = module.id
-        current_job.status = JobStatus.done
+        failures = [
+            f"{c.type.value} {i + 1}: {q.get('fail_reason') or 'Không đạt quiz quality gate'}"
+            for c in module.components if c.type in (ComponentType.quiz, ComponentType.practice)
+            for i, q in enumerate(c.content.get("questions", [])) if not q.get("passed", False)
+        ]
+        current_job.status = JobStatus.failed if failures else JobStatus.done
+        current_job.last_error = "; ".join(failures) if failures else None
+        current_job.locked_at = None
+        current_job.locked_by = None
         db.commit()
     finally:
         db.close()

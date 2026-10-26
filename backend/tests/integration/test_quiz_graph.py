@@ -20,6 +20,7 @@ from app.generation.quiz_graph import (
     generate_quiz_question,
 )
 from app.retrieval.search import ChunkScope
+from tests.integration.generation_helpers import passing_check
 
 BACKEND = Path(__file__).resolve().parents[2]
 
@@ -34,10 +35,7 @@ BALANCED = QuizQuestion(
 )
 ABSOLUTE = BALANCED.model_copy(update={"choices": ["luôn luôn", "pa hai", "pa ba", "pa bốn"]})
 
-PASS = GroundednessAnswerabilityCheck(
-    groundedness_pass=True, groundedness_reason="", answerability_pass=True, answerability_reason="",
-    bloom_level_pass=True, bloom_level_reason="",
-)
+PASS = passing_check(GroundednessAnswerabilityCheck)
 UNGROUNDED = PASS.model_copy(update={"groundedness_pass": False, "groundedness_reason": "ngoài nguồn"})
 
 
@@ -133,13 +131,13 @@ def test_without_self_check_the_model_never_checks_and_the_syntax_trap_still_blo
     assert result["passed"] is False and "tuyệt đối" in result["fail_reason"]
 
 
-def test_the_syntax_trap_does_not_block_practice(monkeypatch, searches):
+def test_the_syntax_trap_blocks_practice_too(monkeypatch, searches):
     model = _use(monkeypatch, FakeModel(questions=[ABSOLUTE]))
 
     result = generate_quiz_question(None, uuid.uuid4(), "q", LO, "practice", self_check=False)
 
-    assert model.names() == ["QuizQuestion"]
-    assert result["passed"] is True and result["syntax_issues"]
+    assert model.names() == ["QuizQuestion", "QuizQuestion"]
+    assert result["passed"] is False and result["syntax_issues"]
 
 
 def test_set_level_feedback_stays_on_the_retry_along_with_the_check_reason(monkeypatch, searches):

@@ -9,6 +9,7 @@ from app.db import SessionLocal
 from app.generation import module_generation_pipeline as pipeline
 from app.generation.example import Example, ExampleOutput
 from app.generation.planner import Concept, PlannerOutput
+from app.generation.quiz_graph import QuizQuestion
 from app.generation.relevance import CorrectiveResult
 from app.generation.study_packets import resolved_citations
 from app.ingestion.embeddings import embed_texts
@@ -24,6 +25,7 @@ from app.models import (
     User,
 )
 from app.retrieval import search as retrieval
+from tests.integration.generation_helpers import OUTPUTS
 
 CHUNK_TEXTS = [f"CHUNK-{i} " + "filler text " * 20 for i in range(6)]
 
@@ -87,7 +89,10 @@ def seen(monkeypatch):
 
     def fake_quiz(db, course_id, query, lo, mode="quiz", scope=None, **kwargs):
         record["quiz_scopes"].append(scope)
-        return {"passed": False}
+        passed = record.get("question_pass", True)
+        return {"passed": passed, "question": OUTPUTS[QuizQuestion],
+                "fail_reason": None if passed else "C and D both describe abstraction",
+                "correction_retry_count": 0 if passed else 1}
 
     objective = types.SimpleNamespace(
         objective_text="objective", bloom_level="understand", sub_objectives=["first", "second"]
@@ -199,7 +204,9 @@ def test_pdf_and_mp3_in_one_course_keep_generation_citations_in_their_document(d
 
 
 
-def test_the_job_step_without_a_section_generates_from_the_whole_document(document_world, seen):
+@pytest.mark.parametrize("quality_pass", [True, False])
+def test_the_job_step_without_a_section_generates_from_the_whole_document(document_world, seen, quality_pass):
+    seen["question_pass"] = quality_pass
     db = SessionLocal()
     try:
         job = Job(
@@ -216,7 +223,13 @@ def test_the_job_step_without_a_section_generates_from_the_whole_document(docume
 
         db.expire_all()
         finished = db.get(Job, job_id)
-        assert finished.status == JobStatus.done
+        assert finished.status == (JobStatus.done if quality_pass else JobStatus.failed)
+        if not quality_pass:
+            assert "C and D both describe abstraction" in finished.last_error
+            module = db.get(Module, finished.module_id)
+            checked = [c for c in module.components if c.type.value in ("quiz", "practice")]
+            assert all(not q["passed"] and q["correction_retry_count"] == 1
+                       for c in checked for q in c.content["questions"])
         assert all(s is not None and s.document_id == document_world["doc"] for s in seen["retrieve_scopes"])
     finally:
         db.close()
@@ -232,7 +245,7 @@ def test_every_generation_provider_call_releases_worker_transactions(document_wo
     from app.generation.quiz_graph import AnswerabilityCheck, GroundednessAnswerabilityCheck
     from app.ingestion import embeddings
     from tests.conftest import _offline_embedding
-    from tests.integration.generation_helpers import OUTPUTS
+    from tests.integration.generation_helpers import OUTPUTS, passing_check
 
     calls = []
 
@@ -258,12 +271,7 @@ def test_every_generation_provider_call_releases_worker_transactions(document_wo
                                        completeness_pass=True, completeness_reason="ok",
                                        scope_pass=True, scope_reason="ok")
         if response_model in (GroundednessAnswerabilityCheck, AnswerabilityCheck):
-            if response_model is AnswerabilityCheck:
-                return AnswerabilityCheck(answerability_pass=True, answerability_reason="ok",
-                                          bloom_level_pass=True, bloom_level_reason="ok")
-            return GroundednessAnswerabilityCheck(groundedness_pass=True, groundedness_reason="ok",
-                                                 answerability_pass=True, answerability_reason="ok",
-                                                 bloom_level_pass=True, bloom_level_reason="ok")
+            return passing_check(response_model)
         return OUTPUTS[response_model].model_copy(deep=True)
 
     def fake_embedding(**kwargs):

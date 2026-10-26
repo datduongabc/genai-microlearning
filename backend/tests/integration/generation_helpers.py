@@ -25,3 +25,14 @@ OUTPUTS = {
         choices=["pa một", "pa hai", "pa ba", "pa bốn"], correct_index=1, explanation="lời giải",
     ),
 }
+
+
+def passing_check(response_model, correct_index=1):
+    values = {name: True if name.endswith("_pass") else "đạt"
+              for name in response_model.model_fields}
+    if "option_checks" in values:
+        values["option_checks"] = [
+            {"is_correct": i == correct_index, "distinct_pass": True, "plausible_pass": True,
+             "reason": "đạt"} for i in range(4)
+        ]
+    return response_model(**values)
