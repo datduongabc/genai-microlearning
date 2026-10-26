@@ -36,3 +36,36 @@ Set these in `.env`: `SITE_ADDRESS=lms.example.com`, `HSTS_MAX_AGE=31536000`, `C
 In production the backend refuses to start with a weak configuration (`backend/app/config.py`).
 The frontend is still served by the Vite dev server behind the proxy.
 For a real deployment build it (`npm run build`) and serve `frontend/dist` from Caddy instead.
+
+## Media ingestion and GPU embedding
+
+`MEDIA_ASR_CONCURRENCY` (default 4, range 1–8) bounds Whisper uploads across all document
+jobs in the backend process. Audio and video use the same mono 16 kHz, 32 kbps MP3
+preparation, in ten-minute windows with two seconds of context overlap. Only failed
+windows retry (at most three attempts, honoring `retry-after`); an exhausted window
+fails the document with its timestamp in the existing job monitor. Successful windows
+are merged in source order, removing matching overlap text and retaining absolute
+segment locators. Normalization preserves duration-based pricing; the overlap adds
+about 0.3% audio duration for an 80-minute lecture.
+
+Use `./devops/scripts/compose.sh up -d` to select GPU embedding automatically on the
+measured NVIDIA Ampere 8.6 hardware (including the RTX 3050 Ti). The launcher applies
+`devops/docker-compose.gpu.yml` after the CPU base configuration. NVIDIA Container
+Toolkit must expose the GPU to Docker. On other hardware it keeps CPU; force that path
+with `EMBEDDER_DEVICE=cpu ./devops/scripts/compose.sh up -d`. Ordinary root
+`docker compose` also retains the CPU configuration. `DO_AN_ENV_FILE` can select an
+alternative env file, and all Compose arguments, including `-p`, pass through.
+
+Both paths use Qwen3-Embedding-0.6B, last-token pooling, and the backend's existing 768
+normalized dimensions. CPU keeps ONNX revision `c25a394dd583836952667c12f008335071b3f43d`.
+The GPU image needs native weights (the ONNX repo has no safetensors), pinned to
+`Qwen/Qwen3-Embedding-0.6B` revision `97b0c614be4d77ee51c0cef4e5f07c00f9eb65b3`.
+The GPU override uses TEI `86-1.9.4`, float16, at most 1,024 tokens and four inputs per
+model batch. TEI executes model batches serially; its 512-request queue accommodates
+the backend's four workers with 100-chunk requests without raising the GPU batch limits.
+The reranker stays on its existing CPU runtime. A different GPU can be selected
+explicitly with `EMBEDDER_DEVICE=gpu` and `EMBEDDER_GPU_IMAGE` set to the appropriate
+[TEI hardware image](https://huggingface.co/docs/text-embeddings-inference/supported_models).
+
+Verification results and the ASR access limitation are recorded in
+`docs/measurements/2026-10-26-media-ingest.md`.

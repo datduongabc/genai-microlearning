@@ -395,6 +395,8 @@ def _duration_seconds(path: str) -> float:
 def _transcribe_piece(path: str, offset: float, deadline: float) -> list[dict]:
     for attempt in range(3):
         try:
+            if time.monotonic() >= deadline:
+                raise TimeoutError("Audio transcription deadline expired")
             return transcribe_audio(path)
         except Exception as exc:
             rate_limited = isinstance(exc, (RateLimitError, openai.RateLimitError))
@@ -443,9 +445,14 @@ def _merge_audio_segments(pieces: list[tuple[float, float, list[dict]]]) -> list
         prefix = " ".join(u.text for u in incoming if u.locator["start_ms"] < overlap_end)
         normalize = lambda text: [re.sub(r"\W", "", word).casefold() for word in text.split()]
         old_words, new_words = normalize(previous), normalize(prefix)
+        # A final short utterance ("Yeah") or a truncated word can follow the
+        # shared phrase. Match multi-word prefixes inside the overlap as well.
+        # ponytail: exact words only; word-level alignment if paraphrased overlaps matter.
         duplicate = next((n for n in range(min(len(old_words), len(new_words)), 0, -1)
-                          if old_words[-n:] == new_words[:n]), 0)
-        previous_end = units[-1].locator["end_ms"] if units else 0
+                          if old_words[-n:] == new_words[:n] or (n >= 2 and any(
+                              old_words[i:i + n] == new_words[:n]
+                              for i in range(len(old_words) - n + 1)))), 0)
+        previous_end = max((u.locator["end_ms"] for u in units), default=0)
         for unit in incoming:
             words = unit.text.split()
             trim = min(duplicate, len(words))
@@ -456,7 +463,19 @@ def _merge_audio_segments(pieces: list[tuple[float, float, list[dict]]]) -> list
                                                 max(unit.locator["start_ms"], previous_end))
             if unit.text:
                 units.append(unit)
-    return units
+    return sorted(units, key=lambda unit: unit.locator["start_ms"])
+
+
+def _transcribe_window(path: str, tmp: str, index: int, start: float,
+                       length: float, deadline: float) -> list[dict]:
+    try:
+        piece = _transcode_to_mp3(path, tmp, start=start, duration=length, index=index)
+    except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as exc:
+        minutes, seconds = divmod(int(start), 60)
+        raise ValueError(f"Khong the xu ly doan {minutes:02d}:{seconds:02d}: ffmpeg that bai") from exc
+    if os.path.getsize(piece) > _AUDIO_UPLOAD_BYTES:
+        raise ValueError("Audio vuot gioi han 24 MB sau khi chia")
+    return _transcribe_piece(piece, start, deadline)
 
 
 def read_audio_video(path: str) -> list[DocumentUnit]:
@@ -471,13 +490,9 @@ def read_audio_video(path: str) -> list[DocumentUnit]:
         )
     with tempfile.TemporaryDirectory() as tmp:
         windows = _audio_windows(duration)
-        paths = [_transcode_to_mp3(path, tmp, start=start, duration=length, index=index)
-                 for index, (start, length) in enumerate(windows)]
-        if any(os.path.getsize(piece) > _AUDIO_UPLOAD_BYTES for piece in paths):
-            raise ValueError("Audio vuot gioi han 24 MB sau khi chia")
         deadline = time.monotonic() + _RATE_LIMIT_WAIT_SECONDS
-        futures = [_ASR_EXECUTOR.submit(_transcribe_piece, piece, start, deadline)
-                   for piece, (start, _) in zip(paths, windows, strict=True)]
+        futures = [_ASR_EXECUTOR.submit(_transcribe_window, path, tmp, index, start, length, deadline)
+                   for index, (start, length) in enumerate(windows)]
         # All readers must finish before the TemporaryDirectory removes their input.
         wait(futures)
         units = _merge_audio_segments([

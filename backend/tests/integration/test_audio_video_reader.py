@@ -157,3 +157,113 @@ def test_invalid_duration_refused_before_transcode_or_spending_quota(tmp_path, d
         readers.read_audio_video(str(path))
     ffmpeg.assert_not_called()
     transcribe.assert_not_called()
+
+
+def test_queued_segment_does_not_upload_after_document_deadline():
+    with patch.object(readers, "transcribe_audio") as transcribe, pytest.raises(
+        ValueError, match="09:58.*TimeoutError"
+    ):
+        readers._transcribe_piece("part.mp3", 598, readers.time.monotonic() - 1)
+    transcribe.assert_not_called()
+
+
+def test_retry_does_not_repeat_a_successful_sibling(tmp_path):
+    from collections import Counter
+    path = tmp_path / "lecture.mp4"
+    path.write_bytes(b"input")
+    calls = Counter()
+    lock = threading.Lock()
+    def transcribe(piece):
+        name = Path(piece).stem
+        with lock:
+            calls[name] += 1
+            attempt = calls[name]
+        if name == 'part001' and attempt == 1:
+            raise _rate_limit('1')
+        return [{"start": 3, "end": 4, "text": name}]
+    with patch.object(readers, "_duration_seconds", return_value=700), patch.object(
+        readers.subprocess, "run", side_effect=_fake_ffmpeg
+    ), patch.object(readers, "transcribe_audio", side_effect=transcribe), patch.object(
+        readers.time, "sleep"
+    ):
+        units = readers.read_audio_video(str(path))
+    assert calls == {'part000': 1, 'part001': 2}
+    assert [u.text for u in units] == ['part000', 'part001']
+
+
+def test_permanently_failed_segment_stops_after_three_attempts():
+    with patch.object(readers, "transcribe_audio", side_effect=_rate_limit('1')) as transcribe, patch.object(
+        readers.time, "sleep"
+    ), pytest.raises(ValueError, match="09:58.*han muc audio Groq"):
+        readers._transcribe_piece('part.mp3', 598, readers.time.monotonic() + 600)
+    assert transcribe.call_count == 3
+
+
+def test_normalization_shares_the_bounded_pool(tmp_path):
+    path = tmp_path / 'lecture.mp4'
+    path.write_bytes(b'input')
+    started, release, lock = threading.Event(), threading.Event(), threading.Lock()
+    active = peak = 0
+    def ffmpeg(command, **kwargs):
+        nonlocal active, peak
+        with lock:
+            active += 1
+            peak = max(peak, active)
+            if active == 2:
+                started.set()
+        assert release.wait(5)
+        Path(command[-1]).write_bytes(b'mp3')
+        with lock:
+            active -= 1
+    with (
+        ThreadPoolExecutor(max_workers=2) as pool,
+        ThreadPoolExecutor(max_workers=1) as caller,
+        patch.object(readers, '_ASR_EXECUTOR', pool),
+        patch.object(readers, '_duration_seconds', return_value=700),
+        patch.object(readers.subprocess, 'run', side_effect=ffmpeg),
+        patch.object(readers, 'transcribe_audio', return_value=[{'start': 3, 'end': 4, 'text': 'speech'}]),
+    ):
+        future = caller.submit(readers.read_audio_video, str(path))
+        try:
+            assert started.wait(2)
+        finally:
+            release.set()
+        assert len(future.result(timeout=5)) == 2
+    assert peak == 2
+
+
+def test_failed_window_preparation_is_terminal_before_its_upload(tmp_path):
+    import subprocess
+    with patch.object(readers.subprocess, 'run', side_effect=subprocess.CalledProcessError(1, 'ffmpeg')), patch.object(
+        readers, 'transcribe_audio'
+    ) as transcribe, pytest.raises(ValueError, match='09:58.*ffmpeg'):
+        readers._transcribe_window('input.mp4', str(tmp_path), 1, 598, 602, readers.time.monotonic() + 600)
+    transcribe.assert_not_called()
+
+
+def test_overlap_before_a_short_trailing_utterance_is_not_repeated():
+    units = readers._merge_audio_segments([
+        (0, 600, [{'start': 596, 'end': 599.64, 'text': 'And Y is the output.'},
+                  {'start': 599.64, 'end': 600, 'text': 'Yeah.'}]),
+        (598, 602, [{'start': 0, 'end': 1.66, 'text': 'is the output.'},
+                    {'start': 3, 'end': 6, 'text': 'This is the target variable.'}]),
+    ])
+    assert [u.text for u in units] == ['And Y is the output.', 'Yeah.', 'This is the target variable.']
+
+
+def test_crossing_overlap_prefix_can_match_before_a_truncated_trailing_word():
+    units = readers._merge_audio_segments([
+        (0, 600, [{'start': 597.36, 'end': 600, 'text': "And then I'll describe this in..."}]),
+        (598, 602, [{'start': 0, 'end': 2.86, 'text': "I'll describe this informally for now,"}]),
+    ])
+    assert units[-1].text == 'informally for now,'
+    assert units[-1].locator == {'start_ms': 600000, 'end_ms': 600860}
+
+
+def test_unmatched_overlap_keeps_text_in_absolute_timestamp_order():
+    units = readers._merge_audio_segments([
+        (0, 600, [{'start': 599, 'end': 600, 'text': 'earlier ending'}]),
+        (598, 602, [{'start': 0, 'end': 4, 'text': 'different wording'}]),
+    ])
+    assert [u.locator['start_ms'] for u in units] == sorted(u.locator['start_ms'] for u in units)
+    assert {u.text for u in units} == {'earlier ending', 'different wording'}
