@@ -52,12 +52,15 @@ optimized path. CPU embeddings are the control; optimized embeddings use GPU.
 
 The four-file table records the initial replay. Boundary inspection then found a duplicate
 phrase before a short trailing utterance, and timestamp order when overlap text differed.
-Three regression tests now cover those cases. The final code matches multi-word overlap
-prefixes inside the preceding shared text and returns units in timestamp order. A full
-Week05 replay of that final code gave extract **17.04 s**, ASR wall **14.91 s**, GPU embed
+Three regression tests now cover those cases. The code then matched multi-word overlap
+prefixes inside the preceding shared text and returned units in timestamp order. A full
+Week05 replay of that code gave extract **17.04 s**, ASR wall **14.91 s**, GPU embed
 **1.96 s**, total **19.03 s**, **91 chunks**, and similarity **0.9076**. Its eight ASR
 responses were saved for deterministic re-merging. No additional four-file provider replay
 was made after that merge-only correction, to stay within the requested spend cap.
+Review later restricted multi-word matches to those ending within the last two words of
+the preceding text, so common phrases earlier in a long segment are never trimmed; no
+provider replay was made for that merge-only change either.
 
 Similarity is `difflib.SequenceMatcher(autojunk=False)` on case-folded, whitespace-split
 words against the fresh whole-file control transcript. Against the archived original
