@@ -2,6 +2,7 @@
 import threading
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
+from subprocess import CompletedProcess
 from unittest.mock import patch
 
 import httpx
@@ -16,6 +17,29 @@ def test_windows_cover_duration_with_only_small_overlap():
     assert readers._audio_windows(60) == [(0, 60)]
     assert readers._audio_windows(1201) == [(0, 600), (598, 602), (1198, 3)]
     assert readers._audio_windows(1200) == [(0, 600), (598, 602)]
+
+
+@pytest.mark.parametrize("audio_duration, expected", [("1195\n", 1195), ("N/A\n", 1210)])
+def test_duration_uses_audio_track_with_container_fallback(audio_duration, expected):
+    def probe(command, **kwargs):
+        if command[command.index("-show_entries") + 1] == "stream=duration":
+            assert command[command.index("-select_streams") + 1] == "a:0"
+            return CompletedProcess(command, 0, stdout=audio_duration)
+        return CompletedProcess(command, 0, stdout="1210\n")
+    with patch.object(readers.subprocess, "run", side_effect=probe):
+        assert readers._duration_seconds("lecture.mp4") == expected
+
+
+@pytest.mark.parametrize("previous, following", [
+    ("and we minimize the loss.", "Loss is convex."),
+    ("so the answer is yes", "yes or no questions are next"),
+])
+def test_single_word_boundary_coincidence_preserves_the_next_utterance(previous, following):
+    units = readers._merge_audio_segments([
+        (0, 600, [{"start": 598, "end": 600, "text": previous}]),
+        (598, 602, [{"start": 0, "end": 4, "text": following}]),
+    ])
+    assert [unit.text for unit in units] == [previous, following]
 
 
 def test_merge_offsets_and_removes_only_temporally_overlapping_prefix():
@@ -88,7 +112,7 @@ def test_parallel_segments_are_bounded_and_results_stay_in_order(tmp_path):
         ThreadPoolExecutor(max_workers=1) as caller,
         patch.object(readers, "_ASR_EXECUTOR", pool),
         patch.object(readers, "_duration_seconds", return_value=1801),
-        patch.object(readers.subprocess, "run", side_effect=_fake_ffmpeg),
+        patch.object(readers.subprocess, "run", side_effect=_fake_ffmpeg) as ffmpeg,
         patch.object(readers, "transcribe_audio", side_effect=transcribe),
     ):
         future = caller.submit(readers.read_audio_video, str(path))
@@ -100,6 +124,9 @@ def test_parallel_segments_are_bounded_and_results_stay_in_order(tmp_path):
     assert peak == 2
     assert [u.locator['start_ms'] for u in units] == [3000, 601000, 1201000]
     assert [u.text for u in units] == ["part000", "part001", "part002"]
+    commands = sorted((call.args[0] for call in ffmpeg.call_args_list), key=lambda cmd: cmd[-1])
+    assert [cmd[cmd.index("-ss") + 1] for cmd in commands] == ["0", "598", "1198", "1798"]
+    assert [cmd[cmd.index("-t") + 1] for cmd in commands] == ["600", "602", "602", "3"]
 
 
 def _rate_limit(retry_after="2"):
@@ -148,7 +175,7 @@ def test_empty_transcript_is_rejected(tmp_path):
         readers.read_audio_video(str(path))
 
 
-@pytest.mark.parametrize('duration', [7200.5, float('nan'), 0])
+@pytest.mark.parametrize('duration', [5400.5, float('nan'), 0])
 def test_invalid_duration_refused_before_transcode_or_spending_quota(tmp_path, duration):
     path = tmp_path / "long.mp3"
     path.write_bytes(b"input")
@@ -197,6 +224,42 @@ def test_permanently_failed_segment_stops_after_three_attempts():
     ), pytest.raises(ValueError, match="09:58.*han muc audio Groq"):
         readers._transcribe_piece('part.mp3', 598, readers.time.monotonic() + 600, failed)
     assert transcribe.call_count == 3
+
+
+def test_exhausted_network_errors_remain_retryable_by_the_job_queue():
+    from app.jobs.queue import is_terminal_error
+
+    error = openai.APIConnectionError(request=httpx.Request("POST", "http://x"))
+    failed = threading.Event()
+    with patch.object(readers, "transcribe_audio", side_effect=error), patch.object(
+        failed, "wait", return_value=False
+    ), pytest.raises(openai.APIConnectionError) as caught:
+        readers._transcribe_piece("part.mp3", 598, readers.time.monotonic() + 600, failed)
+    assert caught.value is error
+    assert not is_terminal_error(caught.value)
+
+
+def test_stop_worker_cancels_queued_asr_without_waiting_for_active_upload():
+    from app.jobs import queue
+
+    started, release = threading.Event(), threading.Event()
+    def upload():
+        started.set()
+        assert release.wait(5)
+    pool = ThreadPoolExecutor(max_workers=1)
+    try:
+        running = pool.submit(upload)
+        assert started.wait(5)
+        queued = pool.submit(lambda: "must not upload")
+        with patch.object(readers, "_ASR_EXECUTOR", pool), patch.object(
+            queue, "_worker_threads", []
+        ), patch.object(queue, "_stop_event", threading.Event()):
+            queue.stop_worker()
+        assert queued.cancelled()
+        assert not running.done()
+    finally:
+        release.set()
+        pool.shutdown(wait=True, cancel_futures=True)
 
 
 def test_normalization_shares_the_bounded_pool(tmp_path):

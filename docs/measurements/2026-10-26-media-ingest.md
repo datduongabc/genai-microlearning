@@ -35,7 +35,10 @@ latency. The historical artifacts contain total client time, without separate up
 provider queue or inference timings; those components cannot be recovered. Provider or
 network variation is a plausible explanation, **not a proven root cause**. The private
 replay disabled gateway retries for transparent request/cost accounting; production's
-existing router retry policy is another historical timing confounder.
+existing router retry policy is another historical timing confounder. In particular,
+`router_settings.timeout: 120` and `num_retries: 1` could explain a 231/239-second
+request as one 120-second timeout plus a retry. This is an **unverified lead**;
+historical gateway logs would be needed to confirm it.
 
 ## Four-file control and optimized replay
 
@@ -69,8 +72,12 @@ controls matched those archives at 0.9997 each. The archives lack Week04/Week05 
 transcripts, so fresh control transcripts were saved for those files. This metric measures
 agreement with another ASR result, **not recognition accuracy or WER against human text**.
 Manual inspection found changed terminology and distant student questions in both paths;
-no human transcript was available. Exact word matching removes repeated overlap text;
-paraphrased overlap remains a known limit and would need word-level alignment.
+no human transcript was available. Exact multi-word matching removes some repeated
+overlap text. Re-merging the saved final Week05 responses still leaves duplicated or
+out-of-order fragments at **5 of 7 boundaries**, such as "over a one-dimensional |
+one dimensional random variable". Paraphrase, misrecognition, and sorting by start
+timestamp can leave these small fragments; word-level alignment would be needed to
+resolve them reliably. Single-word coincidences are preserved to avoid deleting real words.
 
 ## Embedding compatibility and GPU memory
 
@@ -86,8 +93,9 @@ Week03's 97 chunks took **48.90 s CPU / 1.57 s GPU** (28.2× / 31.2×).
 Four concurrent requests of 100 chunks all returned 200, in 5.79–5.91 seconds each.
 Sampling VRAM every 200 ms recorded a peak of **1,315 MiB**, leaving **2,781 MiB** free.
 TEI processes model batches serially, limited to 1,024 tokens and four inputs per batch;
-512 queued inputs accommodate the four backend workers. The current reranker remains on
-CPU. VieNeu TTS was not loaded; its future coexistence is **not** claimed as validated.
+TEI's default limit of 512 concurrent requests counts requests, not queued inputs.
+The current reranker remains on CPU. VieNeu TTS was not loaded; its future coexistence
+is **not** claimed as validated.
 
 `devops/scripts/compose.sh` automatically selects the measured Ampere 8.6 GPU override;
 missing/other GPUs retain CPU. `EMBEDDER_DEVICE=cpu` forces CPU. The actual Compose
@@ -106,9 +114,10 @@ restored access; they are recorded separately and are not successful duration us
 
 The reader retries only failed windows (three attempts, retry-after/backoff, document
 retry deadline), and the shared process-wide pool bounds preparation and ASR together.
-Exhausted windows raise a timestamped terminal error shown by the existing failed-job
-monitor; successful partial text is never returned. Unit tests exercise concurrency,
-normalization, absolute offsets, padding, duplicate text, retry isolation, failure and
+Rate limits and deadline exhaustion raise a timestamped terminal error shown by the
+existing failed-job monitor; exhausted transient network/server errors propagate to the
+durable job queue for retry. Successful partial text is never returned. Unit tests exercise
+concurrency, normalization, absolute offsets, padding, duplicate text, retry isolation, failure and
 preflight rejection. Automated validation results are appended below after the final run.
 
 Raw proof is outside the repository under `/mnt/d/firstmate/data/do-an-media-ingest-speedup/`:
@@ -123,3 +132,10 @@ Private CPU/GPU/gateway/database containers and the temporary provider-key env f
 were removed after measurements and tests. No additional paid ASR calls are needed
 for review: automated tests and one short smoke check cover the changed flow using
 the recorded live evidence above.
+
+Review follow-up validation, 2026-10-27: **1,200 passed, 1 live-provider test deselected**
+in 141.20 s on a disposable private database, with **744 warnings**. All 32 media-reader
+tests and Ruff passed. A real-ffmpeg smoke used a 1,210-second video with 1,195 seconds
+of audio: the reader produced two valid windows and preserved absolute locators, with
+ASR mocked and zero paid calls. Its network-disabled `--rm` container and the private
+database were removed. No historical latency root cause or new provider timing is claimed.

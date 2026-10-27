@@ -355,7 +355,7 @@ def read_transcript_file(path: str) -> list[DocumentUnit]:
 # Leave headroom below Groq's 25 MB upload limit (decimal bytes).
 _AUDIO_UPLOAD_BYTES = 24_000_000
 _RATE_LIMIT_WAIT_SECONDS = 600
-_MAX_AUDIO_SECONDS = 7000
+_MAX_AUDIO_SECONDS = 5400
 _AUDIO_SEGMENT_SECONDS = 600
 _AUDIO_OVERLAP_SECONDS = 2
 # Shared across document jobs: four uploads per process, not four per document.
@@ -386,9 +386,15 @@ def _transcode_to_mp3(input_path: str, out_dir: str, *, start: float = 0,
 
 def _duration_seconds(path: str) -> float:
     result = subprocess.run(
-        ["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", path],
+        ["ffprobe", "-v", "error", "-select_streams", "a:0", "-show_entries",
+         "stream=duration", "-of", "csv=p=0", path],
         check=True, timeout=60, capture_output=True, text=True,
     )
+    if result.stdout.strip() == "N/A":
+        result = subprocess.run(
+            ["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", path],
+            check=True, timeout=60, capture_output=True, text=True,
+        )
     return float(result.stdout)
 
 
@@ -416,11 +422,14 @@ def _transcribe_piece(path: str, offset: float, deadline: float,
                 delay = max(1, delay)
             except (TypeError, ValueError):
                 delay = 60 if rate_limited else 2 ** attempt
+            if transient and not rate_limited and attempt == 2 and time.monotonic() < deadline:
+                # Preserve transient failures so the durable job queue can retry later.
+                raise
             if not transient or attempt == 2 or time.monotonic() + delay >= deadline:
                 minutes, seconds = divmod(int(offset), 60)
                 reason = "Da het han muc audio Groq" if rate_limited else type(exc).__name__
                 # ValueError is terminal and is shown in the document's job monitor.
-                # Never return a successful but incomplete document or retry completed pieces.
+                # Never return a successful but incomplete document.
                 raise ValueError(
                     f"Phien am doan {minutes:02d}:{seconds:02d} that bai: {reason}; "
                     "tai lieu chua duoc nhap, vui long thu lai sau."
@@ -452,7 +461,7 @@ def _merge_audio_segments(pieces: list[tuple[float, float, list[dict]]]) -> list
         # A final short utterance ("Yeah") or a truncated word can follow the
         # shared phrase, so a multi-word match may end up to two words early.
         # ponytail: exact words only; word-level alignment if paraphrased overlaps matter.
-        duplicate = next((n for n in range(min(len(old_words), len(new_words)), 0, -1)
+        duplicate = next((n for n in range(min(len(old_words), len(new_words)), 1, -1)
                           if old_words[-n:] == new_words[:n] or (n >= 2 and any(
                               old_words[i:i + n] == new_words[:n]
                               for i in range(max(0, len(old_words) - n - 2), len(old_words) - n + 1)))), 0)
@@ -495,8 +504,7 @@ def read_audio_video(path: str) -> list[DocumentUnit]:
         raise ValueError("Audio co thoi luong khong hop le")
     if duration > _MAX_AUDIO_SECONDS:
         raise ValueError(
-            "Audio dài hơn khoảng 2 giờ vượt hạn mức phiên âm miễn phí; "
-            "hãy cắt file thành các phần dưới 2 giờ rồi tải lên từng phần."
+            "Audio dài hơn 90 phút; hãy cắt thành các phần tối đa 90 phút."
         )
     with tempfile.TemporaryDirectory() as tmp:
         windows = _audio_windows(duration)
