@@ -57,15 +57,15 @@ describe('generateModuleSchema', () => {
 
 describe('uploadDocumentSchema', () => {
   it('takes a file within the limit of its kind', () => {
-    expect(uploadDocumentSchema.safeParse({ file: fileOfSize('a.pdf', 50 * MB) }).success).toBe(true)
+    expect(uploadDocumentSchema.safeParse({ file: fileOfSize('a.pdf', 25 * MB) }).success).toBe(true)
     expect(uploadDocumentSchema.safeParse({ file: fileOfSize('a.mp3', 200 * MB) }).success).toBe(true)
-    expect(uploadDocumentSchema.safeParse({ file: fileOfSize('a.mp4', 500 * MB) }).success).toBe(true)
+    expect(uploadDocumentSchema.safeParse({ file: fileOfSize('a.mp4', 1024 * MB) }).success).toBe(true)
   })
 
   it.each([
-    ['a.pdf', 50 * MB + 1, 'File vượt quá giới hạn 50MB'],
+    ['a.pdf', 25 * MB + 1, 'Tài liệu tối đa 25 MB'],
     ['a.MP3', 200 * MB + 1, 'Tệp âm thanh tối đa 200 MB'],
-    ['a.mp4', 500 * MB + 1, 'Tệp video tối đa 500 MB'],
+    ['a.mp4', 1024 * MB + 1, 'Tệp video tối đa 1 GB'],
   ])('says why %s of %d bytes is too big', (name, size, message) => {
     const result = uploadDocumentSchema.safeParse({ file: fileOfSize(name, size) })
     expect(result.error?.issues[0].message).toBe(message)
@@ -76,7 +76,7 @@ describe('uploadDocumentSchema', () => {
   })
 
   it('finds the limit of a name without an extension', () => {
-    expect(uploadSizeLimit('README').bytes).toBe(50 * MB)
+    expect(uploadSizeLimit('README').bytes).toBe(25 * MB)
   })
 })
 

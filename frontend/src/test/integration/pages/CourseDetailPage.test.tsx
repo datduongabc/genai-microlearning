@@ -425,13 +425,13 @@ describe('CourseDetailPage - upload form', () => {
 
   it('says a file is too big instead of sending it', async () => {
     const file = new File(['x'], 'lecture.pdf', { type: 'application/pdf' })
-    Object.defineProperty(file, 'size', { value: 51 * 1024 * 1024 })
+    Object.defineProperty(file, 'size', { value: 25 * 1024 * 1024 + 1 })
 
     renderPage()
     await screen.findByText('Tải tài liệu lên')
     await userEvent.upload(uploadInput(), file)
 
-    expect(await screen.findByText('File vượt quá giới hạn 50MB')).toBeInTheDocument()
+    expect(await screen.findByText('Tài liệu tối đa 25 MB')).toBeInTheDocument()
     expect(api.uploadDocument).not.toHaveBeenCalled()
     expect(uploadInput()).toBeEnabled()
   })

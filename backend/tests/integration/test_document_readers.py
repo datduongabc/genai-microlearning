@@ -1,6 +1,6 @@
 from docx import Document as DocxDocument
 
-from app.ingestion.document_readers import read_docx, read_html, read_transcript_file
+from app.ingestion.document_readers import read_docx, read_html
 
 
 def test_read_html_splits_by_heading(tmp_path):
@@ -22,52 +22,6 @@ def test_read_html_splits_by_heading(tmp_path):
     assert "First paragraph" in units[0].text
     assert units[1].locator["heading"] == "Section 1.1"
     assert "Second paragraph" in units[1].text
-
-
-def test_read_transcript_file_srt_parses_timestamps(tmp_path):
-    srt = (
-        "1\n00:00:00,000 --> 00:00:02,500\nHello world.\n\n"
-        "2\n00:00:02,500 --> 00:00:05,000\nSecond caption.\n\n"
-    )
-    path = tmp_path / "sample.srt"
-    path.write_text(srt, encoding="utf-8")
-
-    units = read_transcript_file(str(path))
-
-    assert len(units) == 2
-    assert units[0].locator == {"start_ms": 0, "end_ms": 2500}
-    assert units[0].text == "Hello world."
-    assert units[1].locator == {"start_ms": 2500, "end_ms": 5000}
-
-
-def test_read_transcript_file_srt_handles_crlf(tmp_path):
-    # Windows caption exporters use \r\n\r\n between blocks -- real bug found
-    # live: this must not collapse the whole file into one giant segment.
-    srt = (
-        "1\r\n00:00:00,000 --> 00:00:01,000\r\nFirst.\r\n\r\n"
-        "2\r\n00:00:01,000 --> 00:00:02,000\r\nSecond.\r\n\r\n"
-    )
-    path = tmp_path / "sample_crlf.srt"
-    path.write_bytes(srt.encode("utf-8"))
-
-    units = read_transcript_file(str(path))
-
-    assert len(units) == 2
-
-
-def test_read_transcript_file_txt_splits_by_paragraph(tmp_path):
-    txt = "Paragraph one.\n\nParagraph two.\n\nParagraph three."
-    path = tmp_path / "sample.txt"
-    path.write_text(txt, encoding="utf-8")
-
-    units = read_transcript_file(str(path))
-
-    assert len(units) == 3
-    assert units[0].locator == {"paragraph_index": 0}
-
-
-
-
 
 
 # --- OCR và bảng --------------------------------------------------------------

@@ -366,10 +366,14 @@ export function CourseDetailPage() {
               void upload.handleSubmit(handleUpload, (errors) => setError(errors.file?.message ?? null))();
             }}
             disabled={loading || uploadBusy}
-            accept=".pdf,.pptx,.docx,.html,.htm,.txt,.vtt,.srt,.mp3,.wav,.m4a,.flac,.ogg,.aac,.mp4,.mkv,.webm,.mov,.avi"
+            accept=".pdf,.pptx,.docx,.html,.htm,.mp3,.wav,.m4a,.flac,.ogg,.aac,.mp4,.mkv,.webm,.mov,.avi"
           />
         </label>
       </div>
+      <p className="mt-2 text-xs text-gray-500">
+        Nhận PDF, PPTX, DOCX, HTML (tối đa 25 MB, 150 trang/slide); audio MP3, WAV, M4A, FLAC,
+        OGG, AAC (tối đa 200 MB, 90 phút); video MP4, MKV, WEBM, MOV, AVI (tối đa 1 GB, 90 phút).
+      </p>
       {/* Hàng riêng chứ không chung hàng với nút tải lên: đây là thiết lập cho các nút
           "+ Sinh mô-đun" bên dưới, không liên quan tới việc tải tài liệu. Chung hàng thì
           dòng ghi chú dưới ô chọn còn đẩy ô chọn lệch lên so với các nút bên cạnh. */}

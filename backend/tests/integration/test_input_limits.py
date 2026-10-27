@@ -133,7 +133,7 @@ def test_a_multipart_body_is_limited_like_any_other_except_for_the_upload_itself
 
     elsewhere = client.post("/courses", files={"file": ("x.txt", big, "text/plain")}, headers=world["headers"])
     upload = client.post(
-        "/documents", params={"course_id": world["course"]}, files={"file": ("big.txt", big, "text/plain")},
+        "/documents", params={"course_id": world["course"]}, files={"file": ("big.html", big, "text/html")},
         headers=world["headers"],
     )
 

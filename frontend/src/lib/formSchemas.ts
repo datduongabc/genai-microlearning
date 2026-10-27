@@ -41,8 +41,8 @@ export function uploadSizeLimit(filename: string): { bytes: number; message: str
   const dot = filename.lastIndexOf(".");
   const suffix = dot === -1 ? "" : filename.slice(dot).toLowerCase();
   if (AUDIO_EXTENSIONS.includes(suffix)) return { bytes: 200 * MB, message: "Tệp âm thanh tối đa 200 MB" };
-  if (VIDEO_EXTENSIONS.includes(suffix)) return { bytes: 500 * MB, message: "Tệp video tối đa 500 MB" };
-  return { bytes: 50 * MB, message: "File vượt quá giới hạn 50MB" };
+  if (VIDEO_EXTENSIONS.includes(suffix)) return { bytes: 1024 * MB, message: "Tệp video tối đa 1 GB" };
+  return { bytes: 25 * MB, message: "Tài liệu tối đa 25 MB" };
 }
 
 // The file picked for upload. The type is left to the server, which explains an unsupported or
