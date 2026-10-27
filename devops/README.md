@@ -1,7 +1,7 @@
 # devops
 
 Everything here is about running the system, not about what it does.
-Only the CI workflow stays where GitHub expects it (`.github/`), and a root `docker-compose.yml` that does nothing but include `devops/docker-compose.yml`, so `docker compose up -d` works from the repository root.
+Only the CI workflow stays where GitHub expects it (`.github/`), and a root `docker-compose.yml` that does nothing but include `devops/docker-compose.yml`, keeping plain `docker compose` available as the CPU path from the repository root.
 That root file keeps the repository root as the project directory, so the relative paths and the volume names are the same as before the move,
 and it points `env_file` at `devops/.env`, the single env file the compose stack and the backend both read.
 
@@ -12,12 +12,15 @@ and it points `env_file` at `devops/.env`, the single env file the compose stack
 - `moodle/`: the Moodle image.
 - `caddy/Caddyfile`: the HTTPS proxy in front of the frontend and the API (`/api`).
 - `scripts/rotate_secrets.py`: replaces the database and Moodle admin passwords everywhere they live.
+- `scripts/compose.sh`: the standard Compose launcher, with GPU embedding auto-selection and CPU fallback.
 - `.env.example`: every variable the compose file and the backend read, with placeholders.
 
 ## Running it
 
 Copy `devops/.env.example` to `devops/.env`, then run `python devops/scripts/rotate_secrets.py` once to give the three database roles and the Moodle admin random passwords.
-Start the stack with `docker compose up -d`.
+Start the stack from the repository root with `./devops/scripts/compose.sh up -d`.
+This is the standard start path: it selects GPU embedding on supported hardware and
+falls back to CPU as described below.
 The site is then at `https://localhost:8443`.
 Caddy signs the local certificate with its own CA, so trust it once with `docker exec do-an-proxy caddy trust`.
 

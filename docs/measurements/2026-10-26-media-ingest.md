@@ -79,6 +79,40 @@ one dimensional random variable". Paraphrase, misrecognition, and sorting by sta
 timestamp can leave these small fragments; word-level alignment would be needed to
 resolve them reliably. Single-word coincidences are preserved to avoid deleting real words.
 
+## Final-reader ASR replay, 2026-10-27
+
+After the review fixes and the one-second MP3 encoder-padding tolerance, the owner
+authorized another $0.50 of Groq usage. The final reader replayed all four original
+files through a private gateway using the same Whisper Large V3 Turbo model. Gateway
+retries were disabled for explicit cost accounting; its timeout was 120 seconds.
+The reader's bounded concurrency and failed-window retry behavior were unchanged.
+All **33 requests succeeded without retry**.
+
+| File | Historical ASR s | Final ASR wall s | Final extract s | Requests | Chunks | Similarity to saved whole-file control |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Week02.mp4 | 230.98 | 7.20 | 9.45 | 8 | 91 | 0.9325 |
+| Week03.mp4 | 239.43 | 6.53 | 9.16 | 8 | 95 | 0.9292 |
+| Week04.mp3 | 35.15 | 6.96 | 9.08 | 9 | 72 | 0.9303 |
+| Week05.mp3 | 19.83 | 6.73 | 8.86 | 8 | 91 | 0.9075 |
+
+ASR wall time runs from the first request to the last response, including client upload
+and gateway/provider latency. Extract includes normalization and ASR, which overlap.
+The historical column is the original full-workflow baseline, not a simultaneous
+control: the earlier fresh whole-file controls were already much faster than that
+baseline. These new values confirm the final reader's timings without establishing
+the cause of the historical video delay. No embedding or database phase was rerun,
+so this table does not claim a new full-ingestion total. Similarity uses the same
+saved controls and word comparison described above.
+
+The replay reserved an estimated **$0.2131664** of duration-based cost before upload,
+within the additional **$0.50** allowance. Including the earlier $0.4783956, the task
+total reserved estimate is **$0.691562**, below the combined $0.9783956 allowance.
+This is a conservative local reservation ledger, not a provider invoice. Both private
+`fm-do-an-media-ingest-speedup-oct27-*` containers and the temporary credential files
+were removed. Raw evidence is `oct27-asr-timing.json`, `groq-oct27-budget.json`,
+`oct27-asr-timing.log`, `oct27-after-*-units.json`, and `oct27-raw-*.json` under the
+existing private proof directory.
+
 ## Embedding compatibility and GPU memory
 
 CPU retains ONNX revision `c25a394dd583836952667c12f008335071b3f43d`.
@@ -97,7 +131,8 @@ TEI's default limit of 512 concurrent requests counts requests, not queued input
 The current reranker remains on CPU. VieNeu TTS was not loaded; its future coexistence
 is **not** claimed as validated.
 
-`devops/scripts/compose.sh` automatically selects the measured Ampere 8.6 GPU override;
+`./devops/scripts/compose.sh up -d` is now the documented standard start command.
+It automatically selects the measured Ampere 8.6 GPU override;
 missing/other GPUs retain CPU. `EMBEDDER_DEVICE=cpu` forces CPU. The actual Compose
 consumer validated both resolved configurations without starting the application stack.
 
