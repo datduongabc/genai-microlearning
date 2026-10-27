@@ -211,6 +211,22 @@ def test_a_logo_on_every_pdf_page_is_not_read(tmp_path, monkeypatch):
     assert all("Hình" not in u.text for u in units)
 
 
+def test_the_full_page_scan_under_a_searchable_pdf_text_layer_is_not_read(tmp_path, monkeypatch):
+    seen = []
+    monkeypatch.setattr(figures, "ocr_figure", lambda blob: seen.append(blob) or "new ready running waiting")
+
+    def build(doc):
+        page = doc.new_page()
+        page.insert_image(page.rect, stream=_png(size=(600, 800)))
+        for row in range(12):
+            page.insert_text((50, 60 + 20 * row), f"Line {row} of the scanned lecture page text", fontname="helv")
+
+    units = read_pdf(_pdf(tmp_path, build))
+
+    assert seen == []
+    assert "Hình" not in units[0].text
+
+
 # --- PPTX ------------------------------------------------------------------------
 
 

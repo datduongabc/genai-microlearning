@@ -29,7 +29,7 @@ from pptx.oxml import parse_xml
 from pptx.shapes.picture import Picture
 
 from app.config import settings
-from app.ingestion.figures import is_content_figure, new_text, ocr_figures
+from app.ingestion.figures import is_content_figure, is_page_scan, new_text, ocr_figures
 from app.ingestion.formula_repair import repair_page
 from app.ingestion.pdf_layout import page_lines, suspect_formula_lines, title_candidates
 from app.llm.gateway import transcribe_audio
@@ -59,14 +59,16 @@ def _figure_pages(doc: pymupdf.Document) -> dict[str, int]:
     return {digest: len(found) for digest, found in pages.items()}
 
 
-def _page_figures(page: pymupdf.Page, figure_pages: dict[str, int]) -> list[bytes]:
+def _page_figures(page: pymupdf.Page, figure_pages: dict[str, int], page_text: str) -> list[bytes]:
     """Ảnh các hình nội dung của trang, vẽ lại đúng vùng của hình: ảnh gốc trong tệp có thể bị
     lật, cắt hay có mặt nạ trong suốt, còn vùng vẽ ra là đúng thứ người đọc thấy."""
     area = page.rect.width * page.rect.height
     images = []
     for info in page.get_image_info(hashes=True):
         box = pymupdf.Rect(info["bbox"]) & page.rect
-        if not box.is_empty and is_content_figure(box.width * box.height / area, figure_pages[info["digest"]]):
+        ratio = box.width * box.height / area
+        if (not box.is_empty and is_content_figure(ratio, figure_pages[info["digest"]])
+                and not is_page_scan(ratio, page_text)):
             images.append(page.get_pixmap(clip=box, dpi=200).tobytes("png"))
     return images
 
@@ -74,10 +76,10 @@ def _page_figures(page: pymupdf.Page, figure_pages: dict[str, int]) -> list[byte
 _FORMULA_WORKERS = 4
 
 
-def _repair_formulas(repairs: list[tuple[dict, bytes]]) -> None:
-    """Gửi các trang còn công thức vỡ cho model đọc ảnh; trang nào không có bản chép đáng tin thì
-    giữ bản dựng lại kèm cảnh báo, để giảng viên biết trang nào cần soát."""
-    chosen = repairs[:settings.formula_vision_max_pages] if settings.formula_vision_model else []
+def _repair_formulas(repairs: list[tuple[dict, bytes | None]]) -> None:
+    """Gửi các trang còn công thức vỡ có ảnh cho model đọc ảnh; trang nào không có bản chép đáng
+    tin thì giữ bản dựng lại kèm cảnh báo, để giảng viên biết trang nào cần soát."""
+    chosen = [(page, png) for page, png in repairs if png is not None]
     results: list[str | None] = []
     if chosen:
         with ThreadPoolExecutor(max_workers=_FORMULA_WORKERS) as pool:
@@ -103,8 +105,7 @@ def read_pdf(path: str) -> list[DocumentUnit]:
             raise ValueError("PDF được mã hóa; hãy bỏ mật khẩu rồi tải lại tài liệu.")
         figure_pages = _figure_pages(doc)
         page_records: list[dict] = []
-        repairs: list[tuple[dict, bytes]] = []
-        figures: list[tuple[dict, bytes]] = []
+        repairs: list[tuple[dict, bytes | None]] = []
         for page_index, page in enumerate(doc):
             code_lines: set[int] = set()
             math_lines: set[int] = set()
@@ -132,15 +133,16 @@ def read_pdf(path: str) -> list[DocumentUnit]:
                         record["warnings"].append({"code": "ocr_failed", "page": page_index + 1})
                 continue
             if suspect_formula_lines([lines[i] for i in sorted(math_lines)]):
-                repairs.append((record, page.get_pixmap(dpi=150).tobytes("png")))
-            figures.extend((record, image) for image in _page_figures(page, figure_pages))
+                # Chỉ vẽ trang sẽ thật sự gửi cho model; các trang còn lại chỉ nhận cảnh báo.
+                sent = settings.formula_vision_model and len(repairs) < settings.formula_vision_max_pages
+                repairs.append((record, page.get_pixmap(dpi=150).tobytes("png") if sent else None))
+            for text in ocr_figures(_page_figures(page, figure_pages, record["text"])):
+                if text and new_text(text, "\n".join([record["text"], *record["figures"]])):
+                    record["figures"].append(text)
     finally:
         doc.close()
 
     _repair_formulas(repairs)
-    for (record, _), text in zip(figures, ocr_figures([image for _, image in figures]), strict=True):
-        if text and new_text(text, "\n".join([record["text"], *record["figures"]])):
-            record["figures"].append(text)
 
     raw_units = []
     for record in page_records:
@@ -274,16 +276,12 @@ def read_pptx(path: str) -> list[DocumentUnit]:
     prs = Presentation(path)
     slide_area = prs.slide_width * prs.slide_height
     picture_slides: dict[str, set[int]] = {}
-    for slide_index, slide in enumerate(prs.slides):
-        for shape in _iter_pptx_shapes(slide.shapes):
-            if isinstance(shape, Picture) and (blob := _picture_blob(shape)) is not None:
-                picture_slides.setdefault(hashlib.sha1(blob).hexdigest(), set()).add(slide_index)
-
+    pictures: list[tuple[str, float, bytes]] = []
     slides = []
-    figures: list[bytes] = []
     for slide_index, slide in enumerate(prs.slides):
         title_shape = slide.shapes.title
-        # Chữ của slide, hoặc chỉ số của một hình chờ OCR: hình được đọc cùng lúc cho cả bộ slide.
+        # Chữ của slide, hoặc chỉ số của một hình: hình chỉ được chọn đọc khi đã biết nó có mặt trên
+        # bao nhiêu slide, và được đọc cùng lúc cho cả bộ slide.
         title, body = "", []
         for shape in _iter_pptx_shapes(slide.shapes):
             if shape.has_text_frame:
@@ -298,10 +296,12 @@ def read_pptx(path: str) -> list[DocumentUnit]:
                 body.extend(_pptx_table_lines(shape.table))
             elif isinstance(shape, Picture):
                 blob = _picture_blob(shape)
-                area = (shape.width or 0) * (shape.height or 0) / slide_area if slide_area else 0
-                if blob is not None and is_content_figure(area, len(picture_slides[hashlib.sha1(blob).hexdigest()])):
-                    body.append(len(figures))
-                    figures.append(blob)
+                if blob is not None:
+                    digest = hashlib.sha1(blob).hexdigest()
+                    picture_slides.setdefault(digest, set()).add(slide_index)
+                    area = (shape.width or 0) * (shape.height or 0) / slide_area if slide_area else 0
+                    body.append(len(pictures))
+                    pictures.append((digest, area, blob))
             else:
                 body.extend(_smartart_lines(shape, slide))
         notes = ""
@@ -309,7 +309,8 @@ def read_pptx(path: str) -> list[DocumentUnit]:
             notes = _clean_pptx_text(slide.notes_slide.notes_text_frame.text)
         slides.append((slide_index, title, body, notes))
 
-    figure_texts = ocr_figures(figures)
+    chosen = [i for i, (digest, area, _) in enumerate(pictures) if is_content_figure(area, len(picture_slides[digest]))]
+    figure_texts = dict(zip(chosen, ocr_figures([pictures[i][2] for i in chosen]), strict=True))
     units = []
     for slide_index, title, body, notes in slides:
         written = "\n".join([title, notes, *(part for part in body if isinstance(part, str))])
@@ -317,7 +318,7 @@ def read_pptx(path: str) -> list[DocumentUnit]:
         for part in body:
             if isinstance(part, str):
                 parts.append(part)
-            elif figure_texts[part] and new_text(figure_texts[part], written):
+            elif figure_texts.get(part) and new_text(figure_texts[part], written):
                 parts.append(f"Hình: {figure_texts[part]}")
         if notes:
             parts.append(f"Ghi chú: {notes}")
