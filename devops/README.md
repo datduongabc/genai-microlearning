@@ -42,8 +42,10 @@ For a real deployment build it (`npm run build`) and serve `frontend/dist` from 
 At most four Whisper uploads run at once across all document jobs in the backend
 process. Audio and video use the same mono 16 kHz, 32 kbps MP3
 preparation, in ten-minute windows with two seconds of context overlap. Only failed
-windows retry (at most three attempts, honoring `retry-after`); an exhausted window
-fails the document with its timestamp in the existing job monitor. Successful windows
+windows retry (at most three attempts, honoring `retry-after`). Exhausted network or
+server errors return the job to the durable queue for a later retry; rate limits, the
+retry deadline and other errors fail the document with the window's timestamp in the
+existing job monitor. Successful windows
 are merged in source order, removing matching overlap text and retaining absolute
 segment locators. Normalization preserves duration-based pricing; the overlap adds
 about 0.3% audio duration for an 80-minute lecture.
