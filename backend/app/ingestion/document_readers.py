@@ -1,4 +1,5 @@
 import csv
+import hashlib
 import io
 import logging
 import os
@@ -6,6 +7,8 @@ import re
 import subprocess
 import tempfile
 import time
+import unicodedata
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
 from typing import Any
 from zipfile import BadZipFile
@@ -22,8 +25,13 @@ from PIL import Image
 from pptx import Presentation
 from pptx.enum.shapes import MSO_SHAPE_TYPE
 from pptx.exc import PackageNotFoundError as PptxPackageNotFoundError
+from pptx.oxml import parse_xml
+from pptx.shapes.picture import Picture
 
-from app.ingestion.pdf_layout import page_lines, title_candidates
+from app.config import settings
+from app.ingestion.figures import is_content_figure, new_text, ocr_figures
+from app.ingestion.formula_repair import repair_page
+from app.ingestion.pdf_layout import page_lines, suspect_formula_lines, title_candidates
 from app.llm.gateway import transcribe_audio
 
 logger = logging.getLogger(__name__)
@@ -42,61 +50,130 @@ MIN_TEXT_LEN_PER_PAGE = 20
 HEADING_RE = re.compile(r"^\s*(\d+(\.\d+)*)\.?\s+\S")
 
 
+def _figure_pages(doc: pymupdf.Document) -> dict[str, int]:
+    """Số trang có mặt mỗi ảnh, theo mã băm nội dung ảnh."""
+    pages: dict[str, set[int]] = {}
+    for page_index, page in enumerate(doc):
+        for info in page.get_image_info(hashes=True):
+            pages.setdefault(info["digest"], set()).add(page_index)
+    return {digest: len(found) for digest, found in pages.items()}
+
+
+def _page_figures(page: pymupdf.Page, figure_pages: dict[str, int]) -> list[bytes]:
+    """Ảnh các hình nội dung của trang, vẽ lại đúng vùng của hình: ảnh gốc trong tệp có thể bị
+    lật, cắt hay có mặt nạ trong suốt, còn vùng vẽ ra là đúng thứ người đọc thấy."""
+    area = page.rect.width * page.rect.height
+    images = []
+    for info in page.get_image_info(hashes=True):
+        box = pymupdf.Rect(info["bbox"]) & page.rect
+        if not box.is_empty and is_content_figure(box.width * box.height / area, figure_pages[info["digest"]]):
+            images.append(page.get_pixmap(clip=box, dpi=200).tobytes("png"))
+    return images
+
+
+_FORMULA_WORKERS = 4
+
+
+def _repair_formulas(repairs: list[tuple[dict, bytes]]) -> None:
+    """Gửi các trang còn công thức vỡ cho model đọc ảnh; trang nào không có bản chép đáng tin thì
+    giữ bản dựng lại kèm cảnh báo, để giảng viên biết trang nào cần soát."""
+    chosen = repairs[:settings.formula_vision_max_pages] if settings.formula_vision_model else []
+    results: list[str | None] = []
+    if chosen:
+        with ThreadPoolExecutor(max_workers=_FORMULA_WORKERS) as pool:
+            futures = [pool.submit(repair_page, png, page["text"]) for page, png in chosen]
+        for (page, _), future in zip(chosen, futures, strict=True):
+            try:
+                results.append(future.result())
+            except Exception as e:
+                logger.warning(f"[document_readers] formula re-read failed on page {page['page']}: {e}")
+                results.append(None)
+    for index, (page, _) in enumerate(repairs):
+        text = results[index] if index < len(results) else None
+        if text:
+            page.update(text=text, code_lines=set(), extraction_method="vision")
+        else:
+            page["warnings"].append({"code": "formula_unverified", "page": page["page"]})
+
+
 def read_pdf(path: str) -> list[DocumentUnit]:
     doc = pymupdf.open(path)
     try:
         if doc.needs_pass:
             raise ValueError("PDF được mã hóa; hãy bỏ mật khẩu rồi tải lại tài liệu.")
-        raw_units = []
+        figure_pages = _figure_pages(doc)
+        page_records: list[dict] = []
+        repairs: list[tuple[dict, bytes]] = []
+        figures: list[tuple[dict, bytes]] = []
         for page_index, page in enumerate(doc):
             code_lines: set[int] = set()
-            page_text = "\n".join(page_lines(page, code_lines=code_lines))
-            titles = title_candidates(page)
-            extraction_method = "text_layer"
-            if len(page_text.strip()) < MIN_TEXT_LEN_PER_PAGE:
+            math_lines: set[int] = set()
+            lines = page_lines(page, code_lines=code_lines, math_lines=math_lines)
+            record = {
+                "page": page_index + 1, "text": "\n".join(lines), "code_lines": code_lines,
+                "titles": title_candidates(page), "extraction_method": "text_layer", "warnings": [], "figures": [],
+            }
+            page_records.append(record)
+            if len(record["text"].strip()) < MIN_TEXT_LEN_PER_PAGE:
                 try:
                     pix = page.get_pixmap(dpi=200)
                     img = Image.open(io.BytesIO(pix.tobytes("png")))
                     ocr_text = pytesseract.image_to_string(img, lang="vie+eng")
                     if not ocr_text.strip():
                         raise ValueError("OCR returned no readable text")
-                    page_text = ocr_text
-                    code_lines.clear()
-                    extraction_method = "ocr"
+                    record.update(text=ocr_text, code_lines=set(), extraction_method="ocr")
                 except Exception as e:
                     # OCR is best-effort per page -- a single bad/scanned page
                     # (or a misconfigured OCR toolchain) must not discard the
                     # text already successfully extracted from every other
                     # page in the document.
                     logger.warning(f"[document_readers] OCR failed on page {page_index + 1} of {path}: {e}")
-                    if not page_text.strip():
-                        raw_units.append({
-                            "page": page_index + 1, "lines": [], "numbered": None,
-                            "titles": titles, "extraction_method": "ocr_failed",
-                            "warnings": [{"code": "ocr_failed", "page": page_index + 1}],
-                        })
-
-            lines_all = page_text.split("\n")
-            current_lines, current_heading = [], None
-
-            def flush():
-                if current_lines and "".join(current_lines).strip():
-                    stripped = [line.rstrip() for line in current_lines if line.strip()]
-                    raw_units.append({
-                        "page": page_index + 1, "lines": stripped, "numbered": current_heading,
-                        "titles": titles,
-                        "extraction_method": extraction_method,
-                    })
-
-            for line_index, line in enumerate(lines_all):
-                if line_index not in code_lines and HEADING_RE.match(line):
-                    flush()
-                    current_lines, current_heading = [line], line.strip()
-                else:
-                    current_lines.append(line)
-            flush()
+                    if not record["text"].strip():
+                        record["warnings"].append({"code": "ocr_failed", "page": page_index + 1})
+                continue
+            if suspect_formula_lines([lines[i] for i in sorted(math_lines)]):
+                repairs.append((record, page.get_pixmap(dpi=150).tobytes("png")))
+            figures.extend((record, image) for image in _page_figures(page, figure_pages))
     finally:
         doc.close()
+
+    _repair_formulas(repairs)
+    for (record, _), text in zip(figures, ocr_figures([image for _, image in figures]), strict=True):
+        if text and new_text(text, "\n".join([record["text"], *record["figures"]])):
+            record["figures"].append(text)
+
+    raw_units = []
+    for record in page_records:
+        if record["warnings"] and not record["text"].strip():
+            raw_units.append({
+                "page": record["page"], "lines": [], "numbered": None, "titles": record["titles"],
+                "extraction_method": "ocr_failed", "warnings": record["warnings"],
+            })
+            continue
+        # Chữ đọc từ hình đứng cuối trang, sau phần lớp chữ mà hình minh họa.
+        lines_all = record["text"].split("\n") + [f"Hình: {text}" for text in record["figures"]]
+        current_lines, current_heading = [], None
+        warnings = record["warnings"]
+
+        def flush():
+            nonlocal warnings
+            if current_lines and "".join(current_lines).strip():
+                stripped = [line.rstrip() for line in current_lines if line.strip()]
+                raw_units.append({
+                    "page": record["page"], "lines": stripped, "numbered": current_heading,
+                    "titles": record["titles"], "extraction_method": record["extraction_method"],
+                    "warnings": warnings,
+                })
+                # Cảnh báo của trang chỉ ghi một lần, ở đơn vị đầu tiên của trang.
+                warnings = []
+
+        for line_index, line in enumerate(lines_all):
+            if line_index not in record["code_lines"] and HEADING_RE.match(line):
+                flush()
+                current_lines, current_heading = [line], line.strip()
+            else:
+                current_lines.append(line)
+        flush()
 
     total = len(raw_units)
     if total == 0:
@@ -159,13 +236,54 @@ def _pptx_table_lines(table) -> list[str]:
     return lines
 
 
+_DRAWING_PARAGRAPH = "{http://schemas.openxmlformats.org/drawingml/2006/main}p"
+_DRAWING_TEXT = "{http://schemas.openxmlformats.org/drawingml/2006/main}t"
+
+
+def _smartart_lines(shape, slide) -> list[str]:
+    """Chữ của một sơ đồ SmartArt. Nó nằm trong phần dữ liệu riêng của sơ đồ chứ không trong slide,
+    nên đọc slide thì một slide chỉ có sơ đồ trông như slide trống."""
+    ids = shape._element.xpath('.//*[local-name()="relIds"]/@*[local-name()="dm"]')
+    if not ids:
+        return []
+    try:
+        data = parse_xml(slide.part.related_part(ids[0]).blob)
+    except (KeyError, XMLSyntaxError):
+        return []
+    lines = []
+    for paragraph in data.iter(_DRAWING_PARAGRAPH):
+        # Một chữ có dấu có thể bị tách thành hai lượt gõ, chữ gốc và dấu thanh kết hợp.
+        text = unicodedata.normalize("NFC", "".join(t.text or "" for t in paragraph.iter(_DRAWING_TEXT)))
+        if _clean_pptx_text(text):
+            lines.append(_clean_pptx_text(text))
+    return lines
+
+
+def _picture_blob(shape) -> bytes | None:
+    try:
+        return shape.image.blob
+    except (AttributeError, KeyError, ValueError):
+        # Ảnh liên kết ra ngoài tệp, không được nhúng: không có gì để đọc.
+        return None
+
+
 def read_pptx(path: str) -> list[DocumentUnit]:
     """One unit per slide with any text: the title, then everything else on the slide in the order
-    it was placed (text boxes, tables, shapes inside groups), then the speaker notes."""
-    units = []
+    it was placed (text boxes, tables, shapes inside groups, SmartArt, the text inside pictures),
+    then the speaker notes."""
     prs = Presentation(path)
+    slide_area = prs.slide_width * prs.slide_height
+    picture_slides: dict[str, set[int]] = {}
+    for slide_index, slide in enumerate(prs.slides):
+        for shape in _iter_pptx_shapes(slide.shapes):
+            if isinstance(shape, Picture) and (blob := _picture_blob(shape)) is not None:
+                picture_slides.setdefault(hashlib.sha1(blob).hexdigest(), set()).add(slide_index)
+
+    slides = []
+    figures: list[bytes] = []
     for slide_index, slide in enumerate(prs.slides):
         title_shape = slide.shapes.title
+        # Chữ của slide, hoặc chỉ số của một hình chờ OCR: hình được đọc cùng lúc cho cả bộ slide.
         title, body = "", []
         for shape in _iter_pptx_shapes(slide.shapes):
             if shape.has_text_frame:
@@ -178,11 +296,29 @@ def read_pptx(path: str) -> list[DocumentUnit]:
                     body.append(text)
             elif getattr(shape, "has_table", False) and shape.has_table:
                 body.extend(_pptx_table_lines(shape.table))
+            elif isinstance(shape, Picture):
+                blob = _picture_blob(shape)
+                area = (shape.width or 0) * (shape.height or 0) / slide_area if slide_area else 0
+                if blob is not None and is_content_figure(area, len(picture_slides[hashlib.sha1(blob).hexdigest()])):
+                    body.append(len(figures))
+                    figures.append(blob)
+            else:
+                body.extend(_smartart_lines(shape, slide))
         notes = ""
         if slide.has_notes_slide:
             notes = _clean_pptx_text(slide.notes_slide.notes_text_frame.text)
+        slides.append((slide_index, title, body, notes))
+
+    figure_texts = ocr_figures(figures)
+    units = []
+    for slide_index, title, body, notes in slides:
+        written = "\n".join([title, notes, *(part for part in body if isinstance(part, str))])
         parts = [title] if title else []
-        parts.extend(body)
+        for part in body:
+            if isinstance(part, str):
+                parts.append(part)
+            elif figure_texts[part] and new_text(figure_texts[part], written):
+                parts.append(f"Hình: {figure_texts[part]}")
         if notes:
             parts.append(f"Ghi chú: {notes}")
         text_combined = "\n".join(parts)

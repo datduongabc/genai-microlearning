@@ -4,6 +4,7 @@ maps a model alias to a real provider/model, so swapping models or providers is
 a configuration change, not a code change.
 """
 
+import base64
 import contextlib
 import contextvars
 import json
@@ -117,6 +118,17 @@ def complete(prompt: str, system_instruction: str | None = None, **kwargs) -> st
     if system_instruction:
         messages.append({"role": "system", "content": system_instruction})
     messages.append({"role": "user", "content": prompt})
+    response = _completion(messages=messages, **kwargs)
+    return response.choices[0].message.content
+
+
+def complete_with_image(prompt: str, png: bytes, **kwargs) -> str:
+    """One question about one image, routed like complete(): the alias must serve a vision model."""
+    image = f"data:image/png;base64,{base64.b64encode(png).decode()}"
+    messages = [{"role": "user", "content": [
+        {"type": "text", "text": prompt},
+        {"type": "image_url", "image_url": {"url": image}},
+    ]}]
     response = _completion(messages=messages, **kwargs)
     return response.choices[0].message.content
 
