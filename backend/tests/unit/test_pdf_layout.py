@@ -67,6 +67,31 @@ def test_glyphs_above_and_below_a_drawn_bar_are_a_fraction(page):
     assert [_compact(line) for line in page_lines(page)] == ["y=(a+1)/b"]
 
 
+def test_a_bulleted_fraction_over_a_drawn_bar_is_still_a_fraction(page):
+    page.insert_text((15, 99), "\xb7", fontname="symb", fontsize=14)
+    page.insert_text((60, 90), "a", fontname="tiit", fontsize=14)
+    page.insert_text((80, 90), "1", fontname="tiro", fontsize=14)
+    page.insert_text((70, 90), "+", fontname="symb", fontsize=14)
+    page.draw_line((55, 95), (95, 95), width=1)
+    page.insert_text((72, 110), "b", fontname="tiit", fontsize=14)
+    page.insert_text((30, 99), "y", fontname="tiit", fontsize=14)
+    page.insert_text((42, 99), "=", fontname="symb", fontsize=14)
+
+    assert page_lines(page) == ["• y = (a + 1)/b"]
+
+
+def test_a_named_function_over_a_drawn_bar_is_still_a_fraction(page):
+    page.insert_text((20, 99), "lim", fontname="tiro", fontsize=14)
+    page.insert_text((60, 90), "arctan", fontname="tiro", fontsize=14)
+    page.insert_text((102, 90), "x", fontname="tiit", fontsize=14)
+    page.draw_line((55, 95), (112, 95), width=1)
+    page.insert_text((80, 110), "x", fontname="tiit", fontsize=14)
+    page.insert_text((120, 99), "=", fontname="symb", fontsize=14)
+    page.insert_text((135, 99), "1", fontname="tiro", fontsize=14)
+
+    assert [_compact(line) for line in page_lines(page)] == ["lim(arctanx)/x=1"]
+
+
 def test_a_drawn_radical_sign_wraps_what_is_under_its_bar(page):
     # Dấu căn của MathType: nét chéo đi xuống rồi đi lên chạm đầu trái của vạch trên.
     page.draw_line((40, 95), (43, 93), width=0.5)
@@ -205,6 +230,15 @@ def test_text_without_vni_codes_is_unchanged_by_the_vni_decoder():
     assert vni_to_unicode(text) == text
 
 
+def test_symbol_font_bullets_keep_the_ordinary_line_reading(page):
+    # The Symbol font makes the region math-like; its bullets must not send it to formula rebuilding.
+    for y, text in [(100, "Each process has a state"), (120, "The scheduler picks one")]:
+        page.insert_text((50, y - 3), "\xb7", fontname="symb", fontsize=10)
+        page.insert_text((70, y), text, fontname="helv", fontsize=14)
+
+    assert page_lines(page) == ["•", "Each process has a state", "•", "The scheduler picks one"]
+
+
 def test_read_document_uses_the_rebuilt_lines_for_pdf_pages(tmp_path):
     doc = pymupdf.open()
     page = doc.new_page()
@@ -258,6 +292,26 @@ def test_a_title_repeated_on_every_slide_gives_way_to_the_slide_own_title(tmp_pa
     assert _deck(tmp_path, pages) == [f"Substitution rule {i}" for i in range(1, 6)]
 
 
+def test_a_deck_title_drawn_with_a_leading_space_on_some_slides_is_still_the_deck_title(tmp_path):
+    pages = [
+        [(60, (" " if i % 2 else "") + "Linked lists", 30), (110, f"Removal {i}", 22),
+         (160, "Body text of the slide", 14), (190, "More body text here", 14)]
+        for i in range(1, 6)
+    ]
+
+    assert _deck(tmp_path, pages) == [f"Removal {i}" for i in range(1, 6)]
+
+
+def test_a_large_bullet_drawn_after_a_space_is_not_a_heading(tmp_path):
+    headings = _deck(tmp_path, [[
+        (80, " - Stack frames", 28),
+        (130, "Each call pushes a frame on the stack.", 14),
+        (160, "Returning pops the frame again.", 14),
+    ]])
+
+    assert headings == [None]
+
+
 def test_a_page_whose_lines_are_all_the_same_size_has_no_heading_rather_than_a_wrong_one(tmp_path):
     headings = _deck(tmp_path, [[
         (80, "- first bullet of the slide", 14),
@@ -265,3 +319,24 @@ def test_a_page_whose_lines_are_all_the_same_size_has_no_heading_rather_than_a_w
     ]])
 
     assert headings == [None]
+
+
+def test_vni_decoder_requires_evidence_of_legacy_encoding(monkeypatch, page):
+    from app.ingestion import pdf_layout
+
+    page.insert_text((50, 80), "Vieät Nam", fontname="helv")
+    original = pymupdf.Page.get_text
+
+    def legacy_text(self, *args, **kwargs):
+        result = original(self, *args, **kwargs)
+        if args and args[0] == "rawdict":
+            for block in result["blocks"]:
+                for line in block.get("lines", []):
+                    for span in line["spans"]:
+                        span["font"] = "VNI-Times"
+        return result
+
+    monkeypatch.setattr(pymupdf.Page, "get_text", legacy_text)
+    assert page_lines(page) == ["Việt Nam"]
+    assert pdf_layout.map_font_text("Hòa bình", "VNI-Times") == ("Hòa bình", False)
+    assert pdf_layout.vni_to_unicode("TRÖÔØNG ÑAÏI HOÏC") == "TRƯỜNG ĐẠI HỌC"

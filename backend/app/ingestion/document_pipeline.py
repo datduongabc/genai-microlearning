@@ -43,7 +43,12 @@ def _run_extract(job) -> None:
         db.commit()
 
         units = read_document(storage_path, course_id=course_id, source_id=filename)
-        doc.raw_text = "\n\n".join(u.text for u in units)
+        doc.raw_text = "\n\n".join(u.text for u in units if u.text)
+        # Persist before rejecting an unreadable document, and keep them after job cleanup.
+        doc.extraction_warnings = [w for u in units for w in u.warnings]
+        if not doc.raw_text.strip():
+            db.commit()
+            raise ValueError("Không đọc được nội dung tài liệu; hãy tải lại bản có lớp chữ.")
 
         next_payload = {**current_job.payload, "units": [asdict(u) for u in units]}
         current_job.step = "chunk"

@@ -111,7 +111,8 @@ def test_an_ocr_failure_on_one_page_keeps_the_text_of_the_other_pages(tmp_path, 
 
     units = document_readers.read_pdf(_pdf(tmp_path, ["A page that has plenty of real text on it.", ""]))
 
-    assert [u.locator["page"] for u in units] == [1]
+    assert [u.locator["page"] for u in units if u.text] == [1]
+    assert units[1].warnings[0]["page"] == 2
     assert "plenty of real text" in units[0].text
 
 
