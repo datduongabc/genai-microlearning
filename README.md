@@ -93,14 +93,20 @@ cp devops/.env.example devops/.env
 3. Dựng toàn bộ stack:
 
 ```bash
-docker compose up -d
+./devops/scripts/compose.sh up -d
 ```
+
+Đây là cách khởi động mặc định: launcher tự chọn embedder GPU trên NVIDIA Ampere 8.6
+được hỗ trợ (ví dụ RTX 3050 Ti), và dùng CPU khi không có GPU phù hợp. Docker cần
+NVIDIA Container Toolkit để dùng GPU. Có thể ép CPU bằng
+`EMBEDDER_DEVICE=cpu ./devops/scripts/compose.sh up -d`; `docker compose` trực tiếp
+vẫn dùng cấu hình CPU.
 
 - Giao diện: http://localhost:5173
 - API: http://localhost:8000
 - Moodle: http://localhost:8081
 
-Nếu mọi thao tác với Moodle báo "Moodle từ chối yêu cầu do cấu hình quyền truy cập chưa đúng" (nhật ký backend: `Access control exception`, kể cả với `core_webservice_get_site_info`), lần cài Moodle đầu đã bị ngắt trước khi bật vai trò (`rolesactive=0`). Dựng lại image để script `finish-interrupted-install.php` sửa (chạy mỗi lần container khởi động, không làm gì trên site đã ổn): `docker compose up -d --build moodle`; nhật ký Moodle sẽ in `roles activated`.
+Nếu mọi thao tác với Moodle báo "Moodle từ chối yêu cầu do cấu hình quyền truy cập chưa đúng" (nhật ký backend: `Access control exception`, kể cả với `core_webservice_get_site_info`), lần cài Moodle đầu đã bị ngắt trước khi bật vai trò (`rolesactive=0`). Dựng lại image để script `finish-interrupted-install.php` sửa (chạy mỗi lần container khởi động, không làm gì trên site đã ổn): `./devops/scripts/compose.sh up -d --build moodle`; nhật ký Moodle sẽ in `roles activated`.
 
 ## Phát triển
 

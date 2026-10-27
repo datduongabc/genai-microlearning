@@ -1,147 +1,409 @@
-"""Audio preparation and timestamped transcription without provider calls."""
-import json
+"""Audio preparation, parallel ASR and original-timeline citations without provider calls."""
+import threading
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
-from types import SimpleNamespace
+from subprocess import CompletedProcess
 from unittest.mock import patch
 
 import httpx
 import openai
 import pytest
-from litellm.exceptions import RateLimitError
+from litellm.exceptions import BadGatewayError, RateLimitError, ServiceUnavailableError
 
 from app.ingestion import document_readers as readers
 
-_probe_duration = readers._duration_seconds
+
+def test_windows_cover_duration_with_only_small_overlap():
+    assert readers._audio_windows(60) == [(0, 60)]
+    assert readers._audio_windows(1201) == [(0, 600), (598, 602), (1198, 3)]
+    assert readers._audio_windows(1200) == [(0, 600), (598, 602)]
 
 
-@pytest.fixture(autouse=True)
-def short_audio():
-    with patch.object(readers, "_duration_seconds", return_value=60.0):
-        yield
+@pytest.mark.parametrize("audio_duration, expected", [("1195\n", 1195), ("N/A\n", 1210)])
+def test_duration_uses_audio_track_with_container_fallback(audio_duration, expected):
+    def probe(command, **kwargs):
+        if command[command.index("-show_entries") + 1] == "stream=duration":
+            assert command[command.index("-select_streams") + 1] == "a:0"
+            return CompletedProcess(command, 0, stdout=audio_duration)
+        return CompletedProcess(command, 0, stdout="1210\n")
+    with patch.object(readers.subprocess, "run", side_effect=probe):
+        assert readers._duration_seconds("lecture.mp4") == expected
 
 
-def test_small_mp3_skips_ffmpeg_and_keeps_segment_timestamps(tmp_path):
-    path = tmp_path / "lecture.mp3"
-    path.write_bytes(b"audio")
-    segments = [
-        {"start": 750, "end": 760, "text": " A "},
-        {"start": 760, "end": 785, "text": "  "},
-        {"start": 785, "end": 820, "text": "C"},
-    ]
-    with patch.object(readers.subprocess, "run") as ffmpeg, patch.object(
-        readers, "transcribe_audio", return_value=segments
-    ) as transcribe:
-        units = readers.read_audio_video(str(path))
-    ffmpeg.assert_not_called()
-    transcribe.assert_called_once_with(str(path))
+@pytest.mark.parametrize("previous, following", [
+    ("and we minimize the loss.", "Loss is convex."),
+    ("so the answer is yes", "yes or no questions are next"),
+])
+def test_single_word_boundary_coincidence_preserves_the_next_utterance(previous, following):
+    units = readers._merge_audio_segments([
+        (0, 600, [{"start": 598, "end": 600, "text": previous}]),
+        (598, 602, [{"start": 0, "end": 4, "text": following}]),
+    ])
+    assert [unit.text for unit in units] == [previous, following]
+
+
+def test_merge_offsets_and_removes_only_temporally_overlapping_prefix():
+    units = readers._merge_audio_segments([
+        (0, 600, [{"start": 595, "end": 600, "text": "Welcome to machine learning."}]),
+        (598, 602, [
+            {"start": 0, "end": 5, "text": " Machine learning, continues today."},
+            {"start": 10, "end": 12, "text": "machine learning"},
+        ]),
+    ])
     assert [(u.text, u.locator) for u in units] == [
-        ("A", {"start_ms": 750000, "end_ms": 760000}),
-        ("C", {"start_ms": 785000, "end_ms": 820000}),
+        ("Welcome to machine learning.", {"start_ms": 595000, "end_ms": 600000}),
+        ("continues today.", {"start_ms": 600000, "end_ms": 603000}),
+        ("machine learning", {"start_ms": 608000, "end_ms": 610000}),
     ]
 
-    from app.api.modules import citation_label
-    assert citation_label("lecture.mp3", json.dumps(units[0].locator)) == "lecture.mp3 · 12:30–12:40"
+
+def test_merge_deduplicates_across_segments_and_clamps_padding():
+    units = readers._merge_audio_segments([
+        (0, 600, [{"start": 598, "end": 600, "text": "one two three"}]),
+        (598, 3, [
+            {"start": 0, "end": 1, "text": "one two"},
+            {"start": 1, "end": 5, "text": "three four"},
+        ]),
+    ])
+    assert [u.text for u in units] == ["one two three", "four"]
+    assert units[-1].locator == {"start_ms": 600000, "end_ms": 601000}
 
 
-def _rate_limit(retry_after=None):
-    headers = {"retry-after": retry_after} if retry_after else None
-    return RateLimitError("quota", "groq", "transcribe", response=httpx.Response(429, headers=headers))
+def _fake_ffmpeg(command, **kwargs):
+    Path(command[-1]).write_bytes(b"mp3")
 
 
-def test_rate_limited_piece_waits_and_retries_only_that_piece(tmp_path):
-    path = tmp_path / "lecture.mp3"
-    path.write_bytes(b"audio")
-    segment = [{"start": 0, "end": 2, "text": "speech"}]
-    with patch.object(
-        readers, "transcribe_audio", side_effect=[_rate_limit("120"), segment]
-    ) as transcribe, patch.object(readers.time, "sleep") as sleep:
-        units = readers.read_audio_video(str(path))
-    assert transcribe.call_count == 2
-    sleep.assert_called_once_with(120.0)
-    assert [u.locator for u in units] == [{"start_ms": 0, "end_ms": 2000}]
-
-
-@pytest.mark.parametrize(("retry_after", "sleeps"), [(None, [60] * 10), ("900", [])])
-def test_rate_limit_wait_stays_under_stuck_job_threshold(tmp_path, retry_after, sleeps):
-    path = tmp_path / "lecture.mp3"
-    path.write_bytes(b"audio")
-    with patch.object(readers, "transcribe_audio", side_effect=_rate_limit(retry_after)), patch.object(
-        readers.time, "sleep"
-    ) as sleep, pytest.raises(ValueError, match="han muc audio Groq"):
-        readers.read_audio_video(str(path))
-    assert [c.args[0] for c in sleep.call_args_list] == sleeps
-
-
-def test_openai_sdk_rate_limit_error_is_handled(tmp_path):
-    # litellm.transcription raises openai.RateLimitError, not litellm's class.
-    path = tmp_path / "lecture.mp3"
-    path.write_bytes(b"audio")
-    error = openai.RateLimitError("quota", response=httpx.Response(429, headers={"retry-after": "900"}, request=httpx.Request("POST", "http://x")), body=None)
-    with patch.object(readers, "transcribe_audio", side_effect=error), patch.object(
-        readers.time, "sleep"
-    ) as sleep, pytest.raises(ValueError, match="han muc audio Groq"):
-        readers.read_audio_video(str(path))
-    sleep.assert_not_called()
-
-
-@pytest.mark.parametrize("extension", ["wav", "mp4"])
-def test_compression_is_mono_16khz_low_bitrate(tmp_path, extension):
+@pytest.mark.parametrize("extension", ["mp3", "wav", "mp4"])
+def test_every_format_is_normalized_before_upload(tmp_path, extension):
     path = tmp_path / f"lecture.{extension}"
     path.write_bytes(b"input")
-    commands = []
-    def ffmpeg(command, **kwargs):
-        commands.append(command)
-        Path(command[-1]).write_bytes(b"mp3")
-    with patch.object(readers.subprocess, "run", side_effect=ffmpeg), patch.object(
-        readers, "transcribe_audio", return_value=[{"start": 0, "end": 2, "text": "speech"}]
-    ):
-        assert readers.read_audio_video(str(path))[0].locator == {"start_ms": 0, "end_ms": 2000}
-    command = commands[0]
-    assert "-vn" in command
+    with patch.object(readers, "_duration_seconds", return_value=60), patch.object(
+        readers.subprocess, "run", side_effect=_fake_ffmpeg
+    ) as ffmpeg, patch.object(readers, "transcribe_audio", return_value=[
+        {"start": 1, "end": 2, "text": "speech"}
+    ]) as transcribe:
+        units = readers.read_audio_video(str(path))
+    command = ffmpeg.call_args.args[0]
     for option, value in [("-ac", "1"), ("-ar", "16000"), ("-b:a", "32k")]:
         assert command[command.index(option) + 1] == value
-
-
-def test_oversized_audio_splits_and_offsets_segments(tmp_path):
-    path = tmp_path / "large.mp3"
-    with path.open("wb") as f:
-        f.truncate(24_000_001)
-    def ffmpeg(command, **kwargs):
-        if "-f" not in command:
-            with open(command[-1], "wb") as f:
-                f.truncate(24_000_001)
-        else:
-            assert command[command.index("-f") + 1] == "segment"
-            for i in range(2):
-                Path(command[-1] % i).write_bytes(b"part")
-            manifest = command[command.index("-segment_list") + 1]
-            Path(manifest).write_text("part000.mp3,0.000000,5400.036000\npart001.mp3,5400.036000,5410.000000\n")
-    with patch.object(readers.subprocess, "run", side_effect=ffmpeg), patch.object(
-        readers, "transcribe_audio", return_value=[{"start": 1, "end": 10, "text": "speech"}]
-    ) as transcribe:
-        units = readers.read_audio_video(str(path))
-    assert transcribe.call_count == 2
-    assert units[0].locator == {"start_ms": 1000, "end_ms": 10000}
-    assert units[1].locator == {"start_ms": 5401036, "end_ms": 5410036}
+    assert transcribe.call_args.args[0] != str(path)
+    assert units[0].locator == {"start_ms": 1000, "end_ms": 2000}
     assert not Path(transcribe.call_args.args[0]).exists()
+
+
+def test_parallel_segments_are_bounded_and_results_stay_in_order(tmp_path):
+    path = tmp_path / "lecture.mp4"
+    path.write_bytes(b"input")
+    lock, release, started = threading.Lock(), threading.Event(), threading.Event()
+    active = peak = 0
+    def transcribe(piece):
+        nonlocal active, peak
+        with lock:
+            active += 1
+            peak = max(peak, active)
+            if active == 2:
+                started.set()
+        assert release.wait(5)
+        with lock:
+            active -= 1
+        return [{"start": 3, "end": 4, "text": Path(piece).stem}]
+    with (
+        ThreadPoolExecutor(max_workers=2) as pool,
+        ThreadPoolExecutor(max_workers=1) as caller,
+        patch.object(readers, "_ASR_EXECUTOR", pool),
+        patch.object(readers, "_duration_seconds", return_value=1801),
+        patch.object(readers.subprocess, "run", side_effect=_fake_ffmpeg) as ffmpeg,
+        patch.object(readers, "transcribe_audio", side_effect=transcribe),
+    ):
+        future = caller.submit(readers.read_audio_video, str(path))
+        try:
+            assert started.wait(5)
+        finally:
+            release.set()
+        units = future.result(timeout=5)
+    assert peak == 2
+    assert [u.locator['start_ms'] for u in units] == [3000, 601000, 1201000]
+    assert [u.text for u in units] == ["part000", "part001", "part002"]
+    commands = sorted((call.args[0] for call in ffmpeg.call_args_list), key=lambda cmd: cmd[-1])
+    assert [cmd[cmd.index("-ss") + 1] for cmd in commands] == ["0", "598", "1198", "1798"]
+    assert [cmd[cmd.index("-t") + 1] for cmd in commands] == ["600", "602", "602", "3"]
+
+
+def _rate_limit(retry_after="2"):
+    return RateLimitError("quota", "groq", "transcribe", response=httpx.Response(
+        429, headers={"retry-after": retry_after}
+    ))
+
+
+@pytest.mark.parametrize("error", [
+    _rate_limit(),
+    openai.RateLimitError("quota", response=httpx.Response(429, headers={"retry-after": "2"},
+        request=httpx.Request("POST", "http://x")), body=None),
+    openai.APIConnectionError(request=httpx.Request("POST", "http://x")),
+    BadGatewayError("bad gateway", "groq", "transcribe"),
+    ServiceUnavailableError("over capacity", "groq", "transcribe"),
+])
+def test_failed_segment_retries_without_resending_successful_segments(error):
+    failed = threading.Event()
+    with patch.object(readers, "transcribe_audio", side_effect=[error, [
+        {"start": 0, "end": 2, "text": "speech"}
+    ]]), patch.object(failed, "wait", return_value=False) as sleep:
+        result = readers._transcribe_piece("part.mp3", 598, readers.time.monotonic() + 600, failed)
+    assert result[0]['text'] == 'speech'
+    assert sleep.call_count == 1
+
+
+def test_exhausted_segment_is_visible_and_no_partial_transcript_is_returned(tmp_path):
+    path = tmp_path / "lecture.mp4"
+    path.write_bytes(b"input")
+    def transcribe(piece):
+        if '001' in piece:
+            raise _rate_limit("900")
+        return [{"start": 0, "end": 2, "text": "speech"}]
+    with patch.object(readers, "_duration_seconds", return_value=700), patch.object(
+        readers.subprocess, "run", side_effect=_fake_ffmpeg
+    ), patch.object(readers, "transcribe_audio", side_effect=transcribe), pytest.raises(
+        ValueError, match="09:58.*han muc audio Groq"
+    ):
+        readers.read_audio_video(str(path))
 
 
 def test_empty_transcript_is_rejected(tmp_path):
     path = tmp_path / "silence.mp3"
-    path.write_bytes(b"audio")
-    with patch.object(readers, "transcribe_audio", return_value=[]), pytest.raises(ValueError, match="rong"):
+    path.write_bytes(b"input")
+    with patch.object(readers, "_duration_seconds", return_value=60), patch.object(
+        readers.subprocess, "run", side_effect=_fake_ffmpeg
+    ), patch.object(readers, "transcribe_audio", return_value=[]), pytest.raises(ValueError, match="rong"):
         readers.read_audio_video(str(path))
 
 
-def test_audio_over_two_hours_is_refused_before_spending_quota(tmp_path):
+@pytest.mark.parametrize('duration', [5402, float('nan'), 0])
+def test_invalid_duration_refused_before_transcode_or_spending_quota(tmp_path, duration):
     path = tmp_path / "long.mp3"
-    path.write_bytes(b"audio")
-    probe = SimpleNamespace(stdout="7200.500000\n")
-    with patch.object(readers, "_duration_seconds", _probe_duration), patch.object(
-        readers.subprocess, "run", return_value=probe
-    ) as run, patch.object(
-        readers, "transcribe_audio"
-    ) as transcribe, pytest.raises(ValueError, match="dài hơn khoảng 2 giờ"):
+    path.write_bytes(b"input")
+    with patch.object(readers, "_duration_seconds", return_value=duration), patch.object(
+        readers.subprocess, "run"
+    ) as ffmpeg, patch.object(readers, "transcribe_audio") as transcribe, pytest.raises(ValueError):
         readers.read_audio_video(str(path))
-    assert run.call_args.args[0][0] == "ffprobe"
+    ffmpeg.assert_not_called()
     transcribe.assert_not_called()
+
+
+def test_exact_ninety_minute_mp3_with_encoder_padding_is_accepted(tmp_path):
+    path = tmp_path / "week.mp3"
+    path.write_bytes(b"input")
+    with patch.object(readers, "_duration_seconds", return_value=5400.1), patch.object(
+        readers.subprocess, "run", side_effect=_fake_ffmpeg
+    ), patch.object(readers, "transcribe_audio", return_value=[{"start": 0, "end": 2, "text": "speech"}]) as transcribe:
+        units = readers.read_audio_video(str(path))
+    assert transcribe.call_count == 10
+    assert units
+
+
+def test_queued_segment_does_not_upload_after_document_deadline():
+    with patch.object(readers, "transcribe_audio") as transcribe, pytest.raises(
+        ValueError, match="09:58.*TimeoutError"
+    ):
+        readers._transcribe_piece("part.mp3", 598, readers.time.monotonic() - 1, threading.Event())
+    transcribe.assert_not_called()
+
+
+def test_retry_does_not_repeat_a_successful_sibling(tmp_path):
+    from collections import Counter
+    path = tmp_path / "lecture.mp4"
+    path.write_bytes(b"input")
+    calls = Counter()
+    lock = threading.Lock()
+    def transcribe(piece):
+        name = Path(piece).stem
+        with lock:
+            calls[name] += 1
+            attempt = calls[name]
+        if name == 'part001' and attempt == 1:
+            raise _rate_limit('1')
+        return [{"start": 3, "end": 4, "text": name}]
+    with patch.object(readers, "_duration_seconds", return_value=700), patch.object(
+        readers.subprocess, "run", side_effect=_fake_ffmpeg
+    ), patch.object(readers, "transcribe_audio", side_effect=transcribe):
+        units = readers.read_audio_video(str(path))
+    assert calls == {'part000': 1, 'part001': 2}
+    assert [u.text for u in units] == ['part000', 'part001']
+
+
+def test_permanently_failed_segment_stops_after_three_attempts():
+    failed = threading.Event()
+    with patch.object(readers, "transcribe_audio", side_effect=_rate_limit('1')) as transcribe, patch.object(
+        failed, "wait", return_value=False
+    ), pytest.raises(ValueError, match="09:58.*han muc audio Groq"):
+        readers._transcribe_piece('part.mp3', 598, readers.time.monotonic() + 600, failed)
+    assert transcribe.call_count == 3
+
+
+@pytest.mark.parametrize("error", [
+    openai.APIConnectionError(request=httpx.Request("POST", "http://x")),
+    BadGatewayError("bad gateway", "groq", "transcribe"),
+    ServiceUnavailableError("over capacity", "groq", "transcribe"),
+])
+def test_exhausted_transient_errors_remain_retryable_by_the_job_queue(error):
+    from app.jobs.queue import is_terminal_error
+
+    failed = threading.Event()
+    with patch.object(readers, "transcribe_audio", side_effect=error) as transcribe, patch.object(
+        failed, "wait", return_value=False
+    ) as backoff, pytest.raises(type(error)) as caught:
+        readers._transcribe_piece("part.mp3", 598, readers.time.monotonic() + 600, failed)
+    assert transcribe.call_count == 3
+    assert [call.args[0] for call in backoff.call_args_list] == [1, 2]
+    assert caught.value is error
+    assert not is_terminal_error(caught.value)
+
+
+def test_stop_worker_cancels_queued_asr_without_waiting_for_active_upload():
+    from app.jobs import queue
+
+    started, release = threading.Event(), threading.Event()
+    def upload():
+        started.set()
+        assert release.wait(5)
+    pool = ThreadPoolExecutor(max_workers=1)
+    try:
+        running = pool.submit(upload)
+        assert started.wait(5)
+        queued = pool.submit(lambda: "must not upload")
+        with patch.object(readers, "_ASR_EXECUTOR", pool), patch.object(
+            queue, "_worker_threads", []
+        ), patch.object(queue, "_stop_event", threading.Event()):
+            queue.stop_worker()
+        assert queued.cancelled()
+        assert not running.done()
+    finally:
+        release.set()
+        pool.shutdown(wait=True, cancel_futures=True)
+
+
+def test_normalization_shares_the_bounded_pool(tmp_path):
+    path = tmp_path / 'lecture.mp4'
+    path.write_bytes(b'input')
+    started, release, lock = threading.Event(), threading.Event(), threading.Lock()
+    active = peak = 0
+    def ffmpeg(command, **kwargs):
+        nonlocal active, peak
+        with lock:
+            active += 1
+            peak = max(peak, active)
+            if active == 2:
+                started.set()
+        assert release.wait(5)
+        Path(command[-1]).write_bytes(b'mp3')
+        with lock:
+            active -= 1
+    with (
+        ThreadPoolExecutor(max_workers=2) as pool,
+        ThreadPoolExecutor(max_workers=1) as caller,
+        patch.object(readers, '_ASR_EXECUTOR', pool),
+        patch.object(readers, '_duration_seconds', return_value=700),
+        patch.object(readers.subprocess, 'run', side_effect=ffmpeg),
+        patch.object(readers, 'transcribe_audio', return_value=[{'start': 3, 'end': 4, 'text': 'speech'}]),
+    ):
+        future = caller.submit(readers.read_audio_video, str(path))
+        try:
+            assert started.wait(2)
+        finally:
+            release.set()
+        assert len(future.result(timeout=5)) == 2
+    assert peak == 2
+
+
+def test_failed_window_preparation_is_terminal_before_its_upload(tmp_path):
+    import subprocess
+    with patch.object(readers.subprocess, 'run', side_effect=subprocess.CalledProcessError(1, 'ffmpeg')), patch.object(
+        readers, 'transcribe_audio'
+    ) as transcribe, pytest.raises(ValueError, match='09:58.*ffmpeg'):
+        readers._transcribe_window('input.mp4', str(tmp_path), 1, 598, 602, readers.time.monotonic() + 600,
+                                   threading.Event())
+    transcribe.assert_not_called()
+
+
+def test_overlap_before_a_short_trailing_utterance_is_not_repeated():
+    units = readers._merge_audio_segments([
+        (0, 600, [{'start': 596, 'end': 599.64, 'text': 'And Y is the output.'},
+                  {'start': 599.64, 'end': 600, 'text': 'Yeah.'}]),
+        (598, 602, [{'start': 0, 'end': 1.66, 'text': 'is the output.'},
+                    {'start': 3, 'end': 6, 'text': 'This is the target variable.'}]),
+    ])
+    assert [u.text for u in units] == ['And Y is the output.', 'Yeah.', 'This is the target variable.']
+
+
+def test_crossing_overlap_prefix_can_match_before_a_truncated_trailing_word():
+    units = readers._merge_audio_segments([
+        (0, 600, [{'start': 597.36, 'end': 600, 'text': "And then I'll describe this in..."}]),
+        (598, 602, [{'start': 0, 'end': 2.86, 'text': "I'll describe this informally for now,"}]),
+    ])
+    assert units[-1].text == 'informally for now,'
+    assert units[-1].locator == {'start_ms': 600000, 'end_ms': 600860}
+
+
+def test_unmatched_overlap_keeps_text_in_absolute_timestamp_order():
+    units = readers._merge_audio_segments([
+        (0, 600, [{'start': 599, 'end': 600, 'text': 'earlier ending'}]),
+        (598, 602, [{'start': 0, 'end': 4, 'text': 'different wording'}]),
+    ])
+    assert [u.locator['start_ms'] for u in units] == sorted(u.locator['start_ms'] for u in units)
+    assert {u.text for u in units} == {'earlier ending', 'different wording'}
+
+
+def test_common_phrase_earlier_in_the_previous_segment_is_not_trimmed():
+    units = readers._merge_audio_segments([
+        (0, 600, [{'start': 580, 'end': 600,
+                   'text': 'chúng ta có thể thấy rằng mô hình này hoạt động tốt'}]),
+        (598, 602, [{'start': 1, 'end': 4, 'text': 'chúng ta sẽ xem ví dụ tiếp theo'}]),
+    ])
+    assert units[-1].text == 'chúng ta sẽ xem ví dụ tiếp theo'
+    assert units[-1].locator == {'start_ms': 599000, 'end_ms': 602000}
+
+
+def test_failed_window_cancels_queued_siblings_before_upload(tmp_path):
+    path = tmp_path / 'lecture.mp4'
+    path.write_bytes(b'input')
+    uploaded = []
+    def transcribe(piece):
+        uploaded.append(Path(piece).stem)
+        raise openai.BadRequestError('bad audio', response=httpx.Response(
+            400, request=httpx.Request('POST', 'http://x')), body=None)
+    with (
+        ThreadPoolExecutor(max_workers=1) as pool,
+        patch.object(readers, '_ASR_EXECUTOR', pool),
+        patch.object(readers, '_duration_seconds', return_value=3600),
+        patch.object(readers.subprocess, 'run', side_effect=_fake_ffmpeg),
+        patch.object(readers, 'transcribe_audio', side_effect=transcribe),
+        pytest.raises(ValueError, match='00:00.*BadRequestError'),
+    ):
+        readers.read_audio_video(str(path))
+    assert uploaded == ['part000']
+
+
+def test_sibling_sleeping_on_backoff_never_reuploads_after_document_failure(tmp_path):
+    path = tmp_path / 'lecture.mp4'
+    path.write_bytes(b'input')
+    uploaded, backing_off = [], threading.Event()
+    def transcribe(piece):
+        name = Path(piece).stem
+        uploaded.append(name)
+        if name == 'part000':
+            backing_off.set()
+            raise _rate_limit('30')
+        assert backing_off.wait(5)
+        raise openai.BadRequestError('bad audio', response=httpx.Response(
+            400, request=httpx.Request('POST', 'http://x')), body=None)
+    with (
+        ThreadPoolExecutor(max_workers=2) as pool,
+        ThreadPoolExecutor(max_workers=1) as caller,
+        patch.object(readers, '_ASR_EXECUTOR', pool),
+        patch.object(readers, '_duration_seconds', return_value=700),
+        patch.object(readers.subprocess, 'run', side_effect=_fake_ffmpeg),
+        patch.object(readers, 'transcribe_audio', side_effect=transcribe),
+    ):
+        future = caller.submit(readers.read_audio_video, str(path))
+        with pytest.raises(ValueError, match='09:58.*BadRequestError'):
+            future.result(timeout=5)
+    assert sorted(uploaded) == ['part000', 'part001']

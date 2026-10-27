@@ -1,23 +1,32 @@
-import csv
 import io
 import logging
+import math
 import os
 import re
 import subprocess
 import tempfile
+import threading
 import time
+from concurrent.futures import ThreadPoolExecutor, wait
 from dataclasses import dataclass, field
 from typing import Any
 from zipfile import BadZipFile
 
+import openai
 import pymupdf
 import pytesseract
 from bs4 import BeautifulSoup
 from docx import Document as DocxDocument
 from docx.opc.exceptions import PackageNotFoundError as DocxPackageNotFoundError
-from litellm.exceptions import RateLimitError
+from litellm.exceptions import (
+    APIConnectionError,
+    BadGatewayError,
+    InternalServerError,
+    RateLimitError,
+    ServiceUnavailableError,
+    Timeout,
+)
 from lxml.etree import XMLSyntaxError
-from openai import RateLimitError as OpenAIRateLimitError
 from PIL import Image
 from pptx import Presentation
 from pptx.enum.shapes import MSO_SHAPE_TYPE
@@ -352,20 +361,33 @@ def read_transcript_file(path: str) -> list[DocumentUnit]:
 
 # Leave headroom below Groq's 25 MB upload limit (decimal bytes).
 _AUDIO_UPLOAD_BYTES = 24_000_000
-# ponytail: total in-job wait stays under the 15-minute stuck-job threshold, and audio
-# longer than one hourly Groq window (7,200 audio-seconds) is refused up front, because
-# a retry would re-send every finished piece and hit the same limit again.
 _RATE_LIMIT_WAIT_SECONDS = 600
-_MAX_AUDIO_SECONDS = 7000
+_MAX_AUDIO_SECONDS = 5400
+# MP3 encoder padding makes an exact 90:00 cut probe slightly above 5400 s.
+_DURATION_TOLERANCE_SECONDS = 1
+_AUDIO_SEGMENT_SECONDS = 600
+_AUDIO_OVERLAP_SECONDS = 2
+# Shared across document jobs: four uploads per process, not four per document.
+_ASR_EXECUTOR = ThreadPoolExecutor(max_workers=4)
 
 
-def _transcode_to_mp3(input_path: str, out_dir: str) -> str:
-    if input_path.lower().endswith(".mp3") and os.path.getsize(input_path) <= _AUDIO_UPLOAD_BYTES:
-        return input_path
-    out_path = os.path.join(out_dir, "audio.mp3")
+def _audio_windows(duration: float) -> list[tuple[float, float]]:
+    return [
+        (max(0, start - _AUDIO_OVERLAP_SECONDS),
+         min(duration, start + _AUDIO_SEGMENT_SECONDS) - max(0, start - _AUDIO_OVERLAP_SECONDS))
+        for start in range(0, math.ceil(duration), _AUDIO_SEGMENT_SECONDS)
+    ]
+
+
+def _transcode_to_mp3(input_path: str, out_dir: str, *, start: float = 0,
+                      duration: float, index: int = 0) -> str:
+    out_path = os.path.join(out_dir, f"part{index:03d}.mp3")
+    # Input seeking followed by re-encoding is sample-accurate; stream-copy seeking
+    # rounds to packet boundaries and would shift citations at each split.
     subprocess.run(
-        ["ffmpeg", "-y", "-i", input_path, "-vn", "-ac", "1", "-ar", "16000",
-         "-acodec", "libmp3lame", "-b:a", "32k", out_path],
+        ["ffmpeg", "-y", "-ss", str(start), "-i", input_path, "-t", str(duration),
+         "-map", "0:a:0", "-vn", "-ac", "1", "-ar", "16000", "-acodec", "libmp3lame",
+         "-b:a", "32k", "-threads", "1", out_path],
         check=True, timeout=300, capture_output=True,
     )
     return out_path
@@ -373,60 +395,139 @@ def _transcode_to_mp3(input_path: str, out_dir: str) -> str:
 
 def _duration_seconds(path: str) -> float:
     result = subprocess.run(
-        ["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", path],
+        ["ffprobe", "-v", "error", "-select_streams", "a:0", "-show_entries",
+         "stream=duration", "-of", "csv=p=0", path],
         check=True, timeout=60, capture_output=True, text=True,
     )
+    if result.stdout.strip() == "N/A":
+        result = subprocess.run(
+            ["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", path],
+            check=True, timeout=60, capture_output=True, text=True,
+        )
     return float(result.stdout)
 
 
+def _transcribe_piece(path: str, offset: float, deadline: float,
+                      failed: threading.Event) -> list[dict]:
+    for attempt in range(3):
+        # A sibling already failed the document; never spend ASR quota on it.
+        if failed.is_set():
+            return []
+        try:
+            if time.monotonic() >= deadline:
+                raise TimeoutError("Audio transcription deadline expired")
+            return transcribe_audio(path)
+        except Exception as exc:
+            rate_limited = isinstance(exc, (RateLimitError, openai.RateLimitError))
+            transient = rate_limited or isinstance(exc, (
+                APIConnectionError, Timeout, InternalServerError, BadGatewayError, ServiceUnavailableError,
+                openai.APIConnectionError, openai.InternalServerError,
+            ))
+            headers = getattr(getattr(exc, "response", None), "headers", {})
+            try:
+                delay = float(headers.get("retry-after", 60 if rate_limited else 2 ** attempt))
+                if not math.isfinite(delay):
+                    raise ValueError("invalid retry-after")
+                delay = max(1, delay)
+            except (TypeError, ValueError):
+                delay = 60 if rate_limited else 2 ** attempt
+            if transient and not rate_limited and attempt == 2 and time.monotonic() < deadline:
+                # Preserve transient failures so the durable job queue can retry later.
+                raise
+            if not transient or attempt == 2 or time.monotonic() + delay >= deadline:
+                minutes, seconds = divmod(int(offset), 60)
+                reason = "Da het han muc audio Groq" if rate_limited else type(exc).__name__
+                # ValueError is terminal and is shown in the document's job monitor.
+                # Never return a successful but incomplete document.
+                raise ValueError(
+                    f"Phien am doan {minutes:02d}:{seconds:02d} that bai: {reason}; "
+                    "tai lieu chua duoc nhap, vui long thu lai sau."
+                ) from exc
+            failed.wait(delay)
+    raise AssertionError("unreachable")
+
+
+def _merge_audio_segments(pieces: list[tuple[float, float, list[dict]]]) -> list[DocumentUnit]:
+    units: list[DocumentUnit] = []
+    for offset, duration, segments in pieces:
+        incoming = []
+        for segment in segments:
+            text = segment["text"].strip()
+            start = max(0, min(duration, float(segment["start"])))
+            end = max(start, min(duration, float(segment["end"])))
+            if text and end > start:
+                incoming.append(DocumentUnit(text=text, locator={
+                    "start_ms": round((offset + start) * 1000),
+                    "end_ms": round((offset + end) * 1000),
+                }))
+        # Only compare text within the shared audio window. Repetition elsewhere
+        # in a lecture is meaningful and must survive.
+        overlap_end = round((offset + _AUDIO_OVERLAP_SECONDS) * 1000)
+        previous = " ".join(u.text for u in units if u.locator["end_ms"] > offset * 1000)
+        prefix = " ".join(u.text for u in incoming if u.locator["start_ms"] < overlap_end)
+        normalize = lambda text: [re.sub(r"\W", "", word).casefold() for word in text.split()]
+        old_words, new_words = normalize(previous), normalize(prefix)
+        # A final short utterance ("Yeah") or a truncated word can follow the
+        # shared phrase, so a multi-word match may end up to two words early.
+        # ponytail: exact words only; word-level alignment if paraphrased overlaps matter.
+        duplicate = next((n for n in range(min(len(old_words), len(new_words)), 1, -1)
+                          if old_words[-n:] == new_words[:n] or (n >= 2 and any(
+                              old_words[i:i + n] == new_words[:n]
+                              for i in range(max(0, len(old_words) - n - 2), len(old_words) - n + 1)))), 0)
+        previous_end = max((u.locator["end_ms"] for u in units), default=0)
+        for unit in incoming:
+            words = unit.text.split()
+            trim = min(duplicate, len(words))
+            duplicate -= trim
+            if trim:
+                unit.text = " ".join(words[trim:])
+                unit.locator["start_ms"] = min(unit.locator["end_ms"],
+                                                max(unit.locator["start_ms"], previous_end))
+            if unit.text:
+                units.append(unit)
+    return sorted(units, key=lambda unit: unit.locator["start_ms"])
+
+
+def _transcribe_window(path: str, tmp: str, index: int, start: float,
+                       length: float, deadline: float, failed: threading.Event) -> list[dict]:
+    if failed.is_set():
+        return []
+    try:
+        try:
+            piece = _transcode_to_mp3(path, tmp, start=start, duration=length, index=index)
+        except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as exc:
+            minutes, seconds = divmod(int(start), 60)
+            raise ValueError(f"Khong the xu ly doan {minutes:02d}:{seconds:02d}: ffmpeg that bai") from exc
+        if os.path.getsize(piece) > _AUDIO_UPLOAD_BYTES:
+            raise ValueError("Audio vuot gioi han 24 MB sau khi chia")
+        return _transcribe_piece(piece, start, deadline, failed)
+    except Exception:
+        failed.set()
+        raise
+
+
 def read_audio_video(path: str) -> list[DocumentUnit]:
-    """Compress audio/video for Whisper and retain original-timeline citations."""
-    units = []
-    waited = 0
+    """Normalize every input, transcribe bounded parallel windows, retain absolute citations."""
+    duration = _duration_seconds(path)
+    if not math.isfinite(duration) or duration <= 0:
+        raise ValueError("Audio co thoi luong khong hop le")
+    if duration > _MAX_AUDIO_SECONDS + _DURATION_TOLERANCE_SECONDS:
+        raise ValueError(
+            "Audio dài hơn 90 phút; hãy cắt thành các phần tối đa 90 phút."
+        )
     with tempfile.TemporaryDirectory() as tmp:
-        mp3_path = _transcode_to_mp3(path, tmp)
-        if _duration_seconds(mp3_path) > _MAX_AUDIO_SECONDS:
-            raise ValueError(
-                "Audio dài hơn khoảng 2 giờ vượt hạn mức phiên âm miễn phí; "
-                "hãy cắt file thành các phần dưới 2 giờ rồi tải lên từng phần."
-            )
-        pieces = [(mp3_path, 0.0)]
-        if os.path.getsize(mp3_path) > _AUDIO_UPLOAD_BYTES:
-            manifest = os.path.join(tmp, "pieces.csv")
-            # 90 minutes at 32 kbit/s is ~21.6 MB. Copy the already compressed audio;
-            # the manifest records actual packet boundaries, not rounded split times.
-            subprocess.run(
-                ["ffmpeg", "-y", "-i", mp3_path, "-c", "copy", "-f", "segment",
-                 "-segment_time", "5400", "-reset_timestamps", "1",
-                 "-segment_list", manifest, os.path.join(tmp, "part%03d.mp3")],
-                check=True, timeout=300, capture_output=True,
-            )
-            with open(manifest, newline="", encoding="utf-8") as f:
-                pieces = [(os.path.join(tmp, name), float(start)) for name, start, _ in csv.reader(f)]
-        for piece, offset in pieces:
-            if os.path.getsize(piece) > _AUDIO_UPLOAD_BYTES:
-                raise ValueError("Audio vuot gioi han 24 MB sau khi chia")
-            while True:
-                try:
-                    segments = transcribe_audio(piece)
-                    break
-                # litellm.transcription raises the OpenAI SDK's class, not litellm's.
-                except (RateLimitError, OpenAIRateLimitError) as exc:
-                    try:
-                        wait = max(float(exc.response.headers.get("retry-after", 60)), 1)
-                    except ValueError:
-                        wait = 60
-                    if waited + wait > _RATE_LIMIT_WAIT_SECONDS:
-                        raise ValueError("Da het han muc audio Groq Whisper, vui long thu lai sau") from exc
-                    time.sleep(wait)
-                    waited += wait
-            for segment in segments:
-                text = segment["text"].strip()
-                if text:
-                    units.append(DocumentUnit(text=text, locator={
-                        "start_ms": round((offset + segment["start"]) * 1000),
-                        "end_ms": round((offset + segment["end"]) * 1000),
-                    }))
+        windows = _audio_windows(duration)
+        deadline = time.monotonic() + _RATE_LIMIT_WAIT_SECONDS
+        failed = threading.Event()
+        futures = [_ASR_EXECUTOR.submit(_transcribe_window, path, tmp, index, start, length,
+                                        deadline, failed)
+                   for index, (start, length) in enumerate(windows)]
+        # All readers must finish before the TemporaryDirectory removes their input.
+        wait(futures)
+        units = _merge_audio_segments([
+            (start, length, future.result())
+            for (start, length), future in zip(windows, futures, strict=True)
+        ])
     if not units:
         raise ValueError("Whisper tra ve transcript rong -- audio co the khong co loi noi")
     return units

@@ -279,7 +279,7 @@ cp devops/.env.example devops/.env
 3. Dựng toàn bộ stack:
 
 ```bash
-docker compose up -d
+./devops/scripts/compose.sh up -d
 ```
 
 - Giao diện: http://localhost:5173
@@ -382,9 +382,9 @@ Nhánh `fix/restore-alembic`. CI có bước `alembic upgrade head` nên đang �
 Container `do-an-db` phải đang chạy và gắn volume `do-an_db_data`.
 
 ```bash
-cd /d/do-an/devops
-docker compose -p do-an up -d db
-DBUSER=$(grep "^DATABASE_USER=" .env | head -1 | cut -d= -f2- | tr -d '\r')
+cd /d/do-an
+./devops/scripts/compose.sh -p do-an up -d db
+DBUSER=$(grep "^DATABASE_USER=" devops/.env | head -1 | cut -d= -f2- | tr -d '\r')
 docker exec do-an-db pg_dump -U "$DBUSER" -d microlearning --schema-only --no-owner \
   --no-privileges --exclude-table='mdl_*' > /tmp/schema-that.sql
 grep -c "^CREATE TABLE" /tmp/schema-that.sql
@@ -958,7 +958,7 @@ Trong `/d/do-an/devops/docker-compose.yml`, thay phần `volumes` của service 
 
 ```bash
 cd /d/do-an
-docker compose up -d moodle
+./devops/scripts/compose.sh up -d moodle
 sleep 60
 docker exec do-an-moodle ls /var/www/html/public/local/lms_bridge
 docker exec do-an-moodle php /var/www/html/public/admin/cli/upgrade.php --non-interactive
@@ -972,7 +972,7 @@ Kỳ vọng: lệnh `ls` liệt kê `version.php`, `db`, `classes`, `lang`. Lệ
 
 ```bash
 cd /d/do-an
-docker compose up -d
+./devops/scripts/compose.sh up -d
 ```
 
 Qua giao diện tại http://localhost:5173: đăng nhập, chọn một khóa học đã liên kết Moodle, mở một module đã sinh, bấm xuất bản sang Moodle. Sau đó mở http://localhost:8081, vào đúng khóa học đó và kiểm tra Book hiện ra đủ các chương "Mục tiêu học tập", "Nội dung", "Slide" kèm chương con cho từng slide, và "Ví dụ", cùng hai quiz Practice và Quiz.

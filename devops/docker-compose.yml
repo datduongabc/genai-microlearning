@@ -81,6 +81,7 @@ services:
   # (1000 chunk moi ngay, mot kho tai lieu mat nhieu ngay moi nhung xong), va tai
   # lieu cua giang vien khong roi khoi may chu. Do tren cau hoi cu cua 5 mon, model
   # nay truy hoi ngang Gemini, xem docs/measurements/2026-09-25-model-nhung.md.
+  # CPU fallback; scripts/compose.sh selects the GPU override on the measured Ampere 8.6 GPU.
   # Ban ONNX chay duoc tren CPU cua moi may chu; cho ra dung vector cua ban goc.
   # Chi gateway goi toi no, nen khong mo cong nao ra may that.
   embedder:

@@ -291,6 +291,9 @@ def start_worker() -> None:
 
 
 def stop_worker() -> None:
+    from app.ingestion import document_readers
+
     _stop_event.set()
+    document_readers._ASR_EXECUTOR.shutdown(wait=False, cancel_futures=True)
     for t in _worker_threads:
         t.join(timeout=5)

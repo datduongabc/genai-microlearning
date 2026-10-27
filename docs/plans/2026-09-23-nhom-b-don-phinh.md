@@ -473,7 +473,7 @@ Kỳ vọng: cả hai lệnh chạy xong không lỗi. Cách tổ chức các t�
 
 ```bash
 cd /d/do-an
-docker compose up -d
+./devops/scripts/compose.sh up -d
 ```
 
 Mở http://localhost:5173, đăng nhập, mở danh sách khoá học, mở một khoá học, mở một module.

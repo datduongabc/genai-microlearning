@@ -185,7 +185,10 @@ def _container(service: str) -> str:
     result = _docker(["compose", "ps", "-q", service])
     container = result.stdout.strip()
     if not container:
-        raise RuntimeError(f"service '{service}' is not running; start the stack with `docker compose up -d` first")
+        raise RuntimeError(
+            f"service '{service}' is not running; "
+            "start the stack with `./devops/scripts/compose.sh up -d` first"
+        )
     return container
 
 
