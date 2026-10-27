@@ -18,7 +18,14 @@ import pytesseract
 from bs4 import BeautifulSoup
 from docx import Document as DocxDocument
 from docx.opc.exceptions import PackageNotFoundError as DocxPackageNotFoundError
-from litellm.exceptions import APIConnectionError, InternalServerError, RateLimitError, Timeout
+from litellm.exceptions import (
+    APIConnectionError,
+    BadGatewayError,
+    InternalServerError,
+    RateLimitError,
+    ServiceUnavailableError,
+    Timeout,
+)
 from lxml.etree import XMLSyntaxError
 from PIL import Image
 from pptx import Presentation
@@ -413,7 +420,7 @@ def _transcribe_piece(path: str, offset: float, deadline: float,
         except Exception as exc:
             rate_limited = isinstance(exc, (RateLimitError, openai.RateLimitError))
             transient = rate_limited or isinstance(exc, (
-                APIConnectionError, Timeout, InternalServerError,
+                APIConnectionError, Timeout, InternalServerError, BadGatewayError, ServiceUnavailableError,
                 openai.APIConnectionError, openai.InternalServerError,
             ))
             headers = getattr(getattr(exc, "response", None), "headers", {})

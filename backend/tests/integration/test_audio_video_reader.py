@@ -8,7 +8,7 @@ from unittest.mock import patch
 import httpx
 import openai
 import pytest
-from litellm.exceptions import RateLimitError
+from litellm.exceptions import BadGatewayError, RateLimitError, ServiceUnavailableError
 
 from app.ingestion import document_readers as readers
 
@@ -140,6 +140,8 @@ def _rate_limit(retry_after="2"):
     openai.RateLimitError("quota", response=httpx.Response(429, headers={"retry-after": "2"},
         request=httpx.Request("POST", "http://x")), body=None),
     openai.APIConnectionError(request=httpx.Request("POST", "http://x")),
+    BadGatewayError("bad gateway", "groq", "transcribe"),
+    ServiceUnavailableError("over capacity", "groq", "transcribe"),
 ])
 def test_failed_segment_retries_without_resending_successful_segments(error):
     failed = threading.Event()
@@ -237,15 +239,21 @@ def test_permanently_failed_segment_stops_after_three_attempts():
     assert transcribe.call_count == 3
 
 
-def test_exhausted_network_errors_remain_retryable_by_the_job_queue():
+@pytest.mark.parametrize("error", [
+    openai.APIConnectionError(request=httpx.Request("POST", "http://x")),
+    BadGatewayError("bad gateway", "groq", "transcribe"),
+    ServiceUnavailableError("over capacity", "groq", "transcribe"),
+])
+def test_exhausted_transient_errors_remain_retryable_by_the_job_queue(error):
     from app.jobs.queue import is_terminal_error
 
-    error = openai.APIConnectionError(request=httpx.Request("POST", "http://x"))
     failed = threading.Event()
-    with patch.object(readers, "transcribe_audio", side_effect=error), patch.object(
+    with patch.object(readers, "transcribe_audio", side_effect=error) as transcribe, patch.object(
         failed, "wait", return_value=False
-    ), pytest.raises(openai.APIConnectionError) as caught:
+    ) as backoff, pytest.raises(type(error)) as caught:
         readers._transcribe_piece("part.mp3", 598, readers.time.monotonic() + 600, failed)
+    assert transcribe.call_count == 3
+    assert [call.args[0] for call in backoff.call_args_list] == [1, 2]
     assert caught.value is error
     assert not is_terminal_error(caught.value)
 
