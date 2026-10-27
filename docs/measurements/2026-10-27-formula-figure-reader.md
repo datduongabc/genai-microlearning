@@ -23,7 +23,8 @@ before/after extraction on every affected file and the model spend.
   keep the page; `extraction_method` is `vision`.
 - **Figures.** Pictures covering ≥ 4 % of a slide/page and appearing on fewer than three
   slides/pages are OCRed with Tesseract `vie+eng` (already in the backend image), four at a
-  time. An image counts as text only with ≥ 3 words at confidence ≥ 60 and a mean word
+  time. A picture covering ≥ 80 % of a PDF page that already has ≥ 50 words of text layer
+  is a searchable scan of that page and is skipped. An image counts as text only with ≥ 3 words at confidence ≥ 60 and a mean word
   confidence ≥ 60; photos, logos and cluttered screenshots give nothing. Text already in
   the text layer is not repeated. The result is added as `Hình: …` where the picture sits
   in the slide, or at the end of the PDF page. No model is called for figures.
