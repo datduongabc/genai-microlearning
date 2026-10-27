@@ -21,6 +21,10 @@ logger = logging.getLogger(__name__)
 MIN_FIGURE_AREA = 0.04
 # Cùng một ảnh trên chừng này trang trở lên là một phần của mẫu slide, không phải nội dung.
 REPEATED_FIGURE_PAGES = 3
+# Ảnh phủ gần hết một trang đã có nhiều chữ là bản quét của chính trang đó (PDF quét có lớp chữ):
+# OCR chỉ đọc lại đúng lớp chữ ấy, tốn thời gian mà không thêm gì.
+SCAN_AREA = 0.8
+SCAN_TEXT_WORDS = 50
 # Ảnh có chữ thật khi có ít nhất ba từ đọc chắc chắn và độ tin cậy trung bình của cả ảnh từ 60:
 # sơ đồ, mã nguồn, bảng chụp đạt 64-93 trên bộ tài liệu chuẩn, còn ảnh chụp màn hình rối, logo
 # hay trục số của đồ thị chỉ 43-56 và cho ra chữ vô nghĩa.
@@ -42,6 +46,10 @@ _WORD = re.compile(r"[^\W\d_]{2,}")
 
 def is_content_figure(area_ratio: float, pages_with_image: int) -> bool:
     return area_ratio >= MIN_FIGURE_AREA and pages_with_image < REPEATED_FIGURE_PAGES
+
+
+def is_page_scan(area_ratio: float, page_text: str) -> bool:
+    return area_ratio >= SCAN_AREA and len(_WORD.findall(page_text)) >= SCAN_TEXT_WORDS
 
 
 def _prepare(blob: bytes) -> Image.Image:
