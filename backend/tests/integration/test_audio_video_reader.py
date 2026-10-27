@@ -175,7 +175,7 @@ def test_empty_transcript_is_rejected(tmp_path):
         readers.read_audio_video(str(path))
 
 
-@pytest.mark.parametrize('duration', [5400.5, float('nan'), 0])
+@pytest.mark.parametrize('duration', [5402, float('nan'), 0])
 def test_invalid_duration_refused_before_transcode_or_spending_quota(tmp_path, duration):
     path = tmp_path / "long.mp3"
     path.write_bytes(b"input")
@@ -185,6 +185,17 @@ def test_invalid_duration_refused_before_transcode_or_spending_quota(tmp_path, d
         readers.read_audio_video(str(path))
     ffmpeg.assert_not_called()
     transcribe.assert_not_called()
+
+
+def test_exact_ninety_minute_mp3_with_encoder_padding_is_accepted(tmp_path):
+    path = tmp_path / "week.mp3"
+    path.write_bytes(b"input")
+    with patch.object(readers, "_duration_seconds", return_value=5400.1), patch.object(
+        readers.subprocess, "run", side_effect=_fake_ffmpeg
+    ), patch.object(readers, "transcribe_audio", return_value=[{"start": 0, "end": 2, "text": "speech"}]) as transcribe:
+        units = readers.read_audio_video(str(path))
+    assert transcribe.call_count == 10
+    assert units
 
 
 def test_queued_segment_does_not_upload_after_document_deadline():

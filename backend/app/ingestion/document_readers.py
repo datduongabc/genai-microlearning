@@ -356,6 +356,8 @@ def read_transcript_file(path: str) -> list[DocumentUnit]:
 _AUDIO_UPLOAD_BYTES = 24_000_000
 _RATE_LIMIT_WAIT_SECONDS = 600
 _MAX_AUDIO_SECONDS = 5400
+# MP3 encoder padding makes an exact 90:00 cut probe slightly above 5400 s.
+_DURATION_TOLERANCE_SECONDS = 1
 _AUDIO_SEGMENT_SECONDS = 600
 _AUDIO_OVERLAP_SECONDS = 2
 # Shared across document jobs: four uploads per process, not four per document.
@@ -502,7 +504,7 @@ def read_audio_video(path: str) -> list[DocumentUnit]:
     duration = _duration_seconds(path)
     if not math.isfinite(duration) or duration <= 0:
         raise ValueError("Audio co thoi luong khong hop le")
-    if duration > _MAX_AUDIO_SECONDS:
+    if duration > _MAX_AUDIO_SECONDS + _DURATION_TOLERANCE_SECONDS:
         raise ValueError(
             "Audio dài hơn 90 phút; hãy cắt thành các phần tối đa 90 phút."
         )
