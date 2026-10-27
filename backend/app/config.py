@@ -74,6 +74,13 @@ class Settings(BaseSettings):
     llm_experiment_mode: bool = False
     # The gateway alias that serves the embeddings (devops/gateway/config.yaml).
     embedding_model: str = "embed-default"
+    # The gateway alias that re-reads, from the rendered page, PDF formulas whose text layer could
+    # not be rebuilt (app/ingestion/formula_repair.py). It must accept images; empty turns it off,
+    # and those pages then keep the rebuilt text with a warning.
+    formula_vision_model: str = "gemini-fast"
+    # At most this many pages of one document are sent, so one badly typeset file cannot spend a
+    # day of the free quota.
+    formula_vision_max_pages: int = Field(default=40, ge=0)
     # The reranker service of devops/docker-compose.yml, a cross-encoder in a container of its
     # own so the backend image carries no torch. Not behind the gateway: it holds no provider key.
     reranker_url: str = "http://localhost:8082"

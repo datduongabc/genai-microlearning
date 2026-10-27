@@ -58,12 +58,46 @@ for _code, _char in zip(range(0xF6, 0xFF), ")))]]]}}}"):
 for _code, _char in zip(range(0xF8EB, 0xF8FF), "((([[[{{{|)))]]]}}}"):
     _BRACKET_PIECES[chr(_code)] = _char
 
+# Phông CMEX của TeX không kèm bảng chuyển mã: PyMuPDF trả nguyên mã glyph, nên dấu tích phân ra
+# chữ "R", dấu căn ra "q", ngoặc lớn ra ký tự điều khiển. Chỉ đổi chữ cái, chữ số và ký tự điều
+# khiển: không glyph CMEX nào có bảng chuyển mã ra những ký tự đó, còn ngoặc tròn, ngoặc vuông hay
+# gạch dọc thì tệp có kèm bảng chuyển mã cũng ra đúng các ký tự ấy, đổi nữa là sai.
+_CMEX_DELIMITERS = {
+    **dict(zip(range(0x10), "()[]⌊⌋⌈⌉{}⟨⟩|‖/\\")),
+    **dict(zip(range(0x10, 0x20), "()()[]⌊⌋⌈⌉{}⟨⟩/\\")),
+    **dict(zip(range(0x21, 0x28), ")[]⌊⌋⌈⌉")),
+    **dict(zip(range(0x30, 0x46), "()[][][]{}{}{}{|()()⟨⟩")),
+    **dict(zip(range(0x68, 0x70), "[]⌊⌋⌈⌉{}")),
+    0x77: "‖",
+}
+_CMEX_SYMBOLS = {
+    **dict(zip(range(0x46, 0x62), "⊔⊔∮∮⊙⊙⊕⊕⊗⊗∑∏∫⋃⋂⨄⋀⋁∑∏∫⋃⋂⨄⋀⋁∐∐")),
+    0x70: "√", 0x71: "√", 0x72: "√", 0x73: "√", 0x74: "√",
+    # Mũ, sóng, thân dấu căn, đầu mũi tên và mảnh ngoặc nhọn nằm ngang: phần kéo dài của ký hiệu khác.
+    **{c: "" for c in (*range(0x62, 0x68), 0x75, 0x76, *range(0x78, 0x7B))},
+}
+_CMEX_MAPPED = {*range(0x20), *range(0x21, 0x28), *range(0x30, 0x5B), *range(0x5E, 0x7B)}
+# Glyph CMEX treo dưới điểm gốc, sâu hơn hẳn một dòng chữ, mà khung PyMuPDF trả chỉ cao bằng cỡ
+# chữ: ngoặc bao quanh một phân số trông như nằm trên dòng của tử số. Độ sâu (theo em) lấy từ
+# bảng số đo của cmex10: big, Big, bigg, Bigg; toán tử lớn dạng chữ và dạng trưng bày.
+_CMEX_DEPTH = {
+    **dict.fromkeys(range(0x10), 1.16), 0x10: 1.76, 0x11: 1.76, **dict.fromkeys(range(0x12, 0x20), 2.36),
+    **dict.fromkeys(range(0x20, 0x30), 2.96), **dict.fromkeys(range(0x30, 0x44), 1.76), 0x44: 2.36, 0x45: 2.36,
+    **dict.fromkeys((*range(0x46, 0x50, 2), *range(0x50, 0x58), 0x60), 1.0),
+    **dict.fromkeys((*range(0x47, 0x50, 2), *range(0x58, 0x60), 0x61), 1.36),
+    0x52: 1.07, 0x5A: 2.18, **dict.fromkeys(range(0x68, 0x70), 1.76),
+    0x70: 1.16, 0x71: 1.76, 0x72: 2.36, 0x73: 2.96,
+}
+# Chữ bảng đen của AMS (msbm): R là tập số thực chứ không phải chữ R.
+_BLACKBOARD = dict(zip("CNPQRZ", "ℂℕℙℚℝℤ"))
+
 # Phông ký hiệu trang trí: gần như luôn là dấu đầu dòng, còn mã gốc của nó không mang nghĩa
 # gì khi đọc thành chữ.
 _DINGBAT_FONTS = ("wingdings", "webdings", "monotypesorts", "zapfdingbats", "dingbats")
 # Phông của ký hiệu toán: khối chứa chúng được phép nối với khối bên cạnh cùng hàng, vì đó
 # là các phần của cùng một công thức.
-_MATH_FONTS = ("symbol", "cmmi", "cmsy", "cmex", "cmr", "mt extra", "mt-extra", "cambria math", "math")
+_MATH_FONTS = ("symbol", "cmmi", "cmsy", "cmex", "cmr", "msam", "msbm", "mt extra", "mt-extra", "cambria math",
+               "math")
 
 
 # Toán tử có giới hạn đặt ngay dưới hoặc trên nó. Chữ thường không bao giờ có: chỉ số của dòng
@@ -149,8 +183,19 @@ def map_font_text(text: str, font: str, vni_fonts: frozenset[str] = frozenset())
         return "".join("•" if _is_private(c) or not c.isspace() else c for c in text), False
     base = name.split(",")[0].split("-")[0].removesuffix("mt")
     is_symbol = base == "symbol"
+    is_cmex, is_blackboard = base.startswith("cmex"), base.startswith("msbm")
     out, bracket = [], False
     for c in text:
+        if is_cmex and ord(c) in _CMEX_MAPPED:
+            if ord(c) in _CMEX_DELIMITERS:
+                out.append(_CMEX_DELIMITERS[ord(c)])
+                bracket = True
+            else:
+                out.append(_CMEX_SYMBOLS[ord(c)])
+            continue
+        if is_blackboard and c in _BLACKBOARD:
+            out.append(_BLACKBOARD[c])
+            continue
         if is_symbol and ord(c) < 0x100:
             c = chr(0xF000 + ord(c))
         if c in _BRACKET_PIECES:
@@ -266,6 +311,17 @@ def _block_is_mathlike(block: dict) -> bool:
     return italic_fragments >= 2
 
 
+def _block_box(block: dict) -> tuple[float, float, float, float]:
+    """Khung của khối, kéo xuống tới đáy thật của glyph CMEX treo dưới điểm gốc."""
+    x0, y0, x1, y1 = block["bbox"]
+    for line in block["lines"]:
+        for span in line["spans"]:
+            if span["font"].lower().startswith("cmex"):
+                for c in span["chars"]:
+                    y1 = max(y1, c["origin"][1] + _CMEX_DEPTH.get(ord(c["c"]), 0) * span["size"])
+    return x0, y0, x1, y1
+
+
 def _regions(blocks: list[dict]) -> list[list[int]]:
     """Gom các khối thuộc cùng một công thức: khung chồng lên nhau, hoặc cùng hàng và sát nhau
     khi ít nhất một khối mang ký hiệu toán. Hai cột văn bản thường không bao giờ bị gom, và khối
@@ -278,7 +334,7 @@ def _regions(blocks: list[dict]) -> list[list[int]]:
             i = parent[i]
         return i
 
-    boxes = [b["bbox"] for b in blocks]
+    boxes = [_block_box(b) for b in blocks]
     mathlike = [_block_is_mathlike(b) for b in blocks]
     code = [any(s["flags"] & pymupdf.TEXT_FONT_MONOSPACED for line in b["lines"] for s in line["spans"])
             for b in blocks]
@@ -368,6 +424,7 @@ def _small_pieces(pieces: list[_Piece]) -> set[int]:
     làm thước so, không thì chính chữ thường bên cạnh chúng bị coi là chỉ số."""
     reference = [p for p in pieces if not p.tall and not _is_big_operator(p.text)]
     operators = [p for p in pieces if not p.tall and _is_big_operator(p.text)]
+    tall = [p for p in pieces if p.tall]
     reference.sort(key=lambda p: p.x0)
     starts = [p.x0 for p in reference]
     small: set[int] = set()
@@ -389,7 +446,12 @@ def _small_pieces(pieces: list[_Piece]) -> set[int]:
             above = 0 <= o.y0 - p.y1 + 0.35 * o.size < 0.9 * o.size
             if beside and (below or above):
                 biggest = max(biggest, o.size)
-        if p.size < 0.8 * biggest:
+        # Số mũ của (1/q)^n chỉ đứng cạnh ngoặc lớn, ở nửa trên của nó. Chữ bên trong ngoặc thì
+        # trải qua giữa ngoặc, nên không bị so với cỡ của ngoặc.
+        for q in tall:
+            if q.x1 - 1 <= p.x0 <= q.x1 + reach and p.y1 <= q.cy:
+                biggest = max(biggest, q.size)
+        if p.size < 0.85 * biggest:
             small.add(id(p))
     return small
 
@@ -442,7 +504,9 @@ def _rows(pieces: list[_Piece]) -> list[list[_Piece]]:
                          and (0 <= p.y0 - q.y1 + 0.35 * size < 0.9 * size or 0 <= q.y0 - p.y1 + 0.35 * size < 0.9 * size)),
                         None)
             neighbour = min(r["pieces"], key=lambda q: min(abs(p.x0 - q.x1), abs(q.x0 - p.x1)))
-            touching = _overlap(p.y0, p.y1, r["y0"], r["y1"]) > 0
+            # Số mũ của một ngoặc lớn nằm cao hơn cả dòng chữ, nhưng vẫn chạm vào chính ngoặc đó.
+            touching = _overlap(p.y0, p.y1, r["y0"], r["y1"]) > 0 or (
+                neighbour.tall and _overlap(p.y0, p.y1, neighbour.y0, neighbour.y1) > 0)
             adjacent = touching and min(abs(p.x0 - neighbour.x1), abs(neighbour.x0 - p.x1)) < 0.8 * size
             if base is None and not adjacent:
                 continue
@@ -530,18 +594,33 @@ def _absolute_bars(verticals, box, size: float) -> list[tuple[float, float, floa
 def _structures(pieces: list[_Piece], rules: list[_Rule]) -> list[_Piece]:
     """Dấu căn và phân số, gạch ngắn trước: một phân số lồng trong phân số khác được dựng
     xong rồi mới thành một mảnh của tử hay mẫu bên ngoài."""
+    # TeX vẽ dấu căn là một glyph √ của phông rồi kéo vạch trên bằng một nét ngang bắt đầu ngay
+    # mép phải glyph, không có nét chéo nào như MathType. Gạch phân số đứng ngay sau dấu căn lớn
+    # cũng chạm mép glyph đó, nhưng nằm thấp hơn: vạch trên là nét cao nhất.
+    signs: dict[int, _Piece] = {}
+    for p in pieces:
+        if p.text == "√":
+            touching = [r for r in rules if abs(p.x1 - r.x0) < 1.5 and p.y0 - 1 <= r.y <= p.y1 + 1]
+            if touching:
+                signs[id(min(touching, key=lambda r: r.y))] = p
     for rule in sorted(rules, key=lambda r: r.x1 - r.x0):
         within = [p for p in pieces if rule.x0 - 1 <= p.cx <= rule.x1 + 1]
         if not within:
             continue
         size = statistics.median(p.size for p in within)
         below = [p for p in within if rule.y < p.cy <= rule.y + 1.3 * size and p.y0 >= rule.y - 0.3 * size]
-        if rule.radical:
+        sign = signs.get(id(rule))
+        if rule.radical or sign is not None:
+            # Dưới dấu căn có thể là cả một phân số, cao hơn hẳn một dòng: nó thuộc dấu căn vì bắt
+            # đầu ngay dưới vạch trên.
+            below = [p for p in within if p.y0 >= rule.y - 0.3 * size
+                     and (p.cy <= rule.y + 1.3 * size or p.y0 <= rule.y + 0.5 * size)]
             if not below:
                 continue
-            used = set(map(id, below))
+            used = set(map(id, below)) | ({id(sign)} if sign is not None else set())
             pieces = [p for p in pieces if id(p) not in used]
-            pieces.append(_Piece(rule.x0 - 0.6 * size, rule.y, rule.x1, max(p.y1 for p in below),
+            left = sign.x0 if sign is not None else rule.x0 - 0.6 * size
+            pieces.append(_Piece(left, rule.y, rule.x1, max(p.y1 for p in below),
                                  statistics.median(p.baseline for p in below), size, "√" + _group(below)))
             continue
         above = [p for p in within if rule.y - 1.3 * size <= p.cy < rule.y and p.y1 <= rule.y + 0.3 * size]
@@ -567,16 +646,23 @@ def _span_pieces(span: dict, vni_fonts: frozenset[str]) -> list[_Piece]:
     pieces: list[_Piece] = []
     current: list[dict] = []
     space = False
+    cmex = span["font"].lower().startswith("cmex")
 
     def flush() -> None:
         nonlocal current, space
         if current:
             text, bracket = map_font_text("".join(c["c"] for c in current), span["font"], vni_fonts)
             if text.strip():
+                y0, y1 = min(c["bbox"][1] for c in current), max(c["bbox"][3] for c in current)
+                baseline = current[0]["origin"][1]
+                depths = [_CMEX_DEPTH[ord(c["c"])] for c in current if cmex and ord(c["c"]) in _CMEX_DEPTH]
+                if depths:
+                    y0, y1 = baseline - 0.04 * size, baseline + max(depths) * size
+                    # TeX canh ký hiệu lớn giữa trục toán, cao hơn đường chân chữ khoảng một phần tư em.
+                    baseline = (y0 + y1) / 2 + 0.25 * size
                 pieces.append(_Piece(
-                    min(c["bbox"][0] for c in current), min(c["bbox"][1] for c in current),
-                    max(c["bbox"][2] for c in current), max(c["bbox"][3] for c in current),
-                    current[0]["origin"][1], size, text.strip(), tall=bracket, space_before=space,
+                    min(c["bbox"][0] for c in current), y0, max(c["bbox"][2] for c in current), y1,
+                    baseline, size, text.strip(), tall=bracket, space_before=space,
                 ))
                 space = False
         current = []
@@ -619,8 +705,11 @@ def _line_text(spans: list[dict], vni_fonts: frozenset[str]) -> str:
     return text if any(s["flags"] & pymupdf.TEXT_FONT_MONOSPACED for s in visible) else text.lstrip()
 
 
-def page_lines(page: pymupdf.Page, *, code_lines: set[int] | None = None) -> list[str]:
-    """Các dòng chữ của trang theo thứ tự đọc, công thức đã được dựng lại thành một dòng."""
+def page_lines(
+    page: pymupdf.Page, *, code_lines: set[int] | None = None, math_lines: set[int] | None = None,
+) -> list[str]:
+    """Các dòng chữ của trang theo thứ tự đọc, công thức đã được dựng lại thành một dòng. Chỉ số các
+    dòng mã nguồn và các dòng có ký hiệu toán được ghi vào `code_lines` và `math_lines`."""
     blocks = [b for b in page.get_text("rawdict", flags=_TEXT_FLAGS)["blocks"] if b["type"] == 0 and b["lines"]]
     if not blocks:
         return []
@@ -673,16 +762,10 @@ def page_lines(page: pymupdf.Page, *, code_lines: set[int] | None = None) -> lis
                         out[-1] += (" " if gap > 0.12 * em else "") + text.lstrip()
                         box = (old_box[0], min(old_box[1], box[1]), box[2], max(old_box[3], box[3]))
                         previous = (out[-1], box, baseline, size, owner)
-                        if code_lines is not None and any(
-                            s["flags"] & pymupdf.TEXT_FONT_MONOSPACED for s in line["spans"]
-                        ):
-                            code_lines.add(len(out) - 1)
+                        _mark(line["spans"], len(out) - 1, code_lines, math_lines)
                         continue
                 out.append(text)
-                if code_lines is not None and any(
-                    s["flags"] & pymupdf.TEXT_FONT_MONOSPACED for s in line["spans"]
-                ):
-                    code_lines.add(len(out) - 1)
+                _mark(line["spans"], len(out) - 1, code_lines, math_lines)
                 previous = (text, box, baseline, size, owner)
             continue
         previous = None
@@ -702,7 +785,18 @@ def page_lines(page: pymupdf.Page, *, code_lines: set[int] | None = None) -> lis
             text = _join(row).strip()
             if text:
                 out.append(text)
+                if math_lines is not None:
+                    math_lines.add(len(out) - 1)
     return out
+
+
+def _mark(spans: list[dict], index: int, code_lines: set[int] | None, math_lines: set[int] | None) -> None:
+    if code_lines is not None and any(s["flags"] & pymupdf.TEXT_FONT_MONOSPACED for s in spans):
+        code_lines.add(index)
+    if math_lines is not None and any(
+        any(f in s["font"].lower() for f in _MATH_FONTS) for s in spans if _span_text(s).strip()
+    ):
+        math_lines.add(index)
 
 
 def title_candidates(page: pymupdf.Page) -> list[str]:
@@ -755,3 +849,40 @@ def title_candidates(page: pymupdf.Page) -> list[str]:
             seen.add(text)
             out.append(text)
     return out
+
+
+# Dấu hiệu một công thức dựng lại chưa đúng: dấu ngoặc lệch số, cặp ngoặc rỗng (ngoặc lớn mất phần
+# bên trong), toán tử treo ngay sát ngoặc hay chỉ số không có gì theo sau.
+_EMPTY_GROUP = re.compile(r"[(\[]\s*[)\]]")
+_DANGLING = re.compile(r"\(\s*[+=×·/](?!\s*∞)|[+−=×/]\s*\)|[\^_](?:\s|$)")
+# "1)", "a)" mở đầu một mục liệt kê: dấu ngoặc đóng không có ngoặc mở là đúng chứ không phải lỗi.
+_ENUMERATOR = re.compile(r"(^|;\s*)(\d{1,2}|[a-zA-Z])\)")
+# Chữ Việt có dấu: một dòng có chúng là câu chữ, không phải mảnh công thức.
+_VIETNAMESE = re.compile(r"[\u00C0-\u024F\u1E00-\u1EFF]")
+
+
+def _balanced(text: str) -> bool:
+    depth = 0
+    for c in text:
+        depth += (c in "([") - (c in ")]")
+        if depth < 0:
+            return False
+    return depth == 0
+
+
+def suspect_formula_lines(lines: list[str]) -> list[str]:
+    """Các dòng công thức trông như dựng lại sai. Một mảnh ngắn rơi khỏi công thức của nó ("n+1",
+    "x→0") có thể chỉ là phần cuối của một dòng dài xuống dòng, nên cần ít nhất hai mảnh như vậy
+    mới tính; một dòng ngoặc lệch hay toán tử treo thì tự nó đã đủ."""
+    broken, fragments = [], []
+    for line in lines:
+        text = _ENUMERATOR.sub(r"\1\2", line.strip())
+        if not text:
+            continue
+        if _EMPTY_GROUP.search(text) or _DANGLING.search(text) or not _balanced(text):
+            broken.append(line)
+        elif (len(text) <= 10 and not re.search(r"[^\W\d_]{3,}", text) and not _VIETNAMESE.search(text)
+              and not text.startswith(("=", "•")) and (len(text.replace(" ", "")) <= 3 or re.search(r"[+−→∞√∫]", text))
+              and not re.fullmatch(r"[\d\s/.]+", text)):
+            fragments.append(line)
+    return broken + fragments if broken or len(fragments) >= 2 else []
