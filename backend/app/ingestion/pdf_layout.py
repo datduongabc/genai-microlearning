@@ -284,11 +284,12 @@ def _strokes(page: pymupdf.Page) -> tuple[list[_Rule], list[tuple[float, float, 
                 if abs(top.x - rule.x0) < 1.5 and abs(top.y - rule.y) < 1.5 and bottom.y > top.y + 3:
                     rule.radical = True
     # MathType vẽ một dấu căn hai ba lần (nét viền, mảng tô) lệch nhau vài điểm: không gộp thì
-    # mỗi bản thành một dấu căn lồng vào bản kia.
+    # mỗi bản thành một dấu căn lồng vào bản kia. Các bản dài gần bằng nhau: vạch trên ngắn của
+    # căn ở mẫu số TeX nằm sát dưới gạch phân số dài hơn hẳn, gộp vào thì mất dấu căn đó.
     unique: list[_Rule] = []
     for rule in sorted(rules, key=lambda r: (r.y, r.x0)):
         twin = next((u for u in unique if abs(u.y - rule.y) < 2.5 and _overlap(u.x0, u.x1, rule.x0, rule.x1)
-                     >= 0.8 * min(u.x1 - u.x0, rule.x1 - rule.x0)), None)
+                     >= 0.8 * max(u.x1 - u.x0, rule.x1 - rule.x0)), None)
         if twin is not None:
             twin.radical = twin.radical or rule.radical
             continue

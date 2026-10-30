@@ -160,6 +160,21 @@ def test_a_fraction_bar_touching_a_big_radical_glyph_stays_inside_the_radical(pa
     assert [_compact(line) for line in page_lines(page)] == ["√(1/n)=y"]
 
 
+def test_a_radical_bar_just_under_a_longer_fraction_bar_keeps_its_radical(page):
+    # pdflatex \frac{1}{\sqrt{n}}: glyph căn của TeX nhô lên quá gạch phân số, còn vạch trên của
+    # căn ở mẫu số nằm sát dưới gạch phân số dài hơn nó.
+    page.insert_text((62, 90), "1", fontname="tiro", fontsize=14)
+    page.insert_text((60, 100), "\xd6", fontname="symb", fontsize=14)
+    sign = _char_box(page, "\xd6")
+    page.insert_text((sign.x1 + 1, 112), "n", fontname="tiit", fontsize=14)
+    page.draw_line((sign.x0, 96.3), (sign.x1 + 9, 96.3), width=0.5)
+    page.draw_line((sign.x1, 98.3), (sign.x1 + 9, 98.3), width=0.5)
+    page.insert_text((30, 101), "y", fontname="tiit", fontsize=14)
+    page.insert_text((42, 101), "=", fontname="symb", fontsize=14)
+
+    assert [_compact(line) for line in page_lines(page)] == ["y=1/(√n)"]
+
+
 def test_limits_under_lim_follow_it_even_when_they_start_further_left(page):
     page.insert_text((50, 100), "lim", fontname="tiro", fontsize=16)
     page.insert_text((46, 112), "n", fontname="tiit", fontsize=9)
