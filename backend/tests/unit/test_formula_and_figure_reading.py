@@ -156,6 +156,31 @@ def test_latex_body_text_in_computer_modern_roman_is_not_taken_for_a_broken_form
     assert units[0].warnings == []
 
 
+def test_a_beamer_sans_math_fraction_split_into_two_lines_is_flagged(tmp_path, monkeypatch):
+    monkeypatch.setattr(settings, "formula_vision_model", "")
+
+    def build(doc):
+        page = doc.new_page()
+        page.insert_text((50, 40), "Gioi han cua ham mu so voi ham luy thua", fontname="helv", fontsize=14)
+        page.insert_font(fontname="F1", fontbuffer=pymupdf.Font("heit").buffer)
+        for text, point, size in [("x", (100, 90), 17), ("n", (110, 82), 12), ("a", (100, 122), 17),
+                                  ("x", (110, 114), 12)]:
+            page.insert_text(point, text, fontname="F1", fontsize=size)
+        page.draw_line((98, 96), (122, 96))
+        for xref, *_, name, _ in page.get_fonts():
+            if name != "F1":
+                continue
+            descendant = int(doc.xref_get_key(xref, "DescendantFonts")[1].strip("[] ").split()[0])
+            descriptor = int(doc.xref_get_key(descendant, "FontDescriptor")[1].split()[0])
+            for target, key in [(xref, "BaseFont"), (descendant, "BaseFont"), (descriptor, "FontName")]:
+                doc.xref_set_key(target, key, "/CMSSI17")
+
+    units = read_pdf(_pdf(tmp_path, build))
+
+    assert units[0].text.split("\n")[-2:] == ["x^n", "a^x"]
+    assert units[0].warnings == [{"code": "formula_unverified", "page": 1}]
+
+
 def test_latex_commands_for_functions_do_not_count_as_lost_words():
     assert formula_repair._faithful("Ta có $\\lim_{x \\to 0} \\sin x / x = 1$", "Ta có lim sin x/x = 1")
 
