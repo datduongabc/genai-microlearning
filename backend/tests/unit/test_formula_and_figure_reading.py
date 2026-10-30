@@ -128,6 +128,21 @@ def test_without_a_vision_model_or_past_the_page_limit_no_call_is_made(tmp_path,
     assert calls == []
 
 
+def test_latex_body_text_in_computer_modern_roman_is_not_taken_for_a_broken_formula(tmp_path):
+    def build(doc):
+        page = doc.new_page()
+        page.insert_text((50, 60), "Ngon ngu nay ke thua tu C va C++) nen", fontname="helv", fontsize=12)
+        page.insert_text((50, 80), "giu cu phap cu (xem dinh ly 2.1 o", fontname="helv", fontsize=12)
+        page.insert_text((50, 100), "trang truoc) de so sanh.", fontname="helv", fontsize=12)
+        for xref, *_ in page.get_fonts():
+            doc.xref_set_key(xref, "BaseFont", "/CMR10")
+
+    units = read_pdf(_pdf(tmp_path, build))
+
+    assert "C++)" in units[0].text
+    assert units[0].warnings == []
+
+
 def test_latex_commands_for_functions_do_not_count_as_lost_words():
     assert formula_repair._faithful("Ta có $\\lim_{x \\to 0} \\sin x / x = 1$", "Ta có lim sin x/x = 1")
 

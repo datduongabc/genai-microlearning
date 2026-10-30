@@ -98,6 +98,9 @@ _DINGBAT_FONTS = ("wingdings", "webdings", "monotypesorts", "zapfdingbats", "din
 # là các phần của cùng một công thức.
 _MATH_FONTS = ("symbol", "cmmi", "cmsy", "cmex", "cmr", "msam", "msbm", "mt extra", "mt-extra", "cambria math",
                "math")
+# Phông chỉ chứa ký hiệu toán. cmr là phông chữ thân bài của LaTeX nên không làm một dòng thành
+# dòng công thức.
+_MATH_SYMBOL_FONTS = tuple(f for f in _MATH_FONTS if f != "cmr")
 
 
 # Toán tử có giới hạn đặt ngay dưới hoặc trên nó. Chữ thường không bao giờ có: chỉ số của dòng
@@ -794,7 +797,7 @@ def _mark(spans: list[dict], index: int, code_lines: set[int] | None, math_lines
     if code_lines is not None and any(s["flags"] & pymupdf.TEXT_FONT_MONOSPACED for s in spans):
         code_lines.add(index)
     if math_lines is not None and any(
-        any(f in s["font"].lower() for f in _MATH_FONTS) for s in spans if _span_text(s).strip()
+        any(f in s["font"].lower() for f in _MATH_SYMBOL_FONTS) for s in spans if _span_text(s).strip()
     ):
         math_lines.add(index)
 
