@@ -371,7 +371,7 @@ export function CourseDetailPage() {
         </label>
       </div>
       <p className="mt-2 text-xs text-gray-500">
-        Nhận PDF, PPTX, DOCX, HTML (tối đa 25 MB, 150 trang/slide); audio MP3, WAV, M4A, FLAC,
+        Nhận PDF, PPTX (tối đa 25 MB, 150 trang/slide); DOCX, HTML (tối đa 25 MB); audio MP3, WAV, M4A, FLAC,
         OGG, AAC (tối đa 200 MB, 90 phút); video MP4, MKV, WEBM, MOV, AVI (tối đa 1 GB, 90 phút).
       </p>
       {/* Hàng riêng chứ không chung hàng với nút tải lên: đây là thiết lập cho các nút
