@@ -128,18 +128,31 @@ def test_without_a_vision_model_or_past_the_page_limit_no_call_is_made(tmp_path,
     assert calls == []
 
 
-def test_latex_body_text_in_computer_modern_roman_is_not_taken_for_a_broken_formula(tmp_path):
+def _cmr_prose(page):
+    page.insert_text((50, 60), "Ngon ngu nay ke thua tu C va C++) nen", fontname="helv", fontsize=12)
+    page.insert_text((50, 80), "giu cu phap cu (xem dinh ly 2.1 o", fontname="helv", fontsize=12)
+    page.insert_text((50, 100), "trang truoc) de so sanh.", fontname="helv", fontsize=12)
+
+
+def _cmr_table(page):
+    page.insert_text((50, 60), "Thao tac", fontname="helv", fontsize=12)
+    page.insert_text((200, 60), "Y nghia", fontname="helv", fontsize=12)
+    page.draw_line((50, 66), (320, 66))
+    page.insert_text((50, 80), "push()", fontname="helv", fontsize=12)
+    page.insert_text((200, 80), "them vao dinh", fontname="helv", fontsize=12)
+
+
+@pytest.mark.parametrize("layout", [_cmr_prose, _cmr_table])
+def test_latex_body_text_in_computer_modern_roman_is_not_taken_for_a_broken_formula(tmp_path, layout):
     def build(doc):
         page = doc.new_page()
-        page.insert_text((50, 60), "Ngon ngu nay ke thua tu C va C++) nen", fontname="helv", fontsize=12)
-        page.insert_text((50, 80), "giu cu phap cu (xem dinh ly 2.1 o", fontname="helv", fontsize=12)
-        page.insert_text((50, 100), "trang truoc) de so sanh.", fontname="helv", fontsize=12)
+        layout(page)
         for xref, *_ in page.get_fonts():
             doc.xref_set_key(xref, "BaseFont", "/CMR10")
 
     units = read_pdf(_pdf(tmp_path, build))
 
-    assert "C++)" in units[0].text
+    assert ("C++)" if layout is _cmr_prose else "push()") in units[0].text
     assert units[0].warnings == []
 
 

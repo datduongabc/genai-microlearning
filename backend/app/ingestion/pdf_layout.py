@@ -784,11 +784,12 @@ def page_lines(
         for x, ya, yb in _absolute_bars(verticals, (x0, y0, x1, y1), main_size):
             pieces.append(_Piece(x - 0.5, ya, x + 0.5, yb, (ya + yb) / 2, main_size, "|", tall=True))
         pieces = _structures(_merge_brackets(pieces), region_rules)
+        symbols = _has_math_symbols([s for line in lines for s in line["spans"]])
         for row in _rows(pieces):
             text = _join(row).strip()
             if text:
                 out.append(text)
-                if math_lines is not None:
+                if math_lines is not None and symbols:
                     math_lines.add(len(out) - 1)
     return out
 
@@ -796,10 +797,14 @@ def page_lines(
 def _mark(spans: list[dict], index: int, code_lines: set[int] | None, math_lines: set[int] | None) -> None:
     if code_lines is not None and any(s["flags"] & pymupdf.TEXT_FONT_MONOSPACED for s in spans):
         code_lines.add(index)
-    if math_lines is not None and any(
-        any(f in s["font"].lower() for f in _MATH_SYMBOL_FONTS) for s in spans if _span_text(s).strip()
-    ):
+    if math_lines is not None and _has_math_symbols(spans):
         math_lines.add(index)
+
+
+def _has_math_symbols(spans: list[dict]) -> bool:
+    return any(
+        any(f in s["font"].lower() for f in _MATH_SYMBOL_FONTS) for s in spans if _span_text(s).strip()
+    )
 
 
 def title_candidates(page: pymupdf.Page) -> list[str]:
