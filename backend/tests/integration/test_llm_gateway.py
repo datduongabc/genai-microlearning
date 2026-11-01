@@ -179,6 +179,44 @@ def test_a_structured_reply_that_breaks_the_schema_is_still_rejected(monkeypatch
         llm.complete_structured("kiểm tra", _Formula)
 
 
+def _replies(monkeypatch, *contents):
+    """Each call answers with the next reply; the list of calls is returned."""
+    calls = []
+
+    def fake_completion(**kwargs):
+        calls.append(kwargs)
+        content = contents[min(len(calls), len(contents)) - 1]
+        return SimpleNamespace(choices=[SimpleNamespace(message=SimpleNamespace(content=content))])
+
+    monkeypatch.setattr(litellm, "completion", fake_completion)
+    return calls
+
+
+@pytest.mark.parametrize("malformed", [
+    '{"reason": "cắt giữa chừng vì hết max_to',
+    '{"reason": "thiếu trường ok"}',
+], ids=["truncated-json", "schema-violation"])
+def test_one_malformed_structured_reply_is_asked_again_instead_of_failing_the_job(monkeypatch, captured, malformed):
+    """Một lượt sinh module gồm 15-30 lệnh gọi model đã trả tiền. ValidationError và JSONDecodeError
+    đều là ValueError, mà hàng đợi coi ValueError là lỗi vĩnh viễn: trước đây chỉ một câu trả lời
+    hỏng ở bước cuối là cả job thất bại, không thử lại."""
+    calls = _replies(monkeypatch, malformed, '{"reason": "ổn", "ok": true}')
+
+    result = llm.complete_structured("kiểm tra", _Formula)
+
+    assert result.ok is True
+    assert len(calls) == 2
+
+
+def test_a_model_that_keeps_breaking_the_schema_is_asked_a_bounded_number_of_times(monkeypatch, captured):
+    calls = _replies(monkeypatch, '{"reason": "x"}')
+
+    with pytest.raises(ValueError):
+        llm.complete_structured("kiểm tra", _Formula)
+
+    assert len(calls) == 1 + llm.MALFORMED_REPLY_RETRIES
+
+
 def test_experiment_mode_pins_and_survives_nested_model_choices(captured):
     with llm.experiment_mode():
         with llm.using_model("gemini-fast"):
