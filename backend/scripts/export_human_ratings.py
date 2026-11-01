@@ -44,10 +44,16 @@ def _pair_ids(items: list[StudyItem]) -> dict[str, str]:
         key = (item.packet.get("learning_objective"), tuple(item.packet.get("sub_objectives") or []))
         by_objective.setdefault(key, {}).setdefault(item.group, []).append(item)
     pair_ids = {item.anon_code: item.anon_code for item in items}
+    unpaired = []
     for groups in by_objective.values():
         rag, no_rag = groups.get("rag_llm", []), groups.get("llm_no_rag", [])
         if len(rag) == 1 and len(no_rag) == 1:
             pair_ids[no_rag[0].anon_code] = rag[0].anon_code
+        else:
+            unpaired += [item.anon_code for item in rag + no_rag]
+    if unpaired:
+        print(f"Cảnh báo: không ghép được cặp cho {', '.join(sorted(unpaired))} (thiếu bạn cặp hoặc nhiều gói "
+              "cùng LO và mục tiêu con); các gói này bị loại khỏi phép kiểm ghép cặp.")
     return pair_ids
 
 
