@@ -96,9 +96,9 @@ def run_study_judge_step(queued: Job) -> None:
             check_packet_budget(packet, payload["max_input_tokens"])
             with gateway.experiment_mode(), gateway.using_model(alias), gateway.capture_models() as calls:
                 evaluation = judge_module(packet, max_tokens=OUTPUT_TOKENS, max_retries=0, timeout=120)
-            if len(calls) != 1 or calls[0]["served_model"].split("/")[-1] != expected.split("/")[-1]:
+            if not calls or any(c["served_model"].split("/")[-1] != expected.split("/")[-1] for c in calls):
                 raise ValueError("Gateway did not report the pinned judge model; rating was not saved")
-            served = calls[0]["served_model"]
+            served = calls[-1]["served_model"]
             upsert_rating(db, item, alias, served, evaluation)
             result = {"item_id": str(item.id), "status": "done", "judge_model": served}
         except Exception as exc:

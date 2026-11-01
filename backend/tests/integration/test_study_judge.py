@@ -315,3 +315,43 @@ def test_judge_endpoints_are_admin_only(world, fake, headers_name, code):
     assert client.post(f"/studies/{sid}/judge", headers=headers, json={}).status_code == code
     assert client.get(f"/studies/{sid}/judge/{uuid.uuid4()}", headers=headers).status_code == code
     assert fake == []
+
+
+def _replies(monkeypatch, replies):
+    sent = []
+
+    def complete(**kwargs):
+        served, valid = replies[len(sent)]
+        sent.append(kwargs)
+        code = kwargs["messages"][1]["content"].split("anon_id=")[1].split(")")[0]
+        content = _evaluation(code).model_dump_json() if valid else '{"anon_id": "' + code + '", "accur'
+        return SimpleNamespace(model=served, choices=[SimpleNamespace(message=SimpleNamespace(content=content))])
+
+    monkeypatch.setattr(litellm, "completion", complete)
+    return sent
+
+
+def test_malformed_judge_reply_re_asked_on_the_pinned_model_saves_the_rating(world, fake, monkeypatch):
+    sid = create_study(world)
+    items = load(world, sid, human_packets=[human_packet()]).json()
+    jid = start(world, sid).json()["job_id"]
+    sent = _replies(monkeypatch, [("gpt-oss-120b", False), ("gpt-oss-120b", True)])
+    step(jid)
+    result = status(world, sid, jid)
+    assert len(sent) == 2
+    assert result["status"] == "done" and result["results"][0]["status"] == "done", result
+    rows = judge_rows(sid)
+    assert rows[uuid.UUID(items[0]["id"])].judge_model == "gpt-oss-120b"
+
+
+def test_re_asked_judge_reply_served_by_another_model_is_refused(world, fake, monkeypatch):
+    sid = create_study(world)
+    load(world, sid, human_packets=[human_packet()])
+    jid = start(world, sid).json()["job_id"]
+    sent = _replies(monkeypatch, [("gpt-oss-120b", False), ("llama-3.3-70b", True)])
+    step(jid)
+    result = status(world, sid, jid)
+    assert len(sent) == 2
+    assert result["status"] == "done" and result["results"][0]["status"] == "failed"
+    assert "pinned judge model" in result["results"][0]["error"]
+    assert judge_rows(sid) == {}
