@@ -7,6 +7,7 @@ docs/measurements/2026-10-14-crosslingual-rerank.md."""
 
 import httpx
 
+from app import timing
 from app.config import settings
 from app.models import Chunk
 
@@ -19,13 +20,14 @@ def rerank_scored(query: str, chunks: list[Chunk]) -> list[tuple[Chunk, float]]:
     score distribution to find its own cut (see search.py)."""
     if not chunks:
         return []
-    response = httpx.post(
-        f"{settings.reranker_url}/rerank",
-        # Sigmoid scores for Adaptive-k; a model change can still change their distribution.
-        # truncate: cut pairs at the model's context limit rather than refuse the request.
-        json={"query": query, "texts": [c.content for c in chunks], "raw_scores": False, "truncate": True},
-        timeout=TIMEOUT_SECONDS,
-    )
+    with timing.timed("rerank", candidates=len(chunks)):
+        response = httpx.post(
+            f"{settings.reranker_url}/rerank",
+            # Sigmoid scores for Adaptive-k; a model change can still change their distribution.
+            # truncate: cut pairs at the model's context limit rather than refuse the request.
+            json={"query": query, "texts": [c.content for c in chunks], "raw_scores": False, "truncate": True},
+            timeout=TIMEOUT_SECONDS,
+        )
     response.raise_for_status()
     scores = {item["index"]: item["score"] for item in response.json()}
     if len(scores) != len(chunks):

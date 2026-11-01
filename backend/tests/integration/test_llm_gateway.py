@@ -274,3 +274,20 @@ def test_experiment_rejects_a_balanced_alias(captured):
     with llm.experiment_mode(), llm.using_model("gemini-balanced"), pytest.raises(ValueError):
         llm.complete("hello")
     assert captured == {}
+
+
+def test_each_completion_records_its_latency_and_token_usage_in_the_current_stage(monkeypatch, captured):
+    from app import timing
+
+    monkeypatch.setattr(litellm, "completion", lambda **kwargs: SimpleNamespace(
+        model="gemini-2.5-flash", usage=SimpleNamespace(prompt_tokens=120, completion_tokens=30),
+        choices=[SimpleNamespace(message=SimpleNamespace(content="ok"))],
+    ))
+
+    with timing.capture_timings() as spans, timing.stage("slides"):
+        llm.complete("hello")
+
+    call = spans[0]
+    assert (call["kind"], call["stage"], call["prompt_tokens"], call["completion_tokens"]) == ("llm", "slides", 120, 30)
+    assert call["served_model"] == "gemini-2.5-flash"
+    assert call["seconds"] >= 0
