@@ -5,6 +5,8 @@ analyze_study."""
 import csv
 import uuid
 
+import pytest
+
 from scripts import analyze_study, export_human_ratings
 from tests.integration.test_blind_ratings import blind as blind_study
 from tests.integration.test_blind_ratings import client, evaluation
@@ -44,3 +46,19 @@ def test_each_human_rater_becomes_one_csv_that_the_analysis_reads(blind, tmp_pat
 
 def test_a_study_nobody_rated_writes_nothing(blind, tmp_path):
     assert export_human_ratings.export(uuid.UUID(blind["sid"]), tmp_path) == []
+
+
+def test_exporting_into_a_directory_holding_rater_files_is_refused_and_keeps_them(blind, tmp_path):
+    _rate(blind, blind["teacher_headers"], [1, 2, 3])
+    _rate(blind, blind["second_headers"], [5, 4])
+    stale = tmp_path / "rater-3.csv"
+    stale.write_text("cũ", encoding="utf-8")
+    first = tmp_path / "rater-1.csv"
+    first.write_text("cũ", encoding="utf-8")
+
+    with pytest.raises(SystemExit) as refused:
+        export_human_ratings.export(uuid.UUID(blind["sid"]), tmp_path)
+
+    assert "rater-1.csv" in str(refused.value.code) and "rater-3.csv" in str(refused.value.code)
+    assert sorted(p.name for p in tmp_path.iterdir()) == ["rater-1.csv", "rater-3.csv"]
+    assert stale.read_text(encoding="utf-8") == "cũ" and first.read_text(encoding="utf-8") == "cũ"

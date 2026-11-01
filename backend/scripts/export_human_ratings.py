@@ -32,6 +32,12 @@ def _notes(findings: list[dict] | None) -> str:
 
 def export(study_id: uuid.UUID, out: Path) -> list[Path]:
     """Ghi một CSV cho mỗi người đã chấm ít nhất một gói của nghiên cứu; trả về các tệp đã ghi."""
+    existing = sorted(p.name for p in out.glob("rater-*.csv"))
+    if existing:
+        sys.exit(
+            f"Thư mục {out} đã có {', '.join(existing)}. Hãy xoá các tệp này hoặc chọn thư mục khác, "
+            "để tệp cũ không bị phân tích như một người chấm thêm."
+        )
     with SessionLocal() as db:
         rows = db.execute(
             select(User.email, StudyItem.anon_code, Rating)
