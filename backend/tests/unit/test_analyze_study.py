@@ -251,3 +251,16 @@ def test_report_with_several_human_files_adds_pairwise_and_group_reliability(tmp
     assert report["reliability"]["humans"]["accuracy"]["krippendorff_alpha_ordinal"] == pytest.approx(1.0)
     # Mô hình chấm có thay được một người chấm không: alpha của nhóm người khi thêm nó vào.
     assert report["reliability"]["humans+a"]["accuracy"]["krippendorff_alpha_ordinal"] == pytest.approx(1.0)
+
+
+def test_a_human_file_sharing_no_code_with_any_judge_is_refused(tmp_path, study):
+    """CSV mang mã M01 của nghiên cứu trong ứng dụng, tệp chấm mang mã của run_judge: không ghép được gói
+    nào, nên dừng thay vì báo độ đồng thuận rỗng."""
+    judge = _write(tmp_path / "a.jsonl", _lines_of(study, "a"))
+    matching = _human_csv(tmp_path / "an.csv", {r.anon_id: r.scores["accuracy"] for r in study})
+    foreign = _human_csv(tmp_path / "rater-1.csv", {"M01": 3, "M02": 4})
+
+    with pytest.raises(SystemExit) as refused:
+        analyze_study.main([judge, "--human", matching, "--human", foreign])
+
+    assert "rater-1" in str(refused.value.code)

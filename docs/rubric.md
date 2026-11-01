@@ -142,16 +142,18 @@ PYTHONPATH=. uv run python scripts/run_judge.py study/packets --judge <verified-
 # 3. R9: tách claim độc lập từ Content và chấm các trích dẫn được máy chủ giải.
 PYTHONPATH=. uv run python scripts/run_claim_judge.py study/packets --judge <verified-free-alias> --out study/claims.jsonl
 
-# 4. Xuất điểm chấm mù trong ứng dụng, mỗi người chấm một CSV ẩn danh rater-N.csv.
-PYTHONPATH=. uv run python scripts/export_human_ratings.py <study_id> --out study/human
+# 4. Xuất nghiên cứu chấm mù trong ứng dụng: mỗi người chấm một CSV ẩn danh rater-N.csv, và các
+#    lượt chấm của mô hình chấm trong ứng dụng vào judge.jsonl, cùng mã ẩn danh M01, M02, ...
+#    Thư mục đích không được có sẵn rater-*.csv hay judge.jsonl.
+PYTHONPATH=. uv run python scripts/export_human_ratings.py <study_id> --out study/inapp
 
-# 5. Phân tích cùng R8, lặp --human cho mỗi người chấm.
-PYTHONPATH=. uv run python scripts/analyze_study.py study/rubric.jsonl \
-    --claims study/claims.jsonl --human study/human/rater-1.csv --human study/human/rater-2.csv \
+# 5. Phân tích judge.jsonl vừa xuất cùng các CSV người chấm, lặp --human cho mỗi người chấm.
+PYTHONPATH=. uv run python scripts/analyze_study.py study/inapp/judge.jsonl \
+    --claims study/claims.jsonl --human study/inapp/rater-1.csv --human study/inapp/rater-2.csv \
     --out study/report.json
 ```
 
-Mã ẩn danh của mỗi gói (cột `anon_id` trong tệp `.jsonl`) cố định theo tên tệp gói, nên người nghiên cứu dùng chính mã đó khi đưa gói cho người chấm.
+Có hai hệ mã ẩn danh, không được trộn. Nghiên cứu trong ứng dụng đánh mã M01, M02, ... cho các gói; `export_human_ratings.py` ghi đúng mã đó cho cả người chấm lẫn mô hình chấm. `run_judge.py` (bước 2) đánh mã `M-` cộng 8 ký tự hex, cố định theo tên tệp gói; chỉ ghép tệp `.jsonl` của nó với CSV của người chấm đã chấm chính các tệp gói đó. Đưa một tệp người chấm không có mã nào trùng với tệp của mô hình chấm thì `analyze_study.py` dừng với lỗi, thay vì báo độ đồng thuận rỗng.
 
 `analyze_study.py` báo cáo:
 

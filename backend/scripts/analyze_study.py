@@ -386,6 +386,14 @@ def main(argv: list[str] | None = None) -> None:
             scores_by_code(loaded[first]), scores_by_code(loaded[second])
         )
     humans = _load_humans(args.human or [])
+    judged_codes = {r.anon_id for rows in loaded.values() for r in rows}
+    for rater, human in humans.items():
+        if not human.keys() & judged_codes:
+            sys.exit(
+                f"Người chấm {rater} không có mã ẩn danh nào trùng với tệp của mô hình chấm. Mã M01, M02, ... "
+                "của nghiên cứu trong ứng dụng (export_human_ratings.py) và mã M-xxxxxxxx của run_judge.py "
+                "là hai hệ khác nhau: dùng judge.jsonl xuất cùng các tệp rater-N.csv, không trộn hai hệ."
+            )
     for name in names:
         for rater, human in humans.items():
             report["agreement"][f"{name}~{rater}"] = agreement(scores_by_code(loaded[name]), human)
