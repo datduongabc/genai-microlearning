@@ -1,12 +1,12 @@
 """Phân tích kết quả chấm của nghiên cứu RAG so với không RAG.
 
-    PYTHONPATH=. uv run python scripts/analyze_study.py <judge.jsonl>... [--human <ratings.csv>] [--out <report.json>]
+    PYTHONPATH=. uv run python scripts/analyze_study.py <judge.jsonl>... [--human <rater.csv>]... [--out <report.json>]
 
 --claims <claims.jsonl>... thêm metric R9 từ run_claim_judge.py, cộng tử số/mẫu số
 theo mô hình và nhóm, loại gói có bộ đối chiếu chưa đủ khỏi tỉ lệ claim không có căn cứ.
 
-Đầu vào là các tệp do scripts/run_judge.py ghi, và tuỳ chọn một tệp CSV điểm của người chấm (cột anon_id
-cùng các cột tiêu chí, xem docs/rubric.md). Các dòng được tách theo mô hình chấm ghi trong dòng, không
+Đầu vào là các tệp do scripts/run_judge.py ghi, và tuỳ chọn các tệp CSV điểm, mỗi người chấm một
+tệp (cột anon_id cùng các cột tiêu chí, xem docs/rubric.md). Các dòng được tách theo mô hình chấm ghi trong dòng, không
 theo tệp: một tệp có thể chứa nhiều mô hình chấm, và một mô hình chấm có thể nằm ở nhiều tệp. Với từng
 mô hình chấm:
 
