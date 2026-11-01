@@ -172,3 +172,82 @@ def test_a_packet_judged_twice_by_the_same_judge_is_refused(tmp_path, study):
         analyze_study.load_judgements([first, again])
 
     assert "claude-pro" in str(refused.value.code)
+
+
+# --- Độ tin cậy giữa nhiều người chấm ----------------------------------------------------------
+
+# Ví dụ chuẩn của Krippendorff (2011), "Computing Krippendorff's Alpha-Reliability", mục C: bốn người
+# quan sát, mười hai đơn vị, có ô thiếu. Bài báo công bố alpha danh nghĩa 0,743, thứ bậc 0,815 và
+# khoảng 0,849 cho đúng dữ liệu này, nên đây là giá trị mong đợi độc lập với cách cài đặt.
+_KRIPPENDORFF_2011 = {
+    "A": [1, 2, 3, 3, 2, 1, 4, 1, 2, None, None, None],
+    "B": [1, 2, 3, 3, 2, 2, 4, 1, 2, 5, None, 3],
+    "C": [None, 3, 3, 3, 2, 3, 4, 2, 2, 5, 1, None],
+    "D": [1, 2, 3, 3, 2, 4, 4, 1, 2, 5, 1, None],
+}
+
+
+def _units(table: dict[str, list]) -> list[list[int]]:
+    return [[row[u] for row in table.values() if row[u] is not None] for u in range(len(next(iter(table.values()))))]
+
+
+@pytest.mark.parametrize(("metric", "expected"), [("nominal", 0.743), ("ordinal", 0.815), ("interval", 0.849)])
+def test_krippendorff_alpha_matches_the_published_worked_example(metric, expected):
+    alpha = analyze_study.krippendorff_alpha(_units(_KRIPPENDORFF_2011), metric=metric, levels=range(1, 6))
+
+    assert alpha == pytest.approx(expected, abs=0.0005)
+
+
+def test_alpha_is_one_when_every_rater_agrees_and_undefined_without_variation():
+    assert analyze_study.krippendorff_alpha([[2, 2], [4, 4, 4], [5, 5]], levels=range(1, 6)) == pytest.approx(1.0)
+    # Mọi giá trị bằng nhau: không có bất đồng kỳ vọng nào để so, nên alpha không xác định.
+    assert analyze_study.krippendorff_alpha([[3, 3], [3, 3]], levels=range(1, 6)) is None
+
+
+def test_fleiss_kappa_matches_the_classic_worked_example():
+    """Ví dụ của Fleiss trên Wikipedia: 10 đối tượng, 14 người chấm, 5 hạng mục, kappa = 0,210."""
+    counts = [
+        [0, 0, 0, 0, 14], [0, 2, 6, 4, 2], [0, 0, 3, 5, 6], [0, 3, 9, 2, 0], [2, 2, 8, 1, 1],
+        [7, 7, 0, 0, 0], [3, 2, 6, 3, 0], [2, 5, 3, 2, 2], [6, 5, 2, 1, 0], [0, 2, 2, 3, 7],
+    ]
+
+    assert analyze_study.fleiss_kappa(counts) == pytest.approx(0.210, abs=0.0005)
+
+
+def _human_csv(path, scores: dict[str, int]):
+    path.write_text("anon_id,accuracy\n" + "".join(f"{code},{s}\n" for code, s in scores.items()), encoding="utf-8")
+    return str(path)
+
+
+def test_reliability_among_human_raters_uses_every_rating_and_fleiss_only_complete_items(tmp_path):
+    raters = {
+        "an": {"M1": 1, "M2": 2, "M3": 3, "M4": 4, "M5": 5},
+        "binh": {"M1": 1, "M2": 2, "M3": 3, "M4": 4, "M5": 5},
+        "chi": {"M1": 1, "M2": 2, "M3": 3, "M4": 4},
+    }
+    loaded = {name: analyze_study.load_human(_human_csv(tmp_path / f"{name}.csv", s)) for name, s in raters.items()}
+
+    result = analyze_study.reliability(loaded)["accuracy"]
+
+    assert result["raters"] == 3
+    assert result["units"] == 5
+    assert result["complete_units"] == 4
+    assert result["krippendorff_alpha_ordinal"] == pytest.approx(1.0)
+    assert result["fleiss_kappa"] == pytest.approx(1.0)
+
+
+def test_report_with_several_human_files_adds_pairwise_and_group_reliability(tmp_path, study):
+    judge = _write(tmp_path / "a.jsonl", _lines_of(study, "a"))
+    truth = {r.anon_id: r.scores["accuracy"] for r in study}
+    first = _human_csv(tmp_path / "an.csv", truth)
+    second = _human_csv(tmp_path / "binh.csv", truth)
+    out = tmp_path / "report.json"
+
+    analyze_study.main([judge, "--human", first, "--human", second, "--out", str(out)])
+
+    report = json.loads(out.read_text(encoding="utf-8"))
+    assert report["agreement"]["an~binh"]["accuracy"]["kappa"] == pytest.approx(1.0)
+    assert report["agreement"]["a~an"]["accuracy"]["n"] == 8
+    assert report["reliability"]["humans"]["accuracy"]["krippendorff_alpha_ordinal"] == pytest.approx(1.0)
+    # Mô hình chấm có thay được một người chấm không: alpha của nhóm người khi thêm nó vào.
+    assert report["reliability"]["humans+a"]["accuracy"]["krippendorff_alpha_ordinal"] == pytest.approx(1.0)

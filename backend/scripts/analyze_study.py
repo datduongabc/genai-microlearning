@@ -17,6 +17,11 @@ mô hình chấm:
 
 Giữa từng cặp mô hình chấm, và giữa mỗi mô hình chấm với người: Spearman và kappa trọng số bậc hai trên
 thang 1-5, ghép theo mã ẩn danh. Một chỉ số không xác định (ví dụ mọi điểm bằng nhau) ghi là null.
+
+Lặp --human cho mỗi người chấm (scripts/export_human_ratings.py xuất sẵn mỗi người một tệp). Từ hai
+người trở lên còn có đồng thuận giữa từng cặp người và độ tin cậy của cả nhóm: Krippendorff's alpha
+thứ bậc trên mọi điểm, Fleiss' kappa trên các gói ai cũng chấm, và alpha khi thêm mỗi mô hình chấm
+vào nhóm người như một người chấm nữa.
 """
 
 import argparse
@@ -147,6 +152,90 @@ def quadratic_weighted_kappa(first: list[int], second: list[int]) -> float | Non
     return None if expected == 0 else 1 - seen / expected
 
 
+def _squared_difference(metric: str, levels: list[int], totals: dict[int, int]):
+    """delta^2 giữa hai giá trị theo loại thang của Krippendorff (2011)."""
+    if metric == "nominal":
+        return lambda c, k: 0.0 if c == k else 1.0
+    if metric == "interval":
+        return lambda c, k: float(c - k) ** 2
+    if metric == "ordinal":
+        position = {level: i for i, level in enumerate(levels)}
+
+        def ordinal(c, k):
+            low, high = sorted((position[c], position[k]))
+            between = sum(totals.get(levels[g], 0) for g in range(low, high + 1))
+            return (between - (totals.get(c, 0) + totals.get(k, 0)) / 2) ** 2
+
+        return ordinal
+    raise ValueError(f"unknown metric {metric!r}")
+
+
+def krippendorff_alpha(units: list[list[int]], metric: str = "ordinal", levels=SCALE) -> float | None:
+    """Alpha của Krippendorff qua ma trận trùng khớp: mỗi đơn vị là danh sách điểm mà các người chấm
+    đã cho nó (thiếu người nào thì bỏ người đó). Đơn vị chỉ có một điểm không ghép cặp được nên bị bỏ,
+    vì thế alpha dùng được mọi điểm có sẵn chứ không chỉ những đơn vị ai cũng chấm. None khi không có
+    biến thiên nào (mọi điểm bằng nhau), lúc đó không có bất đồng kỳ vọng để so."""
+    levels = list(levels)
+    pairable = [u for u in units if len(u) >= 2]
+    coincidence: dict[tuple[int, int], float] = {}
+    for values in pairable:
+        m = len(values)
+        for i, c in enumerate(values):
+            for j, k in enumerate(values):
+                if i != j:
+                    coincidence[(c, k)] = coincidence.get((c, k), 0.0) + 1 / (m - 1)
+    totals: dict[int, float] = {}
+    for (c, _), weight in coincidence.items():
+        totals[c] = totals.get(c, 0.0) + weight
+    n = sum(totals.values())
+    if n <= 1:
+        return None
+    delta = _squared_difference(metric, levels, totals)
+    observed = sum(w * delta(c, k) for (c, k), w in coincidence.items())
+    expected = sum(totals[c] * totals[k] * delta(c, k) for c in totals for k in totals)
+    if expected == 0:
+        return None
+    return 1 - (n - 1) * observed / expected
+
+
+def fleiss_kappa(counts: list[list[int]]) -> float | None:
+    """Kappa của Fleiss (1971), thang danh nghĩa. Mỗi dòng là một đối tượng, mỗi cột một hạng mục,
+    ô là số người xếp đối tượng đó vào hạng mục đó; mọi dòng phải cùng số người chấm."""
+    if not counts:
+        return None
+    raters = sum(counts[0])
+    if raters < 2 or any(sum(row) != raters for row in counts):
+        raise ValueError("Fleiss' kappa needs the same number (at least two) of raters for every item")
+    subjects = len(counts)
+    agreement_per_item = [(sum(x * x for x in row) - raters) / (raters * (raters - 1)) for row in counts]
+    observed = sum(agreement_per_item) / subjects
+    shares = [sum(row[j] for row in counts) / (subjects * raters) for j in range(len(counts[0]))]
+    expected = sum(p * p for p in shares)
+    return None if expected == 1 else (observed - expected) / (1 - expected)
+
+
+def reliability(raters: dict[str, dict[str, dict[str, int]]]) -> dict[str, dict]:
+    """Độ tin cậy của cả nhóm người chấm cho từng tiêu chí: alpha thứ bậc của Krippendorff trên mọi
+    điểm đã cho (chịu được ô thiếu), và kappa của Fleiss trên các gói mà ai cũng chấm, như góp ý yêu
+    cầu. Fleiss coi thang 1-5 là danh nghĩa nên thường thấp hơn alpha thứ bậc trên cùng dữ liệu."""
+    result = {}
+    for c in CRITERIA:
+        codes = sorted({code for scores in raters.values() for code, s in scores.items() if c in s})
+        units = [[scores[code][c] for scores in raters.values() if c in scores.get(code, {})] for code in codes]
+        pairable = [u for u in units if len(u) >= 2]
+        if not pairable:
+            continue
+        complete = [u for u in units if len(u) == len(raters)]
+        counts = [[u.count(level) for level in SCALE] for u in complete]
+        result[c] = {
+            "raters": len(raters), "units": len(pairable), "complete_units": len(complete),
+            "krippendorff_alpha_ordinal": krippendorff_alpha(pairable, "ordinal"),
+            "krippendorff_alpha_interval": krippendorff_alpha(pairable, "interval"),
+            "fleiss_kappa": fleiss_kappa(counts) if complete else None,
+        }
+    return result
+
+
 def scores_by_code(rows: list[Judged]) -> dict[str, dict[str, int]]:
     return {r.anon_id: r.scores for r in rows}
 
@@ -187,6 +276,17 @@ def load_human(path: str) -> dict[str, dict[str, int]]:
     return ratings
 
 
+def _load_humans(paths: list[str]) -> dict[str, dict[str, dict[str, int]]]:
+    """Mỗi tệp một người chấm, đặt tên theo tên tệp không đuôi."""
+    humans = {}
+    for path in paths:
+        name = Path(path).stem
+        if name in humans:
+            raise SystemExit(f"{path}: hai tệp người chấm cùng tên {name!r}; đổi tên một tệp")
+        humans[name] = load_human(path)
+    return humans
+
+
 def _print_report(report: dict) -> None:
     def fmt(value) -> str:
         return "-" if value is None else f"{value:.3f}"
@@ -211,6 +311,13 @@ def _print_report(report: dict) -> None:
         print(f"{'tiêu chí':<22}{'n':>4}{'Spearman':>10}{'kappa':>8}")
         for c, a in per_criterion.items():
             print(f"{c:<22}{a['n']:>4}{fmt(a['spearman']):>10}{fmt(a['kappa']):>8}")
+    for group, per_criterion in report.get("reliability", {}).items():
+        print(f"\n== Độ tin cậy nhóm {group}")
+        print(f"{'tiêu chí':<22}{'người':>6}{'gói':>5}{'đủ':>5}{'α thứ bậc':>11}{'α khoảng':>10}{'Fleiss κ':>10}")
+        for c, r in per_criterion.items():
+            print(f"{c:<22}{r['raters']:>6}{r['units']:>5}{r['complete_units']:>5}"
+                  f"{fmt(r['krippendorff_alpha_ordinal']):>11}{fmt(r['krippendorff_alpha_interval']):>10}"
+                  f"{fmt(r['fleiss_kappa']):>10}")
     if "claims" in report:
         print("\nR9 Content claims (pooled counts; incomplete references excluded):")
         print(json.dumps(report["claims"], ensure_ascii=False, indent=2))
@@ -260,7 +367,7 @@ def main(argv: list[str] | None = None) -> None:
     sys.stdout.reconfigure(encoding="utf-8")
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("judges", nargs="+", help="các tệp .jsonl của scripts/run_judge.py")
-    parser.add_argument("--human", help="CSV điểm của người chấm")
+    parser.add_argument("--human", action="append", help="CSV điểm của một người chấm; lặp lại cho mỗi người")
     parser.add_argument("--claims", nargs="+", help="R9 JSONL from run_claim_judge.py")
     parser.add_argument("--out", type=Path, help="ghi thêm báo cáo dạng JSON vào tệp này")
     args = parser.parse_args(argv)
@@ -278,10 +385,16 @@ def main(argv: list[str] | None = None) -> None:
         report["agreement"][f"{first}~{second}"] = agreement(
             scores_by_code(loaded[first]), scores_by_code(loaded[second])
         )
-    if args.human:
-        human = load_human(args.human)
+    humans = _load_humans(args.human or [])
+    for name in names:
+        for rater, human in humans.items():
+            report["agreement"][f"{name}~{rater}"] = agreement(scores_by_code(loaded[name]), human)
+    for first, second in itertools.combinations(sorted(humans), 2):
+        report["agreement"][f"{first}~{second}"] = agreement(humans[first], humans[second])
+    if len(humans) >= 2:
+        report["reliability"] = {"humans": reliability(humans)}
         for name in names:
-            report["agreement"][f"{name}~human"] = agreement(scores_by_code(loaded[name]), human)
+            report["reliability"][f"humans+{name}"] = reliability({**humans, name: scores_by_code(loaded[name])})
 
     _print_report(report)
     if args.out:
