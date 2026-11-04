@@ -1,0 +1,11 @@
+# Several API and worker containers on one host:
+#   ./devops/scripts/compose.sh -f devops/docker-compose.scale.yml up -d --scale backend=2 --scale worker=2
+# Caddy balances between the API containers, so port 8000 is not published. They share uploads through
+# the bind mount, which only works on one host; several hosts need shared file storage.
+services:
+  backend:
+    container_name: !reset null
+    command: ["uv", "run", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+    ports: !reset []
+  worker:
+    container_name: !reset null

@@ -25,6 +25,7 @@ from litellm.exceptions import RateLimitError
 from sqlalchemy import func, select, update
 from sqlalchemy.orm import Session
 
+from app.config import settings
 from app.db import WorkerSessionLocal
 from app.jobs.maintenance import purge_old_records
 from app.models import Job, JobStatus, JobType
@@ -44,13 +45,6 @@ SWEEP_INTERVAL_SECONDS = 60
 MAINTENANCE_INTERVAL_SECONDS = 60 * 60
 MAINTENANCE_FIRST_RUN_DELAY_SECONDS = 60
 POLL_INTERVAL_SECONDS = 2.0
-# Self-audit (performance review) found jobs processed strictly one-at-a-time
-# system-wide (1 thread) -- 2 giảng viên sinh module cùng lúc, người thứ 2
-# chờ hết ~10 phút của người thứ 1 thay vì chỉ chờ lượt riêng. Không cần
-# nginx/nhiều process: claim_next_job() đã dùng FOR UPDATE SKIP LOCKED nên N
-# thread cùng gọi song song trong CHÍNH process backend là đủ an toàn -- vẫn
-# khớp triết lý "1 process, không thêm hạ tầng" đã chọn từ đầu.
-WORKER_POOL_SIZE = 4
 
 
 def jittered_backoff(attempts: int) -> float:
@@ -225,7 +219,10 @@ def sweep_stuck_jobs() -> None:
     db = WorkerSessionLocal()
     try:
         cutoff = datetime.now(UTC) - timedelta(seconds=STUCK_THRESHOLD_SECONDS)
-        stuck = db.query(Job).filter(Job.status == JobStatus.running, Job.locked_at < cutoff).all()
+        # SKIP LOCKED: with several worker processes, sweepers overlap. A job another sweeper holds
+        # is its to handle; waiting for it would then overwrite its result with this stale copy.
+        stuck = (db.query(Job).filter(Job.status == JobStatus.running, Job.locked_at < cutoff)
+                 .with_for_update(skip_locked=True).all())
         for job in stuck:
             new_attempts = job.attempts + 1
             logger.warning(f"[job_queue] sweeper: job {job.id} step={job.step} bi ket, locked_at={job.locked_at}")
@@ -278,9 +275,7 @@ def _worker_loop(worker_id: str, *, run_sweeper: bool) -> None:
     next_maintenance_at = datetime.now(UTC) + timedelta(seconds=MAINTENANCE_FIRST_RUN_DELAY_SECONDS)
 
     while not _stop_event.is_set():
-        # Chỉ 1 trong N worker chạy sweeper (worker đầu tiên) -- sweep_stuck_jobs()
-        # an toàn khi chạy trùng (chỉ requeue job thật sự kẹt), nhưng để N worker
-        # cùng chạy trên cùng lịch là lãng phí không cần thiết.
+        # One thread per process sweeps. Several processes overlap safely, see sweep_stuck_jobs().
         if run_sweeper:
             now = datetime.now(UTC)
             if now >= next_sweep_at:
@@ -313,23 +308,15 @@ def _worker_loop(worker_id: str, *, run_sweeper: bool) -> None:
 
 
 def start_worker() -> None:
-    """Chạy WORKER_POOL_SIZE background thread trong CHÍNH process backend
-    (không thêm container/service/reverse-proxy mới trong docker-compose --
-    khớp quy mô đồ án solo, xem Architecture_GD2.md mục DevOps). FastAPI
-    endpoint đồng bộ đã chạy trong thread pool riêng của uvicorn nên các
-    thread nền này không chặn event loop xử lý request khác.
-
-    N thread cùng gọi claim_next_job() song song AN TOÀN vì hàm đó dùng
-    `FOR UPDATE SKIP LOCKED` (Postgres tự đảm bảo 2 thread không bao giờ
-    claim trùng 1 job) -- không cần thêm lock/coordination riêng ở tầng
-    Python. Đây là lý do tăng từ 1 lên N thread chỉ cần đổi đúng chỗ này,
-    không cần đổi hạ tầng (không nginx, không nhiều process/container)."""
+    """Runs settings.worker_pool_size job threads in this process: the API process when
+    run_job_worker is true, otherwise the worker process (app/jobs/worker.py). claim_next_job()
+    uses FOR UPDATE SKIP LOCKED, so threads and processes never claim the same job."""
     global _worker_threads
     if _worker_threads and any(t.is_alive() for t in _worker_threads):
         return
     _stop_event.clear()
     _worker_threads = []
-    for i in range(WORKER_POOL_SIZE):
+    for i in range(settings.worker_pool_size):
         worker_id = f"worker-{uuid.uuid4().hex[:6]}"
         t = threading.Thread(target=_worker_loop, args=(worker_id,), kwargs={"run_sweeper": i == 0}, daemon=True)
         t.start()

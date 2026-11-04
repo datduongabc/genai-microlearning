@@ -18,7 +18,13 @@
 	# The API, under the prefix the frontend already calls it by. The proxy overwrites
 	# X-Forwarded-For with the address it saw, so a client cannot pick its own.
 	handle_path /api/* {
-		reverse_proxy backend:8000
+		# Looks the name up again, so containers added or removed by scaling are picked up.
+		reverse_proxy {
+			dynamic a backend 8000 {
+				refresh 5s
+			}
+			lb_policy round_robin
+		}
 	}
 
 	handle {

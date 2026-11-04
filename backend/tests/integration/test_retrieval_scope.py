@@ -96,7 +96,7 @@ def test_sparse_search_ranks_only_the_chunks_of_the_scope(book):
         db.close()
 
 
-def test_invalidating_a_course_clears_its_scoped_cache_entries_too(book):
+def test_a_scoped_index_sees_new_chunks_without_invalidation(book):
     db = SessionLocal()
     try:
         scope = ChunkScope(book["doc"], 0, 5)
@@ -104,9 +104,6 @@ def test_invalidating_a_course_clears_its_scoped_cache_entries_too(book):
 
         db.add(Chunk(document_id=book["doc"], course_id=book["course"], chunk_index=2, content="zebra crossing"))
         db.commit()
-        assert sparse_search(db, book["course"], "zebra", scope=scope) == []  # still the cached index
-
-        invalidate_sparse_cache(book["course"])
         assert any("zebra" in c.content for c in sparse_search(db, book["course"], "zebra", scope=scope))
     finally:
         db.close()

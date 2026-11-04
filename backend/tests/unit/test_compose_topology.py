@@ -93,11 +93,25 @@ def test_the_backend_believes_forwarded_addresses_only_from_the_compose_network(
     assert "172.16.0.0/12" in trusted
 
 
+def test_jobs_run_in_the_worker_service_with_no_more_rights_than_the_api(services):
+    api, worker = _environment(services["backend"]), _environment(services["worker"])
+
+    assert api["RUN_JOB_WORKER"] == "false"
+    assert worker == api
+    assert "DATABASE_URL" not in worker
+    assert "ports" not in services["worker"]
+
+
+def test_api_containers_share_rate_limit_counters_in_a_private_redis(services):
+    assert _environment(services["backend"])["RATE_LIMIT_STORAGE_URI"] == "redis://redis:6379/0"
+    assert "ports" not in services["redis"]
+
+
 def test_the_proxy_sends_the_api_and_the_pages_to_the_right_place():
     caddyfile = CADDYFILE.read_text(encoding="utf-8")
 
     assert "handle_path /api/*" in caddyfile
-    assert "reverse_proxy backend:8000" in caddyfile
+    assert "dynamic a backend 8000" in caddyfile
     assert "reverse_proxy frontend:5173" in caddyfile
 
 

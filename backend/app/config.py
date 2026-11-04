@@ -92,6 +92,14 @@ class Settings(BaseSettings):
     # container (không phải named volume ephemeral).
     upload_storage_dir: str = "uploads"
 
+    # False when the jobs run in their own process (python -m app.jobs.worker), so that API
+    # and workers scale separately. True keeps a single process working on its own.
+    run_job_worker: bool = True
+    # Jobs one process runs at once. Read from WORKER_POOL_SIZE.
+    worker_pool_size: int = Field(default=4, ge=1)
+    # memory:// is exact only for one process; several API processes must share a store.
+    rate_limit_storage_uri: str = Field(default="memory://", repr=False)
+
     # Largest body accepted for anything that is not an upload. The biggest legitimate
     # one is an edited module component, a few tens of kilobytes.
     max_request_body_bytes: int = 1024 * 1024

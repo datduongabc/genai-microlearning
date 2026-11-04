@@ -1,8 +1,12 @@
 import re
+import threading
+from collections import OrderedDict
 from dataclasses import dataclass
 from uuid import UUID
 
 from rank_bm25 import BM25Okapi
+from sqlalchemy import String, cast, func, literal_column
+from sqlalchemy.dialects.postgresql import aggregate_order_by
 from sqlalchemy.orm import Session
 
 from app import timing
@@ -58,47 +62,59 @@ def dense_search(
         )
 
 
-# Cache BM25 index theo course_id -- 1 lần generate_module() gọi sparse_search
-# nhiều lần (LO/Content, Quiz, Practice...) cho CÙNG course, trước đây build
-# lại từ đầu mỗi lần dù corpus không đổi. Invalidate tường minh khi có chunk
-# mới (invalidate_sparse_cache(), gọi từ documents.py sau khi upload) thay vì
-# TTL đoán mò -- tránh phục vụ index cũ sau khi tài liệu mới được thêm.
-# Khóa gồm cả phạm vi: một tài liệu hay một khoảng chunk có corpus (và thống
-# kê IDF) riêng, không được dùng chung index với cả course.
-# Chỉ giữ id chunk, không giữ đối tượng ORM: cache sống lâu hơn Session đã
-# nạp chúng, và sau commit/close mọi thuộc tính của chúng là rỗng hoặc detached
-# (DetachedInstanceError ở request thứ hai). Chunk thắng được nạp lại bằng id
-# trong Session của chính lời gọi.
-_bm25_cache: dict[tuple[UUID, ChunkScope | None], tuple[BM25Okapi, list[UUID]]] = {}
+# BM25 indexes per course and scope, because one generation searches the same course many times.
+# Each entry carries a fingerprint of its chunk ids, compared on every search: chunks are written by
+# the worker, usually another process, which cannot clear this process's cache. The cache only
+# holds chunk ids, not ORM objects, because it outlives the session that loaded them.
+_BM25_CACHE_MAX_ENTRIES = 64
+_bm25_cache: OrderedDict[tuple[UUID, ChunkScope | None], tuple[str, BM25Okapi, list[UUID]]] = OrderedDict()
+_bm25_cache_lock = threading.Lock()
 
 
 def invalidate_sparse_cache(course_id: UUID) -> None:
-    for key in [k for k in _bm25_cache if k[0] == course_id]:
-        del _bm25_cache[key]
+    with _bm25_cache_lock:
+        for key in [k for k in _bm25_cache if k[0] == course_id]:
+            del _bm25_cache[key]
+
+
+def _corpus_fingerprint(db: Session, course_id: UUID, scope: ChunkScope | None) -> str | None:
+    """Changes whenever a chunk is added or removed; chunk text is never edited in place. None when
+    this session sees no chunks, which is also what row level security gives a non-owner."""
+    ids = func.string_agg(cast(Chunk.id, String), aggregate_order_by(literal_column("''"), Chunk.id))
+    return _scoped(db.query(func.md5(ids)).filter(Chunk.course_id == course_id), scope).scalar()
+
+
+def _bm25_index(db: Session, course_id: UUID, scope: ChunkScope | None) -> tuple[BM25Okapi, list[UUID]] | None:
+    fingerprint = _corpus_fingerprint(db, course_id, scope)
+    if fingerprint is None:
+        return None
+    key = (course_id, scope)
+    with _bm25_cache_lock:
+        cached = _bm25_cache.get(key)
+        if cached is not None and cached[0] == fingerprint:
+            _bm25_cache.move_to_end(key)
+            return cached[1], cached[2]
+    rows = _scoped(db.query(Chunk.id, Chunk.content).filter(Chunk.course_id == course_id), scope).all()
+    if not rows:
+        return None
+    bm25 = BM25Okapi([_tokenize(content) for _, content in rows])
+    chunk_ids = [chunk_id for chunk_id, _ in rows]
+    with _bm25_cache_lock:
+        _bm25_cache[key] = (fingerprint, bm25, chunk_ids)
+        _bm25_cache.move_to_end(key)
+        while len(_bm25_cache) > _BM25_CACHE_MAX_ENTRIES:
+            _bm25_cache.popitem(last=False)
+    return bm25, chunk_ids
 
 
 def sparse_search(
     db: Session, course_id: UUID, query: str, top_k: int = 20, scope: ChunkScope | None = None
 ) -> list[Chunk]:
     """BM25 tren toan bo chunk cua 1 course, hoac chi tren khoang chunk cua `scope`."""
-    with timing.timed("bm25"):
-        return _sparse_search(db, course_id, query, top_k, scope)
-
-
-def _sparse_search(db: Session, course_id: UUID, query: str, top_k: int, scope: ChunkScope | None) -> list[Chunk]:
-    key = (course_id, scope)
-    cached = _bm25_cache.get(key)
-    if cached is None:
-        rows = _scoped(
-            db.query(Chunk.id, Chunk.content).filter(Chunk.course_id == course_id), scope
-        ).all()
-        if not rows:
-            return []
-        bm25 = BM25Okapi([_tokenize(content) for _, content in rows])
-        chunk_ids = [chunk_id for chunk_id, _ in rows]
-        _bm25_cache[key] = (bm25, chunk_ids)
-    else:
-        bm25, chunk_ids = cached
+    index = _bm25_index(db, course_id, scope)
+    if index is None:
+        return []
+    bm25, chunk_ids = index
 
     scores = bm25.get_scores(_tokenize(query))
     ranked = sorted(zip(chunk_ids, scores, strict=True), key=lambda pair: pair[1], reverse=True)
