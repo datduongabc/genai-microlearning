@@ -6,12 +6,21 @@ from slowapi import Limiter
 from slowapi.util import get_remote_address
 
 from app.auth.security import decode_token, token_user_id
+from app.config import settings
 
-# Counters live in the memory of the backend process, which runs alone: they are exact
-# and reset on a restart. key_style="endpoint": slowapi counts per URL by default, and an
-# endpoint such as /courses/{id}/chat has a different URL for every course, so each course
-# would get its own budget and a user could get past any limit by changing the id.
-limiter = Limiter(key_func=get_remote_address, key_style="endpoint", storage_uri="memory://")
+
+def build_limiter(storage_uri: str) -> Limiter:
+    """key_style="endpoint": slowapi counts per URL by default, and an endpoint such as
+    /courses/{id}/chat has a different URL for every course, so each course would get its own
+    budget and a user could get past any limit by changing the id.
+
+    in_memory_fallback_enabled: if the shared store is down, each process keeps limiting on its
+    own instead of failing every request."""
+    return Limiter(key_func=get_remote_address, key_style="endpoint", storage_uri=storage_uri,
+                   in_memory_fallback_enabled=True)
+
+
+limiter = build_limiter(settings.rate_limit_storage_uri)
 
 
 def user_or_address(request: Request) -> str:

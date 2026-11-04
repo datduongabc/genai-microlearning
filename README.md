@@ -48,7 +48,8 @@ Tài khoản có ít nhất một khóa học ứng dụng liên kết với kh�
 | --- | --- |
 | Backend | FastAPI, SQLAlchemy, Alembic |
 | Cơ sở dữ liệu | PostgreSQL 16 với pgvector, Row Level Security |
-| Hàng đợi công việc | Bảng trong chính Postgres, không dùng Redis hay Celery |
+| Hàng đợi công việc | Bảng trong chính Postgres, worker chạy ở tiến trình riêng |
+| Rate limit | Bộ đếm dùng chung trong Redis |
 | Truy xuất | Dense cộng BM25 cộng Reciprocal Rank Fusion |
 | Cổng mô hình | LiteLLM Proxy, giữ toàn bộ khóa nhà cung cấp |
 | Frontend | React, Vite, TypeScript |

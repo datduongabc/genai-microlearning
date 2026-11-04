@@ -49,12 +49,12 @@ async def _gateway_unavailable(request: Request, exc: GatewayUnavailable):
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Background thread trong chính process backend (không job queue
-    # container riêng) -- xử lý document_pipeline/module_generation job nền,
-    # xem app/services/job_queue.py.
-    start_worker()
+    # Jobs run here only without a separate worker process (app/jobs/worker.py).
+    if settings.run_job_worker:
+        start_worker()
     yield
-    stop_worker()
+    if settings.run_job_worker:
+        stop_worker()
 
 
 def _is_upload(scope) -> bool:

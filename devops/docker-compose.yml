@@ -1,3 +1,27 @@
+x-backend-environment: &backend-environment
+  # Khong co URL cua vai tro chu so huu: tien trinh nay chay bang hai vai tro
+  # bi Row Level Security rang buoc.
+  APP_RUNTIME_DATABASE_URL: ${APP_RUNTIME_DATABASE_URL_DOCKER}
+  APP_WORKER_DATABASE_URL: ${APP_WORKER_DATABASE_URL_DOCKER}
+  # Khong co gia tri du phong: moi container sinh mot khoa rieng thi moi lan
+  # khoi dong lai se dang xuat tat ca moi nguoi.
+  SECRET_KEY: ${SECRET_KEY}
+  # Ten service chu khong phai localhost: trong container, localhost la chinh
+  # container backend, nen localhost o day nghia la khong goi duoc ai ca.
+  MOODLE_BASE_URL: http://moodle:80
+  MOODLE_TOKEN: ${MOODLE_TOKEN}
+  MOODLE_WWWROOT: ${MOODLE_WWWROOT}
+  NON_TEACHER_DAILY_GENERATION_LIMIT: ${NON_TEACHER_DAILY_GENERATION_LIMIT:-3}
+  LLM_GATEWAY_URL: http://gateway:4000
+  LLM_GATEWAY_KEY: ${LLM_GATEWAY_KEY}
+  LLM_EXPERIMENT_MODE: ${LLM_EXPERIMENT_MODE:-false}
+  RERANKER_URL: http://reranker:80
+  FORWARDED_ALLOW_IPS: 172.16.0.0/12,192.168.0.0/16,10.0.0.0/8
+  # The API hands jobs to the worker service and shares its rate limit counters through Redis.
+  RUN_JOB_WORKER: "false"
+  RATE_LIMIT_STORAGE_URI: redis://redis:6379/0
+  WORKER_POOL_SIZE: ${WORKER_POOL_SIZE:-4}
+
 services:
   db:
     image: pgvector/pgvector:pg16
@@ -178,30 +202,39 @@ services:
       # Moi lan truy xuat cua LO, Content va cau hoi deu di qua no.
       reranker:
         condition: service_healthy
-    environment:
-      # Khong co URL cua vai tro chu so huu: tien trinh nay chay bang hai vai tro
-      # bi Row Level Security rang buoc.
-      APP_RUNTIME_DATABASE_URL: ${APP_RUNTIME_DATABASE_URL_DOCKER}
-      APP_WORKER_DATABASE_URL: ${APP_WORKER_DATABASE_URL_DOCKER}
-      # Khong co gia tri du phong: moi container sinh mot khoa rieng thi moi lan
-      # khoi dong lai se dang xuat tat ca moi nguoi.
-      SECRET_KEY: ${SECRET_KEY}
-      # Ten service chu khong phai localhost: trong container, localhost la chinh
-      # container backend, nen localhost o day nghia la khong goi duoc ai ca.
-      MOODLE_BASE_URL: http://moodle:80
-      MOODLE_TOKEN: ${MOODLE_TOKEN}
-      MOODLE_WWWROOT: ${MOODLE_WWWROOT}
-      NON_TEACHER_DAILY_GENERATION_LIMIT: ${NON_TEACHER_DAILY_GENERATION_LIMIT:-3}
-      LLM_GATEWAY_URL: http://gateway:4000
-      LLM_GATEWAY_KEY: ${LLM_GATEWAY_KEY}
-      LLM_EXPERIMENT_MODE: ${LLM_EXPERIMENT_MODE:-false}
-      RERANKER_URL: http://reranker:80
-      FORWARDED_ALLOW_IPS: 172.16.0.0/12,192.168.0.0/16,10.0.0.0/8
+      redis:
+        condition: service_healthy
+    environment: *backend-environment
     ports:
       - 127.0.0.1:8000:8000
     volumes:
       - ./backend:/app
       - /app/.venv
+
+  # Runs the queued jobs, apart from the API so that each scales on its own.
+  # No hot reload: restart this service after changing job code.
+  worker:
+    image: do-an-backend
+    container_name: do-an-worker
+    depends_on:
+      backend:
+        condition: service_started
+    environment: *backend-environment
+    command: ["uv", "run", "python", "-m", "app.jobs.worker"]
+    volumes:
+      - ./backend:/app
+      - /app/.venv
+
+  # Only holds rate limit counters, which are safe to lose on a restart, so nothing is persisted.
+  redis:
+    image: redis:7-alpine
+    container_name: do-an-redis
+    command: ["redis-server", "--save", "", "--appendonly", "no", "--maxmemory", "64mb", "--maxmemory-policy", "volatile-ttl"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
 
   frontend:
     # Chay stage dev chu khong phai stage cuoi: cong 5173 la cua Vite dev server,

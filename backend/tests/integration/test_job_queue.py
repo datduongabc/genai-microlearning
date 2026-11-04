@@ -17,6 +17,7 @@ from litellm.exceptions import RateLimitError
 
 from app.db import SessionLocal
 from app.jobs.queue import (
+    STUCK_THRESHOLD_SECONDS,
     claim_next_job,
     enqueue_job,
     execute_job_step,
@@ -453,3 +454,24 @@ def test_a_step_that_raises_is_still_handled_after_beating(seed_document, monkey
         assert current.last_error == "network hiccup"
     finally:
         db.close()
+
+
+def test_sweep_skips_a_job_another_sweeper_is_processing(seed_document):
+    # With several worker processes, sweepers overlap. Without the row lock the second one would
+    # wait, then write its stale copy over the first one's result.
+    with SessionLocal() as db:
+        job = enqueue_job(db, job_type=JobType.document_pipeline, step="extract", document_id=seed_document(db).id)
+        job.status = JobStatus.running
+        job.locked_at = datetime.now(UTC) - timedelta(seconds=STUCK_THRESHOLD_SECONDS + 60)
+        job.locked_by = "dead-worker"
+        db.commit()
+        job_id = job.id
+    holder = SessionLocal()
+    try:
+        holder.query(Job).filter(Job.id == job_id).with_for_update().one()
+        sweep_stuck_jobs()
+        holder.rollback()
+    finally:
+        holder.close()
+    with SessionLocal() as db:
+        assert db.get(Job, job_id).status == JobStatus.running

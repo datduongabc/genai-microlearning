@@ -8,6 +8,7 @@ and it points `env_file` at `devops/.env`, the single env file the compose stack
 ## What is here
 
 - `docker-compose.yml`: the whole stack (database, Moodle, migrate, backend, frontend, LLM gateway, local embedder and reranker, HTTPS proxy).
+- `docker-compose.scale.yml`: several API and worker containers on one host.
 - `gateway/`: the LLM gateway image and its model routing. Chat and transcription models are called through a provider's API; embeddings and reranking run locally in the `embedder` and `reranker` services.
 - `moodle/`: the Moodle image.
 - `caddy/Caddyfile`: the HTTPS proxy in front of the frontend and the API (`/api`).
@@ -30,8 +31,23 @@ Caddy signs the local certificate with its own CA, so trust it once with `docker
   It is the only place that does.
 - `backend` serves requests as `app_runtime` and runs the worker as `app_worker`.
   It gets its variables one by one, not the whole `.env`.
-- The rate-limit counters live in the backend's memory: it runs one process, so they are exact.
-  Running several backend processes would need a store they share, which this stack does not have.
+- `worker` runs the queued jobs with the same two roles and the same variables as `backend`.
+- `redis` holds the rate-limit counters that the API containers share, and nothing else. If it is
+  down, each container keeps limiting on its own until it returns.
+
+## Scaling on one host
+
+The API and the workers are separate containers, and neither keeps state another one needs: sessions
+are JWTs plus refresh tokens in Postgres, jobs and their status are in Postgres, and rate-limit
+counters are in Redis. Each BM25 index in memory is only a cache, checked against the chunks in
+Postgres on every search.
+
+```bash
+./devops/scripts/compose.sh -f devops/docker-compose.scale.yml up -d --scale backend=2 --scale worker=2
+```
+
+Each worker container runs `WORKER_POOL_SIZE` jobs at once (four by default). Uploads are still files
+in the shared bind mount, so running on several hosts needs shared file storage first.
 
 ## Going public
 
