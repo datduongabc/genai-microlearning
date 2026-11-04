@@ -1,0 +1,101 @@
+[
+  {
+    "luot": "claude-fast-x1",
+    "document_id": "a650d27d-4ff7-4cba-a356-c5fabb61e433",
+    "module_id": "2e37db1d-b4b4-4713-adc3-e0ae24614556",
+    "ok": true,
+    "bat_dau": "2026-11-04T14:26:24.149845+00:00",
+    "ket_thuc": "2026-11-04T14:31:56.674650+00:00",
+    "giay": 332.55
+  },
+  {
+    "luot": "claude-fast-x1",
+    "document_id": "9a657f11-b50d-498a-831e-94eaed7e9a6d",
+    "module_id": "5fe28f5e-c30c-43b2-9a36-065df247edc3",
+    "ok": true,
+    "bat_dau": "2026-11-04T14:31:56.675292+00:00",
+    "ket_thuc": "2026-11-04T14:39:03.476622+00:00",
+    "giay": 427.23
+  },
+  {
+    "luot": "claude-fast-x1",
+    "document_id": "a7c19d5d-9d3f-4f98-a7d3-fc92881dd0c2",
+    "module_id": "718d1bd6-031c-4aae-8378-d596494e81f7",
+    "ok": true,
+    "bat_dau": "2026-11-04T14:39:03.476920+00:00",
+    "ket_thuc": "2026-11-04T14:44:15.137210+00:00",
+    "giay": 311.67
+  },
+  {
+    "luot": "claude-fast-x1",
+    "document_id": "25217533-1bdc-423d-85b6-6212d63a9e68",
+    "module_id": "312d04a9-39f4-4741-a2ba-f5eb8730adb1",
+    "ok": true,
+    "bat_dau": "2026-11-04T14:44:15.137495+00:00",
+    "ket_thuc": "2026-11-04T14:51:24.442767+00:00",
+    "giay": 429.32
+  },
+  {
+    "luot": "claude-fast-x1",
+    "document_id": "041ab983-e8a7-4f12-bc92-07da8d4d8388",
+    "module_id": "f80b677c-362b-46b4-a10a-45eb44a4c433",
+    "ok": true,
+    "bat_dau": "2026-11-04T14:51:24.443213+00:00",
+    "ket_thuc": "2026-11-04T14:57:08.122495+00:00",
+    "giay": 343.69
+  },
+  {
+    "luot": "claude-fast-x1",
+    "tong_ket": true,
+    "dong_thoi": 1,
+    "so_module": 5,
+    "bat_dau": "2026-11-04T14:26:24.149401+00:00",
+    "ket_thuc": "2026-11-04T14:57:08.123276+00:00",
+    "giay": 1844.46
+  },
+  {
+    "luot": "claude-fast-x4",
+    "document_id": "d0304f59-2dd4-448d-861c-f7fce7ef8c22",
+    "module_id": "60e1c73f-9d4c-4c5a-a84f-a9a1dd59dfc9",
+    "ok": true,
+    "bat_dau": "2026-11-04T14:57:08.125159+00:00",
+    "ket_thuc": "2026-11-04T15:02:45.291457+00:00",
+    "giay": 337.18
+  },
+  {
+    "luot": "claude-fast-x4",
+    "document_id": "4a7b6203-987a-4141-b4f1-3d667021905a",
+    "module_id": "85d2f181-0c58-439f-a787-c831f18fa32c",
+    "ok": true,
+    "bat_dau": "2026-11-04T14:57:08.125802+00:00",
+    "ket_thuc": "2026-11-04T15:02:22.334268+00:00",
+    "giay": 314.22
+  },
+  {
+    "luot": "claude-fast-x4",
+    "document_id": "b5b2c169-d9ad-4704-9afe-59a6e1de2109",
+    "module_id": "3b28ed7c-c7a8-48ad-8f35-d0815727207c",
+    "ok": true,
+    "bat_dau": "2026-11-04T14:57:08.126941+00:00",
+    "ket_thuc": "2026-11-04T15:01:31.224935+00:00",
+    "giay": 263.11
+  },
+  {
+    "luot": "claude-fast-x4",
+    "document_id": "5ea6d4d7-3204-494d-af4a-b8c0b3e26e92",
+    "module_id": "7cdc3583-3b0e-448d-8dcd-999753cbdbf5",
+    "ok": true,
+    "bat_dau": "2026-11-04T14:57:08.129272+00:00",
+    "ket_thuc": "2026-11-04T15:02:54.039313+00:00",
+    "giay": 345.93
+  },
+  {
+    "luot": "claude-fast-x4",
+    "tong_ket": true,
+    "dong_thoi": 4,
+    "so_module": 4,
+    "bat_dau": "2026-11-04T14:57:08.124064+00:00",
+    "ket_thuc": "2026-11-04T15:02:54.040471+00:00",
+    "giay": 345.93
+  }
+]
