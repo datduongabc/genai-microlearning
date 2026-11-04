@@ -7,6 +7,7 @@ app/api/modules.py, không đổi hành vi) -- chỉ đổi cách được gọi
 `_generating_document_ids` in-memory lock (bảng jobs giờ là nguồn sự thật
 duy nhất cho "có đang sinh dở không", không cần 2 cơ chế song song)."""
 
+import time
 import uuid
 from dataclasses import dataclass
 
@@ -14,6 +15,7 @@ from sqlalchemy import literal, select
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Session
 
+from app import timing
 from app.db import WorkerSessionLocal
 from app.generation.common import OutputLanguage
 from app.generation.content import generate_content
@@ -325,8 +327,9 @@ def run_module_generation(
     expire_on_commit = db.expire_on_commit
     db.expire_on_commit = False
     try:
-        return _generate_module(db, doc, self_check, use_retrieval, paired_module,
-                                output_language, custom_instructions)
+        with timing.capture_timings() as spans:
+            return _generate_module(db, doc, self_check, use_retrieval, paired_module,
+                                    output_language, custom_instructions, spans)
     finally:
         db.expire_on_commit = expire_on_commit
 
@@ -335,6 +338,7 @@ def _generate_module(
     db: Session, doc: Document, self_check: bool = True,
     use_retrieval: bool = True, paired_module: Module | None = None,
     output_language: OutputLanguage = "vi", custom_instructions: str = "",
+    spans: list[dict] | None = None,
 ) -> Module:
     """Planner -> LO -> Content -> Slides -> Example -> Quiz/Practice ->
     Explanation. Nguyên logic chuyển từ _run_generate_module() cũ
@@ -352,17 +356,21 @@ def _generate_module(
     trừ khối SOURCE CHUNK, và câu hỏi (kèm lời giải) đọc Content thay cho đoạn truy hồi. Các bước
     tự kiểm bỏ những tiêu chí cần nguồn để đối chiếu (groundedness)."""
     # Every source must belong to the module's document, where citations resolve.
+    started = time.perf_counter()
     scope = ChunkScope(doc.id)
     context_chunks = None
     if use_retrieval:
-        planner_out = _get_or_cache_planner(db, doc, output_language, custom_instructions)
+        with timing.stage("planner"):
+            planner_out = _get_or_cache_planner(db, doc, output_language, custom_instructions)
         top_concept = min(planner_out.concepts, key=lambda c: c.priority)
         title = top_concept.name
         query = f"{top_concept.name}: {top_concept.summary}"
         db.commit()
-        context_chunks = retrieve(db, doc.course_id, query, top_k=None, min_k=8, scope=scope)
+        with timing.stage("retrieval"):
+            context_chunks = retrieve(db, doc.course_id, query, top_k=None, min_k=8, scope=scope)
         db.commit()
-        lo = generate_learning_objective(top_concept, context_chunks, output_language=output_language, custom_instructions=custom_instructions)
+        with timing.stage("learning_objective"):
+            lo = generate_learning_objective(top_concept, context_chunks, output_language=output_language, custom_instructions=custom_instructions)
     else:
         if paired_module is None:
             raise ValueError("Sinh không RAG cần module RAG đi cặp để lấy Learning Objective.")
@@ -392,12 +400,14 @@ def _generate_module(
 
     content_context = None
     if use_retrieval:
-        corrected = _retrieve_for_content(db, doc, lo, context_chunks, scope)
-        content_context = expand_with_parent_context(db, corrected.chunks, scope=scope)
+        with timing.stage("content_retrieval"):
+            corrected = _retrieve_for_content(db, doc, lo, context_chunks, scope)
+            content_context = expand_with_parent_context(db, corrected.chunks, scope=scope)
         db.commit()
-    content_out, content_check = generate_content(
-        lo, content_context, self_check=self_check, output_language=output_language, custom_instructions=custom_instructions,
-    )
+    with timing.stage("content"):
+        content_out, content_check = generate_content(
+            lo, content_context, self_check=self_check, output_language=output_language, custom_instructions=custom_instructions,
+        )
     # Nhánh không RAG giữ nguyên hình dạng thành phần Content: không có nguồn nên không có trích dẫn,
     # và không chấm độ liên quan (None).
     content_component = ModuleComponent(
@@ -414,22 +424,25 @@ def _generate_module(
     )
 
     lesson_text = MARKER.sub("", content_out.content)
-    slides_out = generate_slides(lo, lesson_text, output_language=output_language, custom_instructions=custom_instructions)
+    with timing.stage("slides"):
+        slides_out = generate_slides(lo, lesson_text, output_language=output_language, custom_instructions=custom_instructions)
     slides_component = ModuleComponent(
         module_id=module.id, type=ComponentType.slides,
         content={"slides": [s.model_dump() for s in slides_out.slides]},
     )
 
-    example_out = generate_example(lo, lesson_text, context_chunks, output_language=output_language, custom_instructions=custom_instructions)
+    with timing.stage("example"):
+        example_out = generate_example(lo, lesson_text, context_chunks, output_language=output_language, custom_instructions=custom_instructions)
     example_component = ModuleComponent(
         module_id=module.id, type=ComponentType.example,
         content={"examples": [e.model_dump() for e in example_out.examples]},
     )
 
     lesson = None if use_retrieval else lesson_text
-    asked = _generate_questions(
-        db, doc, lo, query, scope, self_check, lesson=lesson, output_language=output_language, custom_instructions=custom_instructions,
-    )
+    with timing.stage("questions"):
+        asked = _generate_questions(
+            db, doc, lo, query, scope, self_check, lesson=lesson, output_language=output_language, custom_instructions=custom_instructions,
+        )
 
     # The Explanation component is what each question already wrote along with its answer: its
     # reasoning, written before the choices, and the explanation drawn from it, both checked along
@@ -461,6 +474,11 @@ def _generate_module(
         db.add(ModuleComponent(module_id=module.id, type=ComponentType.explanation, content={"items": items}))
 
     module.generation_models = recorded_models()
+    if spans is not None:
+        module.generation_timings = {
+            "total_seconds": round(time.perf_counter() - started, 4),
+            "summary": timing.summarize(spans), "spans": list(spans),
+        }
     db.commit()
     db.refresh(module)
     return module
