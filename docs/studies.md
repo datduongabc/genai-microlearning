@@ -82,8 +82,9 @@ judge để chấm cả các đơn vị mới.
 
 Các trường chấm của bảng `ratings` khớp `ModuleEvaluation` và
 [rubric dùng chung](rubric.md), không thêm cột điểm số thứ chín. `rater_kind`
-là `human` kèm `user_id`, hoặc `llm_judge` không có `user_id`. Mỗi người và
-LLM judge có tối đa một lượt chấm trên một đơn vị; `judge_alias` và `judge_model`
+là `human` kèm `user_id`, hoặc `llm_judge` không có `user_id`. Mỗi người có
+tối đa một lượt chấm trên một đơn vị; mỗi hãng LLM có tối đa một hàng theo
+unique index `(study_item_id, judge_family)`. `judge_alias` và `judge_model`
 lưu alias cùng model thực sự đã phục vụ. Bảng này độc lập với
 `evaluations` của pipeline.
 
@@ -156,49 +157,27 @@ một lượt chấm đã có.
 `POST /studies/{id}/judge` xếp một job `study_judge` vào hàng đợi nền hiện có
 và trả về ngay; request không chờ LLM. Job chấm lần lượt mọi đơn vị của nghiên
 cứu bằng `judge_module` trong `app/generation/evaluation.py`, trên chính gói
-tự chứa mà người chấm nhìn thấy, rồi ghi một hàng `llm_judge` vào `ratings` cho
-mỗi đơn vị: tám điểm kèm lý do, `hallucination_findings` và `overall_notes`.
+tự chứa mà người chấm nhìn thấy, với mục tiêu hoàn tất hai alias chấm chung cho
+mỗi cặp theo [rubric mục 1](rubric.md#1-thiết-kế-nghiên-cứu). Mỗi lượt lưu một
+hàng `llm_judge` vào `ratings`: tám điểm kèm lý do, `hallucination_findings` và
+`overall_notes`. Lượt của alias bị bỏ dở giữa cặp vẫn được giữ, nên một đơn vị
+có thể có thêm điểm ngoài hai alias chung đã hoàn tất.
 Rubric và prompt không đổi.
 
-- **Model chấm.** Cố định là `groq-pro` (gpt-oss-120b trên Groq); request
-  không chọn được model khác. Nếu gateway không có alias này, hoặc nó cùng
-  hãng với model đã sinh bất kỳ đơn vị nào, request bị từ chối 422, dùng chung
-  phép kiểm hãng với `scripts/run_judge.py` (`app/llm/judge.py`). Gateway
-  không trả lời được thì nhận 503. Hãng của đơn vị lấy từ
-  `study_items.generation_models` (model thực sự phục vụ), nếu thiếu thì từ
-  alias `generator_model`, nếu cũng thiếu (đơn vị nạp trước revision 0020) thì
-  coi như alias mặc định của cấu hình; hai cột này nằm ngoài gói nên không lộ
-  cho người chấm. Gói người soạn không có model sinh nên không bị kiểm.
-- **Ghim model.** Lượt chấm chạy ở chế độ thí nghiệm (`disable_fallbacks`).
-  `ratings.judge_model` là model gateway báo đã phục vụ câu trả lời được dùng;
-  nếu bất kỳ lệnh gọi nào của đơn vị (kể cả lần hỏi lại) do model khác model
-  của alias lúc xếp job phục vụ thì đơn vị bị ghi lỗi và không lưu điểm.
-- **Chạy lại.** Mỗi lần gọi là một job mới chấm mọi đơn vị hiện có. Chấm lại
-  thay hàng `llm_judge` cũ của đơn vị chứ không thêm hàng. Khi một job chấm
-  còn `queued`/`running`, lần gọi thứ hai và việc nạp thêm đơn vị nhận 409.
-- **Lỗi từng đơn vị.** Lỗi tạm thời (hết quota, mạng) được thử lại có back-off
-  trên đúng đơn vị đó; JSON bị cắt hoặc sai rubric được hỏi lại tối đa hai lần
-  trong cùng lượt gọi. Hết lượt thử hoặc lỗi không thử lại được (JSON vẫn sai
-  sau khi hỏi lại, gói quá lớn) được ghi vào `results` với `status: failed` và job chấm
-  tiếp đơn vị sau. Job kết thúc `done` kể cả khi có đơn vị lỗi; đọc `results`.
-- **Giới hạn Groq.** Dùng bậc **trả phí**, với `tpm: 250000` và
-  `max_input_tokens: 128000`, chừa chỗ cho schema và 2.048 token đầu ra trong
-  [cửa sổ 131.072 token](https://console.groq.com/docs/models). Toàn bộ gói
-  (nguồn, nội dung, slide, ví dụ, quiz và practice) được chấm **trong một lệnh
-  gọi**, không tách thành phần. Job đọc giới hạn từ gateway và đếm prompt như
-  gateway; vượt giới hạn thì ghi `Packet too large ...`, không gọi Groq, không
-  thử lại và không cắt gói. Lỗi cửa sổ ngữ cảnh từ gateway cũng không thử lại.
-  Gateway giữ lưu lượng dưới `tpm` đã khai báo; hạn mức tài khoản và lưu lượng
-  khác vẫn có thể gây 429, được thử lại có back-off. Phải bật billing trên tài khoản Groq; bậc miễn phí
-  8.000 TPM không đủ cho gói toàn module khoảng 9.600–12.600 token.
+- **Model chấm.** Pool, thứ tự ưu tiên và hãng ở [rubric mục 1](rubric.md#1-thiết-kế-nghiên-cứu). Mỗi đơn vị chọn hai hãng khác nhau và khác tất cả model thực sự sinh gói; dùng guard chung với CLI. Provenance lấy từ `generation_models`, rồi `generator_model`, rồi alias mặc định cho dữ liệu cũ. Gói người soạn không có hãng sinh. Gateway không trả lời nhận 503; thiếu hai hãng hợp lệ nhận 422 trước khi xếp job.
+- **Ghim model.** Chạy thí nghiệm (`disable_fallbacks`); lưu `judge_alias`, `judge_model` và `judge_family`. Sai model được ghim ở bất kỳ lệnh gọi nào của lượt chấm, kể cả lần hỏi lại, thì không lưu điểm.
+- **Theo cặp.** Migration 0022 thêm `study_items.pair_id` (id module RAG, chung cho hai đơn vị của cặp). Mỗi bước xử lý cả cặp theo quy tắc ở [rubric mục 1](rubric.md#1-thiết-kế-nghiên-cứu); lượt của alias bị bỏ dở được thử hoàn tất trước ở lần chạy sau. Đơn vị nạp trước 0022 không có `pair_id` được chấm riêng.
+- **Chạy lại.** Giữ điểm đã hoàn tất, chỉ chấm phần thiếu. Job đang chạy ngăn xếp trùng và nạp thêm đơn vị.
+- **Lỗi từng đơn vị.** JSON bị cắt hoặc sai rubric được hỏi lại tối đa hai lần trong cùng lượt gọi. Các lỗi được thay ứng viên theo [rubric mục 1](rubric.md#1-thiết-kế-nghiên-cứu). Lỗi tạm thời khác được retry có back-off trên bước hiện tại. Nếu không đủ hai alias, hoặc lỗi khác không thử lại được hay đã hết retry, đơn vị được ghi `status: pending` kèm `error` trong `results` và job chấm tiếp đơn vị sau; job kết thúc `done`. `POST /studies/{id}/judge` tạo job mới chỉ chấm phần còn thiếu.
+- **Ngân sách.** Đếm toàn prompt theo `max_input_tokens` của alias; không chia hoặc cắt gói. Không có cam kết miễn phí cho toàn pool: không gọi API trả phí trong kiểm thử, mọi provider được mock.
 
 Migration 0020 giữ trigger khóa nghiên cứu, cấm sửa danh tính lượt chấm và
 cấm ghi khi `closed`. Chỉ vai trò `app_worker` được bỏ qua kiểm lời mời khi
 đang ghi hàng `llm_judge`; ghi hàng `human` vẫn phải qua kiểm lời mời/admin.
 
-`GET /studies/{id}/judge/{job_id}` trả `status`, `judge_alias`, `judge_model`,
-`total`, `completed`, `results` (mỗi phần tử có `item_id`, `status`, và
-`judge_model` hoặc `error`) và `last_error` của lượt thử gần nhất. Job đã xong
+`GET /studies/{id}/judge/{job_id}` trả `status`, `required_ratings_per_item`, `pending_item_ids`
+(đơn vị `pending` và chưa tới lượt), `total`, `completed` (số đơn vị `done`), `results` (mỗi phần tử có `item_id`, `status`, và
+`judge_models` hoặc `error`) và `last_error` của lượt thử gần nhất. Job đã xong
 bị dọn theo lịch dọn job chung; điểm vẫn nằm trong `ratings`.
 
 ```sh
@@ -216,9 +195,8 @@ chiếu; muốn xóa nguồn phải xử lý nghiên cứu liên quan trước. 
 tài liệu hoặc môn học chứa module đang được tham chiếu trả HTTP 409 trước
 khi xóa tệp tải lên; xung đột khóa ngoại lúc commit cũng rollback và trả 409.
 
-Các script R8 `export_study_pair.py`, `run_judge.py`, `analyze_study.py` và định
-dạng JSON của chúng giữ nguyên. Nhập trực tiếp cặp JSON xuất sẵn chưa nằm
-trong API này.
+Quy trình CLI R8 và định dạng kết quả ở [rubric mục 6](rubric.md#6-quy-trình-chạy-và-phân-tích).
+Nhập trực tiếp cặp JSON xuất sẵn chưa nằm trong API này.
 
 Khi nhập cặp AI vào nghiên cứu hoặc xuất bằng CLI, mỗi component đã sửa dùng
 `ai_original` đã lưu, gồm cả các hàng câu hỏi và lời giải gốc. Component chưa có

@@ -9,6 +9,7 @@ _FAMILY_BY_NAME = (
     ("gpt", "openai"),
     ("llama", "meta"),
     ("qwen", "alibaba"),
+    ("minimax", "minimax"),
 )
 
 
@@ -44,3 +45,27 @@ def refuse_same_family(judge: str, generators: list[tuple[str, str | None, list]
             )
     return models[judge]
 
+
+# Ordered preferred families, then explicitly pinned Groq alternatives.
+JUDGE_POOL = ("claude-pro", "openai-pro", "gemini-fast", "groq-llama", "groq-qwen", "groq-minimax")
+
+
+def eligible_judges(generators: list[tuple[str, str | None, list]], model_info: list[dict]) -> list[dict]:
+    """Use the same provenance guard for initial selection and substitutes."""
+    candidates = []
+    for alias in JUDGE_POOL:
+        if not any(m["model_name"] == alias for m in model_info):
+            continue
+        try:
+            model = refuse_same_family(alias, generators, model_info)
+        except ValueError:
+            continue
+        declared = next(m for m in model_info if m["model_name"] == alias).get("model_info") or {}
+        candidates.append({"alias": alias, "model": model,
+                           "max_input_tokens": declared.get("max_input_tokens")})
+    return candidates
+
+
+def is_quota_error(exc: Exception) -> bool:
+    import litellm
+    return isinstance(exc, litellm.RateLimitError) or getattr(exc, "status_code", None) == 429

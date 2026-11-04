@@ -112,8 +112,7 @@ model_list:
       display_name: Claude Sonnet 5.5
       note: chất lượng cao hơn, chậm hơn
 
-  # Paid Groq tier: the study judge alias (whole packets in one call) and a lecturer
-  # opt-in model. Modules generated with it are excluded from judging (same family).
+  # Paid Groq tier: lecturer opt-in model; GPT-OSS is not in the judge pool.
   # https://console.groq.com/docs/models (131,072 context; 250K TPM).
   # Text generation only: litellm's model table has no groq embedding model.
   - model_name: groq-pro
@@ -126,9 +125,34 @@ model_list:
       api_key: os.environ/GROQ_API_KEY
     model_info:
       display_name: GPT-OSS 120B qua Groq
-      note: trả phí, chấm toàn bộ gói nghiên cứu (250.000 TPM)
+      note: trả phí, model sinh tùy chọn (250.000 TPM)
       max_input_tokens: 128000
       max_output_tokens: 2048
+
+  # Evaluation alternatives verified against https://console.groq.com/docs/models (2026-10-17).
+  - model_name: groq-llama
+    litellm_params:
+      model: groq/llama-3.3-70b-versatile
+      api_key: os.environ/GROQ_API_KEY
+    model_info:
+      display_name: llama-3.3-70b-versatile qua Groq
+      max_input_tokens: 128000
+
+  - model_name: groq-qwen
+    litellm_params:
+      model: groq/qwen/qwen3.8-27b
+      api_key: os.environ/GROQ_API_KEY
+    model_info:
+      display_name: qwen/qwen3.8-27b qua Groq
+      max_input_tokens: 128000
+
+  - model_name: groq-minimax
+    litellm_params:
+      model: groq/minimaxai/minimax-m2.7
+      api_key: os.environ/GROQ_API_KEY
+    model_info:
+      display_name: minimaxai/minimax-m2.7 qua Groq
+      max_input_tokens: 128000
 
   # Internal small-step profiles keep the same primary model. Only bounded
   # requests use these; Content, Slides and Example use the large-safe aliases.

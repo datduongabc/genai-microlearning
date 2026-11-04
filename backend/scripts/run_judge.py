@@ -1,21 +1,11 @@
-"""Chấm một thư mục gói nghiên cứu bằng LLM chấm theo rubric chín tiêu chí (docs/rubric.md).
+"""Chấm mỗi gói bằng hai hãng khác nhau và khác hãng sinh.
 
-    PYTHONPATH=. uv run python scripts/run_judge.py <thư mục gói> --judge <alias> --out <tệp .jsonl>
+    PYTHONPATH=. uv run python scripts/run_judge.py <folder> --out <ratings.jsonl>
 
-Thư mục là đầu ra của scripts/export_study_pair.py, mỗi tệp một StudyFile. Mỗi gói ra một dòng JSON
-trong tệp kết quả: mã ẩn danh, mã cặp, nhóm, mô hình chấm và bản chấm đầy đủ. scripts/analyze_study.py
-đọc tệp này.
-
-Mô hình chấm phải khác hãng với mô hình đã sinh gói, vì mô hình chấm thường ưu ái văn của chính họ nhà
-mình (self-preference bias). Hãng là nơi làm ra model chứ không phải nơi phục vụ nó: gpt-oss chạy trên
-Groq vẫn là model của OpenAI. Kiểm cho mọi gói trước khi gọi lượt nào, để một thư mục lẫn gói không
-hợp lệ không tốn tiền nửa chừng rồi mới dừng.
-
-Chạy lại với cùng tệp kết quả thì chỉ chấm những gói mô hình chấm này còn thiếu: lượt chấm bị
-ngắt giữa chừng (hết hạn mức, mất mạng) không phải gọi lại cho phần đã xong. Mô hình chấm khác ghi vào
-cùng tệp thì chấm đủ mọi gói; scripts/analyze_study.py tách các dòng theo mô hình chấm.
-
-Tốn một lượt gọi LLM thật cho mỗi gói, qua gateway; điều kiện chạy miễn phí ở docs/rubric.md, mục 6.
+Pool và quy tắc thay ứng viên ở docs/rubric.md, mục 1.
+Hai gói của một cặp cần hoàn tất cùng hai alias chấm. Ghi alias và
+model thực sự phục vụ từng lượt. Chạy lại giữ điểm đã xong, chỉ gọi cho phần
+thiếu. Cặp lỗi hoặc hết ứng viên được báo cuối lượt; các cặp sau vẫn được chấm.
 """
 
 import argparse
@@ -29,6 +19,7 @@ from app.generation.study_packets import StudyFile
 from app.llm import gateway
 from app.llm.catalog import fetch_model_info
 from app.llm.judge import refuse_same_family
+from app.study.judge import judge_pair
 
 
 def anon_code(path: Path) -> str:
@@ -75,29 +66,53 @@ def main(argv: list[str] | None = None) -> None:
     sys.stdout.reconfigure(encoding="utf-8")
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("packets", type=Path, help="thư mục các tệp gói .json")
-    parser.add_argument("--judge", required=True, help="alias gateway của mô hình chấm, ví dụ claude-pro")
     parser.add_argument("--out", type=Path, required=True, help="tệp .jsonl ghi kết quả")
     args = parser.parse_args(argv)
 
     studies = _load(args.packets)
-    judge_model = _refuse_same_family(args.judge, studies)
-    done = _already_judged(args.out)
-
+    catalog = fetch_model_info()
+    done = _already_judged(args.out)  # Also repairs an interrupted final JSONL write before resuming.
     args.out.parent.mkdir(parents=True, exist_ok=True)
-    with args.out.open("a", encoding="utf-8") as out, gateway.experiment_mode(), gateway.using_model(args.judge):
-        for path, study in studies:
-            code = anon_code(path)
-            if (code, args.judge) in done:
+    pairs: dict[str, list[tuple[Path, StudyFile]]] = {}
+    for path, study in studies:
+        pairs.setdefault(study.pair_id, []).append((path, study))
+    pending = []
+    with args.out.open("a", encoding="utf-8") as out, gateway.experiment_mode():
+        for members in pairs.values():
+            by_code = {anon_code(path): (path, study) for path, study in members}
+            packets = {code: study.packet.model_copy(update={"anon_id": code}) for code, (_, study) in by_code.items()}
+            rated = {code: {judge for anon_id, judge in done if anon_id == code} for code in by_code}
+            generators = [(path.name, study.generator_model, study.generation_models)
+                          for path, study in members if study.group != "human"]
+
+            def rate(code, packet, candidate):
+                path, study = by_code[code]
+                alias, expected = candidate["alias"], candidate["model"]
+                with gateway.using_model(alias), gateway.capture_models() as calls:
+                    evaluation = judge_module(packet, max_retries=0)
+                if evaluation.anon_id != code:
+                    raise ValueError("Judge returned a different anonymous item code")
+                if len(calls) != 1 or calls[0]["served_model"].split("/")[-1] != expected.split("/")[-1]:
+                    raise ValueError("Gateway did not report the pinned judge model")
+                served = calls[0]["served_model"]
+                line = {"anon_id": code, "pair_id": study.pair_id, "group": study.group,
+                        "judge": alias, "judge_model": served, "evaluation": evaluation.model_dump()}
+                out.write(json.dumps(line, ensure_ascii=False) + "\n")
+                out.flush()
+                print(f"{path.name} -> {code}: {alias} ({served})")
+
+            codes = ", ".join(by_code)
+            try:
+                missing, errors = judge_pair(packets, generators, catalog, rated, rate)
+            except Exception as exc:
+                pending.append(f"{codes}: rating pending: {str(exc)[:200]} (rerun to resume)")
                 continue
-            evaluation = judge_module(study.packet.model_copy(update={"anon_id": code}))
-            line = {
-                "anon_id": code, "pair_id": study.pair_id, "group": study.group,
-                "judge": args.judge, "judge_model": judge_model, "evaluation": evaluation.model_dump(),
-            }
-            # Ghi và đẩy xuống đĩa từng dòng: bị ngắt thì những gói đã chấm vẫn còn.
-            out.write(json.dumps(line, ensure_ascii=False) + "\n")
-            out.flush()
-            print(f"{path.name} -> {code}")
+            for error in errors:
+                print(f"{codes}: {error}", file=sys.stderr)
+            if missing:
+                pending.append(f"{codes}: missing {missing}/2 ratings (rerun to resume)")
+    if pending:
+        raise SystemExit("\n".join(pending))
 
 
 if __name__ == "__main__":
