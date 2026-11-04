@@ -827,4 +827,15 @@ describe('CourseDetailPage - OCR warnings', () => {
     expect(await screen.findByText(/OCR không đọc được các trang 2, 5, 9\./)).toBeInTheDocument()
     expect(screen.getAllByText(/OCR không đọc được/)).toHaveLength(1)
   })
+
+  it('asks to check the formulas of pages whose formulas could not be re-read', async () => {
+    vi.mocked(api.listCourses).mockResolvedValue([unlinkedCourse])
+    vi.mocked(api.listDocuments).mockResolvedValue([{
+      ...sampleDocument, extraction_warnings: [{ code: 'formula_unverified', page: 7 }, ocrWarning(2)],
+    }])
+    renderPage()
+    expect(await screen.findByText(/Công thức có thể đọc chưa đúng ở trang 7\. Hãy soát lại công thức/))
+      .toBeInTheDocument()
+    expect(screen.getByText(/OCR không đọc được trang 2\. Nội dung có thể thiếu/)).toBeInTheDocument()
+  })
 })

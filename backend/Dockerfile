@@ -17,6 +17,9 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y --no-install-recommends \
     tesseract-ocr tesseract-ocr-vie ffmpeg \
     && rm -rf /var/lib/apt/lists/*
+# Hinh trong slide duoc OCR song song, moi anh mot tien trinh Tesseract: de moi tien trinh
+# tu chia them luong thi chung tranh nhau CPU va cham hon chay tuan tu.
+ENV OMP_THREAD_LIMIT=1
 
 RUN pip install --no-cache-dir uv
 

@@ -84,6 +84,12 @@ function failureTitle(failure: DocumentFailure): string {
 
 const WARNING_LABEL: Record<string, string> = {
   ocr_failed: "OCR không đọc được",
+  formula_unverified: "Công thức có thể đọc chưa đúng ở",
+};
+
+const DEFAULT_WARNING_ADVICE = "Nội dung có thể thiếu; hãy kiểm tra hoặc tải lại bản PDF có lớp chữ.";
+const WARNING_ADVICE: Record<string, string> = {
+  formula_unverified: "Hãy soát lại công thức của các trang này trước khi dùng nội dung sinh ra.",
 };
 
 function extractionWarningLines(warnings: DocumentInfo["extraction_warnings"]) {
@@ -92,7 +98,7 @@ function extractionWarningLines(warnings: DocumentInfo["extraction_warnings"]) {
   return [...pagesByCode].map(([code, pages]) => ({
     code,
     text: `${WARNING_LABEL[code] ?? code} ${pages.length > 1 ? "các trang" : "trang"} ${pages.sort((a, b) => a - b).join(", ")}. `
-      + "Nội dung có thể thiếu; hãy kiểm tra hoặc tải lại bản PDF có lớp chữ.",
+      + (WARNING_ADVICE[code] ?? DEFAULT_WARNING_ADVICE),
   }));
 }
 
