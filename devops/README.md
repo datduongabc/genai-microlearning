@@ -7,8 +7,8 @@ and it points `env_file` at `devops/.env`, the single env file the compose stack
 
 ## What is here
 
-- `docker-compose.yml`: the whole stack (database, Moodle, migrate, backend, frontend, LLM gateway, HTTPS proxy).
-- `gateway/`: the LLM gateway image and its model routing. Every model is called through a provider's API, none is served locally.
+- `docker-compose.yml`: the whole stack (database, Moodle, migrate, backend, frontend, LLM gateway, local embedder and reranker, HTTPS proxy).
+- `gateway/`: the LLM gateway image and its model routing. Chat and transcription models are called through a provider's API; embeddings and reranking run locally in the `embedder` and `reranker` services.
 - `moodle/`: the Moodle image.
 - `caddy/Caddyfile`: the HTTPS proxy in front of the frontend and the API (`/api`).
 - `scripts/rotate_secrets.py`: replaces the database and Moodle admin passwords everywhere they live.
