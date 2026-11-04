@@ -557,7 +557,7 @@ def _transcribe_piece(path: str, offset: float, deadline: float,
             transient = rate_limited or isinstance(exc, (
                 APIConnectionError, Timeout, InternalServerError, BadGatewayError, ServiceUnavailableError,
                 openai.APIConnectionError, openai.InternalServerError,
-            ))
+            )) or (isinstance(exc, openai.APIStatusError) and exc.status_code == 408)
             headers = getattr(getattr(exc, "response", None), "headers", {})
             try:
                 delay = float(headers.get("retry-after", 60 if rate_limited else 2 ** attempt))

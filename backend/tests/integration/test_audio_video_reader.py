@@ -140,6 +140,8 @@ def _rate_limit(retry_after="2"):
     openai.RateLimitError("quota", response=httpx.Response(429, headers={"retry-after": "2"},
         request=httpx.Request("POST", "http://x")), body=None),
     openai.APIConnectionError(request=httpx.Request("POST", "http://x")),
+    # The gateway answers its own upstream timeout with 408, which has no dedicated client error.
+    openai.APIStatusError("timed out", response=httpx.Response(408, request=httpx.Request("POST", "http://x")), body=None),
     BadGatewayError("bad gateway", "groq", "transcribe"),
     ServiceUnavailableError("over capacity", "groq", "transcribe"),
 ])
@@ -241,6 +243,8 @@ def test_permanently_failed_segment_stops_after_three_attempts():
 
 @pytest.mark.parametrize("error", [
     openai.APIConnectionError(request=httpx.Request("POST", "http://x")),
+    # The gateway answers its own upstream timeout with 408, which has no dedicated client error.
+    openai.APIStatusError("timed out", response=httpx.Response(408, request=httpx.Request("POST", "http://x")), body=None),
     BadGatewayError("bad gateway", "groq", "transcribe"),
     ServiceUnavailableError("over capacity", "groq", "transcribe"),
 ])
