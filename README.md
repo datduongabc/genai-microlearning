@@ -6,7 +6,7 @@ Sinh viên: Dương Nguyễn Tấn Đạt, ngành Khoa học Máy tính.
 Hệ thống nhận tài liệu môn học của giảng viên (PDF, PowerPoint, HTML, video), truy xuất bằng RAG, rồi sinh mô-đun Microlearning gồm bảy thành phần: Learning Objective, Content, Slides, Example, Practice, Quiz, Explanation.
 Mô-đun sau đó được xuất bản sang Moodle cho học viên học.
 
-Mọi tài liệu được xử lý như bài giảng thông thường: không chọn loại giáo trình, không phát hiện mục lục và không sinh theo chương/mục. API sinh mô-đun trả 422 nếu request còn gửi `section_ids`; hãy bỏ trường này để sinh cho cả tài liệu. Đợt đánh giá chỉ dùng bốn thư mục trong `docs/documents`: `dsa`, `operating-system`, `program-fundamentals`, `web-programming`.
+Mọi tài liệu được xử lý như bài giảng thông thường: không chọn loại giáo trình, không phát hiện mục lục và không sinh theo chương/mục. API sinh mô-đun trả 422 nếu request còn gửi `section_ids`; hãy bỏ trường này để sinh cho cả tài liệu. Đợt đánh giá chỉ dùng năm thư mục trong `docs/documents`: `advanced-programming`, `calculus 1`, `machine-learning`, `operating-system`, `scientific-socialism`.
 
 Model trả phí cho đợt đánh giá được chọn tường minh và ghim bằng `LLM_EXPERIMENT_MODE=true`; xem lựa chọn model, embedding và chính sách fallback tại [gateway routing](docs/gateway-routing.md).
 
@@ -39,8 +39,6 @@ Tài khoản có ít nhất một khóa học ứng dụng liên kết với kh�
 ## Tài liệu
 
 - Đề tài: `GenerativeAI.md`
-- Thiết kế kiến trúc Giai đoạn 2: `docs/specs/2026-09-23-kien-truc-gd2-design.md`
-- Kế hoạch thực thi: `docs/plans/`
 - Đánh giá R8 và metric claim/trích dẫn R9: [docs/rubric.md](docs/rubric.md), gồm xuất cặp gói, chấm riêng Content, phân tích kết quả đã lưu và điều kiện chạy miễn phí.
 - Thiết lập nghiên cứu R18 qua API admin và chấm mù theo lời mời: [docs/studies.md](docs/studies.md).
 
@@ -84,7 +82,7 @@ cp devops/.env.example devops/.env
    Kiểm tra phiên bản database bằng:
 
    ```bash
-   docker compose exec db psql -U "$DATABASE_USER" -d microlearning \
+   docker compose exec db psql -U "$DATABASE_USER" -d "$MOODLE_DB_NAME" \
      -c "select value from mdl_config where name = 'release'"
    ```
 

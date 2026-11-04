@@ -66,9 +66,11 @@ GOC = Path(__file__).resolve().parents[2]
 GOC_TAI_LIEU = Path(os.environ.get("BENCHMARK_DOCUMENTS") or GOC / "docs" / "documents")
 THU_MUC_KET_QUA = Path(os.environ.get("BENCHMARK_KET_QUA") or GOC / "docs" / "measurements")
 
-# Chỉ bốn môn của đợt đánh giá; lấy toàn bộ tệp theo thứ tự cố định.
-# Kết quả cũ đo trên tập tệp bị giới hạn mỗi môn nên không so sánh trực tiếp được với lần đo này.
-MON = ("dsa", "operating-system", "program-fundamentals", "web-programming")
+# Năm môn của đợt đánh giá, đúng tên thư mục trong docs/documents; lấy toàn bộ tệp theo thứ
+# tự cố định. Bao phủ đủ các dạng đầu vào: pptx (advanced-programming, scientific-socialism), PDF
+# tiếng Anh (operating-system), PDF toán tiếng Việt (calculus 1) và bài giảng ghi hình/ghi âm
+# (machine-learning, đọc qua Whisper). Kết quả đo trên tập môn cũ không so sánh trực tiếp được.
+MON = ("advanced-programming", "calculus 1", "machine-learning", "operating-system", "scientific-socialism")
 
 TRUY_VAN_MOI_MON = 50
 # Chunk quá ngắn không đủ chi tiết để đặt một câu hỏi chỉ nó trả lời được, nên
@@ -85,9 +87,11 @@ CAU_HINH = ("dense", "hybrid", "hybrid+rerank")
 # Bộ câu hỏi của lần đo 2026-09-26, nhúng bằng Qwen3. Bộ cũ (truy_van.json, thu_hang.json,
 # ket_qua.json) giữ nguyên làm lịch sử: đáp án của nó là chunk trong một database đã mất,
 # nên không chấm lại được trên chunk mới.
-TEP_TRUY_VAN = "truy_van_qwen3.json"
-TEP_THU_HANG = "thu_hang_qwen3.json"
-TEP_KET_QUA = "ket_qua_qwen3.json"
+# Bộ của lần đo 5 môn (2026-11-01); các bộ trước giữ nguyên làm lịch sử.
+TEP_TRUY_VAN = "truy_van_5mon.json"
+TEP_THU_HANG = "thu_hang_5mon.json"
+TEP_KET_QUA = "ket_qua_5mon.json"
+TEP_NAP = "nap_5mon.json"
 
 # groq-pro (gpt-oss-120b) nay ở gói trả phí, trần thật cao hơn nhiều. 8.000 token mỗi phút
 # là nhịp cố ý giữ chậm để chặn chi phí, không phải hạn mức gói miễn phí: chờ sau mỗi câu
@@ -146,6 +150,10 @@ def nap(db: Session, cac_mon: list[str]) -> None:
         db.flush()
 
     tong_chunk = 0
+    # Thời gian từng tệp (đọc gồm OCR/ASR, cắt, nhúng), cộng dồn với các môn đã nạp trước đó.
+    tep_nap = _tep_ket_qua(TEP_NAP)
+    thoi_gian = [d for d in (json.loads(tep_nap.read_text(encoding="utf-8")) if tep_nap.exists() else [])
+                 if d["course"] not in cac_mon]
     for mon in cac_mon:
         # Nạp lại một môn đã có là nhúng lại toàn bộ chunk của nó, tốn hạn mức vô ích.
         # Muốn nạp lại thì xoá course đó trước.
@@ -158,8 +166,11 @@ def nap(db: Session, cac_mon: list[str]) -> None:
         print(f"\n=== {mon}")
 
         for tep in _cac_tep(mon):
+            t0 = time.perf_counter()
             units = read_document(str(tep), course_id=str(khoa.id), source_id=None)
+            t1 = time.perf_counter()
             cac_chunk = chunk_units(units, title=document_title(tep.name))
+            t2 = time.perf_counter()
             tai_lieu = Document(
                 id=uuid.uuid4(), course_id=khoa.id, filename=tep.name,
                 status=DocumentStatus.embedded,
@@ -168,6 +179,7 @@ def nap(db: Session, cac_mon: list[str]) -> None:
             db.flush()
 
             vectors = embed_texts([c.content for c in cac_chunk])
+            t3 = time.perf_counter()
             for chi_so, (c, vector) in enumerate(zip(cac_chunk, vectors, strict=True)):
                 db.add(Chunk(
                     id=uuid.uuid4(), document_id=tai_lieu.id, course_id=khoa.id,
@@ -178,7 +190,15 @@ def nap(db: Session, cac_mon: list[str]) -> None:
                 ))
             db.commit()
             tong_chunk += len(cac_chunk)
-            print(f"  {tep.name[:52]:<52} {len(cac_chunk):>4} chunk")
+            thoi_gian.append({
+                "course": mon, "file": tep.name, "bytes": tep.stat().st_size,
+                "units": len(units), "chunks": len(cac_chunk),
+                "warnings": sum(len(u.warnings) for u in units),
+                "read_s": round(t1 - t0, 3), "chunk_s": round(t2 - t1, 3), "embed_s": round(t3 - t2, 3),
+                "total_s": round(time.perf_counter() - t0, 3),
+            })
+            _tep_ket_qua(TEP_NAP).write_text(json.dumps(thoi_gian, ensure_ascii=False, indent=2), encoding="utf-8")
+            print(f"  {tep.name[:52]:<52} {len(cac_chunk):>4} chunk  đọc {t1 - t0:7.1f}s  nhúng {t3 - t2:6.1f}s")
 
     print(f"\n=== đã nhúng {tong_chunk} chunk")
 

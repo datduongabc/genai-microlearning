@@ -128,12 +128,12 @@ def test_partial_run_drops_old_subjects_from_aggregate(tmp_path, monkeypatch):
     (tmp_path / benchmark.TEP_TRUY_VAN).write_text('[]')
     old = [
         {'course': course, 'thu_hang': {name: rank for name in benchmark.CAU_HINH}}
-        for course, rank in [('web-programming', 1), ('advanced-programming', None), ('chemistry1', None)]
+        for course, rank in [('operating-system', 1), ('dsa', None), ('chemistry1', None)]
     ]
     (tmp_path / benchmark.TEP_THU_HANG).write_text(json.dumps(old))
     db = SimpleNamespace(query=lambda model: SimpleNamespace(all=list))
-    benchmark.danh_gia(db, ['dsa'])
+    benchmark.danh_gia(db, ['calculus 1'])
     result = json.loads((tmp_path / benchmark.TEP_KET_QUA).read_text())
     assert result['dense']['chung']['recall@1'] == 1
-    assert set(result['dense']['tung_mon']) == {'web-programming'}
-    assert {row['course'] for row in json.loads((tmp_path / benchmark.TEP_THU_HANG).read_text())} == {'web-programming'}
+    assert set(result['dense']['tung_mon']) == {'operating-system'}
+    assert {row['course'] for row in json.loads((tmp_path / benchmark.TEP_THU_HANG).read_text())} == {'operating-system'}
