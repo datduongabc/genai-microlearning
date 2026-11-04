@@ -229,6 +229,8 @@ def _chunk_page_level(units: list[DocumentUnit], chunks: list[Chunk]) -> None:
         buffer_locators.clear()
 
     for unit in units:
+        if not unit.text.strip():
+            continue
         unit_key = _group_key(unit.locator)
         if buffer_text and unit_key is not None:
             buffer_keys = {_group_key(loc) for loc in buffer_locators if _group_key(loc) is not None}

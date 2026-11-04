@@ -22,7 +22,7 @@ from app.models import (
     Evaluation,
     ModuleComponent,
 )
-from tests.integration.generation_helpers import OUTPUTS
+from tests.integration.generation_helpers import OUTPUTS, passing_check
 
 
 @pytest.fixture
@@ -34,9 +34,7 @@ def llm(monkeypatch):
         if response_model in OUTPUTS:
             return OUTPUTS[response_model]
         # Mọi bản kiểm: đạt hết.
-        return response_model(**{
-            name: True if name.endswith("_pass") else "đạt" for name in response_model.model_fields
-        })
+        return passing_check(response_model)
 
     for info in pkgutil.iter_modules(generation.__path__):
         module = importlib.import_module(f"app.generation.{info.name}")

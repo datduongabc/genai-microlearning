@@ -1,0 +1,31 @@
+# Used by scripts/compose.sh on the measured RTX 3050 Ti (compute capability 8.6).
+services:
+  embedder:
+    image: ghcr.io/huggingface/text-embeddings-inference:86-1.9.4
+    gpus: all
+    command:
+      - --model-id
+      # Native weights of the same Qwen3 model: the CPU ONNX repository has no safetensors.
+      - Qwen/Qwen3-Embedding-0.6B
+      - --revision
+      - 97b0c614be4d77ee51c0cef4e5f07c00f9eb65b3
+      - --served-model-name
+      - Qwen3-Embedding-0.6B
+      - --pooling
+      - last-token
+      - --dtype
+      - float16
+      - --max-batch-tokens
+      - "1024"
+      - --max-batch-requests
+      - "4"
+      # Queue capacity accommodates four workers of up to 100 chunks plus queries.
+      # TEI runs one model batch at a time; the limits above bound active GPU work.
+      - --max-concurrent-requests
+      - "512"
+      - --max-client-batch-size
+      - "128"
+      - --tokenization-workers
+      - "2"
+      - --api-key
+      - ${EMBEDDER_API_KEY}

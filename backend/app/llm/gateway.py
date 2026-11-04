@@ -10,8 +10,9 @@ import json
 
 import litellm
 from litellm.constants import RETURN_RAW_MODEL_NAME_METADATA_KEY
-from pydantic import BaseModel
+from pydantic import BaseModel, ValidationError
 
+from app import timing
 from app.config import settings
 
 # Model do giảng viên chọn cho riêng một lượt sinh. Để trong ContextVar chứ không truyền
@@ -98,13 +99,18 @@ def _completion(*, small_step: bool = False, **kwargs):
             kwargs["max_tokens"] = output_tokens
     # "openai/" only means "speak the OpenAI-compatible protocol to api_base";
     # the gateway decides which provider actually serves the alias.
-    response = litellm.completion(
-        model=f"openai/{routed_alias}",
-        api_base=settings.llm_gateway_url,
-        api_key=settings.llm_gateway_key,
-        extra_body=extra_body,
-        **kwargs,
-    )
+    with timing.timed("llm", requested_alias=alias, routed_alias=routed_alias) as span:
+        response = litellm.completion(
+            model=f"openai/{routed_alias}",
+            api_base=settings.llm_gateway_url,
+            api_key=settings.llm_gateway_key,
+            extra_body=extra_body,
+            **kwargs,
+        )
+        usage = getattr(response, "usage", None)
+        span["prompt_tokens"] = getattr(usage, "prompt_tokens", None)
+        span["completion_tokens"] = getattr(usage, "completion_tokens", None)
+        span["served_model"] = getattr(response, "model", None)
     calls = _model_calls.get()
     served = getattr(response, "model", None)
     if calls is not None and isinstance(served, str):
@@ -131,8 +137,14 @@ def transcribe_audio(path: str) -> list[dict]:
             api_key=settings.llm_gateway_key,
             response_format="verbose_json",
             max_retries=0,
+            timeout=180,
         )
     return response.segments or []
+
+
+# Extra calls for a reply that is not valid JSON or breaks the schema (cut off, missing field). It is
+# sampled again, so a one-off slip passes; a model that keeps failing still fails, after this bound.
+MALFORMED_REPLY_RETRIES = 2
 
 
 def complete_structured[T: BaseModel](
@@ -147,11 +159,20 @@ def complete_structured[T: BaseModel](
     if system_instruction:
         messages.append({"role": "system", "content": system_instruction})
     messages.append({"role": "user", "content": prompt})
-    response = _completion(
-        messages=messages,
-        response_format=response_format if response_format is not None else response_model,
-        **kwargs,
-    )
-    # strict=False: model hay để lọt tab, xuống dòng trần vào giữa chuỗi JSON khi viết công thức, và
-    # trình đọc nghiêm từ chối cả câu trả lời dù nó vẫn đọc được. Schema vẫn được kiểm đầy đủ ở bước sau.
-    return response_model.model_validate(json.loads(response.choices[0].message.content, strict=False))
+    for attempt in range(MALFORMED_REPLY_RETRIES + 1):
+        response = _completion(
+            messages=messages,
+            response_format=response_format if response_format is not None else response_model,
+            **kwargs,
+        )
+        try:
+            # strict=False: model hay để lọt tab, xuống dòng trần vào giữa chuỗi JSON khi viết công
+            # thức, và trình đọc nghiêm từ chối cả câu trả lời dù nó vẫn đọc được. Schema vẫn được
+            # kiểm đầy đủ ngay sau đó.
+            return response_model.model_validate(json.loads(response.choices[0].message.content, strict=False))
+        except (json.JSONDecodeError, ValidationError):
+            # Both are ValueError, which the job queue treats as permanent: without asking again here,
+            # one bad reply late in a module would throw away every paid call made before it.
+            if attempt == MALFORMED_REPLY_RETRIES:
+                raise
+    raise AssertionError("unreachable")

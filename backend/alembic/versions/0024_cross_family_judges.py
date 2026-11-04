@@ -3,8 +3,8 @@ import sqlalchemy as sa
 
 from alembic import op
 
-revision = "0022_cross_family_judges"
-down_revision = "0021_remove_textbook_scope"
+revision = "0024_cross_family_judges"
+down_revision = "0023_generation_timings"
 branch_labels = None
 depends_on = None
 

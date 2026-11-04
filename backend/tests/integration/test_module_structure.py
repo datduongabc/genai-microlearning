@@ -237,6 +237,19 @@ def test_a_redo_that_produces_no_question_keeps_the_original_one(run):
 
     all_stems = [s for t in (ComponentType.quiz, ComponentType.practice) for _, s, _ in parts[t][1]]
     assert sorted(all_stems) == ["Q0", "Q1", "Q2"]
+    assert parts[ComponentType.quiz][0]["questions"][0]["passed"] is False
+    assert LENGTH_TELL_FEEDBACK in parts[ComponentType.quiz][0]["questions"][0]["fail_reason"]
+
+
+def test_an_unsuccessful_rebalance_is_recorded_as_a_failure(run):
+    install, calls, _ = run
+    telling = [_question(stem=f"Q{i}", choices=LONG_CORRECT) for i in range(4)]
+    _, parts = install(["s1", "s2"], telling)
+
+    assert len(calls["quiz"]) == 4  # no unbounded rebalancing loop
+    failed = parts[ComponentType.quiz][0]["questions"][0]
+    assert failed["passed"] is False
+    assert LENGTH_TELL_FEEDBACK in failed["fail_reason"]
 
 
 def test_the_module_api_returns_questions_in_their_order(run):

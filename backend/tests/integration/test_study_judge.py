@@ -433,3 +433,48 @@ def test_upsert_matches_partial_index_with_generic_prepared_plans(world):
         rows = list(db.scalars(select(Rating).where(Rating.study_item_id == item.id)))
         assert len(rows) == 2
         assert {r.judge_family for r in rows} == {'anthropic', 'openai'}
+
+
+def _replies(monkeypatch, replies):
+    """One (served model or None for the pinned one, valid JSON?) per model call."""
+    sent = []
+
+    def complete(**kwargs):
+        served, valid = replies[len(sent)]
+        sent.append(kwargs)
+        code = kwargs["messages"][1]["content"].split("anon_id=")[1].split(")")[0]
+        alias = judge.gateway.active_model()
+        pinned = next(m["litellm_params"]["model"] for m in GATEWAY if m["model_name"] == alias)
+        content = _evaluation(code).model_dump_json() if valid else '{"anon_id": "' + code + '", "accur'
+        return SimpleNamespace(model=served or pinned, choices=[SimpleNamespace(message=SimpleNamespace(content=content))])
+
+    monkeypatch.setattr(litellm, "completion", complete)
+    return sent
+
+
+def test_malformed_judge_reply_re_asked_on_the_pinned_model_saves_the_rating(world, fake, monkeypatch):
+    sid = create_study(world)
+    load(world, sid, human_packets=[human_packet()])
+    jid = start(world, sid).json()["job_id"]
+    # The first judge is re-asked once, the second answers at once.
+    sent = _replies(monkeypatch, [(None, False), (None, True), (None, True)])
+    step(jid)
+    result = status(world, sid, jid)
+    assert len(sent) == 3
+    assert result["status"] == "done" and result["results"][0]["status"] == "done", result
+    with SessionLocal() as db:
+        rows = list(db.scalars(select(Rating).join(StudyItem).where(StudyItem.study_id == uuid.UUID(sid))))
+    assert len(rows) == 2 and len({r.judge_family for r in rows}) == 2
+
+
+def test_re_asked_judge_reply_served_by_another_model_is_refused(world, fake, monkeypatch):
+    sid = create_study(world)
+    load(world, sid, human_packets=[human_packet()])
+    jid = start(world, sid).json()["job_id"]
+    sent = _replies(monkeypatch, [(None, False), ("other/unpinned-model", True)])
+    step(jid)
+    result = status(world, sid, jid)
+    assert len(sent) == 2
+    assert result["status"] == "done" and result["results"][0]["status"] == "pending"
+    assert "pinned judge model" in result["results"][0]["error"]
+    assert judge_rows(sid) == {}

@@ -82,6 +82,20 @@ function failureTitle(failure: DocumentFailure): string {
   return "Sinh mô-đun thất bại";
 }
 
+const WARNING_LABEL: Record<string, string> = {
+  ocr_failed: "OCR không đọc được",
+};
+
+function extractionWarningLines(warnings: DocumentInfo["extraction_warnings"]) {
+  const pagesByCode = new Map<string, number[]>();
+  for (const w of warnings) pagesByCode.set(w.code, [...(pagesByCode.get(w.code) ?? []), w.page]);
+  return [...pagesByCode].map(([code, pages]) => ({
+    code,
+    text: `${WARNING_LABEL[code] ?? code} ${pages.length > 1 ? "các trang" : "trang"} ${pages.sort((a, b) => a - b).join(", ")}. `
+      + "Nội dung có thể thiếu; hãy kiểm tra hoặc tải lại bản PDF có lớp chữ.",
+  }));
+}
+
 const STATUS_COLOR: Record<string, string> = {
   uploaded: "text-gray-500",
   processing: "text-amber-600",
@@ -352,10 +366,14 @@ export function CourseDetailPage() {
               void upload.handleSubmit(handleUpload, (errors) => setError(errors.file?.message ?? null))();
             }}
             disabled={loading || uploadBusy}
-            accept=".pdf,.pptx,.docx,.html,.htm,.txt,.vtt,.srt,.mp3,.wav,.m4a,.flac,.ogg,.aac,.mp4,.mkv,.webm,.mov,.avi"
+            accept=".pdf,.pptx,.docx,.html,.htm,.mp3,.wav,.m4a,.flac,.ogg,.aac,.mp4,.mkv,.webm,.mov,.avi"
           />
         </label>
       </div>
+      <p className="mt-2 text-xs text-gray-500">
+        Nhận PDF, PPTX (tối đa 25 MB, 150 trang/slide); DOCX, HTML (tối đa 25 MB); audio MP3, WAV, M4A, FLAC,
+        OGG, AAC (tối đa 200 MB, 90 phút); video MP4, MKV, WEBM, MOV, AVI (tối đa 1 GB, 90 phút).
+      </p>
       {/* Hàng riêng chứ không chung hàng với nút tải lên: đây là thiết lập cho các nút
           "+ Sinh mô-đun" bên dưới, không liên quan tới việc tải tài liệu. Chung hàng thì
           dòng ghi chú dưới ô chọn còn đẩy ô chọn lệch lên so với các nút bên cạnh. */}
@@ -429,6 +447,11 @@ export function CourseDetailPage() {
                   </button>
                 </div>
               </div>
+              {extractionWarningLines(d.extraction_warnings).map((warning) => (
+                <p key={warning.code} className="mt-2 text-sm text-amber-800">
+                  {warning.text}
+                </p>
+              ))}
               {d.failures.length > 0 && (
                 <ul className="mt-2 flex flex-col gap-2">
                   {d.failures.map((f) => (

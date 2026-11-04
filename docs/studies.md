@@ -165,10 +165,10 @@ có thể có thêm điểm ngoài hai alias chung đã hoàn tất.
 Rubric và prompt không đổi.
 
 - **Model chấm.** Pool, thứ tự ưu tiên và hãng ở [rubric mục 1](rubric.md#1-thiết-kế-nghiên-cứu). Mỗi đơn vị chọn hai hãng khác nhau và khác tất cả model thực sự sinh gói; dùng guard chung với CLI. Provenance lấy từ `generation_models`, rồi `generator_model`, rồi alias mặc định cho dữ liệu cũ. Gói người soạn không có hãng sinh. Gateway không trả lời nhận 503; thiếu hai hãng hợp lệ nhận 422 trước khi xếp job.
-- **Ghim model.** Chạy thí nghiệm (`disable_fallbacks`); lưu `judge_alias`, `judge_model` và `judge_family`. Sai model được ghim thì không lưu điểm.
+- **Ghim model.** Chạy thí nghiệm (`disable_fallbacks`); lưu `judge_alias`, `judge_model` và `judge_family`. Sai model được ghim ở bất kỳ lệnh gọi nào của lượt chấm, kể cả lần hỏi lại, thì không lưu điểm.
 - **Theo cặp.** Migration 0022 thêm `study_items.pair_id` (id module RAG, chung cho hai đơn vị của cặp). Mỗi bước xử lý cả cặp theo quy tắc ở [rubric mục 1](rubric.md#1-thiết-kế-nghiên-cứu); lượt của alias bị bỏ dở được thử hoàn tất trước ở lần chạy sau. Đơn vị nạp trước 0022 không có `pair_id` được chấm riêng.
 - **Chạy lại.** Giữ điểm đã hoàn tất, chỉ chấm phần thiếu. Job đang chạy ngăn xếp trùng và nạp thêm đơn vị.
-- **Lỗi từng đơn vị.** Các lỗi được thay ứng viên theo [rubric mục 1](rubric.md#1-thiết-kế-nghiên-cứu). Lỗi tạm thời khác được retry có back-off trên bước hiện tại. Nếu không đủ hai alias, hoặc lỗi khác không thử lại được hay đã hết retry, đơn vị được ghi `status: pending` kèm `error` trong `results` và job chấm tiếp đơn vị sau; job kết thúc `done`. `POST /studies/{id}/judge` tạo job mới chỉ chấm phần còn thiếu.
+- **Lỗi từng đơn vị.** JSON bị cắt hoặc sai rubric được hỏi lại tối đa hai lần trong cùng lượt gọi. Các lỗi được thay ứng viên theo [rubric mục 1](rubric.md#1-thiết-kế-nghiên-cứu). Lỗi tạm thời khác được retry có back-off trên bước hiện tại. Nếu không đủ hai alias, hoặc lỗi khác không thử lại được hay đã hết retry, đơn vị được ghi `status: pending` kèm `error` trong `results` và job chấm tiếp đơn vị sau; job kết thúc `done`. `POST /studies/{id}/judge` tạo job mới chỉ chấm phần còn thiếu.
 - **Ngân sách.** Đếm toàn prompt theo `max_input_tokens` của alias; không chia hoặc cắt gói. Không có cam kết miễn phí cho toàn pool: không gọi API trả phí trong kiểm thử, mọi provider được mock.
 
 Migration 0020 giữ trigger khóa nghiên cứu, cấm sửa danh tính lượt chấm và

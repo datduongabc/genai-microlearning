@@ -147,7 +147,7 @@ RATING = {
 
 ATTACKS = [
     ("GET", "/documents", {"course_id": "{course}"}, {}),
-    ("POST", "/documents", {"course_id": "{course}"}, {"files": {"file": ("x.txt", b"hi", "text/plain")}}),
+    ("POST", "/documents", {"course_id": "{course}"}, {"files": {"file": ("x.html", b"hi", "text/html")}}),
     ("DELETE", "/documents/{document}", None, {}),
     ("GET", "/documents/{document}/status", None, {}),
     ("GET", "/documents/{document}/sections", None, {}),

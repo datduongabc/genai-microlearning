@@ -73,6 +73,9 @@ model_list:
   - model_name: openai-fast
     litellm_params:
       model: openai/gpt-6-luna
+      # Accepts only temperature=1. The pipeline asks for 0 at most steps; sending it fails the
+      # call, and outside experiment mode the fallback then hands the step to free Gemini.
+      additional_drop_params: [temperature]
       api_key: os.environ/OPENAI_API_KEY
     model_info:
       display_name: GPT-6 Luna
@@ -80,6 +83,9 @@ model_list:
   - model_name: openai-pro
     litellm_params:
       model: openai/gpt-6.1-sol
+      # Accepts only temperature=1. The pipeline asks for 0 at most steps; sending it fails the
+      # call, and outside experiment mode the fallback then hands the step to free Gemini.
+      additional_drop_params: [temperature]
       api_key: os.environ/OPENAI_API_KEY
     model_info:
       display_name: GPT-6.1 Sol
@@ -88,6 +94,9 @@ model_list:
   - model_name: claude-fast
     litellm_params:
       model: anthropic/claude-haiku-5-5
+      # Accepts only temperature=1. The pipeline asks for 0 at most steps; sending it fails the
+      # call, and outside experiment mode the fallback then hands the step to free Gemini.
+      additional_drop_params: [temperature]
       api_key: os.environ/ANTHROPIC_API_KEY
     model_info:
       display_name: Claude Haiku 5.5
@@ -95,6 +104,9 @@ model_list:
   - model_name: claude-pro
     litellm_params:
       model: anthropic/claude-sonnet-5-5
+      # Accepts only temperature=1. The pipeline asks for 0 at most steps; sending it fails the
+      # call, and outside experiment mode the fallback then hands the step to free Gemini.
+      additional_drop_params: [temperature]
       api_key: os.environ/ANTHROPIC_API_KEY
     model_info:
       display_name: Claude Sonnet 5.5

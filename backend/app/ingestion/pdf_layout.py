@@ -255,19 +255,21 @@ def _block_is_mathlike(block: dict) -> bool:
     spans = [s for line in block["lines"] for s in line["spans"]]
     if any(any(f in s["font"].lower() for f in _MATH_FONTS) for s in spans):
         return True
-    # MathType soạn bằng Arial hay Times thì không có phông toán nào; dấu hiệu còn lại là các
-    # biến in nghiêng đứng riêng lẻ (x, y, dx). Mã nguồn dùng phông đơn cách không nghiêng, chú
-    # thích là chữ thường, nên không bị bắt nhầm.
+    # Công thức soạn bằng Arial hay Times thì không có phông toán nào; dấu hiệu còn lại là các
+    # biến in nghiêng đứng riêng lẻ (x, y, dx). Mã nguồn dùng phông đơn cách, kể cả chú thích
+    # nghiêng như "//" hay "of", nên không được tính.
     italic_fragments = sum(
         1 for s in spans
-        if 0 < len(_span_text(s).strip()) <= 3 and (s["flags"] & pymupdf.TEXT_FONT_ITALIC or "italic" in s["font"].lower())
+        if 0 < len(_span_text(s).strip()) <= 3 and not s["flags"] & pymupdf.TEXT_FONT_MONOSPACED
+        and (s["flags"] & pymupdf.TEXT_FONT_ITALIC or "italic" in s["font"].lower())
     )
     return italic_fragments >= 2
 
 
 def _regions(blocks: list[dict]) -> list[list[int]]:
     """Gom các khối thuộc cùng một công thức: khung chồng lên nhau, hoặc cùng hàng và sát nhau
-    khi ít nhất một khối mang ký hiệu toán. Hai cột văn bản thường không bao giờ bị gom."""
+    khi ít nhất một khối mang ký hiệu toán. Hai cột văn bản thường không bao giờ bị gom, và khối
+    mã nguồn chỉ chạm chân trang hay chú thích thường thì giữ nguyên thứ tự của nó."""
     parent = list(range(len(blocks)))
 
     def root(i: int) -> int:
@@ -278,6 +280,8 @@ def _regions(blocks: list[dict]) -> list[list[int]]:
 
     boxes = [b["bbox"] for b in blocks]
     mathlike = [_block_is_mathlike(b) for b in blocks]
+    code = [any(s["flags"] & pymupdf.TEXT_FONT_MONOSPACED for line in b["lines"] for s in line["spans"])
+            for b in blocks]
     sizes = [max((s["size"] for line in b["lines"] for s in line["spans"]), default=10) for b in blocks]
     for i, a in enumerate(boxes):
         for j in range(i + 1, len(boxes)):
@@ -286,7 +290,7 @@ def _regions(blocks: list[dict]) -> list[list[int]]:
             same_row = _overlap(a[1], a[3], b[1], b[3]) >= 0.5 * min(a[3] - a[1], b[3] - b[1])
             gap = max(b[0] - a[2], a[0] - b[2])
             near = same_row and gap < max(sizes[i], sizes[j]) and (mathlike[i] or mathlike[j])
-            if touching or near:
+            if near or (touching and (mathlike[i] or mathlike[j] or not (code[i] or code[j]))):
                 parent[root(i)] = root(j)
     groups: dict[int, list[int]] = {}
     for i in range(len(blocks)):
@@ -610,17 +614,20 @@ def _line_text(spans: list[dict], vni_fonts: frozenset[str]) -> str:
             elif shift < -0.1 * base["size"]:
                 text = "_" + text.strip()
         out.append(text)
-    return "".join(out).strip()
+    text = "".join(out).rstrip()
+    # Chỉ thụt lề của mã nguồn mang nghĩa; khoảng trắng đầu dòng chữ thường bỏ đi.
+    return text if any(s["flags"] & pymupdf.TEXT_FONT_MONOSPACED for s in visible) else text.lstrip()
 
 
-def page_lines(page: pymupdf.Page) -> list[str]:
+def page_lines(page: pymupdf.Page, *, code_lines: set[int] | None = None) -> list[str]:
     """Các dòng chữ của trang theo thứ tự đọc, công thức đã được dựng lại thành một dòng."""
     blocks = [b for b in page.get_text("rawdict", flags=_TEXT_FLAGS)["blocks"] if b["type"] == 0 and b["lines"]]
     if not blocks:
         return []
-    rules, verticals = _strokes(page)
+    rules, verticals = _strokes(page) if any(_block_is_mathlike(b) for b in blocks) else ([], [])
     vni_fonts = frozenset(_vni_fonts(blocks))
     out: list[str] = []
+    previous = None
     for region in _regions(blocks):
         lines = [line for i in region for line in blocks[i]["lines"]]
         boxes = [line["bbox"] for line in lines]
@@ -638,16 +645,47 @@ def page_lines(page: pymupdf.Page) -> list[str]:
         # Dòng cùng hàng mà không có ký hiệu toán nào là bố cục có chủ ý (chân trang Beamer ba ô,
         # bảng hai cột) chứ không phải công thức vỡ: trộn chúng lại thì chữ các ô đan vào nhau.
         math = any(_block_is_mathlike(blocks[i]) for i in region)
-        if not math or (not _is_shattered(boxes) and not region_rules):
-            previous = None
-            for line in lines:
-                text = _line_text(line["spans"], vni_fonts)
+        has_code = any(s["flags"] & pymupdf.TEXT_FONT_MONOSPACED for line in lines for s in line["spans"])
+        owners = [i for i in region for _ in blocks[i]["lines"]]
+        texts = [_line_text(line["spans"], vni_fonts) for line in lines]
+        has_bullets = any(text.strip() in {"•", "▪", "❖"} for text in texts)
+        if (not math or ((has_bullets or has_code) and not region_rules)
+                or (not _is_shattered(boxes) and not region_rules)):
+            for owner, line, text in zip(owners, lines, texts):
                 # Chữ vẽ hai lần chồng khít (hiệu ứng bóng của tiêu đề slide) chỉ giữ một lần.
-                if text and not (previous and previous[0] == text and _overlap(
-                        previous[1][1], previous[1][3], line["bbox"][1], line["bbox"][3]) > 0):
-                    out.append(text)
-                    previous = (text, line["bbox"])
+                if not text:
+                    continue
+                box = line["bbox"]
+                base = max(line["spans"], key=lambda s: s["size"])
+                baseline, size = base["origin"][1], base["size"]
+                if previous:
+                    old_text, old_box, old_baseline, old_size, old_owner = previous
+                    if (old_text == text and _overlap(old_box[1], old_box[3], box[1], box[3]) > 0
+                            and _overlap(old_box[0], old_box[2], box[0], box[2])
+                            > 0.8 * min(old_box[2] - old_box[0], box[2] - box[0])):
+                        continue
+                    gap = box[0] - old_box[2]
+                    em = max(size, old_size)
+                    listing = owner == old_owner and any(
+                        s["flags"] & pymupdf.TEXT_FONT_MONOSPACED for s in line["spans"]
+                    ) and ((old_text.strip().isdigit() and gap < 4 * em) or text.lstrip().startswith("//"))
+                    if abs(baseline - old_baseline) < 0.15 * em and 0 <= gap and (gap < em or listing):
+                        out[-1] += (" " if gap > 0.12 * em else "") + text.lstrip()
+                        box = (old_box[0], min(old_box[1], box[1]), box[2], max(old_box[3], box[3]))
+                        previous = (out[-1], box, baseline, size, owner)
+                        if code_lines is not None and any(
+                            s["flags"] & pymupdf.TEXT_FONT_MONOSPACED for s in line["spans"]
+                        ):
+                            code_lines.add(len(out) - 1)
+                        continue
+                out.append(text)
+                if code_lines is not None and any(
+                    s["flags"] & pymupdf.TEXT_FONT_MONOSPACED for s in line["spans"]
+                ):
+                    code_lines.add(len(out) - 1)
+                previous = (text, box, baseline, size, owner)
             continue
+        previous = None
         pieces: list[_Piece] = []
         for line in lines:
             for s in line["spans"]:
@@ -689,7 +727,7 @@ def title_candidates(page: pymupdf.Page) -> list[str]:
     found: list[tuple[float, float, float, str]] = []
     for block in blocks:
         for line in block["lines"]:
-            text = _line_text(line["spans"], vni_fonts)
+            text = _line_text(line["spans"], vni_fonts).strip()
             size = max(s["size"] for s in line["spans"])
             visible = [c for c in text if not c.isspace()]
             letters = sum(c.isalpha() for c in visible)

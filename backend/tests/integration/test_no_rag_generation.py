@@ -39,6 +39,7 @@ from app.models import (
 from app.retrieval.search import ChunkScope
 from scripts import export_study_pair
 from scripts.export_study_pair import model_that_made
+from tests.integration.generation_helpers import passing_check
 
 SOURCES = ["NGUON-BI-MAT-1: một đoạn của giáo trình", "NGUON-BI-MAT-2: đoạn khác"]
 COURSE_NAME = "TEN-MON-HOC-KHONG-DUOC-LO"
@@ -69,10 +70,7 @@ def llm(monkeypatch):
                                 reasoning="r", choices=["pa một", "pa hai", "pa ba", "pa bốn"], correct_index=1,
                                 explanation="lời giải")
         # Mọi bản kiểm (Verification/Check): đạt hết.
-        values = {}
-        for name in response_model.model_fields:
-            values[name] = True if name.endswith("_pass") else "đạt"
-        return response_model(**values)
+        return passing_check(response_model)
 
     for info in pkgutil.iter_modules(generation.__path__):
         module = importlib.import_module(f"app.generation.{info.name}")

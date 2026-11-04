@@ -5,6 +5,7 @@ from uuid import UUID
 from rank_bm25 import BM25Okapi
 from sqlalchemy.orm import Session
 
+from app import timing
 from app.ingestion.embeddings import embed_text
 from app.models import Chunk
 from app.retrieval.reranker import rerank_scored
@@ -46,13 +47,15 @@ def dense_search(
     dung TRUOC khi vao vector search (mục 4: hard metadata filtering,
     khong tin tuong LLM tu loc quyen). `scope` thu hep tiep xuong 1 khoang
     chunk cua 1 tai lieu, cung o WHERE clause."""
-    query_embedding = embed_text(query)
-    return (
-        _scoped(db.query(Chunk).filter(Chunk.course_id == course_id, Chunk.embedding.isnot(None)), scope)
-        .order_by(Chunk.embedding.cosine_distance(query_embedding))
-        .limit(top_k)
-        .all()
-    )
+    with timing.timed("embed_query"):
+        query_embedding = embed_text(query)
+    with timing.timed("vector_search"):
+        return (
+            _scoped(db.query(Chunk).filter(Chunk.course_id == course_id, Chunk.embedding.isnot(None)), scope)
+            .order_by(Chunk.embedding.cosine_distance(query_embedding))
+            .limit(top_k)
+            .all()
+        )
 
 
 # Cache BM25 index theo course_id -- 1 lần generate_module() gọi sparse_search
@@ -78,6 +81,11 @@ def sparse_search(
     db: Session, course_id: UUID, query: str, top_k: int = 20, scope: ChunkScope | None = None
 ) -> list[Chunk]:
     """BM25 tren toan bo chunk cua 1 course, hoac chi tren khoang chunk cua `scope`."""
+    with timing.timed("bm25"):
+        return _sparse_search(db, course_id, query, top_k, scope)
+
+
+def _sparse_search(db: Session, course_id: UUID, query: str, top_k: int, scope: ChunkScope | None) -> list[Chunk]:
     key = (course_id, scope)
     cached = _bm25_cache.get(key)
     if cached is None:
@@ -122,7 +130,8 @@ def hybrid_search(
     `retrieve_for_generation()` ben duoi thay vi ham nay truc tiep."""
     dense = dense_search(db, course_id, query, top_k=candidate_k, scope=scope)
     sparse = sparse_search(db, course_id, query, top_k=candidate_k, scope=scope)
-    fused = reciprocal_rank_fusion([dense, sparse])
+    with timing.timed("rrf"):
+        fused = reciprocal_rank_fusion([dense, sparse])
     return fused[:top_k]
 
 

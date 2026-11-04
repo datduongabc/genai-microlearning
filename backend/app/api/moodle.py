@@ -121,6 +121,19 @@ def _build_questions(component: ModuleComponent, explanations: dict[int, str] | 
     ]
 
 
+def _failing_questions(module: Module) -> list[str]:
+    """Quiz/practice questions that failed the quality gate and have not been edited since."""
+    failing = []
+    for component in module.components:
+        if component.type not in (ComponentType.quiz, ComponentType.practice):
+            continue
+        positions = {q.position for q in component.questions}
+        for position, q in enumerate(component.content.get("questions", [])):
+            if position in positions and q.get("passed") is False:
+                failing.append(f"{component.type.value} {position + 1}: {q.get('fail_reason') or 'không đạt gate chất lượng'}")
+    return failing
+
+
 class PublishRequest(BaseModel):
     # Which existing Moodle section to add the Book/Quiz into (0 = the
     # course's general/top section) -- see /courses/{id}/moodle-sections for
@@ -146,6 +159,14 @@ def publish_to_moodle(
         raise HTTPException(
             status_code=422,
             detail="Mô-đun đối chứng (không RAG) chỉ dùng cho nghiên cứu, không được đẩy lên Moodle.",
+        )
+
+    failing = _failing_questions(module)
+    if failing:
+        raise HTTPException(
+            status_code=422,
+            detail="Còn câu hỏi chưa đạt gate chất lượng; sửa hoặc sinh lại trước khi đẩy lên Moodle: "
+            + "; ".join(failing),
         )
 
     course = db.get(Course, module.course_id)

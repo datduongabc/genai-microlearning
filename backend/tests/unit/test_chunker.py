@@ -80,7 +80,7 @@ def test_chunk_units_transcript_oversized_single_unit_is_split():
     # Regression test: a single caption/segment far larger than the target
     # (e.g. a mis-segmented ASR transcript dumping an entire lecture into one
     # 2-second "caption") must still be split, not emitted as one giant
-    # chunk -- real bug found via eng-introduction.srt sample data.
+    # chunk -- real bug found via a lecture transcript sample.
     long_text = "word " * 300  # well over TRANSCRIPT_CHUNK_TOKENS
     units = [_unit(long_text, {"start_ms": 0, "end_ms": 2000})]
     chunks = chunk_units(units)

@@ -154,9 +154,10 @@ def run_study_judge_step(queued: Job) -> None:
                 alias, expected = candidate["alias"], candidate["model"]
                 with gateway.experiment_mode(), gateway.using_model(alias), gateway.capture_models() as calls:
                     evaluation = judge_module(packet, max_tokens=OUTPUT_TOKENS, max_retries=0, timeout=120)
-                if len(calls) != 1 or calls[0]["served_model"].split("/")[-1] != expected.split("/")[-1]:
+                # A malformed reply is re-asked inside the call, so there can be several calls: all pinned.
+                if not calls or any(c["served_model"].split("/")[-1] != expected.split("/")[-1] for c in calls):
                     raise ValueError("Gateway did not report the pinned judge model; rating was not saved")
-                upsert_rating(db, by_id[item_id], alias, calls[0]["served_model"], evaluation)
+                upsert_rating(db, by_id[item_id], alias, calls[-1]["served_model"], evaluation)
                 db.commit()  # Preserve each rating when a later one hits quota or the worker stops.
 
             missing, errors = judge_pair(packets, [g for m in members for g in item_generators(m)],

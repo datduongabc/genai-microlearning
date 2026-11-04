@@ -41,6 +41,7 @@ from app.models import (
     ModuleComponent,
     User,
 )
+from tests.integration.generation_helpers import passing_check
 
 client = TestClient(app)
 
@@ -76,9 +77,7 @@ def llm(monkeypatch):
         calls.append({"model": response_model.__name__, "prompt": prompt, "system": system_instruction or ""})
         if response_model in OUTPUTS:
             return OUTPUTS[response_model]
-        return response_model(**{
-            name: True if name.endswith("_pass") else "đạt" for name in response_model.model_fields
-        })
+        return passing_check(response_model)
 
     for info in pkgutil.iter_modules(generation.__path__):
         module = importlib.import_module(f"app.generation.{info.name}")
