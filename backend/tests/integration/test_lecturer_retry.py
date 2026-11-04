@@ -143,10 +143,10 @@ def test_retrying_a_failed_document_shows_it_processing_again(lecturer):
 
 
 def test_retrying_a_document_that_failed_part_way_finishes_it_without_uploading_again(lecturer, tmp_path):
-    path = tmp_path / "bai.txt"
-    path.write_text("Khái niệm A rất quan trọng.\n\nKhái niệm B khác khái niệm A.", encoding="utf-8")
+    path = tmp_path / "bai.html"
+    path.write_text("<p>Khái niệm A rất quan trọng.</p><p>Khái niệm B khác khái niệm A.</p>", encoding="utf-8")
     with SessionLocal() as db:
-        doc = Document(course_id=lecturer["course"], filename="bai.txt", status=DocumentStatus.uploaded)
+        doc = Document(course_id=lecturer["course"], filename="bai.html", status=DocumentStatus.uploaded)
         db.add(doc)
         db.flush()
         job = Job(job_type=JobType.document_pipeline, document_id=doc.id, step="extract", payload={"storage_path": str(path)})
@@ -156,7 +156,7 @@ def test_retrying_a_document_that_failed_part_way_finishes_it_without_uploading_
 
     # The provider gave out for good: the job is failed and the document says so.
     handle_job_error(job_id, ValueError("hết hạn mức"))
-    assert _listed(lecturer)["bai.txt"]["status"] == "failed"
+    assert _listed(lecturer)["bai.html"]["status"] == "failed"
 
     assert client.post(f"/jobs/{job_id}/retry", headers=lecturer["headers"]).status_code == 200
     for _ in range(3):
@@ -170,7 +170,7 @@ def test_retrying_a_document_that_failed_part_way_finishes_it_without_uploading_
             db.expunge(current)
         run_document_pipeline_step(current)
 
-    listed = _listed(lecturer)["bai.txt"]
+    listed = _listed(lecturer)["bai.html"]
     assert listed["status"] == "embedded" and listed["failures"] == []
     with SessionLocal() as db:
         assert db.get(Job, job_id).status == JobStatus.done

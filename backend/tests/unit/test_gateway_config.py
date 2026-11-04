@@ -383,3 +383,36 @@ def test_paid_alias_falls_back_to_free_gemini_and_experiment_flag_refuses_it(gat
         with pytest.raises((litellm.InternalServerError, litellm.ContextWindowExceededError)):
             asyncio.run(router.acompletion(**call, disable_fallbacks=True))
     router.reset()
+
+
+SAMPLING_FIXED_ALIASES = ("claude-fast", "claude-pro", "openai-fast", "openai-pro")
+
+
+def test_paid_generation_models_with_fixed_sampling_drop_the_temperature(gateway):
+    """Claude Haiku/Sonnet 5.5 and GPT-6 Luna/6.1 Sol accept only temperature=1, while the pipeline asks
+    for 0 at most steps. Without dropping it, an experiment run fails on its first call, and outside
+    experiment mode every such call silently falls back to free Gemini: a module the lecturer asked
+    Claude for came back mostly written by Gemini."""
+    for alias in SAMPLING_FIXED_ALIASES:
+        (deployment,) = [d for d in _deployments(gateway) if d["model_name"] == alias]
+        assert "temperature" in deployment["litellm_params"].get("additional_drop_params", []), alias
+
+
+@pytest.mark.parametrize("alias", SAMPLING_FIXED_ALIASES)
+def test_a_pinned_paid_call_at_temperature_zero_is_served_by_its_own_model(gateway, monkeypatch, alias):
+    import asyncio
+
+    import litellm
+
+    for name in (*PROVIDER_KEY_VARIABLES, "LLM_GATEWAY_KEY", "EMBEDDER_API_KEY"):
+        monkeypatch.setenv(name, "test-key")
+    router = litellm.Router(model_list=gateway["model_list"], **gateway["router_settings"])
+    expected = next(d for d in _deployments(gateway) if d["model_name"] == alias)["litellm_params"]["model"]
+
+    response = asyncio.run(router.acompletion(
+        model=alias, messages=[{"role": "user", "content": "hi"}], temperature=0.0,
+        mock_response="ok", num_retries=0, disable_fallbacks=True,
+    ))
+
+    assert response.model == expected.split("/", 1)[1]
+    router.reset()

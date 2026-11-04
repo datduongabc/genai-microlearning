@@ -170,14 +170,16 @@ Rubric và prompt không đổi.
   coi như alias mặc định của cấu hình; hai cột này nằm ngoài gói nên không lộ
   cho người chấm. Gói người soạn không có model sinh nên không bị kiểm.
 - **Ghim model.** Lượt chấm chạy ở chế độ thí nghiệm (`disable_fallbacks`).
-  `ratings.judge_model` là model gateway báo đã phục vụ; nếu nó khác model
-  của alias lúc xếp job thì đơn vị bị ghi lỗi và không lưu điểm.
+  `ratings.judge_model` là model gateway báo đã phục vụ câu trả lời được dùng;
+  nếu bất kỳ lệnh gọi nào của đơn vị (kể cả lần hỏi lại) do model khác model
+  của alias lúc xếp job phục vụ thì đơn vị bị ghi lỗi và không lưu điểm.
 - **Chạy lại.** Mỗi lần gọi là một job mới chấm mọi đơn vị hiện có. Chấm lại
   thay hàng `llm_judge` cũ của đơn vị chứ không thêm hàng. Khi một job chấm
   còn `queued`/`running`, lần gọi thứ hai và việc nạp thêm đơn vị nhận 409.
 - **Lỗi từng đơn vị.** Lỗi tạm thời (hết quota, mạng) được thử lại có back-off
-  trên đúng đơn vị đó; hết lượt thử hoặc lỗi không thử lại được (JSON sai
-  rubric, gói quá lớn) được ghi vào `results` với `status: failed` và job chấm
+  trên đúng đơn vị đó; JSON bị cắt hoặc sai rubric được hỏi lại tối đa hai lần
+  trong cùng lượt gọi. Hết lượt thử hoặc lỗi không thử lại được (JSON vẫn sai
+  sau khi hỏi lại, gói quá lớn) được ghi vào `results` với `status: failed` và job chấm
   tiếp đơn vị sau. Job kết thúc `done` kể cả khi có đơn vị lỗi; đọc `results`.
 - **Giới hạn Groq.** Dùng bậc **trả phí**, với `tpm: 250000` và
   `max_input_tokens: 128000`, chừa chỗ cho schema và 2.048 token đầu ra trong

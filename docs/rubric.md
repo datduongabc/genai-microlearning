@@ -142,19 +142,31 @@ PYTHONPATH=. uv run python scripts/run_judge.py study/packets --judge <verified-
 # 3. R9: tách claim độc lập từ Content và chấm các trích dẫn được máy chủ giải.
 PYTHONPATH=. uv run python scripts/run_claim_judge.py study/packets --judge <verified-free-alias> --out study/claims.jsonl
 
-# 4. Phân tích cùng R8, kèm điểm người chấm nếu có.
-PYTHONPATH=. uv run python scripts/analyze_study.py study/rubric.jsonl \
-    --claims study/claims.jsonl --human study/human.csv --out study/report.json
+# 4. Xuất nghiên cứu chấm mù trong ứng dụng: mỗi người chấm một CSV ẩn danh rater-N.csv, và các
+#    lượt chấm của mô hình chấm trong ứng dụng vào judge.jsonl, cùng mã ẩn danh M01, M02, ...
+#    Thư mục đích không được có sẵn rater-*.csv hay judge.jsonl.
+PYTHONPATH=. uv run python scripts/export_human_ratings.py <study_id> --out study/inapp
+
+# 5. Phân tích judge.jsonl vừa xuất cùng các CSV người chấm, lặp --human cho mỗi người chấm.
+PYTHONPATH=. uv run python scripts/analyze_study.py study/inapp/judge.jsonl \
+    --claims study/claims.jsonl --human study/inapp/rater-1.csv --human study/inapp/rater-2.csv \
+    --out study/report.json
 ```
 
-Mã ẩn danh của mỗi gói (cột `anon_id` trong tệp `.jsonl`) cố định theo tên tệp gói, nên người nghiên cứu dùng chính mã đó khi đưa gói cho người chấm.
+Có hai hệ mã ẩn danh, không được trộn. Nghiên cứu trong ứng dụng đánh mã M01, M02, ... cho các gói; `export_human_ratings.py` ghi đúng mã đó cho cả người chấm lẫn mô hình chấm. `run_judge.py` (bước 2) đánh mã `M-` cộng 8 ký tự hex, cố định theo tên tệp gói; chỉ ghép tệp `.jsonl` của nó với CSV của người chấm đã chấm chính các tệp gói đó. Đưa một tệp người chấm không có mã nào trùng với tệp của mô hình chấm thì `analyze_study.py` dừng với lỗi, thay vì báo độ đồng thuận rỗng.
 
 `analyze_study.py` báo cáo:
 
 - **Điểm trung bình** mỗi tiêu chí của từng nhóm, theo từng mô hình chấm.
 - **Wilcoxon signed-rank hai phía** trên các cặp (rag_llm trừ llm_no_rag) cho từng tiêu chí, kèm p đã hiệu chỉnh Holm cho 8 tiêu chí. Dùng Wilcoxon vì điểm là thang thứ bậc và mẫu nhỏ, không giả định phân phối chuẩn.
 - **McNemar chính xác** cho tỉ lệ module có ít nhất một hallucination giữa hai nhóm, trên các cặp.
-- **Spearman và kappa trọng số bậc hai** (thang 1-5) cho từng tiêu chí, giữa hai mô hình chấm và giữa mỗi mô hình chấm với người.
+- **Spearman và kappa trọng số bậc hai** (thang 1-5) cho từng tiêu chí, giữa hai mô hình chấm, giữa mỗi mô hình chấm với từng người, và giữa từng cặp người chấm.
+- **Độ tin cậy của cả nhóm người chấm** (khi có từ hai tệp `--human`), cho từng tiêu chí:
+  - **Krippendorff's α thứ bậc** (kèm α khoảng) trên mọi điểm đã cho. Đây là chỉ số chính: nó đúng với thang thứ bậc 1-5 và chịu được việc mỗi người không chấm đủ mọi gói.
+  - **Fleiss' κ** trên những gói mà ai cũng chấm. Fleiss coi thang là danh nghĩa (lệch 1 điểm bị tính như lệch 4 điểm), nên thường thấp hơn α thứ bậc trên cùng dữ liệu; báo kèm vì đây là chỉ số quen thuộc.
+  - **Nhóm người cộng một mô hình chấm** (`humans+<judge>`): α khi thêm mô hình chấm vào như một người chấm nữa. α không giảm nghĩa là mô hình chấm đồng thuận với người ngang người với người.
+  - Mốc đọc α thường dùng (Krippendorff 2004): α ≥ 0,800 tin cậy được; 0,667 ≤ α < 0,800 chỉ dùng cho kết luận thận trọng.
+  - Cài đặt được kiểm bằng ví dụ đã công bố: dữ liệu của Krippendorff (2011) cho α danh nghĩa 0,743, thứ bậc 0,815, khoảng 0,849; ví dụ Fleiss 10 đối tượng × 14 người cho κ = 0,210.
 
 ## 7. R9: claim không có căn cứ và độ chính xác trích dẫn
 

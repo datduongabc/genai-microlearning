@@ -449,51 +449,15 @@ _AUDIO_VIDEO_EXTENSIONS = {
 # Nguồn duy nhất cho danh sách định dạng được hỗ trợ -- dùng ở đây (nhánh
 # read_document()) VÀ ở app/api/documents.py (kiểm tra sớm trước khi đọc file
 # vào bộ nhớ), tránh 2 danh sách lệch nhau.
-SUPPORTED_EXTENSIONS = (
-    {".pdf", ".docx", ".pptx", ".html", ".htm", ".srt", ".vtt", ".txt"}
-    | _AUDIO_VIDEO_EXTENSIONS
-)
+SUPPORTED_EXTENSIONS = {".pdf", ".docx", ".pptx", ".html", ".htm"} | _AUDIO_VIDEO_EXTENSIONS
 
-_SRT_BLOCK_RE = re.compile(
-    r"(?:\d+\s*\n)?(\d{2}:\d{2}:\d{2}[,.]\d{3})\s*-->\s*(\d{2}:\d{2}:\d{2}[,.]\d{3})\s*\n(.+?)(?=\n\n|\Z)",
-    re.DOTALL,
-)
+# Giới hạn đầu vào đã chốt: tài liệu tối đa 150 trang/slide, audio/video tối đa 90 phút.
+MAX_DOCUMENT_PAGES = 150
 
 
-def _srt_timestamp_to_ms(ts: str) -> int:
-    ts = ts.replace(",", ".")
-    h, m, s = ts.split(":")
-    sec, ms = s.split(".")
-    return ((int(h) * 3600 + int(m) * 60 + int(sec)) * 1000) + int(ms)
+class InputLimitError(ValueError):
+    """Tệp vượt giới hạn trang hoặc thời lượng; API trả 413 thay vì để job nền xử lý."""
 
-
-def read_transcript_file(path: str) -> list[DocumentUnit]:
-    """
-    Doc transcript giang vien da co san (khong can chay ASR) -- .srt/.vtt (phu
-    de co timestamp, khop thang vao locator={"start_ms","end_ms"}) hoac .txt
-    thuan (khong co timestamp, chia theo doan van).
-    """
-    ext = path.lower().rsplit(".", 1)[-1]
-    with open(path, encoding="utf-8") as f:
-        content = f.read()
-    # Normalize to LF: both the SRT/VTT block regex and the plain-text
-    # paragraph split below match a literal "\n\n" -- a Windows-authored file
-    # (SubtitleEdit, Windows caption exporters) uses "\r\n\r\n" between
-    # blocks, which never matches that literal sequence.
-    content = content.replace("\r\n", "\n").replace("\r", "\n")
-
-    if ext in ("srt", "vtt"):
-        units = []
-        for match in _SRT_BLOCK_RE.finditer(content):
-            start_ms = _srt_timestamp_to_ms(match.group(1))
-            end_ms = _srt_timestamp_to_ms(match.group(2))
-            text = " ".join(line.strip() for line in match.group(3).splitlines() if line.strip())
-            if text:
-                units.append(DocumentUnit(text=text, locator={"start_ms": start_ms, "end_ms": end_ms}))
-        return units
-
-    paragraphs = [p.strip() for p in content.split("\n\n") if p.strip()]
-    return [DocumentUnit(text=p, locator={"paragraph_index": i}) for i, p in enumerate(paragraphs)]
 
 # Leave headroom below Groq's 25 MB upload limit (decimal bytes).
 _AUDIO_UPLOAD_BYTES = 24_000_000
@@ -541,6 +505,41 @@ def _duration_seconds(path: str) -> float:
             check=True, timeout=60, capture_output=True, text=True,
         )
     return float(result.stdout)
+
+
+def _check_duration(duration: float) -> None:
+    if duration > _MAX_AUDIO_SECONDS + _DURATION_TOLERANCE_SECONDS:
+        raise InputLimitError("Audio/video dài hơn 90 phút; hãy cắt thành các phần tối đa 90 phút.")
+
+
+def preflight_limits(path: str) -> None:
+    """Đếm trang/slide hoặc đo thời lượng trước khi tạo job, để từ chối ngay lúc upload.
+
+    Chỉ ném InputLimitError. Tệp hỏng hay không đọc được thì bỏ qua: reader trong job
+    nền vẫn báo lỗi cụ thể hơn cho trường hợp đó.
+    """
+    ext = os.path.splitext(path)[1].lower()
+    try:
+        if ext == ".pdf":
+            with pymupdf.open(path) as doc:
+                pages = doc.page_count
+        elif ext == ".pptx":
+            pages = len(Presentation(path).slides)
+        elif ext in _AUDIO_VIDEO_EXTENSIONS:
+            duration = _duration_seconds(path)
+            pages = 0
+        else:
+            return
+    except Exception:
+        return
+    if ext in _AUDIO_VIDEO_EXTENSIONS:
+        _check_duration(duration)
+    elif pages > MAX_DOCUMENT_PAGES:
+        unit = "slide" if ext == ".pptx" else "trang"
+        raise InputLimitError(
+            f"Tài liệu có {pages} {unit}, vượt giới hạn {MAX_DOCUMENT_PAGES} {unit}; "
+            "hãy tách thành nhiều tệp nhỏ hơn."
+        )
 
 
 def _transcribe_piece(path: str, offset: float, deadline: float,
@@ -647,10 +646,7 @@ def read_audio_video(path: str) -> list[DocumentUnit]:
     duration = _duration_seconds(path)
     if not math.isfinite(duration) or duration <= 0:
         raise ValueError("Audio co thoi luong khong hop le")
-    if duration > _MAX_AUDIO_SECONDS + _DURATION_TOLERANCE_SECONDS:
-        raise ValueError(
-            "Audio dài hơn 90 phút; hãy cắt thành các phần tối đa 90 phút."
-        )
+    _check_duration(duration)
     with tempfile.TemporaryDirectory() as tmp:
         windows = _audio_windows(duration)
         deadline = time.monotonic() + _RATE_LIMIT_WAIT_SECONDS
@@ -680,8 +676,6 @@ def _read_document_units(path: str) -> list[DocumentUnit]:
         units = read_pptx(path)
     elif ext in (".html", ".htm"):
         units = read_html(path)
-    elif ext in (".srt", ".vtt", ".txt"):
-        units = read_transcript_file(path)
     elif ext in _AUDIO_VIDEO_EXTENSIONS:
         units = read_audio_video(path)
     else:

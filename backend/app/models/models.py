@@ -226,6 +226,9 @@ class Module(Base):
     # Content phải có 1 heading riêng bao phủ đúng khía cạnh đó.
     sub_objectives: Mapped[list | None] = mapped_column(JSONB, nullable=True)
     generation_payload: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    # Where the generation's time went: per-stage wall time, model calls and tokens, retrieval and
+    # rerank time (app/timing.py). NULL for modules generated before it was recorded.
+    generation_timings: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     paired_module_id: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey("modules.id", ondelete="CASCADE"), nullable=True, index=True
     )

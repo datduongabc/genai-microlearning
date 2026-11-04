@@ -1,3 +1,4 @@
+import os
 import uuid
 from pathlib import Path
 
@@ -10,7 +11,12 @@ from app.api.deps import get_current_user, require_course_owner
 from app.auth.rate_limit import limiter, user_or_address
 from app.config import settings
 from app.db import get_db
-from app.ingestion.document_readers import LEGACY_EXTENSIONS, SUPPORTED_EXTENSIONS
+from app.ingestion.document_readers import (
+    LEGACY_EXTENSIONS,
+    SUPPORTED_EXTENSIONS,
+    InputLimitError,
+    preflight_limits,
+)
 from app.jobs.failures import open_failures
 from app.jobs.queue import enqueue_job
 from app.models import (
@@ -26,10 +32,10 @@ from app.models import (
 
 router = APIRouter(prefix="/documents", tags=["documents"], dependencies=[Depends(get_current_user)])
 
-# Bound memory use before extraction: audio 200 MB, video 500 MB, documents 50 MB.
-MAX_UPLOAD_SIZE_BYTES = 50 * 1024 * 1024
+# Giới hạn đã chốt: tài liệu 25 MB, audio 200 MB, video 1 GB.
+MAX_UPLOAD_SIZE_BYTES = 25 * 1024 * 1024
 MAX_UPLOAD_SIZE_BYTES_AUDIO = 200 * 1024 * 1024
-MAX_UPLOAD_SIZE_BYTES_VIDEO = 500 * 1024 * 1024
+MAX_UPLOAD_SIZE_BYTES_VIDEO = 1024 * 1024 * 1024
 _READ_CHUNK_SIZE = 1024 * 1024
 # A document in one of these states still has its pipeline running or queued.
 _PIPELINE_ACTIVE_STATUSES = (DocumentStatus.uploaded, DocumentStatus.processing)
@@ -77,33 +83,42 @@ def upload_document(
     if suffix in _AUDIO_EXTENSIONS:
         size_limit, size_error = MAX_UPLOAD_SIZE_BYTES_AUDIO, "Tệp âm thanh tối đa 200 MB"
     elif suffix in _VIDEO_EXTENSIONS:
-        size_limit, size_error = MAX_UPLOAD_SIZE_BYTES_VIDEO, "Tệp video tối đa 500 MB"
+        size_limit, size_error = MAX_UPLOAD_SIZE_BYTES_VIDEO, "Tệp video tối đa 1 GB"
     else:
-        size_limit, size_error = MAX_UPLOAD_SIZE_BYTES, "File vượt quá giới hạn 50MB"
-    # Đọc theo từng khối và chặn sớm nếu vượt giới hạn, thay vì file.file.read()
-    # không giới hạn (đọc hết file vào bộ nhớ trước khi kiểm tra bất cứ gì).
-    content = bytearray()
-    while file_chunk := file.file.read(_READ_CHUNK_SIZE):
-        content.extend(file_chunk)
-        if len(content) > size_limit:
-            raise HTTPException(
-                status_code=413,
-                detail=size_error,
-            )
-
-    doc = Document(course_id=course_id, filename=file.filename, status=DocumentStatus.uploaded)
-    db.add(doc)
-    db.flush()
-
-    # Lưu bền vững (không phải NamedTemporaryFile bị xóa cuối request) -- job
-    # extract chạy nền, có thể sau khi request upload này đã trả response từ
-    # lâu, nên file phải còn tồn tại lúc đó. Nằm trong bind mount ./backend:/app
-    # nên sống sót qua restart container (không phải named volume ephemeral).
+        size_limit, size_error = MAX_UPLOAD_SIZE_BYTES, "Tài liệu tối đa 25 MB"
+    # Ghi thẳng từng khối xuống đĩa và chặn sớm nếu vượt giới hạn: video tới 1 GB thì
+    # không được giữ cả tệp trong bộ nhớ.
     upload_dir = Path(settings.upload_storage_dir)
     upload_dir.mkdir(parents=True, exist_ok=True)
-    storage_path = str(upload_dir / f"{doc.id}{suffix}")
-    with open(storage_path, "wb") as f:
-        f.write(content)
+    pending_path = upload_dir / f"pending-{uuid.uuid4()}{suffix}"
+    try:
+        size = 0
+        with open(pending_path, "wb") as f:
+            while file_chunk := file.file.read(_READ_CHUNK_SIZE):
+                size += len(file_chunk)
+                if size > size_limit:
+                    raise HTTPException(status_code=413, detail=size_error)
+                f.write(file_chunk)
+        # Đếm trang/đo thời lượng trước khi tạo job, để job nền không phải tải hay
+        # phiên âm một tệp chắc chắn bị từ chối.
+        try:
+            preflight_limits(str(pending_path))
+        except InputLimitError as exc:
+            raise HTTPException(status_code=413, detail=str(exc)) from exc
+
+        doc = Document(course_id=course_id, filename=file.filename, status=DocumentStatus.uploaded)
+        db.add(doc)
+        db.flush()
+
+        # Lưu bền vững (không phải NamedTemporaryFile bị xóa cuối request) -- job
+        # extract chạy nền, có thể sau khi request upload này đã trả response từ
+        # lâu, nên file phải còn tồn tại lúc đó. Nằm trong bind mount ./backend:/app
+        # nên sống sót qua restart container (không phải named volume ephemeral).
+        storage_path = str(upload_dir / f"{doc.id}{suffix}")
+        os.replace(pending_path, storage_path)
+    except BaseException:
+        pending_path.unlink(missing_ok=True)
+        raise
 
     job = enqueue_job(
         db, job_type=JobType.document_pipeline, step="extract",

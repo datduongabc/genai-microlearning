@@ -18,6 +18,14 @@ failures fall back to the free `gemini-fast`, then `gemini-flash`:
 | `claude-pro` | Strong model for a small subset |
 | `openai-pro` | Alternative strong model |
 
+Claude Haiku/Sonnet 5.5 and GPT-6 Luna/6.1 Sol accept only `temperature=1`. Their
+deployments drop the `temperature` the pipeline sends (0 at most steps), so they always
+sample at 1. Before this, a pinned experiment failed on its first call, and outside
+experiment mode every temperature-0 step silently fell back to free Gemini, which
+`generation_models` recorded as a Gemini `served_model`. For the evaluation this means
+paid-model modules are not deterministic across reruns; the Planner result is still
+cached per document, so the module topic and Learning Objective stay stable.
+
 Exact provider model IDs and display names are defined in
 [`devops/gateway/config.yaml`](../devops/gateway/config.yaml).
 No paid API call is required to validate configuration. Provider availability and

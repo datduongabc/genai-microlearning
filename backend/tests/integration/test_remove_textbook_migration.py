@@ -57,7 +57,9 @@ def test_remove_textbook_scope_preserves_study_data_and_view_access():
             original_access = conn.execute(access_sql).one()
             tracked = ('modules', 'module_components', 'questions', 'jobs', 'study_items')
             original_rows = {table: conn.execute(text(f"SELECT * FROM {table}")).mappings().all() for table in tracked}
-        migrate("head")
+        # Exactly the migration under test: the row comparison below would otherwise also see every
+        # column a later migration adds to these tables.
+        migrate("0021_remove_textbook_scope")
         assert 'document_sections' not in inspect(engine).get_table_names()
         for table in ('documents', 'modules', 'jobs'):
             assert not {'kind', 'section_id'} & {c['name'] for c in inspect(engine).get_columns(table)}

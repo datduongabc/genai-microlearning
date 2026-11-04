@@ -6,13 +6,13 @@ Sinh viên: Dương Nguyễn Tấn Đạt, ngành Khoa học Máy tính.
 Hệ thống nhận tài liệu môn học của giảng viên (PDF, PowerPoint, HTML, video), truy xuất bằng RAG, rồi sinh mô-đun Microlearning gồm bảy thành phần: Learning Objective, Content, Slides, Example, Practice, Quiz, Explanation.
 Mô-đun sau đó được xuất bản sang Moodle cho học viên học.
 
-Mọi tài liệu được xử lý như bài giảng thông thường: không chọn loại giáo trình, không phát hiện mục lục và không sinh theo chương/mục. API sinh mô-đun trả 422 nếu request còn gửi `section_ids`; hãy bỏ trường này để sinh cho cả tài liệu. Đợt đánh giá chỉ dùng bốn thư mục trong `docs/documents`: `dsa`, `operating-system`, `program-fundamentals`, `web-programming`.
+Mọi tài liệu được xử lý như bài giảng thông thường: không chọn loại giáo trình, không phát hiện mục lục và không sinh theo chương/mục. API sinh mô-đun trả 422 nếu request còn gửi `section_ids`; hãy bỏ trường này để sinh cho cả tài liệu. Đợt đánh giá chỉ dùng năm thư mục trong `docs/documents`: `advanced-programming`, `calculus 1`, `machine-learning`, `operating-system`, `scientific-socialism`.
 
 Model trả phí cho đợt đánh giá được chọn tường minh và ghim bằng `LLM_EXPERIMENT_MODE=true`; xem lựa chọn model, embedding và chính sách fallback tại [gateway routing](docs/gateway-routing.md).
 
-Khi bộ đọc nhận diện tài liệu hỏng hoặc sai định dạng, job báo lỗi ngay ở lần xử lý đầu và không tự thử lại; PDF có mật khẩu cần bỏ mật khẩu rồi tải lại. Trang PDF gần như không có lớp chữ được đọc bằng OCR; chữ trong hình nội dung của PDF và PPTX (sơ đồ, ảnh chụp chữ) cùng chữ SmartArt được đưa vào bài dưới dạng `Hình: …`; trang PDF còn công thức vỡ được đọc lại từ ảnh trang qua gateway ([gateway routing](docs/gateway-routing.md)). Trang không còn chữ sau khi đọc lớp chữ và OCR, cùng trang có công thức chưa xác minh được, hiện cảnh báo theo số trang dưới tài liệu trong trang môn học (cần `alembic upgrade head`), và tài liệu không đọc được chữ nào bị báo lỗi để tải lại bản có lớp chữ. Lỗi tạm thời khi gọi gateway vẫn được tự thử lại với thời gian chờ tăng dần.
+Khi bộ đọc nhận diện tài liệu hỏng hoặc sai định dạng, job báo lỗi ngay ở lần xử lý đầu và không tự thử lại; PDF có mật khẩu cần bỏ mật khẩu rồi tải lại. Trang PDF gần như không có lớp chữ được đọc bằng OCR; chữ trong hình nội dung của PDF và PPTX (sơ đồ, ảnh chụp chữ) cùng chữ SmartArt được đưa vào bài dưới dạng `Hình: …`; trang PDF còn công thức vỡ được đọc lại từ ảnh trang qua gateway ([gateway routing](docs/gateway-routing.md)). Trang không còn chữ sau khi đọc lớp chữ và OCR, cùng trang có công thức chưa xác minh được, hiện cảnh báo theo số trang dưới tài liệu trong trang môn học (cần `alembic upgrade head`), và tài liệu không đọc được chữ nào bị báo lỗi để tải lại bản có lớp chữ. Lỗi tạm thời khi gọi gateway vẫn được tự thử lại với thời gian chờ tăng dần. Câu trả lời có cấu trúc của model bị cắt hoặc sai schema được hỏi lại tối đa hai lần ngay trong lệnh gọi đó, thay vì làm job thất bại vĩnh viễn. Worker đang chạy job gửi nhịp tim mỗi 60 giây, nên một lượt sinh hay một video dài chạy quá 15 phút không bị sweeper coi là kẹt và chạy trùng; chỉ job mà worker đã chết mới được đưa lại vào hàng đợi.
 
-Quiz và Practice dùng chung gate chất lượng: kiểm key duy nhất, từng phương án nhiễu, trùng ý, dấu hiệu lộ đáp án, Bloom của sub-objective và bằng chứng nguồn. Chỉ câu trượt được sinh lại một lần trong vòng tự kiểm; nếu vẫn trượt, giữ câu và lý do trong mô-đun để xem xét; job sinh vẫn hoàn tất với một mô-đun, nhưng mô-đun không được đẩy lên Moodle cho đến khi giảng viên sửa (thủ công hoặc qua chat) mọi câu trượt. Tắt `self_check` chỉ bỏ kiểm bằng model; kiểm key, trùng phương án và bẫy độ dài/từ tuyệt đối vẫn chạy. Gate mở rộng dùng lại lượt kiểm hiện có: mô-đun bốn câu vẫn thường cần 15 lượt model (10 khi tắt tự kiểm), tối đa 30 theo các giới hạn sửa hiện có, gồm một lần cân bằng độ dài cả bộ.
+Quiz và Practice dùng chung gate chất lượng: kiểm key duy nhất, từng phương án nhiễu, trùng ý, dấu hiệu lộ đáp án, Bloom của sub-objective và bằng chứng nguồn. Chỉ câu trượt được sinh lại một lần trong vòng tự kiểm; nếu vẫn trượt, giữ câu và lý do trong mô-đun để xem xét; job sinh vẫn hoàn tất với một mô-đun, nhưng mô-đun không được đẩy lên Moodle cho đến khi giảng viên sửa (thủ công hoặc qua chat) mọi câu trượt. Tắt `self_check` chỉ bỏ kiểm bằng model; kiểm key, trùng phương án và bẫy độ dài/từ tuyệt đối vẫn chạy. Gate mở rộng dùng lại lượt kiểm hiện có: mô-đun bốn câu vẫn thường cần 15 lượt model (10 khi tắt tự kiểm), tối đa 30 theo các giới hạn sửa hiện có, gồm một lần cân bằng độ dài cả bộ; con số này chưa tính các lần hỏi lại khi câu trả lời có cấu trúc bị lỗi (tối đa thêm 2 lần cho mỗi lệnh gọi).
 
 Ứng dụng mở cho mọi người dùng; admin quản lý tài khoản và theo dõi lỗi. Quyền làm giáo viên trong Moodle được quản lý theo từng môn học trên Moodle.
 
@@ -39,8 +39,6 @@ Tài khoản có ít nhất một khóa học ứng dụng liên kết với kh�
 ## Tài liệu
 
 - Đề tài: `GenerativeAI.md`
-- Thiết kế kiến trúc Giai đoạn 2: `docs/specs/2026-09-23-kien-truc-gd2-design.md`
-- Kế hoạch thực thi: `docs/plans/`
 - Đánh giá R8 và metric claim/trích dẫn R9: [docs/rubric.md](docs/rubric.md), gồm xuất cặp gói, chấm riêng Content, phân tích kết quả đã lưu và điều kiện chạy miễn phí.
 - Thiết lập nghiên cứu R18 qua API admin và chấm mù theo lời mời: [docs/studies.md](docs/studies.md).
 
@@ -84,7 +82,7 @@ cp devops/.env.example devops/.env
    Kiểm tra phiên bản database bằng:
 
    ```bash
-   docker compose exec db psql -U "$DATABASE_USER" -d microlearning \
+   docker compose exec db psql -U "$DATABASE_USER" -d "$MOODLE_DB_NAME" \
      -c "select value from mdl_config where name = 'release'"
    ```
 
