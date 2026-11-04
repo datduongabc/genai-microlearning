@@ -32,6 +32,13 @@ No paid API call is required to validate configuration. Provider availability an
 credit still require explicit deployment verification. Embeddings remain local
 Qwen3-Embedding-0.6B through `embed-default`. No fallbacks apply to embeddings or transcription.
 
+PDF ingestion sends a rendered page to `FORMULA_VISION_MODEL` (default `gemini-fast`, which
+must accept images) only when its rebuilt formulas still look broken, at most
+`FORMULA_VISION_MAX_PAGES` (default 40) pages per document. These calls use the ordinary
+routing, so a rate-limited `gemini-fast` falls back to `gemini-flash`. An empty
+`FORMULA_VISION_MODEL` turns the re-read off; such pages keep the rebuilt text and get a
+`formula_unverified` warning. See `docs/measurements/2026-10-27-formula-figure-reader.md`.
+
 `groq-pro` is a paid lecturer opt-in model, excluded from the judge pool.
 Judge selection, including for modules generated with `groq-pro`, follows the
 [rubric](rubric.md#1-thiết-kế-nghiên-cứu).

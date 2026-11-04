@@ -13,7 +13,12 @@ import pymupdf
 import pytest
 
 from app.ingestion.document_readers import read_document
-from app.ingestion.pdf_layout import map_font_text, page_lines, vni_to_unicode
+from app.ingestion.pdf_layout import (
+    map_font_text,
+    page_lines,
+    suspect_formula_lines,
+    vni_to_unicode,
+)
 
 
 def _compact(text: str) -> str:
@@ -117,6 +122,59 @@ def test_a_rule_under_a_radical_is_not_mistaken_for_a_fraction_bar(page):
     assert all("/" not in line for line in page_lines(page))
 
 
+def _char_box(page, char):
+    for block in page.get_text("rawdict")["blocks"]:
+        for line in block.get("lines", []):
+            for span in line["spans"]:
+                for c in span["chars"]:
+                    if c["c"] == char:
+                        return pymupdf.Rect(c["bbox"])
+    raise AssertionError(char)
+
+
+def test_a_tex_radical_glyph_with_a_bar_from_its_edge_wraps_what_is_under_the_bar(page):
+    # TeX: dấu căn là một glyph của phông, vạch trên là một nét ngang bắt đầu ngay mép phải glyph.
+    page.insert_text((40, 100), "\xd6", fontname="symb", fontsize=16)
+    sign = _char_box(page, "\xd6")
+    page.insert_text((sign.x1 + 1, 100), "x", fontname="tiit", fontsize=16)
+    page.insert_text((sign.x1 + 20, 100), "=", fontname="symb", fontsize=16)
+    page.insert_text((sign.x1 + 36, 100), "3", fontname="tiro", fontsize=16)
+    top = _char_box(page, "x").y0 + 1
+    page.draw_line((sign.x1, top), (sign.x1 + 12, top), width=0.5)
+
+    assert [_compact(line) for line in page_lines(page)] == ["√x=3"]
+
+
+def test_a_fraction_bar_touching_a_big_radical_glyph_stays_inside_the_radical(page):
+    # Dấu căn lớn bao một phân số: gạch phân số cũng bắt đầu ở mép glyph nhưng thấp hơn vạch trên.
+    page.insert_text((40, 100), "\xd6", fontname="symb", fontsize=30)
+    sign = _char_box(page, "\xd6")
+    page.insert_text((sign.x1 + 2, 92), "1", fontname="tiro", fontsize=12)
+    page.insert_text((sign.x1 + 2, 108), "n", fontname="tiit", fontsize=12)
+    page.draw_line((sign.x1 + 0.5, 96), (sign.x1 + 9, 96), width=0.5)
+    top = _char_box(page, "1").y0 - 1
+    page.draw_line((sign.x1, top), (sign.x1 + 12, top), width=0.5)
+    page.insert_text((sign.x1 + 20, 100), "=", fontname="symb", fontsize=16)
+    page.insert_text((sign.x1 + 36, 100), "y", fontname="tiit", fontsize=16)
+
+    assert [_compact(line) for line in page_lines(page)] == ["√(1/n)=y"]
+
+
+def test_a_radical_bar_just_under_a_longer_fraction_bar_keeps_its_radical(page):
+    # pdflatex \frac{1}{\sqrt{n}}: glyph căn của TeX nhô lên quá gạch phân số, còn vạch trên của
+    # căn ở mẫu số nằm sát dưới gạch phân số dài hơn nó.
+    page.insert_text((62, 90), "1", fontname="tiro", fontsize=14)
+    page.insert_text((60, 100), "\xd6", fontname="symb", fontsize=14)
+    sign = _char_box(page, "\xd6")
+    page.insert_text((sign.x1 + 1, 112), "n", fontname="tiit", fontsize=14)
+    page.draw_line((sign.x0, 96.3), (sign.x1 + 9, 96.3), width=0.5)
+    page.draw_line((sign.x1, 98.3), (sign.x1 + 9, 98.3), width=0.5)
+    page.insert_text((30, 101), "y", fontname="tiit", fontsize=14)
+    page.insert_text((42, 101), "=", fontname="symb", fontsize=14)
+
+    assert [_compact(line) for line in page_lines(page)] == ["y=1/(√n)"]
+
+
 def test_limits_under_lim_follow_it_even_when_they_start_further_left(page):
     page.insert_text((50, 100), "lim", fontname="tiro", fontsize=16)
     page.insert_text((46, 112), "n", fontname="tiit", fontsize=9)
@@ -193,6 +251,27 @@ def test_a_page_with_no_text_has_no_lines(page):
 )
 def test_symbol_font_codes_become_the_symbols_they_draw(encoded, font, expected):
     assert map_font_text(encoded, font) == (expected, False)
+
+
+@pytest.mark.parametrize(
+    "encoded, font, expected",
+    [
+        ("R", "CMEX10", ("∫", False)),
+        ("Z", "CMEX10", ("∫", False)),
+        ("P", "CMEX10", ("∑", False)),
+        ("q", "CMEX10", ("√", False)),
+        ("\x12", "CMEX10", ("(", True)),
+        ("\x13", "CMEX10", (")", True)),
+        ("RNZ", "MSBM10", ("ℝℕℤ", False)),
+    ],
+)
+def test_tex_extension_and_blackboard_codes_become_the_symbols_they_draw(encoded, font, expected):
+    # CMEX và msbm của TeX không kèm bảng chuyển mã: PyMuPDF trả nguyên mã glyph.
+    assert map_font_text(encoded, font) == expected
+
+
+def test_cmex_delimiters_that_a_to_unicode_map_already_decoded_are_kept():
+    assert map_font_text("(", "CMEX10") == ("(", False)
 
 
 def test_ordinary_fonts_are_not_remapped():
@@ -340,3 +419,34 @@ def test_vni_decoder_requires_evidence_of_legacy_encoding(monkeypatch, page):
     assert page_lines(page) == ["Việt Nam"]
     assert pdf_layout.map_font_text("Hòa bình", "VNI-Times") == ("Hòa bình", False)
     assert pdf_layout.vni_to_unicode("TRÖÔØNG ÑAÏI HOÏC") == "TRƯỜNG ĐẠI HỌC"
+
+
+# --- công thức còn vỡ ----------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "lines",
+    [
+        ["(x_(n+1))/x_n = (( )^(n+1))/(( )^n)"],
+        ["I = lim ((n^2 + 1)( + n√n))/(n + 1)"],
+        ["1 + 1/n) .n/(n+1) = 1."],
+        ["lim_(x→0) f(x) = A", "x→0", "x→0"],
+    ],
+)
+def test_a_formula_with_an_empty_group_a_dangling_operator_or_stray_limits_is_suspect(lines):
+    assert suspect_formula_lines(lines)
+
+
+@pytest.mark.parametrize(
+    "lines",
+    [
+        ["lim_(n→∞) (√(n^2 + 1) − n)/(√(n + 1) − √n)."],
+        ["f (x) trên [a, +∞) và được ký hiệu là ∫_a^(+∞)f (x)dx."],
+        ["1)A/(x − a); 2)A/((x − a)^k) (k = 2, 3, . . .);"],
+        ["thì luôn có bất đẳng thức (1 + h)^n > 1 + nh với"],
+        ["Ví dụ", "= 0."],
+        ["x→0"],
+    ],
+)
+def test_a_rebuilt_formula_an_interval_a_numbered_list_or_one_short_line_is_not_suspect(lines):
+    assert suspect_formula_lines(lines) == []
