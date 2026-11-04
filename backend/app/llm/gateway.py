@@ -10,7 +10,7 @@ import json
 
 import litellm
 from litellm.constants import RETURN_RAW_MODEL_NAME_METADATA_KEY
-from pydantic import BaseModel
+from pydantic import BaseModel, ValidationError
 
 from app.config import settings
 
@@ -136,6 +136,11 @@ def transcribe_audio(path: str) -> list[dict]:
     return response.segments or []
 
 
+# Extra calls for a reply that is not valid JSON or breaks the schema (cut off, missing field). It is
+# sampled again, so a one-off slip passes; a model that keeps failing still fails, after this bound.
+MALFORMED_REPLY_RETRIES = 2
+
+
 def complete_structured[T: BaseModel](
     prompt: str, response_model: type[T], system_instruction: str | None = None,
     response_format: dict | None = None, **kwargs
@@ -148,11 +153,20 @@ def complete_structured[T: BaseModel](
     if system_instruction:
         messages.append({"role": "system", "content": system_instruction})
     messages.append({"role": "user", "content": prompt})
-    response = _completion(
-        messages=messages,
-        response_format=response_format if response_format is not None else response_model,
-        **kwargs,
-    )
-    # strict=False: model hay để lọt tab, xuống dòng trần vào giữa chuỗi JSON khi viết công thức, và
-    # trình đọc nghiêm từ chối cả câu trả lời dù nó vẫn đọc được. Schema vẫn được kiểm đầy đủ ở bước sau.
-    return response_model.model_validate(json.loads(response.choices[0].message.content, strict=False))
+    for attempt in range(MALFORMED_REPLY_RETRIES + 1):
+        response = _completion(
+            messages=messages,
+            response_format=response_format if response_format is not None else response_model,
+            **kwargs,
+        )
+        try:
+            # strict=False: model hay để lọt tab, xuống dòng trần vào giữa chuỗi JSON khi viết công
+            # thức, và trình đọc nghiêm từ chối cả câu trả lời dù nó vẫn đọc được. Schema vẫn được
+            # kiểm đầy đủ ngay sau đó.
+            return response_model.model_validate(json.loads(response.choices[0].message.content, strict=False))
+        except (json.JSONDecodeError, ValidationError):
+            # Both are ValueError, which the job queue treats as permanent: without asking again here,
+            # one bad reply late in a module would throw away every paid call made before it.
+            if attempt == MALFORMED_REPLY_RETRIES:
+                raise
+    raise AssertionError("unreachable")

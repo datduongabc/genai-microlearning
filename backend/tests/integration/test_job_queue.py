@@ -21,7 +21,9 @@ from app.jobs.queue import (
     enqueue_job,
     execute_job_step,
     handle_job_error,
+    heartbeat,
     is_terminal_error,
+    run_claimed_job,
     sweep_stuck_jobs,
 )
 from app.models import Course, Document, DocumentStatus, Job, JobStatus, JobType, User
@@ -347,5 +349,107 @@ def test_sweep_stuck_jobs_fails_a_job_with_no_attempts_left_and_marks_its_docume
         assert job.status == JobStatus.failed
         assert job.locked_at is None
         assert db.get(Document, doc_id).status == DocumentStatus.failed
+    finally:
+        db.close()
+
+
+def _running_job_locked_long_ago(db, doc, worker_id: str) -> uuid.UUID:
+    job = enqueue_job(db, job_type=JobType.module_generation, step="generate", document_id=doc.id, max_attempts=5)
+    job.status = JobStatus.running
+    job.locked_at = datetime.now(UTC) - timedelta(minutes=20)
+    job.locked_by = worker_id
+    db.commit()
+    return job.id
+
+
+def test_a_long_job_whose_worker_still_beats_is_not_requeued(seed_document):
+    """Một lượt sinh module hay transcribe video có thể chạy quá ngưỡng kẹt 15 phút. Nếu sweeper
+    coi nó là kẹt thì worker thứ hai chạy lại cùng job trong khi worker đầu vẫn chạy: hai module,
+    gấp đôi lượt gọi model. Worker còn sống thì nhịp tim giữ job lại cho nó."""
+    db = SessionLocal()
+    try:
+        job_id = _running_job_locked_long_ago(db, seed_document(db), "alive-worker")
+    finally:
+        db.close()
+
+    assert heartbeat(job_id, "alive-worker") is True
+    sweep_stuck_jobs()
+
+    db = SessionLocal()
+    try:
+        job = db.get(Job, job_id)
+        assert job.status == JobStatus.running
+        assert job.locked_by == "alive-worker"
+        assert job.attempts == 0
+    finally:
+        db.close()
+
+
+def test_a_worker_that_lost_its_job_cannot_beat_for_it(seed_document):
+    """Job đã bị sweeper lấy lại và giao cho worker khác: nhịp tim của worker cũ không được giữ
+    khóa thay cho worker mới, và báo cho worker cũ biết nó đã mất job."""
+    db = SessionLocal()
+    try:
+        job_id = _running_job_locked_long_ago(db, seed_document(db), "new-worker")
+        before = db.get(Job, job_id).locked_at
+    finally:
+        db.close()
+
+    assert heartbeat(job_id, "old-worker") is False
+
+    db = SessionLocal()
+    try:
+        assert db.get(Job, job_id).locked_at == before
+    finally:
+        db.close()
+
+
+def test_running_a_claimed_job_keeps_beating_until_it_finishes(seed_document, monkeypatch):
+    import time
+
+    from app.jobs import queue
+
+    db = SessionLocal()
+    try:
+        job = db.get(Job, _running_job_locked_long_ago(db, seed_document(db), "beating-worker"))
+        db.expunge(job)
+    finally:
+        db.close()
+
+    monkeypatch.setattr(queue, "HEARTBEAT_INTERVAL_SECONDS", 0.05)
+    monkeypatch.setattr(queue, "execute_job_step", lambda job: time.sleep(0.3))
+
+    run_claimed_job(job, "beating-worker")
+
+    db = SessionLocal()
+    try:
+        locked_at = db.get(Job, job.id).locked_at
+        assert locked_at > datetime.now(UTC) - timedelta(minutes=1)
+    finally:
+        db.close()
+
+
+def test_a_step_that_raises_is_still_handled_after_beating(seed_document, monkeypatch):
+    from app.jobs import queue
+
+    db = SessionLocal()
+    try:
+        job = db.get(Job, _running_job_locked_long_ago(db, seed_document(db), "raising-worker"))
+        db.expunge(job)
+    finally:
+        db.close()
+
+    def boom(job):
+        raise RuntimeError("network hiccup")
+
+    monkeypatch.setattr(queue, "execute_job_step", boom)
+    run_claimed_job(job, "raising-worker")
+
+    db = SessionLocal()
+    try:
+        current = db.get(Job, job.id)
+        assert current.status == JobStatus.queued
+        assert current.attempts == 1
+        assert current.last_error == "network hiccup"
     finally:
         db.close()

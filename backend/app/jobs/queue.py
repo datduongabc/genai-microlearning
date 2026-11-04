@@ -22,7 +22,7 @@ import uuid
 from datetime import UTC, datetime, timedelta
 
 from litellm.exceptions import RateLimitError
-from sqlalchemy import func, select
+from sqlalchemy import func, select, update
 from sqlalchemy.orm import Session
 
 from app.db import WorkerSessionLocal
@@ -34,6 +34,10 @@ logger = logging.getLogger(__name__)
 BASE_BACKOFF_SECONDS = 5.0
 MAX_BACKOFF_SECONDS = 300.0
 STUCK_THRESHOLD_SECONDS = 15 * 60
+# A running job's worker refreshes locked_at this often, so only a job whose worker has died goes
+# STUCK_THRESHOLD_SECONDS without it: a module generation or a long video can legitimately run longer
+# than the threshold, and requeuing it then would run the same job twice at once.
+HEARTBEAT_INTERVAL_SECONDS = 60
 SWEEP_INTERVAL_SECONDS = 60
 # Periodic clean-up (finished jobs, dead refresh tokens): first run shortly
 # after start so a backend that is restarted often still gets it, then hourly.
@@ -125,6 +129,51 @@ def claim_next_job(worker_id: str) -> Job | None:
         return job
     finally:
         db.close()
+
+
+def heartbeat(job_id: uuid.UUID, worker_id: str) -> bool:
+    """Refresh the lock of a job this worker is still running. False when the job is no longer
+    running under this worker (the sweeper gave it to another), which then must not be kept alive."""
+    db = WorkerSessionLocal()
+    try:
+        result = db.execute(
+            update(Job)
+            .where(Job.id == job_id, Job.status == JobStatus.running, Job.locked_by == worker_id)
+            .values(locked_at=datetime.now(UTC))
+        )
+        db.commit()
+        return result.rowcount == 1
+    finally:
+        db.close()
+
+
+def _beat_until(stop: threading.Event, job_id: uuid.UUID, worker_id: str) -> None:
+    while not stop.wait(HEARTBEAT_INTERVAL_SECONDS):
+        try:
+            if not heartbeat(job_id, worker_id):
+                logger.warning(f"[job_queue] worker {worker_id} no longer holds job {job_id}")
+                return
+        except Exception:
+            # A missed beat is retried on the next interval; the threshold allows many of them.
+            logger.exception(f"[job_queue] heartbeat failed for job {job_id}")
+
+
+def run_claimed_job(job: Job, worker_id: str) -> None:
+    """Run a job this worker claimed, beating for it the whole time, and record a failure."""
+    stop = threading.Event()
+    beater = threading.Thread(target=_beat_until, args=(stop, job.id, worker_id), daemon=True)
+    beater.start()
+    try:
+        execute_job_step(job)
+    except Exception as err:
+        failure = err
+    else:
+        failure = None
+    finally:
+        stop.set()
+        beater.join()
+    if failure is not None:
+        handle_job_error(job.id, failure)
 
 
 def handle_job_error(job_id: uuid.UUID, err: Exception) -> None:
@@ -254,10 +303,7 @@ def _worker_loop(worker_id: str, *, run_sweeper: bool) -> None:
             job = claim_next_job(worker_id)
             if job is not None:
                 logger.info(f"[job_queue] executing job {job.id} type={job.job_type} step={job.step} attempt={job.attempts}")
-                try:
-                    execute_job_step(job)
-                except Exception as err:
-                    handle_job_error(job.id, err)
+                run_claimed_job(job, worker_id)
         except Exception:
             logger.exception("[job_queue] worker loop error")
 
