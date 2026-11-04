@@ -1,4 +1,4 @@
-"""Chạy thật 3 step (extract -> chunk -> embed) trên 1 file .txt thật --
+"""Chạy thật 3 step (extract -> chunk -> embed) trên 1 file .html thật --
 không cần LLM/API ngoài; fixture offline_embeddings trong tests/conftest.py
 thay provider embedding, còn các bước pipeline và lưu DB chạy thật.
 
@@ -26,10 +26,10 @@ from app.models import (
 )
 
 SAMPLE_TEXT = (
-    "Doan mot noi ve khai niem A voi nhieu chi tiet quan trong can duoc giu "
-    "nguyen ven khi chia nho tai lieu thanh cac phan.\n\n"
-    "Doan hai noi ve khai niem B, khac voi khai niem A o mot so diem chinh "
-    "can duoc trich xuat dung."
+    "<p>Doan mot noi ve khai niem A voi nhieu chi tiet quan trong can duoc giu "
+    "nguyen ven khi chia nho tai lieu thanh cac phan.</p>"
+    "<p>Doan hai noi ve khai niem B, khac voi khai niem A o mot so diem chinh "
+    "can duoc trich xuat dung.</p>"
 )
 
 
@@ -44,12 +44,12 @@ def seed_document_with_file(tmp_path):
         course = Course(name="Document pipeline test", owner_id=user.id)
         db.add(course)
         db.flush()
-        doc = Document(course_id=course.id, filename="sample.txt", status=DocumentStatus.uploaded)
+        doc = Document(course_id=course.id, filename="sample.html", status=DocumentStatus.uploaded)
         db.add(doc)
         db.commit()
         created_doc_ids.append(doc.id)
 
-        file_path = tmp_path / "sample.txt"
+        file_path = tmp_path / "sample.html"
         file_path.write_text(SAMPLE_TEXT, encoding="utf-8")
         return doc, str(file_path)
 

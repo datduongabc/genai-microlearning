@@ -75,7 +75,7 @@ def _upload(world, course_id):
     return client.post(
         "/documents",
         params={"course_id": course_id},
-        files={"file": ("notes.txt", b"hello world", "text/plain")},
+        files={"file": ("notes.html", b"<p>hello world</p>", "text/html")},
         headers={"Authorization": f"Bearer {world['token']}"},
     )
 

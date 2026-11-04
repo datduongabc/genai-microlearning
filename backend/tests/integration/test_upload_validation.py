@@ -1,11 +1,17 @@
 import uuid
 
+import pymupdf
 import pytest
 from fastapi.testclient import TestClient
+from pptx import Presentation
 
+from app.api import documents
 from app.api.documents import MAX_UPLOAD_SIZE_BYTES
+from app.db import SessionLocal
+from app.ingestion import document_readers
 from app.ingestion.document_readers import SUPPORTED_EXTENSIONS
 from app.main import app
+from app.models import Document, Job
 from tests.auth_helpers import create_and_login
 
 client = TestClient(app)
@@ -44,7 +50,7 @@ def test_upload_rejects_oversized_file():
     oversized = b"x" * (MAX_UPLOAD_SIZE_BYTES + 1)
     response = client.post(
         "/documents", params={"course_id": course_id},
-        files={"file": ("big.txt", oversized, "text/plain")},
+        files={"file": ("big.html", oversized, "text/html")},
         headers={"Authorization": f"Bearer {token}"},
     )
     assert response.status_code == 413
@@ -105,3 +111,116 @@ def test_o_chon_tep_tren_giao_dien_nhan_dung_cac_dinh_dang_backend_nhan():
 
     assert len(khop) == 1, "mong đợi đúng một ô chọn tệp trên trang tài liệu môn học"
     assert set(khop[0].split(",")) == SUPPORTED_EXTENSIONS
+
+
+# --- giới hạn đã chốt -----------------------------------------------------------
+# Tài liệu 25 MB và 150 trang/slide, audio 200 MB, video 1 GB, audio/video 90 phút.
+# Mỗi giới hạn được kiểm ở đúng biên: nhận ở giới hạn, từ chối ngay trên giới hạn.
+
+MB = 1024 * 1024
+
+
+@pytest.fixture
+def upload(tmp_path, monkeypatch):
+    monkeypatch.setattr(documents.settings, "upload_storage_dir", str(tmp_path))
+    suffix = uuid.uuid4().hex[:8]
+    token = _create_and_login(f"upload-limit-{suffix}@example.com")
+    headers = {"Authorization": f"Bearer {token}"}
+    created = []
+
+    def send(filename: str, content: bytes):
+        # Mỗi lần tải dùng một môn riêng: môn đang có tài liệu chờ xử lý thì từ chối tải tiếp.
+        course_id = _make_course(token, uuid.uuid4().hex[:8])
+        response = client.post(
+            "/documents", params={"course_id": course_id},
+            files={"file": (filename, content, "application/octet-stream")}, headers=headers,
+        )
+        if response.status_code == 200:
+            created.append(response.json()["id"])
+        return response
+
+    yield send
+    # Job 'queued' sót lại làm sai các test claim job chạy sau.
+    with SessionLocal() as db:
+        db.query(Job).filter(Job.document_id.in_(created)).delete(synchronize_session=False)
+        db.query(Document).filter(Document.id.in_(created)).delete(synchronize_session=False)
+        db.commit()
+    assert not [p for p in tmp_path.iterdir() if p.name.startswith("pending-")], "tệp tạm phải được dọn"
+
+
+def test_gioi_han_da_chot():
+    assert documents.MAX_UPLOAD_SIZE_BYTES == 25 * MB
+    assert documents.MAX_UPLOAD_SIZE_BYTES_AUDIO == 200 * MB
+    assert documents.MAX_UPLOAD_SIZE_BYTES_VIDEO == 1024 * MB
+    assert document_readers.MAX_DOCUMENT_PAGES == 150
+
+
+def test_tai_lieu_25_mb_o_bien(upload):
+    assert upload("a.html", b"x" * (25 * MB)).status_code == 200
+    response = upload("b.html", b"x" * (25 * MB + 1))
+    assert response.status_code == 413
+    assert response.json()["detail"] == "Tài liệu tối đa 25 MB"
+
+
+@pytest.mark.parametrize("name,constant,message", [
+    ("a.mp3", "MAX_UPLOAD_SIZE_BYTES_AUDIO", "Tệp âm thanh tối đa 200 MB"),
+    ("a.mp4", "MAX_UPLOAD_SIZE_BYTES_VIDEO", "Tệp video tối đa 1 GB"),
+])
+def test_audio_video_theo_byte_o_bien(upload, monkeypatch, name, constant, message):
+    # Gửi 200 MB / 1 GB qua TestClient quá chậm: thu nhỏ giới hạn để kiểm phép so sánh ở biên,
+    # còn con số thật đã được test_gioi_han_da_chot kiểm.
+    monkeypatch.setattr(documents, constant, 1000)
+    monkeypatch.setattr(document_readers, "_duration_seconds", lambda path: 60)
+    assert upload(name, b"x" * 1000).status_code == 200
+    response = upload(name, b"x" * 1001)
+    assert response.status_code == 413
+    assert response.json()["detail"] == message
+
+
+def _pdf(pages: int) -> bytes:
+    doc = pymupdf.open()
+    for _ in range(pages):
+        doc.new_page()
+    return doc.tobytes()
+
+
+def _pptx(slides: int, tmp_path) -> bytes:
+    deck = Presentation()
+    for _ in range(slides):
+        deck.slides.add_slide(deck.slide_layouts[6])
+    path = tmp_path / f"deck-{slides}.pptx"
+    deck.save(path)
+    return path.read_bytes()
+
+
+def test_pdf_150_trang_o_bien(upload):
+    assert upload("a.pdf", _pdf(150)).status_code == 200
+    response = upload("b.pdf", _pdf(151))
+    assert response.status_code == 413
+    assert "151 trang" in response.json()["detail"]
+
+
+def test_pptx_150_slide_o_bien(upload, tmp_path_factory):
+    tmp = tmp_path_factory.mktemp("decks")
+    assert upload("a.pptx", _pptx(150, tmp)).status_code == 200
+    response = upload("b.pptx", _pptx(151, tmp))
+    assert response.status_code == 413
+    assert "151 slide" in response.json()["detail"]
+
+
+@pytest.mark.parametrize("name", ["a.mp3", "a.mp4"])
+def test_audio_video_90_phut_o_bien(upload, monkeypatch, name):
+    # Cùng phép kiểm với reader: 5400 s cộng 1 s đệm của bộ mã hoá MP3.
+    monkeypatch.setattr(document_readers, "_duration_seconds", lambda path: 5401)
+    assert upload(name, b"input").status_code == 200
+    monkeypatch.setattr(document_readers, "_duration_seconds", lambda path: 5401.5)
+    response = upload(name, b"input")
+    assert response.status_code == 413
+    assert "90 phút" in response.json()["detail"]
+
+
+@pytest.mark.parametrize("duoi", [".srt", ".vtt", ".txt"])
+def test_dinh_dang_da_bo_bi_tu_choi(upload, duoi):
+    response = upload(f"bai-giang{duoi}", b"1\n00:00:00,000 --> 00:00:01,000\nXin chao\n")
+    assert response.status_code == 422
+    assert "không được hỗ trợ" in response.json()["detail"]

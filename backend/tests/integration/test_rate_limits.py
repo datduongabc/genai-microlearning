@@ -88,7 +88,7 @@ CASES = [
     ("moodle-link-request", 10, lambda h: client.post("/moodle/account/link-requests", json={"email": "invalid"}, headers=h)),
     ("publish", 20, lambda h: client.post(f"/modules/{uuid.uuid4()}/publish-to-moodle", json={"section_num": 0}, headers=h)),
     ("upload", 20, lambda h: client.post(
-        "/documents", params={"course_id": str(uuid.uuid4())}, files={"file": ("a.txt", b"x", "text/plain")}, headers=h
+        "/documents", params={"course_id": str(uuid.uuid4())}, files={"file": ("a.html", b"x", "text/html")}, headers=h
     )),
     ("create-course", 30, lambda h: client.post("/courses", json={"name": "c"}, headers=h)),
 ]

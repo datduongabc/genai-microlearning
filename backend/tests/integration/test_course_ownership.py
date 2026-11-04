@@ -30,7 +30,7 @@ def test_user_cannot_see_or_use_another_users_course():
     response = client.post(
         "/documents",
         params={"course_id": course_id},
-        files={"file": ("x.txt", b"hello", "text/plain")},
+        files={"file": ("x.html", b"<p>hello</p>", "text/html")},
         headers={"Authorization": f"Bearer {token_other}"},
     )
     assert response.status_code == 404
