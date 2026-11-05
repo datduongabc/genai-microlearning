@@ -27,7 +27,8 @@ class RelevanceCheck(BaseModel):
 
 _INSTRUCTION = IGNORE_EMBEDDED_INSTRUCTIONS + """Bạn là bộ đánh giá độ liên quan (relevance evaluator) trong pipeline Corrective
 RAG. Nhiệm vụ: chấm các đoạn nguồn (source chunk) được truy xuất có ĐỦ liên
-quan để {purpose} hay không.
+quan để {purpose} hay không. Chấm chung cho tất cả các đoạn: trả về ĐÚNG MỘT đối
+tượng JSON, không phải một mảng với mỗi đoạn một phần tử.
 
 - confidence="high": nội dung nguồn đủ cụ thể, đủ chi tiết để {purpose} có
   căn cứ vững chắc về đúng chủ đề.

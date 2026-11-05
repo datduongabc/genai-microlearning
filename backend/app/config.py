@@ -72,6 +72,9 @@ class Settings(BaseSettings):
     non_teacher_daily_generation_limit: int = Field(default=3, ge=1)
     # Pin the selected alias for evaluation; the gateway may still retry that model.
     llm_experiment_mode: bool = False
+    # Times one call in a background job waits and asks again after a 429, so a brief limit does not
+    # restart the whole job. Requests do not wait.
+    llm_rate_limit_retries: int = Field(default=6, ge=0)
     # The gateway alias that serves the embeddings (devops/gateway/config.yaml).
     embedding_model: str = "embed-default"
     # The gateway alias that re-reads, from the rendered page, PDF formulas whose text layer could
