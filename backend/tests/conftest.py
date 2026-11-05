@@ -1,6 +1,7 @@
 import pytest
 
 from app.auth.rate_limit import limiter
+from app.config import settings
 from app.moodle import client as moodle_client
 
 
@@ -17,6 +18,12 @@ def rate_limits(request, monkeypatch):
     else:
         monkeypatch.setattr(limiter, "enabled", False)
         yield
+
+
+@pytest.fixture(autouse=True)
+def one_question_at_a_time(monkeypatch):
+    """Many tests script model replies in call order. A test of the parallel path asks for more."""
+    monkeypatch.setattr(settings, "question_concurrency", 1)
 
 
 def _offline_embedding(**kwargs):

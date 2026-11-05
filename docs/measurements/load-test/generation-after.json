@@ -1,0 +1,214 @@
+[
+  {
+    "label": "workers-1x4",
+    "modules": 4,
+    "done": 4,
+    "failed": 0,
+    "errors": [],
+    "wall_seconds": 198.4,
+    "modules_per_hour": 72.6,
+    "module_seconds": {
+      "n": 4,
+      "mean": 182.751,
+      "p50": 183.198,
+      "p95": 195.748,
+      "max": 195.748
+    },
+    "llm_calls_per_module": 23.0,
+    "retrievals_per_module": 8.0,
+    "rerank_seconds": {
+      "n": 32,
+      "mean": 4.138,
+      "p50": 4.192,
+      "p95": 6.068,
+      "max": 8.066
+    },
+    "embed_query_seconds": {
+      "n": 32,
+      "mean": 0.068,
+      "p50": 0.129,
+      "p95": 0.142,
+      "max": 0.144
+    },
+    "vector_search_seconds": {
+      "n": 32,
+      "mean": 0.008,
+      "p50": 0.008,
+      "p95": 0.013,
+      "max": 0.014
+    },
+    "bm25_seconds": {
+      "n": 32,
+      "mean": 0.003,
+      "p50": 0.003,
+      "p95": 0.005,
+      "max": 0.006
+    },
+    "llm_seconds": {
+      "n": 92,
+      "mean": 13.882,
+      "p50": 13.501,
+      "p95": 21.135,
+      "max": 26.071
+    }
+  },
+  {
+    "label": "workers-2x4",
+    "modules": 8,
+    "done": 8,
+    "failed": 0,
+    "errors": [],
+    "wall_seconds": 243.5,
+    "modules_per_hour": 118.3,
+    "module_seconds": {
+      "n": 8,
+      "mean": 221.76,
+      "p50": 230.458,
+      "p95": 239.688,
+      "max": 239.688
+    },
+    "llm_calls_per_module": 23.0,
+    "retrievals_per_module": 8.0,
+    "rerank_seconds": {
+      "n": 64,
+      "mean": 10.914,
+      "p50": 10.46,
+      "p95": 21.882,
+      "max": 24.438
+    },
+    "embed_query_seconds": {
+      "n": 64,
+      "mean": 0.063,
+      "p50": 0.026,
+      "p95": 0.145,
+      "max": 0.209
+    },
+    "vector_search_seconds": {
+      "n": 64,
+      "mean": 0.013,
+      "p50": 0.01,
+      "p95": 0.018,
+      "max": 0.175
+    },
+    "bm25_seconds": {
+      "n": 64,
+      "mean": 0.003,
+      "p50": 0.003,
+      "p95": 0.007,
+      "max": 0.008
+    },
+    "llm_seconds": {
+      "n": 184,
+      "mean": 13.618,
+      "p50": 13.221,
+      "p95": 19.22,
+      "max": 24.894
+    }
+  },
+  {
+    "label": "workers-4x4",
+    "modules": 16,
+    "done": 16,
+    "failed": 0,
+    "errors": [],
+    "wall_seconds": 369.7,
+    "modules_per_hour": 155.8,
+    "module_seconds": {
+      "n": 16,
+      "mean": 320.683,
+      "p50": 322.198,
+      "p95": 364.553,
+      "max": 365.855
+    },
+    "llm_calls_per_module": 23.0,
+    "retrievals_per_module": 8.0,
+    "rerank_seconds": {
+      "n": 128,
+      "mean": 27.646,
+      "p50": 29.608,
+      "p95": 45.461,
+      "max": 51.472
+    },
+    "embed_query_seconds": {
+      "n": 128,
+      "mean": 0.062,
+      "p50": 0.024,
+      "p95": 0.142,
+      "max": 0.181
+    },
+    "vector_search_seconds": {
+      "n": 128,
+      "mean": 0.016,
+      "p50": 0.011,
+      "p95": 0.021,
+      "max": 0.197
+    },
+    "bm25_seconds": {
+      "n": 128,
+      "mean": 0.005,
+      "p50": 0.003,
+      "p95": 0.007,
+      "max": 0.183
+    },
+    "llm_seconds": {
+      "n": 368,
+      "mean": 13.838,
+      "p50": 13.648,
+      "p95": 19.91,
+      "max": 25.477
+    }
+  },
+  {
+    "label": "workers-8x4",
+    "modules": 32,
+    "done": 32,
+    "failed": 0,
+    "errors": [],
+    "wall_seconds": 576.8,
+    "modules_per_hour": 199.7,
+    "module_seconds": {
+      "n": 32,
+      "mean": 494.466,
+      "p50": 499.667,
+      "p95": 559.342,
+      "max": 573.843
+    },
+    "llm_calls_per_module": 23.0,
+    "retrievals_per_module": 8.0,
+    "rerank_seconds": {
+      "n": 256,
+      "mean": 62.408,
+      "p50": 70.138,
+      "p95": 92.986,
+      "max": 104.994
+    },
+    "embed_query_seconds": {
+      "n": 256,
+      "mean": 0.059,
+      "p50": 0.023,
+      "p95": 0.14,
+      "max": 0.242
+    },
+    "vector_search_seconds": {
+      "n": 256,
+      "mean": 0.03,
+      "p50": 0.011,
+      "p95": 0.019,
+      "max": 2.47
+    },
+    "bm25_seconds": {
+      "n": 256,
+      "mean": 0.004,
+      "p50": 0.002,
+      "p95": 0.008,
+      "max": 0.015
+    },
+    "llm_seconds": {
+      "n": 736,
+      "mean": 13.702,
+      "p50": 13.376,
+      "p95": 19.657,
+      "max": 25.909
+    }
+  }
+]

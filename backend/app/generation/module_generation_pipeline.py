@@ -7,8 +7,10 @@ app/api/modules.py, không đổi hành vi) -- chỉ đổi cách được gọi
 `_generating_document_ids` in-memory lock (bảng jobs giờ là nguồn sự thật
 duy nhất cho "có đang sinh dở không", không cần 2 cơ chế song song)."""
 
+import contextvars
 import time
 import uuid
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 
 from sqlalchemy import literal, select
@@ -16,6 +18,7 @@ from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Session
 
 from app import timing
+from app.config import settings
 from app.db import WorkerSessionLocal
 from app.generation.common import OutputLanguage
 from app.generation.content import generate_content
@@ -198,20 +201,20 @@ def _generate_questions(
     """Quiz: một câu cho mỗi sub-objective (tối đa MAX_QUIZ_QUESTIONS), để cả bộ phủ đủ các phần
     của bài thay vì hỏi lại một ý. Practice: một câu luyện tập theo khái niệm chính. `lesson`
     (nhánh không RAG): mọi câu đọc bài học này thay cho đoạn truy hồi."""
-    asked = [
-        _Asked(ComponentType.quiz, target, generate_quiz_question(
-            db, doc.course_id, target, lo, "quiz", scope, self_check=self_check, lesson=lesson,
+    wanted = [(ComponentType.quiz, target) for target in lo.sub_objectives[:MAX_QUIZ_QUESTIONS]]
+    wanted.append((ComponentType.practice, practice_query))
+
+    def ask(component_type: ComponentType, target: str) -> _Asked:
+        # Retrieval opens its own session from db's bind, so the threads never share this session.
+        return _Asked(component_type, target, generate_quiz_question(
+            db, doc.course_id, target, lo, component_type.value, scope, self_check=self_check, lesson=lesson,
             output_language=output_language, custom_instructions=custom_instructions,
         ))
-        for target in lo.sub_objectives[:MAX_QUIZ_QUESTIONS]
-    ]
-    asked.append(_Asked(
-        ComponentType.practice, practice_query,
-        generate_quiz_question(
-            db, doc.course_id, practice_query, lo, "practice", scope, self_check=self_check, lesson=lesson,
-            output_language=output_language, custom_instructions=custom_instructions,
-        ),
-    ))
+
+    # One context per thread carries the chosen model, the experiment pin and the timing spans.
+    with ThreadPoolExecutor(max_workers=settings.question_concurrency) as pool:
+        futures = [pool.submit(contextvars.copy_context().run, ask, *item) for item in wanted]
+    asked = [future.result() for future in futures]
 
     made = [a for a in asked if a.state.get("question") is not None]
     index = question_to_rebalance([a.state["question"] for a in made])

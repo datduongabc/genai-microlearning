@@ -9,6 +9,7 @@ from pathlib import Path
 import httpx
 import pytest
 
+from app import timing
 from app.retrieval import reranker
 
 
@@ -89,3 +90,79 @@ def test_the_backend_does_not_depend_on_torch():
              for dep in pyproject["project"]["dependencies"]}
 
     assert not names & {"torch", "sentence-transformers", "transformers"}
+
+
+def _scored_reply():
+    return httpx.Response(200, json=[{"index": 0, "score": 0.9}], request=httpx.Request("POST", "http://r"))
+
+
+@pytest.mark.parametrize("busy", [
+    httpx.Response(429, request=httpx.Request("POST", "http://r")),
+    httpx.Response(503, request=httpx.Request("POST", "http://r")),
+    httpx.ReadTimeout("slow"),
+])
+def test_an_overloaded_reranker_is_retried_instead_of_failing_the_generation(monkeypatch, busy):
+    replies = [busy, _scored_reply()]
+
+    def post(*args, **kwargs):
+        reply = replies.pop(0)
+        if isinstance(reply, Exception):
+            raise reply
+        return reply
+
+    monkeypatch.setattr(reranker.httpx, "post", post)
+    monkeypatch.setattr(reranker.time, "sleep", lambda seconds: None)
+    assert [score for _, score in reranker.rerank_scored("q", [_chunk("a")])] == [0.9]
+    assert replies == []
+
+
+def test_a_reranker_that_stays_overloaded_still_fails_after_the_last_attempt(monkeypatch):
+    calls = []
+
+    def post(*args, **kwargs):
+        calls.append(1)
+        return httpx.Response(429, request=httpx.Request("POST", "http://r"))
+
+    monkeypatch.setattr(reranker.httpx, "post", post)
+    monkeypatch.setattr(reranker.time, "sleep", lambda seconds: None)
+    with pytest.raises(httpx.HTTPStatusError):
+        reranker.rerank_scored("q", [_chunk("a")])
+    assert len(calls) == reranker.MAX_ATTEMPTS
+
+
+def test_a_refused_request_is_not_retried(monkeypatch):
+    calls = []
+
+    def post(*args, **kwargs):
+        calls.append(1)
+        return httpx.Response(413, request=httpx.Request("POST", "http://r"))
+
+    monkeypatch.setattr(reranker.httpx, "post", post)
+    with pytest.raises(httpx.HTTPStatusError):
+        reranker.rerank_scored("q", [_chunk("a")])
+    assert len(calls) == 1
+
+
+def test_a_slot_is_free_while_waiting_to_retry(monkeypatch):
+    # The wait must not hold a slot, or a busy reranker would also block every other call.
+    free_during_sleep = []
+    replies = [httpx.Response(429, request=httpx.Request("POST", "http://r")), _scored_reply()]
+    monkeypatch.setattr(reranker.httpx, "post", lambda *a, **k: replies.pop(0))
+    monkeypatch.setattr(reranker, "_slots", reranker.threading.BoundedSemaphore(1))
+
+    def sleep(seconds):
+        acquired = reranker._slots.acquire(blocking=False)
+        free_during_sleep.append(acquired)
+        if acquired:
+            reranker._slots.release()
+
+    monkeypatch.setattr(reranker.time, "sleep", sleep)
+    reranker.rerank_scored("q", [_chunk("a")])
+    assert free_during_sleep == [True]
+
+
+def test_rerank_is_timed_for_the_generation_profile(monkeypatch):
+    monkeypatch.setattr(reranker.httpx, "post", lambda *a, **k: _scored_reply())
+    with timing.capture_timings() as spans:
+        reranker.rerank_scored("q", [_chunk("a")])
+    assert [(s["kind"], s["candidates"]) for s in spans] == [("rerank", 1)]

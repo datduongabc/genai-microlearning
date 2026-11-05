@@ -38,6 +38,9 @@ from app.retrieval.search import retrieve_for_generation as retrieve
 
 # Số đoạn truy hồi cho mỗi câu hỏi, theo đúng điều câu đó kiểm.
 QUESTION_TOP_K = 5
+# A question needs a few passages on one point, so the reranker scores fewer candidates here than for
+# Content. Measured in docs/measurements/2026-11-05-generation-throughput.md.
+QUESTION_CANDIDATE_K = 15
 
 # mục 3.1 bước 3 (Syntax/IWF Analyzer) — loại bỏ từ mang tính tuyệt đối
 # thường lộ đáp án ("luôn luôn"/"never" hiếm khi đúng làm distractor).
@@ -388,7 +391,9 @@ def generate_quiz_question(
     pháp (không tốn lượt gọi nào) vẫn chặn câu quiz như khi bật."""
     sourced = lesson is None
     if sourced:
-        material = source_block(retrieve(db, course_id, query, top_k=QUESTION_TOP_K, scope=scope))
+        material = source_block(retrieve(
+            db, course_id, query, top_k=QUESTION_TOP_K, candidate_k=QUESTION_CANDIDATE_K, scope=scope,
+        ))
         instruction = QUESTION_SYSTEM_INSTRUCTION
     else:
         material = f"NỘI DUNG BÀI HỌC:\n{lesson}\n\n"
