@@ -89,5 +89,19 @@ def test_a_fallback_is_logged_for_an_alert_and_running_out_of_credit_stands_out(
     assert record.levelname == level and f"status={status}" in record.getMessage()
 
 
+def test_a_caller_with_someone_waiting_can_limit_the_tries(jev):
+    calls = []
+
+    def busy(_):
+        calls.append(1)
+        return httpx.Response(429)
+
+    jev(busy)
+
+    reranker.rerank_scored("q", _chunks("a"), attempts=2)
+
+    assert len(calls) == 2
+
+
 def test_jina_stays_the_default(monkeypatch):
     assert type(settings).model_fields["reranker_provider"].default == "jina"

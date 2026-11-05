@@ -74,16 +74,16 @@ def _jina_scores(query: str, chunks: list[Chunk], attempts: int) -> list[float]:
 _JEV_NEEDS_ATTENTION = {401, 402, 403}
 
 
-def _ask_jev(query: str, text: str) -> tuple[float, int]:
+def _ask_jev(query: str, text: str, attempts: int = MAX_ATTEMPTS) -> tuple[float, int]:
     """The probability that this passage answers the query, and the retries it took."""
-    for attempt in range(1, MAX_ATTEMPTS + 1):
+    for attempt in range(1, attempts + 1):
         response = _jev_client.post(
             JEV_URL,
             headers={"Authorization": f"Bearer {settings.typesafe_api_key}"},
             json={"model": settings.jev_model, "state": {"query": query, "passage": text},
                   "questions": {"relevant": {"type": "noul", "instructions": JEV_QUESTION}}},
         )
-        if response.status_code not in _JEV_RETRY_STATUSES or attempt == MAX_ATTEMPTS:
+        if response.status_code not in _JEV_RETRY_STATUSES or attempt == attempts:
             response.raise_for_status()
             return response.json()["answers"]["relevant"]["noul"], attempt - 1
         retry_after = response.headers.get("retry-after")
@@ -91,10 +91,10 @@ def _ask_jev(query: str, text: str) -> tuple[float, int]:
     raise AssertionError("unreachable")
 
 
-def _jev_scores(query: str, chunks: list[Chunk], span: dict) -> list[float]:
+def _jev_scores(query: str, chunks: list[Chunk], span: dict, attempts: int = MAX_ATTEMPTS) -> list[float]:
     """A failed call must not send a generation back to the queue, so the search order stands in for the scores."""
     try:
-        answers = list(_jev_pool.map(lambda c: _ask_jev(query, c.content), chunks))
+        answers = list(_jev_pool.map(lambda c: _ask_jev(query, c.content, attempts), chunks))
     except (httpx.HTTPError, KeyError, ValueError) as error:
         # Retrieval quality has dropped with nothing else to show it. The fixed text is for a log-based alert.
         status = error.response.status_code if isinstance(error, httpx.HTTPStatusError) else None
@@ -114,7 +114,7 @@ def rerank_scored(query: str, chunks: list[Chunk], attempts: int = MAX_ATTEMPTS)
         return []
     # Includes any wait for a slot or a retry: that is what the generation experiences under load.
     with timing.timed("rerank", candidates=len(chunks), provider=settings.reranker_provider) as span:
-        scores = _jev_scores(query, chunks, span) if settings.reranker_provider == "jev" else _jina_scores(query, chunks, attempts)
+        scores = _jev_scores(query, chunks, span, attempts) if settings.reranker_provider == "jev" else _jina_scores(query, chunks, attempts)
     # A stable sort keeps the search order among equal scores, which matters for Jev's two-decimal probabilities.
     return sorted(zip(chunks, scores, strict=True), key=lambda pair: pair[1], reverse=True)
 
