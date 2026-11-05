@@ -3,7 +3,9 @@
 mô-đun bằng chat (propose_module_edit), bám đoạn nguồn của mô-đun."""
 
 import json
+import re
 import uuid
+from collections.abc import AsyncIterator
 from typing import Literal
 
 from pydantic import BaseModel, Field
@@ -22,7 +24,7 @@ from app.generation.content import ContentOutput
 from app.generation.example import ExampleOutput
 from app.generation.inline_citations import MARKER
 from app.generation.slides import SlidesOutput
-from app.llm.gateway import complete, complete_structured
+from app.llm.gateway import complete, complete_structured, stream_text
 from app.models import ChatMessage, ChatSession, Chunk, Module
 
 HISTORY_TURNS = 4
@@ -64,6 +66,16 @@ Ngôn ngữ trả lời khớp ngôn ngữ chính của câu hỏi/nguồn (ti�
 """
 
 
+# A reply streamed as text cannot carry a JSON list of sources, so it cites inline, as Content does.
+CHAT_STREAM_INSTRUCTION = CHAT_SYSTEM_INSTRUCTION.replace(
+    "Khi trích dẫn (source_ids), CHỈ được dùng đúng ID ngắn (vd \"S2\") ghi ở đầu mỗi\nSOURCE CHUNK — không được tự bịa ID.",
+    "Chèn mã nguồn trong ngoặc vuông (vd [S2]) ngay sau câu được nguồn đó bảo chứng. CHỈ được dùng đúng ID ngắn\n"
+    "ghi ở đầu mỗi SOURCE CHUNK — không được tự bịa ID.",
+)
+NOT_COVERED = "Tài liệu môn học không đề cập nội dung này."
+SPACE_BEFORE_PUNCTUATION = re.compile(r"[ \t]+([.,;:!?])")
+
+
 class ChatCitation(BaseModel):
     chunk_id: str
     source_ref: str = ""
@@ -81,17 +93,20 @@ class ChatAnswer(BaseModel):
     citations: list[ChatCitation] = Field(default_factory=list)
 
 
-def answer_question(query: str, context_chunks: list[Chunk], history: list[dict]) -> ChatAnswer:
-    if not context_chunks:
-        return ChatAnswer(answer="Tài liệu môn học không đề cập nội dung này.", citations=[])
-
+def _answer_prompt(query: str, context_chunks: list[Chunk], history: list[dict]) -> str:
     history_text = ""
     if history:
         history_text = "\n\nLỊCH SỬ HỘI THOẠI TRƯỚC (gần nhất trước):\n" + "\n".join(
             f"{m['role']}: {m['content']}" for m in history
         )
+    return f"{source_block(context_chunks)}{history_text}\n\nCÂU HỎI: {query}"
 
-    prompt = f"{source_block(context_chunks)}{history_text}\n\nCÂU HỎI: {query}"
+
+def answer_question(query: str, context_chunks: list[Chunk], history: list[dict]) -> ChatAnswer:
+    if not context_chunks:
+        return ChatAnswer(answer=NOT_COVERED, citations=[])
+
+    prompt = _answer_prompt(query, context_chunks, history)
 
     draft = complete_structured(prompt, ChatDraft, system_instruction=CHAT_SYSTEM_INSTRUCTION)
 
@@ -103,6 +118,70 @@ def answer_question(query: str, context_chunks: list[Chunk], history: list[dict]
         if chunk is not None:
             cited[str(chunk.id)] = ChatCitation(chunk_id=str(chunk.id), source_ref=chunk.source_ref or "")
     return ChatAnswer(answer=draft.answer, citations=list(cited.values()))
+
+
+class MarkerFilter:
+    """Takes the [S2] markers out of a reply arriving in pieces. A marker may be split across two pieces, so text
+    from an open "[" is held until it either closes or can no longer be a marker."""
+
+    MAX_MARKER = 8
+
+    def __init__(self) -> None:
+        self._held = ""
+        self.source_ids: list[str] = []
+
+    def feed(self, text: str) -> str:
+        text = self._held + text
+        self._held = ""
+        opened = text.rfind("[")
+        if opened != -1 and "]" not in text[opened:] and len(text) - opened <= self.MAX_MARKER:
+            text, self._held = text[:opened], text[opened:]
+        return self._strip(text)
+
+    def finish(self) -> str:
+        text, self._held = self._held, ""
+        return self._strip(text)
+
+    def _strip(self, text: str) -> str:
+        self.source_ids.extend(MARKER.findall(text))
+        return MARKER.sub("", text)
+
+
+async def stream_answer(
+    query: str, context_chunks: list[Chunk], history: list[dict]
+) -> AsyncIterator[str | ChatAnswer]:
+    """Yields the answer as text pieces, then one ChatAnswer holding all of it and its citations."""
+    if not context_chunks:
+        yield NOT_COVERED
+        yield ChatAnswer(answer=NOT_COVERED, citations=[])
+        return
+    markers = MarkerFilter()
+    pieces = []
+    async for text in stream_text(_answer_prompt(query, context_chunks, history),
+                                  system_instruction=CHAT_STREAM_INSTRUCTION):
+        if visible := markers.feed(text):
+            pieces.append(visible)
+            yield visible
+    if rest := markers.finish():
+        pieces.append(rest)
+        yield rest
+    cited = {}
+    for source in markers.source_ids:
+        chunk = resolve_source_id(context_chunks, source)
+        if chunk is not None:
+            cited[str(chunk.id)] = ChatCitation(chunk_id=str(chunk.id), source_ref=chunk.source_ref or "")
+    # A marker written before the full stop leaves a space there.
+    yield ChatAnswer(answer=SPACE_BEFORE_PUNCTUATION.sub(r"\1", "".join(pieces)).strip(), citations=list(cited.values()))
+
+
+async def condense_query_streamed(message: str, history: list[dict]) -> str:
+    """condense_query() without holding a thread while the model answers."""
+    if not history:
+        return message
+    history_text = "\n".join(f"{m['role']}: {m['content']}" for m in history)
+    prompt = f"LỊCH SỬ HỘI THOẠI:\n{history_text}\n\nCÂU HỎI MỚI NHẤT: {message}"
+    rewritten = "".join([text async for text in stream_text(prompt, system_instruction=CONDENSE_SYSTEM_INSTRUCTION)])
+    return rewritten.strip() or message
 
 
 # Only these question fields are applied by the existing question editor.

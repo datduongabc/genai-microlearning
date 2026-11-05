@@ -8,6 +8,10 @@ import base64
 import contextlib
 import contextvars
 import json
+import random
+import re
+import time
+from collections.abc import AsyncIterator
 
 import litellm
 from litellm.constants import RETURN_RAW_MODEL_NAME_METADATA_KEY
@@ -15,6 +19,10 @@ from pydantic import BaseModel, ValidationError
 
 from app import timing
 from app.config import settings
+
+# A 429 that says the account has no money or the wrong plan: waiting will not help.
+_NOT_A_RATE_LIMIT = re.compile(r"insufficient_quota|billing|credit balance|no credits", re.IGNORECASE)
+MAX_RATE_LIMIT_WAIT_SECONDS = 60.0
 
 # Model do giảng viên chọn cho riêng một lượt sinh. Để trong ContextVar chứ không truyền
 # qua tham số: một lượt sinh đi qua mười chỗ gọi rải khắp generation, chat và ingestion,
@@ -24,6 +32,17 @@ from app.config import settings
 _model_da_chon: contextvars.ContextVar[str | None] = contextvars.ContextVar("_model_da_chon", default=None)
 _experiment: contextvars.ContextVar[bool] = contextvars.ContextVar("_experiment", default=False)
 _model_calls: contextvars.ContextVar[list[dict] | None] = contextvars.ContextVar("_model_calls", default=None)
+_waits_on_rate_limit: contextvars.ContextVar[bool] = contextvars.ContextVar("_waits_on_rate_limit", default=False)
+
+
+@contextlib.contextmanager
+def waiting_on_rate_limits():
+    """For background jobs: a 429 waits inside the call. A request keeps failing fast, since someone is waiting on it."""
+    token = _waits_on_rate_limit.set(True)
+    try:
+        yield
+    finally:
+        _waits_on_rate_limit.reset(token)
 
 
 @contextlib.contextmanager
@@ -74,6 +93,39 @@ def active_model() -> str:
     return settings.llm_model
 
 
+def _rate_limit_wait(error: litellm.RateLimitError, attempt: int) -> float:
+    """The provider's Retry-After when it sends one, otherwise doubling from 5 s. Jittered, so jobs that
+    were limited together do not all come back in the same second."""
+    headers = getattr(getattr(error, "response", None), "headers", None) or {}
+    try:
+        wait = float(headers.get("retry-after", ""))
+    except ValueError:
+        wait = 5.0 * 2**attempt
+    return min(wait, MAX_RATE_LIMIT_WAIT_SECONDS) * random.uniform(1.0, 1.5)
+
+
+def _call_with_rate_limit_retries(alias: str, routed_alias: str, **request):
+    retries = settings.llm_rate_limit_retries if _waits_on_rate_limit.get() else 0
+    for attempt in range(retries + 1):
+        with timing.timed("llm", requested_alias=alias, routed_alias=routed_alias) as span:
+            try:
+                response = litellm.completion(**request)
+            except litellm.RateLimitError as error:
+                span["rate_limited"] = True
+                if attempt == retries or _NOT_A_RATE_LIMIT.search(str(error)):
+                    raise
+                wait = _rate_limit_wait(error, attempt)
+            else:
+                usage = getattr(response, "usage", None)
+                span["prompt_tokens"] = getattr(usage, "prompt_tokens", None)
+                span["completion_tokens"] = getattr(usage, "completion_tokens", None)
+                span["served_model"] = getattr(response, "model", None)
+                return response
+        with timing.timed("llm_backoff"):
+            time.sleep(wait)
+    raise AssertionError("unreachable")
+
+
 def _completion(*, small_step: bool = False, **kwargs):
     alias = active_model()
     routed_alias = alias
@@ -100,23 +152,41 @@ def _completion(*, small_step: bool = False, **kwargs):
             kwargs["max_tokens"] = output_tokens
     # "openai/" only means "speak the OpenAI-compatible protocol to api_base";
     # the gateway decides which provider actually serves the alias.
-    with timing.timed("llm", requested_alias=alias, routed_alias=routed_alias) as span:
-        response = litellm.completion(
-            model=f"openai/{routed_alias}",
-            api_base=settings.llm_gateway_url,
-            api_key=settings.llm_gateway_key,
-            extra_body=extra_body,
-            **kwargs,
-        )
-        usage = getattr(response, "usage", None)
-        span["prompt_tokens"] = getattr(usage, "prompt_tokens", None)
-        span["completion_tokens"] = getattr(usage, "completion_tokens", None)
-        span["served_model"] = getattr(response, "model", None)
+    response = _call_with_rate_limit_retries(
+        alias, routed_alias,
+        model=f"openai/{routed_alias}",
+        api_base=settings.llm_gateway_url,
+        api_key=settings.llm_gateway_key,
+        extra_body=extra_body,
+        **kwargs,
+    )
     calls = _model_calls.get()
     served = getattr(response, "model", None)
     if calls is not None and isinstance(served, str):
         calls.append({"requested_alias": alias, "routed_alias": routed_alias, "served_model": served})
     return response
+
+
+async def stream_text(prompt: str, system_instruction: str | None = None) -> AsyncIterator[str]:
+    """The reply piece by piece, without holding a thread while it waits. Retries stay with the gateway: once a
+    word has reached the reader, the reply cannot start over."""
+    alias = active_model()
+    if settings.llm_experiment_mode or _experiment.get():
+        if alias == "gemini-balanced" or alias.endswith("-small"):
+            raise ValueError("Experiments require a single-model alias, not a routing profile")
+        extra_body = {"disable_fallbacks": True}
+    else:
+        extra_body = {}
+    messages = [{"role": "system", "content": system_instruction}] if system_instruction else []
+    messages.append({"role": "user", "content": prompt})
+    stream = await litellm.acompletion(
+        model=f"openai/{alias}", api_base=settings.llm_gateway_url, api_key=settings.llm_gateway_key,
+        extra_body=extra_body, messages=messages, stream=True,
+    )
+    async for chunk in stream:
+        text = chunk.choices[0].delta.content if chunk.choices else None
+        if text:
+            yield text
 
 
 def complete(prompt: str, system_instruction: str | None = None, **kwargs) -> str:
@@ -157,6 +227,7 @@ def transcribe_audio(path: str) -> list[dict]:
 # Extra calls for a reply that is not valid JSON or breaks the schema (cut off, missing field). It is
 # sampled again, so a one-off slip passes; a model that keeps failing still fails, after this bound.
 MALFORMED_REPLY_RETRIES = 2
+_REPLY_BROKE_SCHEMA = re.compile(r"does not match the expected schema|failed_generation|json_validate_failed")
 
 
 def complete_structured[T: BaseModel](
@@ -172,11 +243,17 @@ def complete_structured[T: BaseModel](
         messages.append({"role": "system", "content": system_instruction})
     messages.append({"role": "user", "content": prompt})
     for attempt in range(MALFORMED_REPLY_RETRIES + 1):
-        response = _completion(
-            messages=messages,
-            response_format=response_format if response_format is not None else response_model,
-            **kwargs,
-        )
+        try:
+            response = _completion(
+                messages=messages,
+                response_format=response_format if response_format is not None else response_model,
+                **kwargs,
+            )
+        except litellm.BadRequestError as error:
+            # A provider that checks the schema itself refuses a bad reply here instead of returning it.
+            if attempt == MALFORMED_REPLY_RETRIES or not _REPLY_BROKE_SCHEMA.search(str(error)):
+                raise
+            continue
         try:
             # strict=False: model hay để lọt tab, xuống dòng trần vào giữa chuỗi JSON khi viết công
             # thức, và trình đọc nghiêm từ chối cả câu trả lời dù nó vẫn đọc được. Schema vẫn được

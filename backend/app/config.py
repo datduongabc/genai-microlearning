@@ -72,6 +72,9 @@ class Settings(BaseSettings):
     non_teacher_daily_generation_limit: int = Field(default=3, ge=1)
     # Pin the selected alias for evaluation; the gateway may still retry that model.
     llm_experiment_mode: bool = False
+    # Times one call in a background job waits and asks again after a 429, so a brief limit does not
+    # restart the whole job. Requests do not wait.
+    llm_rate_limit_retries: int = Field(default=6, ge=0)
     # The gateway alias that serves the embeddings (devops/gateway/config.yaml).
     embedding_model: str = "embed-default"
     # The gateway alias that re-reads, from the rendered page, PDF formulas whose text layer could
@@ -84,6 +87,14 @@ class Settings(BaseSettings):
     # The reranker service of devops/docker-compose.yml, a cross-encoder in a container of its
     # own so the backend image carries no torch. Not behind the gateway: it holds no provider key.
     reranker_url: str = "http://localhost:8082"
+    # "jina" is the service above. "jev" sends the query and the candidate chunks to TypeSafe; see app/retrieval/reranker.py.
+    reranker_provider: Literal["jina", "jev"] = "jina"
+    typesafe_api_key: str = ""
+    # Pinned: the `jev-latest` alias moves with each release, so its scores could change with no change here.
+    jev_model: str = "jev-1.14.0"
+    # Jev calls one process has in flight. One rerank makes a call per candidate. 64 held steady in
+    # docs/measurements/2026-11-05-real-llm-and-jev.md, and 128 from one machine was far slower.
+    jev_max_concurrent: int = Field(default=64, ge=1)
 
     # Upload lưu ở đây cho tới khi job document_pipeline xử lý xong (job
     # chạy nền, sau khi request upload gốc đã trả response từ lâu -- khác
@@ -107,6 +118,11 @@ class Settings(BaseSettings):
     # thread can end up waiting for a connection held by a request that is waiting for a thread.
     # Keeping requests at or below the pool size rules that out; the rest queue cheaply.
     api_max_concurrent_requests: int = Field(default=20, ge=1)
+    # Chat streams one process holds open. They mostly wait on the network, so they sit outside the
+    # limit above. Above this, a new stream gets 503.
+    chat_max_streams: int = Field(default=100, ge=1)
+    # Streams searching the database at once, below the connection pool so that other requests still get one.
+    chat_retrieval_concurrency: int = Field(default=8, ge=1)
     api_queue_timeout_seconds: float = Field(default=30, gt=0)
     # memory:// is exact only for one process; several API processes must share a store.
     rate_limit_storage_uri: str = Field(default="memory://", repr=False)

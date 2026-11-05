@@ -121,20 +121,29 @@ class SecurityHeadersMiddleware:
         await self.app(scope, receive, send_with_headers)
 
 
+CHAT_STREAM_SUFFIX = "/chat/stream"
+
+
 class ConcurrencyLimitMiddleware:
     """Serves at most `max_concurrent` requests at once; the others wait here, which costs no thread
     or database connection. One that waits longer than `queue_timeout` gets 503, so an overload
     sheds requests instead of stalling them all. See api_max_concurrent_requests in app/config.py."""
 
-    def __init__(self, app, max_concurrent: int, queue_timeout: float, exempt_paths: frozenset[str] = frozenset()):
+    def __init__(self, app, max_concurrent: int, queue_timeout: float, exempt_paths: frozenset[str] = frozenset(),
+                 max_streams: int = 100):
         self.app = app
         self.queue_timeout = queue_timeout
         self.exempt_paths = exempt_paths
+        self.max_streams = max_streams
         self._slots = asyncio.Semaphore(max_concurrent)
+        self._streams = 0
 
     async def __call__(self, scope, receive, send):
         if scope["type"] != "http" or scope["path"] in self.exempt_paths:
             await self.app(scope, receive, send)
+            return
+        if scope["path"].endswith(CHAT_STREAM_SUFFIX):
+            await self._serve_stream(scope, receive, send)
             return
         try:
             await asyncio.wait_for(self._slots.acquire(), timeout=self.queue_timeout)
@@ -147,3 +156,17 @@ class ConcurrencyLimitMiddleware:
             await self.app(scope, receive, send)
         finally:
             self._slots.release()
+
+    async def _serve_stream(self, scope, receive, send):
+        """A stream lasts as long as its answer, so a slot above would let 20 of them shut out every other
+        request. It holds no thread or connection while it waits, and has a limit of its own, which sheds at once."""
+        if self._streams >= self.max_streams:
+            response = JSONResponse({"detail": "Hệ thống đang quá tải, vui lòng thử lại sau."}, status_code=503,
+                                    headers={"Retry-After": "5"})
+            await response(scope, receive, send)
+            return
+        self._streams += 1
+        try:
+            await self.app(scope, receive, send)
+        finally:
+            self._streams -= 1

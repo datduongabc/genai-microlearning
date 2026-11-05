@@ -1,9 +1,11 @@
+import logging
 import re
 import threading
 from collections import OrderedDict
 from dataclasses import dataclass
 from uuid import UUID
 
+import httpx
 from rank_bm25 import BM25Okapi
 from sqlalchemy import String, cast, func, literal_column
 from sqlalchemy.dialects.postgresql import aggregate_order_by
@@ -17,6 +19,9 @@ from app.retrieval.reranker import rerank_scored
 # mục 2 kien truc: RRF (k=60, tu code) tron Dense + Sparse ma khong can
 # tinh chinh trong so thu cong.
 RRF_K = 60
+CHAT_RERANK_ATTEMPTS = 2
+
+logger = logging.getLogger(__name__)
 
 _TOKEN_RE = re.compile(r"\w+", re.UNICODE)
 
@@ -220,6 +225,18 @@ def retrieve_for_generation(
         candidates = hybrid_search(reads, course_id, query, top_k=candidate_k,
                                    candidate_k=candidate_k, scope=scope)
     return _reranked(query, candidates, top_k, min_k)
+
+
+def retrieve_for_chat(reads: Session, course_id: UUID, query: str, top_k: int = 8, candidate_k: int = 30) -> list[Chunk]:
+    """Closes `reads` before reranking, so a slow reranker holds no connection. A reranker that fails or stays busy
+    costs the answer some ordering, not the answer: someone is waiting for the first word, so it gets one retry."""
+    candidates = hybrid_search(reads, course_id, query, top_k=candidate_k, candidate_k=candidate_k)
+    reads.close()
+    try:
+        return [c for c, _ in rerank_scored(query, candidates, attempts=CHAT_RERANK_ATTEMPTS)[:top_k]]
+    except (httpx.HTTPError, ValueError) as error:
+        logger.warning("rerank failed, chat keeps the hybrid order: %s", error)
+        return candidates[:top_k]
 
 
 def _reranked(query: str, candidates: list[Chunk], top_k: int | None, min_k: int) -> list[Chunk]:

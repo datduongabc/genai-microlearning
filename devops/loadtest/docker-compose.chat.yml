@@ -1,0 +1,14 @@
+# Measures how many chat streams one API process holds, with Jev as the reranker. The mock gateway answers, because
+# this measures the API holding connections, not a model. Image: chat stream code with the Jev reranker.
+services:
+  runner:
+    image: do-an-load-backend-chat
+  backend:
+    image: do-an-load-backend-chat
+    environment:
+      RERANKER_PROVIDER: jev
+      TYPESAFE_API_KEY: ${TYPESAFE_API_KEY:?}
+      CHAT_MAX_STREAMS: "5000"
+    # Rate limits count per user; the driver has few users for this many messages.
+  worker:
+    image: do-an-load-backend-chat

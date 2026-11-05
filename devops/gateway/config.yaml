@@ -188,15 +188,16 @@ model_list:
       display_name: Gemini cân bằng tải
       note: phân phối giữa Flash Lite và Flash; không dùng cho thí nghiệm
 
-# LiteLLM owns retries, deployment cooldowns, load balancing and failover.
+# LiteLLM owns retries, load balancing and failover.
 # OpenAI, Claude and paid Groq are opt-in; generation never falls back to them.
 router_settings:
   routing_strategy: simple-shuffle
   num_retries: 1
   retry_after: 1
   timeout: 120
-  allowed_fails: 0
-  cooldown_time: 60
+  # A cooldown turned one 429 into errors for every job using the model: 1 of 32 modules finished with it,
+  # 30 of 32 without it (docs/measurements/2026-11-05-real-llm-and-jev.md). The backend retries a 429.
+  disable_cooldowns: true
   enable_pre_call_checks: true
   optional_pre_call_checks: [enforce_model_rate_limits]
   fallbacks:

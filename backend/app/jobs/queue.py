@@ -28,6 +28,7 @@ from sqlalchemy.orm import Session
 from app.config import settings
 from app.db import WorkerSessionLocal
 from app.jobs.maintenance import purge_old_records
+from app.llm.gateway import waiting_on_rate_limits
 from app.models import Job, JobStatus, JobType
 
 logger = logging.getLogger(__name__)
@@ -158,7 +159,8 @@ def run_claimed_job(job: Job, worker_id: str) -> None:
     beater = threading.Thread(target=_beat_until, args=(stop, job.id, worker_id), daemon=True)
     beater.start()
     try:
-        execute_job_step(job)
+        with waiting_on_rate_limits():
+            execute_job_step(job)
     except Exception as err:
         failure = err
     else:

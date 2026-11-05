@@ -214,7 +214,7 @@ def test_router_accepts_the_config_and_keeps_large_routes_off_groq(gateway, monk
     assert len({d["litellm_params"]["model"] for d in balanced}) == 2
     assert router.routing_strategy == "simple-shuffle"
     assert router.num_retries == 1
-    assert router.cooldown_time == 60
+    assert router.disable_cooldowns is True
     aliases = {d["model_name"] for d in gateway["model_list"]}
     assert "groq-fast" not in aliases
     for fallback_type in (router.fallbacks, router.context_window_fallbacks):

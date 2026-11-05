@@ -35,8 +35,22 @@ The reranker. At 8 x 4 it averaged 332% CPU and reached its 400% quota, and a re
 4 s at 1 x 4. That time includes waiting for a slot and for retries. The growth in module time comes mostly from this
 wait, because LLM latency stayed near 14 s, and embedding, vector search and BM25 stayed under 0.15 s at every load.
 
-Whether a second reranker now helps has not been measured. The earlier test with two showed no gain, but restarted jobs
-hid its effect. To use more reranker containers, `RERANKER_MAX_CONCURRENT` has to rise with them, since it is a limit
+### A second reranker
+
+| Workers x threads | Rerankers | `RERANKER_MAX_CONCURRENT` | Failed | Modules/hour | Module mean | Rerank mean | Rerank p95 |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 4 x 4 | 1 | 2 | 0 | 155.8 | 321 s | 27.6 s | 45.5 s |
+| 4 x 4 | 2 | 4 | 0 | 175.8 | 283 s | 18.8 s | 43.6 s |
+
+The second reranker raised throughput by 13%, far from double. Each container averaged about 230% CPU and still peaked at
+its 400% quota, and p95 barely moved. That pattern fits bursts from jobs that all start at once, but this run cannot
+separate that from other limits. A reranker-only test with steady load is needed to answer how far it scales.
+
+The same test at 8 x 4 could not finish on this machine. Swap filled up, available memory fell below the 300 MB stop limit
+after about 3 minutes, and one reranker was later killed by the out-of-memory killer. Its partial stats are in
+`results/`, and no throughput figure exists for it.
+
+To use more reranker containers, `RERANKER_MAX_CONCURRENT` has to rise with them, since it is a limit
 per worker process.
 
 ## Rerank candidates

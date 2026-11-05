@@ -1,0 +1,13 @@
+# Runs the API and workers from an image with Jev as the reranker, built from the feat/jev-rerank branch.
+# The key goes only to the two services that call TypeSafe.
+services:
+  runner:
+    image: do-an-load-backend-jev
+  backend:
+    image: do-an-load-backend-jev
+    environment: &jev
+      RERANKER_PROVIDER: jev
+      TYPESAFE_API_KEY: ${TYPESAFE_API_KEY:?}
+  worker:
+    image: do-an-load-backend-jev
+    environment: *jev

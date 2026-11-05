@@ -1,0 +1,65 @@
+{
+ "claude-fast": {
+  "status": 200,
+  "model": "claude-fast",
+  "lat": 1.58,
+  "total": 24,
+  "limits": {
+   "x-ratelimit-limit-requests": "1000",
+   "x-ratelimit-remaining-requests": "999",
+   "x-ratelimit-limit-tokens": "580000",
+   "x-ratelimit-remaining-tokens": "580000",
+   "llm_provider-anthropic-ratelimit-input-tokens-limit": "500000",
+   "llm_provider-anthropic-ratelimit-input-tokens-remaining": "500000",
+   "llm_provider-anthropic-ratelimit-input-tokens-reset": "2026-11-05T06:58:30Z",
+   "llm_provider-anthropic-ratelimit-output-tokens-limit": "80000",
+   "llm_provider-anthropic-ratelimit-output-tokens-remaining": "80000",
+   "llm_provider-anthropic-ratelimit-output-tokens-reset": "2026-11-05T06:58:30Z",
+   "llm_provider-anthropic-ratelimit-requests-limit": "1000",
+   "llm_provider-anthropic-ratelimit-requests-remaining": "999",
+   "llm_provider-anthropic-ratelimit-requests-reset": "2026-11-05T06:58:30Z",
+   "llm_provider-anthropic-ratelimit-tokens-limit": "580000",
+   "llm_provider-anthropic-ratelimit-tokens-remaining": "580000",
+   "llm_provider-anthropic-ratelimit-tokens-reset": "2026-11-05T06:58:30Z",
+   "llm_provider-x-ratelimit-limit-requests": "1000",
+   "llm_provider-x-ratelimit-remaining-requests": "999",
+   "llm_provider-x-ratelimit-limit-tokens": "580000",
+   "llm_provider-x-ratelimit-remaining-tokens": "580000"
+  },
+  "err": ""
+ },
+ "openai-fast": {
+  "status": 200,
+  "total": 15,
+  "limits": {
+   "x-ratelimit-limit-requests": "5000",
+   "x-ratelimit-remaining-requests": "4999",
+   "x-ratelimit-limit-tokens": "2000000",
+   "x-ratelimit-remaining-tokens": "1999994",
+   "llm_provider-x-ratelimit-limit-requests": "5000",
+   "llm_provider-x-ratelimit-limit-tokens": "2000000",
+   "llm_provider-x-ratelimit-remaining-requests": "4999",
+   "llm_provider-x-ratelimit-remaining-tokens": "1999994",
+   "llm_provider-x-ratelimit-reset-requests": "12ms",
+   "llm_provider-x-ratelimit-reset-tokens": "0s"
+  }
+ },
+ "groq-pro": {
+  "status": 200,
+  "total": 92,
+  "limits": {}
+ },
+ "gemini-fast": {
+  "status": 200,
+  "model": "gemini-fast",
+  "lat": 1.01,
+  "total": 7,
+  "limits": {
+   "x-ratelimit-remaining-tokens": "249993",
+   "x-ratelimit-limit-tokens": "250000",
+   "x-ratelimit-remaining-requests": "14",
+   "x-ratelimit-limit-requests": "15"
+  },
+  "err": ""
+ }
+}

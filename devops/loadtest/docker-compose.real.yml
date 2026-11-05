@@ -1,0 +1,25 @@
+# Replaces the mock gateway with a real LiteLLM gateway. Only this gateway receives provider keys, from the shell
+# environment, never from a file here. Paid: see run_real.sh, which sets the stop conditions.
+services:
+  gateway:
+    image: do-an-gateway:latest
+    build: !reset null
+    entrypoint: ["litellm", "--config", "/app/config.yaml", "--host", "0.0.0.0", "--port", "4000"]
+    command: !reset []
+    environment:
+      LLM_GATEWAY_KEY: load-test
+      EMBEDDER_API_KEY: load-test
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:?}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:?}
+    volumes: !override
+      - ./real_gateway.yaml:/app/config.yaml:ro
+  runner:
+    environment: &pinned
+      LLM_MODEL: ${LLM_MODEL:?}
+      # Refuses to fall back to another model, so every number belongs to the model named in the run.
+      LLM_EXPERIMENT_MODE: "true"
+      QUESTION_CONCURRENCY: "5"
+  backend:
+    environment: *pinned
+  worker:
+    environment: *pinned

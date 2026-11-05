@@ -1,0 +1,67 @@
+[
+  {
+    "label": "worker-8x4-queue96",
+    "modules": 96,
+    "done": 58,
+    "failed": 38,
+    "errors": [
+      "litellm.RateLimitError: RateLimitError: OpenAIException - No deployments available for selected model, Try again in 60 seconds. Passed model=openai-fast. pre-call-checks=False, cooldown_list=['5bcef09",
+      "litellm.RateLimitError: RateLimitError: OpenAIException - litellm.RateLimitError: RateLimitError: OpenAIException - You have no credits remaining. Add credits to continue using the API at https://plat"
+    ],
+    "wall_seconds": 1115.4,
+    "modules_per_hour": 187.2,
+    "module_seconds": {
+      "n": 58,
+      "mean": 150.817,
+      "p50": 148.173,
+      "p95": 181.942,
+      "max": 216.861
+    },
+    "timed_out": false,
+    "job_attempts": 190,
+    "prompt_tokens": 4858217,
+    "completion_tokens": 1732836,
+    "served_models": [
+      "gpt-6-luna"
+    ],
+    "llm_calls_per_module": 22.1,
+    "retrievals_per_module": 8.1,
+    "rerank_seconds": {
+      "n": 472,
+      "mean": 0.852,
+      "p50": 0.908,
+      "p95": 1.133,
+      "max": 1.425
+    },
+    "rerank_fallbacks": 0,
+    "rerank_retries": 0,
+    "embed_query_seconds": {
+      "n": 472,
+      "mean": 0.035,
+      "p50": 0.0,
+      "p95": 0.139,
+      "max": 0.267
+    },
+    "vector_search_seconds": {
+      "n": 472,
+      "mean": 0.009,
+      "p50": 0.008,
+      "p95": 0.015,
+      "max": 0.21
+    },
+    "bm25_seconds": {
+      "n": 472,
+      "mean": 0.003,
+      "p50": 0.002,
+      "p95": 0.007,
+      "max": 0.012
+    },
+    "llm_seconds": {
+      "n": 1280,
+      "mean": 14.278,
+      "p50": 14.063,
+      "p95": 25.085,
+      "max": 37.77
+    }
+  }
+]

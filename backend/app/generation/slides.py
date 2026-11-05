@@ -1,6 +1,6 @@
 """Slides: the lesson text cut into slides."""
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from app.generation.common import (
     IGNORE_EMBEDDED_INSTRUCTIONS,
@@ -34,13 +34,29 @@ Ràng buộc BẮT BUỘC:
 """
 
 
+MAX_BULLETS = 3
+MAX_SLIDES = 8
+
+
 class Slide(BaseModel):
     title: str
-    bullets: list[str] = Field(min_length=1, max_length=3)
+    bullets: list[str] = Field(min_length=1, max_length=MAX_BULLETS)
+
+    @field_validator("bullets", mode="before")
+    @classmethod
+    def _keep_within_limit(cls, bullets):
+        # Providers treat the schema's limit as advice. One extra bullet late in a module must not throw
+        # away every paid call made before it, and the slide stays within the limit either way.
+        return bullets[:MAX_BULLETS] if isinstance(bullets, list) else bullets
 
 
 class SlidesOutput(BaseModel):
-    slides: list[Slide] = Field(min_length=2, max_length=8)
+    slides: list[Slide] = Field(min_length=2, max_length=MAX_SLIDES)
+
+    @field_validator("slides", mode="before")
+    @classmethod
+    def _keep_within_limit(cls, slides):
+        return slides[:MAX_SLIDES] if isinstance(slides, list) else slides
 
 
 def generate_slides(
