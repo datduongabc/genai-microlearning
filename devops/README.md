@@ -46,7 +46,9 @@ Postgres on every search.
 ./devops/scripts/compose.sh -f devops/docker-compose.scale.yml up -d --scale backend=2 --scale worker=2
 ```
 
-Each worker container runs `WORKER_POOL_SIZE` jobs at once (four by default). Uploads are still files
+Each worker container runs `WORKER_POOL_SIZE` jobs at once (four by default), with `QUESTION_CONCURRENCY` questions at
+a time inside a module and at most `RERANKER_MAX_CONCURRENT` rerank requests at a time per container. Raise the last one
+when adding reranker containers. Uploads are still files
 in the shared bind mount, so running on several hosts needs shared file storage first.
 
 ## Going public

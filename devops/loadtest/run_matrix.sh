@@ -12,7 +12,8 @@ docker compose up -d --scale worker=1 --scale backend=1 --scale reranker=1 2>&1 
 docker compose exec -T runner /app/.venv/bin/alembic upgrade head 2>&1 | tail -1
 run seed --users 40 | tail -1
 
-for n in 1 2 4; do
+# GENERATION_ONLY=1 skips the API runs, which generation changes do not affect.
+for n in $( [ -n "$GENERATION_ONLY" ] || echo 1 2 4 ); do
   docker compose up -d --scale worker=1 --scale backend=$n 2>&1 | tail -1; sleep 12
   sample api-$n & P=$!
   docker compose --profile k6 run --rm -e VUS=200 -e DURATION=60s k6 run --quiet --summary-export /results/api-$n.json /scripts/api_read.js 2>&1 | tail -25 > results/api-$n.log

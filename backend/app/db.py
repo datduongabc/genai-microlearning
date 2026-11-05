@@ -43,9 +43,10 @@ def _reapply_rls_context(session: Session, transaction, connection) -> None:
 # Role app_worker -- the background worker (job_queue.py) that processes the jobs of every
 # user. Exempt from row level security because it has to see all of them, and given
 # grants for the tables it works on and nothing else (migration a4d7e2c9b6f1).
-# Two per job thread: a running job also holds a connection for its heartbeat.
+# Per job thread: its own connection, one for its heartbeat, and one per question it retrieves for.
 worker_engine = create_engine(
-    settings.app_worker_database_url, pool_size=2 * settings.worker_pool_size + 2, max_overflow=2,
+    settings.app_worker_database_url,
+    pool_size=(2 + settings.question_concurrency) * settings.worker_pool_size + 2, max_overflow=2,
 )
 WorkerSessionLocal = sessionmaker(bind=worker_engine, autoflush=False, autocommit=False)
 

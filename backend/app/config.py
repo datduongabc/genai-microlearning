@@ -97,6 +97,11 @@ class Settings(BaseSettings):
     run_job_worker: bool = True
     # Jobs one process runs at once. Read from WORKER_POOL_SIZE.
     worker_pool_size: int = Field(default=4, ge=1)
+    # Rerank calls one process has in flight. The service counts each candidate text against its queue
+    # and answers 429 when full, so this keeps a bursty pipeline from being refused.
+    reranker_max_concurrent: int = Field(default=2, ge=1)
+    # Questions of one module generated at once. They do not depend on each other.
+    question_concurrency: int = Field(default=5, ge=1)
     # Requests one API process serves at once, and its database connections. FastAPI opens the
     # connection in one worker thread and runs the endpoint in another, so past the pool size every
     # thread can end up waiting for a connection held by a request that is waiting for a thread.

@@ -21,6 +21,8 @@ x-backend-environment: &backend-environment
   RUN_JOB_WORKER: "false"
   RATE_LIMIT_STORAGE_URI: redis://redis:6379/0
   WORKER_POOL_SIZE: ${WORKER_POOL_SIZE:-4}
+  QUESTION_CONCURRENCY: ${QUESTION_CONCURRENCY:-5}
+  RERANKER_MAX_CONCURRENT: ${RERANKER_MAX_CONCURRENT:-2}
 
 services:
   db:

@@ -118,7 +118,7 @@ def test_each_question_retrieves_five_passages_for_what_it_asks_and_never_grades
 
     generate_quiz_question(None, uuid.uuid4(), "Nêu định nghĩa", LO, scope=scope)
 
-    assert searches == [{"query": "Nêu định nghĩa", "top_k": 5, "scope": scope}]
+    assert searches == [{"query": "Nêu định nghĩa", "top_k": 5, "candidate_k": 15, "scope": scope}]
     assert "RelevanceCheck" not in model.names()
 
 
