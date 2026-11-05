@@ -37,8 +37,8 @@ _jev_pool = concurrent.futures.ThreadPoolExecutor(settings.jev_max_concurrent, t
 _jev_client = httpx.Client(timeout=TIMEOUT_SECONDS)
 
 
-def _post(query: str, chunks: list[Chunk]) -> httpx.Response:
-    for attempt in range(1, MAX_ATTEMPTS + 1):
+def _post(query: str, chunks: list[Chunk], attempts: int) -> httpx.Response:
+    for attempt in range(1, attempts + 1):
         try:
             with _slots:
                 response = httpx.post(
@@ -48,12 +48,12 @@ def _post(query: str, chunks: list[Chunk]) -> httpx.Response:
                     json={"query": query, "texts": [c.content for c in chunks], "raw_scores": False, "truncate": True},
                     timeout=TIMEOUT_SECONDS,
                 )
-            if response.status_code not in _RETRY_STATUSES or attempt == MAX_ATTEMPTS:
+            if response.status_code not in _RETRY_STATUSES or attempt == attempts:
                 response.raise_for_status()
                 return response
             reason = str(response.status_code)
         except httpx.TransportError as exc:
-            if attempt == MAX_ATTEMPTS:
+            if attempt == attempts:
                 raise
             reason = type(exc).__name__
         delay = BASE_BACKOFF_SECONDS * 2 ** (attempt - 1) * (0.5 + random.random())
@@ -62,8 +62,8 @@ def _post(query: str, chunks: list[Chunk]) -> httpx.Response:
     raise AssertionError("unreachable")
 
 
-def _jina_scores(query: str, chunks: list[Chunk]) -> list[float]:
-    response = _post(query, chunks)
+def _jina_scores(query: str, chunks: list[Chunk], attempts: int) -> list[float]:
+    response = _post(query, chunks, attempts)
     scores = {item["index"]: item["score"] for item in response.json()}
     if len(scores) != len(chunks):
         raise ValueError(f"the reranker scored {len(scores)} of {len(chunks)} chunks")
@@ -100,14 +100,14 @@ def _jev_scores(query: str, chunks: list[Chunk], span: dict) -> list[float]:
     return [score for score, _ in answers]
 
 
-def rerank_scored(query: str, chunks: list[Chunk]) -> list[tuple[Chunk, float]]:
+def rerank_scored(query: str, chunks: list[Chunk], attempts: int = MAX_ATTEMPTS) -> list[tuple[Chunk, float]]:
     """Every chunk with its score, best first. Not cut to top_k here: Adaptive-k needs the whole
     score distribution to find its own cut (see search.py)."""
     if not chunks:
         return []
     # Includes any wait for a slot or a retry: that is what the generation experiences under load.
     with timing.timed("rerank", candidates=len(chunks), provider=settings.reranker_provider) as span:
-        scores = _jev_scores(query, chunks, span) if settings.reranker_provider == "jev" else _jina_scores(query, chunks)
+        scores = _jev_scores(query, chunks, span) if settings.reranker_provider == "jev" else _jina_scores(query, chunks, attempts)
     # A stable sort keeps the search order among equal scores, which matters for Jev's two-decimal probabilities.
     return sorted(zip(chunks, scores, strict=True), key=lambda pair: pair[1], reverse=True)
 

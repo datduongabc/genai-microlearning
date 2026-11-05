@@ -115,6 +115,11 @@ class Settings(BaseSettings):
     # thread can end up waiting for a connection held by a request that is waiting for a thread.
     # Keeping requests at or below the pool size rules that out; the rest queue cheaply.
     api_max_concurrent_requests: int = Field(default=20, ge=1)
+    # Chat streams one process holds open. They mostly wait on the network, so they sit outside the
+    # limit above. Above this, a new stream gets 503.
+    chat_max_streams: int = Field(default=100, ge=1)
+    # Streams searching the database at once, below the connection pool so that other requests still get one.
+    chat_retrieval_concurrency: int = Field(default=8, ge=1)
     api_queue_timeout_seconds: float = Field(default=30, gt=0)
     # memory:// is exact only for one process; several API processes must share a store.
     rate_limit_storage_uri: str = Field(default="memory://", repr=False)

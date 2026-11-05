@@ -84,7 +84,8 @@ def create_app(app_settings: Settings = settings) -> FastAPI:
     # size limit answers on its own.
     api.add_middleware(BodySizeLimitMiddleware, max_bytes=app_settings.max_request_body_bytes, exempt=_is_upload)
     api.add_middleware(ConcurrencyLimitMiddleware, max_concurrent=app_settings.api_max_concurrent_requests,
-                       queue_timeout=app_settings.api_queue_timeout_seconds, exempt_paths=frozenset({"/health"}))
+                       queue_timeout=app_settings.api_queue_timeout_seconds, exempt_paths=frozenset({"/health"}),
+                       max_streams=app_settings.chat_max_streams)
     api.add_middleware(SecurityHeadersMiddleware, production=production)
 
     api.include_router(auth.router)

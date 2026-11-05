@@ -8,6 +8,7 @@ import base64
 import contextlib
 import contextvars
 import json
+from collections.abc import AsyncIterator
 
 import litellm
 from litellm.constants import RETURN_RAW_MODEL_NAME_METADATA_KEY
@@ -117,6 +118,28 @@ def _completion(*, small_step: bool = False, **kwargs):
     if calls is not None and isinstance(served, str):
         calls.append({"requested_alias": alias, "routed_alias": routed_alias, "served_model": served})
     return response
+
+
+async def stream_text(prompt: str, system_instruction: str | None = None) -> AsyncIterator[str]:
+    """The reply piece by piece, without holding a thread while it waits. Retries stay with the gateway: once a
+    word has reached the reader, the reply cannot start over."""
+    alias = active_model()
+    if settings.llm_experiment_mode or _experiment.get():
+        if alias == "gemini-balanced" or alias.endswith("-small"):
+            raise ValueError("Experiments require a single-model alias, not a routing profile")
+        extra_body = {"disable_fallbacks": True}
+    else:
+        extra_body = {}
+    messages = [{"role": "system", "content": system_instruction}] if system_instruction else []
+    messages.append({"role": "user", "content": prompt})
+    stream = await litellm.acompletion(
+        model=f"openai/{alias}", api_base=settings.llm_gateway_url, api_key=settings.llm_gateway_key,
+        extra_body=extra_body, messages=messages, stream=True,
+    )
+    async for chunk in stream:
+        text = chunk.choices[0].delta.content if chunk.choices else None
+        if text:
+            yield text
 
 
 def complete(prompt: str, system_instruction: str | None = None, **kwargs) -> str:
