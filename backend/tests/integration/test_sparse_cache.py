@@ -1,5 +1,6 @@
 import uuid
 
+from app import timing
 from app.db import SessionLocal
 from app.models import Chunk, Course, Document, DocumentStatus, User
 from app.retrieval import search
@@ -118,3 +119,14 @@ def test_sparse_search_reuses_cache_across_sessions_after_commit_and_close():
         assert results[0].id is not None
     finally:
         second.close()
+
+
+def test_search_is_timed_for_the_generation_profile():
+    db = SessionLocal()
+    try:
+        course_id, _ = _seed_course_with_chunks(db, ["binary search"])
+        with timing.capture_timings() as spans:
+            sparse_search(db, course_id, "binary")
+        assert [s["kind"] for s in spans] == ["bm25"]
+    finally:
+        db.close()

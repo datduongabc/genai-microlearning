@@ -1,0 +1,271 @@
+[
+  {
+    "label": "workers-1x4",
+    "modules": 4,
+    "done": 4,
+    "failed": 0,
+    "errors": [],
+    "wall_seconds": 375.5,
+    "modules_per_hour": 38.4,
+    "module_seconds": {
+      "n": 4,
+      "mean": 356.873,
+      "p50": 362.516,
+      "p95": 370.989,
+      "max": 370.989
+    },
+    "llm_calls_per_module": 23.0,
+    "retrievals_per_module": 8.0,
+    "rerank_seconds": {
+      "n": 32,
+      "mean": 4.232,
+      "p50": 3.098,
+      "p95": 10.101,
+      "max": 10.608
+    },
+    "embed_query_seconds": {
+      "n": 32,
+      "mean": 0.067,
+      "p50": 0.128,
+      "p95": 0.141,
+      "max": 0.146
+    },
+    "vector_search_seconds": {
+      "n": 32,
+      "mean": 0.007,
+      "p50": 0.007,
+      "p95": 0.009,
+      "max": 0.01
+    },
+    "bm25_seconds": {
+      "n": 32,
+      "mean": 0.002,
+      "p50": 0.002,
+      "p95": 0.005,
+      "max": 0.009
+    },
+    "llm_seconds": {
+      "n": 92,
+      "mean": 14.011,
+      "p50": 13.658,
+      "p95": 20.074,
+      "max": 24.495
+    }
+  },
+  {
+    "label": "workers-2x4",
+    "modules": 8,
+    "done": 8,
+    "failed": 0,
+    "errors": [],
+    "wall_seconds": 429.5,
+    "modules_per_hour": 67.0,
+    "module_seconds": {
+      "n": 8,
+      "mean": 393.306,
+      "p50": 395.216,
+      "p95": 426.679,
+      "max": 426.679
+    },
+    "llm_calls_per_module": 23.0,
+    "retrievals_per_module": 8.0,
+    "rerank_seconds": {
+      "n": 64,
+      "mean": 8.573,
+      "p50": 5.768,
+      "p95": 22.063,
+      "max": 22.663
+    },
+    "embed_query_seconds": {
+      "n": 64,
+      "mean": 0.064,
+      "p50": 0.074,
+      "p95": 0.141,
+      "max": 0.145
+    },
+    "vector_search_seconds": {
+      "n": 64,
+      "mean": 0.01,
+      "p50": 0.008,
+      "p95": 0.012,
+      "max": 0.167
+    },
+    "bm25_seconds": {
+      "n": 64,
+      "mean": 0.002,
+      "p50": 0.002,
+      "p95": 0.005,
+      "max": 0.008
+    },
+    "llm_seconds": {
+      "n": 184,
+      "mean": 14.08,
+      "p50": 13.853,
+      "p95": 19.058,
+      "max": 28.274
+    }
+  },
+  {
+    "label": "workers-4x4",
+    "modules": 16,
+    "done": 16,
+    "failed": 0,
+    "errors": [],
+    "wall_seconds": 501.7,
+    "modules_per_hour": 114.8,
+    "module_seconds": {
+      "n": 16,
+      "mean": 460.909,
+      "p50": 465.696,
+      "p95": 493.666,
+      "max": 498.606
+    },
+    "llm_calls_per_module": 23.0,
+    "retrievals_per_module": 8.0,
+    "rerank_seconds": {
+      "n": 128,
+      "mean": 18.822,
+      "p50": 8.332,
+      "p95": 42.968,
+      "max": 43.279
+    },
+    "embed_query_seconds": {
+      "n": 128,
+      "mean": 0.066,
+      "p50": 0.045,
+      "p95": 0.15,
+      "max": 0.242
+    },
+    "vector_search_seconds": {
+      "n": 128,
+      "mean": 0.008,
+      "p50": 0.008,
+      "p95": 0.013,
+      "max": 0.015
+    },
+    "bm25_seconds": {
+      "n": 128,
+      "mean": 0.002,
+      "p50": 0.002,
+      "p95": 0.007,
+      "max": 0.01
+    },
+    "llm_seconds": {
+      "n": 368,
+      "mean": 13.449,
+      "p50": 12.979,
+      "p95": 19.628,
+      "max": 27.979
+    }
+  },
+  {
+    "label": "workers-8x4",
+    "modules": 32,
+    "done": 21,
+    "failed": 11,
+    "errors": [
+      "Client error '429 Too Many Requests' for url 'http://reranker/rerank'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/429"
+    ],
+    "wall_seconds": 946.4,
+    "modules_per_hour": 79.9,
+    "module_seconds": {
+      "n": 21,
+      "mean": 499.825,
+      "p50": 502.813,
+      "p95": 565.398,
+      "max": 565.729
+    },
+    "llm_calls_per_module": 22.0,
+    "retrievals_per_module": 8.0,
+    "rerank_seconds": {
+      "n": 168,
+      "mean": 25.078,
+      "p50": 33.463,
+      "p95": 47.007,
+      "max": 48.72
+    },
+    "embed_query_seconds": {
+      "n": 168,
+      "mean": 0.066,
+      "p50": 0.0,
+      "p95": 0.147,
+      "max": 0.25
+    },
+    "vector_search_seconds": {
+      "n": 168,
+      "mean": 0.013,
+      "p50": 0.008,
+      "p95": 0.013,
+      "max": 0.824
+    },
+    "bm25_seconds": {
+      "n": 168,
+      "mean": 0.002,
+      "p50": 0.002,
+      "p95": 0.005,
+      "max": 0.008
+    },
+    "llm_seconds": {
+      "n": 462,
+      "mean": 13.567,
+      "p50": 13.354,
+      "p95": 18.901,
+      "max": 26.593
+    }
+  },
+  {
+    "label": "workers-8x4-reranker-2",
+    "modules": 32,
+    "done": 23,
+    "failed": 9,
+    "errors": [
+      "timed out"
+    ],
+    "wall_seconds": 1135.9,
+    "modules_per_hour": 72.9,
+    "module_seconds": {
+      "n": 23,
+      "mean": 523.556,
+      "p50": 536.527,
+      "p95": 617.402,
+      "max": 623.559
+    },
+    "llm_calls_per_module": 22.0,
+    "retrievals_per_module": 8.0,
+    "rerank_seconds": {
+      "n": 184,
+      "mean": 27.163,
+      "p50": 27.102,
+      "p95": 57.654,
+      "max": 59.969
+    },
+    "embed_query_seconds": {
+      "n": 184,
+      "mean": 0.075,
+      "p50": 0.0,
+      "p95": 0.149,
+      "max": 2.181
+    },
+    "vector_search_seconds": {
+      "n": 184,
+      "mean": 0.011,
+      "p50": 0.01,
+      "p95": 0.016,
+      "max": 0.02
+    },
+    "bm25_seconds": {
+      "n": 184,
+      "mean": 0.003,
+      "p50": 0.002,
+      "p95": 0.007,
+      "max": 0.009
+    },
+    "llm_seconds": {
+      "n": 506,
+      "mean": 13.885,
+      "p50": 13.483,
+      "p95": 20.529,
+      "max": 34.58
+    }
+  }
+]

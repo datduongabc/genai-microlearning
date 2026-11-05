@@ -24,7 +24,11 @@ from app.config import Settings, settings
 from app.jobs.queue import start_worker, stop_worker
 from app.llm.catalog import GatewayUnavailable
 from app.logging_config import configure_app_logging
-from app.middleware import BodySizeLimitMiddleware, SecurityHeadersMiddleware
+from app.middleware import (
+    BodySizeLimitMiddleware,
+    ConcurrencyLimitMiddleware,
+    SecurityHeadersMiddleware,
+)
 
 configure_app_logging()
 logger = logging.getLogger("app.rate_limit")
@@ -79,6 +83,8 @@ def create_app(app_settings: Settings = settings) -> FastAPI:
     # The last one added is the outermost, so the headers also reach the 413 that the
     # size limit answers on its own.
     api.add_middleware(BodySizeLimitMiddleware, max_bytes=app_settings.max_request_body_bytes, exempt=_is_upload)
+    api.add_middleware(ConcurrencyLimitMiddleware, max_concurrent=app_settings.api_max_concurrent_requests,
+                       queue_timeout=app_settings.api_queue_timeout_seconds, exempt_paths=frozenset({"/health"}))
     api.add_middleware(SecurityHeadersMiddleware, production=production)
 
     api.include_router(auth.router)

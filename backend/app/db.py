@@ -14,7 +14,10 @@ SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
 # FastAPI). RLS (migration 881bca16e9bc) áp dụng thật với vai trò này, nên
 # mọi truy vấn qua request_engine bị lọc theo course_id/owner_id ở tầng DB,
 # không chỉ tầng application -- lớp phòng thủ thứ 2 theo đúng kiến trúc GD2.
-request_engine = create_engine(settings.app_runtime_database_url)
+# Exactly as many connections as requests served at once, see api_max_concurrent_requests.
+request_engine = create_engine(
+    settings.app_runtime_database_url, pool_size=settings.api_max_concurrent_requests, max_overflow=0,
+)
 RequestSessionLocal = sessionmaker(bind=request_engine, autoflush=False, autocommit=False)
 
 
@@ -40,7 +43,10 @@ def _reapply_rls_context(session: Session, transaction, connection) -> None:
 # Role app_worker -- the background worker (job_queue.py) that processes the jobs of every
 # user. Exempt from row level security because it has to see all of them, and given
 # grants for the tables it works on and nothing else (migration a4d7e2c9b6f1).
-worker_engine = create_engine(settings.app_worker_database_url)
+# Two per job thread: a running job also holds a connection for its heartbeat.
+worker_engine = create_engine(
+    settings.app_worker_database_url, pool_size=2 * settings.worker_pool_size + 2, max_overflow=2,
+)
 WorkerSessionLocal = sessionmaker(bind=worker_engine, autoflush=False, autocommit=False)
 
 

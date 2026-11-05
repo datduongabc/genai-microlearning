@@ -1,8 +1,10 @@
 """ASGI middleware for the whole application."""
 
+import asyncio
 from collections.abc import Callable
 from typing import ClassVar
 
+from starlette.responses import JSONResponse
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 
@@ -117,3 +119,31 @@ class SecurityHeadersMiddleware:
             await send(message)
 
         await self.app(scope, receive, send_with_headers)
+
+
+class ConcurrencyLimitMiddleware:
+    """Serves at most `max_concurrent` requests at once; the others wait here, which costs no thread
+    or database connection. One that waits longer than `queue_timeout` gets 503, so an overload
+    sheds requests instead of stalling them all. See api_max_concurrent_requests in app/config.py."""
+
+    def __init__(self, app, max_concurrent: int, queue_timeout: float, exempt_paths: frozenset[str] = frozenset()):
+        self.app = app
+        self.queue_timeout = queue_timeout
+        self.exempt_paths = exempt_paths
+        self._slots = asyncio.Semaphore(max_concurrent)
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] != "http" or scope["path"] in self.exempt_paths:
+            await self.app(scope, receive, send)
+            return
+        try:
+            await asyncio.wait_for(self._slots.acquire(), timeout=self.queue_timeout)
+        except TimeoutError:
+            response = JSONResponse({"detail": "Hệ thống đang quá tải, vui lòng thử lại sau."}, status_code=503,
+                                    headers={"Retry-After": "5"})
+            await response(scope, receive, send)
+            return
+        try:
+            await self.app(scope, receive, send)
+        finally:
+            self._slots.release()
