@@ -1,0 +1,100 @@
+[
+  {
+    "concurrency": 8,
+    "codes": {
+      "200": 700
+    },
+    "tokens": 492800,
+    "samples": {},
+    "wall": 20.2,
+    "ok_per_second": 34.7,
+    "tokens_per_second": 24409,
+    "p50": 0.222,
+    "p95": 0.258,
+    "refused": 0.0
+  },
+  {
+    "concurrency": 16,
+    "codes": {
+      "200": 1420
+    },
+    "tokens": 999680,
+    "samples": {},
+    "wall": 20.3,
+    "ok_per_second": 70.0,
+    "tokens_per_second": 49299,
+    "p50": 0.222,
+    "p95": 0.266,
+    "refused": 0.0
+  },
+  {
+    "concurrency": 32,
+    "codes": {
+      "200": 2842
+    },
+    "tokens": 2000768,
+    "samples": {},
+    "wall": 20.2,
+    "ok_per_second": 140.6,
+    "tokens_per_second": 99008,
+    "p50": 0.22,
+    "p95": 0.266,
+    "refused": 0.0
+  },
+  {
+    "concurrency": 64,
+    "codes": {
+      "200": 5519
+    },
+    "tokens": 3885376,
+    "samples": {},
+    "wall": 20.5,
+    "ok_per_second": 269.3,
+    "tokens_per_second": 189556,
+    "p50": 0.224,
+    "p95": 0.297,
+    "refused": 0.0
+  },
+  {
+    "concurrency": 128,
+    "codes": {
+      "200": 1564
+    },
+    "tokens": 1101056,
+    "samples": {},
+    "wall": 22.2,
+    "ok_per_second": 70.4,
+    "tokens_per_second": 49596,
+    "p50": 0.892,
+    "p95": 5.568,
+    "refused": 0.0
+  },
+  {
+    "concurrency": 256,
+    "codes": {
+      "200": 1469
+    },
+    "tokens": 1034176,
+    "samples": {},
+    "wall": 24.1,
+    "ok_per_second": 61.1,
+    "tokens_per_second": 42979,
+    "p50": 3.699,
+    "p95": 7.773,
+    "refused": 0.0
+  },
+  {
+    "concurrency": 512,
+    "codes": {
+      "200": 1595
+    },
+    "tokens": 1122880,
+    "samples": {},
+    "wall": 26.3,
+    "ok_per_second": 60.7,
+    "tokens_per_second": 42755,
+    "p50": 6.871,
+    "p95": 17.481,
+    "refused": 0.0
+  }
+]

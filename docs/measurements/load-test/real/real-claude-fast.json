@@ -1,0 +1,291 @@
+[
+  {
+    "label": "worker-1x4",
+    "modules": 4,
+    "done": 4,
+    "failed": 0,
+    "errors": [],
+    "wall_seconds": 192.4,
+    "modules_per_hour": 74.9,
+    "module_seconds": {
+      "n": 4,
+      "mean": 163.367,
+      "p50": 163.299,
+      "p95": 189.052,
+      "max": 189.052
+    },
+    "timed_out": false,
+    "job_attempts": 0,
+    "prompt_tokens": 664251,
+    "completion_tokens": 221415,
+    "served_models": [
+      "claude-haiku-5-5"
+    ],
+    "llm_calls_per_module": 23.2,
+    "retrievals_per_module": 8.5,
+    "rerank_seconds": {
+      "n": 34,
+      "mean": 6.921,
+      "p50": 7.479,
+      "p95": 10.723,
+      "max": 12.206
+    },
+    "embed_query_seconds": {
+      "n": 34,
+      "mean": 0.091,
+      "p50": 0.036,
+      "p95": 0.165,
+      "max": 0.638
+    },
+    "vector_search_seconds": {
+      "n": 34,
+      "mean": 0.01,
+      "p50": 0.009,
+      "p95": 0.016,
+      "max": 0.025
+    },
+    "bm25_seconds": {
+      "n": 34,
+      "mean": 0.004,
+      "p50": 0.003,
+      "p95": 0.007,
+      "max": 0.011
+    },
+    "llm_seconds": {
+      "n": 93,
+      "mean": 11.097,
+      "p50": 11.261,
+      "p95": 15.23,
+      "max": 20.681
+    }
+  },
+  {
+    "label": "worker-2x4",
+    "modules": 8,
+    "done": 7,
+    "failed": 1,
+    "errors": [
+      "1 validation error for SlidesOutput\nslides.2.bullets\n  List should have at most 3 items after validation, not 4 [type=too_long, input_value=['Mã lệnh (text sectio...ng trong lúc chạy'], input_type=lis"
+    ],
+    "wall_seconds": 899.5,
+    "modules_per_hour": 28.0,
+    "module_seconds": {
+      "n": 7,
+      "mean": 180.818,
+      "p50": 164.75,
+      "p95": 260.432,
+      "max": 260.432
+    },
+    "timed_out": false,
+    "job_attempts": 17,
+    "prompt_tokens": 1291572,
+    "completion_tokens": 422540,
+    "served_models": [
+      "claude-haiku-5-5"
+    ],
+    "llm_calls_per_module": 25.3,
+    "retrievals_per_module": 9.0,
+    "rerank_seconds": {
+      "n": 63,
+      "mean": 6.197,
+      "p50": 4.065,
+      "p95": 21.117,
+      "max": 21.718
+    },
+    "embed_query_seconds": {
+      "n": 63,
+      "mean": 0.12,
+      "p50": 0.0,
+      "p95": 0.161,
+      "max": 3.97
+    },
+    "vector_search_seconds": {
+      "n": 63,
+      "mean": 0.009,
+      "p50": 0.007,
+      "p95": 0.015,
+      "max": 0.046
+    },
+    "bm25_seconds": {
+      "n": 63,
+      "mean": 0.003,
+      "p50": 0.002,
+      "p95": 0.007,
+      "max": 0.021
+    },
+    "llm_seconds": {
+      "n": 177,
+      "mean": 11.188,
+      "p50": 11.721,
+      "p95": 16.469,
+      "max": 24.857
+    }
+  },
+  {
+    "label": "worker-4x4",
+    "modules": 16,
+    "done": 11,
+    "failed": 5,
+    "errors": [
+      "1 validation error for SlidesOutput\nslides\n  List should have at most 8 items after validation, not 9 [type=too_long, input_value=[{'title': 'Chương trì...ng việc hữu ích']}], input_type=list]\n    For",
+      "3 validation errors for SlidesOutput\nslides.1.bullets\n  List should have at most 3 items after validation, not 4 [type=too_long, input_value=['Mã lệnh (text sectio...t động lúc chạy'], input_type=list",
+      "litellm.RateLimitError: RateLimitError: OpenAIException - No deployments available for selected model, Try again in 6 seconds. Passed model=claude-fast. pre-call-checks=False, cooldown_list=['3020efca",
+      "litellm.RateLimitError: RateLimitError: OpenAIException - No deployments available for selected model, Try again in 9 seconds. Passed model=claude-fast. pre-call-checks=False, cooldown_list=['3020efca"
+    ],
+    "wall_seconds": 1327.2,
+    "modules_per_hour": 29.8,
+    "module_seconds": {
+      "n": 11,
+      "mean": 510.89,
+      "p50": 597.93,
+      "p95": 653.918,
+      "max": 653.918
+    },
+    "timed_out": false,
+    "job_attempts": 32,
+    "prompt_tokens": 1989922,
+    "completion_tokens": 677751,
+    "served_models": [
+      "claude-haiku-5-5"
+    ],
+    "llm_calls_per_module": 24.1,
+    "retrievals_per_module": 9.2,
+    "rerank_seconds": {
+      "n": 101,
+      "mean": 21.273,
+      "p50": 17.312,
+      "p95": 48.846,
+      "max": 78.254
+    },
+    "embed_query_seconds": {
+      "n": 101,
+      "mean": 0.087,
+      "p50": 0.0,
+      "p95": 0.169,
+      "max": 2.085
+    },
+    "vector_search_seconds": {
+      "n": 101,
+      "mean": 0.01,
+      "p50": 0.009,
+      "p95": 0.017,
+      "max": 0.026
+    },
+    "bm25_seconds": {
+      "n": 101,
+      "mean": 0.003,
+      "p50": 0.003,
+      "p95": 0.008,
+      "max": 0.011
+    },
+    "llm_seconds": {
+      "n": 265,
+      "mean": 36.898,
+      "p50": 13.815,
+      "p95": 132.337,
+      "max": 137.419
+    }
+  },
+  {
+    "label": "reranker-2-worker-4x4",
+    "modules": 16,
+    "done": 9,
+    "failed": 7,
+    "errors": [
+      "1 validation error for SlidesOutput\nslides.1.bullets\n  List should have at most 3 items after validation, not 4 [type=too_long, input_value=['Chương trình: thụ ...i dùng cùng chạy)'], input_type=list]",
+      "litellm.RateLimitError: RateLimitError: OpenAIException - No deployments available for selected model, Try again in 10 seconds. Passed model=claude-fast. pre-call-checks=False, cooldown_list=['3020efc",
+      "litellm.RateLimitError: RateLimitError: OpenAIException - No deployments available for selected model, Try again in 17 seconds. Passed model=claude-fast. pre-call-checks=False, cooldown_list=['3020efc",
+      "litellm.RateLimitError: RateLimitError: OpenAIException - No deployments available for selected model, Try again in 2 seconds. Passed model=claude-fast. pre-call-checks=False, cooldown_list=['3020efca",
+      "litellm.RateLimitError: RateLimitError: OpenAIException - litellm.RateLimitError: AnthropicException - {\"type\":\"error\",\"error\":{\"type\":\"rate_limit_error\",\"message\":\"This request would exceed your rate"
+    ],
+    "wall_seconds": 1372.4,
+    "modules_per_hour": 23.6,
+    "module_seconds": {
+      "n": 9,
+      "mean": 420.559,
+      "p50": 436.85,
+      "p95": 601.591,
+      "max": 601.591
+    },
+    "timed_out": false,
+    "job_attempts": 43,
+    "prompt_tokens": 1535131,
+    "completion_tokens": 515210,
+    "served_models": [
+      "claude-haiku-5-5"
+    ],
+    "llm_calls_per_module": 23.3,
+    "retrievals_per_module": 8.7,
+    "rerank_seconds": {
+      "n": 78,
+      "mean": 19.752,
+      "p50": 20.883,
+      "p95": 46.089,
+      "max": 59.452
+    },
+    "embed_query_seconds": {
+      "n": 78,
+      "mean": 0.081,
+      "p50": 0.0,
+      "p95": 0.168,
+      "max": 1.078
+    },
+    "vector_search_seconds": {
+      "n": 78,
+      "mean": 0.014,
+      "p50": 0.011,
+      "p95": 0.025,
+      "max": 0.162
+    },
+    "bm25_seconds": {
+      "n": 78,
+      "mean": 0.004,
+      "p50": 0.003,
+      "p95": 0.009,
+      "max": 0.011
+    },
+    "llm_seconds": {
+      "n": 210,
+      "mean": 34.954,
+      "p50": 13.208,
+      "p95": 132.894,
+      "max": 140.729
+    }
+  },
+  {
+    "label": "embedder-2-worker-4x4",
+    "modules": 16,
+    "done": 0,
+    "failed": 16,
+    "errors": [
+      "litellm.BadRequestError: OpenAIException - litellm.BadRequestError: AnthropicException - {\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"Your credit balance is too low to access the"
+    ],
+    "wall_seconds": 501.7,
+    "modules_per_hour": 0.0,
+    "module_seconds": {
+      "n": 0
+    },
+    "timed_out": false,
+    "job_attempts": 80,
+    "prompt_tokens": 0,
+    "completion_tokens": 0,
+    "served_models": [],
+    "llm_calls_per_module": 0.0,
+    "retrievals_per_module": 0.0,
+    "rerank_seconds": {
+      "n": 0
+    },
+    "embed_query_seconds": {
+      "n": 0
+    },
+    "vector_search_seconds": {
+      "n": 0
+    },
+    "bm25_seconds": {
+      "n": 0
+    },
+    "llm_seconds": {
+      "n": 0
+    }
+  }
+]

@@ -1,0 +1,64 @@
+[
+  {
+    "label": "worker-8x4",
+    "modules": 32,
+    "done": 32,
+    "failed": 0,
+    "errors": [],
+    "wall_seconds": 342.8,
+    "modules_per_hour": 336.0,
+    "module_seconds": {
+      "n": 32,
+      "mean": 267.911,
+      "p50": 268.092,
+      "p95": 328.192,
+      "max": 339.694
+    },
+    "timed_out": false,
+    "job_attempts": 0,
+    "prompt_tokens": 2748432,
+    "completion_tokens": 960320,
+    "served_models": [
+      "gpt-6-luna"
+    ],
+    "llm_calls_per_module": 22.6,
+    "retrievals_per_module": 8.2,
+    "rerank_seconds": {
+      "n": 261,
+      "mean": 1.337,
+      "p50": 1.148,
+      "p95": 2.743,
+      "max": 3.85
+    },
+    "rerank_fallbacks": 0,
+    "rerank_retries": 0,
+    "embed_query_seconds": {
+      "n": 261,
+      "mean": 0.048,
+      "p50": 0.0,
+      "p95": 0.168,
+      "max": 0.419
+    },
+    "vector_search_seconds": {
+      "n": 261,
+      "mean": 0.009,
+      "p50": 0.008,
+      "p95": 0.015,
+      "max": 0.143
+    },
+    "bm25_seconds": {
+      "n": 261,
+      "mean": 0.003,
+      "p50": 0.002,
+      "p95": 0.007,
+      "max": 0.011
+    },
+    "llm_seconds": {
+      "n": 722,
+      "mean": 22.208,
+      "p50": 14.111,
+      "p95": 74.989,
+      "max": 201.119
+    }
+  }
+]

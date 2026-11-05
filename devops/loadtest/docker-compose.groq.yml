@@ -1,0 +1,21 @@
+# Real generation with Groq's gpt-oss-20b, Jev as the reranker and the LLM load control settings of the run.
+# Image: the Jev reranker, chat stream and load control changes built together.
+services:
+  gateway:
+    environment:
+      GROQ_API_KEY: ${GROQ_API_KEY:?}
+    volumes: !override
+      - ${GATEWAY_CONFIG:-./real_gateway.yaml}:/app/config.yaml:ro
+  runner:
+    image: do-an-load-backend-chat
+    environment: &settings
+      RERANKER_PROVIDER: jev
+      TYPESAFE_API_KEY: ${TYPESAFE_API_KEY:?}
+      LLM_RATE_LIMIT_RETRIES: ${LLM_RATE_LIMIT_RETRIES:-0}
+      CHAT_MAX_STREAMS: "1000"
+  backend:
+    image: do-an-load-backend-chat
+    environment: *settings
+  worker:
+    image: do-an-load-backend-chat
+    environment: *settings

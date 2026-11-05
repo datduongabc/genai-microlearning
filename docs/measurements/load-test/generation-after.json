@@ -210,5 +210,58 @@
       "p95": 19.657,
       "max": 25.909
     }
+  },
+  {
+    "label": "workers-4x4-reranker-2",
+    "modules": 16,
+    "done": 16,
+    "failed": 0,
+    "errors": [],
+    "wall_seconds": 327.6,
+    "modules_per_hour": 175.8,
+    "module_seconds": {
+      "n": 16,
+      "mean": 283.187,
+      "p50": 282.57,
+      "p95": 317.092,
+      "max": 324.264
+    },
+    "llm_calls_per_module": 23.0,
+    "retrievals_per_module": 8.0,
+    "rerank_seconds": {
+      "n": 128,
+      "mean": 18.805,
+      "p50": 15.362,
+      "p95": 43.584,
+      "max": 52.765
+    },
+    "embed_query_seconds": {
+      "n": 128,
+      "mean": 0.064,
+      "p50": 0.025,
+      "p95": 0.144,
+      "max": 0.214
+    },
+    "vector_search_seconds": {
+      "n": 128,
+      "mean": 0.026,
+      "p50": 0.013,
+      "p95": 0.025,
+      "max": 0.947
+    },
+    "bm25_seconds": {
+      "n": 128,
+      "mean": 0.004,
+      "p50": 0.003,
+      "p95": 0.009,
+      "max": 0.014
+    },
+    "llm_seconds": {
+      "n": 368,
+      "mean": 13.991,
+      "p50": 13.473,
+      "p95": 20.373,
+      "max": 26.543
+    }
   }
 ]

@@ -1,0 +1,180 @@
+[
+  {
+    "label": "worker-4x4",
+    "modules": 16,
+    "done": 16,
+    "failed": 0,
+    "errors": [],
+    "wall_seconds": 180.4,
+    "modules_per_hour": 319.3,
+    "module_seconds": {
+      "n": 16,
+      "mean": 142.603,
+      "p50": 140.156,
+      "p95": 170.809,
+      "max": 177.294
+    },
+    "timed_out": false,
+    "job_attempts": 0,
+    "prompt_tokens": 1394036,
+    "completion_tokens": 491695,
+    "served_models": [
+      "gpt-6-luna"
+    ],
+    "llm_calls_per_module": 22.9,
+    "retrievals_per_module": 8.1,
+    "rerank_seconds": {
+      "n": 129,
+      "mean": 0.895,
+      "p50": 0.927,
+      "p95": 1.254,
+      "max": 1.361
+    },
+    "rerank_fallbacks": 0,
+    "rerank_retries": 0,
+    "embed_query_seconds": {
+      "n": 129,
+      "mean": 0.037,
+      "p50": 0.0,
+      "p95": 0.144,
+      "max": 0.229
+    },
+    "vector_search_seconds": {
+      "n": 129,
+      "mean": 0.009,
+      "p50": 0.007,
+      "p95": 0.017,
+      "max": 0.114
+    },
+    "bm25_seconds": {
+      "n": 129,
+      "mean": 0.003,
+      "p50": 0.002,
+      "p95": 0.007,
+      "max": 0.015
+    },
+    "llm_seconds": {
+      "n": 366,
+      "mean": 13.468,
+      "p50": 12.6,
+      "p95": 24.621,
+      "max": 34.08
+    }
+  },
+  {
+    "label": "chat-api-1",
+    "concurrency": 25,
+    "messages": 50,
+    "status_codes": {
+      "200": 50
+    },
+    "failed": 0,
+    "wall_seconds": 19.8,
+    "messages_per_minute": 151.6,
+    "latency_seconds": {
+      "n": 50,
+      "mean": 8.66,
+      "p50": 8.768,
+      "p95": 11.01,
+      "max": 11.386
+    }
+  },
+  {
+    "label": "chat-api-2",
+    "concurrency": 50,
+    "messages": 100,
+    "status_codes": {
+      "200": 100
+    },
+    "failed": 0,
+    "wall_seconds": 21.4,
+    "messages_per_minute": 280.6,
+    "latency_seconds": {
+      "n": 100,
+      "mean": 9.182,
+      "p50": 8.942,
+      "p95": 11.714,
+      "max": 13.169
+    }
+  },
+  {
+    "label": "chat-api-4",
+    "concurrency": 100,
+    "messages": 200,
+    "status_codes": {
+      "200": 200
+    },
+    "failed": 0,
+    "wall_seconds": 26.0,
+    "messages_per_minute": 462.3,
+    "latency_seconds": {
+      "n": 200,
+      "mean": 10.841,
+      "p50": 11.206,
+      "p95": 13.377,
+      "max": 15.484
+    }
+  },
+  {
+    "label": "worker-8x4",
+    "modules": 32,
+    "done": 32,
+    "failed": 0,
+    "errors": [],
+    "wall_seconds": 180.7,
+    "modules_per_hour": 637.7,
+    "module_seconds": {
+      "n": 32,
+      "mean": 131.926,
+      "p50": 132.703,
+      "p95": 151.677,
+      "max": 177.273
+    },
+    "timed_out": false,
+    "job_attempts": 0,
+    "prompt_tokens": 2671143,
+    "completion_tokens": 913301,
+    "served_models": [
+      "gpt-6-luna"
+    ],
+    "llm_calls_per_module": 21.7,
+    "retrievals_per_module": 8.2,
+    "rerank_seconds": {
+      "n": 263,
+      "mean": 0.895,
+      "p50": 0.915,
+      "p95": 1.38,
+      "max": 1.523
+    },
+    "rerank_fallbacks": 0,
+    "rerank_retries": 0,
+    "embed_query_seconds": {
+      "n": 263,
+      "mean": 0.166,
+      "p50": 0.0,
+      "p95": 1.988,
+      "max": 2.486
+    },
+    "vector_search_seconds": {
+      "n": 263,
+      "mean": 0.011,
+      "p50": 0.007,
+      "p95": 0.023,
+      "max": 0.227
+    },
+    "bm25_seconds": {
+      "n": 263,
+      "mean": 0.003,
+      "p50": 0.002,
+      "p95": 0.011,
+      "max": 0.019
+    },
+    "llm_seconds": {
+      "n": 694,
+      "mean": 13.465,
+      "p50": 13.154,
+      "p95": 24.356,
+      "max": 34.966
+    }
+  }
+]

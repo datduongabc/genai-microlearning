@@ -1,0 +1,478 @@
+[
+  {
+    "label": "worker-1x4",
+    "modules": 4,
+    "done": 4,
+    "failed": 0,
+    "errors": [],
+    "wall_seconds": 159.3,
+    "modules_per_hour": 90.4,
+    "module_seconds": {
+      "n": 4,
+      "mean": 142.493,
+      "p50": 153.872,
+      "p95": 156.417,
+      "max": 156.417
+    },
+    "timed_out": false,
+    "job_attempts": 0,
+    "prompt_tokens": 301433,
+    "completion_tokens": 101826,
+    "served_models": [
+      "gpt-6-luna"
+    ],
+    "llm_calls_per_module": 20.0,
+    "retrievals_per_module": 7.5,
+    "rerank_seconds": {
+      "n": 30,
+      "mean": 5.059,
+      "p50": 4.873,
+      "p95": 10.231,
+      "max": 10.269
+    },
+    "embed_query_seconds": {
+      "n": 30,
+      "mean": 0.069,
+      "p50": 0.0,
+      "p95": 0.177,
+      "max": 0.208
+    },
+    "vector_search_seconds": {
+      "n": 30,
+      "mean": 0.025,
+      "p50": 0.009,
+      "p95": 0.173,
+      "max": 0.175
+    },
+    "bm25_seconds": {
+      "n": 30,
+      "mean": 0.009,
+      "p50": 0.003,
+      "p95": 0.009,
+      "max": 0.159
+    },
+    "llm_seconds": {
+      "n": 80,
+      "mean": 11.824,
+      "p50": 11.809,
+      "p95": 20.56,
+      "max": 23.886
+    }
+  },
+  {
+    "label": "worker-2x4",
+    "modules": 8,
+    "done": 8,
+    "failed": 0,
+    "errors": [],
+    "wall_seconds": 267.4,
+    "modules_per_hour": 107.7,
+    "module_seconds": {
+      "n": 8,
+      "mean": 198.23,
+      "p50": 202.783,
+      "p95": 262.6,
+      "max": 262.6
+    },
+    "timed_out": false,
+    "job_attempts": 0,
+    "prompt_tokens": 734121,
+    "completion_tokens": 242457,
+    "served_models": [
+      "gpt-6-luna"
+    ],
+    "llm_calls_per_module": 23.0,
+    "retrievals_per_module": 8.1,
+    "rerank_seconds": {
+      "n": 65,
+      "mean": 11.988,
+      "p50": 11.57,
+      "p95": 23.796,
+      "max": 25.912
+    },
+    "embed_query_seconds": {
+      "n": 65,
+      "mean": 0.178,
+      "p50": 0.001,
+      "p95": 1.738,
+      "max": 1.924
+    },
+    "vector_search_seconds": {
+      "n": 65,
+      "mean": 0.011,
+      "p50": 0.009,
+      "p95": 0.018,
+      "max": 0.025
+    },
+    "bm25_seconds": {
+      "n": 65,
+      "mean": 0.004,
+      "p50": 0.003,
+      "p95": 0.011,
+      "max": 0.019
+    },
+    "llm_seconds": {
+      "n": 184,
+      "mean": 11.731,
+      "p50": 11.74,
+      "p95": 19.86,
+      "max": 27.188
+    }
+  },
+  {
+    "label": "worker-4x4",
+    "modules": 16,
+    "done": 16,
+    "failed": 0,
+    "errors": [],
+    "wall_seconds": 354.7,
+    "modules_per_hour": 162.4,
+    "module_seconds": {
+      "n": 16,
+      "mean": 308.679,
+      "p50": 317.758,
+      "p95": 344.757,
+      "max": 351.648
+    },
+    "timed_out": false,
+    "job_attempts": 0,
+    "prompt_tokens": 1348819,
+    "completion_tokens": 449590,
+    "served_models": [
+      "gpt-6-luna"
+    ],
+    "llm_calls_per_module": 21.5,
+    "retrievals_per_module": 8.1,
+    "rerank_seconds": {
+      "n": 130,
+      "mean": 32.412,
+      "p50": 38.124,
+      "p95": 48.337,
+      "max": 56.658
+    },
+    "embed_query_seconds": {
+      "n": 130,
+      "mean": 0.181,
+      "p50": 0.0,
+      "p95": 1.847,
+      "max": 2.114
+    },
+    "vector_search_seconds": {
+      "n": 130,
+      "mean": 0.023,
+      "p50": 0.012,
+      "p95": 0.103,
+      "max": 0.299
+    },
+    "bm25_seconds": {
+      "n": 130,
+      "mean": 0.004,
+      "p50": 0.003,
+      "p95": 0.01,
+      "max": 0.017
+    },
+    "llm_seconds": {
+      "n": 344,
+      "mean": 12.211,
+      "p50": 11.722,
+      "p95": 21.582,
+      "max": 36.351
+    }
+  },
+  {
+    "label": "worker-8x4",
+    "modules": 32,
+    "done": 32,
+    "failed": 0,
+    "errors": [],
+    "wall_seconds": 631.2,
+    "modules_per_hour": 182.5,
+    "module_seconds": {
+      "n": 32,
+      "mean": 535.276,
+      "p50": 533.291,
+      "p95": 608.147,
+      "max": 626.86
+    },
+    "timed_out": false,
+    "job_attempts": 0,
+    "prompt_tokens": 2799021,
+    "completion_tokens": 971262,
+    "served_models": [
+      "gpt-6-luna"
+    ],
+    "llm_calls_per_module": 22.4,
+    "retrievals_per_module": 8.2,
+    "rerank_seconds": {
+      "n": 262,
+      "mean": 80.846,
+      "p50": 86.517,
+      "p95": 123.536,
+      "max": 141.29
+    },
+    "embed_query_seconds": {
+      "n": 262,
+      "mean": 0.218,
+      "p50": 0.0,
+      "p95": 2.389,
+      "max": 3.232
+    },
+    "vector_search_seconds": {
+      "n": 262,
+      "mean": 0.012,
+      "p50": 0.01,
+      "p95": 0.022,
+      "max": 0.067
+    },
+    "bm25_seconds": {
+      "n": 262,
+      "mean": 0.004,
+      "p50": 0.003,
+      "p95": 0.011,
+      "max": 0.024
+    },
+    "llm_seconds": {
+      "n": 718,
+      "mean": 12.545,
+      "p50": 12.405,
+      "p95": 21.934,
+      "max": 31.324
+    }
+  },
+  {
+    "label": "reranker-2-worker-4x4",
+    "modules": 16,
+    "done": 16,
+    "failed": 0,
+    "errors": [],
+    "wall_seconds": 318.8,
+    "modules_per_hour": 180.7,
+    "module_seconds": {
+      "n": 16,
+      "mean": 275.212,
+      "p50": 276.767,
+      "p95": 314.49,
+      "max": 314.655
+    },
+    "timed_out": false,
+    "job_attempts": 0,
+    "prompt_tokens": 1335290,
+    "completion_tokens": 458128,
+    "served_models": [
+      "gpt-6-luna"
+    ],
+    "llm_calls_per_module": 21.6,
+    "retrievals_per_module": 8.1,
+    "rerank_seconds": {
+      "n": 129,
+      "mean": 28.277,
+      "p50": 29.018,
+      "p95": 45.383,
+      "max": 62.32
+    },
+    "embed_query_seconds": {
+      "n": 129,
+      "mean": 0.186,
+      "p50": 0.0,
+      "p95": 0.84,
+      "max": 2.145
+    },
+    "vector_search_seconds": {
+      "n": 129,
+      "mean": 0.02,
+      "p50": 0.014,
+      "p95": 0.046,
+      "max": 0.224
+    },
+    "bm25_seconds": {
+      "n": 129,
+      "mean": 0.006,
+      "p50": 0.004,
+      "p95": 0.015,
+      "max": 0.024
+    },
+    "llm_seconds": {
+      "n": 346,
+      "mean": 12.336,
+      "p50": 12.367,
+      "p95": 21.294,
+      "max": 30.61
+    }
+  },
+  {
+    "label": "embedder-2-worker-4x4",
+    "modules": 16,
+    "done": 16,
+    "failed": 0,
+    "errors": [],
+    "wall_seconds": 414.6,
+    "modules_per_hour": 138.9,
+    "module_seconds": {
+      "n": 16,
+      "mean": 309.872,
+      "p50": 315.991,
+      "p95": 352.086,
+      "max": 410.011
+    },
+    "timed_out": false,
+    "job_attempts": 0,
+    "prompt_tokens": 1322671,
+    "completion_tokens": 444841,
+    "served_models": [
+      "gpt-6-luna"
+    ],
+    "llm_calls_per_module": 21.4,
+    "retrievals_per_module": 8.2,
+    "rerank_seconds": {
+      "n": 132,
+      "mean": 32.902,
+      "p50": 35.31,
+      "p95": 44.814,
+      "max": 52.858
+    },
+    "embed_query_seconds": {
+      "n": 132,
+      "mean": 0.265,
+      "p50": 0.0,
+      "p95": 1.74,
+      "max": 1.844
+    },
+    "vector_search_seconds": {
+      "n": 132,
+      "mean": 0.013,
+      "p50": 0.01,
+      "p95": 0.023,
+      "max": 0.066
+    },
+    "bm25_seconds": {
+      "n": 132,
+      "mean": 0.004,
+      "p50": 0.003,
+      "p95": 0.009,
+      "max": 0.011
+    },
+    "llm_seconds": {
+      "n": 342,
+      "mean": 13.423,
+      "p50": 12.284,
+      "p95": 28.293,
+      "max": 56.711
+    }
+  },
+  {
+    "label": "gateway-2-worker-4x4",
+    "modules": 16,
+    "done": 16,
+    "failed": 0,
+    "errors": [],
+    "wall_seconds": 529.6,
+    "modules_per_hour": 108.8,
+    "module_seconds": {
+      "n": 16,
+      "mean": 476.253,
+      "p50": 486.488,
+      "p95": 510.577,
+      "max": 527.76
+    },
+    "timed_out": false,
+    "job_attempts": 0,
+    "prompt_tokens": 1356817,
+    "completion_tokens": 475951,
+    "served_models": [
+      "gpt-6-luna"
+    ],
+    "llm_calls_per_module": 21.9,
+    "retrievals_per_module": 8.2,
+    "rerank_seconds": {
+      "n": 132,
+      "mean": 55.03,
+      "p50": 44.629,
+      "p95": 155.006,
+      "max": 212.548
+    },
+    "embed_query_seconds": {
+      "n": 132,
+      "mean": 0.502,
+      "p50": 0.0,
+      "p95": 3.697,
+      "max": 4.033
+    },
+    "vector_search_seconds": {
+      "n": 132,
+      "mean": 0.02,
+      "p50": 0.013,
+      "p95": 0.061,
+      "max": 0.126
+    },
+    "bm25_seconds": {
+      "n": 132,
+      "mean": 0.007,
+      "p50": 0.004,
+      "p95": 0.033,
+      "max": 0.046
+    },
+    "llm_seconds": {
+      "n": 350,
+      "mean": 13.031,
+      "p50": 12.566,
+      "p95": 22.851,
+      "max": 32.273
+    }
+  },
+  {
+    "label": "chat-api-1",
+    "concurrency": 25,
+    "messages": 50,
+    "status_codes": {
+      "200": 50
+    },
+    "failed": 0,
+    "wall_seconds": 133.9,
+    "messages_per_minute": 22.4,
+    "latency_seconds": {
+      "n": 50,
+      "mean": 52.981,
+      "p50": 59.516,
+      "p95": 71.181,
+      "max": 79.308
+    }
+  },
+  {
+    "label": "chat-api-2",
+    "concurrency": 50,
+    "messages": 100,
+    "status_codes": {
+      "200": 95,
+      "503": 5
+    },
+    "failed": 5,
+    "wall_seconds": 253.5,
+    "messages_per_minute": 22.5,
+    "latency_seconds": {
+      "n": 95,
+      "mean": 97.701,
+      "p50": 121.815,
+      "p95": 132.868,
+      "max": 135.176
+    }
+  },
+  {
+    "label": "chat-api-4",
+    "concurrency": 100,
+    "messages": 200,
+    "status_codes": {
+      "200": 140,
+      "503": 60
+    },
+    "failed": 60,
+    "wall_seconds": 372.8,
+    "messages_per_minute": 22.5,
+    "latency_seconds": {
+      "n": 140,
+      "mean": 164.882,
+      "p50": 192.396,
+      "p95": 239.146,
+      "max": 241.573
+    }
+  }
+]

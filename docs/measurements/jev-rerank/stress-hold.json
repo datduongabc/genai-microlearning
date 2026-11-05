@@ -1,0 +1,53 @@
+{
+  "concurrency": 64,
+  "codes": {
+    "200": 12484
+  },
+  "rows": [
+    {
+      "from_second": 0,
+      "ok_per_second": 272.4,
+      "p95": 0.355
+    },
+    {
+      "from_second": 5,
+      "ok_per_second": 278.6,
+      "p95": 0.268
+    },
+    {
+      "from_second": 10,
+      "ok_per_second": 283.4,
+      "p95": 0.259
+    },
+    {
+      "from_second": 15,
+      "ok_per_second": 277.8,
+      "p95": 0.272
+    },
+    {
+      "from_second": 20,
+      "ok_per_second": 279.0,
+      "p95": 0.27
+    },
+    {
+      "from_second": 25,
+      "ok_per_second": 277.2,
+      "p95": 0.272
+    },
+    {
+      "from_second": 30,
+      "ok_per_second": 272.2,
+      "p95": 0.28
+    },
+    {
+      "from_second": 35,
+      "ok_per_second": 278.8,
+      "p95": 0.27
+    },
+    {
+      "from_second": 40,
+      "ok_per_second": 277.4,
+      "p95": 0.273
+    }
+  ]
+}

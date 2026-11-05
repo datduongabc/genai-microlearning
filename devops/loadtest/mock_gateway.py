@@ -14,10 +14,14 @@ import random
 
 import httpx
 from fastapi import FastAPI, Request
+from fastapi.responses import StreamingResponse
 
 MEDIAN_SECONDS = float(os.environ.get("MOCK_LLM_MEDIAN_SECONDS", "13.3"))
 SIGMA = float(os.environ.get("MOCK_LLM_SIGMA", "0.24"))
 COMPLETION_TOKENS = int(os.environ.get("MOCK_COMPLETION_TOKENS", "2700"))
+STREAM_FIRST_SECONDS = float(os.environ.get("MOCK_STREAM_FIRST_SECONDS", "1.5"))
+STREAM_SECONDS = float(os.environ.get("MOCK_STREAM_SECONDS", "6"))
+STREAM_PIECES = int(os.environ.get("MOCK_STREAM_PIECES", "60"))
 EMBEDDER_URL = os.environ.get("EMBEDDER_URL", "http://embedder:80")
 EMBEDDER_KEY = os.environ.get("EMBEDDER_API_KEY", "")
 
@@ -64,10 +68,23 @@ def health():
     return "ok"
 
 
+async def _stream_reply():
+    """A reply in timed pieces, for measuring how many open streams one API process holds. Not a model's latency."""
+    await asyncio.sleep(STREAM_FIRST_SECONDS)
+    for number in range(STREAM_PIECES):
+        piece = {"id": "mock", "object": "chat.completion.chunk", "created": 0, "model": "mock-model",
+                 "choices": [{"index": 0, "delta": {"role": "assistant", "content": f"phần {number} "}, "finish_reason": None}]}
+        yield f"data: {json.dumps(piece, ensure_ascii=False)}\n\n"
+        await asyncio.sleep(STREAM_SECONDS / STREAM_PIECES)
+    yield "data: [DONE]\n\n"
+
+
 @app.post("/chat/completions")
 @app.post("/v1/chat/completions")
 async def chat(request: Request):
     body = await request.json()
+    if body.get("stream"):
+        return StreamingResponse(_stream_reply(), media_type="text/event-stream")
     await asyncio.sleep(random.lognormvariate(0, SIGMA) * MEDIAN_SECONDS)
     response_format = body.get("response_format") or {}
     schema = (response_format.get("json_schema") or {}).get("schema")

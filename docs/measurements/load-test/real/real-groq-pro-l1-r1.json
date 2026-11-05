@@ -1,0 +1,78 @@
+[
+  {
+    "label": "worker-4x4-queue32",
+    "modules": 32,
+    "done": 30,
+    "failed": 2,
+    "errors": [
+      "Citation marker must follow a sentence or bullet. Use only [S1], [S2], [S3], [S4], [S5], [S6], [S7], [S8], [S9], [S10], [S11], [S12], [S13], [S14], [S15], [S16], [S17], [S18], [S19].",
+      "Content cites unknown source IDs: [ S2 ], [ S5 ], [ S4 ]. Use only [S1], [S2], [S3], [S4], [S5], [S6], [S7], [S8], [S9], [S10], [S11], [S12], [S13], [S14], [S15], [S16], [S17], [S18], [S19], [S20]."
+    ],
+    "wall_seconds": 447.8,
+    "modules_per_hour": 241.2,
+    "module_seconds": {
+      "n": 30,
+      "mean": 179.603,
+      "p50": 173.81,
+      "p95": 373.274,
+      "max": 444.351
+    },
+    "timed_out": false,
+    "job_attempts": 4,
+    "prompt_tokens": 2542172,
+    "completion_tokens": 495456,
+    "served_models": [
+      "openai/gpt-oss-120b"
+    ],
+    "llm_calls_per_module": 28.5,
+    "retrievals_per_module": 8.2,
+    "rerank_seconds": {
+      "n": 246,
+      "mean": 0.375,
+      "p50": 0.333,
+      "p95": 0.728,
+      "max": 0.932
+    },
+    "rerank_fallbacks": 165,
+    "rerank_retries": 0,
+    "embed_query_seconds": {
+      "n": 246,
+      "mean": 0.055,
+      "p50": 0.0,
+      "p95": 0.181,
+      "max": 1.21
+    },
+    "vector_search_seconds": {
+      "n": 246,
+      "mean": 0.009,
+      "p50": 0.008,
+      "p95": 0.018,
+      "max": 0.047
+    },
+    "bm25_seconds": {
+      "n": 246,
+      "mean": 0.004,
+      "p50": 0.003,
+      "p95": 0.01,
+      "max": 0.061
+    },
+    "llm_seconds": {
+      "n": 856,
+      "mean": 6.38,
+      "p50": 5.067,
+      "p95": 13.912,
+      "max": 17.614
+    },
+    "llm_rate_limited": 141,
+    "llm_wait_seconds": {
+      "n": 0
+    },
+    "llm_backoff_seconds": {
+      "n": 141,
+      "mean": 14.931,
+      "p50": 7.013,
+      "p95": 54.277,
+      "max": 82.246
+    }
+  }
+]

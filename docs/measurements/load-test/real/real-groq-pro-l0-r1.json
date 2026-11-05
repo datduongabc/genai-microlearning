@@ -1,0 +1,75 @@
+[
+  {
+    "label": "worker-4x4-queue32",
+    "modules": 32,
+    "done": 1,
+    "failed": 31,
+    "errors": [
+      "litellm.BadRequestError: OpenAIException - litellm.BadRequestError: GroqException - {\"error\":{\"message\":\"Generated JSON does not match the expected schema. Please adjust your prompt. See 'failed_gener",
+      "litellm.RateLimitError: RateLimitError: OpenAIException - No deployments available for selected model, Try again in 1 seconds. Passed model=groq-pro. pre-call-checks=False, cooldown_list=['fafb5836811",
+      "litellm.RateLimitError: RateLimitError: OpenAIException - litellm.RateLimitError: RateLimitError: GroqException - {\"error\":{\"message\":\"Rate limit reached for model `openai/gpt-oss-120b` in organizatio"
+    ],
+    "wall_seconds": 204.6,
+    "modules_per_hour": 17.6,
+    "module_seconds": {
+      "n": 1,
+      "mean": 46.852,
+      "p50": 46.852,
+      "p95": 46.852,
+      "max": 46.852
+    },
+    "timed_out": false,
+    "job_attempts": 159,
+    "prompt_tokens": 92312,
+    "completion_tokens": 19795,
+    "served_models": [
+      "openai/gpt-oss-120b"
+    ],
+    "llm_calls_per_module": 26.0,
+    "retrievals_per_module": 9.0,
+    "rerank_seconds": {
+      "n": 9,
+      "mean": 0.412,
+      "p50": 0.395,
+      "p95": 0.504,
+      "max": 0.504
+    },
+    "rerank_fallbacks": 0,
+    "rerank_retries": 0,
+    "embed_query_seconds": {
+      "n": 9,
+      "mean": 0.034,
+      "p50": 0.0,
+      "p95": 0.154,
+      "max": 0.154
+    },
+    "vector_search_seconds": {
+      "n": 9,
+      "mean": 0.006,
+      "p50": 0.006,
+      "p95": 0.009,
+      "max": 0.009
+    },
+    "bm25_seconds": {
+      "n": 9,
+      "mean": 0.002,
+      "p50": 0.003,
+      "p95": 0.004,
+      "max": 0.004
+    },
+    "llm_seconds": {
+      "n": 26,
+      "mean": 3.236,
+      "p50": 2.865,
+      "p95": 5.478,
+      "max": 7.244
+    },
+    "llm_rate_limited": 0,
+    "llm_wait_seconds": {
+      "n": 0
+    },
+    "llm_backoff_seconds": {
+      "n": 0
+    }
+  }
+]

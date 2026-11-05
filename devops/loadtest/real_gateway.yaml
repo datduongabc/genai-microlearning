@@ -1,0 +1,45 @@
+# Gateway for measuring with real models. Router settings match devops/gateway/config.yaml, so a 429 behaves here as it
+# does in production, including the 60 second cooldown. Fallbacks are left out so a model never stands in for another.
+model_list:
+  - model_name: claude-fast
+    litellm_params:
+      model: anthropic/claude-haiku-5-5
+      additional_drop_params: [temperature]
+      api_key: os.environ/ANTHROPIC_API_KEY
+  - model_name: openai-fast
+    litellm_params:
+      model: openai/gpt-6-luna
+      additional_drop_params: [temperature]
+      api_key: os.environ/OPENAI_API_KEY
+  - model_name: groq-fast
+    litellm_params:
+      model: groq/openai/gpt-oss-20b
+      # As groq-pro in devops/gateway/config.yaml: keeps reasoning bounded so the JSON fits the output allowance.
+      reasoning_effort: low
+      allowed_openai_params: [reasoning_effort]
+      api_key: os.environ/GROQ_API_KEY
+  - model_name: groq-pro
+    litellm_params:
+      model: groq/openai/gpt-oss-120b
+      reasoning_effort: low
+      allowed_openai_params: [reasoning_effort]
+      api_key: os.environ/GROQ_API_KEY
+  - model_name: embed-default
+    litellm_params:
+      model: openai/Qwen3-Embedding-0.6B
+      api_base: http://embedder:80/v1
+      api_key: os.environ/EMBEDDER_API_KEY
+      allowed_openai_params: ["dimensions"]
+    model_info:
+      mode: embedding
+
+router_settings:
+  routing_strategy: simple-shuffle
+  num_retries: 1
+  retry_after: 1
+  timeout: 120
+  allowed_fails: 0
+  cooldown_time: 60
+
+general_settings:
+  master_key: os.environ/LLM_GATEWAY_KEY
