@@ -84,6 +84,16 @@ export const chatEditSchema = z.object({
 
 export type ChatEditFormValues = z.infer<typeof chatEditSchema>;
 
+export const courseChatSchema = z.object({
+  message: z
+    .string()
+    .trim()
+    .min(1, "Vui lòng nhập câu hỏi")
+    .max(MAX_CHAT_MESSAGE_LENGTH, `Câu hỏi tối đa ${MAX_CHAT_MESSAGE_LENGTH} ký tự`),
+});
+
+export type CourseChatFormValues = z.infer<typeof courseChatSchema>;
+
 export const moduleTitleSchema = z.object({
   title: z.string().max(MAX_MODULE_TITLE_LENGTH, `Tên mô-đun tối đa ${MAX_MODULE_TITLE_LENGTH} ký tự`),
 });

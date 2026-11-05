@@ -69,6 +69,40 @@ async function refreshAccessToken(): Promise<string | null | undefined> {
   }
 }
 
+function sharedRefresh() {
+  refreshPromise ??= refreshAccessToken().finally(() => {
+    refreshPromise = null
+  })
+  return refreshPromise
+}
+
+function endSession() {
+  if (window.location.pathname !== '/login') {
+    localStorage.removeItem('auth')
+    navigation.toLogin()
+  }
+}
+
+// For what axios cannot do in a browser: reading a response as it arrives. Same session
+// rules as the interceptors below.
+export async function fetchWithAuth(path: string, init: RequestInit): Promise<Response> {
+  const send = (token: string | null) => fetch(`/api${path}`, {
+    ...init,
+    headers: { ...init.headers, ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+  })
+  const response = await send(readStoredAuth().token)
+  if (response.status !== 401) return response
+  const newAccessToken = await sharedRefresh()
+  if (newAccessToken) {
+    const retried = await send(newAccessToken)
+    if (retried.status !== 401) return retried
+    endSession()
+    return retried
+  }
+  if (newAccessToken === null) endSession()
+  return response
+}
+
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
@@ -77,10 +111,7 @@ api.interceptors.response.use(
 
     if (error.response?.status === 401 && config && !config._retried && !isAuthEndpoint) {
       config._retried = true
-      refreshPromise ??= refreshAccessToken().finally(() => {
-        refreshPromise = null
-      })
-      const newAccessToken = await refreshPromise
+      const newAccessToken = await sharedRefresh()
       if (newAccessToken) {
         config.headers.Authorization = `Bearer ${newAccessToken}`
         return api(config)
@@ -89,10 +120,7 @@ api.interceptors.response.use(
       if (newAccessToken === undefined) return Promise.reject(error)
     }
 
-    if (error.response?.status === 401 && window.location.pathname !== '/login') {
-      localStorage.removeItem('auth')
-      navigation.toLogin()
-    }
+    if (error.response?.status === 401) endSession()
     return Promise.reject(error)
   },
 )
