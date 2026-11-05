@@ -111,13 +111,14 @@ def sparse_search(
     db: Session, course_id: UUID, query: str, top_k: int = 20, scope: ChunkScope | None = None
 ) -> list[Chunk]:
     """BM25 tren toan bo chunk cua 1 course, hoac chi tren khoang chunk cua `scope`."""
-    index = _bm25_index(db, course_id, scope)
-    if index is None:
-        return []
-    bm25, chunk_ids = index
+    with timing.timed("bm25"):
+        index = _bm25_index(db, course_id, scope)
+        if index is None:
+            return []
+        bm25, chunk_ids = index
 
-    scores = bm25.get_scores(_tokenize(query))
-    ranked = sorted(zip(chunk_ids, scores, strict=True), key=lambda pair: pair[1], reverse=True)
+        scores = bm25.get_scores(_tokenize(query))
+        ranked = sorted(zip(chunk_ids, scores, strict=True), key=lambda pair: pair[1], reverse=True)
     top_ids = [chunk_id for chunk_id, score in ranked[:top_k] if score > 0]
     if not top_ids:
         return []

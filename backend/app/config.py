@@ -97,6 +97,12 @@ class Settings(BaseSettings):
     run_job_worker: bool = True
     # Jobs one process runs at once. Read from WORKER_POOL_SIZE.
     worker_pool_size: int = Field(default=4, ge=1)
+    # Requests one API process serves at once, and its database connections. FastAPI opens the
+    # connection in one worker thread and runs the endpoint in another, so past the pool size every
+    # thread can end up waiting for a connection held by a request that is waiting for a thread.
+    # Keeping requests at or below the pool size rules that out; the rest queue cheaply.
+    api_max_concurrent_requests: int = Field(default=20, ge=1)
+    api_queue_timeout_seconds: float = Field(default=30, gt=0)
     # memory:// is exact only for one process; several API processes must share a store.
     rate_limit_storage_uri: str = Field(default="memory://", repr=False)
 

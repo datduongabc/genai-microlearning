@@ -1,0 +1,101 @@
+# Private load test stack, with its own database and no provider keys. See README.md.
+# Do not use `down -v`: it would also delete the shared do-an_embedder_models cache.
+name: do-an-load
+
+x-app: &app
+  image: do-an-load-backend
+  entrypoint: []
+  environment:
+    DATABASE_URL: postgresql+psycopg://postgres:loadtest@db:5432/microlearning
+    APP_RUNTIME_DATABASE_URL: postgresql+psycopg://app_runtime:loadtest@db:5432/microlearning
+    APP_WORKER_DATABASE_URL: postgresql+psycopg://app_worker:loadtest@db:5432/microlearning
+    SECRET_KEY: load-test-only-not-a-real-secret-0123456789
+    ACCESS_TOKEN_EXPIRE_MINUTES: "1440"
+    LLM_GATEWAY_URL: http://gateway:4000
+    LLM_GATEWAY_KEY: load-test
+    FORMULA_VISION_MODEL: ""
+    RERANKER_URL: http://reranker:80
+    RUN_JOB_WORKER: "false"
+    RATE_LIMIT_STORAGE_URI: redis://redis:6379/0
+    WORKER_POOL_SIZE: ${WORKER_POOL_SIZE:-4}
+    NON_TEACHER_DAILY_GENERATION_LIMIT: "1000000"
+    FORWARDED_ALLOW_IPS: 172.16.0.0/12,192.168.0.0/16,10.0.0.0/8
+    UPLOAD_STORAGE_DIR: /uploads
+    MOODLE_BASE_URL: http://moodle.invalid
+    MOODLE_WWWROOT: http://moodle.invalid
+    PYTHONPATH: /app
+  volumes:
+    - uploads:/uploads
+
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    environment: {POSTGRES_USER: postgres, POSTGRES_PASSWORD: loadtest, POSTGRES_DB: microlearning}
+    command: ["postgres", "-c", "max_connections=300"]
+    volumes: [db:/var/lib/postgresql/data]
+    healthcheck: {test: ["CMD-SHELL", "pg_isready -U postgres -d microlearning"], interval: 3s, retries: 30}
+  redis:
+    image: redis:7-alpine
+    healthcheck: {test: ["CMD", "redis-cli", "ping"], interval: 3s, retries: 10}
+  embedder:
+    image: ghcr.io/huggingface/text-embeddings-inference:86-1.9.4
+    gpus: all
+    command: [--model-id, Qwen/Qwen3-Embedding-0.6B, --revision, 97b0c614be4d77ee51c0cef4e5f07c00f9eb65b3,
+              --served-model-name, Qwen3-Embedding-0.6B, --pooling, last-token, --dtype, float16,
+              --max-batch-tokens, "1024", --max-batch-requests, "4", --max-concurrent-requests, "512",
+              --max-client-batch-size, "128", --tokenization-workers, "2", --api-key, load-test]
+    volumes: [embedder_models:/data]
+    healthcheck: {test: ["CMD", "curl", "-fsS", "http://127.0.0.1:80/health"], interval: 5s, retries: 12, start_period: 15m}
+  reranker:
+    build: ../reranker
+    image: do-an-reranker
+    cpus: ${RERANKER_CPUS:-4}
+    healthcheck: {test: ["CMD", "curl", "-fsS", "http://127.0.0.1:80/health"], interval: 5s, retries: 12, start_period: 2m}
+  gateway:
+    <<: *app
+    build: ../../backend
+    environment: {EMBEDDER_API_KEY: load-test, PYTHONPATH: /mock, MOCK_LLM_MEDIAN_SECONDS: "${MOCK_LLM_MEDIAN_SECONDS:-13.3}"}
+    command: ["/app/.venv/bin/uvicorn", "mock_gateway:app", "--host", "0.0.0.0", "--port", "4000", "--log-level", "warning"]
+    volumes: ["./mock_gateway.py:/mock/mock_gateway.py:ro"]
+  uploads-owner:
+    image: redis:7-alpine
+    entrypoint: ["chown", "10001:10001", "/uploads"]
+    volumes: [uploads:/uploads]
+  runner:
+    <<: *app
+    command: ["sleep", "infinity"]
+    depends_on:
+      db: {condition: service_healthy}
+      redis: {condition: service_healthy}
+      embedder: {condition: service_healthy}
+      reranker: {condition: service_healthy}
+      gateway: {condition: service_started}
+      uploads-owner: {condition: service_completed_successfully}
+    volumes:
+      - uploads:/uploads
+      - ./results:/results
+      - ${DOCUMENTS_DIR:-../../docs/documents}:/documents:ro
+      - ./drive_generation.py:/app/drive_generation.py:ro
+  backend:
+    <<: *app
+    command: ["/app/.venv/bin/uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--log-level", "warning"]
+    depends_on: {runner: {condition: service_started}}
+  worker:
+    <<: *app
+    command: ["/app/.venv/bin/python", "-m", "app.jobs.worker"]
+    depends_on: {runner: {condition: service_started}}
+  proxy:
+    image: caddy:2-alpine
+    environment: {SITE_ADDRESS: ":80", HSTS_MAX_AGE: "0", CADDY_AUTO_HTTPS: "off"}
+    depends_on: [backend]
+    volumes: ["../caddy/Caddyfile:/etc/caddy/Caddyfile:ro"]
+  k6:
+    image: grafana/k6:1.3.0
+    profiles: [k6]
+    volumes: ["./api_read.js:/scripts/api_read.js:ro", "./results:/results"]
+
+volumes:
+  db:
+  uploads:
+  embedder_models:
+    name: do-an_embedder_models
