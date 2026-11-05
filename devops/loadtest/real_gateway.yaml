@@ -1,5 +1,5 @@
-# Gateway for measuring with real models. Router settings match devops/gateway/config.yaml, so a 429 behaves here as it
-# does in production, including the 60 second cooldown. Fallbacks are left out so a model never stands in for another.
+# Gateway for measuring with real models. Router settings are those production had before load control (L0),
+# so a 429 behaves as it did then, including the 60 second cooldown. Fallbacks are left out so a model never stands in for another.
 model_list:
   - model_name: claude-fast
     litellm_params:
