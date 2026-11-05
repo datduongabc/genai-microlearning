@@ -70,6 +70,10 @@ def _jina_scores(query: str, chunks: list[Chunk], attempts: int) -> list[float]:
     return [scores[i] for i in range(len(chunks))]
 
 
+# The key or the credit: these last until someone acts, unlike a busy or failing service.
+_JEV_NEEDS_ATTENTION = {401, 402, 403}
+
+
 def _ask_jev(query: str, text: str) -> tuple[float, int]:
     """The probability that this passage answers the query, and the retries it took."""
     for attempt in range(1, MAX_ATTEMPTS + 1):
@@ -92,7 +96,10 @@ def _jev_scores(query: str, chunks: list[Chunk], span: dict) -> list[float]:
     try:
         answers = list(_jev_pool.map(lambda c: _ask_jev(query, c.content), chunks))
     except (httpx.HTTPError, KeyError, ValueError) as error:
-        logger.warning("Jev failed, keeping the search order: %s", error)
+        # Retrieval quality has dropped with nothing else to show it. The fixed text is for a log-based alert.
+        status = error.response.status_code if isinstance(error, httpx.HTTPStatusError) else None
+        logger.log(logging.ERROR if status in _JEV_NEEDS_ATTENTION else logging.WARNING,
+                   "jev_fallback status=%s, keeping the search order: %s", status, error)
         span["fallback"] = True
         # Decreasing as RRF does, so Adaptive-k has no large gap to cut at.
         return [1 / (60 + position) for position in range(len(chunks))]

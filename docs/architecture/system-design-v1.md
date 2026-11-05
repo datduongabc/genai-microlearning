@@ -99,7 +99,7 @@ Giới hạn của bằng chứng:
 
 Chỉ job nền mới chờ khi gặp 429; request của người dùng vẫn báo lỗi ngay, để không giữ người dùng và kết nối DB trong nhiều phút. Ngoài ra: lỗi hết tiền không được retry mà báo ngay; câu trả lời bị nhà cung cấp từ chối vì sai schema được sinh lại ngay trong lệnh gọi đó.
 
-Lần hết credit Jev cũng cho thấy job không lỗi khi Jev lỗi, nhưng chất lượng truy hồi giảm mà không có cảnh báo. Vì vậy cần metric và cảnh báo cho tỷ lệ quay về hybrid.
+Lần hết credit Jev cũng cho thấy job không lỗi khi Jev lỗi, nhưng chất lượng truy hồi giảm mà không có cảnh báo. Vì vậy mỗi lần quay về hybrid được ghi một dòng log `jev_fallback`, mức ERROR khi lỗi là 401, 402 hoặc 403. Cảnh báo CloudWatch từ dòng log này sẽ thêm cùng Terraform.
 
 ## Chat
 
@@ -131,7 +131,7 @@ Dự toán đồ án cũ khoảng $96, hoặc $115 với 20% dự phòng, sẽ g
 | Chịu lỗi: dừng từng loại task | Chưa đo | Chạy được trên máy này |
 | Embedder trên CPU Fargate | Mọi số đo dùng GPU | Đo trên AWS |
 | Mọi số trên AWS | Máy đo dùng chung 7,57 GiB RAM | Terraform, chạy đo |
-| Code chưa có | S3 upload, frontend tĩnh, LTI, `/ready`, log JSON, metric hàng đợi, metric và cảnh báo fallback Jev, giới hạn Jev chung | Viết code |
+| Code chưa có | S3 upload, frontend tĩnh, LTI, `/ready`, log JSON, metric hàng đợi, cảnh báo fallback Jev qua CloudWatch từ dòng log `jev_fallback`, giới hạn Jev chung | Viết code |
 | Bật Jev trong production | Code mặc định vẫn dùng Jina, chỉ gửi sang TypeSafe khi đặt `RERANKER_PROVIDER=jev`, để không gửi tài liệu khi trường chưa đồng ý | Nhà trường đồng ý |
 | Credit Jev | Tài khoản TypeSafe đang trả 402; khi chưa nạp, hệ thống chỉ chạy với thứ tự hybrid | Nạp trước khi demo |
 | Điều kiện chứng minh | Ngưỡng ở `scalable-design.md` mục 3 là đề xuất | Giảng viên đồng ý |
