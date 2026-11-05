@@ -125,7 +125,7 @@ Dự toán đồ án cũ khoảng $96, hoặc $115 với 20% dự phòng, sẽ g
 | Nhà trường đồng ý gửi tài liệu sang Jev | Máy chủ ở Mỹ, không có thời hạn lưu cụ thể, được tạo telemetry từ dữ liệu | Bạn hỏi nhà trường |
 | Ổn định 30 phút có hàng đợi | Lần 96 module dừng ở 5,5 phút vì hết credit | Không đo trong đợt này, cần credit LLM và Jev |
 | Lặp lại L0, L1 và đo L2 | Mỗi cấu hình chạy tối đa một lần | Không đo trong đợt này, cần credit Jev và Groq |
-| TTFT trên model thật | Số hiện tại dùng LLM giả | Không đo trong đợt này, cần credit Jev và Groq |
+| TTFT trên model thật khi có tải và có Jev | Mới đo một người dùng với Jina: 3,4–7,3 s | Không đo trong đợt này, cần credit Jev và Groq |
 | Judge module chọn ngữ cảnh bằng Jev so với Jina | Mới đo retrieval, chưa đo đầu ra | LLM chất lượng cao hơn và model judge |
 | Câu hỏi thật của sinh viên | Bộ hiện tại do LLM viết, có thể có lợi cho Jev | Người dùng thật |
 | Chịu lỗi: dừng từng loại task | Chưa đo | Chạy được trên máy này |

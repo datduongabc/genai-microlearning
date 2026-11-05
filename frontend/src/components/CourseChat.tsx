@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
+import Markdown from 'react-markdown'
 import { streamCourseChat, type ChatCitation } from '../api'
 import { courseChatSchema, type CourseChatFormValues } from '../lib/formSchemas'
 
@@ -9,6 +10,26 @@ interface Turn {
   answer: string
   citations: ChatCitation[]
   error?: string
+}
+
+interface ChunkPlace {
+  heading?: string
+  page?: number
+  slide_index?: number
+  spans?: ChunkPlace[]
+}
+
+// A chunk's location is stored as JSON: {"page": 27, "heading": "..."}, or a list of those in
+// "spans" when it crosses pages. Its first place is enough to find it.
+export function sourceLabel(ref: string): string {
+  try {
+    const stored = JSON.parse(ref) as ChunkPlace
+    const place = stored.spans?.[0] ?? stored
+    const where = place.page ? `trang ${place.page}` : place.slide_index ? `slide ${place.slide_index}` : ''
+    return [place.heading, where].filter(Boolean).join(', ') || 'Tài liệu môn học'
+  } catch {
+    return ref || 'Tài liệu môn học'
+  }
 }
 
 // Questions about the course's documents, with the answer appearing as it is written.
@@ -20,7 +41,7 @@ export function CourseChat({ courseId }: { courseId: string }) {
   const {
     register,
     handleSubmit,
-    reset,
+    setValue,
     control,
     formState: { errors, isSubmitting: sending },
   } = useForm<CourseChatFormValues>({ resolver: zodResolver(courseChatSchema), defaultValues: { message: '' } })
@@ -31,7 +52,8 @@ export function CourseChat({ courseId }: { courseId: string }) {
 
   async function send({ message }: CourseChatFormValues) {
     setTurns((previous) => [...previous, { question: message, answer: '', citations: [] }])
-    reset()
+    // Not reset(): it would also end isSubmitting while the answer is still arriving.
+    setValue('message', '')
     const controller = new AbortController()
     leaving.current = controller
     try {
@@ -56,10 +78,12 @@ export function CourseChat({ courseId }: { courseId: string }) {
         const writing = sending && index === turns.length - 1
         return <div key={index} className="text-sm" aria-busy={writing}>
           <p className="font-medium">{turn.question}</p>
-          {turn.answer && <p className="mt-1 whitespace-pre-wrap">{turn.answer}</p>}
+          {turn.answer && <div className="mt-1 [&_li]:ml-5 [&_ol]:list-decimal [&_p]:mb-2 [&_strong]:font-semibold [&_ul]:list-disc">
+            <Markdown>{turn.answer}</Markdown>
+          </div>}
           {writing && !turn.answer && <p className="mt-1 text-gray-500">Đang tìm trong tài liệu...</p>}
           {turn.citations.length > 0 && <p className="mt-1 text-xs text-gray-500">
-            Nguồn: {turn.citations.map((c) => c.source_ref || c.chunk_id).join('; ')}
+            Nguồn: {[...new Set(turn.citations.map((c) => sourceLabel(c.source_ref)))].join('; ')}
           </p>}
           {turn.error && <p role="alert" className="mt-1 text-red-700">{turn.error}</p>}
         </div>

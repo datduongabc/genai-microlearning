@@ -137,6 +137,20 @@ Jev thật, LLM giả với từ đầu tiên sau 1,5 s và phần trả lời 6
 
 Riêng các đợt mở cùng lúc 25 đến 400 stream, đo trước khi sửa giới hạn gọi Jev, không có lỗi nhưng 400 stream phải chờ từ đầu tiên đến p95 118 s.
 
+## Chat trên trình duyệt thật
+
+Chromium 156, frontend chạy qua Vite, backend thật, Groq `gpt-oss-120b`, Jina trên CPU, không có tải khác. Mỗi lần 3 câu hỏi nối tiếp, 3 lần, tổng 9 câu.
+
+| Chỉ số | Kết quả |
+| --- | --- |
+| Từ đầu tiên hiện lên | 3,4–7,3 s |
+| Xong câu trả lời | 3,9–7,8 s |
+| Lỗi trong trình duyệt và backend | 0 ở các lần sau khi sửa |
+
+Lần chạy này tìm ra các lỗi mà test giả lập bỏ sót, đều đã sửa: `reset()` mở lại ô nhập khi stream còn chạy nên câu trả lời bị lẫn sang câu sau; model viết trích dẫn dạng `【S5】`, `[ S2 ]`, `[Nguồn: S2]`; có khoảng trắng U+202F trước dấu câu; và vị trí nguồn lưu dạng JSON có `spans`.
+
+Giới hạn: đây không phải đo tải và không dùng Jev. Model còn viết trích dẫn theo dạng khác thì mã đó vẫn hiện trong chữ. Câu hỏi tiếng Anh sau hai câu tiếng Việt được trả lời bằng tiếng Việt, lặp lại ở mọi lần chạy đã kiểm tra.
+
 ## Kiểm soát tải LLM với 429 thật
 
 Groq `gpt-oss-120b`, 32 module, 4 worker × 4, dữ liệu thô `load-test/real/real-groq-pro-l{0,1}-r1.json`.

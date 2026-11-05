@@ -73,7 +73,8 @@ CHAT_STREAM_INSTRUCTION = CHAT_SYSTEM_INSTRUCTION.replace(
     "ghi ở đầu mỗi SOURCE CHUNK — không được tự bịa ID.",
 )
 NOT_COVERED = "Tài liệu môn học không đề cập nội dung này."
-SPACE_BEFORE_PUNCTUATION = re.compile(r"[ \t]+([.,;:!?])")
+# With the no-break spaces a real model puts before a marker.
+SPACE_BEFORE_PUNCTUATION = re.compile(r"[ \t\u00a0\u202f]+([.,;:!?])")
 
 
 class ChatCitation(BaseModel):
@@ -120,11 +121,17 @@ def answer_question(query: str, context_chunks: list[Chunk], history: list[dict]
     return ChatAnswer(answer=draft.answer, citations=list(cited.values()))
 
 
+# Wider than generation's MARKER: gpt-oss-120b wrote 【S5】, [ S2 ] and [Nguồn: S2] in real runs, and a stream cannot
+# ask again.
+CHAT_MARKER = re.compile(r"[\[【]\s*(?:nguồn\s*:\s*)?S[0-9]+(?:\s*[,;]\s*S[0-9]+)*\s*[\]】]", re.IGNORECASE)
+_SOURCE_NUMBER = re.compile(r"S[0-9]+", re.IGNORECASE)
+
+
 class MarkerFilter:
     """Takes the [S2] markers out of a reply arriving in pieces. A marker may be split across two pieces, so text
     from an open "[" is held until it either closes or can no longer be a marker."""
 
-    MAX_MARKER = 8
+    MAX_MARKER = 16
 
     def __init__(self) -> None:
         self._held = ""
@@ -133,8 +140,8 @@ class MarkerFilter:
     def feed(self, text: str) -> str:
         text = self._held + text
         self._held = ""
-        opened = text.rfind("[")
-        if opened != -1 and "]" not in text[opened:] and len(text) - opened <= self.MAX_MARKER:
+        opened = max(text.rfind("["), text.rfind("【"))
+        if opened != -1 and not {"]", "】"} & set(text[opened:]) and len(text) - opened <= self.MAX_MARKER:
             text, self._held = text[:opened], text[opened:]
         return self._strip(text)
 
@@ -143,8 +150,9 @@ class MarkerFilter:
         return self._strip(text)
 
     def _strip(self, text: str) -> str:
-        self.source_ids.extend(MARKER.findall(text))
-        return MARKER.sub("", text)
+        for marker in CHAT_MARKER.findall(text):
+            self.source_ids.extend(_SOURCE_NUMBER.findall(marker))
+        return CHAT_MARKER.sub("", text)
 
 
 async def stream_answer(

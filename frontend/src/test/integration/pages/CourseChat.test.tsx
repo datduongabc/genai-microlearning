@@ -2,7 +2,7 @@ import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { parseChatEvents } from '../../../api'
-import { CourseChat } from '../../../components/CourseChat'
+import { CourseChat, sourceLabel } from '../../../components/CourseChat'
 
 function event(name: string, data: unknown) {
   return `event: ${name}\ndata: ${JSON.stringify(data)}\n\n`
@@ -68,6 +68,28 @@ describe('CourseChat', () => {
     expect(screen.getByText('Một phần')).toBeInTheDocument()
   })
 
+  it('keeps the question box closed until the answer has finished', async () => {
+    let finish: (value: Uint8Array) => void = () => {}
+    let close = () => {}
+    fetchMock.mockResolvedValueOnce(new Response(new ReadableStream({
+      start(controller) {
+        controller.enqueue(new TextEncoder().encode(event('delta', { text: 'Đang viết' })))
+        finish = (value) => controller.enqueue(value)
+        close = () => controller.close()
+      },
+    }), { status: 200 }))
+    render(<CourseChat courseId="course-1" />)
+
+    await ask('Hỏi')
+
+    await screen.findByText('Đang viết')
+    expect(screen.getByRole('button', { name: 'Đang trả lời...' })).toBeDisabled()
+    expect(screen.getByLabelText('Câu hỏi của bạn')).toBeDisabled()
+    finish(new TextEncoder().encode(event('done', saved('Xong.'))))
+    close()
+    await screen.findByRole('button', { name: 'Gửi câu hỏi' })
+  })
+
   it('says so when the connection ends before the answer does', async () => {
     fetchMock.mockResolvedValueOnce(stream(event('delta', { text: 'Dở' })))
     render(<CourseChat courseId="course-1" />)
@@ -109,6 +131,15 @@ describe('CourseChat', () => {
     unmount()
 
     expect(fetchMock.mock.calls[0][1].signal.aborted).toBe(true)
+  })
+})
+
+describe('sourceLabel', () => {
+  it('reads the stored location', () => {
+    expect(sourceLabel('{"page": 27, "heading": "Process Termination", "extraction_method": "text_layer"}')).toBe('Process Termination, trang 27')
+    expect(sourceLabel('{"slide_index": 3}')).toBe('slide 3')
+    expect(sourceLabel('{"spans": [{"page": 9, "heading": "Process State"}, {"page": 10}]}')).toBe('Process State, trang 9')
+    expect(sourceLabel('{"extraction_method": "text_layer"}')).toBe('Tài liệu môn học')
   })
 })
 
