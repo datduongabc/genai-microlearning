@@ -1,0 +1,38 @@
+\documentclass[tikz,border=7pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usetikzlibrary{arrows.meta,positioning,shapes.geometric,fit,backgrounds,calc}
+\begin{document}
+\begin{tikzpicture}[font=\sffamily\small,>=Latex,
+box/.style={draw,rounded corners=2pt,align=center,minimum width=3cm,minimum height=1cm,fill=blue!4},
+entity/.style={draw,rectangle,align=center,minimum width=2.6cm,minimum height=.75cm,fill=blue!4},
+rel/.style={draw,diamond,aspect=2,inner sep=2pt,align=center,font=\sffamily\footnotesize,fill=yellow!8},
+attr/.style={draw,ellipse,inner sep=3pt,font=\sffamily\footnotesize},
+uc/.style={draw,ellipse,align=center,minimum width=4cm,minimum height=.9cm},
+flow/.style={->,thick},lab/.style={font=\sffamily\scriptsize,fill=white,inner sep=2pt}]
+
+\node[box] (browser) at (0,6) {GENAILMS browser\\React + TypeScript};
+\node[box] (proxy) at (0,3.8) {Caddy reverse proxy\\HTTPS / API routing};
+\node[box,minimum width=5cm] (api) at (0,1.4) {GENAILMS backend process\\HTTP API + background worker thread};
+\node[box] (db) at (-4,-1.5) {PostgreSQL + pgvector\\business data, vectors, jobs};
+\node[box] (store) at (0,-1.5) {Upload storage\\temporary durable files};
+\node[box] (gateway) at (4,-1.5) {LiteLLM gateway\\aliases, retry, fallback};
+\node[box] (rerank) at (-4,-4) {Local reranker\\Jina v2 multilingual\\INT8};
+\node[box] (embed) at (0,-4) {Local embedder\\Qwen3-Embedding-0.6B};
+\node[box] (provider) at (4,-6.4) {External LLM providers\\generation / transcription};
+\node[box] (moodle) at (6.2,3.8) {Moodle + bridge plugin\\Book, Practice, Quiz};
+\draw[flow] (browser) -- node[lab,right]{HTTPS} (proxy);
+\draw[flow,<->] (proxy) -- node[lab,right]{HTTP / JSON} (api);
+\draw[flow,<->] (api) -- node[lab,above,sloped]{SQL: runtime / worker roles} (db);
+\draw[flow,<->] (api) -- (store);
+\draw[flow] (api) -- (gateway);
+\draw[flow] (api.west) -- (-6.5,1.4) |- (rerank.west);
+\draw[flow] (gateway) -- (provider);
+\draw[flow] (gateway.west) -- ++(-.5,0) |- (embed.east);
+\draw[flow,<->] (api.east) -- ++(4.2,0) -- node[lab,right]{REST + actor ID} (moodle.south);
+\draw[flow,dashed] (browser.east) -- ++(1.7,0) -| node[lab,above]{Moodle login / confirmation} (moodle.north);
+\begin{scope}[on background layer]
+\node[draw,dashed,fit=(api)(db)(store)(gateway)(rerank)(embed),inner sep=12pt,label=below:{Private application network (provider is external)}] {};
+\end{scope}
+\end{tikzpicture}
+\end{document}

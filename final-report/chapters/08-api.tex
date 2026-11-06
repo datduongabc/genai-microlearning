@@ -1,0 +1,30 @@
+\clearpage\section{API design summary}\label{sec:api}
+\subsection{Resource and asynchronous contracts}
+The application programming interface (API) uses FastAPI and JavaScript Object Notation (JSON) resources with local UUIDs; uploads use multipart data and PPTX export returns binary content. Moodle IDs remain remote identifiers. OpenAPI is exposed in development and disabled publicly in production. Upload and generation responses identify durable jobs for polling. Identity-link requests return an opaque pending request, with confirmation checked through a separate state resource.
+\par
+Table~\ref{tab:08-api-1} presents representative endpoint groups; resource contracts and authorization.
+\begin{longtable}{|p{6.6cm}|p{7.3cm}|}\caption{Representative endpoint groups; resource contracts and authorization.}\label{tab:08-api-1}\\\hline
+Method / resource & Contract and authorization\\\hline\endfirsthead
+\hline Method / resource & Contract and authorization\\\hline\endhead
+\code{POST /auth/register}, \code{/auth/login}, \code{/auth/refresh}, \code{/auth/logout} & Validate credentials; issue, renew or revoke the session\\\hline
+\code{GET, POST /courses}; \code{DELETE /courses/{id}} & Owned workspaces; deletion conflicts with protected study sources\\\hline
+\code{GET /courses/moodle/courses}; \code{POST /courses/{id}/link-moodle} & Confirmed identity and remote course-author rights\\\hline
+\code{POST /documents}; \code{GET /documents?course_id=...}; \code{GET /documents/jobs/{job_id}} & Upload/list owned source and poll processing\\\hline
+\code{POST /modules/generate}; \code{GET /modules/jobs/{job_id}} & Freeze source/model/language/guidance settings; poll to a saved module ID\\\hline
+\code{GET, PATCH /modules/{id}}; \code{PATCH /modules/{id}/components/{cid}}; \code{PATCH /modules/{id}/questions/{qid}} & Owner reads/edits; original retention, citation validation and synchronized explanations\\\hline
+\code{POST /modules/{id}/chat-edit}; \code{GET /modules/{id}/slides.pptx} & Authorized structured AI edit or current Slides download\\\hline
+\code{POST /modules/{id}/publish-to-moodle} & Owned RAG module, confirmed actor and authorized target\\\hline
+\code{POST /moodle/account/link-requests}; \code{GET, DELETE /moodle/account} & Generic pending identity request, poll confirmed state or unlink\\\hline
+\code{POST /courses/{id}/chat}; \code{GET /courses/{id}/chat/{session}/history} & Owner-only course Q\&A, source citations and conversation history\\\hline
+\code{POST /courses/{id}/chat/stream}; \code{GET /courses/{id}/chat/latest} & Owner-only streamed answer as SSE events \code{session}, \code{delta}, \code{done} or \code{error}; the last used course chat, so a reload continues it\\\hline
+\code{GET, POST /lti/login}, \code{POST /lti/launch}, \code{POST /lti/session}, \code{GET /lti/jwks} & LTI 1.3 login initiation, signed launch, one-time code exchange and the tool's key set (Section~\ref{sec:lti})\\\hline
+\code{GET /health}; \code{GET /ready} & Process liveness for the container; database readiness with a 2 s deadline for the load balancer\\\hline
+\code{GET /models}; \code{PUT /models/default} & Available aliases and user preference\\\hline
+\code{POST /jobs/{id}/retry}; \code{GET /admin/jobs/failed}; \code{POST /admin/jobs/retry} & Own-job recovery or narrow admin recovery scope\\\hline
+\code{GET /admin/users} and account actions & Administrator-only account management\\\hline
+\code{POST, GET /studies}; \code{POST /studies/{id}/items}; \code{PUT /studies/{id}/raters} & Admin prepares paired snapshots and invitations\\\hline
+\code{GET /studies/mine}; \code{GET /studies/mine/{id}/items}; \code{PUT /studies/mine/{id}/items/{item}/rating} & Invited rater reads blinded packets and writes own rating only\\\hline\end{longtable}
+\subsection{Validation and client state}
+Authentication failures normally return 401; missing/non-owned resources use 404. Validation uses 422, oversized uploads 413, protected/concurrent-state conflicts 409 and rate limits 429. Catalog unavailability maps to 503 without revealing its internal URL. A task at its concurrent chat-stream limit also answers 503. A stream that fails after its response has started reports an \code{error} event, because the status code has already been sent. Moodle helpers distinguish remote identity, capability and service failures.
+
+Clients poll job outcomes after submission and open a module only after completion. They distinguish a pending link, confirmed identity and course-specific permission. Source review and saved edits precede export/publication. Generation settings and served-model history belong in researcher manifests; ordinary screens need clear state and actions rather than raw internal fields.
