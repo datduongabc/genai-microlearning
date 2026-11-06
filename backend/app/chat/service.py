@@ -61,8 +61,9 @@ ngoài nguồn.
 Khi trích dẫn (source_ids), CHỈ được dùng đúng ID ngắn (vd "S2") ghi ở đầu mỗi
 SOURCE CHUNK — không được tự bịa ID.
 
-Ngôn ngữ trả lời khớp ngôn ngữ chính của câu hỏi/nguồn (tiếng Việt có dấu đầy
-đủ nếu là tiếng Việt).
+Ngôn ngữ trả lời là ngôn ngữ của CÂU HỎI mới nhất, không phải của nguồn hay của
+lịch sử hội thoại (tiếng Việt thì có dấu đầy đủ). Dòng NGÔN NGỮ cuối prompt nói rõ
+ngôn ngữ đó.
 """
 
 
@@ -73,6 +74,53 @@ CHAT_STREAM_INSTRUCTION = CHAT_SYSTEM_INSTRUCTION.replace(
     "ghi ở đầu mỗi SOURCE CHUNK — không được tự bịa ID.",
 )
 NOT_COVERED = "Tài liệu môn học không đề cập nội dung này."
+NOT_COVERED_EN = "The course materials do not cover this."
+
+# Letters only Vietnamese uses among the languages a student here writes in.
+_VIETNAMESE_LETTERS = re.compile(
+    r"[ăâđêôơưàáạảãằắặẳẵầấậẩẫèéẹẻẽềếệểễìíịỉĩòóọỏõồốộổỗờớợởỡùúụủũừứựửữỳýỵỷỹ]", re.IGNORECASE)
+# Written without diacritics ("cho em hoi ..."), Vietnamese is told apart by its common words.
+_VIETNAMESE_WORDS = {
+    "la", "gi", "khong", "cua", "nhu", "nao", "cho", "em", "hoi", "duoc", "va", "cac", "trong", "co", "mot",
+    "nhung", "tai", "sao", "bao", "nhieu", "giai", "thich", "hay", "voi", "nay", "ve", "khi", "thi", "lam",
+}
+_ENGLISH_WORDS = {
+    "what", "is", "are", "the", "how", "why", "does", "do", "of", "and", "in", "a", "an", "explain", "which",
+    "can", "when", "to", "for", "with", "between", "difference", "please", "tell", "me", "about", "it",
+}
+
+
+def question_language(question: str) -> OutputLanguage | None:
+    """The language of the question itself, or None when it is too short to tell.
+
+    The model was left to pick between the question and the sources before, and an English
+    question after Vietnamese turns over Vietnamese material came back in Vietnamese."""
+    if _VIETNAMESE_LETTERS.search(question):
+        return "vi"
+    words = re.findall(r"[a-z]+", question.lower())
+    vietnamese = sum(w in _VIETNAMESE_WORDS for w in words)
+    english = sum(w in _ENGLISH_WORDS for w in words)
+    if english > vietnamese:
+        return "en"
+    if vietnamese > english:
+        return "vi"
+    return None
+
+
+def not_covered(language: OutputLanguage | None) -> str:
+    return NOT_COVERED_EN if language == "en" else NOT_COVERED
+
+
+def _language_line(language: OutputLanguage | None) -> str:
+    """Last in the prompt, where it is read after the sources and the history it overrides."""
+    if language == "en":
+        return ("\n\nNGÔN NGỮ: The question is in English. Answer in English, even though the sources and the "
+                f"earlier conversation are in Vietnamese. If the sources do not cover it, answer exactly: {NOT_COVERED_EN}")
+    if language == "vi":
+        return "\n\nNGÔN NGỮ: Câu hỏi bằng tiếng Việt. Trả lời bằng tiếng Việt có dấu đầy đủ."
+    return "\n\nNGÔN NGỮ: Trả lời bằng đúng ngôn ngữ của CÂU HỎI trên, không theo ngôn ngữ của nguồn hay lịch sử."
+
+
 # With the no-break spaces a real model puts before a marker.
 SPACE_BEFORE_PUNCTUATION = re.compile(r"[ \t\u00a0\u202f]+([.,;:!?])")
 
@@ -100,12 +148,12 @@ def _answer_prompt(query: str, context_chunks: list[Chunk], history: list[dict])
         history_text = "\n\nLỊCH SỬ HỘI THOẠI TRƯỚC (gần nhất trước):\n" + "\n".join(
             f"{m['role']}: {m['content']}" for m in history
         )
-    return f"{source_block(context_chunks)}{history_text}\n\nCÂU HỎI: {query}"
+    return f"{source_block(context_chunks)}{history_text}\n\nCÂU HỎI: {query}{_language_line(question_language(query))}"
 
 
 def answer_question(query: str, context_chunks: list[Chunk], history: list[dict]) -> ChatAnswer:
     if not context_chunks:
-        return ChatAnswer(answer=NOT_COVERED, citations=[])
+        return ChatAnswer(answer=not_covered(question_language(query)), citations=[])
 
     prompt = _answer_prompt(query, context_chunks, history)
 
@@ -160,8 +208,9 @@ async def stream_answer(
 ) -> AsyncIterator[str | ChatAnswer]:
     """Yields the answer as text pieces, then one ChatAnswer holding all of it and its citations."""
     if not context_chunks:
-        yield NOT_COVERED
-        yield ChatAnswer(answer=NOT_COVERED, citations=[])
+        reply = not_covered(question_language(query))
+        yield reply
+        yield ChatAnswer(answer=reply, citations=[])
         return
     markers = MarkerFilter()
     pieces = []
