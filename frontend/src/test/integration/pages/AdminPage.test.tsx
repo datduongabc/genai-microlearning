@@ -51,7 +51,8 @@ beforeEach(() => {
   vi.spyOn(window, 'confirm').mockReturnValue(true)
   vi.spyOn(AuthHookModule, 'useAuth').mockReturnValue({
     token: 't', refreshToken: 'r', user: { id: 'admin-1', email: 'admin@example.com', name: 'Quản trị', is_admin: true },
-    login: vi.fn(), logout: vi.fn(),
+    login: vi.fn(),
+    loginWithLaunchCode: vi.fn(), logout: vi.fn(),
   })
   vi.mocked(api.listUsers).mockResolvedValue([admin, lan, minh])
   vi.mocked(api.listFailedJobs).mockResolvedValue([])

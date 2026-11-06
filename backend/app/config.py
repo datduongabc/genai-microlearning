@@ -152,6 +152,10 @@ class Settings(BaseSettings):
     done_job_retention_days: int = 7
     failed_job_retention_days: int = 30
 
+    # The address people open the application at, as the LMS sees it. The LTI redirect URI is
+    # built from it and must match the one registered in the LMS exactly.
+    public_url: str = "https://localhost:8443"
+
     moodle_base_url: str = "http://localhost:8080"
     # Moodle's own $CFG->wwwroot (how it's configured, e.g. so a human can
     # open it in a browser on the host machine) -- not necessarily the same

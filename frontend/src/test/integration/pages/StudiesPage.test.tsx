@@ -47,6 +47,7 @@ beforeEach(() => {
     token: "t",
     refreshToken: null,
     login: vi.fn(),
+    loginWithLaunchCode: vi.fn(),
     logout: vi.fn(),
   });
   vi.mocked(api.myStudies).mockResolvedValue([{ ...study, rated: 0, total: 1 }]);

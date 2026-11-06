@@ -29,6 +29,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return data.user;
   }
 
+  async function loginWithLaunchCode(code: string) {
+    const data = await authApi.ltiSession(code);
+    setState({ token: data.access_token, refreshToken: data.refresh_token, user: data.user });
+    return data.course_id;
+  }
+
   function logout() {
     // access token giờ chỉ sống 1h nên api.ts tự refresh ngầm khi cần --
     // logout() phải chủ động thu hồi refresh_token ở server (không chỉ xóa
@@ -38,7 +44,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ ...state, login, logout }}>
+    <AuthContext.Provider value={{ ...state, login, loginWithLaunchCode, logout }}>
       {children}
     </AuthContext.Provider>
   );

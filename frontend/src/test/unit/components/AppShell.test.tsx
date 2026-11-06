@@ -20,7 +20,8 @@ beforeEach(() => {
 function renderShell(admin = false, route = '/courses') {
   vi.spyOn(AuthHookModule, 'useAuth').mockReturnValue({
     token: 't', refreshToken: 'r', user: { id: '1', email: 'a@b.com', name: 'Nguyễn Văn An', is_admin: admin },
-    login: vi.fn(), logout,
+    login: vi.fn(),
+    loginWithLaunchCode: vi.fn(), logout,
   })
   return render(<MemoryRouter initialEntries={[route]}><AppShell title="Trang">content</AppShell></MemoryRouter>)
 }

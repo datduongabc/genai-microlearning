@@ -204,7 +204,7 @@ autoscale của worker phải có trần tính từ quota. Hạn mức theo ngư
 | Rate limit | Valkey | Mỗi task tự giới hạn đến khi Valkey trở lại | Có sẵn |
 | Chỉ mục BM25 | Bộ nhớ task | Chỉ là cache, đối chiếu fingerprint mỗi lần tìm | Có sẵn |
 | Tệp tải lên | S3 | Độ bền của S3 | **Phải chuyển từ bind mount** |
-| `state`, `nonce` của LTI | Valkey, có TTL | Launch thất bại, không cho qua, người dùng mở lại | **Thêm** |
+| `state`, `nonce` của LTI | Postgres, hết hạn sau 10 phút, worker dọn | Launch thất bại, không cho qua, người dùng mở lại | Có sẵn. Không dùng Valkey: khi Valkey mất, rate limit lùi về bộ nhớ từng task, còn state thì không được lùi như vậy, vì task khác sẽ không tìm thấy |
 | Bộ đếm quota LLM | Valkey qua LiteLLM | Mỗi gateway tự đếm, có thể vượt | **Thêm** |
 
 Valkey chỉ giữ thứ có thể mất, nên một node là đủ. Không cần sticky session vì task không giữ state riêng.
@@ -379,7 +379,7 @@ sequenceDiagram
 
 Lưu ý khi cài đặt:
 
-- Khóa danh tính là `(iss, deployment_id, sub)`, không phải email.
+- Khóa danh tính là `(iss, sub)`, không phải email. Theo chuẩn, `sub` là duy nhất trong một platform; thêm deployment vào khóa sẽ tạo hai tài khoản cho một người. Đã cài, xem `docs/integration/lti.md`.
 - RLS hiện lọc theo chủ sở hữu, nên muốn sinh viên chat thì phải thêm quan hệ thành viên khóa học. Đây là thay đổi về bảo mật, cần test riêng.
 - Công cụ chạy trong iframe gặp hạn chế cookie bên thứ ba, nên không dùng cookie để giữ `state` hoặc phiên.
 - Cần chạy thử với Moodle 5.2 của dự án, vì tài liệu tìm được mô tả bản 4.x.

@@ -31,6 +31,7 @@ function signedInAs(role: string) {
     refreshToken: 'a-refresh-token',
     user: { id: '1', email: 'a@b.com', name: 'A', is_admin: role === 'admin' },
     login: vi.fn(),
+    loginWithLaunchCode: vi.fn(),
     logout: vi.fn(),
   })
 }
@@ -42,6 +43,7 @@ describe('ProtectedRoute', () => {
       refreshToken: null,
       user: null,
       login: vi.fn(),
+      loginWithLaunchCode: vi.fn(),
       logout: vi.fn(),
     })
 
@@ -57,6 +59,7 @@ describe('ProtectedRoute', () => {
       refreshToken: 'a-refresh-token',
       user: { id: '1', email: 'a@b.com', name: 'A', is_admin: false },
       login: vi.fn(),
+      loginWithLaunchCode: vi.fn(),
       logout: vi.fn(),
     })
 

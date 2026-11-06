@@ -44,3 +44,12 @@ output "services" {
 output "connections_at_full_scale" {
   value = local.connections_peak
 }
+
+output "lti" {
+  description = "What to enter in the LMS when registering the tool."
+  value = {
+    initiate_login_url = "https://${aws_cloudfront_distribution.main.domain_name}/api/lti/login"
+    redirection_uri    = "https://${aws_cloudfront_distribution.main.domain_name}/api/lti/launch"
+    public_keyset_url  = "https://${aws_cloudfront_distribution.main.domain_name}/api/lti/jwks"
+  }
+}

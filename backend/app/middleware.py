@@ -107,13 +107,18 @@ class SecurityHeadersMiddleware:
         wanted = dict(self.BASIC)
         if self.production:
             wanted.update(self.PRODUCTION)
-        if scope["path"].startswith("/auth/"):
+        if scope["path"].startswith(("/auth/", "/lti/")):
             wanted[b"cache-control"] = b"no-store"
 
         async def send_with_headers(message: Message) -> None:
             if message["type"] == "http.response.start":
                 headers = list(message.get("headers", []))
                 present = {name.lower() for name, _ in headers}
+                # A response that says who may frame it (the LTI pages, shown inside the LMS)
+                # keeps that; DENY next to it would contradict it in older browsers.
+                if any(name.lower() == b"content-security-policy" and b"frame-ancestors" in value
+                       for name, value in headers):
+                    present.add(b"x-frame-options")
                 headers.extend((name, value) for name, value in wanted.items() if name not in present)
                 message = {**message, "headers": headers}
             await send(message)
