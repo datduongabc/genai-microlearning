@@ -57,7 +57,7 @@ def _worker():
     return WorkerSessionLocal()
 
 
-def test_the_worker_is_neither_a_superuser_nor_the_owner_but_is_exempt_from_row_security():
+def test_the_worker_is_neither_a_superuser_nor_the_owner_and_has_no_bypassrls():
     db = _worker()
     try:
         row = db.execute(text(
@@ -69,7 +69,26 @@ def test_the_worker_is_neither_a_superuser_nor_the_owner_but_is_exempt_from_row_
 
     assert row.current_user == "app_worker"
     assert (row.rolsuper, row.rolcreatedb, row.rolcreaterole) == (False, False, False)
-    assert row.rolbypassrls is True
+    # Exempt by policy instead (migration 0025): RDS cannot give BYPASSRLS, and local and CI must
+    # exempt it the same way for their tests to say anything about RDS.
+    assert row.rolbypassrls is False
+
+
+def test_every_table_under_row_security_lets_the_worker_through():
+    """A table that gets row level security without the worker's policy would look empty to every
+    job, with no error: generation would find no chunks."""
+    db = _worker()
+    try:
+        missing = db.execute(text(
+            "select c.relname from pg_class c join pg_namespace n on n.oid = c.relnamespace "
+            "where n.nspname = 'public' and c.relkind = 'r' and c.relrowsecurity and not exists ("
+            "  select 1 from pg_policies p where p.schemaname = 'public' and p.tablename = c.relname"
+            "  and p.policyname = 'worker_processes_every_tenant' and 'app_worker' = any(p.roles))"
+        )).scalars().all()
+    finally:
+        db.close()
+
+    assert missing == []
 
 
 def test_the_worker_sees_the_documents_of_every_user(world):
