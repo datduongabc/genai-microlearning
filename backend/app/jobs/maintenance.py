@@ -9,7 +9,7 @@ from sqlalchemy import or_
 
 from app.config import settings
 from app.db import WorkerSessionLocal
-from app.models import Job, JobStatus, RefreshToken
+from app.models import Job, JobStatus, LtiLaunchCode, LtiLoginState, RefreshToken
 
 logger = logging.getLogger(__name__)
 
@@ -51,11 +51,16 @@ def purge_old_records() -> dict[str, int]:
             )
             .delete(synchronize_session=False)
         )
+        # LTI logins that were started and never finished, and launch codes never traded.
+        lti = sum(
+            db.query(model).filter(model.expires_at < now).delete(synchronize_session=False)
+            for model in (LtiLoginState, LtiLaunchCode)
+        )
         db.commit()
     finally:
         db.close()
 
-    removed = {"jobs": finished_jobs + failed_jobs, "refresh_tokens": tokens}
+    removed = {"jobs": finished_jobs + failed_jobs, "refresh_tokens": tokens, "lti": lti}
     if any(removed.values()):
         logger.info(
             f"[maintenance] removed {removed['jobs']} old job(s), {removed['refresh_tokens']} dead refresh token(s)"

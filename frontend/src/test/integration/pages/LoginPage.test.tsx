@@ -15,6 +15,7 @@ beforeEach(() => {
     refreshToken: null,
     user: null,
     login: mockLogin,
+    loginWithLaunchCode: vi.fn(),
     logout: vi.fn(),
   })
 })

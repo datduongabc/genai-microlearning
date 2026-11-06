@@ -1,3 +1,11 @@
+from app.models.lti import (
+    LtiContext,
+    LtiDeployment,
+    LtiIdentity,
+    LtiLaunchCode,
+    LtiLoginState,
+    LtiPlatform,
+)
 from app.models.models import (
     ChatMessage,
     ChatRole,
@@ -32,6 +40,12 @@ __all__ = [
     "Job",
     "JobStatus",
     "JobType",
+    "LtiContext",
+    "LtiDeployment",
+    "LtiIdentity",
+    "LtiLaunchCode",
+    "LtiLoginState",
+    "LtiPlatform",
     "Module",
     "ModuleComponent",
     "Question",

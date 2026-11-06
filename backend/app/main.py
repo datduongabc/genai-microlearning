@@ -13,6 +13,7 @@ from app.api import (
     courses,
     documents,
     jobs,
+    lti,
     model_selection,
     modules,
     moodle,
@@ -101,6 +102,7 @@ def create_app(app_settings: Settings = settings) -> FastAPI:
     api.include_router(jobs.router)
     api.include_router(model_selection.router)
     api.include_router(studies.router)
+    api.include_router(lti.router)
 
     @api.get("/health")
     def health():

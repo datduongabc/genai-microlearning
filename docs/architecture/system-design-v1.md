@@ -155,7 +155,8 @@ Dự toán đồ án cũ khoảng $96, hoặc $115 với 20% dự phòng, sẽ g
 | Chịu lỗi: dừng từng loại task | Chưa đo | Chạy được trên máy này |
 | Embedder trên CPU Fargate | Mọi số đo dùng GPU | Đo trên AWS |
 | Mọi số trên AWS | Máy đo dùng chung 7,57 GiB RAM | Terraform, chạy đo |
-| Code chưa có | LTI, giới hạn Jev chung | Viết code |
+| Code chưa có | Giới hạn Jev chung; LTI cho sinh viên, Deep Linking, trả điểm | Viết code; sinh viên cần thêm thành viên khóa học vào RLS |
+| LTI chưa thử với Moodle thật | Launch cho giảng viên mới test với một LMS giả ký bằng khóa RSA thật, xem `docs/integration/lti.md` | Chạy Moodle 5.2 của dự án |
 | Terraform chưa `apply` lần nào | `infra/terraform` mới qua `validate` và `terraform test` với AWS giả lập | Tài khoản AWS, chạy theo `infra/README.md` |
 | Bật Jev trong production | Code mặc định vẫn dùng Jina, chỉ gửi sang TypeSafe khi đặt `RERANKER_PROVIDER=jev`, để không gửi tài liệu khi trường chưa đồng ý | Nhà trường đồng ý |
 | Credit Jev | Tài khoản TypeSafe đang trả 402; khi chưa nạp, hệ thống chỉ chạy với thứ tự hybrid | Nạp trước khi demo |
