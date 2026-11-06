@@ -1,6 +1,6 @@
 \clearpage\section{Progress and remaining work}\label{sec:plan}\label{sec:progress}
 \subsection{Status on 6 November 2026}
-Phase 2 began on 26 October 2026 with a twelve-week baseline ending on 17 January 2027 and a target defense on 18 January 2027. After two weeks, the system described in the midterm report has been implemented and extended with the scalable architecture of Section~\ref{sec:architecture}. The automated test suites pass: 1,489 backend tests on Python 3.14 and 268 frontend tests, checked by continuous integration on every change. The evaluation of generated content, which depends on paid models and human raters, has not started.
+Phase 2 began on 26 October 2026 with a twelve-week baseline ending on 17 January 2027 and a target defense on 18 January 2027. After two weeks, the system described in the midterm report has been implemented and extended with the scalable architecture of Section~\ref{sec:architecture}. The automated test suites pass: 1,489 backend tests on Python 3.14 and 268 frontend tests, checked by continuous integration on every change. The evaluation of generated content, which depends on paid models and human raters, has not started. A first \code{terraform apply} on a real AWS account on 6 November created the network, database, cache, load balancer and storage, 110 resources, and stopped at CloudFront, which AWS refuses to a new account until it has verified it; the stack was destroyed the same day. That run also exposed two faults in the deployment script, a first deployment that is not restarted after the migration and a fixed final snapshot name; the fixes await review.
 
 The advisor's feedback after the midterm set the targets this work is judged against: the five-subject corpus, retrieval metrics (Hit Rate@$K$, MRR, nDCG), faithfulness and answer relevance, latency and resource profile, agreement between raters and between human and model judges, a strategy for figures and code in documents, a cloud-native AWS deployment within \$200 with a justified budget and lock-in, and integration with Moodle through the LTI tool model. Table~\ref{tab:feedback} maps each target to its state.
 \begin{longtable}{|p{3.4cm}|p{5.6cm}|p{4.8cm}|}\caption{Advisor targets and their state.}\label{tab:feedback}\\\hline
@@ -12,7 +12,7 @@ Faithfulness, answer relevance & Claim extraction, citation checks and judge pip
 Latency and resources & Per stage and under load (Sections~\ref{sec:results-latency} and \ref{sec:results-scale}) & Chat time to first word on a real model under load; any number on AWS\\\hline
 Inter-rater reliability & Weighted kappa and Spearman analysis, blind rating screens and export implemented & Recruited raters and rated packets\\\hline
 Figures and code & Formula repair, selective vision re-reading, figure OCR, SmartArt text (Section~\ref{sec:results-extraction}) & Describing diagrams without text; evaluating code fidelity\\\hline
-AWS, \$200, lock-in & Terraform, deployment script, cost estimate, lock-in analysis (Section~\ref{sec:aws}) & First \code{terraform apply} and the measurements S1--S8\\\hline
+AWS, \$200, lock-in & Terraform, deployment script, cost estimate, lock-in analysis (Section~\ref{sec:aws}); a first apply on a real account & A complete apply, once AWS verifies the account for CloudFront, and the measurements S1--S8\\\hline
 Scalability & Stateless services, measured bottlenecks and their removal & Sustained runs, failure injection, autoscaling on AWS\\\hline
 Moodle LTI & LTI 1.3 launch for instructors, tested against Moodle 5.2.3 (Section~\ref{sec:lti}) & Students, Deep Linking, grade return\\\hline
 \end{longtable}
@@ -43,7 +43,7 @@ Course chat in a real browser after the latest fixes & Source labels and restore
 Student access through LTI & Row-level security filters by course owner; course membership must be added as a separate, tested security change & Code and tests\\\hline
 LTI Deep Linking and grade return & Not implemented & Code and tests\\\hline
 \multicolumn{3}{|l|}{\textit{Needs AWS credit}}\\\hline
-First \code{terraform apply} and S1--S8 (Table~\ref{tab:aws-experiments}) & No number has been measured on AWS; the embedder has only been measured on a GPU & AWS account; Fargate quota for about 60 vCPU at the largest step\\\hline
+Complete \code{terraform apply} and S1--S8 (Table~\ref{tab:aws-experiments}) & No number has been measured on AWS; the embedder has only been measured on a GPU & Account verification for CloudFront; Fargate quota for about 60 vCPU at the largest step\\\hline
 \multicolumn{3}{|l|}{\textit{Needs model credit}}\\\hline
 Held-out module pairs, ablations and judges & The main quality comparison of Section~\ref{sec:evaluation} & A funded generation model and a judge model of another family\\\hline
 30-minute run with a queue & The 96-module run stopped after 5.5 minutes when credit ran out & Model and Jev credit\\\hline
@@ -82,7 +82,7 @@ Model credit & Three providers are out of credit; the evaluation cannot start & 
 Jev consent & The university refuses; reranking returns to CPU, the measured bottleneck & Measure Jina on a GPU, which is unmeasured; keep the hybrid fallback\\\hline
 Raters & Too few ratings for agreement estimates & Recruit before held-out generation; report shortfalls\\\hline
 Single-run evidence & Four identical runs ranged from 108.8 to 180.7 modules per hour & Repeat every run used to lock a decision three times on AWS\\\hline
-First apply & Quotas or engine versions fail on a real account & Apply early with the smallest sizes; request Fargate quota in advance\\\hline
+First apply & Happened: CloudFront refused a new account until AWS verifies it, and the ECS services wait on its address & Verification requested; if it is late, a switch that serves the load tests from the load balancer without CloudFront, at the cost of HTTPS and LTI\\\hline
 Reranker licence & Jina weights are licensed for non-commercial use only & Acceptable for the thesis; Jev or another model for any other use\\\hline
 Model-written questions & Retrieval results may be optimistic & Human labels with several correct chunks; cross-language set kept\\\hline
 \end{longtable}

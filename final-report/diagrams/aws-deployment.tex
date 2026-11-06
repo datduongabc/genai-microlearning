@@ -47,7 +47,6 @@ flow/.style={->,thick},lab/.style={font=\sffamily\scriptsize,fill=white,inner se
 \draw[flow] ([xshift=-.6cm]api.south) -- ++(0,0) |- (0,-1.95) -| (up.south);
 
 \draw[flow] (worker) -- node[lab,sloped,above]{Service Connect} (gw);
-\draw[flow] (worker) -- (emb);
 \draw[flow,dashed] (worker) -- (rr);
 \draw[flow] (gw) -- node[lab,left]{embeddings} (emb);
 \draw[flow] (gw) -- node[lab,above]{HTTPS} (llm);
@@ -61,6 +60,6 @@ flow/.style={->,thick},lab/.style={font=\sffamily\scriptsize,fill=white,inner se
 \node[draw,dashed,rounded corners,fit=(alb)(ecs)(vk)(rds)(up),inner sep=14pt] (vpc) {};
 \node[anchor=north east,font=\sffamily\scriptsize,gray!70!black] at (vpc.south east) {VPC in two AZs: public task subnets without inbound rules, private data subnets, no NAT};
 \end{scope}
-\node[font=\sffamily\scriptsize,align=left,anchor=north west] at (8.7,-0.3) {Operations: ECR, Auto Scaling, CloudWatch\\logs and alarms, SSM Parameter Store,\\AWS Budgets. The api calls the gateway,\\embedder and reranker as the worker does.};
+\node[font=\sffamily\scriptsize,align=left,anchor=north west] at (8.7,-0.3) {Operations: ECR, Auto Scaling, CloudWatch\\logs and alarms, SSM Parameter Store,\\AWS Budgets. The api calls the gateway\\and the reranker as the worker does; only\\the gateway reaches the embedder.};
 \end{tikzpicture}
 \end{document}
