@@ -69,6 +69,30 @@ jobs:
       - run: npm run test -- src/test/unit src/test/integration
       - run: npm run build
 
+  infra:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: infra/terraform
+    env:
+      TERRAFORM_VERSION: 1.17.1
+    steps:
+      - uses: actions/checkout@v7
+      # Downloaded and checked against HashiCorp's checksums instead of a setup action, so there
+      # is no third-party action runtime to keep up to date.
+      - run: |
+          base=https://releases.hashicorp.com/terraform/$TERRAFORM_VERSION
+          curl -fsSLo /tmp/tf.zip "$base/terraform_${TERRAFORM_VERSION}_linux_amd64.zip"
+          curl -fsSLo /tmp/tf.sums "$base/terraform_${TERRAFORM_VERSION}_SHA256SUMS"
+          (cd /tmp && grep linux_amd64 tf.sums | sed 's/terraform_.*\.zip/tf.zip/' | sha256sum -c)
+          sudo unzip -o -q /tmp/tf.zip -d /usr/local/bin terraform
+      - run: terraform fmt -check -recursive
+      - run: terraform init -backend=false -input=false
+      - run: terraform validate
+      # Plans against a mocked AWS: no account and no cost (tests/plan.tftest.hcl).
+      - run: terraform test
+      - run: bash -n ../scripts/deploy.sh
+
   moodle-plugin:
     runs-on: ubuntu-latest
     services:

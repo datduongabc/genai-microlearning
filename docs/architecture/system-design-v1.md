@@ -109,6 +109,30 @@ Lần hết credit Jev cũng cho thấy job không lỗi khi Jev lỗi, nhưng c
 4. Stream qua LLM không giữ thread, gửi `: ping` mỗi 15 s, ALB và CloudFront phải có timeout dài hơn mức này.
 5. Sự kiện: `session`, `delta`, `done` hoặc `error`. Trích dẫn đọc từ mã `[S2]` trong câu trả lời và được bỏ khỏi văn bản.
 
+## Chạy trên AWS
+
+`api` và `worker` là hai task riêng, không chung đĩa, nên mọi thứ chúng trao cho nhau phải đi qua RDS hoặc S3.
+
+| Biến | Giá trị trên AWS | Tác dụng |
+| --- | --- | --- |
+| `UPLOAD_STORE`, `UPLOAD_S3_BUCKET` | `s3`, tên bucket | API ghi tệp vào `uploads/<document id><đuôi>`, worker tải về thư mục tạm để đọc, xóa object sau khi embed. Xóa tài liệu hoặc môn học cũng xóa object. Thiếu bucket thì tiến trình không khởi động |
+| `LOG_FORMAT` | `json` | Mỗi dòng log là một JSON có `time`, `level`, `logger`, `message`, kể cả log của uvicorn. `message` giữ nguyên chữ, nên metric filter `jev_fallback` chạy như cũ |
+| `WORKER_SHUTDOWN_GRACE_SECONDS` | `100` trên `worker` | Thời gian job đang chạy được để xong khi task dừng, dưới `stopTimeout` 120 s của Fargate. Hết thời gian thì job được trả về hàng đợi |
+| `QUEUE_METRICS` | `true` trên `worker` | Mỗi phút ghi một dòng EMF vào stdout: `JobsReady` (job đến hạn), `JobsRunning`, `OldestReadyJobAgeSeconds`, namespace `Microlearning/Jobs`. Job đang chờ backoff không tính vào `JobsReady`, vì worker mới cũng không lấy được nó. Chạy trong thread riêng, để vẫn báo khi mọi thread đang bận job dài |
+
+Hai endpoint kiểm tra, cố ý khác nhau:
+
+- `/health` cho health check của container: chỉ hỏi tiến trình còn chạy không. Lỗi thì ECS khởi động lại task.
+- `/ready` cho target group của ALB: hỏi thêm RDS bằng một pool riêng một kết nối, timeout 2 s, để không phải xếp hàng sau request khi API bận. Không hỏi Valkey (rate limit có fallback trong bộ nhớ), gateway, embedder hay Jev: chúng dùng chung cho mọi task, nên một thành phần lỗi sẽ rút hết task khỏi ALB, kể cả cho request không cần nó.
+
+Mỗi tiến trình worker đều báo cùng một số đếm, nên scaling và cảnh báo phải đọc `Maximum`, không đọc `Sum`.
+
+Ba điểm chỉ lộ ra khi tách task hoặc chạy trên RDS, đã sửa:
+
+- **Migration không chạy được trên RDS.** PostgreSQL 16 chỉ cho role có `BYPASSRLS` đổi thuộc tính này, kể cả sang `NOBYPASSRLS`, mà user master của RDS không phải superuser. Giả lập bằng một role có `CREATEROLE` nhưng không phải superuser: migration 0001 lỗi `permission denied to alter role`. Giờ worker được miễn RLS bằng policy `TO app_worker USING (true)` trên từng bảng (migration 0025), ở mọi môi trường, và không role ứng dụng nào còn `BYPASSRLS`. Quyền theo bảng của worker vẫn giữ nguyên. Một test bắt bảng RLS mới nào thiếu policy này.
+- **`/ready` treo 87 s khi DB nhận kết nối mà không trả lời** (thử bằng cách pause container DB). `connect_timeout` và `statement_timeout` không cắt được trường hợp này. Giờ phép thử chạy trong thread có hạn chót 2 s, và không mở phép thử thứ hai khi phép thử trước còn treo.
+- **Scale-in giết job đang chạy.** Job nằm ở `running` tới khi sweeper trả lại sau 15 phút, và token đã tiêu bị tiêu lại. Giờ worker có job thì bật scale-in protection của ECS, và khi bị dừng thì trả job chưa xong về hàng đợi ngay.
+
 ## Chi phí
 
 Bỏ task reranker tiết kiệm $0,2465/giờ mỗi task. Jev khoảng $0,0007 mỗi retrieval, theo giá tài liệu của họ, nên hòa vốn ở khoảng 350 retrieval/giờ:
@@ -131,7 +155,8 @@ Dự toán đồ án cũ khoảng $96, hoặc $115 với 20% dự phòng, sẽ g
 | Chịu lỗi: dừng từng loại task | Chưa đo | Chạy được trên máy này |
 | Embedder trên CPU Fargate | Mọi số đo dùng GPU | Đo trên AWS |
 | Mọi số trên AWS | Máy đo dùng chung 7,57 GiB RAM | Terraform, chạy đo |
-| Code chưa có | S3 upload, frontend tĩnh, LTI, `/ready`, log JSON, metric hàng đợi, cảnh báo fallback Jev qua CloudWatch từ dòng log `jev_fallback`, giới hạn Jev chung | Viết code |
+| Code chưa có | LTI, giới hạn Jev chung | Viết code |
+| Terraform chưa `apply` lần nào | `infra/terraform` mới qua `validate` và `terraform test` với AWS giả lập | Tài khoản AWS, chạy theo `infra/README.md` |
 | Bật Jev trong production | Code mặc định vẫn dùng Jina, chỉ gửi sang TypeSafe khi đặt `RERANKER_PROVIDER=jev`, để không gửi tài liệu khi trường chưa đồng ý | Nhà trường đồng ý |
 | Credit Jev | Tài khoản TypeSafe đang trả 402; khi chưa nạp, hệ thống chỉ chạy với thứ tự hybrid | Nạp trước khi demo |
 | Điều kiện chứng minh | Ngưỡng ở `scalable-design.md` mục 3 là đề xuất | Giảng viên đồng ý |
