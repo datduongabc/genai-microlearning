@@ -364,17 +364,17 @@ sequenceDiagram
     participant B as Trình duyệt
     participant M as Moodle (Platform)
     participant T as chat (Tool)
-    participant V as Valkey
+    participant P as Postgres
     B->>M: Mở hoạt động External tool
     M->>T: OIDC login initiation
-    T->>V: Lưu state, nonce (TTL ngắn)
+    T->>P: Lưu state, nonce (hết hạn sau 10 phút)
     T->>B: Chuyển hướng đến auth của Moodle
     B->>M: Yêu cầu xác thực
     M->>T: id_token (JWT) + state
-    T->>V: Kiểm tra và xóa state, nonce
+    T->>P: Xóa state và lấy nonce trong cùng một lệnh (DELETE ... RETURNING)
     T->>M: Lấy JWKS (có cache), kiểm tra chữ ký
     T->>T: Ánh xạ (iss, sub, deployment) sang user, context sang course, role sang quyền
-    T->>B: Phiên của ứng dụng
+    T->>B: Mã launch dùng một lần, đổi lấy token của ứng dụng
 ```
 
 Lưu ý khi cài đặt:
