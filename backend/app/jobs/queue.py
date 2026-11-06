@@ -21,6 +21,7 @@ import time
 import uuid
 from datetime import UTC, datetime, timedelta
 
+import httpx
 from litellm.exceptions import RateLimitError
 from sqlalchemy import func, select, update
 from sqlalchemy.orm import Session
@@ -34,12 +35,20 @@ from app.models import Job, JobStatus, JobType
 logger = logging.getLogger(__name__)
 
 BASE_BACKOFF_SECONDS = 5.0
+# When one of our own services is down (gateway, embedder, reranker, database), not the request. Five attempts at
+# 30, 60, 120 and 240 s ride out about seven minutes of outage; at 5 s a two-minute outage failed the job for good
+# (docs/measurements/2026-11-06-failure-tests.md).
+OUTAGE_BASE_BACKOFF_SECONDS = 30.0
 MAX_BACKOFF_SECONDS = 300.0
-STUCK_THRESHOLD_SECONDS = 15 * 60
-# A running job's worker refreshes locked_at this often, so only a job whose worker has died goes
-# STUCK_THRESHOLD_SECONDS without it: a module generation or a long video can legitimately run longer
-# than the threshold, and requeuing it then would run the same job twice at once.
+# A running job's worker refreshes locked_at every HEARTBEAT_INTERVAL_SECONDS, so only a job whose worker has died
+# goes STUCK_THRESHOLD_SECONDS without it: five missed beats. A module generation or a long video can legitimately
+# run longer than the threshold, and requeuing it then would run the same job twice at once. It was 15 minutes,
+# which is how long a job held by a crashed worker waited (measured: 14 minutes).
+STUCK_THRESHOLD_SECONDS = 5 * 60
 HEARTBEAT_INTERVAL_SECONDS = 60
+# After a failed beat, the next one comes this soon, so a worker whose database connection was cut refreshes its
+# locks as soon as the database is back, before a sweeper that also waited for it can take them.
+HEARTBEAT_RETRY_SECONDS = 5
 SWEEP_INTERVAL_SECONDS = 60
 # Periodic clean-up (finished jobs, dead refresh tokens): first run shortly
 # after start so a backend that is restarted often still gets it, then hourly.
@@ -50,9 +59,32 @@ POLL_INTERVAL_SECONDS = 2.0
 METRICS_INTERVAL_SECONDS = 60
 
 
-def jittered_backoff(attempts: int) -> float:
-    exp = min(BASE_BACKOFF_SECONDS * (2 ** (attempts - 1)), MAX_BACKOFF_SECONDS)
+def jittered_backoff(attempts: int, base: float = BASE_BACKOFF_SECONDS) -> float:
+    exp = min(base * (2 ** (attempts - 1)), MAX_BACKOFF_SECONDS)
     return exp * (0.75 + random.random() * 0.5)
+
+
+_OUTAGE_STATUSES = {502, 503, 504}
+
+
+def is_outage(err: BaseException) -> bool:
+    """A service we depend on did not answer, or answered that it is unavailable: waiting longer is what helps.
+    Looks through the causes, because litellm and SQLAlchemy wrap the connection error they got."""
+    from litellm.exceptions import APIConnectionError, InternalServerError, ServiceUnavailableError
+    from sqlalchemy.exc import InterfaceError, OperationalError
+
+    outage = (httpx.TransportError, OperationalError, InterfaceError, APIConnectionError, InternalServerError,
+              ServiceUnavailableError)
+    seen: set[int] = set()
+    current: BaseException | None = err
+    while current is not None and id(current) not in seen:
+        if isinstance(current, outage):
+            return True
+        if isinstance(current, httpx.HTTPStatusError) and current.response.status_code in _OUTAGE_STATUSES:
+            return True
+        seen.add(id(current))
+        current = current.__cause__ or current.__context__
+    return False
 
 
 def is_terminal_error(err: Exception) -> bool:
@@ -145,14 +177,16 @@ def heartbeat(job_id: uuid.UUID, worker_id: str) -> bool:
 
 
 def _beat_until(stop: threading.Event, job_id: uuid.UUID, worker_id: str) -> None:
-    while not stop.wait(HEARTBEAT_INTERVAL_SECONDS):
+    wait = HEARTBEAT_INTERVAL_SECONDS
+    while not stop.wait(wait):
         try:
             if not heartbeat(job_id, worker_id):
                 logger.warning(f"[job_queue] worker {worker_id} no longer holds job {job_id}")
                 return
+            wait = HEARTBEAT_INTERVAL_SECONDS
         except Exception:
-            # A missed beat is retried on the next interval; the threshold allows many of them.
             logger.exception(f"[job_queue] heartbeat failed for job {job_id}")
+            wait = HEARTBEAT_RETRY_SECONDS
 
 
 _active_jobs = 0
@@ -205,7 +239,7 @@ def handle_job_error(job_id: uuid.UUID, err: Exception) -> None:
         new_attempts = job.attempts + 1
 
         if not terminal and new_attempts < job.max_attempts:
-            delay = jittered_backoff(new_attempts)
+            delay = jittered_backoff(new_attempts, OUTAGE_BASE_BACKOFF_SECONDS if is_outage(err) else BASE_BACKOFF_SECONDS)
             logger.warning(
                 f"[job_queue] job {job_id} step={job.step} loi tam thoi, retry sau {delay:.1f}s: {message}"
             )
@@ -297,7 +331,7 @@ _stop_event = threading.Event()
 def release_jobs_of(worker_ids: list[str]) -> int:
     """Puts the jobs these workers still hold back in the queue, due now and with the attempt not
     counted: the worker is stopping, the job did not fail. Without it they would sit as running
-    until the sweeper's threshold, 15 minutes, on every deploy and every scale-in."""
+    until the sweeper's threshold, STUCK_THRESHOLD_SECONDS, on every deploy and every scale-in."""
     if not worker_ids:
         return 0
     db = WorkerSessionLocal()

@@ -111,7 +111,7 @@ def test_chat_keeps_eighth_source_and_persists_its_citation(monkeypatch, questio
             return schema(answer="The root moves down.", source_ids=["S8"])
         return schema(answer="Tài liệu môn học không đề cập nội dung này", source_ids=[])
 
-    def scored(query, candidates):
+    def scored(query, candidates, attempts=None):
         assert query == question
         assert len(candidates) == 8
         return sorted(((c, 0.1 if c.content == evidence else 0.2) for c in candidates),

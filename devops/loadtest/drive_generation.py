@@ -23,6 +23,7 @@ from pathlib import Path
 
 import httpx
 from sqlalchemy import func, select
+from sqlalchemy.exc import OperationalError
 
 from app.auth.security import create_access_token
 from app.db import SessionLocal
@@ -107,8 +108,13 @@ def generate(modules: int, label: str, out: str = "generation.json", max_seconds
             job_ids.append(uuid.UUID(response.json()["job_id"]))
     print(f"queued {len(job_ids)} jobs in {time.perf_counter() - t0:.1f}s", flush=True)
     while True:
-        with SessionLocal() as db:
-            statuses = list(db.scalars(select(Job.status).where(Job.id.in_(job_ids))))
+        try:
+            with SessionLocal() as db:
+                statuses = list(db.scalars(select(Job.status).where(Job.id.in_(job_ids))))
+        except OperationalError:
+            # The failure tests restart the database under this loop.
+            time.sleep(3)
+            continue
         if all(s in (JobStatus.done, JobStatus.failed) for s in statuses):
             break
         if max_seconds and time.perf_counter() - t0 > max_seconds:
@@ -134,6 +140,8 @@ def generate(modules: int, label: str, out: str = "generation.json", max_seconds
         "wall_seconds": round(wall, 1), "modules_per_hour": round(3600 * (len(job_ids) - len(failed)) / wall, 1),
         "module_seconds": _stats([t["total_seconds"] for t in timings]),
         "timed_out": timed_out, "job_attempts": attempts,
+        # More than one module for a document means a job ran twice to the end.
+        "modules_created": len(rows), "documents_with_modules": len({m.document_id for m in rows}),
         "prompt_tokens": sum(s.get("prompt_tokens") or 0 for s in spans),
         "completion_tokens": sum(s.get("completion_tokens") or 0 for s in spans),
         "served_models": sorted({s.get("served_model") for s in spans if s.get("served_model")}),

@@ -38,12 +38,10 @@ flowchart TB
     API --> VK[(Valkey)]
     API --> UP[(S3: tệp tải lên)]
     WK[worker] --> DB
-    WK --> VK
     WK --> UP
-    API -- "Service Connect" --> EMB[embedder]
-    WK -- "Service Connect" --> EMB
     API -- "Service Connect" --> GW[llm-gateway]
     WK -- "Service Connect" --> GW
+    GW -- "embedding" --> EMB[embedder]
     GW --> LLM[Nhà cung cấp LLM]
     API -- "HTTPS: chữ của chunk" --> JEV[Jev, TypeSafe]
     WK -- "HTTPS: chữ của chunk" --> JEV

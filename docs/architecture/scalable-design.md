@@ -220,14 +220,15 @@ dùng RDS Proxy vì tài liệu AWS không khẳng định `SET LOCAL` tránh đ
 
 | Sự cố | Hành vi thiết kế | Trạng thái |
 | --- | --- | --- |
-| Task `api` hoặc `chat` chết | ALB bỏ qua task, ECS thay task mới. Client mở lại stream | Cần test |
-| Worker chết, Spot thu hồi | Heartbeat phát hiện, job chạy lại, tối đa số lần cho phép | Có sẵn, cần test Spot |
-| Reranker lỗi | Thử lại với backoff, sau đó chat dùng hybrid | Thử lại có sẵn, hybrid cần làm |
+| Task `api` hoặc `chat` chết | ALB bỏ qua task, ECS thay task mới. Client mở lại stream | Đã test trên máy: kill một api, job sinh module không bị ảnh hưởng. Trên AWS chưa |
+| Worker chết, Spot thu hồi | Dừng bình thường: trả job về hàng đợi ngay, không tính lần thử. Chết đột ngột: sweeper trả job sau 5 phút không có heartbeat | Đã test trên máy: 8/8 job xong, không trùng; chết đột ngột hồi phục sau 4 phút. Spot chưa test |
+| Reranker lỗi | Sinh module thử lại với backoff, rồi job được thử lại. Chat thử một lần rồi dùng thứ tự hybrid | Có sẵn, đã test trên máy |
+| Embedder hoặc gateway lỗi, RDS khởi động lại | Job thử lại với backoff dài (30, 60, 120, 240 s), chịu được khoảng 7 phút. Chat tìm bằng BM25 khi không có embedding | Có sẵn, đã test trên máy với sự cố 60 s |
 | Nhà cung cấp LLM lỗi hoặc 429 | Gateway thử lại và fallback theo cấu hình | Có sẵn |
 | Valkey mất | Rate limit theo từng task; LTI không bị ảnh hưởng vì state nằm trong Postgres | Rate limit có sẵn |
 | RDS lỗi | Vận hành thật: Multi-AZ tự chuyển. Demo: khôi phục từ snapshot | Một tham số Terraform |
-| Một AZ mất | Tầng ứng dụng chạy trên 2 AZ. NAT một AZ là điểm yếu đã chấp nhận vì chi phí | Theo thiết kế |
-| Deploy lỗi | Circuit breaker của ECS tự quay về bản trước | Cần cấu hình |
+| Một AZ mất | Tầng ứng dụng chạy trên 2 AZ, không có NAT nên không có điểm yếu một AZ ở đường ra. RDS và Valkey một node ở bản demo | Theo thiết kế |
+| Deploy lỗi | Circuit breaker của ECS tự quay về bản trước. Lần deploy đầu không có bản trước: `deploy.sh` chạy lại service sau migration | Đã cấu hình (`ecs.tf`), chưa chạy trên AWS |
 | Migration lỗi | Migration chạy trước, không đổi service nếu lỗi. Dùng mẫu expand rồi contract | Cần quy ước |
 
 Quy tắc chung: mọi lệnh gọi mạng có timeout và retry có backoff, job phải idempotent, tách tài nguyên để lỗi ở một đường không lan sang đường khác.

@@ -158,6 +158,70 @@ def test_a_failed_reranker_costs_the_order_not_the_answer(world, monkeypatch):
     assert events[-1][0] == "done"
 
 
+def test_the_plain_endpoint_also_answers_when_the_reranker_fails(world, monkeypatch):
+    """Found by devops/loadtest/run_failures.sh: POST /chat used the generation search, whose reranker
+    retries five times and raises, so a stopped reranker turned every message into a 500."""
+    client, headers, course_id, _ = world
+
+    def fail(query, chunks, attempts):
+        assert attempts == search.CHAT_RERANK_ATTEMPTS
+        raise search.httpx.ConnectError("reranker down")
+
+    monkeypatch.setattr(search, "rerank_scored", fail)
+    monkeypatch.setattr(service, "complete_structured",
+                        lambda prompt, schema, **kw: schema(answer="Heap là cây.", source_ids=["S1"]))
+
+    response = client.post(f"/courses/{course_id}/chat", json={"message": "Heap?"}, headers=headers)
+
+    assert response.status_code == 200
+    assert response.json()["message"]["content"] == "Heap là cây."
+
+
+@pytest.mark.parametrize("path", ["/chat/stream", "/chat"])
+def test_without_the_embedder_chat_searches_by_keyword(world, monkeypatch, passthrough_rerank, path):
+    client, headers, course_id, _ = world
+    prompts = []
+    _scripted_model(monkeypatch, "Heap là cây [S1].", prompts=prompts)
+
+    def plain(prompt, schema, **kw):
+        prompts.append(prompt)
+        return schema(answer="Heap là cây.", source_ids=["S1"])
+
+    monkeypatch.setattr(service, "complete_structured", plain)
+
+    def down(text):
+        raise search.httpx.ConnectError("embedder down")
+
+    monkeypatch.setattr(search, "embed_text", down)
+    # With two chunks every word is in half of them and BM25 gives it no weight; a course has many more.
+    with SessionLocal() as db:
+        document = db.query(Document).filter(Document.course_id == uuid.UUID(course_id)).one()
+        db.add_all(Chunk(document_id=document.id, course_id=document.course_id, chunk_index=10 + i, content=text,
+                         source_ref="p2") for i, text in enumerate(
+            ["Queues are first in first out.", "Graphs have vertices and edges.", "Sorting orders a list."]))
+        db.commit()
+
+    response = client.post(f"/courses/{course_id}{path}", json={"message": "heap binary tree"}, headers=headers)
+
+    assert response.status_code == 200
+    answer_prompt = prompts[-1]
+    # BM25 alone finds the chunk with the words; the other one shares none and is left out.
+    assert "A heap is a binary tree." in answer_prompt
+    assert "A stack is last in first out." not in answer_prompt
+
+
+def test_generation_still_fails_without_the_embedder(world, monkeypatch):
+    """The job queue retries a generation step; answering from keywords alone would lower its quality silently."""
+    _, _, course_id, _ = world
+
+    def down(text):
+        raise search.httpx.ConnectError("embedder down")
+
+    monkeypatch.setattr(search, "embed_text", down)
+    with SessionLocal() as db, pytest.raises(search.httpx.ConnectError):
+        search.retrieve_for_generation(db, uuid.UUID(course_id), "heap")
+
+
 def test_a_model_that_fails_midway_ends_with_an_error_and_the_question_stays(world, monkeypatch, passthrough_rerank):
     client, headers, course_id, _ = world
 

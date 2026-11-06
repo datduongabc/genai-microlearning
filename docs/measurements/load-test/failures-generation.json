@@ -1,0 +1,712 @@
+[
+  {
+    "label": "baseline",
+    "modules": 8,
+    "done": 8,
+    "failed": 0,
+    "errors": [],
+    "wall_seconds": 240.4,
+    "modules_per_hour": 119.8,
+    "module_seconds": {
+      "n": 8,
+      "mean": 221.206,
+      "p50": 226.573,
+      "p95": 236.96,
+      "max": 236.96
+    },
+    "timed_out": false,
+    "job_attempts": 0,
+    "modules_created": 8,
+    "documents_with_modules": 8,
+    "prompt_tokens": 555385,
+    "completion_tokens": 496800,
+    "served_models": [
+      "mock-model"
+    ],
+    "llm_calls_per_module": 23.0,
+    "retrievals_per_module": 8.0,
+    "rerank_seconds": {
+      "n": 64,
+      "mean": 11.344,
+      "p50": 11.14,
+      "p95": 20.657,
+      "max": 21.139
+    },
+    "rerank_fallbacks": 0,
+    "rerank_retries": 0,
+    "embed_query_seconds": {
+      "n": 64,
+      "mean": 0.062,
+      "p50": 0.07,
+      "p95": 0.139,
+      "max": 0.153
+    },
+    "vector_search_seconds": {
+      "n": 64,
+      "mean": 0.01,
+      "p50": 0.008,
+      "p95": 0.017,
+      "max": 0.022
+    },
+    "bm25_seconds": {
+      "n": 64,
+      "mean": 0.003,
+      "p50": 0.002,
+      "p95": 0.008,
+      "max": 0.011
+    },
+    "llm_seconds": {
+      "n": 184,
+      "mean": 13.743,
+      "p50": 13.302,
+      "p95": 19.302,
+      "max": 24.758
+    },
+    "llm_rate_limited": 0,
+    "llm_wait_seconds": {
+      "n": 0
+    },
+    "llm_backoff_seconds": {
+      "n": 0
+    }
+  },
+  {
+    "label": "worker-sigterm",
+    "modules": 8,
+    "done": 8,
+    "failed": 0,
+    "errors": [],
+    "wall_seconds": 258.3,
+    "modules_per_hour": 111.5,
+    "module_seconds": {
+      "n": 8,
+      "mean": 193.858,
+      "p50": 197.887,
+      "p95": 218.664,
+      "max": 218.664
+    },
+    "timed_out": false,
+    "job_attempts": 0,
+    "modules_created": 8,
+    "documents_with_modules": 8,
+    "prompt_tokens": 633580,
+    "completion_tokens": 486000,
+    "served_models": [
+      "mock-model"
+    ],
+    "llm_calls_per_module": 22.5,
+    "retrievals_per_module": 8.0,
+    "rerank_seconds": {
+      "n": 64,
+      "mean": 7.11,
+      "p50": 5.374,
+      "p95": 18.08,
+      "max": 20.959
+    },
+    "rerank_fallbacks": 0,
+    "rerank_retries": 0,
+    "embed_query_seconds": {
+      "n": 64,
+      "mean": 0.093,
+      "p50": 0.024,
+      "p95": 0.511,
+      "max": 0.637
+    },
+    "vector_search_seconds": {
+      "n": 64,
+      "mean": 0.009,
+      "p50": 0.008,
+      "p95": 0.017,
+      "max": 0.024
+    },
+    "bm25_seconds": {
+      "n": 64,
+      "mean": 0.004,
+      "p50": 0.003,
+      "p95": 0.011,
+      "max": 0.022
+    },
+    "llm_seconds": {
+      "n": 180,
+      "mean": 13.342,
+      "p50": 13.202,
+      "p95": 18.038,
+      "max": 21.553
+    },
+    "llm_rate_limited": 0,
+    "llm_wait_seconds": {
+      "n": 0
+    },
+    "llm_backoff_seconds": {
+      "n": 0
+    }
+  },
+  {
+    "label": "worker-sigkill",
+    "modules": 8,
+    "done": 8,
+    "failed": 0,
+    "errors": [],
+    "wall_seconds": 1089.8,
+    "modules_per_hour": 26.4,
+    "module_seconds": {
+      "n": 8,
+      "mean": 188.366,
+      "p50": 192.855,
+      "p95": 219.83,
+      "max": 219.83
+    },
+    "timed_out": false,
+    "job_attempts": 4,
+    "modules_created": 8,
+    "documents_with_modules": 8,
+    "prompt_tokens": 646072,
+    "completion_tokens": 475200,
+    "served_models": [
+      "mock-model"
+    ],
+    "llm_calls_per_module": 22.0,
+    "retrievals_per_module": 8.0,
+    "rerank_seconds": {
+      "n": 64,
+      "mean": 7.685,
+      "p50": 7.096,
+      "p95": 18.218,
+      "max": 20.733
+    },
+    "rerank_fallbacks": 0,
+    "rerank_retries": 0,
+    "embed_query_seconds": {
+      "n": 64,
+      "mean": 0.063,
+      "p50": 0.0,
+      "p95": 0.146,
+      "max": 0.399
+    },
+    "vector_search_seconds": {
+      "n": 64,
+      "mean": 0.009,
+      "p50": 0.008,
+      "p95": 0.015,
+      "max": 0.018
+    },
+    "bm25_seconds": {
+      "n": 64,
+      "mean": 0.003,
+      "p50": 0.002,
+      "p95": 0.005,
+      "max": 0.008
+    },
+    "llm_seconds": {
+      "n": 176,
+      "mean": 13.701,
+      "p50": 13.38,
+      "p95": 19.19,
+      "max": 25.211
+    },
+    "llm_rate_limited": 0,
+    "llm_wait_seconds": {
+      "n": 0
+    },
+    "llm_backoff_seconds": {
+      "n": 0
+    }
+  },
+  {
+    "label": "gateway-60s",
+    "modules": 8,
+    "done": 8,
+    "failed": 0,
+    "errors": [],
+    "wall_seconds": 342.4,
+    "modules_per_hour": 84.1,
+    "module_seconds": {
+      "n": 8,
+      "mean": 191.503,
+      "p50": 194.41,
+      "p95": 201.915,
+      "max": 201.915
+    },
+    "timed_out": false,
+    "job_attempts": 22,
+    "modules_created": 8,
+    "documents_with_modules": 8,
+    "prompt_tokens": 637133,
+    "completion_tokens": 475200,
+    "served_models": [
+      "mock-model"
+    ],
+    "llm_calls_per_module": 22.0,
+    "retrievals_per_module": 8.0,
+    "rerank_seconds": {
+      "n": 64,
+      "mean": 7.783,
+      "p50": 7.458,
+      "p95": 17.607,
+      "max": 20.608
+    },
+    "rerank_fallbacks": 0,
+    "rerank_retries": 0,
+    "embed_query_seconds": {
+      "n": 64,
+      "mean": 0.051,
+      "p50": 0.0,
+      "p95": 0.138,
+      "max": 0.145
+    },
+    "vector_search_seconds": {
+      "n": 64,
+      "mean": 0.01,
+      "p50": 0.009,
+      "p95": 0.016,
+      "max": 0.02
+    },
+    "bm25_seconds": {
+      "n": 64,
+      "mean": 0.002,
+      "p50": 0.002,
+      "p95": 0.005,
+      "max": 0.008
+    },
+    "llm_seconds": {
+      "n": 176,
+      "mean": 13.747,
+      "p50": 13.518,
+      "p95": 18.877,
+      "max": 23.232
+    },
+    "llm_rate_limited": 0,
+    "llm_wait_seconds": {
+      "n": 0
+    },
+    "llm_backoff_seconds": {
+      "n": 0
+    }
+  },
+  {
+    "label": "reranker-60s",
+    "modules": 8,
+    "done": 8,
+    "failed": 0,
+    "errors": [],
+    "wall_seconds": 342.3,
+    "modules_per_hour": 84.1,
+    "module_seconds": {
+      "n": 8,
+      "mean": 215.082,
+      "p50": 222.918,
+      "p95": 230.621,
+      "max": 230.621
+    },
+    "timed_out": false,
+    "job_attempts": 6,
+    "modules_created": 8,
+    "documents_with_modules": 8,
+    "prompt_tokens": 631741,
+    "completion_tokens": 475200,
+    "served_models": [
+      "mock-model"
+    ],
+    "llm_calls_per_module": 22.0,
+    "retrievals_per_module": 8.0,
+    "rerank_seconds": {
+      "n": 64,
+      "mean": 13.347,
+      "p50": 12.102,
+      "p95": 32.618,
+      "max": 40.718
+    },
+    "rerank_fallbacks": 0,
+    "rerank_retries": 0,
+    "embed_query_seconds": {
+      "n": 64,
+      "mean": 0.049,
+      "p50": 0.0,
+      "p95": 0.14,
+      "max": 0.148
+    },
+    "vector_search_seconds": {
+      "n": 64,
+      "mean": 0.01,
+      "p50": 0.008,
+      "p95": 0.018,
+      "max": 0.022
+    },
+    "bm25_seconds": {
+      "n": 64,
+      "mean": 0.002,
+      "p50": 0.002,
+      "p95": 0.005,
+      "max": 0.008
+    },
+    "llm_seconds": {
+      "n": 176,
+      "mean": 13.415,
+      "p50": 12.918,
+      "p95": 18.445,
+      "max": 25.509
+    },
+    "llm_rate_limited": 0,
+    "llm_wait_seconds": {
+      "n": 0
+    },
+    "llm_backoff_seconds": {
+      "n": 0
+    }
+  },
+  {
+    "label": "embedder-60s",
+    "modules": 8,
+    "done": 8,
+    "failed": 0,
+    "errors": [],
+    "wall_seconds": 321.3,
+    "modules_per_hour": 89.6,
+    "module_seconds": {
+      "n": 8,
+      "mean": 195.363,
+      "p50": 193.219,
+      "p95": 211.582,
+      "max": 211.582
+    },
+    "timed_out": false,
+    "job_attempts": 8,
+    "modules_created": 8,
+    "documents_with_modules": 8,
+    "prompt_tokens": 601846,
+    "completion_tokens": 475200,
+    "served_models": [
+      "mock-model"
+    ],
+    "llm_calls_per_module": 22.0,
+    "retrievals_per_module": 8.0,
+    "rerank_seconds": {
+      "n": 64,
+      "mean": 9.587,
+      "p50": 8.501,
+      "p95": 21.073,
+      "max": 21.423
+    },
+    "rerank_fallbacks": 0,
+    "rerank_retries": 0,
+    "embed_query_seconds": {
+      "n": 64,
+      "mean": 0.051,
+      "p50": 0.0,
+      "p95": 0.138,
+      "max": 0.154
+    },
+    "vector_search_seconds": {
+      "n": 64,
+      "mean": 0.01,
+      "p50": 0.008,
+      "p95": 0.019,
+      "max": 0.021
+    },
+    "bm25_seconds": {
+      "n": 64,
+      "mean": 0.003,
+      "p50": 0.002,
+      "p95": 0.005,
+      "max": 0.007
+    },
+    "llm_seconds": {
+      "n": 176,
+      "mean": 13.616,
+      "p50": 13.378,
+      "p95": 18.776,
+      "max": 25.652
+    },
+    "llm_rate_limited": 0,
+    "llm_wait_seconds": {
+      "n": 0
+    },
+    "llm_backoff_seconds": {
+      "n": 0
+    }
+  },
+  {
+    "label": "database-restart",
+    "modules": 8,
+    "done": 8,
+    "failed": 0,
+    "errors": [],
+    "wall_seconds": 255.3,
+    "modules_per_hour": 112.8,
+    "module_seconds": {
+      "n": 8,
+      "mean": 196.221,
+      "p50": 205.456,
+      "p95": 216.535,
+      "max": 216.535
+    },
+    "timed_out": false,
+    "job_attempts": 2,
+    "modules_created": 8,
+    "documents_with_modules": 8,
+    "prompt_tokens": 624236,
+    "completion_tokens": 475200,
+    "served_models": [
+      "mock-model"
+    ],
+    "llm_calls_per_module": 22.0,
+    "retrievals_per_module": 8.0,
+    "rerank_seconds": {
+      "n": 64,
+      "mean": 7.84,
+      "p50": 5.249,
+      "p95": 21.593,
+      "max": 22.363
+    },
+    "rerank_fallbacks": 0,
+    "rerank_retries": 0,
+    "embed_query_seconds": {
+      "n": 64,
+      "mean": 0.049,
+      "p50": 0.0,
+      "p95": 0.137,
+      "max": 0.14
+    },
+    "vector_search_seconds": {
+      "n": 64,
+      "mean": 0.009,
+      "p50": 0.009,
+      "p95": 0.016,
+      "max": 0.023
+    },
+    "bm25_seconds": {
+      "n": 64,
+      "mean": 0.002,
+      "p50": 0.002,
+      "p95": 0.005,
+      "max": 0.011
+    },
+    "llm_seconds": {
+      "n": 176,
+      "mean": 13.844,
+      "p50": 13.376,
+      "p95": 20.073,
+      "max": 26.181
+    },
+    "llm_rate_limited": 0,
+    "llm_wait_seconds": {
+      "n": 0
+    },
+    "llm_backoff_seconds": {
+      "n": 0
+    }
+  },
+  {
+    "label": "api-sigkill",
+    "modules": 8,
+    "done": 8,
+    "failed": 0,
+    "errors": [],
+    "wall_seconds": 237.5,
+    "modules_per_hour": 121.3,
+    "module_seconds": {
+      "n": 8,
+      "mean": 211.126,
+      "p50": 211.625,
+      "p95": 228.834,
+      "max": 228.834
+    },
+    "timed_out": false,
+    "job_attempts": 0,
+    "modules_created": 8,
+    "documents_with_modules": 8,
+    "prompt_tokens": 586602,
+    "completion_tokens": 475200,
+    "served_models": [
+      "mock-model"
+    ],
+    "llm_calls_per_module": 22.0,
+    "retrievals_per_module": 8.0,
+    "rerank_seconds": {
+      "n": 64,
+      "mean": 10.776,
+      "p50": 10.355,
+      "p95": 21.905,
+      "max": 22.632
+    },
+    "rerank_fallbacks": 0,
+    "rerank_retries": 0,
+    "embed_query_seconds": {
+      "n": 64,
+      "mean": 0.046,
+      "p50": 0.0,
+      "p95": 0.141,
+      "max": 0.146
+    },
+    "vector_search_seconds": {
+      "n": 64,
+      "mean": 0.009,
+      "p50": 0.008,
+      "p95": 0.015,
+      "max": 0.017
+    },
+    "bm25_seconds": {
+      "n": 64,
+      "mean": 0.003,
+      "p50": 0.002,
+      "p95": 0.006,
+      "max": 0.011
+    },
+    "llm_seconds": {
+      "n": 176,
+      "mean": 13.815,
+      "p50": 13.342,
+      "p95": 19.832,
+      "max": 30.169
+    },
+    "llm_rate_limited": 0,
+    "llm_wait_seconds": {
+      "n": 0
+    },
+    "llm_backoff_seconds": {
+      "n": 0
+    }
+  },
+  {
+    "label": "worker-sigkill",
+    "modules": 8,
+    "done": 8,
+    "failed": 0,
+    "errors": [],
+    "wall_seconds": 504.6,
+    "modules_per_hour": 57.1,
+    "module_seconds": {
+      "n": 8,
+      "mean": 193.917,
+      "p50": 197.279,
+      "p95": 216.357,
+      "max": 216.357
+    },
+    "timed_out": false,
+    "job_attempts": 4,
+    "modules_created": 8,
+    "documents_with_modules": 8,
+    "prompt_tokens": 544988,
+    "completion_tokens": 486000,
+    "served_models": [
+      "mock-model"
+    ],
+    "llm_calls_per_module": 22.5,
+    "retrievals_per_module": 8.0,
+    "rerank_seconds": {
+      "n": 64,
+      "mean": 5.557,
+      "p50": 4.92,
+      "p95": 10.672,
+      "max": 19.977
+    },
+    "rerank_fallbacks": 0,
+    "rerank_retries": 0,
+    "embed_query_seconds": {
+      "n": 64,
+      "mean": 0.072,
+      "p50": 0.023,
+      "p95": 0.143,
+      "max": 0.489
+    },
+    "vector_search_seconds": {
+      "n": 64,
+      "mean": 0.01,
+      "p50": 0.008,
+      "p95": 0.019,
+      "max": 0.021
+    },
+    "bm25_seconds": {
+      "n": 64,
+      "mean": 0.003,
+      "p50": 0.002,
+      "p95": 0.007,
+      "max": 0.01
+    },
+    "llm_seconds": {
+      "n": 180,
+      "mean": 14.264,
+      "p50": 13.447,
+      "p95": 21.585,
+      "max": 33.475
+    },
+    "llm_rate_limited": 0,
+    "llm_wait_seconds": {
+      "n": 0
+    },
+    "llm_backoff_seconds": {
+      "n": 0
+    }
+  },
+  {
+    "label": "gateway-60s",
+    "modules": 8,
+    "done": 8,
+    "failed": 0,
+    "errors": [],
+    "wall_seconds": 369.4,
+    "modules_per_hour": 78.0,
+    "module_seconds": {
+      "n": 8,
+      "mean": 173.86,
+      "p50": 174.952,
+      "p95": 186.967,
+      "max": 186.967
+    },
+    "timed_out": false,
+    "job_attempts": 13,
+    "modules_created": 8,
+    "documents_with_modules": 8,
+    "prompt_tokens": 534355,
+    "completion_tokens": 475200,
+    "served_models": [
+      "mock-model"
+    ],
+    "llm_calls_per_module": 22.0,
+    "retrievals_per_module": 8.0,
+    "rerank_seconds": {
+      "n": 64,
+      "mean": 5.652,
+      "p50": 5.207,
+      "p95": 11.929,
+      "max": 14.304
+    },
+    "rerank_fallbacks": 0,
+    "rerank_retries": 0,
+    "embed_query_seconds": {
+      "n": 64,
+      "mean": 0.178,
+      "p50": 0.0,
+      "p95": 0.143,
+      "max": 7.82
+    },
+    "vector_search_seconds": {
+      "n": 64,
+      "mean": 0.009,
+      "p50": 0.008,
+      "p95": 0.014,
+      "max": 0.019
+    },
+    "bm25_seconds": {
+      "n": 64,
+      "mean": 0.003,
+      "p50": 0.002,
+      "p95": 0.005,
+      "max": 0.008
+    },
+    "llm_seconds": {
+      "n": 176,
+      "mean": 13.712,
+      "p50": 13.334,
+      "p95": 20.661,
+      "max": 25.523
+    },
+    "llm_rate_limited": 0,
+    "llm_wait_seconds": {
+      "n": 0
+    },
+    "llm_backoff_seconds": {
+      "n": 0
+    }
+  }
+]
