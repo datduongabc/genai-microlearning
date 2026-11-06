@@ -22,15 +22,17 @@ BACKEND = Path(__file__).resolve().parents[2]
 # bo loc lan len tan courses. Gia tri la cac manh bat buoc phai co trong dieu kien.
 CHUOI_LAN = {
     "courses": ["owner_id", "app.current_user_id"],
-    "chat_sessions": ["course_id", "FROM courses"],
-    "chunks": ["course_id", "FROM courses"],
-    "documents": ["course_id", "FROM courses"],
-    "modules": ["course_id", "FROM courses"],
+    # Since course membership (0027) "the course is visible" is not "the course is mine": what may be
+    # changed must still be the owner's, and a chat is its person's.
+    "chat_sessions": ["course_id", "FROM courses", "user_id"],
+    "chunks": ["course_id", "FROM courses", "owner_id"],
+    "documents": ["course_id", "FROM courses", "owner_id"],
+    "modules": ["course_id", "FROM courses", "owner_id"],
     "evaluations": ["module_id", "FROM modules"],
     "module_components": ["module_id", "FROM modules"],
     "questions": ["component_id", "FROM module_components"],
     "chat_messages": ["session_id", "FROM chat_sessions"],
-    "jobs": ["document_id", "module_id"],
+    "jobs": ["document_id", "module_id", "owner_id"],
 }
 CAC_BANG_CO_RLS = set(CHUOI_LAN)
 
@@ -123,10 +125,12 @@ def test_moi_bang_lan_qua_dung_cha_cua_no(db_trang):
     # Chi kiem tra "co policy" thi mot policy sai cha van lot qua, ma sai cha
     # nghia la loc nham hoac khong loc gi.
     with db_trang.connect() as conn:
+        # A table has several policies (the worker's, members' reads); this is about the tenant one.
         dieu_kien = {
-            bang: qual for bang, qual in conn.execute(
-                text("select tablename, qual from pg_policies")
-            )
+            bang: qual for bang, qual in conn.execute(text(
+                "select tablename, qual from pg_policies "
+                "where policyname = tablename || '_tenant_isolation' or policyname = 'courses_tenant_isolation'"
+            ))
         }
 
     sai = {

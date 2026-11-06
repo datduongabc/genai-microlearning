@@ -12,8 +12,9 @@ export interface AuthState {
 
 export interface AuthContextValue extends AuthState {
   login: (email: string, password: string) => Promise<UserInfo>;
-  /** Signs in with the code of an LTI launch and returns the course it opened. */
-  loginWithLaunchCode: (code: string) => Promise<string>;
+  /** Signs in with the code of an LTI launch and returns the course it opened, and whether it is the user's own
+   * (a member's launch opens the course chat only). */
+  loginWithLaunchCode: (code: string) => Promise<{ courseId: string; owner: boolean }>;
   logout: () => void;
 }
 

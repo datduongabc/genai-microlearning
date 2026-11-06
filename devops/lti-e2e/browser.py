@@ -46,6 +46,10 @@ with httpx.Client(follow_redirects=False, timeout=30) as b:
     session = b.post(f"{TOOL}/api/lti/session", json={"code": code})
     print("5. session", session.status_code)
     body = session.json()
-    courses = b.get(f"{TOOL}/api/courses", headers={"Authorization": f"Bearer {body['access_token']}"}).json()
-    print(json.dumps({"user": body["user"], "course_id": body["course_id"],
-                      "courses": [{"id": c["id"], "name": c["name"]} for c in courses]}, ensure_ascii=False))
+    bearer = {"Authorization": f"Bearer {body['access_token']}"}
+    courses = b.get(f"{TOOL}/api/courses", headers=bearer).json()
+    chat = b.get(f"{TOOL}/api/courses/{body['course_id']}/chat/latest", headers=bearer)
+    documents = b.get(f"{TOOL}/api/documents", params={"course_id": body["course_id"]}, headers=bearer)
+    print(json.dumps({"user": body["user"], "course_id": body["course_id"], "course_role": body["course_role"],
+                      "courses": [{"id": c["id"], "name": c["name"]} for c in courses],
+                      "chat_latest": chat.status_code, "documents": documents.status_code}, ensure_ascii=False))

@@ -12,7 +12,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_current_user, require_course_owner
+from app.api.deps import count_learner_chat, get_current_user, require_course_reader
 from app.auth.rate_limit import limiter, user_or_address
 from app.chat.service import (
     HISTORY_TURNS,
@@ -64,15 +64,17 @@ class ChatResponse(BaseModel):
 
 
 def _get_or_create_session(db: Session, course_id: uuid.UUID, session_id: uuid.UUID | None, title_seed: str,
-    module_id: uuid.UUID | None = None,
+    user_id: uuid.UUID, module_id: uuid.UUID | None = None,
 ) -> ChatSession:
     if session_id is not None:
         session = db.get(ChatSession, session_id)
-        if session is None or session.course_id != course_id or session.module_id != module_id:
+        # Row level security hides another person's session already; the user check says so here too.
+        if (session is None or session.course_id != course_id or session.module_id != module_id
+                or session.user_id != user_id):
             raise HTTPException(status_code=404, detail="Chat session not found")
         return session
     title = title_seed[:40] + ("..." if len(title_seed) > 40 else "")
-    session = ChatSession(course_id=course_id, module_id=module_id, title=title)
+    session = ChatSession(course_id=course_id, user_id=user_id, module_id=module_id, title=title)
     db.add(session)
     db.flush()
     return session
@@ -84,13 +86,14 @@ def post_chat_message(
     request: Request, course_id: uuid.UUID, payload: ChatRequest, db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    require_course_owner(db.get(Course, course_id), current_user)
+    require_course_reader(db, db.get(Course, course_id), current_user)
 
     message = payload.message.strip()
     if not message:
         raise HTTPException(status_code=400, detail="message is required")
+    count_learner_chat(db, current_user)
 
-    session = _get_or_create_session(db, course_id, payload.session_id, message)
+    session = _get_or_create_session(db, course_id, payload.session_id, message, current_user.id)
 
     user_message = ChatMessage(session_id=session.id, role=ChatRole.user, content=message, citations=[])
     db.add(user_message)
@@ -142,11 +145,12 @@ class _Turn:
 
 def _start_turn(db: Session, course_id: uuid.UUID, payload: ChatRequest, user: User) -> _Turn:
     """Saves the question and closes the session: an answer takes seconds, and must not hold a connection."""
-    require_course_owner(db.get(Course, course_id), user)
+    require_course_reader(db, db.get(Course, course_id), user)
     message = payload.message.strip()
     if not message:
         raise HTTPException(status_code=400, detail="message is required")
-    session = _get_or_create_session(db, course_id, payload.session_id, message)
+    count_learner_chat(db, user)
+    session = _get_or_create_session(db, course_id, payload.session_id, message, user.id)
     question = ChatMessage(session_id=session.id, role=ChatRole.user, content=message, citations=[])
     db.add(question)
     db.flush()
@@ -246,12 +250,13 @@ class LatestChatResponse(BaseModel):
 def get_latest_chat(
     course_id: uuid.UUID, db: Session = Depends(get_db), current_user: User = Depends(get_current_user),
 ):
-    """The course chat the lecturer used last, so that reloading the page or opening it on another
+    """The course chat this person used last, so that reloading the page or opening it on another
     machine continues it. Last used, not last created: by its newest message."""
-    require_course_owner(db.get(Course, course_id), current_user)
+    require_course_reader(db, db.get(Course, course_id), current_user)
     session = db.scalar(
         select(ChatSession).join(ChatMessage)
-        .where(ChatSession.course_id == course_id, ChatSession.module_id.is_(None))
+        .where(ChatSession.course_id == course_id, ChatSession.user_id == current_user.id,
+               ChatSession.module_id.is_(None))
         .order_by(ChatMessage.created_at.desc()).limit(1)
     )
     if session is None:
@@ -267,10 +272,11 @@ def get_chat_history(
     course_id: uuid.UUID, session_id: uuid.UUID, db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    require_course_owner(db.get(Course, course_id), current_user)
+    require_course_reader(db, db.get(Course, course_id), current_user)
 
     session = db.get(ChatSession, session_id)
-    if session is None or session.course_id != course_id or session.module_id is not None:
+    if (session is None or session.course_id != course_id or session.module_id is not None
+            or session.user_id != current_user.id):
         raise HTTPException(status_code=404, detail="Chat session not found")
     return [
         ChatMessageResponse(id=m.id, role=m.role.value, content=m.content, citations=m.citations)

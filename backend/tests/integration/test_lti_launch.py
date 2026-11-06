@@ -16,7 +16,16 @@ from app.db import RequestSessionLocal, SessionLocal
 from app.jobs.maintenance import purge_old_records
 from app.lti import launch as lti
 from app.main import app
-from app.models import Course, LtiIdentity, LtiLaunchCode, LtiLoginState, LtiPlatform, User
+from app.models import (
+    Course,
+    Document,
+    DocumentStatus,
+    LtiIdentity,
+    LtiLaunchCode,
+    LtiLoginState,
+    LtiPlatform,
+    User,
+)
 from scripts.register_lti_platform import register
 
 client = TestClient(app, follow_redirects=False)
@@ -129,13 +138,124 @@ def test_launching_again_reuses_the_person_and_the_course(lms):
     assert second["course_id"] == first["course_id"]
 
 
-def test_a_learner_is_refused_and_signed_in_as_no_one(lms):
-    response = launch(lms, **{lti.CLAIM + "roles": [LEARNER]})
+STUDENT = {"sub": "lms-student-3", "name": "Tran Thi B", "email": "student@lms.example.edu", lti.CLAIM + "roles": [LEARNER]}
+
+
+def _bearer(body):
+    return {"Authorization": f"Bearer {body['access_token']}"}
+
+
+def test_a_learner_before_the_instructor_opened_the_tool_is_refused_and_signed_in_as_no_one(lms):
+    response = launch(lms, **STUDENT)
 
     assert response.status_code == 400
-    assert "giảng viên" in response.text
+    assert "chưa thiết lập" in response.text
     with SessionLocal() as db:
         assert db.scalar(select(LtiIdentity).where(LtiIdentity.platform_id == lms.platform_id)) is None
+
+
+def test_a_launch_with_neither_role_is_refused(lms):
+    response = launch(lms, **{**STUDENT, lti.CLAIM + "roles": ["http://purl.imsglobal.org/vocab/lis/v2/membership#Mentor"]})
+
+    assert response.status_code == 400
+
+
+def test_a_learner_joins_the_course_the_instructor_opened_and_can_only_chat(lms, monkeypatch):
+    lecturer = trade(launch(lms)).json()
+    response = launch(lms, **STUDENT)
+    assert response.status_code == 303, response.text
+    student = trade(response).json()
+
+    assert student["course_id"] == lecturer["course_id"]
+    assert student["user"]["can_author"] is False and lecturer["user"]["can_author"] is True
+    assert (student["course_role"], lecturer["course_role"]) == ("member", "owner")
+    course, headers = student["course_id"], _bearer(student)
+    # Nothing of authoring: no course list, no new course, nothing under the course.
+    assert client.get("/courses", headers=headers).json() == []
+    assert client.post("/courses", json={"name": "Mine"}, headers=headers).status_code == 403
+    with SessionLocal() as db:
+        document = Document(course_id=uuid.UUID(course), filename="notes.pdf", status=DocumentStatus.embedded)
+        db.add(document)
+        db.commit()
+        document_id = str(document.id)
+    owner = _bearer(lecturer)
+    for method, path in (("get", f"/documents?course_id={course}"), ("get", f"/modules?document_id={document_id}"),
+                         ("post", f"/modules/generate?document_id={document_id}")):
+        assert getattr(client, method)(path, headers=headers).status_code == 404, path
+        # The lecturer reaches the same one, so the student's 404 is a refusal, not a wrong path.
+        assert getattr(client, method)(path, headers=owner).status_code not in (404, 405), path
+    # The chat: a course with no material yet answers that it is not covered, without a model call.
+    answer = client.post(f"/courses/{course}/chat", json={"message": "Tiến trình là gì?"}, headers=headers)
+    assert answer.status_code == 200, answer.text
+    latest = client.get(f"/courses/{course}/chat/latest", headers=headers).json()
+    assert latest["session_id"] == answer.json()["session_id"]
+    # The lecturer does not read the student's chat.
+    assert client.get(f"/courses/{course}/chat/latest", headers=_bearer(lecturer)).json()["session_id"] is None
+    assert client.get(f"/courses/{course}/chat/{latest['session_id']}/history",
+                      headers=_bearer(lecturer)).status_code == 404
+
+
+def test_a_learner_launching_again_stays_one_member(lms):
+    trade(launch(lms))
+    first = trade(launch(lms, **STUDENT)).json()
+    second = trade(launch(lms, **STUDENT)).json()
+
+    assert second["user"]["id"] == first["user"]["id"]
+    with SessionLocal() as db:
+        assert db.scalar(text("SELECT count(*) FROM course_members WHERE user_id = :u"), {"u": first["user"]["id"]}) == 1
+
+
+def test_a_learner_has_a_daily_chat_limit(lms, monkeypatch):
+    monkeypatch.setattr(settings, "learner_daily_chat_limit", 1)
+    lecturer = trade(launch(lms)).json()
+    student = trade(launch(lms, **STUDENT)).json()
+    course = student["course_id"]
+
+    assert client.post(f"/courses/{course}/chat", json={"message": "a"}, headers=_bearer(student)).status_code == 200
+    refused = client.post(f"/courses/{course}/chat/stream", json={"message": "b"}, headers=_bearer(student))
+    assert refused.status_code == 429
+    # Lecturers are not counted.
+    for message in ("a", "b"):
+        assert client.post(f"/courses/{course}/chat", json={"message": message},
+                           headers=_bearer(lecturer)).status_code == 200
+
+
+def test_an_instructor_launch_makes_a_student_account_an_author(lms):
+    trade(launch(lms))
+    trade(launch(lms, **STUDENT))
+
+    teaching = trade(launch(lms, **{**STUDENT, lti.CLAIM + "roles": [INSTRUCTOR],
+                                    lti.CLAIM + "context": {"id": "course-99", "title": "Mạng máy tính"}})).json()
+
+    assert teaching["user"]["can_author"] is True
+    assert [c["name"] for c in client.get("/courses", headers=_bearer(teaching)).json()] == ["Mạng máy tính"]
+
+
+def test_an_author_who_takes_a_course_as_learner_is_a_member_of_it(lms):
+    """A lecturer with an account here who studies in another lecturer's LMS course: the launch opens that course's
+    chat, not the author pages, where everything would answer 404."""
+    trade(launch(lms))
+    own = trade(launch(lms, sub="lms-user-9", name="Other lecturer", email="other@lms.example.edu",
+                       **{lti.CLAIM + "context": {"id": "course-77", "title": "Của mình"}})).json()
+    assert own["course_role"] == "owner"
+
+    studying = trade(launch(lms, sub="lms-user-9", **{lti.CLAIM + "roles": [LEARNER]})).json()
+
+    assert studying["user"]["id"] == own["user"]["id"]
+    assert studying["user"]["can_author"] is True
+    assert studying["course_role"] == "member"
+    assert studying["course_id"] != own["course_id"]
+
+
+def test_a_member_launching_as_instructor_does_not_get_the_course(lms):
+    """A student who later teaches the same LMS course must not author the lecturer's course here."""
+    trade(launch(lms))
+    trade(launch(lms, **STUDENT))
+
+    response = launch(lms, **{**STUDENT, lti.CLAIM + "roles": [INSTRUCTOR]})
+
+    assert response.status_code == 400
+    assert "giảng viên khác" in response.text
 
 
 @pytest.mark.parametrize("change", [

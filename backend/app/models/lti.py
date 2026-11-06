@@ -87,3 +87,14 @@ class LtiLaunchCode(Base):
     user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
     course_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("courses.id", ondelete="CASCADE"), index=True)
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+
+
+class CourseMember(Base):
+    """Someone who may chat with a course's material without owning it: a student, added by their own
+    LTI launch. Unlike the tables above it is under row level security (migration 0027)."""
+    __tablename__ = "course_members"
+
+    course_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("courses.id", ondelete="CASCADE"), primary_key=True)
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), primary_key=True, index=True)
+    source: Mapped[str] = mapped_column(default="lti", server_default="lti")
+    created_at: Mapped[datetime] = created_at_column()

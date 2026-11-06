@@ -13,8 +13,10 @@ No cookie is used at any step: the tool often runs in an iframe of the LMS, wher
 block third-party cookies. The state lives in the database, so any api task can finish a
 launch another one started.
 
-Only instructors are let in. A student launch is refused until course membership exists in
-row level security (docs/architecture/scalable-design.md, section 14).
+An instructor's launch maps the LMS course to a course here, made the first time. A learner's launch
+makes them a member of that course, which lets them chat with its material and nothing else (migration
+0027); before the instructor has opened the tool in that LMS course there is nothing to join, and the
+launch is refused.
 """
 
 import hashlib
@@ -36,6 +38,7 @@ from app.auth.security import hash_password
 from app.config import settings
 from app.models import (
     Course,
+    CourseMember,
     LtiContext,
     LtiDeployment,
     LtiIdentity,
@@ -56,6 +59,10 @@ INSTRUCTOR_ROLES = {
     "http://purl.imsglobal.org/vocab/lis/v2/membership#Instructor",
     # The short form LTI 1.1 used, which some platforms still send.
     "Instructor",
+}
+LEARNER_ROLES = {
+    "http://purl.imsglobal.org/vocab/lis/v2/membership#Learner",
+    "Learner",
 }
 
 
@@ -209,13 +216,13 @@ def validate_id_token(db: Session, platform: LtiPlatform, id_token: str, nonce: 
         deployment_id=str(deployment_id),
         context_id=str(context["id"]),
         context_title=str(context.get("title") or context.get("label") or "Khóa học từ LMS"),
-        name=name or "Giảng viên",
+        name=name or "",
         email=claims.get("email"),
         roles=list(claims.get(CLAIM + "roles") or []),
     )
 
 
-def _act_as(db: Session, user_id: uuid.UUID) -> None:
+def act_as(db: Session, user_id: uuid.UUID) -> None:
     """From here the request is this user's, under row level security like any signed-in request
     (see app/api/deps.py: SET LOCAL now, and again on every later transaction)."""
     db.info["rls_user_id"] = user_id
@@ -226,7 +233,7 @@ def _moodle_id(value: str) -> int | None:
     return int(value) if value.isdigit() else None
 
 
-def _user_for(db: Session, platform: LtiPlatform, claims: LaunchClaims) -> User:
+def _user_for(db: Session, platform: LtiPlatform, claims: LaunchClaims, *, instructor: bool) -> User:
     identity = db.scalar(select(LtiIdentity).where(
         LtiIdentity.platform_id == platform.id, LtiIdentity.sub == claims.sub))
     if identity is not None:
@@ -239,14 +246,17 @@ def _user_for(db: Session, platform: LtiPlatform, claims: LaunchClaims) -> User:
             # same person, now confirmed by Moodle's signature as well.
             user = db.scalar(select(User).where(User.moodle_user_id == moodle_user_id))
         if user is None:
-            user = _new_user(db, claims, moodle_user_id)
+            user = _new_user(db, claims, moodle_user_id, can_author=instructor)
         db.add(LtiIdentity(platform_id=platform.id, sub=claims.sub, user_id=user.id))
     if user is None or not user.is_active:
         raise LaunchRefused("account disabled", "Tài khoản đã bị vô hiệu hóa. Vui lòng liên hệ admin.")
+    if instructor and not user.can_author:
+        # The LMS says this person teaches a course: a student account that now teaches may author.
+        user.can_author = True
     return user
 
 
-def _new_user(db: Session, claims: LaunchClaims, moodle_user_id: int | None) -> User:
+def _new_user(db: Session, claims: LaunchClaims, moodle_user_id: int | None, *, can_author: bool) -> User:
     # The LMS's email is used when it is free. It is never used to join an existing account:
     # nothing in a launch proves the person owns that address here.
     email = None
@@ -260,13 +270,14 @@ def _new_user(db: Session, claims: LaunchClaims, moodle_user_id: int | None) -> 
     try:
         name = clean_name(claims.name)
     except AccountError:
-        name = "Giảng viên"
+        name = "Giảng viên" if can_author else "Sinh viên"
     user = User(
         email=email or f"lti-{uuid.uuid4().hex}@lti.invalid",
         name=name[:100],
         # A password nobody knows: this account signs in through the LMS only.
         hashed_password=hash_password(secrets.token_urlsafe(32)),
         moodle_user_id=moodle_user_id,
+        can_author=can_author,
     )
     db.add(user)
     db.flush()
@@ -278,9 +289,10 @@ def _course_for(db: Session, platform: LtiPlatform, claims: LaunchClaims, user: 
         LtiContext.platform_id == platform.id, LtiContext.deployment_id == claims.deployment_id,
         LtiContext.context_id == claims.context_id))
     if context is not None:
-        # Under row level security: another lecturer's course is not visible, so None.
+        # Under row level security: another lecturer's course is not visible, so None, unless this person
+        # joined it as a student, which does not make it theirs to author.
         course = db.get(Course, context.course_id)
-        if course is None:
+        if course is None or course.owner_id != user.id:
             raise LaunchRefused(
                 "context owned by another user",
                 "Khóa học này đã được một giảng viên khác mở trong công cụ. "
@@ -302,20 +314,41 @@ def _course_for(db: Session, platform: LtiPlatform, claims: LaunchClaims, user: 
     return course
 
 
+def _joined_course(db: Session, platform: LtiPlatform, claims: LaunchClaims, user: User) -> Course:
+    """The course a learner's LMS course opens, with the learner a member of it."""
+    context = db.scalar(select(LtiContext).where(
+        LtiContext.platform_id == platform.id, LtiContext.deployment_id == claims.deployment_id,
+        LtiContext.context_id == claims.context_id))
+    if context is None:
+        raise LaunchRefused("no instructor has opened this context",
+                            "Giảng viên chưa thiết lập công cụ cho khóa học này. Hãy thử lại sau.")
+    already = db.scalar(select(CourseMember.user_id).where(
+        CourseMember.course_id == context.course_id, CourseMember.user_id == user.id))
+    course = db.get(Course, context.course_id)
+    if already is None and (course is None or course.owner_id != user.id):
+        db.add(CourseMember(course_id=context.course_id, user_id=user.id))
+        db.flush()
+        # Visible now, through the membership just added.
+        course = db.get(Course, context.course_id)
+    if course is None:
+        raise LaunchRefused("joined course not visible", "Hãy mở lại hoạt động từ LMS.")
+    return course
+
+
 def launch(db: Session, *, id_token: str, state: str, now: datetime | None = None) -> tuple[str, uuid.UUID]:
-    """(launch code, course id) for a valid instructor launch. The caller commits."""
+    """(launch code, course id) for a valid instructor or learner launch. The caller commits."""
     now = now or datetime.now(UTC)
     login_state = _spend_state(db, state, now)
     platform = db.get(LtiPlatform, login_state.platform_id)
     claims = validate_id_token(db, platform, id_token, login_state.nonce)
-    if not INSTRUCTOR_ROLES.intersection(claims.roles):
-        raise LaunchRefused("not an instructor",
-                            "Hiện công cụ chỉ dành cho giảng viên của khóa học. Sinh viên sẽ dùng được ở bản sau.")
+    instructor = bool(INSTRUCTOR_ROLES.intersection(claims.roles))
+    if not instructor and not LEARNER_ROLES.intersection(claims.roles):
+        raise LaunchRefused(f"roles {claims.roles!r}", "Công cụ dành cho giảng viên và sinh viên của khóa học.")
 
     try:
-        user = _user_for(db, platform, claims)
-        _act_as(db, user.id)
-        course = _course_for(db, platform, claims, user)
+        user = _user_for(db, platform, claims, instructor=instructor)
+        act_as(db, user.id)
+        course = _course_for(db, platform, claims, user) if instructor else _joined_course(db, platform, claims, user)
         db.flush()
     except IntegrityError as error:
         # Two launches of the same new person or course at once: one wins, the other retries.

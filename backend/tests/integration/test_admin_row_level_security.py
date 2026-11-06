@@ -52,7 +52,7 @@ def world():
         db.add(component)
         db.flush()
         db.add(Question(component_id=component.id, stem="secret", choices={"options": ["A", "B"]}, answer_key="0"))
-        session = ChatSession(course_id=course.id, title="chat")
+        session = ChatSession(course_id=course.id, user_id=course.owner_id, title="chat")
         db.add(session)
         db.flush()
         db.add(ChatMessage(session_id=session.id, role=ChatRole.user, content="secret chat", citations=[]))

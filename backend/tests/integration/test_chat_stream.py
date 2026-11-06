@@ -278,7 +278,7 @@ def _seed_session(course_id: str, *contents: str, minutes_ago: int, module: bool
             db.add(row)
             db.flush()
             module_id = row.id
-        session = ChatSession(course_id=course_uuid, module_id=module_id)
+        session = ChatSession(course_id=course_uuid, user_id=db.get(Course, course_uuid).owner_id, module_id=module_id)
         db.add(session)
         db.flush()
         start = datetime.now(UTC) - timedelta(minutes=minutes_ago)

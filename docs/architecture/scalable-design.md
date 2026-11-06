@@ -381,7 +381,7 @@ sequenceDiagram
 Lưu ý khi cài đặt:
 
 - Khóa danh tính là `(iss, sub)`, không phải email. Theo chuẩn, `sub` là duy nhất trong một platform; thêm deployment vào khóa sẽ tạo hai tài khoản cho một người. Đã cài, xem `docs/integration/lti.md`.
-- RLS hiện lọc theo chủ sở hữu, nên muốn sinh viên chat thì phải thêm quan hệ thành viên khóa học. Đây là thay đổi về bảo mật, cần test riêng.
+- Sinh viên chat được nhờ quan hệ thành viên khóa học (migration 0027): thành viên chỉ đọc khóa học, tài liệu và chunk; mọi thao tác ghi vẫn đòi là chủ; phiên chat thuộc về người chat. Đã cài và test, xem `docs/integration/lti.md`.
 - Công cụ chạy trong iframe gặp hạn chế cookie bên thứ ba, nên không dùng cookie để giữ `state` hoặc phiên.
 - Cần chạy thử với Moodle 5.2 của dự án, vì tài liệu tìm được mô tả bản 4.x.
 

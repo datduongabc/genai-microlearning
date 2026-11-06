@@ -35,6 +35,13 @@ class UserResponse(BaseModel):
     email: str
     name: str
     is_admin: bool
+    # False for a student account made by an LMS launch: the interface shows it the course chat only.
+    can_author: bool = True
+
+    @classmethod
+    def of(cls, user) -> "UserResponse":
+        return cls(id=str(user.id), email=user.email, name=user.name, is_admin=user.is_admin,
+                   can_author=user.can_author)
 
 
 class Token(BaseModel):
@@ -69,7 +76,7 @@ def register(request: Request, payload: RegisterRequest, db: Session = Depends(g
         log_auth_event(audit.REGISTER_REJECTED, request, email=payload.email, detail={"status": error.status_code})
         raise HTTPException(status_code=error.status_code, detail=error.detail) from error
     log_auth_event(audit.REGISTER_SUCCESS, request, user_id=user.id, email=user.email)
-    return UserResponse(id=str(user.id), email=user.email, name=user.name, is_admin=user.is_admin)
+    return UserResponse.of(user)
 
 
 @router.post("/login", response_model=Token)
@@ -88,7 +95,7 @@ def login(request: Request, payload: LoginRequest, db: Session = Depends(get_db)
     db.commit()
     log_auth_event(audit.LOGIN_SUCCESS, request, user_id=user.id, email=user.email)
     return Token(access_token=access_token, refresh_token=refresh_token,
-                 user=UserResponse(id=str(user.id), email=user.email, name=user.name, is_admin=user.is_admin))
+                 user=UserResponse.of(user))
 
 
 @router.post("/refresh", response_model=AccessTokenResponse)

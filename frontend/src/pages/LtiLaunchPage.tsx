@@ -22,7 +22,8 @@ export function LtiLaunchPage() {
       return;
     }
     loginWithLaunchCode(code)
-      .then((courseId) => navigate(`/courses/${courseId}`, { replace: true }))
+      .then(({ courseId, owner }) =>
+        navigate(owner ? `/courses/${courseId}` : `/learn/${courseId}`, { replace: true }))
       .catch((err: unknown) => {
         const detail = isAxiosError(err) ? err.response?.data?.detail : null;
         setError(typeof detail === "string" ? detail : "Không mở được công cụ. Hãy mở lại hoạt động từ LMS.");

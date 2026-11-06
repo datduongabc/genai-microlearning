@@ -64,7 +64,7 @@ def world():
         component = ModuleComponent(module_id=module.id, type=ComponentType.quiz, content={})
         db.add(component)
         db.add(Evaluation(module_id=module.id, criterion="c", score=1.0))
-        session = ChatSession(course_id=course.id, title="t")
+        session = ChatSession(course_id=course.id, user_id=owner.id, title="t")
         db.add(session)
         db.flush()
         db.add(Question(component_id=component.id, stem="s", choices={"options": []}, answer_key="0"))
@@ -156,7 +156,8 @@ def test_another_user_cannot_change_or_take_over_a_course(world):
     "statement",
     [
         "insert into modules (id, document_id, course_id, title) values (gen_random_uuid(), :document, :course, 'x')",
-        "insert into chat_sessions (id, course_id, title) values (gen_random_uuid(), :course, 'x')",
+        ("insert into chat_sessions (id, course_id, user_id, title) values (gen_random_uuid(), :course, "
+         "NULLIF(current_setting('app.current_user_id', true), '')::uuid, 'x')"),
         "insert into documents (id, course_id, filename, status) values (gen_random_uuid(), :course, 'x', 'uploaded')",
     ],
     ids=["module", "chat-session", "document"],
