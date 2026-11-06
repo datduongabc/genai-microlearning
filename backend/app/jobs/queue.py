@@ -46,6 +46,8 @@ SWEEP_INTERVAL_SECONDS = 60
 MAINTENANCE_INTERVAL_SECONDS = 60 * 60
 MAINTENANCE_FIRST_RUN_DELAY_SECONDS = 60
 POLL_INTERVAL_SECONDS = 2.0
+# One CloudWatch data point a minute, the finest that standard resolution keeps.
+METRICS_INTERVAL_SECONDS = 60
 
 
 def jittered_backoff(attempts: int) -> float:
@@ -153,8 +155,28 @@ def _beat_until(stop: threading.Event, job_id: uuid.UUID, worker_id: str) -> Non
             logger.exception(f"[job_queue] heartbeat failed for job {job_id}")
 
 
+_active_jobs = 0
+_active_jobs_lock = threading.Lock()
+
+
+def has_active_jobs() -> bool:
+    """Whether this process is running a job now; see app/jobs/ecs_protection.py."""
+    return _active_jobs > 0
+
+
 def run_claimed_job(job: Job, worker_id: str) -> None:
     """Run a job this worker claimed, beating for it the whole time, and record a failure."""
+    global _active_jobs
+    with _active_jobs_lock:
+        _active_jobs += 1
+    try:
+        _run_with_heartbeat(job, worker_id)
+    finally:
+        with _active_jobs_lock:
+            _active_jobs -= 1
+
+
+def _run_with_heartbeat(job: Job, worker_id: str) -> None:
     stop = threading.Event()
     beater = threading.Thread(target=_beat_until, args=(stop, job.id, worker_id), daemon=True)
     beater.start()
@@ -268,7 +290,27 @@ def execute_job_step(job: Job) -> None:
 
 
 _worker_threads: list[threading.Thread] = []
+_worker_ids: list[str] = []
 _stop_event = threading.Event()
+
+
+def release_jobs_of(worker_ids: list[str]) -> int:
+    """Puts the jobs these workers still hold back in the queue, due now and with the attempt not
+    counted: the worker is stopping, the job did not fail. Without it they would sit as running
+    until the sweeper's threshold, 15 minutes, on every deploy and every scale-in."""
+    if not worker_ids:
+        return 0
+    db = WorkerSessionLocal()
+    try:
+        result = db.execute(
+            update(Job)
+            .where(Job.status == JobStatus.running, Job.locked_by.in_(worker_ids))
+            .values(status=JobStatus.queued, locked_at=None, locked_by=None, run_after=func.now())
+        )
+        db.commit()
+        return result.rowcount
+    finally:
+        db.close()
 
 
 def _worker_loop(worker_id: str, *, run_sweeper: bool) -> None:
@@ -309,18 +351,36 @@ def _worker_loop(worker_id: str, *, run_sweeper: bool) -> None:
     logger.info(f"[job_queue] worker {worker_id} stopped")
 
 
+def _metrics_loop() -> None:
+    """A thread of its own: the sweeper's thread also runs jobs, and a backlog is exactly when it
+    would be busy with a long one and the scaling signal would stop."""
+    from app.jobs.metrics import report_queue_metrics
+
+    while not _stop_event.wait(METRICS_INTERVAL_SECONDS):
+        try:
+            report_queue_metrics()
+        except Exception:
+            logger.exception("[job_queue] queue metrics error")
+
+
 def start_worker() -> None:
     """Runs settings.worker_pool_size job threads in this process: the API process when
     run_job_worker is true, otherwise the worker process (app/jobs/worker.py). claim_next_job()
     uses FOR UPDATE SKIP LOCKED, so threads and processes never claim the same job."""
-    global _worker_threads
+    global _worker_threads, _worker_ids
     if _worker_threads and any(t.is_alive() for t in _worker_threads):
         return
     _stop_event.clear()
     _worker_threads = []
+    _worker_ids = []
     for i in range(settings.worker_pool_size):
         worker_id = f"worker-{uuid.uuid4().hex[:6]}"
+        _worker_ids.append(worker_id)
         t = threading.Thread(target=_worker_loop, args=(worker_id,), kwargs={"run_sweeper": i == 0}, daemon=True)
+        t.start()
+        _worker_threads.append(t)
+    if settings.queue_metrics:
+        t = threading.Thread(target=_metrics_loop, daemon=True)
         t.start()
         _worker_threads.append(t)
 
@@ -330,5 +390,13 @@ def stop_worker() -> None:
 
     _stop_event.set()
     document_readers._ASR_EXECUTOR.shutdown(wait=False, cancel_futures=True)
+    # A job that ends within the grace finishes normally. ECS gives a stopping task stopTimeout
+    # (120 s at most on Fargate) before it kills it, so the grace must stay below that.
+    deadline = time.monotonic() + settings.worker_shutdown_grace_seconds
     for t in _worker_threads:
-        t.join(timeout=5)
+        t.join(timeout=max(0.0, deadline - time.monotonic()))
+    if any(t.is_alive() for t in _worker_threads):
+        # The process exits right after this, so a still-running job cannot write after its release.
+        released = release_jobs_of(_worker_ids)
+        if released:
+            logger.warning(f"[job_queue] stopping with {released} job(s) unfinished, put back in the queue")

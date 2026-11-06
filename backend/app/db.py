@@ -1,5 +1,9 @@
+import threading
+from concurrent.futures import Future, ThreadPoolExecutor
+
 from sqlalchemy import create_engine, event, text
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
+from sqlalchemy.pool import NullPool
 
 from app.config import settings
 
@@ -49,6 +53,44 @@ worker_engine = create_engine(
     pool_size=(2 + settings.question_concurrency) * settings.worker_pool_size + 2, max_overflow=2,
 )
 WorkerSessionLocal = sessionmaker(bind=worker_engine, autoflush=False, autocommit=False)
+
+
+# For /ready alone: the request pool is exactly as large as the requests served at once, so a
+# check drawn from it would wait behind a busy API and report a healthy task as down. NullPool:
+# each check opens a fresh connection, so a socket left hanging by an earlier failure is never reused.
+readiness_engine = create_engine(
+    settings.app_runtime_database_url, poolclass=NullPool,
+    # tcp_user_timeout ends a connection whose packets go unacknowledged, as when the host is gone.
+    connect_args={"connect_timeout": 2, "tcp_user_timeout": 2000, "options": "-c statement_timeout=2000"},
+)
+READINESS_TIMEOUT_SECONDS = 2.0
+_readiness_pool = ThreadPoolExecutor(max_workers=1, thread_name_prefix="readiness")
+_readiness_check: Future | None = None
+_readiness_lock = threading.Lock()
+
+
+def _select_one() -> None:
+    with readiness_engine.connect() as connection:
+        connection.execute(text("SELECT 1"))
+
+
+def database_ready() -> bool:
+    """Whether the database answers within READINESS_TIMEOUT_SECONDS.
+
+    The timeouts above cannot end a connection the server accepted and then stopped answering
+    on: its packets are acknowledged, and statement_timeout needs the server to run. So the check
+    runs in a thread and is given up on at the deadline. A check still hanging from before counts
+    as not ready, and no second one is started next to it."""
+    global _readiness_check
+    with _readiness_lock:
+        if _readiness_check is None or _readiness_check.done():
+            _readiness_check = _readiness_pool.submit(_select_one)
+        check = _readiness_check
+    try:
+        check.result(timeout=READINESS_TIMEOUT_SECONDS)
+        return True
+    except Exception:
+        return False
 
 
 class Base(DeclarativeBase):

@@ -325,8 +325,6 @@ def test_loading_pair_survives_job_retention(world):
 def test_study_reference_blocks_deletion_before_file_removal(world, kind, monkeypatch):
     from pathlib import Path
 
-    from app.api import documents
-
     sid = create_study(world)
     assert load(world, sid, module_ids=[str(world["rag"])]).status_code == 201
     with SessionLocal() as db:
@@ -335,7 +333,7 @@ def test_study_reference_blocks_deletion_before_file_removal(world, kind, monkey
     upload_dir.mkdir(parents=True, exist_ok=True)
     upload = upload_dir / f"{document_id}.txt"
     upload.write_text("retained upload")
-    monkeypatch.setattr(documents.settings, "upload_storage_dir", str(upload_dir))
+    monkeypatch.setattr(settings, "upload_storage_dir", str(upload_dir))
     target = {"modules": world["rag"], "documents": document_id, "courses": world["course"]}[kind]
     try:
         response = client.delete(f"/{kind}/{target}", headers=world["headers"])

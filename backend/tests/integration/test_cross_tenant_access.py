@@ -267,7 +267,8 @@ def test_a_lecturer_cannot_use_the_admin_pages(world, layers):
         assert client.post(f"/admin/users/{uuid.uuid4()}/disable", headers=headers).status_code == 404
 
 
-PUBLIC = {"/auth/register", "/health", "/auth/login", "/auth/refresh", "/auth/logout"}
+# /ready is called by the load balancer, which has no login. It says only whether the database answers.
+PUBLIC = {"/auth/register", "/health", "/ready", "/auth/login", "/auth/refresh", "/auth/logout"}
 RESOURCE_QUERY = {"course_id", "document_id"}
 BODY_METHODS = {"POST", "PATCH", "PUT"}
 

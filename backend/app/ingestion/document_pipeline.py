@@ -5,7 +5,6 @@ HTTP treo cả phiên, và để retry tự động khi gặp lỗi tạm thời
 thay vì người dùng phải tải lại file."""
 
 import json
-import os
 from dataclasses import asdict
 
 from app.db import WorkerSessionLocal
@@ -16,6 +15,7 @@ from app.ingestion.embeddings import embed_texts
 from app.models import Chunk as ChunkModel
 from app.models import Document, DocumentStatus, Job, JobStatus
 from app.retrieval.search import invalidate_sparse_cache
+from app.storage import uploaded_file
 
 
 def run_document_pipeline_step(job) -> None:
@@ -36,13 +36,17 @@ def _run_extract(job) -> None:
         doc = db.get(Document, current_job.document_id)
         if doc is None:
             raise ValueError(f"Document {current_job.document_id} not found")
-        storage_path = current_job.payload["storage_path"]
+        upload = uploaded_file(current_job.payload)
+        if upload is None:
+            raise ValueError(f"extract: no uploaded file in payload for document {doc.id}")
+        store, storage_key = upload
         course_id, filename = str(doc.course_id), doc.filename
 
         doc.status = DocumentStatus.processing
         db.commit()
 
-        units = read_document(storage_path, course_id=course_id, source_id=filename)
+        with store.local_copy(storage_key) as path:
+            units = read_document(path, course_id=course_id, source_id=filename)
         doc.raw_text = "\n\n".join(u.text for u in units if u.text)
         # Persist before rejecting an unreadable document, and keep them after job cleanup.
         doc.extraction_warnings = [w for u in units for w in u.warnings]
@@ -110,7 +114,7 @@ def _run_embed(job) -> None:
             ))
 
         course_id = doc.course_id
-        storage_path = current_job.payload.get("storage_path")
+        upload = uploaded_file(current_job.payload)
 
         doc.status = DocumentStatus.embedded
         current_job.status = JobStatus.done
@@ -122,5 +126,6 @@ def _run_embed(job) -> None:
         db.close()
 
     invalidate_sparse_cache(course_id)
-    if storage_path and os.path.exists(storage_path):
-        os.remove(storage_path)
+    if upload is not None:
+        store, storage_key = upload
+        store.delete(storage_key)

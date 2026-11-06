@@ -102,6 +102,21 @@ class Settings(BaseSettings):
     # bộ). Nằm trong bind mount ./backend:/app nên sống sót qua restart
     # container (không phải named volume ephemeral).
     upload_storage_dir: str = "uploads"
+    # "local" keeps the file in upload_storage_dir, which only works when the API and the worker
+    # share that directory (one machine, or the compose bind mount). "s3" is for separate tasks,
+    # as on ECS: the API puts the file in upload_s3_bucket and the worker fetches it from there.
+    # Credentials come from the default AWS chain, which on ECS is the task role.
+    upload_store: Literal["local", "s3"] = "local"
+    upload_s3_bucket: str = ""
+    upload_s3_prefix: str = "uploads/"
+
+    # "json" writes one JSON object per log line, for CloudWatch Logs Insights and metric filters.
+    log_format: Literal["text", "json"] = "text"
+    # How long a stopping worker lets its running jobs finish before it puts them back in the queue.
+    # Below ECS's stopTimeout, which on Fargate is at most 120 s.
+    worker_shutdown_grace_seconds: float = Field(default=5, ge=0)
+    # Queue depth as CloudWatch embedded metric lines, which the worker service scales on. See app/jobs/metrics.py.
+    queue_metrics: bool = False
 
     # False when the jobs run in their own process (python -m app.jobs.worker), so that API
     # and workers scale separately. True keeps a single process working on its own.
@@ -164,6 +179,8 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def _check_environment(self) -> "Settings":
+        if self.upload_store == "s3" and not self.upload_s3_bucket:
+            raise ValueError("UPLOAD_STORE=s3 needs UPLOAD_S3_BUCKET")
         if self.environment == "production":
             problems = self._production_problems()
             if problems:
