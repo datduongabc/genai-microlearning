@@ -136,3 +136,47 @@ def test_an_open_stream_does_not_take_a_slot_from_other_requests():
         return status
 
     assert asyncio.run(scenario()) == 200
+
+
+# --- Answer language: the question's, not the sources' or the history's.
+
+@pytest.mark.parametrize("question, language", [
+    ("Tiến trình là gì?", "vi"),
+    ("cho em hoi tien trinh la gi", "vi"),  # Vietnamese typed without diacritics
+    ("What is a process?", "en"),
+    ("Explain the difference between a process and a thread", "en"),
+    ("And deadlocks?", "en"),
+    ("RAID 5?", None),  # nothing to tell by: the model follows the question
+])
+def test_the_question_language_is_read_from_the_question(question, language):
+    from app.chat.service import question_language
+
+    assert question_language(question) == language
+
+
+def test_an_english_question_after_vietnamese_turns_asks_for_english_last():
+    from app.chat.service import NOT_COVERED_EN, _answer_prompt
+    from app.models import Chunk
+
+    chunk = Chunk(content="Tiến trình là chương trình đang chạy.", source_ref="{}")
+    history = [{"role": "user", "content": "Tiến trình là gì?"},
+               {"role": "assistant", "content": "Tiến trình là chương trình đang chạy."}]
+
+    prompt = _answer_prompt("What is a process?", [chunk], history)
+
+    language = prompt.rsplit("NGÔN NGỮ:", 1)[1]
+    assert prompt.rstrip().endswith(language.rstrip()), "the language line comes after the sources and history"
+    assert "Answer in English" in language and NOT_COVERED_EN in language
+
+
+def test_with_nothing_found_the_reply_is_in_the_question_language():
+    import asyncio
+
+    from app.chat.service import NOT_COVERED, NOT_COVERED_EN, answer_question, stream_answer
+
+    async def collect(question):
+        return [part async for part in stream_answer(question, [], [])]
+
+    assert asyncio.run(collect("What is paging?"))[0] == NOT_COVERED_EN
+    assert asyncio.run(collect("Phân trang là gì?"))[0] == NOT_COVERED
+    assert answer_question("What is paging?", [], []).answer == NOT_COVERED_EN
