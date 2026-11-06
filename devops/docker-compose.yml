@@ -47,7 +47,8 @@ services:
   # Buoc rieng, chay mot lan roi dung. Day la noi duy nhat cam URL cua vai tro
   # chu so huu; tien trinh chay that khong bao gio can quyen do.
   migrate:
-    build: ./backend
+    # Stage dev: uv run va hot reload qua bind mount. Stage cuoi (prod) la cua ECS va load test.
+    build: {context: ./backend, target: dev}
     # Chung image voi backend: thieu dong nay Compose dung mot ban sao rieng nang
     # ca chuc GB, va ban sao do co the cu hon, nen migration chay tren code khac.
     image: do-an-backend
@@ -189,7 +190,8 @@ services:
       start_period: 30s
 
   backend:
-    build: ./backend
+    # Stage dev: uv run va hot reload qua bind mount. Stage cuoi (prod) la cua ECS va load test.
+    build: {context: ./backend, target: dev}
     image: do-an-backend
     container_name: do-an-backend
     depends_on:

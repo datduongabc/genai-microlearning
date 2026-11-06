@@ -133,26 +133,22 @@ locals {
       task_role    = null
     }
     embedder = {
-      image  = var.embedder_image
+      image  = "${aws_ecr_repository.repo["embedder"].repository_url}:${var.image_tag}"
       cpu    = var.embedder.cpu
       memory = var.embedder.memory
-      # Same model and revision as compose. The model is fetched at start into the task's disk;
-      # baking it into an ECR image would start a new task faster.
+      # Model, revision and batch sizes are in the image (devops/embedder), so a new task reads the
+      # model from its own layers instead of fetching 2.4 GB from Hugging Face first.
       command = null
       environment = {
-        MODEL_ID              = "onnx-community/Qwen3-Embedding-0.6B-ONNX"
-        REVISION              = "c25a394dd583836952667c12f008335071b3f43d"
-        POOLING               = "last-token"
-        MAX_BATCH_TOKENS      = "1024"
-        MAX_CLIENT_BATCH_SIZE = "128"
-        PORT                  = "80"
+        PORT = "80"
         # Docker and Fargate set HOSTNAME to the task's own name, which the server would bind to;
         # the health check and Service Connect reach it on every address.
         HOSTNAME = "0.0.0.0"
       }
-      port         = 80
-      health       = "curl -fsS http://127.0.0.1:80/health"
-      start_period = 300 # the most ECS allows
+      port   = 80
+      health = "curl -fsS http://127.0.0.1:80/health"
+      # Loading the ONNX graph from local disk; the image pull happens before this counts.
+      start_period = 120
       stop_timeout = 30
       task_role    = null
     }

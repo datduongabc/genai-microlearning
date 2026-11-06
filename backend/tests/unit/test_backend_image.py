@@ -13,10 +13,23 @@ REPO_ROOT = Path(__file__).resolve().parents[3]
 DOCKERFILE = REPO_ROOT / "backend" / "Dockerfile"
 
 
-def _lenh_khoi_dong() -> list[str]:
-    khop = re.findall(r"^CMD\s+(\[.*\])\s*$", DOCKERFILE.read_text(encoding="utf-8"), re.MULTILINE)
-    assert len(khop) == 1, "backend/Dockerfile phải có đúng một CMD dạng JSON"
+def _stage(name: str) -> str:
+    """The lines of one stage: from its FROM to the next."""
+    stages = re.split(r"^(?=FROM\s)", DOCKERFILE.read_text(encoding="utf-8"), flags=re.MULTILINE)
+    found = [s for s in stages if re.match(rf"FROM\s+\S+\s+AS\s+{name}\s*$", s.splitlines()[0], re.IGNORECASE)]
+    assert len(found) == 1, f"backend/Dockerfile phải có đúng một stage {name}"
+    return found[0]
+
+
+def _cmd(stage: str) -> list[str]:
+    khop = re.findall(r"^CMD\s+(\[.*\])\s*$", _stage(stage), re.MULTILINE)
+    assert len(khop) == 1, f"stage {stage} phải có đúng một CMD dạng JSON"
     return json.loads(khop[0])
+
+
+def _lenh_khoi_dong() -> list[str]:
+    """Stage dev, which compose runs over the bind mount."""
+    return _cmd("dev")
 
 
 def test_tu_nap_lai_chi_theo_doi_ma_ung_dung():
@@ -39,7 +52,55 @@ def test_tu_nap_lai_do_dinh_ky_chu_khong_cho_su_kien_tu_he_dieu_hanh():
     if "--reload" not in _lenh_khoi_dong():
         return
 
-    env = re.findall(r"^ENV\s+(.+)$", DOCKERFILE.read_text(encoding="utf-8"), re.MULTILINE)
+    env = re.findall(r"^ENV\s+(.+)$", _stage("dev"), re.MULTILINE)
     gia_tri = {k: v for dong in env for k, _, v in [dong.strip().partition("=")]}
 
     assert gia_tri.get("WATCHFILES_FORCE_POLLING", "").lower() == "true"
+
+
+def test_the_last_stage_is_the_one_that_runs_on_ecs():
+    """deploy.sh and the load test build without a target, which is the last stage."""
+    last = re.findall(r"^FROM\s+\S+\s+AS\s+(\S+)", DOCKERFILE.read_text(encoding="utf-8"), re.MULTILINE)[-1]
+    assert last == "prod"
+
+
+def test_prod_holds_neither_the_build_tools_nor_the_tests():
+    """uv, the dev dependencies and tests/ only build or test the app; in the image that runs they are size and
+    tools for whoever gets into it. The code is copied by name, so nothing new slips in with `COPY . .`."""
+    prod = _stage("prod")
+    command = _cmd("prod")
+
+    assert "--reload" not in command and command[0] != "uv"
+    assert not re.search(r"COPY\s+--from=uv\b", prod), "uv stays in the deps stage"
+    assert not re.search(r"^COPY\s+(--\S+\s+)*\.\s", prod, re.MULTILINE), "no COPY of the whole context"
+    assert "tests" not in prod
+    assert "--no-dev" in _stage("deps")
+
+
+def test_compose_builds_the_dev_stage():
+    import yaml
+
+    compose = yaml.safe_load((REPO_ROOT / "devops" / "docker-compose.yml").read_text(encoding="utf-8"))
+    built = {name: s["build"] for name, s in compose["services"].items()
+             if isinstance(s.get("build"), (str, dict)) and "backend" in str(s["build"])}
+
+    assert built and all(isinstance(b, dict) and b.get("target") == "dev" for b in built.values()), built
+
+
+def test_the_ecs_commands_exist_in_the_prod_image():
+    """The task definitions run these by absolute path: the venv must be where they look."""
+    ecs = (REPO_ROOT / "infra" / "terraform" / "ecs.tf").read_text(encoding="utf-8")
+
+    assert set(re.findall(r'"(/app/[^"]+)"', ecs)) <= {"/app/.venv/bin/uvicorn", "/app/.venv/bin/python",
+                                                       "/app/.venv/bin/alembic"}
+    assert "COPY --from=deps /app/.venv /app/.venv" in _stage("prod")
+
+
+def test_ci_tests_on_the_python_the_image_runs():
+    import yaml
+
+    image = re.search(r"^ARG PYTHON_VERSION=(\S+)$", DOCKERFILE.read_text(encoding="utf-8"), re.MULTILINE).group(1)
+    workflow = yaml.safe_load((REPO_ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8"))
+    steps = [s for s in workflow["jobs"]["backend"]["steps"] if s.get("uses", "").startswith("astral-sh/setup-uv@")]
+
+    assert [str(s.get("with", {}).get("python-version")) for s in steps] == [image]

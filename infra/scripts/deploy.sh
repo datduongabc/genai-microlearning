@@ -39,6 +39,9 @@ if [[ "${SKIP_BUILD:-0}" != 1 ]]; then
   }
   build backend "$ROOT/backend"
   build gateway "$ROOT/devops/gateway"
+  # 2.4 GB of model. Rebuilt on a machine that still has the build cache, its layers are the same
+  # bytes, and ECR skips the layers it holds; a fresh machine uploads them again.
+  build embedder "$ROOT/devops/embedder"
   if [[ "${WITH_RERANKER:-0}" == 1 ]] || grep -qx reranker <<<"$SERVICES"; then
     build reranker "$ROOT/devops/reranker"
   fi

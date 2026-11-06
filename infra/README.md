@@ -67,6 +67,6 @@ Còn lại sau khi xóa: snapshot cuối của RDS (`microlearning-<environment>
 - **Địa chỉ client.** Uvicorn chỉ tin VPC (ALB) và dải IP của CloudFront, nên rate limit theo IP thấy đúng địa chỉ người dùng mà người dùng không giả được. Tin `*` thì client tự ghi được `X-Forwarded-For`.
 - **CloudFront tới ALB là HTTP.** HTTPS ở chặng này cần tên miền và chứng chỉ riêng. Chặng người dùng tới CloudFront vẫn là HTTPS.
 - **Ngân sách kết nối DB.** `check "connection_budget"` báo khi `api.max` và `worker.max` cộng lại có thể mở nhiều kết nối hơn RDS nhận. Mặc định: 349 trên 407.
-- **Embedder tải model khi khởi động.** Task mới mất vài phút. Đưa model vào image, như `devops/reranker` đang làm, sẽ khởi động nhanh hơn.
+- **Model embedder nằm trong image** (`devops/embedder`), như reranker. Task mới không phải tải 2,4 GB từ Hugging Face trước khi phục vụ, và không phụ thuộc Hugging Face lúc chạy. Đổi model thì phải nhúng lại toàn bộ chunk, xem `devops/embedder/prepare_model.py`.
 - **Moodle không nằm trong stack này.** Điền `moodle_base_url` nếu có.
 - **Valkey không có mật khẩu,** chỉ có TLS và security group. Nó chỉ giữ bộ đếm rate limit.
