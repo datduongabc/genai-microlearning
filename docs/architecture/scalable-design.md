@@ -227,8 +227,8 @@ dùng RDS Proxy vì tài liệu AWS không khẳng định `SET LOCAL` tránh đ
 | Nhà cung cấp LLM lỗi hoặc 429 | Gateway thử lại và fallback theo cấu hình | Có sẵn |
 | Valkey mất | Rate limit theo từng task; LTI không bị ảnh hưởng vì state nằm trong Postgres | Rate limit có sẵn |
 | RDS lỗi | Vận hành thật: Multi-AZ tự chuyển. Demo: khôi phục từ snapshot | Một tham số Terraform |
-| Một AZ mất | Tầng ứng dụng chạy trên 2 AZ. NAT một AZ là điểm yếu đã chấp nhận vì chi phí | Theo thiết kế |
-| Deploy lỗi | Circuit breaker của ECS tự quay về bản trước | Cần cấu hình |
+| Một AZ mất | Tầng ứng dụng chạy trên 2 AZ, không có NAT nên không có điểm yếu một AZ ở đường ra. RDS và Valkey một node ở bản demo | Theo thiết kế |
+| Deploy lỗi | Circuit breaker của ECS tự quay về bản trước. Lần deploy đầu không có bản trước: `deploy.sh` chạy lại service sau migration | Đã cấu hình (`ecs.tf`), chưa chạy trên AWS |
 | Migration lỗi | Migration chạy trước, không đổi service nếu lỗi. Dùng mẫu expand rồi contract | Cần quy ước |
 
 Quy tắc chung: mọi lệnh gọi mạng có timeout và retry có backoff, job phải idempotent, tách tài nguyên để lỗi ở một đường không lan sang đường khác.
