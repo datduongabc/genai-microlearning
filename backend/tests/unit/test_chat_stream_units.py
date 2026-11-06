@@ -3,6 +3,7 @@ shedding streams past the limit."""
 
 import asyncio
 
+import pytest
 from starlette.responses import JSONResponse
 
 from app.api.chat import _with_heartbeat
@@ -18,6 +19,15 @@ def _filtered(*pieces: str) -> tuple[str, list[str]]:
 
 def test_a_marker_split_across_pieces_is_still_removed_and_read():
     assert _filtered("Heap là cây [", "S", "2", "] nhị phân.") == ("Heap là cây  nhị phân.", ["S2"])
+
+
+@pytest.mark.parametrize("marker", ["【S5】", "[ S5 ]", "【 S5 】", "[Nguồn: S5]"])
+def test_the_marker_shapes_a_real_model_wrote_are_read(marker):
+    assert _filtered("Câu một", marker[:2], marker[2:], ".") == ("Câu một.", ["S5"])
+
+
+def test_one_marker_can_name_several_sources():
+    assert _filtered("Câu một[S1, S2].") == ("Câu một.", ["S1", "S2"])
 
 
 def test_a_bracket_that_is_no_marker_reaches_the_reader():

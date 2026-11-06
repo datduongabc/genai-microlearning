@@ -25,6 +25,7 @@ import {
   type MoodleCourse,
 } from "../api";
 import { AppShell } from "../components/AppShell";
+import { CourseChat } from "../components/CourseChat";
 import { ModelPicker } from "../components/ModelPicker";
 import { MoodleAccountSection, type MoodleAccountState } from "../components/MoodleAccountSection";
 import { GenerateDialog } from "../components/GenerateDialog";
@@ -503,6 +504,7 @@ export function CourseDetailPage() {
           )}
         </ul>
       )}
+      {courseId && documents.some((d) => d.status === "embedded") && <CourseChat courseId={courseId} />}
     </AppShell>
   );
 }
