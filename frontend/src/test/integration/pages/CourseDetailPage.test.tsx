@@ -57,6 +57,8 @@ beforeEach(() => {
   vi.mocked(api.listDocuments).mockResolvedValue([])
   // Ô chọn model gọi API này ngay khi trang mở, như listDocuments ở trên.
   vi.mocked(api.listModels).mockResolvedValue({ models: [], default: null })
+  // The course chat loads its last conversation on open.
+  vi.mocked(api.getLatestCourseChat).mockResolvedValue({ session_id: null, messages: [] })
 })
 
 const axiosFailure = (status: number, detail: string) => {

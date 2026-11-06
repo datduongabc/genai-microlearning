@@ -75,3 +75,15 @@ export async function streamCourseChat(
     }
   }
 }
+
+export interface LatestCourseChat {
+  session_id: string | null
+  messages: ChatReply[]
+}
+
+// The course chat used most recently, so a reload carries on with it.
+export async function getLatestCourseChat(courseId: string, signal?: AbortSignal): Promise<LatestCourseChat> {
+  const response = await fetchWithAuth(`/courses/${courseId}/chat/latest`, { signal })
+  if (!response.ok) throw new Error('Không tải được cuộc trò chuyện trước.')
+  return response.json()
+}

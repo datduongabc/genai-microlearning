@@ -9,6 +9,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user, require_course_owner
@@ -233,6 +234,31 @@ async def stream_chat_message(
     turn = await run_in_threadpool(_start_turn, db, course_id, payload, current_user)
     return StreamingResponse(_with_heartbeat(_answer_events(turn)), media_type="text/event-stream",
                              headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
+
+
+class LatestChatResponse(BaseModel):
+    session_id: uuid.UUID | None
+    messages: list[ChatMessageResponse]
+
+
+@router.get("/latest", response_model=LatestChatResponse)
+def get_latest_chat(
+    course_id: uuid.UUID, db: Session = Depends(get_db), current_user: User = Depends(get_current_user),
+):
+    """The course chat the lecturer used last, so that reloading the page or opening it on another
+    machine continues it. Last used, not last created: by its newest message."""
+    require_course_owner(db.get(Course, course_id), current_user)
+    session = db.scalar(
+        select(ChatSession).join(ChatMessage)
+        .where(ChatSession.course_id == course_id, ChatSession.module_id.is_(None))
+        .order_by(ChatMessage.created_at.desc()).limit(1)
+    )
+    if session is None:
+        return LatestChatResponse(session_id=None, messages=[])
+    return LatestChatResponse(session_id=session.id, messages=[
+        ChatMessageResponse(id=m.id, role=m.role.value, content=m.content, citations=m.citations)
+        for m in session.messages
+    ])
 
 
 @router.get("/{session_id}/history", response_model=list[ChatMessageResponse])
