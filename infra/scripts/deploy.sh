@@ -79,6 +79,18 @@ fi
 # --- 3. Roll the services out to the new image.
 echo "== Rolling out"
 tf apply -input=false -auto-approve -var "image_tag=$TAG"
+# On the first deploy the services start before this migration has made the database roles, so
+# api fails /ready and the circuit breaker may fail that deployment. With nothing to roll back to,
+# it stays failed, and the apply above changes nothing because the tag is the same. Start it again
+# now that the schema is ready.
+for svc in $SERVICES; do
+  STATE="$(aws ecs describe-services --region "$REGION" --cluster "$CLUSTER" --services "$svc" \
+    --query 'services[0].deployments[?status==`PRIMARY`].rolloutState | [0]' --output text)"
+  if [[ "$STATE" == FAILED ]]; then
+    echo "== $svc: last deployment failed, starting it again"
+    aws ecs update-service --region "$REGION" --cluster "$CLUSTER" --service "$svc" --force-new-deployment >/dev/null
+  fi
+done
 # shellcheck disable=SC2086 # one argument per service
 aws ecs wait services-stable --region "$REGION" --cluster "$CLUSTER" --services $SERVICES
 

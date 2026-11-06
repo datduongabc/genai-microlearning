@@ -29,7 +29,9 @@ terraform init
 terraform apply -target=aws_ecr_repository.repo -target=aws_ecr_lifecycle_policy.keep_recent
 IMAGES_ONLY=1 ../scripts/deploy.sh             # thêm WITH_RERANKER=1 nếu dùng jina
 
-# 2. Phần còn lại. Service khởi động trước migration, nên trong vài phút đầu api và worker báo lỗi bảng chưa có.
+# 2. Phần còn lại. Service khởi động trước migration, nên api chưa qua /ready và lần deploy đầu có
+#    thể bị circuit breaker đánh dấu thất bại; bước 4 khởi động lại service đó sau migration.
+#    Topic SNS mới gửi email xác nhận tới alarm_email: bấm Confirm, mỗi lần tạo lại stack.
 terraform apply
 
 # 3. Khóa nhà cung cấp. Terraform không bao giờ thấy chúng và không ghi đè sau lần tạo.
@@ -58,7 +60,9 @@ Trong lúc rolling update, bản cũ và mới chạy cùng lúc trên schema m�
 terraform destroy
 ```
 
-Còn lại sau khi xóa: snapshot cuối của RDS (`microlearning-<environment>-final`). Muốn xóa hẳn thì xóa snapshot đó trong console.
+Còn lại sau khi xóa: snapshot cuối của RDS (`microlearning-<environment>-final-<8 ký tự hex>`, tên mới mỗi lần nên không đụng snapshot của lần trước). Muốn xóa hẳn: `aws rds delete-db-snapshot --db-snapshot-identifier <tên>`.
+
+Kho ECR cũng bị xóa cùng image, nên lần dựng sau bắt đầu lại từ bước 1 và đẩy lại khoảng 2.5 GB image.
 
 ## Quyết định và giới hạn
 

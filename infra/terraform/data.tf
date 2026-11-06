@@ -15,6 +15,12 @@ resource "random_password" "db_worker" {
   special = false
 }
 
+# A new suffix for every database, so destroying one never collides with the final snapshot an
+# earlier destroy left, which a fixed name did.
+resource "random_id" "final_snapshot" {
+  byte_length = 4
+}
+
 resource "aws_db_subnet_group" "main" {
   name       = local.name
   subnet_ids = aws_subnet.data[*].id
@@ -59,7 +65,7 @@ resource "aws_db_instance" "main" {
   backup_retention_period    = var.db_backup_retention_days
   deletion_protection        = var.db_deletion_protection
   skip_final_snapshot        = false
-  final_snapshot_identifier  = "${local.name}-final"
+  final_snapshot_identifier  = "${local.name}-final-${random_id.final_snapshot.hex}"
   auto_minor_version_upgrade = true
   apply_immediately          = true
 }
