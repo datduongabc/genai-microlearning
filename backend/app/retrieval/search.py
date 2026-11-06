@@ -58,6 +58,12 @@ def dense_search(
     chunk cua 1 tai lieu, cung o WHERE clause."""
     with timing.timed("embed_query"):
         query_embedding = embed_text(query)
+    return _vector_search(db, course_id, query_embedding, top_k, scope)
+
+
+def _vector_search(
+    db: Session, course_id: UUID, query_embedding: list[float], top_k: int, scope: ChunkScope | None = None
+) -> list[Chunk]:
     with timing.timed("vector_search"):
         return (
             _scoped(db.query(Chunk).filter(Chunk.course_id == course_id, Chunk.embedding.isnot(None)), scope)
@@ -227,16 +233,37 @@ def retrieve_for_generation(
     return _reranked(query, candidates, top_k, min_k)
 
 
-def retrieve_for_chat(reads: Session, course_id: UUID, query: str, top_k: int = 8, candidate_k: int = 30) -> list[Chunk]:
-    """Closes `reads` before reranking, so a slow reranker holds no connection. A reranker that fails or stays busy
-    costs the answer some ordering, not the answer: someone is waiting for the first word, so it gets one retry."""
-    candidates = hybrid_search(reads, course_id, query, top_k=candidate_k, candidate_k=candidate_k)
-    reads.close()
+def search_for_chat(db: Session, course_id: UUID, query: str, candidate_k: int = 30) -> list[Chunk]:
+    """Hybrid candidates for a chat answer. Without an embedding (the embedder or the gateway is down) the
+    BM25 ones alone: someone is waiting, and keyword matches answer most questions about a course. Generation
+    does not do this, it fails the step and the job queue retries it once the embedder is back."""
+    try:
+        with timing.timed("embed_query"):
+            query_embedding = embed_text(query)
+    except Exception as error:  # any failure to embed leaves the keyword search
+        logger.warning("query embedding failed, chat searches by keyword only: %s: %s", type(error).__name__, error)
+        return sparse_search(db, course_id, query, top_k=candidate_k)
+    dense = _vector_search(db, course_id, query_embedding, candidate_k)
+    sparse = sparse_search(db, course_id, query, top_k=candidate_k)
+    with timing.timed("rrf"):
+        return reciprocal_rank_fusion([dense, sparse])[:candidate_k]
+
+
+def rerank_for_chat(query: str, candidates: list[Chunk], top_k: int = 8) -> list[Chunk]:
+    """A reranker that fails or stays busy costs the answer some ordering, not the answer: someone is waiting
+    for the first word, so it gets one retry."""
     try:
         return [c for c, _ in rerank_scored(query, candidates, attempts=CHAT_RERANK_ATTEMPTS)[:top_k]]
     except (httpx.HTTPError, ValueError) as error:
         logger.warning("rerank failed, chat keeps the hybrid order: %s", error)
         return candidates[:top_k]
+
+
+def retrieve_for_chat(reads: Session, course_id: UUID, query: str, top_k: int = 8, candidate_k: int = 30) -> list[Chunk]:
+    """Closes `reads` before reranking, so a slow reranker holds no connection."""
+    candidates = search_for_chat(reads, course_id, query, candidate_k)
+    reads.close()
+    return rerank_for_chat(query, candidates, top_k)
 
 
 def _reranked(query: str, candidates: list[Chunk], top_k: int | None, min_k: int) -> list[Chunk]:

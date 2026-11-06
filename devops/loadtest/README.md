@@ -10,5 +10,8 @@ DOCUMENTS_DIR=/path/to/docs/documents ./run_matrix.sh
 ```
 
 The run takes about an hour and writes to `results/`. Remove the stack with `docker compose --profile k6 down`.
+Failure tests, which stop each kind of service while it works and check that no job is lost, are
+`./run_failures.sh` (about an hour and a quarter; results in `docs/measurements/2026-11-06-failure-tests.md`).
+
 Do not add `-v`: it would also delete the shared `do-an_embedder_models` cache. To start from an empty database, run
 `docker volume rm do-an-load_db do-an-load_uploads`.

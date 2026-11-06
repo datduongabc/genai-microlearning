@@ -25,7 +25,7 @@ from app.chat.service import (
 from app.config import settings
 from app.db import RequestSessionLocal, get_db
 from app.models import ChatMessage, ChatRole, ChatSession, Course, User
-from app.retrieval.search import retrieve, retrieve_for_chat
+from app.retrieval.search import rerank_for_chat, retrieve_for_chat, search_for_chat
 
 router = APIRouter(prefix="/courses/{course_id}/chat", tags=["chat"], dependencies=[Depends(get_current_user)])
 
@@ -106,7 +106,8 @@ def post_chat_message(
     history = [{"role": r.role.value, "content": r.content} for r in reversed(history_rows)]
 
     retrieval_query = condense_query(message, history)
-    context_chunks = retrieve(db, course_id, retrieval_query, top_k=8)
+    # The same search as the stream, so a failed reranker or embedder degrades the answer the same way.
+    context_chunks = rerank_for_chat(retrieval_query, search_for_chat(db, course_id, retrieval_query), top_k=8)
     answer = answer_question(message, context_chunks, history, standalone=retrieval_query)
 
     assistant_message = ChatMessage(

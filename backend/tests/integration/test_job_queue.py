@@ -364,7 +364,7 @@ def _running_job_locked_long_ago(db, doc, worker_id: str) -> uuid.UUID:
 
 
 def test_a_long_job_whose_worker_still_beats_is_not_requeued(seed_document):
-    """Một lượt sinh module hay transcribe video có thể chạy quá ngưỡng kẹt 15 phút. Nếu sweeper
+    """Một lượt sinh module hay transcribe video có thể chạy quá ngưỡng kẹt (STUCK_THRESHOLD_SECONDS). Nếu sweeper
     coi nó là kẹt thì worker thứ hai chạy lại cùng job trong khi worker đầu vẫn chạy: hai module,
     gấp đôi lượt gọi model. Worker còn sống thì nhịp tim giữ job lại cho nó."""
     db = SessionLocal()
@@ -454,6 +454,34 @@ def test_a_step_that_raises_is_still_handled_after_beating(seed_document, monkey
         assert current.last_error == "network hiccup"
     finally:
         db.close()
+
+
+def test_an_outage_waits_longer_than_an_ordinary_failure(seed_document, monkeypatch):
+    """A 60 s gateway outage took a job to 3 of its 5 attempts at the usual backoff
+    (docs/measurements/2026-11-06-failure-tests.md)."""
+    import httpx
+
+    from app.jobs import queue
+
+    monkeypatch.setattr(queue.random, "random", lambda: 0.0)  # the shortest jitter
+    delays = {}
+    for name, err in {"outage": httpx.ConnectError("gateway down"), "other": RuntimeError("hiccup")}.items():
+        db = SessionLocal()
+        try:
+            job = db.get(Job, _running_job_locked_long_ago(db, seed_document(db), f"{name}-worker"))
+            db.expunge(job)
+        finally:
+            db.close()
+        monkeypatch.setattr(queue, "execute_job_step", lambda job, err=err: (_ for _ in ()).throw(err))
+        before = datetime.now(UTC)
+        run_claimed_job(job, f"{name}-worker")
+        with SessionLocal() as db:
+            current = db.get(Job, job.id)
+            assert current.status == JobStatus.queued and current.attempts == 1
+            delays[name] = (current.run_after - before).total_seconds()
+
+    assert delays["outage"] >= 0.75 * queue.OUTAGE_BASE_BACKOFF_SECONDS - 1
+    assert delays["other"] < 0.75 * queue.OUTAGE_BASE_BACKOFF_SECONDS - 1
 
 
 def test_sweep_skips_a_job_another_sweeper_is_processing(seed_document):

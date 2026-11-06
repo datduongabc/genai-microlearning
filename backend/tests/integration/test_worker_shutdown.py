@@ -1,5 +1,5 @@
 """A worker that stops, on a deploy or a scale-in, gives its unfinished jobs back at once instead
-of leaving them as running for the sweeper's 15 minutes."""
+of leaving them as running for the sweeper's threshold."""
 
 import threading
 import uuid

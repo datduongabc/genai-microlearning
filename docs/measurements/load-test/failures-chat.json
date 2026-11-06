@@ -1,0 +1,125 @@
+[
+  {
+    "label": "chat-redis-down",
+    "concurrency": 2,
+    "messages": 6,
+    "status_codes": {
+      "200": 6
+    },
+    "failed": 0,
+    "wall_seconds": 66.5,
+    "messages_per_minute": 5.4,
+    "latency_seconds": {
+      "n": 6,
+      "mean": 21.796,
+      "p50": 21.54,
+      "p95": 27.035,
+      "max": 27.035
+    }
+  },
+  {
+    "label": "chat-reranker-down",
+    "concurrency": 2,
+    "messages": 6,
+    "status_codes": {
+      "500": 6
+    },
+    "failed": 6,
+    "wall_seconds": 154.1,
+    "messages_per_minute": 0.0,
+    "latency_seconds": {
+      "n": 0
+    }
+  },
+  {
+    "label": "chat-embedder-down",
+    "concurrency": 2,
+    "messages": 6,
+    "status_codes": {
+      "200": 4,
+      "500": 2
+    },
+    "failed": 2,
+    "wall_seconds": 44.8,
+    "messages_per_minute": 5.4,
+    "latency_seconds": {
+      "n": 4,
+      "mean": 16.284,
+      "p50": 15.916,
+      "p95": 18.42,
+      "max": 18.42
+    }
+  },
+  {
+    "label": "chat-redis-down",
+    "concurrency": 2,
+    "messages": 6,
+    "status_codes": {
+      "200": 6
+    },
+    "failed": 0,
+    "wall_seconds": 69.0,
+    "messages_per_minute": 5.2,
+    "latency_seconds": {
+      "n": 6,
+      "mean": 20.47,
+      "p50": 18.472,
+      "p95": 28.083,
+      "max": 28.083
+    }
+  },
+  {
+    "label": "chat-reranker-down",
+    "concurrency": 2,
+    "messages": 6,
+    "status_codes": {
+      "200": 6
+    },
+    "failed": 0,
+    "wall_seconds": 73.5,
+    "messages_per_minute": 4.9,
+    "latency_seconds": {
+      "n": 6,
+      "mean": 23.057,
+      "p50": 23.442,
+      "p95": 27.404,
+      "max": 27.404
+    }
+  },
+  {
+    "label": "chat-embedder-down",
+    "concurrency": 2,
+    "messages": 6,
+    "status_codes": {
+      "200": 6
+    },
+    "failed": 0,
+    "wall_seconds": 55.7,
+    "messages_per_minute": 6.5,
+    "latency_seconds": {
+      "n": 6,
+      "mean": 16.946,
+      "p50": 17.356,
+      "p95": 20.307,
+      "max": 20.307
+    }
+  },
+  {
+    "label": "chat-embedder-down-cold",
+    "concurrency": 2,
+    "messages": 6,
+    "status_codes": {
+      "200": 6
+    },
+    "failed": 0,
+    "wall_seconds": 70.0,
+    "messages_per_minute": 5.1,
+    "latency_seconds": {
+      "n": 6,
+      "mean": 20.27,
+      "p50": 24.739,
+      "p95": 29.485,
+      "max": 29.485
+    }
+  }
+]
