@@ -132,7 +132,7 @@ lại với tài liệu lớn.
 | Database | RDS PostgreSQL + pgvector | Backup, PITR, Multi-AZ chỉ là một tham số. Giữ được RLS | Aurora: giá trị thể hiện ở tải lớn hơn. Vector DB riêng: thêm hệ thống phải đồng bộ quyền, trong khi retrieval lọc theo từng khóa | CPU cao kéo dài | Thấp: `pg_dump` |
 | Hàng đợi | Giữ bảng Postgres, đẩy độ sâu lên CloudWatch | Lượng job rất nhỏ. Tạo job cùng transaction với dữ liệu nên không cần outbox. Đã có heartbeat, retry, đã test tải | SQS: cần outbox để tránh ghi lệch, trong khi trạng thái job vẫn phải ở Postgres | Vượt khoảng 100 job/s, hoặc polling thành tải đáng kể | Không có |
 | Cache, bộ đếm | ElastiCache Valkey | Không phải vá và theo dõi. Rẻ hơn Redis 20% theo bảng giá, cùng giao thức | Redis tự chạy: tiết kiệm ít, thêm một task phải giữ sống | | Thấp |
-| Tệp | S3, upload trực tiếp bằng presigned URL | Bền, không cần ổ dùng chung, API không phải chịu băng thông upload | EFS: đắt và phức tạp hơn, giữ kiểu dùng file không cần thiết | | Thấp: API tương thích MinIO |
+| Tệp | S3: api nhận tệp rồi đẩy lên, worker tải về khi xử lý | Bền, không cần ổ dùng chung giữa api và worker. Api chặn kích thước khi đang nhận và kiểm số trang, thời lượng trước khi tạo job | EFS: đắt và phức tạp hơn, giữ kiểu dùng file không cần thiết. Presigned URL: api không phải chịu băng thông upload, nhưng phải kiểm tệp sau khi đã lên S3 | Băng thông upload qua api thành nút cổ chai, hoặc video 1 GB chạm giới hạn 60 s của CloudFront | Thấp: API tương thích MinIO |
 | Frontend | S3 + CloudFront | Không tốn compute, có CDN, có HTTPS | Container Vite: chỉ hợp để phát triển | | Thấp |
 | Cửa vào | CloudFront, ALB | Một tên miền cho tệp tĩnh và API, tránh CORS, có sẵn HTTPS. Định tuyến theo đường dẫn | API Gateway: giới hạn thời gian không hợp stream | | Thấp |
 | Gọi nội bộ | ECS Service Connect | Tự cân bằng tải và thử lại giữa các task, không cần ALB nội bộ | ALB nội bộ: thêm phí giờ. Cloud Map DNS: phụ thuộc cache DNS | | Thấp |
@@ -238,7 +238,7 @@ Quy tắc chung: mọi lệnh gọi mạng có timeout và retry có backoff, jo
 - **Danh tính:** IAM role riêng cho từng task, quyền tối thiểu. GitHub Actions dùng OIDC, không lưu access key lâu dài. Không SSH, debug bằng ECS Exec khi cần.
 - **Bí mật:** Parameter Store, chỉ gateway đọc được khóa LLM, giữ nguyên nguyên tắc backend không thấy khóa.
 - **Dữ liệu:** mã hóa khi lưu bằng KMS khóa mặc định, TLS khi truyền. RLS tiếp tục là lớp phòng thủ thứ hai. Backend dùng role `app_runtime` và `app_worker`, không dùng owner.
-- **Upload:** presigned URL ngắn hạn, kiểm tra kích thước và định dạng lúc xử lý.
+- **Upload:** qua api, chặn kích thước ngay khi đang nhận (tài liệu 25 MB, âm thanh 200 MB, video 1 GB), kiểm số trang và thời lượng trước khi tạo job. Tệp trên S3 tự hết hạn sau 7 ngày.
 - **Dữ liệu gửi cho LLM:** tài liệu môn học đi qua nhà cung cấp bên ngoài, cần nêu trong báo cáo và điều khoản sử dụng.
 
 ## 10. CI/CD và vận hành
