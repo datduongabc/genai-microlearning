@@ -46,6 +46,9 @@ jobs:
       # Ghim dung phien ban chu khong dung tag major nhu hai action kia: astral-sh chi
       # duy tri tag major di dong den v7, con v8 tro len khong co, nen @v10 se khong ton tai.
       - uses: astral-sh/setup-uv@v10.2.0
+        with:
+          # The Python of backend/Dockerfile: the tests run on what the image runs.
+          python-version: "3.14"
       - run: uv sync
       # docker-compose's db service creates the vector extension via
       # docker/init-pgvector.sql on first boot -- the CI service container

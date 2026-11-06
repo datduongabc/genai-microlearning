@@ -15,13 +15,8 @@ variable "environment" {
 }
 
 variable "image_tag" {
-  description = "Tag of the backend and gateway images in ECR. A commit hash: images are immutable."
+  description = "Tag of the images in ECR (backend, gateway, embedder, reranker). A commit hash: images are immutable."
   type        = string
-}
-
-variable "embedder_image" {
-  type    = string
-  default = "ghcr.io/huggingface/text-embeddings-inference:cpu-1.9.4"
 }
 
 # --- Sizes and scaling. Defaults are the demo configuration of docs/architecture/scalable-design.md.

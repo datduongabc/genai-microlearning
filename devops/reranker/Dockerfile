@@ -1,4 +1,4 @@
-FROM python:3.12-slim AS model
+FROM python:3.14-slim AS model
 WORKDIR /model
 COPY prepare_model.py /prepare_model.py
 RUN python /prepare_model.py
