@@ -96,9 +96,21 @@ Kiểm tra trên id_token:
   - Khóa học của giảng viên đó đã nối với cùng mã khóa học Moodle cũng được dùng luôn.
   - Người dùng mới nhận `moodle_user_id`, khóa học mới nhận `moodle_course_id`, nên xuất bản sang Moodle và hạn mức sinh đầy đủ hoạt động như tài khoản đã liên kết.
 
+## Kiểm chứng
+
+- **Với Moodle thật:** `devops/lti-e2e/run.sh` dựng Moodle 5.2.3 của repo, cấu hình giảng viên, sinh viên, khóa học và công cụ LTI 1.3 như trong trang quản trị, rồi đi trọn luồng launch như một trình duyệt. Kết quả lần chạy 2026-11-06:
+  - Giảng viên vào được và thấy khóa học.
+  - Lần mở thứ hai dùng lại đúng tài khoản và khóa học.
+  - Sinh viên bị từ chối.
+  - `moodle_user_id` và `moodle_course_id` khớp id trong Moodle.
+
+  Stack này tách riêng: DB trên tmpfs, mã nguồn Moodle mount chỉ đọc, không tạo volume, không đụng `do-an_db_data` hay `moodle/config.php`, và tự xóa khi xong. Cần khoảng 1 GB RAM và vài phút để Moodle cài đặt.
+- **Các trường hợp lỗi:** `backend/tests/integration/test_lti_launch.py` dùng một LMS giả ký bằng khóa RSA thật: sai chữ ký, sai audience, hết hạn, sai nonce, deployment lạ, phát lại state, dùng lại mã.
+- **Chưa thử trên trình duyệt thật.** Script đóng vai trình duyệt nên dừng ở bước đổi mã; trang `/lti/launch` của frontend chỉ có test unit.
+
 ## Giới hạn
 
 - **Sinh viên bị từ chối.** RLS hiện lọc theo chủ khóa học. Cho sinh viên vào phải thêm quan hệ thành viên khóa học vào RLS, là một thay đổi bảo mật cần test riêng.
 - **Mỗi khóa học thuộc một giảng viên.** Giảng viên thứ hai mở cùng khóa LMS sẽ nhận thông báo khóa đã thuộc người khác.
 - **State không gắn với trình duyệt.** Không có cookie, nên kẻ tấn công có thể khiến nạn nhân đăng nhập vào tài khoản LTI của chính kẻ tấn công (login CSRF). Họ không lấy được gì của nạn nhân, nhưng nạn nhân có thể vô tình tải tài liệu vào khóa học của kẻ tấn công. Gắn state với cookie `SameSite=None` khi mở cửa sổ mới sẽ chặn được.
-- **Chưa thử với Moodle thật.** Đã test bằng một LMS giả ký bằng khóa RSA thật (`backend/tests/integration/test_lti_launch.py`), nhưng chưa chạy với Moodle 5.2 của dự án.
+
