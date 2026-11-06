@@ -7,6 +7,7 @@ from pptx import Presentation
 
 from app.api import documents
 from app.api.documents import MAX_UPLOAD_SIZE_BYTES
+from app.config import settings
 from app.db import SessionLocal
 from app.ingestion import document_readers
 from app.ingestion.document_readers import SUPPORTED_EXTENSIONS
@@ -122,7 +123,7 @@ MB = 1024 * 1024
 
 @pytest.fixture
 def upload(tmp_path, monkeypatch):
-    monkeypatch.setattr(documents.settings, "upload_storage_dir", str(tmp_path))
+    monkeypatch.setattr(settings, "upload_storage_dir", str(tmp_path))
     suffix = uuid.uuid4().hex[:8]
     token = _create_and_login(f"upload-limit-{suffix}@example.com")
     headers = {"Authorization": f"Bearer {token}"}

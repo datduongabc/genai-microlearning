@@ -1,4 +1,3 @@
-import os
 import uuid
 from pathlib import Path
 
@@ -9,7 +8,6 @@ from sqlalchemy.orm import Session, selectinload
 from app.api.deletion import check_study_references, commit_deletion
 from app.api.deps import get_current_user, require_course_owner
 from app.auth.rate_limit import limiter, user_or_address
-from app.config import settings
 from app.db import get_db
 from app.ingestion.document_readers import (
     LEGACY_EXTENSIONS,
@@ -29,6 +27,7 @@ from app.models import (
     Module,
     User,
 )
+from app.storage import staging_dir, upload_key, upload_store
 
 router = APIRouter(prefix="/documents", tags=["documents"], dependencies=[Depends(get_current_user)])
 
@@ -88,9 +87,7 @@ def upload_document(
         size_limit, size_error = MAX_UPLOAD_SIZE_BYTES, "Tài liệu tối đa 25 MB"
     # Ghi thẳng từng khối xuống đĩa và chặn sớm nếu vượt giới hạn: video tới 1 GB thì
     # không được giữ cả tệp trong bộ nhớ.
-    upload_dir = Path(settings.upload_storage_dir)
-    upload_dir.mkdir(parents=True, exist_ok=True)
-    pending_path = upload_dir / f"pending-{uuid.uuid4()}{suffix}"
+    pending_path = staging_dir() / f"pending-{uuid.uuid4()}{suffix}"
     try:
         size = 0
         with open(pending_path, "wb") as f:
@@ -110,21 +107,25 @@ def upload_document(
         db.add(doc)
         db.flush()
 
-        # Lưu bền vững (không phải NamedTemporaryFile bị xóa cuối request) -- job
-        # extract chạy nền, có thể sau khi request upload này đã trả response từ
-        # lâu, nên file phải còn tồn tại lúc đó. Nằm trong bind mount ./backend:/app
-        # nên sống sót qua restart container (không phải named volume ephemeral).
-        storage_path = str(upload_dir / f"{doc.id}{suffix}")
-        os.replace(pending_path, storage_path)
+        # Job extract chạy nền, có thể sau khi request này đã trả response từ lâu và ở một
+        # tiến trình khác (trên ECS là task khác), nên tệp phải nằm ở nơi worker cũng đọc được:
+        # thư mục chung hoặc S3, xem app/storage.py.
+        storage_key = upload_key(doc.id, file.filename)
+        upload_store().save(pending_path, storage_key)
     except BaseException:
         pending_path.unlink(missing_ok=True)
         raise
 
-    job = enqueue_job(
-        db, job_type=JobType.document_pipeline, step="extract",
-        document_id=doc.id, payload={"storage_path": storage_path},
-    )
-    db.commit()
+    try:
+        job = enqueue_job(
+            db, job_type=JobType.document_pipeline, step="extract",
+            document_id=doc.id, payload={"storage_key": storage_key},
+        )
+        db.commit()
+    except BaseException:
+        # Không có job nào sẽ đọc tệp này nữa.
+        upload_store().delete(storage_key)
+        raise
 
     return {"id": doc.id, "status": doc.status, "job_id": job.id}
 
@@ -204,12 +205,12 @@ def delete_document(
         raise HTTPException(status_code=404, detail="Document not found")
 
     check_study_references(db, db.scalars(select(Module.id).where(Module.document_id == document_id)))
+    storage_key = upload_key(document_id, doc.filename)
     db.delete(doc)
     commit_deletion(db)
 
-    upload_dir = Path(settings.upload_storage_dir)
-    for leftover in upload_dir.glob(f"{document_id}.*"):
-        leftover.unlink(missing_ok=True)
+    # Committed first: a file without its row is harmless, a row whose file is gone is not.
+    upload_store().delete(storage_key)
 
     return {"status": "deleted"}
 

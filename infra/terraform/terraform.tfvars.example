@@ -1,0 +1,14 @@
+# Copy to terraform.tfvars (ignored by git). Only image_tag is required.
+image_tag = "50d64a7"
+
+# environment       = "demo"
+# alarm_email       = "you@example.com"
+# reranker_provider = "jina" # "jev" only once the school agrees to send documents to TypeSafe
+# moodle_base_url   = "https://moodle.example.edu"
+# moodle_wwwroot    = "https://moodle.example.edu"
+
+# Load test sizes, from scalable-design.md section 11:
+# api               = { cpu = 1024, memory = 2048, min = 4, max = 8 }
+# worker            = { cpu = 1024, memory = 3072, min = 8, max = 16, pool_size = 4 }
+# db_instance_class = "db.m7g.large"
+# db_max_connections = 820

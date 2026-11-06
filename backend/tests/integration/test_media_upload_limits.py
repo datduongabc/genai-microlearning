@@ -6,8 +6,8 @@ import pytest
 from fastapi import HTTPException, UploadFile
 from starlette.requests import Request
 
-from app.api import documents
 from app.api.documents import upload_document
+from app.config import settings
 from app.models import Course, User
 
 
@@ -16,7 +16,7 @@ from app.models import Course, User
     ("lecture.mp4", 1024, "Tệp video tối đa 1 GB"),
 ])
 def test_media_upload_rejects_above_its_limit(filename, limit_mb, message, tmp_path, monkeypatch):
-    monkeypatch.setattr(documents.settings, "upload_storage_dir", str(tmp_path))
+    monkeypatch.setattr(settings, "upload_storage_dir", str(tmp_path))
     user = User(id=uuid.uuid4())
     course = Course(id=uuid.uuid4(), owner_id=user.id)
     db = MagicMock()

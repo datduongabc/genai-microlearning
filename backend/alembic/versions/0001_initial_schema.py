@@ -303,7 +303,16 @@ def upgrade() -> None:
         # Dat thuoc tinh bang lenh rieng chu khong chi trong nhanh CREATE: vai tro
         # trong Postgres thuoc toan cum chu khong thuoc tung database, nen mot vai
         # tro con sot lai tu cum cu se giu nguyen thuoc tinh sai ma khong bao loi.
-        op.execute(f"ALTER ROLE {ten} LOGIN PASSWORD '{mat_khau}'{them}")
+        op.execute(f"ALTER ROLE {ten} LOGIN PASSWORD '{mat_khau}'")
+        # Postgres 16 chỉ cho role có BYPASSRLS đổi thuộc tính này, kể cả sang NOBYPASSRLS, mà
+        # user master của RDS không phải superuser. Ở đó vai trò mới tạo vốn đã NOBYPASSRLS, và
+        # worker được miễn RLS bằng policy riêng (migration 0025), nên bỏ qua là đúng.
+        op.execute(
+            f"DO $$ BEGIN "
+            f"IF (SELECT rolsuper OR rolbypassrls FROM pg_roles WHERE rolname = current_user) THEN "
+            f"EXECUTE 'ALTER ROLE {ten}{them}'; "
+            f"END IF; END $$;"
+        )
         op.execute(f"GRANT USAGE ON SCHEMA public TO {ten}")
 
     # Cap quyen theo TUNG bang chu khong cap hang loat. Cap hang loat se cho

@@ -8,6 +8,10 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 
 WORKDIR /app
 
+# In the image for ECS, which has no bind mount. Compose still mounts the file over it, so an
+# edit there needs no rebuild.
+COPY config.yaml /app/config.yaml
+
 EXPOSE 4000
 
 ENTRYPOINT ["litellm", "--config", "/app/config.yaml", "--host", "0.0.0.0", "--port", "4000"]

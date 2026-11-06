@@ -21,6 +21,7 @@ from app.api import (
 )
 from app.auth.rate_limit import limiter, user_or_address
 from app.config import Settings, settings
+from app.db import database_ready
 from app.jobs.queue import start_worker, stop_worker
 from app.llm.catalog import GatewayUnavailable
 from app.logging_config import configure_app_logging
@@ -33,6 +34,7 @@ from app.middleware import (
 configure_app_logging()
 logger = logging.getLogger("app.rate_limit")
 gateway_logger = logging.getLogger("app.gateway")
+readiness_logger = logging.getLogger("app.readiness")
 
 
 async def _rate_limited(request: Request, exc: RateLimitExceeded):
@@ -84,7 +86,7 @@ def create_app(app_settings: Settings = settings) -> FastAPI:
     # size limit answers on its own.
     api.add_middleware(BodySizeLimitMiddleware, max_bytes=app_settings.max_request_body_bytes, exempt=_is_upload)
     api.add_middleware(ConcurrencyLimitMiddleware, max_concurrent=app_settings.api_max_concurrent_requests,
-                       queue_timeout=app_settings.api_queue_timeout_seconds, exempt_paths=frozenset({"/health"}),
+                       queue_timeout=app_settings.api_queue_timeout_seconds, exempt_paths=frozenset({"/health", "/ready"}),
                        max_streams=app_settings.chat_max_streams)
     api.add_middleware(SecurityHeadersMiddleware, production=production)
 
@@ -102,7 +104,20 @@ def create_app(app_settings: Settings = settings) -> FastAPI:
 
     @api.get("/health")
     def health():
+        """The process answers. For the container health check: failing it restarts the task."""
         return {"status": "ok"}
+
+    @api.get("/ready")
+    def ready():
+        """The task can serve: for the load balancer, which stops sending it requests while this fails.
+
+        Only the database, which almost every request needs. Valkey has an in-memory fallback, and
+        the gateway, the embedder and Jev are shared by every task: one of them down would take
+        all tasks out of the load balancer, including for the requests that do not need it."""
+        if not database_ready():
+            readiness_logger.warning("not_ready reason=database")
+            return JSONResponse(status_code=503, content={"status": "unavailable", "database": "down"})
+        return {"status": "ok", "database": "ok"}
 
     return api
 

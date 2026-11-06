@@ -151,9 +151,9 @@ def test_app_runtime_doc_ghi_duoc_bang_courses(db_trang):
 
 
 def test_worker_khong_cham_duoc_vao_bang_nhay_cam(db_trang):
-    # Worker co BYPASSRLS de xu ly tai lieu cua moi giang vien. Neu lai cap cho
-    # no quyen tren users hay chat thi BYPASSRLS bien thanh lo hong, nen hai
-    # dieu nay phai di cung nhau.
+    # Worker duoc mien RLS (policy cua migration 0025) de xu ly tai lieu cua moi
+    # giang vien. Neu lai cap cho no quyen tren users hay chat thi su mien tru do
+    # bien thanh lo hong, nen hai dieu nay phai di cung nhau.
     with db_trang.connect() as conn:
         cham_duoc = {
             r[0] for r in conn.execute(text(
@@ -181,7 +181,8 @@ def test_worker_doc_duoc_han_token_nhung_khong_doc_duoc_chinh_token(db_trang):
     assert "token_hash" not in doc_duoc
 
 
-def test_chi_worker_duoc_bo_qua_row_level_security(db_trang):
+def test_khong_vai_tro_ung_dung_nao_co_bypassrls(db_trang):
+    # Worker được miễn RLS bằng policy (migration 0025), vì RDS không cấp được BYPASSRLS.
     with db_trang.connect() as conn:
         bo_qua = {
             r[0] for r in conn.execute(text(
@@ -190,4 +191,4 @@ def test_chi_worker_duoc_bo_qua_row_level_security(db_trang):
             ))
         }
 
-    assert bo_qua == {"app_worker"}
+    assert bo_qua == set()
