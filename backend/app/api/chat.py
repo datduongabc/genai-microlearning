@@ -107,7 +107,7 @@ def post_chat_message(
 
     retrieval_query = condense_query(message, history)
     context_chunks = retrieve(db, course_id, retrieval_query, top_k=8)
-    answer = answer_question(message, context_chunks, history)
+    answer = answer_question(message, context_chunks, history, standalone=retrieval_query)
 
     assistant_message = ChatMessage(
         session_id=session.id,
@@ -187,7 +187,7 @@ async def _answer_events(turn: _Turn) -> AsyncIterator[str]:
         query = await condense_query_streamed(turn.message, turn.history)
         async with _retrieval_slots:
             chunks = await asyncio.to_thread(_search, turn, query)
-        async for part in stream_answer(turn.message, chunks, turn.history):
+        async for part in stream_answer(turn.message, chunks, turn.history, standalone=query):
             if isinstance(part, str):
                 yield _event("delta", {"text": part})
             else:

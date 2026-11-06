@@ -120,6 +120,29 @@ def test_a_follow_up_carries_the_earlier_turn(world, monkeypatch, passthrough_re
     assert "Nó có mấy tính chất?" not in prompts[0].split("CÂU HỎI MỚI NHẤT")[0]
 
 
+def test_the_answer_is_given_the_rewritten_follow_up(world, monkeypatch, passthrough_rerank):
+    client, headers, course_id, _ = world
+    _scripted_model(monkeypatch, "Heap là cây.")
+    session_id = _events(client.post(f"/courses/{course_id}/chat/stream", json={"message": "Heap?"}, headers=headers))[0][1]["session_id"]
+    answers = []
+
+    async def model(prompt, system_instruction=None):
+        if system_instruction == service.CONDENSE_SYSTEM_INSTRUCTION:
+            yield "Heap có mấy tính chất?"
+        else:
+            answers.append(prompt)
+            yield "Hai tính chất."
+
+    monkeypatch.setattr(service, "stream_text", model)
+
+    client.post(f"/courses/{course_id}/chat/stream", json={"message": "no co may tinh chat", "session_id": session_id},
+                headers=headers)
+
+    asked = answers[0].rsplit("CÂU HỎI:", 1)[1]
+    assert asked.lstrip().startswith("no co may tinh chat")
+    assert "Heap có mấy tính chất?" in asked
+
+
 def test_a_failed_reranker_costs_the_order_not_the_answer(world, monkeypatch):
     client, headers, course_id, _ = world
     _scripted_model(monkeypatch, "Trả lời.")

@@ -41,8 +41,8 @@ def condense_query(message: str, history: list[dict]) -> str:
     """Query rewriting cho hội thoại nhiều lượt: retrieve() không thấy lịch sử
     hội thoại, nên 1 câu hỏi dùng đại từ tham chiếu lượt trước ("nó có mấy
     tính chất?") sẽ tìm sai/không ra chunk liên quan nếu dùng nguyên văn.
-    Viết lại thành câu hỏi độc lập trước khi truy xuất (retrieve() vẫn nhận
-    câu hỏi gốc để trả lời tự nhiên, chỉ dùng bản viết lại để tìm kiếm)."""
+    Viết lại thành câu hỏi độc lập trước khi truy xuất. Bước trả lời nhận cả
+    câu hỏi gốc (giọng và ngôn ngữ người hỏi) lẫn bản viết lại (nghĩa của nó)."""
     if not history:
         return message
     history_text = "\n".join(f"{m['role']}: {m['content']}" for m in history)
@@ -57,6 +57,10 @@ ngoài nguồn, kể cả khi bạn biết câu trả lời đúng từ nơi kh�
 Nếu câu hỏi KHÔNG được trả lời trong các đoạn nguồn, PHẢI trả lời rõ "Tài liệu
 môn học không đề cập nội dung này" — không được cố trả lời bằng kiến thức
 ngoài nguồn.
+
+Câu hỏi có thể viết tắt, không dấu hoặc chỉ đến lượt trước ("cai do", "con X
+thi sao"). Khi prompt có dòng CÂU HỎI VIẾT ĐẦY ĐỦ, hiểu câu hỏi theo dòng đó
+trước khi kết luận nguồn không đề cập.
 
 Khi trích dẫn (source_ids), CHỈ được dùng đúng ID ngắn (vd "S2") ghi ở đầu mỗi
 SOURCE CHUNK — không được tự bịa ID.
@@ -142,20 +146,28 @@ class ChatAnswer(BaseModel):
     citations: list[ChatCitation] = Field(default_factory=list)
 
 
-def _answer_prompt(query: str, context_chunks: list[Chunk], history: list[dict]) -> str:
+def _answer_prompt(query: str, context_chunks: list[Chunk], history: list[dict], standalone: str | None = None) -> str:
+    """`standalone` is the question as condense_query() rewrote it for the search. The sources were found for that
+    one, and a follow-up such as "con cai kia thi sao" read alone matches none of them, so the model is told what it
+    means. The language is still read from the question as asked."""
     history_text = ""
     if history:
         history_text = "\n\nLỊCH SỬ HỘI THOẠI TRƯỚC (gần nhất trước):\n" + "\n".join(
             f"{m['role']}: {m['content']}" for m in history
         )
-    return f"{source_block(context_chunks)}{history_text}\n\nCÂU HỎI: {query}{_language_line(question_language(query))}"
+    meaning = ""
+    if standalone and standalone.strip() != query.strip():
+        meaning = f"\nCÂU HỎI VIẾT ĐẦY ĐỦ (hiểu câu hỏi trên theo câu này): {standalone.strip()}"
+    return (f"{source_block(context_chunks)}{history_text}\n\nCÂU HỎI: {query}{meaning}"
+            f"{_language_line(question_language(query))}")
 
 
-def answer_question(query: str, context_chunks: list[Chunk], history: list[dict]) -> ChatAnswer:
+def answer_question(query: str, context_chunks: list[Chunk], history: list[dict],
+                    standalone: str | None = None) -> ChatAnswer:
     if not context_chunks:
         return ChatAnswer(answer=not_covered(question_language(query)), citations=[])
 
-    prompt = _answer_prompt(query, context_chunks, history)
+    prompt = _answer_prompt(query, context_chunks, history, standalone)
 
     draft = complete_structured(prompt, ChatDraft, system_instruction=CHAT_SYSTEM_INSTRUCTION)
 
@@ -204,7 +216,7 @@ class MarkerFilter:
 
 
 async def stream_answer(
-    query: str, context_chunks: list[Chunk], history: list[dict]
+    query: str, context_chunks: list[Chunk], history: list[dict], standalone: str | None = None
 ) -> AsyncIterator[str | ChatAnswer]:
     """Yields the answer as text pieces, then one ChatAnswer holding all of it and its citations."""
     if not context_chunks:
@@ -214,7 +226,7 @@ async def stream_answer(
         return
     markers = MarkerFilter()
     pieces = []
-    async for text in stream_text(_answer_prompt(query, context_chunks, history),
+    async for text in stream_text(_answer_prompt(query, context_chunks, history, standalone),
                                   system_instruction=CHAT_STREAM_INSTRUCTION):
         if visible := markers.feed(text):
             pieces.append(visible)

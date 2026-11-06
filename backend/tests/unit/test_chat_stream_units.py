@@ -180,3 +180,31 @@ def test_with_nothing_found_the_reply_is_in_the_question_language():
     assert asyncio.run(collect("What is paging?"))[0] == NOT_COVERED_EN
     assert asyncio.run(collect("Phân trang là gì?"))[0] == NOT_COVERED
     assert answer_question("What is paging?", [], []).answer == NOT_COVERED_EN
+
+
+# --- The answer is told what a follow-up means, not only how it was typed.
+
+def test_the_rewritten_question_reaches_the_answer_beside_the_one_asked():
+    from app.chat.service import _answer_prompt
+    from app.models import Chunk
+
+    chunk = Chunk(content="Luồng là đơn vị lập lịch nhỏ nhất.", source_ref="{}")
+    history = [{"role": "user", "content": "Tiến trình là gì?"},
+               {"role": "assistant", "content": "Tiến trình là chương trình đang chạy."}]
+
+    prompt = _answer_prompt("con luong thi sao", [chunk], history, standalone="Luồng (thread) là gì?")
+
+    asked = prompt.rsplit("CÂU HỎI:", 1)[1]
+    assert asked.lstrip().startswith("con luong thi sao")
+    assert "CÂU HỎI VIẾT ĐẦY ĐỦ" in asked and "Luồng (thread) là gì?" in asked
+    assert "Câu hỏi bằng tiếng Việt" in prompt.rsplit("NGÔN NGỮ:", 1)[1], "the language is the asked question's"
+
+
+@pytest.mark.parametrize("standalone", [None, "", "Heap là gì?", "  Heap là gì?  "])
+def test_a_question_that_needed_no_rewrite_is_not_repeated(standalone):
+    from app.chat.service import _answer_prompt
+    from app.models import Chunk
+
+    prompt = _answer_prompt("Heap là gì?", [Chunk(content="Heap.", source_ref="{}")], [], standalone=standalone)
+
+    assert "CÂU HỎI VIẾT ĐẦY ĐỦ" not in prompt
