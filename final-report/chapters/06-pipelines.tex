@@ -1,0 +1,85 @@
+\clearpage\section{Document, retrieval and generation pipelines}
+\subsection{Ingestion: read, chunk and embed}
+The author uploads a file into an owned course. The API validates format and streamed size, stores the binary under a generated identifier, and creates a document/job record. The background worker executes extraction, chunking and embedding as durable steps. It removes the temporary file after successful processing.
+Figure~\ref{fig:ingestion} shows proposed asynchronous ingestion and bounded error recovery.
+\diagram{ingestion}{Proposed asynchronous ingestion and bounded error recovery.}{ingestion}
+\subsubsection{Readers and source locators}
+PDF uses PyMuPDF with layout/font rules and OCR for low-text pages. PowerPoint extraction retains slide text and speaker notes. Narrative and transcript readers provide the same document-unit interface. Each unit carries text and a page, slide or timestamp locator. Source-quality checks identify empty pages, suspicious extraction and omitted visual content for instructor review.
+\subsubsection{Chunking and embedding}\label{sec:chunking}
+The chunker follows source structure before applying size limits. PDF and presentation readers supply page/slide units with physical locators. Short units can share a chunk, but no chunk spans more than two distinct pages or slides; the combined content is checked before merging. A long unit uses word-boundary windows and keeps the same page/slide locator with a part index. Timestamped captions are accumulated as transcript segments, retaining their minimum start and maximum end time. Oversized individual captions are split without overlap; accumulation stops after crossing its target, so 150 is a soft target rather than a strict maximum.
+
+Narrative DOCX, HTML and plain text use recursive splitting: blank-line boundary, newline, period followed by space, space, then character fallback. This extends LangChain's recursive-separator approach with a sentence separator and a custom length function\citep{recursivesplit}. The estimator counts each Unicode word as one plus its length divided by seven (rounded down), then adds one for every non-word, non-whitespace symbol. It is a lightweight estimate, not the embedding model's tokenizer. Source-unit positions and headings are retained when a narrative chunk crosses a boundary.
+
+Table~\ref{tab:chunk-parameters} gives the canonical settings. The filename supplies a readable title; a nonredundant section or slide heading is prefixed after content splitting. Token estimates are then recomputed, so the content cap does not include this prefix. At generation time, up to two neighboring physical chunks on either side supply context; they keep separate source IDs and citations.
+\begin{table}[H]\centering\small\caption{Structure-aware chunking and generation-context parameters.}\label{tab:chunk-parameters}
+\begin{tabularx}{\linewidth}{|p{4.3cm}|p{2.1cm}|Y|}\hline
+Parameter & Value & Meaning\\\hline
+Content budget & 340 & Estimated tokens before title/heading prefix\\\hline
+Narrative overlap & 50 & Estimated-token overlap in recursive splitting\\\hline
+Page/slide grouping & Target 250; at most 2 & Flush at target; at most two distinct pages/slides; check 340 before merging\\\hline
+Long-page overlap & 40 & Word-boundary split of oversized page/slide units\\\hline
+Transcript target & 150 & Timestamp accumulation target; long captions split with zero overlap\\\hline
+Context prefix & Title + heading & Omit redundant heading; recompute estimated length\\\hline
+Generation neighbors & $\pm 2$ & Same-document physical neighbors retain individual source codes\\\hline
+\end{tabularx}\end{table}
+The 340-token content budget reserves room for a query and prefix against the 512-token BGE comparison service; the selected Qwen3/Jina services accept 1,024 model tokens. Estimated and model-token lengths differ, so truncation must still be checked. Smaller page/transcript targets support precise citation locators. Fixed-size splitting is simple but can sever code or topic boundaries; semantic splitting adds embedding-based boundary computation. Qu et al. find no consistent gain that justifies its cost across their tasks\citep{semanticchunking}. The design therefore retains structure-aware/recursive splitting and compares alternatives on held-out material, rather than assuming semantic splitting is superior.
+
+The gateway's \code{embed-default} alias routes embedding to local Qwen3-Embedding-0.6B. Queries use the instructed retrieval prefix; document text does not. The 768-dimensional normalized representation uses a common revision\citep{qwen}; changing it requires consistent corpus re-embedding and cache refresh.
+\subsection{Retrieval}
+\subsubsection{Scope, candidates and ranking}\label{sec:retrieval-policy}
+Module queries are filtered by the authorized course and selected document; course Q\&A uses the authorized course as its boundary. Dense cosine search and BM25 each return ranked candidates; RRF combines their positions with damping constant 60\citep{bm25,rrf}. A scoped BM25 cache stores chunk IDs and is invalidated after ingestion or deletion.
+
+A reranker reorders the candidates: Jina multilingual INT8 by default, or the hosted Jev model when configured (Section~\ref{sec:rerank-choice}). LO and Content rerank 30 candidates and use adaptive-$k$ with floor eight. Practice/Quiz retrieval for each sub-objective reranks 15 candidates and uses fixed $k=4$. Module-edit chat and course Q\&A use fixed $k=8$. Adaptive selection finds the largest adjacent gap within the leading 90\%, adds five and enforces floor eight\citep{adaptive}. A flat score distribution retains the search window. Each process sends at most two concurrent requests to a self-hosted reranker and retries a busy one (429, 502--504, connection errors) up to five times with backoff, so a busy reranker no longer restarts the job. A failed Jev call keeps the hybrid order and is logged for alerting; in chat, any rerank failure after two attempts keeps the hybrid order.
+\subsubsection{Physical evidence and corrective retrieval}
+Neighbor expansion supplies up to two physical chunks on either side of a hit. Each passage keeps its own ID and locator and receives a separate source code in the prompt. The saved source map and evaluation packets resolve those same physical units.
+
+The relevance evaluator assesses whether the retrieved set supports the LO and sub-objectives. If confidence is low, it proposes one refined query, merges the new passages by identity and reassesses\citep{correctiverag}. The result stores confidence and retry count for the generation record.
+\subsection{Generation orchestration}\label{sec:generation}
+Figure~\ref{fig:generation} shows retrieval and generation flow with physical inline citations.
+\diagram{retrieval-generation}{Retrieval and generation flow with physical inline citations.}{generation}
+\subsubsection{Planner and learning objectives}
+The planner extracts up to eight ranked concepts from the first 8,000 characters of document text. Its result is cached per document. Each generation request selects one priority concept and retrieves broad evidence to derive a terminal LO, Bloom level and enabling sub-objectives.
+
+For broad documents, the planner budget bounds cost. Phase 2 will assess concept coverage, including topics occurring beyond the prefix, and compare the selected objective with instructor expectations.
+\subsubsection{Content and inline citations}
+Content follows the LO and uses one heading per sub-objective. The prompt supplies physical passages with server-assigned codes. Important statements carry adjacent Markdown markers, for example \code{Heap insertion takes O(log n). [S2]}.
+
+The server validates marker membership and derives claim/marker character spans from the saved text. It resolves the chunk ID and page/slide/timestamp through the source map. Unknown markers are rejected. When several passages jointly support a statement, adjacent markers share the claim span. The source panel displays the corresponding text beside the lesson for instructor inspection.
+\needspace{.55\textheight}
+\subsubsection{Grounding and pedagogical freedom}\label{sec:grounding-policy}
+Table~\ref{tab:grounding-policy} separates source-required knowledge from permitted instructional invention. This policy controls generation and defines the denominator of the source-support assessment.
+\begin{table}[H]\centering\small\caption{Grounding policy for generated teaching material.}\label{tab:grounding-policy}
+\begin{tabularx}{\linewidth}{|p{3.0cm}|Y|}\hline
+Part & Grounding rule\\\hline
+Lesson content & Facts, definitions and formulas come from supplied passages with \code{[S\#]} citations. The model may paraphrase and connect ideas, but adds no new knowledge.\\\hline
+Illustrative examples & Worked examples and code may be created, labelled ``Illustrative example,'' and consistent with source concepts. Code is checked by execution in an isolated environment where possible.\\\hline
+Practice and Quiz & New scenarios may elicit Apply/Analyze processes. Correct answers must be derivable from cited sources. Distractors may express model-generated common misconceptions and need no citation; each explanation cites the passage supporting the correct answer.\\\hline
+Source gaps & Missing knowledge required by an objective is flagged to the lecturer instead of supplied from model knowledge.\\\hline
+Support assessment & Assess source-required facts, correct answers and explanations. Exclude explicitly illustrative material and distractors from the support denominator.\\\hline
+\end{tabularx}\end{table}
+The permitted invention supplies a setting for learners to use a concept rather than introducing unsupported lesson knowledge. The instructor reviews scenario validity, misconception plausibility and the stated Bloom demand. A failed or unavailable code execution check is recorded and surfaced for review, rather than interpreted as success. Source support and pedagogical quality remain separate acceptance dimensions: a configuration that repeats only easy factual questions cannot win solely by achieving a high support score. The question-generation literature motivates evaluating difficulty and feedback alongside factual acceptability\citep{aqgreview}.
+\subsubsection{Slides, example, questions and explanation}
+Slides and examples are generated as structured objects aligned with the Content and LO. Practice and Quiz retrieve narrower evidence for each objective. A bounded question-generation loop validates stems, choices, correct-answer indices and explanations. Learner-facing fields use the selected English or Vietnamese output language; quoted source material keeps its language.
+
+Ordered Question rows store editable fields, while the Explanation component links reasoning to question type and position. A manual or chat edit updates the question and corresponding explanation together. The first edit saves an immutable \code{ai_original} snapshot; subsequent edits update the teaching version and retain that original.
+\subsubsection{Self-check and comparison condition}
+The Content critic checks completeness, scope and source support. Practice/Quiz checks evaluate answerability and, in the RAG condition, groundedness. Bounded regeneration limits time and token consumption. Structured validation and unknown-citation checks are enforced before storage; semantic check results remain part of the module record.
+
+The LLM-only comparison follows the matched source-withholding condition in Section~\ref{sec:conditions}. Comparison modules remain research material and cannot be published through the Moodle endpoint.
+\subsubsection{Concurrency within a module}
+Question generation took about 75\% of a module's time on a real model (Section~\ref{sec:results-latency}). Questions are therefore generated five at a time (\code{QUESTION_CONCURRENCY}), and each worker process runs four jobs at once. Rate-limited model calls are retried individually by background jobs, as described in Section~\ref{sec:architecture}; every stage records its duration, model calls and tokens, which produced the timing tables of Section~\ref{sec:results}.
+\subsection{Gateway routing and model control}
+The LiteLLM gateway centralizes provider keys, model aliases, structured output and retry policy\citep{litellm}. Normal use can route eligible small steps to a lower-cost backup and fall back after transient failures. Content uses the selected generation profile.
+
+Table~\ref{tab:model-aliases} names the generation profiles once. Experiment mode disables cross-model fallback; each output records the requested profile, served model, prompt version and settings. Local Qwen3 embedding remains constant across generation conditions.
+\begin{table}[H]\centering\small\caption{Generation model profiles and gateway aliases.}\label{tab:model-aliases}
+\begin{tabularx}{\linewidth}{|p{3.1cm}|p{4.1cm}|Y|}\hline
+Alias & Model & Role\\\hline
+\code{claude-fast} & Claude Haiku 5.5 & Paid primary comparison candidate\\\hline
+\code{openai-fast} & GPT-6 Luna & Paid primary comparison candidate\\\hline
+\code{claude-pro} & Claude Sonnet 5.5 & Higher-tier bounded comparison\\\hline
+\code{openai-pro} & GPT-6.1 Sol & Higher-tier bounded comparison\\\hline
+\code{groq-pro} & GPT-OSS-120B on Groq & Load-control and chat measurements; not yet evaluated for quality\\\hline
+\code{gemini-fast} & Gemini 3.5 Flash-Lite & Formula re-reading by vision\\\hline
+\code{transcribe} & Whisper large-v3 turbo on Groq & Audio and video transcription\\\hline
+\end{tabularx}\end{table}

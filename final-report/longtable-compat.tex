@@ -1,0 +1,12 @@
+% Backport the LaTeX maintainers' finite-glue fix for longtable v4.24.
+% https://www.latex-project.org/news/latex2e-news/ltnews43.pdf
+\makeatletter
+\ifpatchable{\LT@output}{\copy\LT@foot\vss}{%
+  \patchcmd{\LT@output}{\copy\LT@foot\vss}
+    {\copy\LT@foot\vskip 0pt plus \maxdimen minus \normalbaselineskip}
+    {}{\PackageError{genailms-report}{Cannot patch longtable output glue}{}}
+  \patchcmd{\LT@output}{\copy\LT@foot\vss}
+    {\copy\LT@foot\vskip 0pt plus \maxdimen minus \normalbaselineskip}
+    {}{\PackageError{genailms-report}{Cannot patch second longtable output glue}{}}
+}{}
+\makeatother

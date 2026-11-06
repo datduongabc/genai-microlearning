@@ -1,0 +1,90 @@
+\clearpage\section{Progress and remaining work}\label{sec:plan}\label{sec:progress}
+\subsection{Status on 6 November 2026}
+Phase 2 began on 26 October 2026 with a twelve-week baseline ending on 17 January 2027 and a target defense on 18 January 2027. After two weeks, the system described in the midterm report has been implemented and extended with the scalable architecture of Section~\ref{sec:architecture}. The automated test suites pass: 1,489 backend tests on Python 3.14 and 268 frontend tests, checked by continuous integration on every change. The evaluation of generated content, which depends on paid models and human raters, has not started.
+
+The advisor's feedback after the midterm set the targets this work is judged against: the five-subject corpus, retrieval metrics (Hit Rate@$K$, MRR, nDCG), faithfulness and answer relevance, latency and resource profile, agreement between raters and between human and model judges, a strategy for figures and code in documents, a cloud-native AWS deployment within \$200 with a justified budget and lock-in, and integration with Moodle through the LTI tool model. Table~\ref{tab:feedback} maps each target to its state.
+\begin{longtable}{|p{3.4cm}|p{5.6cm}|p{4.8cm}|}\caption{Advisor targets and their state.}\label{tab:feedback}\\\hline
+Target & Done & Remaining\\\hline\endfirsthead
+\hline Target & Done & Remaining\\\hline\endhead
+Five-subject corpus & Ingested (937 chunks, 23 files); 250 retrieval questions & Real student questions\\\hline
+Hit Rate@$K$, MRR, nDCG & Measured for three configurations and two rerankers, with a cross-language set (Section~\ref{sec:results-retrieval}) & Human relevance labels allowing several correct chunks\\\hline
+Faithfulness, answer relevance & Claim extraction, citation checks and judge pipeline implemented & Run on generated modules; Ragas or an equivalent judge\\\hline
+Latency and resources & Per stage and under load (Sections~\ref{sec:results-latency} and \ref{sec:results-scale}) & Chat time to first word on a real model under load; any number on AWS\\\hline
+Inter-rater reliability & Weighted kappa and Spearman analysis, blind rating screens and export implemented & Recruited raters and rated packets\\\hline
+Figures and code & Formula repair, selective vision re-reading, figure OCR, SmartArt text (Section~\ref{sec:results-extraction}) & Describing diagrams without text; evaluating code fidelity\\\hline
+AWS, \$200, lock-in & Terraform, deployment script, cost estimate, lock-in analysis (Section~\ref{sec:aws}) & First \code{terraform apply} and the measurements S1--S8\\\hline
+Scalability & Stateless services, measured bottlenecks and their removal & Sustained runs, failure injection, autoscaling on AWS\\\hline
+Moodle LTI & LTI 1.3 launch for instructors, tested against Moodle 5.2.3 (Section~\ref{sec:lti}) & Students, Deep Linking, grade return\\\hline
+\end{longtable}
+\subsection{Progress against the schedule}
+Table~\ref{tab:schedule} keeps the work packages of the midterm plan and adds their state. Figure~\ref{fig:gantt} marks the report date.
+\begin{longtable}{|p{2.0cm}|p{5.6cm}|p{6.2cm}|}\caption{Phase 2 work packages and their state.}\label{tab:schedule}\\\hline
+Window & Work package & State on 6 November\\\hline\endfirsthead
+\hline Window & Work package & State on 6 November\\\hline\endhead
+26 Oct--8 Nov & Ownership, ingestion, physical citations, AI-original preservation; corpus and raters & Implemented and tested. Corpus replaced by the five subjects. Raters not yet recruited\\\hline
+2--15 Nov & Retrieval and gateway orchestration; gold queries and human packets & Retrieval, reranking options and load control implemented and measured. Gold queries are model-written; human labels and packets not started\\\hline
+9--22 Nov & Paid-model pilot, failure and cost & Partly done ahead of time: real-model generation and load runs with Haiku, Luna and \code{gpt-oss-120b}. Stopped when the credit of three providers ran out\\\hline
+16 Nov--6 Dec & Held-out pairs and ablations & Not started; needs model credit\\\hline
+23 Nov--13 Dec & Blinded rating, judges, claim audits & Rating and judge software ready; needs raters and credit\\\hline
+7--20 Dec & Analysis & Analysis scripts ready\\\hline
+14 Dec--3 Jan & Interface, publication recovery, usability and security scenarios & Interface implemented, including streaming chat and LTI entry. Usability sessions and the adversarial-document suite not started\\\hline
+28 Dec--17 Jan & Demonstration, final report, evaluation package & This progress draft\\\hline
+\end{longtable}
+\diagram{phase2-gantt}{Phase 2 planning baseline. The dashed line marks this report.}{gantt}
+Implementation is ahead of the schedule, because the architecture work requested after the midterm was done first. The evaluation is the critical path. It depends on two things outside the author's control, model credit and recruited raters, and it occupies the windows from mid-November to mid-December.
+\subsection{Remaining work}
+Table~\ref{tab:remaining} lists what is not done, grouped by what it needs. Free work can start immediately; the rest waits on a decision or on money.
+\begin{longtable}{|p{4.3cm}|p{5.2cm}|p{4.3cm}|}\caption{Remaining work and what each item needs.}\label{tab:remaining}\\\hline
+Item & Why & Needs\\\hline\endfirsthead
+\hline Item & Why & Needs\\\hline\endhead
+\multicolumn{3}{|l|}{\textit{No cost}}\\\hline
+Failure tests: stop each kind of task & Recovery is designed and unit-tested, not measured & This machine\\\hline
+Course chat in a real browser after the latest fixes & Source labels and restored conversations have automated tests only & This machine\\\hline
+Student access through LTI & Row-level security filters by course owner; course membership must be added as a separate, tested security change & Code and tests\\\hline
+LTI Deep Linking and grade return & Not implemented & Code and tests\\\hline
+\multicolumn{3}{|l|}{\textit{Needs AWS credit}}\\\hline
+First \code{terraform apply} and S1--S8 (Table~\ref{tab:aws-experiments}) & No number has been measured on AWS; the embedder has only been measured on a GPU & AWS account; Fargate quota for about 60 vCPU at the largest step\\\hline
+\multicolumn{3}{|l|}{\textit{Needs model credit}}\\\hline
+Held-out module pairs, ablations and judges & The main quality comparison of Section~\ref{sec:evaluation} & A funded generation model and a judge model of another family\\\hline
+30-minute run with a queue & The 96-module run stopped after 5.5 minutes when credit ran out & Model and Jev credit\\\hline
+L0, L1 repeated three times; L2 & Each configuration ran once & Groq and Jev credit\\\hline
+Chat time to first word under load & Measured only for one user with Jina & Model and Jev credit\\\hline
+Haiku at 2 gateways, chat and 8 workers & Stopped at the two-embedder step by billing & Anthropic credit\\\hline
+\multicolumn{3}{|l|}{\textit{Needs someone else}}\\\hline
+University consent for Jev & Course material would be sent to a server in the United States & The university\\\hline
+Raters & Human ratings and agreement & Recruited instructors or students\\\hline
+Acceptance thresholds & The service-level targets of the design are proposals & The advisor\\\hline
+\end{longtable}
+\subsection{Planned measurements on AWS}
+Each layer is measured on its own first, because measuring the whole system lets one bottleneck hide the others. The load generator runs on a separate machine and each point is repeated three times. The pass criteria are proposals awaiting the advisor's agreement.
+\begin{longtable}{|p{1.0cm}|p{2.6cm}|p{5.4cm}|p{4.8cm}|}\caption{Planned scalability experiments on AWS.}\label{tab:aws-experiments}\\\hline
+Code & Experiment & Method & Pass when\\\hline\endfirsthead
+\hline Code & Experiment & Method & Pass when\\\hline\endhead
+S1 & \code{api} & 1, 2, 4, 8 tasks with the existing k6 script & 8 tasks reach at least 6 times one task, without errors\\\hline
+S2 & Reranking & Steady load at 1, 2, 4, 8 rerank tasks, or Jev & 8 tasks reach at least 6 times one task\\\hline
+S3 & Chat & Raise open streams until the first word misses its target & Streams per task known; other requests unaffected\\\hline
+S4 & Generation & 4, 8, 16 workers, steady and bursty arrivals & No failed job; doubling workers adds at least 70\%\\\hline
+S5 & Autoscaling & Load rises, then falls & Tasks follow; p95 back on target within 5 minutes\\\hline
+S6 & Failure & Stop each kind of task, stop Valkey & No job lost; chat still answers; recovery without intervention\\\hline
+S7 & Real model quota & Small batch raised until 429 & Real tokens per minute and modules per hour\\\hline
+S8 & Operations & Deploy, failed deploy, migration, restore from backup & Automatic rollback; measured RTO and RPO\\\hline
+\end{longtable}
+The results of S1, S2 and S4 will be fitted with the Universal Scalability Law to separate contention from coordination cost and to show where adding tasks stops helping.
+\subsection{Budget}
+The AWS estimate uses published Singapore on-demand prices from November 2026. Planned use is about 75 hours of demonstration and 10 hours of load tests: Fargate \$86.11, CloudWatch \$10.84, RDS \$15.51, EC2 for Moodle and the load generator \$5.92, load balancer and public addresses \$10.03, and Valkey, S3 and ECR \$3.82, a total of \$132.24, or about \$159 with a 20\% margin. Removing the NAT gateway and, if Jev is approved, the reranker task lowers this; the estimate has not been recomputed for those changes. The environment is destroyed after each session, and budget alarms fire at \$50, \$100 and \$150. Running continuously would cost about \$784 per month, well beyond the credit.
+
+Model use is not covered by the AWS credit. A module costs about \$0.056 with Claude Haiku 5.5, from a secondary price source. Jev costs about \$0.0007 per retrieval from TypeSafe's published price, about \$0.005 per module, and breaks even with a self-hosted reranker task at about 350 retrievals per hour.
+\subsection{Risks}
+\begin{longtable}{|p{3.0cm}|p{5.0cm}|p{5.9cm}|}\caption{Risks after two weeks of Phase 2.}\label{tab:risks}\\\hline
+Risk & Trigger and consequence & Mitigation\\\hline\endfirsthead
+\hline Risk & Trigger and consequence & Mitigation\\\hline\endhead
+Model credit & Three providers are out of credit; the evaluation cannot start & Decide which model to fund before the held-out window; Groq remains for small tasks\\\hline
+Jev consent & The university refuses; reranking returns to CPU, the measured bottleneck & Measure Jina on a GPU, which is unmeasured; keep the hybrid fallback\\\hline
+Raters & Too few ratings for agreement estimates & Recruit before held-out generation; report shortfalls\\\hline
+Single-run evidence & Four identical runs ranged from 108.8 to 180.7 modules per hour & Repeat every run used to lock a decision three times on AWS\\\hline
+First apply & Quotas or engine versions fail on a real account & Apply early with the smallest sizes; request Fargate quota in advance\\\hline
+Reranker licence & Jina weights are licensed for non-commercial use only & Acceptable for the thesis; Jev or another model for any other use\\\hline
+Model-written questions & Retrieval results may be optimistic & Human labels with several correct chunks; cross-language set kept\\\hline
+\end{longtable}
+\subsection{Conclusion}
+The authoring system is implemented end to end, from upload through generation and editing to Moodle publication and LTI entry, and it runs as stateless services that can be deployed to AWS from code. The measurements so far identified the bottlenecks (CPU reranking, provider rate limits and a thread-pool stall) and showed each one removed on one machine. What the thesis still has to show is the quality of the generated modules and the system's behaviour on AWS. Both are planned and ready to run; both wait on credit, and the quality study also waits on raters.

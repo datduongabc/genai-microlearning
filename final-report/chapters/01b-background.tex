@@ -1,0 +1,121 @@
+\clearpage\section{Background and method justification}\label{sec:background}
+\subsection{Retrieval-augmented generation and source support}
+RAG conditions a language model on passages retrieved from an external corpus\citep{rag}. In course authoring, the selected lecture document supplies the reference material. A plain LLM condition supplies a comparison at the same objective, while a full-source condition can distinguish retrieval from simply supplying document text.
+
+Citation design separates source identity, claim support and coverage. Short server-owned codes map to physical passages; inline markers associate those passages with nearby claims. ALCE motivates citation evaluation\citep{alce}, while FActScore motivates checking uncited factual claims as well\citep{factscore}. The proposed metrics assess both semantic support and the proportion of important claims supplied with supporting citations.
+\subsection{Preliminary design measurement corpus}\label{sec:measurement-setup}
+The measurements in this section were made for the midterm report, on the earlier four-subject corpus, and are kept because they motivated the choice of models. Results on the five-subject evaluation corpus are in Section~\ref{sec:results}.
+
+The preliminary comparisons use all 48 lecture PDFs from the four in-scope computing subjects: 2,145 pages and 1,214 searchable chunks. A frozen set contains 60 questions per subject, split evenly between English and Vietnamese, for 240 questions in total. Each question originates from a distinct eligible chunk with at least 300 characters; shorter chunks remain searchable. The language groups contain independent questions over English-dominant teaching material, rather than translated pairs.
+\par
+Table~\ref{tab:measurement-corpus} presents four-subject corpus and frozen question allocation.
+\begin{table}[H]\centering\small\caption{Four-subject corpus and frozen question allocation.}\label{tab:measurement-corpus}
+\begin{tabularx}{\linewidth}{|p{5.0cm}|Y|Y|Y|Y|}\hline
+Subject & PDFs & Pages & Chunks & Questions (EN/VI)\\\hline
+Data structures and algorithms & 12 & 811 & 523 & 60 (30/30)\\\hline
+Operating systems & 11 & 603 & 322 & 60 (30/30)\\\hline
+Programming fundamentals & 13 & 357 & 180 & 60 (30/30)\\\hline
+Web programming & 12 & 374 & 189 & 60 (30/30)\\\hline
+Total & 48 & 2,145 & 1,214 & 240 (120/120)\\\hline
+\end{tabularx}\end{table}
+The questions are generated from source chunks, curated for language and support, then frozen before scoring. Gold labels identify the originating chunk and do not exhaustively identify every relevant passage. An inspected sample of 32 question/source pairs and whitespace-normalized quote checks support curation; independent human relevance annotation remains part of Phase 2. Because questions derive from extracted chunks, retrieval scores cannot assess content omitted during extraction. 
+\subsubsection{Experimental setup and question curation}
+Preliminary measurements use standalone benchmark scripts on a development host with an Intel Core i7-12700H, Windows Subsystem for Linux 2 (WSL2), 20 exposed logical central processing units (CPUs), approximately 10 GiB random-access memory (RAM) and 8 GiB swap. One heavy inference service is driven at a time. Text Embeddings Inference (TEI) CPU 1.9.4 serves local models; NumPy 2.5.3 computes exhaustive normalized float32 cosine rankings and rank-bm25 0.2.2 supplies lexical scores. The reader environments use PyMuPDF 1.28.2 and Docling 2.139.0 (Docling's NumPy is 2.5.4)\citep{pymupdf,docling}. Model revisions and numerical settings are listed in Table~\ref{tab:benchmark-config}.
+
+Local embedding services use a three-logical-CPU cap and 4 GiB RAM; reranker/reader tests use four CPU IDs and a four-CPU cap. These are independently configured component benchmarks. Comparisons within each component share its resource budget; timings across components do not constitute an equal-resource model comparison. Service initialization and downloads are excluded. Container working-set samples are taken approximately every ten seconds and are reported separately from request times.
+
+Question sampling uses seed 20260923 and distinct eligible source chunks. Claude Haiku 5.5 receives six chunks per request and instructions to produce source-supported questions with supporting quotes, without example questions. Provider-default temperature and no model sampling seed are used. Before freezing the set, 71 questions are translated to their assigned language. Curation is performed by a research software agent reading the sources: a seeded sample of three pairs per subject/language cell (24 total) and eight flagged pairs is examined. Two unsupported assignments are corrected, nine question texts and five quote-only fields are revised, and all 240 quotes pass whitespace-normalized matching. These checks are not independent human relevance annotation. The set is frozen before scoring; Phase 2 adds human-authored questions and broader relevance labels.
+\subsection{Embedding and retrieval}
+\subsubsection{Local Qwen3 embeddings}
+Dense retrieval represents queries and passages in a shared vector space. The design uses local Qwen3-Embedding-0.6B with query instruction enabled. Its native 1,024-dimensional output supports Matryoshka representation learning (MRL); the design truncates to 768 dimensions and renormalizes the vectors\citep{qwen}. The model supports multilingual embedding and variable dimensions\citep{qwen}. Local serving gives the system control over embedding capacity and keeps this processing stage on the research host.
+
+All five configurations rank the same frozen corpus within each question's subject using exhaustive cosine similarity over normalized vectors. Qwen3 instruction and no-instruction conditions share document vectors; only the query prefix differs. BGE-M3 uses 1,024 dimensions\citep{bgem3}, while Qwen3 and OpenAI text-embedding-3-small use 768\citep{qwen,openaiembedding}. Gemini embedding-001 uses 768 dimensions with task types \code{RETRIEVAL_DOCUMENT} for chunks and \code{RETRIEVAL_QUERY} for questions, followed by unit normalization\citep{geminiembedding}. Recall@$k$ measures origin presence in the first $k$ results. Full mean reciprocal rank (MRR) uses the complete subject ranking; MRR@10 assigns zero beyond rank ten.
+\par
+Table~\ref{tab:embedding-measurements} presents preliminary embedding measurements on 240 bilingual questions over 1,214 chunks.
+\begin{table}[H]\centering\small\caption{Preliminary embedding measurements on 240 bilingual questions over 1,214 chunks.}\label{tab:embedding-measurements}
+\begin{tabularx}{\linewidth}{|p{5.2cm}|Y|Y|Y|Y|Y|}\hline
+Configuration & R@1 & R@5 & R@10 & Full MRR & MRR@10\\\hline
+Qwen3, no query instruction & 0.75 & 0.967 & 0.983 & 0.851 & 0.85\\\hline
+Qwen3, with query instruction & 0.796 & 0.971 & 0.988 & 0.873 & 0.872\\\hline
+BGE-M3 & 0.704 & 0.917 & 0.946 & 0.797 & 0.794\\\hline
+OpenAI text-embedding-3-small & 0.588 & 0.892 & 0.942 & 0.717 & 0.714\\\hline
+Gemini embedding-001 & 0.796 & 0.946 & 0.988 & 0.869 & 0.868\\\hline
+\end{tabularx}\end{table}
+Qwen3 with instruction has the highest measured full MRR, 0.873 versus 0.851 without instruction, supporting the instructed setting in the design. Full MRR improves in both language subsets: English 0.881 versus 0.865, and Vietnamese 0.865 versus 0.8370. This does not imply improvement at every cutoff: top-eight origin retention is 235/240 with instruction and 236/240 without it. The generic retrieval instruction follows the model-card query template\citep{qwen}; its passage-answering task matches course-source retrieval, while domain-specific wording remains a Phase 2 ablation. The query-only prefix is \texttt{Instruct: Given a web search query, retrieve relevant passages that answer the query}, followed by a newline and \code{Query:} before the question. Gemini embedding-001 is close to instructed Qwen3 (full MRR 0.8688 versus 0.8728), tying R@1 and R@10 but trailing R@5 (227/240 versus 233/240), so it does not replace instructed Qwen3 despite slightly higher top-eight retention (236/240 versus 235/240).
+
+On a CPU service capped at three logical CPUs and 4 GiB RAM, Qwen3 averages 0.824 s/chunk for corpus embedding and 0.149 s/query with instruction in batched requests; sampled container memory peaks at approximately 3,310 MiB. A separate warm batch-size-one probe over 32 queries averages 0.175 s/query with instruction. Corpus throughput, single-query latency and sampled container memory are distinct resource measures. These measurements exclude model initialization and database transport; exact in-memory ranking does not estimate PostgreSQL or approximate-index latency.
+\subsubsection{Dense, BM25 and reciprocal rank fusion}
+Dense search captures semantic similarity and cross-language meaning. Best Matching 25 (BM25) emphasizes exact terminology, identifiers and abbreviations through term frequency saturation and document-length normalization\citep{bm25,irbook}. Reciprocal Rank Fusion (RRF) combines ranked lists without requiring compatible score scales\citep{rrf}, as defined in Equation~\ref{eq:rrf}:
+\begin{equation}\label{eq:rrf}
+\operatorname{RRF}(d)=\sum_{r\in\{\mathrm{dense},\mathrm{sparse}\}}\frac{1}{60+\operatorname{rank}_{r}(d)}.
+\end{equation}
+The Jina configuration uses 8-bit integer (INT8) weights. The dense search and positive-score sparse search each contribute at most 30 candidates; fusion retains 30 for reranking. The preliminary pipeline comparison fixes Qwen3 without instruction as its dense baseline in advance. It therefore evaluates that baseline's pipeline variants separately from the instructed embedding choice; the combined instructed-Qwen3/Jina pipeline requires validation in Phase 2. All 240 origins are present in the hybrid top-30 candidate pool.
+\par
+Table~\ref{tab:retrieval-measurements} presents preliminary retrieval and selected-set retention, 240 questions.
+\begin{table}[H]\centering\small\caption{Preliminary retrieval and selected-set retention, 240 questions.}\label{tab:retrieval-measurements}
+\begin{tabularx}{\linewidth}{|p{4.9cm}|Y|Y|Y|Y|}\hline
+Configuration & R@1 & MRR@10 & Gold retained & Selected budget\\\hline
+Dense cosine & 0.75 & 0.85 & 0.983 & Fixed 8\\\hline
+Dense + BM25 + RRF & 0.733 & 0.816 & 0.963 & Fixed 8\\\hline
+Hybrid + BGE-base & 0.75 & 0.82 & 0.933 & Fixed 8\\\hline
+Hybrid + Jina INT8 & 0.858 & 0.911 & 0.988 & Fixed 8\\\hline
+Hybrid + BGE, adaptive-$k$ & --- & --- & 0.942 & Mean 8.49\\\hline
+Hybrid + Jina, adaptive-$k$ & --- & --- & 0.996 & Mean 9.12\\\hline
+\end{tabularx}\end{table}
+For fixed rows, gold retention is measured at top eight; adaptive rows use the complete selected set, which may contain up to 30 passages. R@1 and MRR@10 describe rankings before selection and are not repeated as selected-set metrics. Jina improves rank-one retrieval over hybrid with 41 after-only correct versus 11 before-only correct queries (two-sided exact McNemar $p<0.001$). Its fixed-eight retention comparison has seven gains and one loss ($p=0.0703$). BGE fixed-eight loses coverage relative to dense: two gains and fourteen losses ($p=0.0042$). Hybrid versus dense at rank one has 24 gains and 28 losses ($p=0.678$). These exploratory probabilities are unadjusted; queries from a common deck or overlapping chunks can be correlated.
+\subsubsection{Multilingual cross-encoder reranking}
+A cross-encoder jointly scores the query and a candidate passage\citep{crossencoder}. The reranker is local Jina-reranker-v2-base-multilingual INT8. Its multilingual model and 1,024-token base context suit Vietnamese questions over English teaching material\citep{jina}. The model license requires noncommercial use.
+
+The measured BGE-base service\citep{bgereranker} accepts 512 input tokens, while the Jina INT8 service accepts 1,024. The comparison concerns these deployable configurations, rather than isolating architecture or quantization. Both main runs use four CPU IDs, a four-CPU cap and a 4 GiB memory cap. Each query sends 30 passages in one serial local HTTP request; timing includes tokenization, inference and transport, with initialization excluded.
+\par
+Table~\ref{tab:reranking-time} presents CPU reranking time for 240 requests with 30 candidates each.
+\begin{table}[H]\centering\small\caption{CPU reranking time for 240 requests with 30 candidates each.}\label{tab:reranking-time}
+\begin{tabularx}{\linewidth}{|p{4.9cm}|Y|Y|Y|Y|}\hline
+Reranker & Total (s) & Mean (s/query) & Median (s/query) & p90 (s/query)\\\hline
+BGE-base & 1,450 & 6.04 & 6.09 & 8.37\\\hline
+Jina multilingual INT8 & 563 & 2.35 & 2.33 & 3.07\\\hline
+\end{tabularx}\end{table}
+Jina combines the highest measured pipeline MRR@10 with lower CPU request time than BGE in this setup. Its English and Vietnamese MRR@10 are 0.905 and 0.917 respectively. These descriptive language groups contain different questions and source chunks. The design uses one query per Jina reranking request with an eight-chunk chat budget and retains dense bypass as a fallback; independent questions will test this choice beyond the generated-origin labels.
+\subsubsection{Adaptive context and evidence boundaries}
+Adaptive-$k$ selects the number of passages using score distributions\citep{adaptive}. The canonical generation and chat budgets are specified in Section~\ref{sec:retrieval-policy}; the preliminary comparison below isolates fixed-eight and adaptive selection on the same saved ranking.
+
+With a minimum of eight, buffer five and search fraction 0.9, Jina adaptive selection retains 239/240 origins, with mean $k=9.12$, median eight and maximum 30. Compared with the same Jina fixed-eight ranking, this adds two origins and loses none ($p=0.5$). Compared with hybrid fixed-eight it adds eight and loses none ($p=0.00781$), but that comparison combines reranking and selection. BGE adaptive selection retains 226/240, adding two origins over BGE fixed-eight ($p=0.5$). The measurements support keeping selection cost and retention explicit; they do not isolate a significant adaptive-$k$ gain over either reranker's own fixed-eight condition.
+
+The chunking budgets and physical neighbor policy are specified in Sections~\ref{sec:chunking} and~\ref{sec:retrieval-policy}. These retain physical chunk identities so displayed evidence and evaluation references resolve the same passages.
+
+Corrective retrieval evaluates evidence relevance, allows one refined-query search and reassesses the combined passages\citep{correctiverag}. This bounded retry policy balances evidence coverage with latency and token cost.
+\subsection{Document extraction}
+The design uses PyMuPDF with font/layout rules for PDF and preserves PowerPoint text and speaker notes. Low-text PDF pages use optical character recognition (OCR). All readers produce text units with page, slide or timestamp locators.
+
+A preliminary reader comparison covers three complete code-heavy decks, 142 pages: Heap (48), C++ Operations (40), and JavaScript (54). PyMuPDF times are median seconds/page from three complete reads; each Docling mode uses one complete pass after initialization. Docling 2.139.0 uses CPU execution with four threads; plain and formula modes retain OCR and table processing. The formula mode enables formula enrichment. The shared development host limits interpretation of small timing differences.
+\par
+Table~\ref{tab:reader-measurements} presents reader time in seconds/page and observed code-layout outcome on three decks.
+\begin{table}[H]\centering\small\caption{Reader time in seconds/page and observed code-layout outcome on three decks.}\label{tab:reader-measurements}
+\begin{tabularx}{\linewidth}{|p{2.3cm}|p{1.1cm}|p{1.9cm}|p{1.6cm}|p{1.6cm}|Y|}\hline
+Deck & Pages & PyMuPDF & Docling plain & Docling formula & Code-layout observation\\\hline
+Heap & 48 & 0.0075 & 3.85 & 3.43 & Inspected index fragments preserved in all modes\\\hline
+C++ Operations & 40 & 0.0636 & 1.02 & 1.06 & PyMuPDF block passes syntax check; both Docling modes flatten directive line and fail\\\hline
+JavaScript & 54 & 0.0068 & 4.04 & 4.64 & Both Docling modes split/reorder inspected HTML/head/script listing\\\hline
+\end{tabularx}\end{table}
+Nine preselected math/index and code/statement fragments across three source pages survive all modes. However, both Docling modes merge the inspected C++ \code{\#include} directive with subsequent statements, causing the separate compiler syntax check to fail; PyMuPDF preserves this block. Fragment preservation and zero blank code fields therefore do not establish program correctness. Both Docling modes detect 88 code fields with zero blanks and no standalone formula fields across the 142 pages. With no detected formula targets, formula-decoding accuracy cannot be estimated on these decks. PyMuPDF emits unstructured text rather than typed formula/code fields.
+
+The design retains the lightweight reader and explicit source-quality checks. Phase 2 will evaluate reading order, code/formula fidelity, missing text and locator accuracy on held-out computing material, including native and mixed-image pages. OCR coverage checks will also verify preservation of native text when an OCR attempt returns empty.
+\subsection{Generation model and gateway choice}
+The gateway centralizes provider credentials, structured calls and fallback. Table~\ref{tab:model-aliases} defines the generation profiles. Formal comparisons use a paid single-model condition with cross-model fallback disabled (Section~\ref{sec:conditions}); higher-tier profiles provide a bounded quality--cost comparison.
+\par
+Table~\ref{tab:prices} presents illustrative text-token prices, USD per million tokens.
+\begin{table}[H]\centering\small\caption{Illustrative text-token prices, USD per million tokens.}\label{tab:prices}
+\begin{tabularx}{\linewidth}{|p{5.4cm}|Y|Y|p{3.8cm}|}\hline
+Model & Input & Output & Source / condition\\\hline
+Claude Haiku 5.5 & 0.10 & 0.50 & Prompts at most 100K tokens\\\hline
+Claude Sonnet 5.5 & 2.00 & 10.00 & Official base pricing\\\hline
+GPT-6 Luna & 0.10 & 0.50 & Official standard short-context pricing\\\hline
+GPT-6.1 Sol & 2.00 & 10.00 & Official standard short-context pricing\\\hline
+Gemini 3.5 Flash-Lite & 0.30 & 2.50 & Official standard paid tier\\\hline
+Groq GPT-OSS-120B & 0.15 & 0.60 & Official model catalogue\\\hline
+\end{tabularx}\end{table}
+The price comparison uses official provider rate tables\citep{anthropicprice,lunaprice,solprice,geminiprice,groqprice}. Haiku's row uses its input tier up to 100K tokens; OpenAI rows use standard short-context pricing. An assumed per-module budget of 65,000 input and 7,200 output text tokens gives illustrative costs of USD 0.0101 for Haiku/Luna, 0.202 for Sonnet/Sol, 0.0375 for Flash-Lite and 0.0141 for Groq GPT-OSS. This is an analytical cost scenario, not an observed module bill. Phase 2 will collect actual token counts, attempts and charges for each condition.
+\subsection{Storage and evaluation design}
+PostgreSQL with pgvector keeps relational entities, source vectors and queue rows under the same ownership rules and transactions. A 768-float32 vector has 3,072 bytes of numeric payload; the 1,214 measured source chunks provide a preliminary workload suitable for filtered exact search. Growth and concurrency tests will guide indexing and worker capacity.
+
+LLM judges provide rubric and claim-level assessments, while blinded human ratings calibrate their judgments. Evaluator self-preference motivates using a distinct generator/judge model family\citep{selfpreference}. Human raters score eight dimensions on a 1--5 scale, with reasons and overall notes. Agreement, source support and citation completeness form separate evaluation outputs.
