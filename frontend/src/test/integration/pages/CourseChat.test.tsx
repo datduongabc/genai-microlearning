@@ -22,16 +22,22 @@ const saved = (content: string) => ({
 })
 
 async function ask(question: string) {
+  await waitFor(() => expect(screen.getByLabelText('Câu hỏi của bạn')).toBeEnabled())
   await userEvent.type(screen.getByLabelText('Câu hỏi của bạn'), question)
   await userEvent.click(screen.getByRole('button', { name: 'Gửi câu hỏi' }))
 }
 
 describe('CourseChat', () => {
   const fetchMock = vi.fn()
+  const latestMock = vi.fn()
 
   beforeEach(() => {
     fetchMock.mockReset()
-    vi.stubGlobal('fetch', fetchMock)
+    latestMock.mockReset()
+    latestMock.mockImplementation(async () => Response.json({ session_id: null, messages: [] }))
+    // Loading the last conversation goes to its own mock, so fetchMock sees only the questions.
+    vi.stubGlobal('fetch', (url: string, init: RequestInit) =>
+      url.endsWith('/chat/latest') ? latestMock(url, init) : fetchMock(url, init))
     localStorage.setItem('auth', JSON.stringify({ token: 'old', refreshToken: 'r' }))
   })
 
@@ -132,14 +138,78 @@ describe('CourseChat', () => {
 
     expect(fetchMock.mock.calls[0][1].signal.aborted).toBe(true)
   })
+
+  it('opens on the last conversation and carries on with its session', async () => {
+    latestMock.mockImplementation(async () => Response.json({ session_id: 's9', messages: [
+      { id: 'u1', role: 'user', content: 'Heap là gì?', citations: [] },
+      saved('Heap là cây nhị phân.'),
+      { id: 'u2', role: 'user', content: 'Câu hỏi bị lỗi', citations: [] },
+    ] }))
+    fetchMock.mockResolvedValueOnce(stream(event('done', saved('Có hai tính chất.'))))
+    render(<CourseChat courseId="course-1" />)
+
+    expect(await screen.findByText('Heap là cây nhị phân.')).toBeInTheDocument()
+    expect(screen.getByText('Câu hỏi bị lỗi')).toBeInTheDocument()
+    expect(latestMock.mock.calls[0][0]).toBe('/api/courses/course-1/chat/latest')
+    await ask('Nó có mấy tính chất?')
+    await screen.findByText('Có hai tính chất.')
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body).session_id).toBe('s9')
+  })
+
+  it('cannot send until the last conversation has loaded', async () => {
+    let finish: (response: Response) => void = () => {}
+    latestMock.mockImplementation(() => new Promise<Response>((resolve) => { finish = resolve }))
+    render(<CourseChat courseId="course-1" />)
+
+    expect(screen.getByText('Đang tải cuộc trò chuyện...')).toBeInTheDocument()
+    expect(screen.getByLabelText('Câu hỏi của bạn')).toBeDisabled()
+    finish(Response.json({ session_id: null, messages: [] }))
+    await waitFor(() => expect(screen.getByLabelText('Câu hỏi của bạn')).toBeEnabled())
+  })
+
+  it('still lets you ask when the last conversation fails to load, in a new session', async () => {
+    latestMock.mockImplementation(async () => new Response(null, { status: 500 }))
+    fetchMock.mockResolvedValueOnce(stream(event('done', saved('Có.'))))
+    render(<CourseChat courseId="course-1" />)
+
+    expect(await screen.findByText('Không tải được cuộc trò chuyện trước.')).toBeInTheDocument()
+    await ask('Heap?')
+    await screen.findByText('Có.')
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body).session_id).toBeUndefined()
+  })
+
+  it('starts a new conversation without the old session', async () => {
+    latestMock.mockImplementation(async () => Response.json({ session_id: 's9', messages: [
+      { id: 'u1', role: 'user', content: 'Heap là gì?', citations: [] }, saved('Heap là cây nhị phân.'),
+    ] }))
+    fetchMock.mockResolvedValueOnce(stream(event('session', { session_id: 's10' }), event('done', saved('Stack là LIFO.'))))
+    render(<CourseChat courseId="course-1" />)
+
+    await screen.findByText('Heap là cây nhị phân.')
+    await userEvent.click(screen.getByRole('button', { name: 'Cuộc trò chuyện mới' }))
+    expect(screen.queryByText('Heap là cây nhị phân.')).not.toBeInTheDocument()
+    await ask('Stack là gì?')
+    await screen.findByText('Stack là LIFO.')
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body).session_id).toBeUndefined()
+  })
 })
 
 describe('sourceLabel', () => {
   it('reads the stored location', () => {
     expect(sourceLabel('{"page": 27, "heading": "Process Termination", "extraction_method": "text_layer"}')).toBe('Process Termination, trang 27')
     expect(sourceLabel('{"slide_index": 3}')).toBe('slide 3')
-    expect(sourceLabel('{"spans": [{"page": 9, "heading": "Process State"}, {"page": 10}]}')).toBe('Process State, trang 9')
     expect(sourceLabel('{"extraction_method": "text_layer"}')).toBe('Tài liệu môn học')
+  })
+
+  it('names every page a chunk crosses, not only the first', () => {
+    expect(sourceLabel('{"spans": [{"page": 9, "heading": "Process State"}, {"page": 10}]}')).toBe('Process State, trang 9–10')
+    expect(sourceLabel('{"spans": [{"page": 9}, {"page": 11}, {"page": 12}, {"page": 11}]}')).toBe('trang 9, 11–12')
+    expect(sourceLabel('{"spans": [{"slide_index": 4, "slide_title": "Deadlock"}, {"slide_index": 5}]}')).toBe('Deadlock, slide 4–5')
+  })
+
+  it('gives audio and video the time they cover', () => {
+    expect(sourceLabel('{"start_ms": 750000, "end_ms": 790500}')).toBe('12:30–13:10')
+    expect(sourceLabel('{"spans": [{"start_ms": 3600000, "end_ms": 3605000}, {"start_ms": 3605000, "end_ms": 3725000}]}')).toBe('1:00:00–1:02:05')
   })
 })
 
@@ -150,4 +220,5 @@ describe('parseChatEvents', () => {
     expect(first.events).toEqual([])
     expect(parseChatEvents(first.rest + whole.slice(10)).events).toEqual([{ name: 'delta', data: { text: 'a' } }])
   })
+
 })

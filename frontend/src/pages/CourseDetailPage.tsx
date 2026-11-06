@@ -504,7 +504,7 @@ export function CourseDetailPage() {
           )}
         </ul>
       )}
-      {courseId && documents.some((d) => d.status === "embedded") && <CourseChat courseId={courseId} />}
+      {courseId && documents.some((d) => d.status === "embedded") && <CourseChat key={courseId} courseId={courseId} />}
     </AppShell>
   );
 }

@@ -2,6 +2,7 @@
 
 import json
 import uuid
+from datetime import UTC, datetime, timedelta
 
 import pytest
 from fastapi.testclient import TestClient
@@ -10,7 +11,18 @@ from app.chat import service
 from app.db import SessionLocal, request_engine
 from app.ingestion.embeddings import embed_texts
 from app.main import app
-from app.models import ChatSession, Chunk, Course, Document, DocumentStatus, RefreshToken, User
+from app.models import (
+    ChatMessage,
+    ChatRole,
+    ChatSession,
+    Chunk,
+    Course,
+    Document,
+    DocumentStatus,
+    Module,
+    RefreshToken,
+    User,
+)
 from app.retrieval import search
 from tests.auth_helpers import create_and_login
 
@@ -166,3 +178,69 @@ def test_another_users_course_is_refused_before_anything_is_saved(world):
     assert response.status_code in (403, 404)
     with SessionLocal() as db:
         assert db.query(ChatSession).filter(ChatSession.course_id == uuid.UUID(course_id)).count() == 0
+
+
+def _seed_session(course_id: str, *contents: str, minutes_ago: int, module: bool = False) -> str:
+    """A session whose messages were written `minutes_ago`, one second apart, alternating user and assistant."""
+    with SessionLocal() as db:
+        course_uuid = uuid.UUID(course_id)
+        module_id = None
+        if module:
+            document = db.query(Document).filter(Document.course_id == course_uuid).first()
+            row = Module(document_id=document.id, course_id=course_uuid, title="M")
+            db.add(row)
+            db.flush()
+            module_id = row.id
+        session = ChatSession(course_id=course_uuid, module_id=module_id)
+        db.add(session)
+        db.flush()
+        start = datetime.now(UTC) - timedelta(minutes=minutes_ago)
+        db.add_all([ChatMessage(session_id=session.id, role=ChatRole.user if i % 2 == 0 else ChatRole.assistant,
+                                content=text, citations=[], created_at=start + timedelta(seconds=i))
+                    for i, text in enumerate(contents)])
+        db.commit()
+        return str(session.id)
+
+
+def test_latest_is_empty_for_a_course_without_chat(world):
+    client, headers, course_id, _ = world
+
+    response = client.get(f"/courses/{course_id}/chat/latest", headers=headers)
+
+    assert response.status_code == 200
+    assert response.json() == {"session_id": None, "messages": []}
+
+
+def test_latest_is_the_session_with_the_newest_message(world):
+    client, headers, course_id, _ = world
+    # Created first but used last, so it is the one a reload should bring back.
+    used_last = _seed_session(course_id, "Heap?", "Cây.", minutes_ago=60)
+    _seed_session(course_id, "Stack?", "LIFO.", minutes_ago=30)
+    with SessionLocal() as db:
+        db.add(ChatMessage(session_id=uuid.UUID(used_last), role=ChatRole.user, content="Còn gì?", citations=[],
+                           created_at=datetime.now(UTC)))
+        db.commit()
+
+    body = client.get(f"/courses/{course_id}/chat/latest", headers=headers).json()
+
+    assert body["session_id"] == used_last
+    assert [(m["role"], m["content"]) for m in body["messages"]] == [
+        ("user", "Heap?"), ("assistant", "Cây."), ("user", "Còn gì?")]
+
+
+def test_latest_ignores_module_chats(world):
+    client, headers, course_id, _ = world
+    course_chat = _seed_session(course_id, "Heap?", minutes_ago=30)
+    _seed_session(course_id, "Trong module này?", minutes_ago=1, module=True)
+
+    assert client.get(f"/courses/{course_id}/chat/latest", headers=headers).json()["session_id"] == course_chat
+
+
+def test_latest_of_someone_elses_course_is_refused(world):
+    client, _, course_id, _ = world
+    _seed_session(course_id, "Heap?", minutes_ago=1)
+    other = create_and_login(client, f"stream-other-{uuid.uuid4().hex}@example.com")["access_token"]
+
+    response = client.get(f"/courses/{course_id}/chat/latest", headers={"Authorization": f"Bearer {other}"})
+
+    assert response.status_code in (403, 404)
