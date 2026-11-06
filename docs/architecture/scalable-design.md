@@ -224,7 +224,7 @@ dùng RDS Proxy vì tài liệu AWS không khẳng định `SET LOCAL` tránh đ
 | Worker chết, Spot thu hồi | Heartbeat phát hiện, job chạy lại, tối đa số lần cho phép | Có sẵn, cần test Spot |
 | Reranker lỗi | Thử lại với backoff, sau đó chat dùng hybrid | Thử lại có sẵn, hybrid cần làm |
 | Nhà cung cấp LLM lỗi hoặc 429 | Gateway thử lại và fallback theo cấu hình | Có sẵn |
-| Valkey mất | Rate limit theo từng task, LTI launch tạm thất bại | Rate limit có sẵn |
+| Valkey mất | Rate limit theo từng task; LTI không bị ảnh hưởng vì state nằm trong Postgres | Rate limit có sẵn |
 | RDS lỗi | Vận hành thật: Multi-AZ tự chuyển. Demo: khôi phục từ snapshot | Một tham số Terraform |
 | Một AZ mất | Tầng ứng dụng chạy trên 2 AZ. NAT một AZ là điểm yếu đã chấp nhận vì chi phí | Theo thiết kế |
 | Deploy lỗi | Circuit breaker của ECS tự quay về bản trước | Cần cấu hình |
