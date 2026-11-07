@@ -43,7 +43,7 @@ Table~\ref{tab:05-data-2} presents operational and research entities.
 \begin{longtable}{|p{3.0cm}|p{6.6cm}|p{4.3cm}|}\caption{Operational and research entities.}\label{tab:05-data-2}\\\hline
 Table & Key fields and links & Behavior\\\hline\endfirsthead
 \hline Table & Key fields and links & Behavior\\\hline\endhead
-\code{jobs} & Type, document/module references, step, status, payload, attempts, due time and lock metadata & PostgreSQL-backed processing queue; nullable links depend on job type\\\hline
+\code{jobs} & Type, document/module references, step, status, payload, attempts, due time, lock metadata, last error and whether the system caused a failure & PostgreSQL-backed processing queue; nullable links depend on job type\\\hline
 \code{evaluations} & Module FK, criterion, numeric score and notes & Pipeline checks; not formal blind ratings\\\hline
 \code{chat_sessions} & Course FK, user FK and optional module FK & Course Q\&A or module-specific editing context; visible only to its user\\\hline
 \code{chat_messages} & Session FK, role, text, citations and applied-edit flag & Persisted conversation and edit evidence\\\hline
