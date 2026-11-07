@@ -140,6 +140,8 @@ PYTHONPATH=. uv run python scripts/export_study_pair.py <module_id> --out study/
 #    Hai model khác hãng với model sinh và nhau. Bị ngắt thì chạy lại
 #    đúng lệnh đó: chỉ những gói còn thiếu được chấm tiếp.
 PYTHONPATH=. uv run python scripts/run_judge.py study/packets --out study/rubric.jsonl
+#    --judges a,b giới hạn pool (guard khác hãng vẫn áp dụng), ví dụ khi hãng ưu tiên chưa có khóa;
+#    ghi vào tệp riêng để lượt chính thức vẫn chọn đúng hai alias ưu tiên.
 
 # 3. R9: tách claim độc lập từ Content và chấm các trích dẫn được máy chủ giải.
 PYTHONPATH=. uv run python scripts/run_claim_judge.py study/packets --judge <verified-free-alias> --out study/claims.jsonl
