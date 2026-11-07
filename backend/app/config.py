@@ -158,6 +158,14 @@ class Settings(BaseSettings):
     # The address people open the application at, as the LMS sees it. The LTI redirect URI is
     # built from it and must match the one registered in the LMS exactly.
     public_url: str = "https://localhost:8443"
+    # The tool's own RSA private key, PEM (newlines may be written as \n). With it the tool publishes its
+    # public key at /api/lti/jwks and signs the assertion it trades for an access token to an LMS's
+    # Names and Role Provisioning service, which keeps course members in step with the LMS course
+    # (app/lti/roster.py). Empty turns that off: members then stay until they are removed by hand.
+    lti_private_key: str = Field(default="", repr=False)
+    # How old a course's member list may be before the worker reads it from the LMS again. A student
+    # removed from the LMS course loses the course here within about this long.
+    lti_roster_sync_minutes: int = Field(default=60, ge=5)
 
     moodle_base_url: str = "http://localhost:8080"
     # Moodle's own $CFG->wwwroot (how it's configured, e.g. so a human can

@@ -11,6 +11,8 @@ x-backend-environment: &backend-environment
   MOODLE_BASE_URL: http://moodle:80
   MOODLE_TOKEN: ${MOODLE_TOKEN}
   MOODLE_WWWROOT: ${MOODLE_WWWROOT}
+  # Khoa LTI cua cong cu (docs/integration/lti.md). Rong thi khong doc danh sach lop tu LMS.
+  LTI_PRIVATE_KEY: ${LTI_PRIVATE_KEY:-}
   NON_TEACHER_DAILY_GENERATION_LIMIT: ${NON_TEACHER_DAILY_GENERATION_LIMIT:-3}
   LLM_GATEWAY_URL: http://gateway:4000
   LLM_GATEWAY_KEY: ${LLM_GATEWAY_KEY}

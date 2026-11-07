@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # The app in a real browser, through a real Moodle 5.2 LTI 1.3 launch:
-#   devops/browser-e2e/up.sh       start everything (Moodle's install takes a few minutes)
+#   bash devops/browser-e2e/up.sh     start everything (Moodle's install takes a few minutes)
 #   devops/browser-e2e/drive.py    play a teacher or a student, see its docstring
-#   devops/browser-e2e/down.sh     stop everything
+#   bash devops/browser-e2e/down.sh   stop everything
 #
 # Throwaway: Postgres on tmpfs for both Moodle and the backend, moodledata on tmpfs, no volume, and
 # nothing of the compose stack (do-an_db_data, ./moodle/config.php) is touched. Nothing paid is
@@ -24,7 +24,7 @@ NET=be2e
 mkdir -p "$WORK/logs" "$WORK/uploads"
 rm -f "$WORK"/state-*.json "$WORK"/url-*.txt "$WORK/pids"
 
-"$HERE/down.sh" >/dev/null 2>&1 || true
+bash "$HERE/down.sh" >/dev/null 2>&1 || true
 
 cat > "$WORK/config.php" <<PHP
 <?php

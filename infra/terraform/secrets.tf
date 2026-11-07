@@ -15,6 +15,14 @@ resource "random_password" "gateway_key" {
   special = false
 }
 
+# The tool's LTI key: the api publishes its public half at /api/lti/jwks, the worker signs with it to
+# read each course's member list from the LMS (backend/app/lti/roster.py). Replacing it gives it a new
+# key id, so an LMS that cached the old key fetches the set again.
+resource "tls_private_key" "lti" {
+  algorithm = "RSA"
+  rsa_bits  = 2048
+}
+
 resource "random_password" "embedder_key" {
   length  = 40
   special = false
@@ -30,6 +38,7 @@ locals {
     "secret-key"               = random_password.secret_key.result
     "llm-gateway-key"          = "sk-${random_password.gateway_key.result}"
     "embedder-api-key"         = random_password.embedder_key.result
+    "lti-private-key"          = tls_private_key.lti.private_key_pem
   }
 
   external_parameters = [

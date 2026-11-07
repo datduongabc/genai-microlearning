@@ -1,6 +1,11 @@
 <?php
 // Configures the e2e Moodle as an admin would in the UI: a teacher, a student, a course, an
-// LTI 1.3 tool pointing at the local backend, and an activity using it. Prints JSON.
+// LTI 1.3 tool pointing at the local backend, with Names and Role Provisioning on, and an activity
+// using it. Prints JSON.
+//
+// TOOL_PUBLIC_KEY (PEM), when set, is the key Moodle checks the tool's signed assertions with. Without
+// it Moodle fetches the tool's key set, which a backend on the host's localhost is not reachable at
+// from inside this container.
 define('CLI_SCRIPT', true);
 require('/var/www/html/config.php');
 require_once($CFG->dirroot . '/course/lib.php');
@@ -9,6 +14,7 @@ require_once($CFG->dirroot . '/mod/lti/locallib.php');
 require_once($CFG->libdir . '/enrollib.php');
 
 $tool = getenv('TOOL_URL') ?: 'http://localhost:58000';
+$publickey = getenv('TOOL_PUBLIC_KEY') ?: '';
 \core\session\manager::set_user(get_admin());
 
 function e2e_user($username, $first) {
@@ -38,7 +44,8 @@ if (!$type) {
         'lti_typename' => 'Microlearning E2E',
         'lti_toolurl' => "$tool/api/lti/launch",
         'lti_ltiversion' => LTI_VERSION_1P3,
-        'lti_keytype' => LTI_JWK_KEYSET,
+        'lti_keytype' => $publickey ? LTI_RSA_KEY : LTI_JWK_KEYSET,
+        'lti_publickey' => $publickey,
         'lti_publickeyset' => "$tool/api/lti/jwks",
         'lti_initiatelogin' => "$tool/api/lti/login",
         'lti_redirectionuris' => "$tool/api/lti/launch",
@@ -48,6 +55,8 @@ if (!$type) {
         'lti_coursevisible' => LTI_COURSEVISIBLE_ACTIVITYCHOOSER,
         'lti_acceptgrades' => LTI_SETTING_NEVER,
         'lti_contentitem' => 0,
+        // Names and Role Provisioning: the tool reads the course's member list.
+        'ltiservice_memberships' => 1,
     ];
     $typeid = lti_add_type((object)['state' => LTI_TOOL_STATE_CONFIGURED], $config);
     $type = $DB->get_record('lti_types', ['id' => $typeid]);
@@ -72,6 +81,7 @@ echo json_encode([
     'deployment_id' => (string)$type->id,
     'auth_login_url' => "$CFG->wwwroot/mod/lti/auth.php",
     'jwks_url' => "$CFG->wwwroot/mod/lti/certs.php",
+    'token_url' => "$CFG->wwwroot/mod/lti/token.php",
     'course_id' => (int)$course->id,
     'cmid' => (int)$cm->id,
     'teacher_id' => (int)$teacher->id,

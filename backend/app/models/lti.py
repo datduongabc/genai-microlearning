@@ -1,8 +1,9 @@
 """LTI 1.3: the platforms that may launch this tool, and who and what their launches map to.
 
 None of these tables is under row level security: a launch arrives before anyone is signed in,
-so there is no app.current_user_id to filter by. Only the request role has grants on them, and
-the worker may only delete expired rows.
+so there is no app.current_user_id to filter by. Only the request role has grants on them; the
+worker may delete expired rows and read what it needs to keep course members in step with the LMS
+(migration 0029).
 """
 
 import uuid
@@ -25,6 +26,9 @@ class LtiPlatform(Base):
     client_id: Mapped[str]
     auth_login_url: Mapped[str]
     jwks_url: Mapped[str]
+    # Where the tool trades an assertion it signed for an access token to the LMS's services (OAuth 2
+    # client credentials, app/lti/roster.py). Without it, the course's member list is never read.
+    token_url: Mapped[str | None] = mapped_column(default=None)
     # The project's own Moodle: its `sub` is the Moodle user id and its context id the Moodle
     # course id, which a signed launch confirms as strongly as the plugin's confirmation flow.
     links_moodle: Mapped[bool] = mapped_column(default=False, server_default="false")
@@ -64,6 +68,10 @@ class LtiContext(Base):
     deployment_id: Mapped[str]
     context_id: Mapped[str]
     course_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("courses.id", ondelete="CASCADE"), index=True)
+    # The LMS's Names and Role Provisioning address for this course, from the latest launch that carried
+    # one, and when the member list was last read from it.
+    memberships_url: Mapped[str | None] = mapped_column(default=None)
+    roster_synced_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), default=None)
     created_at: Mapped[datetime] = created_at_column()
 
 

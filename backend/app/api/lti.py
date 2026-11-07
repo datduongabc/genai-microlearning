@@ -25,6 +25,7 @@ from app.auth.security import create_access_token
 from app.config import settings
 from app.db import get_db
 from app.lti import launch as lti
+from app.lti import roster
 from app.models import Course
 
 router = APIRouter(tags=["lti"])
@@ -127,6 +128,6 @@ def lti_session(request: Request, payload: ExchangeRequest, db: Session = Depend
 
 @router.get("/lti/jwks")
 def lti_jwks():
-    """The tool's public keys. A launch needs none: the tool only reads what the LMS signed. The
-    LMS asks for the URL anyway, and Deep Linking or grade passback would publish keys here."""
-    return {"keys": []}
+    """The tool's public key, with which the LMS checks the assertion the tool trades for an access
+    token to read a course's member list (app/lti/roster.py). Empty without LTI_PRIVATE_KEY."""
+    return roster.public_jwks()

@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-# LTI 1.3 launch against a real Moodle (the repository's ./moodle, 5.2), end to end:
-#   devops/lti-e2e/run.sh
+# LTI 1.3 launch against a real Moodle (the repository's ./moodle, 5.2), end to end, and Names and
+# Role Provisioning: a student taken out of the Moodle course is taken out of the course here.
+#   bash devops/lti-e2e/run.sh
 #
 # Throwaway and isolated: its own network, a Postgres on tmpfs for both Moodle and the backend,
 # Moodle's source mounted read-only with a config.php of its own, moodledata on tmpfs. No volume
@@ -36,6 +37,9 @@ global \$CFG;
 require_once(__DIR__ . '/lib/setup.php');
 PHP
 chmod 644 "$WORK/config.php"
+# The tool's key for this run only: the backend signs with it, Moodle checks with its public half.
+openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 -out "$WORK/tool.pem" 2>/dev/null
+openssl pkey -in "$WORK/tool.pem" -pubout -out "$WORK/tool.pub"
 
 echo "== Database"
 docker network create "$NET" >/dev/null
@@ -63,7 +67,7 @@ for _ in $(seq 1 90); do
   curl -fs -o /dev/null localhost:58081/login/index.php && break
   sleep 10
 done
-docker exec -u www-data -e TOOL_URL=http://localhost:58000 lti-e2e-moodle php /e2e/setup.php 2>/dev/null | grep '^{' > "$WORK/moodle.json"
+docker exec -u www-data -e TOOL_URL=http://localhost:58000 -e TOOL_PUBLIC_KEY="$(cat "$WORK/tool.pub")" lti-e2e-moodle php /e2e/setup.php 2>/dev/null | grep '^{' > "$WORK/moodle.json"
 cat "$WORK/moodle.json"
 
 echo "== Backend"
@@ -71,13 +75,16 @@ export DATABASE_URL=postgresql+psycopg://postgres:$DB_PW@localhost:55434/microle
 export APP_RUNTIME_DATABASE_URL=postgresql+psycopg://app_runtime:e2e-runtime-pw@localhost:55434/microlearning
 export APP_WORKER_DATABASE_URL=postgresql+psycopg://app_worker:e2e-worker-pw@localhost:55434/microlearning
 export SECRET_KEY=e2e-secret-key-not-for-production-000000 PUBLIC_URL=http://localhost:58000 RUN_JOB_WORKER=false
+LTI_PRIVATE_KEY="$(cat "$WORK/tool.pem")"
+export LTI_PRIVATE_KEY
 # Blank, so that devops/.env's real keys are never used by this run.
 export OPENAI_API_KEY='' GEMINI_API_KEY='' ANTHROPIC_API_KEY='' GROQ_API_KEY='' TYPESAFE_API_KEY='' LLM_GATEWAY_KEY='' EMBEDDER_API_KEY='' MOODLE_TOKEN=''
 cd "$ROOT/backend"
 uv run alembic upgrade head >/dev/null
 j() { jq -r ".$1" "$WORK/moodle.json"; }
 PYTHONPATH=. uv run python scripts/register_lti_platform.py --issuer "$(j issuer)" --client-id "$(j client_id)" \
-  --auth-login-url "$(j auth_login_url)" --jwks-url "$(j jwks_url)" --deployment "$(j deployment_id)" --links-moodle
+  --auth-login-url "$(j auth_login_url)" --jwks-url "$(j jwks_url)" --token-url "$(j token_url)" \
+  --deployment "$(j deployment_id)" --links-moodle
 PYTHONPATH=".:$HERE" uv run uvicorn asgi:app --port 58000 >"$WORK/api.log" 2>&1 &
 API_PID=$!
 until curl -fs -o /dev/null localhost:58000/api/ready; do sleep 1; done
@@ -103,3 +110,27 @@ docker exec lti-e2e-db psql -U postgres -d microlearning -tAc \
   "select 'courses ' || count(*) || ', moodle_course_id ' || string_agg(moodle_course_id::text, ',') from courses" -c \
   "select 'course_members ' || count(*) from course_members"
 echo "== Expected moodle ids: teacher $(j teacher_id), course $(j course_id)"
+
+stored_url="$(docker exec lti-e2e-db psql -U postgres -d microlearning -tAc "select memberships_url from lti_contexts")"
+[[ "$stored_url" == "$(j issuer)/mod/lti/services.php/"* ]] || { echo "no member list address stored: $stored_url" >&2; exit 1; }
+# One roster check, as if it ran $1 days from now, so that every list is due.
+sync() {
+  PYTHONPATH=. uv run python -c 'import json, sys; from datetime import UTC, datetime, timedelta
+from app.lti.roster import sync_rosters
+print(json.dumps(sync_rosters(datetime.now(UTC) + timedelta(days=int(sys.argv[1])))))' "$1"
+}
+members() { docker exec lti-e2e-db psql -U postgres -d microlearning -tAc "select count(*) from course_members"; }
+
+echo "== Roster check while the student is enrolled: nobody removed"
+SYNC="$(sync 1)"; echo "$SYNC"
+jq -e '.courses == 1 and .removed == 0 and .skipped == 0' <<<"$SYNC" >/dev/null && [[ "$(members)" == 1 ]] \
+  || { echo "an enrolled student was removed, or the list was not read" >&2; exit 1; }
+
+echo "== Student taken out of the Moodle course: out of the course here at the next roster check"
+docker exec -u www-data lti-e2e-moodle php /e2e/unenrol.php e2estudent
+SYNC="$(sync 2)"; echo "$SYNC"
+jq -e '.removed == 1 and .skipped == 0' <<<"$SYNC" >/dev/null && [[ "$(members)" == 0 ]] \
+  || { echo "the roster check did not remove the student" >&2; exit 1; }
+echo "== Teacher still owns the course after the check"
+browse e2eteacher | tail -1 | jq -e '.course_role == "owner" and .documents == 200' >/dev/null || { echo "teacher lost the course" >&2; exit 1; }
+echo "== All checks passed"
