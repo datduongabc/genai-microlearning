@@ -26,7 +26,7 @@ import threading
 import uuid
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
-from urllib.parse import urlencode
+from urllib.parse import urlencode, urlsplit
 
 import jwt
 from sqlalchemy import delete, select, text
@@ -55,6 +55,7 @@ LAUNCH_CODE_TTL = timedelta(seconds=60)
 CLOCK_SKEW_SECONDS = 60
 
 CLAIM = "https://purl.imsglobal.org/spec/lti/claim/"
+NRPS_CLAIM = "https://purl.imsglobal.org/spec/lti-nrps/claim/namesroleservice"
 INSTRUCTOR_ROLES = {
     "http://purl.imsglobal.org/vocab/lis/v2/membership#Instructor",
     # The short form LTI 1.1 used, which some platforms still send.
@@ -74,6 +75,11 @@ class LaunchRefused(Exception):
         super().__init__(reason)
         self.reason = reason
         self.message = message
+
+
+def same_origin(url: str, reference: str) -> bool:
+    a, b = urlsplit(url), urlsplit(reference)
+    return (a.scheme, a.hostname, a.port) == (b.scheme, b.hostname, b.port)
 
 
 def _hash(value: str) -> str:
@@ -172,6 +178,8 @@ class LaunchClaims:
     name: str
     email: str | None
     roles: list[str]
+    # The LMS course's Names and Role Provisioning address, when the LMS offers the service.
+    memberships_url: str | None = None
 
 
 def validate_id_token(db: Session, platform: LtiPlatform, id_token: str, nonce: str) -> LaunchClaims:
@@ -210,6 +218,12 @@ def validate_id_token(db: Session, platform: LtiPlatform, id_token: str, nonce: 
     if not context.get("id"):
         raise LaunchRefused("no context", "Hãy mở công cụ từ bên trong một khóa học.")
 
+    memberships_url = (claims.get(NRPS_CLAIM) or {}).get("context_memberships_url")
+    if memberships_url is not None and not (isinstance(memberships_url, str) and same_origin(memberships_url, platform.issuer)):
+        # The tool's access token will be sent there, so only to the LMS itself.
+        logger.warning("lti_launch ignores memberships url %r: not on %s", memberships_url, platform.issuer)
+        memberships_url = None
+
     name = claims.get("name") or " ".join(p for p in (claims.get("given_name"), claims.get("family_name")) if p)
     return LaunchClaims(
         sub=str(claims["sub"]),
@@ -219,6 +233,7 @@ def validate_id_token(db: Session, platform: LtiPlatform, id_token: str, nonce: 
         name=name or "",
         email=claims.get("email"),
         roles=list(claims.get(CLAIM + "roles") or []),
+        memberships_url=memberships_url,
     )
 
 
@@ -284,6 +299,13 @@ def _new_user(db: Session, claims: LaunchClaims, moodle_user_id: int | None, *, 
     return user
 
 
+def _note_memberships_url(context: LtiContext, claims: LaunchClaims) -> None:
+    """Kept from the latest launch that carries one: the LMS may move it, and a context made before the
+    tool read member lists gets one this way. A launch without one leaves it alone."""
+    if claims.memberships_url and context.memberships_url != claims.memberships_url:
+        context.memberships_url = claims.memberships_url
+
+
 def _course_for(db: Session, platform: LtiPlatform, claims: LaunchClaims, user: User) -> Course:
     context = db.scalar(select(LtiContext).where(
         LtiContext.platform_id == platform.id, LtiContext.deployment_id == claims.deployment_id,
@@ -297,6 +319,7 @@ def _course_for(db: Session, platform: LtiPlatform, claims: LaunchClaims, user: 
                 "context owned by another user",
                 "Khóa học này đã được một giảng viên khác mở trong công cụ. "
                 "Hiện mỗi khóa học thuộc về một giảng viên.")
+        _note_memberships_url(context, claims)
         return course
 
     moodle_course_id = _moodle_id(claims.context_id) if platform.links_moodle else None
@@ -310,7 +333,7 @@ def _course_for(db: Session, platform: LtiPlatform, claims: LaunchClaims, user: 
         db.add(course)
         db.flush()
     db.add(LtiContext(platform_id=platform.id, deployment_id=claims.deployment_id,
-                      context_id=claims.context_id, course_id=course.id))
+                      context_id=claims.context_id, course_id=course.id, memberships_url=claims.memberships_url))
     return course
 
 
@@ -322,6 +345,7 @@ def _joined_course(db: Session, platform: LtiPlatform, claims: LaunchClaims, use
     if context is None:
         raise LaunchRefused("no instructor has opened this context",
                             "Giảng viên chưa thiết lập công cụ cho khóa học này. Hãy thử lại sau.")
+    _note_memberships_url(context, claims)
     already = db.scalar(select(CourseMember.user_id).where(
         CourseMember.course_id == context.course_id, CourseMember.user_id == user.id))
     course = db.get(Course, context.course_id)

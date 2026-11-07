@@ -23,6 +23,7 @@ Phạm vi bản này: launch cho giảng viên và sinh viên. Giảng viên dù
 | Chia sẻ tên người dùng | Luôn luôn |
 | Chia sẻ email người dùng | Luôn luôn (không bắt buộc) |
 | Vùng chứa mặc định khi mở | **Cửa sổ mới** |
+| IMS LTI Names and Role Provisioning | **Dùng dịch vụ này để lấy thông tin thành viên** (để gỡ sinh viên đã rời lớp, xem [Rời lớp](#rời-lớp)) |
 
 Redirection URI phải khớp từng ký tự với `{PUBLIC_URL}/api/lti/launch`. Sau khi lưu, bấm biểu tượng *Xem chi tiết cấu hình* của công cụ để lấy Platform ID, Client ID, Deployment ID và các URL dùng ở bước 2.
 
@@ -38,9 +39,12 @@ PYTHONPATH=. python scripts/register_lti_platform.py \
   --client-id "<Client ID>" \
   --auth-login-url "<Authentication request URL>" \
   --jwks-url "<Public keyset URL>" \
+  --token-url "<Access token URL>" \
   --deployment "<Deployment ID>" \
   --links-moodle
 ```
+
+`--token-url` (với Moodle là `…/mod/lti/token.php`) và biến `LTI_PRIVATE_KEY` cùng bật việc đồng bộ thành viên; thiếu một trong hai thì sinh viên chỉ được thêm, không bao giờ bị gỡ. Trên AWS, Terraform sinh khóa (`tls_private_key.lti`) và đưa vào SSM. Trên compose, sinh khóa theo hướng dẫn trong `devops/.env.example`.
 
 Chỉ thêm `--links-moodle` cho Moodle của dự án, tức Moodle mà plugin cũng nối tới. Khi có cờ này, launch xác nhận luôn mã người dùng và mã khóa học Moodle (xem dưới). Chạy lại lệnh với cùng issuer và client id thì URL được cập nhật và deployment được thêm.
 
@@ -104,23 +108,37 @@ Kiểm tra trên id_token:
 - **Tài khoản:** tài khoản mà launch `Learner` tạo ra có `can_author = false`, nên không tạo được khóa học. Launch `Instructor` sau đó bật lại quyền này. Nếu người đó đã là thành viên của chính khóa ấy thì vẫn bị từ chối như giảng viên thứ hai.
 - **Hạn mức:** `LEARNER_DAILY_CHAT_LIMIT` (mặc định 30) tin mỗi ngày cho mỗi tài khoản sinh viên, vì mỗi tin là một lần gọi model trả tiền. Giảng viên không bị tính.
 
+## Rời lớp
+
+Launch chỉ thêm sinh viên vào khóa học, không nói khi nào họ rời lớp. Vì vậy worker hỏi LMS bằng Names and Role Provisioning Services 2.0 (`backend/app/lti/roster.py`):
+
+- **Địa chỉ danh sách lớp:** lấy từ claim `namesroleservice` của launch gần nhất, lưu ở `lti_contexts.memberships_url`. Địa chỉ phải cùng origin với issuer, vì access token sẽ được gửi tới đó. Launch của giảng viên hay sinh viên đều cập nhật được nó.
+- **Access token:** công cụ ký một assertion bằng `LTI_PRIVATE_KEY` và đổi ở token endpoint của LMS (OAuth 2 client credentials, scope `contextmembership.readonly`). Khóa công khai nằm ở `/api/lti/jwks`; key id là thumbprint RFC 7638, nên đổi khóa thì id cũng đổi.
+- **Chu kỳ:** cứ 5 phút worker xem khóa nào có danh sách cũ hơn `LTI_ROSTER_SYNC_MINUTES` (mặc định 60), đọc hết các trang và gỡ những thành viên không còn được liệt kê là `Learner` hay `Instructor` ở trạng thái `Active`. Ghi danh bị tạm ngưng (`Inactive`) cũng tính là đã rời. Sinh viên bị gỡ sẽ mất khóa học ngay ở request tiếp theo (RLS). Phiên đăng nhập của họ được giữ, vì họ có thể còn là thành viên khóa khác. Nếu được ghi danh lại, họ launch lại là vào được.
+- **Không gỡ ai khi chưa chắc:** lấy danh sách lỗi, token bị từ chối, trang tiếp theo nằm ngoài LMS, danh sách trống (đến giảng viên cũng không có), hoặc khóa học có một context LMS chưa có địa chỉ danh sách. Gặp các trường hợp này thì bỏ qua và thử lại ở lần kiểm tra sau.
+
 ## Kiểm chứng
 
-- **Với Moodle thật:** `devops/lti-e2e/run.sh` dựng Moodle 5.2.3 của repo, cấu hình giảng viên, sinh viên, khóa học và công cụ LTI 1.3 như trong trang quản trị, rồi đi trọn luồng launch như một trình duyệt. Kết quả lần chạy 2026-11-06, sau migration 0027:
+- **Với Moodle thật:** `bash devops/lti-e2e/run.sh` dựng Moodle 5.2.3 của repo, cấu hình giảng viên, sinh viên, khóa học và công cụ LTI 1.3 như trong trang quản trị, rồi đi trọn luồng launch như một trình duyệt. Kết quả lần chạy 2026-11-06, sau migration 0027:
   - Sinh viên mở trước khi giảng viên mở công cụ: bị từ chối (400).
   - Giảng viên vào được và thấy khóa học; lần mở thứ hai dùng lại đúng tài khoản và khóa học.
   - Sinh viên mở sau đó: vào đúng khóa học của giảng viên với `can_author = false`, danh sách khóa rỗng, chat trả 200, danh sách tài liệu trả 404. DB có đúng 1 dòng `course_members`.
   - `moodle_user_id` và `moodle_course_id` khớp id trong Moodle.
 
+  Lần chạy 2026-11-07, sau migration 0029, có thêm Names and Role Provisioning (Moodle kiểm assertion bằng khóa công khai của một khóa sinh riêng cho lần chạy):
+  - Khi sinh viên còn trong lớp: worker đọc được danh sách của Moodle và không gỡ ai.
+  - Rút sinh viên khỏi khóa Moodle: lần kiểm tra sau gỡ đúng sinh viên đó; giảng viên vẫn là chủ khóa học.
+
   Stack này tách riêng: DB trên tmpfs, mã nguồn Moodle mount chỉ đọc, không tạo volume, không đụng `do-an_db_data` hay `moodle/config.php`, và tự xóa khi xong. Cần khoảng 1 GB RAM và vài phút để Moodle cài đặt.
 - **Các trường hợp lỗi:** `backend/tests/integration/test_lti_launch.py` dùng một LMS giả ký bằng khóa RSA thật: sai chữ ký, sai audience, hết hạn, sai nonce, deployment lạ, phát lại state, dùng lại mã, và luồng sinh viên (vào trước giảng viên, chỉ chat được, hạn mức, đổi vai trò).
 - **Quyền ở tầng DB:** `backend/tests/integration/test_course_membership_rls.py` chạy SQL trực tiếp bằng role của request: thành viên đọc được gì, không sửa hay thêm được gì, và ai thấy chat của ai.
-- **Chưa thử trên trình duyệt thật.** Script đóng vai trình duyệt nên dừng ở bước đổi mã; trang `/lti/launch` của frontend chỉ có test unit.
+- **Đồng bộ thành viên:** `backend/tests/integration/test_lti_roster.py` dùng LMS giả, kiểm assertion bằng chính key set mà công cụ công bố: gỡ người đã rời, ghi danh bị tạm ngưng, vai trò không được phục vụ, đọc nhiều trang, mỗi chu kỳ đọc một lần, và các trường hợp không được gỡ ai.
+- **Trình duyệt thật:** `devops/browser-e2e` (2026-11-07) cho Chromium đóng giảng viên và sinh viên, đi qua Moodle 5.2 tới tận trang của frontend.
 
 ## Giới hạn
 
 - **Sinh viên không thấy module đã xuất bản trong công cụ.** Họ đọc Book và Quiz trên Moodle như trước.
-- **Không rút thành viên khi LMS rút tên.** Sinh viên bị gỡ khỏi khóa Moodle không launch được nữa, nhưng nếu còn token thì vẫn chat được tới khi token hết hạn (14 ngày). Names and Role Provisioning sẽ đồng bộ được việc này.
+- **Rời lớp không có hiệu lực ngay.** Sinh viên mất khóa học trong vòng khoảng `LTI_ROSTER_SYNC_MINUTES` cộng 5 phút sau khi bị rút khỏi khóa LMS, chứ không phải tức thì. Nếu LMS không bật Names and Role Provisioning hoặc công cụ không có khóa thì thời hạn vẫn là 14 ngày như trước.
 - **Mỗi khóa học thuộc một giảng viên.** Giảng viên thứ hai mở cùng khóa LMS sẽ nhận thông báo khóa đã thuộc người khác.
 - **State không gắn với trình duyệt.** Không có cookie, nên kẻ tấn công có thể khiến nạn nhân đăng nhập vào tài khoản LTI của chính kẻ tấn công (login CSRF). Họ không lấy được gì của nạn nhân, nhưng nạn nhân có thể vô tình tải tài liệu vào khóa học của kẻ tấn công. Gắn state với cookie `SameSite=None` khi mở cửa sổ mới sẽ chặn được.
 

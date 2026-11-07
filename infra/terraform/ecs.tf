@@ -50,6 +50,7 @@ locals {
     LLM_GATEWAY_KEY          = local.ssm["llm-gateway-key"]
     MOODLE_TOKEN             = local.ssm["moodle-token"]
     TYPESAFE_API_KEY         = local.ssm["typesafe-api-key"]
+    LTI_PRIVATE_KEY          = local.ssm["lti-private-key"]
   }
 
   # The provider keys reach the gateway and nothing else: the backend never holds one.

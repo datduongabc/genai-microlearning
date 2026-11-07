@@ -30,6 +30,7 @@ from app.config import settings
 from app.db import WorkerSessionLocal
 from app.jobs.maintenance import purge_old_records
 from app.llm.gateway import waiting_on_rate_limits
+from app.lti.roster import sync_rosters
 from app.models import Job, JobStatus, JobType
 
 logger = logging.getLogger(__name__)
@@ -54,6 +55,9 @@ SWEEP_INTERVAL_SECONDS = 60
 # after start so a backend that is restarted often still gets it, then hourly.
 MAINTENANCE_INTERVAL_SECONDS = 60 * 60
 MAINTENANCE_FIRST_RUN_DELAY_SECONDS = 60
+# How often the sweeping worker looks for courses whose member list is due to be read from the LMS
+# (app/lti/roster.py); how old a list may get is LTI_ROSTER_SYNC_MINUTES.
+ROSTER_CHECK_INTERVAL_SECONDS = 5 * 60
 POLL_INTERVAL_SECONDS = 2.0
 # One CloudWatch data point a minute, the finest that standard resolution keeps.
 METRICS_INTERVAL_SECONDS = 60
@@ -355,6 +359,7 @@ def _worker_loop(worker_id: str, *, run_sweeper: bool) -> None:
     logger.info(f"[job_queue] worker {worker_id} started (sweeper={run_sweeper})")
     next_sweep_at = datetime.now(UTC) + timedelta(seconds=SWEEP_INTERVAL_SECONDS)
     next_maintenance_at = datetime.now(UTC) + timedelta(seconds=MAINTENANCE_FIRST_RUN_DELAY_SECONDS)
+    next_roster_check_at = next_maintenance_at
 
     while not _stop_event.is_set():
         # One thread per process sweeps. Several processes overlap safely, see sweep_stuck_jobs().
@@ -374,6 +379,12 @@ def _worker_loop(worker_id: str, *, run_sweeper: bool) -> None:
                 except Exception:
                     logger.exception("[job_queue] maintenance error")
                 next_maintenance_at = datetime.now(UTC) + timedelta(seconds=MAINTENANCE_INTERVAL_SECONDS)
+            if now >= next_roster_check_at:
+                try:
+                    sync_rosters()
+                except Exception:
+                    logger.exception("[job_queue] roster sync error")
+                next_roster_check_at = datetime.now(UTC) + timedelta(seconds=ROSTER_CHECK_INTERVAL_SECONDS)
 
         job = None
         try:
