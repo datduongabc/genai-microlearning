@@ -66,6 +66,39 @@ nguồn, nhưng ký hiệu căn `√` bị đổi thành `∕(∕`. Nguồn ghi 
 còn câu trả lời ghi `3/(∕(∕(cos x)^3))+3/5 cos x∕(∕(cos^2 x)^3)`. Judge đánh giá nhận định này
 không có căn cứ, và đánh giá như vậy là đúng.
 
+## Sau khi sửa prompt chat (lượt 2)
+
+Prompt cũ cấm cả việc "suy diễn". Vì vậy chat từ chối cả những câu chỉ cần đọc đoạn code có trong
+nguồn. Prompt mới:
+- Vẫn cấm đưa vào thông tin ngoài nguồn.
+- Cho phép suy luận và tính toán trực tiếp trên nội dung của nguồn, có trình bày các bước.
+- Yêu cầu chép công thức giữ nguyên từng ký hiệu.
+
+Trước khi chạy lại cả 50 câu, mình thử 3 câu ngoài phạm vi môn: nấu phở bò (môn Hệ điều hành),
+React `useEffect` (môn Lập trình nâng cao), định lý Bayes (môn Giải tích 1). Cả 3 vẫn bị từ chối.
+
+Sau đó sinh lại cả 50 câu với prompt mới và chấm lại bằng cùng judge. Lượt 2 vẫn do
+`gemini-3.5-flash-lite` sinh và `gpt-oss-120b` chấm, ở cả 50 câu. Dữ liệu thô:
+`chat-eval/answers-gemini-fast-v2.jsonl` và `chat-eval/ragas-groq-pro-v2.jsonl`.
+
+| | Lượt 1 | Lượt 2 |
+| --- | --- | --- |
+| Từ chối | 4 | 2 (Round Robin, liên minh giai cấp) |
+| Faithfulness | 0,967 (0,916–1,000) | 0,966 (0,920–0,995) |
+| Answer relevancy | 0,725 (0,648–0,788) | 0,755 (0,691–0,805) |
+
+- **Answer relevancy theo cặp câu:** tăng +0,030, khoảng tin cậy 95% từ −0,007 đến +0,076. Chưa có
+  ý nghĩa thống kê.
+- **Hai câu từ chối sai trước đây giờ được trả lời:**
+  - `obj.display()`: trả lời "Subclass".
+  - Race condition: chỉ ra đúng biến `available_resources`.
+- **Câu tích phân:** giữ đúng `√` và đạt faithfulness 1,0.
+- **Faithfulness không giảm.** Như vậy cho phép suy luận không làm chat thêm nhận định không có căn cứ.
+- **Một câu mới bị điểm thấp:** câu machine-learning về điều kiện nửa mặt phẳng, faithfulness 0,14.
+  Nguồn của câu này là bản ghi lời giảng ("theta triangle transpose X"), và câu trả lời diễn đạt lại
+  lời giảng đó mà không bám sát được. Một lượt chạy chưa đủ để tách phần do model sinh với phần do
+  judge.
+
 ## Giới hạn
 
 - **Bộ câu hỏi dễ hơn thực tế.** Mỗi câu được một model đặt từ đúng một chunk, và chunk đó luôn được
@@ -81,8 +114,6 @@ không có căn cứ, và đánh giá như vậy là đúng.
 
 ## Việc nên làm tiếp
 
-- **Từ chối quá mức khi câu hỏi cần suy luận trên code hay bài tập có sẵn trong nguồn.** Đây là lỗi
-  của prompt chat, sửa được mà không tốn tiền. Sau khi sửa, chạy lại hai câu này.
-- **Ký hiệu toán bị làm hỏng trong câu trả lời.** Cần tìm xem lỗi nằm ở model hay ở khâu xử lý đầu ra.
+- **Từ chối quá mức và ký hiệu toán bị hỏng:** đã sửa bằng prompt ở lượt 2 (xem trên).
 - **Bổ sung bộ câu hỏi.** Thêm câu cần nhiều đoạn, câu ngoài phạm vi môn học (để kiểm việc từ chối
   đúng) và câu nối tiếp trong hội thoại, có người gán nhãn.
