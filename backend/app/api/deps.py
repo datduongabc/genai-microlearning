@@ -1,11 +1,14 @@
+from datetime import UTC, datetime
+
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from sqlalchemy import text
+from sqlalchemy import select, text
 from sqlalchemy.orm import Session
 
 from app.auth.security import decode_token, token_user_id
+from app.config import settings
 from app.db import get_db
-from app.models import Course, User
+from app.models import Course, CourseMember, User
 
 bearer_scheme = HTTPBearer(auto_error=False)
 
@@ -65,3 +68,37 @@ def require_admin(current_user: User = Depends(get_current_user)) -> User:
     if not current_user.is_admin:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
     return current_user
+
+
+def require_course_reader(db: Session, course: Course | None, user: User) -> Course:
+    """The owner, or a member: someone who may chat with the course's material. 404 otherwise, as for an owner
+    check. Row level security already hides the course from anyone else; this says the same in the code."""
+    if course is not None and course.owner_id == user.id:
+        return course
+    if course is None or db.scalar(select(CourseMember.user_id).where(
+            CourseMember.course_id == course.id, CourseMember.user_id == user.id)) is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Course not found")
+    return course
+
+
+def require_author(user: User) -> User:
+    """Creating courses and everything under them. An account an LMS made for a student cannot."""
+    if not user.can_author:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
+                            detail="Tài khoản sinh viên chỉ dùng được chat của khóa học.")
+    return user
+
+
+def count_learner_chat(db: Session, user: User) -> None:
+    """One chat message against the day's limit of an account that cannot author. In the request's transaction,
+    with the account row locked, so two messages at once cannot both take the last one."""
+    if user.can_author:
+        return
+    db.refresh(user, with_for_update=True)
+    today = datetime.now(UTC).date()
+    used = user.chat_count if user.chat_day == today else 0
+    if used >= settings.learner_daily_chat_limit:
+        raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail=(
+            f"Bạn đã hỏi đủ {settings.learner_daily_chat_limit} câu hôm nay (UTC). Hãy quay lại vào ngày mai."))
+    user.chat_day = today
+    user.chat_count = used + 1

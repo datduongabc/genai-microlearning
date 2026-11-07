@@ -92,6 +92,12 @@ class User(Base):
     generation_count: Mapped[int] = mapped_column(default=0, server_default="0")
     moodle_request_id: Mapped[str | None] = mapped_column(nullable=True)
     moodle_request_email: Mapped[str | None] = mapped_column(nullable=True)
+    # False for an account an LMS made for a student: it chats in the courses it is a member of and
+    # creates nothing. An instructor launch turns it on (app/lti/launch.py).
+    can_author: Mapped[bool] = mapped_column(default=True, server_default="true")
+    # Chat messages today, counted for accounts that cannot author (settings.learner_daily_chat_limit).
+    chat_day: Mapped[date | None] = mapped_column(Date, nullable=True)
+    chat_count: Mapped[int] = mapped_column(default=0, server_default="0")
     created_at: Mapped[datetime] = created_at_column()
 
 
@@ -311,6 +317,8 @@ class ChatSession(Base):
 
     id: Mapped[uuid.UUID] = uuid_pk()
     course_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("courses.id", ondelete="CASCADE"), index=True)
+    # Whose chat it is: row level security shows a session to that person only (migration 0027).
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
     module_id: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey("modules.id", ondelete="CASCADE"), nullable=True, index=True
     )

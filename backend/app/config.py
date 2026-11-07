@@ -70,6 +70,9 @@ class Settings(BaseSettings):
     llm_gateway_key: str = Field(default="", repr=False)
     llm_model: str = "gemini-fast"
     non_teacher_daily_generation_limit: int = Field(default=3, ge=1)
+    # Chat messages a day for an account that cannot author, a student who came through the LMS: each one is a
+    # paid model call, and nobody else is accountable for them.
+    learner_daily_chat_limit: int = Field(default=30, ge=1)
     # Pin the selected alias for evaluation; the gateway may still retry that model.
     llm_experiment_mode: bool = False
     # Times one call in a background job waits and asks again after a 429, so a brief limit does not

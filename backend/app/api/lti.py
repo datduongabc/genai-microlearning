@@ -10,6 +10,7 @@ and the platform in this tool with scripts/register_lti_platform.py (see docs/in
 
 import html
 import logging
+from typing import Literal
 
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
@@ -24,6 +25,7 @@ from app.auth.security import create_access_token
 from app.config import settings
 from app.db import get_db
 from app.lti import launch as lti
+from app.models import Course
 
 router = APIRouter(tags=["lti"])
 logger = logging.getLogger(__name__)
@@ -98,6 +100,9 @@ class ExchangeRequest(BaseModel):
 
 class LtiToken(Token):
     course_id: str
+    # "member" when the launch opened someone else's course to chat in: the frontend opens the chat only,
+    # whatever else the account may do.
+    course_role: Literal["owner", "member"]
 
 
 @router.post("/lti/session", response_model=LtiToken)
@@ -110,10 +115,13 @@ def lti_session(request: Request, payload: ExchangeRequest, db: Session = Depend
         raise HTTPException(status_code=401, detail=refused.message) from None
     refresh_token = sessions.start_session(db, user.id)
     db.commit()
+    lti.act_as(db, user.id)
+    course = db.get(Course, course_id)
     log_auth_event(audit.LOGIN_SUCCESS, request, user_id=user.id, email=user.email, detail={"via": "lti"})
     return LtiToken(
         access_token=create_access_token(subject=user.id), refresh_token=refresh_token, course_id=str(course_id),
-        user=UserResponse(id=str(user.id), email=user.email, name=user.name, is_admin=user.is_admin),
+        course_role="owner" if course is not None and course.owner_id == user.id else "member",
+        user=UserResponse.of(user),
     )
 
 

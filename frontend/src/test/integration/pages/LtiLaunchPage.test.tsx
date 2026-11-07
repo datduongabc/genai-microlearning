@@ -22,6 +22,7 @@ function renderAt(hash: string) {
       <Routes>
         <Route path="/lti/launch" element={<LtiLaunchPage />} />
         <Route path="/courses/:courseId" element={<p>course page</p>} />
+        <Route path="/learn/:courseId" element={<p>learner chat</p>} />
       </Routes>
     </MemoryRouter>,
   )
@@ -29,7 +30,7 @@ function renderAt(hash: string) {
 
 describe('LtiLaunchPage', () => {
   it('trades the code once, wipes it from the address bar and opens the course', async () => {
-    loginWithLaunchCode.mockResolvedValue('course-1')
+    loginWithLaunchCode.mockResolvedValue({ courseId: 'course-1', owner: true })
 
     renderAt('#code=abc123&course=course-1')
 
@@ -37,6 +38,14 @@ describe('LtiLaunchPage', () => {
     expect(loginWithLaunchCode).toHaveBeenCalledTimes(1)
     expect(loginWithLaunchCode).toHaveBeenCalledWith('abc123')
     expect(window.location.hash).toBe('')
+  })
+
+  it('opens only the course chat when the launch made the user a member', async () => {
+    loginWithLaunchCode.mockResolvedValue({ courseId: 'course-1', owner: false })
+
+    renderAt('#code=abc123')
+
+    await waitFor(() => expect(screen.getByText('learner chat')).toBeInTheDocument())
   })
 
   it('shows what the server said when the code is refused', async () => {

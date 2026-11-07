@@ -6,7 +6,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.api.deletion import check_study_references, commit_deletion
-from app.api.deps import get_current_user
+from app.api.deps import get_current_user, require_author
 from app.auth.rate_limit import limiter, user_or_address
 from app.db import get_db
 from app.models import Course, Document, Module, User
@@ -48,6 +48,7 @@ def create_course(
     request: Request, payload: CourseCreate, db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    require_author(current_user)
     course = Course(name=payload.name, owner_id=current_user.id)
     db.add(course)
     db.commit()

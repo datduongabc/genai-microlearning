@@ -574,7 +574,7 @@ def chat_edit_module(
     message = payload.message.strip()
     if not message:
         raise HTTPException(status_code=400, detail="message is required")
-    session = _get_or_create_session(db, module.course_id, payload.session_id, message, module.id)
+    session = _get_or_create_session(db, module.course_id, payload.session_id, message, current_user.id, module.id)
     history_rows = db.query(ChatMessage).filter(ChatMessage.session_id == session.id).order_by(
         ChatMessage.created_at.desc(), ChatMessage.id.desc(),
     ).limit(HISTORY_TURNS).all()

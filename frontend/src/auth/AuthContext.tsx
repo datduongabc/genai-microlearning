@@ -32,7 +32,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   async function loginWithLaunchCode(code: string) {
     const data = await authApi.ltiSession(code);
     setState({ token: data.access_token, refreshToken: data.refresh_token, user: data.user });
-    return data.course_id;
+    return { courseId: data.course_id, owner: data.course_role !== "member" };
   }
 
   function logout() {

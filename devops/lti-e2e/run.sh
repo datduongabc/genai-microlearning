@@ -82,16 +82,24 @@ PYTHONPATH=".:$HERE" uv run uvicorn asgi:app --port 58000 >"$WORK/api.log" 2>&1 
 API_PID=$!
 until curl -fs -o /dev/null localhost:58000/api/ready; do sleep 1; done
 
-echo "== Teacher launch"
-uv run python "$HERE/browser.py" "$WORK/moodle.json" e2eteacher
-echo "== Teacher again: same account and course"
-uv run python "$HERE/browser.py" "$WORK/moodle.json" e2eteacher | tail -1
-echo "== Student launch: refused"
-if uv run python "$HERE/browser.py" "$WORK/moodle.json" e2estudent; then
-  echo "a student was let in" >&2; exit 1
+browse() { uv run python "$HERE/browser.py" "$WORK/moodle.json" "$1"; }
+echo "== Student before the teacher opened the tool: refused"
+if browse e2estudent; then
+  echo "a student got in before any teacher had opened the tool" >&2; exit 1
 fi
+echo "== Teacher launch"
+TEACHER="$(browse e2eteacher | tee >(cat >&2) | tail -1)"
+echo "== Teacher again: same account and course"
+browse e2eteacher | tail -1
+echo "== Student launch: a member of the teacher's course, chat only"
+STUDENT="$(browse e2estudent | tee >(cat >&2) | tail -1)"
+jq -e --argjson t "$TEACHER" '.user.can_author == false and .course_role == "member" and .course_id == $t.course_id and .courses == []
+  and .chat_latest == 200 and .documents == 404' <<<"$STUDENT" >/dev/null || { echo "student check failed" >&2; exit 1; }
+jq -e '.user.can_author == true and .course_role == "owner" and .chat_latest == 200 and .documents == 200' <<<"$TEACHER" >/dev/null \
+  || { echo "teacher check failed" >&2; exit 1; }
 echo "== Stored"
 docker exec lti-e2e-db psql -U postgres -d microlearning -tAc \
   "select 'users ' || count(*) || ', moodle_user_id ' || string_agg(moodle_user_id::text, ',') from users" -c \
-  "select 'courses ' || count(*) || ', moodle_course_id ' || string_agg(moodle_course_id::text, ',') from courses"
+  "select 'courses ' || count(*) || ', moodle_course_id ' || string_agg(moodle_course_id::text, ',') from courses" -c \
+  "select 'course_members ' || count(*) from course_members"
 echo "== Expected moodle ids: teacher $(j teacher_id), course $(j course_id)"

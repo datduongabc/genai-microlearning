@@ -5,6 +5,8 @@ export interface UserInfo {
   email: string
   name: string
   is_admin: boolean
+  // False for a student account an LMS launch made: it may only use the course chat.
+  can_author?: boolean
 }
 
 // Local credentials for every account.
@@ -26,6 +28,7 @@ export async function ltiSession(code: string) {
     token_type: string
     user: UserInfo
     course_id: string
+    course_role: "owner" | "member"
   }>('/lti/session', { code })
   return data
 }

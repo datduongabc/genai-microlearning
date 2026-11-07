@@ -1,4 +1,5 @@
 from app.models.lti import (
+    CourseMember,
     LtiContext,
     LtiDeployment,
     LtiIdentity,
@@ -34,6 +35,7 @@ __all__ = [
     "Chunk",
     "ComponentType",
     "Course",
+    "CourseMember",
     "Document",
     "DocumentStatus",
     "Evaluation",

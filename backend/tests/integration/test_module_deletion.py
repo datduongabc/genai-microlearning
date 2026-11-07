@@ -51,7 +51,7 @@ def _add_module(db, course, doc, title, *, control_of=None) -> Module:
     db.flush()
     db.add(Question(component_id=quiz.id, stem="q", choices={"options": ["A", "B"]}, answer_key="0"))
     db.add(Evaluation(module_id=module.id, criterion="accuracy", score=1.0))
-    session = ChatSession(course_id=course.id, module_id=module.id, title="edit")
+    session = ChatSession(course_id=course.id, user_id=course.owner_id, module_id=module.id, title="edit")
     db.add(session)
     db.flush()
     db.add(ChatMessage(session_id=session.id, role=ChatRole.user, content="shorten", citations=[]))
