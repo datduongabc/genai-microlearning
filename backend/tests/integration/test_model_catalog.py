@@ -7,7 +7,7 @@ tại tình cờ trả về.
 """
 
 import litellm
-import litellm.exceptions as loi_litellm
+import litellm.exceptions as litellm_errors
 import pytest
 
 from app.llm import catalog
@@ -181,19 +181,19 @@ def test_thu_dung_model_da_chon_va_chi_xin_mot_token(ghi_lai_lenh_thu):
 
 def test_khoa_trong_hoac_sai_thi_bao_chua_co_khoa(monkeypatch):
     monkeypatch.setattr(litellm, "completion", _nem(
-        loi_litellm.AuthenticationError(message="401", llm_provider="openai", model="gpt-4o")
+        litellm_errors.AuthenticationError(message="401", llm_provider="openai", model="gpt-4o")
     ))
 
-    with pytest.raises(catalog.ModelUnusable) as bat:
+    with pytest.raises(catalog.ModelUnusable) as raised:
         catalog.probe("openai-pro")
 
-    assert bat.value.alias == "openai-pro"
-    assert "api key" in bat.value.ly_do.lower()
+    assert raised.value.alias == "openai-pro"
+    assert "api key" in raised.value.reason.lower()
 
 
 def test_probe_429_is_usable_for_router_fallbacks(monkeypatch):
     monkeypatch.setattr(litellm, "completion", _nem(
-        loi_litellm.RateLimitError(message="429", llm_provider="gemini", model="gemini-flash")
+        litellm_errors.RateLimitError(message="429", llm_provider="gemini", model="gemini-flash")
     ))
     catalog.probe("gemini-flash")
 
@@ -203,50 +203,50 @@ def test_khoa_trong_that_ra_500_chu_khong_phai_401_van_bao_dung_la_thieu_khoa(mo
     tưởng: khóa OpenAI trống thì gateway hỏng ngay lúc dựng request và trả 500 mang
     "api_key" và "credential", chứ không trả 401. Test ban đầu chỉ kiểm 401 nên đã xanh
     trong khi giảng viên thật nhận câu "hết số dư" cho một khóa trống."""
-    monkeypatch.setattr(litellm, "completion", _nem(loi_litellm.InternalServerError(
+    monkeypatch.setattr(litellm, "completion", _nem(litellm_errors.InternalServerError(
         message="OpenAIException - The api_key client option must be set; missing credential",
         llm_provider="openai", model="gpt-4o-mini",
     )))
 
-    with pytest.raises(catalog.ModelUnusable) as bat:
+    with pytest.raises(catalog.ModelUnusable) as raised:
         catalog.probe("openai-fast")
 
-    assert "api key" in bat.value.ly_do.lower()
+    assert "api key" in raised.value.reason.lower()
 
 
 def test_khoa_co_nhung_chua_nap_tien_thi_bao_het_so_du(monkeypatch):
     """Cũng đo trên gateway thật: khóa Anthropic có giá trị nhưng chưa nạp tiền thì ra 400
     mang "credit", "balance", "billing"."""
-    monkeypatch.setattr(litellm, "completion", _nem(loi_litellm.BadRequestError(
+    monkeypatch.setattr(litellm, "completion", _nem(litellm_errors.BadRequestError(
         message="Your credit balance is too low. Please go to Plans & Billing",
         model="claude-haiku-4-5", llm_provider="anthropic",
     )))
 
-    with pytest.raises(catalog.ModelUnusable) as bat:
+    with pytest.raises(catalog.ModelUnusable) as raised:
         catalog.probe("claude-fast")
 
-    assert "số dư" in bat.value.ly_do
+    assert "số dư" in raised.value.reason
 
 
 def test_loi_khong_ro_nguyen_nhan_thi_khong_doan_bua(monkeypatch):
     """Đoán sai còn tệ hơn không nói: bảo "hết số dư" khi thực ra là thiếu khóa thì người ta
     đi nạp tiền. Không nhận ra nguyên nhân thì câu thông báo không được nêu nguyên nhân."""
-    monkeypatch.setattr(litellm, "completion", _nem(loi_litellm.BadRequestError(
+    monkeypatch.setattr(litellm, "completion", _nem(litellm_errors.BadRequestError(
         message="something unexpected happened", model="x", llm_provider="openai",
     )))
 
-    with pytest.raises(catalog.ModelUnusable) as bat:
+    with pytest.raises(catalog.ModelUnusable) as raised:
         catalog.probe("openai-pro")
 
-    ly_do = bat.value.ly_do.lower()
-    assert "api key" not in ly_do and "số dư" not in ly_do and "hạn mức" not in ly_do
+    reason = raised.value.reason.lower()
+    assert "api key" not in reason and "số dư" not in reason and "hạn mức" not in reason
 
 
 def test_gateway_khong_voi_toi_duoc_thi_la_gateway_sap_chu_khong_phai_model_hong(monkeypatch):
     """Phân biệt quan trọng: gateway sập thì mọi model đều hỏng và đổi model không giúp gì,
     nên phải báo 503 chứ không bảo giảng viên chọn model khác."""
     monkeypatch.setattr(litellm, "completion", _nem(
-        loi_litellm.APIConnectionError(message="refused", llm_provider="openai", model="x")
+        litellm_errors.APIConnectionError(message="refused", llm_provider="openai", model="x")
     ))
 
     with pytest.raises(catalog.GatewayUnavailable):
@@ -255,7 +255,7 @@ def test_gateway_khong_voi_toi_duoc_thi_la_gateway_sap_chu_khong_phai_model_hong
 
 def test_gateway_qua_han_cho_cung_la_gateway_sap(monkeypatch):
     monkeypatch.setattr(litellm, "completion", _nem(
-        loi_litellm.Timeout(message="timeout", model="x", llm_provider="openai")
+        litellm_errors.Timeout(message="timeout", model="x", llm_provider="openai")
     ))
 
     with pytest.raises(catalog.GatewayUnavailable):
@@ -283,13 +283,13 @@ def test_pinned_balanced_probe_reports_an_unusable_choice(monkeypatch):
 
 
 @pytest.mark.parametrize("error", [
-    loi_litellm.AuthenticationError(message="invalid API key", llm_provider="anthropic", model="claude"),
-    loi_litellm.BadRequestError(message="credit balance too low", llm_provider="anthropic", model="claude"),
+    litellm_errors.AuthenticationError(message="invalid API key", llm_provider="anthropic", model="claude"),
+    litellm_errors.BadRequestError(message="credit balance too low", llm_provider="anthropic", model="claude"),
 ])
 def test_unusable_primary_is_rejected_with_422_without_probing_fallback(error, monkeypatch):
     from fastapi import HTTPException
 
-    from app.api.modules import _alias_dung_duoc
+    from app.api.modules import _usable_alias
 
     sent = []
     def completion(**kwargs):
@@ -298,20 +298,20 @@ def test_unusable_primary_is_rejected_with_422_without_probing_fallback(error, m
     monkeypatch.setattr(litellm, "completion", completion)
     monkeypatch.setattr(catalog, "is_available", lambda alias: True)
     with pytest.raises(HTTPException) as rejected:
-        _alias_dung_duoc("claude-pro")
+        _usable_alias("claude-pro")
     assert rejected.value.status_code == 422
     assert len(sent) == 1 and sent[0]["model"] == "openai/claude-pro"
     assert sent[0]["extra_body"]["disable_fallbacks"] is True
 
 
 def test_quota_exhausted_primary_still_passes_generation_alias_validation(monkeypatch):
-    from app.api.modules import _alias_dung_duoc
+    from app.api.modules import _usable_alias
 
     monkeypatch.setattr(catalog, "is_available", lambda alias: True)
     monkeypatch.setattr(litellm, "completion", _nem(
-        loi_litellm.RateLimitError(message="quota exhausted", llm_provider="gemini", model="gemini-fast")
+        litellm_errors.RateLimitError(message="quota exhausted", llm_provider="gemini", model="gemini-fast")
     ))
-    assert _alias_dung_duoc("gemini-fast") == "gemini-fast"
+    assert _usable_alias("gemini-fast") == "gemini-fast"
 
 
 @pytest.mark.parametrize("message", [
@@ -324,14 +324,14 @@ def test_quota_exhausted_primary_still_passes_generation_alias_validation(monkey
 def test_credit_429_rejects_model_selection_with_422(message, monkeypatch):
     from fastapi import HTTPException
 
-    from app.api.modules import _alias_dung_duoc
+    from app.api.modules import _usable_alias
 
     monkeypatch.setattr(catalog, "is_available", lambda alias: True)
     monkeypatch.setattr(litellm, "completion", _nem(
-        loi_litellm.RateLimitError(message=message, llm_provider="openai", model="gpt-4o-mini")
+        litellm_errors.RateLimitError(message=message, llm_provider="openai", model="gpt-4o-mini")
     ))
     with pytest.raises(HTTPException) as rejected:
-        _alias_dung_duoc("openai-fast")
+        _usable_alias("openai-fast")
     assert rejected.value.status_code == 422
     assert "số dư" in rejected.value.detail
 
@@ -345,20 +345,20 @@ def test_credit_429_rejects_model_selection_with_422(message, monkeypatch):
 ])
 def test_balanced_alias_in_rate_limit_error_does_not_mean_insufficient_balance(message, monkeypatch):
     monkeypatch.setattr(litellm, "completion", _nem(
-        loi_litellm.RateLimitError(message=message, llm_provider="gemini", model="gemini-balanced")
+        litellm_errors.RateLimitError(message=message, llm_provider="gemini", model="gemini-balanced")
     ))
     catalog.probe("gemini-balanced")
 
 
 def test_gemini_resource_exhausted_is_accepted_and_not_reported_as_missing_credit(monkeypatch):
-    from app.api.modules import _alias_dung_duoc
+    from app.api.modules import _usable_alias
 
-    loi = loi_litellm.RateLimitError(
+    loi = litellm_errors.RateLimitError(
         message="{'error': {'code': 429, 'status': 'RESOURCE_EXHAUSTED', 'message': 'You exceeded "
         "your current quota, please check your plan and billing details.'}}",
         llm_provider="gemini", model="gemini-fast",
     )
     monkeypatch.setattr(catalog, "is_available", lambda alias: True)
     monkeypatch.setattr(litellm, "completion", _nem(loi))
-    assert _alias_dung_duoc("gemini-fast") == "gemini-fast"
-    assert "số dư" not in catalog._ly_do(loi)
+    assert _usable_alias("gemini-fast") == "gemini-fast"
+    assert "số dư" not in catalog._reason(loi)

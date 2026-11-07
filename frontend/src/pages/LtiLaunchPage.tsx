@@ -5,10 +5,14 @@ import { useAuth } from "../auth/useAuth";
 
 // Where an LTI launch from the LMS lands (backend/app/api/lti.py). The fragment carries a code
 // that works once, for a minute, so it is read once and wiped from the address bar at once.
+const MISSING_CODE = "Thiếu mã mở công cụ. Hãy mở lại hoạt động từ LMS.";
+
 export function LtiLaunchPage() {
   const { loginWithLaunchCode } = useAuth();
   const navigate = useNavigate();
-  const [error, setError] = useState<string | null>(null);
+  // Read before the effect wipes it; a missing code is known at the first render.
+  const [error, setError] = useState<string | null>(() =>
+    new URLSearchParams(window.location.hash.slice(1)).get("code") ? null : MISSING_CODE);
   // StrictMode runs effects twice in development; a second exchange would spend nothing and fail.
   const started = useRef(false);
 
@@ -17,10 +21,7 @@ export function LtiLaunchPage() {
     started.current = true;
     const code = new URLSearchParams(window.location.hash.slice(1)).get("code");
     window.history.replaceState(null, "", window.location.pathname);
-    if (!code) {
-      setError("Thiếu mã mở công cụ. Hãy mở lại hoạt động từ LMS.");
-      return;
-    }
+    if (!code) return;
     loginWithLaunchCode(code)
       .then(({ courseId, owner }) =>
         navigate(owner ? `/courses/${courseId}` : `/learn/${courseId}`, { replace: true }))

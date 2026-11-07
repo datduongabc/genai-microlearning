@@ -29,7 +29,7 @@ MAX_RATE_LIMIT_WAIT_SECONDS = 60.0
 # nên truyền tay sẽ phải thêm một tham số vào chữ ký của cả pipeline chỉ để chuyển tiếp.
 # ContextVar cũng là thứ duy nhất an toàn ở đây: worker chạy nhiều lượt sinh đồng thời,
 # mà một biến toàn cục thì lượt này sẽ đổi model của lượt kia.
-_model_da_chon: contextvars.ContextVar[str | None] = contextvars.ContextVar("_model_da_chon", default=None)
+_selected_model: contextvars.ContextVar[str | None] = contextvars.ContextVar("_selected_model", default=None)
 _experiment: contextvars.ContextVar[bool] = contextvars.ContextVar("_experiment", default=False)
 _model_calls: contextvars.ContextVar[list[dict] | None] = contextvars.ContextVar("_model_calls", default=None)
 _waits_on_rate_limit: contextvars.ContextVar[bool] = contextvars.ContextVar("_waits_on_rate_limit", default=False)
@@ -73,23 +73,23 @@ def recorded_models() -> list[dict]:
 def using_model(alias: str | None):
     """Mọi lệnh gọi LLM bên trong khối này dùng `alias`. Truyền None nghĩa là giữ nguyên
     cấu hình, để chỗ gọi không phải tự phân nhánh khi giảng viên chưa chọn gì."""
-    token = _model_da_chon.set(alias)
+    token = _selected_model.set(alias)
     try:
         yield
     finally:
         # reset trong finally: một lượt sinh ném ngoại lệ không được để lượt kế tiếp
         # chạy trên model của người khác.
-        _model_da_chon.reset(token)
+        _selected_model.reset(token)
 
 
 def requested_model() -> str | None:
-    return _model_da_chon.get()
+    return _selected_model.get()
 
 
 def active_model() -> str:
-    da_chon = requested_model()
-    if da_chon:
-        return da_chon
+    selected = requested_model()
+    if selected:
+        return selected
     return settings.llm_model
 
 

@@ -69,6 +69,8 @@ jobs:
         with:
           node-version: 24
       - run: npm ci
+      # A warning fails the job, so that none is left to pile up.
+      - run: npm run lint -- --deny-warnings
       - run: npm run test -- src/test/unit src/test/integration
       - run: npm run build
 

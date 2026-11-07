@@ -48,7 +48,9 @@ markers = [
 addopts = "-m 'not live_llm'"
 
 [tool.ruff]
-line-length = 100
+# The length the code is written to; most lines keep within it. It is not enforced (E501 is off) and
+# `ruff format` is not run: reformatting would rewrite most files for no behavioural change.
+line-length = 120
 
 [tool.ruff.lint]
 # B008: FastAPI's Depends() is meant to be used as an argument default.

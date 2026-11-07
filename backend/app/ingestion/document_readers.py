@@ -571,7 +571,7 @@ def _transcribe_piece(path: str, offset: float, deadline: float,
                 raise
             if not transient or attempt == 2 or time.monotonic() + delay >= deadline:
                 minutes, seconds = divmod(int(offset), 60)
-                reason = "Da het han muc audio Groq" if rate_limited else type(exc).__name__
+                reason = "Đã hết hạn mức audio Groq" if rate_limited else type(exc).__name__
                 # ValueError is terminal and is shown in the document's job monitor.
                 # Never return a successful but incomplete document.
                 raise ValueError(

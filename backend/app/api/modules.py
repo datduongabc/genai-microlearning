@@ -75,7 +75,7 @@ class GenerateRequest(BaseModel):
     paired_module_id: uuid.UUID | None = None
 
 
-def _alias_da_chon(body: GenerateRequest | None, current_user: User) -> str | None:
+def _selected_alias(body: GenerateRequest | None, current_user: User) -> str | None:
     """Alias sẽ dùng cho lượt sinh này, hoặc None nghĩa là để cấu hình hệ thống quyết định.
 
     Kiểm ở đây chứ không tin client: một alias lạ lọt xuống hàng đợi thì lượt sinh chạy
@@ -83,7 +83,7 @@ def _alias_da_chon(body: GenerateRequest | None, current_user: User) -> str | No
     """
     alias = body.model_alias if body is not None else None
     if alias is not None:
-        return _alias_dung_duoc(alias)
+        return _usable_alias(alias)
     alias = current_user.default_model_alias
     if alias is None:
         # Đường mặc định: không có gì để kiểm hay thử, nên không gọi gateway lúc bấm nút.
@@ -92,10 +92,10 @@ def _alias_da_chon(body: GenerateRequest | None, current_user: User) -> str | No
         # Mặc định đã lưu có thể trỏ tới alias gateway đã bỏ (gemini-pro đổi thành
         # gemini-flash): lùi về cấu hình hệ thống, đừng chặn mọi lượt sinh bằng 422.
         return None
-    return _alias_dung_duoc(alias)
+    return _usable_alias(alias)
 
 
-def _alias_dung_duoc(alias: str) -> str:
+def _usable_alias(alias: str) -> str:
     """`alias` nếu gateway phục vụ nó và nó dùng được ngay lúc này, không thì 422."""
     if not catalog.is_available(alias):
         raise HTTPException(
@@ -107,11 +107,11 @@ def _alias_dung_duoc(alias: str) -> str:
     # GatewayUnavailable thì để lọt ra, app/main.py đổi nó thành 503.
     try:
         catalog.probe(alias)
-    except catalog.ModelUnusable as loi:
+    except catalog.ModelUnusable as error:
         raise HTTPException(
             status_code=422,
-            detail=f"Model '{loi.alias}' chưa dùng được: {loi.ly_do}. Hãy chọn model khác.",
-        ) from loi
+            detail=f"Model '{error.alias}' chưa dùng được: {error.reason}. Hãy chọn model khác.",
+        ) from error
     return alias
 
 
@@ -147,14 +147,14 @@ def _generate_without_retrieval(db: Session, doc: Document, body: GenerateReques
         raise HTTPException(status_code=422, detail="Module đi cặp không thuộc tài liệu này.")
     try:
         learning_objective_of(paired)
-    except IncompleteModuleError as loi:
-        raise HTTPException(status_code=422, detail=str(loi)) from loi
+    except IncompleteModuleError as error:
+        raise HTTPException(status_code=422, detail=str(error)) from error
 
     if is_control(db, paired.id):
         raise HTTPException(status_code=422, detail="Module đi cặp phải là module sinh có RAG.")
     paired_payload = generation_payload_of(db, paired.id)
     alias = body.model_alias or paired_payload.get("model_alias")
-    alias = _alias_dung_duoc(alias) if alias is not None else None
+    alias = _usable_alias(alias) if alias is not None else None
     self_check = body.self_check if "self_check" in body.model_fields_set else paired_payload.get("self_check", True)
 
     running = (
@@ -194,7 +194,7 @@ def generate_module(
     if body is not None and (not body.use_retrieval or body.paired_module_id is not None):
         return _generate_without_retrieval(db, doc, body, current_user)
 
-    alias = _alias_da_chon(body, current_user)
+    alias = _selected_alias(body, current_user)
     self_check = body.self_check if body is not None else True
 
     output_language = body.output_language if body is not None else "vi"

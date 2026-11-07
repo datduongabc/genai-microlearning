@@ -70,11 +70,11 @@ def set_default_model(
         # GatewayUnavailable thì để lọt ra, app/main.py đổi nó thành 503.
         try:
             catalog.probe(body.alias)
-        except catalog.ModelUnusable as loi:
+        except catalog.ModelUnusable as error:
             raise HTTPException(
                 status_code=422,
-                detail=f"Model '{loi.alias}' chưa dùng được: {loi.ly_do}. Hãy chọn model khác.",
-            ) from loi
+                detail=f"Model '{error.alias}' chưa dùng được: {error.reason}. Hãy chọn model khác.",
+            ) from error
 
     user = db.get(User, current_user.id)
     user.default_model_alias = body.alias

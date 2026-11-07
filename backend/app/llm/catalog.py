@@ -37,10 +37,10 @@ class ModelUnusable(Exception):
     trống hoặc sai, hết số dư, hết hạn mức ngày. Khác với GatewayUnavailable ở chỗ đổi
     sang model khác thì có thể được, nên thông báo phải bảo giảng viên làm đúng điều đó."""
 
-    def __init__(self, alias: str, ly_do: str):
-        super().__init__(f"{alias}: {ly_do}")
+    def __init__(self, alias: str, reason: str):
+        super().__init__(f"{alias}: {reason}")
         self.alias = alias
-        self.ly_do = ly_do
+        self.reason = reason
 
 
 @dataclass(frozen=True)
@@ -62,26 +62,26 @@ def fetch_model_info() -> list[dict]:
 
 
 def to_choices(raw: list[dict]) -> list[ModelChoice]:
-    chon = []
-    for muc in raw:
-        thong_tin = muc.get("model_info") or {}
+    choices = []
+    for item in raw:
+        info = item.get("model_info") or {}
         # Chỉ nhận đúng mode "chat". Một alias không rõ mode thà bỏ sót còn hơn đem ra cho
         # chọn: bỏ sót thì giảng viên thấy thiếu và báo, còn chọn nhầm một model nhúng thì
         # cả pipeline sinh nội dung chết bằng một lỗi chẳng liên quan gì tới việc chọn model.
-        if thong_tin.get("mode") != "chat" or thong_tin.get("hidden"):
+        if info.get("mode") != "chat" or info.get("hidden"):
             continue
-        alias = muc["model_name"]
+        alias = item["model_name"]
         # Nhà cung cấp là tiền tố của tên model, nên thêm model mới không phải khai lại nó.
         # Groq đi qua litellm dưới dạng "groq/openai/..." nên chỉ lấy đoạn đầu.
-        provider = str(muc.get("litellm_params", {}).get("model", "")).split("/")[0]
-        chon.append(ModelChoice(
+        provider = str(item.get("litellm_params", {}).get("model", "")).split("/")[0]
+        choices.append(ModelChoice(
             alias=alias,
-            label=thong_tin.get("display_name") or alias,
+            label=info.get("display_name") or alias,
             provider=provider,
-            note=thong_tin.get("note"),
+            note=info.get("note"),
         ))
     # Thứ tự cố định để danh sách trên giao diện không đổi chỗ giữa hai lần tải.
-    return sorted({c.alias: c for c in chon}.values(), key=lambda c: (c.provider, c.alias))
+    return sorted({c.alias: c for c in choices}.values(), key=lambda c: (c.provider, c.alias))
 
 
 _lock = threading.Lock()
@@ -103,13 +103,13 @@ def available_models() -> list[ModelChoice]:
     # lúc, mà cái giá phải trả nếu hai request cùng vào là một lần gọi gateway thừa.
     try:
         raw = fetch_model_info()
-    except httpx.HTTPError as loi:
+    except httpx.HTTPError as error:
         # Không ghi đệm kết quả lỗi: gateway vừa lên lại thì request kế tiếp phải thấy ngay.
-        raise GatewayUnavailable(str(loi)) from loi
-    chon = to_choices(raw)
+        raise GatewayUnavailable(str(error)) from error
+    choices = to_choices(raw)
     with _lock:
-        _cache = (time.monotonic(), chon)
-    return chon
+        _cache = (time.monotonic(), choices)
+    return choices
 
 
 def is_available(alias: str) -> bool:
@@ -137,42 +137,42 @@ def probe(alias: str) -> None:
                 messages=[{"role": "user", "content": "ping"}], max_tokens=1,
                 extra_body={"disable_fallbacks": True},
             )
-    except ValueError as loi:
-        raise ModelUnusable(alias, str(loi)) from loi
+    except ValueError as error:
+        raise ModelUnusable(alias, str(error)) from error
     # Trước tiên: gateway không với tới được thì mọi model đều hỏng như nhau, nên đổi model
     # không giúp gì. Phải đứng trước câu bắt tổng quát vì nó cũng là một openai.APIError.
-    except openai.APIConnectionError as loi:
-        raise GatewayUnavailable(str(loi)) from loi
-    except openai.APIError as loi:
+    except openai.APIConnectionError as error:
+        raise GatewayUnavailable(str(error)) from error
+    except openai.APIError as error:
         # Quota alone does not make the alias unusable: generation can use its backups.
-        if loi.status_code == 429 and not _LOI_SO_DU.search(str(loi)):
+        if error.status_code == 429 and not _BALANCE_ERROR.search(str(error)):
             return
-        raise ModelUnusable(alias, _ly_do(loi)) from loi
+        raise ModelUnusable(alias, _reason(error)) from error
 
 
 # Từ khoá lấy từ thông báo lỗi thật của gateway, đo trên chính stack này: khóa OpenAI
 # trống thì gateway trả 500 mang "api_key" và "credential" (nó hỏng ngay lúc dựng request,
 # nên KHÔNG ra 401 như người ta hay tưởng); khóa Anthropic chưa nạp tiền thì trả 400 mang
 # "credit", "balance", "billing".
-_TU_KHOA_KHOA = ("api_key", "api key", "credential", "unauthorized", "authentication")
-_TU_KHOA_HAN_MUC = ("rate limit", "quota", "resource_exhausted")
+_KEY_WORDS = ("api_key", "api key", "credential", "unauthorized", "authentication")
+_QUOTA_WORDS = ("rate limit", "quota", "resource_exhausted")
 # Only explicit credit signals: Gemini's free-tier quota 429 also says "plan and billing details".
-_LOI_SO_DU = re.compile(
+_BALANCE_ERROR = re.compile(
     r"\b(?:insufficient_quota|billing_hard_limit_reached|credits?|insufficient[ _]funds)\b",
     re.IGNORECASE,
 )
 
 
-def _ly_do(loi: openai.APIError) -> str:
+def _reason(error: openai.APIError) -> str:
     """Câu giải thích cho giảng viên, sau khi probe đã phân loại lỗi.
 
     Không khớp từ khoá nào thì trả một câu không đoán nguyên nhân. Đoán sai còn tệ hơn
     không nói: bảo "hết số dư" khi thực ra là thiếu khóa sẽ khiến người ta đi nạp tiền."""
-    van_ban = str(loi).lower()
-    if isinstance(loi, AuthenticationError) or any(k in van_ban for k in _TU_KHOA_KHOA):
+    text = str(error).lower()
+    if isinstance(error, AuthenticationError) or any(k in text for k in _KEY_WORDS):
         return "chưa có API key hợp lệ cho nhà cung cấp của model này"
-    if _LOI_SO_DU.search(van_ban):
+    if _BALANCE_ERROR.search(text):
         return "tài khoản của nhà cung cấp đã hết số dư"
-    if isinstance(loi, RateLimitError) or any(k in van_ban for k in _TU_KHOA_HAN_MUC):
+    if isinstance(error, RateLimitError) or any(k in text for k in _QUOTA_WORDS):
         return "đã hết hạn mức hoặc đang bị giới hạn tốc độ, thử lại sau"
     return "nhà cung cấp chưa phục vụ được model này"
