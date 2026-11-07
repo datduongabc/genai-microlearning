@@ -256,6 +256,9 @@ def handle_job_error(job_id: uuid.UUID, err: Exception) -> None:
         job.status = JobStatus.failed
         job.attempts = new_attempts
         job.last_error = message
+        # Out of attempts on an error worth retrying: an outage, a rate limit or something unexpected,
+        # not the input. A terminal error is a ValueError, whose message is meant for the lecturer.
+        job.system_failure = not terminal
         job.locked_at = None
         job.locked_by = None
         db.commit()
@@ -288,6 +291,7 @@ def sweep_stuck_jobs() -> None:
                 job.status = JobStatus.failed
                 job.attempts = new_attempts
                 job.last_error = "Job timeout (ket o trang thai running -- worker co the da restart giua chung)"
+                job.system_failure = True
                 job.locked_at = None
                 job.locked_by = None
                 if job.job_type == JobType.document_pipeline and job.document_id is not None:

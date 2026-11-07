@@ -12,6 +12,7 @@ from sqlalchemy import (
     Index,
     Text,
     UniqueConstraint,
+    false,
 )
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -396,6 +397,9 @@ class Job(Base):
     locked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     locked_by: Mapped[str | None] = mapped_column(nullable=True)
     last_error: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # Set when the job fails: true when the system failed it (attempts used up on errors worth retrying,
+    # or stuck), so the lecturer is not shown last_error's exception text. See migration 0028.
+    system_failure: Mapped[bool] = mapped_column(default=False, server_default=false())
     created_at: Mapped[datetime] = created_at_column()
 
 

@@ -10,6 +10,7 @@ from fastapi.testclient import TestClient
 
 from app.db import SessionLocal
 from app.ingestion.document_pipeline import run_document_pipeline_step
+from app.jobs.failures import SYSTEM_FAILURE_MESSAGE
 from app.jobs.queue import handle_job_error
 from app.main import app
 from app.models import (
@@ -95,6 +96,37 @@ def test_the_error_is_cut_to_a_short_message(lecturer):
     _job(doc, JobType.module_generation, JobStatus.failed, error="x" * 500)
 
     assert len(_listed(lecturer)["dai.pdf"]["failures"][0]["error"]) == 200
+
+
+def _failing_on_its_last_attempt(course_id, filename):
+    doc = _document(course_id, DocumentStatus.processing, filename)
+    with SessionLocal() as db:
+        job = Job(job_type=JobType.document_pipeline, document_id=doc, status=JobStatus.running, step="embed",
+                  attempts=4, max_attempts=5)
+        db.add(job)
+        db.commit()
+        return job.id
+
+
+def test_a_job_the_system_failed_tells_the_lecturer_so_and_keeps_the_exception_for_the_admin(lecturer):
+    from litellm.exceptions import InternalServerError
+
+    job = _failing_on_its_last_attempt(lecturer["course"], "embed.pdf")
+    handle_job_error(job, InternalServerError(message="Internal Server Error", llm_provider="openai", model="m"))
+
+    failure = _listed(lecturer)["embed.pdf"]["failures"][0]
+    assert failure["error"] == SYSTEM_FAILURE_MESSAGE
+    assert "litellm" not in failure["error"]
+    with SessionLocal() as db:
+        assert db.get(Job, job).last_error.startswith("litellm.InternalServerError")
+
+
+def test_a_job_its_input_failed_still_shows_why(lecturer):
+    job = _failing_on_its_last_attempt(lecturer["course"], "rong.pdf")
+    handle_job_error(job, ValueError("Không đọc được nội dung tài liệu; hãy tải lại bản có lớp chữ."))
+
+    assert _listed(lecturer)["rong.pdf"]["failures"][0]["error"] == (
+        "Không đọc được nội dung tài liệu; hãy tải lại bản có lớp chữ.")
 
 
 def test_only_failed_jobs_show_and_a_document_without_failures_has_an_empty_list(lecturer):
