@@ -165,7 +165,7 @@ def test_exhausted_segment_is_visible_and_no_partial_transcript_is_returned(tmp_
     with patch.object(readers, "_duration_seconds", return_value=700), patch.object(
         readers.subprocess, "run", side_effect=_fake_ffmpeg
     ), patch.object(readers, "transcribe_audio", side_effect=transcribe), pytest.raises(
-        ValueError, match="09:58.*han muc audio Groq"
+        ValueError, match="09:58.*hạn mức audio Groq"
     ):
         readers.read_audio_video(str(path))
 
@@ -236,7 +236,7 @@ def test_permanently_failed_segment_stops_after_three_attempts():
     failed = threading.Event()
     with patch.object(readers, "transcribe_audio", side_effect=_rate_limit('1')) as transcribe, patch.object(
         failed, "wait", return_value=False
-    ), pytest.raises(ValueError, match="09:58.*han muc audio Groq"):
+    ), pytest.raises(ValueError, match="09:58.*hạn mức audio Groq"):
         readers._transcribe_piece('part.mp3', 598, readers.time.monotonic() + 600, failed)
     assert transcribe.call_count == 3
 

@@ -245,7 +245,7 @@ def handle_job_error(job_id: uuid.UUID, err: Exception) -> None:
         if not terminal and new_attempts < job.max_attempts:
             delay = jittered_backoff(new_attempts, OUTAGE_BASE_BACKOFF_SECONDS if is_outage(err) else BASE_BACKOFF_SECONDS)
             logger.warning(
-                f"[job_queue] job {job_id} step={job.step} loi tam thoi, retry sau {delay:.1f}s: {message}"
+                f"[job_queue] job {job_id} step={job.step} transient error, retrying in {delay:.1f}s: {message}"
             )
             job.status = JobStatus.queued
             job.attempts = new_attempts
@@ -256,7 +256,7 @@ def handle_job_error(job_id: uuid.UUID, err: Exception) -> None:
             db.commit()
             return
 
-        logger.error(f"[job_queue] job {job_id} step={job.step} THAT BAI ({new_attempts}/{job.max_attempts}): {message}")
+        logger.error(f"[job_queue] job {job_id} step={job.step} FAILED ({new_attempts}/{job.max_attempts}): {message}")
         job.status = JobStatus.failed
         job.attempts = new_attempts
         job.last_error = message

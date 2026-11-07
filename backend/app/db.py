@@ -26,7 +26,7 @@ RequestSessionLocal = sessionmaker(bind=request_engine, autoflush=False, autocom
 
 
 @event.listens_for(RequestSessionLocal, "after_begin")
-def _reapply_rls_context(session: Session, transaction, connection) -> None:
+def _reapply_rls_context(session: Session, _transaction, connection) -> None:
     """SET LOCAL chỉ sống trong 1 transaction, hết hiệu lực sau mỗi
     db.commit() -- nhiều route trong repo này commit nhiều lần/request
     (vd tạo Module rồi commit, thêm từng ModuleComponent rồi commit riêng).

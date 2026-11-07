@@ -2,7 +2,8 @@ import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { parseChatEvents } from '../../../api'
-import { CourseChat, sourceLabel } from '../../../components/CourseChat'
+import { CourseChat } from '../../../components/CourseChat'
+import { sourceLabel } from '../../../lib/sourceLabel'
 
 function event(name: string, data: unknown) {
   return `event: ${name}\ndata: ${JSON.stringify(data)}\n\n`
