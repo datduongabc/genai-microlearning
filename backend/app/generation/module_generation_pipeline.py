@@ -337,6 +337,103 @@ def run_module_generation(
         db.expire_on_commit = expire_on_commit
 
 
+@dataclass
+class _Objective:
+    """What every later step builds on: the module's title, the search query its questions use,
+    its Learning Objective and, on the RAG branch, the passages the objective was written from."""
+
+    title: str
+    query: str
+    lo: LearningObjective
+    context_chunks: list[Chunk] | None
+
+
+def _objective_from_sources(
+    db: Session, doc: Document, scope: ChunkScope,
+    output_language: OutputLanguage, custom_instructions: str,
+) -> _Objective:
+    with timing.stage("planner"):
+        planner_out = _get_or_cache_planner(db, doc, output_language, custom_instructions)
+    top_concept = min(planner_out.concepts, key=lambda c: c.priority)
+    query = f"{top_concept.name}: {top_concept.summary}"
+    db.commit()
+    with timing.stage("retrieval"):
+        context_chunks = retrieve(db, doc.course_id, query, top_k=None, min_k=8, scope=scope)
+    db.commit()
+    with timing.stage("learning_objective"):
+        lo = generate_learning_objective(
+            top_concept, context_chunks, output_language=output_language, custom_instructions=custom_instructions,
+        )
+    return _Objective(top_concept.name, query, lo, context_chunks)
+
+
+def _objective_from_pair(doc: Document, paired_module: Module | None) -> _Objective:
+    if paired_module is None:
+        raise ValueError("Sinh không RAG cần module RAG đi cặp để lấy Learning Objective.")
+    if paired_module.document_id != doc.id:
+        raise ValueError("Module đi cặp không thuộc đúng tài liệu đang sinh.")
+    return _Objective(
+        paired_module.title, concept_query_of(paired_module), learning_objective_of(paired_module), None,
+    )
+
+
+def _new_module(
+    doc: Document, objective: _Objective, paired_module: Module | None, self_check: bool,
+    use_retrieval: bool, output_language: OutputLanguage, custom_instructions: str,
+) -> Module:
+    if use_retrieval:
+        payload = {**generation_payload(requested_model(), self_check, output_language, custom_instructions),
+                   "use_retrieval": True}
+    else:
+        payload = control_payload(paired_module.id, requested_model(), self_check, output_language, custom_instructions)
+    return Module(
+        document_id=doc.id,
+        course_id=doc.course_id,
+        title=objective.title,
+        paired_module_id=paired_module.id if paired_module is not None else None,
+        generation_payload=normalize_generation_payload(payload),
+        learning_objective=objective.lo.objective_text,
+        bloom_level=objective.lo.bloom_level,
+        sub_objectives=objective.lo.sub_objectives,
+    )
+
+
+def _content_component(module: Module, content_out, corrected: CorrectiveResult | None) -> ModuleComponent:
+    # Nhánh không RAG giữ nguyên hình dạng thành phần Content: không có nguồn nên không có trích dẫn,
+    # và không chấm độ liên quan (None).
+    return ModuleComponent(
+        module_id=module.id, type=ComponentType.content,
+        content={
+            "markdown": content_out.content,
+            "source_locators": getattr(content_out, "source_locators", []),
+            **({"source_map": {k: v.model_dump() for k, v in content_out.source_map.items()},
+                "inline_citations": [c.model_dump() for c in content_out.inline_citations]}
+               if hasattr(content_out, "source_map") else {"claim_citations": []}),
+            "relevance_confidence": corrected.confidence if corrected is not None else None,
+            "relevance_retry_count": corrected.retries if corrected is not None else 0,
+        },
+    )
+
+
+def _explanation_items(asked: list[_Asked]) -> list[dict]:
+    # The Explanation component is what each question already wrote along with its answer: its
+    # reasoning, written before the choices, and the explanation drawn from it, both checked along
+    # with the question against its own passages. A separate step would only cost more model calls.
+    items = []
+    positions = {ComponentType.quiz: 0, ComponentType.practice: 0}
+    for a in asked:
+        position = positions[a.type]
+        positions[a.type] += 1
+        question = a.state.get("question")
+        if question is None:
+            continue
+        items.append({
+            "component": a.type.value, "position": position,
+            "reasoning": question.reasoning, "explanation_text": question.explanation,
+        })
+    return items
+
+
 def _generate_module(
     db: Session, doc: Document, self_check: bool = True,
     use_retrieval: bool = True, paired_module: Module | None = None,
@@ -358,117 +455,58 @@ def _generate_module(
     (module RAG đi cặp) thay vì Planner và LO tự đặt lại; mỗi bước dùng đúng prompt của nhánh RAG
     trừ khối SOURCE CHUNK, và câu hỏi (kèm lời giải) đọc Content thay cho đoạn truy hồi. Các bước
     tự kiểm bỏ những tiêu chí cần nguồn để đối chiếu (groundedness)."""
-    # Every source must belong to the module's document, where citations resolve.
     started = time.perf_counter()
+    # Every source must belong to the module's document, where citations resolve.
     scope = ChunkScope(doc.id)
-    context_chunks = None
+    language = {"output_language": output_language, "custom_instructions": custom_instructions}
+
     if use_retrieval:
-        with timing.stage("planner"):
-            planner_out = _get_or_cache_planner(db, doc, output_language, custom_instructions)
-        top_concept = min(planner_out.concepts, key=lambda c: c.priority)
-        title = top_concept.name
-        query = f"{top_concept.name}: {top_concept.summary}"
-        db.commit()
-        with timing.stage("retrieval"):
-            context_chunks = retrieve(db, doc.course_id, query, top_k=None, min_k=8, scope=scope)
-        db.commit()
-        with timing.stage("learning_objective"):
-            lo = generate_learning_objective(top_concept, context_chunks, output_language=output_language, custom_instructions=custom_instructions)
+        objective = _objective_from_sources(db, doc, scope, output_language, custom_instructions)
     else:
-        if paired_module is None:
-            raise ValueError("Sinh không RAG cần module RAG đi cặp để lấy Learning Objective.")
-        if paired_module.document_id != doc.id:
-            raise ValueError("Module đi cặp không thuộc đúng tài liệu đang sinh.")
-        title = paired_module.title
-        query = concept_query_of(paired_module)
-        lo = learning_objective_of(paired_module)
-
+        objective = _objective_from_pair(doc, paired_module)
+    lo = objective.lo
     db.commit()
+    module = _new_module(doc, objective, paired_module, self_check, use_retrieval, output_language, custom_instructions)
 
-    module = Module(
-        document_id=doc.id,
-        course_id=doc.course_id,
-        title=title,
-        paired_module_id=paired_module.id if paired_module is not None else None,
-        generation_payload=normalize_generation_payload(
-            {**generation_payload(requested_model(), self_check, output_language, custom_instructions),
-             "use_retrieval": True}
-            if use_retrieval else
-            control_payload(paired_module.id, requested_model(), self_check, output_language, custom_instructions)
-        ),
-        learning_objective=lo.objective_text,
-        bloom_level=lo.bloom_level,
-        sub_objectives=lo.sub_objectives,
-    )
-
-    content_context = None
+    corrected = content_context = None
     if use_retrieval:
         with timing.stage("content_retrieval"):
-            corrected = _retrieve_for_content(db, doc, lo, context_chunks, scope)
+            corrected = _retrieve_for_content(db, doc, lo, objective.context_chunks, scope)
             content_context = expand_with_parent_context(db, corrected.chunks, scope=scope)
         db.commit()
     with timing.stage("content"):
-        content_out, content_check = generate_content(
-            lo, content_context, self_check=self_check, output_language=output_language, custom_instructions=custom_instructions,
-        )
-    # Nhánh không RAG giữ nguyên hình dạng thành phần Content: không có nguồn nên không có trích dẫn,
-    # và không chấm độ liên quan (None).
-    content_component = ModuleComponent(
-        module_id=module.id, type=ComponentType.content,
-        content={
-            "markdown": content_out.content,
-            "source_locators": getattr(content_out, "source_locators", []),
-            **({"source_map": {k: v.model_dump() for k, v in content_out.source_map.items()},
-                "inline_citations": [c.model_dump() for c in content_out.inline_citations]}
-               if hasattr(content_out, "source_map") else {"claim_citations": []}),
-            "relevance_confidence": corrected.confidence if use_retrieval else None,
-            "relevance_retry_count": corrected.retries if use_retrieval else 0,
-        },
-    )
+        content_out, content_check = generate_content(lo, content_context, self_check=self_check, **language)
+    content_component = _content_component(module, content_out, corrected)
 
     lesson_text = MARKER.sub("", content_out.content)
     with timing.stage("slides"):
-        slides_out = generate_slides(lo, lesson_text, output_language=output_language, custom_instructions=custom_instructions)
+        slides_out = generate_slides(lo, lesson_text, **language)
     slides_component = ModuleComponent(
         module_id=module.id, type=ComponentType.slides,
         content={"slides": [s.model_dump() for s in slides_out.slides]},
     )
 
     with timing.stage("example"):
-        example_out = generate_example(lo, lesson_text, context_chunks, output_language=output_language, custom_instructions=custom_instructions)
+        example_out = generate_example(lo, lesson_text, objective.context_chunks, **language)
     example_component = ModuleComponent(
         module_id=module.id, type=ComponentType.example,
         content={"examples": [e.model_dump() for e in example_out.examples]},
     )
 
-    lesson = None if use_retrieval else lesson_text
     with timing.stage("questions"):
         asked = _generate_questions(
-            db, doc, lo, query, scope, self_check, lesson=lesson, output_language=output_language, custom_instructions=custom_instructions,
+            db, doc, lo, objective.query, scope, self_check,
+            lesson=None if use_retrieval else lesson_text, **language,
         )
+    items = _explanation_items(asked)
 
-    # The Explanation component is what each question already wrote along with its answer: its
-    # reasoning, written before the choices, and the explanation drawn from it, both checked along
-    # with the question against its own passages. A separate step would only cost more model calls.
-    items = []
-    positions = {ComponentType.quiz: 0, ComponentType.practice: 0}
-    for a in asked:
-        position = positions[a.type]
-        positions[a.type] += 1
-        question = a.state.get("question")
-        if question is None:
-            continue
-        items.append({
-            "component": a.type.value, "position": position,
-            "reasoning": question.reasoning, "explanation_text": question.explanation,
-        })
     # Persist the complete result atomically, after every provider call has finished.
     db.add(module)
     db.flush()
     for component in (content_component, slides_component, example_component):
         component.module_id = module.id
         db.add(component)
-    if use_retrieval:
+    if corrected is not None:
         _log_hallucination_check(db, module.id, "content_relevance_pass", corrected.confidence == "high")
     if content_check is not None and use_retrieval:
         _log_hallucination_check(db, module.id, "content_groundedness_pass", content_check.groundedness_pass)
