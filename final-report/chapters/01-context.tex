@@ -1,76 +1,38 @@
 \section{Introduction}\label{sec:introduction}
 \subsection{Problem and motivation}
-GENAILMS stands for Generative Artificial Intelligence for Learning Management Systems; AI denotes artificial intelligence. A learning management system (LMS) organizes learner access, activities and assessment.
+Lecture material is organised for a lecture: slide bullets, notes, code, formulas and recordings that assume a teacher in the room. A microlearning module needs something different, one narrow objective with an explanation, an example and questions aligned to it. Writing such modules by hand is repetitive, and a module drafted by a general language model may contain statements that the course material does not support.
 
-Lecture materials combine slide bullets, narrative notes, diagrams, code and mathematical expressions. Their organization follows a lecture rather than a short self-contained activity. Creating a microlearning module requires selecting a narrow learning objective, aligning explanations and assessments, reviewing the source evidence and preparing LMS activities.
+GENAILMS (Generative Artificial Intelligence for Learning Management Systems) is a tool for lecturers. A lecturer uploads course documents, asks for a module, checks each statement against the passage it cites, edits the result and publishes it to Moodle as a Book and quizzes. Students reach the published activities in Moodle and can ask questions about the course material through the same tool.
 
-GENAILMS is an instructor-facing system for generating microlearning modules from course documents and publishing them to Moodle. The instructor uploads material, requests a module, inspects the sources, edits the lesson and publishes it. Learners access the resulting Book and quizzes through Moodle.
-
-The design addresses three linked problems: reducing repetitive authoring work, maintaining a traceable connection between generated claims and course sources, and preserving instructor control over the published material. Source selection, content quality and pedagogical alignment are evaluated separately.
-\subsection{Objectives and module structure}
-The design has five objectives:
-\begin{enumerate}[label=O\arabic*.,leftmargin=*]
-\item Define a complete course-source-to-microlearning authoring workflow.
-\item Combine local retrieval with structured, source-conditioned generation.
-\item Support source inspection and editing while preserving the AI original.
-\item Publish through Moodle identity and course-capability boundaries.
-\item Define a reproducible bilingual evaluation of quality, usability and resource cost.
+The project reduces authoring effort while keeping every generated statement traceable to the lecturer's own material and leaving the final decision with the lecturer.
+\subsection{Objectives}
+\begin{enumerate}[label=O\arabic*.,leftmargin=*,nosep]
+\item Build the complete workflow from course document to published Moodle activity.
+\item Generate modules from passages retrieved in the lecturer's documents, with an inline citation to the exact passage for each important statement.
+\item Let the lecturer inspect sources and edit the module while the first AI version is kept.
+\item Integrate with Moodle through its identity and capability checks and through LTI 1.3.
+\item Deploy as stateless services that can scale on AWS within a \$200 credit.
+\item Measure retrieval quality, answer quality, latency, resource use and scalability, and define a blinded evaluation of module quality with human and model raters.
 \end{enumerate}
-
-Each module targets one terminal learning objective (LO), the final observable capability, with enabling sub-objectives that support it. The cognitive process is described using the revised Bloom taxonomy\citep{bloom}; alignment between objectives, learning activities and assessment follows constructive alignment\citep{alignment}. A large language model (LLM) drafts the parts, while the instructor evaluates their pedagogical fit. The seven parts are:
-\begin{enumerate}[leftmargin=*]
-\item \textbf{Learning Objective}: the expected learner behavior and cognitive level.
-\item \textbf{Content}: a compact lesson organized around the sub-objectives.
-\item \textbf{Slides}: a presentation of the core lesson.
-\item \textbf{Example}: an illustration of the target concept.
-\item \textbf{Practice}: rehearsal questions with immediate feedback.
+\subsection{Module structure}\label{sec:module-structure}
+A module targets one terminal learning objective (LO) with enabling sub-objectives. The cognitive level follows the revised Bloom taxonomy\citep{bloom}, and the parts are aligned with the objective following constructive alignment\citep{alignment}. A module has seven parts:
+\begin{enumerate}[leftmargin=*,nosep]
+\item \textbf{Learning Objective}: the expected behaviour and its Bloom level.
+\item \textbf{Content}: a short lesson with one heading per sub-objective.
+\item \textbf{Slides}: the lesson as a presentation, exportable to PPTX.
+\item \textbf{Example}: a worked illustration of the concept.
+\item \textbf{Practice}: questions with immediate feedback.
 \item \textbf{Quiz}: assessment questions with feedback after submission.
-\item \textbf{Explanation}: reasoning associated with individual answers.
+\item \textbf{Explanation}: the reasoning behind each answer.
 \end{enumerate}
-The data model stores LO fields on the module and the other six part types in component rows. Phase 2 will assess length, learning load and question--LO alignment.
 \subsection{Scope}\label{sec:scope}
-The evaluation corpus covers five subjects: Advanced Programming, Calculus 1, Machine Learning, Operating Systems and Scientific Socialism. It replaced the four computing subjects of the midterm report after the advisor's feedback. Textbook classification, outline detection and chapter selection are excluded. The application accepts Portable Document Format (PDF), DOCX, Office Open XML presentations (PPTX) and Hypertext Markup Language (HTML/HTM) documents; MP3, WAV, M4A, FLAC, OGG and AAC audio; and MP4, MKV, WebM, MOV and AVI video. Subtitle and plain-text inputs were removed in Phase 2. Legacy office inputs are converted to a supported document format before upload. Audio/video transcription preserves timestamp locators. The five-subject corpus contains PDF and PPTX slides and lecture recordings (Section~\ref{sec:results-setup}).
-
-Module generation retrieves within the selected document and its authorized course. Course question answering (Q\&A) retrieves across the author's selected course and keeps conversation history. Authors can select an available default generation model; administrators manage accounts, operational recovery and study preparation. Moodle provides learner delivery and assessment. Practice denotes a Moodle Quiz configured with immediate feedback, rather than a separate activity type.
-\subsection{Related work and comparable systems}\label{sec:related}
-\subsubsection{Microlearning and instructional design}
-Microlearning organizes learning into focused units that learners can use in short episodes. Leong et al. review the development of this area and its varied educational and workplace applications\citep{microlearning}. Brevity alone does not establish effective learning. A coherent unit needs an attainable outcome, prerequisite knowledge, a meaningful explanation and an opportunity to use the idea. GENAILMS therefore defines microlearning through one terminal objective and its aligned seven-part structure, rather than imposing a universal duration. Phase 2 will examine completion time, perceived load and instructor judgments of coherence.
-
-The revised Bloom taxonomy distinguishes knowledge dimensions from cognitive processes such as remembering, applying and evaluating\citep{bloom}. This supports a structured objective with an observable verb and an explicit target concept. A generated Bloom label is a design intention, not proof that a question elicits that process. For example, a question that merely asks for a definition does not become an application task because its metadata says ``Apply.'' Review must compare the actual reasoning demanded by the task with the stated objective.
-
-Constructive alignment connects intended outcomes, teaching activities and assessment\citep{alignment}. GENAILMS applies this principle by carrying the same terminal objective and enabling sub-objectives into Content, Example, Practice and Quiz. Each question is associated with the skill it rehearses or assesses. This provides a concrete basis for rejecting off-topic questions even when they are factually correct. Enabling objectives describe necessary intermediate capabilities; the terminal objective expresses the capability expected after the complete unit.
-
-Cognitive load theory distinguishes the processing demands of a task from opportunities for schema acquisition\citep{cogload}. It motivates limiting unrelated detail, presenting a worked example and keeping evidence inspection adjacent to the lesson. These are design implications rather than demonstrated learning effects of GENAILMS. Code, notation and diagrams can carry substantial prerequisites, so length and token count are recorded as workload indicators rather than substituted for a direct measure of learning difficulty.
-\subsubsection{Automatic question generation and LLM authoring}
-Automatic question generation (AQG) predates generative LLMs. Heilman and Smith generate candidate factual questions through transformations and rank them for acceptability\citep{heilman}. Their named system illustrates the separation of generating a candidate from selecting a usable question. Kurdi et al.'s systematic review organizes educational AQG by inputs, methods, response formats and evaluation; it identifies limitations in feedback generation, difficulty control and comparable evaluation\citep{aqgreview}. These concerns motivate explicit answer keys, explanations and objective alignment in GENAILMS rather than evaluating grammaticality alone.
-
-LLMs broaden the range of material that can be drafted from a prompt, including explanations, examples and assessment items. Kasneci et al. discuss these opportunities alongside factual, pedagogical and ethical challenges\citep{llmed}. A fluent lesson can omit prerequisites, invent a source-supported detail or give an implausible distractor. The generation design consequently separates schema validation, semantic self-check and independent assessment. A self-check is another model judgment and must not serve as its own quality ground truth.
-
-The broader review by Zawacki-Richter et al. highlights the need to connect educational AI research with educators and pedagogical evaluation\citep{aiedreview}. GENAILMS keeps the lecturer responsible for accepting and publishing content. Its blinded evaluation includes instructor-authored reference material and human calibration of model judges. The contribution is an authoring and evaluation workflow; a claim of improved student learning requires a separate learning-outcome study.
-\subsubsection{Grounded generation and citation evaluation}
-Retrieval-augmented generation (RAG) provides external passages as generation context\citep{rag}. Retrieval can supply course-specific evidence, but relevance, coverage and factual support remain separate. A top-ranked passage may concern the topic without supporting a particular sentence. This motivates physical passage identities and claim-adjacent markers in the design.
-
-Automatic LLMs' Citation Evaluation (ALCE) distinguishes correctness and citation quality\citep{alce}. Factual precision in Atomicity Score (FActScore) decomposes long answers into assessable factual claims\citep{factscore}. GENAILMS combines these perspectives: citation assessment examines the passages attached to a claim, while the source-support assessment also includes uncited factual claims. The metrics therefore expose a lesson that cites its few supported statements but leaves substantial unsupported content elsewhere. Neither method by itself establishes pedagogical completeness or objective fidelity.
-\subsubsection{LMS integration and authoring tools}
-Moodle Book and Quiz provide established lesson delivery and assessment mechanisms\citep{moodlebook,moodlequiz}. Moodle's AI subsystem connects providers with permitted actions and placements in the LMS\citep{moodleai}. This is a useful integration pattern for AI-assisted operations, while GENAILMS specifies a document-to-seven-part authoring workflow with its own source identities, original snapshots and paired evaluation records.
-
-H5P Course Presentation supports browser authoring of interactive slides and questions\citep{h5p}; Gemini Notebook supports source-oriented exploration\citep{notebook}. These inform interaction composition and source inspection. Table~\ref{tab:related} compares the documented primary workflows. ``Not specified'' means that the cited workflow does not establish the feature, rather than asserting that no version or extension can provide it.
-\begin{table}[H]\centering\small\caption{Named systems and the workflow addressed by GENAILMS.}\label{tab:related}
-\begin{tabularx}{\linewidth}{|p{2.8cm}|Y|Y|Y|}\hline
-System & Documented primary workflow & Evidence / instructional structure & LMS relationship\\\hline
-Heilman--Smith QG & Generate and rank factual questions & Factual questions & Publication not specified\\\hline
-Gemini Notebook & Explore supplied sources & Source-oriented interaction; seven-part module not specified & Moodle bridge not specified\\\hline
-H5P Course Presentation & Compose interactive slides and questions & Author-controlled composition & Embeddable interactive content; Moodle authoring support\\\hline
-Moodle AI subsystem & Provider actions in permitted placements & Placement-level assistance & Native Moodle boundary\\\hline
-GENAILMS & Source-to-module generation, review and publication & One LO; seven parts; sources and originals & Capability-checked Book and Quiz publication\\\hline
-\end{tabularx}\end{table}
-GENAILMS connects structured authoring, physical sources, controlled editing and Moodle publication. Phase 2 tests their combined support, usability and cost while retaining instructor judgment.
-\subsection{Design contribution}
-The contribution connects five complementary design elements:
-\begin{itemize}[leftmargin=*]
-\item A complete instructor-controlled source-to-module workflow (O1).
-\item Scoped local retrieval and structured generation with explicit budgets (O2).
-\item Physical citation identity and preservation of the first AI version (O3).
-\item Moodle publication bounded by confirmed identity and fresh course capabilities (O4).
-\item A paired protocol separating source support, pedagogy, usability and cost (O5).
+The evaluation corpus is the five subjects of \code{docs/documents}: Advanced Programming, Calculus 1, Machine Learning, Operating Systems and Scientific Socialism, in PDF and PPTX slides and lecture recordings. It replaced the four computing subjects of the midterm report after the advisor's feedback. The tool accepts PDF, DOCX, PPTX and HTML documents and common audio and video formats, which are transcribed with timestamps. Chapter detection in textbooks and learning-outcome studies with students are out of scope.
+\subsection{Contributions}
+\begin{itemize}[leftmargin=*,nosep]
+\item A working authoring tool, from upload through generation, review, editing and Moodle publication, with LTI 1.3 entry for lecturers and students and roster synchronisation (O1, O3, O4).
+\item Source-conditioned generation with physical citations: each citation resolves to a stored chunk and its page, slide or timestamp (O2).
+\item A deployment of stateless services described in Terraform for AWS, with load and failure tests that located and removed the bottlenecks on one machine (O5).
+\item Measurements on the five-subject corpus: retrieval (Hit Rate@$K$, MRR, nDCG), course chat faithfulness and relevancy with Ragas, a first pilot of the module evaluation, latency, throughput and failure behaviour (O6).
 \end{itemize}
+\subsection{Report structure}
+Section~\ref{sec:background} reviews related work and the measurements behind the main technical choices. Sections~\ref{sec:requirements} and~\ref{sec:usecases} give requirements and use cases. Sections~\ref{sec:architecture} to~\ref{sec:ui} describe the architecture, data model, pipelines, Moodle integration and security, API and interface. Section~\ref{sec:evaluation} defines the evaluation method, Section~\ref{sec:results} reports the results, and Section~\ref{sec:conclusion} concludes and lists remaining work.

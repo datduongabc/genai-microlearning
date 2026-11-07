@@ -1,46 +1,28 @@
-\clearpage\section{Use case design}\label{sec:usecases}
-\subsection{UML use case diagrams}
-Figures~\ref{fig:use-author} and~\ref{fig:use-ops} use Unified Modeling Language (UML) actor symbols, elliptical use cases, associations and a system boundary. UC01 account access applies to authors, administrators and invited raters; the latter roles authenticate through the same local-account flow. Authentication is a precondition for all other protected use cases rather than a repeated included bubble. Internal retrieval and database operations are not independent human use cases. The split keeps authoring and operational roles legible.
-\diagram{use-cases-authoring}{UML use cases for module authoring and Moodle publication.}{use-author}
-\diagram{use-cases-operations}{UML use cases for administration, recovery and blinded rating.}{use-ops}
-\clearpage
-\subsection{Use case specifications}
-Each table specifies one actor interaction, including its normal, alternative and exception paths. UC11 covers both author-owned recovery and the administrator's operational recovery. All other protected cases require UC01 authentication.
-
-\needspace{.39\textheight}
-Table~\ref{tab:uc-01} specifies UC01: Account access.
-\begin{table}[H]\centering\footnotesize\setstretch{1.0}\renewcommand{\arraystretch}{1.05}
-\caption{UC01: Account access.}\label{tab:uc-01}
-\begin{tabular}{|p{2.8cm}|p{11.9cm}|}\hline
-\textbf{Field} & \textbf{Content}\\\hline
-Use case & UC01: Account access\\\hline
-Description & Authenticate an author, administrator or invited rater.\\\hline
-Actors & Lecturer/author; application administrator; invited rater.\\\hline
-Preconditions & Account page reachable; existing account active.\\\hline
-Postconditions & A valid session opens permitted resources; rejected requests expose none.\\\hline
-Trigger & User submits the access form.\\\hline
-Normal flow & \textbf{1.} User enters email and password.\par \textbf{2.} System validates fields, password hash and active status.\par \textbf{3.} System issues access and refresh material.\par \textbf{4.} Interface opens permitted courses or assigned studies.\\\hline
-Alternative flows & \textbf{A1.} Register: validate password/email, create account, offer sign-in.\par \textbf{A2.} Renew: validate and rotate the refresh token.\par \textbf{A3.} Sign out: revoke the refresh token and clear client state.\\\hline
-Exception flows & \textbf{E1.} Invalid credentials, disabled account or invalid refresh token deny access.\par \textbf{E2.} Malformed registration or duplicate email returns validation feedback.\\\hline
-\end{tabular}\end{table}
-
-\needspace{.39\textheight}
-Table~\ref{tab:uc-02} specifies UC02: Manage courses.
-\begin{table}[H]\centering\footnotesize\setstretch{1.0}\renewcommand{\arraystretch}{1.05}
-\caption{UC02: Manage courses.}\label{tab:uc-02}
-\begin{tabular}{|p{2.8cm}|p{11.9cm}|}\hline
-\textbf{Field} & \textbf{Content}\\\hline
-Use case & UC02: Manage courses\\\hline
-Description & Manage an owned workspace and its Moodle destination.\\\hline
-Actors & Lecturer/author; Moodle for target-course authorization.\\\hline
-Preconditions & Author signed in; existing course owned.\\\hline
-Postconditions & Changes remain owner-scoped; Moodle target saved only after authorization.\\\hline
-Trigger & Author opens or creates a course.\\\hline
-Normal flow & \textbf{1.} System lists owned courses.\par \textbf{2.} Author names a new course or selects an existing one.\par \textbf{3.} System validates ownership and saves changes.\par \textbf{4.} Interface shows sources, modules and destination.\\\hline
-Alternative flows & \textbf{A1.} Link an authorized Moodle course after identity confirmation.\par \textbf{A2.} Delete only after checking research dependencies.\\\hline
-Exception flows & \textbf{E1.} Missing/non-owned course is unavailable.\par \textbf{E2.} Study dependencies prevent deletion.\par \textbf{E3.} Remote permission or connection failure prevents a target change.\\\hline
-\end{tabular}\end{table}
-
+\clearpage\section{Use cases}\label{sec:usecases}
+Figures~\ref{fig:use-author} and~\ref{fig:use-ops} show the use cases. Signing in (UC01) is a precondition of every other case and is not repeated in the diagrams.
+\diagram{use-cases-authoring}{Use cases for module authoring and Moodle publication.}{use-author}
+\diagram{use-cases-operations}{Use cases for administration, recovery and blinded rating.}{use-ops}
+Table~\ref{tab:uc-summary} lists all use cases. The four that carry the main workflow are specified in full below.
+\begin{longtable}{|p{1.2cm}|p{3.6cm}|p{2.9cm}|p{6.9cm}|}\caption{Use cases.}\label{tab:uc-summary}\\\hline
+ID & Use case & Actor & Main flow and main exceptions\\\hline\endfirsthead
+\hline ID & Use case & Actor & Main flow and main exceptions\\\hline\endhead
+UC01 & Account access & All users & Sign in, register, renew, sign out; invalid credentials or a disabled account are refused\\\hline
+UC02 & Manage courses & Lecturer & Create, open or delete a course; link a Moodle course only with authoring rights; deletion refused while a study uses the course\\\hline
+UC03 & Upload document & Lecturer & Table~\ref{tab:uc-03}\\\hline
+UC04 & Generate module & Lecturer & Table~\ref{tab:uc-04}\\\hline
+UC05 & Inspect sources & Lecturer & Click a citation; the passage and its page, slide or time open beside the claim; an unknown code stays unresolved\\\hline
+UC06 & Edit module & Lecturer & Edit by hand or accept an AI chat proposal; answers, indices and citations are validated; the first AI version is kept\\\hline
+UC07 & Export slides & Lecturer & Download the current slides as PPTX\\\hline
+UC08 & Publish to Moodle & Linked lecturer & Table~\ref{tab:uc-08}\\\hline
+UC09 & Link Moodle identity & Lecturer & Request a link by email, confirm in Moodle; the response is the same whether or not the email exists\\\hline
+UC10 & Manage accounts & Administrator & Create, disable or change accounts; no access to their content\\\hline
+UC11 & Retry failed jobs & Lecturer, administrator & Read the failure, retry once; active or successful jobs cannot be retried\\\hline
+UC12 & Prepare study & Administrator & Load RAG modules with their no-RAG pairs; packets are frozen and coded; raters are invited by email\\\hline
+UC13 & Rate packets & Rater & Score eight criteria from 1 to 5 with reasons; only one's own rating is saved\\\hline
+UC14 & Ask course questions & Lecturer, course member & Table~\ref{tab:uc-14}\\\hline
+UC15 & Set default model & Lecturer & Choose a model from the gateway catalogue; an unusable model is refused\\\hline
+UC16 & Open from Moodle & Lecturer, student & LTI 1.3 launch from an External tool activity; the lecturer reaches the course, a student reaches the chat page; a student before the lecturer's first launch is refused\\\hline
+\end{longtable}
 \needspace{.39\textheight}
 Table~\ref{tab:uc-03} specifies UC03: Upload document.
 \begin{table}[H]\centering\footnotesize\setstretch{1.0}\renewcommand{\arraystretch}{1.05}
@@ -76,57 +58,6 @@ Exception flows & \textbf{E1.} Unavailable provider or malformed output exhausts
 \end{tabular}\end{table}
 
 \needspace{.39\textheight}
-Table~\ref{tab:uc-05} specifies UC05: Inspect sources.
-\begin{table}[H]\centering\footnotesize\setstretch{1.0}\renewcommand{\arraystretch}{1.05}
-\caption{UC05: Inspect sources.}\label{tab:uc-05}
-\begin{tabular}{|p{2.8cm}|p{11.9cm}|}\hline
-\textbf{Field} & \textbf{Content}\\\hline
-Use case & UC05: Inspect sources\\\hline
-Description & Inspect the physical passage supporting a generated claim.\\\hline
-Actors & Lecturer/author.\\\hline
-Preconditions & Owned module/source accessible; a citation marker is displayed.\\\hline
-Postconditions & Correct passage and locator appear beside the claim.\\\hline
-Trigger & Author activates a marker.\\\hline
-Normal flow & \textbf{1.} Interface identifies the marker and claim span.\par \textbf{2.} System verifies source/module access.\par \textbf{3.} Source map resolves the physical chunk and locator.\par \textbf{4.} Interface highlights the passage and preserves reading position.\\\hline
-Alternative flows & \textbf{A1.} Adjacent markers on one claim can be inspected separately.\\\hline
-Exception flows & \textbf{E1.} Missing/ambiguous mapping remains unresolved; no replacement is invented.\par \textbf{E2.} Unavailable or revoked source access discloses no protected passage.\\\hline
-\end{tabular}\end{table}
-
-\needspace{.39\textheight}
-Table~\ref{tab:uc-06} specifies UC06: Edit module.
-\begin{table}[H]\centering\footnotesize\setstretch{1.0}\renewcommand{\arraystretch}{1.05}
-\caption{UC06: Edit module.}\label{tab:uc-06}
-\begin{tabular}{|p{2.8cm}|p{11.9cm}|}\hline
-\textbf{Field} & \textbf{Content}\\\hline
-Use case & UC06: Edit module\\\hline
-Description & Edit teaching content while retaining the first AI version.\\\hline
-Actors & Lecturer/author; LLM service for chat edits.\\\hline
-Preconditions & Owned module; editable component or question selected.\\\hline
-Postconditions & Teaching version, questions/explanations and citation spans agree; original stays immutable.\\\hline
-Trigger & Author saves an edit or accepts a chat change.\\\hline
-Normal flow & \textbf{1.} Author selects a component/question and edits it.\par \textbf{2.} System validates fields, answer indices and source markers.\par \textbf{3.} First edit captures original content and ordered question/explanation data.\par \textbf{4.} System saves the teaching version and synchronized references atomically.\par \textbf{5.} Interface confirms the saved state.\\\hline
-Alternative flows & \textbf{A1.} Chat proposes a structured change in authorized context, using the same validation/save path.\\\hline
-Exception flows & \textbf{E1.} Invalid answer, type or source marker rejects the change.\par \textbf{E2.} Malformed output or unavailable service leaves the prior version intact.\par \textbf{E3.} Missing module or lost ownership prevents editing.\\\hline
-\end{tabular}\end{table}
-
-\needspace{.39\textheight}
-Table~\ref{tab:uc-07} specifies UC07: Export slides.
-\begin{table}[H]\centering\footnotesize\setstretch{1.0}\renewcommand{\arraystretch}{1.05}
-\caption{UC07: Export slides.}\label{tab:uc-07}
-\begin{tabular}{|p{2.8cm}|p{11.9cm}|}\hline
-\textbf{Field} & \textbf{Content}\\\hline
-Use case & UC07: Export slides\\\hline
-Description & Export the saved Slides component as a presentation.\\\hline
-Actors & Lecturer/author.\\\hline
-Preconditions & Owned module has usable Slides content.\\\hline
-Postconditions & Current slides are returned as a PPTX file.\\\hline
-Trigger & Author chooses download.\\\hline
-Normal flow & \textbf{1.} System verifies ownership.\par \textbf{2.} System loads saved slide content.\par \textbf{3.} Exporter renders the presentation.\par \textbf{4.} Client downloads the file.\\\hline
-Alternative flows & None.\\\hline
-Exception flows & \textbf{E1.} Unusable content returns a clear error.\par \textbf{E2.} Rendering/delivery failure leaves teaching content intact.\par \textbf{E3.} Missing/non-owned module is unavailable.\\\hline
-\end{tabular}\end{table}
-
-\needspace{.39\textheight}
 Table~\ref{tab:uc-08} specifies UC08: Publish to Moodle.
 \begin{table}[H]\centering\footnotesize\setstretch{1.0}\renewcommand{\arraystretch}{1.05}
 \caption{UC08: Publish to Moodle.}\label{tab:uc-08}
@@ -144,91 +75,6 @@ Exception flows & \textbf{E1.} Identity/capability/network failure prevents unau
 \end{tabular}\end{table}
 
 \needspace{.39\textheight}
-Table~\ref{tab:uc-09} specifies UC09: Link Moodle identity.
-\begin{table}[H]\centering\footnotesize\setstretch{1.0}\renewcommand{\arraystretch}{1.05}
-\caption{UC09: Link Moodle identity.}\label{tab:uc-09}
-\begin{tabular}{|p{2.8cm}|p{11.9cm}|}\hline
-\textbf{Field} & \textbf{Content}\\\hline
-Use case & UC09: Link Moodle identity\\\hline
-Description & Confirm control of a Moodle account without email enumeration.\\\hline
-Actors & Lecturer/author; Moodle.\\\hline
-Preconditions & Local session active; Moodle user able to confirm.\\\hline
-Postconditions & Only valid confirmation links identity; rejected/expired requests stay unlinked.\\\hline
-Trigger & User submits a linking email.\\\hline
-Normal flow & \textbf{1.} System validates email and creates an opaque request.\par \textbf{2.} API returns the generic pending shape.\par \textbf{3.} Matching Moodle user reviews the confirmation.\par \textbf{4.} System stores the confirmed Moodle ID.\par \textbf{5.} Client polls state and resumes course linking.\\\hline
-Alternative flows & \textbf{A1.} Unlink removes the association and disables publication.\par \textbf{A2.} Missing/ambiguous email retains the same pending response.\\\hline
-Exception flows & \textbf{E1.} Expired/rejected confirmation leaves identity unlinked.\par \textbf{E2.} Transport failure is reported without exposing email existence.\par \textbf{E3.} Later suspension or capability loss blocks publication.\\\hline
-\end{tabular}\end{table}
-
-\needspace{.39\textheight}
-Table~\ref{tab:uc-10} specifies UC10: Manage accounts.
-\begin{table}[H]\centering\footnotesize\setstretch{1.0}\renewcommand{\arraystretch}{1.05}
-\caption{UC10: Manage accounts.}\label{tab:uc-10}
-\begin{tabular}{|p{2.8cm}|p{11.9cm}|}\hline
-\textbf{Field} & \textbf{Content}\\\hline
-Use case & UC10: Manage accounts\\\hline
-Description & Administer local accounts and Moodle associations.\\\hline
-Actors & Application administrator.\\\hline
-Preconditions & Administrator authenticated; target account exists.\\\hline
-Postconditions & Validated changes persist; disable blocks access without granting content access.\\\hline
-Trigger & Administrator selects an account action.\\\hline
-Normal flow & \textbf{1.} System lists permitted accounts.\par \textbf{2.} Administrator selects action and target.\par \textbf{3.} System validates role/input and applies the change.\par \textbf{4.} Interface confirms the result.\\\hline
-Alternative flows & \textbf{A1.} Create an account or update permitted fields/privileges.\\\hline
-Exception flows & \textbf{E1.} Non-admin request is denied.\par \textbf{E2.} Invalid input, duplicate identifier or account-state restriction prevents change.\\\hline
-\end{tabular}\end{table}
-
-\needspace{.39\textheight}
-Table~\ref{tab:uc-11} specifies UC11: Inspect and retry failed jobs.
-\begin{table}[H]\centering\footnotesize\setstretch{1.0}\renewcommand{\arraystretch}{1.05}
-\caption{UC11: Inspect and retry failed jobs.}\label{tab:uc-11}
-\begin{tabular}{|p{2.8cm}|p{11.9cm}|}\hline
-\textbf{Field} & \textbf{Content}\\\hline
-Use case & UC11: Inspect and retry failed jobs\\\hline
-Description & Recover eligible own jobs or operationally failed jobs.\\\hline
-Actors & Lecturer/author for own jobs; application administrator for operational recovery.\\\hline
-Preconditions & Caller authenticated; target failed job within author/admin recovery scope.\\\hline
-Postconditions & One eligible job is requeued; duplicate claiming remains prevented.\\\hline
-Trigger & Caller chooses retry after reading failure detail.\\\hline
-Normal flow & \textbf{1.} System verifies role, scope, failure and retry eligibility.\par \textbf{2.} Caller requests retry.\par \textbf{3.} System removes eligible terminal locks and requeues.\par \textbf{4.} Client polls and reports the new outcome.\\\hline
-Alternative flows & \textbf{A1.} Administrator selects a job from the restricted operational queue.\par \textbf{A2.} Ingestion resumes a valid step; module generation may rerun and consume additional calls.\\\hline
-Exception flows & \textbf{E1.} Successful/active/non-owned job is rejected.\par \textbf{E2.} Concurrent retry or invalid recovery state prevents duplicate scheduling.\par \textbf{E3.} Repeated failure retains reason and attempt outcome.\\\hline
-\end{tabular}\end{table}
-
-\needspace{.39\textheight}
-Table~\ref{tab:uc-12} specifies UC12: Prepare blinded study.
-\begin{table}[H]\centering\footnotesize\setstretch{1.0}\renewcommand{\arraystretch}{1.05}
-\caption{UC12: Prepare blinded study.}\label{tab:uc-12}
-\begin{tabular}{|p{2.8cm}|p{11.9cm}|}\hline
-\textbf{Field} & \textbf{Content}\\\hline
-Use case & UC12: Prepare blinded study\\\hline
-Description & Prepare anonymous study snapshots, rubric and invitations.\\\hline
-Actors & Application administrator.\\\hline
-Preconditions & Administrator authenticated; draft study; valid source packets.\\\hline
-Postconditions & Study contains frozen packets, invitation list and rubric version.\\\hline
-Trigger & Administrator creates or edits a study.\\\hline
-Normal flow & \textbf{1.} Administrator sets identity and rubric.\par \textbf{2.} System imports RAG/LLM-only or human reference packets.\par \textbf{3.} System freezes content and evidence.\par \textbf{4.} System assigns anonymous codes and authorized rater access.\par \textbf{5.} Administrator reviews and activates the study.\\\hline
-Alternative flows & \textbf{A1.} Use validated instructor-authored reference packets.\par \textbf{A2.} Revise invitations or close an active study before rating begins/ends as permitted.\\\hline
-Exception flows & \textbf{E1.} Invalid/incomplete source packets are rejected.\par \textbf{E2.} Editing live rated content requires a new snapshot.\par \textbf{E3.} Missing labels, invitations or unauthorized source dependencies block activation.\\\hline
-\end{tabular}\end{table}
-
-\needspace{.39\textheight}
-Table~\ref{tab:uc-13} specifies UC13: Rate assigned packets.
-\begin{table}[H]\centering\footnotesize\setstretch{1.0}\renewcommand{\arraystretch}{1.05}
-\caption{UC13: Rate assigned packets.}\label{tab:uc-13}
-\begin{tabular}{|p{2.8cm}|p{11.9cm}|}\hline
-\textbf{Field} & \textbf{Content}\\\hline
-Use case & UC13: Rate assigned packets\\\hline
-Description & Rate anonymous module packets independently.\\\hline
-Actors & Invited active rater.\\\hline
-Preconditions & Active invitation; authenticated rater; accessible prepared packet.\\\hline
-Postconditions & Scores/reasons and notes save only as that rater's record.\\\hline
-Trigger & Rater opens an assigned study.\\\hline
-Normal flow & \textbf{1.} System orders anonymous packets stably for the rater.\par \textbf{2.} Rater inspects components and reference evidence.\par \textbf{3.} Rater supplies eight 1--5 scores, reasons and notes.\par \textbf{4.} System validates invitation and score payload.\par \textbf{5.} System saves the own-rating record and confirms progress.\\\hline
-Alternative flows & \textbf{A1.} Resume a previously rated packet and update permitted scores.\par \textbf{A2.} Reopen the study with the same stable packet order.\\\hline
-Exception flows & \textbf{E1.} Closed study, revoked invitation or removed packet denies access.\par \textbf{E2.} Invalid score/item payload is rejected.\par \textbf{E3.} Connection failure leaves retry available without overwriting another rater.\\\hline
-\end{tabular}\end{table}
-
-\needspace{.39\textheight}
 Table~\ref{tab:uc-14} specifies UC14: Ask course questions.
 \begin{table}[H]\centering\footnotesize\setstretch{1.0}\renewcommand{\arraystretch}{1.05}
 \caption{UC14: Ask course questions.}\label{tab:uc-14}
@@ -239,25 +85,8 @@ Description & Answer source-grounded course questions and retain conversation.\\
 Actors & Lecturer/author or course member through LTI; LLM service.\\\hline
 Preconditions & Author signed in and owns the course, or member launched from its Moodle course; course has searchable chunks.\\\hline
 Postconditions & Messages and citations save in the authorized course session.\\\hline
-Trigger & Author sends a course question.\\\hline
-Normal flow & \textbf{1.} Author selects course and enters a question.\par \textbf{2.} System verifies ownership or membership and loads the caller's own history.\par \textbf{3.} System condenses context into a retrieval query.\par \textbf{4.} Course retrieval selects five passages; model drafts the answer.\par \textbf{5.} System saves messages/citations for inspection.\\\hline
+Trigger & Caller sends a course question.\\\hline
+Normal flow & \textbf{1.} Caller opens the course chat and enters a question.\par \textbf{2.} System verifies ownership or membership and loads the caller's own history.\par \textbf{3.} System condenses context into a retrieval query.\par \textbf{4.} Hybrid search and reranking select eight passages; the model streams the answer.\par \textbf{5.} System saves messages/citations for inspection.\\\hline
 Alternative flows & \textbf{A1.} Resume a permitted session or start a new conversation.\\\hline
 Exception flows & \textbf{E1.} Missing/non-owned course/session is unavailable.\par \textbf{E2.} Invalid/excessive message or rate/provider failure returns actionable feedback.\par \textbf{E3.} Insufficient evidence is flagged without inventing a source.\\\hline
-\end{tabular}\end{table}
-
-\needspace{.39\textheight}
-Table~\ref{tab:uc-15} specifies UC15: Set default generation model.
-\begin{table}[H]\centering\footnotesize\setstretch{1.0}\renewcommand{\arraystretch}{1.05}
-\caption{UC15: Set default generation model.}\label{tab:uc-15}
-\begin{tabular}{|p{2.8cm}|p{11.9cm}|}\hline
-\textbf{Field} & \textbf{Content}\\\hline
-Use case & UC15: Set default generation model\\\hline
-Description & Save an available generation model as the account default.\\\hline
-Actors & Lecturer/author; LLM gateway.\\\hline
-Preconditions & Author signed in; model catalog available.\\\hline
-Postconditions & Validated preference persists; clearing uses system default; existing modules unchanged.\\\hline
-Trigger & Author selects a model preference.\\\hline
-Normal flow & \textbf{1.} System lists available models and current preference.\par \textbf{2.} Author selects a model.\par \textbf{3.} System validates catalog membership and service availability.\par \textbf{4.} System saves preference and preselects it next time.\\\hline
-Alternative flows & \textbf{A1.} Clear the preference to restore the system default.\par \textbf{A2.} Override one generation request without changing the preference.\\\hline
-Exception flows & \textbf{E1.} Unknown/unusable model is rejected; old preference remains.\par \textbf{E2.} Unavailable catalog prevents saving an unchecked model.\\\hline
 \end{tabular}\end{table}

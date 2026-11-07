@@ -1,13 +1,6 @@
 \clearpage\section{Data model and schema mapping}\label{sec:data}
-\subsection{Chen conceptual ER diagrams}
-The entity--relationship diagrams (ERDs) describe entities and their relationships. The data model covers only GENAILMS's own PostgreSQL schema. Moodle is an external LMS reached through Web Services and the \code{local_lms_bridge} plugin. Moodle course/user/activity identifiers stored by the application are external references carried through these service contracts.
-
-Figure~\ref{fig:erd-overview} gives an attribute-free overview of all fourteen entities and their cardinalities before the three detailed clusters.
-
-
-Figures~\ref{fig:erd-core}, \ref{fig:erd-study} and~\ref{fig:erd-ops} use Chen notation: rectangles represent entities, diamonds relationships, ovals selected attributes and underlined names key attributes. Cardinalities appear beside the relationship edges. The figures intentionally show selected conceptual attributes; the mapping tables specify the proposed physical schema. Dashed entities labelled ``core ref.'' in the study and operations clusters refer to the same entities in the authoring core.
-
-The core diagram represents the ordinary-document design. A Course contains Documents; each Document has Chunks and can produce Modules; a Module comprises Components, and question-bearing components contain Questions. A course may have no documents, and a new document may have no chunks or modules, so the many side can be empty. Each stored child on these core relationships has one parent. Additional course foreign keys on Chunk and Module enforce tenant scope and are described in the schema mapping rather than drawn as separate conceptual ownership relationships.
+\subsection{Conceptual model}
+The model covers GENAILMS's own PostgreSQL schema; Moodle is external, and the Moodle course, user and activity ids stored here are references to it. Figure~\ref{fig:erd-overview} shows all entities and cardinalities in Chen notation; the attributes are given in the mapping tables. A course contains documents; a document has chunks and produces modules; a module has components, and question-bearing components have questions. The research and operational entities are listed in Table~\ref{tab:05-data-2}.
 \begin{landscape}
 \thispagestyle{plain}
 \begin{figure}[H]\centering
@@ -16,13 +9,8 @@ The core diagram represents the ordinary-document design. A Course contains Docu
 \label{fig:erd-overview}
 \end{figure}
 \end{landscape}
-\diagram{erd-core}{Chen ERD for the authoring core, with selected attributes and one-to-many relationships.}{erd-core}
-\diagram{erd-study}{Chen ERD for research snapshots and ratings. Invitation is a conceptual many-to-many relationship stored as an email list; dashed entities reference the authoring core.}{erd-study}
-\diagram{erd-operations}{Chen ERD for operational jobs, conversation history and pipeline evaluations. Dashed entities reference the authoring core; optional module links are specified in the mapping table.}{erd-ops}
 \needspace{10\baselineskip}
 \subsection{Core relational mapping}
-\par
-Table~\ref{tab:schema} presents core entity-to-table mapping.
 \begin{longtable}{|p{2.8cm}|p{7.0cm}|p{4.1cm}|}\caption{Core entity-to-table mapping.}\label{tab:schema}\\\hline
 Table & Important columns and keys & Purpose / invariant\\\hline\endfirsthead
 \hline Table & Important columns and keys & Purpose / invariant\\\hline\endhead
@@ -34,12 +22,8 @@ Table & Important columns and keys & Purpose / invariant\\\hline\endfirsthead
 \code{modules} & UUID PK; document/course FKs; title; LO; Bloom level; sub-objectives; generation payload/models; optional paired-module FK & Saved module and experimental pairing\\\hline
 \code{module_components} & UUID PK; module FK; type; JSONB content; unique (module, type) & One row per non-LO component type\\\hline
 \code{questions} & UUID PK; component FK; stem; choices JSONB; answer key; explanation; position & Editable and exportable quiz/practice questions\\\hline\end{longtable}
-The vector dimension is a single 768-dimensional configuration constant shared by embedding and storage. Source locators are serialized text; component content uses PostgreSQL's binary JSON representation (JSONB) for structured fields and Markdown. LO fields belong to \code{modules}, so seven pedagogical parts correspond to six component enum values plus the module's LO fields.
-
-The denormalized \code{course_id} on chunks and modules supports inexpensive scope filters and RLS. A composite foreign key to \code{documents(id, course_id)} prevents these rows from claiming a different course from their source document. Unique component types prevent two competing Content or Quiz rows for one module. Explicit chunk and question positions avoid relying on equal creation timestamps for ordering. These constraints preserve source scope and ordering while JSONB stores the variable structures of generated components.
+The LO fields belong to \code{modules}, so the seven parts are six component types plus those fields. Component content is JSONB. The \code{course_id} copied onto chunks and modules makes course filters and row-level security cheap; a composite foreign key to \code{documents(id, course_id)} prevents such a row from naming a different course from its document. A unique (module, type) pair prevents two Content rows in one module, and explicit positions order chunks and questions.
 \subsection{Operational and research mapping}
-\par
-Table~\ref{tab:05-data-2} presents operational and research entities.
 \begin{longtable}{|p{3.0cm}|p{6.6cm}|p{4.3cm}|}\caption{Operational and research entities.}\label{tab:05-data-2}\\\hline
 Table & Key fields and links & Behavior\\\hline\endfirsthead
 \hline Table & Key fields and links & Behavior\\\hline\endhead
@@ -50,11 +34,10 @@ Table & Key fields and links & Behavior\\\hline\endfirsthead
 \code{refresh_tokens} & User FK, unique token hash, expiry and revocation & Server-side session renewal control\\\hline
 \code{studies} & Name, rubric version, status and JSONB invited email list & Draft/active/closed study organization\\\hline
 \code{study_items} & Study FK, anonymous code, group, nullable source module FK and JSONB packet & Frozen blinded material; group hidden from raters\\\hline
-\code{ratings} & Item FK, nullable user FK, rater kind, eight score/reason objects and notes & Human rating or LLM-judge slot, separate from pipeline checks\\\hline\end{longtable}
-A RAG study item has exactly one referenced module; a human or LLM-only item is a self-contained packet without that source FK. A source module can have snapshots in different studies, with at most one per study. Human ratings belong to one user and item. LLM-judge ratings have no user ID; the partial unique index allows one LLM-judge rating per item. The conceptual User--Study invitation is physically an email list in \code{studies}, not a junction table. Blinded views enforce what a rater can read.
-
-Study source and rater foreign keys use \code{RESTRICT} where necessary to preserve provenance. A source edit does not mutate its snapshot. Deleting a referenced module, document or course must first address its research dependencies and returns a conflict rather than silently discarding the snapshot. A two-judge experiment stores separate result packets keyed by judge model and packet hash.
+\code{ratings} & Item FK, nullable user FK, rater kind, eight score/reason objects and notes & Human rating or LLM-judge slot, separate from pipeline checks\\\hline
+\code{lti_platforms}, \code{lti_deployments} & Issuer, client id, key-set and token URLs; registered deployments & Platforms allowed to launch the tool\\\hline
+\code{lti_identities}, \code{lti_contexts} & (platform, \code{sub}) to user; (platform, deployment, context) to course; roster address and last check & Who a launch is and which course it opens\\\hline
+\code{lti_login_states}, \code{lti_launch_codes} & State and nonce with a 10-minute expiry; one-time launch code & Single use; kept in PostgreSQL so any task can finish a launch\\\hline\end{longtable}
+A study item is a frozen packet; a RAG item also references its module, while the no-RAG item of a pair is self-contained. Ratings hold one row per human rater and item, and one per judge family and item. Foreign keys from studies use \code{RESTRICT}, so a module used in a study cannot be deleted silently; the API answers 409 instead.
 \subsection{Citation and edit representation}
-The citation model stores a server-created \code{source_map} from codes such as S1 to physical chunk ID and locator. It derives \code{inline_citations} from saved Markdown, including claim and marker character offsets. These are offsets in the saved string, not PDF coordinates or byte offsets. Adjacent markers can share a claim span. Invalid or malformed source codes are rejected; span-validation scenarios include abbreviations, mathematics and complex Markdown.
-
-An \code{ai_original} object in component JSON preserves the pre-edit version on the first modification. For question-bearing components, it also includes ordered question fields. The edit operation preserves corresponding explanation data when a question explanation changes. The original snapshot remains unchanged after subsequent edits. For experiments, a frozen unedited module/packet remains the preferred analysis artifact.
+The server stores a \code{source_map} from codes such as S1 to a chunk id and its locator, and derives \code{inline_citations} from the saved Markdown with the character offsets of each claim and marker. Unknown codes are rejected. On the first edit, an \code{ai_original} object in the component keeps the version before editing, including the ordered questions and explanations; later edits do not change it.

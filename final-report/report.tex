@@ -16,13 +16,13 @@
 \newcommand{\screen}[3]{\par\begin{figure}[H]\centering\includegraphics[width=\linewidth,height=.405\textheight,keepaspectratio]{graphics/ui/#1}\caption{#2}\label{fig:ui-#3}\end{figure}\par}
 \setcounter{tocdepth}{2}
 \coursename{Specialized Project}
-\reporttype{Final Report (Progress Draft)}
+\reporttype{Final Report}
 \title{Generative AI-Based Automatic Microlearning Module Generation for LMS}
 \advisor{& TS. Nguyễn Quang Hùng & \\ & PGS. TS. Thoại Nam &}
 \stuname{& Dương Nguyễn Tấn Đạt & 2352222}
 \reportplace{Ho Chi Minh City}
 \reporttime{November 2026}
-\hypersetup{pdftitle={Generative AI-Based Automatic Microlearning Module Generation for LMS - Final Report, Progress Draft - HK261-DAGD1-033},pdfauthor={Dương Nguyễn Tấn Đạt},citecolor=black,urlcolor=blue!50!black}
+\hypersetup{pdftitle={Generative AI-Based Automatic Microlearning Module Generation for LMS - Final Report - HK261-DAGD1-033},pdfauthor={Dương Nguyễn Tấn Đạt},citecolor=black,urlcolor=blue!50!black}
 \setlength{\emergencystretch}{2em}
 \begin{document}
 \hypersetup{pageanchor=false}
@@ -46,13 +46,11 @@ I would like to thank my advisors, Dr. Nguyễn Quang Hùng and Assoc. Prof. Dr.
 \clearpage
 \section*{Abstract}
 \addcontentsline{toc}{section}{Abstract}
-GENAILMS (Generative Artificial Intelligence for Learning Management Systems) helps instructors turn course material into short, coherent learning modules. A module contains a learning objective, Content, Slides, Example, Practice, Quiz and Explanation, generated from passages retrieved from the instructor's own documents, with inline citations to the exact source passages. Modules are reviewed and edited in the tool and published to Moodle as Book and Quiz activities. This progress draft of the final report describes the system as implemented by November 2026 and the measurements made so far.
+Writing short learning modules from lecture material takes lecturers much time, and a module drafted by a general language model may state things the course material does not support. GENAILMS (Generative Artificial Intelligence for Learning Management Systems) generates a module of seven parts (Learning Objective, Content, Slides, Example, Practice, Quiz and Explanation) from passages retrieved in the lecturer's own documents, with an inline citation to the exact passage behind each important statement. The lecturer reviews and edits the module, the first AI version is kept, and the module is published to Moodle as a Book and quizzes. Lecturers and students open the tool from Moodle through LTI 1.3; students can only chat over their course's material.
 
-The system is a modular monolith of stateless services: an API that also streams course chat, a job worker for ingestion and generation, a model gateway, and a self-hosted embedder. PostgreSQL with pgvector holds data, vectors and the job queue. A Terraform description deploys it to AWS on ECS Fargate, RDS, S3, ElastiCache and CloudFront, designed to be created and destroyed per session to fit a \$200 credit. Instructors can open the tool from Moodle with an LTI 1.3 launch.
+The system runs as stateless services: an API that also streams chat, a job worker, a model gateway and a local embedder, with data, vectors and the job queue in PostgreSQL with pgvector. Its AWS deployment on ECS Fargate, RDS, S3, ElastiCache and CloudFront is written in Terraform and is created and destroyed per session to fit a \$200 credit.
 
-On 250 questions over five subjects, hybrid retrieval with Jina reranking reached Hit Rate@1 0.856, MRR@10 0.918 and nDCG@10 0.938. Load tests on one machine identified CPU reranking as the shared bottleneck: chat stayed at 22.5 messages per minute regardless of API tasks. A hosted reranker removed it, reaching 462 messages per minute with four API tasks and up to 638 modules per hour in short bursts, and ranked at least as well on held-out questions; on Vietnamese questions over English material its MRR was higher, though equivalent recall there is not yet demonstrated. Retrying rate-limited model calls individually raised completed modules from 1 to 30 of 32 under real provider limits.
-
-The quality evaluation of generated modules, the sustained and failure tests, and all measurements on AWS remain. They are ready to run and wait on model credit, cloud credit and recruited raters.
+On 250 questions over five subjects, hybrid retrieval with Jina reranking reached Hit Rate@1 0.856, MRR@10 0.918 and nDCG@10 0.938. Course chat answers scored 0.966 for faithfulness and 0.755 for answer relevancy with Ragas. In a pilot of ten module pairs, Content generated with retrieval had no unsupported claim in 120, against 17 in 101 without retrieval. Load tests on one machine found CPU reranking to be the shared bottleneck; a hosted reranker raised chat from 22.5 to 462 messages per minute, and retrying rate-limited calls one by one raised completed modules from 1 to 30 of 32 under real provider limits. The rubric study with human raters and all measurements on AWS remain.
 
 \noindent\textbf{Keywords:} microlearning; generative artificial intelligence; retrieval-augmented generation; Moodle; LTI; source citations; cloud-native architecture; scalability.
 \clearpage
@@ -77,8 +75,6 @@ The quality evaluation of generated modules, the sustained and failure tests, an
 \input{chapters/10-evaluation}
 \input{chapters/10b-results}
 \input{chapters/11-plan}
-\appendix
-\input{chapters/12-design-details}
 \clearpage
 \phantomsection
 \addcontentsline{toc}{section}{References}

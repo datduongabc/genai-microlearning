@@ -1,80 +1,59 @@
-\clearpage\section{Requirements and actors}\label{sec:requirements}
-\subsection{Actors and trust boundaries}
-An \textbf{author/lecturer} owns application courses and their documents and modules. A local account can draft and export without a confirmed Moodle identity, subject to generation limits. A \textbf{Moodle-authorized lecturer} is the same person with a confirmed identity and authoring capabilities in a specific Moodle course; linking an identity does not grant course permissions.
-
-An \textbf{application administrator} manages accounts and failed jobs and prepares studies. The administrator role is not a general right to inspect another author's documents. An \textbf{invited rater} sees blinded study snapshots and their own ratings. A user may have more than one role, but authorization is checked for the requested action. \textbf{Moodle} is an external publishing and confirmation actor. The \textbf{LLM service} supplies generation and transcription. \textbf{Learners} use Moodle after publication. A learner who opens the tool from a Moodle course through LTI becomes a \textbf{course member}, who can only ask course questions and read their own chats (Section~\ref{sec:lti-learners}); learners have no other access to the authoring application.
+\clearpage\section{Requirements}\label{sec:requirements}
+\subsection{Actors}
+\begin{itemize}[leftmargin=*,nosep]
+\item \textbf{Lecturer (author)} owns courses, documents and modules. A local account can generate and export; publishing needs a confirmed Moodle identity and authoring rights in the target Moodle course.
+\item \textbf{Administrator} manages accounts and failed jobs and prepares rating studies. The role gives no access to other lecturers' content.
+\item \textbf{Invited rater} sees anonymous study packets and their own ratings only.
+\item \textbf{Course member} is a student who opened the tool from a Moodle course through LTI. A member can only chat over that course's material (Section~\ref{sec:lti-learners}).
+\item \textbf{External systems}: Moodle (identity, capabilities, publication, LTI platform), language-model providers (generation, transcription) and the reranking service.
+\end{itemize}
 \subsection{Functional requirements}
-\par
-Table~\ref{tab:requirements} presents functional requirements.
-\begin{longtable}{|p{1.5cm}|p{13.5cm}|}
+\begin{longtable}{|p{1.3cm}|p{13.6cm}|}
 \caption{Functional requirements.}\label{tab:requirements}\\\hline
-ID & Required behavior\\\hline\endfirsthead
-\hline ID & Required behavior\\\hline\endhead
-FR01 & Register, sign in, renew a session and sign out; disabled users lose access.\\\hline
-FR02 & Create and manage owned courses; bind an authorized Moodle target course.\\\hline
-FR03 & Upload PDF/DOCX/PPTX, HTML/TXT, SRT/VTT and the audio/video formats listed in Section~\ref{sec:scope} and inspect asynchronous processing states and failures.\\\hline
-FR04 & Generate a seven-part module with model, output language and guidance settings.\\\hline
-FR05 & Inspect source passages next to generated claims through inline markers.\\\hline
-FR06 & Edit lesson components or questions manually and through chat while preserving the original AI version.\\\hline
-FR07 & Download generated slides as PPTX.\\\hline
-FR08 & Publish an owned RAG module as Moodle Book, Practice and Quiz after capability checks.\\\hline
-FR09 & Request and confirm Moodle identity linking without disclosing whether an email exists.\\\hline
-FR10 & Inspect and retry failed jobs within role scope.\\\hline
-FR11 & Prepare a study, snapshot paired modules and invite active raters.\\\hline
-FR12 & Show blinded packets in a stable per-rater shuffled order and save rubric ratings.\\\hline
-FR13 & Administer local accounts, including active/admin state and Moodle-account association.\\\hline
-FR14 & Ask source-grounded course questions, inspect citations and retrieve conversation history within the owned course.\\\hline
-FR15 & List available generation models and save or clear the author's default model preference, validating availability.\\\hline\end{longtable}
-\subsection{Non-functional requirements}
-The following are design acceptance targets for Phase 2, rather than measured service guarantees. They make isolation, workload and recovery verifiable.
-\par
-Table~\ref{tab:nfr} presents non-functional requirements and acceptance criteria.
-\begin{longtable}{|p{1.6cm}|p{4.0cm}|p{8.3cm}|}\caption{Non-functional requirements and acceptance criteria.}\label{tab:nfr}\\\hline
-ID & Concern & Verification criterion\\\hline\endfirsthead
-\hline ID & Concern & Verification criterion\\\hline\endhead
-NFR01 & Isolation & All cross-owner API and runtime-role database probes are denied; no protected content appears in an unauthorized response.\\\hline
-NFR02 & Responsiveness & Under the declared single-worker workload, job acknowledgement p95 is at most 2 s, excluding upload transfer; the client polls every 2--5 s and stops on terminal states.\\\hline
-NFR03 & Recoverability & At most three automatic attempts per transient job failure and one corrective retrieval retry; one worker claims a job at a time; retry history remains visible.\\\hline
-NFR04 & Source integrity & Every accepted citation resolves to an authorized physical chunk; first-edit tests preserve the original across all later edits.\\\hline
-NFR05 & Reproducibility & All formal packets have source/prompt/model/settings hashes; cross-model fallback is disabled; all failures and attempts are retained.\\\hline
-NFR06 & Accessibility & Main task flows satisfy Web Content Accessibility Guidelines (WCAG) 2.2 AA, including keyboard completion, visible focus, labelled controls and non-colour-only status; control contrast is at least 3:1.\\\hline
-NFR07 & Bounded workload & One heavy background job runs per worker in the baseline configuration. Streamed uploads enforce 50 MB documents, 200 MB audio and 500 MB video; excess inputs return a defined error.\\\hline
-NFR08 & Cost observability & Every provider attempt records tokens, served model, elapsed time and status; reconciled totals include failed/retried calls and report local memory separately.\\\hline
+ID & Required behaviour\\\hline\endfirsthead
+\hline ID & Required behaviour\\\hline\endhead
+FR01 & Register, sign in, renew a session and sign out; a disabled account loses access.\\\hline
+FR02 & Create and manage owned courses; link a Moodle course the lecturer may author.\\\hline
+FR03 & Upload the document and media formats of Section~\ref{sec:scope}; follow processing and see the reason for a failure.\\\hline
+FR04 & Generate a seven-part module, choosing model, output language and optional guidance.\\\hline
+FR05 & Open the source passage of each inline citation beside the lesson.\\\hline
+FR06 & Edit components and questions by hand or through an AI chat, keeping the first AI version.\\\hline
+FR07 & Download the slides as PPTX.\\\hline
+FR08 & Publish a module to Moodle as a Book, a Practice quiz and a Quiz after capability checks.\\\hline
+FR09 & Link a Moodle account by confirmation in Moodle, without revealing whether an email exists.\\\hline
+FR10 & Inspect and retry failed jobs within the caller's scope.\\\hline
+FR11 & Prepare a rating study from paired modules and invite raters.\\\hline
+FR12 & Show anonymous packets to each rater in a stable shuffled order and save rubric ratings.\\\hline
+FR13 & Administer local accounts.\\\hline
+FR14 & Ask questions about a course, with cited sources and saved conversation history; answers stream as they are written.\\\hline
+FR15 & List available models and save a default model per lecturer.\\\hline
+FR16 & Open the tool from Moodle with an LTI 1.3 launch: lecturers reach their course, students reach a chat-only page.\\\hline
+FR17 & Remove a student's access after they leave the Moodle course.\\\hline
 \end{longtable}
-\needspace{.60\textheight}
-\subsection{Permission matrix}
-
-Table~\ref{tab:permissions} separates operational administration from invited rating. An administrator who also authors content retains the same ownership checks as an ordinary author. A course member, a student who entered through LTI, can only chat over that course.
-\begin{table}[H]\centering\footnotesize\caption{Authorization by role; ownership remains required.}\label{tab:permissions}
-\begin{tabularx}{\linewidth}{|p{2.6cm}|Y|Y|Y|Y|Y|}\hline
-Action & Local author & Linked author & Administrator & Invited rater & Course member\\\hline
-Draft, edit, export & Own content & Own content & Own content only & Only if separately an author & No\\\hline
-Publish to Moodle & No & Remote course rights & Same remote checks & No rating-role privilege & No\\\hline
-Read other authors' courses & No & No & No general override & No & Chat over the member's course only\\\hline
-Retry failed jobs & Own & Own & Narrow operational recovery & No & No\\\hline
-Manage accounts / studies & No & No & Yes & No & No\\\hline
-Read/rate blinded packets & If invited & If invited & If invited & Assigned packets; own rating & No\\\hline
+\subsection{Non-functional requirements}
+The targets below are acceptance criteria proposed for agreement with the advisor, not measured guarantees.
+\begin{longtable}{|p{1.5cm}|p{3.0cm}|p{10.2cm}|}\caption{Non-functional requirements.}\label{tab:nfr}\\\hline
+ID & Concern & Criterion\\\hline\endfirsthead
+\hline ID & Concern & Criterion\\\hline\endhead
+NFR01 & Isolation & Every cross-owner probe, through the API and as the runtime database role, is denied.\\\hline
+NFR02 & Responsiveness & An upload or generation request is acknowledged within 2 s (p95), excluding file transfer; long work runs as a job.\\\hline
+NFR03 & Recoverability & A job survives the loss of any single task; no job is lost or done twice; transient errors are retried a bounded number of times.\\\hline
+NFR04 & Source integrity & Every accepted citation resolves to a chunk the user may read; the first AI version survives all later edits.\\\hline
+NFR05 & Reproducibility & Experiment runs pin the model, disable fallback and record the served model of every call.\\\hline
+NFR06 & Accessibility & Main tasks can be completed by keyboard with visible focus and labelled controls (WCAG 2.2 AA\citep{wcag}); status is not shown by colour alone.\\\hline
+NFR07 & Bounded input & Uploads are streamed and limited to 25 MB per document (150 pages or slides), 200 MB per audio file, 1 GB per video and 90 minutes of recording.\\\hline
+NFR08 & Scalability & Each service is stateless and scales by adding tasks; the bottleneck of each load path is measured.\\\hline
+NFR09 & Cost & The AWS environment fits a \$200 credit; every model call records its tokens and served model.\\\hline
+\end{longtable}
+\subsection{Permissions}
+Table~\ref{tab:permissions} summarises authorisation. Ownership is checked in the API and again by row-level security in the database.
+\begin{table}[H]\centering\footnotesize\caption{Authorisation by role.}\label{tab:permissions}
+\begin{tabularx}{\linewidth}{|p{2.9cm}|Y|Y|Y|Y|Y|}\hline
+Action & Lecturer & Linked lecturer & Administrator & Rater & Course member\\\hline
+Generate, edit, export & Own content & Own content & Own content & No & No\\\hline
+Publish to Moodle & No & With Moodle rights & With Moodle rights & No & No\\\hline
+Read other courses & No & No & No & No & Chat over own course\\\hline
+Retry failed jobs & Own & Own & Operational recovery & No & No\\\hline
+Manage accounts, studies & No & No & Yes & No & No\\\hline
+Rate packets & If invited & If invited & If invited & Assigned & No\\\hline
 \end{tabularx}\end{table}
-\clearpage
-\subsection{Requirement traceability}\label{sec:traceability}
-Table~\ref{tab:traceability} connects each functional requirement to its use case, related interface figure and API group. The course workspace supplies the course Q\&A entry; the model-selection dialog and account menu supply preference entry points. These associations identify interaction surfaces without treating an authoring chat-edit image as a separate course-answering screen. Detailed endpoint contracts appear in Section~\ref{sec:api}.
-\begingroup\small
-\begin{longtable}{|p{1.1cm}|p{1.0cm}|p{3.0cm}|p{4.2cm}|p{4.1cm}|}\caption{Functional requirement--use case--screen--API traceability.}\label{tab:traceability}\\\hline
-FR & UC & Interface figures & Primary action & API group\\\hline\endfirsthead
-\hline FR & UC & Interface figures & Primary action & API group\\\hline\endhead
-FR01 & UC01 & \ref{fig:ui-screen-01}, \ref{fig:ui-screen-02} & Account access & \code{auth}\\\hline
-FR02 & UC02 & \ref{fig:ui-screen-03}, \ref{fig:ui-screen-04} & Course workspace & \code{courses}\\\hline
-FR03 & UC03 & \ref{fig:ui-screen-04}, \ref{fig:ui-screen-14} & Upload/status & \code{documents}\\\hline
-FR04 & UC04 & \ref{fig:ui-screen-05} & Generation form & \code{modules/generate}\\\hline
-FR05 & UC05 & \ref{fig:ui-screen-06} & Evidence panel & \code{modules}\\\hline
-FR06 & UC06 & \ref{fig:ui-screen-06}, \ref{fig:ui-screen-07} & Component/chat edit & \code{modules}\\\hline
-FR07 & UC07 & \ref{fig:ui-screen-07} & Slide download & \code{modules}\\\hline
-FR08 & UC08 & \ref{fig:ui-screen-08}, \ref{fig:ui-screen-09} & Publication review & \code{modules}\\\hline
-FR09 & UC09 & \ref{fig:ui-screen-09}, \ref{fig:ui-screen-15} & Account linking & \code{moodle/account}\\\hline
-FR10 & UC11 & \ref{fig:ui-screen-04}, \ref{fig:ui-screen-11} & Failure recovery & \code{jobs; admin/jobs}\\\hline
-FR11 & UC12 & \ref{fig:ui-screen-12} & Study setup & \code{studies}\\\hline
-FR12 & UC13 & \ref{fig:ui-screen-13} & Blinded rating & \code{studies/mine}\\\hline
-FR13 & UC10 & \ref{fig:ui-screen-10} & Account administration & \code{admin/users}\\\hline
-FR14 & UC14 & \ref{fig:ui-screen-04} & Course Q\&A entry; source context & \code{courses/{id}/chat}\\\hline
-FR15 & UC15 & \ref{fig:ui-screen-05}, \ref{fig:ui-screen-15} & Model selection; account menu & \code{models}\\\hline
-\end{longtable}\endgroup
