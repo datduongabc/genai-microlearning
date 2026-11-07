@@ -257,6 +257,23 @@ def test_r8_analysis_cli_includes_separate_r9_results(tmp_path, judge, monkeypat
     assert result["judges"]["claude-pro"]["means"]["rag_llm"]["accuracy"] == 4
 
 
+def test_rubric_judges_can_be_limited_to_named_pool_aliases(tmp_path, judge, monkeypatch):
+    write_pair(tmp_path)
+    out = tmp_path / "r8.jsonl"
+    def evaluate(packet, **kwargs):
+        run_judge.gateway.complete("judge")
+        return _evaluation(packet.anon_id)
+    monkeypatch.setattr(run_judge, "judge_module", evaluate)
+    monkeypatch.setattr("litellm.completion", lambda **kwargs: SimpleNamespace(
+        model=next(m["litellm_params"]["model"] for m in GATEWAY if m["model_name"] == run_judge.gateway.active_model()),
+        choices=[SimpleNamespace(message=SimpleNamespace(content="ok"))]))
+    run_judge.main([str(tmp_path), "--out", str(out), "--judges", "groq-llama,groq-qwen"])
+    rows = [json.loads(line) for line in out.read_text().splitlines()]
+    assert sorted({r["judge"] for r in rows}) == ["groq-llama", "groq-qwen"] and len(rows) == 4
+    with pytest.raises(SystemExit, match="Không thuộc pool"):
+        run_judge.main([str(tmp_path), "--out", str(out), "--judges", "groq-pro"])
+
+
 def test_document_reference_and_citation_identities_in_isolated_sqlite(monkeypatch):
     engine = create_engine("sqlite://")
     Chunk.__table__.create(engine)

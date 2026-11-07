@@ -1,0 +1,410 @@
+{
+  "pair_id": "1afc963f-9722-4804-985b-fe3d7fe6148b",
+  "group": "rag_llm",
+  "generator_model": "gemini-fast",
+  "generation_models": [
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    },
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    },
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    },
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    },
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    },
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    },
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    },
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    },
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    },
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    },
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    },
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    },
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    },
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    },
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    }
+  ],
+  "packet": {
+    "anon_id": "",
+    "topic": "Sự ra đời của Chủ nghĩa xã hội khoa học",
+    "bloom_level": "understand",
+    "learning_objective": "Sau khi hoàn thành module, người học có thể trình bày hoàn cảnh lịch sử bao gồm điều kiện kinh tế - xã hội, tiền đề khoa học tự nhiên và tư tưởng lý luận dẫn đến sự ra đời của chủ nghĩa xã hội khoa học.",
+    "sub_objectives": [
+      "Mô tả các điều kiện kinh tế - xã hội và sự phát triển của nền đại công nghiệp",
+      "Liệt kê các tiền đề khoa học tự nhiên và tư tưởng lý luận",
+      "Giải thích vai trò của chủ nghĩa xã hội không tưởng - phê phán"
+    ],
+    "content_markdown": "# Mô tả các điều kiện kinh tế - xã hội và sự phát triển của nền đại công nghiệp\n- Cách mạng công nghiệp đã hoàn thành ở Anh (đầu thế kỷ 19), sau đó phát triển ở Pháp và Đức.     \n- Sự phát triển của nền đại công nghiệp dẫn đến phương thức sản xuất tư bản chủ nghĩa thay đổi về quy mô sản xuất, năng suất lao động, kỹ năng quản lý và kiến trúc thượng tầng.     \n- Phong trào đấu tranh của giai cấp công nhân chống giai cấp tư sản ngày càng nhiều.     \n- Giai cấp vô sản bị bóc lột nặng nề, khiến mâu thuẫn giữa giai cấp vô sản và giai cấp tư sản ngày càng gay gắt.     \n- Các cuộc đấu tranh tiêu biểu của công nhân bao gồm khởi nghĩa của công nhân dệt Lu-ông năm 1831, công nhân Anh đưa Hiến chương đến Quốc hội, và công nhân dệt vùng Sơ-lê-din (Đức).     \n\n# Liệt kê các tiền đề khoa học tự nhiên và tư tưởng lý luận\n- Các tiền đề khoa học tự nhiên bao gồm học thuyết tế bào, học thuyết tiến hóa của Charles Darwin (1809-1882), và định luật bảo toàn và chuyển hóa năng lượng.         \n- Các tiền đề tư tưởng lý luận bao gồm triết học cổ điển Đức (tiêu biểu là L. Feuerbach và G.W.F. Hegel), kinh tế chính trị học cổ điển Anh (tiêu biểu là A. Smith và D. Ricardo), và chủ nghĩa xã hội không tưởng - phê phán (Pháp, Anh).         \n\n# Giải thích vai trò của chủ nghĩa xã hội không tưởng - phê phán\n- Chủ nghĩa xã hội không tưởng - phê phán thể hiện tinh thần nhân đạo cao cả, đồng thời phê phán và lên án chế độ quân chủ chuyên chế cùng chế độ tư bản chủ nghĩa.      \n- Nó đã chuẩn bị các tiền đề lý luận (như các luận điểm và khái niệm) để kế thừa và phát triển tư tưởng xã hội chủ nghĩa lên một trình độ mới.      \n- Nó góp phần thức tỉnh phong trào công nhân và người lao động.      \n- Hạn chế của khuynh hướng này là đi theo con đường ôn hòa để cải tạo xã hội và không phát hiện ra lực lượng xã hội tiên phong thực hiện cuộc cách mạng chuyển biến từ chủ nghĩa tư bản lên chủ nghĩa xã hội và chủ nghĩa cộng sản.      ",
+    "slides": [
+      {
+        "title": "Điều kiện kinh tế - xã hội",
+        "bullets": [
+          "Cách mạng công nghiệp phát triển mạnh mẽ ở Anh, Pháp và Đức",
+          "Sự lớn mạnh của nền đại công nghiệp tư bản chủ nghĩa",
+          "Mâu thuẫn gay gắt giữa giai cấp vô sản và giai cấp tư sản"
+        ]
+      },
+      {
+        "title": "Phong trào đấu tranh của giai cấp công nhân",
+        "bullets": [
+          "Giai cấp vô sản chịu sự bóc lột nặng nề",
+          "Nhiều cuộc đấu tranh chống giai cấp tư sản nổ ra",
+          "Các phong trào tiêu biểu: Lu-ông (1831), Hiến chương Anh, Sơ-lê-din (Đức)"
+        ]
+      },
+      {
+        "title": "Tiền đề khoa học tự nhiên",
+        "bullets": [
+          "Học thuyết tế bào",
+          "Học thuyết tiến hóa của Charles Darwin",
+          "Định luật bảo toàn và chuyển hóa năng lượng"
+        ]
+      },
+      {
+        "title": "Tiền đề tư tưởng lý luận",
+        "bullets": [
+          "Triết học cổ điển Đức (Feuerbach và Hegel)",
+          "Kinh tế chính trị học cổ điển Anh (Smith và Ricardo)",
+          "Chủ nghĩa xã hội không tưởng - phê phán (Pháp, Anh)"
+        ]
+      },
+      {
+        "title": "Vai trò và hạn chế của chủ nghĩa xã hội không tưởng",
+        "bullets": [
+          "Thể hiện tinh thần nhân đạo và phê phán chế độ tư bản",
+          "Thức tỉnh phong trào công nhân và chuẩn bị tiền đề lý luận",
+          "Hạn chế: theo con đường ôn hòa, chưa tìm ra lực lượng tiên phong thực hiện cách mạng"
+        ]
+      }
+    ],
+    "examples": [
+      {
+        "context": "Tại nước Anh đầu thế kỷ 19, sự hoàn thành của Cách mạng công nghiệp đã chuyển hóa nền sản xuất thủ công nhỏ sang nền đại công nghiệp tư bản chủ nghĩa với các nhà máy quy mô lớn, năng suất cao. Tuy nhiên, giai cấp vô sản phải làm việc trong điều kiện khắc nghiệt, bị bóc lột nặng nề, dẫn đến mâu thuẫn gay gắt với giai cấp tư sản và bùng nổ các cuộc đấu tranh tiêu biểu như phong trào Hiến chương của công nhân Anh.",
+        "analysis": "Bối cảnh trên minh họa trực tiếp cho điều kiện kinh tế - xã hội và sự phát triển của nền đại công nghiệp. Sự thay đổi về phương thức sản xuất tư bản chủ nghĩa không chỉ làm thay đổi quy mô sản xuất và kiến trúc thượng tầng mà còn làm gia tăng sự bóc lột đối với giai cấp vô sản, làm cho mâu thuẫn giữa giai cấp vô sản và giai cấp tư sản ngày càng gay gắt, từ đó thúc đẩy phong trào đấu tranh của công nhân phát triển mạnh mẽ."
+      },
+      {
+        "context": "Vào thế kỷ 19, sự phát triển vượt bậc của khoa học tự nhiên với học thuyết tế bào, học thuyết tiến hóa của Charles Darwin và định luật bảo toàn và chuyển hóa năng lượng đã cung cấp những phát hiện vĩ đại về mặt khoa học. Đồng thời, triết học cổ điển Đức, kinh tế chính trị học cổ điển Anh và chủ nghĩa xã hội không tưởng - phê phán ở Pháp và Anh đã tạo ra những tiền đề tư tưởng lý luận quan trọng cho sự ra đời của chủ nghĩa xã hội khoa học.",
+        "analysis": "Bối cảnh trên phản ánh chính xác các tiền đề khoa học tự nhiên và tư tưởng lý luận. Những thành tựu khoa học tự nhiên và các trào lưu tư tưởng lý luận này chính là nguồn gốc, tiền đề không thể thiếu để C.Mác và Ph.Ăngghen kế thừa, tổng kết và phát triển tư tưởng xã hội chủ nghĩa lên một trình độ mới khoa học hơn."
+      }
+    ],
+    "quiz": [
+      {
+        "stem": "Khi tìm hiểu về hoàn cảnh lịch sử ra đời của chủ nghĩa xã hội khoa học dựa trên tài liệu đã học, phát biểu nào sau đây diễn giải đúng về tác động của nền đại công nghiệp và điều kiện kinh tế - xã hội?",
+        "choices": [
+          "Sự phát triển của nền đại công nghiệp làm thay đổi phương thức sản xuất tư bản chủ nghĩa và làm cho mâu thuẫn giữa giai cấp vô sản với giai cấp tư sản ngày càng trở nên gay gắt.",
+          "Nền đại công nghiệp ra đời chủ yếu tạo ra các cuộc tranh luận thuần túy về tư tưởng lý luận giữa các nhà triết học mà ít liên quan đến thực tiễn sản xuất.",
+          "Sự tiến bộ của nền đại công nghiệp giúp xoa dịu các xung đột xã hội và làm cho đời sống của giai cấp vô sản bớt bị bóc lột nặng nề.",
+          "Nền đại công nghiệp gắn liền trực tiếp với việc thực hiện kế hoạch 5 năm và chính sách kinh tế mới nhằm quản lý thương nghiệp tư nhân."
+        ],
+        "correct_index": 0,
+        "explanation": "Đáp án đúng là phương án phản ánh chính xác nội dung từ tài liệu (S1): sự hoàn thành cách mạng công nghiệp và phát triển nền đại công nghiệp làm thay đổi phương thức sản xuất tư bản chủ nghĩa, khiến giai cấp vô sản bị bóc lột nặng nề và mâu thuẫn giữa giai cấp vô sản với giai cấp tư sản ngày càng gay gắt. Phương án 1 sai vì tách rời điều kiện kinh tế khỏi nền đại công nghiệp, cho rằng chỉ có tranh luận tư tưởng. Phương án 2 sai vì đi ngược lại bản chất thực tế là đại công nghiệp làm gia tăng bóc lột và mâu thuẫn giai cấp. Phương án 3 sai vì nhầm lẫn sự kiện lịch sử ra đời chủ nghĩa xã hội khoa học với chính sách kinh tế mới (NEP) ở giai đoạn sau."
+      },
+      {
+        "stem": "Khi nói về các tiền đề tư tưởng lý luận dẫn đến sự ra đời của chủ nghĩa xã hội khoa học, thành phần nào dưới đây là chính xác?",
+        "choices": [
+          "Học thuyết tế bào và các phát minh vật lý đầu thế kỷ XIX.",
+          "Triết học cổ điển Đức, Kinh tế chính trị học cổ điển Anh và chủ nghĩa xã hội không tưởng-phê phán.",
+          "Chính sách kinh tế mới và các mô hình thực nghiệm công xưởng của Robert Owen.",
+          "Học thuyết tiến hóa và các tác phẩm đấu tranh giai cấp trong giai đoạn 1848-1851."
+        ],
+        "correct_index": 1,
+        "explanation": "Đáp án đúng là Triết học cổ điển Đức, Kinh tế chính trị học cổ điển Anh và chủ nghĩa xã hội không tưởng-phê phán vì đây là ba bộ phận cấu thành tiền đề tư tưởng lý luận theo nguồn cung cấp (S2, S3). Phương án A sai vì học thuyết tế bào thuộc tiền đề khoa học tự nhiên. Phương án C sai vì chính sách kinh tế mới (NEP) thuộc giai đoạn sau ở Nga và Liên Xô (S4). Phương án D sai vì học thuyết tiến hóa và các tác phẩm đấu tranh giai cấp thuộc các giai đoạn phát triển và tiền đề khác không nằm trọn trong nhóm tiền đề tư tưởng lý luận ban đầu."
+      },
+      {
+        "stem": "Theo các tài liệu đã học, chủ nghĩa xã hội không tưởng - phê phán có giá trị lịch sử và đóng góp như thế nào đối với sự phát triển của tư tưởng xã hội chủ nghĩa?",
+        "choices": [
+          "Trực tiếp thực hiện thành công cuộc cách mạng chuyển biến từ chủ nghĩa tư bản lên chủ nghĩa xã hội thông qua các mô hình thực nghiệm.",
+          "Chuẩn bị các tiền đề lý luận quan trọng và thức tỉnh phong trào công nhân, người lao động trước khi lên trình độ mới.",
+          "Không mang lại giá trị thực tiễn hay lý luận nào do vấp phải những hạn chế lớn về phương pháp cải tạo xã hội.",
+          "Phát hiện chính xác lực lượng xã hội tiên phong có sứ mệnh thực hiện cuộc cách mạng chuyển biến xã hội."
+        ],
+        "correct_index": 1,
+        "explanation": "Đáp án đúng là phương án thứ hai vì theo tài liệu, chủ nghĩa xã hội không tưởng - phê phán có giá trị chuẩn bị các tiền đề lý luận (luận điểm, khái niệm) và thức tỉnh phong trào công nhân người lao động. Phương án đầu tiên sai vì trào lưu này chỉ xây dựng mô hình thực nghiệm và đi theo con đường ôn hoà chứ chưa thực hiện thành công cuộc chuyển biến xã hội. Phương án thứ ba sai vì trào lưu này vẫn chứa đựng tinh thần nhân đạo và giá trị lịch sử to lớn. Phương án cuối cùng sai vì trào lưu này chưa phát hiện ra lực lượng xã hội tiên phong thực hiện cuộc cách mạng (theo S4)."
+      }
+    ],
+    "practice": {
+      "stem": "Khi tìm hiểu về hoàn cảnh lịch sử dẫn đến sự ra đời của chủ nghĩa xã hội khoa học, phát biểu nào sau đây diễn giải đúng về mối quan hệ giữa các yếu tố trong điều kiện kinh tế - xã hội?",
+      "choices": [
+        "Phong trào đấu tranh của giai cấp vô sản chống giai cấp tư sản bùng nổ mạnh mẽ là hệ quả khi nền đại công nghiệp phát triển làm cho mâu thuẫn giai cấp ngày càng gay gắt.",
+        "Phong trào đấu tranh của giai cấp vô sản chống lại giai cấp tư sản diễn ra từ trước khi cuộc cách mạng công nghiệp hoàn thành tại Anh và lan sang Pháp, Đức.",
+        "Phương thức sản xuất tư bản chủ nghĩa trong giai đoạn này giữ nguyên quy mô sản xuất và kỹ năng quản lý, chỉ làm gia tăng số lượng lao động làm thuê.",
+        "Điều kiện kinh tế - xã hội hình thành chủ yếu dựa trên sự ra đời của các phát kiến khoa học tự nhiên lớn và các tư tưởng lý luận trước thời kỳ đại công nghiệp."
+      ],
+      "correct_index": 0,
+      "explanation": "Đáp án đúng là phương án phản ánh đúng mối quan hệ nhân quả trong điều kiện kinh tế - xã hội (S1): sự phát triển của nền đại công nghiệp và cách mạng công nghiệp làm thay đổi phương thức sản xuất tư bản chủ nghĩa, khiến giai cấp vô sản bị bóc lột nặng nề, từ đó làm mâu thuẫn giữa giai cấp vô sản và giai cấp tư sản ngày càng gay gắt và thúc đẩy phong trào đấu tranh của giai cấp vô sản. Phương án thứ hai sai vì cho rằng phong trào đấu tranh xuất hiện trước cách mạng công nghiệp. Phương án thứ ba sai vì phủ nhận sự thay đổi về quy mô sản xuất và kỹ thuật của phương thức sản xuất tư bản chủ nghĩa. Phương án cuối cùng sai vì nhầm lẫn điều kiện kinh tế - xã hội với tiền đề khoa học tự nhiên và tư tưởng lý luận."
+    },
+    "source_chunks": [
+      "Chapter1\nChương 1 \nNHẬP MÔN \nCHỦ NGHĨA XÃ HỘI KHOA HỌC\n(Chương trình không chuyên)\nSự ra đời chủ nghĩa xã hội khoa học\nCác giai đoạn phát triển cơ bản của\n chủ nghĩa xã hội khoa học\nĐối tượng, phương pháp và ý nghĩa của việc nghiên cứu chủ nghĩa xã hội khoa học\nI\nII\nIII\nNỘI DUNG",
+      "Chapter1\nChủ nghĩa xã hội khoa học\nTheo nghĩa rộng: Chủ nghĩa xã hội khoa học là chủ nghĩa Mác - Lênin.\nTheo nghĩa hẹp: CNXHKH là một trong ba bộ phận của chủ nghĩa Mác - Lênin\nChủ nghĩa xã hội khoa học là học thuyết khoa học về cuộc đấu tranh giai cấp của giai cấp công nhân và cách mạng XHCN, về các qui luật chính trị - xã hội của công cuộc xây dựng chủ nghĩa xã hội và chủ nghĩa cộng sản",
+      "Chapter1\nI. Sự ra đời của Chủ nghĩa xã hội khoa học\n1. Hoàn cảnh lịch sử ra đời Chủ nghĩa xã hội khoa học\na. Điều kiện kinh tế - xã hội\nCách mạng công nghiệp đã hoàn thành ở Anh\n (đầu tk 19)\nPháp\nĐức\nNền đại công nghiệp\nPTĐT của GCCN chống GCTS ngày càng nhiều\nPTSX TBCN thay đổi (Quy mô sx, NSLĐ, KN quản lý, KTTT)\nGCVS bị bóc lột nặng nề\nGCVS >< GCTS ngày càng gay gắt\nNền đại công nghiệp",
+      "Chapter1\nKhởi nghĩa của CN dệt Lion  năm 1831\n\"Live free working, or die fighting…”\nCông nhân Anh đưa Hiến chương đến Quốc hội\nCông nhân dệt vùng Sơ-lê-din (Đức)",
+      "Chapter1\nHình: KỶ NIỆM\n138 NĂM NGÀY QUỐC TẾ LAO ĐỘNG\n(01/5/1886 01/5/2024)\nHọc thuyết tế bào\nb. Tiền đề khoa học tự nhiên và tư tưởng lý luận",
+      "Chapter1\nHọc thuyết tiến hoá\nCharles Darwin(1809-1882)\nĐịnh luật bảo toàn và chuyển hóa năng lượng",
+      "Chapter1\nL.Feuerbach\nTiền đề tư tưởng lý luận\nTriết học cổ điển Đức\nHình: Georg Wilhelm Friedrich Hegel\nGerman philosopher Georg Wilhelm\nFriedrich Hegel proposed that truth\nis reached by a continuing dialectic,\nin which 4 concept (thesis) always\ngives rise to its opposite\n{antithesis}, and the interaction\nbetween these two leads to the\ncreation of a new concept\n{synthesis}. Hegel employed this\ndialectical method in such works as\nThe Phenomenology of Mind (1807)\nto explain history and the evolution\nof ideas.\nyclopedia\nA.Smith (1723-1790)\nD. Ricardo (1772-1823)\nKinh tế chính trị học cổ điển Anh",
+      "Chapter1\nChủ nghĩa xã hội không tưởng - phê phán Pháp,  Anh\n1848\nTT.XHCN\nC/hữuNô lệ\nCNXH không tưởng\n(trước Mác)\nCNXH \nkhoa học\nMác – Ăngghen\nTác phẩm Utopia \ncủa Thomas More\nNgày làm việc 6h\nKhông ai sống ở nông thôn\nTrẻ em đi học miễn phí\nKhông có chiến tranh\nHôn nhân một vợ, một chồng\nXóa bỏ tư hữu, thiết lập SH chung\nLuận điểm: “Cừu ăn thịt người”\nThomas More (1478 – 1535)\nThế kỷ XVI",
+      "Chapter1\nTHẾ KỶ XIX\nPhê phán CMTS Pháp 1789 (nửa vời, chưa vì lợi ích của đa số…, cần tổng CM = ôn hòa)\nLuận giải về mâu thuẫn giai cấp\nMâu thuẫn quan niệm sở hữu:\n+  Sở hữu có lợi cho toàn XH\n+ Không xóa bỏ tư hữu, chỉ cần xóa phân hóa giàu nghèo\nClaude Henri Saint Simon (1760-1825)\nPhê phán văn minh tư bản (chưa đem lại sự giàu có cho toàn XH), sẽ được thay thế bằng XH mới: “XH đảm bảo”, “XH hài hòa”. \nPhê phán XH Pháp “vô chính phủ của CN”:\nNghèo đói sinh ra chính từ sự thừa thãi\nVăn minh sinh ra chính từ sự dã man\nTrình độ giải phóng phụ nữ là thước đo trình độ giải phóng XH\nThế kỷ XIX\nCharles Fourier (1772 - 1837)",
+      "Chapter1\nXây dựng mô hình thực nghiệm CSCN trên thực tế: công xưởng Nuilanac theo tinh thần: “làm theo năng lực, hưởng theo nhu cầu”.\nXây dựng Luật lao động nhân đạo trong công xưởng\nChủ trương xóa bỏ chế độ tư hữu\nThế kỷ XIX\nRobert Owen(1771-1858)\nGIÁ TRỊ LỊCH SỬ\nChứa đựng tinh thần nhân đạo cao cả.\nThể hiện tinh thần phê phán, lên án chế độ quân chủ chuyên chế và chế độ tư bản chủ nghĩa.\nChuẩn bị tiền đề lý luận (luận điểm, khái niệm…) cho sự kế thừa phát triển tư tưởng xã hội chủ nghĩa lên một trình độ mới.\nThức tỉnh phong trào công nhân và người lao động",
+      "Chapter1\nHẠN CHẾ\nKhuynh hướng đi theo con đường ôn hoà để cải tạo xã hội \nKhông phát hiện ra lực lượng xã hội tiên phong thực hiện cuộc  CM chuyển biến từ chủ nghĩa tư bản lên chủ nghĩa xã hội và chủ nghĩa cộng sản.\n2. Vai trò của Các Mác và Phriđrích Ăngghen\nC.Mac (1818-1883)\nPh. Ăngghen(1820-1895)\nSáng lập CNXH KH\nLãnh tụ của PTCN quốc tế",
+      "Chapter1\na. Sự chuyển biến lập trường triết học và lập trường chính trị\nDuy tâm\nDuy vật\nCMDC\nCSCN\n- Giai đoạn trước 1843: C.Mác và Ph.Ăngghen còn chịu ảnh hưởng bởi các quan điểm duy tâm, siêu hình của Hêghen và Phoiơbách.\n- Giai đoạn từ 1844-1848: C.Mác và Ph.Ăng ghen đã thể hiện rõ sự chuyển biến từ thế giới quan duy tâm sang thế giới quan duy vật, từ lập trường dân chủ cách mạng sang lập trường cộng sản chủ nghĩa.",
+      "Chapter1\n<number>\nb. Ba phát kiến vĩ đại của C.Mác và Ph.Ăngghen\nChủ nghĩa duy vật lịch sử\nHọc thuyết về giá trị thặng dư\nHọc thuyết về SMLS toàn thế giới của GCCN\n1848\nTT.XHCN\nC/hữuNô lệ\nSơ đồ\nc. Tuyên ngôn của ĐCS đánh dấu sự ra đời của \nChủ nghĩa xã hội khoa học\nCNXH\n khoa học\nCNXH\n Không tưởng\nTP Tuyên ngôn của ĐCS \n(Mác – Ăngghen)",
+      "Chapter1\nK. MARX VÀ F. ENGELS\nTUYÊN NGÔN \nCỦA  ĐẢNG CỘNG SẢN\n(C.Mác và Ph.Ăngghen, Toàn tập, t.4, CTQG, HN, 1995)\n\n…Vô sản tất cả các nước đoàn kết lại!\n“Tuyên ngôn của Đảng Cộng sản” đã nêu và phân tích về những vấn đề cơ bản\nSMLS của giai cấp công nhân và vai trò của Đảng cộng sản\nLôgic phát triển tất yếu của xã hội tư sản\nVấn đề liên minh giai cấp trong CMXHCN\nTuyên ngôn của ĐCS đánh dấu sự ra đời của chủ nghĩa Mác.",
+      "Chapter1\n<number>\nII. Các giai đoạn phát triển cơ bản của Chủ nghĩa xã hội khoa học\n1. C.Mác và Ph.Ăngghen phát triển CNXHKH\na. Thời kỳ từ 1848 đến Công xã Pari (1871)\nTổng kết kinh nghiệm PTCM 1848-1851,  phát triển lý luận CNXHKH thông qua các TP:\n“Đấu tranh giai cấp ở Pháp\" (1848 – 1850)\n\"Ngày 18 tháng Sương mù của Luibônapác tơ\" (1851)\n\"Chiến tranh nông dân ở Đức\" (1850)\n\"Cách mạng và phản cách mạng ở Đức\" (1852)\nTập I bộ Tư bản của C.Mác được xuất bản (1867)",
+      "Chapter1\nb. Thời kỳ sau Công xã Pari đến 1895\nTổng kết kinh nghiệm Công xã Pari và phát triển toàn diện CNXHKH thông qua các tác phẩm:\n\" Nội chiến ở Pháp\"\n\"Phê phán cương lĩnh Gô ta\"\n\"Chống Đuy rinh\"\n\"Nguồn gốc của gia đình, của chế độ tư hữu và của NN\"\nHoàn tất bộ \"Tư bản\"\n2. V.I.Lênin vận dụng và phát triển CNXHKH trong điều kiện mới\n2.2.1 Thời kỳ trước Cách mạng tháng Mười Nga\n2.2.2 Thời kỳ sau Cách mạng Tháng Mười Nga đến 1924 (Lênin mất)",
+      "Chapter1\na. Thời kỳ trước Cách mạng Tháng Mười Nga\n“Làm gì?” (1902)\n“Một bước tiến, hai bước lùi” (1904)\n“Nhà nước và cách mạng” (1917)\nQT  tất yếu từ CNTB lên CNXH và CNCS, tiêu biểu:\nĐấu tranh chống các trào lưu phi mác xít\nXây dựng lý luận về đảng cách mạng kiểu mới của giai cấp công nhân\nHoàn chỉnh lý luận về cách mạng xã hội chủ nghĩa và chuyên chính vô sản\nb. Thời kỳ sau Cách mạng Tháng Mười Nga đến 1924 (Lênin mất)\nV.I.Lênin đặc biệt quan tâm đến những vấn đề:\nChuyên chính vô sản\nVề chế độ dân chủ\nVề cải cách hành chính bộ máy NN\nVề cương lĩnh xây dựng CNXH ở nước Nga\nVấn đề dân tộc",
+      "Chapter1\nLênin và vấn đề đổi mới tư duy\nTOÀN TẬP, T. 45; 3/1922 – 3/1923\nBÀN VỀ CHẾ ĐỘ HTX\nNHỮNG BỨC THƯ VÀ BÀI BÁO CUỐI CÙNG\nTHÀ ÍT MÀ TỐT\n…\nCHÍNH SÁCH KINH TẾ MỚI (đọc thêm)\nНовая экономическая политика (НЭП, Eng. New Economic Policy) – đường lối kinh tế, đc vận dụng vào năm 1920 tại Nga và Liên Xô. \nTại ĐH X Đảng CS Nga (b) (14/3/1921) chính sách CSTC (thời nội chiến và can thiệp) bị bãi bỏ. Nội dung chính của NEP: chấm dứt chính sách trưng thu lương thực ở nông thôn, cho phép thị trường và sự tồn tại các hình thức sở hữu, thu hút dòng vốn từ bên ngoài dưới hình thức tô nhượng (concession), thực hiện cải cách tiền tệ (1922 – 1924)...",
+      "Chapter1\nCHÍNH SÁCH KINH TẾ MỚI\n10/1928, bắt đầu thực hiện Kế hoạch 5 năm phát triển kinh tế quốc dân lần 1; ban lãnh đạo xúc tiến đường lối công nghiệp hóa (theo phương châm “đuổi kịp và vượt…”) và hợp tác hóa. NEP chưa chính thức chấm dứt, song trên thực tế đã bị loại bỏ, trước hết trong nông nghiệp (đầu 1929) vì những bất cập, xung đột trong nguồn cung và hình thức cung. \nNEP chỉ kết thúc chính thức vào 11/10/1931 khi nghị quyết về chấm dứt hoàn toàn thương nghiệp tư nhân tại Liên Xô được thông qua. Bắt đầu “quân sự hóa kinh tế” và biến nhà nước xô-viết thành “lâu đài bị phong tỏa”, “sau bức màn sắt”, xã hội khép kín…\n3. Sự vận dụng và phát triển sáng tạo của CNXHKH từ sau khi V.I.Lênin qua đời đến nay",
+      "Chapter1\nTại Liên Xô:  từ năm 1924 đến năm 1953, Liên Xô trở thành một cường quốc XHCN đầu tiên và duy nhất trên toàn cầu.\nJ.Stalin\nNGUYÊN NHÂN VÀ BÀI HỌC\nLưu ý : Nguyên nhân của mọi nguyên nhân là gì?\nbên trong hay bên ngoài? \nVấn đề “diễn biến hòa bình” nên hiểu thế nào?\nVai trò của Đảng cầm quyền? Bộ máy Nhà nước?\n  Thế nào là  nhất nguyên và đa nguyên trong \nchính trị? \nThế nào là chế độ “toàn trị”? Cực quyền? Sự lỏng lẻo của  liên bang\nTư duy lý luận chịu trách nhiệm gì về sự \nsụp đổ mô hình Liên Xô?\nThế nào là chủ nghĩa Marx của Marx \nvà chủ nghĩa Marx bị biến dạng?",
+      "Chapter1\nNăm bài học\n1: Giữ vững vai trò lãnh đạo của Đảng Cộng sản, nhưng phải đảm bảo tính pháp quyền của nhà nước, trong đó có vđ chế ước quyền lực; \n2: Thừa nhận tính đa dạng trong phát triển, không áp đặt mô hình;  không biến hệ thống thành lâu đài bị phong tỏa và rơi vào “hiệu ứng” của chủ nghĩa lạc quan thiếu cơ sở (khái niệm “hiệu ứng xôviết”)\n3: Thống nhất lý luận và thực tiễn, thường xuyên đổi mới, nhận thức lại và tính thích ứng; đối thoại văn hóa thay cho tính một chiều và chủ̉ nghĩa kinh viện mới. \n4: Không đổi mới bằng mọi giá, không rơi vào chủ nghĩa phiêu lưu chính trị, và cũng không “trung thành với nguyên tắc” một cách máy móc\n5: không “đóng vai Marx chống lại Marx” (mượn ý của Derrida), biến bộ máy nhà nước thành nơi trục lợi của một bộ phận lãnh đạo xa dân (cửa quyền, quan liêu).",
+      "Chapter1\nHình: Europe (on modern borders)\nEastern bloc FINLAND 1949-\nSWEDEN ESTONIA\nLATVIA RUS STA\nDENMARK LITHUANIA\nKALININGRAD)\nUNITED’, NETHER BELARUS\nLANDS\nGERMANY\nBELGIUM\nCZECH REP.\nsả 4\nFRANCE Switz. °° (HUNGARY $\nSEV. ROMANIA £\nFoposnia 2, CRIMEA\nHAY, +\nBULGARIA =\nALBANIA* RGIA\nSPAIN\nGREECE TURKEY\nPORTUGAL\n*Until 1968\nCuối thập niên 80 đầu thập niên 90 của thế kỷ XX, mô hình của chế độ xã hội chủ nghĩa của Liên Xô và Đông Âu lần lượt sụp đổ, hệ thống xã hội chủ nghĩa tan rã.\nĐặng Tiểu Bình 邓小平\nMao Trạch Đông\n毛泽东\nHồ Cẩm Đào 胡锦涛\nTập Cận Bình 习近平\nTại Trung Quốc: tiến hành cải cách năm 1978, đã thu được những thành tựu đáng ghi nhận, cả về lý luận và thực tiễn.",
+      "Chapter1\nĐại hội XIX ĐCS TQ đã khẳng định: Xây dựng Trung Quốc trở thành cường quốc hiện đại hóa XHCN giàu mạnh, dân chủ, văn minh, hài hòa, tươi đẹp vào năm 2050; “Nhân dân Trung Quốc sẽ được hưởng sự hạnh phúc và thịnh vượng cao hơn, và dân tộc Trung Quốc sẽ có chỗ đứng cao hơn, vững hơn trên trường quốc tế”, ông Tập nói về tầm nhìn tới năm 2050.\nQuốc kỳ Trung Quốc\nỞ Việt Nam, công cuộc đổi mới do Đảng Cộng sản Việt Nam khởi xướng và lãnh đạo từ Đại hội lần thứ VI (1986), đã thu được những thành tựu to lớn có ý nghĩa lịch sử.",
+      "Chapter1\n- Là những quy luật, tính quy luật chính trị -xã hội của quá trình phát sinh, hình thành và phát triển của hình thái kinh tế -xã hội cộng sản chủ nghĩa mà giai đoạn đầu là chủ nghĩa xã hội.\nIII. Đối tượng, phương pháp và ý nghĩa của việc nghiên cứu CNXHKH\na. Đối tượng nghiên cứu của CNXHKH\n- Là những nguyên tắc cơ bản, những điều kiện, những con đường và hình thức, phương pháp đấu tranh cách mạng của giai cấp công nhân và nhân dân lao động nhằm hiện thực hóa sự chuyển biến từ chủ nghĩa tư bản lên chủ nghĩa xã hội và chủ nghĩa cộng sản.",
+      "Chapter1\nPhương pháp nghiên cứu của CNXHKH\nPhương pháp kết hợp lịch sử - lôgíc\nPhương pháp khảo sát\n và phân tích\nPhương pháp so sánh\nCác phương pháp có \ntính liên ngành\nb. Phương pháp nghiên cứu của CNXHKH\nÝ nghĩa về mặt lý luận\nTrang bị những nhận thức chính trị - xã hội và phương pháp luận khoa học về quá trình tất yếu lịch sử\nĐịnh hướng chính trị - xã hội cho hoạt động thực tiễn của Đảng Cộng sản, Nhà nước xã hội chủ nghĩa và nhân dân\nGíup cho sinh viên có căn cứ nhận thức khoa học để cảnh giác, phân tích đúng và đấu tranh chống lại những quan điểm sai trái, chống phá của các thế lực phản động\nc. Ý nghĩa của việc nghiên cứu CNXHKH",
+      "Chapter1\nÝ nghĩa về mặt thực tiễn\nXây dựng bản lĩnh chính trị cho sinh viên, giúp họ kiên định, tự tin, tiếp tục sự nghiệp xây dựng và bảo vệ Tổ quốc xã hội chủ nghĩa\nGiáo dục niềm tin khoa học cho sinh viên vào mục tiêu, lý tưởng xã hội chủ nghĩa và con đường đi lên chủ nghĩa xã hội của Việt Nam\nc. Ý nghĩa của việc nghiên cứu CNXHKH\nCủng cố bài học\n1. Phân tích vai trò của C.Mác và Ph.Ăngghen trong việc hình thành Chủ nghĩa xã hội khoa học.\n2. Phân tích sự vận dụng và phát triển Chủ nghĩa xã hội khoa học của V.I .Lênin.\n3. Phân tích sự vận dụng và phát triển Chủ nghĩa xã hội khoa học của các Đảng cộng sản và công nhân quốc tế từ sau khi V.I.Lênin qua đời."
+    ]
+  },
+  "reference": {
+    "coverage": "complete",
+    "chunk_ids": [
+      "4515145e-d44a-406a-88e8-6998e02a91b1",
+      "2ff03382-4083-4de2-94bd-8326e1650632",
+      "f0a4e464-a32c-4467-a663-75e35913bf70",
+      "7fc4afb7-ab57-4be8-a53f-a15a5ae62f59",
+      "a86731fb-c33f-49e2-9226-979e7c0b73a3",
+      "0859fb96-d613-4c61-a44a-841151c29c0b",
+      "56f77cfb-81d8-42dc-93ce-bfdfcb57d094",
+      "2ae2e27b-2325-47f9-a61a-f4db462686ec",
+      "91df289c-f28e-4cdf-a4df-73c390f09c11",
+      "d241120d-cb08-4fb2-ad02-59e8997d997f",
+      "867f1a12-b0e7-4f25-9818-4776cd7be0de",
+      "2661e7c8-930b-4932-9632-dd18ea237a17",
+      "2d6bb31b-da03-4873-8f83-024f22160232",
+      "aa9792be-ba6a-4c66-83d1-bdce2dc9f8df",
+      "3133e8fd-34ee-44bd-88df-531bcfa580b1",
+      "2d82362c-2cbe-430b-af13-0722bacb5218",
+      "fdae077b-8e97-485b-8cd1-55359d38f726",
+      "8fe30b39-6327-472b-95c7-e0b59c538af1",
+      "187b090b-4dbd-493d-86bc-2f4b4eb1ad72",
+      "7d55795a-1e34-4577-9c7c-1fee1debd0de",
+      "530feaf7-4a7e-4a86-b645-799d41939f2c",
+      "2b87beee-0284-45b3-8c63-4d97c0d4c148",
+      "34d7b1f9-cf64-462c-b8fc-d0969a360602",
+      "9684e3c6-2557-4771-a308-25b38ce5bda7",
+      "3aedcb61-8930-4a5d-9027-de4038de646c",
+      "b7fcab82-8716-4eb0-a26b-2f021cee4c26"
+    ],
+    "total_chunks": 26
+  },
+  "claim_citations": [
+    {
+      "claim": "Cách mạng công nghiệp đã hoàn thành ở Anh (đầu thế kỷ 19), sau đó phát triển ở Pháp và Đức.",
+      "source_id": "S3",
+      "start": 82,
+      "end": 173,
+      "marker_start": 174,
+      "marker_end": 178,
+      "locator": "{\"spans\": [{\"slide_index\": 5, \"slide_title\": \"\"}, {\"slide_index\": 6, \"slide_title\": \"\"}]}",
+      "chunk_id": "f0a4e464-a32c-4467-a663-75e35913bf70",
+      "chunk_content": "Chapter1\nI. Sự ra đời của Chủ nghĩa xã hội khoa học\n1. Hoàn cảnh lịch sử ra đời Chủ nghĩa xã hội khoa học\na. Điều kiện kinh tế - xã hội\nCách mạng công nghiệp đã hoàn thành ở Anh\n (đầu tk 19)\nPháp\nĐức\nNền đại công nghiệp\nPTĐT của GCCN chống GCTS ngày càng nhiều\nPTSX TBCN thay đổi (Quy mô sx, NSLĐ, KN quản lý, KTTT)\nGCVS bị bóc lột nặng nề\nGCVS >< GCTS ngày càng gay gắt\nNền đại công nghiệp",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "Sự phát triển của nền đại công nghiệp dẫn đến phương thức sản xuất tư bản chủ nghĩa thay đổi về quy mô sản xuất, năng suất lao động, kỹ năng quản lý và kiến trúc thượng tầng.",
+      "source_id": "S3",
+      "start": 181,
+      "end": 355,
+      "marker_start": 356,
+      "marker_end": 360,
+      "locator": "{\"spans\": [{\"slide_index\": 5, \"slide_title\": \"\"}, {\"slide_index\": 6, \"slide_title\": \"\"}]}",
+      "chunk_id": "f0a4e464-a32c-4467-a663-75e35913bf70",
+      "chunk_content": "Chapter1\nI. Sự ra đời của Chủ nghĩa xã hội khoa học\n1. Hoàn cảnh lịch sử ra đời Chủ nghĩa xã hội khoa học\na. Điều kiện kinh tế - xã hội\nCách mạng công nghiệp đã hoàn thành ở Anh\n (đầu tk 19)\nPháp\nĐức\nNền đại công nghiệp\nPTĐT của GCCN chống GCTS ngày càng nhiều\nPTSX TBCN thay đổi (Quy mô sx, NSLĐ, KN quản lý, KTTT)\nGCVS bị bóc lột nặng nề\nGCVS >< GCTS ngày càng gay gắt\nNền đại công nghiệp",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "Phong trào đấu tranh của giai cấp công nhân chống giai cấp tư sản ngày càng nhiều.",
+      "source_id": "S3",
+      "start": 363,
+      "end": 445,
+      "marker_start": 446,
+      "marker_end": 450,
+      "locator": "{\"spans\": [{\"slide_index\": 5, \"slide_title\": \"\"}, {\"slide_index\": 6, \"slide_title\": \"\"}]}",
+      "chunk_id": "f0a4e464-a32c-4467-a663-75e35913bf70",
+      "chunk_content": "Chapter1\nI. Sự ra đời của Chủ nghĩa xã hội khoa học\n1. Hoàn cảnh lịch sử ra đời Chủ nghĩa xã hội khoa học\na. Điều kiện kinh tế - xã hội\nCách mạng công nghiệp đã hoàn thành ở Anh\n (đầu tk 19)\nPháp\nĐức\nNền đại công nghiệp\nPTĐT của GCCN chống GCTS ngày càng nhiều\nPTSX TBCN thay đổi (Quy mô sx, NSLĐ, KN quản lý, KTTT)\nGCVS bị bóc lột nặng nề\nGCVS >< GCTS ngày càng gay gắt\nNền đại công nghiệp",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "Giai cấp vô sản bị bóc lột nặng nề, khiến mâu thuẫn giữa giai cấp vô sản và giai cấp tư sản ngày càng gay gắt.",
+      "source_id": "S3",
+      "start": 453,
+      "end": 563,
+      "marker_start": 564,
+      "marker_end": 568,
+      "locator": "{\"spans\": [{\"slide_index\": 5, \"slide_title\": \"\"}, {\"slide_index\": 6, \"slide_title\": \"\"}]}",
+      "chunk_id": "f0a4e464-a32c-4467-a663-75e35913bf70",
+      "chunk_content": "Chapter1\nI. Sự ra đời của Chủ nghĩa xã hội khoa học\n1. Hoàn cảnh lịch sử ra đời Chủ nghĩa xã hội khoa học\na. Điều kiện kinh tế - xã hội\nCách mạng công nghiệp đã hoàn thành ở Anh\n (đầu tk 19)\nPháp\nĐức\nNền đại công nghiệp\nPTĐT của GCCN chống GCTS ngày càng nhiều\nPTSX TBCN thay đổi (Quy mô sx, NSLĐ, KN quản lý, KTTT)\nGCVS bị bóc lột nặng nề\nGCVS >< GCTS ngày càng gay gắt\nNền đại công nghiệp",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "Các cuộc đấu tranh tiêu biểu của công nhân bao gồm khởi nghĩa của công nhân dệt Lu-ông năm 1831, công nhân Anh đưa Hiến chương đến Quốc hội, và công nhân dệt vùng Sơ-lê-din (Đức).",
+      "source_id": "S4",
+      "start": 571,
+      "end": 750,
+      "marker_start": 751,
+      "marker_end": 755,
+      "locator": "{\"spans\": [{\"slide_index\": 7, \"slide_title\": \"\"}, {\"slide_index\": 8, \"slide_title\": \"\"}]}",
+      "chunk_id": "7fc4afb7-ab57-4be8-a53f-a15a5ae62f59",
+      "chunk_content": "Chapter1\nKhởi nghĩa của CN dệt Lion  năm 1831\n\"Live free working, or die fighting…”\nCông nhân Anh đưa Hiến chương đến Quốc hội\nCông nhân dệt vùng Sơ-lê-din (Đức)",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "Các tiền đề khoa học tự nhiên bao gồm học thuyết tế bào, học thuyết tiến hóa của Charles Darwin (1809-1882), và định luật bảo toàn và chuyển hóa năng lượng.",
+      "source_id": "S5",
+      "start": 819,
+      "end": 975,
+      "marker_start": 976,
+      "marker_end": 980,
+      "locator": "{\"spans\": [{\"slide_index\": 9, \"slide_title\": \"\"}, {\"slide_index\": 10, \"slide_title\": \"\"}]}",
+      "chunk_id": "a86731fb-c33f-49e2-9226-979e7c0b73a3",
+      "chunk_content": "Chapter1\nHình: KỶ NIỆM\n138 NĂM NGÀY QUỐC TẾ LAO ĐỘNG\n(01/5/1886 01/5/2024)\nHọc thuyết tế bào\nb. Tiền đề khoa học tự nhiên và tư tưởng lý luận",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "Các tiền đề khoa học tự nhiên bao gồm học thuyết tế bào, học thuyết tiến hóa của Charles Darwin (1809-1882), và định luật bảo toàn và chuyển hóa năng lượng.",
+      "source_id": "S6",
+      "start": 819,
+      "end": 975,
+      "marker_start": 980,
+      "marker_end": 984,
+      "locator": "{\"spans\": [{\"slide_index\": 11, \"slide_title\": \"Học thuyết tiến hoá\"}, {\"slide_index\": 12, \"slide_title\": \"\"}]}",
+      "chunk_id": "0859fb96-d613-4c61-a44a-841151c29c0b",
+      "chunk_content": "Chapter1\nHọc thuyết tiến hoá\nCharles Darwin(1809-1882)\nĐịnh luật bảo toàn và chuyển hóa năng lượng",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "Ricardo), và chủ nghĩa xã hội không tưởng - phê phán (Pháp, Anh).",
+      "source_id": "S7",
+      "start": 1154,
+      "end": 1219,
+      "marker_start": 1220,
+      "marker_end": 1224,
+      "locator": "{\"spans\": [{\"slide_index\": 13, \"slide_title\": \"\"}, {\"slide_index\": 14, \"slide_title\": \"\"}]}",
+      "chunk_id": "56f77cfb-81d8-42dc-93ce-bfdfcb57d094",
+      "chunk_content": "Chapter1\nL.Feuerbach\nTiền đề tư tưởng lý luận\nTriết học cổ điển Đức\nHình: Georg Wilhelm Friedrich Hegel\nGerman philosopher Georg Wilhelm\nFriedrich Hegel proposed that truth\nis reached by a continuing dialectic,\nin which 4 concept (thesis) always\ngives rise to its opposite\n{antithesis}, and the interaction\nbetween these two leads to the\ncreation of a new concept\n{synthesis}. Hegel employed this\ndialectical method in such works as\nThe Phenomenology of Mind (1807)\nto explain history and the evolution\nof ideas.\nyclopedia\nA.Smith (1723-1790)\nD. Ricardo (1772-1823)\nKinh tế chính trị học cổ điển Anh",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "Ricardo), và chủ nghĩa xã hội không tưởng - phê phán (Pháp, Anh).",
+      "source_id": "S8",
+      "start": 1154,
+      "end": 1219,
+      "marker_start": 1224,
+      "marker_end": 1228,
+      "locator": "{\"spans\": [{\"slide_index\": 15, \"slide_title\": \"Chủ nghĩa xã hội không tưởng - phê phán Pháp,  Anh\"}, {\"slide_index\": 16, \"slide_title\": \"\"}]}",
+      "chunk_id": "2ae2e27b-2325-47f9-a61a-f4db462686ec",
+      "chunk_content": "Chapter1\nChủ nghĩa xã hội không tưởng - phê phán Pháp,  Anh\n1848\nTT.XHCN\nC/hữuNô lệ\nCNXH không tưởng\n(trước Mác)\nCNXH \nkhoa học\nMác – Ăngghen\nTác phẩm Utopia \ncủa Thomas More\nNgày làm việc 6h\nKhông ai sống ở nông thôn\nTrẻ em đi học miễn phí\nKhông có chiến tranh\nHôn nhân một vợ, một chồng\nXóa bỏ tư hữu, thiết lập SH chung\nLuận điểm: “Cừu ăn thịt người”\nThomas More (1478 – 1535)\nThế kỷ XVI",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "Chủ nghĩa xã hội không tưởng - phê phán thể hiện tinh thần nhân đạo cao cả, đồng thời phê phán và lên án chế độ quân chủ chuyên chế cùng chế độ tư bản chủ nghĩa.",
+      "source_id": "S10",
+      "start": 1297,
+      "end": 1458,
+      "marker_start": 1459,
+      "marker_end": 1464,
+      "locator": "{\"spans\": [{\"slide_index\": 19, \"slide_title\": \"Xây dựng mô hình thực nghiệm CSCN trên thực tế: công xưởng Nuilanac theo tinh thần: “làm theo năng lực, hưởng theo nhu cầu”.\\nXây dựng Luật lao động nhân đạo trong công xưởng\\nChủ trương xóa bỏ chế độ tư hữu\"}, {\"slide_index\": 20, \"slide_title\": \"\"}]}",
+      "chunk_id": "d241120d-cb08-4fb2-ad02-59e8997d997f",
+      "chunk_content": "Chapter1\nXây dựng mô hình thực nghiệm CSCN trên thực tế: công xưởng Nuilanac theo tinh thần: “làm theo năng lực, hưởng theo nhu cầu”.\nXây dựng Luật lao động nhân đạo trong công xưởng\nChủ trương xóa bỏ chế độ tư hữu\nThế kỷ XIX\nRobert Owen(1771-1858)\nGIÁ TRỊ LỊCH SỬ\nChứa đựng tinh thần nhân đạo cao cả.\nThể hiện tinh thần phê phán, lên án chế độ quân chủ chuyên chế và chế độ tư bản chủ nghĩa.\nChuẩn bị tiền đề lý luận (luận điểm, khái niệm…) cho sự kế thừa phát triển tư tưởng xã hội chủ nghĩa lên một trình độ mới.\nThức tỉnh phong trào công nhân và người lao động",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "Nó đã chuẩn bị các tiền đề lý luận (như các luận điểm và khái niệm) để kế thừa và phát triển tư tưởng xã hội chủ nghĩa lên một trình độ mới.",
+      "source_id": "S10",
+      "start": 1467,
+      "end": 1607,
+      "marker_start": 1608,
+      "marker_end": 1613,
+      "locator": "{\"spans\": [{\"slide_index\": 19, \"slide_title\": \"Xây dựng mô hình thực nghiệm CSCN trên thực tế: công xưởng Nuilanac theo tinh thần: “làm theo năng lực, hưởng theo nhu cầu”.\\nXây dựng Luật lao động nhân đạo trong công xưởng\\nChủ trương xóa bỏ chế độ tư hữu\"}, {\"slide_index\": 20, \"slide_title\": \"\"}]}",
+      "chunk_id": "d241120d-cb08-4fb2-ad02-59e8997d997f",
+      "chunk_content": "Chapter1\nXây dựng mô hình thực nghiệm CSCN trên thực tế: công xưởng Nuilanac theo tinh thần: “làm theo năng lực, hưởng theo nhu cầu”.\nXây dựng Luật lao động nhân đạo trong công xưởng\nChủ trương xóa bỏ chế độ tư hữu\nThế kỷ XIX\nRobert Owen(1771-1858)\nGIÁ TRỊ LỊCH SỬ\nChứa đựng tinh thần nhân đạo cao cả.\nThể hiện tinh thần phê phán, lên án chế độ quân chủ chuyên chế và chế độ tư bản chủ nghĩa.\nChuẩn bị tiền đề lý luận (luận điểm, khái niệm…) cho sự kế thừa phát triển tư tưởng xã hội chủ nghĩa lên một trình độ mới.\nThức tỉnh phong trào công nhân và người lao động",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "Nó góp phần thức tỉnh phong trào công nhân và người lao động.",
+      "source_id": "S10",
+      "start": 1616,
+      "end": 1677,
+      "marker_start": 1678,
+      "marker_end": 1683,
+      "locator": "{\"spans\": [{\"slide_index\": 19, \"slide_title\": \"Xây dựng mô hình thực nghiệm CSCN trên thực tế: công xưởng Nuilanac theo tinh thần: “làm theo năng lực, hưởng theo nhu cầu”.\\nXây dựng Luật lao động nhân đạo trong công xưởng\\nChủ trương xóa bỏ chế độ tư hữu\"}, {\"slide_index\": 20, \"slide_title\": \"\"}]}",
+      "chunk_id": "d241120d-cb08-4fb2-ad02-59e8997d997f",
+      "chunk_content": "Chapter1\nXây dựng mô hình thực nghiệm CSCN trên thực tế: công xưởng Nuilanac theo tinh thần: “làm theo năng lực, hưởng theo nhu cầu”.\nXây dựng Luật lao động nhân đạo trong công xưởng\nChủ trương xóa bỏ chế độ tư hữu\nThế kỷ XIX\nRobert Owen(1771-1858)\nGIÁ TRỊ LỊCH SỬ\nChứa đựng tinh thần nhân đạo cao cả.\nThể hiện tinh thần phê phán, lên án chế độ quân chủ chuyên chế và chế độ tư bản chủ nghĩa.\nChuẩn bị tiền đề lý luận (luận điểm, khái niệm…) cho sự kế thừa phát triển tư tưởng xã hội chủ nghĩa lên một trình độ mới.\nThức tỉnh phong trào công nhân và người lao động",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "Hạn chế của khuynh hướng này là đi theo con đường ôn hòa để cải tạo xã hội và không phát hiện ra lực lượng xã hội tiên phong thực hiện cuộc cách mạng chuyển biến từ chủ nghĩa tư bản lên chủ nghĩa xã hội và chủ nghĩa cộng sản.",
+      "source_id": "S11",
+      "start": 1686,
+      "end": 1911,
+      "marker_start": 1912,
+      "marker_end": 1917,
+      "locator": "{\"spans\": [{\"slide_index\": 21, \"slide_title\": \"\"}, {\"slide_index\": 22, \"slide_title\": \"\"}]}",
+      "chunk_id": "867f1a12-b0e7-4f25-9818-4776cd7be0de",
+      "chunk_content": "Chapter1\nHẠN CHẾ\nKhuynh hướng đi theo con đường ôn hoà để cải tạo xã hội \nKhông phát hiện ra lực lượng xã hội tiên phong thực hiện cuộc  CM chuyển biến từ chủ nghĩa tư bản lên chủ nghĩa xã hội và chủ nghĩa cộng sản.\n2. Vai trò của Các Mác và Phriđrích Ăngghen\nC.Mac (1818-1883)\nPh. Ăngghen(1820-1895)\nSáng lập CNXH KH\nLãnh tụ của PTCN quốc tế",
+      "resolution": "resolved"
+    }
+  ]
+}

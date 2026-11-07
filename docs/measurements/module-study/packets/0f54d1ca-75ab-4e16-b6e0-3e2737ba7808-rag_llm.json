@@ -1,0 +1,515 @@
+{
+  "pair_id": "0f54d1ca-75ab-4e16-b6e0-3e2737ba7808",
+  "group": "rag_llm",
+  "generator_model": "gemini-fast",
+  "generation_models": [
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    },
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    },
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    },
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    },
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    },
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    },
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    },
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    },
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    },
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    },
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    },
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    },
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    },
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    },
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    },
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    },
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    },
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    },
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    }
+  ],
+  "packet": {
+    "anon_id": "",
+    "topic": "Giới thiệu về Tính kế thừa (Introduction to Inheritance)",
+    "bloom_level": "understand",
+    "learning_objective": "Sau khi hoàn thành module, người học có thể phân biệt các khái niệm cốt lõi, mối quan hệ giữa lớp cơ sở với lớp dẫn xuất và các loại tính kế thừa trong lập trình hướng đối tượng.",
+    "sub_objectives": [
+      "Định nghĩa khái niệm tính kế thừa và các lợi ích cốt lõi của nó",
+      "Phân biệt vai trò giữa lớp cơ sở và lớp dẫn xuất trong mối quan hệ 'is-a'",
+      "Mô tả các loại tính kế thừa phổ biến như đơn kế thừa, đa kế thừa và kế thừa đa tầng",
+      "Giải thích cách thức hoạt động của phương thức ghi đè cùng trình tự gọi constructor và destructor"
+    ],
+    "content_markdown": "# Định nghĩa khái niệm tính kế thừa và các lợi ích cốt lõi của nó\n\n- Tính kế thừa là một cơ chế dùng để tạo ra một lớp mới (được gọi là lớp dẫn xuất hoặc lớp con) từ một lớp đã có sẵn (được gọi là lớp cơ sở hoặc lớp cha) nhằm mục đích tái sử dụng và mở rộng các tính năng của nó.     \n- Các lợi ích cốt lõi của tính kế thừa bao gồm:     \n  - Tái sử dụng mã (Code Reusability): Giúp tái sử dụng các logic chung từ lớp cơ sở, từ đó làm cho mã nguồn hiệu quả hơn và dễ bảo trì hơn.     \n  - Khả năng mở rộng (Extensibility): Cho phép bổ sung các tính năng mới bằng cách mở rộng từ lớp cơ sở, giúp dễ dàng cập nhật mà không làm ảnh hưởng đến mã nguồn hiện có.     \n  - Tổ chức theo phân cấp (Hierarchical Organization): Giúp tổ chức các lớp theo một cấu trúc logic, đại diện cho các mối quan hệ trong thế giới thực.     \n- Lớp con (subclass) kế thừa tất cả các thành phần (members) của lớp cha (superclass).     \n- Về khả năng truy cập:     \n  - Các thành phần public và protected có thể được truy cập trực tiếp trong lớp con.     \n  - Các thành phần private được kế thừa nhưng không thể truy cập trực tiếp; chúng chỉ có thể được truy cập thông qua các phương thức getter và setter có quyền public hoặc protected nằm ở lớp cha.     \n\n# Phân biệt vai trò giữa lớp cơ sở và lớp dẫn xuất trong mối quan hệ 'is-a'\n\n- Lớp cơ sở (Base class / Parent / Superclass): Là lớp mà các thuộc tính (properties) và phương thức (methods) của nó được kế thừa bởi một lớp khác.     \n- Lớp dẫn xuất (Derived class / Child / Subclass): Là lớp thực hiện việc kế thừa từ lớp cơ sở.     \n- Vai trò của lớp dẫn xuất là có thể sử dụng hoặc ghi đẻ các thành phần của lớp cơ sở và bổ sung thêm các thành phần của riêng nó, tạo nên mối quan hệ \"is-a\" (là một).     \n- Ví dụ, Animal là lớp cơ sở, Dog kế thừa từ Animal tạo thành mối quan hệ Dog \"is-a\" Animal.     \n\n# Mô tả các loại tính kế thừa phổ biến như đơn kế thừa, đa kế thừa và kế thừa đa tầng\n\n- Đơn kế thừa (Single Inheritance): Một lớp dẫn xuất chỉ kế thừa từ một lớp cơ sở duy nhất.     \n- Đa kế thừa (Multiple Inheritance): Một lớp kế thừa từ nhiều hơn một lớp cơ sở (được hỗ trợ trong C++ nhưng không được hỗ trợ trong Java).     \n- Kế thừa đa tầng (Multilevel Inheritance): Một lớp kế thừa từ một lớp dẫn xuất, tạo thành một chuỗi kế thừa.     \n- Kế thừa phân cấp (Hierarchical Inheritance): Nhiều lớp dẫn xuất cùng kế thừa từ một lớp cơ sở.     \n- Kế thừa hỗn hợp (Hybrid Inheritance): Sự kết hợp của từ hai loại kế thừa trở lên.     \n\n# Giải thích cách thức hoạt động của phương thức ghi đè cùng trình tự gọi constructor và destructor\n\n- Phương thức ghi đè (Method overriding): Một lớp dẫn xuất có thể định nghĩa lại (ghi đè) một phương thức từ lớp cơ sở để cung cấp một chức năng cụ thể.     \n- Yêu cầu của phương thức ghi đè: Phương thức ở lớp cơ sở phải có tên, kiểu trả về và các tham số giống hệt với phương thức được ghi đè.     \n- Trình tự gọi constructor: Khi một đối tượng của lớp dẫn xuất được tạo ra, constructor của lớp cơ sở sẽ được gọi trước, sau đó mới đến constructor của lớp dẫn xuất.     \n- Trình tự gọi destructor: Khi một đối tượng bị hủy, destructor của lớp dẫn xuất sẽ được gọi trước, sau đó mới đến destructor của lớp cơ sở.     ",
+    "slides": [
+      {
+        "title": "Khái niệm và lợi ích của tính kế thừa",
+        "bullets": [
+          "Tính kế thừa tạo lớp mới từ lớp có sẵn nhằm tái sử dụng và mở rộng",
+          "Lợi ích cốt lõi: Tái sử dụng mã, khả năng mở rộng và tổ chức theo phân cấp",
+          "Lớp con kế thừa tất cả thành phần của lớp cha với các quy tắc truy cập khác nhau"
+        ]
+      },
+      {
+        "title": "Lớp cơ sở và lớp dẫn xuất",
+        "bullets": [
+          "Lớp cơ sở cung cấp thuộc tính và phương thức để lớp khác kế thừa",
+          "Lớp dẫn xuất sử dụng, ghi đẻ thành phần và bổ sung tính năng mới",
+          "Tạo nên mối quan hệ \"is-a\" (ví dụ: Dog là một Animal)"
+        ]
+      },
+      {
+        "title": "Các loại tính kế thừa phổ biến",
+        "bullets": [
+          "Đơn kế thừa và đa kế thừa từ một hoặc nhiều lớp cơ sở",
+          "Kế thừa đa tầng tạo thành một chuỗi kế thừa",
+          "Kế thừa phân cấp và kế thừa hỗn hợp kết hợp nhiều loại"
+        ]
+      },
+      {
+        "title": "Ghi đè phương thức và vòng đời đối tượng",
+        "bullets": [
+          "Phương thức ghi đè cho phép lớp dẫn xuất định nghĩa lại chức năng",
+          "Trình tự gọi constructor: Lớp cơ sở chạy trước, sau đến lớp dẫn xuất",
+          "Trình tự gọi destructor: Lớp dẫn xuất hủy trước, sau đến lớp cơ sở"
+        ]
+      }
+    ],
+    "examples": [
+      {
+        "context": "Trong một hệ thống quản lý nhân sự tại doanh nghiệp, lớp NhanVien (lớp cơ sở) định nghĩa các thuộc tính chung như hoTen, maNV và phương thức tinhLuong(). Lớp LapTrinhVien được xây dựng bằng cách kế thừa từ NhanVien để tái sử dụng các logic tính lương và thông tin cá nhân, đồng thời bổ sung thêm thuộc tính soGioOT và kỹ năng chuyên môn riêng.",
+        "analysis": "Bối cảnh này minh họa rõ nét khái niệm tính kế thừa và các lợi ích cốt lõi của nó như tái sử dụng mã (Code Reusability) và khả năng mở rộng (Extensibility). Lớp con LapTrinhVien kế thừa toàn bộ thành phần từ lớp cha NhanVien giúp mã nguồn hiệu quả, dễ bảo trì, đồng thời dễ dàng bổ sung tính năng mới mà không ảnh hưởng đến cấu trúc hiện có."
+      },
+      {
+        "context": "Khi phát triển phần mềm quản lý thư viện, kỹ sư lập trình thiết kế lớp TaiLieu làm lớp cơ sở chứa các thuộc tính chung như maTaiLieu, tenNhaXuatBan. Tiếp đó, lớp Sach được tạo ra để kế thừa từ TaiLieu, tạo nên mối quan hệ Sach \"is-a\" TaiLieu, trong đó Sach vừa có thể sử dụng các thuộc tính chung vừa bổ sung thêm thuộc tính soTrang của riêng mình.",
+        "analysis": "Ví dụ này phản ánh chính xác vai trò của lớp cơ sở (Base class) và lớp dẫn xuất (Derived class) trong mối quan hệ \"is-a\". Lớp dẫn xuất Sach kế thừa từ lớp cơ sở TaiLieu, cho phép nó sử dụng các thuộc tính có sẵn đồng thời mở rộng thêm các đặc tính đặc thù của sách."
+      }
+    ],
+    "quiz": [
+      {
+        "stem": "Phát biểu nào sau đây diễn giải chính xác về khái niệm và lợi ích cốt lõi của tính kế thừa trong lập trình hướng đối tượng dựa trên tài liệu?",
+        "choices": [
+          "Tính kế thừa là cơ chế tổ chức phân cấp lớp nhưng không đem lại lợi ích về tái sử dụng mã nguồn hay mở rộng chức năng.",
+          "Tính kế thừa làm cho mã nguồn trở nên cố định và gây khó khăn khi cần cập nhật các tính năng mới cho chương trình.",
+          "Tính kế thừa chỉ nhằm mục đích che giấu các thuộc tính của lớp cơ sở thay vì giúp mở rộng chức năng cho lớp dẫn xuất.",
+          "Tính kế thừa là cơ chế cho phép tạo lớp mới từ lớp có sẵn nhằm tái sử dụng logic chung và mở rộng tính năng dễ dàng hơn."
+        ],
+        "correct_index": 3,
+        "explanation": "Đáp án đúng là phương án thứ tư vì tính kế thừa là cơ chế tạo lớp mới từ lớp có sẵn giúp tái sử dụng logic và mở rộng tính năng một cách linh hoạt (S1, S3). Phương án đầu tiên sai vì tính kế thừa thực chất đem lại lợi ích lớn về tái sử dụng mã nguồn. Phương án thứ hai sai vì kế thừa thực tế giúp dễ dàng cập nhật mã nguồn mà không ảnh hưởng đến phần cũ nhờ tính mở rộng (S3). Phương án thứ ba sai vì mục đích của kế thừa là dùng và mở rộng thành viên chứ không phải chỉ che giấu thuộc tính (S2, S3)."
+      },
+      {
+        "stem": "Khi xem xét mối quan hệ giữa lớp cơ sở (base class) và lớp dẫn xuất (derived class) trong lập trình hướng đối tượng dựa trên tài liệu, phát biểu nào sau đây diễn giải đúng bản chất của chúng?",
+        "choices": [
+          "Lớp dẫn xuất đóng vai trò cung cấp các thuộc tính chung để nhiều lớp cơ sở khác có thể kế thừa lại.",
+          "Lớp cơ sở đại diện cho một phiên bản mở rộng chuyên biệt và cụ thể hơn so với lớp dẫn xuất.",
+          "Lớp dẫn xuất kế thừa từ lớp cơ sở, có khả năng mở rộng chức năng riêng và thiết lập mối quan hệ 'is-a'.",
+          "Lớp dẫn xuất chỉ kế thừa và sử dụng các thành viên có sẵn mà không thể bổ sung thêm bất kỳ thuộc tính nào."
+        ],
+        "correct_index": 2,
+        "explanation": "Đáp án đúng là phương án thứ ba vì theo tài liệu, lớp dẫn xuất kế thừa từ lớp cơ sở để tận dụng mã nguồn, đồng thời có thể tự định nghĩa thêm các đặc điểm riêng của mình và hình thành mối quan hệ 'is-a' với lớp cơ sở. Phương án thứ nhất sai vì lớp cơ sở mới là nơi chứa các thuộc tính chung được kế thừa. Phương án thứ hai sai vì lớp cơ sở mang tính tổng quát còn lớp dẫn xuất mới là lớp chuyên biệt hóa mở rộng. Phương án thứ tư sai vì tài liệu chỉ rõ lớp dẫn xuất có thể bổ sung các thành phần mới của riêng nó bên cạnh việc kế thừa."
+      },
+      {
+        "stem": "Phát biểu nào sau đây diễn giải đúng về khái niệm kế thừa đa tầng (multilevel inheritance) theo tài liệu?",
+        "choices": [
+          "Một lớp dẫn xuất kế thừa trực tiếp từ nhiều lớp cơ sở khác nhau tại cùng một thời điểm.",
+          "Một lớp kế thừa từ một lớp dẫn xuất khác, qua đó tạo thành một chuỗi liên kết các lớp.",
+          "Một lớp dẫn xuất duy nhất tiến hành kế thừa từ đúng một lớp cơ sở ở cấp độ đầu.",
+          "Nhiều lớp dẫn xuất khác nhau cùng tiến hành kế thừa chung từ một lớp cơ sở duy nhất."
+        ],
+        "correct_index": 1,
+        "explanation": "Đáp án đúng là: Một lớp kế thừa từ một lớp dẫn xuất khác, qua đó tạo thành một chuỗi liên kết các lớp. Giải thích: Theo tài liệu, kế thừa đa tầng (multilevel inheritance) được định nghĩa là khi một lớp kế thừa từ một lớp dẫn xuất, tạo thành một chuỗi. Phương án đầu tiên sai vì mô tả đặc điểm của đa kế thừa (multiple inheritance). Phương án thứ ba sai vì mô tả đơn kế thừa (single inheritance). Phương án cuối cùng sai vì mô tả kế thừa phân cấp (hierarchical inheritance)."
+      }
+    ],
+    "practice": {
+      "stem": "Phát biểu nào sau đây diễn giải đúng về bản chất và lợi ích của cơ chế tính kế thừa trong lập trình hướng đối tượng dựa trên nguồn tài liệu?",
+      "choices": [
+        "Tính kế thừa giúp tạo lớp mới từ lớp có sẵn nhằm tái sử dụng logic chung và mở rộng chức năng một cách dễ dàng.",
+        "Tính kế thừa hạn chế việc cập nhật mã nguồn vì các tính năng mới không thể được thêm vào lớp dẫn xuất.",
+        "Tính kế thừa chỉ phục vụ mục đích tổ chức phân cấp cấu trúc thực tế mà không mang lại lợi ích tái sử dụng mã.",
+        "Tính kế thừa yêu cầu lớp dẫn xuất phải viết lại toàn bộ các phương thức từ đầu thay vì kế thừa từ lớp cơ sở."
+      ],
+      "correct_index": 0,
+      "explanation": "Đáp án đúng là phương án đầu tiên vì theo tài liệu, tính kế thừa là cơ chế tạo lớp mới từ lớp cơ sở nhằm tái sử dụng logic chung và mở rộng chức năng dễ dàng. Các phương án còn lại đều sai: phương án thứ hai sai vì kế thừa thực tế giúp thêm tính năng mới qua việc mở rộng lớp cơ sở; phương án thứ ba sai vì tái sử dụng mã nguồn là một lợi ích cốt lõi song song với tổ chức phân cấp; phương án thứ tư sai vì lớp dẫn xuất tận dụng chức năng sẵn có từ lớp cơ sở chứ không phải viết lại toàn bộ."
+    },
+    "source_chunks": [
+      "Chap2 Inheritance\nChapter 2: Object Oriented Programming Revision - Inheritance\nTP.HCM, 03/01/2025\nAdvanced Programming\nCO2039\nAdditional Notes\nCall constructor of the superclass\nDefault baseclass\nClass Object\nOverloading method\nSubclass inherits ALL members of the superclass\n2",
+      "Chap2 Inheritance\nCONTENT\n01\n04\n02\n05\n03\nINTRODUCTION TO INHERITANCE\nKEY CONCEPTS OF INHERITANCE\nHOW INHERITANCE WORKS?\nBEST PRACTICES\nCONCLUSION\n3\n06\nEXTENSION: COMPOSITION\nINTRODUCTION TO INHERITANCE\n01\n4",
+      "Chap2 Inheritance\nWhat is Inheritance?\nA mechanism for creating a new class (called a derived class or child class) from an existing class (called a base class or parent class) to reuse and extend its functionality.\n5\nWhy is Inheritance important?\nCode Reusability: Reuse of common logic from base classes ⇒ codebase more efficient and maintainable.\nExtensibility: New features can be added by extending the base class ⇒ easy updates without affecting existing code.\nPolymorphism: Introduced in Chap 3 later.\nHierarchical Organization: Classes can be organized in a logical structure, representing real-world relationships.\n6",
+      "Chap2 Inheritance\nKEY CONCEPTS OF INHERITANCE\n02\n7\nBase class & Derived class\n8\nBase class (Parent/Superclass): The class whose properties (attributes) and methods (functions) are inherited by another class.\nExample: Animal is a base class.\nDerived class (Child/Subclass): The class inheriting from the base class. It can use or override the members of the base class and add its own ⇒ “is-a” relationship\nExample: Dog inherits from Animal ⇒ Dog “is-a” Animal.",
+      "Chap2 Inheritance\nMethod overriding\nA derived class can redefine (override) a method from the base class to provide specific functionality.\nThe method in the base class must have the same name, return type, and parameters as the overridden method.\n9\nConstructors: When an object of a derived class is created, the base class constructor is called first, followed by the derived class constructor.\nDestructors: When an object is destroyed, the derived class destructor is called first, followed by the base class destructor.\nIntroduced more detailed in Chap 3 - Polymorphism\nTypes of Inheritance\nSingle Inheritance: A derived class inherits from one base class.\nMultiple Inheritance: A class inherits from more than one base class. (Supported in C++ but not in Java)\nMultilevel Inheritance: A class inherits from a derived class, forming a chain.\nHierarchical Inheritance: Multiple derived classes inherit from one base class.\nHybrid Inheritance: A combination of two or more types of inheritance.\n10",
+      "Chap2 Inheritance\nTypes of Inheritance\n11\nHình: ClassB ClassB ClassB | | ClassC\nSingle Inheritance Hierarchical Inheritance\nClassC\nMultilevel Inheritance\n| ClassA | | ClassB |\nClassB | | ClassC\nMultiple Inheritance\nHybrid Inheritance\nDiamond Problem?\nHOW INHERITANCE WORKS?\n03\n12",
+      "Chap2 Inheritance\nSubclass inherits all members from Superclass\nWhen a subclass inherits from a superclass:\nAll members of the superclass, whether public or private, are technically inherited.\nHowever, accessibility depends on the access specifier:\nPublic and protected members can be directly accessed in the subclass.\nPrivate members are inherited but not accessible directly; they are accessible through public or protected getters and setters in the superclass.\n13\nSubclass inherits all members from Superclass\n14\nHình: MODE OF INHERITANCE\nee Public\nPublic Public Protected Private\nProtected Protected Protected Private\nPrivate Not Accessible NotAccessible Not Accessible\n(Hidden) (Hidden) (Hidden)",
+      "Chap2 Inheritance\nPointers for Polymorphism (1)\nclass Superclass {\npublic:\n    virtual void display() { cout << \"Superclass\\n\"; }\n};\n\nclass Subclass : public Superclass {\npublic:\n    void display() override { cout << \"Subclass\\n\"; }\n};\n\nint main() {\n    Subclass sub;\n    Superclass sup = sub; \n    sup.display(); // Output: ???\n}\n15\nSuperclass\nSubclass\nsup\nsub\nPointers for Polymorphism (2)\nclass Superclass {\npublic:\n    virtual void display() { cout << \"Superclass\\n\"; }\n};\n\nclass Subclass : public Superclass {\npublic:\n    void display() override { cout << \"Subclass\\n\"; }\n};\n\nint main() {\n    Subclass sub;\n    Superclass* sup = &sub; \n    sup–>display(); // Output: ???\n}\n16\nSuperclass\nSubclass\nsup\nsub",
+      "Chap2 Inheritance\nImplicit use of pointers\nclass Superclass {\n    public void display() {\n        System.out.println(\"Superclass\");\n    }\n}\nclass Subclass extends Superclass {\n    @Override\n    public void display() {\n        System.out.println(\"Subclass\");\n    }\n}\npublic class Main {\n    public static void main(String[] args) {\n        Superclass obj = new Subclass(); \n        obj.display(); // Output: ???\n    }\n}\n17\nIn Java (and many other OOP languages): All objects are accessed via references (similar to pointers in C++).\nBEST PRACTICES\n04\n18",
+      "Chap2 Inheritance\nExercise 1 - Inheritance in Vehicle classes (1)\nCreate a base class Vehicle with the following private attributes:\nbrand (string)\nyear (int)\nAdd the following to Vehicle:\nA default constructor that sets default values (\"Unknown\" for brand, 0 for year).\nA parameterized constructor to initialize brand and year.\nSetters and getters for brand and year.\nA method displayInfo() to print details of the vehicle.\n19\nExercise 1 - Inheritance in Vehicle classes (2)\nCreate a derived class Car that inherits from Vehicle:\nAdd a private attribute: model (string).\nProvide a default constructor and a parameterized constructor for Car using constructor chaining.\nOverride the displayInfo() method to include model.\nCreate another derived class Bike that inherits from Vehicle:\nAdd a private attribute: engineCapacity (int).\nProvide constructors and override displayInfo() to include engineCapacity.\nIn the main function:\nCreate a Car object using both default and parameterized constructors and display its details.\nCreate a Bike object using both default and parameterized constructors and display its details.\n20",
+      "Chap2 Inheritance\nExercise 2 - Enhanced Library System with Inheritance (1)\nBook Class (Base Class):\nAttributes: title, author, ISBN, price, and stock.\nMethods:\nConstructor to initialize attributes.\nGetter and setter methods.\nA virtual displayDetails() method to display book information.\nDerived Classes:\nEBook (inherits Book):\nAdditional attribute: fileSize (in MB).\nOverride displayDetails() to include file size.\nPrintedBook (inherits Book):\nAdditional attribute: pageCount.\nOverride displayDetails() to include page count.\n21\nExercise 2 - Enhanced Library System with Inheritance (2)\nLibrary Class:\nAttributes:\nA dynamic array or vector of pointers to Book objects (supporting both EBook and PrintedBook).\nMethods:\naddBook(Book*): Add a new book (of any type).\nsearchByTitle(string) and searchByAuthor(string): Search books by title/author.\nborrowBook(string ISBN): Reduce stock of the specified book by 1.\ndisplayAllBooks(): Display all books in the library.\nMain Function:\nAdd a mix of EBook and PrintedBook objects to the library.\nSimulate user operations: Search for books by title/author, Borrow books, Display all books.\n22",
+      "Chap2 Inheritance\nExercise 3 - Point2D and Point3D\n23\nHình: Point2D\n-x:float = 0.0f\n-y:float = 0.0f\n+Point2D(x:float,y:float)\n+Point2D()\n+getX():float\n+setX(x: float): void\n+getY():float\n+setY(y:float) :void\n+setXY(x:float,y:float) :void\n+getXY():float[2]\n+toString():String\nextends\nArray of {x,y}\n\"(x,y)”\nPoint3D\n-z:float = 0.0f\n+Point3D(x: float,y:float,z:float)\n+Point3D()\n+getZ():float\n+setZ(z:flaot):void\n+setXYZ(x:float,y:flaot,z:float):void\n+getXYZ():float[3]\n+toString() :Stringe\nArray of {x,y,z}\nCan you write a program based on this class diagram?\nCONCLUSION\n05\n24",
+      "Chap2 Inheritance\nConclusion\nInheritance is a fundamental concept of OOP, enabling the creation of new classes by reusing and extending existing ones.  \nThe primary benefit of inheritance lies in code reuse and the establishment of hierarchical relationships between classes.  \nMethod overriding and dynamic binding1 are key mechanisms in inheritance, supporting polymorphism and enhancing flexibility in design.\n25\n1Introduced in Chap 3 - Polymorphism\nEXTENSION: COMPOSITION\n06\n26",
+      "Chap2 Inheritance\nOOP Composition\n27\nComplete this code: https://www.programiz.com/online-compiler/03auquyMRJCj0\nGhi chú: A class called Author (as shown in the class diagram) is designed to model a book's author. It contains:\nThree private instance variables: name (String), email (String), and gender (char of either 'm' or 'f');\nOne constructor to initialize the name, email and gender with the given values;\n(There is no default constructor for Author, as there are no defaults for name, email and gender.)\npublic getters/setters: getName(), getEmail(), setEmail(), and getGender();\n(There are no setters for name and gender, as these attributes cannot be changed.)\nA toString() method that returns \"Author[name=?,email=?,gender=?]\", e.g., \"Author[name=Tan Ah Teck,email=ahTeck@somewhere.com,gender=m]\".\nA class called Book is designed (as shown in the class diagram) to model a book written by one author. It contains:\nFour private instance variables: name (String), author (of the class Author you have just created, assume that a book has one and only one author), price (double), and qty (int);\npublic methods getName(), getAuthor(), getPrice(), setPrice(),",
+      "Chap2 Inheritance › OOP Composition\nand only one author), price (double), and qty (int);\npublic methods getName(), getAuthor(), getPrice(), setPrice(), getQty(), setQty().\nA toString() that returns \"Book[name=?,Author[name=?,email=?,gender=?],price=?,qty=?\".  You should reuse Author’s toString().\nWrite the Book class (which uses the Author class written earlier).",
+      "Chap2 Inheritance\nHands-on exercise\n28\nComplete this code: https://www.programiz.com/online-compiler/74XUfgm8cwc0G\nHình: Book Author\n-name : String -name: String\n-authors:Author[] -email:String\n-price:double\n-qty:int = 9\n+Book(name : String, authors:Author[],\n+Book(name : authors:Author[],\nprice:double,qty:int)\n+getName()\n+getAuthors():Author[]\n+getPrice() :double\n+setPrice(price: double) :void of\n+getQty():int\n+setQty(qty:int):void “\n+toString() :String\n+getAuthorNames() : Stringe ee -\\acuthonNanel\n“Book[name=n, authors={Author [nam\n},price=p,\nGhi chú: In the earlier exercise, a book is written by one and only one author. In reality, a book can be written by one or more author. Modify the Book class to support one or more authors by changing the instance variable authors to an Author array.\nNotes:\nThe constructors take an array of Author (i.e., Author[]), instead of an Author instance. In this design, once a Book instance is constructor, you cannot add or remove author.\nThe toString() method shall return",
+      "Chap2 Inheritance › Hands-on exercise\ninstead of an Author instance. In this design, once a Book instance is constructor, you cannot add or remove author.\nThe toString() method shall return \"Book[name=?,authors={Author[name=?,email=?,gender=?],......},price=?,qty=?]\".\nYou are required to:\nWrite the code for the Book class. You shall re-use the Author class written earlier.",
+      "Chap2 Inheritance\nThank you for your attention!\nhttps://www.cse.hcmut.edu.vn"
+    ]
+  },
+  "reference": {
+    "coverage": "complete",
+    "chunk_ids": [
+      "9cfe1121-e768-42bc-b9d5-74e47876e3c6",
+      "78052ed0-e309-4ce1-ba22-b7500a622b6b",
+      "e85dfc06-b027-4a9a-818f-f08bcabd3526",
+      "0890082a-ca14-4fd2-997b-1bd78af9efeb",
+      "359c4bca-5de0-4466-9337-6a04d1b00028",
+      "9622640e-9bce-4027-bb65-d064ed5a078e",
+      "49326e07-211f-468c-b2cf-eceb225816dd",
+      "1632c1bb-da4e-47f1-a1b6-306b973884f8",
+      "746700cc-b0fb-4182-8df7-db3390d6954c",
+      "3dea45e3-c2fe-4db6-94c5-640ce9f5add9",
+      "f16c7d08-005f-45da-8b46-19909acb002d",
+      "2c4f82f8-a6f3-45ac-b3bf-2c844a58b817",
+      "7b7495a0-934f-48db-bb0d-cfa3e500aa50",
+      "bfddc65e-3b05-4687-afc2-fb526aa7ea17",
+      "3e7fb895-a193-45dd-a454-528429ee4525",
+      "b77f3284-0379-4651-9f37-5ad86d2e090d",
+      "a6412e18-1465-4eca-9ac6-58b35b7378ab",
+      "0629ae8b-995a-4584-9b24-7b79808bb644"
+    ],
+    "total_chunks": 18
+  },
+  "claim_citations": [
+    {
+      "claim": "Tính kế thừa là một cơ chế dùng để tạo ra một lớp mới (được gọi là lớp dẫn xuất hoặc lớp con) từ một lớp đã có sẵn (được gọi là lớp cơ sở hoặc lớp cha) nhằm mục đích tái sử dụng và mở rộng các tính năng của nó.",
+      "source_id": "S3",
+      "start": 69,
+      "end": 279,
+      "marker_start": 280,
+      "marker_end": 284,
+      "locator": "{\"spans\": [{\"slide_index\": 5, \"slide_title\": \"What is Inheritance?\"}, {\"slide_index\": 6, \"slide_title\": \"Why is Inheritance important?\"}]}",
+      "chunk_id": "e85dfc06-b027-4a9a-818f-f08bcabd3526",
+      "chunk_content": "Chap2 Inheritance\nWhat is Inheritance?\nA mechanism for creating a new class (called a derived class or child class) from an existing class (called a base class or parent class) to reuse and extend its functionality.\n5\nWhy is Inheritance important?\nCode Reusability: Reuse of common logic from base classes ⇒ codebase more efficient and maintainable.\nExtensibility: New features can be added by extending the base class ⇒ easy updates without affecting existing code.\nPolymorphism: Introduced in Chap 3 later.\nHierarchical Organization: Classes can be organized in a logical structure, representing real-world relationships.\n6",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "Các lợi ích cốt lõi của tính kế thừa bao gồm:",
+      "source_id": "S3",
+      "start": 287,
+      "end": 332,
+      "marker_start": 333,
+      "marker_end": 337,
+      "locator": "{\"spans\": [{\"slide_index\": 5, \"slide_title\": \"What is Inheritance?\"}, {\"slide_index\": 6, \"slide_title\": \"Why is Inheritance important?\"}]}",
+      "chunk_id": "e85dfc06-b027-4a9a-818f-f08bcabd3526",
+      "chunk_content": "Chap2 Inheritance\nWhat is Inheritance?\nA mechanism for creating a new class (called a derived class or child class) from an existing class (called a base class or parent class) to reuse and extend its functionality.\n5\nWhy is Inheritance important?\nCode Reusability: Reuse of common logic from base classes ⇒ codebase more efficient and maintainable.\nExtensibility: New features can be added by extending the base class ⇒ easy updates without affecting existing code.\nPolymorphism: Introduced in Chap 3 later.\nHierarchical Organization: Classes can be organized in a logical structure, representing real-world relationships.\n6",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "Tái sử dụng mã (Code Reusability): Giúp tái sử dụng các logic chung từ lớp cơ sở, từ đó làm cho mã nguồn hiệu quả hơn và dễ bảo trì hơn.",
+      "source_id": "S3",
+      "start": 342,
+      "end": 478,
+      "marker_start": 479,
+      "marker_end": 483,
+      "locator": "{\"spans\": [{\"slide_index\": 5, \"slide_title\": \"What is Inheritance?\"}, {\"slide_index\": 6, \"slide_title\": \"Why is Inheritance important?\"}]}",
+      "chunk_id": "e85dfc06-b027-4a9a-818f-f08bcabd3526",
+      "chunk_content": "Chap2 Inheritance\nWhat is Inheritance?\nA mechanism for creating a new class (called a derived class or child class) from an existing class (called a base class or parent class) to reuse and extend its functionality.\n5\nWhy is Inheritance important?\nCode Reusability: Reuse of common logic from base classes ⇒ codebase more efficient and maintainable.\nExtensibility: New features can be added by extending the base class ⇒ easy updates without affecting existing code.\nPolymorphism: Introduced in Chap 3 later.\nHierarchical Organization: Classes can be organized in a logical structure, representing real-world relationships.\n6",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "Khả năng mở rộng (Extensibility): Cho phép bổ sung các tính năng mới bằng cách mở rộng từ lớp cơ sở, giúp dễ dàng cập nhật mà không làm ảnh hưởng đến mã nguồn hiện có.",
+      "source_id": "S3",
+      "start": 488,
+      "end": 655,
+      "marker_start": 656,
+      "marker_end": 660,
+      "locator": "{\"spans\": [{\"slide_index\": 5, \"slide_title\": \"What is Inheritance?\"}, {\"slide_index\": 6, \"slide_title\": \"Why is Inheritance important?\"}]}",
+      "chunk_id": "e85dfc06-b027-4a9a-818f-f08bcabd3526",
+      "chunk_content": "Chap2 Inheritance\nWhat is Inheritance?\nA mechanism for creating a new class (called a derived class or child class) from an existing class (called a base class or parent class) to reuse and extend its functionality.\n5\nWhy is Inheritance important?\nCode Reusability: Reuse of common logic from base classes ⇒ codebase more efficient and maintainable.\nExtensibility: New features can be added by extending the base class ⇒ easy updates without affecting existing code.\nPolymorphism: Introduced in Chap 3 later.\nHierarchical Organization: Classes can be organized in a logical structure, representing real-world relationships.\n6",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "Tổ chức theo phân cấp (Hierarchical Organization): Giúp tổ chức các lớp theo một cấu trúc logic, đại diện cho các mối quan hệ trong thế giới thực.",
+      "source_id": "S3",
+      "start": 665,
+      "end": 811,
+      "marker_start": 812,
+      "marker_end": 816,
+      "locator": "{\"spans\": [{\"slide_index\": 5, \"slide_title\": \"What is Inheritance?\"}, {\"slide_index\": 6, \"slide_title\": \"Why is Inheritance important?\"}]}",
+      "chunk_id": "e85dfc06-b027-4a9a-818f-f08bcabd3526",
+      "chunk_content": "Chap2 Inheritance\nWhat is Inheritance?\nA mechanism for creating a new class (called a derived class or child class) from an existing class (called a base class or parent class) to reuse and extend its functionality.\n5\nWhy is Inheritance important?\nCode Reusability: Reuse of common logic from base classes ⇒ codebase more efficient and maintainable.\nExtensibility: New features can be added by extending the base class ⇒ easy updates without affecting existing code.\nPolymorphism: Introduced in Chap 3 later.\nHierarchical Organization: Classes can be organized in a logical structure, representing real-world relationships.\n6",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "Lớp con (subclass) kế thừa tất cả các thành phần (members) của lớp cha (superclass).",
+      "source_id": "S7",
+      "start": 819,
+      "end": 903,
+      "marker_start": 904,
+      "marker_end": 908,
+      "locator": "{\"spans\": [{\"slide_index\": 13, \"slide_title\": \"Subclass inherits all members from Superclass\"}, {\"slide_index\": 14, \"slide_title\": \"Subclass inherits all members from Superclass\"}]}",
+      "chunk_id": "49326e07-211f-468c-b2cf-eceb225816dd",
+      "chunk_content": "Chap2 Inheritance\nSubclass inherits all members from Superclass\nWhen a subclass inherits from a superclass:\nAll members of the superclass, whether public or private, are technically inherited.\nHowever, accessibility depends on the access specifier:\nPublic and protected members can be directly accessed in the subclass.\nPrivate members are inherited but not accessible directly; they are accessible through public or protected getters and setters in the superclass.\n13\nSubclass inherits all members from Superclass\n14\nHình: MODE OF INHERITANCE\nee Public\nPublic Public Protected Private\nProtected Protected Protected Private\nPrivate Not Accessible NotAccessible Not Accessible\n(Hidden) (Hidden) (Hidden)",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "Về khả năng truy cập:",
+      "source_id": "S7",
+      "start": 911,
+      "end": 932,
+      "marker_start": 933,
+      "marker_end": 937,
+      "locator": "{\"spans\": [{\"slide_index\": 13, \"slide_title\": \"Subclass inherits all members from Superclass\"}, {\"slide_index\": 14, \"slide_title\": \"Subclass inherits all members from Superclass\"}]}",
+      "chunk_id": "49326e07-211f-468c-b2cf-eceb225816dd",
+      "chunk_content": "Chap2 Inheritance\nSubclass inherits all members from Superclass\nWhen a subclass inherits from a superclass:\nAll members of the superclass, whether public or private, are technically inherited.\nHowever, accessibility depends on the access specifier:\nPublic and protected members can be directly accessed in the subclass.\nPrivate members are inherited but not accessible directly; they are accessible through public or protected getters and setters in the superclass.\n13\nSubclass inherits all members from Superclass\n14\nHình: MODE OF INHERITANCE\nee Public\nPublic Public Protected Private\nProtected Protected Protected Private\nPrivate Not Accessible NotAccessible Not Accessible\n(Hidden) (Hidden) (Hidden)",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "Các thành phần public và protected có thể được truy cập trực tiếp trong lớp con.",
+      "source_id": "S7",
+      "start": 942,
+      "end": 1022,
+      "marker_start": 1023,
+      "marker_end": 1027,
+      "locator": "{\"spans\": [{\"slide_index\": 13, \"slide_title\": \"Subclass inherits all members from Superclass\"}, {\"slide_index\": 14, \"slide_title\": \"Subclass inherits all members from Superclass\"}]}",
+      "chunk_id": "49326e07-211f-468c-b2cf-eceb225816dd",
+      "chunk_content": "Chap2 Inheritance\nSubclass inherits all members from Superclass\nWhen a subclass inherits from a superclass:\nAll members of the superclass, whether public or private, are technically inherited.\nHowever, accessibility depends on the access specifier:\nPublic and protected members can be directly accessed in the subclass.\nPrivate members are inherited but not accessible directly; they are accessible through public or protected getters and setters in the superclass.\n13\nSubclass inherits all members from Superclass\n14\nHình: MODE OF INHERITANCE\nee Public\nPublic Public Protected Private\nProtected Protected Protected Private\nPrivate Not Accessible NotAccessible Not Accessible\n(Hidden) (Hidden) (Hidden)",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "Các thành phần private được kế thừa nhưng không thể truy cập trực tiếp; chúng chỉ có thể được truy cập thông qua các phương thức getter và setter có quyền public hoặc protected nằm ở lớp cha.",
+      "source_id": "S7",
+      "start": 1032,
+      "end": 1223,
+      "marker_start": 1224,
+      "marker_end": 1228,
+      "locator": "{\"spans\": [{\"slide_index\": 13, \"slide_title\": \"Subclass inherits all members from Superclass\"}, {\"slide_index\": 14, \"slide_title\": \"Subclass inherits all members from Superclass\"}]}",
+      "chunk_id": "49326e07-211f-468c-b2cf-eceb225816dd",
+      "chunk_content": "Chap2 Inheritance\nSubclass inherits all members from Superclass\nWhen a subclass inherits from a superclass:\nAll members of the superclass, whether public or private, are technically inherited.\nHowever, accessibility depends on the access specifier:\nPublic and protected members can be directly accessed in the subclass.\nPrivate members are inherited but not accessible directly; they are accessible through public or protected getters and setters in the superclass.\n13\nSubclass inherits all members from Superclass\n14\nHình: MODE OF INHERITANCE\nee Public\nPublic Public Protected Private\nProtected Protected Protected Private\nPrivate Not Accessible NotAccessible Not Accessible\n(Hidden) (Hidden) (Hidden)",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "Lớp cơ sở (Base class / Parent / Superclass): Là lớp mà các thuộc tính (properties) và phương thức (methods) của nó được kế thừa bởi một lớp khác.",
+      "source_id": "S4",
+      "start": 1309,
+      "end": 1455,
+      "marker_start": 1456,
+      "marker_end": 1460,
+      "locator": "{\"spans\": [{\"slide_index\": 7, \"slide_title\": \"KEY CONCEPTS OF INHERITANCE\"}, {\"slide_index\": 8, \"slide_title\": \"Base class & Derived class\"}]}",
+      "chunk_id": "0890082a-ca14-4fd2-997b-1bd78af9efeb",
+      "chunk_content": "Chap2 Inheritance\nKEY CONCEPTS OF INHERITANCE\n02\n7\nBase class & Derived class\n8\nBase class (Parent/Superclass): The class whose properties (attributes) and methods (functions) are inherited by another class.\nExample: Animal is a base class.\nDerived class (Child/Subclass): The class inheriting from the base class. It can use or override the members of the base class and add its own ⇒ “is-a” relationship\nExample: Dog inherits from Animal ⇒ Dog “is-a” Animal.",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "Lớp dẫn xuất (Derived class / Child / Subclass): Là lớp thực hiện việc kế thừa từ lớp cơ sở.",
+      "source_id": "S4",
+      "start": 1463,
+      "end": 1555,
+      "marker_start": 1556,
+      "marker_end": 1560,
+      "locator": "{\"spans\": [{\"slide_index\": 7, \"slide_title\": \"KEY CONCEPTS OF INHERITANCE\"}, {\"slide_index\": 8, \"slide_title\": \"Base class & Derived class\"}]}",
+      "chunk_id": "0890082a-ca14-4fd2-997b-1bd78af9efeb",
+      "chunk_content": "Chap2 Inheritance\nKEY CONCEPTS OF INHERITANCE\n02\n7\nBase class & Derived class\n8\nBase class (Parent/Superclass): The class whose properties (attributes) and methods (functions) are inherited by another class.\nExample: Animal is a base class.\nDerived class (Child/Subclass): The class inheriting from the base class. It can use or override the members of the base class and add its own ⇒ “is-a” relationship\nExample: Dog inherits from Animal ⇒ Dog “is-a” Animal.",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "Vai trò của lớp dẫn xuất là có thể sử dụng hoặc ghi đẻ các thành phần của lớp cơ sở và bổ sung thêm các thành phần của riêng nó, tạo nên mối quan hệ \"is-a\" (là một).",
+      "source_id": "S4",
+      "start": 1563,
+      "end": 1728,
+      "marker_start": 1729,
+      "marker_end": 1733,
+      "locator": "{\"spans\": [{\"slide_index\": 7, \"slide_title\": \"KEY CONCEPTS OF INHERITANCE\"}, {\"slide_index\": 8, \"slide_title\": \"Base class & Derived class\"}]}",
+      "chunk_id": "0890082a-ca14-4fd2-997b-1bd78af9efeb",
+      "chunk_content": "Chap2 Inheritance\nKEY CONCEPTS OF INHERITANCE\n02\n7\nBase class & Derived class\n8\nBase class (Parent/Superclass): The class whose properties (attributes) and methods (functions) are inherited by another class.\nExample: Animal is a base class.\nDerived class (Child/Subclass): The class inheriting from the base class. It can use or override the members of the base class and add its own ⇒ “is-a” relationship\nExample: Dog inherits from Animal ⇒ Dog “is-a” Animal.",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "Ví dụ, Animal là lớp cơ sở, Dog kế thừa từ Animal tạo thành mối quan hệ Dog \"is-a\" Animal.",
+      "source_id": "S4",
+      "start": 1736,
+      "end": 1826,
+      "marker_start": 1827,
+      "marker_end": 1831,
+      "locator": "{\"spans\": [{\"slide_index\": 7, \"slide_title\": \"KEY CONCEPTS OF INHERITANCE\"}, {\"slide_index\": 8, \"slide_title\": \"Base class & Derived class\"}]}",
+      "chunk_id": "0890082a-ca14-4fd2-997b-1bd78af9efeb",
+      "chunk_content": "Chap2 Inheritance\nKEY CONCEPTS OF INHERITANCE\n02\n7\nBase class & Derived class\n8\nBase class (Parent/Superclass): The class whose properties (attributes) and methods (functions) are inherited by another class.\nExample: Animal is a base class.\nDerived class (Child/Subclass): The class inheriting from the base class. It can use or override the members of the base class and add its own ⇒ “is-a” relationship\nExample: Dog inherits from Animal ⇒ Dog “is-a” Animal.",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "Đơn kế thừa (Single Inheritance): Một lớp dẫn xuất chỉ kế thừa từ một lớp cơ sở duy nhất.",
+      "source_id": "S5",
+      "start": 1922,
+      "end": 2011,
+      "marker_start": 2012,
+      "marker_end": 2016,
+      "locator": "{\"spans\": [{\"slide_index\": 9, \"slide_title\": \"Method overriding\"}, {\"slide_index\": 10, \"slide_title\": \"Types of Inheritance\"}]}",
+      "chunk_id": "359c4bca-5de0-4466-9337-6a04d1b00028",
+      "chunk_content": "Chap2 Inheritance\nMethod overriding\nA derived class can redefine (override) a method from the base class to provide specific functionality.\nThe method in the base class must have the same name, return type, and parameters as the overridden method.\n9\nConstructors: When an object of a derived class is created, the base class constructor is called first, followed by the derived class constructor.\nDestructors: When an object is destroyed, the derived class destructor is called first, followed by the base class destructor.\nIntroduced more detailed in Chap 3 - Polymorphism\nTypes of Inheritance\nSingle Inheritance: A derived class inherits from one base class.\nMultiple Inheritance: A class inherits from more than one base class. (Supported in C++ but not in Java)\nMultilevel Inheritance: A class inherits from a derived class, forming a chain.\nHierarchical Inheritance: Multiple derived classes inherit from one base class.\nHybrid Inheritance: A combination of two or more types of inheritance.\n10",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "Đa kế thừa (Multiple Inheritance): Một lớp kế thừa từ nhiều hơn một lớp cơ sở (được hỗ trợ trong C++ nhưng không được hỗ trợ trong Java).",
+      "source_id": "S5",
+      "start": 2019,
+      "end": 2156,
+      "marker_start": 2157,
+      "marker_end": 2161,
+      "locator": "{\"spans\": [{\"slide_index\": 9, \"slide_title\": \"Method overriding\"}, {\"slide_index\": 10, \"slide_title\": \"Types of Inheritance\"}]}",
+      "chunk_id": "359c4bca-5de0-4466-9337-6a04d1b00028",
+      "chunk_content": "Chap2 Inheritance\nMethod overriding\nA derived class can redefine (override) a method from the base class to provide specific functionality.\nThe method in the base class must have the same name, return type, and parameters as the overridden method.\n9\nConstructors: When an object of a derived class is created, the base class constructor is called first, followed by the derived class constructor.\nDestructors: When an object is destroyed, the derived class destructor is called first, followed by the base class destructor.\nIntroduced more detailed in Chap 3 - Polymorphism\nTypes of Inheritance\nSingle Inheritance: A derived class inherits from one base class.\nMultiple Inheritance: A class inherits from more than one base class. (Supported in C++ but not in Java)\nMultilevel Inheritance: A class inherits from a derived class, forming a chain.\nHierarchical Inheritance: Multiple derived classes inherit from one base class.\nHybrid Inheritance: A combination of two or more types of inheritance.\n10",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "Kế thừa đa tầng (Multilevel Inheritance): Một lớp kế thừa từ một lớp dẫn xuất, tạo thành một chuỗi kế thừa.",
+      "source_id": "S5",
+      "start": 2164,
+      "end": 2271,
+      "marker_start": 2272,
+      "marker_end": 2276,
+      "locator": "{\"spans\": [{\"slide_index\": 9, \"slide_title\": \"Method overriding\"}, {\"slide_index\": 10, \"slide_title\": \"Types of Inheritance\"}]}",
+      "chunk_id": "359c4bca-5de0-4466-9337-6a04d1b00028",
+      "chunk_content": "Chap2 Inheritance\nMethod overriding\nA derived class can redefine (override) a method from the base class to provide specific functionality.\nThe method in the base class must have the same name, return type, and parameters as the overridden method.\n9\nConstructors: When an object of a derived class is created, the base class constructor is called first, followed by the derived class constructor.\nDestructors: When an object is destroyed, the derived class destructor is called first, followed by the base class destructor.\nIntroduced more detailed in Chap 3 - Polymorphism\nTypes of Inheritance\nSingle Inheritance: A derived class inherits from one base class.\nMultiple Inheritance: A class inherits from more than one base class. (Supported in C++ but not in Java)\nMultilevel Inheritance: A class inherits from a derived class, forming a chain.\nHierarchical Inheritance: Multiple derived classes inherit from one base class.\nHybrid Inheritance: A combination of two or more types of inheritance.\n10",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "Kế thừa phân cấp (Hierarchical Inheritance): Nhiều lớp dẫn xuất cùng kế thừa từ một lớp cơ sở.",
+      "source_id": "S5",
+      "start": 2279,
+      "end": 2373,
+      "marker_start": 2374,
+      "marker_end": 2378,
+      "locator": "{\"spans\": [{\"slide_index\": 9, \"slide_title\": \"Method overriding\"}, {\"slide_index\": 10, \"slide_title\": \"Types of Inheritance\"}]}",
+      "chunk_id": "359c4bca-5de0-4466-9337-6a04d1b00028",
+      "chunk_content": "Chap2 Inheritance\nMethod overriding\nA derived class can redefine (override) a method from the base class to provide specific functionality.\nThe method in the base class must have the same name, return type, and parameters as the overridden method.\n9\nConstructors: When an object of a derived class is created, the base class constructor is called first, followed by the derived class constructor.\nDestructors: When an object is destroyed, the derived class destructor is called first, followed by the base class destructor.\nIntroduced more detailed in Chap 3 - Polymorphism\nTypes of Inheritance\nSingle Inheritance: A derived class inherits from one base class.\nMultiple Inheritance: A class inherits from more than one base class. (Supported in C++ but not in Java)\nMultilevel Inheritance: A class inherits from a derived class, forming a chain.\nHierarchical Inheritance: Multiple derived classes inherit from one base class.\nHybrid Inheritance: A combination of two or more types of inheritance.\n10",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "Kế thừa hỗn hợp (Hybrid Inheritance): Sự kết hợp của từ hai loại kế thừa trở lên.",
+      "source_id": "S5",
+      "start": 2381,
+      "end": 2462,
+      "marker_start": 2463,
+      "marker_end": 2467,
+      "locator": "{\"spans\": [{\"slide_index\": 9, \"slide_title\": \"Method overriding\"}, {\"slide_index\": 10, \"slide_title\": \"Types of Inheritance\"}]}",
+      "chunk_id": "359c4bca-5de0-4466-9337-6a04d1b00028",
+      "chunk_content": "Chap2 Inheritance\nMethod overriding\nA derived class can redefine (override) a method from the base class to provide specific functionality.\nThe method in the base class must have the same name, return type, and parameters as the overridden method.\n9\nConstructors: When an object of a derived class is created, the base class constructor is called first, followed by the derived class constructor.\nDestructors: When an object is destroyed, the derived class destructor is called first, followed by the base class destructor.\nIntroduced more detailed in Chap 3 - Polymorphism\nTypes of Inheritance\nSingle Inheritance: A derived class inherits from one base class.\nMultiple Inheritance: A class inherits from more than one base class. (Supported in C++ but not in Java)\nMultilevel Inheritance: A class inherits from a derived class, forming a chain.\nHierarchical Inheritance: Multiple derived classes inherit from one base class.\nHybrid Inheritance: A combination of two or more types of inheritance.\n10",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "Phương thức ghi đè (Method overriding): Một lớp dẫn xuất có thể định nghĩa lại (ghi đè) một phương thức từ lớp cơ sở để cung cấp một chức năng cụ thể.",
+      "source_id": "S5",
+      "start": 2572,
+      "end": 2722,
+      "marker_start": 2723,
+      "marker_end": 2727,
+      "locator": "{\"spans\": [{\"slide_index\": 9, \"slide_title\": \"Method overriding\"}, {\"slide_index\": 10, \"slide_title\": \"Types of Inheritance\"}]}",
+      "chunk_id": "359c4bca-5de0-4466-9337-6a04d1b00028",
+      "chunk_content": "Chap2 Inheritance\nMethod overriding\nA derived class can redefine (override) a method from the base class to provide specific functionality.\nThe method in the base class must have the same name, return type, and parameters as the overridden method.\n9\nConstructors: When an object of a derived class is created, the base class constructor is called first, followed by the derived class constructor.\nDestructors: When an object is destroyed, the derived class destructor is called first, followed by the base class destructor.\nIntroduced more detailed in Chap 3 - Polymorphism\nTypes of Inheritance\nSingle Inheritance: A derived class inherits from one base class.\nMultiple Inheritance: A class inherits from more than one base class. (Supported in C++ but not in Java)\nMultilevel Inheritance: A class inherits from a derived class, forming a chain.\nHierarchical Inheritance: Multiple derived classes inherit from one base class.\nHybrid Inheritance: A combination of two or more types of inheritance.\n10",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "Yêu cầu của phương thức ghi đè: Phương thức ở lớp cơ sở phải có tên, kiểu trả về và các tham số giống hệt với phương thức được ghi đè.",
+      "source_id": "S5",
+      "start": 2730,
+      "end": 2864,
+      "marker_start": 2865,
+      "marker_end": 2869,
+      "locator": "{\"spans\": [{\"slide_index\": 9, \"slide_title\": \"Method overriding\"}, {\"slide_index\": 10, \"slide_title\": \"Types of Inheritance\"}]}",
+      "chunk_id": "359c4bca-5de0-4466-9337-6a04d1b00028",
+      "chunk_content": "Chap2 Inheritance\nMethod overriding\nA derived class can redefine (override) a method from the base class to provide specific functionality.\nThe method in the base class must have the same name, return type, and parameters as the overridden method.\n9\nConstructors: When an object of a derived class is created, the base class constructor is called first, followed by the derived class constructor.\nDestructors: When an object is destroyed, the derived class destructor is called first, followed by the base class destructor.\nIntroduced more detailed in Chap 3 - Polymorphism\nTypes of Inheritance\nSingle Inheritance: A derived class inherits from one base class.\nMultiple Inheritance: A class inherits from more than one base class. (Supported in C++ but not in Java)\nMultilevel Inheritance: A class inherits from a derived class, forming a chain.\nHierarchical Inheritance: Multiple derived classes inherit from one base class.\nHybrid Inheritance: A combination of two or more types of inheritance.\n10",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "Trình tự gọi constructor: Khi một đối tượng của lớp dẫn xuất được tạo ra, constructor của lớp cơ sở sẽ được gọi trước, sau đó mới đến constructor của lớp dẫn xuất.",
+      "source_id": "S5",
+      "start": 2872,
+      "end": 3035,
+      "marker_start": 3036,
+      "marker_end": 3040,
+      "locator": "{\"spans\": [{\"slide_index\": 9, \"slide_title\": \"Method overriding\"}, {\"slide_index\": 10, \"slide_title\": \"Types of Inheritance\"}]}",
+      "chunk_id": "359c4bca-5de0-4466-9337-6a04d1b00028",
+      "chunk_content": "Chap2 Inheritance\nMethod overriding\nA derived class can redefine (override) a method from the base class to provide specific functionality.\nThe method in the base class must have the same name, return type, and parameters as the overridden method.\n9\nConstructors: When an object of a derived class is created, the base class constructor is called first, followed by the derived class constructor.\nDestructors: When an object is destroyed, the derived class destructor is called first, followed by the base class destructor.\nIntroduced more detailed in Chap 3 - Polymorphism\nTypes of Inheritance\nSingle Inheritance: A derived class inherits from one base class.\nMultiple Inheritance: A class inherits from more than one base class. (Supported in C++ but not in Java)\nMultilevel Inheritance: A class inherits from a derived class, forming a chain.\nHierarchical Inheritance: Multiple derived classes inherit from one base class.\nHybrid Inheritance: A combination of two or more types of inheritance.\n10",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "Trình tự gọi destructor: Khi một đối tượng bị hủy, destructor của lớp dẫn xuất sẽ được gọi trước, sau đó mới đến destructor của lớp cơ sở.",
+      "source_id": "S5",
+      "start": 3043,
+      "end": 3181,
+      "marker_start": 3182,
+      "marker_end": 3186,
+      "locator": "{\"spans\": [{\"slide_index\": 9, \"slide_title\": \"Method overriding\"}, {\"slide_index\": 10, \"slide_title\": \"Types of Inheritance\"}]}",
+      "chunk_id": "359c4bca-5de0-4466-9337-6a04d1b00028",
+      "chunk_content": "Chap2 Inheritance\nMethod overriding\nA derived class can redefine (override) a method from the base class to provide specific functionality.\nThe method in the base class must have the same name, return type, and parameters as the overridden method.\n9\nConstructors: When an object of a derived class is created, the base class constructor is called first, followed by the derived class constructor.\nDestructors: When an object is destroyed, the derived class destructor is called first, followed by the base class destructor.\nIntroduced more detailed in Chap 3 - Polymorphism\nTypes of Inheritance\nSingle Inheritance: A derived class inherits from one base class.\nMultiple Inheritance: A class inherits from more than one base class. (Supported in C++ but not in Java)\nMultilevel Inheritance: A class inherits from a derived class, forming a chain.\nHierarchical Inheritance: Multiple derived classes inherit from one base class.\nHybrid Inheritance: A combination of two or more types of inheritance.\n10",
+      "resolution": "resolved"
+    }
+  ]
+}

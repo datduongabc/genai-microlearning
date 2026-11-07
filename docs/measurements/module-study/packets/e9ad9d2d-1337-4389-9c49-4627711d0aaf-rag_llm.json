@@ -1,0 +1,359 @@
+{
+  "pair_id": "e9ad9d2d-1337-4389-9c49-4627711d0aaf",
+  "group": "rag_llm",
+  "generator_model": "gemini-fast",
+  "generation_models": [
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    },
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    },
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    },
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    },
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    },
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    },
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    },
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    },
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    },
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    },
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    },
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    },
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    },
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    }
+  ],
+  "packet": {
+    "anon_id": "",
+    "topic": "Giới thiệu Lập trình hướng đối tượng (Introduction to OOP)",
+    "bloom_level": "understand",
+    "learning_objective": "Sau khi hoàn thành module, người học có thể giải thích các khái niệm cơ bản và bốn nguyên tắc cốt lõi của lập trình hướng đối tượng.",
+    "sub_objectives": [
+      "Mô tả định nghĩa về đối tượng, dữ liệu và hành vi trong lập trình hướng đối tượng",
+      "Giải thích bốn nguyên tắc cốt lõi gồm đóng gói, kế thừa, đa hình và trừu tượng hóa",
+      "Phân biệt các mức độ kiểm soát truy cập trong tính đóng gói"
+    ],
+    "content_markdown": "# Mô tả định nghĩa về đối tượng, dữ liệu và hành vi trong lập trình hướng đối tượng\n- Lập trình hướng đối tượng (Object-oriented programming - OOP) là một mô hình lập trình tổ chức thiết kế phần mềm xung quanh các đối tượng, đại diện cho các thực thể trong thế giới thực hoặc các khái niệm trừu tượng.     \n- Mỗi đối tượng bao gồm dữ liệu (thuộc tính hoặc tính chất) và hành vi (phương thức hoặc hàm).     \n- Mô hình này giúp tạo ra các hệ thống mang tính mô đun, có khả năng mở rộng, tái sử dụng và dễ hiểu hơn bằng cách mô phỏng các thực thể trong thế giới thực.     \n\n# Giải thích bốn nguyên tắc cốt lõi gồm đóng gói, kế thừa, đa hình và trừu tượng hóa\n- Tính đóng gói (Encapsulation): Gói gọn dữ liệu (thuộc tính) và các phương thức (hành vi) vào một đơn vị duy nhất (lớp) và hạn chế quyền truy cập để bảo vệ tính toàn vẹn của dữ liệu.     \n- Tính kế thừa (Inheritance): Cho phép một lớp kế thừa các thuộc tính và phương thức từ lớp khác, thúc đẩy việc tái sử dụng mã nguồn và mối quan hệ phân cấp.     \n- Tính đa hình (Polymorphism): Cho phép các đối tượng nhận nhiều hình thức khác nhau, ví dụ một phương thức hoặc lớp duy nhất có thể đại diện cho các kiểu dữ liệu hoặc hành vi cơ bản khác nhau, giúp đơn giản hóa mã nguồn và tạo tính linh hoạt.     \n- Tính trừu tượng hóa (Abstraction): Giấu đi các chi tiết thực thi và chỉ phơi bày các tính năng thiết yếu, giúp đơn giản hóa các hệ thống phức tạp cho người dùng.     \n\n# Phân biệt các mức độ kiểm soát truy cập trong tính đóng gói\n- Các bộ chỉ định truy cập (access specifiers) được sử dụng để kiểm soát khả năng hiển thị của các thành viên trong lớp.     \n- private: Chỉ có thể truy cập được bên trong lớp định nghĩa nó.     \n- default (package-private): Chỉ có thể truy cập được trong cùng một gói (package).     \n- protected: Có thể truy cập được trong cùng một gói và bởi các lớp con (thậm chí ở các gói khác).     \n- public: Có thể truy cập được từ bất kỳ đâu (bất kỳ lớp nào, bất kỳ gói nào và bất kỳ lớp con nào).     ",
+    "slides": [
+      {
+        "title": "Tổng quan về Lập trình Hướng Đối tượng",
+        "bullets": [
+          "Mô hình thiết kế phần mềm xoay quanh đối tượng (thực thể thực tế hoặc trừu tượng)",
+          "Đối tượng bao gồm dữ liệu (thuộc tính) và hành vi (phương thức)",
+          "Giúp tạo hệ thống mang tính mô đun, dễ mở rộng và tái sử dụng"
+        ]
+      },
+      {
+        "title": "Bốn Nguyên tắc Cốt lõi của OOP",
+        "bullets": [
+          "Tính đóng gói: Bảo vệ dữ liệu và gói gọn vào một đơn vị duy nhất",
+          "Tính kế thừa: Tái sử dụng mã nguồn qua mối quan hệ phân cấp",
+          "Tính đa hình và Trừu tượng hóa: Tăng tính linh hoạt và ẩn chi tiết phức tạp"
+        ]
+      },
+      {
+        "title": "Chi tiết Đóng gói và Mức độ Kiểm soát Truy cập",
+        "bullets": [
+          "Sử dụng access specifiers để kiểm soát hiển thị thành viên lớp",
+          "private và default: Giới hạn truy cập nội bộ lớp hoặc cùng gói",
+          "protected và public: Cho phép truy cập rộng hơn tới lớp con hoặc mọi nơi"
+        ]
+      }
+    ],
+    "examples": [
+      {
+        "context": "Khi thiết kế một phần mềm quản lý thư viện, lập trình viên tạo ra một đối tượng 'Cuốn sách' (Book) để đại diện cho một tài liệu thực tế. Đối tượng này chứa các dữ liệu (thuộc tính) như tiêu đề, tác giả, số trang và các hành vi (phương thức) như mượn sách, trả sách.",
+        "analysis": "Bối cảnh này minh họa trực tiếp định nghĩa về đối tượng trong lập trình hướng đối tượng (OOP), trong đó phần mềm được thiết kế xung quanh các thực thể. Mỗi đối tượng kết hợp chặt chẽ giữa dữ liệu (thuộc tính) và hành vi (phương thức), giúp mô phỏng chính xác thế giới thực và tạo ra hệ thống mang tính mô đun."
+      },
+      {
+        "context": "Trong một ứng dụng quản lý nhân sự, lớp 'NhanVien' khai báo các mức độ kiểm soát truy cập cho thông tin cá nhân: thuộc tính 'maNhanVien' dùng public để có thể xem từ bất kỳ đâu, 'luong' dùng private để chỉ lớp 'NhanVien' mới được truy cập trực tiếp nhằm bảo vệ dữ liệu tài chính, còn các phương thức xử lý nội bộ gói gọn trong tính đóng gói.",
+        "analysis": "Bối cảnh này thể hiện rõ việc phân biệt các mức độ kiểm soát truy cập trong tính đóng gói. Từ khóa private giới hạn phạm vi chỉ truy cập được bên trong lớp định nghĩa để bảo vệ tính toàn vẹn của dữ liệu lương, trong khi public cho phép khả năng hiển thị từ bất kỳ đâu, minh họa chính xác cơ chế access specifiers của OOP."
+      }
+    ],
+    "quiz": [
+      {
+        "stem": "Trong lập trình hướng đối tượng, khái niệm đối tượng được mô tả bao gồm những thành phần nào?",
+        "choices": [
+          "Chỉ bao gồm các thuộc tính lưu trữ giá trị dữ liệu riêng lẻ",
+          "Bao gồm cả dữ liệu biểu diễn thuộc tính và hành vi thực thi phương thức",
+          "Bao gồm phương thức chỉ dùng để in thông điệp ra màn hình giao diện",
+          "Chỉ bao gồm các hàm xử lý logic thuật toán độc lập không chứa dữ liệu"
+        ],
+        "correct_index": 1,
+        "explanation": "Đáp án đúng là phương án thứ hai vì theo tài liệu, mỗi đối tượng trong lập trình hướng đối tượng đều chứa cả dữ liệu (attributes/properties) và hành vi (methods/functions). Phương án đầu tiên sai vì bỏ qua thành phần hành vi. Phương án thứ ba sai vì thu hẹp phạm vi của hành vi chỉ là in thông điệp. Phương án cuối cùng sai vì tách rời hàm xử lý khỏi dữ liệu của đối tượng."
+      },
+      {
+        "stem": "Khi giải thích về bốn nguyên tắc cốt lõi của lập trình hướng đối tượng, phát biểu nào sau đây diễn giải chính xác về bản chất của nguyên tắc Đóng gói (Encapsulation)?",
+        "choices": [
+          "Nguyên tắc này ẩn đi các chi tiết cài đặt phức tạp bên trong và chỉ phơi bày các tính năng thiết yếu ra bên ngoài cho người sử dụng.",
+          "Nguyên tắc này gói gọn dữ liệu cùng phương thức vào một đơn vị và giới hạn quyền truy cập để bảo vệ tính toàn vẹn dữ liệu.",
+          "Nguyên tắc này cho phép một lớp nhận lại các thuộc tính và phương thức từ lớp khác nhằm thúc đẩy việc tái sử dụng mã nguồn.",
+          "Nguyên tắc này giúp các đối tượng thể hiện nhiều hình thái khác nhau thông qua việc kiểm soát tầm nhìn của thành viên."
+        ],
+        "correct_index": 1,
+        "explanation": "Đáp án đúng là phương án thứ hai vì theo tài liệu, đóng gói (Encapsulation) kết hợp dữ liệu và phương thức vào một đơn vị duy nhất (lớp) và hạn chế quyền truy cập trực tiếp nhằm bảo vệ tính toàn vẹn dữ liệu. Phương án thứ nhất mô tả tính trừu tượng hóa (Abstraction). Phương án thứ ba mô tả tính kế thừa (Inheritance). Phương án thứ tư nhầm lẫn giữa đa hình (Polymorphism) và kiểm soát truy cập."
+      },
+      {
+        "stem": "Theo nội dung về tính đóng gói, phát biểu nào sau đây diễn giải chính xác về các mức độ kiểm soát truy cập (access specifiers) của thành phần lớp?",
+        "choices": [
+          "Thành phần khai báo là protected chỉ cho phép truy cập bên trong chính class định nghĩa ra nó.",
+          "Thành phần khai báo là default cho phép bất kỳ lớp nào từ mọi package khác nhau đều có thể truy cập.",
+          "Thành phần khai báo là private cho phép các lớp khác nằm chung một package có thể truy cập trực tiếp.",
+          "Thành phần khai báo là protected cho phép truy cập trong cùng package và bởi các subclass ở package khác."
+        ],
+        "correct_index": 3,
+        "explanation": "Đáp án đúng là phương án thứ tư vì theo tài liệu, protected cung cấp khả năng truy cập trong cùng một package và bởi các subclass ngay cả khi nằm ở các package khác nhau. Phương án thứ nhất sai vì đó là đặc điểm của private. Phương án thứ hai sai vì default chỉ cho phép truy cập trong cùng package. Phương án thứ ba sai vì private chỉ cho phép truy cập duy nhất bên trong class định nghĩa nó."
+      }
+    ],
+    "practice": {
+      "stem": "Phát biểu nào sau đây diễn giải đúng nhất về bản chất của lập trình hướng đối tượng (OOP) dựa trên các khái niệm cơ bản?",
+      "choices": [
+        "Một mô hình lập trình tập trung vào các thủ tục xử lý tuần tự tách biệt hoàn toàn giữa dữ liệu và hàm.",
+        "Một mô hình tổ chức thiết kế xoay quanh ba nguyên tắc cốt lõi gồm đóng gói, kế thừa và đa hình.",
+        "Một mô hình lập trình xoay quanh các đối tượng chỉ chứa dữ liệu thuộc tính mà không chứa hành vi.",
+        "Một mô hình tổ chức thiết kế xoay quanh các đối tượng chứa dữ liệu và hành vi cùng bốn nguyên tắc cốt lõi."
+      ],
+      "correct_index": 3,
+      "explanation": "Đáp án đúng là phương án thứ tư vì theo tài liệu, OOP là mô hình xoay quanh các đối tượng chứa dữ liệu và hành vi cùng bốn nguyên tắc cốt lõi gồm đóng gói, kế thừa, đa hình và trừu tượng hóa. Phương án đầu tiên sai vì OOP không tách biệt dữ liệu và hàm mà gom chúng vào đối tượng. Phương án thứ hai sai vì bỏ sót nguyên tắc trừu tượng hóa. Phương án thứ ba sai vì đối tượng trong OOP chứa cả dữ liệu và hành vi phương thức."
+    },
+    "source_chunks": [
+      "Chap1 Encapsulation\nChapter 1: Object Oriented Programming Revision - Encapsulation\nTP.HCM, 03/01/2025\nAdvanced Programming\nCO2039\nCONTENT\n01\n04\n02\n05\n03\nINTRODUCTION TO OOP\nENCAPSULATION\nHOW ENCAPSULATION WORKS?\nBEST PRACTICES\nCONCLUSION\n2\n06\nEXTENSION: CLASS DIAGRAM",
+      "Chap1 Encapsulation\nINTRODUCTION TO OBJECT ORIENTED PROGRAMMING\n01\n3\nWhat is OOP?\nObject-oriented programming (OOP) is a programming paradigm that organizes software design around objects, which can represent real-world entities or abstract concepts. Each object contains data (attributes or properties) and behavior (methods or functions).\n4",
+      "Chap1 Encapsulation\nKey principles of OOP\nEncapsulation: Bundles data (attributes) and methods (behavior) into a single unit (class) and restricts access to protect data integrity.  Example: A Car object has private attribute speed and a public method getSpeed() to access it. => Protects data integrity by restricting direct access.\n5\nKey principles of OOP\nInheritance: Allows one class to inherit attributes and methods from another, promoting code reuse and hierarchical relationships.  Example: A Truck class can inherit from a Vehicle class. => Promotes code reuse.\n6",
+      "Chap1 Encapsulation\nKey principles of OOP\nPolymorphism: Allows objects to take on many forms, e.g., a single method or class to represent different underlying data types or behaviors.  Example: A draw() method behaves differently for Circle and Rectangle objects. =>Simplifies code and makes it flexible.\n7\nKey principles of OOP\nAbstraction: Hides implementation details and exposes only essential features, simplifying complex systems for the user.  Example: A user presses a car's \"start\" button without needing to understand the engine mechanics. =>Reduce complexity\n8",
+      "Chap1 Encapsulation\nWhy OOP?\nCreate systems that are modular, scalable, reusable, and easier to understand.  Think of a car in the real world. It has:     Attributes: color, brand, speed, fuel capacity.     Behaviors: start, stop, accelerate. Modular -> divides programs into independent, self-contained classes Scalable -> allows new functionality to be added or extended Reusable -> creating generic classes or extending existing classes Easier to understand ->  models real-world entities with objects\n9\nENCAPSULATION\n02\n10",
+      "Chap1 Encapsulation\nWhat is Encapsulation?\nWhen creating new data types (classes) the details of the actual data and the way operations work is hidden from the other programmers who will use those new data types.\nHình: Encapsulation\nIN CAPSULE ation\nClass\nVariables ©@\nMethods\n11\nWhy is Encapsulation important?\nBy controlling how data and methods are accessed or modified, encapsulation ensures:\nData Integrity: Prevents unauthorized or accidental changes to data.\nSecurity: Sensitive data is hidden from unauthorized access.\nEase of Use: Users of the class do not need to understand its internal complexities.\nCode Maintenance: Internal implementation can change without impacting external usage.\n12",
+      "Chap1 Encapsulation\nCore principles of Encapsulation\nData Hiding: The internal state of an object is kept private and can only be accessed through public methods (getters and setters).\nAccess Control: Access specifiers are used to control the visibility of class members:\nprivate: Accessible only within the defining class. default: Accessible only within the same package.\nprotected: Accessible within the same package and by subclasses (even in different packages). public: Accessible from anywhere (any class, any package, and any subclass).\n13\nExample\npublic class Person { // Public: Accessible anywhere public String name;   // Protected: Accessible within the same package or by subclasses protected int age;   // Default (Package-private): Accessible only within the same package String address;   // Private: Accessible only within this class private String password;   // Constructor to initialize the object public Person(String name, int age, String address, String password) { this.name = name; this.age = age; this.address = address; this.password = password; }   // Getter for password to demonstrate controlled access public String getPassword() { return password; }\n14",
+      "Chap1 Encapsulation\nHOW ENCAPSULATION WORKS?\n03\n15\nClass vs struct\nDefining Classes and Objects \n⇒ Can I use Struct instead of Class? Java: no struct C++: class and struct\nHình: structure class\nstruct struct_name class cLass-name\n// struct data members // data\n} // functions\n35\n16\nDefault Access; Struct: Public; Class: Private\nEncapsulation; Struct: Less support; Class: Full support\nUse case; Struct: Light weight objects; Class: All",
+      "Chap1 Encapsulation\nConstructor in Encapsulation\nA constructor is a special function in a class:  \nSame name as the class.  \nNot have a return value.  \nIt is automatically called when an object is created (the programmer does not call it directly).  \nIf no constructor is declared, the program automatically provides a default empty constructor. \n⇒ What is the access modifier for the default constructor?  ⇒ Can we create a private constructor? (Singleton Pattern)\n17\nGetters and Setters\n18\nExample:\npublic class Getset {\nprivate int age;\n// Getter for 'age'\npublic int getAge() {\nreturn age;\n}\n// Setter for 'age' with validation\npublic void setAge(int age) {\nif (age >= 0) {\nthis.age = age;\n} else {\nSystem.out.println(\"Age cannot be negative.\");\n}\n}\npublic static void main(String[] args) {\n}\n}\nGetters and Setters are methods used to access and modify the private fields of a class, adhering to the principles of encapsulation",
+      "Chap1 Encapsulation\nGetters and Setters\n19\nEncapsulation: Protects the internal state of an object.\nControl: Allows you to validate or modify data before it's set.\nConsistency: Helps maintain consistent object state.\nFlexibility: Makes it easier to change the internal implementation without affecting other code.\nReadability: Improves the readability and maintainability of the code.\nAccess Control: Allows creation of read-only or write-only properties.\nDebugging: Enables easy tracking and debugging of changes to the data.\nBEST PRACTICES\n04\n20",
+      "Chap1 Encapsulation\nExercise 1 - Multiple constructor\nCreate a Car class with the following private attributes:\nbrand (string)\nmodel (string)\nyear (int)\nAdd the following:\nA default constructor that sets default values.\nA parameterized constructor to initialize all attributes.\nSetters and getters for all attributes.\nWrite a main function to:\nCreate an object using the default constructor and display its details.\nCreate another object using the parameterized constructor and display its details.\n21\nExercise 2 - Constructor chaining\nCreate a Laptop class with attributes:\nbrand (string)\nmodel (string)\nprice (double)\nAdd the following:\nA default constructor.\nA parameterized constructor to initialize all attributes.\nUse constructor chaining to call one constructor from another.\nWrite a main function to test the class.\n22",
+      "Chap1 Encapsulation\nExercise 3 (Bonus)\nCreate a Library system using encapsulation and constructors.\nCreate a Book class with attributes: title, author, ISBN, price, and stock.\nCreate a Library class with:\nAn array of Book objects.\nMethods to:\nAdd new books.\nSearch for books by title or author.\nBorrow books (reduce stock).\nWrite a main function to simulate library operations.\n23\nCONCLUSION\n05\n24",
+      "Chap1 Encapsulation\nConclusion\nEncapsulation is the foundation of OOP, focusing on bundling data and functions within a class.  \nThe main difference between a class and a struct lies in the level of data security (private/public).  \nA constructor is a special mechanism in OOP that automatically executes when an object is created and can cause errors if not properly designed.\n25\nEXTENSION: \nCLASS DIAGRAM\n06\n26",
+      "Chap1 Encapsulation\nClass diagram\n27\nHình: Circle\ntvarName:type = default-value\n~radius: double = 1.0 denotes private access\n-color:String = \"red\"\n+ denotes public access\n+Circle()\n+Circle(r:double)\n__, tmethodName (parmName : type, ) :retunType\nCan you write a program based on the above class diagram?\nGhi chú: A class called Circle is designed as shown in the following class diagram. It contains:\nTwo private instance variables: radius (of the type double) and color (of the type String), with default value of 1.0 and \"red\", respectively.\nTwo overloaded constructors - a default constructor with no argument, and a constructor which takes a double argument for radius.\nTwo public methods: getRadius() and getArea(), which return the radius and area of this instance, respectively.",
+      "Chap1 Encapsulation\nHands-on exercise\n28\nHình: Ball\n-x: float\n-radius:int\n-xDelta:float ae\n-yDelta: float\nEach move step advances x and y\n” by Ax and Ay. Ax and Ay could be\npositive or negative.\n+Ball(x:float,y: float, radius:int\nxDelta: float, yDelta: float)\n+setX(x: float): void\nt+getY():float\n+setY(y: float): void\n+getRadius():int\n+setXDelta(xDelta: float) : void\n+getYDelta(): float\n+setYDelta(yDelta: float): void\n+move() : void\n+reflectHorizonta1() :void\nt+reflectVertical():voide-\nMove one step:\n/X += Ax; y t= Ay;\n1\n-Ax\n-Ay\nA class called Ball, which models a bouncing ball, is designed as shown in the following class diagram. \nIt contains its radius, x and y position. Each move-step advances the x and y by delta-x and delta-y, respectively. delta-x and delta-y could be positive or negative. \nThe reflectHorizontal() and reflectVertical() methods could be used to bounce the ball off the walls. Write the Ball class. Study the main() on how the ball bounces.\nhttps://www.programiz.com/online-compiler/5VrKcTuK0GRr6\nGhi chú: A class called Circle is designed as shown in the following class diagram. It contains:\nTwo private instance",
+      "Chap1 Encapsulation › Hands-on exercise\nGhi chú: A class called Circle is designed as shown in the following class diagram. It contains:\nTwo private instance variables: radius (of the type double) and color (of the type String), with default value of 1.0 and \"red\", respectively.\nTwo overloaded constructors - a default constructor with no argument, and a constructor which takes a double argument for radius.\nTwo public methods: getRadius() and getArea(), which return the radius and area of this instance, respectively.",
+      "Chap1 Encapsulation\nThank you for your attention!\nhttps://www.cse.hcmut.edu.vn"
+    ]
+  },
+  "reference": {
+    "coverage": "complete",
+    "chunk_ids": [
+      "2bc4cfdc-ef39-42a5-9f8d-8268024a52ab",
+      "0a8137d4-19fd-40b2-bb66-07219df74fd4",
+      "1ebf53aa-c1b3-48d3-900a-fc41cc082ddf",
+      "d3f54d15-de5e-45b4-99b5-e32ceab7d289",
+      "efbf36c7-ef0d-4bec-b37d-e2f720dd7599",
+      "2d67cb84-6dae-4986-a399-7c1f8fc8b935",
+      "45478ca5-8e24-4621-84bf-1ee47c283baa",
+      "fa4091d9-2914-40c2-bfc5-66a2bdfeba01",
+      "5e866606-0418-4783-aa88-8cd7afb5fb36",
+      "9f82989c-35bb-4954-aa1a-580e8553ea6c",
+      "0f9cc02b-45d2-4394-bca0-607c6aed3ee0",
+      "5d3b2f7d-2472-48ca-b9c0-9732548d1390",
+      "b66e2f97-5a2f-41b0-84a2-9d74760ce653",
+      "3bf922d4-0758-4e43-9fbb-836ad6db00b5",
+      "9f04828e-52d3-4fdb-a944-6d839c172f84",
+      "1e804e62-11fb-4d0f-aa4b-1c6bbef170cb",
+      "5a15b7d3-90e5-4468-b15d-8f430b8c9a1f"
+    ],
+    "total_chunks": 17
+  },
+  "claim_citations": [
+    {
+      "claim": "Lập trình hướng đối tượng (Object-oriented programming - OOP) là một mô hình lập trình tổ chức thiết kế phần mềm xung quanh các đối tượng, đại diện cho các thực thể trong thế giới thực hoặc các khái niệm trừu tượng.",
+      "source_id": "S2",
+      "start": 86,
+      "end": 301,
+      "marker_start": 302,
+      "marker_end": 306,
+      "locator": "{\"spans\": [{\"slide_index\": 3, \"slide_title\": \"INTRODUCTION TO OBJECT ORIENTED PROGRAMMING\"}, {\"slide_index\": 4, \"slide_title\": \"What is OOP?\"}]}",
+      "chunk_id": "0a8137d4-19fd-40b2-bb66-07219df74fd4",
+      "chunk_content": "Chap1 Encapsulation\nINTRODUCTION TO OBJECT ORIENTED PROGRAMMING\n01\n3\nWhat is OOP?\nObject-oriented programming (OOP) is a programming paradigm that organizes software design around objects, which can represent real-world entities or abstract concepts. Each object contains data (attributes or properties) and behavior (methods or functions).\n4",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "Mỗi đối tượng bao gồm dữ liệu (thuộc tính hoặc tính chất) và hành vi (phương thức hoặc hàm).",
+      "source_id": "S2",
+      "start": 309,
+      "end": 401,
+      "marker_start": 402,
+      "marker_end": 406,
+      "locator": "{\"spans\": [{\"slide_index\": 3, \"slide_title\": \"INTRODUCTION TO OBJECT ORIENTED PROGRAMMING\"}, {\"slide_index\": 4, \"slide_title\": \"What is OOP?\"}]}",
+      "chunk_id": "0a8137d4-19fd-40b2-bb66-07219df74fd4",
+      "chunk_content": "Chap1 Encapsulation\nINTRODUCTION TO OBJECT ORIENTED PROGRAMMING\n01\n3\nWhat is OOP?\nObject-oriented programming (OOP) is a programming paradigm that organizes software design around objects, which can represent real-world entities or abstract concepts. Each object contains data (attributes or properties) and behavior (methods or functions).\n4",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "Mô hình này giúp tạo ra các hệ thống mang tính mô đun, có khả năng mở rộng, tái sử dụng và dễ hiểu hơn bằng cách mô phỏng các thực thể trong thế giới thực.",
+      "source_id": "S5",
+      "start": 409,
+      "end": 564,
+      "marker_start": 565,
+      "marker_end": 569,
+      "locator": "{\"spans\": [{\"slide_index\": 9, \"slide_title\": \"Why OOP?\"}, {\"slide_index\": 10, \"slide_title\": \"ENCAPSULATION\"}]}",
+      "chunk_id": "efbf36c7-ef0d-4bec-b37d-e2f720dd7599",
+      "chunk_content": "Chap1 Encapsulation\nWhy OOP?\nCreate systems that are modular, scalable, reusable, and easier to understand.  Think of a car in the real world. It has:     Attributes: color, brand, speed, fuel capacity.     Behaviors: start, stop, accelerate. Modular -> divides programs into independent, self-contained classes Scalable -> allows new functionality to be added or extended Reusable -> creating generic classes or extending existing classes Easier to understand ->  models real-world entities with objects\n9\nENCAPSULATION\n02\n10",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "Tính đóng gói (Encapsulation): Gói gọn dữ liệu (thuộc tính) và các phương thức (hành vi) vào một đơn vị duy nhất (lớp) và hạn chế quyền truy cập để bảo vệ tính toàn vẹn của dữ liệu.",
+      "source_id": "S3",
+      "start": 658,
+      "end": 839,
+      "marker_start": 840,
+      "marker_end": 844,
+      "locator": "{\"spans\": [{\"slide_index\": 5, \"slide_title\": \"Key principles of OOP\"}, {\"slide_index\": 6, \"slide_title\": \"Key principles of OOP\"}]}",
+      "chunk_id": "1ebf53aa-c1b3-48d3-900a-fc41cc082ddf",
+      "chunk_content": "Chap1 Encapsulation\nKey principles of OOP\nEncapsulation: Bundles data (attributes) and methods (behavior) into a single unit (class) and restricts access to protect data integrity.  Example: A Car object has private attribute speed and a public method getSpeed() to access it. => Protects data integrity by restricting direct access.\n5\nKey principles of OOP\nInheritance: Allows one class to inherit attributes and methods from another, promoting code reuse and hierarchical relationships.  Example: A Truck class can inherit from a Vehicle class. => Promotes code reuse.\n6",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "Tính kế thừa (Inheritance): Cho phép một lớp kế thừa các thuộc tính và phương thức từ lớp khác, thúc đẩy việc tái sử dụng mã nguồn và mối quan hệ phân cấp.",
+      "source_id": "S3",
+      "start": 847,
+      "end": 1002,
+      "marker_start": 1003,
+      "marker_end": 1007,
+      "locator": "{\"spans\": [{\"slide_index\": 5, \"slide_title\": \"Key principles of OOP\"}, {\"slide_index\": 6, \"slide_title\": \"Key principles of OOP\"}]}",
+      "chunk_id": "1ebf53aa-c1b3-48d3-900a-fc41cc082ddf",
+      "chunk_content": "Chap1 Encapsulation\nKey principles of OOP\nEncapsulation: Bundles data (attributes) and methods (behavior) into a single unit (class) and restricts access to protect data integrity.  Example: A Car object has private attribute speed and a public method getSpeed() to access it. => Protects data integrity by restricting direct access.\n5\nKey principles of OOP\nInheritance: Allows one class to inherit attributes and methods from another, promoting code reuse and hierarchical relationships.  Example: A Truck class can inherit from a Vehicle class. => Promotes code reuse.\n6",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "Tính đa hình (Polymorphism): Cho phép các đối tượng nhận nhiều hình thức khác nhau, ví dụ một phương thức hoặc lớp duy nhất có thể đại diện cho các kiểu dữ liệu hoặc hành vi cơ bản khác nhau, giúp đơn giản hóa mã nguồn và tạo tính linh hoạt.",
+      "source_id": "S4",
+      "start": 1010,
+      "end": 1251,
+      "marker_start": 1252,
+      "marker_end": 1256,
+      "locator": "{\"spans\": [{\"slide_index\": 7, \"slide_title\": \"Key principles of OOP\"}, {\"slide_index\": 8, \"slide_title\": \"Key principles of OOP\"}]}",
+      "chunk_id": "d3f54d15-de5e-45b4-99b5-e32ceab7d289",
+      "chunk_content": "Chap1 Encapsulation\nKey principles of OOP\nPolymorphism: Allows objects to take on many forms, e.g., a single method or class to represent different underlying data types or behaviors.  Example: A draw() method behaves differently for Circle and Rectangle objects. =>Simplifies code and makes it flexible.\n7\nKey principles of OOP\nAbstraction: Hides implementation details and exposes only essential features, simplifying complex systems for the user.  Example: A user presses a car's \"start\" button without needing to understand the engine mechanics. =>Reduce complexity\n8",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "Tính trừu tượng hóa (Abstraction): Giấu đi các chi tiết thực thi và chỉ phơi bày các tính năng thiết yếu, giúp đơn giản hóa các hệ thống phức tạp cho người dùng.",
+      "source_id": "S4",
+      "start": 1259,
+      "end": 1420,
+      "marker_start": 1421,
+      "marker_end": 1425,
+      "locator": "{\"spans\": [{\"slide_index\": 7, \"slide_title\": \"Key principles of OOP\"}, {\"slide_index\": 8, \"slide_title\": \"Key principles of OOP\"}]}",
+      "chunk_id": "d3f54d15-de5e-45b4-99b5-e32ceab7d289",
+      "chunk_content": "Chap1 Encapsulation\nKey principles of OOP\nPolymorphism: Allows objects to take on many forms, e.g., a single method or class to represent different underlying data types or behaviors.  Example: A draw() method behaves differently for Circle and Rectangle objects. =>Simplifies code and makes it flexible.\n7\nKey principles of OOP\nAbstraction: Hides implementation details and exposes only essential features, simplifying complex systems for the user.  Example: A user presses a car's \"start\" button without needing to understand the engine mechanics. =>Reduce complexity\n8",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "Các bộ chỉ định truy cập (access specifiers) được sử dụng để kiểm soát khả năng hiển thị của các thành viên trong lớp.",
+      "source_id": "S7",
+      "start": 1491,
+      "end": 1609,
+      "marker_start": 1610,
+      "marker_end": 1614,
+      "locator": "{\"spans\": [{\"slide_index\": 13, \"slide_title\": \"Core principles of Encapsulation\"}, {\"slide_index\": 14, \"slide_title\": \"Example\"}]}",
+      "chunk_id": "45478ca5-8e24-4621-84bf-1ee47c283baa",
+      "chunk_content": "Chap1 Encapsulation\nCore principles of Encapsulation\nData Hiding: The internal state of an object is kept private and can only be accessed through public methods (getters and setters).\nAccess Control: Access specifiers are used to control the visibility of class members:\nprivate: Accessible only within the defining class. default: Accessible only within the same package.\nprotected: Accessible within the same package and by subclasses (even in different packages). public: Accessible from anywhere (any class, any package, and any subclass).\n13\nExample\npublic class Person { // Public: Accessible anywhere public String name;   // Protected: Accessible within the same package or by subclasses protected int age;   // Default (Package-private): Accessible only within the same package String address;   // Private: Accessible only within this class private String password;   // Constructor to initialize the object public Person(String name, int age, String address, String password) { this.name = name; this.age = age; this.address = address; this.password = password; }   // Getter for password to demonstrate controlled access public String getPassword() { return password; }\n14",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "private: Chỉ có thể truy cập được bên trong lớp định nghĩa nó.",
+      "source_id": "S7",
+      "start": 1617,
+      "end": 1679,
+      "marker_start": 1680,
+      "marker_end": 1684,
+      "locator": "{\"spans\": [{\"slide_index\": 13, \"slide_title\": \"Core principles of Encapsulation\"}, {\"slide_index\": 14, \"slide_title\": \"Example\"}]}",
+      "chunk_id": "45478ca5-8e24-4621-84bf-1ee47c283baa",
+      "chunk_content": "Chap1 Encapsulation\nCore principles of Encapsulation\nData Hiding: The internal state of an object is kept private and can only be accessed through public methods (getters and setters).\nAccess Control: Access specifiers are used to control the visibility of class members:\nprivate: Accessible only within the defining class. default: Accessible only within the same package.\nprotected: Accessible within the same package and by subclasses (even in different packages). public: Accessible from anywhere (any class, any package, and any subclass).\n13\nExample\npublic class Person { // Public: Accessible anywhere public String name;   // Protected: Accessible within the same package or by subclasses protected int age;   // Default (Package-private): Accessible only within the same package String address;   // Private: Accessible only within this class private String password;   // Constructor to initialize the object public Person(String name, int age, String address, String password) { this.name = name; this.age = age; this.address = address; this.password = password; }   // Getter for password to demonstrate controlled access public String getPassword() { return password; }\n14",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "default (package-private): Chỉ có thể truy cập được trong cùng một gói (package).",
+      "source_id": "S7",
+      "start": 1687,
+      "end": 1768,
+      "marker_start": 1769,
+      "marker_end": 1773,
+      "locator": "{\"spans\": [{\"slide_index\": 13, \"slide_title\": \"Core principles of Encapsulation\"}, {\"slide_index\": 14, \"slide_title\": \"Example\"}]}",
+      "chunk_id": "45478ca5-8e24-4621-84bf-1ee47c283baa",
+      "chunk_content": "Chap1 Encapsulation\nCore principles of Encapsulation\nData Hiding: The internal state of an object is kept private and can only be accessed through public methods (getters and setters).\nAccess Control: Access specifiers are used to control the visibility of class members:\nprivate: Accessible only within the defining class. default: Accessible only within the same package.\nprotected: Accessible within the same package and by subclasses (even in different packages). public: Accessible from anywhere (any class, any package, and any subclass).\n13\nExample\npublic class Person { // Public: Accessible anywhere public String name;   // Protected: Accessible within the same package or by subclasses protected int age;   // Default (Package-private): Accessible only within the same package String address;   // Private: Accessible only within this class private String password;   // Constructor to initialize the object public Person(String name, int age, String address, String password) { this.name = name; this.age = age; this.address = address; this.password = password; }   // Getter for password to demonstrate controlled access public String getPassword() { return password; }\n14",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "protected: Có thể truy cập được trong cùng một gói và bởi các lớp con (thậm chí ở các gói khác).",
+      "source_id": "S7",
+      "start": 1776,
+      "end": 1872,
+      "marker_start": 1873,
+      "marker_end": 1877,
+      "locator": "{\"spans\": [{\"slide_index\": 13, \"slide_title\": \"Core principles of Encapsulation\"}, {\"slide_index\": 14, \"slide_title\": \"Example\"}]}",
+      "chunk_id": "45478ca5-8e24-4621-84bf-1ee47c283baa",
+      "chunk_content": "Chap1 Encapsulation\nCore principles of Encapsulation\nData Hiding: The internal state of an object is kept private and can only be accessed through public methods (getters and setters).\nAccess Control: Access specifiers are used to control the visibility of class members:\nprivate: Accessible only within the defining class. default: Accessible only within the same package.\nprotected: Accessible within the same package and by subclasses (even in different packages). public: Accessible from anywhere (any class, any package, and any subclass).\n13\nExample\npublic class Person { // Public: Accessible anywhere public String name;   // Protected: Accessible within the same package or by subclasses protected int age;   // Default (Package-private): Accessible only within the same package String address;   // Private: Accessible only within this class private String password;   // Constructor to initialize the object public Person(String name, int age, String address, String password) { this.name = name; this.age = age; this.address = address; this.password = password; }   // Getter for password to demonstrate controlled access public String getPassword() { return password; }\n14",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "public: Có thể truy cập được từ bất kỳ đâu (bất kỳ lớp nào, bất kỳ gói nào và bất kỳ lớp con nào).",
+      "source_id": "S7",
+      "start": 1880,
+      "end": 1978,
+      "marker_start": 1979,
+      "marker_end": 1983,
+      "locator": "{\"spans\": [{\"slide_index\": 13, \"slide_title\": \"Core principles of Encapsulation\"}, {\"slide_index\": 14, \"slide_title\": \"Example\"}]}",
+      "chunk_id": "45478ca5-8e24-4621-84bf-1ee47c283baa",
+      "chunk_content": "Chap1 Encapsulation\nCore principles of Encapsulation\nData Hiding: The internal state of an object is kept private and can only be accessed through public methods (getters and setters).\nAccess Control: Access specifiers are used to control the visibility of class members:\nprivate: Accessible only within the defining class. default: Accessible only within the same package.\nprotected: Accessible within the same package and by subclasses (even in different packages). public: Accessible from anywhere (any class, any package, and any subclass).\n13\nExample\npublic class Person { // Public: Accessible anywhere public String name;   // Protected: Accessible within the same package or by subclasses protected int age;   // Default (Package-private): Accessible only within the same package String address;   // Private: Accessible only within this class private String password;   // Constructor to initialize the object public Person(String name, int age, String address, String password) { this.name = name; this.age = age; this.address = address; this.password = password; }   // Getter for password to demonstrate controlled access public String getPassword() { return password; }\n14",
+      "resolution": "resolved"
+    }
+  ]
+}

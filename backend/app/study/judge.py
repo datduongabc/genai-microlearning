@@ -72,11 +72,13 @@ def check_packet_budget(packet: ModuleContentInput, max_input_tokens: int | None
 
 
 def judge_pair(packets: dict, generators: list, catalog: list[dict], rated: dict[object, set[str]],
-               rate: Callable[[object, ModuleContentInput, dict], None]) -> tuple[int, list[str]]:
+               rate: Callable[[object, ModuleContentInput, dict], None],
+               allowed: set[str] | None = None) -> tuple[int, list[str]]:
     """Rate every member of a pair with the same two judge aliases, so paired analysis keeps the pair.
+    `allowed` limits the pool to those aliases, for example while a preferred provider has no usable key.
 
     Returns the number of aliases still missing for the pair and the skipped candidates' errors."""
-    candidates = eligible_judges(generators, catalog)
+    candidates = [c for c in eligible_judges(generators, catalog) if allowed is None or c["alias"] in allowed]
     # Count complete aliases first, then finish started aliases before opening new ones.
     candidates.sort(key=lambda c: (
         not all(c["alias"] in rated[key] for key in packets),

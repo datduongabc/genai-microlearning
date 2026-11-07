@@ -18,7 +18,7 @@ from app.generation.evaluation import judge_module
 from app.generation.study_packets import StudyFile
 from app.llm import gateway
 from app.llm.catalog import fetch_model_info
-from app.llm.judge import refuse_same_family
+from app.llm.judge import JUDGE_POOL, refuse_same_family
 from app.study.judge import judge_pair
 
 
@@ -67,10 +67,19 @@ def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("packets", type=Path, help="thư mục các tệp gói .json")
     parser.add_argument("--out", type=Path, required=True, help="tệp .jsonl ghi kết quả")
+    parser.add_argument("--judges", default=None,
+                        help="chỉ chấm bằng các alias này của pool, phân cách bằng dấu phẩy, "
+                             "ví dụ khi hãng ưu tiên chưa có khóa dùng được")
     args = parser.parse_args(argv)
 
     studies = _load(args.packets)
     catalog = fetch_model_info()
+    allowed = None
+    if args.judges:
+        allowed = {alias.strip() for alias in args.judges.split(",") if alias.strip()}
+        unknown = allowed - set(JUDGE_POOL)
+        if unknown:
+            raise SystemExit(f"Không thuộc pool chấm: {', '.join(sorted(unknown))}")
     done = _already_judged(args.out)  # Also repairs an interrupted final JSONL write before resuming.
     args.out.parent.mkdir(parents=True, exist_ok=True)
     pairs: dict[str, list[tuple[Path, StudyFile]]] = {}
@@ -103,7 +112,7 @@ def main(argv: list[str] | None = None) -> None:
 
             codes = ", ".join(by_code)
             try:
-                missing, errors = judge_pair(packets, generators, catalog, rated, rate)
+                missing, errors = judge_pair(packets, generators, catalog, rated, rate, allowed)
             except Exception as exc:
                 pending.append(f"{codes}: rating pending: {str(exc)[:200]} (rerun to resume)")
                 continue
