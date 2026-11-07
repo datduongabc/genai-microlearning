@@ -85,8 +85,49 @@ Trung bình trên 10 cặp, tính bằng `analyze_study.py`:
   có nguồn, nên khó tin là mọi nhận định của nó đều có trong đoạn đối chiếu.
   - Như vậy `qwen3.8-27b` chấm quá dễ, không dùng được làm bằng chứng cho câu hỏi RAG và không RAG.
   - Đây chính là điều lượt chấm chính thức bằng hai model mạnh, cùng người chấm, phải kiểm.
-- **Việc kiểm hallucination theo từng claim (R9, `run_claim_judge.py`) chưa chạy.** Bước này kiểm
-  từng nhận định với nguồn, nên ít phụ thuộc vào độ dễ dãi của mô hình chấm hơn.
+
+## Nhận định không có căn cứ (R9) bằng `groq-pro`
+
+Lệnh: `run_claim_judge.py --judge groq-pro`. Bước này tách phần Content thành từng nhận định, rồi kiểm
+từng nhận định với bộ đoạn đối chiếu chung của cặp. Ở bản RAG, nó còn kiểm từng trích dẫn đã giải
+được về chunk.
+
+- **Model chấm:** cả 20 gói đều do `openai/gpt-oss-120b` chấm, khác hãng với model sinh.
+- **Số lượt gọi:** khoảng 370. Groq giới hạn 250 nghìn token mỗi phút, nên lệnh được chạy lại sau
+  mỗi lần bị chặn. Các gói đã chấm được giữ nguyên.
+- **Kết quả thô:** `module-study/claims-groq-pro.jsonl`.
+
+**Gói không được tính** theo [rubric mục 7](../rubric.md#7-r9-claim-không-có-căn-cứ-và-độ-chính-xác-trích-dẫn):
+
+- Hai cặp machine-learning (`cfd30918`, `e3d92415`) không được tính. Bộ đối chiếu của chúng được lấy
+  bằng truy hồi, nên độ phủ là `unknown`: một nhận định không tìm thấy trong 8 đoạn chưa chắc đã
+  không có trong bài giảng.
+- Bản không RAG của cặp `40a27fe8` (Giới hạn dãy số) không tách ra được nhận định nào, dù Content
+  dài 1.808 ký tự và chứa nhiều công thức LaTeX. Đây là chỗ bước tách nhận định không xử lý được,
+  không có nghĩa là module không có nhận định. Cặp này cũng bị loại.
+
+Còn lại 7 cặp có độ phủ đầy đủ:
+
+| | rag_llm | llm_no_rag |
+| --- | ---: | ---: |
+| Nhận định | 120 | 101 |
+| Không có căn cứ | 0 | 17 (16,8%) |
+| Module có ít nhất 1 nhận định không có căn cứ | 0 / 7 | 6 / 7 |
+| Trích dẫn đúng chunk (cả 10 gói RAG) | 148 / 166 (89,2%) | — |
+
+- **Kiểm định theo cặp.** Tỉ lệ nhận định không có căn cứ của bản không RAG cao hơn bản RAG ở 6/7
+  cặp và bằng nhau ở cặp còn lại.
+  - Wilcoxon signed-rank cho p = 0,031.
+  - McNemar chính xác trên "có ít nhất một nhận định không có căn cứ" cho 6 cặp lệch về không RAG,
+    0 cặp lệch về RAG, p = 0,031.
+- **Mẫu còn nhỏ (n = 7) và chỉ có một model chấm.** Đây là bằng chứng sơ bộ, chưa phải kết luận.
+- **"Không có căn cứ" không có nghĩa là sai.** Đọc các nhận định bị đánh dấu thì phần lớn là kiến thức
+  chung và thường đúng, nhưng không có trong tài liệu nguồn. Ví dụ "GUI cung cấp cửa sổ, biểu tượng và
+  menu", trong khi slide chỉ nói tới biểu tượng, chuột và bàn phím. Một số lượt đánh giá của judge khá
+  khắt khe (như phần Text của tiến trình chứa mã máy).
+  - Điều R9 đo là module có bám sát tài liệu của giảng viên hay không, và RAG giữ được điều đó.
+- **Ba gói RAG có trích dẫn chính xác thấp hơn:** `1afc963f` 9/13, `cfd30918` 19/26 và `f1f4dfdf`
+  13/20. Ở các gói này, nhận định đúng với nguồn nhưng trỏ sang một chunk lân cận.
 
 ## Việc tiếp theo
 
