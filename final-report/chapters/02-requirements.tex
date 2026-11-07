@@ -2,7 +2,7 @@
 \subsection{Actors and trust boundaries}
 An \textbf{author/lecturer} owns application courses and their documents and modules. A local account can draft and export without a confirmed Moodle identity, subject to generation limits. A \textbf{Moodle-authorized lecturer} is the same person with a confirmed identity and authoring capabilities in a specific Moodle course; linking an identity does not grant course permissions.
 
-An \textbf{application administrator} manages accounts and failed jobs and prepares studies. The administrator role is not a general right to inspect another author's documents. An \textbf{invited rater} sees blinded study snapshots and their own ratings. A user may have more than one role, but authorization is checked for the requested action. \textbf{Moodle} is an external publishing and confirmation actor. The \textbf{LLM service} supplies generation and transcription. \textbf{Learners} are stakeholders who use Moodle after publication; they are outside the authoring application's actor boundary.
+An \textbf{application administrator} manages accounts and failed jobs and prepares studies. The administrator role is not a general right to inspect another author's documents. An \textbf{invited rater} sees blinded study snapshots and their own ratings. A user may have more than one role, but authorization is checked for the requested action. \textbf{Moodle} is an external publishing and confirmation actor. The \textbf{LLM service} supplies generation and transcription. \textbf{Learners} use Moodle after publication. A learner who opens the tool from a Moodle course through LTI becomes a \textbf{course member}, who can only ask course questions and read their own chats (Section~\ref{sec:lti-learners}); learners have no other access to the authoring application.
 \subsection{Functional requirements}
 \par
 Table~\ref{tab:requirements} presents functional requirements.
@@ -44,16 +44,16 @@ NFR08 & Cost observability & Every provider attempt records tokens, served model
 \needspace{.60\textheight}
 \subsection{Permission matrix}
 
-Table~\ref{tab:permissions} separates operational administration from invited rating. An administrator who also authors content retains the same ownership checks as an ordinary author.
-\begin{table}[H]\centering\small\caption{Authorization by role; ownership remains required.}\label{tab:permissions}
-\begin{tabularx}{\linewidth}{|p{3.4cm}|Y|Y|Y|Y|}\hline
-Action & Local author & Linked author & Administrator & Invited rater\\\hline
-Draft/edit/export & Own content & Own content & Own content only & Only if separately an author\\\hline
-Publish to Moodle & No & Remote course rights & Same remote checks & No rating-role privilege\\\hline
-Read other authors' courses & No & No & No general override & No\\\hline
-Retry failed jobs & Own & Own & Narrow operational recovery & No\\\hline
-Manage accounts / studies & No & No & Yes & No\\\hline
-Read/rate blinded packets & If invited & If invited & If invited & Assigned packets; own rating\\\hline
+Table~\ref{tab:permissions} separates operational administration from invited rating. An administrator who also authors content retains the same ownership checks as an ordinary author. A course member, a student who entered through LTI, can only chat over that course.
+\begin{table}[H]\centering\footnotesize\caption{Authorization by role; ownership remains required.}\label{tab:permissions}
+\begin{tabularx}{\linewidth}{|p{2.6cm}|Y|Y|Y|Y|Y|}\hline
+Action & Local author & Linked author & Administrator & Invited rater & Course member\\\hline
+Draft, edit, export & Own content & Own content & Own content only & Only if separately an author & No\\\hline
+Publish to Moodle & No & Remote course rights & Same remote checks & No rating-role privilege & No\\\hline
+Read other authors' courses & No & No & No general override & No & Chat over the member's course only\\\hline
+Retry failed jobs & Own & Own & Narrow operational recovery & No & No\\\hline
+Manage accounts / studies & No & No & Yes & No & No\\\hline
+Read/rate blinded packets & If invited & If invited & If invited & Assigned packets; own rating & No\\\hline
 \end{tabularx}\end{table}
 \clearpage
 \subsection{Requirement traceability}\label{sec:traceability}
