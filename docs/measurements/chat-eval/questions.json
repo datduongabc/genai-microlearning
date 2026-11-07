@@ -1,0 +1,452 @@
+[
+ {
+  "course_id": "bf278d5e-f4d7-42e6-83c1-41ece425b302",
+  "course": "advanced-programming",
+  "chunk_id": "6ef6932e-24f3-4a48-80f0-14fd765bfe53",
+  "cau_hoi": "What is the term used to describe replacing an inherited method with another method that has the same signature in Java?",
+  "reference": "Chap3 Polymorphism\nINTRODUCTION TO POLYMORPHISM\n01\n3\nWhat is Polymorphism?\nIn Java, polymorphism refers to the fact that you can have multiple methods with the same name in the same class.\n4\nTwo kinds of polymorphism:\nOverloading: two or more methods with different signatures.\nOverriding: replacing an inherited method with another having the same signature.",
+  "source_ref": "{\"spans\": [{\"slide_index\": 3, \"slide_title\": \"INTRODUCTION TO POLYMORPHISM\"}, {\"slide_index\": 4, \"slide_title\": \"What is Polymorphism?\"}]}",
+  "document": "Chap3_Polymorphism.pptx"
+ },
+ {
+  "course_id": "bf278d5e-f4d7-42e6-83c1-41ece425b302",
+  "course": "advanced-programming",
+  "chunk_id": "f9d1b185-619f-4e7b-b1e4-c9b3f73411f0",
+  "cau_hoi": "What method does the Subscriber Interface declare that concrete subscriber classes must implement?",
+  "reference": "Chap5 Design Patterns\nStep-by-step instructions\nSeparate Business Logic\nIdentify core functionality → Acts as the Publisher\nIdentify dependent components → Act as Subscribers\nDefine Interfaces\nSubscriber Interface → Declares update() method\nPublisher Interface → Methods to add/remove subscribers\nManage Subscriptions\nStore subscriber list in an abstract class (for reusability)\nAlternative: Use composition to separate subscription logic\nImplement Concrete Classes\nPublisher: Notifies all subscribers when an event occurs\nSubscriber: Implements update() method to react to changes\nRegister Subscribers: Clients create subscribers and attach them to publishers\n26\nCONCLUSION\n05\n27",
+  "source_ref": "{\"spans\": [{\"slide_index\": 26, \"slide_title\": \"Step-by-step instructions\"}, {\"slide_index\": 27, \"slide_title\": \"CONCLUSION\"}]}",
+  "document": "Chap5_Design_Patterns.pptx"
+ },
+ {
+  "course_id": "bf278d5e-f4d7-42e6-83c1-41ece425b302",
+  "course": "advanced-programming",
+  "chunk_id": "de211b35-9b35-4ab8-b71f-3c380734d4d2",
+  "cau_hoi": "What mechanism in OOP automatically executes when an object is created and can cause errors if it is not properly designed?",
+  "reference": "Chap1 Encapsulation\nConclusion\nEncapsulation is the foundation of OOP, focusing on bundling data and functions within a class.  \nThe main difference between a class and a struct lies in the level of data security (private/public).  \nA constructor is a special mechanism in OOP that automatically executes when an object is created and can cause errors if not properly designed.\n25\nEXTENSION: \nCLASS DIAGRAM\n06\n26",
+  "source_ref": "{\"spans\": [{\"slide_index\": 25, \"slide_title\": \"Conclusion\"}, {\"slide_index\": 26, \"slide_title\": \"EXTENSION: \\nCLASS DIAGRAM\"}]}",
+  "document": "Chap1_Encapsulation.pptx"
+ },
+ {
+  "course_id": "bf278d5e-f4d7-42e6-83c1-41ece425b302",
+  "course": "advanced-programming",
+  "chunk_id": "d69de116-6531-44a3-ab64-2c6c5fa7a654",
+  "cau_hoi": "What is the required access modifier for the interface declaration if you want the interface to be accessible from other packages?",
+  "reference": "Chap4 Abstract Interface\nCreating an Interface\nFile InterfaceName.java:\nmodifier interface InterfaceName { \nconstants declarations;\n  \tmethods signatures;\n}\n\nFile ClassName.java:\nmodifier Class ClassName implements InterfaceName {\n   \tmethods implementation;\n}\n‹#›\n⇒ modifier is public or not used.\nGhi chú: If a class implements an interface, it should override all the abstract methods declared in the interface.\nHands-on exercise\ninterface Drawable {\n    void draw();  // Abstract method\n}\nclass Rectangle implements Drawable {\n    public void draw() {\n        System.out.println(\"Drawing Rectangle\");\n    }\n}\n‹#›\nAdd new interface Area to calculate the area of a shape and implement it in Rectangle. Write main function to test.\nGhi chú: Interfaces promote multiple inheritance in a structured way.\nFind the hands-on exercise easy? Implement above code in C++.",
+  "source_ref": "{\"spans\": [{\"slide_index\": 7, \"slide_title\": \"Creating an Interface\"}, {\"slide_index\": 8, \"slide_title\": \"Hands-on exercise\"}]}",
+  "document": "Chap4_Abstract_Interface.pptx"
+ },
+ {
+  "course_id": "bf278d5e-f4d7-42e6-83c1-41ece425b302",
+  "course": "advanced-programming",
+  "chunk_id": "1540257b-0cbb-401c-a19b-89e99ad6471f",
+  "cau_hoi": "What role does the **Adapter** play in the Object Adapter pattern, and how does it interact with both the client interface and the wrapped service object?",
+  "reference": "Chap5 Design Patterns\nStructure - Object adapter\n15\nHình: «interface»\nClient Interface\n+ method(data)\nZ\\\nClient\n+ method(data) + serviceMethod(specialData)\nspecialData = convertToServiceFormat(data)\nreturn adaptee.serviceMethod(specialData)\nGhi chú: The Client is a class that contains the existing business logic of the program.\nThe Client Interface describes a protocol that other classes must follow to be able to collaborate with the client code.\nThe Service is some useful class (usually 3rd-party or legacy). The client can’t use this class directly because it has an incompatible interface.\nThe Adapter is a class that’s able to work with both the client and the service: it implements the client interface, while wrapping the service object. The adapter receives calls from the client via the client interface and translates them into calls to the wrapped service object in a format it can understand.\nThe client code doesn’t get coupled to the concrete adapter class as long as it works with the adapter via the client interface. Thanks to this, you can introduce new types of adapters into the program without breaking the existing client code. This can be useful when the interface of the service class gets changed or replaced: you can just create a new adapter class without changing the client code.",
+  "source_ref": "{\"slide_index\": 15, \"slide_title\": \"Structure - Object adapter\"}",
+  "document": "Chap5_Design_Patterns.pptx"
+ },
+ {
+  "course_id": "bf278d5e-f4d7-42e6-83c1-41ece425b302",
+  "course": "advanced-programming",
+  "chunk_id": "9cef7768-5093-4786-aee1-cb9b9f3b89c1",
+  "cau_hoi": "What will be printed to the console when `obj.display()` is executed, given that `obj` is declared as a `Superclass` reference but instantiated as a `Subclass`?",
+  "reference": "Chap2 Inheritance\nImplicit use of pointers\nclass Superclass {\n    public void display() {\n        System.out.println(\"Superclass\");\n    }\n}\nclass Subclass extends Superclass {\n    @Override\n    public void display() {\n        System.out.println(\"Subclass\");\n    }\n}\npublic class Main {\n    public static void main(String[] args) {\n        Superclass obj = new Subclass(); \n        obj.display(); // Output: ???\n    }\n}\n17\nIn Java (and many other OOP languages): All objects are accessed via references (similar to pointers in C++).\nBEST PRACTICES\n04\n18",
+  "source_ref": "{\"spans\": [{\"slide_index\": 17, \"slide_title\": \"Implicit use of pointers\"}, {\"slide_index\": 18, \"slide_title\": \"BEST PRACTICES\"}]}",
+  "document": "Chap2_Inheritance.pptx"
+ },
+ {
+  "course_id": "bf278d5e-f4d7-42e6-83c1-41ece425b302",
+  "course": "advanced-programming",
+  "chunk_id": "758ebab1-6bd9-4db8-b590-7b9fdf689a72",
+  "cau_hoi": "What access specifier is used for the `age` field in the `Person` class, and what level of visibility does it provide?",
+  "reference": "Chap1 Encapsulation\nCore principles of Encapsulation\nData Hiding: The internal state of an object is kept private and can only be accessed through public methods (getters and setters).\nAccess Control: Access specifiers are used to control the visibility of class members:\nprivate: Accessible only within the defining class. default: Accessible only within the same package.\nprotected: Accessible within the same package and by subclasses (even in different packages). public: Accessible from anywhere (any class, any package, and any subclass).\n13\nExample\npublic class Person { // Public: Accessible anywhere public String name;   // Protected: Accessible within the same package or by subclasses protected int age;   // Default (Package-private): Accessible only within the same package String address;   // Private: Accessible only within this class private String password;   // Constructor to initialize the object public Person(String name, int age, String address, String password) { this.name = name; this.age = age; this.address = address; this.password = password; }   // Getter for password to demonstrate controlled access public String getPassword() { return password; }\n14",
+  "source_ref": "{\"spans\": [{\"slide_index\": 13, \"slide_title\": \"Core principles of Encapsulation\"}, {\"slide_index\": 14, \"slide_title\": \"Example\"}]}",
+  "document": "Chap1_Encapsulation.pptx"
+ },
+ {
+  "course_id": "bf278d5e-f4d7-42e6-83c1-41ece425b302",
+  "course": "advanced-programming",
+  "chunk_id": "672615f4-59f1-48a1-a992-a09857acda36",
+  "cau_hoi": "What are the two common steps required to implement a Singleton, and why must the class’s constructor be hidden from client code?",
+  "reference": "Chap5 Design Patterns\nImplementation\nAll implementations of the Singleton have these two steps in common:\nMake the default constructor private, to prevent other objects from using the new operator with the Singleton class.\nCreate a static creation method that acts as a constructor. Under the hood, this method calls the private constructor to create an object and saves it in a static field. All following calls to this method return the cached object.\n9\nStructure\n10\nHình: instance: Singleton\nSingleton()\n+ getlnstance(: Singleton\nClient\nif (instance == null) {\n// Note: if creating an app with\n// multithreading support, you should\n// place a thread lock here.\ninstance = new Singleton()\nreturn instance\nGhi chú: The Singleton class declares the static method getInstance that returns the same instance of its own class.\nThe Singleton’s constructor should be hidden from the client code. Calling the getInstance method should be the only way of getting the Singleton object.",
+  "source_ref": "{\"spans\": [{\"slide_index\": 9, \"slide_title\": \"Implementation\"}, {\"slide_index\": 10, \"slide_title\": \"Structure\"}]}",
+  "document": "Chap5_Design_Patterns.pptx"
+ },
+ {
+  "course_id": "bf278d5e-f4d7-42e6-83c1-41ece425b302",
+  "course": "advanced-programming",
+  "chunk_id": "1a8bb487-2cd0-4dd4-82ce-bb1e30b497ce",
+  "cau_hoi": "What mechanism does C++ use to enable dynamic method resolution when using pointers or references?",
+  "reference": "Chap3 Polymorphism\nKey differences: C++ vs. Java\n15\nFeatures: Default binding; C++: Static binding; Java: Dynamic binding\nFeatures: Enabling dynamic binding; C++: Use virtual keyword; Java: Always enabled for overrides\nFeatures: Polymorphism; C++: Requires explicit virtual; Java: Default behaviour\nFeatures: Behind the scenes; C++: Requires explicit pointers; Java: Abstracted as object references\nWhy use pointers for dynamic binding in C++?\nReason:\nIn C++, the vtable (virtual table) is used to enable dynamic method resolution.\nWhen using pointers or references, the program accesses the vtable of the actual object to determine the appropriate method.\nStatic Objects (No Pointer):\nVtable lookup is skipped, leading to static binding.\nDynamic Objects (Pointer/Reference):\nVtable is consulted, allowing polymorphism to work.\n16",
+  "source_ref": "{\"spans\": [{\"slide_index\": 15, \"slide_title\": \"Key differences: C++ vs. Java\"}, {\"slide_index\": 16, \"slide_title\": \"Why use pointers for dynamic binding in C++?\"}]}",
+  "document": "Chap3_Polymorphism.pptx"
+ },
+ {
+  "course_id": "bf278d5e-f4d7-42e6-83c1-41ece425b302",
+  "course": "advanced-programming",
+  "chunk_id": "badb9cb6-5314-4e91-be69-717eef61f819",
+  "cau_hoi": "What are the names and data types of the private attributes that must be added to the derived classes Car and Bike, and how should each class’s displayInfo() method be modified to include these new attributes?",
+  "reference": "Chap2 Inheritance\nExercise 1 - Inheritance in Vehicle classes (1)\nCreate a base class Vehicle with the following private attributes:\nbrand (string)\nyear (int)\nAdd the following to Vehicle:\nA default constructor that sets default values (\"Unknown\" for brand, 0 for year).\nA parameterized constructor to initialize brand and year.\nSetters and getters for brand and year.\nA method displayInfo() to print details of the vehicle.\n19\nExercise 1 - Inheritance in Vehicle classes (2)\nCreate a derived class Car that inherits from Vehicle:\nAdd a private attribute: model (string).\nProvide a default constructor and a parameterized constructor for Car using constructor chaining.\nOverride the displayInfo() method to include model.\nCreate another derived class Bike that inherits from Vehicle:\nAdd a private attribute: engineCapacity (int).\nProvide constructors and override displayInfo() to include engineCapacity.\nIn the main function:\nCreate a Car object using both default and parameterized constructors and display its details.\nCreate a Bike object using both default and parameterized constructors and display its details.\n20",
+  "source_ref": "{\"spans\": [{\"slide_index\": 19, \"slide_title\": \"Exercise 1 - Inheritance in Vehicle classes (1)\"}, {\"slide_index\": 20, \"slide_title\": \"Exercise 1 - Inheritance in Vehicle classes (2)\"}]}",
+  "document": "Chap2_Inheritance.pptx"
+ },
+ {
+  "course_id": "7fe1b08c-11a8-4551-9b51-79ce658da639",
+  "course": "calculus 1",
+  "chunk_id": "ce575ba3-b400-4a9b-9da2-8c7dc93de855",
+  "cau_hoi": "Trong trường hợp \\(f(x)\\) và \\(g(x)\\) là các hàm có giới hạn tương đương khi \\(x \\to a\\), tại sao biểu thức \\(\\ln f(x) \\sim \\ln g(x)\\) lại sai, và lý do nào cho thấy \\(\\ln f(x)\\) và \\(\\ln g(x)\\) không phải là các hàm có giới hạn vô cùng bé?",
+  "reference": "2. Giới hạn và liên tục hàm một biến\n2 Nếu f (x), g(x) là những VCB tương đương khi\nx →a thì ln f (x) ∼ln g(x) SAI ??? vì\nln f (x), ln g(x) KHÔNG là VCB.\n3 Nếu f (x), g(x) là những VCB tương đương khi\nx →a thì cos f (x) ∼cos g(x) SAI ??? vì\ncos f (x), cos g(x) KHÔNG là VCB.\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN - TÍNH LIÊN TỤC CỦA HÀM MỘT BIẾN\nTP. HCM — 2013.\n31 / 53\nGiới hạn vô cùng bé của hàm số\nNhững lỗi SAI thường gặp\nNhững lỗi SAI thường gặp",
+  "source_ref": "{\"spans\": [{\"page\": 31, \"heading\": \"2 Nếu f (x), g(x) là những VCB tương đương khi\", \"extraction_method\": \"text_layer\"}, {\"page\": 31, \"heading\": \"3 Nếu f (x), g(x) là những VCB tương đương khi\", \"extraction_method\": \"text_layer\"}, {\"page\": 31, \"heading\": \"31 / 53\", \"extraction_method\": \"text_layer\"}, {\"page\": 32, \"heading\": null, \"extraction_method\": \"vision\"}]}",
+  "document": "2. Giới hạn và liên tục hàm một biến.pdf"
+ },
+ {
+  "course_id": "7fe1b08c-11a8-4551-9b51-79ce658da639",
+  "course": "calculus 1",
+  "chunk_id": "548c90ef-8b30-444a-bd8a-55cd49a8aa2d",
+  "cau_hoi": "Khi \\(n = 2k + 1\\), công thức cho \\(f^{(2k+1)}(0)\\) được cho bởi biểu thức nào?",
+  "reference": "3. Đạo hàm và vi phân › Khi n = 2k + 1 thì\nĐạo hàm cấp cao\nMột sốcông thức cơ bản\nKhi n = 2k + 1 thì\nf ^(2^k^+1)(0) = −(2k)(2k −1)f ^(2^k^−^1)(0) = . . . =\n= (−1)^k(2k)!f ^′(0) = (−1)^k(2k)!,\ndo f ^′(0) = 1.\nTS. Lê Xuân Đại (BK TPHCM)\nĐẠO HÀM VÀ VI PHÂN CỦA HÀM MỘT BIẾN\nTP. HCM — 2013.\n40 / 81\nVi phân của hàm một biến\nVi phân cấp 1\nĐịnh nghĩa\nVi phân cấp 1 của hàm số y = f (x) tại điểm x_0 là\ndf (x_0) = f ^′(x_0)dx.\nVí dụ\nCho f (x) = e^x/x^2. Tìm df (1)\nf^′(x) = (e^x.x^2 − e^x.2x)/x^4 = (e^x(x − 2))/(x_′^3)\n⇒ f^′(1) = −e. Vậy df (1) = f (1)dx = −edx.\nTS. Lê Xuân Đại (BK TPHCM)\nĐẠO HÀM VÀ VI PHÂN CỦA HÀM MỘT BIẾN\nTP. HCM — 2013.",
+  "source_ref": "{\"spans\": [{\"page\": 40, \"heading\": \"Khi n = 2k + 1 thì\", \"extraction_method\": \"text_layer\"}, {\"page\": 40, \"heading\": \"40 / 81\", \"extraction_method\": \"text_layer\"}, {\"page\": 41, \"heading\": null, \"extraction_method\": \"text_layer\"}]}",
+  "document": "3. Đạo hàm và vi phân.pdf"
+ },
+ {
+  "course_id": "7fe1b08c-11a8-4551-9b51-79ce658da639",
+  "course": "calculus 1",
+  "chunk_id": "4b5459eb-11f5-410e-a443-8216c2b4578d",
+  "cau_hoi": "Trong việc áp dụng định lý Weierstrass để tìm giới hạn của dãy \\(x_n\\) được cho bởi đẳng thức \\(x_{n+1}^2 = a + x_n\\), tại sao kết luận giới hạn \\(\\displaystyle\\lim_{n\\to\\infty} x_n\\) là \\(\\frac{1+\\sqrt{1+4a}}{2}\\) (với \\(x_n>0\\))?",
+  "reference": "1. Giới hạn dãy số › ta được lim\nCác phương pháp tìm giới hạn của dãy số\nDùng định lý Weierstrass vềsựtồn tại giới hạn của dãy đơn điệu\nLấy giới hạn 2 vế của đẳng thức này khi n → ∞\nta được\nlim_(n→∞) x_(n+1)^2 = a + lim_(n→∞) x_n.\nDo đó x^2 = a + x ⇒ x = (1 − √(1 + 4a))/2 ⋁ x =\n(1 + √(1 + 4a))/2. Vì x_n > 0 nên x = (1 + √(1 + 4a))/2.\nVậy lim_(n→∞) x_n = (1 + √(1 + 4a))/2.\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN CỦA DÃY SỐ\nTP. HCM — 2013.\n68 / 77\nCác phương pháp tìm giới hạn của dãy số\nSửdụng giới hạn của sốe\nSửdụng giới hạn của sốe tính giới hạn dạng 1^∞\nlim_(n→∞) (1 + 1/n)^n = e\nNếu lim\n_n_→∞u_n = ∞thì\nn\nlim_(n→∞) (1 + 1/u_n)^u = e\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN CỦA DÃY SỐ\nTP. HCM — 2013.",
+  "source_ref": "{\"spans\": [{\"page\": 68, \"heading\": \"ta được lim\", \"extraction_method\": \"text_layer\"}, {\"page\": 68, \"heading\": \"68 / 77\", \"extraction_method\": \"text_layer\"}, {\"page\": 69, \"heading\": \"Nếu lim\", \"extraction_method\": \"text_layer\"}]}",
+  "document": "1. Giới hạn dãy số.pdf"
+ },
+ {
+  "course_id": "7fe1b08c-11a8-4551-9b51-79ce658da639",
+  "course": "calculus 1",
+  "chunk_id": "f91252c3-5b6a-44f2-9a26-7097c45cf764",
+  "cau_hoi": "Trong định lý L’Hôpital cho dạng \\(\\frac{\\infty}{\\infty}\\), điều kiện (3) yêu cầu gì về đạo hàm của hàm \\(g(x)\\) trên nửa khoảng \\([c,+\\infty)\\)?",
+  "reference": "3. Đạo hàm và vi phân › Tính I = lim\nTìm giới hạn dạng không xác định theo qui tắc L’ Hopital Tìm giới hạn dạng không xác định (∞)/(∞) theo qui tắc L’ Hopital\nVí dụ\nTính I = lim\nx→0\nln x\n1\nx\nI = lim_(x→0) (1/x)/(−1/x^2) = 0\nTS. Lê Xuân Đại (BK TPHCM)\nĐẠO HÀM VÀ VI PHÂN CỦA HÀM MỘT BIẾN\nTP. HCM — 2013.\n52 / 81\nTìm giới hạn dạng không xác định theo qui tắc L' Hopital Tìm giới hạn dạng không xác định $\\frac{\\infty}{\\infty}$ theo qui tắc L' Hopital\nĐịnh lý\nCho thỏa mãn những điều kiện sau:\n1. Hàm số $f(x)$ và $g(x)$ xác định trên nửa khoảng\n$[c, +\\infty)$\n2. Luôn có $\\lim_{x\\to +\\infty} f(x) = \\lim_{x\\to +\\infty} g(x) = +\\infty$\n3. Trên nửa khoảng $[c, +\\infty)$ tồn tại đạo hàm hữu\nhạn $f'(x)$ và $g'(x)$ với $g'(x) \\neq 0$",
+  "source_ref": "{\"spans\": [{\"page\": 52, \"heading\": \"Tính I = lim\", \"extraction_method\": \"text_layer\"}, {\"page\": 52, \"heading\": \"52 / 81\", \"extraction_method\": \"text_layer\"}, {\"page\": 53, \"heading\": null, \"extraction_method\": \"vision\"}, {\"page\": 53, \"heading\": \"1. Hàm số $f(x)$ và $g(x)$ xác định trên nửa khoảng\", \"extraction_method\": \"vision\"}, {\"page\": 53, \"heading\": \"2. Luôn có $\\\\lim_{x\\\\to +\\\\infty} f(x) = \\\\lim_{x\\\\to +\\\\infty} g(x) = +\\\\infty$\", \"extraction_method\": \"vision\"}, {\"page\": 53, \"heading\": \"3. Trên nửa khoảng $[c, +\\\\infty)$ tồn tại đạo hàm hữu\", \"extraction_method\": \"vision\"}]}",
+  "document": "3. Đạo hàm và vi phân.pdf"
+ },
+ {
+  "course_id": "7fe1b08c-11a8-4551-9b51-79ce658da639",
+  "course": "calculus 1",
+  "chunk_id": "f0cb3dbb-0c83-421e-850c-b141f073e277",
+  "cau_hoi": "Trong ví dụ về giới hạn \\(\\displaystyle I=\\lim_{n\\to\\infty}q^{n}\\) với \\(|q|<1\\), tại sao lại sử dụng bất đẳng thức Bernoulli để suy ra \\(\\displaystyle 0<|q|^{n}<\\frac{1}{nh}\\) và kết luận \\(\\displaystyle I=0\\)?",
+  "reference": "1. Giới hạn dãy số › Tìm giới hạn I = lim\nCác phương pháp tìm giới hạn của dãy số Dùng định lý kẹp giữa tìm giới hạn của dãy số\nVí dụ\nTìm giới hạn I = lim_(n→∞) q^n, |q| < 1.\nNếu q = 0 thì I = 0.\nNếu q̸ = 0 thì ta có 1/(|q|) > 1, do đó\n1/(|q|) = 1 + h, h > 0. Theo bất đẳng thức Bernouli\n1/(|q|^n) = (1 + h)^n > 1 + nh > nh ⇒ 0 < |q|^n < 1/nh.\nMặt khác lim_((BKTPHCM)n→∞) 1/nh = 0 nên I = 0.\nTS. Lê Xuân Đại GIỚI HẠN CỦA DÃY SỐ TP. HCM — 2013. 49 / 77\nCác phương pháp tìm giới hạn của dãy số Dùng định lý kẹp giữa tìm giới hạn của dãy số\nVí dụ\nTìm giới hạn I = lim_(n→∞) n/a^n, a > 1.\nTheo công thức nhịthức Newton ta có\na^n = (1 + (a −1))^n = 1 + n(a −1)\n+(n(n − 1))/2(a − 1)^2 + . . . + (a − 1)^n.\nVới a > 1 ta có a^n > (n(n−1))/2(a − 1)^2. Do đó",
+  "source_ref": "{\"spans\": [{\"page\": 49, \"heading\": \"Tìm giới hạn I = lim\", \"extraction_method\": \"text_layer\"}, {\"page\": 50, \"heading\": \"Tìm giới hạn I = lim\", \"extraction_method\": \"text_layer\"}]}",
+  "document": "1. Giới hạn dãy số.pdf"
+ },
+ {
+  "course_id": "7fe1b08c-11a8-4551-9b51-79ce658da639",
+  "course": "calculus 1",
+  "chunk_id": "1d5ccfef-6695-4455-b05d-f4f85128524d",
+  "cau_hoi": "Trong ví dụ tính tích phân \\(I=\\int \\frac{\\sin^{3}x\\,dx}{\\cos x\\sqrt{(\\cos x)^{3}}}\\), sau khi đặt \\(t=\\cos x\\) và \\(dt=-\\sin x\\,dx\\), kết quả cuối cùng của \\(I\\) được viết dưới dạng nào?",
+  "reference": "5. Tích phân bất định\n61 / 66\nTích phân của hàm lượng giác\nTích phân dạng 2\nVí dụ\nTính tích phân I = ∫ (sin^3 xdx)/(cos x√(cos x)^3)\nĐặt t = cos x, dt = −sin xdx và\nI = ∫ (1 − cos^2 x) cos^(−4/3) x sin xdx =\n= − ∫ (1−t^2)t^(−4/3)dt = − ∫ t^(−4/3)dt+∫ t^(2/3)dt =\n= 3t^(−1/3)+3/5t^(5/3)+C = 3/(√(cos x)^3)+3/5 cos x√(cos^2 x)^3 +C .\nTS. Lê Xuân Đại (BK TPHCM)\nTÍCH PHÂN BẤT ĐỊNH\nTP. HCM — 2013.\n62 / 66",
+  "source_ref": "{\"spans\": [{\"page\": 61, \"heading\": \"61 / 66\", \"extraction_method\": \"text_layer\"}, {\"page\": 62, \"heading\": null, \"extraction_method\": \"text_layer\"}, {\"page\": 62, \"heading\": \"62 / 66\", \"extraction_method\": \"text_layer\"}]}",
+  "document": "5. Tích phân bất định.pdf"
+ },
+ {
+  "course_id": "7fe1b08c-11a8-4551-9b51-79ce658da639",
+  "course": "calculus 1",
+  "chunk_id": "ff3f4a9c-7710-42e8-bc00-622cb481dff4",
+  "cau_hoi": "Trong ví dụ trên, giới hạn \\(\\displaystyle \\lim_{x\\to\\infty}\\bigl(f(x)-x\\bigr)\\) được tính bằng cách biến đổi thành \\(\\displaystyle \\lim_{x\\to\\infty} x\\ln\\!\\bigl(1+\\tfrac{1}{e x}\\bigr)\\); kết quả cuối cùng của giới hạn này là gì?",
+  "reference": "3. Đạo hàm và vi phân › b = lim\nKhảo sát và vẽđồthịhàm số\nVí dụ\nb = lim_(x→∞)(f (x) − x) =\nlim_(x→∞) (x ln e + 1/x − x =\nlim_(x→∞) x (ln (e + 1/x) − 1) =\nlim_(x→∞) x ln (1 + 1/ex) = lim_(x→∞) x 1/ex = 1/e.\nVậy tiệm cận xiên là y = x + 1/e\nTS. Lê Xuân Đại (BK TPHCM)\nĐẠO HÀM VÀ VI PHÂN CỦA HÀM MỘT BIẾN\nTP. HCM — 2013.\n94 / 81",
+  "source_ref": "{\"spans\": [{\"page\": 94, \"heading\": \"b = lim\", \"extraction_method\": \"text_layer\"}, {\"page\": 94, \"heading\": \"94 / 81\", \"extraction_method\": \"text_layer\"}]}",
+  "document": "3. Đạo hàm và vi phân.pdf"
+ },
+ {
+  "course_id": "7fe1b08c-11a8-4551-9b51-79ce658da639",
+  "course": "calculus 1",
+  "chunk_id": "81e18ea9-5e29-453c-9a0f-0ff40a1e82c1",
+  "cau_hoi": "Theo định lý kẹp, nếu \\(\\displaystyle \\lim_{n\\to\\infty} y_n = \\lim_{n\\to\\infty} z_n = a\\) và \\(y_n \\le x_n \\le z_n\\) với mọi \\(n\\) đủ lớn, thì \\(\\displaystyle \\lim_{n\\to\\infty} x_n\\) bằng bao nhiêu?",
+  "reference": "1. Giới hạn dãy số\n1 + 2/n + √(1/n + 1/n^2)\n√(1/n + 1/n^3)^4 − √(1/n)\n= 0.\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN CỦA DÃY SỐ\nTP. HCM — 2013.\n41 / 77\nCác phương pháp tìm giới hạn của dãy số\nDùng định lý kẹp giữa tìm giới hạn của dãy số\nDùng định lý kẹp giữa tìm giới hạn của dãy số\nĐịnh lý\nNếu y_n ⩽ x ⩽ z_n, ∀n > n và\nlim_(n→∞) y_n = lim_(n→∞)^n z_n = a thì lim_(n→∞)^0 x_n = a.\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN CỦA DÃY SỐ\nTP. HCM — 2013.\n42 / 77",
+  "source_ref": "{\"spans\": [{\"page\": 41, \"heading\": \"1 + 2/n + √(1/n + 1/n^2)\", \"extraction_method\": \"text_layer\"}, {\"page\": 41, \"heading\": \"41 / 77\", \"extraction_method\": \"text_layer\"}, {\"page\": 42, \"heading\": \"Định lý\", \"extraction_method\": \"text_layer\"}, {\"page\": 42, \"heading\": \"42 / 77\", \"extraction_method\": \"text_layer\"}]}",
+  "document": "1. Giới hạn dãy số.pdf"
+ },
+ {
+  "course_id": "7fe1b08c-11a8-4551-9b51-79ce658da639",
+  "course": "calculus 1",
+  "chunk_id": "75beb2e4-636c-478d-8040-3a2cd17911fa",
+  "cau_hoi": "Trong định lý L’Hôpital cho dạng ∞/∞, điều kiện nào yêu cầu đạo hàm của hàm mẫu g(x) không bằng 0 trên nửa khoảng (a, b]?",
+  "reference": "3. Đạo hàm và vi phân\n50 / 81\nTìm giới hạn dạng không xác định theo qui tắc L’ Hopital Tìm giới hạn dạng không xác định (∞)/(∞) theo qui tắc L’ Hopital\nĐịnh lý\nCho thỏa mãn những điều kiện sau:\n1. Hàm số f (x) và g(x) xác định trên nửa khoảng\n(a, b](a < b)\n2. Luôn có đẳng thức lim_(x→a) f (x) = lim_(x→a) g(x) = +∞\n3. Trên nửa khoảng (a, b] tồn tại đạo hàm hữu\nhạn f^′(x), g^′(x) với g^′(x)̸ = 0\n4. Tồn tại giới hạn hữu hạn hay vô cùng\nlim_(x→a) (f^′(x))/(g^′(x)) = K\nKhi đó luôn có đẳng thức lim_(x→a) (f (x))/(g(x)) = K\nTS. Lê Xuân Đại (BK TPHCM)\nĐẠO HÀM VÀ VI PHÂN CỦA HÀM MỘT BIẾN\nTP. HCM — 2013.\n51 / 81",
+  "source_ref": "{\"spans\": [{\"page\": 50, \"heading\": \"50 / 81\", \"extraction_method\": \"text_layer\"}, {\"page\": 51, \"heading\": null, \"extraction_method\": \"text_layer\"}, {\"page\": 51, \"heading\": \"1. Hàm số f (x) và g(x) xác định trên nửa khoảng\", \"extraction_method\": \"text_layer\"}, {\"page\": 51, \"heading\": \"2. Luôn có đẳng thức lim_(x→a) f (x) = lim_(x→a) g(x) = +∞\", \"extraction_method\": \"text_layer\"}, {\"page\": 51, \"heading\": \"3. Trên nửa khoảng (a, b] tồn tại đạo hàm hữu\", \"extraction_method\": \"text_layer\"}, {\"page\": 51, \"heading\": \"4. Tồn tại giới hạn hữu hạn hay vô cùng\", \"extraction_method\": \"text_layer\"}, {\"page\": 51, \"heading\": \"51 / 81\", \"extraction_method\": \"text_layer\"}]}",
+  "document": "3. Đạo hàm và vi phân.pdf"
+ },
+ {
+  "course_id": "7fe1b08c-11a8-4551-9b51-79ce658da639",
+  "course": "calculus 1",
+  "chunk_id": "e4f0c46d-3c48-46f9-be4f-db7b2ffce617",
+  "cau_hoi": "Nếu hàm R(sin x, cos x) là hàm lẻ theo cos x, công thức nào thể hiện tính chất R(sin x, −cos x) = −R(sin x, cos x) và biến đổi nào được đề xuất cho t?",
+  "reference": "5. Tích phân bất định\n2 Nếu R(sin x, cos x) là hàm lẻ theo cos x, có\nnghĩa là R(sin x, − cos x) = −R(sin x, cos x)\nthì ta đặt t = sin x.\n3 Nếu R(sin x, cos x) là hàm chẵn theo\nsin x, cos x, có nghĩa là\nR(− sin x, − cos x) = R(sin x, cos x) thì ta đặt\n_(TS.Lê)t_(Xuân)=_(Đại) tan_(BKTPHCM) x.\nTÍCH PHÂN BẤT ĐỊNH TP. HCM — 2013. 55 / 66",
+  "source_ref": "{\"spans\": [{\"page\": 55, \"heading\": \"2 Nếu R(sin x, cos x) là hàm lẻ theo cos x, có\", \"extraction_method\": \"text_layer\"}, {\"page\": 55, \"heading\": \"3 Nếu R(sin x, cos x) là hàm chẵn theo\", \"extraction_method\": \"text_layer\"}]}",
+  "document": "5. Tích phân bất định.pdf"
+ },
+ {
+  "course_id": "79219b5b-20b4-478a-8f32-64215208a512",
+  "course": "machine-learning",
+  "chunk_id": "3646a881-6780-42d8-b59b-774adc186e33",
+  "cau_hoi": "What does the speaker say the derivative of \\(F(A)\\) with respect to a 2 × 2 matrix \\(A\\) looks like, and how are its four entries obtained?",
+  "reference": "Week02\nand the elements of this are the derivative with respect to the individual elements. Actually, I'm just writing it like this. Thank you. Okay, so if A was a 2 by 2 matrix, then the derivative of F of A respect to A is itself a 2 by 2 matrix, and you compute this 2 by 2 matrix just by looking at F and taking derivatives with respect to the different elements and plugging them into the different elements of this matrix. And so in this particular example, I guess the derivative respect to A of F of A this would be right, it would be that and I got these four numbers by taking",
+  "source_ref": "{\"start_ms\": 3571900, \"end_ms\": 3643520}",
+  "document": "Week02.mp4"
+ },
+ {
+  "course_id": "79219b5b-20b4-478a-8f32-64215208a512",
+  "course": "machine-learning",
+  "chunk_id": "d00ccc5a-499a-4989-9405-ebb78ae9f6d3",
+  "cau_hoi": "What distinction does the passage make between theta and the parameters in terms of being random variables?",
+  "reference": "Week03\nSo we like the idea of theta doesn't mean theta is a random variable. Right cool yeah thank you By the way the stuff about what a random variable and what not the semicolon versus comma thing we explained this in more detail in the lecture notes To me, this is part of, you know, a little bit paying homage to the religion of Bayesian frequencies versus Bayesian, frequencies versus Bayesians in statistics. From a machine, from a applied machine learning, operational, what you write, code, point of view, it doesn't matter that much. Yeah, but theta is not a random variable. We have likely the parameters, which are not a random variable.",
+  "source_ref": "{\"start_ms\": 2090560, \"end_ms\": 2129480}",
+  "document": "Week03.mp4"
+ },
+ {
+  "course_id": "79219b5b-20b4-478a-8f32-64215208a512",
+  "course": "machine-learning",
+  "chunk_id": "cbbb71c6-dc39-4855-94ad-363a5253d14f",
+  "cau_hoi": "What property of the exponential family distribution changes only by its natural parameter that leads to a logistic model, and how does this relate to the claim that performance improvement still holds when increasing the number of classes, as mentioned in the context of softmax regression and GDA?",
+  "reference": "Week05\ncomes from an exponential family distribution, x given y equals 0 comes from an exponential family distribution, the same exponential family distribution, and if they vary only by the natural parameter of exponential family distribution then this will be logistic I think this was once a midterm homework problem to prove this actually Actually, let's take one last question and then we'll move on. Go ahead. Does performance improvement hold even as you increase the number of classes? I think so, yes and the generalization of this would be the softmax regression which I didn't talk about, but yes I think a similar thing holds true for GDA for multiple",
+  "source_ref": "{\"start_ms\": 3733400, \"end_ms\": 3783320}",
+  "document": "Week05.mp3"
+ },
+ {
+  "course_id": "79219b5b-20b4-478a-8f32-64215208a512",
+  "course": "machine-learning",
+  "chunk_id": "1ddcc0c1-e632-4eb5-b566-cf4dc3a0f2e0",
+  "cau_hoi": "What reason does the speaker give for preferring the squared error over the fourth power or absolute value when explaining the probabilistic interpretation of linear regression?",
+  "reference": "Week03\nWhy the squared error? Why not, you know, to the fourth power or absolute value? And so what I want to show you today now is the probabilistic interpretation of linear regression. And this probabilistic interpretation will put us into good standing as we go on to logistic regression today and then generalize linear models later this week. Maybe I'll keep the notation there so you can continue to refer to it. So, so, right, so why these squares Why squared error I going to present a set of assumptions under which these squares using squared error falls out very naturally which is, let's say for housing price prediction, let's assume that there's a true price of every house yi,",
+  "source_ref": "{\"start_ms\": 1304240, \"end_ms\": 1363000}",
+  "document": "Week03.mp4"
+ },
+ {
+  "course_id": "79219b5b-20b4-478a-8f32-64215208a512",
+  "course": "machine-learning",
+  "chunk_id": "6dd29d6e-4ad1-4256-8c02-c34d4e73d888",
+  "cau_hoi": "What does the half‑plane condition “θ triangle transpose X = 0” specify about the sign of the expression for points to the left versus to the right of that line?",
+  "reference": "Week04\nAnd over here, it will be less than zero. Right. So if for for the theta triangle class, There is this line which corresponds to theta transpose X equals 0. Anything to the left will give you a value greater than 0. Anything to the right will be 0. Similarly, there is also a... So this corresponds to theta square transpose X equals 0. Anything below will be greater than 0. Anything above will be less than 0. And similarly, you have another one for, this corresponds to theta circle transpose X equals zero. And this half plane, we have to be greater than zero. And to the left, it's less than zero.",
+  "source_ref": "{\"start_ms\": 4433540, \"end_ms\": 4487540}",
+  "document": "Week04.mp3"
+ },
+ {
+  "course_id": "79219b5b-20b4-478a-8f32-64215208a512",
+  "course": "machine-learning",
+  "chunk_id": "53c8deb3-368b-47d2-8cd8-2ee04850de7e",
+  "cau_hoi": "What is the value of the partial derivative of the term with respect to θ_j as stated in the passage?",
+  "reference": "Week02\nend up being 0, and partial derivative of this term with respect to theta j is equal to xj. And so this ends up being h theta x minus y times xj. Okay? And again, listen, if you haven't played with calculus for a while, if you don't quite remember what the partial derivative is or don't quite get what it just said, don't worry too much about it. Go over a bit more in section, and then also read through the lecture notes, which kind of goes over this in more detail and more slowly than we might do in class. Okay? So, um, so plugging this, let's see, so we've just calculated that this partial derivative,",
+  "source_ref": "{\"start_ms\": 1810940, \"end_ms\": 1869460}",
+  "document": "Week02.mp4"
+ },
+ {
+  "course_id": "79219b5b-20b4-478a-8f32-64215208a512",
+  "course": "machine-learning",
+  "chunk_id": "27aefcc2-b310-4366-a468-14db22b7ac25",
+  "cau_hoi": "What is the reason given for labeling the data variable as Y instead of X in the context of using exponential families to model the output in a supervised learning setting?",
+  "reference": "Week04\nSo this PDF can be written in the form, right? This looks pretty scary. Let's kind of break it down into what they actually mean. So Y over here is the data. And there is a reason why we call it Y. Because, yeah? A bit larger, sure. Is this better? Yeah. So Y is the data. And there's a reason why we call it Y and not X. And that's because we're going to use exponential families to model the output of your data in a supervised learning setting. And we're going to see X when we move on to GLMs. Until then, we're just going to deal with Ys for now.",
+  "source_ref": "{\"start_ms\": 923480, \"end_ms\": 1009360}",
+  "document": "Week04.mp3"
+ },
+ {
+  "course_id": "79219b5b-20b4-478a-8f32-64215208a512",
+  "course": "machine-learning",
+  "chunk_id": "f01f6eed-4b5f-4ddf-a56f-8a70a8bcf510",
+  "cau_hoi": "What specific computational bottleneck does the speaker describe when performing each step of gradient descent on a dataset with M = 100 million examples?",
+  "reference": "Week02\nin order to take even a single step of gradient descent, you need to calculate this sum. and if M is, say, a million or 10 million or 100 million, you need to scan through your entire database, scan through your entire data set, and calculate this for 100 million examples and sum it up. And so every single step of gradient descent becomes very slow because you're scanning over, you're reading over, like 100 million training examples before you can even make one tiny little step of gradient descent. Okay? Yeah, and by the way, I think, I don't know, I feel like in today's era of big data, people",
+  "source_ref": "{\"start_ms\": 2561020, \"end_ms\": 2600960}",
+  "document": "Week02.mp4"
+ },
+ {
+  "course_id": "79219b5b-20b4-478a-8f32-64215208a512",
+  "course": "machine-learning",
+  "chunk_id": "df0780ba-0065-4439-8571-9626be2bb80b",
+  "cau_hoi": "What expression do we obtain for the log‑partition function when we substitute η into the Bernoulli distribution’s natural parameter, and how does this relate to the sigmoid function?",
+  "reference": "Week04\nNow this is I just did pattern matching there and minus log 1 minus this thing over here 1 over 1 plus e to the minus eta The reason is because we want an expression in terms of eta Here we got it in terms of phi but we need to plug in eta over here Eta, and this will just be log of 1 plus e to the eta. So there you go. So this kind of verifies that the Bernoulli distribution is a member of the exponential family. Any questions here? So note that this may look familiar. It looks like the sigmoid function, somewhat like the sigmoid function. And this is actually no accident. We'll see why it is actually the sigmoid, how it kind of relates to logistic regression",
+  "source_ref": "{\"start_ms\": 1633160, \"end_ms\": 1695080}",
+  "document": "Week04.mp3"
+ },
+ {
+  "course_id": "79219b5b-20b4-478a-8f32-64215208a512",
+  "course": "machine-learning",
+  "chunk_id": "0d1c9041-ac2c-45f0-ba76-721e296fdb68",
+  "cau_hoi": "What convention is being dropped in the discussion, and how does this change the dimensionality of the feature vector x (i.e., from ℝⁿ⁺¹ to what space)?",
+  "reference": "Week05\nSo, you know, I'm going to drop the x0 equals 1 convention. So we're not going to need that extra x0 equals 1. So x is now rn rather than rn plus 1. And the key assumption in Gaussian discriminant analysis is we're going to assume that P of x given y is distributed Gaussian, right? In other words, conditioned on the tumors being malignant, the distribution of the features is Gaussian. The features like the size of the tumor, the cell adhesion, whatever features you use to measure a tumor. And conditioned on it being benign, the distribution is also Gaussian. So how many of you are familiar with a multivariate Gaussian?",
+  "source_ref": "{\"start_ms\": 525300, \"end_ms\": 575180}",
+  "document": "Week05.mp3"
+ },
+ {
+  "course_id": "aa97ca31-d964-4e1d-a3d5-7943baac9a27",
+  "course": "operating-system",
+  "chunk_id": "98174b77-5c36-466e-a0d7-b0b4a6e1fa7b",
+  "cau_hoi": "Which variable in the `decrease_count` and `increase_count` functions represents the shared resource that can cause a race condition, and in which statements of these functions does the race condition actually occur?",
+  "reference": "Chapter 6 Synchronization Tools › Critical Section (CS)\n10\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nCritical Section (CS)\n•General structure of the process P_i\nHình: do {\ncritical section\nexit section\nremainder section\n} while (true);\n11\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\n11\nExercise (1)\n•#define MAX_RESOURCES 5\n•int available_resources = MAX_RESOURCES;\n/* decrease available_resources by\ncount resources return 0 if sufficient\nresources available,\notherwise return -1 */\nint decrease_count(int count) {\nif (available_resources < count)\nreturn -1;\nelse {\navailable_resources -=count;\nreturn 0;\n}\n}\n/* increase available_resources by count */\nint increase_count(int count) {\navailable_resources += count;\nreturn 0;\n}\n1.Identify the data involved in the race\ncondition.\n2.Identify the location (or locations) in the\ncode where the race condition occurs.",
+  "source_ref": "{\"spans\": [{\"page\": 10, \"heading\": \"Critical Section (CS)\", \"extraction_method\": \"text_layer\"}, {\"page\": 11, \"heading\": \"Exercise (1)\", \"extraction_method\": \"text_layer\"}]}",
+  "document": "Chapter 6_Synchronization Tools.pdf"
+ },
+ {
+  "course_id": "aa97ca31-d964-4e1d-a3d5-7943baac9a27",
+  "course": "operating-system",
+  "chunk_id": "6dd03b96-3d9a-48ba-832d-79f0a38e8e7d",
+  "cau_hoi": "Trong mô hình lập lịch tiến trình, hàng đợi nào chứa tập hợp các tiến trình đang ở trong bộ nhớ chính, sẵn sàng và chờ được CPU thực thi?",
+  "reference": "Chapter 3 Processes › Process Scheduling\n13\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nProcess Scheduling\n• Maximize CPU use ⇢quickly switch processes onto CPU core\n• Process scheduler selects one process among available (ready)\nprocesses for next execution on CPU core\n• Maintains scheduling queues of processes\no Ready queue – set of all processes residing in main memory, ready and\nwaiting to execute\no Wait queues – set of processes waiting for an event (e.g., I/O)\n• Processes migrate among the various queues\n14\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nReady and Wait Queues\nHình: queue header PCB ; PCB ;\nready\nqueue",
+  "source_ref": "{\"spans\": [{\"page\": 13, \"heading\": \"Process Scheduling\", \"extraction_method\": \"text_layer\"}, {\"page\": 14, \"heading\": \"Ready and Wait Queues\", \"extraction_method\": \"text_layer\"}]}",
+  "document": "Chapter 3_Processes.pdf"
+ },
+ {
+  "course_id": "aa97ca31-d964-4e1d-a3d5-7943baac9a27",
+  "course": "operating-system",
+  "chunk_id": "c36957fd-0dbf-4c10-8349-f7550e033850",
+  "cau_hoi": "What scheduling algorithm assigns priorities according to deadlines, giving higher priority to tasks with earlier deadlines?",
+  "reference": "Chapter 5 CPU Scheduling › Summary (Cont.)\n56\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nSummary (Cont.)\n•Soft real-time scheduling gives priority to real-time tasks over non-\nreal- time tasks. Hard real-time scheduling provides timing\nguarantees for real- time tasks,\n•Rate-monotonic real-time scheduling schedules periodic tasks using\na static priority policy with preemption.\n•Earliest-deadline-first (EDF) scheduling assigns priorities according to\ndeadline. The earlier the deadline, the higher the priority; the later the\ndeadline, the lower the priority.\n•Proportional share scheduling allocates T shares among all\napplications. If an application is allocated N shares of time, it is\nensured of having NT of the total processor time.\n57\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nSummary (Cont.)\n•Modeling and simulations can be used to evaluate a CPU scheduling\nalgorithm.",
+  "source_ref": "{\"spans\": [{\"page\": 50, \"heading\": \"Summary (Cont.)\", \"extraction_method\": \"text_layer\"}, {\"page\": 51, \"heading\": \"Summary (Cont.)\", \"extraction_method\": \"text_layer\"}]}",
+  "document": "Chapter 5_CPU Scheduling.pdf"
+ },
+ {
+  "course_id": "aa97ca31-d964-4e1d-a3d5-7943baac9a27",
+  "course": "operating-system",
+  "chunk_id": "3a8af85f-a6d1-4537-857e-9fe56b11cb40",
+  "cau_hoi": "Trong Amdahl’s Law, nếu một ứng dụng có 75 % công việc song song và 25 % công việc tuần tự, việc tăng số lõi từ 1 lên 2 sẽ mang lại tốc độ tăng bao nhiêu lần?",
+  "reference": "Chapter 4 Threads & Concurency › Data and Task Parallelism\n11\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nData and Task Parallelism\nHình: data\ndata\nparallelism\ndata\ntask\nparallelism\ncore g core 1 core 2 core 3\n12\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nAmdahl’s Law\n•Identifies performance gains from adding additional cores to an\napplication that has both serial and parallel components\no S is serial portion\no N processing cores\no That is, if application is 75% parallel / 25% serial, moving from 1 to 2\ncores results in speedup of 1.6 times\no As N approaches infinity, speedup approaches 1/S\n•Serial portion of an application has disproportionate effect on\nperformance gained by adding additional cores\n•But does the law take into account contemporary multicore systems?",
+  "source_ref": "{\"spans\": [{\"page\": 11, \"heading\": \"Data and Task Parallelism\", \"extraction_method\": \"text_layer\"}, {\"page\": 12, \"heading\": \"Amdahl’s Law\", \"extraction_method\": \"text_layer\"}]}",
+  "document": "Chapter 4_Threads & Concurency.pdf"
+ },
+ {
+  "course_id": "aa97ca31-d964-4e1d-a3d5-7943baac9a27",
+  "course": "operating-system",
+  "chunk_id": "d7c32454-142a-48a8-b98b-ae39a7d65b02",
+  "cau_hoi": "What is the average waiting time when the five processes with burst times 10, 29, 3, 7, and 12 and arrival times 0, 2, 5, 3, and 6 are scheduled using Round Robin with a quantum of 5 ms?",
+  "reference": "Chapter 5 CPU Scheduling › Exercise 3\n60\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nExercise 3\nProcess       Burst Time\nArrival time\nP_1\n10\n0\nP_2\n29\n2\nP_3\n3\n5\nP_4\n7\n3\nP_5\n12\n6\n• Considering RR (quantum time = 5)\n• What is the average waiting time for these processes?\n61\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nExercise 4\nProcess       Burst Time      Arrival time\nP_1\n11\n0\nP_2\n12\n3\nP_3\n13\n9\n• Using MLF for  process scheduling with 3 queues:\n• Q0: RR (4ms)\n• Q1: RR (6ms)\n• Q2: FCFS\nCompute average process waiting time.",
+  "source_ref": "{\"spans\": [{\"page\": 54, \"heading\": \"Exercise 3\", \"extraction_method\": \"text_layer\"}, {\"page\": 55, \"heading\": \"Exercise 4\", \"extraction_method\": \"text_layer\"}]}",
+  "document": "Chapter 5_CPU Scheduling.pdf"
+ },
+ {
+  "course_id": "aa97ca31-d964-4e1d-a3d5-7943baac9a27",
+  "course": "operating-system",
+  "chunk_id": "70df2639-b0e7-4cc8-8d30-5e58da2b48f0",
+  "cau_hoi": "Which command is used to display the memory limits of a process?",
+  "reference": "Chapter 3 Processes › Process Concept (Cont.)\n5\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nProcess Concept (Cont.)\n• Program is passive entity stored on disk (e.g., executable file)\n• Process is active entity\no Program becomes process when executable file loaded into memory\n• Execution of program can be started via GUI mouse clicks, command\nline (CLI) entry of its name, etc.\n• One program can be several processes\no E.g., Consider multiple users executing the same program\n#ps -aux\n6\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nProcess in Memory\n(memory limits of a process)\n#size <pid>",
+  "source_ref": "{\"spans\": [{\"page\": 5, \"heading\": \"Process Concept (Cont.)\", \"extraction_method\": \"text_layer\"}, {\"page\": 6, \"heading\": \"Process in Memory\", \"extraction_method\": \"text_layer\"}]}",
+  "document": "Chapter 3_Processes.pdf"
+ },
+ {
+  "course_id": "aa97ca31-d964-4e1d-a3d5-7943baac9a27",
+  "course": "operating-system",
+  "chunk_id": "6e5dc9a0-a8e2-4a79-bf6d-92735ab61963",
+  "cau_hoi": "In a multilevel‑queue scheduler, how are processes assigned to separate queues according to their priority levels?",
+  "reference": "Chapter 5 CPU Scheduling › Multilevel Queue\n27\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nMultilevel Queue\n•Motivation: with priority scheduling, have separate queues for each\npriority\n•Schedule the process in the highest-priority queue!\n28\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nExample of Multilevel Queue\n•Prioritization based upon process type",
+  "source_ref": "{\"spans\": [{\"page\": 27, \"heading\": \"Multilevel Queue\", \"extraction_method\": \"text_layer\"}, {\"page\": 28, \"heading\": \"Example of Multilevel Queue\", \"extraction_method\": \"text_layer\"}]}",
+  "document": "Chapter 5_CPU Scheduling.pdf"
+ },
+ {
+  "course_id": "aa97ca31-d964-4e1d-a3d5-7943baac9a27",
+  "course": "operating-system",
+  "chunk_id": "182b4936-1a57-4eb0-b462-165664f53437",
+  "cau_hoi": "What sequence of entry into the critical sections do P1 and P2 follow given the initial semaphore values S1 = 1 and S2 = 0?",
+  "reference": "Chapter 6 Synchronization Tools › Exercise 2ercise 2\n42\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nExercise 2ercise 2\nProcess P1:\nwhile (1) {\n   wait(S1);\n   Critical section\n   signal(S2);\n   }\nProcess P2:\nwhile (1) {\n   wait(S2);\n   Critical section\n   signal(S1);\n}\nsemaphore S1, S2;\nS1.value = 1;\nS2.value = 0;\nDetermine the order of execution in critical section of P1 and P2?\n43\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nProblems with Semaphores\n• Incorrect use of semaphore operations:\n• signal(mutex)  ….  wait(mutex)\n• wait(mutex)  …     wait(mutex)\n• Omitting  of wait(mutex) and/or  signal(mutex)\n•These – and others – are examples of what can occur when semaphores and other\nsynchronization tools are used incorrectly.",
+  "source_ref": "{\"spans\": [{\"page\": 42, \"heading\": \"Exercise 2ercise 2\", \"extraction_method\": \"text_layer\"}, {\"page\": 43, \"heading\": \"Problems with Semaphores\", \"extraction_method\": \"text_layer\"}]}",
+  "document": "Chapter 6_Synchronization Tools.pdf"
+ },
+ {
+  "course_id": "aa97ca31-d964-4e1d-a3d5-7943baac9a27",
+  "course": "operating-system",
+  "chunk_id": "253ae216-209c-4b2a-ba9b-1578ef15f07e",
+  "cau_hoi": "In the priority inheritance protocol described, which process’s priority is temporarily assigned to the current owner of resource R when the highest‑priority thread is waiting for it?",
+  "reference": "Chapter 6 Synchronization Tools › Priority Inheritance Protocol\n61\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nPriority Inheritance Protocol\n•Consider the scenario with three processes P_1, P_2, and P_3.\n•P_1 has the highest priority, P_2 the next highest, and P_3 the lowest.\n•Assume a resource P_3 is assigned a resource R that P_1 wants. Thus, P_1 must wait for P_3 to finish\nusing the resource.\n•However, P_2 becomes runnable and preempts P_3.\n•What has happened is that P_2 - a process with a lower priority than P_1 - has indirectly prevented P_3\nfrom gaining access to the resource.\n•To prevent this from occurring, a priority inheritance protocol is used.\n•This simply allows the priority of the highest thread waiting to access a shared resource to be\nassigned to the thread currently using the resource.\n•Thus, the current owner of the resource is assigned the priority of the highest priority thread wishing\nto acquire the resource.",
+  "source_ref": "{\"page\": 58, \"heading\": \"Priority Inheritance Protocol\", \"extraction_method\": \"text_layer\"}",
+  "document": "Chapter 6_Synchronization Tools.pdf"
+ },
+ {
+  "course_id": "aa97ca31-d964-4e1d-a3d5-7943baac9a27",
+  "course": "operating-system",
+  "chunk_id": "ae19f632-5d88-4904-abd8-a8214b531676",
+  "cau_hoi": "What happens to processes P and Q when P invokes x.signal() while Q is suspended in x.wait() under the Hoare monitor semantics?",
+  "reference": "Chapter 6 Synchronization Tools › Condition Variables Choices\n48\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nCondition Variables Choices\n•If process P invokes x.signal(), and process Q is suspended in x.wait(), what should\nhappen next?\n• Both Q and P can’t execute in parallel. If Q is resumed, then P must wait\n•Options include\n•Signal and wait – P waits until Q either leaves the monitor or it waits for another condition\n•Signal and continue – Q waits until P either leaves the monitor or it  waits for another condition\n•Both have pros and cons – language implementer can decide\n•Monitors implemented in Concurrent Pascal compromise\n• P executing signal immediately leaves the monitor, Q is resumed\n•Implemented in other languages: Mesa, C#, Java\n52\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\n}\n52\nProducer-Consumer with Monitors (Hoare)\nMonitor bounded_buffer {\nbuffer resources[N];\ncondition not_full, not_empty;\nproduce(resource x) {\nif (array “resources” is full, determined maybe by a count)\nwait(not_full);\ninsert “x” in array “resources”\nsignal(not_empty);\n}\nconsume(resource *x) {\nif (array “resources” is empty, determined maybe by a count)\nwait(not_empty);\n*x = get resource from array “resources”\nsignal(not_full);",
+  "source_ref": "{\"spans\": [{\"page\": 48, \"heading\": \"Condition Variables Choices\", \"extraction_method\": \"text_layer\"}, {\"page\": 49, \"heading\": \"Producer-Consumer with Monitors (Hoare)\", \"extraction_method\": \"text_layer\"}]}",
+  "document": "Chapter 6_Synchronization Tools.pdf"
+ },
+ {
+  "course_id": "8f27170b-015b-4d75-bd9e-e1f0ff358009",
+  "course": "scientific-socialism",
+  "chunk_id": "0b517044-692c-48d0-82dd-c0e591807e1f",
+  "cau_hoi": "GCCN được mô tả là nhân tố nào thúc đẩy chín muồi các tiền đề của chủ nghĩa xã hội trong lòng chủ nghĩa tư bản?",
+  "reference": "Chapter2\nb. Những biến đổi và khác biệt của giai cấp công nhân hiện đại\nXu hướng “trí tuệ hóa” tăng nhanh\nXu hướng “trung lưu hóa” gia tăng\n2. Thực hiện sứ mệnh lịch sử của giai cấp công nhân trên thế giới hiện nay\na. Nội dung kinh tế\nGCCN là nhân tố thúc đẩy chín muồi các tiền đề của chủ nghĩa xã hội trong lòng chủ nghĩa tư bản.",
+  "source_ref": "{\"spans\": [{\"slide_index\": 42, \"slide_title\": \"\"}, {\"slide_index\": 43, \"slide_title\": \"\"}]}",
+  "document": "Chapter2.pptx"
+ },
+ {
+  "course_id": "8f27170b-015b-4d75-bd9e-e1f0ff358009",
+  "course": "scientific-socialism",
+  "chunk_id": "b99321b8-924e-415b-ae9c-358cbfa0e342",
+  "cau_hoi": "Trong “Tuyên ngôn của Đảng Cộng sản”, Marx và Engels đã nêu ra “vấn đề liên minh giai cấp trong CMXHCN” như thế nào?",
+  "reference": "Chapter1\nK. MARX VÀ F. ENGELS\nTUYÊN NGÔN \nCỦA  ĐẢNG CỘNG SẢN\n(C.Mác và Ph.Ăngghen, Toàn tập, t.4, CTQG, HN, 1995)\n\n…Vô sản tất cả các nước đoàn kết lại!\n“Tuyên ngôn của Đảng Cộng sản” đã nêu và phân tích về những vấn đề cơ bản\nSMLS của giai cấp công nhân và vai trò của Đảng cộng sản\nLôgic phát triển tất yếu của xã hội tư sản\nVấn đề liên minh giai cấp trong CMXHCN\nTuyên ngôn của ĐCS đánh dấu sự ra đời của chủ nghĩa Mác.",
+  "source_ref": "{\"spans\": [{\"slide_index\": 27, \"slide_title\": \"K. MARX VÀ F. ENGELS\"}, {\"slide_index\": 28, \"slide_title\": \"\"}]}",
+  "document": "Chapter1.pptx"
+ },
+ {
+  "course_id": "8f27170b-015b-4d75-bd9e-e1f0ff358009",
+  "course": "scientific-socialism",
+  "chunk_id": "6dc7efa6-b382-450c-ae00-f6ce73f3c047",
+  "cau_hoi": "Phương hướng nào được nêu trong đoạn trích để nâng cao nhận thức kiên định quan điểm giai cấp công nhân là giai cấp lãnh đạo cách mạng thông qua “đội tiền phong” là Đảng Cộng sản Việt Nam?",
+  "reference": "Chapter2\n3. Phương hướng và một số giải pháp chủ yếu để xây dựng giai cấp công nhân Việt Nam hiện nay\na. Phương hướng xây dựng giai cấp công nhân Việt Nam hiện nay\nPhát triển về số lượng, chất lượng, nâng cao giác ngộ và bản lĩnh chính trị, trình độ học vấn nghề nghiệp. \nXây dựng giai cấp công nhân yêu nước, yêu chủ nghĩa xã hội, có tinh thần đoàn kết dân tộc, đoàn kết, hợp tác quốc tế\nb. Một số giải pháp xây dựng giai cấp công nhân Việt Nam hiện nay\nMột là, nâng cao nhận thức kiên định quan điểm giai cấp công nhân là giai cấp lãnh đạo cách mạng thông qua đội tiền phong là Đảng Cộng sản Việt Nam\nHai là, xây dựng giai cấp công nhân lớn mạnh gắn với xây dựng và phát huy sức mạnh của liên minh giai cấp công nhân với giai cấp nông dân và đội ngũ trí thức và doanh nhân, dưới sự lãnh đạo của Đảng",
+  "source_ref": "{\"spans\": [{\"slide_index\": 54, \"slide_title\": \"\"}, {\"slide_index\": 55, \"slide_title\": \"\"}]}",
+  "document": "Chapter2.pptx"
+ },
+ {
+  "course_id": "8f27170b-015b-4d75-bd9e-e1f0ff358009",
+  "course": "scientific-socialism",
+  "chunk_id": "de1d7d03-2e66-43cd-877c-e4320600e418",
+  "cau_hoi": "Trong nội dung chính trị - xã hội, mục tiêu nào được nêu ra để “ngăn chặn, đẩy lùi sự suy thoái” và liên quan đến việc gì?",
+  "reference": "Chapter2\nNội dung kinh tế \nPhát triển nền KT thị trường định hướng XHCN; đảm bảo tăng trưởng KT đi đôi với tiến bộ, công bằng; đẩy mạnh CNH HĐH\nNội dung chính trị - xã hội\n- Giữ vững bản chất GCCN của Đảng, vai trò tiên phong, gương mẫu của cán bộ, đảng viên\n- Tăng cường xây dựng chỉnh đốn Đảng, ngăn chặn, đẩy lùi sự suy thoái về tư tưởng chính trị, đạo đức, lối sống",
+  "source_ref": "{\"spans\": [{\"slide_index\": 50, \"slide_title\": \"\"}, {\"slide_index\": 51, \"slide_title\": \"\"}]}",
+  "document": "Chapter2.pptx"
+ },
+ {
+  "course_id": "8f27170b-015b-4d75-bd9e-e1f0ff358009",
+  "course": "scientific-socialism",
+  "chunk_id": "27fbfead-0973-4ba2-a60a-4e40efcab4f8",
+  "cau_hoi": "Tiêu chí nào của GCCN được mô tả là “phương diện KT - XH” và áp dụng cho những người lao động trực tiếp hoặc gián tiếp vận hành các công cụ sản xuất có tính chất công nghiệp ngày càng hiện đại?",
+  "reference": "Chapter2\nGCCN có hai tiêu chí cơ bản\nVề phương diện KT - XH\nVề phương diện CT - XH\nHọ là những người lao động trực tiếp hay gián tiếp vận hành các công cụ sản xuất có tính chất công nghiệp ngày càng hiện đại, tính xã hội hóa cao\nHọ là những người lao động không có hoặc về cơ bản không có tư liệu sản xuất, phải bán sức lao động, làm thuê cho nhà tư bản, bị nhà tư bản bóc lột giá trị thặng dư",
+  "source_ref": "{\"slide_index\": 9, \"slide_title\": \"GCCN có hai tiêu chí cơ bản\"}",
+  "document": "Chapter2.pptx"
+ },
+ {
+  "course_id": "8f27170b-015b-4d75-bd9e-e1f0ff358009",
+  "course": "scientific-socialism",
+  "chunk_id": "f0cd6cb3-4fdd-495f-8301-760cba943fac",
+  "cau_hoi": "Trong giai đoạn 1848‑1851, Marx và Engels đã tổng kết kinh nghiệm của cuộc cách mạng 1848‑1851 và phát triển lý luận Chủ nghĩa xã hội khoa học qua những tác phẩm nào?",
+  "reference": "Chapter1\n<number>\nII. Các giai đoạn phát triển cơ bản của Chủ nghĩa xã hội khoa học\n1. C.Mác và Ph.Ăngghen phát triển CNXHKH\na. Thời kỳ từ 1848 đến Công xã Pari (1871)\nTổng kết kinh nghiệm PTCM 1848-1851,  phát triển lý luận CNXHKH thông qua các TP:\n“Đấu tranh giai cấp ở Pháp\" (1848 – 1850)\n\"Ngày 18 tháng Sương mù của Luibônapác tơ\" (1851)\n\"Chiến tranh nông dân ở Đức\" (1850)\n\"Cách mạng và phản cách mạng ở Đức\" (1852)\nTập I bộ Tư bản của C.Mác được xuất bản (1867)",
+  "source_ref": "{\"spans\": [{\"slide_index\": 29, \"slide_title\": \"\"}, {\"slide_index\": 30, \"slide_title\": \"\"}]}",
+  "document": "Chapter1.pptx"
+ },
+ {
+  "course_id": "8f27170b-015b-4d75-bd9e-e1f0ff358009",
+  "course": "scientific-socialism",
+  "chunk_id": "8b114747-020d-4bd1-9105-e88755b79aaf",
+  "cau_hoi": "Trong phần “Phân tích vai trò của C.Mác và Ph.Ăngghen trong việc hình thành Chủ nghĩa xã hội khoa học”, tác giả đề cập đến hai nhà tư tưởng nào?",
+  "reference": "Chapter1\nÝ nghĩa về mặt thực tiễn\nXây dựng bản lĩnh chính trị cho sinh viên, giúp họ kiên định, tự tin, tiếp tục sự nghiệp xây dựng và bảo vệ Tổ quốc xã hội chủ nghĩa\nGiáo dục niềm tin khoa học cho sinh viên vào mục tiêu, lý tưởng xã hội chủ nghĩa và con đường đi lên chủ nghĩa xã hội của Việt Nam\nc. Ý nghĩa của việc nghiên cứu CNXHKH\nCủng cố bài học\n1. Phân tích vai trò của C.Mác và Ph.Ăngghen trong việc hình thành Chủ nghĩa xã hội khoa học.\n2. Phân tích sự vận dụng và phát triển Chủ nghĩa xã hội khoa học của V.I .Lênin.\n3. Phân tích sự vận dụng và phát triển Chủ nghĩa xã hội khoa học của các Đảng cộng sản và công nhân quốc tế từ sau khi V.I.Lênin qua đời.",
+  "source_ref": "{\"spans\": [{\"slide_index\": 50, \"slide_title\": \"\"}, {\"slide_index\": 51, \"slide_title\": \"Củng cố bài học\"}]}",
+  "document": "Chapter1.pptx"
+ },
+ {
+  "course_id": "8f27170b-015b-4d75-bd9e-e1f0ff358009",
+  "course": "scientific-socialism",
+  "chunk_id": "a9cdc74b-d909-470a-90a0-fa52ece5ab71",
+  "cau_hoi": "Trong đoạn trích, nhóm các nước nào được liệt kê dưới tiêu đề “GROUP OF EIGHT”?",
+  "reference": "Chapter2\nở các nước tư bản, phần lớn họ là những người không có hoặc về cơ bản, không có tư liệu sản xuất, phải làm thuê cho giai cấp tư sản và bị giai cấp tư sản bóc lột giá trị thặng dư.\nHình: UNITED KINGDOM\nSN LZ\nCANADA\nFRANCE\nGERMANY\nRUSSIA\nJAPAN\nITALY\nx*\nGROUP\nOF EIGHT\nở các nước xã hội chủ nghĩa, họ là giai cấp cầm quyền, lãnh đạo; luôn cùng nhân dân lao động làm chủ tư liệu sản xuất chủ yếu, cùng nhau hợp tác lao động cho mình và xây dựng chế độ xã hội chủ nghĩa.\nLào\nChina\nCuba\nViệt Nam",
+  "source_ref": "{\"spans\": [{\"slide_index\": 40, \"slide_title\": \"\"}, {\"slide_index\": 41, \"slide_title\": \"\"}]}",
+  "document": "Chapter2.pptx"
+ },
+ {
+  "course_id": "8f27170b-015b-4d75-bd9e-e1f0ff358009",
+  "course": "scientific-socialism",
+  "chunk_id": "81dad22f-5f1d-4a4f-b3ca-b6695ed800e7",
+  "cau_hoi": "Giai cấp vô sản hiện đại được mô tả trong văn bản có những đặc điểm gì?",
+  "reference": "Chapter2\nC.Mác\n&\nPh.Ăngghen\nVấn đề là ở chỗ tìm hiểu xem GCVS thực ra là gì, và phù hợp với sự tồn tại của bản thân nó, GCVS buộc phải làm gì về mặt lịch sử\nQuan điểm cơ bản của chủ nghĩa Mác - Lênin về giai cấp công nhân và sứ mệnh lịch sử thế giới của giai cấp công nhân \n 1. Khái niệm và đặc điểm của giai cấp công nhân\na. Khái niệm gccn\nGiai cấp vô sản\nGiai cấp vô sản hiện đại\nLao động làm thuê ở thế kỷ XIX\nGiai cấp công nhân hiện đại\nGiai cấp công nhân cơ khí\nC.Mác\n&\nPh.Ăngghen",
+  "source_ref": "{\"spans\": [{\"slide_index\": 3, \"slide_title\": \"\"}, {\"slide_index\": 4, \"slide_title\": \"\"}]}",
+  "document": "Chapter2.pptx"
+ },
+ {
+  "course_id": "8f27170b-015b-4d75-bd9e-e1f0ff358009",
+  "course": "scientific-socialism",
+  "chunk_id": "4747d2de-a50f-47aa-93e6-20f9b52518ca",
+  "cau_hoi": "Theo Marx, yếu tố nào xác định một giai cấp là giai cấp công nhân, và tại sao giáo viên hay bác sĩ làm việc trong doanh nghiệp tư nhân lại được coi là thuộc giai cấp này?",
+  "reference": "Chapter2\nC.Mác\nPh.Ăngghen\nCông nhân cơ khí\nРабо́чий класс\nРабо́чий класс —một g/c XH, tất cả những người làm thuê không có tư liệu SX, sống bằng việc bán sức lao động. \nTheo K. Marx, dấu hiệu cơ bản quy về g/c CN là g/c này tạo ra giá trị thặng dư, nói khác đi, mang đến lợi nhuận cho người chủ, bất kể lao động đó có phải là lao động chân tay không, còn nghề nghiệp có phải sản xuất vật chất không. Ví dụ, giáo viên hay bác sĩ nếu làm việc ở doanh nghiệp tư nhân thì có thể quy về g/c CN, và không quy về đó nếu làm việc không vì mục đích tạo ra lợi nhuận cho người chủ, chẳng hạn trong trường học thuộc Nhà nước (sở hữu Nhà nước).",
+  "source_ref": "{\"spans\": [{\"slide_index\": 7, \"slide_title\": \"\"}, {\"slide_index\": 8, \"slide_title\": \"Рабо́чий класс\"}]}",
+  "document": "Chapter2.pptx"
+ }
+]
