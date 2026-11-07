@@ -1,0 +1,195 @@
+{
+  "pair_id": "e3d92415-df93-4415-9fbc-97c87188dfc2",
+  "group": "llm_no_rag",
+  "generator_model": "gemini-fast",
+  "generation_models": [
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    },
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    },
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    },
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    },
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    },
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    },
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    },
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    },
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    },
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    },
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    },
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    },
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    },
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    }
+  ],
+  "packet": {
+    "anon_id": "",
+    "topic": "Hồi quy cục bộ (Locally Weighted Regression)",
+    "bloom_level": "understand",
+    "learning_objective": "Sau khi hoàn thành module, người học có thể giải thích cách thức hoạt động và đặc điểm của thuật toán học máy phi tham số hồi quy cục bộ (locally weighted regression).",
+    "sub_objectives": [
+      "Phân biệt thuật toán học tham số và phi tham số",
+      "Giải thích vai trò của hàm trọng số (weight function) trong hàm chi phí đã chỉnh sửa",
+      "Mô tả cách thuật toán giải quyết vấn đề dữ liệu phi tuyến tính mà không cần chọn thủ công các đặc trưng"
+    ],
+    "content_markdown": "# Phân biệt thuật toán học tham số và phi tham số\n* Thuật toán học tham số (parametric learning):\n  * Giả định một cấu trúc hàm cố định trước cho mô hình (ví dụ: mô hình tuyến tính).\n  * Chỉ cần lưu trữ các tham số đã học (parameters) sau khi huấn luyện, kích thước mô hình không đổi khi dữ liệu tăng.\n  * Tốc độ dự báo nhanh nhưng có thể gây ra sai lệch (bias) cao nếu giả định về phân phối dữ liệu sai.\n* Thuật toán học phi tham số (non-parametric learning):\n  * Không giả định trước cấu trúc hàm cố định mà để dữ liệu tự định hình mô hình.\n  * Số lượng tham số tăng lên theo kích thước tập huấn luyện.\n  * Thường linh hoạt hơn và phù hợp với các mối quan hệ dữ liệu phức tạp.\n\n# Giải thích vai trò của hàm trọng số trong hàm chi phí đã chỉnh sửa\n* Khái niệm hàm chi phí đã chỉnh sửa (weighted cost function):\n  * Thay vì gán trọng số như nhau cho mọi điểm dữ liệu, hồi quy cục bộ (locally weighted regression) gán mức độ quan trọng khác nhau cho từng điểm.\n* Vai trò của hàm trọng số (weight function):\n  * Thường sử dụng hàm nhân (kernel function) như hàm Gaussian.\n  * Gán trọng số cao cho các điểm dữ liệu nằm gần điểm cần dự báo.\n  * Giảm dần trọng số về không khi khoảng cách từ điểm dữ liệu đến điểm cần dự báo tăng lên.\n  * Đảm bảo rằng việc tối ưu hóa hàm chi phí tập trung vào cấu trúc cục bộ tại vùng lân cận của điểm truy vấn.\n\n# Mô tả cách thuật toán giải quyết vấn đề dữ liệu phi tuyến tính mà không cần chọn thủ công các đặc trưng\n* Thách thức của dữ liệu phi tuyến tính:\n  * Dữ liệu thực tế thường có mối quan hệ phức tạp, không thể xấp xỉ tốt bằng một đường thẳng hoặc mặt phẳng toàn cục.\n* Cơ chế xấp xỉ cục bộ:\n  * Thay vì tìm một hàm toàn cục cho toàn bộ không gian, thuật toán xây dựng một hàm hồi quy riêng biệt cho từng điểm cần dự báo.\n  * Trong một vùng lân cận hẹp, mối quan hệ phi tuyến tính phức tạp thường có thể xấp xỉ tốt bằng một mô hình đơn giản (như hồi quy tuyến tính cục bộ).\n* Ưu điểm không cần chọn thủ công đặc trưng (feature engineering):\n  * Tránh được việc phải tự tạo ra các đặc trưng đa thức (polynomial features) phức tạp.\n  * Thuật toán tự động khai thác khoảng cách không gian gốc để nắm bắt độ cong và tính phi tuyến tính của dữ liệu.",
+    "slides": [
+      {
+        "title": "Học tham số và phi tham số",
+        "bullets": [
+          "Thuật toán tham số: giả định cấu trúc hàm cố định, tốc độ dự báo nhanh.",
+          "Thuật toán phi tham số: không giả định trước, số lượng tham số tăng theo tập huấn luyện.",
+          "Học phi tham số linh hoạt hơn và phù hợp với dữ liệu phức tạp."
+        ]
+      },
+      {
+        "title": "Hàm chi phí đã chỉnh sửa",
+        "bullets": [
+          "Hồi quy cục bộ gán mức độ quan trọng khác nhau cho từng điểm dữ liệu.",
+          "Sử dụng hàm nhân (kernel function) như hàm Gaussian làm hàm trọng số.",
+          "Trọng số cao cho điểm gần, giảm về không khi khoảng cách tăng."
+        ]
+      },
+      {
+        "title": "Xử lý dữ liệu phi tuyến tính",
+        "bullets": [
+          "Dữ liệu thực tế thường phức tạp, khó xấp xỉ bằng đường thẳng toàn cục.",
+          "Xây dựng hàm hồi quy riêng biệt cho từng vùng lân cận của điểm cần dự báo.",
+          "Xấp xỉ mối quan hệ phi tuyến bằng mô hình đơn giản trong không gian hẹp."
+        ]
+      },
+      {
+        "title": "Ưu điểm không cần chọn đặc trưng thủ công",
+        "bullets": [
+          "Tránh việc phải tự tạo các đặc trưng đa thức phức tạp.",
+          "Tự động khai thác khoảng cách không gian gốc để nắm bắt độ cong dữ liệu.",
+          "Giải quyết bài toán phi tuyến tính hiệu quả mà không cần thiết kế đặc trưng."
+        ]
+      }
+    ],
+    "examples": [
+      {
+        "context": "Công ty Bán lẻ Alpha muốn dự báo doanh số cửa hàng dựa trên diện tích. Đội ngũ dữ liệu thử nghiệm hai phương pháp: một mô hình hồi quy tuyến tính truyền thống giả định mối quan hệ là đường thẳng cố định, và một mô hình học phi tham số mà độ phức tạp tăng lên khi số lượng chi nhánh cửa hàng trong cơ sở dữ liệu mở rộng.",
+        "analysis": "Ví dụ này minh họa rõ sự khác biệt giữa học tham số và phi tham số. Mô hình hồi quy tuyến tính đại diện cho học tham số với giả định cấu trúc hàm cố định, có kích thước mô hình không đổi. Ngược lại, mô hình phi tham số không áp đặt cấu trúc cứng nhắc mà để dữ liệu tự định hình, với số lượng tham số linh hoạt tăng theo quy mô tập huấn luyện để nắm bắt các xu hướng phức tạp."
+      },
+      {
+        "context": "Khi dự báo giá nhà tại một tọa độ cụ thể trên bản đồ thành phố, hệ thống hồi quy cục bộ sử dụng hàm nhân Gaussian để tính toán giá trị đầu vào. Những ngôi nhà nằm ngay sát cạnh vị trí cần dự báo được gán trọng số rất cao, trong khi những ngôi nhà ở các quận xa xôi nhận trọng số giảm dần về không trong hàm chi phí đã chỉnh sửa.",
+        "analysis": "Ngữ cảnh này phản ánh chính xác vai trò của hàm trọng số trong hồi quy cục bộ. Thay vì đối xử bình đẳng với mọi điểm dữ liệu, hàm trọng số ưu tiên các điểm lân cận gần điểm truy vấn và loại bỏ ảnh hưởng của các điểm ở xa, giúp việc tối ưu hóa tập trung hoàn toàn vào đặc điểm cấu trúc cục bộ."
+      }
+    ],
+    "quiz": [
+      {
+        "stem": "Phát biểu nào sau đây diễn giải đúng bản chất của thuật toán học phi tham số (non-parametric learning) so với thuật toán học tham số?",
+        "choices": [
+          "Thuật toán phi tham số không sử dụng bất kỳ tham số nào và hoàn toàn không lưu trữ giá trị sau giai đoạn huấn luyện.",
+          "Thuật toán phi tham số giữ số lượng tham số ở mức cố định nhưng thay đổi cấu trúc hàm theo quy mô dữ liệu.",
+          "Thuật toán phi tham số cho phép số lượng tham số tăng lên theo kích thước của tập dữ liệu huấn luyện.",
+          "Thuật toán phi tham số duy trì kích thước mô hình không đổi dù tập huấn luyện có thêm nhiều điểm dữ liệu mới."
+        ],
+        "correct_index": 2,
+        "explanation": "Đáp án đúng là phương án thứ ba vì theo nội dung bài học, thuật toán học phi tham số không giả định trước cấu trúc hàm cố định và có số lượng tham số tăng lên theo kích thước tập huấn luyện. Phương án đầu tiên sai vì phi tham số vẫn có số lượng tham số nhưng chúng tăng theo dữ liệu chứ không phải không có. Phương án thứ hai sai vì số lượng tham số không cố định. Phương án cuối cùng sai vì nhầm lẫn đặc điểm giữ kích thước mô hình không đổi của thuật toán tham số sang thuật toán phi tham số."
+      },
+      {
+        "stem": "Trong thuật toán hồi quy cục bộ (locally weighted regression), hàm trọng số (weight function) đóng vai trò chính nào đối với hàm chi phí đã chỉnh sửa?",
+        "choices": [
+          "Gán trọng số cao cho các điểm dữ liệu nằm gần và giảm dần trọng số về không khi khoảng cách tăng lên",
+          "Loại bỏ hoàn toàn các điểm dữ liệu nằm xa bằng cách gán giá trị trọng số âm trong hàm chi phí",
+          "Giữ nguyên mức độ quan trọng của mọi điểm dữ liệu và chỉ nhân thêm một hệ số khuếch đại tổng thể",
+          "Gán mức độ quan trọng cao hơn cho các điểm dữ liệu nằm ở xa để mở rộng phạm vi dự báo"
+        ],
+        "correct_index": 0,
+        "explanation": "Đáp án đúng là gán trọng số cao cho các điểm dữ liệu nằm gần và giảm dần trọng số về không khi khoảng cách tăng lên, giúp hàm chi phí tập trung tối ưu hóa tại vùng lân cận của điểm truy vấn. Các phương án còn lại sai vì hàm trọng số không dùng giá trị âm để loại bỏ điểm, không giữ nguyên trọng số đều cho mọi điểm, và không ưu tiên các điểm ở xa."
+      },
+      {
+        "stem": "Tại sao thuật toán hồi quy cục bộ (locally weighted regression) có thể giải quyết được các mối quan hệ dữ liệu phi tuyến tính phức tạp mà không cần người dùng phải tự chọn lọc đặc trưng?",
+        "choices": [
+          "Thuật toán tự động khai thác khoảng cách trong không gian gốc để xây dựng hàm xấp xỉ riêng biệt cho từng vùng lân cận.",
+          "Thuật toán yêu cầu người dùng phải chủ động bổ sung các biến đặc trưng đa thức bậc cao trước khi huấn luyện mô hình.",
+          "Thuật toán áp dụng chung một cấu trúc hàm toàn cục duy nhất cho toàn bộ không gian và chỉ điều chỉnh hệ số cân nặng.",
+          "Thuật toán sử dụng khoảng cách không gian gốc để tính toán số lượng tham số cần lưu trữ thay vì nắm bắt độ cong dữ liệu."
+        ],
+        "correct_index": 0,
+        "explanation": "Đáp án đúng là phương án đầu tiên vì hồi quy cục bộ xây dựng hàm riêng biệt cho từng điểm truy vấn và tự động khai thác khoảng cách không gian gốc để nắm bắt tính phi tuyến tính mà không cần chọn đặc trưng thủ công. Phương án thứ hai sai vì thuật toán tránh được việc phải tự tạo đặc trưng đa thức. Phương án thứ ba sai vì thuật toán không dùng hàm toàn cục duy nhất mà xấp xỉ theo từng vùng lân cận. Phương án thứ tư sai vì khoảng cách không gian gốc dùng để định hình vùng lân cận nắm bắt độ cong chứ không phải chỉ để tính số lượng tham số."
+      }
+    ],
+    "practice": {
+      "stem": "Phát biểu nào sau đây diễn giải chính xác cơ chế hoạt động của thuật toán hồi quy cục bộ (locally weighted regression)?",
+      "choices": [
+        "Thuật toán duy trì một số lượng tham số cố định và không thay đổi kích thước mô hình khi dữ liệu huấn luyện tăng lên.",
+        "Thuật toán yêu cầu người dùng phải tự chọn và tạo ra các đặc trưng đa thức phức tạp trước khi thực hiện dự báo.",
+        "Thuật toán xây dựng một hàm hồi quy riêng biệt cho từng điểm dự báo dựa trên trọng số giảm dần theo khoảng cách.",
+        "Thuật toán gán mức độ quan trọng đồng đều cho tất cả các điểm dữ liệu trong toàn bộ không gian không gian mẫu."
+      ],
+      "correct_index": 2,
+      "explanation": "Đáp án đúng là: Thuật toán xây dựng một hàm hồi quy riêng biệt cho từng điểm dự báo dựa trên trọng số giảm dần theo khoảng cách. Giải thích: Hồi quy cục bộ là phương pháp phi tham số tận dụng hàm trọng số để gán mức độ quan trọng cao cho các điểm gần điểm truy vấn và giảm dần với điểm ở xa, giúp xấp xỉ tốt dữ liệu phi tuyến tính mà không cần chọn thủ công đặc trưng. Các phương án khác đều sai: phương án đầu nhầm lẫn với tính chất của học tham số, phương án thứ hai trái ngược với ưu điểm không cần kỹ thuật chọn đặc trưng thủ công, và phương án cuối cùng sai vì hàm trọng số thay đổi theo khoảng cách chứ không gán đều toàn không gian."
+    },
+    "source_chunks": [
+      "Week03\nWhat I'd like to do today is continue our discussion of supervised learning. So, last Wednesday you saw the linear regression algorithm, including both gradient descent, how the formative problem, then gradient descent, and then the normal equations. What I'd like to do today is talk about locally weighted regression, which is a way to modify linear regression to make it fit very non-linear functions, so you aren't just making straight lines. And then we'll talk about a probabilistic interpretation of linear regression, and that will lead us into the first classification algorithm you see in this class, called logistic",
+      "Week03\nthat's not too bad. If you have millions of examples, then there are also more sophisticated algorithms like KD trees and much more complicated algorithms to do this when you have millions or tens of millions of examples. Okay, so you get a better sense of this algorithm when you play with it in the problem set. Now, the second topic, so I'm going to put aside locally weighted regression. We won't talk about that set of ideas anymore today, but what I want to do today is, on last Wednesday, I had said that I had promised last Wednesday that today, I'll give a justification for why we use the squared error, right?",
+      "Week03\nBut in a parametric learning algorithm, you fit some fixed set of parameters, such as data i to data. And so linear regression, as you saw last Wednesday, is a parametric learning algorithm because there's a fixed set of parameters. The theta i's that you fit to data, and then you're done, right? Locally weighted regression will be our first exposure to a non-parametric learning algorithm. And what that means is that the amount of data slash parameters you need to keep grows. And in this case, it grows linearly with the size of the data, with size of the training set. Okay? So with a parametric learning algorithm,",
+      "Week03\nwhich is a type of algorithm for automatically deciding, do you want x squared as a feature or square root of x as a feature, or maybe you want longer of x as a feature, right? But what set of features does the best job fitting the data that you have if it's not fit well by a perfectly straight line? What I'd like to do today is, so you hear about feature selection later this quarter. What I want to share with you today is a different way of addressing this problem of what if the data isn't just fit well by a straight line. And in particular I want to share with you an idea called locally weighted regression or locally weighted linear regression So let me use a slightly different example to illustrate this which is that if you have a data set that looks like that",
+      "Week03\nshape function, so it absolutely goes to zero upside some small range. So there are many versions of this algorithm. So I tend to use locally weighted linear regression when you have a relatively low dimensional dataset. So when the number of features is not too big, right? So when n is quite small, like two or three or something, and we have a lot of data, and you don't want to think about what features to use, right? So that's the scenario. So if you actually have a dataset that looks like these up in drawing, you know, locally weighted linear regression is a pretty good algorithm. All right, just one last question.",
+      "Week03\nregression. And we'll talk about an algorithm called Newton's method for logistic regression. And so the dependency of ideas in this class is that locally weighted regression will depend on what you learned in linear regression. And then, we're actually going to just cover the key ideas of locally weighted regression and let you play some of the ideas yourself in the problem set one, which we'll release later this week. And then, I guess, give a probabilistic interpretation of linear regression, logistic regression depend on that, and Newtis method is for logistic regression. Okay. To recap the notation you saw on Wednesday,",
+      "Week03\nso it's pretty clear what the shape of this data is, but how do you fit a curve that kind of looks like that? And it's actually quite difficult to find features. Is it square root of x, log of x, x cubed, like third root of x, x to the power of two-thirds? But what is the set of features that lets you do this? So we'll sidestep all those problems in an algorithm called locally-weighted regression. And to introduce a bit more machine learning terminology, in machine learning we sometimes distinguish between parametric learning algorithms and non-parametric learning algorithms.",
+      "Week03\nif xi minus x is large, then wi is close to 0. And so if xi is very far away, so let's see if you're fitting this green line, and this is your example, x, i, y, i, then it's saying, give this example all the way out there, if you're fitting the green line, right, look at this first x, saying that example should have a weight very close to zero. Okay? And so, if you look at the cost function, the main modification to the cost function we've made is that we've added this weighting term, right? And so what locally weighted regression does is it's saying, if an example, xi, is far"
+    ]
+  },
+  "reference": {
+    "coverage": "unknown",
+    "chunk_ids": [],
+    "total_chunks": null
+  },
+  "claim_citations": null
+}

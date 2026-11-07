@@ -1,0 +1,235 @@
+{
+  "pair_id": "0f54d1ca-75ab-4e16-b6e0-3e2737ba7808",
+  "group": "llm_no_rag",
+  "generator_model": "gemini-fast",
+  "generation_models": [
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    },
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    },
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    },
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    },
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    },
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    },
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    },
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    },
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    },
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    },
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    },
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    },
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    },
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    },
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    },
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    }
+  ],
+  "packet": {
+    "anon_id": "",
+    "topic": "Giới thiệu về Tính kế thừa (Introduction to Inheritance)",
+    "bloom_level": "understand",
+    "learning_objective": "Sau khi hoàn thành module, người học có thể phân biệt các khái niệm cốt lõi, mối quan hệ giữa lớp cơ sở với lớp dẫn xuất và các loại tính kế thừa trong lập trình hướng đối tượng.",
+    "sub_objectives": [
+      "Định nghĩa khái niệm tính kế thừa và các lợi ích cốt lõi của nó",
+      "Phân biệt vai trò giữa lớp cơ sở và lớp dẫn xuất trong mối quan hệ 'is-a'",
+      "Mô tả các loại tính kế thừa phổ biến như đơn kế thừa, đa kế thừa và kế thừa đa tầng",
+      "Giải thích cách thức hoạt động của phương thức ghi đè cùng trình tự gọi constructor và destructor"
+    ],
+    "content_markdown": "# Định nghĩa khái niệm tính kế thừa và các lợi ích cốt lõi của nó\n* Khái niệm tính kế thừa (inheritance): Cơ chế cho phép một lớp mới (lớp dẫn xuất) kế thừa các thuộc tính và phương thức từ một lớp đã có (lớp cơ sở).\n* Lợi ích cốt lõi:\n  * Tái sử dụng mã nguồn (code reusability): Giảm thiểu việc lặp lại mã bằng cách định nghĩa các đặc tính chung ở lớp cha.\n  * Dễ dàng mở rộng và bảo trì: Cho phép thêm tính năng mới hoặc chỉnh sửa hành vi toàn cục tại lớp cơ sở mà không ảnh hưởng đến từng lớp con riêng lẻ.\n  * Thể hiện phân cấp tự nhiên: Mô hình hóa các quan hệ thực tế trong thế giới thực một cách trực quan.\n\n# Phân biệt vai trò giữa lớp cơ sở và lớp dẫn xuất trong mối quan hệ 'is-a'\n* Lớp cơ sở (Base class / Superclass / Parent class):\n  * Vai trò: Chứa các thuộc tính và hành vi chung cho một nhóm các đối tượng.\n  * Đặc điểm: Đóng vai trò tổng quát hóa.\n* Lớp dẫn xuất (Derived class / Subclass / Child class):\n  * Vai trò: Kế thừa từ lớp cơ sở, đồng thời bổ sung các thuộc tính hoặc phương thức đặc thù riêng.\n  * Đặc điểm: Đóng vai trò chuyên biệt hóa.\n* Mối quan hệ 'is-a' (là một):\n  * Định nghĩa: Thể hiện tính tương thích kiểu dữ liệu, nghĩa là lớp dẫn xuất \"là một\" loại của lớp cơ sở.\n  * Ví dụ: \"Xe hơi\" là một \"Phương tiện giao thông\".\n\n# Mô tả các loại tính kế thừa phổ biến như đơn kế thừa, đa kế thừa và kế thừa đa tầng\n* Đơn kế thừa (Single inheritance):\n  * Khái niệm: Một lớp dẫn xuất chỉ kế thừa trực tiếp từ một lớp cơ sở duy nhất.\n  * Đặc điểm: Cấu trúc phân cấp đơn giản, tránh được các xung đột tên.\n* Đa kế thừa (Multiple inheritance):\n  * Khái niệm: Một lớp dẫn xuất có thể kế thừa từ nhiều lớp cơ sở cùng lúc.\n  * Đặc điểm: Giúp kết hợp nhiều tính năng nhưng có thể dẫn đến hiện tượng phức tạp như \"vấn đề kim cương\" (diamond problem).\n* Kế thừa đa tầng (Multilevel inheritance):\n  * Khái niệm: Một lớp dẫn xuất lại trở thành lớp cơ sở cho một lớp dẫn xuất khác (chuỗi kế thừa A -> B -> C).\n  * Đặc điểm: Tạo ra các tầng phân cấp từ tổng quát đến rất chi tiết.\n\n# Giải thích cách thức hoạt động của phương thức ghi đè cùng trình tự gọi constructor và destructor\n* Phương thức ghi đè (Method overriding):\n  * Khái niệm: Lớp dẫn xuất định nghĩa lại một phương thức đã có ở lớp cơ sở với cùng tên và chữ ký (signature).\n  * Hoạt động: Khi gọi phương thức trên đối tượng lớp con, phiên bản ở lớp con sẽ được thực thi thay vì phiên bản của lớp cha (tính đa hình - polymorphism).\n* Trình tự gọi constructor (Hàm khởi tạo):\n  * Khi tạo đối tượng lớp dẫn xuất, constructor của lớp cơ sở luôn được gọi trước, sau đó mới đến constructor của lớp dẫn xuất.\n* Trình tự gọi destructor (Hàm hủy):\n  * Khi hủy đối tượng, thứ tự thực hiện ngược lại với constructor: destructor của lớp dẫn xuất chạy trước, sau đó mới đến destructor của lớp cơ sở.",
+    "slides": [
+      {
+        "title": "Khái niệm và lợi ích của tính kế thừa",
+        "bullets": [
+          "Cơ chế lớp dẫn xuất kế thừa từ lớp cơ sở",
+          "Tái sử dụng mã nguồn và dễ dàng mở rộng",
+          "Thể hiện phân cấp tự nhiên trong lập trình"
+        ]
+      },
+      {
+        "title": "Lớp cơ sở và lớp dẫn xuất",
+        "bullets": [
+          "Lớp cơ sở tổng quát hóa thuộc tính và hành vi chung",
+          "Lớp dẫn xuất chuyên biệt hóa và bổ sung tính năng riêng",
+          "Mối quan hệ 'is-a' thể hiện tính tương thích kiểu dữ liệu"
+        ]
+      },
+      {
+        "title": "Các loại tính kế thừa phổ biến",
+        "bullets": [
+          "Đơn kế thừa: một lớp dẫn xuất từ một lớp cơ sở duy nhất",
+          "Đa kế thừa: một lớp dẫn xuất từ nhiều lớp cơ sở cùng lúc",
+          "Kế thừa đa tầng: tạo chuỗi phân cấp từ tổng quát đến chi tiết"
+        ]
+      },
+      {
+        "title": "Ghi đè phương thức và trình tự khởi tạo",
+        "bullets": [
+          "Ghi đè phương thức (method overriding) định nghĩa lại ở lớp con",
+          "Constructor của lớp cơ sở luôn được gọi trước khi tạo đối tượng",
+          "Destructor chạy ngược lại: từ lớp dẫn xuất đến lớp cơ sở"
+        ]
+      }
+    ],
+    "examples": [
+      {
+        "context": "Trong một phần mềm quản lý nhân sự của công ty, lập trình viên tạo ra một lớp cơ sở 'NhanVien' chứa các thuộc tính chung như 'maNhanVien', 'hoTen' và phương thức 'tinhLuong()'. Sau do, lập trình viên tạo lớp dẫn xuất 'NhanVienKinhDoanh' kế thừa từ 'NhanVien' và bổ sung thêm thuộc tính đặc thù 'doanhSoBanHang'.",
+        "analysis": "Bối cảnh này minh họa rõ nét khái niệm tính kế thừa khi lớp dẫn xuất 'NhanVienKinhDoanh' tự động nhận các đặc tính chung từ lớp cơ sở 'NhanVien' giúp tái sử dụng mã nguồn. Đồng thời, việc thêm thuộc tính 'doanhSoBanHang' thể hiện đúng vai trò chuyên biệt hóa của lớp dẫn xuất, minh họa cho mối quan hệ 'is-a' khi 'Nhân viên kinh doanh' chính là một 'Nhân viên'."
+      },
+      {
+        "context": "Khi phát triển hệ thống quản lý thiết bị điện tử, lập trình viên xây dựng một chuỗi phân cấp gồm lớp 'ThietBiDien' (lớp cơ sở), lớp 'ThietBiThongMinh' kế thừa từ 'ThietBiDien', và cuối cùng là lớp 'DienThoaiThongMinh' kế thừa từ 'ThietBiThongMinh'.",
+        "analysis": "Bối cảnh này minh họa chính xác loại kế thừa đa tầng, trong đó một lớp dẫn xuất ('ThietBiThongMinh') lại tiếp tục đóng vai trò là lớp cơ sở cho lớp dẫn xuất tiếp theo ('DienThoaiThongMinh'), tạo nên một chuỗi phân cấp từ tổng quát đến rất chi tiết (ThietBiDien -> ThietBiThongMinh -> DienThoaiThongMinh)."
+      }
+    ],
+    "quiz": [
+      {
+        "stem": "Phát biểu nào sau đây diễn giải chính xác về khái niệm tính kế thừa và lợi ích cốt lõi của nó trong lập trình hướng đối tượng?",
+        "choices": [
+          "Tính kế thừa là cơ chế cho phép một lớp dẫn xuất nhận các đặc tính từ lớp cơ sở, giúp tái sử dụng mã nguồn và dễ dàng bảo trì.",
+          "Tính kế thừa là cơ chế giúp lưu trữ các bảng dữ liệu tĩnh của chương trình mà không làm thay đổi cấu trúc mã nguồn.",
+          "Tính kế thừa là quan hệ trong đó lớp cơ sở đóng vai trò chuyên biệt hóa còn lớp dẫn xuất đóng vai trò tổng quát hóa.",
+          "Tính kế thừa đơn nghĩa là một lớp cơ sở duy nhất có thể truyền lại thuộc tính cho nhiều lớp dẫn xuất khác nhau."
+        ],
+        "correct_index": 0,
+        "explanation": "Đáp án đúng là phương án đầu tiên vì phản ánh chính xác cơ chế lớp dẫn xuất kế thừa từ lớp cơ sở nhằm tái sử dụng mã nguồn và hỗ trợ bảo trì theo đúng tài liệu. Phương án thứ hai sai vì kế thừa liên quan đến cấu trúc mã nguồn và hành vi chứ không chỉ lưu trữ dữ liệu tĩnh. Phương án thứ ba sai vì đảo ngược vai trò: lớp cơ sở mới là tổng quát hóa còn lớp dẫn xuất là chuyên biệt hóa. Phương án thứ tư sai vì định nghĩa sai về đơn kế thừa, vốn là việc một lớp dẫn xuất chỉ kế thừa từ một lớp cơ sở."
+      },
+      {
+        "stem": "Phát biểu nào sau đây diễn giải chính xác vai trò của lớp cơ sở và lớp dẫn xuất thông qua mối quan hệ 'is-a'?",
+        "choices": [
+          "Lớp cơ sở đóng vai trò chuyên biệt hóa các hành vi cụ thể, trong khi lớp dẫn xuất đóng vai trò tổng quát hóa cho nhiều đối tượng khác nhau.",
+          "Lớp cơ sở đóng vai trò tổng quát hóa các thuộc tính chung cho nhóm đối tượng, còn lớp dẫn xuất đóng vai trò chuyên biệt hóa thông qua việc bổ sung các đặc thù riêng.",
+          "Lớp dẫn xuất đóng vai trò làm khung chung cho toàn hệ thống, và lớp cơ sở là một phiên bản chi tiết thuộc về lớp dẫn xuất đó theo quan hệ 'is-a'.",
+          "Lớp cơ sở chứa các phương thức đặc thù riêng của từng đối tượng, trong đó lớp dẫn xuất chỉ kế thừa lại mà không có sự thay đổi hay bổ sung nào."
+        ],
+        "correct_index": 1,
+        "explanation": "Đáp án đúng là phương án thứ hai vì theo tài liệu, lớp cơ sở chứa các thuộc tính và hành vi chung mang tính tổng quát hóa, trong khi lớp dẫn xuất kế thừa và bổ sung các phương thức đặc thù mang tính chuyên biệt hóa, thể hiện qua việc lớp dẫn xuất 'là một' loại của lớp cơ sở. Phương án đầu tiên sai vì đảo ngược vai trò của hai lớp. Phương án thứ ba sai vì hiểu ngược chiều mối quan hệ 'is-a'. Phương án thứ tư sai vì bỏ qua đặc điểm bổ sung thuộc tính hoặc phương thức đặc thù riêng của lớp dẫn xuất."
+      },
+      {
+        "stem": "Phát biểu nào sau đây diễn giải chính xác về đặc điểm của các loại tính kế thừa trong lập trình hướng đối tượng?",
+        "choices": [
+          "Đơn kế thừa xảy ra khi một lớp dẫn xuất kế thừa trực tiếp từ một lớp cơ sở duy nhất giúp cấu trúc phân cấp đơn giản.",
+          "Đơn kế thừa thực chất là một chuỗi kế thừa dài gồm nhiều lớp cơ sở liên tiếp nhau hình thành nên một dòng.",
+          "Đa kế thừa và kế thừa đa tầng có chung cơ chế khi một lớp dẫn xuất nhận trực tiếp nhiều đặc tính từ nhiều nguồn.",
+          "Kế thừa đa tầng giới hạn lớp ở giữa chuỗi chỉ làm trung chuyển mà không được phép mang các thuộc tính riêng."
+        ],
+        "correct_index": 0,
+        "explanation": "Đáp án đúng là phương án đầu tiên vì theo tài liệu, đơn kế thừa là trường hợp một lớp dẫn xuất chỉ kế thừa trực tiếp từ một lớp cơ sở duy nhất giúp cấu trúc phân cấp đơn giản và tránh xung đột. Phương án thứ hai sai vì mô tả nhầm sang kế thừa đa tầng. Phương án thứ ba sai vì đánh đồng đa kế thừa (nhiều lớp cha trực tiếp) với kế thừa đa tầng (chuỗi A -> B -> C). Phương án thứ tư sai vì giới hạn vô căn cứ vai trò của lớp ở giữa trong chuỗi kế thừa."
+      }
+    ],
+    "practice": {
+      "stem": "Khi tìm hiểu về mối quan hệ giữa lớp cơ sở và lớp dẫn xuất trong lập trình hướng đối tượng, phát biểu nào sau đây diễn giải chính xác vai trò của chúng?",
+      "choices": [
+        "Lớp dẫn xuất đóng vai trò tổng quát hóa để chứa các đặc tính chung, còn lớp cơ sở đóng vai trò chuyên biệt hóa cho từng đối tượng cụ thể.",
+        "Lớp cơ sở đóng vai trò tổng quát hóa chứa các thuộc tính chung, còn lớp dẫn xuất đóng vai trò chuyên biệt hóa và bổ sung đặc thù riêng.",
+        "Lớp dẫn xuất là quá trình một lớp kế thừa trực tiếp từ nhiều lớp cơ sở cùng lúc để kết hợp nhiều tính năng khác nhau.",
+        "Khi tạo đối tượng lớp dẫn xuất, constructor của lớp dẫn xuất được gọi trước để thiết lập rồi mới gọi constructor lớp cơ sở."
+      ],
+      "correct_index": 1,
+      "explanation": "Đáp án đúng là phương án thứ hai vì theo nội dung bài học, lớp cơ sở đóng vai trò tổng quát hóa chứa đặc tính chung còn lớp dẫn xuất chuyên biệt hóa và bổ sung đặc thù riêng. Phương án đầu tiên sai do đảo ngược vai trò của hai lớp này. Phương án thứ ba sai vì mô tả nhầm sang đặc điểm của đa kế thừa thay vì phân biệt vai trò cơ bản. Phương án thứ tư sai vì trình tự thực tế là constructor của lớp cơ sở phải được gọi trước khi constructor của lớp dẫn xuất thực thi."
+    },
+    "source_chunks": [
+      "Chap2 Inheritance\nChapter 2: Object Oriented Programming Revision - Inheritance\nTP.HCM, 03/01/2025\nAdvanced Programming\nCO2039\nAdditional Notes\nCall constructor of the superclass\nDefault baseclass\nClass Object\nOverloading method\nSubclass inherits ALL members of the superclass\n2",
+      "Chap2 Inheritance\nCONTENT\n01\n04\n02\n05\n03\nINTRODUCTION TO INHERITANCE\nKEY CONCEPTS OF INHERITANCE\nHOW INHERITANCE WORKS?\nBEST PRACTICES\nCONCLUSION\n3\n06\nEXTENSION: COMPOSITION\nINTRODUCTION TO INHERITANCE\n01\n4",
+      "Chap2 Inheritance\nWhat is Inheritance?\nA mechanism for creating a new class (called a derived class or child class) from an existing class (called a base class or parent class) to reuse and extend its functionality.\n5\nWhy is Inheritance important?\nCode Reusability: Reuse of common logic from base classes ⇒ codebase more efficient and maintainable.\nExtensibility: New features can be added by extending the base class ⇒ easy updates without affecting existing code.\nPolymorphism: Introduced in Chap 3 later.\nHierarchical Organization: Classes can be organized in a logical structure, representing real-world relationships.\n6",
+      "Chap2 Inheritance\nKEY CONCEPTS OF INHERITANCE\n02\n7\nBase class & Derived class\n8\nBase class (Parent/Superclass): The class whose properties (attributes) and methods (functions) are inherited by another class.\nExample: Animal is a base class.\nDerived class (Child/Subclass): The class inheriting from the base class. It can use or override the members of the base class and add its own ⇒ “is-a” relationship\nExample: Dog inherits from Animal ⇒ Dog “is-a” Animal.",
+      "Chap2 Inheritance\nMethod overriding\nA derived class can redefine (override) a method from the base class to provide specific functionality.\nThe method in the base class must have the same name, return type, and parameters as the overridden method.\n9\nConstructors: When an object of a derived class is created, the base class constructor is called first, followed by the derived class constructor.\nDestructors: When an object is destroyed, the derived class destructor is called first, followed by the base class destructor.\nIntroduced more detailed in Chap 3 - Polymorphism\nTypes of Inheritance\nSingle Inheritance: A derived class inherits from one base class.\nMultiple Inheritance: A class inherits from more than one base class. (Supported in C++ but not in Java)\nMultilevel Inheritance: A class inherits from a derived class, forming a chain.\nHierarchical Inheritance: Multiple derived classes inherit from one base class.\nHybrid Inheritance: A combination of two or more types of inheritance.\n10",
+      "Chap2 Inheritance\nTypes of Inheritance\n11\nHình: ClassB ClassB ClassB | | ClassC\nSingle Inheritance Hierarchical Inheritance\nClassC\nMultilevel Inheritance\n| ClassA | | ClassB |\nClassB | | ClassC\nMultiple Inheritance\nHybrid Inheritance\nDiamond Problem?\nHOW INHERITANCE WORKS?\n03\n12",
+      "Chap2 Inheritance\nSubclass inherits all members from Superclass\nWhen a subclass inherits from a superclass:\nAll members of the superclass, whether public or private, are technically inherited.\nHowever, accessibility depends on the access specifier:\nPublic and protected members can be directly accessed in the subclass.\nPrivate members are inherited but not accessible directly; they are accessible through public or protected getters and setters in the superclass.\n13\nSubclass inherits all members from Superclass\n14\nHình: MODE OF INHERITANCE\nee Public\nPublic Public Protected Private\nProtected Protected Protected Private\nPrivate Not Accessible NotAccessible Not Accessible\n(Hidden) (Hidden) (Hidden)",
+      "Chap2 Inheritance\nPointers for Polymorphism (1)\nclass Superclass {\npublic:\n    virtual void display() { cout << \"Superclass\\n\"; }\n};\n\nclass Subclass : public Superclass {\npublic:\n    void display() override { cout << \"Subclass\\n\"; }\n};\n\nint main() {\n    Subclass sub;\n    Superclass sup = sub; \n    sup.display(); // Output: ???\n}\n15\nSuperclass\nSubclass\nsup\nsub\nPointers for Polymorphism (2)\nclass Superclass {\npublic:\n    virtual void display() { cout << \"Superclass\\n\"; }\n};\n\nclass Subclass : public Superclass {\npublic:\n    void display() override { cout << \"Subclass\\n\"; }\n};\n\nint main() {\n    Subclass sub;\n    Superclass* sup = &sub; \n    sup–>display(); // Output: ???\n}\n16\nSuperclass\nSubclass\nsup\nsub",
+      "Chap2 Inheritance\nImplicit use of pointers\nclass Superclass {\n    public void display() {\n        System.out.println(\"Superclass\");\n    }\n}\nclass Subclass extends Superclass {\n    @Override\n    public void display() {\n        System.out.println(\"Subclass\");\n    }\n}\npublic class Main {\n    public static void main(String[] args) {\n        Superclass obj = new Subclass(); \n        obj.display(); // Output: ???\n    }\n}\n17\nIn Java (and many other OOP languages): All objects are accessed via references (similar to pointers in C++).\nBEST PRACTICES\n04\n18",
+      "Chap2 Inheritance\nExercise 1 - Inheritance in Vehicle classes (1)\nCreate a base class Vehicle with the following private attributes:\nbrand (string)\nyear (int)\nAdd the following to Vehicle:\nA default constructor that sets default values (\"Unknown\" for brand, 0 for year).\nA parameterized constructor to initialize brand and year.\nSetters and getters for brand and year.\nA method displayInfo() to print details of the vehicle.\n19\nExercise 1 - Inheritance in Vehicle classes (2)\nCreate a derived class Car that inherits from Vehicle:\nAdd a private attribute: model (string).\nProvide a default constructor and a parameterized constructor for Car using constructor chaining.\nOverride the displayInfo() method to include model.\nCreate another derived class Bike that inherits from Vehicle:\nAdd a private attribute: engineCapacity (int).\nProvide constructors and override displayInfo() to include engineCapacity.\nIn the main function:\nCreate a Car object using both default and parameterized constructors and display its details.\nCreate a Bike object using both default and parameterized constructors and display its details.\n20",
+      "Chap2 Inheritance\nExercise 2 - Enhanced Library System with Inheritance (1)\nBook Class (Base Class):\nAttributes: title, author, ISBN, price, and stock.\nMethods:\nConstructor to initialize attributes.\nGetter and setter methods.\nA virtual displayDetails() method to display book information.\nDerived Classes:\nEBook (inherits Book):\nAdditional attribute: fileSize (in MB).\nOverride displayDetails() to include file size.\nPrintedBook (inherits Book):\nAdditional attribute: pageCount.\nOverride displayDetails() to include page count.\n21\nExercise 2 - Enhanced Library System with Inheritance (2)\nLibrary Class:\nAttributes:\nA dynamic array or vector of pointers to Book objects (supporting both EBook and PrintedBook).\nMethods:\naddBook(Book*): Add a new book (of any type).\nsearchByTitle(string) and searchByAuthor(string): Search books by title/author.\nborrowBook(string ISBN): Reduce stock of the specified book by 1.\ndisplayAllBooks(): Display all books in the library.\nMain Function:\nAdd a mix of EBook and PrintedBook objects to the library.\nSimulate user operations: Search for books by title/author, Borrow books, Display all books.\n22",
+      "Chap2 Inheritance\nExercise 3 - Point2D and Point3D\n23\nHình: Point2D\n-x:float = 0.0f\n-y:float = 0.0f\n+Point2D(x:float,y:float)\n+Point2D()\n+getX():float\n+setX(x: float): void\n+getY():float\n+setY(y:float) :void\n+setXY(x:float,y:float) :void\n+getXY():float[2]\n+toString():String\nextends\nArray of {x,y}\n\"(x,y)”\nPoint3D\n-z:float = 0.0f\n+Point3D(x: float,y:float,z:float)\n+Point3D()\n+getZ():float\n+setZ(z:flaot):void\n+setXYZ(x:float,y:flaot,z:float):void\n+getXYZ():float[3]\n+toString() :Stringe\nArray of {x,y,z}\nCan you write a program based on this class diagram?\nCONCLUSION\n05\n24",
+      "Chap2 Inheritance\nConclusion\nInheritance is a fundamental concept of OOP, enabling the creation of new classes by reusing and extending existing ones.  \nThe primary benefit of inheritance lies in code reuse and the establishment of hierarchical relationships between classes.  \nMethod overriding and dynamic binding1 are key mechanisms in inheritance, supporting polymorphism and enhancing flexibility in design.\n25\n1Introduced in Chap 3 - Polymorphism\nEXTENSION: COMPOSITION\n06\n26",
+      "Chap2 Inheritance\nOOP Composition\n27\nComplete this code: https://www.programiz.com/online-compiler/03auquyMRJCj0\nGhi chú: A class called Author (as shown in the class diagram) is designed to model a book's author. It contains:\nThree private instance variables: name (String), email (String), and gender (char of either 'm' or 'f');\nOne constructor to initialize the name, email and gender with the given values;\n(There is no default constructor for Author, as there are no defaults for name, email and gender.)\npublic getters/setters: getName(), getEmail(), setEmail(), and getGender();\n(There are no setters for name and gender, as these attributes cannot be changed.)\nA toString() method that returns \"Author[name=?,email=?,gender=?]\", e.g., \"Author[name=Tan Ah Teck,email=ahTeck@somewhere.com,gender=m]\".\nA class called Book is designed (as shown in the class diagram) to model a book written by one author. It contains:\nFour private instance variables: name (String), author (of the class Author you have just created, assume that a book has one and only one author), price (double), and qty (int);\npublic methods getName(), getAuthor(), getPrice(), setPrice(),",
+      "Chap2 Inheritance › OOP Composition\nand only one author), price (double), and qty (int);\npublic methods getName(), getAuthor(), getPrice(), setPrice(), getQty(), setQty().\nA toString() that returns \"Book[name=?,Author[name=?,email=?,gender=?],price=?,qty=?\".  You should reuse Author’s toString().\nWrite the Book class (which uses the Author class written earlier).",
+      "Chap2 Inheritance\nHands-on exercise\n28\nComplete this code: https://www.programiz.com/online-compiler/74XUfgm8cwc0G\nHình: Book Author\n-name : String -name: String\n-authors:Author[] -email:String\n-price:double\n-qty:int = 9\n+Book(name : String, authors:Author[],\n+Book(name : authors:Author[],\nprice:double,qty:int)\n+getName()\n+getAuthors():Author[]\n+getPrice() :double\n+setPrice(price: double) :void of\n+getQty():int\n+setQty(qty:int):void “\n+toString() :String\n+getAuthorNames() : Stringe ee -\\acuthonNanel\n“Book[name=n, authors={Author [nam\n},price=p,\nGhi chú: In the earlier exercise, a book is written by one and only one author. In reality, a book can be written by one or more author. Modify the Book class to support one or more authors by changing the instance variable authors to an Author array.\nNotes:\nThe constructors take an array of Author (i.e., Author[]), instead of an Author instance. In this design, once a Book instance is constructor, you cannot add or remove author.\nThe toString() method shall return",
+      "Chap2 Inheritance › Hands-on exercise\ninstead of an Author instance. In this design, once a Book instance is constructor, you cannot add or remove author.\nThe toString() method shall return \"Book[name=?,authors={Author[name=?,email=?,gender=?],......},price=?,qty=?]\".\nYou are required to:\nWrite the code for the Book class. You shall re-use the Author class written earlier.",
+      "Chap2 Inheritance\nThank you for your attention!\nhttps://www.cse.hcmut.edu.vn"
+    ]
+  },
+  "reference": {
+    "coverage": "complete",
+    "chunk_ids": [
+      "9cfe1121-e768-42bc-b9d5-74e47876e3c6",
+      "78052ed0-e309-4ce1-ba22-b7500a622b6b",
+      "e85dfc06-b027-4a9a-818f-f08bcabd3526",
+      "0890082a-ca14-4fd2-997b-1bd78af9efeb",
+      "359c4bca-5de0-4466-9337-6a04d1b00028",
+      "9622640e-9bce-4027-bb65-d064ed5a078e",
+      "49326e07-211f-468c-b2cf-eceb225816dd",
+      "1632c1bb-da4e-47f1-a1b6-306b973884f8",
+      "746700cc-b0fb-4182-8df7-db3390d6954c",
+      "3dea45e3-c2fe-4db6-94c5-640ce9f5add9",
+      "f16c7d08-005f-45da-8b46-19909acb002d",
+      "2c4f82f8-a6f3-45ac-b3bf-2c844a58b817",
+      "7b7495a0-934f-48db-bb0d-cfa3e500aa50",
+      "bfddc65e-3b05-4687-afc2-fb526aa7ea17",
+      "3e7fb895-a193-45dd-a454-528429ee4525",
+      "b77f3284-0379-4651-9f37-5ad86d2e090d",
+      "a6412e18-1465-4eca-9ac6-58b35b7378ab",
+      "0629ae8b-995a-4584-9b24-7b79808bb644"
+    ],
+    "total_chunks": 18
+  },
+  "claim_citations": null
+}

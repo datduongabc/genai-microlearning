@@ -1,0 +1,507 @@
+{
+  "pair_id": "cfd30918-e20d-466c-b20c-bede6fa80a74",
+  "group": "rag_llm",
+  "generator_model": "gemini-fast",
+  "generation_models": [
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    },
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    },
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    },
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    },
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    },
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    },
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    },
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    },
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    },
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    },
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    },
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    },
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    },
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    }
+  ],
+  "packet": {
+    "anon_id": "",
+    "topic": "Linear Regression",
+    "bloom_level": "understand",
+    "learning_objective": "Sau khi hoàn thành module, người học có thể giải thích cách thuật toán linear regression sử dụng các tham số và hàm chi phí để dự đoán giá trị đầu ra.",
+    "sub_objectives": [
+      "Mô tả mục đích và cách thu thập tập dữ liệu cho bài toán linear regression",
+      "Giải thích ý nghĩa của các tham số theta và vectơ đặc trưng trong hàm giả thuyết",
+      "Trình bày cách hàm chi phí tính toán bình phương sai số giữa giá trị dự đoán và giá trị thực tế"
+    ],
+    "content_markdown": "# Mô tả mục đích và cách thu thập tập dữ liệu cho bài toán linear regression\n\n* Linear regression là một bài toán supervised learning thuộc bài toán regression, trong đó đầu ra $y$ cần dự đoán là một giá trị liên tục.         \n* Quy trình bắt đầu bằng việc thu thập một tập dữ liệu (training set) gồm các ví dụ, ví dụ như dữ liệu về kích thước nhà và giá nhà được thu thập từ Craigslist ở Portland, Oregon.         \n* Trong tập dữ liệu này, $m$ được định nghĩa là số lượng ví dụ huấn luyện (training examples), $x$ là các đặc trưng đầu vào (input features), và $y$ là đầu ra hoặc biến mục tiêu (target variable).           \n* Một ví dụ huấn luyện đơn lẻ được ký hiệu là $(x^{(i)}, y^{(i)})$, trong đó chỉ số mũ trong ngoặc đơn biểu diễn chỉ số của ví dụ huấn luyện thứ $i$.           \n* Ký hiệu $n$ dùng để chỉ số lượng các đặc trưng đầu vào cho bài toán học có giám sát.      \n\n# Giải thích ý nghĩa của các tham số theta và vectơ đặc trưng trong hàm giả thuyết\n\n* Công việc của thuật toán học máy là tiếp nhận một tập huấn luyện và đầu ra là một hàm được gọi là hàm giả thuyết (hypothesis), ký hiệu là $h(x)$ hoặc $h_theta(x)$.          \n* Hàm giả thuyết có nhiệm vụ nhận đầu vào là các đặc trưng của một đối tượng chưa thấy (ví dụ như kích thước nhà) và đưa ra dự đoán giá trị đầu ra ước tính.     \n* Trong trường hợp có nhiều đặc trưng đầu vào như kích thước ($x_1$) và số phòng ngủ ($x_2$), hàm giả thuyết tuyến tính có thể viết là $h(x) = theta_0 + theta_1 x_1 + theta_2 x_2$.         \n* Để đơn giản hóa ký hiệu, một đặc trưng giả (dummy feature) $x_0 = 1$ được định nghĩa thêm, cho phép viết lại hàm giả thuyết dưới dạng tổng $\\sum_{j=0}^{n} theta_j x_j$.          \n* Trong biểu diễn này, $theta$ trở thành một vectơ tham số $n+1$ chiều ($theta_0, theta_1, \\dots, theta_n$) và $x$ trở thành một vectơ đặc trưng $n+1$ chiều ($x_0, x_1, \\dots, x_n$).           \n* Các tham số $theta$ đóng vai trò là các tham số của thuật toán học máy, và nhiệm vụ của thuật toán là lựa chọn các giá trị $theta$ sao cho có thể tạo ra các dự đoán tốt về giá trị đầu ra.           \n\n# Trình bày cách hàm chi phí tính toán bình phương sai số giữa giá trị dự đoán và giá trị thực tế\n\n* Để học được bộ tham số, ta cần chọn các tham số $theta$ sao cho hàm giả thuyết $h(x)$ gần sát với giá trị thực tế $y$ đối với các ví dụ trong tập huấn luyện.           \n* Thuật toán linear regression (còn gọi là ordinary least squares) thực hiện việc tối thiểu hóa bình phương sai số giữa giá trị dự đoán $h_theta(x)$ và giá trị đúng $y$.      \n* Hàm chi phí (cost function) $J(theta)$ được định nghĩa bằng tổng bình phương các sai số trên tất cả $m$ ví dụ huấn luyện: $J(theta) = \\frac{1}{2m} \\sum_{i=1}^{m} (h_theta(x^{(i)}) - y^{(i)})^2$ (hoặc với hằng số $\\frac{1}{2}$ nhân ở ngoài tổng bình phương sai số để giúp cho việc tính đạo hàm sau này trở nên đơn giản hơn).           \n* Thuật toán sẽ tìm các tham số $theta$ làm giảm thiểu tối đa hàm chi phí $J(theta)$.      ",
+    "slides": [
+      {
+        "title": "Tổng quan về Linear Regression và Tập Dữ Liệu",
+        "bullets": [
+          "Thuộc bài toán supervised learning với đầu ra $y$ là giá trị liên tục",
+          "Sử dụng tập dữ liệu huấn luyện (training set) gồm $m$ ví dụ",
+          "Ký hiệu $(x^{(i)}, y^{(i)})$ đại diện cho ví dụ huấn luyện thứ $i$"
+        ]
+      },
+      {
+        "title": "Hàm Giả Thuyết (Hypothesis)",
+        "bullets": [
+          "Hàm giả thuyết $h_theta(x)$ nhận đầu vào là đặc trưng để dự đoán đầu ra",
+          "Biểu diễn tuyến tính với nhiều đặc trưng: $h(x) = theta_0 + theta_1 x_1 + theta_2 x_2$",
+          "Sử dụng đặc trưng giả $x_0 = 1$ để tổng quát hóa dưới dạng vectơ"
+        ]
+      },
+      {
+        "title": "Vectơ Tham Số Theta và Đặc Trưng",
+        "bullets": [
+          "Vectơ tham số $theta$ và vectơ đặc trưng $x$ có kích thước $n+1$ chiều",
+          "Thuật toán học máy có nhiệm vụ lựa chọn giá trị $theta$ để đưa ra dự đoán tốt"
+        ]
+      },
+      {
+        "title": "Hàm Chi Phí (Cost Function)",
+        "bullets": [
+          "Đo lường mức độ gần sát giữa giá trị dự đoán $h_theta(x)$ và thực tế $y$",
+          "Định nghĩa $J(theta)$ dựa trên tổng bình phương sai số của $m$ ví dụ",
+          "Mục tiêu của thuật toán là tối thiểu hóa hàm chi phí $J(theta)$"
+        ]
+      }
+    ],
+    "examples": [
+      {
+        "context": "Một nhóm kỹ sư dữ liệu tại một công ty bất động sản muốn xây dựng mô hình dự đoán giá căn hộ dựa trên dữ liệu thực tế thu thập từ trang web đăng tin mua bán nhà đất tại thành phố Hồ Chí Minh. Họ thu thập một tập huấn luyện gồm m = 500 căn hộ, trong đó mỗi ví dụ huấn luyện (x^{(i)}, y^{(i)}) bao gồm đặc trưng đầu vào x (như diện tích, số phòng ngủ) là một giá trị liên tục và biến mục tiêu y là giá bán thực tế của căn hộ đó.",
+        "analysis": "Bối cảnh này minh họa chính xác khái niệm tập dữ liệu (training set) trong bài toán linear regression, trong đó đầu ra y cần dự đoán là một giá trị liên tục, m là số lượng ví dụ huấn luyện, x là các đặc trưng đầu vào và cặp (x^{(i)}, y^{(i)}) biểu diễn từng ví dụ huấn luyện đơn lẻ trong tập dữ liệu."
+      },
+      {
+        "context": "Trong bài toán dự đoán giá nhà dựa trên hai đặc trưng là diện tích (x_1) và số phòng ngủ (x_2), hệ thống thiết lập hàm giả thuyết tuyến tính dưới dạng h_theta(x) = theta_0 + theta_1 x_1 + theta_2 x_2. Để đơn giản hóa phép tính, hệ thống bổ sung đặc trưng giả x_0 = 1, biến vectơ tham số thành theta = [theta_0, theta_1, theta_2] và vectơ đặc trưng thành x = [x_0, x_1, x_2]. Nhiệm vụ của thuật toán học máy là lựa chọn các giá trị tham số theta sao cho hàm giả thuyết tạo ra các giá trị dự đoán sát với giá nhà thực tế.",
+        "analysis": "Bối cảnh trên thể hiện đúng ý nghĩa của các tham số theta và vectơ đặc trưng trong hàm giả thuyết, bao gồm việc sử dụng đặc trưng giả x_0 = 1 để biểu diễn hàm giả thuyết dưới dạng tổng tổng quát ∑_{j=0}^{n} theta_j x_j, đồng thời nêu bật vai trò của vectơ tham số theta trong việc giúp thuật toán đưa ra các dự đoán tốt về giá trị đầu ra."
+      }
+    ],
+    "quiz": [
+      {
+        "stem": "Khi thiết kế một thuật toán học máy như linear regression, việc xác định tập dữ liệu phục vụ mục đích gì và được sử dụng như thế nào đóng vai trò cốt lõi. Theo nội dung bài học, tập dữ liệu trong linear regression được dùng để làm gì?",
+        "choices": [
+          "Dữ liệu chỉ được sử dụng sau khi quá trình tối ưu hoàn tất nhằm kiểm tra độ chính xác tổng thể mà không tham gia vào quá trình học.",
+          "Dữ liệu được dùng để tính toán giá trị trung bình của các biến đầu ra mà không ảnh hưởng trực tiếp đến việc điều chỉnh các tham số.",
+          "Dữ liệu chủ yếu phục vụ cho việc trực quan hóa biểu đồ phân phối của mô hình thay vì giúp thuật toán học các tham số phù hợp.",
+          "Dữ liệu được sử dụng để giúp thuật toán học cách chọn các tham số sao cho giá trị dự đoán đầu ra sát với giá trị thực tế đã biết."
+        ],
+        "correct_index": 3,
+        "explanation": "Đáp án đúng là phương án thứ tư vì theo tài liệu, tập dữ liệu chứa các giá trị đầu ra đã biết giúp thuật toán lựa chọn tham số theta sao cho giá trị dự đoán sát với giá trị thực tế. Các phương án còn lại không chính xác vì hiểu sai vai trò thực tế của tập dữ liệu trong quá trình huấn luyện và tối ưu hóa của thuật toán linear regression."
+      },
+      {
+        "stem": "Phát biểu nào sau đây diễn giải chính xác mối quan hệ giữa vectơ đặc trưng và các tham số trong hàm giả thuyết của thuật toán linear regression dựa trên tài liệu?",
+        "choices": [
+          "Vectơ đặc trưng x chỉ bao gồm các thuộc tính thực tế của ngôi nhà và được nhân trực tiếp với giá trị dự đoán mà không cần thành phần x0 bằng 1.",
+          "Các tham số theta là các hằng số cố định có sẵn của bài toán thay vì là vectơ ba chiều được thuật toán học tập lựa chọn để dự đoán.",
+          "Hàm giả thuyết phụ thuộc vào sự kết hợp giữa vectơ đặc trưng x và các tham số theta để tạo ra kết quả dự đoán giá trị đầu ra.",
+          "Hàm giả thuyết chỉ chịu sự chi phối của các giá trị đặc trưng đầu vào x mà không có sự tham gia của các tham số theta."
+        ],
+        "correct_index": 2,
+        "explanation": "Đáp án đúng là phương án thứ ba vì tài liệu chỉ ra hàm giả thuyết phụ thuộc vào cả tham số theta và vectơ đặc trưng x để đưa ra dự đoán. Phương án đầu tiên sai vì bỏ qua thành phần x0 luôn bằng 1. Phương án thứ hai sai vì theta là vectơ ba chiều do thuật toán học tập lựa chọn chứ không phải hằng số cố định có sẵn. Phương án cuối cùng sai vì hàm giả thuyết phụ thuộc vào cả theta lẫn đặc trưng x."
+      },
+      {
+        "stem": "Trong thuật toán linear regression, hàm chi phí sử dụng thành phần nào để đo lường khoảng cách giữa giá trị do thuật toán dự đoán và giá trị thực tế của tập huấn luyện?",
+        "choices": [
+          "Tổng giá trị tuyệt đối của sai số giữa giá trị dự đoán và giá trị thực tế.",
+          "Tổng bình phương sai số giữa giá trị dự đoán và giá trị thực tế cộng thêm hệ số một nửa giúp đơn giản hóa việc tính đạo hàm.",
+          "Tổng giá trị sai số đơn thuần giữa giá trị dự đoán và giá trị thực tế của các tập huấn luyện.",
+          "Tổng bình phương sai số giữa giá trị thực tế và giá trị dự đoán mà không cần nhân với hằng số một nửa."
+        ],
+        "correct_index": 1,
+        "explanation": "Đáp án đúng là phương án thứ hai vì theo tài liệu, hàm chi phí tính tổng bình phương sai số giữa giá trị dự đoán và giá trị thực tế qua các ví dụ huấn luyện, đồng thời có thêm hằng số một nửa bằng quy ước để giúp việc tính đạo hàm toán học trở nên đơn giản hơn sau này. Các phương án khác sai do dùng sai loại sai số (giá trị tuyệt đối hoặc thiếu bình phương) hoặc giải thích sai vai trò của hằng số một nửa."
+      }
+    ],
+    "practice": {
+      "stem": "Trong thuật toán linear regression, việc lựa chọn các tham số theta được thực hiện bằng cách nào để dự đoán giá trị đầu ra?",
+      "choices": [
+        "Thuật toán cố gắng tối đa hóa sự chênh lệch giữa giá trị dự đoán và giá trị thực tế của tập dữ liệu.",
+        "Thuật toán được xây dựng như một phương pháp học không giám sát để gom cụm các giá trị nhà tương tự nhau.",
+        "Thuật toán tìm các tham số bằng cách giảm thiểu bình phương sai số giữa giá trị do giả thuyết đầu ra và giá trị thực tế.",
+        "Thuật toán tính tổng độ lệch tuyệt đối giữa các giá trị thực tế và giá trị dự đoán để xác định tham số."
+      ],
+      "correct_index": 2,
+      "explanation": "Đáp án đúng là giảm thiểu bình phương sai số giữa giá trị dự đoán và giá trị thực tế, đúng như mô tả trong nguồn S1 về mục tiêu tối ưu hóa của linear regression (minimize the squared difference). Phương án tối đa hóa là sai vì ta muốn giảm thiểu sai số dự đoán. Phương án học không giám sát sai vì linear regression là thuật toán học máy giám sát (supervised learning). Phương án dùng độ lệch tuyệt đối sai vì thuật toán sử dụng bình phương sai số (squared difference)."
+    },
+    "source_chunks": [
+      "Week02\nBut so in order to learn a set of parameters, what we'll want to do is choose the parameters theta so that at least for the houses whose prices you know, that the learning algorithm outputs prices that are close to what you know were the correct prices for that set of houses, were the correct asking prices for those houses. And so more formally, in the linear regression algorithm, also called ordinary least squares, with linear regression we will want to minimize I going to build out this equation one piece at a time Minimize the squared difference between what the hypothesis outputs H subscript theta of X minus Y squared So let's say we want to minimize the squared difference between the prediction,",
+      "Week02\nSo I think the simplest, maybe the simplest possible learning algorithm, a supervised learning regression problem is linear regression. And to motivate that, rather than using a self-driving car example, which is quite complicated. We'll build up a supervised learning algorithm using a simpler example. So let's say you want to predict or estimate the prices of houses. So the way you build a learning algorithm is start by collecting a data set of houses and their prices. So this is a data set that we collected off Craigslist a little bit back. This is data from Portland, Oregon. but so that's the size of a house in square feet",
+      "Week02\nMorning and welcome back. So what we'll see today in class is the first in-depth discussion of a learning algorithm, linear regression. And in particular, over the next, what, hour and a bit, you see a linear regression batch and stochastic gradient descent as an algorithm for fitting linear regression models. and then the normal equations as a way of, as a very efficient way to let you fit linear models. And we're going to define notation and a few concepts today that will lay the foundation for a lot of the work that we'll see the rest of this quarter. So to motivate linear regression, it's kind of, you know, maybe the simplest, one of the simplest learning algorithms.",
+      "Week02\nyou see that linear regression is a special case of a bigger family of algorithms called generalized linear models, and that using squared error corresponds to Gaussian, but we'll justify maybe a little bit more y squared error rather than absolute error or error to the power of 4 next week. So let me just check see if any questions at this point Okay cool All right. So, so, So next, let's see how we can implement an algorithm to find the value of theta that minimizes J of theta, that minimizes the cost function J of theta. We're going to use an algorithm called gradient descent. And, you know, this is my first class teaching in this classroom,",
+      "Week02\nand even though linear regression, right, you may have seen it in a linear algebra class before and some of the class before, the way you go about structuring a machine learning algorithm is important. And design choices of what is the workflow, what is the data set, what is the hypothesis, how do we represent the hypothesis? These are the key decisions you have to make in pretty much every supervised learning, every machine learning algorithm design. So as we go through linear regression, I'll try to describe the concepts clearly as well because they'll lay the foundation for the rest of the algorithms, sometimes much more complicated algorithms you see later this quarter.",
+      "Week02\nSo adding a one-half, minimizing that formula should give you the same answer as minimizing one-half of that, but we often put a one-half there since it will make the math a little bit simpler later. And so in linear regression, I'm going to define the cost function j of theta to be equal to that. And we'll find parameters theta that minimizes the cost function j of theta. Okay? And questions I've often gotten is, you know, why squared error? Why not absolute error or just error to the power of 4? We'll talk more about that when we talk about the generalization of linear regression. When we talk about generalized linear models, which we'll do next week,",
+      "Week02\nwhich is H of X, and Y, which is the correct price. and so what we want to do is choose values of theta that minimizes that to fill this out, you know, you have m training examples so I'm going to sum from i equals 1 through m of that squared difference, so this is sum over i equals 1 through all, say, 50 examples you have, right, of the squared difference between what your algorithm predicts and what the true price of the house is. And then finally, by convention, we put a one-half constant there because when we take derivatives to minimize this later, putting one-half there will make some of the math a little bit simpler.",
+      "Week02\nIt works only for linear regression. It doesn't work for any of the other algorithms we'll talk about later this quarter. But let me quickly show you the derivation of that. And what I want to do is give you a flavor of how to derive the normal equation. And where you end up with is, what I hope to do is end up with a formula that lets you say theta equals some stuff, where you just set theta equals to that, and in one step, with a few matrix multiplications, you end up with the optimal value of theta that lands you right at the global optimum. Right, kind of just like that, just in one step. And if you've taken advanced linear algebra classes before or something, you may have"
+    ]
+  },
+  "reference": {
+    "coverage": "unknown",
+    "chunk_ids": [],
+    "total_chunks": null
+  },
+  "claim_citations": [
+    {
+      "claim": "Linear regression là một bài toán supervised learning thuộc bài toán regression, trong đó đầu ra $y$ cần dự đoán là một giá trị liên tục.",
+      "source_id": "S2",
+      "start": 80,
+      "end": 217,
+      "marker_start": 218,
+      "marker_end": 222,
+      "locator": "{\"start_ms\": 51820, \"end_ms\": 95960}",
+      "chunk_id": "a715222d-b2dd-472a-8816-36b6f88c4f6c",
+      "chunk_content": "Week02\nYou remember the Alvin video, the autonomous driving video that I had shown in class on Monday. For the self-driving car video, that was a supervised learning problem. And the term supervised learning meant that you were given X's, which was a picture of what's in front of the car, and the algorithm had to map that to an output Y, which was the steering direction. and that was a regression problem because the output y that you want is continuous value, right? As opposed to a classification problem where y is discrete. And we'll talk about classification next Monday, but supervised learning regression.",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "Linear regression là một bài toán supervised learning thuộc bài toán regression, trong đó đầu ra $y$ cần dự đoán là một giá trị liên tục.",
+      "source_id": "S3",
+      "start": 80,
+      "end": 217,
+      "marker_start": 222,
+      "marker_end": 226,
+      "locator": "{\"start_ms\": 96480, \"end_ms\": 138580}",
+      "chunk_id": "93d2bef7-dcae-4210-a9a0-1a956e0b98bf",
+      "chunk_content": "Week02\nSo I think the simplest, maybe the simplest possible learning algorithm, a supervised learning regression problem is linear regression. And to motivate that, rather than using a self-driving car example, which is quite complicated. We'll build up a supervised learning algorithm using a simpler example. So let's say you want to predict or estimate the prices of houses. So the way you build a learning algorithm is start by collecting a data set of houses and their prices. So this is a data set that we collected off Craigslist a little bit back. This is data from Portland, Oregon. but so that's the size of a house in square feet",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "Quy trình bắt đầu bằng việc thu thập một tập dữ liệu (training set) gồm các ví dụ, ví dụ như dữ liệu về kích thước nhà và giá nhà được thu thập từ Craigslist ở Portland, Oregon.",
+      "source_id": "S3",
+      "start": 229,
+      "end": 406,
+      "marker_start": 407,
+      "marker_end": 411,
+      "locator": "{\"start_ms\": 96480, \"end_ms\": 138580}",
+      "chunk_id": "93d2bef7-dcae-4210-a9a0-1a956e0b98bf",
+      "chunk_content": "Week02\nSo I think the simplest, maybe the simplest possible learning algorithm, a supervised learning regression problem is linear regression. And to motivate that, rather than using a self-driving car example, which is quite complicated. We'll build up a supervised learning algorithm using a simpler example. So let's say you want to predict or estimate the prices of houses. So the way you build a learning algorithm is start by collecting a data set of houses and their prices. So this is a data set that we collected off Craigslist a little bit back. This is data from Portland, Oregon. but so that's the size of a house in square feet",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "Quy trình bắt đầu bằng việc thu thập một tập dữ liệu (training set) gồm các ví dụ, ví dụ như dữ liệu về kích thước nhà và giá nhà được thu thập từ Craigslist ở Portland, Oregon.",
+      "source_id": "S4",
+      "start": 229,
+      "end": 406,
+      "marker_start": 411,
+      "marker_end": 415,
+      "locator": "{\"start_ms\": 138580, \"end_ms\": 201380}",
+      "chunk_id": "d4b3425f-de2f-4476-97b8-8f157cfa27ba",
+      "chunk_content": "Week02\nand that's the price of a house in thousands of dollars right and so there a house that is 2 square feet whose asking price was house with that size with that price and so on. And maybe more conventionally, if you plot this data, there's the size, there's the price, So you have some data set like that. And what we'll end up doing today is fill a straight line to this data and go through how to do that. So in supervised learning, the process of supervised learning is that you have a training set, such as the data set that I drew on the left, and you feed this to learning algorithm. And the job of the learning algorithm",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "Trong tập dữ liệu này, $m$ được định nghĩa là số lượng ví dụ huấn luyện (training examples), $x$ là các đặc trưng đầu vào (input features), và $y$ là đầu ra hoặc biến mục tiêu (target variable).",
+      "source_id": "S11",
+      "start": 418,
+      "end": 612,
+      "marker_start": 613,
+      "marker_end": 618,
+      "locator": "{\"start_ms\": 523260, \"end_ms\": 583480}",
+      "chunk_id": "2f314c5c-d897-437a-b771-82e6ec5b48fd",
+      "chunk_content": "Week02\nAnd just to lay out some more notation that we're gonna use throughout this quarter, we're gonna use a standard that M will define as the number of training examples. So M is going to be the number of rows in the table above. where each house you have in your training set is one training example. You've already seen me use X to denote the inputs, and often the inputs are called features. You know, I think as an emerging discipline grows up, notation kind of emerges depending on what different scientists use for the first time when they write a paper. So I think that, I don't know, I think that the fact that we call these things hypotheses,",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "Trong tập dữ liệu này, $m$ được định nghĩa là số lượng ví dụ huấn luyện (training examples), $x$ là các đặc trưng đầu vào (input features), và $y$ là đầu ra hoặc biến mục tiêu (target variable).",
+      "source_id": "S12",
+      "start": 418,
+      "end": 612,
+      "marker_start": 618,
+      "marker_end": 623,
+      "locator": "{\"start_ms\": 583680, \"end_ms\": 642280}",
+      "chunk_id": "511525e5-de45-4b6e-9ff0-ea1e3ac8dc2a",
+      "chunk_content": "Week02\nfrankly, I don't think that's a great name, but I think someone many decades ago wrote a few papers calling it hypotheses, and then others follow, and we're kind of stuck with some of this terminology. But X is called input features, or sometimes it's input attributes, and Y is the output. Yeah. And sometimes we call this the target variable. And so x, y is one training example. And I'm going to use this notation. x superscript i comma y superscript i in parentheses to denote the i training example. So the superscript parentheses i, that's not exponentiation.",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "Một ví dụ huấn luyện đơn lẻ được ký hiệu là $(x^{(i)}, y^{(i)})$, trong đó chỉ số mũ trong ngoặc đơn biểu diễn chỉ số của ví dụ huấn luyện thứ $i$.",
+      "source_id": "S12",
+      "start": 626,
+      "end": 773,
+      "marker_start": 774,
+      "marker_end": 779,
+      "locator": "{\"start_ms\": 583680, \"end_ms\": 642280}",
+      "chunk_id": "511525e5-de45-4b6e-9ff0-ea1e3ac8dc2a",
+      "chunk_content": "Week02\nfrankly, I don't think that's a great name, but I think someone many decades ago wrote a few papers calling it hypotheses, and then others follow, and we're kind of stuck with some of this terminology. But X is called input features, or sometimes it's input attributes, and Y is the output. Yeah. And sometimes we call this the target variable. And so x, y is one training example. And I'm going to use this notation. x superscript i comma y superscript i in parentheses to denote the i training example. So the superscript parentheses i, that's not exponentiation.",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "Một ví dụ huấn luyện đơn lẻ được ký hiệu là $(x^{(i)}, y^{(i)})$, trong đó chỉ số mũ trong ngoặc đơn biểu diễn chỉ số của ví dụ huấn luyện thứ $i$.",
+      "source_id": "S13",
+      "start": 626,
+      "end": 773,
+      "marker_start": 779,
+      "marker_end": 784,
+      "locator": "{\"start_ms\": 642800, \"end_ms\": 694820}",
+      "chunk_id": "e4ab7c2f-9fb4-4807-a323-55eb4226247a",
+      "chunk_content": "Week02\nI think that as you built, this notation, x i comma y i, this is just a way of writing an index into the table of training examples above. So maybe for example, if the first training example is the house of size 2, 1, 0, 4, so x, 1, 1 would be equal to 2, 1, 0, 4, right? Because this is the size of the first house in the training example. And I guess x, second example, feature 1 would be 1, 4, 1, 6 with our example. above. So the superscript in parentheses is just the index into the different training examples, where superscript i here would run from 1 through m, 1 through the number of",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "Ký hiệu $n$ dùng để chỉ số lượng các đặc trưng đầu vào cho bài toán học có giám sát.",
+      "source_id": "S14",
+      "start": 787,
+      "end": 871,
+      "marker_start": 872,
+      "marker_end": 877,
+      "locator": "{\"start_ms\": 694820, \"end_ms\": 753580}",
+      "chunk_id": "ecd2ba99-9c48-4563-ab85-51aa8b303303",
+      "chunk_content": "Week02\ntraining examples you have. And then one last bit of notation, I'm going to use n to denote number of features you have for the supervised learning problem. So in this example n is equal to 2, right? Because we have two features which is the size of the house and the number of bedrooms. So two features, which is why you can take this and write this as a sum from j equals 0 to n. And so here x and theta are n plus 1 dimensional because we added the extra x0 and theta 0 So if you have two features then these are three vectors and more generally if you have n features you end up with x and theta being n plus one",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "Công việc của thuật toán học máy là tiếp nhận một tập huấn luyện và đầu ra là một hàm được gọi là hàm giả thuyết (hypothesis), ký hiệu là $h(x)$ hoặc $h_theta(x)$.",
+      "source_id": "S5",
+      "start": 965,
+      "end": 1128,
+      "marker_start": 1129,
+      "marker_end": 1133,
+      "locator": "{\"start_ms\": 201380, \"end_ms\": 248320}",
+      "chunk_id": "b87bb304-13a9-4056-8921-fe627e3b47c0",
+      "chunk_content": "Week02\nis to output a function to make predictions about housing prices. And by convention, I'm going to call this a function that it outputs a hypothesis. And the job of the hypothesis is, you know, it can input the size of a new house, the size of a different house that you haven't seen yet, and will output the estimated price. Okay? So the job of the learning algorithm is to input a training set and output a hypothesis. The job of the hypothesis is to take as input any size of a house and try to tell you what it thinks should be the price of that house. Now, when designing a learning algorithm,",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "Công việc của thuật toán học máy là tiếp nhận một tập huấn luyện và đầu ra là một hàm được gọi là hàm giả thuyết (hypothesis), ký hiệu là $h(x)$ hoặc $h_theta(x)$.",
+      "source_id": "S16",
+      "start": 965,
+      "end": 1128,
+      "marker_start": 1133,
+      "marker_end": 1138,
+      "locator": "{\"start_ms\": 815780, \"end_ms\": 857540}",
+      "chunk_id": "d05e0a7f-ee74-42c0-b043-0da2704ab100",
+      "chunk_content": "Week02\nSo, and I think the final bit of notation, I've been writing H of X as a function of the features of the house, as a function of the size and number of bedrooms of the house. sometimes to emphasize that H depends both on the parameters theta and on the input features X. I'm going to use H subscript theta of X to emphasize that the hypothesis depends both on the parameters and on the input features X. But sometimes for notational convenience, I just write this as H of X. Sometimes I include the theta there and they mean the same thing. It's just maybe an abbreviation in notation.",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "Hàm giả thuyết có nhiệm vụ nhận đầu vào là các đặc trưng của một đối tượng chưa thấy (ví dụ như kích thước nhà) và đưa ra dự đoán giá trị đầu ra ước tính.",
+      "source_id": "S5",
+      "start": 1141,
+      "end": 1295,
+      "marker_start": 1296,
+      "marker_end": 1300,
+      "locator": "{\"start_ms\": 201380, \"end_ms\": 248320}",
+      "chunk_id": "b87bb304-13a9-4056-8921-fe627e3b47c0",
+      "chunk_content": "Week02\nis to output a function to make predictions about housing prices. And by convention, I'm going to call this a function that it outputs a hypothesis. And the job of the hypothesis is, you know, it can input the size of a new house, the size of a different house that you haven't seen yet, and will output the estimated price. Okay? So the job of the learning algorithm is to input a training set and output a hypothesis. The job of the hypothesis is to take as input any size of a house and try to tell you what it thinks should be the price of that house. Now, when designing a learning algorithm,",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "Trong trường hợp có nhiều đặc trưng đầu vào như kích thước ($x_1$) và số phòng ngủ ($x_2$), hàm giả thuyết tuyến tính có thể viết là $h(x) = theta_0 + theta_1 x_1 + theta_2 x_2$.",
+      "source_id": "S8",
+      "start": 1303,
+      "end": 1481,
+      "marker_start": 1482,
+      "marker_end": 1486,
+      "locator": "{\"start_ms\": 330220, \"end_ms\": 382740}",
+      "chunk_id": "a2ba3063-4d93-435a-8ba9-d07fbe65c9f8",
+      "chunk_content": "Week02\nSo more generally, in this example, we have just one input feature, X. More generally, if you have multiple input features, so if you have more data, more information about these houses, such as number of bedrooms. excuse me, well, handwriting's not good, that's the word, bedrooms. Then, I guess, alright, yeah, cool. My father-in-law lives a little bit outside Portland, and he's actually really into real estate, so this is actually a real data set from Portland. So, more generally, if you know the size as well as the number of bedrooms in these houses, then you may have two input features, where x1 is the size, and x2 is",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "Trong trường hợp có nhiều đặc trưng đầu vào như kích thước ($x_1$) và số phòng ngủ ($x_2$), hàm giả thuyết tuyến tính có thể viết là $h(x) = theta_0 + theta_1 x_1 + theta_2 x_2$.",
+      "source_id": "S9",
+      "start": 1303,
+      "end": 1481,
+      "marker_start": 1486,
+      "marker_end": 1490,
+      "locator": "{\"start_ms\": 382740, \"end_ms\": 464860}",
+      "chunk_id": "9b287b95-e01c-4f92-9698-698b0de28318",
+      "chunk_content": "Week02\nthe number of bedrooms. I'm using the pound sign bedrooms to denote number of bedrooms. And you might say that you estimate the size of the house as h of x equals theta 0 plus theta 1 x1 plus theta 2 x2, where x1 is the size of the house and x2 is the number of bedrooms. Okay? So in order to simplify the notation, in order to make that notation a little bit more compact I'm also going to introduce this other notation where we want to write the hypothesis as sum from j equals 0 to 2 of theta j x j so this is a summation where for conciseness we define x0 to be equal to 1 So if you define x0 to be a dummy feature that always takes on the value of 1,",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "Để đơn giản hóa ký hiệu, một đặc trưng giả (dummy feature) $x_0 = 1$ được định nghĩa thêm, cho phép viết lại hàm giả thuyết dưới dạng tổng $\\sum_{j=0}^{n} theta_j x_j$.",
+      "source_id": "S9",
+      "start": 1493,
+      "end": 1661,
+      "marker_start": 1662,
+      "marker_end": 1666,
+      "locator": "{\"start_ms\": 382740, \"end_ms\": 464860}",
+      "chunk_id": "9b287b95-e01c-4f92-9698-698b0de28318",
+      "chunk_content": "Week02\nthe number of bedrooms. I'm using the pound sign bedrooms to denote number of bedrooms. And you might say that you estimate the size of the house as h of x equals theta 0 plus theta 1 x1 plus theta 2 x2, where x1 is the size of the house and x2 is the number of bedrooms. Okay? So in order to simplify the notation, in order to make that notation a little bit more compact I'm also going to introduce this other notation where we want to write the hypothesis as sum from j equals 0 to 2 of theta j x j so this is a summation where for conciseness we define x0 to be equal to 1 So if you define x0 to be a dummy feature that always takes on the value of 1,",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "Để đơn giản hóa ký hiệu, một đặc trưng giả (dummy feature) $x_0 = 1$ được định nghĩa thêm, cho phép viết lại hàm giả thuyết dưới dạng tổng $\\sum_{j=0}^{n} theta_j x_j$.",
+      "source_id": "S14",
+      "start": 1493,
+      "end": 1661,
+      "marker_start": 1666,
+      "marker_end": 1671,
+      "locator": "{\"start_ms\": 694820, \"end_ms\": 753580}",
+      "chunk_id": "ecd2ba99-9c48-4563-ab85-51aa8b303303",
+      "chunk_content": "Week02\ntraining examples you have. And then one last bit of notation, I'm going to use n to denote number of features you have for the supervised learning problem. So in this example n is equal to 2, right? Because we have two features which is the size of the house and the number of bedrooms. So two features, which is why you can take this and write this as a sum from j equals 0 to n. And so here x and theta are n plus 1 dimensional because we added the extra x0 and theta 0 So if you have two features then these are three vectors and more generally if you have n features you end up with x and theta being n plus one",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "Trong biểu diễn này, $theta$ trở thành một vectơ tham số $n+1$ chiều ($theta_0, theta_1, \\dots, theta_n$) và $x$ trở thành một vectơ đặc trưng $n+1$ chiều ($x_0, x_1, \\dots, x_n$).",
+      "source_id": "S10",
+      "start": 1674,
+      "end": 1854,
+      "marker_start": 1855,
+      "marker_end": 1860,
+      "locator": "{\"start_ms\": 465320, \"end_ms\": 523260}",
+      "chunk_id": "93b9a24d-e300-4cce-9b44-3de04ef8b014",
+      "chunk_content": "Week02\nthen you can write the hypothesis h of x this way, sum from j equals 0 to 2 or just theta j xj. So same with that equation that you saw to the upper right. And so here, theta becomes a three-dimensional parameter, theta 0, theta 1, theta 2, this index starting from 0, and the features become a three-dimensional feature vector, x0, x1, x2, where x0 is always 1, x1 is the size of the house, and x2 is the number of bedrooms of the house. So to introduce a bit more terminology, theta is called the parameters of the learning algorithm. And the job of the learning algorithm is to choose parameters theta that allows you to make good predictions about prices of houses.",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "Trong biểu diễn này, $theta$ trở thành một vectơ tham số $n+1$ chiều ($theta_0, theta_1, \\dots, theta_n$) và $x$ trở thành một vectơ đặc trưng $n+1$ chiều ($x_0, x_1, \\dots, x_n$).",
+      "source_id": "S14",
+      "start": 1674,
+      "end": 1854,
+      "marker_start": 1860,
+      "marker_end": 1865,
+      "locator": "{\"start_ms\": 694820, \"end_ms\": 753580}",
+      "chunk_id": "ecd2ba99-9c48-4563-ab85-51aa8b303303",
+      "chunk_content": "Week02\ntraining examples you have. And then one last bit of notation, I'm going to use n to denote number of features you have for the supervised learning problem. So in this example n is equal to 2, right? Because we have two features which is the size of the house and the number of bedrooms. So two features, which is why you can take this and write this as a sum from j equals 0 to n. And so here x and theta are n plus 1 dimensional because we added the extra x0 and theta 0 So if you have two features then these are three vectors and more generally if you have n features you end up with x and theta being n plus one",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "Các tham số $theta$ đóng vai trò là các tham số của thuật toán học máy, và nhiệm vụ của thuật toán là lựa chọn các giá trị $theta$ sao cho có thể tạo ra các dự đoán tốt về giá trị đầu ra.",
+      "source_id": "S10",
+      "start": 1868,
+      "end": 2055,
+      "marker_start": 2056,
+      "marker_end": 2061,
+      "locator": "{\"start_ms\": 465320, \"end_ms\": 523260}",
+      "chunk_id": "93b9a24d-e300-4cce-9b44-3de04ef8b014",
+      "chunk_content": "Week02\nthen you can write the hypothesis h of x this way, sum from j equals 0 to 2 or just theta j xj. So same with that equation that you saw to the upper right. And so here, theta becomes a three-dimensional parameter, theta 0, theta 1, theta 2, this index starting from 0, and the features become a three-dimensional feature vector, x0, x1, x2, where x0 is always 1, x1 is the size of the house, and x2 is the number of bedrooms of the house. So to introduce a bit more terminology, theta is called the parameters of the learning algorithm. And the job of the learning algorithm is to choose parameters theta that allows you to make good predictions about prices of houses.",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "Các tham số $theta$ đóng vai trò là các tham số của thuật toán học máy, và nhiệm vụ của thuật toán là lựa chọn các giá trị $theta$ sao cho có thể tạo ra các dự đoán tốt về giá trị đầu ra.",
+      "source_id": "S15",
+      "start": 1868,
+      "end": 2055,
+      "marker_start": 2061,
+      "marker_end": 2066,
+      "locator": "{\"start_ms\": 753580, \"end_ms\": 811540}",
+      "chunk_id": "4afb99be-3f88-4e8c-b213-1e223a7115a0",
+      "chunk_content": "Week02\ndimensional features. Alright. You see this notation multiple times in multiple algorithms throughout this quarter, so if you don't manage to memorize all these symbols right now, don't worry about it. You see them over and over, and they'll become familiar. Alright. All right, so given the data set, and given that this is the way you define the hypothesis, how do you choose the parameters? So the learning algorithm's job is to choose values for parameters theta so that it can output a hypothesis. So how do you choose parameters theta? Well, what we'll do is let's choose theta. such that H of X is close to Y for the training examples.",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "Để học được bộ tham số, ta cần chọn các tham số $theta$ sao cho hàm giả thuyết $h(x)$ gần sát với giá trị thực tế $y$ đối với các ví dụ trong tập huấn luyện.",
+      "source_id": "S15",
+      "start": 2169,
+      "end": 2326,
+      "marker_start": 2327,
+      "marker_end": 2332,
+      "locator": "{\"start_ms\": 753580, \"end_ms\": 811540}",
+      "chunk_id": "4afb99be-3f88-4e8c-b213-1e223a7115a0",
+      "chunk_content": "Week02\ndimensional features. Alright. You see this notation multiple times in multiple algorithms throughout this quarter, so if you don't manage to memorize all these symbols right now, don't worry about it. You see them over and over, and they'll become familiar. Alright. All right, so given the data set, and given that this is the way you define the hypothesis, how do you choose the parameters? So the learning algorithm's job is to choose values for parameters theta so that it can output a hypothesis. So how do you choose parameters theta? Well, what we'll do is let's choose theta. such that H of X is close to Y for the training examples.",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "Để học được bộ tham số, ta cần chọn các tham số $theta$ sao cho hàm giả thuyết $h(x)$ gần sát với giá trị thực tế $y$ đối với các ví dụ trong tập huấn luyện.",
+      "source_id": "S17",
+      "start": 2169,
+      "end": 2326,
+      "marker_start": 2332,
+      "marker_end": 2337,
+      "locator": "{\"start_ms\": 858480, \"end_ms\": 918220}",
+      "chunk_id": "9f0707eb-c572-4d71-af18-5c6c6e8270d9",
+      "chunk_content": "Week02\nBut so in order to learn a set of parameters, what we'll want to do is choose the parameters theta so that at least for the houses whose prices you know, that the learning algorithm outputs prices that are close to what you know were the correct prices for that set of houses, were the correct asking prices for those houses. And so more formally, in the linear regression algorithm, also called ordinary least squares, with linear regression we will want to minimize I going to build out this equation one piece at a time Minimize the squared difference between what the hypothesis outputs H subscript theta of X minus Y squared So let's say we want to minimize the squared difference between the prediction,",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "Thuật toán linear regression (còn gọi là ordinary least squares) thực hiện việc tối thiểu hóa bình phương sai số giữa giá trị dự đoán $h_theta(x)$ và giá trị đúng $y$.",
+      "source_id": "S17",
+      "start": 2340,
+      "end": 2507,
+      "marker_start": 2508,
+      "marker_end": 2513,
+      "locator": "{\"start_ms\": 858480, \"end_ms\": 918220}",
+      "chunk_id": "9f0707eb-c572-4d71-af18-5c6c6e8270d9",
+      "chunk_content": "Week02\nBut so in order to learn a set of parameters, what we'll want to do is choose the parameters theta so that at least for the houses whose prices you know, that the learning algorithm outputs prices that are close to what you know were the correct prices for that set of houses, were the correct asking prices for those houses. And so more formally, in the linear regression algorithm, also called ordinary least squares, with linear regression we will want to minimize I going to build out this equation one piece at a time Minimize the squared difference between what the hypothesis outputs H subscript theta of X minus Y squared So let's say we want to minimize the squared difference between the prediction,",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "Hàm chi phí (cost function) $J(theta)$ được định nghĩa bằng tổng bình phương các sai số trên tất cả $m$ ví dụ huấn luyện: $J(theta) = \\frac{1}{2m} \\sum_{i=1}^{m} (h_theta(x^{(i)}) - y^{(i)})^2$ (hoặc với hằng số $\\frac{1}{2}$ nhân ở ngoài tổng bình phương sai số để giúp cho việc tính đạo hàm sau này trở nên đơn giản hơn).",
+      "source_id": "S18",
+      "start": 2516,
+      "end": 2839,
+      "marker_start": 2840,
+      "marker_end": 2845,
+      "locator": "{\"start_ms\": 918420, \"end_ms\": 967620}",
+      "chunk_id": "6dcfa051-454d-4c70-a0de-fcbc9cb36d4a",
+      "chunk_content": "Week02\nwhich is H of X, and Y, which is the correct price. and so what we want to do is choose values of theta that minimizes that to fill this out, you know, you have m training examples so I'm going to sum from i equals 1 through m of that squared difference, so this is sum over i equals 1 through all, say, 50 examples you have, right, of the squared difference between what your algorithm predicts and what the true price of the house is. And then finally, by convention, we put a one-half constant there because when we take derivatives to minimize this later, putting one-half there will make some of the math a little bit simpler.",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "Hàm chi phí (cost function) $J(theta)$ được định nghĩa bằng tổng bình phương các sai số trên tất cả $m$ ví dụ huấn luyện: $J(theta) = \\frac{1}{2m} \\sum_{i=1}^{m} (h_theta(x^{(i)}) - y^{(i)})^2$ (hoặc với hằng số $\\frac{1}{2}$ nhân ở ngoài tổng bình phương sai số để giúp cho việc tính đạo hàm sau này trở nên đơn giản hơn).",
+      "source_id": "S19",
+      "start": 2516,
+      "end": 2839,
+      "marker_start": 2845,
+      "marker_end": 2850,
+      "locator": "{\"start_ms\": 968020, \"end_ms\": 1019240}",
+      "chunk_id": "6365e22e-09d6-444c-9038-66c5031ec0e8",
+      "chunk_content": "Week02\nSo adding a one-half, minimizing that formula should give you the same answer as minimizing one-half of that, but we often put a one-half there since it will make the math a little bit simpler later. And so in linear regression, I'm going to define the cost function j of theta to be equal to that. And we'll find parameters theta that minimizes the cost function j of theta. Okay? And questions I've often gotten is, you know, why squared error? Why not absolute error or just error to the power of 4? We'll talk more about that when we talk about the generalization of linear regression. When we talk about generalized linear models, which we'll do next week,",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "Thuật toán sẽ tìm các tham số $theta$ làm giảm thiểu tối đa hàm chi phí $J(theta)$.",
+      "source_id": "S19",
+      "start": 2853,
+      "end": 2936,
+      "marker_start": 2937,
+      "marker_end": 2942,
+      "locator": "{\"start_ms\": 968020, \"end_ms\": 1019240}",
+      "chunk_id": "6365e22e-09d6-444c-9038-66c5031ec0e8",
+      "chunk_content": "Week02\nSo adding a one-half, minimizing that formula should give you the same answer as minimizing one-half of that, but we often put a one-half there since it will make the math a little bit simpler later. And so in linear regression, I'm going to define the cost function j of theta to be equal to that. And we'll find parameters theta that minimizes the cost function j of theta. Okay? And questions I've often gotten is, you know, why squared error? Why not absolute error or just error to the power of 4? We'll talk more about that when we talk about the generalization of linear regression. When we talk about generalized linear models, which we'll do next week,",
+      "resolution": "resolved"
+    }
+  ]
+}

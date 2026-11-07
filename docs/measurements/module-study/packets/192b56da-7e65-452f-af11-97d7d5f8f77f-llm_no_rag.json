@@ -1,0 +1,222 @@
+{
+  "pair_id": "192b56da-7e65-452f-af11-97d7d5f8f77f",
+  "group": "llm_no_rag",
+  "generator_model": "gemini-fast",
+  "generation_models": [
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    },
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    },
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    },
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    },
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    },
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    },
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    },
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    },
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    },
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    },
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    },
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    },
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    },
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    }
+  ],
+  "packet": {
+    "anon_id": "",
+    "topic": "Dịch vụ hệ điều hành (Operating System Services)",
+    "bloom_level": "understand",
+    "learning_objective": "Sau khi hoàn thành module, người học có thể mô tả các dịch vụ chính do hệ điều hành cung cấp cho người dùng và chương trình.",
+    "sub_objectives": [
+      "Nhận diện các loại giao diện người dùng như dòng lệnh, giao diện đồ họa và màn hình cảm ứng",
+      "Giải thích các chức năng quản lý hệ thống tệp và thao tác nhập/xuất của hệ điều hành",
+      "Trình bày các cơ chế phân bổ tài nguyên, bảo vệ và bảo mật của hệ thống"
+    ],
+    "content_markdown": "# Nhận diện các loại giao diện người dùng\n* Giao diện dòng lệnh (Command Line Interface - CLI): Cho phép người dùng tương tác bằng cách gõ các câu lệnh văn bản.\n* Giao diện đồ họa (Graphical User Interface - GUI): Cung cấp các thành phần trực quan như cửa sổ, biểu tượng và menu.\n* Màn hình cảm ứng (Touch Screen): Hỗ trợ tương tác trực tiếp bằng cử chỉ tay trên thiết bị.\n\n# Giải thích chức năng quản lý hệ thống tệp và thao tác nhập/xuất\n* Quản lý hệ thống tệp (File System Management): Tổ chức, lưu trữ, truy xuất và bảo vệ các tệp tin trên thiết bị lưu trữ.\n* Thao tác nhập/xuất (Input/Output - I/O): Điều khiển các thiết bị ngoại vi và truyền dữ liệu giữa bộ nhớ với phần cứng.\n\n# Trình bày các cơ chế phân bổ tài nguyên, bảo vệ và bảo mật\n* Phân bổ tài nguyên (Resource Allocation): Quản lý và chia sẻ CPU, bộ nhớ chính cho các tiến trình đang chạy.\n* Bảo vệ và bảo mật (Protection and Security): Kiểm soát quyền truy cập hệ thống và ngăn chặn các mối đe dọa trái phép.",
+    "slides": [
+      {
+        "title": "Giao diện người dùng",
+        "bullets": [
+          "Giao diện dòng lệnh (Command Line Interface - CLI): Gõ câu lệnh văn bản",
+          "Giao diện đồ họa (Graphical User Interface - GUI): Cửa sổ, biểu tượng và menu",
+          "Màn hình cảm ứng (Touch Screen): Tương tác trực tiếp bằng cử chỉ tay"
+        ]
+      },
+      {
+        "title": "Quản lý tệp và nhập/xuất",
+        "bullets": [
+          "Quản lý hệ thống tệp (File System Management): Tổ chức, lưu trữ và bảo vệ tệp tin",
+          "Thao tác nhập/xuất (Input/Output - I/O): Điều khiển thiết bị ngoại vi và truyền dữ liệu"
+        ]
+      },
+      {
+        "title": "Phân bổ tài nguyên và bảo mật",
+        "bullets": [
+          "Phân bổ tài nguyên (Resource Allocation): Quản lý và chia sẻ CPU, bộ nhớ chính",
+          "Bảo vệ và bảo mật (Protection and Security): Kiểm soát quyền truy cập và ngăn chặn mối đe dọa"
+        ]
+      }
+    ],
+    "examples": [
+      {
+        "context": "Một quản trị viên hệ thống đang cấu hình lại máy chủ từ xa thông qua giao diện dòng lệnh (Command Line Interface - CLI) để gõ các câu lệnh văn bản quản lý tiến trình, trong khi người dùng thông thường sử dụng giao diện đồ họa (Graphical User Interface - GUI) với các cửa sổ, biểu tượng và menu trên hệ điều hành Windows để soạn thảo văn bản.",
+        "analysis": "Bối cảnh này minh họa trực tiếp cho nội dung nhận diện các loại giao diện người dùng, trong đó CLI cho phép tương tác bằng cách gõ câu lệnh văn bản, còn GUI cung cấp các thành phần trực quan như cửa sổ, biểu tượng và menu."
+      },
+      {
+        "context": "Khi một nhà thiết kế đồ họa lưu một tệp hình ảnh dung lượng lớn, hệ điều hành thực hiện chức năng quản lý hệ thống tệp (File System Management) để tổ chức và lưu trữ tệp đó trên ổ đĩa, đồng thời thực hiện thao tác nhập/xuất (Input/Output - I/O) để truyền dữ liệu từ bộ nhớ chính ra màn hình hiển thị và nhận tín hiệu từ bảng vẽ điện tử.",
+        "analysis": "Bối cảnh này thể hiện chính xác hai chức năng của hệ điều hành: quản lý hệ thống tệp giúp tổ chức, lưu trữ, truy xuất tệp tin và thao tác nhập/xuất điều khiển thiết bị ngoại vi để truyền dữ liệu giữa bộ nhớ với phần cứng."
+      }
+    ],
+    "quiz": [
+      {
+        "stem": "Phát biểu nào sau đây diễn giải chính xác về đặc điểm của các loại giao diện người dùng do hệ điều hành cung cấp?",
+        "choices": [
+          "Giao diện dòng lệnh (CLI) sử dụng các cửa sổ và biểu tượng trực quan để người dùng điều khiển.",
+          "Giao diện đồ họa (GUI) cung cấp các thành phần trực quan như cửa sổ, biểu tượng và menu.",
+          "Màn hình cảm ứng thực chất là một dạng hiển thị của giao diện dòng lệnh thông qua cử chỉ.",
+          "Giao diện đồ họa (GUI) yêu cầu người dùng gõ các câu lệnh văn bản để tương tác với hệ thống."
+        ],
+        "correct_index": 1,
+        "explanation": "Đáp án đúng là giao diện đồ họa (GUI) cung cấp các thành phần trực quan như cửa sổ, biểu tượng và menu, khớp hoàn toàn với định nghĩa trong bài học. Phương án về CLI là sai vì CLI dùng văn bản. Phương án về màn hình cảm ứng là sai vì đây là loại giao diện tương tác trực tiếp bằng cử chỉ tay độc lập. Phương án cuối cùng sai vì GUI dùng hình ảnh trực quan thay vì gõ câu lệnh văn bản."
+      },
+      {
+        "stem": "Khi hệ điều hành thực hiện việc truyền dữ liệu giữa bộ nhớ chính và các thiết bị phần cứng ngoại vi, chức năng nào đang được thể hiện?",
+        "choices": [
+          "Quản lý hệ thống tệp để lưu trữ dữ liệu",
+          "Giao diện người dùng dòng lệnh hoặc đồ họa",
+          "Thao tác nhập/xuất để truyền dữ liệu phần cứng",
+          "Phân bổ tài nguyên bộ nhớ cho các tiến trình"
+        ],
+        "correct_index": 2,
+        "explanation": "Đáp án đúng là thao tác nhập/xuất vì chức năng này chịu trách nhiệm điều khiển các thiết bị ngoại vi và truyền dữ liệu giữa bộ nhớ với phần cứng. Phương án quản lý hệ thống tệp là tổ chức và truy xuất tệp tin. Phương án giao diện dùng để tương tác với người dùng qua văn bản hoặc hình ảnh. Phương án phân bổ tài nguyên dùng để quản lý và chia sẻ CPU hoặc bộ nhớ chính."
+      },
+      {
+        "stem": "Phát biểu nào sau đây diễn giải chính xác vai trò của cơ chế phân bổ tài nguyên, bảo vệ và bảo mật do hệ điều hành cung cấp?",
+        "choices": [
+          "Kiểm soát quyền truy cập hệ thống, ngăn chặn mối đe dọa và chia sẻ CPU cho tiến trình",
+          "Phân chia dung lượng bộ nhớ chính cho tiến trình và điều khiển các thiết bị ngoại vi",
+          "Tổ chức lưu trữ tệp tin trên thiết bị và kiểm soát quyền truy cập hệ thống dữ liệu",
+          "Truyền dữ liệu giữa bộ nhớ với phần cứng và quản lý chia sẻ CPU cho tiến trình"
+        ],
+        "correct_index": 0,
+        "explanation": "Đáp án đúng là phát biểu mô tả việc kiểm soát quyền truy cập, ngăn chặn mối đe dọa (bảo vệ và bảo mật) và chia sẻ CPU cho các tiến trình (phân bổ tài nguyên). Các phương án còn lại đều bị sai lệch hoặc nhầm lẫn giữa các chức năng quản lý khác nhau của hệ điều hành như I/O hoặc hệ thống tệp."
+      }
+    ],
+    "practice": {
+      "stem": "Phát biểu nào sau đây diễn giải đúng về các dịch vụ khác nhau do hệ điều hành cung cấp cho người dùng và chương trình?",
+      "choices": [
+        "Hệ thống tệp thực hiện việc điều khiển các thiết bị ngoại vi và truyền dữ liệu giữa bộ nhớ với phần cứng.",
+        "Giao diện người dùng có chức năng tổ chức, lưu trữ, truy xuất và bảo vệ các tệp tin trên thiết bị.",
+        "Thao tác nhập/xuất điều khiển các thiết bị ngoại vi và truyền dữ liệu giữa bộ nhớ với phần cứng.",
+        "Phân bổ tài nguyên kiểm soát quyền truy cập hệ thống và ngăn chặn các mối đe dọa trái phép."
+      ],
+      "correct_index": 2,
+      "explanation": "Đáp án đúng là 'Thao tác nhập/xuất điều khiển các thiết bị ngoại vi và truyền dữ liệu giữa bộ nhớ với phần cứng' vì đây là định nghĩa chính xác của dịch vụ I/O. Phương án hệ thống tệp là sai vì đó là chức năng quản lý dữ liệu lưu trữ chứ không phải điều khiển ngoại vi. Phương án giao diện người dùng là sai vì giao diện dùng để tương tác (CLI, GUI) chứ không quản lý tệp tin. Phương án phân bổ tài nguyên là sai vì quản lý chia sẻ CPU/bộ nhớ chứ không phải kiểm soát bảo mật."
+    },
+    "source_chunks": [
+      "Chapter 2 Operating System Structures › Chapter 2: Operating-System Structures\nSilberschatz, Galvin and Gagne ©2018\nOperating System Concepts\nChapter 2: Operating-System\nStructures\n4\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nOperating System Services\n• Operating systems provide an environment for execution of programs\nand services to programs and users\n• A set of operating-system services provides functions that are helpful\nto the user:\n• User interface - Almost all operating systems have a user interface (UI).\n• Varies between Command-Line Interface (CLI), Graphical User Interface\n(GUI), Touch-screen\n• Program execution - The system must be able to load a program into\nmemory, to run that program, and end execution, either normally or\nabnormally (indicating error)\n• I/O operations - A running program may require I/O, which may involve a\nfile or an I/O device",
+      "Chapter 2 Operating System Structures › Operating System Services (Cont.)\n5\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nOperating System Services (Cont.)\n• File-system manipulation - The file system is of particular interest.\nPrograms need to read and write files and directories, create and delete\nthem, search them, list file Information, permission management.\n• Communications – Processes may exchange information, on the same\ncomputer or between computers over a network\n• Communications may be via shared memory or through message passing\n(packets moved by the OS)\n• Error detection – OS needs to be constantly aware of possible errors\n• May occur in the CPU and memory, hardware, in I/O devices, in user program\n• For each type of error, OS should take the appropriate action to ensure correct\nand consistent computing\n• Debugging facilities can greatly enhance the user’s and programmer’s\nabilities to efficiently use the system",
+      "Chapter 2 Operating System Structures › Operating System Services (Cont.)\n6\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nOperating System Services (Cont.)\n• Another set of OS functions exists for ensuring the efficient operation\nof the system itself via resource sharing\n• Resource allocation - When multiple users or multiple jobs running\nconcurrently, resources must be allocated to each of them\n• Many types of resources - CPU cycles, main memory, file storage, I/O devices.\n• Logging - To keep track of which users use how much and what kinds of\ncomputer resources\n• Protection and security - The owners of information stored in a multiuser\nor networked computer system may want to control use of that\ninformation, concurrent processes should not interfere with each other\n• Protection involves ensuring that all access to system resources is controlled\n• Security of the system from outsiders requires user authentication, extends to\ndefending external I/O devices from invalid access attempts\n7\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nA View of Operating System Services\nHình: user and other system programs\nGUI touch screen | command line\nuser interfaces\nsystem calls\nprogram 1/0 file\nf communication\nexecution operations systems\nresource\nallocation\naccounting\nerror\ndetection\nservices\nprotection\nand\nsecurity\noperating system\nhardware",
+      "Chapter 2 Operating System Structures › User Operating System Interface - CLI\n8\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nUser Operating System Interface - CLI\n• CLI or command interpreter allows direct command entry\n• Sometimes implemented in kernel, sometimes by system programs\n• Sometimes multiple flavors implemented – shells\n• Primarily fetches a command from user and executes it\n• Sometimes commands built-in, sometimes just names of programs\n• If the latter, adding new features doesn’t require shell modification",
+      "Chapter 2 Operating System Structures › Bourne Shell Command Interpreter\n9\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nBourne Shell Command Interpreter\nHình: 1. root@r6181-d5-us01:~ (ssh)\nroot@r6181-d5-us01 3§3\nLast login: Thu Jul 14 08:47:01 on ttys002\niMacPro:~ pbg$ ssh root@r6181-d5-us@1\nroot@r6181-d5-us01's password:\nLast login: Thu Jul 14 06:01:11 2016 from 172.16.16.162\n[root@r6181-d5-us@1 ~]# uptime\n06:57:48 up 16 days, 10:52, 3 users, load average: 129.52, 80.33, 56.55\n[root@r6181-d5-us@1 ~]# df -kh\nFilesystem Size Used Avail Use% Mounted on\n/dev/mapper/vg_ks-1v_root\n50G 19G 28G 41% /\ntmpfs 127G 529K 127G 1% /dev/shm\n⁄Zdev/sda1 477M 71M 381M 16% /boot\n⁄Zdev/dssd0000 1.0T 489G 545G 47% /dssd_xfs\ntcp: ⁄⁄192. 168. 150. 1: 3334/orangefs\n12T 5.7T 6.4T 47% /mnt/orangefs\n/dev/gpfs-test 23T 1.1T 22T 5% /mnt/gpfs\n[root@r6181-d5-us01 ~]#\n[root@r6181-d5-us@1 ~]# ps aux | sort -nrk 3,3 | head -n 5\nroot 97653 11.2 6.6 42665344 17520636 ? S<L1 Jul13 166:23",
+      "Chapter 2 Operating System Structures › Bourne Shell Command Interpreter\n~]# ps aux | sort -nrk 3,3 | head -n 5\nroot 97653 11.2 6.6 42665344 17520636 ? S<L1 Jul13 166:23 /usr/Lpp/mmfs/bin/mmfsd\nroot 69849 6.6 0.0 ⁄) 0 ? S 3u112 181:54 [vpthread-1-1]\nroot 69850 6.4 0.0 ⁄) 0? S 3u112 177:42 [vpthread-1-2]\nroot 3829 3.0 0.0 9 9? S Jun27 730:04 [rp_thread 7:0]\nroot 3826 3.0 0.0 @ @? $ Jun27 728:08 [rp_thread 6:0]\n[root@r6181-d5-us@1 ~]# 1s -1 /usr/Lpp/mmfs/bin/mmfsd\n-r-x 1 root root 20667161 Jun 3 2015 /usr/Lpp/mmfs/bin/mmfsd\n[root@r6181-d5-us01 ~]# fj",
+      "Chapter 2 Operating System Structures › User Operating System Interface - GUI\n10\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nUser Operating System Interface - GUI\n• User-friendly desktop metaphor interface\n• Usually mouse, keyboard, and monitor\n• Icons represent files, programs, actions, etc.\n• Various mouse buttons over objects in the interface cause various\nactions providing information, options, execute function, open directory\n• Invented at Xerox PARC\n• Many systems now include both CLI and GUI interfaces\n• Microsoft Windows is GUI with CLI “command” shell\n• Apple Mac OS X is “Aqua” GUI interface with UNIX kernel underneath\nand shells available\n• Unix and Linux have CLI with optional GUI interfaces (e.g., CDE, KDE,\nGNOME)\n11\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nTouchscreen Interfaces\n• Touchscreen devices require\nnew interfaces\n• Mouse not possible or not\ndesired\n• Actions and selection based\non gestures\n• Virtual keyboard for text entry\n• Voice commands\nHình: eeeco AT&T LTE 14:10 57% ›\n® 8C)\nMessages Calendar Photos Camera\nStocks iTunes Store Clock\nSettings Calculator App Store Weather\nx@ SB Gea\nSeis <*) ®\n@ = Z\nPodcasts Photography Avalanche VPR\nÐ\nAA. x SA\nMtn Project Dropbox Spotify Travel\nTwitter Instagram Weather NYT Now\nPhone Safari",
+      "Chapter 2 Operating System Structures › The Mac OS X GUI\n12\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nThe Mac OS X GUI\n13\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nSystem Calls\n• Programming interface to the services provided by the OS\n• Typically written in a high-level language (e.g., C or C++)\n• Mostly accessed by programs via a high-level Application\nProgramming Interface (API) rather than direct system call use\n• Three most common APIs are Win32 API for Windows, POSIX API\nfor POSIX-based systems (including virtually all versions of UNIX,\nLinux, and Mac OS X), and Java API for the Java Virtual Machine\n(JVM)\n(Note that the system-call names used throughout this text are generic)",
+      "Chapter 2 Operating System Structures › Example of System Calls\n14\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nExample of System Calls\n• System call sequence to copy the contents of one file to another file\nHình: destination file\nExample System Call Sequence\nAcquire input file name\nWrite prompt to screen\nAccept input\nAcquire output file name\nWrite prompt to screen\nAccept input\nOpen the input file\nif file doesn't exist, abort\nCreate output file\nif file exists, abort\nLoop\nRead from input file\nWrite to output file\nUntil read fails\nClose output file\nWrite completion message to screen\nTerminate normally\n16\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nSystem Call Implementation\n• Typically, a number associated with each system call\n• System-call interface maintains a table indexed according to these\nnumbers\n• The system call interface invokes the intended system call in OS\nkernel and returns status of the system call and any return values\n• The caller need know nothing about how the system call is\nimplemented\n• Just needs to obey API and understand what OS will do as a result call\n• Most details of OS interface are hidden from programmer by API\n• Managed by run-time support library (set of functions built into libraries\nincluded with compiler)",
+      "Chapter 2 Operating System Structures › API – System Call – OS Relationship\n17\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nAPI – System Call – OS Relationship\nIndex of open()\nIndex table\nHình: user application\nopen()\nuser\nmode\nsystem call interface\nkernel\nmode\nopen()\nImplementation\nIndex of open() | C= of open()\nsystem call\nIndex table return\n18\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nSystem Call Parameter Passing\n• Often, more information is required than simply identity of desired\nsystem call\n• Exact type and amount of information vary according to OS and call\n• Three general methods used to pass parameters to the OS\n• Simplest: pass the parameters in registers\n• In some cases, may be more parameters than registers\n• Parameters stored in a block, or table, in memory, and address of block\npassed as a parameter in a register\n• This approach taken by Linux and Solaris\n• Parameters placed, or pushed, onto the stack (see Memory structure) by\nthe program and popped off the stack by the operating system\n• Block and stack methods do not limit the number or length of parameters\nbeing passed",
+      "Chapter 2 Operating System Structures › Parameter Passing via Table\n19\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nParameter Passing via Table\nHình: X: parameters\nfor call\nload address X\nsystem call 13\nuser program\nuse parameters\nfrom table X\noperating system\ncode for\nsystem\ncall 13\n20\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nTypes of System Calls\n• Process control\n• create process, terminate process\n• end, abort process execution\n• load, execute\n• get process attributes, set process attributes\n• wait for time, wait event, signal event\n• allocate and free memory\n• dump memory if error\n• debugger for determining bugs, single step execution\n• Locks for managing access to shared data between processes",
+      "Chapter 2 Operating System Structures › Types of System Calls (cont.)\n21\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nTypes of System Calls (cont.)\n• File management\n• create file, delete file\n• open, close file\n• read, write, reposition\n• get and set file attributes\n• Device management\n• request device, release device\n• read, write, reposition\n• get device attributes, set device attributes\n• logically attach or detach devices\n22\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nTypes of System Calls (Cont.)\n• Information maintenance\n• get time or date, set time or date\n• get system data, set system data\n• get and set process, file, or device attributes\n• Communications\n• create, delete communication connection\n• send, receive messages if using message passing model to host name or\nprocess name\n• Shared-memory model create and gain access to memory regions\n• transfer status information\n• attach and detach remote devices",
+      "Chapter 2 Operating System Structures › Types of System Calls (Cont.)\n23\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nTypes of System Calls (Cont.)\n• Protection\n• Control access to resources\n• Get and set permissions\n• Allow and deny user access\n24\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nExamples of Windows and Unix System Calls\nHình: EXAMPLES OF WINDOWS AND UNIX SYSTEM CALLS\nThe following illustrates various equivalent system calls for Windows and\nUNIX operating systems.\nWindows\nProcess CreateProcess()\ncontrol ExitProcess()\nWaitForSingleObject()\nFile CreateFile()\nmanagement ReadFile()\nWriteFile()\nCloseHandle()\nDevice SetConsoleMode()\nmanagement ReadConsole()\nWriteConsole()\nInformation GetCurrentProcessID()\nmaintenance SetTimer ()\nSleep()\nCommunications CreatePipe()\nCreateFileMapping()\nMapView0fFile(\nProtection SetFileSecurity()\nInitlializeSecurityDescriptor()\nSetSecurityDescriptorGroup()\nUnix\nfork()\nexit()\nwait()\nopen()\nread()\nwrite()\nclose()\nioctl()\nread()\nwrite()\ngetpid()\nalarm()\nsleep()\npipe()\nshm_open ()\nmmap ()\nchmod()\numask()\nchown()",
+      "Chapter 2 Operating System Structures › Standard C Library Example\n25\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nStandard C Library Example\n• C program invoking printf() library call, which calls write()\nsystem call\nHình: THE STANDARD C LIBRARY\nThe standard C library provides a portion of the system-call interface for\nmany versions of UNIX and Linux. As an example, let’s assume a C pro-\ngram invokes the printf () statement. The C library intercepts this call and\ninvokes the necessary system call (or calls) in the operating system—in this\ninstance, the system call. The C library takes the value returned by\nwrite() and passes it back to the user program:\n#include <stdio.h>\nint main()\nprintf (\"Greetings\");\nreturn 0;\nuser\nmode\nstandard C library\nkernel\nmode\nwrite()\nwrite()\nsystem call\n28\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nSystem Services\n• System programs provide a convenient environment for program\ndevelopment and execution. They can be divided into:\n• File manipulation\n• Status information sometimes stored in a file\n• Programming language support\n• Program loading and execution\n• Communications\n• Background services\n• Application programs\n• Most users’view of the operation system is defined by system\nprograms, not the actual system calls",
+      "Chapter 2 Operating System Structures › Linkers and Loaders\n32\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nLinkers and Loaders\n• Source code compiled into object files designed to be loaded into any\nphysical memory location – relocatable object file\n• Linker combines these (also, brings in libraries) into single binary\nexecutable file\n• Program resides on secondary storage as binary executable and\nmust be brought into memory by loader to be executed\n• Relocation assigns final addresses to program parts and adjusts code\nand data in program to match those addresses\n• Modern general purpose systems don’t link libraries into executables\n• Rather, dynamically linked libraries (in Windows, DLLs) are loaded as\nneeded, shared by all that use the same version of that same library\n• Object, executable files have standard formats, so\noperating system knows how to load and start them\n33\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nThe Role of the Linker and Loader\nHình: other\nobject\nfiles\nsource\nprogram\nexecutable\nfile\nỶ\nprogram\nin memory\ngcc\nmain.c\ngcc -c main.c\n| generates\nmain.o\n-O main main.o\n{ generates\nmain\n./main\n-1lm",
+      "Chapter 2 Operating System Structures\n38\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nOperating System Structure\n• General-purpose OS is very large program\n• Various ways to structure ones\n• Simple structure – MS-DOS\n• More complex – UNIX\n• Layered – an abstraction\n• Microkernel – Mach\n39\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nMonolithic Structure – Original UNIX\n• UNIX – limited by hardware functionality, the original UNIX operating\nsystem had limited structuring. The UNIX OS consists of two\nseparable parts\n• Systems programs\n• Kernel\n• Consists of everything below the system-call interface and above the physical\nhardware\n• Provides the file system, CPU scheduling, memory management, and other\noperating-system functions; a large number of functions for one level",
+      "Chapter 2 Operating System Structures › Traditional UNIX System Structure\n40\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nTraditional UNIX System Structure\n• Beyond simple but not fully layered\nHình: kernel\n(the users)\nshells and commands\ncompilers and interpreters\nsystem libraries\nsystem-call interface to the kernel\nsignals terminal file system\nhandling\nswapping block I/O\ncharacter I/O system\nsystem\nterminal drivers disk and tape drivers\nCPU scheduling\npage replacement\ndemand paging\nvirtual memory\nkernel interface to the hardware\nterminal controllers device controllers memory controllers\nterminals disks and tapes physical memory\n41\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nLinux System Structure\n• Monolithic plus modular design\nHình: applications\nglibc standard c library\nsystem-call interface\nfile CPU\nsystems scheduler\nnetworks memory\n(TCP/IP) manager\nblock character\ndevices devices\nỶ Ỷ",
+      "Chapter 2 Operating System Structures › Layered Approach\n42\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nLayered Approach\n• The operating system is\ndivided into a number of\nlayers (levels), each built\non top of lower layers.\nThe bottom layer (layer 0),\nis the hardware; the\nhighest (layer N) is the\nuser interface.\n• With modularity, layers\nare selected such that\neach uses functions\n(operations) and services\nof only lower-level layers\n43\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nMicrokernels\n• Moves as much from the kernel into user space\n• Mach is an example of microkernel\n• Mac OS X kernel (i.e., Darwin) partly based on Mach\n• Communication takes place between user modules using message\npassing model\n• Benefits\n• Easier to extend a microkernel\n• Easier to port the operating system to new architectures\n• More reliable (less code is running in kernel mode), more secure\n• Detriments: Performance overhead of user space to kernel space\ncommunication",
+      "Chapter 2 Operating System Structures › Microkernel System Structure\n44\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nMicrokernel System Structure\nHình: application file user\nprogram system mode\na a a\n: messages : : messages :\ninterprocess memory CPU kernel\ncommunication managment scheduling mode\nmicrokernel\n45\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nModules\n• Many modern operating systems implement Loadable Kernel\nModules (LKMs)\n• Uses object-oriented approach\n• Each core component is separate\n• Each talks to the others over known interfaces\n• Each is loadable as needed within the kernel\n• Overall, similar to layers but with more flexible\n• Linux, Solaris, etc.",
+      "Chapter 2 Operating System Structures › Hybrid Systems\n46\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nHybrid Systems\n• Most modern operating systems are actually not one pure model\n• Hybrid combines multiple approaches to address performance, security,\nusability needs\n• Linux and Solaris kernels in kernel address space, so monolithic, plus\nmodular for dynamic loading of functionality\n• Windows mostly monolithic, plus microkernel for different subsystem\npersonalities\n• Apple Mac OS X hybrid, layered, Aqua UI plus Cocoa programming\nenvironment\n• Below is kernel consisting of Mach microkernel and BSD Unix parts, plus\nI/O kit and dynamically loadable modules (called kernel extensions)\n47\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nmacOS and iOS Structure\nHình: Ỷ\nuser experience\napplication frameworks\ncore frameworks\nkernel environment (Darwin)",
+      "Chapter 2 Operating System Structures › Darwin\n48\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nDarwin\nHình: applications\nlibrary interface\nMach BSD (POSIX)\ntraps system calls\nmemory\nscheduling management\n53\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nBuilding and Booting Linux\n• Download Linux source code (http://www.kernel.org)\n• Configure kernel via “make menuconfig”\n• Compile the kernel using “make”\n• Produces vmlinuz, the kernel image\n• Compile kernel modules via “make modules”\n• Install kernel modules into vmlinuz via “make modules_install”\n• Install new kernel on the system via “make install”",
+      "Chapter 2 Operating System Structures › Performance Tuning\n56\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nPerformance Tuning\n• Improve performance by removing bottlenecks\n• OS must provide means of computing and displaying measures of\nsystem behavior\n• For example, “top” Linux program or Windows Task Manager\nHình: Task Manager\nFile Options View\nProcesses [Performance] App history Startup Users Details Services\ncpu\nR| 16561 CPU\nIntel(R) Core(TM) i5-2520M CPU @ 2.50GHz\nMemory\n18/38 GB (50%)\nDisk 0 (C)\n28%\nEthernet\nWi-Fi\nlA 30 : 360 Kbps\nBluetooth\n14% 1.65GHz\n112 1550 49904\n143:08:39:26\nFewer details | © Open Resource Monitor"
+    ]
+  },
+  "reference": {
+    "coverage": "complete",
+    "chunk_ids": [
+      "a11d0f83-494d-4501-8773-ac8f7922f840",
+      "2b3e4465-9c93-413c-8aa9-cf97799035ba",
+      "13401509-2758-444f-8e46-defd03449253",
+      "a1842626-b103-4922-a0ac-6b193db7f3ed",
+      "9383fe98-dd6f-4111-a32f-95c196d25778",
+      "052b585f-495c-416f-997d-47acd184220f",
+      "1c9e0321-39b8-432a-a589-8d416736536b",
+      "ecd7ae91-7671-4740-a482-a3f14d7f23d6",
+      "92c45753-c932-4367-b112-16ca68d00dd1",
+      "5a679efe-324d-4db7-a05b-7c587d7b8b58",
+      "2f9a88b0-a376-4c9e-aefe-937ec8be633a",
+      "4a437af4-274c-4dcf-ac8d-422b254e8442",
+      "10020cd5-d0b5-4b54-bdca-dc86254abeda",
+      "a6187db3-d10f-49e3-861a-40f992fe4812",
+      "f5dec42d-8569-4476-8ef4-3cdd9bef5e37",
+      "102401df-276a-468f-8cfc-c779e8eb9d38",
+      "869016c5-1a99-48de-8108-418e685dc08f",
+      "bb109885-9d13-4195-ae60-6b6561fa41af",
+      "42f49366-db6c-4933-a0e1-ae8371277e8f",
+      "1263bf91-a23c-4a7f-b360-14c1fee0f30d",
+      "688d01a3-c84b-4416-b62d-24ac242ecb43",
+      "1db1dcb1-2443-4fa1-997f-3539b8884a19"
+    ],
+    "total_chunks": 22
+  },
+  "claim_citations": null
+}

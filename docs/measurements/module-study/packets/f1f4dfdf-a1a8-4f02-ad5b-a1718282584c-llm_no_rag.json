@@ -1,0 +1,238 @@
+{
+  "pair_id": "f1f4dfdf-a1a8-4f02-ad5b-a1718282584c",
+  "group": "llm_no_rag",
+  "generator_model": "gemini-fast",
+  "generation_models": [
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    },
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    },
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    },
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    },
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    },
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    },
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    },
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    },
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    },
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    },
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    },
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    }
+  ],
+  "packet": {
+    "anon_id": "",
+    "topic": "Quan điểm cơ bản của chủ nghĩa Mác - Lênin về giai cấp công nhân và sứ mệnh lịch sử thế giới của giai cấp công nhân",
+    "bloom_level": "understand",
+    "learning_objective": "Sau khi hoàn thành module, người học có thể giải thích khái niệm, đặc điểm và nội dung sứ mệnh lịch sử tổng quát của giai cấp công nhân theo quan điểm của chủ nghĩa Mác - Lênin.",
+    "sub_objectives": [
+      "Trình bày khái niệm cơ bản của giai cấp công nhân",
+      "Mô tả các đặc điểm về kinh tế - xã hội và chính trị - xã hội của giai cấp công nhân",
+      "Giải thích nội dung sứ mệnh lịch sử tổng quát của giai cấp công nhân"
+    ],
+    "content_markdown": "# Khái niệm cơ bản của giai cấp công nhân\n* Định nghĩa theo chủ nghĩa Mác - Lênin: G giai cấp công nhân là tập đoàn xã hội to lớn, hình thành và phát triển cùng với quá trình phát triển của nền đại công nghiệp tư bản chủ nghĩa.\n* Phương thức lao động: Là những người lao động trực tiếp hay gián tiếp vận hành các công cụ sản xuất có tính chất công nghiệp ngày càng hiện đại và xã hội hóa cao.\n* Địa vị kinh tế: Không có tư liệu sản xuất chủ yếu, phải bán sức lao động cho nhà tư bản để sinh sống và bị bóc lột giá trị thặng dư.\n\n# Đặc điểm về kinh tế - xã hội và chính trị - xã hội của giai cấp công nhân\n* Đặc điểm kinh tế - xã hội:\n  * Là sản phẩm trực tiếp và gián tiếp của nền đại công nghiệp.\n  * Là lực lượng sản xuất hàng đầu, đại diện cho phương thức sản xuất tiên tiến.\n  * Có tính tổ chức, kỷ luật cao do môi trường lao động mang tính dây chuyền và tập trung.\n* Đặc điểm chính trị - xã hội:\n  * Có tinh thần cách mạng triệt để nhất trong cuộc đấu tranh chống áp bức, bóc lột.\n  * Có bản chất quốc tế, vì phong trào công nhân mang tính toàn cầu chống lại chủ nghĩa tư bản.\n  * Có hệ tư tưởng độc lập là chủ nghĩa Mác - Lênin.\n\n# Nội dung sứ mệnh lịch sử tổng quát của giai cấp công nhân\n* Về kinh tế: Là lực lượng đi đầu trong việc xóa bỏ chế độ chiếm hữu tư nhân về tư liệu sản xuất, xây dựng quan hệ sản xuất mới dựa trên chế độ công hữu.\n* Về chính trị - xã hội: Lật đổ sự thống trị của giai cấp tư sản, giành chính quyền về tay giai cấp công nhân và nhân dân lao động, thiết lập nhà nước kiểu mới (chuyên chính vô sản).\n* Về văn hóa - tư tưởng: Xây dựng nền văn hóa mới xã hội chủ nghĩa, cải tạo tư tưởng cũ, trang bị hệ tư tưởng tiên tiến của giai cấp công nhân cho toàn xã hội.",
+    "slides": [
+      {
+        "title": "Khái niệm giai cấp công nhân",
+        "bullets": [
+          "Tập đoàn xã hội hình thành cùng nền đại công nghiệp tư bản chủ nghĩa",
+          "Vận hành công cụ sản xuất có tính chất công nghiệp và xã hội hóa cao",
+          "Không có tư liệu sản xuất, phải bán sức lao động và bị bóc lột"
+        ]
+      },
+      {
+        "title": "Đặc điểm kinh tế - xã hội",
+        "bullets": [
+          "Là sản phẩm của nền đại công nghiệp",
+          "Là lực lượng sản xuất hàng đầu, đại diện phương thức sản xuất tiên tiến",
+          "Có tính tổ chức và kỷ luật lao động cao"
+        ]
+      },
+      {
+        "title": "Đặc điểm chính trị - xã hội",
+        "bullets": [
+          "Có tinh thần cách mạng triệt để chống áp bức, bóc lột",
+          "Mang bản chất quốc tế trong cuộc đấu tranh toàn cầu",
+          "Có hệ tư tưởng độc lập là chủ nghĩa Mác - Lênin"
+        ]
+      },
+      {
+        "title": "Nội dung sứ mệnh lịch sử tổng quát",
+        "bullets": [
+          "Về kinh tế: Xóa bỏ chế độ tư hữu, xây dựng quan hệ sản xuất mới",
+          "Về chính trị - xã hội: Lật đổ giai cấp tư sản, giành chính quyền và thiết lập nhà nước mới",
+          "Về văn hóa - tư tưởng: Xây dựng văn hóa mới xã hội chủ nghĩa và hệ tư tưởng tiên tiến"
+        ]
+      }
+    ],
+    "examples": [
+      {
+        "context": "Tại nhà máy lắp ráp ô tô VinFast, anh Nam làm việc trực tiếp trên dây chuyền tự động hóa hiện đại. Anh không sở hữu nhà xưởng hay máy móc mà phải bán sức lao động để nhận tiền lương, đồng thời tạo ra giá trị thặng dư cho doanh nghiệp.",
+        "analysis": "Bối cảnh này minh họa rõ nét khái niệm giai cấp công nhân theo chủ nghĩa Mác - Lênin. Anh Nam là đại diện cho tập đoàn xã hội gắn liền với nền đại công nghiệp, lao động vận hành công cụ sản xuất mang tính xã hội hóa cao, đồng thời có địa vị kinh tế không sở hữu tư liệu sản xuất chủ yếu và phải bán sức lao động."
+      },
+      {
+        "context": "Trong cuộc đấu tranh đòi quyền lợi lao động, các công nhân tại một tập đoàn công nghệ xuyên quốc gia đã tổ chức đình công với tính kỷ luật thép, sự phối hợp nhịp nhàng trên quy mô toàn cầu giữa các chi nhánh tại châu Âu và châu Á.",
+        "analysis": "Tình huống này phản ánh chính xác các đặc điểm của giai cấp công nhân. Tính tổ chức, kỷ luật cao được hình thành từ môi trường lao động dây chuyền, trong khi bản chất quốc tế và tinh thần đấu tranh triệt để thể hiện qua sự liên kết toàn cầu chống lại sự áp bức bóc lột của chủ nghĩa tư bản."
+      }
+    ],
+    "quiz": [
+      {
+        "stem": "Theo quan điểm của chủ nghĩa Mác - Lênin, đặc trưng nào về mặt phương thức lao động giúp phân biệt giai cấp công nhân với các tầng lớp lao động khác?",
+        "choices": [
+          "Là những người làm công ăn lương nói chung trong mọi lĩnh vực kinh tế của xã hội",
+          "Là những người lao động vận hành các công cụ sản xuất có tính chất công nghiệp hiện đại",
+          "Là những người lao động có sở hữu một phần nhỏ tư liệu sản xuất tại nơi làm việc",
+          "Là những người lao động thủ công dựa trên kỹ thuật truyền thống và quy mô nhỏ"
+        ],
+        "correct_index": 1,
+        "explanation": "Đáp án đúng là B vì theo chủ nghĩa Mác - Lênin, phương thức lao động của giai cấp công nhân là trực tiếp hoặc gián tiếp vận hành các công cụ sản xuất mang tính công nghiệp hiện đại và xã hội hóa cao. Phương án A sai vì mở rộng sai lầm cho mọi người làm công ăn lương nói chung. Phương án C sai vì giai cấp công nhân thực chất không có tư liệu sản xuất chủ yếu. Phương án D sai vì nhầm lẫn với lao động thủ công truyền thống thay vì nền đại công nghiệp."
+      },
+      {
+        "stem": "Khi nói về các đặc điểm của giai cấp công nhân theo quan điểm của chủ nghĩa Mác - Lênin, đặc điểm nào sau đây thuộc về đặc điểm chính trị - xã hội?",
+        "choices": [
+          "Là những người lao động không có tư liệu sản xuất chủ yếu và phải bán sức lao động để sinh sống.",
+          "Là lực lượng đi đầu trong việc xóa bỏ chế độ chiếm hữu tư nhân và xây dựng quan hệ sản xuất mới.",
+          "Có tinh thần cách mạng triệt để nhất trong cuộc đấu tranh chống lại mọi hình thức áp bức và bóc lột.",
+          "Là tập đoàn xã hội hình thành và phát triển gắn liền với quá trình phát triển của nền đại công nghiệp."
+        ],
+        "correct_index": 2,
+        "explanation": "Đáp án đúng là: Có tinh thần cách mạng triệt để nhất trong cuộc đấu tranh chống lại mọi hình thức áp bức và bóc lột. Theo tài liệu học tập, đây là một trong các đặc điểm về chính trị - xã hội của giai cấp công nhân. Các phương án còn lại chưa chính xác vì: phương án không có tư liệu sản xuất mô tả địa vị kinh tế; phương án đi đầu xóa bỏ chế độ chiếm hữu tư nhân thuộc về nội dung sứ mệnh lịch sử về kinh tế; phương án tập đoàn xã hội gắn với đại công nghiệp là định nghĩa khái niệm cơ bản."
+      },
+      {
+        "stem": "Nội dung sứ mệnh lịch sử tổng quát về mặt kinh tế của giai cấp công nhân theo quan điểm của chủ nghĩa Mác - Lênin được thể hiện như thế nào?",
+        "choices": [
+          "Đóng vai trò lực lượng đi đầu trong việc xóa bỏ chế độ chiếm hữu tư nhân về tư liệu sản xuất để xây dựng quan hệ sản xuất mới dựa trên chế độ công hữu.",
+          "Tập trung tham gia quản lý và điều hành các tập đoàn kinh tế tư bản chủ nghĩa hiện đại nhằm cải thiện đời sống người lao động.",
+          "Tiến hành đấu tranh nghị trường để từng bước sửa đổi các chính sách thuế và luật lao động của nhà nước tư sản.",
+          "Tiếp thu toàn bộ các giá trị văn hóa truyền thống để duy trì sự ổn định của cấu trúc xã hội tư bản."
+        ],
+        "correct_index": 0,
+        "explanation": "Đáp án đúng là phương án đầu tiên vì theo tài liệu học tập, về mặt kinh tế, giai cấp công nhân là lực lượng đi đầu trong việc xóa bỏ chế độ chiếm hữu tư nhân về tư liệu sản xuất và xây dựng quan hệ sản xuất mới dựa trên chế độ công hữu. Phương án thứ hai sai vì đây là việc quản lý trong lòng chủ nghĩa tư bản chứ không phải xóa bỏ chế độ tư hữu. Phương án thứ ba sai vì đây là đấu tranh kinh tế - chính trị cải cách trong khuôn khổ tư sản chứ chưa thực hiện sứ mệnh tổng quát. Phương án thứ tư sai vì thuộc về lĩnh vực văn hóa - tư tưởng và mang tính duy trì hiện trạng thay vì cải tạo."
+      }
+    ],
+    "practice": {
+      "stem": "Khi xem xét các đặc điểm cơ bản của giai cấp công nhân theo quan điểm của chủ nghĩa Mác - Lênin, yếu tố nào dưới đây thể hiện đúng đặc điểm về mặt kinh tế - xã hội của giai cấp này?",
+      "choices": [
+        "Không sở hữu tư liệu sản xuất chủ yếu và buộc phải bán sức lao động để sinh sống.",
+        "Là lực lượng sản xuất hàng đầu và đại diện cho phương thức sản xuất tiên tiến.",
+        "Có hệ tư tưởng độc lập là chủ nghĩa Mác - Lênin trong cuộc đấu tranh giai cấp.",
+        "Duy trì và phát triển chế độ chiếm hữu tư nhân về tư liệu sản xuất ở mức độ cao."
+      ],
+      "correct_index": 1,
+      "explanation": "Đáp án đúng là phương án thứ hai vì theo tài liệu, đặc điểm kinh tế - xã hội của giai cấp công nhân nổi bật là việc họ là sản phẩm của nền đại công nghiệp, đồng thời là lực lượng sản xuất hàng đầu đại diện cho phương thức sản xuất tiên tiến. Phương án đầu tiên nói về địa vị kinh tế (không có tư liệu sản xuất). Phương án thứ ba phản ánh đặc điểm chính trị - xã hội (hệ tư tưởng). Phương án cuối cùng sai hoàn toàn vì sứ mệnh kinh tế của giai cấp công nhân là xóa bỏ chế độ chiếm hữu tư nhân chứ không phải duy trì nó."
+    },
+    "source_chunks": [
+      "Chapter2\nChương 2\nSỨ MỆNH LỊCH SỬ CỦA GIAI CẤP CÔNG NHÂN\n( Chương trình không chuyên)\nI. Quan điểm cơ bản của chủ nghĩa Mác - Lênin về giai cấp công nhân và sứ mệnh lịch sử thế giới của giai cấp công nhân\nII. Giai cấp công nhân và việc thực hiện sứ mệnh lịch sử của giai cấp công nhân hiện nay\nIII. Sứ mệnh lịch sử của giai cấp công nhân Việt Nam\nNỘI DUNG",
+      "Chapter2\nC.Mác\n&\nPh.Ăngghen\nVấn đề là ở chỗ tìm hiểu xem GCVS thực ra là gì, và phù hợp với sự tồn tại của bản thân nó, GCVS buộc phải làm gì về mặt lịch sử\nQuan điểm cơ bản của chủ nghĩa Mác - Lênin về giai cấp công nhân và sứ mệnh lịch sử thế giới của giai cấp công nhân \n 1. Khái niệm và đặc điểm của giai cấp công nhân\na. Khái niệm gccn\nGiai cấp vô sản\nGiai cấp vô sản hiện đại\nLao động làm thuê ở thế kỷ XIX\nGiai cấp công nhân hiện đại\nGiai cấp công nhân cơ khí\nC.Mác\n&\nPh.Ăngghen",
+      "Chapter2\nC.Mác\nPh.Ăngghen\nCông nhân khoáng sản\nC.Mác\nPh.Ăngghen\nCông nhân công trường",
+      "Chapter2\nC.Mác\nPh.Ăngghen\nCông nhân cơ khí\nРабо́чий класс\nРабо́чий класс —một g/c XH, tất cả những người làm thuê không có tư liệu SX, sống bằng việc bán sức lao động. \nTheo K. Marx, dấu hiệu cơ bản quy về g/c CN là g/c này tạo ra giá trị thặng dư, nói khác đi, mang đến lợi nhuận cho người chủ, bất kể lao động đó có phải là lao động chân tay không, còn nghề nghiệp có phải sản xuất vật chất không. Ví dụ, giáo viên hay bác sĩ nếu làm việc ở doanh nghiệp tư nhân thì có thể quy về g/c CN, và không quy về đó nếu làm việc không vì mục đích tạo ra lợi nhuận cho người chủ, chẳng hạn trong trường học thuộc Nhà nước (sở hữu Nhà nước).",
+      "Chapter2\nGCCN có hai tiêu chí cơ bản\nVề phương diện KT - XH\nVề phương diện CT - XH\nHọ là những người lao động trực tiếp hay gián tiếp vận hành các công cụ sản xuất có tính chất công nghiệp ngày càng hiện đại, tính xã hội hóa cao\nHọ là những người lao động không có hoặc về cơ bản không có tư liệu sản xuất, phải bán sức lao động, làm thuê cho nhà tư bản, bị nhà tư bản bóc lột giá trị thặng dư",
+      "Chapter2\nGiai cấp công nhân là một tập đoàn xã hội, hình thành và phát triển cùng với quá trình của nền công nghiệp hiện đại; họ lao động bằng phương thức công nghiệp ngày càng hiện đại và gắn liền với quá trình sản xuất vật chất hiện đại, là đại biểu cho phương thức sản xuất mang tính xã hội hóa ngày càng cao. Họ là người làm thuê do không có tư liệu sản xuất, buộc phải bán sức lao động để sống và bị giai cấp tư sản bóc lột giá trị thặng dư; vì vậy lợi ích cơ bản của họ đối lập với lợi ích cơ bản của giai cấp tư sản. Đó là giai cấp có sứ mệnh phủ định chế độ tư bản chủ nghĩa, xây dựng thành công chủ nghĩa xã hội và chủ nghĩa cộng sản trên toàn thế giới\nb. Đặc điểm của giai cấp công nhân\n- Lao động bằng phương thức công nghiệp \n- Là sản phẩm của nền đại công nghiệp\n- Có tính tổ chức kỷ luật lao động, tinh thần cách mạng triệt để",
+      "Chapter2\n2. Nội dung sứ mệnh của lịch sử của giai cấp công nhân\nSứ mệnh lịch sử của giai cấp?\nXã hội nguyên thuỷ\nXã hội nô lệ\nCM XH\ng/c chủ nô là gc lãnh đạo CM\nxã hội Phong kiến\nCM XH\nGc  quí tộc PK là gc lãnh đạo CM",
+      "Chapter2\nXH Tư bản\nXH Phong kiến\nGc tư sản là gc lãnh đạo CM\nXH CSCN\nGc công nhân là gc lãnh đạo\n“thực hiện sự nghiệp giải phóng thế giới ấy – đó là sứ mệnh lịch sử của giai cấp vô sản hiện đại” \n(C.Mác và Ph.Ăngghen . (2004). Toàn tập. tập 20. tr.393. Hà Nội: Chính trị quốc gia)",
+      "Chapter2\n“Điểm chủ yếu trong học thuyết của Mác là ở chỗ nó làm sáng rõ vai trò lịch sử thế giới của giai cấp vô sản là người xây dựng xã hội xã hội chủ nghĩa”\n(V.I.Lênin. (1980). Toàn tập. Tập 23. Tr.1. Mátxcơva: Tiến bộ)\n Vấn đề lao động bị tha hóa. Tại sao là một trong những vấn đề trọng tâm? Vì qua đó :\n- vạch ra bản chất của XH tư sản, sự bần cùng hóa thường xuyên của người lao động, tư hữu, sự bất bình đẳng XH…\n- vạch ra mệnh lệnh lịch sử và khả năng của giai cấp vô sản (khắc phục tha hóa, tự giải phóng và giải phóng nhân loại bị áp bức);\n- Chứng minh tiến triển tư tưởng của Mác: từ sự đồng cảm với thân phận những người công nhân (làm thuê cho nhà tư bản - ông chủ tư bản), Mác lên tiếng bảo vệ họ, đồng thời chỉ ra sự cần thiết đấu tranh tự giải phóng “bằng hình thức chính trị”.\nTác phẩm “BẢN THẢO KINH TẾ - TRIẾT HỌC NĂM 1844”",
+      "Chapter2\nGIA ĐÌNH THẦN THÁNH HAY LÀ PHÊ PHÁN SỰ PHÊ PHÁN CÓ TÍNH PHÊ PHÁN  (Chống  Brunô Bauơ và đồng bọn)  C. Mác và Ph. Ăngghen, Toàn tập, Nxb.CTQG, HN, 2004, t. 2, tr. 13 - 316\n“Giai cấp hữu sản và giai cấp vô sản đều là sự tự tha hóa của con người. Nhưng giai cấp thứ nhất cảm thấy mình được thỏa mãn và vững vàng trong sự tự tha hóa đó, thấy sự tha hóa là sự chứng minh cho sự hùng mạnh của bản thân mình, và có được trong đó cái bề ngoài của sự tồn tại có tính người của mình. Còn giai cấp thứ hai thì cảm thấy mình bị hủy diệt trong sự tha hóa đó, thấy trong sự tha hóa đó, sự bất lực và hiện thực về sự sinh tồn không có tính người của mình”",
+      "Chapter2\nSứ mệnh lịch sử tổng quát của giai cấp công nhân là thông qua chính đảng tiền phong, giai cấp công nhân tổ chức, lãnh đạo nhân dân lao động đấu tranh xóa bỏ các chế độ người bóc lột người, xóa bỏ chủ nghĩa tư bản, giải phóng giai cấp công nhân, nhân dân lao động khỏi mọi sự áp bức, bóc lột, nghèo nàn, lạc hậu, xây dựng xã hội cộng sản chủ nghĩa văn minh\nTiến hành xóa bỏ chế độ tư hữu tư nhân về tư liệu sản xuất, xây dựng chế độ công hữu về tư liệu sản xuất\nNội dung kinh tế",
+      "Chapter2\n- Giành quyền lực về tay GCCN, NDLĐ\n- Thiết lập nhà nước kiểu mới, mang bản chất GCCN\nNội dung chính trị - xã hội\nCải tạo cái cũ lỗi thời, xây dựng cái mới tiến bộ\nNội dung văn hóa, tư tưởng",
+      "Chapter2\nTại sao phải là giai cấp công nhân mới có thể thực hiện được sứ mệnh lịch sử ấy mà không phải là giai cấp khác?\n3. Những điều kiện quy định và thực hiện sứ mệnh lịch sử của giai cấp công nhân\na. Điều kiện khách quan quy định sứ mệnh lịch sử của giai cấp công nhân",
+      "Chapter2\n“Sự phát triển của nền đại công nghiệp đã bị phá sập dưới chân của giai cấp tư sản, chính ngay cái nền tảng trên đó giai cấp tư sản đã xây dựng lên chế độ sản xuất và chiếm hữu của nó. Trước hết, giai cấp tư sản tạo ra những người đào huyệt tự chôn nó. Sự sụp đổ của giai cấp tư sản và thắng lợi của giai cấp vô sản đều tất yếu như nhau”\n(C.Mác và Ph.Ăngghen . (2004). Toàn tập. tập 4. tr.610. Hà Nội: Chính trị quốc gia)\nGGCN là người đại biểu cho phương thức sản xuất mới và LLSX hiện đại  quyết định sự phát triển XH hiện đại\nThứ nhất, địa vị kinh tế của giai cấp công nhân\nCông  nhân nhà máy sản xuất thủy tinh vào lúc nửa đêm, năm 1908 ở Indiana, Mỹ",
+      "Chapter2\nThứ hai, địa vị chính trị - xã hội của giai cấp công nhân\nCó lợi ích trực tiếp đối kháng với lợi ích của giai cấp tư sản\nGiai cấp công nhân\nGiai cấp \ntư sản\nĐấu tranh – Bóc lột\ncông nhân có lợi ích căn bản thống nhất với lợi ích của toàn thể nhân dân lao động--> họ có thể tập hợp, đoàn kết, lãnh đạo đông đảo quần chúng",
+      "Chapter2\n“Trong tất cả các giai cấp hiện đang đối lập với giai cấp tư sản thì chỉ có giai cấp vô sản là giai cấp thực sự cách mạng. Tất cả các giai cấp khác đều suy tàn và tiêu vong cùng với sự phát triển của nền đại công nghiệp, còn giai cấp vô sản lại là sản phẩm của nền đại công nghiệp”\n(C.Mác và Ph.Ăngghen . (2004). Toàn tập. tập 4. tr.610.  Hà Nội: Chính trị quốc gia)\ncó tính tổ chức kỷ luật cao\nmang bản chất quốc tế\ncó tinh thần cách mạng triệt để",
+      "Chapter2\n“Trong tất cả các giai cấp hiện đang đối lập với giai cấp tư sản thì chỉ có giai cấp vô sản là giai cấp thực sự cách mạng, tất cả các giai cấp khác đều là những tầng lớp trung đẳng ... Đó là do giai cấp công nhân không gắn với tư hữu, do vậy, họ kiên định trong cuộc đấu tranh xóa bỏ chủ nghĩa tư bản và xây dựng xã hội mới”\n(C.Mác và Ph.Ăngghen . (2004). Toàn tập. tập 4. tr.612. Hà Nội: Chính trị quốc gia)\n“những người vô sản chẳng mất gì hết ngoài những xiềng xích trói buộc họ. Trong cuộc cách mạng ấy, họ giành được cả một thế giới cho mình”\n(C.Mác và Ph.Ăngghen . (2004). Toàn tập. tập 4. tr.648. Hà Nội: Chính trị quốc gia)",
+      "Chapter2\nGiai cấp nông dân lập trường dao động\nGiai cấp công nhân không sở hữu TLSX\nHình: C.MÁC PH.ĂNGGHEN\nTUYEN NGON\nCUA DANG CONG SAN\n(Tai bản)\nST NHÀ XUẤT BAN CHÍNH TRI QUỐC GIA\n“Vô sản tất cả các nước đoàn kết lại”",
+      "Chapter2\n“Giai cấp công nhân và các dân tộc bị áp bức trên toàn thế giới hãy đoàn kết lại! ”\n(V.I.Lênin. (2005). Toàn tập. t.23. tr.194. Hà Nội: Chính trị Quốc gia, Hà Nội)\nHình: V.I. LE-NIN\nTOÁN TẬP\nTẬP\n23\nTháng Ba tháng Chin 1913\nNHÀ XUẤT BAN CHINH TRI QUỐC GIA\nHa Nội 2005\nb. Điều kiện chủ quan để giai cấp công nhân thực hiện sứ mệnh lịch sử\nSự phát triển giai cấp công nhân\nSự liên minh giai cấp\nĐảng Cộng sản là nhân tố chủ quan quan trọng nhất\nphong trào công nhân\nchủ nghĩa Mác – Lênin\nĐảng cộng sản",
+      "Chapter2\nII. Giai cấp công nhân và việc thực hiện sứ mệnh của giai cấp công hiện nay\n1. Giai cấp công nhân hiện nay\na. Về những điểm tương đối ổn định so với thế kỉ XIX\nvẫn là những người lao động, sản xuất trong các ngành công nghiệp\na. Về những điểm tương đối ổn định so với thế kỉ XIX",
+      "Chapter2\nở các nước tư bản, phần lớn họ là những người không có hoặc về cơ bản, không có tư liệu sản xuất, phải làm thuê cho giai cấp tư sản và bị giai cấp tư sản bóc lột giá trị thặng dư.\nHình: UNITED KINGDOM\nSN LZ\nCANADA\nFRANCE\nGERMANY\nRUSSIA\nJAPAN\nITALY\nx*\nGROUP\nOF EIGHT\nở các nước xã hội chủ nghĩa, họ là giai cấp cầm quyền, lãnh đạo; luôn cùng nhân dân lao động làm chủ tư liệu sản xuất chủ yếu, cùng nhau hợp tác lao động cho mình và xây dựng chế độ xã hội chủ nghĩa.\nLào\nChina\nCuba\nViệt Nam",
+      "Chapter2\nb. Những biến đổi và khác biệt của giai cấp công nhân hiện đại\nXu hướng “trí tuệ hóa” tăng nhanh\nXu hướng “trung lưu hóa” gia tăng\n2. Thực hiện sứ mệnh lịch sử của giai cấp công nhân trên thế giới hiện nay\na. Nội dung kinh tế\nGCCN là nhân tố thúc đẩy chín muồi các tiền đề của chủ nghĩa xã hội trong lòng chủ nghĩa tư bản.",
+      "Chapter2\nb. Nội dung chính trị - xã hội\nGCCN chống bất công và bất bình đẳng xã hội, giành chính quyền về tay GCCN\nc. Nội dung văn hóa, tư tưởng\nBảo vệ nền tảng, tư tưởng của Đảng, mục tiêu CNXH",
+      "Chapter2\nIII. Sứ mệnh lịch sử của giai cấp công nhân Việt Nam\nTại Hội nghị lần thứ sáu, Ban chấp hành Trung ương khóa X, Đảng CSVN đã xác định: “giai cấp công nhân Việt Nam là một lực lượng xã hội to lớn đang phát triển, bao gồm những người lao động chân tay và trí óc, làm công hưởng lương trong các loại hình sản xuất kinh doanh và dịch vụ công nghiệp hoặc sản xuất kinh doanh và dịch vụ có tính chất công nghiệp”",
+      "Chapter2\nRa đời trước giai cấp tư sản vào đầu thế kỷ XX\nTrực tiếp đối kháng với thực dân Pháp\nGiai cấp công nhân Việt Nam gắn bó mật thiết với các tầng lớp nhân dân trong xã hội\nTăng nhanh về số lượng và chất lượng, công nhân tri thức\nĐa dạng về cơ cấu nghề nghiệp\n1. Đặc điểm của giai cấp công nhân Việt Nam\n2. Nội dung SMLS GCCN VN hiện nay\nNghị quyết Hội nghị Trung Ương 6 (khóa X) của Đảng cộng sản Việt Nam khẳng định:\n “Giai cấp công nhân nước ta có sứ mệnh lịch sử to lớn: lực lượng đi đầu trong sự nghiệp công nghiệp hóa, hiện đại hóa đất nước”",
+      "Chapter2\nNội dung kinh tế \nPhát triển nền KT thị trường định hướng XHCN; đảm bảo tăng trưởng KT đi đôi với tiến bộ, công bằng; đẩy mạnh CNH HĐH\nNội dung chính trị - xã hội\n- Giữ vững bản chất GCCN của Đảng, vai trò tiên phong, gương mẫu của cán bộ, đảng viên\n- Tăng cường xây dựng chỉnh đốn Đảng, ngăn chặn, đẩy lùi sự suy thoái về tư tưởng chính trị, đạo đức, lối sống",
+      "Chapter2\nNội dung văn hóa tư tưởng\n- Xây dựng và phát triển nền văn hóa Việt Nam tiên tiến, đậm đà bản sắc dân tộc \n- Bảo vệ sự trong sáng của CNMLN và tư tưởng HCM\nĐảng cộng sản Việt Nam\nPhong trào công nhân\nPhong trào yêu nước\nCN Mác - Lênin",
+      "Chapter2\n3. Phương hướng và một số giải pháp chủ yếu để xây dựng giai cấp công nhân Việt Nam hiện nay\na. Phương hướng xây dựng giai cấp công nhân Việt Nam hiện nay\nPhát triển về số lượng, chất lượng, nâng cao giác ngộ và bản lĩnh chính trị, trình độ học vấn nghề nghiệp. \nXây dựng giai cấp công nhân yêu nước, yêu chủ nghĩa xã hội, có tinh thần đoàn kết dân tộc, đoàn kết, hợp tác quốc tế\nb. Một số giải pháp xây dựng giai cấp công nhân Việt Nam hiện nay\nMột là, nâng cao nhận thức kiên định quan điểm giai cấp công nhân là giai cấp lãnh đạo cách mạng thông qua đội tiền phong là Đảng Cộng sản Việt Nam\nHai là, xây dựng giai cấp công nhân lớn mạnh gắn với xây dựng và phát huy sức mạnh của liên minh giai cấp công nhân với giai cấp nông dân và đội ngũ trí thức và doanh nhân, dưới sự lãnh đạo của Đảng",
+      "Chapter2\nBa là, thực hiện chiến lược xây dựng giai cấp công nhân lớn mạnh, gắn kết chặt chẽ với chiến lược phát triển kinh tế - xã hội\nBốn là, đào tạo bồi dưỡng nâng cao trình độ mọi mặt cho công nhân\nNăm là, xây dựng giai cấp công nhân lớn mạnh\nCÂU HỎI THẢO LUẬN\nPhân tích những thời cơ và thách thức về việc thực hiện sứ mệnh lịch sử của GCCN Việt Nam hiện nay",
+      "Chapter2\n4. Củng cố bài học\nHãy nêu đặc điểm của giai cấp công nhân Việt Nam và tình hình của giai cấp công nhân Việt Nam hiện nay; những vấn đề đặt ra và định hướng xây dựng."
+    ]
+  },
+  "reference": {
+    "coverage": "complete",
+    "chunk_ids": [
+      "d0d42705-97fe-411f-a6d6-41d6e85d86a4",
+      "15043817-4f3a-419a-8c0f-6b9e17837473",
+      "42f1d51e-e99c-4880-9d45-27d856c21b53",
+      "20680c90-d006-4269-9a16-06e0661db36b",
+      "d703094e-41b7-43f4-9ec3-d50358096770",
+      "328210e5-5861-4bce-a709-e462554eb07d",
+      "19c58ae3-cc0d-42ee-9bfe-32787c306e40",
+      "99436ded-fac5-4978-ab5b-c2cbf83822d7",
+      "04c5c9e8-a477-427f-8865-e9100d5bb295",
+      "0f0a026f-14a1-4e55-8fd6-0cfffd389dc8",
+      "970e38b2-ff81-4150-a913-3facaea508ea",
+      "680a403d-6918-4e98-838f-b10aea2a05f7",
+      "906a0dc4-21e7-41ee-96e5-2efe948a3aaa",
+      "1f04c55e-58dd-4208-9144-369b15543aa0",
+      "e9d981b1-570b-4aa7-a522-1508c2cafeb9",
+      "1af0933e-6c26-4953-92f1-68e75b3b19f2",
+      "7d77bda8-f749-4fa7-803f-996c1e53df94",
+      "c30da6f7-5dc5-4aeb-8184-628a7ed9e2ee",
+      "b6075301-c17b-4b99-9dc3-3cd88215bbe4",
+      "020390dc-ab80-49d5-af12-cab08d8618bf",
+      "27f325ef-8551-4341-bd05-e56d59cbfd1d",
+      "425852c1-00d0-41ea-b8da-b95d86bb7410",
+      "e5f2be6c-b975-4ee5-9610-13c32e1460d3",
+      "3a5fbfdd-7a4f-45bd-aa56-32e6ab027c44",
+      "5e8fea94-f243-4ae6-ae86-c8640a821023",
+      "f348cd2b-637f-4ee1-937f-c39ba087f7d9",
+      "7008173b-1fb3-45a5-bebf-3b8e9dc86251",
+      "a0b6eedc-3a40-43d9-a5c1-155e796e8502",
+      "b67f6399-35f8-41b2-a963-ab312c27b28a",
+      "fa95267f-3a6a-4bc5-ac87-62455c6398ca"
+    ],
+    "total_chunks": 30
+  },
+  "claim_citations": null
+}

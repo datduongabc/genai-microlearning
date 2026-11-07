@@ -1,0 +1,469 @@
+{
+  "pair_id": "ac16fbbd-5cab-40e5-a393-85f91df77eef",
+  "group": "rag_llm",
+  "generator_model": "gemini-fast",
+  "generation_models": [
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    },
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    },
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    },
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    },
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    },
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    },
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    },
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    },
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    },
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    },
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    },
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    },
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    },
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    },
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    },
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    }
+  ],
+  "packet": {
+    "anon_id": "",
+    "topic": "Khái niệm tiến trình (Process Concept)",
+    "bloom_level": "understand",
+    "learning_objective": "Sau khi hoàn thành module, người học có thể mô tả khái niệm tiến trình, cấu trúc bộ nhớ và các thành phần trong khối điều khiển tiến trình.",
+    "sub_objectives": [
+      "Phân biệt giữa chương trình ở dạng bị động trên đĩa và tiến trình đang thực thi trong bộ nhớ",
+      "Trình bày các phần trong bố cục bộ nhớ của một tiến trình bao gồm text, stack, data và heap",
+      "Giải thích các thành phần thông tin được lưu trữ trong khối điều khiển tiến trình (PCB)"
+    ],
+    "content_markdown": "### Phân biệt giữa chương trình ở dạng bị động trên đĩa và tiến trình đang thực thi trong bộ nhớ\n- Chương trình là một thực thể bị động được lưu trữ trên đĩa (ví dụ: tệp thực thi).     \n- Tiến trình là một chương trình đang thực thi; quá trình thực thi tiến trình phải tiến hành theo trình tự tuần tự.     \n- Một chương trình trở thành tiến trình khi tệp thực thi được tải vào bộ nhớ.     \n- Một chương trình có thể là nhiều tiến trình (ví dụ: nhiều người dùng thực thi cùng một chương trình).     \n\n### Trình bày các phần trong bố cục bộ nhớ của một tiến trình bao gồm text, stack, data và heap\n- Phần mã chương trình (program code) còn gọi là phần text (text section).     \n- Phần stack chứa dữ liệu tạm thời như tham số hàm, địa chỉ trả về và biến cục bộ.     \n- Phần data chứa các biến toàn cục.     \n- Phần heap chứa bộ nhớ được cấp phát động trong thời gian chạy (run time).     \n\n### Giải thích các thành phần thông tin được lưu trữ trong khối điều khiển tiến trình (PCB)\n- Khối điều khiển tiến trình (PCB - Process Control Block), còn gọi là Khối điều khiển tác vụ (TCB), chứa thông tin liên kết với mỗi tiến trình.     \n- Trạng thái tiến trình (process state): như đang chạy (running), đang chờ (waiting), v.v.     \n- Số hiệu tiến trình (process number): định danh của tiến trình.     \n- Bộ đếm chương trình (program counter): vị trí của lệnh tiếp theo cần thực thi.     \n- Các thanh ghi CPU (CPU registers): nội dung của tất cả các thanh ghi tập trung vào tiến trình.     \n- Thông tin lập lịch CPU (CPU scheduling info): các mức ưu tiên, con trỏ hàng đợi lập lịch.     \n- Thông tin quản lý bộ nhớ (memory-management information): bộ nhớ được cấp phát cho tiến trình.     \n- Thông tin kế toán (accounting information): CPU đã sử dụng, thời gian đồng hồ đã trôi qua kể từ khi bắt đầu, giới hạn thời gian.     \n- Thông tin trạng thái I/O (I/O status information): các thiết bị I/O được cấp phát cho tiến trình, danh sách các tệp đang mở.     ",
+    "slides": [
+      {
+        "title": "Chương trình và Tiến trình",
+        "bullets": [
+          "Chương trình là thực thể bị động được lưu trữ trên đĩa",
+          "Tiến trình là chương trình đang thực thi theo trình tự tuần tự",
+          "Một chương trình có thể trở thành nhiều tiến trình khi được tải vào bộ nhớ"
+        ]
+      },
+      {
+        "title": "Bố cục bộ nhớ của tiến trình",
+        "bullets": [
+          "Phần text và stack: chứa mã chương trình và dữ liệu tạm thời",
+          "Phần data: lưu trữ các biến toàn cục của tiến trình",
+          "Phần heap: chứa bộ nhớ cấp phát động trong thời gian chạy"
+        ]
+      },
+      {
+        "title": "Khối điều khiển tiến trình (PCB)",
+        "bullets": [
+          "Khối điều khiển tiến trình (PCB/TCB) chứa thông tin liên kết với tiến trình",
+          "Lưu trữ trạng thái tiến trình và số hiệu định danh",
+          "Bao gồm bộ đếm chương trình và các thanh ghi CPU"
+        ]
+      },
+      {
+        "title": "Thông tin quản lý trong PCB",
+        "bullets": [
+          "Thông tin lập lịch CPU: mức ưu tiên và con trỏ hàng đợi",
+          "Thông tin quản lý bộ nhớ: dung lượng và vùng nhớ được cấp phát",
+          "Thông tin kế toán và trạng thái I/O của tiến trình"
+        ]
+      }
+    ],
+    "examples": [
+      {
+        "context": "Người dùng nhấp đúp chuột vào biểu tượng của ứng dụng trình duyệt Chrome trên màn hình nền để mở chương trình.",
+        "analysis": "Tệp thực thi của Chrome nằm trên ổ đĩa là một chương trình ở dạng bị động. Khi người dùng nhấp đúp chuột, hệ điều hành tải tệp thực thi đó vào bộ nhớ chính, biến nó thành một tiến trình đang thực thi với các bước thực hiện tuần tự."
+      },
+      {
+        "context": "Một lập trình viên viết hàm tính toán trong C, trong đó có khai báo biến toàn cục đếm số lần gọi, biến cục bộ trong hàm và sử dụng hàm malloc() để cấp phát mảng dữ liệu trong thời gian chạy.",
+        "analysis": "Các phần khác nhau trong mã nguồn này được phân bổ vào các vùng nhớ tương ứng của tiến trình: phần mã chương trình nằm ở vùng text, biến toàn cục nằm ở vùng data, biến cục bộ và tham số hàm nằm ở vùng stack, còn vùng nhớ cấp phát động bằng malloc() nằm ở vùng heap."
+      }
+    ],
+    "quiz": [
+      {
+        "stem": "Phát biểu nào sau đây thể hiện chính xác mối quan hệ và sự khác biệt cơ bản giữa một chương trình và một tiến trình trong hệ điều hành dựa trên các tài liệu đã học?",
+        "choices": [
+          "Chương trình và tiến trình đều là các thực thể động có chung một trạng thái thực thi giống nhau trong bộ nhớ chính.",
+          "Một chương trình chỉ có thể ứng với một tiến trình duy nhất trong hệ thống và không thể chia sẻ cho nhiều người dùng.",
+          "Chương trình là thực thể bị động lưu trữ trên đĩa, trong khi tiến trình là thực thể đang thực thi khi chương trình được nạp vào bộ nhớ.",
+          "Tiến trình là một thực thể bị động nằm trên đĩa cứng và chỉ trở thành chương trình hoạt động khi có yêu cầu từ người dùng."
+        ],
+        "correct_index": 2,
+        "explanation": "Đáp án đúng là tiến trình là thực thể động khi chương trình (thực thể tĩnh lưu trên đĩa) được nạp vào bộ nhớ để thực thi. Phương án đầu tiên sai vì chương trình là thực thể tĩnh còn tiến trình là thực thể động. Phương án thứ hai sai vì một chương trình có thể trở thành nhiều tiến trình khi nhiều người dùng cùng chạy nó. Phương án cuối cùng sai vì mô tả ngược bản chất bị động của chương trình và chủ động của tiến trình."
+      },
+      {
+        "stem": "Khi xem xét cấu trúc bộ nhớ của một tiến trình trong hệ điều hành, thành phần nào chịu trách nhiệm chứa dữ liệu cấp phát động trong thời gian chạy?",
+        "choices": [
+          "Stack section",
+          "Text section",
+          "Heap section",
+          "Data section"
+        ],
+        "correct_index": 2,
+        "explanation": "Đáp án đúng là Heap section vì theo tài liệu, heap section chứa bộ nhớ được cấp phát động trong thời gian chạy (run time). Stack section là nơi chứa dữ liệu tạm thời như biến cục bộ và tham số hàm. Text section chứa mã chương trình. Data section chứa các biến toàn cục."
+      },
+      {
+        "stem": "Trong cấu trúc của hệ điều hành, thành phần khối điều khiển tiến trình (Process Control Block - PCB) lưu trữ loại thông tin nào sau đây?",
+        "choices": [
+          "Chứa toàn bộ mã nguồn chương trình và dữ liệu tĩnh nằm trên đĩa cứng trước khi nạp vào hệ thống.",
+          "Lưu trữ các thông tin định danh, trạng thái, bộ đếm chương trình chỉ vị trí lệnh kế tiếp và thông tin quản lý bộ nhớ của tiến trình.",
+          "Dùng bộ đếm chương trình bên trong để thống kê tổng số lượng tiến trình đang hoạt động trong hệ thống.",
+          "Chịu trách nhiệm lưu trữ trực tiếp các biến cục bộ và tham số hàm nằm trong vùng stack của tiến trình."
+        ],
+        "correct_index": 1,
+        "explanation": "Đáp án đúng là phương án lưu trữ các thông tin định danh, trạng thái, bộ đếm chương trình chỉ vị trí lệnh kế tiếp và thông tin quản lý bộ nhớ của tiến trình, vì theo tài liệu, PCB là tập hợp thông tin liên quan đến từng tiến trình bao gồm trạng thái, số hiệu, bộ đếm chương trình, thanh ghi CPU và thông tin quản lý bộ nhớ. Phương án chứa mã nguồn là sai vì mã nguồn là thực thể bị động trên đĩa. Phương án đếm số lượng tiến trình là sai vì bộ đếm chương trình (program counter) lưu vị trí lệnh kế tiếp cần thực thi chứ không đếm số lượng tiến trình. Phương án lưu biến cục bộ là sai vì các biến cục bộ nằm trong vùng stack của tiến trình chứ không phải là thành phần cấu trúc quản lý trực tiếp trong PCB."
+      }
+    ],
+    "practice": {
+      "stem": "Khi nói về khái niệm tiến trình (process) trong hệ điều hành dựa trên tài liệu nguồn, phát biểu nào sau đây diễn giải chính xác bản chất và các thành phần cấu thành của nó?",
+      "choices": [
+        "Tiến trình là một tệp chương trình tĩnh lưu trữ trên đĩa cứng và chưa được tải vào bộ nhớ.",
+        "Tiến trình là một chương trình đang thực thi, trong đó phần stack section đóng vai trò chứa các biến toàn cục của chương trình.",
+        "Tiến trình là một chương trình đang thực thi, bao gồm phần mã chương trình, bộ đếm chương trình, thanh ghi cùng các phần stack, data và heap.",
+        "Tiến trình là một thực thể tĩnh, trong đó phần heap section được dùng để lưu trữ mã chương trình và văn bản thực thi."
+      ],
+      "correct_index": 2,
+      "explanation": "Đáp án đúng là phương án thứ ba vì theo tài liệu nguồn, tiến trình được định nghĩa là một chương trình đang thực thi (a program in execution) và bao gồm các thành phần: mã chương trình (text section), bộ đếm chương trình, thanh ghi, stack section (chứa dữ liệu tạm thời), data section (chứa biến toàn cục) và heap section (chứa bộ nhớ cấp phát động). Phương án đầu sai vì nhầm tiến trình với chương trình tĩnh trên đĩa (S2). Phương án thứ hai sai vì stack chứa dữ liệu tạm thời chứ không phải biến toàn cục. Phương án thứ tư sai vì heap dùng để cấp phát bộ nhớ động chứ không chứa mã chương trình."
+    },
+    "source_chunks": [
+      "Chapter 3 Processes › Chapter 3: Processes\nSilberschatz, Galvin and Gagne ©2018\nOperating System Concepts\nChapter 3: Processes\n2\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nChapter 3: Processes\n• Process Concept\n• Process Scheduling\n• Operations on Processes\n• Inter-Process Communication (IPC)\n• IPC in Shared-Memory Systems\n• IPC in Message-Passing Systems\n• Examples of IPC Systems\n• Communication in Client-Server Systems",
+      "Chapter 3 Processes › Objectives\n3\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nObjectives\n• Identify the separate components of a process and illustrate how they\nare represented and scheduled in an operating system.\n• Describe how processes are created and terminated in an operating\nsystem, including developing programs using the appropriate system\ncalls that perform these operations.\n• Describe and contrast inter-process communication using shared\nmemory and message passing.\n• Design programs that uses pipes and POSIX shared memory to\nperform inter-process communication.\n• Describe client-server communication using sockets and remote\nprocedure calls.\n• Design kernel modules that interact with the Linux operating system.\n4\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nProcess Concept\n• An operating system executes a variety of programs that run as\nprocesses\n• Process – a program in execution; process execution must progress\nin sequential fashion\n• Multiple parts\no The program code, also called text section\no Current activity including program counter, and processor registers\no Stack section containing temporary data\n• Function parameters, return addresses, local variables\no Data section containing global variables\no Heap section containing memory dynamically allocated during run time",
+      "Chapter 3 Processes › Process Concept (Cont.)\n5\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nProcess Concept (Cont.)\n• Program is passive entity stored on disk (e.g., executable file)\n• Process is active entity\no Program becomes process when executable file loaded into memory\n• Execution of program can be started via GUI mouse clicks, command\nline (CLI) entry of its name, etc.\n• One program can be several processes\no E.g., Consider multiple users executing the same program\n#ps -aux\n6\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nProcess in Memory\n(memory limits of a process)\n#size <pid>",
+      "Chapter 3 Processes › Memory Layout of a C Program\n7\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nMemory Layout of a C Program\nHình: #include <stdio.h>\n#include <stdlib.h>\nhigh\nargc, agrv\nmemory 96 4g\nint main(int argc, char *argv[])\nL7 *values;\nint, 3;\nuninitialized\ndata values = (int *)malloc(sizeof (int) *5) ;\ninitialized for(i = 0; i < 5; i++)\ndata values[i] = 1;\nlow\nreturn 0;\n8\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nProcess State\n• As a process executes, it changes state\no New – The process is being created\no Running – Instructions are being executed\no Waiting – The process is waiting for some event to occur\no Ready – The process is waiting to be assigned to a processor\no Terminated – The process has finished execution",
+      "Chapter 3 Processes › Diagram of Process State\n9\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nDiagram of Process State\n10\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nProcess Control Block (PCB)\n• Process Control Block (PCB) – Information associated with\neach process, also called Task Control Block (TCB), includes:\no Process state – running, waiting, etc.\no Process number – identity of the process\no Program counter – location of instruction to next execute\no CPU registers – contents of all process-centric registers\no CPU scheduling info – priorities, scheduling queue pointers\no Memory-management information – memory allocated to the\nprocess\no Accounting information – CPU used, clock time elapsed\nsince start, time limits\no I/O status information – I/O devices allocated to process, list of\nopen files",
+      "Chapter 3 Processes › Threads\n11\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nThreads\n• So far, process has a single thread of execution\n• Consider having multiple program counters per process\no Multiple locations can execute at once\n• Multiple threads of control –> threads\n• Must then have storage for thread details\n• Multiple program counters in PCB\n12\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nProcess Representation in Linux\n• Represented by the C structure task_struct\npid t_pid;\n/* process identifier */\nlong state;\n/* state of the process */\nunsigned int time_slice\n/* scheduling information */\nstruct task_struct *parent;\n/* this process’s parent */\nstruct list_head children;\n/* this process’s children */\nstruct files_struct *files;\n/* list of open files */\nstruct mm_struct *mm;\n/* address space of this process */\nHình: ⁄Z ™ Z MZ N\nstruct task_ struct struct task_ struct struct task_ struct\nprocess information process information sẻ process information\nt | an ⁄\ncurrent\n(currently executing proccess)",
+      "Chapter 3 Processes › Process Scheduling\n13\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nProcess Scheduling\n• Maximize CPU use ⇢quickly switch processes onto CPU core\n• Process scheduler selects one process among available (ready)\nprocesses for next execution on CPU core\n• Maintains scheduling queues of processes\no Ready queue – set of all processes residing in main memory, ready and\nwaiting to execute\no Wait queues – set of processes waiting for an event (e.g., I/O)\n• Processes migrate among the various queues\n14\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nReady and Wait Queues\nHình: queue header PCB ; PCB ;\nready\nqueue",
+      "Chapter 3 Processes › Representation of Process Scheduling\n15\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nRepresentation of Process Scheduling\nnew process\nHình: ready queue\n(vo) I/O wait queue\nchild\nterminates\ninterrupt\noccurs\nI/O request\ntime slice\nexpired\nchild\ntermination\nWait queue\ncreate child\nprocess\nwait for an\ninterrupt\ninterrupt\nwait queue\n16\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nCPU Switch from Process to Process\n• A context switch\noccurs when the\nCPU switches\nfrom one process\nto another.\nHình: process Py operating system process P,\ninterrupt or system call\nexecuting {\nẦ save state into PCBạ\ne\ne\nreload state from PCB,\n> idle interrupt or system call executing\nsave state into PCB,\ne\nJ reload state from PCB,\nexecuting “|\nidle\nidle",
+      "Chapter 3 Processes › Context Switch\n17\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nContext Switch\n• When CPU switches to another process, the system must save the\nstate of the old process and load the saved state for the new process\nvia a context switch\n• Context of a process represented in the PCB\n• Context-switch time is overhead, the system does no useful work\nwhile switching\no The more complex the OS and the PCB, the longer the context switch\n• Time dependent on hardware support\no Some hardware provides multiple sets of registers per CPU, multiple\ncontexts loaded at once\n18\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nMultitasking in Mobile Systems\n• Some mobile systems (e.g., early version of iOS)  allow only one\nprocess to run, others suspended\n• Due to screen real state, user interface limits iOS provides for a\no Single foreground process – controlled via user interface\no Multiple background processes – in memory, running, but not on the\ndisplay, and with limits\no Limits include single, short task, receiving notification of events, specific\nlong-running tasks like audio playback\n• Android runs foreground and background, with fewer limits\no Background process uses a service to perform tasks\no Service can keep running even if background process is suspended\no Service has no user interface, small memory use",
+      "Chapter 3 Processes › Operations on Processes\n19\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nOperations on Processes\n• System must provide mechanisms for:\no process creation\no process termination\n20\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nProcess Creation\n• Parent processes create children processes, which, in turn create\nother processes, forming a tree of processes\n• Process identified and managed via a Process Identifier (PID)\n• Resource sharing options\no Parent and children share all resources\no Children share subset of parent’s resources\no Parent and child share no resources",
+      "Chapter 3 Processes › Process Creation (Cont.)\n21\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nProcess Creation (Cont.)\n• Execution options\no Parent and children execute concurrently\no Parent waits until children terminate\n• Address space\no Child duplicate of parent\no Child has a program loaded into it\n22\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nA Tree of Processes in Linux\n#pstree\nHình: systemd\npid = 1\nsshd\npid = 3028\nlogind\npid =8415\npython\npid =2808\nbash\npid = 8416\nsshd\npid = 3610\ntcsh\npid = 4005\nvim\npid = 9204\npS\npid = 9298",
+      "Chapter 3 Processes › Process Creation (Cont.)\n23\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nProcess Creation (Cont.)\n• UNIX examples\no system() to execute a command from within a program\no fork() system call creates new process\no exec() system call used after a fork() to replace the process’\nmemory space with a new program\no Parent process calls wait() waiting for the child to terminate\nHình: parent (pid > 0)\nC wa0 > parent resumes\nparent\nchild (pid = 0)\n24\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nsystem() system call\n• hands the argument command to the command interpreter sh: $/bin/sh –c <command>\no Ex: $/bin/sh –c ls\n• If command is NULL, system() return a nonzero value if a shell is available, or 0 if\nno shell is available\n• If system() return -1: child process could not be created or its status could not be\nretrieve\n#include <stdlib.h>\nint system(const char *command);\nHình: #include <std11b.h>\n* * Vans-MacBoo\nint main ( ) 2.2.c.rtfd\naddrspace\nint return_value ;\nreturn_value = system ( \"1s.\" );\nreturn return_value;\nHình: Vans-MacBook-Air:c-examp ltvan$ ./systemsimple\n2.2.c.rtfd ex fork2.c pid\naddrspace ex.c forkp pid.cpp",
+      "Chapter 3 Processes › C Program Forking A Separate Process: fork()\n25\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nC Program Forking A Separate Process: fork()\nHình: #include <sys/types.h>\n#include <stdio.h>\n#include <unistd.h>\nint main()\npid.t pid;\nd process */\nif (pid < 0) { /* error occurred */\nfprintf(stderr, \"Fork Failed\");\nreturn 1;\nelse if (pid == 0) { /* child process */\nexeclp(\"/bin/1s\",\"1s\",NULL) ;\nelse { /* parent process */\n/* parent will wait for the child to complete */\nprintf(\"Child Complete\") ;\nreturn 0;\n27\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nExample\n• ….\n• int main(){\n•  printf(“Hello \\n”);\n•  1. fork();\n•  2. fork();\n• printf(“Hello \\n”);\n• return 0;\n• }\nHow many processes will be generated?",
+      "Chapter 3 Processes › Process Termination\n28\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nProcess Termination\n• Process executes last statement and then asks the operating system\nto delete it using the exit() system call.\no Returns status data from child to parent (via wait())\no Process’resources are deallocated by operating system\n• Parent may terminate the execution of children processes using the\nabort() system call. Some reasons for doing so:\no Child has exceeded allocated resources\no Task assigned to child is no longer required\no The parent is exiting and the operating systems does not allow a child to\ncontinue if its parent terminates",
+      "Chapter 3 Processes › Process Termination (Cont.)\n29\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nProcess Termination (Cont.)\n• Some operating systems do not allow child to exists if its parent has terminated. If\na process terminates, then all its children must also be terminated.\no Cascading termination: All children, grandchildren, etc. are  terminated\no The termination is initiated by the operating system\n• The parent process may wait for termination of a child process by using the\nwait() system call. The call returns status information and the pid of the\nterminated process\n• pid = wait(&status);\n• waitpid() suspends execution of the calling process until a child specified\nby pid argument has changed state\n• If no parent waiting (did not invoke wait()), process is a zombie\n• If parent terminated without invoking wait(), process is an orphan",
+      "Chapter 3 Processes › waitpid() example\n30\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nwaitpid() example\n#include <sys/types.h>\n#include <sys/wait.h>\npid_t waitpid(pid_t pid, int\n*status, int options);\no pid< -1: wait for any child process\nwhose process group ID is equal to the\nabsolute value of pid.\no pid =1: wait for any child process\no pid = 0: wait for any child process\nwhose process group ID is equal to that\nof the calling process\no pid>0: wait for the child whose process\nID is equal to the value of pid\nwait(&status) is equivalent to\nwaitpid(-1, &status, 0);\nHình: Vans-MacBook-Air:c-examp 1tvan$ ./forkwpidr\nChild proc id = 9716, lgroupld = 9715\nParent proc id = 9715\nHình: #include<stdio.h>\n#include<sys/wait.h>\n#include<unistd.h>\nint main(){\npid_t pid=fork();\nif (pid==@) {\nprintf(\"Child proc id = %d, groupid = %d \\n\",\ngetpid(),getpgrp());\nelse if(pid>9){\nwaitpid(pid,NULL,9);\nprintf(\"Parent proc id = %d \\n\",getpid());\nreturn 0;",
+      "Chapter 3 Processes › wait(&status) example\n31\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nwait(&status) example\n#include <sys/types.h>\n#include <sys/wait.h>\npid_t wait(int *status);\nHình: #include <stdio.h> TH BH NGH OS BY SL\n#include <unistd.h> h h h *\n#include <sys/wait.h> pid_t wait(int status);\nint main (int argc, char *argv[]){\nint return_code;\nint status;\n/* create a new process */\nreturn_code = fork();\nif (return_code > 9){\nint id = wait(&status);\nprin Parent process:pcnild's pid =%d with returned value = %d_\\n\",idCWEXITSTATUS(status) ) ;\nprintf(\"child's pid =%d with raw returned value = %d \\n*, id\nprintf(\"Pid of child %d \\n\",return_code);\nreturn 0;\nelse if (return_code == 0){\nprintf(\"This is child process \\n\");\nelse {\nprintf(\"Fork error\\n\");\nreturn 1;",
+      "Chapter 3 Processes › Exercise\n32\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nExercise\n• Given the following code:\nint main(){\nint i;\nfor(i=0; i<n;i++)\nfork();\nreturn 0;\n}\nHow many processes will be generated if n = 2?\n33\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nImportance Hierarchy of Android Process\n• Mobile operating systems often have to terminate processes to\nreclaim system resources such as memory. From most to least\nimportant:\n▲Foreground process\n▲Visible process\n▲Service process\n▲Background process\n▲Empty process\n• Android will begin terminating processes that are least important.",
+      "Chapter 3 Processes › Multiprocess Architecture – Chrome Browser\n34\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nMultiprocess Architecture – Chrome Browser\n• Many web browsers ran as a single process (some still do)\no If one web site causes trouble, entire browser can hang or crash\n• Google Chrome Browser is multiprocess with 3 different types of\nprocesses:\no Browser process manages user interface, disk and network I/O\no Renderer process renders web pages, deals with HTML, JavaScript. A\nnew renderer created for each website opened\n• Runs in sandbox restricting disk and network I/O, minimizing effect of security\nexploits\no Plug-in process for each type of plug-in\nHình: © Chrome Browser\nx OS-BOOK.COM x Operating SystemC x Homepage\nWw\nCG\nLOi chrome\nDOWNLOAD x SET x x\nEach tab represents a separate process.\nCHROMECAST x\n35\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nInter-Process Communication (IPC)\n• Processes within a system may be independent or cooperating\no Independent process does not share data with any other processes\nexecuting in the system\no Cooperating process can affect or be affected by other processes,\nincluding sharing data\n• Reasons for cooperating processes:\no Information sharing\no Computation speed-up\no Modularity\no Convenience\n• Cooperating processes need Inter-Process communication (IPC)",
+      "Chapter 3 Processes › Communication Models\n36\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nCommunication Models\n• Two models of IPC\no Shared memory\no Message passing\nShared memory\nMessage passing\n37\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nInter-Process Communication – Shared Memory\n• An area of memory shared among the processes that wish to\ncommunicate\n• The communication is under the control of the users processes, not\nthe operating system.\n• Major issues is to provide mechanism that will allow the user\nprocesses to synchronize their actions when they access shared\nmemory.",
+      "Chapter 3 Processes › Producer-Consumer Problem\n38\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nProducer-Consumer Problem\n• Producer-Consumer relationship\n• Paradigm for cooperating processes, producer process produces\ninformation that is consumed by a consumer process\no unbounded-buffer places no practical limit on the size of the buffer\no bounded-buffer assumes that there is a fixed buffer size\n39\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nBounded-Buffer – Shared-Memory Solution\n• Shared data\n#define BUFFER_SIZE 10\ntypedef struct {\n. . .\n} item;\nitem buffer[BUFFER_SIZE];\nint in = 0;\nint out = 0;\n• Solution is correct, but can only use BUFFER_SIZE-1 elements",
+      "Chapter 3 Processes › Producer Process – Shared Memory\n40\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nProducer Process – Shared Memory\nitem next_produced;\nwhile (true) {\n/* produce an item in next produced */\nwhile (((in + 1) % BUFFER_SIZE) == out)\n; /* do nothing */\nbuffer[in] = next_produced;\nin = (in + 1) % BUFFER_SIZE;\n}\n41\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nConsumer Process – Shared Memory\nitem next_consumed;\nwhile (true) {\nwhile (in == out)\n; /* do nothing */\nnext_consumed = buffer[out];\nout = (out + 1) % BUFFER_SIZE;\n/* consume the item in next consumed */\n}",
+      "Chapter 3 Processes › Inter-Process Communication – Message Passing\n42\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nInter-Process Communication – Message\nPassing\n• Mechanism for processes to communicate and to synchronize their\nactions\n• Message system – processes communicate with each other without\nresorting to shared variables\n• IPC facility provides two operations:\no send(message)\no receive(message)\n• The message size is either fixed or variable\n43\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nMessage Passing (Cont.)\n• If processes P and Q wish to communicate, they need to:\no Establish a communication link between them\no Exchange messages via send/receive\n• Implementation issues:\no How are links established?\no Can a link be associated with more than two processes?\no How many links can there be between every pair of communicating\nprocesses?\no What is the capacity of a link?\no Is the size of a message that the link can accommodate fixed or variable?\no Is a link unidirectional or bi-directional?",
+      "Chapter 3 Processes › Direct Communication\n45\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nDirect Communication\n• Processes must name each other explicitly:\no send (P, message) – send a message to process P\no receive(Q, message) – receive a message from process Q\n• Properties of communication link\no Links are established automatically\no A link is associated with exactly one pair of communicating processes\no Between each pair there exists exactly one link\no The link may be unidirectional, but is usually bi-directional\n46\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nIndirect Communication\n• Messages are directed and received from mailboxes (also referred to\nas ports)\no Each mailbox has a unique ID\no Processes can communicate only if they share a mailbox\n• Properties of communication link\no Link established only if processes share a common mailbox\no A link may be associated with many processes\no Each pair of processes may share several communication links\no Link may be unidirectional or bi-directional",
+      "Chapter 3 Processes › Indirect Communication (Cont.)\n47\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nIndirect Communication (Cont.)\n• Operations\no create a new mailbox (or port)\no send and receive messages through mailbox\no destroy a mailbox\n• Primitives are defined as:\no\nsend(A, message) – send a message to mailbox A\no\nreceive(A, message) – receive a message from mailbox A\n48\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nIndirect Communication (Cont.)\n• Mailbox sharing\no Example\n• P_1, P_2, and P_3 share mailbox A,\n• P_1 sends; P_2 and P_3 receive.\n• Who gets the message?\no Solutions\n• Allow a link to be associated with at most two processes\n• Allow only one process at a time to execute a receive operation\n• Allow the system to select arbitrarily the receiver. Sender is notified who the\nreceiver was",
+      "Chapter 3 Processes › Message Passing – Synchronization\n49\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nMessage Passing – Synchronization\n• Message passing may be either blocking or non-blocking\n• Blocking is considered synchronous\no Blocking send – the sender is blocked until the message is received\no Blocking receive – the receiver is blocked until a message is available\n• Non-blocking is considered asynchronous\no Non-blocking send – the sender sends the message and continue\no Non-blocking receive – the receiver receives:\n• A valid message, or Null message\n• Different combinations possible\no If both send and receive are blocking, we have a rendezvous\n50\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nProducer – Message Passing\nmessage next_produced;\nwhile (true) {\n/* produce an item in next_produced */\nsend(next_produced);\n}",
+      "Chapter 3 Processes › Consumer – Message Passing\n51\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nConsumer – Message Passing\nmessage next_consumed;\nwhile (true) {\nreceive(next_consumed)\n/* consume the item in next_consumed */\n}\n52\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nBuffering\n• Queue of messages attached to the link.\n• Implemented in one of three ways\no Zero capacity – no messages are queued on a link\n• Sender must wait for receiver (rendezvous)\no Bounded capacity – finite length of n messages\n• Sender must wait if link full\no Unbounded capacity – infinite length\n• Sender never waits",
+      "Chapter 3 Processes › Examples of IPC Systems - POSIX\n53\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nExamples of IPC Systems - POSIX\n• POSIX Shared Memory\no Process first creates shared memory segment\nshm_fd = shm_open(name, O CREAT | O RDWR, 0666);\no Also used to open an existing segment\no Set the size of the object\nftruncate(shm_fd, 4096);\no Use mmap() to memory-map a file pointer to the shared memory object\no Reading and writing to shared memory is done by using the pointer\nreturned by mmap().\n61\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nPipes\n• Acts as a conduit allowing two processes to communicate\n• Issues:\no Is communication unidirectional or bidirectional?\no In the case of two-way communication, is it half or full-duplex?\no Must there exist a relationship (e.g., parent-child) between the\ncommunicating processes?\no Can the pipes be used over a network?\n• Ordinary pipes – cannot be accessed from outside the process that\ncreated it. Typically, a parent process creates a pipe and uses it to\ncommunicate with a child process that it created.\n• Named pipes – can be accessed without a parent-child relationship.",
+      "Chapter 3 Processes › Ordinary Pipes\n62\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nOrdinary Pipes\n• Ordinary Pipes allow communication in standard producer-consumer\nstyle\no Producer writes to one end (the write-end of the pipe)\no Consumer reads from the other end (the read-end of the pipe)\n• Ordinary pipes are therefore unidirectional\n• Require parent-child relationship between communicating processes\n63\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nNamed Pipes\n• Named pipes are more powerful than ordinary pipes\n• Communication is bidirectional\n• No parent-child relationship is necessary between the communicating\nprocesses\n• Several processes can use the named pipe for communication\n• Provided on both UNIX and Windows systems",
+      "Chapter 3 Processes › Communications in Client-Server Systems\n64\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nCommunications in Client-Server Systems\n• Sockets\no A socket is defined as an endpoint for communication\no It is a concatenation of IP address and port – a number included at start\nof message packet to differentiate network services on a host\n• E.g., The socket 161.25.19.8:1625 refers to port 1625 on host 161.25.19.8\no Communication consists between a pair of sockets\no All ports below 1024 are well known, used for standard services\no Special IP address 127.0.0.1 (loopback) to refer to system on which\nprocess is running\n• Remote Procedure Calls (RPC)\n65\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nSocket Communication\nHình: host X\n(146.86.5.20)\nsocket\n(146.86.5.20:1625)\nweb server\n(161.25.19.8)\nsocket\n(161.25.19.8:80)",
+      "Chapter 3 Processes › Sockets in Java – Server\n66\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nSockets in Java – Server\n• Three types of sockets\no Connection-oriented\n(TCP)\no Connectionless\n(UDP)\no MulticastSocket\nclass– data can be\nsent to multiple\nrecipients\n• Consider this “Date”\nserver in Java:\nHình: import java.net.*;\nimport java.io.*;\npublic class DateServer\npublic static void main(String[] args) {\ntry {\nServerSocket sock = new ServerSocket(6013) ;\n/* now listen for connections */\nwhile (true) {\nSocket client = sock.accept() ;\nPrintWriter pout = new\nPrintWriter(client.getOutputStream(), true);\n/* write the Date to the socket */\npout.println(new java.util.Date().toString()) ;\n/* close the socket and resume */\n/* listening for connections */\nclient.close();\ncatch (IOException ioe) {\nSystem.err.print1n(ioe) ;",
+      "Chapter 3 Processes › Sockets in Java – Client\n67\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nSockets in Java – Client\n• The equivalent\n“Date” client\nHình: import java.net.*;\nimport java.io.*;\npublic class DateClient\npublic static void main(String[] args) {\ntry {\n/* make connection to server socket */\nSocket sock = new Socket(\"127.0.0.1\",6013) ;\nInputStream in = sock.getInputStream() ;\nBufferedReader bin = new\nBufferedReader(new InputStreamReader(in)) ;\n/* read the date from the socket */\nString line;\nwhile ( (line = bin.readLine()) != null)\nSystem.out.println(line) ;\n/* close the socket connection*/\nsock.close();\ncatch ioe) {\nSystem.err.print1n(ioe) ;\n68\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nRemote Procedure Calls\n• Remote Procedure Call (RPC) abstracts procedure calls between\nprocesses on networked systems\no Again uses ports for service differentiation\n• Stubs – proxies for the actual procedure on the server and client\nsides\no The client-side stub locates the server and marshals the parameters\no The server-side stub receives this message, unpacks the marshalled\nparameters, and performs the procedure on the server\n• On Windows, stub code compile from specification written in\nMicrosoft Interface Definition Language (MIDL)",
+      "Chapter 3 Processes › Remote Procedure Calls (Cont.)\n69\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nRemote Procedure Calls (Cont.)\n• Data representation handled via External Data Representation\n(XDR) format to account for different architectures\no E.g., Big-endian (Motorola) and little-endian (Intel x86)\n• Remote communication has more failure scenarios than local\no Messages can be delivered exactly once rather than at most once\n• OS typically provides a rendezvous (or matchmaker) service to\nconnect client and server\nSilberschatz, Galvin and Gagne ©2018\nOperating System Concepts\nEnd of Chapter 3"
+    ]
+  },
+  "reference": {
+    "coverage": "complete",
+    "chunk_ids": [
+      "a7271160-d016-4f81-b9b4-5f9c14c7a5fc",
+      "9de672c1-6709-445b-88eb-1585cbe52a7e",
+      "56e13778-a55c-41c2-9401-25312ad59d36",
+      "d364c359-ab12-42cb-a605-2fbf69f777c7",
+      "2059e9e9-2959-40cc-8d0d-e16d8a19197b",
+      "1f999003-0246-4b58-8f1e-89e3c6234872",
+      "d8ac34e3-8aa6-48c3-8193-0451328953ed",
+      "8c6e408d-dacf-46c5-9f4e-ad492dc2de0a",
+      "e9f0af46-b9f5-4779-bea0-42f317f5cce1",
+      "653cdc5c-079c-4ed0-a4ab-a0bb24753904",
+      "88fb8358-4489-4341-a9da-f6650cf190bf",
+      "4d5e1cdc-9914-4a81-8acb-7fd0d6062905",
+      "5a7d1869-8bf1-4016-b29d-c82343c1c962",
+      "43759e12-5ad0-4a8c-b723-44aa20d74d85",
+      "c65d21cf-7632-4d44-8eac-a08b13ddefee",
+      "e5a282b2-0c7c-4b2f-b984-a9ef77c57cbe",
+      "3cf10ee1-62ba-449f-a3dc-7e10b868fa55",
+      "3b656b55-cc7a-4e8f-aef5-151b4c3f67cc",
+      "71db9c6e-a5bc-43d4-8233-629f589039ee",
+      "f452aa58-f24e-483f-b75e-22bcf2772beb",
+      "e568a12a-ce44-456a-951b-1c929b23742a",
+      "c6fa851e-e188-4a67-910d-6d08e1a39516",
+      "2270cb2b-96d3-40eb-a328-15a7ae2a1c08",
+      "e37b0687-f013-4ec8-8e15-dec8d8651938",
+      "9736dcfd-d56f-46b3-9e8f-e9c28f33ce06",
+      "51455c76-1d6c-43a5-ae6f-6b14d2ab9579",
+      "591e11eb-869e-4d24-93d6-003a6d28f77a",
+      "54562189-bb51-4f1c-a0eb-0b7ce1c24a26",
+      "9ba89abe-da56-4801-b55d-37b45dde7d54",
+      "3a4c68fc-a180-4856-a75b-4934e8bd65ee",
+      "849eafcc-0fb3-41f3-8109-3ec6c4741868",
+      "2cbc6b70-75bf-4657-ada7-394701a8133b",
+      "5227f732-becb-4d7f-b4a9-e3524ee4a792"
+    ],
+    "total_chunks": 33
+  },
+  "claim_citations": [
+    {
+      "claim": "Chương trình là một thực thể bị động được lưu trữ trên đĩa (ví dụ: tệp thực thi).",
+      "source_id": "S3",
+      "start": 99,
+      "end": 180,
+      "marker_start": 181,
+      "marker_end": 185,
+      "locator": "{\"spans\": [{\"page\": 5, \"heading\": \"Process Concept (Cont.)\", \"extraction_method\": \"text_layer\"}, {\"page\": 6, \"heading\": \"Process in Memory\", \"extraction_method\": \"text_layer\"}]}",
+      "chunk_id": "56e13778-a55c-41c2-9401-25312ad59d36",
+      "chunk_content": "Chapter 3 Processes › Process Concept (Cont.)\n5\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nProcess Concept (Cont.)\n• Program is passive entity stored on disk (e.g., executable file)\n• Process is active entity\no Program becomes process when executable file loaded into memory\n• Execution of program can be started via GUI mouse clicks, command\nline (CLI) entry of its name, etc.\n• One program can be several processes\no E.g., Consider multiple users executing the same program\n#ps -aux\n6\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nProcess in Memory\n(memory limits of a process)\n#size <pid>",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "Tiến trình là một chương trình đang thực thi; quá trình thực thi tiến trình phải tiến hành theo trình tự tuần tự.",
+      "source_id": "S2",
+      "start": 188,
+      "end": 301,
+      "marker_start": 302,
+      "marker_end": 306,
+      "locator": "{\"spans\": [{\"page\": 3, \"heading\": \"Objectives\", \"extraction_method\": \"text_layer\"}, {\"page\": 4, \"heading\": \"Process Concept\", \"extraction_method\": \"text_layer\"}]}",
+      "chunk_id": "9de672c1-6709-445b-88eb-1585cbe52a7e",
+      "chunk_content": "Chapter 3 Processes › Objectives\n3\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nObjectives\n• Identify the separate components of a process and illustrate how they\nare represented and scheduled in an operating system.\n• Describe how processes are created and terminated in an operating\nsystem, including developing programs using the appropriate system\ncalls that perform these operations.\n• Describe and contrast inter-process communication using shared\nmemory and message passing.\n• Design programs that uses pipes and POSIX shared memory to\nperform inter-process communication.\n• Describe client-server communication using sockets and remote\nprocedure calls.\n• Design kernel modules that interact with the Linux operating system.\n4\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nProcess Concept\n• An operating system executes a variety of programs that run as\nprocesses\n• Process – a program in execution; process execution must progress\nin sequential fashion\n• Multiple parts\no The program code, also called text section\no Current activity including program counter, and processor registers\no Stack section containing temporary data\n• Function parameters, return addresses, local variables\no Data section containing global variables\no Heap section containing memory dynamically allocated during run time",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "Một chương trình trở thành tiến trình khi tệp thực thi được tải vào bộ nhớ.",
+      "source_id": "S3",
+      "start": 309,
+      "end": 384,
+      "marker_start": 385,
+      "marker_end": 389,
+      "locator": "{\"spans\": [{\"page\": 5, \"heading\": \"Process Concept (Cont.)\", \"extraction_method\": \"text_layer\"}, {\"page\": 6, \"heading\": \"Process in Memory\", \"extraction_method\": \"text_layer\"}]}",
+      "chunk_id": "56e13778-a55c-41c2-9401-25312ad59d36",
+      "chunk_content": "Chapter 3 Processes › Process Concept (Cont.)\n5\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nProcess Concept (Cont.)\n• Program is passive entity stored on disk (e.g., executable file)\n• Process is active entity\no Program becomes process when executable file loaded into memory\n• Execution of program can be started via GUI mouse clicks, command\nline (CLI) entry of its name, etc.\n• One program can be several processes\no E.g., Consider multiple users executing the same program\n#ps -aux\n6\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nProcess in Memory\n(memory limits of a process)\n#size <pid>",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "Một chương trình có thể là nhiều tiến trình (ví dụ: nhiều người dùng thực thi cùng một chương trình).",
+      "source_id": "S3",
+      "start": 392,
+      "end": 493,
+      "marker_start": 494,
+      "marker_end": 498,
+      "locator": "{\"spans\": [{\"page\": 5, \"heading\": \"Process Concept (Cont.)\", \"extraction_method\": \"text_layer\"}, {\"page\": 6, \"heading\": \"Process in Memory\", \"extraction_method\": \"text_layer\"}]}",
+      "chunk_id": "56e13778-a55c-41c2-9401-25312ad59d36",
+      "chunk_content": "Chapter 3 Processes › Process Concept (Cont.)\n5\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nProcess Concept (Cont.)\n• Program is passive entity stored on disk (e.g., executable file)\n• Process is active entity\no Program becomes process when executable file loaded into memory\n• Execution of program can be started via GUI mouse clicks, command\nline (CLI) entry of its name, etc.\n• One program can be several processes\no E.g., Consider multiple users executing the same program\n#ps -aux\n6\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nProcess in Memory\n(memory limits of a process)\n#size <pid>",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "Phần mã chương trình (program code) còn gọi là phần text (text section).",
+      "source_id": "S2",
+      "start": 598,
+      "end": 670,
+      "marker_start": 671,
+      "marker_end": 675,
+      "locator": "{\"spans\": [{\"page\": 3, \"heading\": \"Objectives\", \"extraction_method\": \"text_layer\"}, {\"page\": 4, \"heading\": \"Process Concept\", \"extraction_method\": \"text_layer\"}]}",
+      "chunk_id": "9de672c1-6709-445b-88eb-1585cbe52a7e",
+      "chunk_content": "Chapter 3 Processes › Objectives\n3\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nObjectives\n• Identify the separate components of a process and illustrate how they\nare represented and scheduled in an operating system.\n• Describe how processes are created and terminated in an operating\nsystem, including developing programs using the appropriate system\ncalls that perform these operations.\n• Describe and contrast inter-process communication using shared\nmemory and message passing.\n• Design programs that uses pipes and POSIX shared memory to\nperform inter-process communication.\n• Describe client-server communication using sockets and remote\nprocedure calls.\n• Design kernel modules that interact with the Linux operating system.\n4\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nProcess Concept\n• An operating system executes a variety of programs that run as\nprocesses\n• Process – a program in execution; process execution must progress\nin sequential fashion\n• Multiple parts\no The program code, also called text section\no Current activity including program counter, and processor registers\no Stack section containing temporary data\n• Function parameters, return addresses, local variables\no Data section containing global variables\no Heap section containing memory dynamically allocated during run time",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "Phần stack chứa dữ liệu tạm thời như tham số hàm, địa chỉ trả về và biến cục bộ.",
+      "source_id": "S2",
+      "start": 678,
+      "end": 758,
+      "marker_start": 759,
+      "marker_end": 763,
+      "locator": "{\"spans\": [{\"page\": 3, \"heading\": \"Objectives\", \"extraction_method\": \"text_layer\"}, {\"page\": 4, \"heading\": \"Process Concept\", \"extraction_method\": \"text_layer\"}]}",
+      "chunk_id": "9de672c1-6709-445b-88eb-1585cbe52a7e",
+      "chunk_content": "Chapter 3 Processes › Objectives\n3\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nObjectives\n• Identify the separate components of a process and illustrate how they\nare represented and scheduled in an operating system.\n• Describe how processes are created and terminated in an operating\nsystem, including developing programs using the appropriate system\ncalls that perform these operations.\n• Describe and contrast inter-process communication using shared\nmemory and message passing.\n• Design programs that uses pipes and POSIX shared memory to\nperform inter-process communication.\n• Describe client-server communication using sockets and remote\nprocedure calls.\n• Design kernel modules that interact with the Linux operating system.\n4\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nProcess Concept\n• An operating system executes a variety of programs that run as\nprocesses\n• Process – a program in execution; process execution must progress\nin sequential fashion\n• Multiple parts\no The program code, also called text section\no Current activity including program counter, and processor registers\no Stack section containing temporary data\n• Function parameters, return addresses, local variables\no Data section containing global variables\no Heap section containing memory dynamically allocated during run time",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "Phần data chứa các biến toàn cục.",
+      "source_id": "S2",
+      "start": 766,
+      "end": 799,
+      "marker_start": 800,
+      "marker_end": 804,
+      "locator": "{\"spans\": [{\"page\": 3, \"heading\": \"Objectives\", \"extraction_method\": \"text_layer\"}, {\"page\": 4, \"heading\": \"Process Concept\", \"extraction_method\": \"text_layer\"}]}",
+      "chunk_id": "9de672c1-6709-445b-88eb-1585cbe52a7e",
+      "chunk_content": "Chapter 3 Processes › Objectives\n3\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nObjectives\n• Identify the separate components of a process and illustrate how they\nare represented and scheduled in an operating system.\n• Describe how processes are created and terminated in an operating\nsystem, including developing programs using the appropriate system\ncalls that perform these operations.\n• Describe and contrast inter-process communication using shared\nmemory and message passing.\n• Design programs that uses pipes and POSIX shared memory to\nperform inter-process communication.\n• Describe client-server communication using sockets and remote\nprocedure calls.\n• Design kernel modules that interact with the Linux operating system.\n4\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nProcess Concept\n• An operating system executes a variety of programs that run as\nprocesses\n• Process – a program in execution; process execution must progress\nin sequential fashion\n• Multiple parts\no The program code, also called text section\no Current activity including program counter, and processor registers\no Stack section containing temporary data\n• Function parameters, return addresses, local variables\no Data section containing global variables\no Heap section containing memory dynamically allocated during run time",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "Phần heap chứa bộ nhớ được cấp phát động trong thời gian chạy (run time).",
+      "source_id": "S2",
+      "start": 807,
+      "end": 880,
+      "marker_start": 881,
+      "marker_end": 885,
+      "locator": "{\"spans\": [{\"page\": 3, \"heading\": \"Objectives\", \"extraction_method\": \"text_layer\"}, {\"page\": 4, \"heading\": \"Process Concept\", \"extraction_method\": \"text_layer\"}]}",
+      "chunk_id": "9de672c1-6709-445b-88eb-1585cbe52a7e",
+      "chunk_content": "Chapter 3 Processes › Objectives\n3\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nObjectives\n• Identify the separate components of a process and illustrate how they\nare represented and scheduled in an operating system.\n• Describe how processes are created and terminated in an operating\nsystem, including developing programs using the appropriate system\ncalls that perform these operations.\n• Describe and contrast inter-process communication using shared\nmemory and message passing.\n• Design programs that uses pipes and POSIX shared memory to\nperform inter-process communication.\n• Describe client-server communication using sockets and remote\nprocedure calls.\n• Design kernel modules that interact with the Linux operating system.\n4\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nProcess Concept\n• An operating system executes a variety of programs that run as\nprocesses\n• Process – a program in execution; process execution must progress\nin sequential fashion\n• Multiple parts\no The program code, also called text section\no Current activity including program counter, and processor registers\no Stack section containing temporary data\n• Function parameters, return addresses, local variables\no Data section containing global variables\no Heap section containing memory dynamically allocated during run time",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "Khối điều khiển tiến trình (PCB - Process Control Block), còn gọi là Khối điều khiển tác vụ (TCB), chứa thông tin liên kết với mỗi tiến trình.",
+      "source_id": "S5",
+      "start": 981,
+      "end": 1123,
+      "marker_start": 1124,
+      "marker_end": 1128,
+      "locator": "{\"spans\": [{\"page\": 9, \"heading\": \"Diagram of Process State\", \"extraction_method\": \"text_layer\"}, {\"page\": 10, \"heading\": \"Process Control Block (PCB)\", \"extraction_method\": \"text_layer\"}]}",
+      "chunk_id": "2059e9e9-2959-40cc-8d0d-e16d8a19197b",
+      "chunk_content": "Chapter 3 Processes › Diagram of Process State\n9\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nDiagram of Process State\n10\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nProcess Control Block (PCB)\n• Process Control Block (PCB) – Information associated with\neach process, also called Task Control Block (TCB), includes:\no Process state – running, waiting, etc.\no Process number – identity of the process\no Program counter – location of instruction to next execute\no CPU registers – contents of all process-centric registers\no CPU scheduling info – priorities, scheduling queue pointers\no Memory-management information – memory allocated to the\nprocess\no Accounting information – CPU used, clock time elapsed\nsince start, time limits\no I/O status information – I/O devices allocated to process, list of\nopen files",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "Trạng thái tiến trình (process state): như đang chạy (running), đang chờ (waiting), v.v.",
+      "source_id": "S5",
+      "start": 1131,
+      "end": 1219,
+      "marker_start": 1220,
+      "marker_end": 1224,
+      "locator": "{\"spans\": [{\"page\": 9, \"heading\": \"Diagram of Process State\", \"extraction_method\": \"text_layer\"}, {\"page\": 10, \"heading\": \"Process Control Block (PCB)\", \"extraction_method\": \"text_layer\"}]}",
+      "chunk_id": "2059e9e9-2959-40cc-8d0d-e16d8a19197b",
+      "chunk_content": "Chapter 3 Processes › Diagram of Process State\n9\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nDiagram of Process State\n10\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nProcess Control Block (PCB)\n• Process Control Block (PCB) – Information associated with\neach process, also called Task Control Block (TCB), includes:\no Process state – running, waiting, etc.\no Process number – identity of the process\no Program counter – location of instruction to next execute\no CPU registers – contents of all process-centric registers\no CPU scheduling info – priorities, scheduling queue pointers\no Memory-management information – memory allocated to the\nprocess\no Accounting information – CPU used, clock time elapsed\nsince start, time limits\no I/O status information – I/O devices allocated to process, list of\nopen files",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "Số hiệu tiến trình (process number): định danh của tiến trình.",
+      "source_id": "S5",
+      "start": 1227,
+      "end": 1289,
+      "marker_start": 1290,
+      "marker_end": 1294,
+      "locator": "{\"spans\": [{\"page\": 9, \"heading\": \"Diagram of Process State\", \"extraction_method\": \"text_layer\"}, {\"page\": 10, \"heading\": \"Process Control Block (PCB)\", \"extraction_method\": \"text_layer\"}]}",
+      "chunk_id": "2059e9e9-2959-40cc-8d0d-e16d8a19197b",
+      "chunk_content": "Chapter 3 Processes › Diagram of Process State\n9\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nDiagram of Process State\n10\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nProcess Control Block (PCB)\n• Process Control Block (PCB) – Information associated with\neach process, also called Task Control Block (TCB), includes:\no Process state – running, waiting, etc.\no Process number – identity of the process\no Program counter – location of instruction to next execute\no CPU registers – contents of all process-centric registers\no CPU scheduling info – priorities, scheduling queue pointers\no Memory-management information – memory allocated to the\nprocess\no Accounting information – CPU used, clock time elapsed\nsince start, time limits\no I/O status information – I/O devices allocated to process, list of\nopen files",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "Bộ đếm chương trình (program counter): vị trí của lệnh tiếp theo cần thực thi.",
+      "source_id": "S5",
+      "start": 1297,
+      "end": 1375,
+      "marker_start": 1376,
+      "marker_end": 1380,
+      "locator": "{\"spans\": [{\"page\": 9, \"heading\": \"Diagram of Process State\", \"extraction_method\": \"text_layer\"}, {\"page\": 10, \"heading\": \"Process Control Block (PCB)\", \"extraction_method\": \"text_layer\"}]}",
+      "chunk_id": "2059e9e9-2959-40cc-8d0d-e16d8a19197b",
+      "chunk_content": "Chapter 3 Processes › Diagram of Process State\n9\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nDiagram of Process State\n10\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nProcess Control Block (PCB)\n• Process Control Block (PCB) – Information associated with\neach process, also called Task Control Block (TCB), includes:\no Process state – running, waiting, etc.\no Process number – identity of the process\no Program counter – location of instruction to next execute\no CPU registers – contents of all process-centric registers\no CPU scheduling info – priorities, scheduling queue pointers\no Memory-management information – memory allocated to the\nprocess\no Accounting information – CPU used, clock time elapsed\nsince start, time limits\no I/O status information – I/O devices allocated to process, list of\nopen files",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "Các thanh ghi CPU (CPU registers): nội dung của tất cả các thanh ghi tập trung vào tiến trình.",
+      "source_id": "S5",
+      "start": 1383,
+      "end": 1477,
+      "marker_start": 1478,
+      "marker_end": 1482,
+      "locator": "{\"spans\": [{\"page\": 9, \"heading\": \"Diagram of Process State\", \"extraction_method\": \"text_layer\"}, {\"page\": 10, \"heading\": \"Process Control Block (PCB)\", \"extraction_method\": \"text_layer\"}]}",
+      "chunk_id": "2059e9e9-2959-40cc-8d0d-e16d8a19197b",
+      "chunk_content": "Chapter 3 Processes › Diagram of Process State\n9\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nDiagram of Process State\n10\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nProcess Control Block (PCB)\n• Process Control Block (PCB) – Information associated with\neach process, also called Task Control Block (TCB), includes:\no Process state – running, waiting, etc.\no Process number – identity of the process\no Program counter – location of instruction to next execute\no CPU registers – contents of all process-centric registers\no CPU scheduling info – priorities, scheduling queue pointers\no Memory-management information – memory allocated to the\nprocess\no Accounting information – CPU used, clock time elapsed\nsince start, time limits\no I/O status information – I/O devices allocated to process, list of\nopen files",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "Thông tin lập lịch CPU (CPU scheduling info): các mức ưu tiên, con trỏ hàng đợi lập lịch.",
+      "source_id": "S5",
+      "start": 1485,
+      "end": 1574,
+      "marker_start": 1575,
+      "marker_end": 1579,
+      "locator": "{\"spans\": [{\"page\": 9, \"heading\": \"Diagram of Process State\", \"extraction_method\": \"text_layer\"}, {\"page\": 10, \"heading\": \"Process Control Block (PCB)\", \"extraction_method\": \"text_layer\"}]}",
+      "chunk_id": "2059e9e9-2959-40cc-8d0d-e16d8a19197b",
+      "chunk_content": "Chapter 3 Processes › Diagram of Process State\n9\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nDiagram of Process State\n10\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nProcess Control Block (PCB)\n• Process Control Block (PCB) – Information associated with\neach process, also called Task Control Block (TCB), includes:\no Process state – running, waiting, etc.\no Process number – identity of the process\no Program counter – location of instruction to next execute\no CPU registers – contents of all process-centric registers\no CPU scheduling info – priorities, scheduling queue pointers\no Memory-management information – memory allocated to the\nprocess\no Accounting information – CPU used, clock time elapsed\nsince start, time limits\no I/O status information – I/O devices allocated to process, list of\nopen files",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "Thông tin quản lý bộ nhớ (memory-management information): bộ nhớ được cấp phát cho tiến trình.",
+      "source_id": "S5",
+      "start": 1582,
+      "end": 1676,
+      "marker_start": 1677,
+      "marker_end": 1681,
+      "locator": "{\"spans\": [{\"page\": 9, \"heading\": \"Diagram of Process State\", \"extraction_method\": \"text_layer\"}, {\"page\": 10, \"heading\": \"Process Control Block (PCB)\", \"extraction_method\": \"text_layer\"}]}",
+      "chunk_id": "2059e9e9-2959-40cc-8d0d-e16d8a19197b",
+      "chunk_content": "Chapter 3 Processes › Diagram of Process State\n9\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nDiagram of Process State\n10\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nProcess Control Block (PCB)\n• Process Control Block (PCB) – Information associated with\neach process, also called Task Control Block (TCB), includes:\no Process state – running, waiting, etc.\no Process number – identity of the process\no Program counter – location of instruction to next execute\no CPU registers – contents of all process-centric registers\no CPU scheduling info – priorities, scheduling queue pointers\no Memory-management information – memory allocated to the\nprocess\no Accounting information – CPU used, clock time elapsed\nsince start, time limits\no I/O status information – I/O devices allocated to process, list of\nopen files",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "Thông tin kế toán (accounting information): CPU đã sử dụng, thời gian đồng hồ đã trôi qua kể từ khi bắt đầu, giới hạn thời gian.",
+      "source_id": "S5",
+      "start": 1684,
+      "end": 1812,
+      "marker_start": 1813,
+      "marker_end": 1817,
+      "locator": "{\"spans\": [{\"page\": 9, \"heading\": \"Diagram of Process State\", \"extraction_method\": \"text_layer\"}, {\"page\": 10, \"heading\": \"Process Control Block (PCB)\", \"extraction_method\": \"text_layer\"}]}",
+      "chunk_id": "2059e9e9-2959-40cc-8d0d-e16d8a19197b",
+      "chunk_content": "Chapter 3 Processes › Diagram of Process State\n9\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nDiagram of Process State\n10\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nProcess Control Block (PCB)\n• Process Control Block (PCB) – Information associated with\neach process, also called Task Control Block (TCB), includes:\no Process state – running, waiting, etc.\no Process number – identity of the process\no Program counter – location of instruction to next execute\no CPU registers – contents of all process-centric registers\no CPU scheduling info – priorities, scheduling queue pointers\no Memory-management information – memory allocated to the\nprocess\no Accounting information – CPU used, clock time elapsed\nsince start, time limits\no I/O status information – I/O devices allocated to process, list of\nopen files",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "Thông tin trạng thái I/O (I/O status information): các thiết bị I/O được cấp phát cho tiến trình, danh sách các tệp đang mở.",
+      "source_id": "S5",
+      "start": 1820,
+      "end": 1944,
+      "marker_start": 1945,
+      "marker_end": 1949,
+      "locator": "{\"spans\": [{\"page\": 9, \"heading\": \"Diagram of Process State\", \"extraction_method\": \"text_layer\"}, {\"page\": 10, \"heading\": \"Process Control Block (PCB)\", \"extraction_method\": \"text_layer\"}]}",
+      "chunk_id": "2059e9e9-2959-40cc-8d0d-e16d8a19197b",
+      "chunk_content": "Chapter 3 Processes › Diagram of Process State\n9\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nDiagram of Process State\n10\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nProcess Control Block (PCB)\n• Process Control Block (PCB) – Information associated with\neach process, also called Task Control Block (TCB), includes:\no Process state – running, waiting, etc.\no Process number – identity of the process\no Program counter – location of instruction to next execute\no CPU registers – contents of all process-centric registers\no CPU scheduling info – priorities, scheduling queue pointers\no Memory-management information – memory allocated to the\nprocess\no Accounting information – CPU used, clock time elapsed\nsince start, time limits\no I/O status information – I/O devices allocated to process, list of\nopen files",
+      "resolution": "resolved"
+    }
+  ]
+}

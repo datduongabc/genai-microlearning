@@ -1,0 +1,174 @@
+{
+  "pair_id": "cfd30918-e20d-466c-b20c-bede6fa80a74",
+  "group": "llm_no_rag",
+  "generator_model": "gemini-fast",
+  "generation_models": [
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    },
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    },
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    },
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    },
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    },
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    },
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    },
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    },
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    },
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    },
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    },
+    {
+      "routed_alias": "gemini-fast",
+      "served_model": "gemini-3.5-flash-lite",
+      "requested_alias": "gemini-fast"
+    }
+  ],
+  "packet": {
+    "anon_id": "",
+    "topic": "Linear Regression",
+    "bloom_level": "understand",
+    "learning_objective": "Sau khi hoàn thành module, người học có thể giải thích cách thuật toán linear regression sử dụng các tham số và hàm chi phí để dự đoán giá trị đầu ra.",
+    "sub_objectives": [
+      "Mô tả mục đích và cách thu thập tập dữ liệu cho bài toán linear regression",
+      "Giải thích ý nghĩa của các tham số theta và vectơ đặc trưng trong hàm giả thuyết",
+      "Trình bày cách hàm chi phí tính toán bình phương sai số giữa giá trị dự đoán và giá trị thực tế"
+    ],
+    "content_markdown": "# Mục đích và cách thu thập tập dữ liệu cho bài toán linear regression\n- Mục đích: Cung cấp dữ liệu lịch sử bao gồm các đặc trưng (features) và giá trị mục tiêu (target) để mô hình học mối quan hệ.\n- Cách thu thập: Thu thập dữ liệu từ các nguồn thực tế, thực hiện tiền xử lý như làm sạch dữ liệu, xử lý giá trị thiếu và chuẩn hóa.\n\n# Ý nghĩa của các tham số theta và vectơ đặc trưng trong hàm giả thuyết\n- Vectơ đặc trưng (feature vector): Đại diện cho các thuộc tính đầu vào của một mẫu dữ liệu.\n- Tham số theta (weights/bias): Các trọng số điều chỉnh mức độ quan trọng của từng đặc trưng trong việc tạo ra giá trị dự đoán.\n\n# Cách hàm chi phí tính toán bình phương sai số giữa giá trị dự đoán và giá trị thực tế\n- Khái niệm hàm chi phí (cost function): Đo lường mức độ sai sót tổng thể của mô hình.\n- Phương pháp tính: Sử dụng tổng bình phương sai số (Mean Squared Error) để phạt nặng các dự đoán lệch xa giá trị thực tế.",
+    "slides": [
+      {
+        "title": "Mục đích và Thu thập Dữ liệu",
+        "bullets": [
+          "Mục đích: Cung cấp dữ liệu lịch sử gồm features và target",
+          "Thu thập: Lấy từ nguồn thực tế và tiền xử lý dữ liệu"
+        ]
+      },
+      {
+        "title": "Vectơ Đặc trưng và Tham số Theta",
+        "bullets": [
+          "Vectơ đặc trưng (feature vector): Đại diện thuộc tính đầu vào",
+          "Tham số theta (weights/bias): Trọng số điều chỉnh mức độ quan trọng"
+        ]
+      },
+      {
+        "title": "Hàm Chi phí và Sai số",
+        "bullets": [
+          "Khái niệm hàm chi phí: Đo lường mức độ sai sót tổng thể của mô hình",
+          "Phương pháp tính: Dùng tổng bình phương sai số để phạt các dự đoán lệch xa"
+        ]
+      }
+    ],
+    "examples": [
+      {
+        "context": "Một công ty bất động sản muốn dự đoán giá nhà. Họ thu thập một tập dữ liệu lịch sử gồm diện tích và số phòng ngủ làm các đặc trưng (features), cùng với giá bán thực tế làm giá trị mục tiêu (target). Sau đó, họ thực hiện làm sạch dữ liệu và chuẩn hóa các cột giá trị trước khi đưa vào mô hình.",
+        "analysis": "Bối cảnh này minh họa chính xác phần mục đích và cách thu thập tập dữ liệu cho bài toán linear regression trong Content, trong đó dữ liệu lịch sử bao gồm đặc trưng và giá trị mục tiêu được thu thập từ thực tế và trải qua quá trình tiền xử lý."
+      },
+      {
+        "context": "Trong hàm giả thuyết dự đoán giá nhà, vectơ đặc trưng đại diện cho các thuộc tính như diện tích và số phòng ngủ của một căn nhà cụ thể. Các tham số theta đóng vai trò là trọng số điều chỉnh mức độ quan trọng của từng thuộc tính này để tạo ra giá trị giá nhà dự đoán.",
+        "analysis": "Bối cảnh này thể hiện trực tiếp ý nghĩa của vectơ đặc trưng là các thuộc tính đầu vào và tham số theta là các trọng số điều chỉnh mức độ quan trọng của từng đặc trưng như đã nêu trong Content."
+      }
+    ],
+    "quiz": [
+      {
+        "stem": "Mục đích chính của việc xây dựng tập dữ liệu lịch sử trong mô hình linear regression là gì?",
+        "choices": [
+          "Giúp thuật toán học mối quan hệ từ các đặc trưng và giá trị mục tiêu đã có.",
+          "Cho phép thuật toán tự động tạo ra các đặc trưng mới dựa trên dữ liệu thô.",
+          "Cung cấp thông tin tiền xử lý thông qua việc chuyển đổi định dạng tệp.",
+          "Chỉ cung cấp các giá trị mục tiêu để mô hình tính toán mức độ sai sót."
+        ],
+        "correct_index": 0,
+        "explanation": "Đáp án đúng là cung cấp dữ liệu lịch sử bao gồm các đặc trưng và giá trị mục tiêu để mô hình học mối quan hệ. Phương án thứ hai sai vì mô hình không tự tạo ra đặc trưng từ dữ liệu thô. Phương án thứ ba sai vì tiền xử lý bao gồm làm sạch và xử lý giá trị thiếu chứ không chỉ đổi định dạng. Phương án thứ tư sai vì tập dữ liệu cần cả đặc trưng đầu vào chứ không chỉ giá trị mục tiêu."
+      },
+      {
+        "stem": "Phát biểu nào sau đây diễn giải chính xác vai trò của vectơ đặc trưng và các tham số theta trong hàm giả thuyết của thuật toán linear regression?",
+        "choices": [
+          "Vectơ đặc trưng đo lường mức độ sai sót tổng thể trong khi tham số theta biểu diễn các thuộc tính đầu vào của mẫu dữ liệu.",
+          "Vectơ đặc trưng đại diện cho các thuộc tính đầu vào của một mẫu dữ liệu trong khi tham số theta điều chỉnh mức độ quan trọng của từng đặc trưng để dự đoán.",
+          "Vectơ đặc trưng lưu trữ giá trị mục tiêu thực tế trong khi tham số theta quyết định cách thu thập dữ liệu lịch sử từ các nguồn thực tế.",
+          "Vectơ đặc trưng dùng để chuẩn hóa dữ liệu trong khi tham số theta đóng vai trò đo lường mức độ sai lệch giữa dự đoán và thực tế."
+        ],
+        "correct_index": 1,
+        "explanation": "Đáp án đúng là phương án thứ hai vì theo nội dung bài học, vectơ đặc trưng đại diện cho các thuộc tính đầu vào của mẫu dữ liệu và tham số theta là các trọng số điều chỉnh mức độ quan trọng của từng đặc trưng trong việc tạo ra giá trị dự đoán. Phương án đầu tiên sai vì nhầm lẫn vai trò của vectơ đặc trưng thành đo lường sai số. Phương án thứ ba sai vì cho rằng vectơ đặc trưng lưu trữ giá trị mục tiêu và theta quyết định thu thập dữ liệu. Phương án cuối cùng sai vì nhầm lẫn vectơ đặc trưng với bước chuẩn hóa và theta với hàm chi phí đo lường sai lệch."
+      },
+      {
+        "stem": "Hàm chi phí (cost function) trong thuật toán linear regression sử dụng phương pháp nào để đo lường mức độ sai sót tổng thể của mô hình?",
+        "choices": [
+          "Tính tổng bình phương sai số giữa giá trị dự đoán và giá trị thực tế để phạt nặng các dự đoán lệch xa.",
+          "Tính tổng độ lệch tuyệt đối giữa giá trị dự đoán và giá trị thực tế để giữ nguyên mức phạt cho mọi sai số.",
+          "Tính giá trị trung bình cộng đơn giản của tất cả các giá trị dự đoán mà không cần so sánh với thực tế.",
+          "Tính tích số giữa giá trị dự đoán và giá trị thực tế để xác định mức độ phù hợp của mô hình."
+        ],
+        "correct_index": 0,
+        "explanation": "Đáp án đúng là phương pháp tính tổng bình phương sai số vì nội dung bài học nêu rõ hàm chi phí sử dụng phương pháp này để đo lường sai sót và phạt nặng các dự đoán lệch xa thực tế. Các phương án còn lại đều sai do hiểu sai bản chất của việc so sánh giá trị dự đoán với giá trị thực tế trong hàm chi phí."
+      }
+    ],
+    "practice": {
+      "stem": "Trong thuật toán linear regression, phát biểu nào sau đây diễn giải đúng mối quan hệ giữa các thành phần cơ bản để tạo ra giá trị dự đoán và đo lường sai số?",
+      "choices": [
+        "Hàm chi phí đóng vai trò như các trọng số điều chỉnh mức độ quan trọng của từng đặc trưng đầu vào trong mô hình.",
+        "Hàm giả thuyết có nhiệm vụ đo lường mức độ sai sót tổng thể của mô hình dựa trên bình phương sai số.",
+        "Vectơ đặc trưng đại diện cho các giá trị mục tiêu cần dự đoán còn tham số theta là thuộc tính đầu vào.",
+        "Các tham số theta điều chỉnh mức độ quan trọng của các đặc trưng đầu vào, trong khi hàm chi phí đo lường mức độ sai sót tổng thể của mô hình."
+      ],
+      "correct_index": 3,
+      "explanation": "Đáp án đúng là phương án thứ tư vì các tham số theta (weights/bias) đóng vai trò điều chỉnh mức độ quan trọng của từng đặc trưng đầu vào trong hàm giả thuyết, còn hàm chi phí đo lường mức độ sai sót tổng thể của toàn bộ mô hình. Phương án đầu tiên sai vì hàm chi phí dùng để đo lường sai số chứ không điều chỉnh trọng số đặc trưng. Phương án thứ hai sai vì hàm giả thuyết tạo ra giá trị dự đoán chứ không đo lường sai sót. Phương án thứ ba sai vì vectơ đặc trưng đại diện cho thuộc tính đầu vào chứ không phải giá trị mục tiêu."
+    },
+    "source_chunks": [
+      "Week02\nBut so in order to learn a set of parameters, what we'll want to do is choose the parameters theta so that at least for the houses whose prices you know, that the learning algorithm outputs prices that are close to what you know were the correct prices for that set of houses, were the correct asking prices for those houses. And so more formally, in the linear regression algorithm, also called ordinary least squares, with linear regression we will want to minimize I going to build out this equation one piece at a time Minimize the squared difference between what the hypothesis outputs H subscript theta of X minus Y squared So let's say we want to minimize the squared difference between the prediction,",
+      "Week02\nSo I think the simplest, maybe the simplest possible learning algorithm, a supervised learning regression problem is linear regression. And to motivate that, rather than using a self-driving car example, which is quite complicated. We'll build up a supervised learning algorithm using a simpler example. So let's say you want to predict or estimate the prices of houses. So the way you build a learning algorithm is start by collecting a data set of houses and their prices. So this is a data set that we collected off Craigslist a little bit back. This is data from Portland, Oregon. but so that's the size of a house in square feet",
+      "Week02\nMorning and welcome back. So what we'll see today in class is the first in-depth discussion of a learning algorithm, linear regression. And in particular, over the next, what, hour and a bit, you see a linear regression batch and stochastic gradient descent as an algorithm for fitting linear regression models. and then the normal equations as a way of, as a very efficient way to let you fit linear models. And we're going to define notation and a few concepts today that will lay the foundation for a lot of the work that we'll see the rest of this quarter. So to motivate linear regression, it's kind of, you know, maybe the simplest, one of the simplest learning algorithms.",
+      "Week02\nyou see that linear regression is a special case of a bigger family of algorithms called generalized linear models, and that using squared error corresponds to Gaussian, but we'll justify maybe a little bit more y squared error rather than absolute error or error to the power of 4 next week. So let me just check see if any questions at this point Okay cool All right. So, so, So next, let's see how we can implement an algorithm to find the value of theta that minimizes J of theta, that minimizes the cost function J of theta. We're going to use an algorithm called gradient descent. And, you know, this is my first class teaching in this classroom,",
+      "Week02\nand even though linear regression, right, you may have seen it in a linear algebra class before and some of the class before, the way you go about structuring a machine learning algorithm is important. And design choices of what is the workflow, what is the data set, what is the hypothesis, how do we represent the hypothesis? These are the key decisions you have to make in pretty much every supervised learning, every machine learning algorithm design. So as we go through linear regression, I'll try to describe the concepts clearly as well because they'll lay the foundation for the rest of the algorithms, sometimes much more complicated algorithms you see later this quarter.",
+      "Week02\nSo adding a one-half, minimizing that formula should give you the same answer as minimizing one-half of that, but we often put a one-half there since it will make the math a little bit simpler later. And so in linear regression, I'm going to define the cost function j of theta to be equal to that. And we'll find parameters theta that minimizes the cost function j of theta. Okay? And questions I've often gotten is, you know, why squared error? Why not absolute error or just error to the power of 4? We'll talk more about that when we talk about the generalization of linear regression. When we talk about generalized linear models, which we'll do next week,",
+      "Week02\nwhich is H of X, and Y, which is the correct price. and so what we want to do is choose values of theta that minimizes that to fill this out, you know, you have m training examples so I'm going to sum from i equals 1 through m of that squared difference, so this is sum over i equals 1 through all, say, 50 examples you have, right, of the squared difference between what your algorithm predicts and what the true price of the house is. And then finally, by convention, we put a one-half constant there because when we take derivatives to minimize this later, putting one-half there will make some of the math a little bit simpler.",
+      "Week02\nIt works only for linear regression. It doesn't work for any of the other algorithms we'll talk about later this quarter. But let me quickly show you the derivation of that. And what I want to do is give you a flavor of how to derive the normal equation. And where you end up with is, what I hope to do is end up with a formula that lets you say theta equals some stuff, where you just set theta equals to that, and in one step, with a few matrix multiplications, you end up with the optimal value of theta that lands you right at the global optimum. Right, kind of just like that, just in one step. And if you've taken advanced linear algebra classes before or something, you may have"
+    ]
+  },
+  "reference": {
+    "coverage": "unknown",
+    "chunk_ids": [],
+    "total_chunks": null
+  },
+  "claim_citations": null
+}
