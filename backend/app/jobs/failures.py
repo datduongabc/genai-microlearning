@@ -16,6 +16,10 @@ from app.models import Job, JobStatus
 # What the lecturer reads on screen: the first part of the worker's message, which can run to
 # 500 characters of a provider's exception text.
 MAX_ERROR_CHARS = 200
+# In place of that message when the system failed the job: an exception's text tells the lecturer
+# nothing they can act on. It stays in last_error for the admin.
+SYSTEM_FAILURE_MESSAGE = ("Hệ thống tạm thời không xử lý được (dịch vụ mô hình hoặc kết nối gặp sự cố). "
+                          "Hãy bấm Thử lại sau ít phút; nếu vẫn lỗi, báo quản trị viên.")
 
 
 def _open_failure_filter():
@@ -42,6 +46,6 @@ def open_failures(db: Session, document_ids: list[uuid.UUID]) -> dict[uuid.UUID,
         failures.setdefault(job.document_id, []).append({
             "job_id": job.id,
             "job_type": job.job_type,
-            "error": (job.last_error or "")[:MAX_ERROR_CHARS],
+            "error": SYSTEM_FAILURE_MESSAGE if job.system_failure else (job.last_error or "")[:MAX_ERROR_CHARS],
         })
     return failures

@@ -101,7 +101,7 @@ async def chat(request: Request):
 @app.post("/embeddings")
 @app.post("/v1/embeddings")
 async def embeddings(request: Request):
-    response = await _client.post(f"{EMBEDDER_URL}/v1/embeddings", content=await request.body(),
-                                  headers={"Authorization": f"Bearer {EMBEDDER_KEY}",
-                                           "Content-Type": "application/json"})
+    # An embedder started without --api-key takes no header, and "Bearer " alone is refused by httpx.
+    headers = {"Content-Type": "application/json"} | ({"Authorization": f"Bearer {EMBEDDER_KEY}"} if EMBEDDER_KEY else {})
+    response = await _client.post(f"{EMBEDDER_URL}/v1/embeddings", content=await request.body(), headers=headers)
     return response.json()

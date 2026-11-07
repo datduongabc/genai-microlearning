@@ -349,6 +349,7 @@ def test_sweep_stuck_jobs_fails_a_job_with_no_attempts_left_and_marks_its_docume
         job = db.get(Job, job_id)
         assert job.status == JobStatus.failed
         assert job.locked_at is None
+        assert job.system_failure  # the lecturer is not shown the sweeper's own note
         assert db.get(Document, doc_id).status == DocumentStatus.failed
     finally:
         db.close()
