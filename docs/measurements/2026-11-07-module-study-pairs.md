@@ -1,7 +1,7 @@
 # Cặp module RAG và không RAG cho nghiên cứu chấm, 2026-11-07
 
 Sinh 10 cặp module (20 gói) để chấm theo [rubric](../rubric.md): mỗi cặp gồm một module sinh có RAG
-(`rag_llm`) và một module sinh không RAG trên cùng Learning Objective (`llm_no_rag`). Chưa chấm điểm.
+(`rag_llm`) và một module sinh không RAG trên cùng Learning Objective (`llm_no_rag`). Mới có một lượt chấm sơ bộ bằng một mô hình chấm, chưa phải kết quả của nghiên cứu.
 
 ## Điều kiện sinh
 
@@ -51,6 +51,42 @@ Mức Bloom khai báo: 8 cặp `understand`, 1 cặp `apply`, 1 cặp `analyze`.
   - Kèm `rubric.html` (rubric mục 2 đến 5), `ratings.csv` mẫu và `README.txt` ghi thứ tự chấm đã
     xáo.
   - Tệp khóa (mã ẩn danh, cặp, nhóm) được ghi ra ngoài thư mục bộ chấm.
+
+## Chấm sơ bộ bằng `groq-qwen`
+
+Thiết kế chấm cần hai hãng khác Google (`claude-pro` và `openai-pro`), nhưng hai khóa này chưa nạp
+tiền. Trong khi chờ, 20 gói được chấm bằng một mô hình chấm duy nhất:
+`run_judge.py --judges groq-qwen`. Tùy chọn `--judges` giới hạn pool chấm và vẫn giữ guard khác hãng.
+
+- **Model chấm:** cả 20 lượt đều do `qwen/qwen3.8-27b` (Alibaba) phục vụ.
+  - Có một lượt Groq trả "Failed to generate JSON". Chạy lại lệnh thì lượt đó được chấm.
+- **Các model Groq khác trong pool không dùng được:** `groq-llama` và `groq-minimax` báo tài khoản
+  không có quyền truy cập. Tài khoản chỉ có Qwen và GPT-OSS, mà GPT-OSS không thuộc pool.
+- **Kết quả thô:** `module-study/judge-groq-qwen.jsonl`. Tệp này tách riêng khỏi lượt chấm chính
+  thức, để lượt sau vẫn chọn đúng `claude-pro` và `openai-pro`.
+
+Trung bình trên 10 cặp, tính bằng `analyze_study.py`:
+
+| Tiêu chí | rag_llm | llm_no_rag | RAG hơn / kém / bằng |
+| --- | ---: | ---: | --- |
+| accuracy | 5,0 | 5,0 | 0 / 0 / 10 |
+| completeness | 4,5 | 4,2 | 3 / 0 / 7 |
+| consistency | 5,0 | 5,0 | 0 / 0 / 10 |
+| hallucination_score | 5,0 | 5,0 | 0 / 0 / 10 |
+| slide_quality | 4,7 | 5,0 | 0 / 3 / 7 |
+| quiz_quality | 4,2 | 4,2 | 2 / 2 / 6 |
+| bloom_fidelity | 4,7 | 4,7 | 1 / 1 / 8 |
+| query_alignment | 4,6 | 4,9 | 0 / 2 / 8 |
+
+- **Không tiêu chí nào khác biệt có ý nghĩa.** Mọi p Holm đều bằng 1,0 (Wilcoxon). McNemar trên tỉ
+  lệ module có hallucination cho p = 1,0.
+- **Không phân biệt được hai nhóm.** Judge này cho điểm trần ở accuracy, consistency và
+  hallucination, và không ghi hallucination nào, kể cả ở bản không RAG. Bản không RAG được viết không
+  có nguồn, nên khó tin là mọi nhận định của nó đều có trong đoạn đối chiếu.
+  - Như vậy `qwen3.8-27b` chấm quá dễ, không dùng được làm bằng chứng cho câu hỏi RAG và không RAG.
+  - Đây chính là điều lượt chấm chính thức bằng hai model mạnh, cùng người chấm, phải kiểm.
+- **Việc kiểm hallucination theo từng claim (R9, `run_claim_judge.py`) chưa chạy.** Bước này kiểm
+  từng nhận định với nguồn, nên ít phụ thuộc vào độ dễ dãi của mô hình chấm hơn.
 
 ## Việc tiếp theo
 
