@@ -119,24 +119,32 @@ async def score_all(args) -> None:
             await asyncio.sleep(args.pause)
 
 
+def refused(row: dict) -> bool:
+    """ResponseRelevancy is exactly 0 when the judge finds the answer noncommittal: "the course materials do not
+    cover this". Faithfulness then scores that sentence as an unsupported claim, so a right refusal would lower
+    it; refusals are counted on their own instead and left out of faithfulness."""
+    return row.get("answer_relevancy") == 0
+
+
 def summarize(path: Path) -> None:
     rows = [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
     groups = {"all": rows}
     for row in rows:
         groups.setdefault(row["course"], []).append(row)
-    print("A number after the interval is how many answers have no score: for faithfulness, answers with no claim.")
-    print(f"{'set':24} {'n':>3}  {'faithfulness (95% CI)':28} {'answer relevancy (95% CI)':28}")
+    print("Faithfulness over the answers that are not refusals; a number after it counts those with no claim.")
+    print(f"{'set':24} {'n':>3} {'refused':>7}  {'faithfulness (95% CI)':28} {'answer relevancy (95% CI)':28}")
     for name, group in groups.items():
         cells = []
         for metric in ("faithfulness", "answer_relevancy"):
-            values = [r[metric] for r in group if r.get(metric) is not None and not math.isnan(r[metric])]
+            scored = [r for r in group if not refused(r)] if metric == "faithfulness" else group
+            values = [r[metric] for r in scored if r.get(metric) is not None and not math.isnan(r[metric])]
             if not values:
                 cells.append("-")
                 continue
             low, high = bootstrap(values)
-            missing = len(group) - len(values)
+            missing = len(scored) - len(values)
             cells.append(f"{statistics.fmean(values):.3f} ({low:.3f}-{high:.3f})" + (f" -{missing}" if missing else ""))
-        print(f"{name:24} {len(group):>3}  {cells[0]:28} {cells[1]:28}")
+        print(f"{name:24} {len(group):>3} {sum(map(refused, group)):>7}  {cells[0]:28} {cells[1]:28}")
 
 
 def main() -> None:

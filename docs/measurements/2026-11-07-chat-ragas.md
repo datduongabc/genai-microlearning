@@ -28,16 +28,21 @@ Lần đầu đo faithfulness và answer relevance của chat theo khóa học, 
 
 ## Kết quả
 
-Trung bình, kèm khoảng tin cậy bootstrap 95% (2.000 lần lấy mẫu lại, theo câu hỏi):
+Trung bình, kèm khoảng tin cậy bootstrap 95% (2.000 lần lấy mẫu lại, theo câu hỏi).
 
-| Tập | n | Faithfulness | Answer relevancy |
-| --- | ---: | --- | --- |
-| Tất cả | 50 | 0,959 (0,904–0,996), 49 câu có nhận định | 0,725 (0,648–0,788) |
-| advanced-programming | 10 | 1,000 | 0,744 (0,558–0,871) |
-| calculus 1 | 10 | 0,900 (0,700–1,000) | 0,743 (0,697–0,792) |
-| machine-learning | 10 | 1,000 | 0,847 (0,781–0,908) |
-| operating-system | 10 | 0,907 (0,778–1,000), 9 câu có nhận định | 0,685 (0,439–0,888) |
-| scientific-socialism | 10 | 0,980 (0,940–1,000) | 0,604 (0,432–0,725) |
+**Không tính các câu từ chối vào faithfulness.** Ragas coi câu "tài liệu không đề cập" là một nhận
+định, và chấm nó là không có căn cứ. Nếu tính vào, một câu từ chối đúng sẽ kéo faithfulness xuống.
+Vì vậy câu nào bị judge đánh dấu là noncommittal (answer relevancy đúng bằng 0) thì được đếm riêng
+ở cột "từ chối", và không tính vào faithfulness.
+
+| Tập | n | Từ chối | Faithfulness | Answer relevancy |
+| --- | ---: | ---: | --- | --- |
+| Tất cả | 50 | 4 | 0,967 (0,916–1,000) | 0,725 (0,648–0,788) |
+| advanced-programming | 10 | 1 | 1,000 | 0,744 (0,558–0,871) |
+| calculus 1 | 10 | 0 | 0,900 (0,700–1,000) | 0,743 (0,697–0,792) |
+| machine-learning | 10 | 0 | 1,000 | 0,847 (0,781–0,908) |
+| operating-system | 10 | 2 | 0,958 (0,875–1,000) | 0,685 (0,439–0,888) |
+| scientific-socialism | 10 | 1 | 0,978 (0,933–1,000) | 0,604 (0,432–0,725) |
 
 Phía truy xuất:
 - Chunk mà câu hỏi được đặt từ đó nằm trong 8 chunk ngữ cảnh ở cả 50 câu.
@@ -65,7 +70,7 @@ không có căn cứ, và đánh giá như vậy là đúng.
 
 - **Bộ câu hỏi dễ hơn thực tế.** Mỗi câu được một model đặt từ đúng một chunk, và chunk đó luôn được
   truy xuất. Vì vậy bộ này đo việc trả lời từ ngữ cảnh đúng, không đo câu hỏi cần nhiều đoạn, câu hỏi
-  ngoài phạm vi môn học, hay hội thoại nhiều lượt. Faithfulness 0,959 là cận trên trong điều kiện
+  ngoài phạm vi môn học, hay hội thoại nhiều lượt. Faithfulness 0,967 là cận trên trong điều kiện
   này, không phải con số chung cho mọi loại câu hỏi.
 - **Một judge, một lượt chấm.** Chưa so judge với người chấm (kappa) và chưa lặp lại lượt chấm.
 - **Answer relevancy có thể bị kéo xuống ở câu hỏi tiếng Việt.** Prompt của Ragas viết bằng tiếng
