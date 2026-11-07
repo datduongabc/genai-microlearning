@@ -15,9 +15,9 @@ Method / resource & Contract and authorization\\\hline\endfirsthead
 \code{POST /modules/{id}/chat-edit}; \code{GET /modules/{id}/slides.pptx} & Authorized structured AI edit or current Slides download\\\hline
 \code{POST /modules/{id}/publish-to-moodle} & Owned RAG module, confirmed actor and authorized target\\\hline
 \code{POST /moodle/account/link-requests}; \code{GET, DELETE /moodle/account} & Generic pending identity request, poll confirmed state or unlink\\\hline
-\code{POST /courses/{id}/chat}; \code{GET /courses/{id}/chat/{session}/history} & Owner-only course Q\&A, source citations and conversation history\\\hline
-\code{POST /courses/{id}/chat/stream}; \code{GET /courses/{id}/chat/latest} & Owner-only streamed answer as SSE events \code{session}, \code{delta}, \code{done} or \code{error}; the last used course chat, so a reload continues it\\\hline
-\code{GET, POST /lti/login}, \code{POST /lti/launch}, \code{POST /lti/session}, \code{GET /lti/jwks} & LTI 1.3 login initiation, signed launch, one-time code exchange and the tool's key set (Section~\ref{sec:lti})\\\hline
+\code{POST /courses/{id}/chat}; \code{GET /courses/{id}/chat/{session}/history} & Owner or course member: course Q\&A, source citations and the caller's own conversation history; a member has 30 messages per day\\\hline
+\code{POST /courses/{id}/chat/stream}; \code{GET /courses/{id}/chat/latest} & Owner or course member: streamed answer as SSE events \code{session}, \code{delta}, \code{done} or \code{error}; the last used course chat, so a reload continues it\\\hline
+\code{GET, POST /lti/login}, \code{POST /lti/launch}, \code{POST /lti/session}, \code{GET /lti/jwks} & LTI 1.3 login initiation, signed launch, one-time code exchange returning the course role, and the tool's key set (Sections~\ref{sec:lti} and \ref{sec:lti-learners})\\\hline
 \code{GET /health}; \code{GET /ready} & Process liveness for the container; database readiness with a 2 s deadline for the load balancer\\\hline
 \code{GET /models}; \code{PUT /models/default} & Available aliases and user preference\\\hline
 \code{POST /jobs/{id}/retry}; \code{GET /admin/jobs/failed}; \code{POST /admin/jobs/retry} & Own-job recovery or narrow admin recovery scope\\\hline

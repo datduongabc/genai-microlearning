@@ -1,6 +1,6 @@
 \clearpage\section{Progress and remaining work}\label{sec:plan}\label{sec:progress}
-\subsection{Status on 6 November 2026}
-Phase 2 began on 26 October 2026 with a twelve-week baseline ending on 17 January 2027 and a target defense on 18 January 2027. After two weeks, the system described in the midterm report has been implemented and extended with the scalable architecture of Section~\ref{sec:architecture}. The automated test suites pass: 1,489 backend tests on Python 3.14 and 268 frontend tests, checked by continuous integration on every change. The evaluation of generated content, which depends on paid models and human raters, has not started. A first \code{terraform apply} on a real AWS account on 6 November created the network, database, cache, load balancer and storage, 110 resources, and stopped at CloudFront, which AWS refuses to a new account until it has verified it; the stack was destroyed the same day. That run also exposed two faults in the deployment script, a first deployment that is not restarted after the migration and a fixed final snapshot name; the fixes await review.
+\subsection{Status on 7 November 2026}
+Phase 2 began on 26 October 2026 with a twelve-week baseline ending on 17 January 2027 and a target defense on 18 January 2027. After two weeks, the system described in the midterm report has been implemented and extended with the scalable architecture of Section~\ref{sec:architecture}. The automated test suites pass: 1,553 backend tests on Python 3.14 and 273 frontend tests, checked by continuous integration on every change. The evaluation of generated content, which depends on paid models and human raters, has not started. A first \code{terraform apply} on a real AWS account on 6 November created the network, database, cache, load balancer and storage, 110 resources, and stopped at CloudFront, which AWS refuses to a new account until it has verified it; the stack was destroyed the same day. That run also exposed two faults in the deployment script, a first deployment that is not restarted after the migration and a fixed final snapshot name; both are fixed. Since then, failure tests on one machine (Section~\ref{sec:results-failure}) found and fixed a chat error and shortened recovery from a crashed worker, and students can now enter through LTI to chat with their course's material (Section~\ref{sec:lti-learners}). A walk-through of both roles in a real browser found that a lecturer was shown a provider's exception text for a document the system had failed; the lecturer is now told to retry later.
 
 The advisor's feedback after the midterm set the targets this work is judged against: the five-subject corpus, retrieval metrics (Hit Rate@$K$, MRR, nDCG), faithfulness and answer relevance, latency and resource profile, agreement between raters and between human and model judges, a strategy for figures and code in documents, a cloud-native AWS deployment within \$200 with a justified budget and lock-in, and integration with Moodle through the LTI tool model. Table~\ref{tab:feedback} maps each target to its state.
 \begin{longtable}{|p{3.4cm}|p{5.6cm}|p{4.8cm}|}\caption{Advisor targets and their state.}\label{tab:feedback}\\\hline
@@ -13,21 +13,21 @@ Latency and resources & Per stage and under load (Sections~\ref{sec:results-late
 Inter-rater reliability & Weighted kappa and Spearman analysis, blind rating screens and export implemented & Recruited raters and rated packets\\\hline
 Figures and code & Formula repair, selective vision re-reading, figure OCR, SmartArt text (Section~\ref{sec:results-extraction}) & Describing diagrams without text; evaluating code fidelity\\\hline
 AWS, \$200, lock-in & Terraform, deployment script, cost estimate, lock-in analysis (Section~\ref{sec:aws}); a first apply on a real account & A complete apply, once AWS verifies the account for CloudFront, and the measurements S1--S8\\\hline
-Scalability & Stateless services, measured bottlenecks and their removal & Sustained runs, failure injection, autoscaling on AWS\\\hline
-Moodle LTI & LTI 1.3 launch for instructors, tested against Moodle 5.2.3 (Section~\ref{sec:lti}) & Students, Deep Linking, grade return\\\hline
+Scalability & Stateless services, measured bottlenecks and their removal; failure tests of every service on one machine (Section~\ref{sec:results-failure}) & Sustained runs, failure tests and autoscaling on AWS\\\hline
+Moodle LTI & LTI 1.3 launch for instructors and chat-only access for students, tested against Moodle 5.2.3 (Sections~\ref{sec:lti} and \ref{sec:lti-learners}) & Deep Linking, grade return, roster checks through the Names and Role Provisioning Service\\\hline
 \end{longtable}
 \subsection{Progress against the schedule}
 Table~\ref{tab:schedule} keeps the work packages of the midterm plan and adds their state. Figure~\ref{fig:gantt} marks the report date.
 \begin{longtable}{|p{2.0cm}|p{5.6cm}|p{6.2cm}|}\caption{Phase 2 work packages and their state.}\label{tab:schedule}\\\hline
-Window & Work package & State on 6 November\\\hline\endfirsthead
-\hline Window & Work package & State on 6 November\\\hline\endhead
+Window & Work package & State on 7 November\\\hline\endfirsthead
+\hline Window & Work package & State on 7 November\\\hline\endhead
 26 Oct--8 Nov & Ownership, ingestion, physical citations, AI-original preservation; corpus and raters & Implemented and tested. Corpus replaced by the five subjects. Raters not yet recruited\\\hline
 2--15 Nov & Retrieval and gateway orchestration; gold queries and human packets & Retrieval, reranking options and load control implemented and measured. Gold queries are model-written; human labels and packets not started\\\hline
-9--22 Nov & Paid-model pilot, failure and cost & Partly done ahead of time: real-model generation and load runs with Haiku, Luna and \code{gpt-oss-120b}. Stopped when the credit of three providers ran out\\\hline
+9--22 Nov & Paid-model pilot, failure and cost & Partly done ahead of time: real-model generation and load runs with Haiku, Luna and \code{gpt-oss-120b}, stopped when the credit of three providers ran out; failure tests on one machine with a mock model\\\hline
 16 Nov--6 Dec & Held-out pairs and ablations & Not started; needs model credit\\\hline
 23 Nov--13 Dec & Blinded rating, judges, claim audits & Rating and judge software ready; needs raters and credit\\\hline
 7--20 Dec & Analysis & Analysis scripts ready\\\hline
-14 Dec--3 Jan & Interface, publication recovery, usability and security scenarios & Interface implemented, including streaming chat and LTI entry. Usability sessions and the adversarial-document suite not started\\\hline
+14 Dec--3 Jan & Interface, publication recovery, usability and security scenarios & Interface implemented, including streaming chat, LTI entry and the student chat page. Usability sessions and the adversarial-document suite not started\\\hline
 28 Dec--17 Jan & Demonstration, final report, evaluation package & This progress draft\\\hline
 \end{longtable}
 \diagram{phase2-gantt}{Phase 2 planning baseline. The dashed line marks this report.}{gantt}
@@ -38,10 +38,10 @@ Table~\ref{tab:remaining} lists what is not done, grouped by what it needs. Free
 Item & Why & Needs\\\hline\endfirsthead
 \hline Item & Why & Needs\\\hline\endhead
 \multicolumn{3}{|l|}{\textit{No cost}}\\\hline
-Failure tests: stop each kind of task & Recovery is designed and unit-tested, not measured & This machine\\\hline
-Course chat in a real browser after the latest fixes & Source labels and restored conversations have automated tests only & This machine\\\hline
-Student access through LTI & Row-level security filters by course owner; course membership must be added as a separate, tested security change & Code and tests\\\hline
+Course chat and the student chat page in a real browser & Source labels, restored conversations and the student page have automated tests and a scripted Moodle run only & This machine\\\hline
 LTI Deep Linking and grade return & Not implemented & Code and tests\\\hline
+Roster checks (Names and Role Provisioning) & A student removed in Moodle keeps chatting for up to 14 days & Code and tests\\\hline
+Adversarial-document suite & Prompt-injection controls are designed, not measured (Section~\ref{sec:prompt-injection}) & Code; a small model budget\\\hline
 \multicolumn{3}{|l|}{\textit{Needs AWS credit}}\\\hline
 Complete \code{terraform apply} and S1--S8 (Table~\ref{tab:aws-experiments}) & No number has been measured on AWS; the embedder has only been measured on a GPU & Account verification for CloudFront; Fargate quota for about 60 vCPU at the largest step\\\hline
 \multicolumn{3}{|l|}{\textit{Needs model credit}}\\\hline

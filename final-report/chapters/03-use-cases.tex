@@ -236,11 +236,11 @@ Table~\ref{tab:uc-14} specifies UC14: Ask course questions.
 \textbf{Field} & \textbf{Content}\\\hline
 Use case & UC14: Ask course questions\\\hline
 Description & Answer source-grounded course questions and retain conversation.\\\hline
-Actors & Lecturer/author; LLM service.\\\hline
-Preconditions & Author signed in; owns course with searchable chunks.\\\hline
+Actors & Lecturer/author or course member through LTI; LLM service.\\\hline
+Preconditions & Author signed in and owns the course, or member launched from its Moodle course; course has searchable chunks.\\\hline
 Postconditions & Messages and citations save in the authorized course session.\\\hline
 Trigger & Author sends a course question.\\\hline
-Normal flow & \textbf{1.} Author selects course and enters a question.\par \textbf{2.} System verifies ownership and loads permitted history.\par \textbf{3.} System condenses context into a retrieval query.\par \textbf{4.} Course retrieval selects five passages; model drafts the answer.\par \textbf{5.} System saves messages/citations for inspection.\\\hline
+Normal flow & \textbf{1.} Author selects course and enters a question.\par \textbf{2.} System verifies ownership or membership and loads the caller's own history.\par \textbf{3.} System condenses context into a retrieval query.\par \textbf{4.} Course retrieval selects five passages; model drafts the answer.\par \textbf{5.} System saves messages/citations for inspection.\\\hline
 Alternative flows & \textbf{A1.} Resume a permitted session or start a new conversation.\\\hline
 Exception flows & \textbf{E1.} Missing/non-owned course/session is unavailable.\par \textbf{E2.} Invalid/excessive message or rate/provider failure returns actionable feedback.\par \textbf{E3.} Insufficient evidence is flagged without inventing a source.\\\hline
 \end{tabular}\end{table}

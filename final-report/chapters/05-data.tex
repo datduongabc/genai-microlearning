@@ -26,8 +26,9 @@ Table~\ref{tab:schema} presents core entity-to-table mapping.
 \begin{longtable}{|p{2.8cm}|p{7.0cm}|p{4.1cm}|}\caption{Core entity-to-table mapping.}\label{tab:schema}\\\hline
 Table & Important columns and keys & Purpose / invariant\\\hline\endfirsthead
 \hline Table & Important columns and keys & Purpose / invariant\\\hline\endhead
-\code{users} & universally unique identifier (UUID) primary key (PK); unique email; password hash; active/admin flags; optional unique Moodle user ID; model preference & Local identity independent of Moodle confirmation\\\hline
+\code{users} & universally unique identifier (UUID) primary key (PK); unique email; password hash; active/admin/can-author flags; optional unique Moodle user ID; model preference; daily chat count & Local identity independent of Moodle confirmation\\\hline
 \code{courses} & UUID PK; owner foreign key (FK) to users; name; nullable Moodle course ID & Owned authoring workspace; remote target may be shared by multiple app courses\\\hline
+\code{course_members} & Composite PK (course, user); source & Read-only access for LTI learners (Section~\ref{sec:lti-learners})\\\hline
 \code{documents} & UUID PK; course FK; filename; status; raw text; planner cache & Document processing and concept planning\\\hline
 \code{chunks} & UUID PK; document/course FKs; ordered chunk index; content; source reference; vector(768) & Evidence unit and retrievable passage\\\hline
 \code{modules} & UUID PK; document/course FKs; title; LO; Bloom level; sub-objectives; generation payload/models; optional paired-module FK & Saved module and experimental pairing\\\hline
@@ -42,9 +43,9 @@ Table~\ref{tab:05-data-2} presents operational and research entities.
 \begin{longtable}{|p{3.0cm}|p{6.6cm}|p{4.3cm}|}\caption{Operational and research entities.}\label{tab:05-data-2}\\\hline
 Table & Key fields and links & Behavior\\\hline\endfirsthead
 \hline Table & Key fields and links & Behavior\\\hline\endhead
-\code{jobs} & Type, document/module references, step, status, payload, attempts, due time and lock metadata & PostgreSQL-backed processing queue; nullable links depend on job type\\\hline
+\code{jobs} & Type, document/module references, step, status, payload, attempts, due time, lock metadata, last error and whether the system caused a failure & PostgreSQL-backed processing queue; nullable links depend on job type\\\hline
 \code{evaluations} & Module FK, criterion, numeric score and notes & Pipeline checks; not formal blind ratings\\\hline
-\code{chat_sessions} & Course FK and optional module FK & Course Q\&A or module-specific editing context\\\hline
+\code{chat_sessions} & Course FK, user FK and optional module FK & Course Q\&A or module-specific editing context; visible only to its user\\\hline
 \code{chat_messages} & Session FK, role, text, citations and applied-edit flag & Persisted conversation and edit evidence\\\hline
 \code{refresh_tokens} & User FK, unique token hash, expiry and revocation & Server-side session renewal control\\\hline
 \code{studies} & Name, rubric version, status and JSONB invited email list & Draft/active/closed study organization\\\hline

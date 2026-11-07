@@ -54,7 +54,7 @@ Chat was the largest gap in the midterm design: a message held a request thread 
 \begin{enumerate}[nosep]
 \item Save the question, commit and close the session.
 \item Rewrite a follow-up question into a standalone one, using the last four messages, and search with the rewritten question. The answer step receives both the question as asked and the rewritten one, so a vague or unaccented follow-up is still understood; the answer language is read from the question as asked.
-\item Search with at most eight concurrent searches per process, fewer than the database pool, and rerank with at most two attempts. If reranking fails, the hybrid order is kept.
+\item Search with at most eight concurrent searches per process, fewer than the database pool, and rerank with at most two attempts. If reranking fails, the hybrid order is kept; if the question cannot be embedded, the BM25 candidates are used alone. Generation does the opposite and fails the step, so the queue retries it with full retrieval.
 \item Stream the answer without holding a thread, as SSE events \code{session}, \code{delta}, \code{done} or \code{error}, with a comment line every 15 s so that proxies do not close a silent connection. The ALB idle time-out (120 s) and CloudFront origin read time-out (60 s) are longer than this interval.
 \item Read citations from markers such as \code{[S2]} in the streamed text, remove them from the displayed answer, and save the answer with its sources.
 \end{enumerate}
@@ -67,7 +67,7 @@ Table~\ref{tab:state} lists where each kind of state lives and what happens when
 State or event & Where & Behaviour\\\hline\endfirsthead
 \hline State or event & Where & Behaviour\\\hline\endhead
 Business data, vectors & RDS & Point-in-time recovery from backups\\\hline
-Jobs & PostgreSQL table & A heartbeat detects a dead worker and requeues its job. A worker with a running job asks ECS for scale-in protection; when stopped, it gives the job 100 s to finish and then returns it to the queue without counting an attempt\\\hline
+Jobs & PostgreSQL table & A worker refreshes a heartbeat once a minute, retrying a failed beat after 5 s; a sweeper requeues a job after five missed beats (5 minutes). An error from an unavailable dependency is retried after 30, 60, 120 and 240 s, so the five attempts outlast an outage of about seven minutes. A worker with a running job asks ECS for scale-in protection; when stopped, it gives the job 100 s to finish and then returns it to the queue without counting an attempt\\\hline
 Sessions & Refresh tokens in PostgreSQL & Independent of tasks\\\hline
 LTI \code{state} and \code{nonce} & PostgreSQL, 10-minute expiry & Not in Valkey: when Valkey is lost, rate limits fall back to per-task memory, but a login state cannot, because another task would not find it\\\hline
 Rate limits & Valkey & Each task limits on its own until Valkey returns\\\hline
