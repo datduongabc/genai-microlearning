@@ -27,6 +27,8 @@ EMBEDDING_DIM = 768
 
 
 class DocumentStatus(str, enum.Enum):
+    # Created, its file not yet in the upload store; the pipeline has not been queued.
+    awaiting_upload = "awaiting_upload"
     uploaded = "uploaded"
     processing = "processing"
     chunked = "chunked"

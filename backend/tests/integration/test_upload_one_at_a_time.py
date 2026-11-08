@@ -12,6 +12,7 @@ from app.config import settings
 from app.db import SessionLocal
 from app.main import app
 from app.models import Course, Document, DocumentStatus, User
+from tests.upload_helpers import upload_document
 
 client = TestClient(app)
 
@@ -72,11 +73,8 @@ def _document_count(course_id) -> int:
 
 
 def _upload(world, course_id):
-    return client.post(
-        "/documents",
-        params={"course_id": course_id},
-        files={"file": ("notes.html", b"<p>hello world</p>", "text/html")},
-        headers={"Authorization": f"Bearer {world['token']}"},
+    return upload_document(
+        client, course_id, "notes.html", b"<p>hello world</p>", {"Authorization": f"Bearer {world['token']}"},
     )
 
 

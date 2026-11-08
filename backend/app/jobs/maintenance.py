@@ -9,7 +9,8 @@ from sqlalchemy import or_
 
 from app.config import settings
 from app.db import WorkerSessionLocal
-from app.models import Job, JobStatus, LtiLaunchCode, LtiLoginState, RefreshToken
+from app.models import Document, DocumentStatus, Job, JobStatus, LtiLaunchCode, LtiLoginState, RefreshToken
+from app.storage import upload_key, upload_store
 
 logger = logging.getLogger(__name__)
 
@@ -17,6 +18,9 @@ logger = logging.getLogger(__name__)
 # deleted row is "not found"), so it is only kept briefly to help diagnose a
 # rotation problem.
 REVOKED_REFRESH_TOKEN_GRACE = timedelta(days=1)
+# A presigned POST expires after 15 minutes (app/storage.py); an hour leaves a slow upload that
+# started in time to finish and be completed.
+ABANDONED_UPLOAD_AGE = timedelta(hours=1)
 
 
 def purge_old_records() -> dict[str, int]:
@@ -56,13 +60,30 @@ def purge_old_records() -> dict[str, int]:
             db.query(model).filter(model.expires_at < now).delete(synchronize_session=False)
             for model in (LtiLoginState, LtiLaunchCode)
         )
+        # Documents whose file never arrived: the client stopped between asking where to send it
+        # and reporting it sent. The rows go first; a file left without its row is harmless and
+        # S3's lifecycle expires it anyway.
+        abandoned = (
+            db.query(Document)
+            .filter(Document.status == DocumentStatus.awaiting_upload,
+                    Document.created_at < now - ABANDONED_UPLOAD_AGE)
+            .all()
+        )
+        abandoned_keys = [upload_key(doc.id, doc.filename) for doc in abandoned]
+        for doc in abandoned:
+            db.delete(doc)
         db.commit()
     finally:
         db.close()
+    store = upload_store()
+    for key in abandoned_keys:
+        store.delete(key)
 
-    removed = {"jobs": finished_jobs + failed_jobs, "refresh_tokens": tokens, "lti": lti}
+    removed = {"jobs": finished_jobs + failed_jobs, "refresh_tokens": tokens, "lti": lti,
+               "abandoned_uploads": len(abandoned_keys)}
     if any(removed.values()):
         logger.info(
-            f"[maintenance] removed {removed['jobs']} old job(s), {removed['refresh_tokens']} dead refresh token(s)"
+            f"[maintenance] removed {removed['jobs']} old job(s), {removed['refresh_tokens']} dead refresh token(s), "
+            f"{removed['abandoned_uploads']} abandoned upload(s)"
         )
     return removed

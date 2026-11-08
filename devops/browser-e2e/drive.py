@@ -95,8 +95,13 @@ with sync_playwright() as p:
         print("landed:", page.url)
         shot(page, "launch")
     elif step == "upload":
+        # The three requests of an upload (app/api/documents.py), in the order the page sends them.
+        sent: list[str] = []
+        page.on("requestfinished", lambda r: re.search(r"/documents/(uploads|[0-9a-f-]{36}/(content|complete))", r.url)
+                and sent.append(f"{r.method} {r.url.split('?')[0]} -> {r.response().status}"))
         page.locator("input[type=file]").set_input_files(rest[0])
         wait_for_documents(page)
+        print("upload requests:", *sent, sep="\n  ")
         shot(page, "upload")
     elif step == "retry":
         page.get_by_role("button", name="Thử lại").first.click()

@@ -11,7 +11,7 @@ Terraform cho bản đồ án của `docs/architecture/system-design-v1.md`: m�
 | Mạng | VPC 2 AZ, subnet public cho task, subnet data không có đường ra Internet, S3 gateway endpoint | Không NAT: task có IP công khai, không có rule inbound từ Internet |
 | Vào | CloudFront (`/api/*` tới ALB, còn lại là frontend trong S3), ALB chỉ nhận từ CloudFront | ALB kiểm header bí mật `X-Origin-Verify`, health check `/ready` |
 | Tính toán | ECS Fargate: `api`, `worker`, `llm-gateway`, `embedder`, và `reranker` khi `reranker_provider = "jina"` | Service Connect: tên `gateway`, `embedder`, `reranker` giống compose |
-| Dữ liệu | RDS PostgreSQL 16 (pgvector, bắt buộc TLS), ElastiCache Valkey một node, S3 cho tệp tải lên | Tệp tải lên tự hết hạn sau 7 ngày, phòng job lỗi bỏ lại |
+| Dữ liệu | RDS PostgreSQL 16 (pgvector, bắt buộc TLS), ElastiCache Valkey một node, S3 cho tệp tải lên | Trình duyệt gửi tệp thẳng vào S3 bằng presigned POST (CORS chỉ cho phép POST từ địa chỉ CloudFront); tệp tự hết hạn sau 7 ngày, phòng job lỗi bỏ lại |
 | Bí mật | Parameter Store SecureString | Khóa nhà cung cấp chỉ tới `llm-gateway`; URL chủ DB chỉ tới task migrate |
 | Scale | `api` theo request/task và CPU; `worker` theo `JobsReady`; `embedder` theo CPU | Worker có job đang chạy được bảo vệ khỏi scale-in |
 | Giám sát | Log JSON 14 ngày, cảnh báo qua SNS, AWS Budgets $50/$100/$150 | Cảnh báo Jev chỉ có khi `reranker_provider = "jev"` |

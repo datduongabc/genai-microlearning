@@ -1,4 +1,5 @@
 import logging
+import re
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
@@ -64,8 +65,12 @@ async def lifespan(app: FastAPI):
         stop_worker()
 
 
+_UPLOAD_CONTENT_PATH = re.compile(r"/documents/[0-9a-fA-F-]{36}/content")
+
+
 def _is_upload(scope) -> bool:
-    return scope["method"] == "POST" and scope["path"] == "/documents"
+    """PUT /documents/{id}/content, the file itself: it has its own limit per format."""
+    return scope["method"] == "PUT" and _UPLOAD_CONTENT_PATH.fullmatch(scope["path"]) is not None
 
 
 def create_app(app_settings: Settings = settings) -> FastAPI:

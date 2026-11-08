@@ -12,8 +12,9 @@ from app.main import app
 
 def test_upload_has_no_document_kind_and_sections_have_no_endpoint():
     schema = app.openapi()
-    parameters = schema['paths']['/documents']['post']['parameters']
+    parameters = schema['paths']['/documents/uploads']['post']['parameters']
     assert 'kind' not in {p['name'] for p in parameters}
+    assert set(schema['components']['schemas']['UploadRequest']['properties']) == {'filename', 'size'}
     assert '/documents/{document_id}/sections' not in schema['paths']
 
 

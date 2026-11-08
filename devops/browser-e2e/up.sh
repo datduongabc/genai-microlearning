@@ -18,7 +18,11 @@ ROOT="$(cd "$HERE/../.." && pwd)"
 WORK="${BE2E_WORK:-${TMPDIR:-/tmp}/browser-e2e}"
 # 58000, the port of devops/lti-e2e/run.sh, could not be bound on the WSL machine this was written on.
 TOOL_PORT="${TOOL_PORT:-58010}"
-EMBEDDER_IMAGE="${EMBEDDER_IMAGE:-772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/embedder:96b0719}"
+# Moodle's source is not in git (see .gitignore); a worktree points at the main checkout's copy.
+MOODLE_SRC="${MOODLE_SRC:-$ROOT/moodle}"
+# The compose embedder: the public TEI image, with the model cached in compose's volume (read only).
+EMBEDDER_IMAGE="${EMBEDDER_IMAGE:-ghcr.io/huggingface/text-embeddings-inference:cpu-1.9.4}"
+EMBEDDER_MODELS_VOLUME="${EMBEDDER_MODELS_VOLUME:-do-an_embedder_models}"
 DB_PW=e2e-only-password
 NET=be2e
 mkdir -p "$WORK/logs" "$WORK/uploads"
@@ -44,7 +48,9 @@ echo "== Database, embedder"
 docker network create "$NET" >/dev/null
 docker run -d --rm --name be2e-db --network "$NET" -p 55434:5432 -e POSTGRES_PASSWORD=$DB_PW \
   --tmpfs /var/lib/postgresql/data pgvector/pgvector:pg16 >/dev/null
-docker run -d --rm --name be2e-embedder -p 58082:80 --memory 3g "$EMBEDDER_IMAGE" >/dev/null
+docker run -d --rm --name be2e-embedder -p 58082:80 --memory 3g -v "$EMBEDDER_MODELS_VOLUME:/data:ro" -e HF_HUB_OFFLINE=1 \
+  "$EMBEDDER_IMAGE" --model-id onnx-community/Qwen3-Embedding-0.6B-ONNX --revision c25a394dd583836952667c12f008335071b3f43d \
+  --pooling last-token --max-batch-tokens 1024 --max-client-batch-size 128 --api-key mock-not-a-real-key >/dev/null
 until docker exec be2e-db pg_isready -U postgres >/dev/null 2>&1; do sleep 1; done
 sleep 2
 docker exec be2e-db psql -U postgres -qc "CREATE DATABASE moodle" -c "CREATE DATABASE microlearning"
@@ -53,7 +59,7 @@ docker exec be2e-db psql -U postgres -d microlearning -qc "CREATE EXTENSION vect
 echo "== Moodle (installing, a few minutes)"
 docker build -q -t do-an-moodle -f "$ROOT/devops/moodle/Dockerfile" "$ROOT" >/dev/null
 docker run -d --rm --name be2e-moodle --network "$NET" -p 58081:80 \
-  -v "$ROOT/moodle:/var/www/html:ro" -v "$WORK/config.php:/var/www/html/config.php:ro" \
+  -v "$MOODLE_SRC:/var/www/html:ro" -v "$WORK/config.php:/var/www/html/config.php:ro" \
   -v "$ROOT/moodle-plugin/local_lms_bridge:/var/www/html/public/local/lms_bridge:ro" -v "$ROOT/devops/lti-e2e:/e2e:ro" \
   --tmpfs /var/www/moodledata:uid=33,gid=33,mode=0777 \
   -e MOODLE_WWWROOT=http://localhost:58081 -e MOODLE_DB_HOST=be2e-db -e MOODLE_DB_PORT=5432 -e MOODLE_DB_NAME=moodle \

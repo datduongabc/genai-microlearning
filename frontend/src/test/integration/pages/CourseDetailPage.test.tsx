@@ -422,7 +422,21 @@ describe('CourseDetailPage - upload form', () => {
     await screen.findByText('Tải tài liệu lên')
     await userEvent.upload(uploadInput(), file)
 
-    await waitFor(() => expect(api.uploadDocument).toHaveBeenCalledWith('course-1', file))
+    await waitFor(() => expect(api.uploadDocument).toHaveBeenCalledWith('course-1', file, expect.any(Function)))
+  })
+
+  it('shows how much of the file has been sent while it is being sent', async () => {
+    vi.mocked(api.uploadDocument).mockImplementation(async (_course, _file, onProgress) => {
+      onProgress?.(0.42)
+      return new Promise(() => {}) // still sending
+    })
+
+    renderPage()
+    await screen.findByText('Tải tài liệu lên')
+    await userEvent.upload(uploadInput(), new File(['x'], 'lecture.mp4', { type: 'video/mp4' }))
+
+    expect(await screen.findByText('Đang tải lên 42%')).toBeInTheDocument()
+    expect(uploadInput()).toBeDisabled()
   })
 
   it('says a file is too big instead of sending it', async () => {

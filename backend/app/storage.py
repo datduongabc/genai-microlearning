@@ -1,9 +1,13 @@
-"""Where an uploaded file waits between the upload request and the document pipeline job.
+"""Where an uploaded file waits between the upload and the document pipeline job.
 
 The API and the worker are separate processes, and on ECS separate tasks with separate disks, so
 the file has to be somewhere both can reach. Each store is addressed by a key, the file name
 `<document id><suffix>`, and the readers still get a local path: S3 is copied down to a temporary
 file for the length of the read.
+
+On S3 the browser sends the file itself, through a presigned POST whose policy caps its size, so a
+1 GB video never passes through an API task. The local store has no such URL: the API receives the
+file at PUT /documents/{id}/content instead (app/api/documents.py).
 """
 
 import logging
@@ -18,6 +22,10 @@ from typing import Protocol
 
 from app.config import settings
 
+# How long a presigned POST stays valid. A 1 GB video over a 10 Mbit/s line takes about 14 minutes;
+# S3 checks the expiry when the upload starts, not when it ends.
+PRESIGNED_POST_SECONDS = 15 * 60
+
 logger = logging.getLogger(__name__)
 
 
@@ -30,6 +38,9 @@ class UploadStore(Protocol):
 
     def delete(self, key: str) -> None:
         """Remove the file. Nothing happens when there is none."""
+
+    def size(self, key: str) -> int | None:
+        """The stored file's size in bytes, or None when nothing is stored under key."""
 
 
 class LocalUploadStore:
@@ -49,6 +60,10 @@ class LocalUploadStore:
 
     def delete(self, key: str) -> None:
         self._path(key).unlink(missing_ok=True)
+
+    def size(self, key: str) -> int | None:
+        path = self._path(key)
+        return path.stat().st_size if path.is_file() else None
 
 
 class S3UploadStore:
@@ -82,14 +97,42 @@ class S3UploadStore:
         # S3 answers a delete of a missing object with success, so there is nothing to check.
         self.client.delete_object(Bucket=self.bucket, Key=self._object_key(key))
 
+    def size(self, key: str) -> int | None:
+        from botocore.exceptions import ClientError
+
+        try:
+            return self.client.head_object(Bucket=self.bucket, Key=self._object_key(key))["ContentLength"]
+        except ClientError as error:
+            # HEAD has no body, so a missing object is only a status code.
+            if error.response.get("Error", {}).get("Code") in ("404", "NoSuchKey", "NotFound"):
+                return None
+            raise
+
+    def presigned_post(self, key: str, max_bytes: int) -> dict:
+        """Where and how the browser sends the file: {"url", "fields"} of a form POST.
+
+        S3 itself refuses a body outside 1..max_bytes, and the key is fixed, so the URL can only
+        ever put this one document's file."""
+        return self.client.generate_presigned_post(
+            Bucket=self.bucket, Key=self._object_key(key),
+            Conditions=[["content-length-range", 1, max_bytes]],
+            ExpiresIn=PRESIGNED_POST_SECONDS,
+        )
+
 
 @cache
 def _s3_client():
     import boto3
+    from botocore.config import Config
 
     # Made on first use and shared (boto3 clients are thread safe), so a process that never
-    # touches an upload needs no AWS setup.
-    return boto3.client("s3")
+    # touches an upload needs no AWS setup. The region and virtual-hosted addressing make a
+    # presigned POST name the bucket's regional endpoint: the global one answers a browser in
+    # another region with a redirect, which a cross-origin POST does not follow.
+    return boto3.client(
+        "s3", region_name=settings.upload_s3_region or None,
+        config=Config(signature_version="s3v4", s3={"addressing_style": "virtual"}),
+    )
 
 
 def upload_store() -> UploadStore:
@@ -115,10 +158,9 @@ def upload_key(document_id, filename: str) -> str:
 
 
 def staging_dir() -> Path:
-    """Where the upload request writes the file while it checks the size and the page count.
+    """Where PUT /documents/{id}/content writes the file while it checks the size.
 
-    The local store's own directory, so that save() is a rename. For S3 the system temp dir:
-    the file only lives there until it has been sent."""
+    The local store's own directory, so that save() is a rename. For S3 the system temp dir."""
     directory = Path(settings.upload_storage_dir if settings.upload_store == "local" else tempfile.gettempdir())
     directory.mkdir(parents=True, exist_ok=True)
     return directory

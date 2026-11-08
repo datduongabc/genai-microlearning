@@ -52,9 +52,11 @@ resource "aws_iam_role" "task" {
 }
 
 data "aws_iam_policy_document" "api_task" {
+  # PutObject is what a presigned POST signed with this role may do; GetObject covers the HEAD
+  # that checks the file's size when the upload is completed.
   statement {
     sid       = "Uploads"
-    actions   = ["s3:PutObject", "s3:DeleteObject", "s3:AbortMultipartUpload"]
+    actions   = ["s3:PutObject", "s3:GetObject", "s3:DeleteObject"]
     resources = ["${aws_s3_bucket.uploads.arn}/uploads/*"]
   }
 }

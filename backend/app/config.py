@@ -107,11 +107,14 @@ class Settings(BaseSettings):
     upload_storage_dir: str = "uploads"
     # "local" keeps the file in upload_storage_dir, which only works when the API and the worker
     # share that directory (one machine, or the compose bind mount). "s3" is for separate tasks,
-    # as on ECS: the API puts the file in upload_s3_bucket and the worker fetches it from there.
+    # as on ECS: the browser puts the file in upload_s3_bucket through a presigned POST and the
+    # worker fetches it from there.
     # Credentials come from the default AWS chain, which on ECS is the task role.
     upload_store: Literal["local", "s3"] = "local"
     upload_s3_bucket: str = ""
     upload_s3_prefix: str = "uploads/"
+    # The bucket's region, so that presigned POSTs name its regional endpoint. Empty: boto3's default.
+    upload_s3_region: str = ""
 
     # "json" writes one JSON object per log line, for CloudWatch Logs Insights and metric filters.
     log_format: Literal["text", "json"] = "text"

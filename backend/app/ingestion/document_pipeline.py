@@ -10,7 +10,7 @@ from dataclasses import asdict
 from app.db import WorkerSessionLocal
 from app.ingestion.chunker import Chunk as ChunkerChunk
 from app.ingestion.chunker import chunk_units, document_title
-from app.ingestion.document_readers import DocumentUnit, read_document
+from app.ingestion.document_readers import DocumentUnit, InputLimitError, preflight_limits, read_document
 from app.ingestion.embeddings import embed_texts
 from app.models import Chunk as ChunkModel
 from app.models import Document, DocumentStatus, Job, JobStatus
@@ -46,6 +46,13 @@ def _run_extract(job) -> None:
         db.commit()
 
         with store.local_copy(storage_key) as path:
+            try:
+                # The upload request only saw the declared size: pages and duration need the file.
+                preflight_limits(path)
+            except InputLimitError:
+                # Terminal, and retrying cannot fix the input: the file has no further use.
+                store.delete(storage_key)
+                raise
             units = read_document(path, course_id=course_id, source_id=filename)
         doc.raw_text = "\n\n".join(u.text for u in units if u.text)
         # Persist before rejecting an unreadable document, and keep them after job cleanup.
