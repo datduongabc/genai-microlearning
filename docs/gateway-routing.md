@@ -5,6 +5,28 @@ Demo and normal use enable failover by default. The backend default remains
 selection, retries, cooldowns, rate checks and fallback chains. Provider keys are
 read only by the gateway from the runtime environment.
 
+## Providers and keys
+
+Three keys cover every alias:
+
+| Key | Aliases | Why this route |
+| --- | --- | --- |
+| `GEMINI_API_KEY` | `gemini-*`, `embed-gemini`, formula re-read | Google's free tier; OpenRouter has no free Gemini |
+| `OPENROUTER_API_KEY` | `claude-*`, `openai-*`, `groq-*`, `embed-openai` | One key and one balance for every paid model |
+| `GROQ_API_KEY` | `transcribe` (Whisper) | Segment timestamps, measured; Whisper via OpenRouter is not yet |
+
+Every OpenRouter alias sends `provider: {order: [<one upstream>], allow_fallbacks: false,
+data_collection: deny}`. Without it OpenRouter picks an upstream per request (price,
+latency, uptime), so two runs of one alias could be served by different hosts and
+quantisations; with it a failing upstream is an error, which experiment mode needs, and
+prompts, which carry course material, only reach upstreams that neither store nor train
+on them. Claude goes to Anthropic, GPT to OpenAI, GPT-OSS, Llama and MiniMax to Groq (the
+upstream of the earlier measurements), and Qwen3.8 27B to DeepInfra (bf16), since Groq
+does not serve it through OpenRouter. OpenRouter bills the upstream's token price and
+takes 5.5% when credit is bought. Results measured before 2026-11-08 called Anthropic,
+OpenAI and Groq directly; `devops/loadtest/real_gateway*.yaml` keep that route so those
+runs can be repeated as they were.
+
 The two free Gemini aliases back up each other, with LiteLLM's bounded fallback
 attempts preventing an endless cycle. If neither free model can serve a large
 request, generation fails. Paid generation aliases are selected explicitly and are
@@ -53,8 +75,9 @@ alias. Content, including no-RAG Content and its self-check, never opts into the
 small profile. Slides, Example and question generation also keep the ordinary
 alias. The historical `groq-fast` alias is unavailable in the current configuration.
 
-Groq's `groq-pro` deployment now uses the paid Developer plan, declared as
-`tpm: 250000`, `max_input_tokens: 128000` and `max_output_tokens: 2048`. The
+`groq-pro` runs on Groq through OpenRouter, declared with
+`max_input_tokens: 128000` and `max_output_tokens: 2048` (the 250,000 TPM of Groq's
+Developer plan no longer applies; OpenRouter's own limits do). The
 [model's context is 131,072 tokens](https://console.groq.com/docs/models), so
 this leaves room for the bounded output and response schema. A whole study
 packet of roughly 9.6–12.6k tokens fits in one call; the former 3,952-token cap

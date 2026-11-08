@@ -4,11 +4,22 @@
 # place that reads the provider API keys, from the environment (never write a
 # key here). A provider whose key is empty simply cannot be used.
 #
+# Two keys cover every alias. GEMINI_API_KEY: Google's free tier, called directly, since
+# OpenRouter has no free Gemini; it also serves the default aliases and embed-gemini.
+# OPENROUTER_API_KEY: every paid model (OpenAI, Anthropic, the open-weight models), billed
+# on one balance. Transcription stays on Groq (GROQ_API_KEY) until Whisper through
+# OpenRouter is measured: it returns segment timestamps only from some upstreams.
+#
+# Each OpenRouter alias pins one upstream (provider.order, allow_fallbacks: false), so a
+# measurement keeps the provider it was made on and a failure is visible instead of
+# silently served elsewhere; data_collection: deny keeps prompts, which carry course
+# material, off endpoints that store or train on them.
+#
 # Model ids are pinned, never "-latest": Google moves a "-latest" alias to each new
 # release, so results measured on it could not be reproduced. Gemini ids are stable
 # models of the free tier (https://ai.google.dev/gemini-api/docs/models); there is no
-# stable Pro model on the free tier, so the stronger Gemini alias is Flash. Check the
-# OpenAI ids when you first enable that provider, model names change over time.
+# stable Pro model on the free tier, so the stronger Gemini alias is Flash. OpenRouter
+# slugs are listed at https://openrouter.ai/models.
 model_list:
   - model_name: transcribe
     litellm_params:
@@ -64,92 +75,100 @@ model_list:
       mode: embedding
   - model_name: embed-openai
     litellm_params:
-      model: openai/text-embedding-3-small
-      api_key: os.environ/OPENAI_API_KEY
+      model: openrouter/openai/text-embedding-3-small
+      extra_body:
+        provider: {order: [openai], allow_fallbacks: false, data_collection: deny}
+      api_key: os.environ/OPENROUTER_API_KEY
     model_info:
       display_name: OpenAI Embedding 3 Small
       mode: embedding
 
   - model_name: openai-fast
     litellm_params:
-      model: openai/gpt-6-luna
-      # Accepts only temperature=1. The pipeline asks for 0 at most steps; sending it fails the
-      # call, and outside experiment mode the fallback then hands the step to free Gemini.
+      model: openrouter/openai/gpt-6-luna
       additional_drop_params: [temperature]
-      api_key: os.environ/OPENAI_API_KEY
+      extra_body:
+        provider: {order: [openai], allow_fallbacks: false, data_collection: deny}
+      api_key: os.environ/OPENROUTER_API_KEY
     model_info:
       display_name: GPT-6 Luna
       note: nhanh
   - model_name: openai-pro
     litellm_params:
-      model: openai/gpt-6.1-sol
-      # Accepts only temperature=1. The pipeline asks for 0 at most steps; sending it fails the
-      # call, and outside experiment mode the fallback then hands the step to free Gemini.
+      model: openrouter/openai/gpt-6.1-sol
       additional_drop_params: [temperature]
-      api_key: os.environ/OPENAI_API_KEY
+      extra_body:
+        provider: {order: [openai], allow_fallbacks: false, data_collection: deny}
+      api_key: os.environ/OPENROUTER_API_KEY
     model_info:
       display_name: GPT-6.1 Sol
       note: chất lượng cao hơn, chậm hơn
 
   - model_name: claude-fast
     litellm_params:
-      model: anthropic/claude-haiku-5-5
-      # Accepts only temperature=1. The pipeline asks for 0 at most steps; sending it fails the
-      # call, and outside experiment mode the fallback then hands the step to free Gemini.
+      model: openrouter/anthropic/claude-haiku-5.5
       additional_drop_params: [temperature]
-      api_key: os.environ/ANTHROPIC_API_KEY
+      extra_body:
+        provider: {order: [anthropic], allow_fallbacks: false, data_collection: deny}
+      api_key: os.environ/OPENROUTER_API_KEY
     model_info:
       display_name: Claude Haiku 5.5
       note: nhanh
   - model_name: claude-pro
     litellm_params:
-      model: anthropic/claude-sonnet-5-5
-      # Accepts only temperature=1. The pipeline asks for 0 at most steps; sending it fails the
-      # call, and outside experiment mode the fallback then hands the step to free Gemini.
+      model: openrouter/anthropic/claude-sonnet-5.5
       additional_drop_params: [temperature]
-      api_key: os.environ/ANTHROPIC_API_KEY
+      extra_body:
+        provider: {order: [anthropic], allow_fallbacks: false, data_collection: deny}
+      api_key: os.environ/OPENROUTER_API_KEY
     model_info:
       display_name: Claude Sonnet 5.5
       note: chất lượng cao hơn, chậm hơn
 
-  # Paid Groq tier: lecturer opt-in model; GPT-OSS is not in the judge pool.
-  # https://console.groq.com/docs/models (131,072 context; 250K TPM).
-  # Text generation only: litellm's model table has no groq embedding model.
+  # Lecturer opt-in model, served by Groq through OpenRouter; GPT-OSS is not in the judge pool.
   - model_name: groq-pro
     litellm_params:
-      model: groq/openai/gpt-oss-120b
-      tpm: 250000
-      # Keep reasoning bounded so rubric JSON fits the output allowance.
+      model: openrouter/openai/gpt-oss-120b
       reasoning_effort: low
       allowed_openai_params: [reasoning_effort]
-      api_key: os.environ/GROQ_API_KEY
+      extra_body:
+        provider: {order: [groq], allow_fallbacks: false, data_collection: deny}
+      api_key: os.environ/OPENROUTER_API_KEY
     model_info:
       display_name: GPT-OSS 120B qua Groq
-      note: trả phí, model sinh tùy chọn (250.000 TPM)
+      note: trả phí, model sinh tùy chọn
       max_input_tokens: 128000
       max_output_tokens: 2048
 
-  # Evaluation alternatives verified against https://console.groq.com/docs/models (2026-10-17).
+  # Evaluation alternatives, on the upstream they were measured on (checked against
+  # https://openrouter.ai/api/v1/models/<slug>/endpoints on 2026-11-08).
   - model_name: groq-llama
     litellm_params:
-      model: groq/llama-3.3-70b-versatile
-      api_key: os.environ/GROQ_API_KEY
+      model: openrouter/meta-llama/llama-3.3-70b-instruct
+      extra_body:
+        provider: {order: [groq], allow_fallbacks: false, data_collection: deny}
+      api_key: os.environ/OPENROUTER_API_KEY
     model_info:
       display_name: llama-3.3-70b-versatile qua Groq
       max_input_tokens: 128000
 
+  # Groq does not serve this model through OpenRouter; DeepInfra serves it unquantised (bf16).
   - model_name: groq-qwen
     litellm_params:
-      model: groq/qwen/qwen3.8-27b
-      api_key: os.environ/GROQ_API_KEY
+      model: openrouter/qwen/qwen3.8-27b
+      extra_body:
+        provider: {order: [deepinfra], allow_fallbacks: false, data_collection: deny}
+      api_key: os.environ/OPENROUTER_API_KEY
     model_info:
-      display_name: qwen/qwen3.8-27b qua Groq
+      display_name: qwen/qwen3.8-27b qua DeepInfra
       max_input_tokens: 128000
 
   - model_name: groq-minimax
     litellm_params:
-      model: groq/minimaxai/minimax-m2.7
-      api_key: os.environ/GROQ_API_KEY
+      model: openrouter/minimax/minimax-m2.7
+      extra_body:
+        provider: {order: [groq], allow_fallbacks: false, data_collection: deny}
+      api_key: os.environ/OPENROUTER_API_KEY
     model_info:
       display_name: minimaxai/minimax-m2.7 qua Groq
       max_input_tokens: 128000

@@ -42,7 +42,7 @@ locals {
   }
 
   external_parameters = [
-    "openai-api-key", "gemini-api-key", "anthropic-api-key", "groq-api-key", "typesafe-api-key", "moodle-token",
+    "gemini-api-key", "openrouter-api-key", "groq-api-key", "typesafe-api-key", "moodle-token",
   ]
 }
 

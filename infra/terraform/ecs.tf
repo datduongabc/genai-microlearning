@@ -64,12 +64,11 @@ locals {
       APP_WORKER_DATABASE_URL  = local.ssm["app-worker-database-url"]
     }
     gateway = {
-      LLM_GATEWAY_KEY   = local.ssm["llm-gateway-key"]
-      EMBEDDER_API_KEY  = local.ssm["embedder-api-key"]
-      OPENAI_API_KEY    = local.ssm["openai-api-key"]
-      GEMINI_API_KEY    = local.ssm["gemini-api-key"]
-      ANTHROPIC_API_KEY = local.ssm["anthropic-api-key"]
-      GROQ_API_KEY      = local.ssm["groq-api-key"]
+      LLM_GATEWAY_KEY    = local.ssm["llm-gateway-key"]
+      EMBEDDER_API_KEY   = local.ssm["embedder-api-key"]
+      GEMINI_API_KEY     = local.ssm["gemini-api-key"]
+      OPENROUTER_API_KEY = local.ssm["openrouter-api-key"]
+      GROQ_API_KEY       = local.ssm["groq-api-key"]
     }
     embedder = { API_KEY = local.ssm["embedder-api-key"] }
     reranker = {}
