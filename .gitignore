@@ -35,6 +35,12 @@ __pycache__/
 Thumbs.db
 
 /docs/documents/
+
+# Hai ban bao cao: chi dua report.pdf len git, ma nguon LaTeX chi giu o may.
+/midterm-report/*
+!/midterm-report/report.pdf
+/final-report/*
+!/final-report/report.pdf
 Applying AI Tools to Design Microlearning Materials.md
 Bloom Taxonomy.md
 The MIND Model A Microlearning AI Integrated Instructional Design for Enhanced Learning Outcomes.md
