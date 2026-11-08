@@ -72,8 +72,11 @@ def to_choices(raw: list[dict]) -> list[ModelChoice]:
             continue
         alias = item["model_name"]
         # Nhà cung cấp là tiền tố của tên model, nên thêm model mới không phải khai lại nó.
-        # Groq đi qua litellm dưới dạng "groq/openai/..." nên chỉ lấy đoạn đầu.
-        provider = str(item.get("litellm_params", {}).get("model", "")).split("/")[0]
+        # Groq đi qua litellm dưới dạng "groq/openai/..." nên chỉ lấy đoạn đầu. Mọi model trả
+        # phí đi qua OpenRouter ("openrouter/<hãng>/<model>"), nên với nó lấy hãng ở đoạn thứ
+        # hai, kẻo cả danh sách gom về một nhóm "openrouter".
+        parts = str(item.get("litellm_params", {}).get("model", "")).split("/")
+        provider = parts[1] if parts[0] == "openrouter" and len(parts) >= 3 else parts[0]
         choices.append(ModelChoice(
             alias=alias,
             label=info.get("display_name") or alias,

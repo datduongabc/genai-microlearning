@@ -1,3 +1,5 @@
+# Calls Anthropic and OpenAI directly, as when the load-test results were measured (before the
+# gateway moved paid models to OpenRouter); kept so those runs can be repeated as they were.
 # Gateway for measuring with real models. Router settings are those production had before load control (L0),
 # so a 429 behaves as it did then, including the 60 second cooldown. Fallbacks are left out so a model never stands in for another.
 model_list:

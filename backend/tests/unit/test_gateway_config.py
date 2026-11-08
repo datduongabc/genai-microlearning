@@ -3,8 +3,10 @@ the backend. These files are never executed by the test suite, so a typo in a
 model alias or an accidentally committed key would otherwise only show up as a
 failed LLM call."""
 
+import json
 import re
 from pathlib import Path
+from typing import ClassVar
 
 import pytest
 import yaml
@@ -17,8 +19,9 @@ GATEWAY_DOCKERFILE = REPO_ROOT / "devops" / "gateway" / "Dockerfile"
 COMPOSE = REPO_ROOT / "devops" / "docker-compose.yml"
 BACKEND_LOCK = REPO_ROOT / "backend" / "uv.lock"
 
-SUPPORTED_PROVIDERS = {"gemini", "openai", "anthropic", "groq"}
-PROVIDER_KEY_VARIABLES = ("GEMINI_API_KEY", "OPENAI_API_KEY", "ANTHROPIC_API_KEY", "GROQ_API_KEY")
+# Gemini directly for its free tier, Groq for Whisper, OpenRouter for every paid model.
+SUPPORTED_PROVIDERS = {"gemini", "groq", "openrouter"}
+PROVIDER_KEY_VARIABLES = ("GEMINI_API_KEY", "GROQ_API_KEY", "OPENROUTER_API_KEY")
 
 
 @pytest.fixture(scope="module")
@@ -33,6 +36,13 @@ def compose():
 
 def _deployments(gateway) -> list[dict]:
     return gateway["model_list"]
+
+
+def _remote_providers(gateway) -> set[str]:
+    """The local embedder is reached over the OpenAI protocol ("openai/..." with an api_base), but
+    no key of OpenAI's is involved: only the deployments without an api_base reach a provider."""
+    return {d["litellm_params"]["model"].split("/")[0] for d in _deployments(gateway)
+            if "api_base" not in d["litellm_params"]}
 
 
 def test_the_default_alias_of_the_backend_is_defined_in_the_gateway(gateway):
@@ -50,13 +60,13 @@ def test_every_model_id_is_pinned(gateway):
 
 
 def test_only_the_supported_providers_are_routed(gateway):
-    providers = {d["litellm_params"]["model"].split("/")[0] for d in _deployments(gateway)}
+    providers = _remote_providers(gateway)
 
     assert providers <= SUPPORTED_PROVIDERS
 
 
 def test_every_supported_provider_is_reachable_through_an_alias(gateway):
-    providers = {d["litellm_params"]["model"].split("/")[0] for d in _deployments(gateway)}
+    providers = _remote_providers(gateway)
 
     assert providers == SUPPORTED_PROVIDERS
 
@@ -223,7 +233,6 @@ def test_router_accepts_the_config_and_keeps_large_routes_off_groq(gateway, monk
                 assert alias in aliases and set(backups) <= aliases
                 assert "groq-pro" not in backups
     groq = next(d for d in gateway["model_list"] if d["model_name"] == "groq-pro")
-    assert groq["litellm_params"]["tpm"] == 250000
     assert groq["model_info"]["max_input_tokens"] + groq["model_info"]["max_output_tokens"] <= 131072
     router.reset()
 
@@ -351,10 +360,10 @@ PAID_ALIASES = {"claude-fast", "claude-pro", "openai-fast", "openai-pro", "groq-
 
 def test_evaluation_paid_aliases_are_current_and_never_fallback_targets(gateway):
     expected = {
-        "claude-fast": "anthropic/claude-haiku-5-5",
-        "claude-pro": "anthropic/claude-sonnet-5-5",
-        "openai-fast": "openai/gpt-6-luna",
-        "openai-pro": "openai/gpt-6.1-sol",
+        "claude-fast": "openrouter/anthropic/claude-haiku-5.5",
+        "claude-pro": "openrouter/anthropic/claude-sonnet-5.5",
+        "openai-fast": "openrouter/openai/gpt-6-luna",
+        "openai-pro": "openrouter/openai/gpt-6.1-sol",
     }
     for alias, model in expected.items():
         deployments = [d for d in gateway["model_list"] if d["model_name"] == alias]
@@ -415,4 +424,70 @@ def test_a_pinned_paid_call_at_temperature_zero_is_served_by_its_own_model(gatew
     ))
 
     assert response.model == expected.split("/", 1)[1]
+    router.reset()
+
+
+def _openrouter_deployments(gateway) -> list[dict]:
+    return [d for d in _deployments(gateway) if d["litellm_params"]["model"].startswith("openrouter/")]
+
+
+def test_every_paid_model_goes_through_openrouter_with_its_one_key(gateway):
+    """One balance and one key for every paid model; the provider keys of OpenAI and Anthropic
+    are no longer read anywhere."""
+    paid = {d["model_name"] for d in _openrouter_deployments(gateway)}
+
+    assert PAID_ALIASES | {"groq-llama", "groq-qwen", "groq-minimax", "embed-openai"} == paid
+    assert {d["litellm_params"]["api_key"] for d in _openrouter_deployments(gateway)} == {
+        "os.environ/OPENROUTER_API_KEY"}
+
+
+def test_each_openrouter_alias_is_pinned_to_one_upstream_that_keeps_no_prompt(gateway):
+    """OpenRouter would otherwise pick the cheapest or fastest upstream per request, so two runs
+    of one alias could be served by different hosts (and quantisations); a failing upstream must
+    surface as an error, not be served silently elsewhere. Prompts carry course material, so
+    only upstreams that neither store nor train on them are allowed."""
+    for deployment in _openrouter_deployments(gateway):
+        provider = deployment["litellm_params"]["extra_body"]["provider"]
+        assert len(provider["order"]) == 1, deployment["model_name"]
+        assert provider["allow_fallbacks"] is False, deployment["model_name"]
+        assert provider["data_collection"] == "deny", deployment["model_name"]
+
+
+def test_the_routing_preferences_reach_the_openrouter_request(gateway, monkeypatch):
+    import asyncio
+
+    import litellm
+
+    for name in (*PROVIDER_KEY_VARIABLES, "LLM_GATEWAY_KEY", "EMBEDDER_API_KEY"):
+        monkeypatch.setenv(name, "test-key")
+    sent = {}
+
+    class Response:
+        status_code = 200
+        headers: ClassVar[dict] = {}
+
+        def json(self):
+            return {"id": "x", "object": "chat.completion", "created": 0, "model": "anthropic/claude-haiku-5.5",
+                    "choices": [{"index": 0, "finish_reason": "stop",
+                                 "message": {"role": "assistant", "content": "ok"}}],
+                    "usage": {"prompt_tokens": 1, "completion_tokens": 1, "total_tokens": 2}}
+
+        text = ""
+
+    async def post(self, url, *args, **kwargs):
+        sent["url"] = url
+        sent["body"] = kwargs.get("json") or json.loads(kwargs.get("data") or "{}")
+        return Response()
+
+    from litellm.llms.custom_httpx.http_handler import AsyncHTTPHandler
+
+    monkeypatch.setattr(AsyncHTTPHandler, "post", post)
+    router = litellm.Router(model_list=gateway["model_list"], **gateway["router_settings"])
+    asyncio.run(router.acompletion(
+        model="claude-fast", messages=[{"role": "user", "content": "hi"}], num_retries=0, disable_fallbacks=True,
+    ))
+
+    assert sent["url"].startswith("https://openrouter.ai/api/v1")
+    assert sent["body"]["model"] == "anthropic/claude-haiku-5.5"
+    assert sent["body"]["provider"] == {"order": ["anthropic"], "allow_fallbacks": False, "data_collection": "deny"}
     router.reset()

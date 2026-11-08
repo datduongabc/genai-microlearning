@@ -36,8 +36,8 @@ terraform apply
 
 # 3. Khóa nhà cung cấp. Terraform không bao giờ thấy chúng và không ghi đè sau lần tạo.
 PREFIX=$(terraform output -raw ssm_prefix)
-aws ssm put-parameter --overwrite --type SecureString --name "$PREFIX/openai-api-key" --value "..."
-#   tương tự: gemini-api-key, anthropic-api-key, groq-api-key, typesafe-api-key, moodle-token
+aws ssm put-parameter --overwrite --type SecureString --name "$PREFIX/openrouter-api-key" --value "..."
+#   tương tự: gemini-api-key, groq-api-key, typesafe-api-key, moodle-token
 aws ecs update-service --cluster "$(terraform output -raw cluster)" --service gateway --force-new-deployment
 
 # 4. Migration, frontend, smoke test.

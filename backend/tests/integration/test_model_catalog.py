@@ -73,6 +73,15 @@ def test_nha_cung_cap_suy_ra_tu_ten_model_chu_khong_phai_khai_them():
     assert {c.alias: c.provider for c in chon} == {"groq-pro": "groq", "claude-pro": "anthropic"}
 
 
+def test_model_qua_openrouter_mang_ten_hang_lam_nha_cung_cap():
+    chon = catalog.to_choices([
+        _muc("claude-fast", "openrouter/anthropic/claude-haiku-5.5"),
+        _muc("groq-llama", "openrouter/meta-llama/llama-3.3-70b-instruct"),
+    ])
+
+    assert {c.alias: c.provider for c in chon} == {"claude-fast": "anthropic", "groq-llama": "meta-llama"}
+
+
 def test_thu_tu_on_dinh_de_danh_sach_tren_giao_dien_khong_nhay():
     xuoi = catalog.to_choices([
         _muc("openai-fast", "openai/gpt-4o-mini"),
