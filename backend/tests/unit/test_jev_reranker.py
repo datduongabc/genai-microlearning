@@ -103,5 +103,5 @@ def test_a_caller_with_someone_waiting_can_limit_the_tries(jev):
     assert len(calls) == 2
 
 
-def test_jina_stays_the_default(monkeypatch):
-    assert type(settings).model_fields["reranker_provider"].default == "jina"
+def test_jev_is_the_default():
+    assert type(settings).model_fields["reranker_provider"].default == "jev"

@@ -61,6 +61,10 @@ variables {
 run "demo_with_the_self_hosted_reranker" {
   command = plan
 
+  variables {
+    reranker_provider = "jina"
+  }
+
   assert {
     condition     = toset(keys(aws_ecs_service.service)) == toset(["api", "worker", "gateway", "embedder", "reranker"])
     error_message = "jina needs the reranker service."
@@ -108,6 +112,15 @@ run "demo_with_the_self_hosted_reranker" {
   assert {
     condition     = one(aws_s3_bucket_cors_configuration.uploads.cors_rule).allowed_methods == toset(["POST"])
     error_message = "The browser may only POST to the uploads bucket."
+  }
+}
+
+run "jev_is_the_default" {
+  command = plan
+
+  assert {
+    condition     = var.reranker_provider == "jev" && !contains(keys(aws_ecs_service.service), "reranker")
+    error_message = "Jev is the default since 2026-11-08, so the default plan runs no reranker task."
   }
 }
 

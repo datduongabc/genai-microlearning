@@ -155,6 +155,6 @@ Dự toán đồ án cũ khoảng $96, hoặc $115 với 20% dự phòng, sẽ g
 | Mọi số trên AWS | Máy đo dùng chung 7,57 GiB RAM | Terraform, chạy đo |
 | Code chưa có | Giới hạn Jev chung; LTI cho sinh viên, Deep Linking, trả điểm | Viết code; sinh viên cần thêm thành viên khóa học vào RLS |
 | Terraform chưa `apply` lần nào | `infra/terraform` mới qua `validate` và `terraform test` với AWS giả lập | Tài khoản AWS, chạy theo `infra/README.md` |
-| Bật Jev trong production | Code mặc định vẫn dùng Jina, chỉ gửi sang TypeSafe khi đặt `RERANKER_PROVIDER=jev`, để không gửi tài liệu khi trường chưa đồng ý | Nhà trường đồng ý |
-| Credit Jev | Tài khoản TypeSafe đang trả 402; khi chưa nạp, hệ thống chỉ chạy với thứ tự hybrid | Nạp trước khi demo |
+| Bật Jev trong production | Đã được đồng ý ngày 2026-11-08. Compose, `.env.example` và Terraform mặc định `jev`; code backend vẫn mặc định Jina để test không gọi ra ngoài | Xong |
+| Credit Jev | Đã nạp 5 $ ngày 2026-11-08; hết credit thì hệ thống chạy với thứ tự hybrid và báo `jev_fallback` | Theo dõi số dư trước khi demo |
 | Điều kiện chứng minh | Ngưỡng ở `scalable-design.md` mục 3 là đề xuất | Giảng viên đồng ý |

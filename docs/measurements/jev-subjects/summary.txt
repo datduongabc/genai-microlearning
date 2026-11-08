@@ -1,0 +1,35 @@
+== advanced-programming
+  ingest s: n=5 mean=24.1 p50=18.2 p95=49.2 max=54.8 | MB 11.4 | failed 0
+  chat s:   n=10 mean=2.9 p50=1.8 p95=7.7 max=11.9 | errors 0 | citations mean 1.3 | refusals 0
+  module 45.8s calls=19 served={'google/gemini-3.5-flash-lite': 19} rerank n=8 mean=0.39s max=0.65s provider={'jev': 8} llm n=19 mean=3.8s tokens=51272/9196
+     stages: {'questions': 28.4, 'content': 3.1, 'content_retrieval': 2.9, 'planner': 2.3, 'example': 1.7, 'slides': 1.6, 'retrieval': 1.3, 'learning_objective': 1.2}
+  module 25.9s calls=15 served={'google/gemini-3.5-flash-lite': 15} rerank n=8 mean=0.48s max=0.87s provider={'jev': 8} llm n=15 mean=2.1s tokens=45656/7128
+     stages: {'questions': 5.5, 'content_retrieval': 3.7, 'content': 3.6, 'planner': 2.1, 'example': 2.0, 'slides': 1.8, 'learning_objective': 1.2, 'retrieval': 1.0}
+== calculus 1
+  ingest s: n=6 mean=42.1 p50=42.5 p95=61.7 max=66.7 | MB 5.8 | failed 0
+  chat s:   n=10 mean=1.9 p50=1.8 p95=2.2 max=2.3 | errors 0 | citations mean 1.2 | refusals 0
+  module 20.7s calls=15 served={'google/gemini-3.5-flash-lite': 15} rerank n=8 mean=0.40s max=0.43s provider={'jev': 8} llm n=15 mean=1.9s tokens=77830/6395
+     stages: {'questions': 5.0, 'content': 3.6, 'content_retrieval': 3.1, 'planner': 2.1, 'example': 1.9, 'slides': 1.5, 'learning_objective': 1.2, 'retrieval': 0.7}
+  module 30.7s calls=17 served={'google/gemini-3.5-flash-lite': 17} rerank n=9 mean=0.40s max=0.43s provider={'jev': 9} llm n=17 mean=2.3s tokens=81432/8757
+     stages: {'questions': 13.0, 'content': 3.8, 'content_retrieval': 3.6, 'example': 2.1, 'slides': 1.9, 'planner': 1.6, 'learning_objective': 1.3, 'retrieval': 0.7}
+== operating-system
+  ingest s: n=5 mean=25.5 p50=26.3 p95=31.1 max=32.3 | MB 15.7 | failed 0
+  chat s:   n=10 mean=1.6 p50=1.6 p95=1.8 max=1.9 | errors 0 | citations mean 1.1 | refusals 0
+  module 30.8s calls=19 served={'google/gemini-3.5-flash-lite': 19} rerank n=8 mean=0.44s max=0.55s provider={'jev': 8} llm n=19 mean=2.4s tokens=80058/9716
+     stages: {'questions': 10.6, 'content': 8.5, 'content_retrieval': 2.7, 'planner': 2.4, 'example': 1.8, 'slides': 1.6, 'learning_objective': 1.3, 'retrieval': 0.7}
+  module 30.7s calls=19 served={'google/gemini-3.5-flash-lite': 19} rerank n=8 mean=0.42s max=0.65s provider={'jev': 8} llm n=19 mean=2.1s tokens=65144/9231
+     stages: {'questions': 11.4, 'content': 3.6, 'content_retrieval': 3.4, 'example': 1.9, 'slides': 1.5, 'planner': 1.4, 'learning_objective': 1.4, 'retrieval': 0.7}
+== scientific-socialism
+  ingest s: n=3 mean=13.5 p50=16.2 p95=16.2 max=16.2 | MB 14.2 | failed 0
+  chat s:   n=10 mean=1.9 p50=1.9 p95=2.2 max=2.3 | errors 0 | citations mean 1.6 | refusals 0
+  module 26.5s calls=17 served={'google/gemini-3.5-flash-lite': 17} rerank n=8 mean=0.49s max=1.35s provider={'jev': 8} llm n=17 mean=1.9s tokens=44722/7863
+     stages: {'questions': 8.9, 'content': 3.3, 'content_retrieval': 2.6, 'slides': 1.8, 'example': 1.7, 'retrieval': 1.7, 'planner': 1.6, 'learning_objective': 1.2}
+  module 30.8s calls=17 served={'google/gemini-3.5-flash-lite': 17} rerank n=8 mean=0.50s max=0.71s provider={'jev': 8} llm n=17 mean=2.2s tokens=52034/9903
+     stages: {'questions': 10.9, 'content': 4.2, 'content_retrieval': 3.6, 'planner': 2.3, 'example': 2.1, 'slides': 1.6, 'learning_objective': 1.3, 'retrieval': 0.9}
+== machine-learning
+  ingest s: n=4 mean=58.4 p50=57.0 p95=73.6 max=74.4 | MB 1165.3 | failed 0
+  chat s:   n=10 mean=2.0 p50=1.8 p95=2.9 max=3.2 | errors 0 | citations mean 2 | refusals 0
+  module 20.8s calls=15 served={'google/gemini-3.5-flash-lite': 15} rerank n=8 mean=0.44s max=0.69s provider={'jev': 8} llm n=15 mean=1.9s tokens=40771/6300
+     stages: {'questions': 5.0, 'content_retrieval': 3.3, 'content': 3.2, 'planner': 1.8, 'example': 1.8, 'slides': 1.4, 'learning_objective': 1.2, 'retrieval': 0.8}
+  module 25.8s calls=17 served={'google/gemini-3.5-flash-lite': 17} rerank n=8 mean=0.46s max=0.56s provider={'jev': 8} llm n=17 mean=2.0s tokens=62098/7699
+     stages: {'questions': 10.3, 'content': 3.5, 'content_retrieval': 3.2, 'example': 1.7, 'planner': 1.7, 'slides': 1.2, 'learning_objective': 1.2, 'retrieval': 0.7}
