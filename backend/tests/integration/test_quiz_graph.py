@@ -14,6 +14,7 @@ from app.generation import common, content, quiz_graph
 from app.generation.common import MAX_CORRECTION_RETRY
 from app.generation.objective import LearningObjective
 from app.generation.quiz_graph import (
+    SYNTAX_RETRY,
     GroundednessAnswerabilityCheck,
     QuizQuestion,
     _syntax_iwf_check,
@@ -101,15 +102,50 @@ def test_a_question_that_fails_is_regenerated_exactly_once_with_the_reason(monke
     assert "ngoài nguồn" not in first and "Groundedness fail: ngoài nguồn" in second
 
 
-def test_a_question_that_passes_on_the_second_try_is_kept(monkeypatch, searches):
+def test_a_draft_failing_the_syntax_trap_is_regenerated_before_the_model_checks_it(monkeypatch, searches):
     model = _use(monkeypatch, FakeModel(questions=[ABSOLUTE, BALANCED]))
 
     result = generate_quiz_question(None, uuid.uuid4(), "Nêu định nghĩa", LO)
 
-    assert model.names().count("QuizQuestion") == 2
+    assert model.names() == ["QuizQuestion", "QuizQuestion", "GroundednessAnswerabilityCheck"]
     assert result["passed"] is True and result["correction_retry_count"] == 1
     assert result["question"] == BALANCED
     assert "Syntax/IWF fail" in model.question_prompts()[1]
+
+
+def test_the_syntax_retries_are_capped_for_the_whole_question(monkeypatch, searches):
+    model = _use(monkeypatch, FakeModel(questions=[ABSOLUTE]))
+
+    result = generate_quiz_question(None, uuid.uuid4(), "Nêu định nghĩa", LO)
+
+    assert SYNTAX_RETRY == 2
+    assert model.names() == ["QuizQuestion"] * 3 + ["GroundednessAnswerabilityCheck", "QuizQuestion",
+                                                    "GroundednessAnswerabilityCheck"]
+    assert result["passed"] is False and "tuyệt đối" in result["fail_reason"]
+
+
+def test_a_retry_that_fails_more_criteria_than_the_first_attempt_is_dropped(monkeypatch, searches):
+    worse = UNGROUNDED.model_copy(update={"bloom_level_pass": False, "bloom_level_reason": "sai cấp"})
+    second = BALANCED.model_copy(update={"stem": "Hỏi lại"})
+    model = _use(monkeypatch, FakeModel(questions=[BALANCED, second], checks=[UNGROUNDED, worse]))
+
+    result = generate_quiz_question(None, uuid.uuid4(), "Nêu định nghĩa", LO)
+
+    assert model.names().count("QuizQuestion") == 2
+    assert result["question"] == BALANCED
+    assert result["fail_reason"] == "Groundedness fail: ngoài nguồn"
+    assert result["correction_retry_count"] == 1
+
+
+def test_among_drafts_failing_the_syntax_trap_the_one_with_fewest_issues_is_checked(monkeypatch, searches):
+    two_issues = BALANCED.model_copy(update={"choices": ["luôn luôn", "tất cả đều đúng", "pa ba", "pa bốn"]})
+    model = _use(monkeypatch, FakeModel(questions=[ABSOLUTE, two_issues, two_issues, BALANCED]))
+
+    result = generate_quiz_question(None, uuid.uuid4(), "Nêu định nghĩa", LO)
+
+    checked = next(p for n, p in model.calls if n == "GroundednessAnswerabilityCheck")
+    assert "luôn luôn" in checked and "tất cả đều" not in checked
+    assert result["question"] == BALANCED
 
 
 def test_each_question_retrieves_five_passages_for_what_it_asks_and_never_grades_them(monkeypatch, searches):
@@ -127,7 +163,7 @@ def test_without_self_check_the_model_never_checks_and_the_syntax_trap_still_blo
 
     result = generate_quiz_question(None, uuid.uuid4(), "q", LO, "quiz", self_check=False)
 
-    assert model.names() == ["QuizQuestion", "QuizQuestion"]
+    assert model.names() == ["QuizQuestion"] * (MAX_CORRECTION_RETRY + 1 + SYNTAX_RETRY)
     assert result["passed"] is False and "tuyệt đối" in result["fail_reason"]
 
 
@@ -136,7 +172,7 @@ def test_the_syntax_trap_blocks_practice_too(monkeypatch, searches):
 
     result = generate_quiz_question(None, uuid.uuid4(), "q", LO, "practice", self_check=False)
 
-    assert model.names() == ["QuizQuestion", "QuizQuestion"]
+    assert model.names() == ["QuizQuestion"] * (MAX_CORRECTION_RETRY + 1 + SYNTAX_RETRY)
     assert result["passed"] is False and result["syntax_issues"]
 
 
@@ -150,9 +186,9 @@ def test_set_level_feedback_stays_on_the_retry_along_with_the_check_reason(monke
     assert "đáp án đúng dài nhất" in second and "ngoài nguồn" in second
 
 
-def test_content_and_questions_share_one_self_check_loop():
+def test_content_and_questions_share_one_retry_budget_after_the_model_check():
     assert content._checked is common._checked
-    assert quiz_graph._checked is common._checked
+    assert quiz_graph.MAX_CORRECTION_RETRY is common.MAX_CORRECTION_RETRY
 
 
 def test_nothing_imports_langgraph_any_more():

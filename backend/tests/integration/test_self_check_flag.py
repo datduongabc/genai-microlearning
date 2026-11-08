@@ -124,4 +124,5 @@ def test_without_self_check_a_quiz_question_still_fails_the_free_syntax_check(do
         db.close()
 
     assert state["passed"] is False and "tuyệt đối" in state["fail_reason"]
-    assert llm.count("QuizQuestion") == 2 and "GroundednessAnswerabilityCheck" not in llm
+    assert llm.count("QuizQuestion") == 2 + quiz_graph.SYNTAX_RETRY
+    assert "GroundednessAnswerabilityCheck" not in llm

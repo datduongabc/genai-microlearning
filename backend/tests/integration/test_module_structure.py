@@ -38,13 +38,24 @@ def _question(stem="stem", choices=("A", "B", "C", "D"), correct=1) -> QuizQuest
 LONG_CORRECT = ("ngắn", "một đáp án đúng dài hơn hẳn mọi phương án khác", "cũng ngắn", "ngắn nữa")
 
 
-# --- đáp án đúng không được dài nhất ở mọi câu --------------------------------------------------
+# --- đáp án đúng không được dài nhất ở quá nửa số câu ----------------------------------------------
+
+NOT_LONGEST = ("dài nhất trong câu này", "B", "C", "D")
 
 
-def test_no_question_is_redone_when_some_correct_answer_is_not_the_longest():
-    questions = [_question(choices=LONG_CORRECT), _question(choices=("dài nhất trong câu này", "B", "C", "D"))]
+def test_no_question_is_redone_when_at_most_half_the_correct_answers_are_the_longest():
+    questions = [_question(choices=LONG_CORRECT), _question(choices=NOT_LONGEST)]
 
     assert question_to_rebalance(questions) is None
+
+
+def test_three_of_four_longest_correct_answers_give_the_answer_away():
+    """The case the old rule (every question) let through and both rubric judges reported."""
+    mild = ("aaaa", "bbbbb", "cccc", "dddd")
+    questions = [_question(choices=mild), _question(choices=NOT_LONGEST),
+                 _question(choices=LONG_CORRECT), _question(choices=mild)]
+
+    assert question_to_rebalance(questions) == 2
 
 
 def test_when_every_correct_answer_is_the_longest_the_most_obvious_one_is_redone():
