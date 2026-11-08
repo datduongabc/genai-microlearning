@@ -84,9 +84,7 @@ CAC_MUC_K = (1, 3, 5, 8, 10)
 
 CAU_HINH = ("dense", "hybrid", "hybrid+rerank")
 
-# Bộ câu hỏi của lần đo 2026-09-26, nhúng bằng Qwen3. Bộ cũ (truy_van.json, thu_hang.json,
-# ket_qua.json) giữ nguyên làm lịch sử: đáp án của nó là chunk trong một database đã mất,
-# nên không chấm lại được trên chunk mới.
+# Bộ câu hỏi của lần đo 2026-09-26, nhúng bằng Qwen3 (truy_van.json, nay chỉ còn làm lịch sử).
 # Bộ của lần đo 5 môn (2026-11-01); các bộ trước giữ nguyên làm lịch sử.
 TEP_TRUY_VAN = "truy_van_5mon.json"
 TEP_THU_HANG = "thu_hang_5mon.json"

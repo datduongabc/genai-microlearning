@@ -130,7 +130,7 @@ M-3fa9c2d1,4,3,5,4,4,3,5,5,"nội dung: câu về năm 1998 không có trong ngu
 
 ## 6. Quy trình chạy và phân tích
 
-Chạy trong thư mục `backend/`. R8 cần hai lượt thành công mỗi gói (có thể thêm lượt thử khi hết quota); R9 gọi một lượt tách claim khi Content không rỗng, một lượt kiểm mỗi claim khi có nguồn hợp lệ, rồi một lượt kiểm mỗi trích dẫn đã giải được chunk có nội dung. Hiện phát triển và validation chỉ dùng kiểm thử xác định hoặc route miễn phí được xác minh, đủ ngữ cảnh và quota; API trả phí để sau khi hoàn thành toàn bộ dự án. Bước xuất có thể sinh bản không RAG nếu chưa có sẵn, nên cũng cần route miễn phí. Kết quả và giới hạn của các lượt live đã chạy nằm trong [báo cáo smoke R9](measurements/2026-09-28-r9-live-smoke.md).
+Chạy trong thư mục `backend/`. R8 cần hai lượt thành công mỗi gói (có thể thêm lượt thử khi hết quota); R9 gọi một lượt tách claim khi Content không rỗng, một lượt kiểm mỗi claim khi có nguồn hợp lệ, rồi một lượt kiểm mỗi trích dẫn đã giải được chunk có nội dung. Hiện phát triển và validation chỉ dùng kiểm thử xác định hoặc route miễn phí được xác minh, đủ ngữ cảnh và quota; API trả phí để sau khi hoàn thành toàn bộ dự án. Bước xuất có thể sinh bản không RAG nếu chưa có sẵn, nên cũng cần route miễn phí. Kết quả lượt chạy R9 trên 10 cặp module nằm trong [module-study](measurements/2026-11-07-module-study-pairs.md).
 
 ```bash
 # 1. Xuất cặp gói của từng module RAG đã sinh (một lần cho mỗi module).
