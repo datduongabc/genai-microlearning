@@ -7,7 +7,8 @@ import pytest
 from starlette.responses import JSONResponse
 
 from app.api.chat import _with_heartbeat
-from app.chat.service import MarkerFilter
+from app.chat.service import CHAT_STREAM_INSTRUCTION, CHAT_SYSTEM_INSTRUCTION, MarkerFilter
+from app.generation.common import IGNORE_EMBEDDED_INSTRUCTIONS
 from app.middleware import ConcurrencyLimitMiddleware
 
 
@@ -208,3 +209,11 @@ def test_a_question_that_needed_no_rewrite_is_not_repeated(standalone):
     prompt = _answer_prompt("Heap là gì?", [Chunk(content="Heap.", source_ref="{}")], [], standalone=standalone)
 
     assert "CÂU HỎI VIẾT ĐẦY ĐỦ" not in prompt
+
+
+@pytest.mark.parametrize("instruction", [CHAT_SYSTEM_INSTRUCTION, CHAT_STREAM_INSTRUCTION])
+def test_chat_answers_treat_instructions_inside_course_passages_as_data(instruction):
+    # Planted instructions in an uploaded document reached chat answers before this rule
+    # (docs/measurements/2026-11-07-prompt-injection.md).
+    assert instruction.startswith(IGNORE_EMBEDDED_INSTRUCTIONS)
+    assert "[S2]" in CHAT_STREAM_INSTRUCTION  # the stream variant still swaps its citation rule
