@@ -1,142 +1,202 @@
-# Hệ thống AI tạo sinh mô-đun Microlearning từ tài liệu môn học
+# GENAILMS: sinh mô-đun Microlearning từ tài liệu môn học
 
-Đề tài HK261-DAGD1-033.
-Sinh viên: Dương Nguyễn Tấn Đạt, ngành Khoa học Máy tính.
+Đề tài HK261-DAGD1-033, Đồ án chuyên ngành, Khoa Khoa học và Kỹ thuật Máy tính, Trường Đại học Bách khoa – ĐHQG-HCM.
+Sinh viên: Dương Nguyễn Tấn Đạt (2352222). Giảng viên hướng dẫn: TS. Nguyễn Quang Hùng, PGS. TS. Thoại Nam.
 
-Hệ thống nhận tài liệu môn học của giảng viên (PDF, PowerPoint, HTML, video), truy xuất bằng RAG, rồi sinh mô-đun Microlearning gồm bảy thành phần: Learning Objective, Content, Slides, Example, Practice, Quiz, Explanation.
-Mô-đun sau đó được xuất bản sang Moodle cho học viên học.
+GENAILMS là công cụ cho giảng viên:
 
-Mọi tài liệu được xử lý như bài giảng thông thường: không chọn loại giáo trình, không phát hiện mục lục và không sinh theo chương/mục. API sinh mô-đun trả 422 nếu request còn gửi `section_ids`; hãy bỏ trường này để sinh cho cả tài liệu. Đợt đánh giá chỉ dùng năm thư mục trong `docs/documents`: `advanced-programming`, `calculus 1`, `machine-learning`, `operating-system`, `scientific-socialism`.
+1. Tải tài liệu môn học lên: PDF, PPTX, DOCX, HTML, âm thanh hoặc video bài giảng.
+2. Sinh một mô-đun Microlearning gồm bảy phần: Learning Objective, Content, Slides, Example, Practice, Quiz, Explanation.
+3. Mỗi ý quan trọng trong bài có trích dẫn tới đúng đoạn nguồn (trang, slide hoặc mốc thời gian).
+4. Giảng viên đối chiếu nguồn và sửa bài, bằng tay hoặc qua chat với AI; bản gốc AI luôn được giữ lại.
+5. Bài được xuất bản lên Moodle thành một Book và hai quiz.
 
-Model trả phí cho đợt đánh giá được chọn tường minh và ghim bằng `LLM_EXPERIMENT_MODE=true`; xem lựa chọn model, embedding và chính sách fallback tại [gateway routing](docs/gateway-routing.md).
+Giảng viên và sinh viên mở công cụ từ Moodle qua LTI 1.3. Sinh viên chỉ được hỏi đáp trên tài liệu của khóa học mình.
 
-Khi bộ đọc nhận diện tài liệu hỏng hoặc sai định dạng, job báo lỗi ngay ở lần xử lý đầu và không tự thử lại; PDF có mật khẩu cần bỏ mật khẩu rồi tải lại. Trang PDF gần như không có lớp chữ được đọc bằng OCR; chữ trong hình nội dung của PDF và PPTX (sơ đồ, ảnh chụp chữ) cùng chữ SmartArt được đưa vào bài dưới dạng `Hình: …`; trang PDF còn công thức vỡ được đọc lại từ ảnh trang qua gateway ([gateway routing](docs/gateway-routing.md)). Trang không còn chữ sau khi đọc lớp chữ và OCR, cùng trang có công thức chưa xác minh được, hiện cảnh báo theo số trang dưới tài liệu trong trang môn học (cần `alembic upgrade head`), và tài liệu không đọc được chữ nào bị báo lỗi để tải lại bản có lớp chữ. Lỗi tạm thời khi gọi gateway vẫn được tự thử lại với thời gian chờ tăng dần. Câu trả lời có cấu trúc của model bị cắt hoặc sai schema được hỏi lại tối đa hai lần ngay trong lệnh gọi đó, thay vì làm job thất bại vĩnh viễn. Worker đang chạy job gửi nhịp tim mỗi 60 giây, nên một lượt sinh hay một video dài chạy quá 15 phút không bị sweeper coi là kẹt và chạy trùng; chỉ job mà worker đã chết mới được đưa lại vào hàng đợi.
+Báo cáo cuối kỳ: [`final-report/report.pdf`](final-report/report.pdf). Đề bài: [`GenerativeAI.md`](GenerativeAI.md).
 
-Quiz và Practice dùng chung gate chất lượng: kiểm key duy nhất, từng phương án nhiễu, trùng ý, dấu hiệu lộ đáp án, Bloom của sub-objective và bằng chứng nguồn. Chỉ câu trượt được sinh lại một lần trong vòng tự kiểm; nếu vẫn trượt, giữ câu và lý do trong mô-đun để xem xét; job sinh vẫn hoàn tất với một mô-đun, nhưng mô-đun không được đẩy lên Moodle cho đến khi giảng viên sửa (thủ công hoặc qua chat) mọi câu trượt. Tắt `self_check` chỉ bỏ kiểm bằng model; kiểm key, trùng phương án và bẫy độ dài/từ tuyệt đối vẫn chạy. Gate mở rộng dùng lại lượt kiểm hiện có: mô-đun bốn câu vẫn thường cần 15 lượt model (10 khi tắt tự kiểm), tối đa 30 theo các giới hạn sửa hiện có, gồm một lần cân bằng độ dài cả bộ; con số này chưa tính các lần hỏi lại khi câu trả lời có cấu trúc bị lỗi (tối đa thêm 2 lần cho mỗi lệnh gọi).
+## Tính năng chính
 
-Ứng dụng mở cho mọi người dùng; admin quản lý tài khoản và theo dõi lỗi. Quyền làm giáo viên trong Moodle được quản lý theo từng môn học trên Moodle.
-
-Trong trang xem trước, giảng viên có thể yêu cầu AI sửa một thành phần bằng ngôn ngữ tự nhiên, ví dụ “Rút gọn slide 3” hoặc “Làm câu quiz 2 khó hơn”. AI bám các đoạn nguồn của mô-đun và ngôn ngữ đầu ra đã chọn; yêu cầu chưa rõ sẽ được hỏi lại. Bản gốc AI được giữ trong `ai_original`, và số lượt chỉnh sửa đã áp dụng được hiển thị trên trang. Mô-đun đối chứng (không RAG) không hỗ trợ chỉnh sửa bằng chat.
-API: `POST /modules/{module_id}/chat-edit` nhận `{message, session_id?}`, trả `{session_id, reply, applied, edit_count}`. Lịch sử lưu trong bảng chat hiện có, tách khỏi hỏi-đáp môn học bằng `chat_sessions.module_id`; `chat_messages.applied_edit` đánh dấu lượt đã áp dụng. Chạy `alembic upgrade head` trước khi dùng.
-
-Sinh lại cho cùng một tài liệu luôn tạo mô-đun mới, không ghi đè mô-đun đã có; chỉ một lượt đang chạy mới chặn lượt sau. Giảng viên xóa một mô-đun đã sinh bằng `DELETE /modules/{module_id}` (nút “Xóa mô-đun” trên danh sách, có hộp xác nhận): khi được phép, endpoint xóa luôn bản đối chứng không RAG đi cặp và mọi dòng phụ thuộc (câu hỏi, đánh giá, lịch sử chat-edit, job), trả 409 khi bản đối chứng của nó đang được sinh, và 404 với mô-đun của người khác. Nguồn đang được nghiên cứu tham chiếu có [ràng buộc xóa riêng](docs/studies.md#bao-toan-nguon). Ứng dụng không lưu mô-đun nào đã đẩy lên Moodle, nên Book/Quiz đã tạo trên Moodle được giữ nguyên.
-
-
-
-Mọi người có thể đăng ký bằng email bất kỳ tại `/register` và đăng nhập bằng email, mật khẩu cục bộ. `POST /auth/register` và admin tạo tài khoản dùng chung `app/auth/accounts.py`: kiểm email hợp lệ, chuẩn hóa email, chính sách mật khẩu, tên và email trùng. Đăng ký và đăng nhập giới hạn 10 lần/phút; nhật ký không ghi mật khẩu hay token. Không có vai trò teacher/student trong ứng dụng: `users.is_admin` chỉ phân biệt admin. Admin vẫn được tạo bằng `scripts/create_admin.py` trên máy chủ, không qua API công khai.
-
-Admin tạo tài khoản người dùng mà không tự liên kết Moodle; có thể đặt lại mật khẩu, vô hiệu hóa/kích hoạt lại, theo dõi và thử lại job lỗi. Vô hiệu hóa chặn đăng nhập và token hiện có, thu hồi phiên; dữ liệu, liên kết Moodle và email đăng ký được giữ nguyên. Kích hoạt lại khôi phục quyền đăng nhập với mật khẩu cũ. Admin không thể vô hiệu hóa tài khoản admin. Liên kết "Quên mật khẩu?" trên trang đăng nhập hướng dẫn liên hệ quản trị viên để đặt lại mật khẩu.
-
-Mật khẩu ứng dụng và Moodle là riêng biệt. Ứng dụng không kiểm mật khẩu Moodle và không tạo người dùng Moodle. Nhập email trong “Tài khoản Moodle” để gửi yêu cầu. Email hợp lệ luôn nhận phản hồi 202 cùng thông báo chung và URL có mã yêu cầu ngẫu nhiên, kể cả khi không có tài khoản Moodle phù hợp; yêu cầu vẫn chờ rồi hết hạn sau một giờ. Nếu có tài khoản phù hợp, đăng nhập đúng tài khoản Moodle và xác nhận trên trang/thông báo Moodle (hết hạn sau một giờ); chỉ sau xác nhận ứng dụng mới lưu liên kết. Mỗi tài khoản Moodle chỉ liên kết với một tài khoản ứng dụng; đăng ký/tạo tài khoản ở đây luôn để liên kết trống. Không tự cấp vai trò giáo viên từ email hay từ đăng nhập. Có thể chọn “Hủy liên kết Moodle…” trong menu tài khoản ở thanh bên (có hộp xác nhận), hoặc nhờ admin hủy liên kết trên trang quản lý người dùng. Thao tác chỉ xóa liên kết tài khoản trong ứng dụng, giữ nguyên liên kết khóa học và mọi nội dung trên Moodle; cần liên kết lại tài khoản trước khi đẩy nội dung lên Moodle.
-
-Admin Moodle tạo khóa học và phân quyền trong Moodle. Ứng dụng chỉ liệt kê, liên kết và đẩy nội dung vào khóa học mà tài khoản Moodle đã liên kết hiện có quyền `moodle/course:manageactivities`; kiểm tra lại trước mỗi thao tác. Không tạo khóa học hay tự ghi danh từ ứng dụng. Nhiều khóa học ứng dụng có thể liên kết cùng một khóa học Moodle được phép. Nút đẩy nội dung ẩn khi kiểm tra quyền thất bại.
-
-Nếu Moodle trả về nội dung không phải JSON (ví dụ trang lỗi HTML), ứng dụng báo lỗi Moodle có kiểm soát để người dùng thử lại sau.
-
-Tài khoản có ít nhất một khóa học ứng dụng liên kết với khóa học Moodle mà họ hiện có quyền quản lý hoạt động được sinh mô-đun đầy đủ. Các tài khoản khác được sinh tối đa 3 mô-đun mỗi ngày UTC, cấu hình bằng `NON_TEACHER_DAILY_GENERATION_LIMIT` (số nguyên dương). Mỗi mô-đun tính một lượt, kể cả bản đối chứng; retry job không tính lại. Không kiểm tra được Moodle thì áp dụng hạn mức; admin ứng dụng cũng tuân theo quy tắc này. Hạn mức lưu theo tài khoản, không đặt lại khi xóa khóa học.
-
-
-## Tài liệu
-
-- Đề tài: `GenerativeAI.md`
-- Đánh giá R8 và metric claim/trích dẫn R9: [docs/rubric.md](docs/rubric.md), gồm xuất cặp gói, chấm riêng Content, phân tích kết quả đã lưu và điều kiện chạy miễn phí.
-- Thiết lập nghiên cứu R18 qua API admin và chấm mù theo lời mời: [docs/studies.md](docs/studies.md).
+| Nhóm | Chức năng |
+| --- | --- |
+| Tài liệu | Upload ba bước, có thể gửi thẳng lên S3 bằng presigned POST. Đọc PDF có sửa công thức, OCR trang và chữ trong hình. Đọc slide, ghi chú và SmartArt của PPTX. Phiên âm audio/video bằng Whisper, giữ mốc thời gian. Chia đoạn theo cấu trúc nguồn. |
+| Truy xuất | Dense (Qwen3-Embedding chạy tại chỗ) cộng BM25, gộp bằng Reciprocal Rank Fusion, rerank bằng Jev (mặc định) hoặc Jina tự host. Số đoạn chọn theo adaptive-k. |
+| Sinh mô-đun | Planner chọn khái niệm, sinh LO và sub-objective, kiểm tra độ liên quan rồi viết lại truy vấn khi thiếu nguồn, viết Content kèm `[S#]`, sau đó Slides và Example. Câu hỏi do model tự kiểm, có bẫy cú pháp và luật cân bằng độ dài; khi trượt thì giữ bản ít lỗi nhất. |
+| Biên tập | Mở đoạn nguồn của từng trích dẫn, sửa từng thành phần hoặc từng câu hỏi, sửa qua chat, xuất slide ra PPTX. |
+| Moodle | Liên kết tài khoản, xác nhận ngay trong Moodle. Kiểm quyền giảng viên theo khóa học. Tạo Book, Practice (phản hồi ngay) và Quiz (phản hồi sau khi nộp). |
+| LTI 1.3 | Giảng viên và sinh viên vào thẳng từ hoạt động External tool. Danh sách lớp được đồng bộ qua NRPS, sinh viên rời lớp bị gỡ quyền sau khoảng một giờ. |
+| Hỏi đáp | Chat theo khóa học, câu trả lời stream (SSE), có trích dẫn và lưu lịch sử. Sinh viên được 30 tin mỗi ngày. |
+| Nghiên cứu | Cặp module RAG và không RAG, gói chấm mù với thứ tự xáo riêng cho từng người chấm, chấm bằng model judge, phân tích độ đồng thuận. |
+| Quản trị | Quản lý tài khoản; xem và thử lại job lỗi mà không đọc được nội dung của giảng viên. |
 
 ## Kiến trúc
 
 | Thành phần | Công nghệ |
 | --- | --- |
-| Backend | FastAPI, SQLAlchemy, Alembic |
-| Cơ sở dữ liệu | PostgreSQL 16 với pgvector, Row Level Security |
-| Hàng đợi công việc | Bảng trong chính Postgres, worker chạy ở tiến trình riêng |
-| Rate limit | Bộ đếm dùng chung trong Redis |
-| Truy xuất | Dense cộng BM25 cộng Reciprocal Rank Fusion |
-| Cổng mô hình | LiteLLM Proxy, giữ toàn bộ khóa nhà cung cấp |
-| Frontend | React, Vite, TypeScript |
-| LMS | Moodle 5.2 cùng plugin `local_lms_bridge` tự viết |
+| Backend (`api`, `worker`) | Python 3.14, FastAPI, SQLAlchemy 2, Alembic. Cùng một image, hai tiến trình. |
+| Dữ liệu | PostgreSQL 16 với pgvector: dữ liệu, vector, hàng đợi job và Row Level Security. |
+| Bộ đếm rate limit | Valkey (giao thức Redis). Mất dữ liệu ở đây không mất việc. |
+| Cổng mô hình | LiteLLM. Giữ mọi khóa nhà cung cấp; model trả phí đi qua OpenRouter, Gemini miễn phí và Whisper gọi trực tiếp. |
+| Embedding | Text Embeddings Inference với Qwen3-Embedding-0.6B, chạy GPU hoặc CPU. |
+| Rerank | Jev (TypeSafe), hoặc Jina reranker v2 INT8 tự host (chỉ được dùng phi thương mại). |
+| Frontend | React 19, TypeScript, Vite, Tailwind CSS. |
+| LMS | Moodle 5.2 với plugin `local_lms_bridge`, kèm LTI 1.3. |
+| Hạ tầng | Docker Compose và Caddy. Terraform cho AWS đã viết xong nhưng chưa kích hoạt. |
 
-Backend không bao giờ thấy khóa của nhà cung cấp mô hình.
-Nó chỉ biết địa chỉ gateway, một khóa nội bộ, và tên alias của mô hình.
-Chính sách fallback, cân bằng tải, ghim model cho thí nghiệm và model thực sự đã sinh: [gateway routing](docs/gateway-routing.md).
+Các service đều không giữ trạng thái, nên thêm task là scale được.
+Backend không bao giờ cầm khóa nhà cung cấp: nó chỉ biết địa chỉ gateway, một khóa nội bộ và tên alias.
+Chính sách định tuyến, fallback và ghim model khi đo xem ở [docs/gateway-routing.md](docs/gateway-routing.md).
 
+## Cấu trúc kho mã
+
+| Đường dẫn | Nội dung |
+| --- | --- |
+| `backend/app` | API và worker, chia theo chức năng: `api`, `auth`, `ingestion`, `retrieval`, `generation`, `chat`, `jobs`, `llm`, `lti`, `moodle`, `study`, `models`. |
+| `backend/alembic` | Migration, gồm cả role và policy RLS. |
+| `backend/tests` | Test unit, integration và e2e. |
+| `backend/scripts` | Script vận hành (tạo admin, đăng ký nền tảng LTI, embed lại) và các script đo. |
+| `frontend/src` | Trang, component, API client và test. |
+| `moodle-plugin/local_lms_bridge` | Plugin Moodle và test PHPUnit. |
+| `devops` | Compose, cấu hình gateway, image embedder/reranker, Caddy, load test, các kịch bản e2e trình duyệt và LTI. |
+| `infra` | Terraform cho AWS và script triển khai. |
+| `docs` | Báo cáo đo kèm dữ liệu thô, rubric, giao thức nghiên cứu, ghi chú thiết kế. |
+| `final-report` | Báo cáo cuối kỳ (chỉ lưu PDF trong git). |
 
 ## Yêu cầu
 
-Docker Desktop, và mã nguồn Moodle 5.2 tải riêng (xem bước 2).
+- Docker và Docker Compose. Muốn embed bằng GPU thì cần thêm NVIDIA Container Toolkit.
+- Mã nguồn Moodle 5.2, tải riêng (xem bước 2 bên dưới).
+- Khóa API trong `devops/.env`:
+  - `GEMINI_API_KEY` cho model mặc định.
+  - `OPENROUTER_API_KEY` cho các model trả phí.
+  - `GROQ_API_KEY` cho phiên âm.
+  - `TYPESAFE_API_KEY` cho Jev. Muốn rerank ngay trên máy, không gửi đoạn tài liệu cho dịch vụ rerank bên ngoài, thì đặt `RERANKER_PROVIDER=jina`.
 
 ## Chạy hệ thống
 
-1. Sao chép biến môi trường rồi điền giá trị thật:
-
-```bash
-cp devops/.env.example devops/.env
-```
-
-2. Tải mã nguồn Moodle và giải nén vào thư mục `moodle/` ở gốc kho mã.
-   Thư mục này không nằm trong kho vì nặng 1,42 GB và là sản phẩm của bên thứ ba.
-   Sau khi giải nén, tệp `moodle/public/version.php` phải tồn tại.
-
-   Phiên bản phải **bằng hoặc mới hơn** phiên bản đã ghi trong cơ sở dữ liệu, hiện là
-   `5.2.3+ (Build: 20260916)`, tức `$version = 2026042003.01`.
-   Moodle từ chối khởi động với mã nguồn cũ hơn database và báo
-   "The code you are using is older than the version recorded in the database".
-   Kiểm tra phiên bản database bằng:
+1. Tạo file môi trường, điền khóa, rồi đặt mật khẩu ngẫu nhiên cho các role database và admin Moodle:
 
    ```bash
-   docker compose exec db psql -U "$DATABASE_USER" -d "$MOODLE_DB_NAME" \
-     -c "select value from mdl_config where name = 'release'"
+   cp devops/.env.example devops/.env
+   python devops/scripts/rotate_secrets.py
    ```
 
-   Nếu dựng mới hoàn toàn (chưa có dữ liệu Moodle) thì bản 5.2 bất kỳ đều dùng được.
+2. Giải nén mã nguồn Moodle vào thư mục `moodle/` ở gốc kho mã, sao cho có tệp `moodle/public/version.php`.
+   Thư mục này không nằm trong git vì nặng khoảng 1,4 GB và là mã của bên thứ ba.
+   Nếu database Moodle đã có dữ liệu thì mã nguồn phải bằng hoặc mới hơn phiên bản đã ghi (hiện là 5.2.3+, `2026042003.01`).
+   Nếu cũ hơn, Moodle báo "The code you are using is older than the version recorded in the database".
 
-3. Dựng toàn bộ stack:
+3. Khởi động stack:
+
+   ```bash
+   ./devops/scripts/compose.sh up -d
+   ```
+
+   Script tự dùng GPU cho embedder khi có, không có thì dùng CPU. Muốn ép CPU thì đặt `EMBEDDER_DEVICE=cpu`.
+   Migration chạy một lần trong service `migrate` trước khi backend khởi động.
+
+4. Tin chứng chỉ cục bộ của Caddy một lần, rồi tạo admin đầu tiên:
+
+   ```bash
+   docker exec do-an-proxy caddy trust
+   docker exec -it -e PYTHONPATH=. do-an-backend uv run python scripts/create_admin.py admin@example.com --name "Admin"
+   ```
+
+5. Truy cập:
+   - Ứng dụng: https://localhost:8443
+   - Moodle: http://localhost:8081
+   - API (chỉ trên máy): http://localhost:8000
+
+6. Muốn mở công cụ từ Moodle thì:
+   - Đăng ký nền tảng bằng `backend/scripts/register_lti_platform.py`, với các giá trị Moodle hiển thị cho công cụ.
+   - Thêm một hoạt động External tool vào khóa học.
+   - Giảng viên phải mở công cụ một lần trước, sinh viên mới vào được.
+
+Muốn chạy nhiều API và worker trên một máy:
 
 ```bash
-./devops/scripts/compose.sh up -d
+./devops/scripts/compose.sh -f devops/docker-compose.scale.yml up -d --scale backend=2 --scale worker=2
 ```
 
-Đây là cách khởi động mặc định: launcher tự chọn embedder GPU trên NVIDIA Ampere 8.6
-được hỗ trợ (ví dụ RTX 3050 Ti), và dùng CPU khi không có GPU phù hợp. Docker cần
-NVIDIA Container Toolkit để dùng GPU. Có thể ép CPU bằng
-`EMBEDDER_DEVICE=cpu ./devops/scripts/compose.sh up -d`; `docker compose` trực tiếp
-vẫn dùng cấu hình CPU.
+Chạy trên nhiều máy thì cần `UPLOAD_STORE=s3`. Cách đưa ra địa chỉ công khai xem ở [devops/README.md](devops/README.md).
 
-- Giao diện: http://localhost:5173
-- API: http://localhost:8000
-- Moodle: http://localhost:8081
+Nếu mọi thao tác Moodle báo lỗi quyền truy cập (nhật ký backend ghi `Access control exception`), nghĩa là lần cài Moodle đầu đã bị ngắt giữa chừng.
+Dựng lại image để script tự sửa: `./devops/scripts/compose.sh up -d --build moodle`.
 
-Nếu mọi thao tác với Moodle báo "Moodle từ chối yêu cầu do cấu hình quyền truy cập chưa đúng" (nhật ký backend: `Access control exception`, kể cả với `core_webservice_get_site_info`), lần cài Moodle đầu đã bị ngắt trước khi bật vai trò (`rolesactive=0`). Dựng lại image để script `finish-interrupted-install.php` sửa (chạy mỗi lần container khởi động, không làm gì trên site đã ổn): `./devops/scripts/compose.sh up -d --build moodle`; nhật ký Moodle sẽ in `roles activated`.
+## Cấu hình thường dùng
 
-## Phát triển
+| Biến | Mặc định | Ý nghĩa |
+| --- | --- | --- |
+| `LLM_MODEL` | `gemini-fast` | Alias sinh mặc định. |
+| `LLM_EXPERIMENT_MODE` | `false` | Ghim model và tắt fallback khi đo. |
+| `RERANKER_PROVIDER` | `jev` | `jev` hoặc `jina`. |
+| `WORKER_POOL_SIZE` | `4` | Số job một worker chạy cùng lúc. |
+| `QUESTION_CONCURRENCY` | `5` | Số câu hỏi sinh song song trong một mô-đun. |
+| `NON_TEACHER_DAILY_GENERATION_LIMIT` | `3` | Số mô-đun mỗi ngày của tài khoản chưa liên kết Moodle. |
+| `LEARNER_DAILY_CHAT_LIMIT` | `30` | Số tin chat mỗi ngày của sinh viên. |
+| `UPLOAD_STORE` | `local` | `local` (gửi qua API) hoặc `s3` (presigned POST). |
+
+Danh sách đầy đủ có trong `devops/.env.example` và `backend/app/config.py`.
+
+## Phát triển và kiểm thử
 
 ```bash
 cd backend
-uv run pytest tests/unit tests/integration tests/e2e
-uv run ruff check .
 uv run alembic upgrade head
+uv run ruff check .
+uv run pytest tests/unit tests/integration tests/e2e
 ```
 
 ```bash
 cd frontend
+npm run lint
 npm run test -- src/test/unit src/test/integration
 npm run build
 ```
 
-Đây cũng đúng là những lệnh mà CI chạy, xem `.github/workflows/ci.yml`.
-`uv run pytest` và `npm run test` cũng tự tìm toàn bộ các tầng trên.
+- Test backend cần một PostgreSQL có pgvector đã chạy migration, với ba biến `DATABASE_URL`, `APP_RUNTIME_DATABASE_URL` và `APP_WORKER_DATABASE_URL` trỏ tới DB đó, như CI.
+- Model, reranker, Moodle và nền tảng LTI đều được thay bằng hàm giả: không test nào gửi tài liệu ra ngoài.
+- Test sinh mô-đun bằng model thật mang marker `live_llm` và không chạy trong CI.
 
-- Backend `tests/unit`: thuật toán, cấu hình và xử lý dữ liệu cục bộ; không cần DB hay dịch vụ mạng.
-- Backend `tests/integration`: HTTP app, DB và các ranh giới với gateway, Moodle, OCR hoặc FFmpeg dùng hàm giả.
-- Backend `tests/e2e`: pipeline nhập tài liệu chạy đầy đủ tới dữ liệu được lưu trong DB, với embedding ngoại tuyến. Test sinh module dùng LLM thật vẫn mang marker `live_llm`, mặc định không chạy trong CI; chỉ chạy riêng bằng `uv run pytest tests/e2e -m live_llm` khi đã cấu hình DB và gateway thử nghiệm.
-- Frontend `src/test/unit`: component và schema; `src/test/integration`: luồng trang, auth và API. Fixture jsdom chung ở `src/test/setup.ts`.
+| Bộ test | Số test |
+| --- | ---: |
+| Backend unit / integration / e2e | 488 / 1.106 / 2 |
+| Frontend unit / integration | 72 / 205 |
+| Plugin Moodle (PHPUnit) | 18 |
+| Terraform (`terraform test`, provider giả lập) | 5 |
 
-Có thể chạy riêng một tầng bằng đường dẫn, ví dụ `uv run pytest tests/unit` hoặc `npm run test -- src/test/unit`. Các tầng backend cần DB phải dùng PostgreSQL/pgvector thử nghiệm đã chạy migration, với `DATABASE_URL`, `APP_RUNTIME_DATABASE_URL` và `APP_WORKER_DATABASE_URL` trỏ tới DB đó (như CI), vì test migration tạo và xoá DB tạm. Fixture dùng chung nằm ở `backend/tests/conftest.py`; fixture DB dùng chung cho self-check/ngôn ngữ nằm ở `backend/tests/integration/conftest.py`.
-CI còn có job `moodle-plugin` chạy php lint và PHPUnit cho `moodle-plugin/local_lms_bridge` trên một site Moodle 5.2 dựng sẵn trong job.
+CI (`.github/workflows/ci.yml`) có bốn job: `backend`, `frontend`, `infra` và `moodle-plugin`.
 
-## Quy trình đóng góp
+Load test và kiểm thử lỗi nằm trong `devops/loadtest`. Kịch bản trình duyệt thật và LTI thật nằm trong `devops/browser-e2e` và `devops/lti-e2e`.
 
-Nhánh `main` luôn phải xanh và không nhận commit trực tiếp.
-Mỗi tính năng làm trên một nhánh riêng theo tiền tố `feat/`, `fix/`, `refactor/` hoặc `chore/`.
-Khi xong thì mở merge request, CI xanh mới được gộp, và gộp theo kiểu squash để mỗi tính năng tương ứng một commit trên `main`.
+## Kết quả đo chính
 
-Một tính năng được coi là hoàn chỉnh khi: test được viết trước phần cài đặt, `ruff check` sạch, toàn bộ `pytest` xanh chứ không riêng test của tính năng đó, có migration kèm theo nếu đổi schema, và tính năng người dùng nhìn thấy được thì đã kiểm thử thật bằng trình duyệt.
+Đo trên năm môn: Lập trình nâng cao, Giải tích 1, Học máy, Hệ điều hành, Chủ nghĩa xã hội khoa học (23 tệp, 937 đoạn). Chi tiết ở chương Results của báo cáo và trong `docs/measurements/`.
+
+| Chỉ số | Kết quả |
+| --- | --- |
+| Truy xuất (hybrid + Jina, 250 câu) | Hit Rate@1 0,856; MRR@10 0,918; nDCG@10 0,938 |
+| Jev so với Jina (200 câu giữ lại) | MRR@10 0,952 so với 0,909; p95 rerank thấp hơn 2,4–6,3 lần |
+| Chat (Ragas, 50 câu) | Faithfulness 0,990; answer relevancy 0,740 |
+| Pilot 10 cặp module | RAG: 0/120 ý không có nguồn; không RAG: 17/101 |
+| Năm môn với Jev và Gemini 3.5 Flash Lite | Upload 33,7 s/tệp, chat 2,1 s, mô-đun 28,9 s |
+| Rubric hai judge, 10 mô-đun | Trung bình 3,76/5; quiz và Bloom yếu nhất (~2,9) |
+| Prompt injection trong chat | 22/80 → 4/80 sau khi thêm luật chống chỉ thị nhúng |
+
+## Giới hạn hiện tại
+
+- Chất lượng quiz còn thấp: đáp án đúng thường là phương án dài nhất, câu hỏi chủ yếu ở mức nhớ.
+- Chưa có người chấm thật; điểm rubric mới đến từ model judge trên ít mô-đun.
+- Mọi số đo tải đều chạy trên một máy; bản triển khai AWS chưa từng chạy.
+- Compose vẫn phục vụ frontend bằng Vite dev server.
+- Mỗi khóa học có một giảng viên; chưa có LTI Deep Linking và chưa trả điểm về Moodle.
+
+Danh sách đầy đủ và kế hoạch phát triển nằm ở chương Conclusion của báo cáo.
+
+## Tài liệu
+
+- [docs/rubric.md](docs/rubric.md): rubric tám tiêu chí, metric claim và trích dẫn, cách xuất và phân tích.
+- [docs/studies.md](docs/studies.md): thiết lập nghiên cứu và chấm mù.
+- [docs/gateway-routing.md](docs/gateway-routing.md): alias model, nhà cung cấp, fallback và chế độ thí nghiệm.
+- [devops/README.md](devops/README.md): vận hành stack, phân quyền credential, scale và công khai.
+- [docs/measurements/](docs/measurements/): mỗi lần đo một báo cáo, kèm script và dữ liệu thô.
