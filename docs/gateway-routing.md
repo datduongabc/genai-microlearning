@@ -12,7 +12,7 @@ Three keys cover every alias:
 | Key | Aliases | Why this route |
 | --- | --- | --- |
 | `GEMINI_API_KEY` | `gemini-*`, `embed-gemini`, formula re-read | Google's free tier; OpenRouter has no free Gemini |
-| `OPENROUTER_API_KEY` | `claude-*`, `openai-*`, `groq-*`, `embed-openai` | One key and one balance for every paid model |
+| `OPENROUTER_API_KEY` | `claude-*`, `openai-*`, `groq-*`, `gemini-fast-paid`, `embed-openai` | One key and one balance for every paid model |
 | `GROQ_API_KEY` | `transcribe` (Whisper) | Segment timestamps, measured; Whisper via OpenRouter is not yet |
 
 Every OpenRouter alias sends `provider: {order: [<one upstream>], allow_fallbacks: false,

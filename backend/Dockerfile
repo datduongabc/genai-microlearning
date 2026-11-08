@@ -39,7 +39,10 @@ RUN adduser \
     --shell "/bin/bash" \
     --uid "${UID}" \
     appuser \
-    && chown appuser:appuser /app
+    && chown appuser:appuser /app \
+    # Owned by appuser in the image, so that a new volume mounted here (compose's `uploads`) is
+    # created with this owner: the source bind mount of compose belongs to the host user instead.
+    && install -d -o appuser -g appuser /app/uploads
 
 EXPOSE 8000
 

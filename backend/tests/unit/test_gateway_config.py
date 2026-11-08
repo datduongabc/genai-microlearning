@@ -355,7 +355,7 @@ def test_small_chain_never_reaches_paid_groq_when_both_gemini_models_have_no_quo
     router.reset()
 
 
-PAID_ALIASES = {"claude-fast", "claude-pro", "openai-fast", "openai-pro", "groq-pro"}
+PAID_ALIASES = {"claude-fast", "claude-pro", "openai-fast", "openai-pro", "groq-pro", "gemini-fast-paid"}
 
 
 def test_evaluation_paid_aliases_are_current_and_never_fallback_targets(gateway):
@@ -436,7 +436,7 @@ def test_every_paid_model_goes_through_openrouter_with_its_one_key(gateway):
     are no longer read anywhere."""
     paid = {d["model_name"] for d in _openrouter_deployments(gateway)}
 
-    assert PAID_ALIASES | {"groq-llama", "groq-qwen", "groq-minimax", "embed-openai"} == paid
+    assert PAID_ALIASES | {"groq-llama", "groq-qwen", "groq-minimax", "embed-openai", "gemini-fast-paid"} == paid
     assert {d["litellm_params"]["api_key"] for d in _openrouter_deployments(gateway)} == {
         "os.environ/OPENROUTER_API_KEY"}
 
@@ -491,3 +491,13 @@ def test_the_routing_preferences_reach_the_openrouter_request(gateway, monkeypat
     assert sent["body"]["model"] == "anthropic/claude-haiku-5.5"
     assert sent["body"]["provider"] == {"order": ["anthropic"], "allow_fallbacks": False, "data_collection": "deny"}
     router.reset()
+
+
+def test_every_openrouter_alias_declares_its_mode(gateway):
+    """litellm's model table has no OpenRouter slugs, so the gateway reports no mode for them; the
+    backend lists and accepts only aliases whose mode is "chat", so without it a paid alias vanished
+    from the picker and generation refused it ("Gateway không phục vụ model sinh văn bản nào...")."""
+    undeclared = [d["model_name"] for d in _openrouter_deployments(gateway)
+                  if (d.get("model_info") or {}).get("mode") not in {"chat", "embedding"}]
+
+    assert undeclared == []
