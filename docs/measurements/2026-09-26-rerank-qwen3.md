@@ -2,7 +2,7 @@
 
 ## Vì sao đo lại
 
-Hai lần đo trước (`2026-09-24-rerank.md`) không đủ để quyết giữ hay bỏ cross-encoder `BAAI/bge-reranker-base`:
+Hai lần đo trước (ngày 23 và 24/9, đã xóa khỏi thư mục này vì bị lần đo này thay thế; còn trong lịch sử git) không đủ để quyết giữ hay bỏ cross-encoder `BAAI/bge-reranker-base`:
 
 - Mọi lần đo rerank dùng embedding Gemini, trong khi sản phẩm nay nhúng bằng Qwen3-Embedding-0.6B (`2026-09-25-model-nhung.md`).
   Reranker chấm lại ứng viên do nhánh dense đưa lên, nên đổi model nhúng là đổi đầu vào của nó.

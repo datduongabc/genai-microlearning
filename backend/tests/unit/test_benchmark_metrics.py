@@ -81,7 +81,7 @@ def test_ndcg_luon_nam_giua_mrr_va_recall_khi_thu_hang_lon_hon_mot():
 def test_mcnemar_chi_dem_cap_cau_hai_ben_khac_nhau():
     # 10 câu chỉ bên sau đúng, 2 câu chỉ bên trước đúng, 3 câu cả hai cùng đúng và 1 câu
     # cả hai cùng sai. p chính xác hai phía = 2 * (C(12,0) + C(12,1) + C(12,2)) / 2^12
-    # = 158 / 4096, đúng con số 0,039 của môn operating-system trong 2026-09-24-rerank.md.
+    # = 158 / 4096 ≈ 0,039.
     truoc = [False] * 10 + [True] * 2 + [True] * 3 + [False]
     sau = [True] * 10 + [False] * 2 + [True] * 3 + [False]
 
