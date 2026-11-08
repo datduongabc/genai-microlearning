@@ -9,8 +9,7 @@ services:
     environment:
       LLM_GATEWAY_KEY: load-test
       EMBEDDER_API_KEY: load-test
-      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:?}
-      OPENAI_API_KEY: ${OPENAI_API_KEY:?}
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:?}
     volumes: !override
       - ./real_gateway.yaml:/app/config.yaml:ro
   runner:

@@ -27,8 +27,8 @@ on them. Gemini goes to Google AI Studio, Claude to Anthropic, GPT to OpenAI, GP
 upstream of the earlier measurements), and Qwen3.8 27B to DeepInfra (bf16), since Groq
 does not serve it through OpenRouter. OpenRouter bills the upstream's token price and
 takes 5.5% when credit is bought. Results measured before 2026-11-08 called Anthropic,
-OpenAI and Groq directly; `devops/loadtest/real_gateway*.yaml` keep that route so those
-runs can be repeated as they were.
+OpenAI and Groq directly; `devops/loadtest/real_gateway*.yaml` now reach the same models
+through OpenRouter, pinned to the same upstreams.
 
 The two Gemini aliases back up each other, with LiteLLM's bounded fallback
 attempts preventing an endless cycle. If neither can serve a large
@@ -92,7 +92,8 @@ each chosen alias with fallbacks disabled and keep incomplete ratings resumable 
 The deployment requests low reasoning effort so the output allowance can
 include the JSON answer.
 
-LiteLLM retries once, cools failed deployments for 60 seconds, and applies both
+LiteLLM retries once, does not cool a deployment down after a failure (the backend
+retries a 429 itself), and applies both
 ordinary and context-window fallbacks. `routing_strategy: simple-shuffle` spreads
 requests among deployments sharing an alias. The optional `gemini-balanced`
 alias has two distinct Gemini deployments for actual load balancing. The

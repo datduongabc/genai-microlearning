@@ -35,8 +35,8 @@ Báo cáo cuối kỳ: [`final-report/report.pdf`](final-report/report.pdf). Đ�
 | --- | --- |
 | Backend (`api`, `worker`) | Python 3.14, FastAPI, SQLAlchemy 2, Alembic. Cùng một image, hai tiến trình. |
 | Dữ liệu | PostgreSQL 16 với pgvector: dữ liệu, vector, hàng đợi job và Row Level Security. |
-| Bộ đếm rate limit | Valkey (giao thức Redis). Mất dữ liệu ở đây không mất việc. |
-| Cổng mô hình | LiteLLM. Giữ mọi khóa nhà cung cấp; model trả phí đi qua OpenRouter, Gemini miễn phí và Whisper gọi trực tiếp. |
+| Bộ đếm rate limit | Redis 7 khi chạy local, Valkey trong thiết kế AWS. Mất dữ liệu ở đây không mất việc. |
+| Cổng mô hình | LiteLLM. Giữ một khóa duy nhất của OpenRouter; mọi model (Gemini mặc định, Claude, GPT, GPT-OSS, Whisper) đều đi qua OpenRouter. |
 | Embedding | Text Embeddings Inference với Qwen3-Embedding-0.6B, chạy GPU hoặc CPU. |
 | Rerank | Jev (TypeSafe), hoặc Jina reranker v2 INT8 tự host (chỉ được dùng phi thương mại). |
 | Frontend | React 19, TypeScript, Vite, Tailwind CSS. |

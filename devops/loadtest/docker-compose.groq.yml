@@ -1,9 +1,9 @@
-# Real generation with Groq's gpt-oss-20b, Jev as the reranker and the LLM load control settings of the run.
+# Real generation with gpt-oss-20b on Groq (through OpenRouter), Jev as the reranker and the LLM load control settings of the run.
 # Image: the Jev reranker, chat stream and load control changes built together.
 services:
   gateway:
     environment:
-      GROQ_API_KEY: ${GROQ_API_KEY:?}
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:?}
     volumes: !override
       - ${GATEWAY_CONFIG:-./real_gateway.yaml}:/app/config.yaml:ro
   runner:
