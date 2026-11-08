@@ -3,7 +3,7 @@ image_tag = "50d64a7"
 
 # environment       = "demo"
 # alarm_email       = "you@example.com"
-# reranker_provider = "jina" # "jev" only once the school agrees to send documents to TypeSafe
+# reranker_provider = "jev"  # or "jina": the self-hosted reranker, nothing sent to TypeSafe
 # moodle_base_url   = "https://moodle.example.edu"
 # moodle_wwwroot    = "https://moodle.example.edu"
 

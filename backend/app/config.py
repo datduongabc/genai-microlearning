@@ -90,8 +90,9 @@ class Settings(BaseSettings):
     # The reranker service of devops/docker-compose.yml, a cross-encoder in a container of its
     # own so the backend image carries no torch. Not behind the gateway: it holds no provider key.
     reranker_url: str = "http://localhost:8082"
-    # "jina" is the service above. "jev" sends the query and the candidate chunks to TypeSafe; see app/retrieval/reranker.py.
-    reranker_provider: Literal["jina", "jev"] = "jina"
+    # "jev" sends the query and the candidate chunks to TypeSafe (app/retrieval/reranker.py); approved
+    # 2026-11-08 and the default since. "jina" is the self-hosted service above, nothing sent out.
+    reranker_provider: Literal["jina", "jev"] = "jev"
     typesafe_api_key: str = ""
     # Pinned: the `jev-latest` alias moves with each release, so its scores could change with no change here.
     jev_model: str = "jev-1.14.0"

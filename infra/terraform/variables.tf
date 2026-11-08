@@ -56,9 +56,9 @@ variable "api_requests_per_target" {
 # --- Retrieval
 
 variable "reranker_provider" {
-  description = "jev sends the question and candidate chunk text to TypeSafe in the US, so it needs the school's agreement. jina runs the reranker service here."
+  description = "jev (approved 2026-11-08) sends the question and candidate chunk text to TypeSafe in the US and runs no reranker task. jina runs the self-hosted reranker service instead."
   type        = string
-  default     = "jina"
+  default     = "jev"
 
   validation {
     condition     = contains(["jina", "jev"], var.reranker_provider)
