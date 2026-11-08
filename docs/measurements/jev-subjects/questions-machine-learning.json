@@ -1,0 +1,92 @@
+[
+ {
+  "course_id": "2195848f-0399-4f2d-94b1-f5b9edbed5fd",
+  "course": "machine-learning",
+  "chunk_id": "3646a881-6780-42d8-b59b-774adc186e33",
+  "cau_hoi": "What does the speaker say the derivative of \\(F(A)\\) with respect to a 2 × 2 matrix \\(A\\) looks like, and how are its four entries obtained?",
+  "reference": "Week02\nand the elements of this are the derivative with respect to the individual elements. Actually, I'm just writing it like this. Thank you. Okay, so if A was a 2 by 2 matrix, then the derivative of F of A respect to A is itself a 2 by 2 matrix, and you compute this 2 by 2 matrix just by looking at F and taking derivatives with respect to the different elements and plugging them into the different elements of this matrix. And so in this particular example, I guess the derivative respect to A of F of A this would be right, it would be that and I got these four numbers by taking",
+  "source_ref": "{\"start_ms\": 3571900, \"end_ms\": 3643520}",
+  "document": "Week02.mp4"
+ },
+ {
+  "course_id": "2195848f-0399-4f2d-94b1-f5b9edbed5fd",
+  "course": "machine-learning",
+  "chunk_id": "d00ccc5a-499a-4989-9405-ebb78ae9f6d3",
+  "cau_hoi": "What distinction does the passage make between theta and the parameters in terms of being random variables?",
+  "reference": "Week03\nSo we like the idea of theta doesn't mean theta is a random variable. Right cool yeah thank you By the way the stuff about what a random variable and what not the semicolon versus comma thing we explained this in more detail in the lecture notes To me, this is part of, you know, a little bit paying homage to the religion of Bayesian frequencies versus Bayesian, frequencies versus Bayesians in statistics. From a machine, from a applied machine learning, operational, what you write, code, point of view, it doesn't matter that much. Yeah, but theta is not a random variable. We have likely the parameters, which are not a random variable.",
+  "source_ref": "{\"start_ms\": 2090560, \"end_ms\": 2129480}",
+  "document": "Week03.mp4"
+ },
+ {
+  "course_id": "2195848f-0399-4f2d-94b1-f5b9edbed5fd",
+  "course": "machine-learning",
+  "chunk_id": "cbbb71c6-dc39-4855-94ad-363a5253d14f",
+  "cau_hoi": "What property of the exponential family distribution changes only by its natural parameter that leads to a logistic model, and how does this relate to the claim that performance improvement still holds when increasing the number of classes, as mentioned in the context of softmax regression and GDA?",
+  "reference": "Week05\ncomes from an exponential family distribution, x given y equals 0 comes from an exponential family distribution, the same exponential family distribution, and if they vary only by the natural parameter of exponential family distribution then this will be logistic I think this was once a midterm homework problem to prove this actually Actually, let's take one last question and then we'll move on. Go ahead. Does performance improvement hold even as you increase the number of classes? I think so, yes and the generalization of this would be the softmax regression which I didn't talk about, but yes I think a similar thing holds true for GDA for multiple",
+  "source_ref": "{\"start_ms\": 3733400, \"end_ms\": 3783320}",
+  "document": "Week05.mp3"
+ },
+ {
+  "course_id": "2195848f-0399-4f2d-94b1-f5b9edbed5fd",
+  "course": "machine-learning",
+  "chunk_id": "1ddcc0c1-e632-4eb5-b566-cf4dc3a0f2e0",
+  "cau_hoi": "What reason does the speaker give for preferring the squared error over the fourth power or absolute value when explaining the probabilistic interpretation of linear regression?",
+  "reference": "Week03\nWhy the squared error? Why not, you know, to the fourth power or absolute value? And so what I want to show you today now is the probabilistic interpretation of linear regression. And this probabilistic interpretation will put us into good standing as we go on to logistic regression today and then generalize linear models later this week. Maybe I'll keep the notation there so you can continue to refer to it. So, so, right, so why these squares Why squared error I going to present a set of assumptions under which these squares using squared error falls out very naturally which is, let's say for housing price prediction, let's assume that there's a true price of every house yi,",
+  "source_ref": "{\"start_ms\": 1304240, \"end_ms\": 1363000}",
+  "document": "Week03.mp4"
+ },
+ {
+  "course_id": "2195848f-0399-4f2d-94b1-f5b9edbed5fd",
+  "course": "machine-learning",
+  "chunk_id": "6dd29d6e-4ad1-4256-8c02-c34d4e73d888",
+  "cau_hoi": "What does the half‑plane condition “θ triangle transpose X = 0” specify about the sign of the expression for points to the left versus to the right of that line?",
+  "reference": "Week04\nAnd over here, it will be less than zero. Right. So if for for the theta triangle class, There is this line which corresponds to theta transpose X equals 0. Anything to the left will give you a value greater than 0. Anything to the right will be 0. Similarly, there is also a... So this corresponds to theta square transpose X equals 0. Anything below will be greater than 0. Anything above will be less than 0. And similarly, you have another one for, this corresponds to theta circle transpose X equals zero. And this half plane, we have to be greater than zero. And to the left, it's less than zero.",
+  "source_ref": "{\"start_ms\": 4433540, \"end_ms\": 4487540}",
+  "document": "Week04.mp3"
+ },
+ {
+  "course_id": "2195848f-0399-4f2d-94b1-f5b9edbed5fd",
+  "course": "machine-learning",
+  "chunk_id": "53c8deb3-368b-47d2-8cd8-2ee04850de7e",
+  "cau_hoi": "What is the value of the partial derivative of the term with respect to θ_j as stated in the passage?",
+  "reference": "Week02\nend up being 0, and partial derivative of this term with respect to theta j is equal to xj. And so this ends up being h theta x minus y times xj. Okay? And again, listen, if you haven't played with calculus for a while, if you don't quite remember what the partial derivative is or don't quite get what it just said, don't worry too much about it. Go over a bit more in section, and then also read through the lecture notes, which kind of goes over this in more detail and more slowly than we might do in class. Okay? So, um, so plugging this, let's see, so we've just calculated that this partial derivative,",
+  "source_ref": "{\"start_ms\": 1810940, \"end_ms\": 1869460}",
+  "document": "Week02.mp4"
+ },
+ {
+  "course_id": "2195848f-0399-4f2d-94b1-f5b9edbed5fd",
+  "course": "machine-learning",
+  "chunk_id": "27aefcc2-b310-4366-a468-14db22b7ac25",
+  "cau_hoi": "What is the reason given for labeling the data variable as Y instead of X in the context of using exponential families to model the output in a supervised learning setting?",
+  "reference": "Week04\nSo this PDF can be written in the form, right? This looks pretty scary. Let's kind of break it down into what they actually mean. So Y over here is the data. And there is a reason why we call it Y. Because, yeah? A bit larger, sure. Is this better? Yeah. So Y is the data. And there's a reason why we call it Y and not X. And that's because we're going to use exponential families to model the output of your data in a supervised learning setting. And we're going to see X when we move on to GLMs. Until then, we're just going to deal with Ys for now.",
+  "source_ref": "{\"start_ms\": 923480, \"end_ms\": 1009360}",
+  "document": "Week04.mp3"
+ },
+ {
+  "course_id": "2195848f-0399-4f2d-94b1-f5b9edbed5fd",
+  "course": "machine-learning",
+  "chunk_id": "f01f6eed-4b5f-4ddf-a56f-8a70a8bcf510",
+  "cau_hoi": "What specific computational bottleneck does the speaker describe when performing each step of gradient descent on a dataset with M = 100 million examples?",
+  "reference": "Week02\nin order to take even a single step of gradient descent, you need to calculate this sum. and if M is, say, a million or 10 million or 100 million, you need to scan through your entire database, scan through your entire data set, and calculate this for 100 million examples and sum it up. And so every single step of gradient descent becomes very slow because you're scanning over, you're reading over, like 100 million training examples before you can even make one tiny little step of gradient descent. Okay? Yeah, and by the way, I think, I don't know, I feel like in today's era of big data, people",
+  "source_ref": "{\"start_ms\": 2561020, \"end_ms\": 2600960}",
+  "document": "Week02.mp4"
+ },
+ {
+  "course_id": "2195848f-0399-4f2d-94b1-f5b9edbed5fd",
+  "course": "machine-learning",
+  "chunk_id": "df0780ba-0065-4439-8571-9626be2bb80b",
+  "cau_hoi": "What expression do we obtain for the log‑partition function when we substitute η into the Bernoulli distribution’s natural parameter, and how does this relate to the sigmoid function?",
+  "reference": "Week04\nNow this is I just did pattern matching there and minus log 1 minus this thing over here 1 over 1 plus e to the minus eta The reason is because we want an expression in terms of eta Here we got it in terms of phi but we need to plug in eta over here Eta, and this will just be log of 1 plus e to the eta. So there you go. So this kind of verifies that the Bernoulli distribution is a member of the exponential family. Any questions here? So note that this may look familiar. It looks like the sigmoid function, somewhat like the sigmoid function. And this is actually no accident. We'll see why it is actually the sigmoid, how it kind of relates to logistic regression",
+  "source_ref": "{\"start_ms\": 1633160, \"end_ms\": 1695080}",
+  "document": "Week04.mp3"
+ },
+ {
+  "course_id": "2195848f-0399-4f2d-94b1-f5b9edbed5fd",
+  "course": "machine-learning",
+  "chunk_id": "0d1c9041-ac2c-45f0-ba76-721e296fdb68",
+  "cau_hoi": "What convention is being dropped in the discussion, and how does this change the dimensionality of the feature vector x (i.e., from ℝⁿ⁺¹ to what space)?",
+  "reference": "Week05\nSo, you know, I'm going to drop the x0 equals 1 convention. So we're not going to need that extra x0 equals 1. So x is now rn rather than rn plus 1. And the key assumption in Gaussian discriminant analysis is we're going to assume that P of x given y is distributed Gaussian, right? In other words, conditioned on the tumors being malignant, the distribution of the features is Gaussian. The features like the size of the tumor, the cell adhesion, whatever features you use to measure a tumor. And conditioned on it being benign, the distribution is also Gaussian. So how many of you are familiar with a multivariate Gaussian?",
+  "source_ref": "{\"start_ms\": 525300, \"end_ms\": 575180}",
+  "document": "Week05.mp3"
+ }
+]
