@@ -491,3 +491,13 @@ def test_the_routing_preferences_reach_the_openrouter_request(gateway, monkeypat
     assert sent["body"]["model"] == "anthropic/claude-haiku-5.5"
     assert sent["body"]["provider"] == {"order": ["anthropic"], "allow_fallbacks": False, "data_collection": "deny"}
     router.reset()
+
+
+def test_every_openrouter_alias_declares_its_mode(gateway):
+    """litellm's model table has no OpenRouter slugs, so the gateway reports no mode for them; the
+    backend lists and accepts only aliases whose mode is "chat", so without it a paid alias vanished
+    from the picker and generation refused it ("Gateway không phục vụ model sinh văn bản nào...")."""
+    undeclared = [d["model_name"] for d in _openrouter_deployments(gateway)
+                  if (d.get("model_info") or {}).get("mode") not in {"chat", "embedding"}]
+
+    assert undeclared == []
