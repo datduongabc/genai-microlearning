@@ -103,7 +103,9 @@ resource "aws_elasticache_replication_group" "main" {
   apply_immediately          = true
 }
 
-# --- Uploads, between the api task that receives them and the worker that reads them.
+# --- Uploads, between the browser that sends them and the worker that reads them. The browser
+# posts the file here with a presigned POST from the api task (app/storage.py); it never passes
+# through the load balancer or an api task.
 
 resource "aws_s3_bucket" "uploads" {
   bucket_prefix = "${local.name}-uploads-"
@@ -141,6 +143,17 @@ resource "aws_s3_bucket_lifecycle_configuration" "uploads" {
     abort_incomplete_multipart_upload {
       days_after_initiation = 1
     }
+  }
+}
+
+# The presigned POST is a cross-origin request from the page CloudFront serves.
+resource "aws_s3_bucket_cors_configuration" "uploads" {
+  bucket = aws_s3_bucket.uploads.id
+  cors_rule {
+    allowed_methods = ["POST"]
+    allowed_origins = ["https://${aws_cloudfront_distribution.main.domain_name}"]
+    allowed_headers = ["*"]
+    max_age_seconds = 3600
   }
 }
 

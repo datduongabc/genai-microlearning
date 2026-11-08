@@ -14,6 +14,7 @@ from app.config import settings
 from app.db import SessionLocal
 from app.main import app
 from app.models import Course, Document, DocumentStatus, Module, User
+from tests.upload_helpers import upload_document
 
 client = TestClient(app)
 ONE_MEGABYTE = 1024 * 1024
@@ -128,17 +129,17 @@ def test_a_body_that_only_shows_its_size_while_streaming_is_refused_too(world):
     assert response.status_code == 413
 
 
-def test_a_multipart_body_is_limited_like_any_other_except_for_the_upload_itself(world):
+def test_a_large_body_is_limited_like_any_other_except_for_the_file_of_an_upload(world):
     big = b"a" * (2 * ONE_MEGABYTE)
 
     elsewhere = client.post("/courses", files={"file": ("x.txt", big, "text/plain")}, headers=world["headers"])
-    upload = client.post(
-        "/documents", params={"course_id": world["course"]}, files={"file": ("big.html", big, "text/html")},
-        headers=world["headers"],
-    )
+    # The same PUT on a path that only looks like the file's route is no exemption.
+    lookalike = client.put(f"/documents/{world['course']}/content/x", content=big, headers=world["headers"])
+    upload = upload_document(client, world["course"], "big.html", big, world["headers"])
 
     assert elsewhere.status_code == 413
-    assert upload.status_code == 200
+    assert lookalike.status_code == 413
+    assert upload.status_code == 200, upload.text
 
 
 def test_a_body_under_the_limit_is_untouched(world):

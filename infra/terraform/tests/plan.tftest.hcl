@@ -101,6 +101,14 @@ run "demo_with_the_self_hosted_reranker" {
     condition     = aws_lb_target_group.api.health_check[0].path == "/ready"
     error_message = "The load balancer checks /ready."
   }
+  assert {
+    condition     = local.tasks.api.environment.UPLOAD_S3_REGION == "ap-southeast-1"
+    error_message = "A presigned POST must name the bucket's regional endpoint."
+  }
+  assert {
+    condition     = one(aws_s3_bucket_cors_configuration.uploads.cors_rule).allowed_methods == toset(["POST"])
+    error_message = "The browser may only POST to the uploads bucket."
+  }
 }
 
 run "jev_drops_the_reranker_and_adds_its_alarms" {

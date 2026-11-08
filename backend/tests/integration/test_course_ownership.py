@@ -4,6 +4,7 @@ from fastapi.testclient import TestClient
 
 from app.main import app
 from tests.auth_helpers import create_and_login
+from tests.upload_helpers import upload_document
 
 client = TestClient(app)
 
@@ -27,11 +28,8 @@ def test_user_cannot_see_or_use_another_users_course():
     assert all(c["id"] != course_id for c in other_courses)
 
     # ...and that user must not be able to upload into it, even knowing its id.
-    response = client.post(
-        "/documents",
-        params={"course_id": course_id},
-        files={"file": ("x.html", b"<p>hello</p>", "text/html")},
-        headers={"Authorization": f"Bearer {token_other}"},
+    response = upload_document(
+        client, course_id, "x.html", b"<p>hello</p>", {"Authorization": f"Bearer {token_other}"},
     )
     assert response.status_code == 404
 

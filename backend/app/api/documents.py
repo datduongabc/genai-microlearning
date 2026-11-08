@@ -1,7 +1,10 @@
 import uuid
 from pathlib import Path
 
-from fastapi import APIRouter, Depends, HTTPException, Request, UploadFile
+import anyio
+from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi.concurrency import run_in_threadpool
+from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 
@@ -12,8 +15,6 @@ from app.db import get_db
 from app.ingestion.document_readers import (
     LEGACY_EXTENSIONS,
     SUPPORTED_EXTENSIONS,
-    InputLimitError,
-    preflight_limits,
 )
 from app.jobs.failures import open_failures
 from app.jobs.queue import enqueue_job
@@ -27,7 +28,7 @@ from app.models import (
     Module,
     User,
 )
-from app.storage import staging_dir, upload_key, upload_store
+from app.storage import LocalUploadStore, S3UploadStore, staging_dir, upload_key, upload_store
 
 router = APIRouter(prefix="/documents", tags=["documents"], dependencies=[Depends(get_current_user)])
 
@@ -35,37 +36,22 @@ router = APIRouter(prefix="/documents", tags=["documents"], dependencies=[Depend
 MAX_UPLOAD_SIZE_BYTES = 25 * 1024 * 1024
 MAX_UPLOAD_SIZE_BYTES_AUDIO = 200 * 1024 * 1024
 MAX_UPLOAD_SIZE_BYTES_VIDEO = 1024 * 1024 * 1024
-_READ_CHUNK_SIZE = 1024 * 1024
 # A document in one of these states still has its pipeline running or queued.
 _PIPELINE_ACTIVE_STATUSES = (DocumentStatus.uploaded, DocumentStatus.processing)
 _AUDIO_EXTENSIONS = {".mp3", ".wav", ".m4a", ".flac", ".ogg", ".aac"}
 _VIDEO_EXTENSIONS = {".mp4", ".mkv", ".webm", ".mov", ".avi"}
 
 
-@router.post("")
-@limiter.limit("20/minute", key_func=user_or_address)
-def upload_document(
-    request: Request, course_id: uuid.UUID, file: UploadFile,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-):
-    # FOR UPDATE serialises concurrent uploads to the same course: the second
-    # request waits, then sees the first document and gets the 409 below
-    # instead of both passing the check.
-    require_course_owner(db.get(Course, course_id, with_for_update=True), current_user)
+def _size_limit(suffix: str) -> tuple[int, str]:
+    if suffix in _AUDIO_EXTENSIONS:
+        return MAX_UPLOAD_SIZE_BYTES_AUDIO, "Tệp âm thanh tối đa 200 MB"
+    if suffix in _VIDEO_EXTENSIONS:
+        return MAX_UPLOAD_SIZE_BYTES_VIDEO, "Tệp video tối đa 1 GB"
+    return MAX_UPLOAD_SIZE_BYTES, "Tài liệu tối đa 25 MB"
 
-    still_processing = (
-        db.query(Document.id)
-        .filter(Document.course_id == course_id, Document.status.in_(_PIPELINE_ACTIVE_STATUSES))
-        .first()
-    )
-    if still_processing is not None:
-        raise HTTPException(
-            status_code=409,
-            detail="Môn học này đang có tài liệu khác được xử lý, vui lòng chờ xong rồi tải tiếp.",
-        )
 
-    suffix = Path(file.filename).suffix.lower()
+def _checked_suffix(filename: str) -> str:
+    suffix = Path(filename).suffix.lower()
     if suffix in LEGACY_EXTENSIONS:
         raise HTTPException(
             status_code=422,
@@ -78,55 +64,149 @@ def upload_document(
             detail=f"Định dạng {suffix or '(không có đuôi)'} không được hỗ trợ. "
                    f"Các định dạng được nhận: {', '.join(sorted(SUPPORTED_EXTENSIONS))}.",
         )
+    return suffix
 
-    if suffix in _AUDIO_EXTENSIONS:
-        size_limit, size_error = MAX_UPLOAD_SIZE_BYTES_AUDIO, "Tệp âm thanh tối đa 200 MB"
-    elif suffix in _VIDEO_EXTENSIONS:
-        size_limit, size_error = MAX_UPLOAD_SIZE_BYTES_VIDEO, "Tệp video tối đa 1 GB"
+
+def _refuse_while_processing(db: Session, course_id: uuid.UUID, *, other_than: uuid.UUID | None = None) -> None:
+    query = db.query(Document.id).filter(
+        Document.course_id == course_id, Document.status.in_(_PIPELINE_ACTIVE_STATUSES),
+    )
+    if other_than is not None:
+        query = query.filter(Document.id != other_than)
+    if query.first() is not None:
+        raise HTTPException(
+            status_code=409,
+            detail="Môn học này đang có tài liệu khác được xử lý, vui lòng chờ xong rồi tải tiếp.",
+        )
+
+
+def _owned_document(db: Session, document_id: uuid.UUID, user: User, *, lock_course: bool = False) -> Document:
+    doc = db.get(Document, document_id)
+    if doc is None or doc.course.owner_id != user.id:
+        raise HTTPException(status_code=404, detail="Document not found")
+    if lock_course:
+        # An explicit SELECT: the course is already loaded, and a get() could answer from the session.
+        db.execute(select(Course.id).where(Course.id == doc.course_id).with_for_update())
+    return doc
+
+
+class UploadRequest(BaseModel):
+    filename: str = Field(min_length=1, max_length=255)
+    size: int = Field(gt=0)
+
+
+@router.post("/uploads")
+@limiter.limit("20/minute", key_func=user_or_address)
+def request_upload(
+    request: Request, course_id: uuid.UUID, body: UploadRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Step 1 of 3: create the document and say where its file goes.
+
+    The checks that need no file run here, so a wrong format or a size over the limit costs no
+    transfer. The page count and the duration need the file: the worker checks them before
+    reading (app/ingestion/document_pipeline.py)."""
+    require_course_owner(db.get(Course, course_id), current_user)
+    _refuse_while_processing(db, course_id)
+    suffix = _checked_suffix(body.filename)
+    size_limit, size_error = _size_limit(suffix)
+    if body.size > size_limit:
+        raise HTTPException(status_code=413, detail=size_error)
+
+    doc = Document(course_id=course_id, filename=body.filename, status=DocumentStatus.awaiting_upload)
+    db.add(doc)
+    db.commit()
+
+    store = upload_store()
+    if isinstance(store, S3UploadStore):
+        target = {"method": "POST", **store.presigned_post(upload_key(doc.id, body.filename), body.size)}
     else:
-        size_limit, size_error = MAX_UPLOAD_SIZE_BYTES, "Tài liệu tối đa 25 MB"
-    # Ghi thẳng từng khối xuống đĩa và chặn sớm nếu vượt giới hạn: video tới 1 GB thì
-    # không được giữ cả tệp trong bộ nhớ.
+        target = {"method": "PUT", "url": f"/documents/{doc.id}/content", "fields": {}}
+    return {"document_id": doc.id, "upload": target}
+
+
+@router.put("/{document_id}/content")
+async def put_document_content(
+    document_id: uuid.UUID, request: Request,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Step 2 without S3: the file itself, as the raw request body.
+
+    Where S3 is the store the browser posts to S3 instead, so this answers 404 there. No
+    transaction is open while the body streams in, so a slow upload holds no database
+    connection."""
+    if not isinstance(upload_store(), LocalUploadStore):
+        raise HTTPException(status_code=404, detail="Not found")
+
+    def owned_awaiting() -> str:
+        doc = _owned_document(db, document_id, current_user)
+        if doc.status != DocumentStatus.awaiting_upload:
+            raise HTTPException(status_code=409, detail="Tài liệu này đã được tải lên.")
+        filename = doc.filename
+        db.commit()
+        return filename
+
+    filename = await run_in_threadpool(owned_awaiting)
+    suffix = Path(filename).suffix.lower()
+    size_limit, size_error = _size_limit(suffix)
+    # Written to disk block by block and stopped as soon as it passes the limit: a 1 GB video
+    # is never held in memory.
     pending_path = staging_dir() / f"pending-{uuid.uuid4()}{suffix}"
     try:
         size = 0
-        with open(pending_path, "wb") as f:
-            while file_chunk := file.file.read(_READ_CHUNK_SIZE):
-                size += len(file_chunk)
+        async with await anyio.open_file(pending_path, "wb") as f:
+            async for block in request.stream():
+                size += len(block)
                 if size > size_limit:
                     raise HTTPException(status_code=413, detail=size_error)
-                f.write(file_chunk)
-        # Đếm trang/đo thời lượng trước khi tạo job, để job nền không phải tải hay
-        # phiên âm một tệp chắc chắn bị từ chối.
-        try:
-            preflight_limits(str(pending_path))
-        except InputLimitError as exc:
-            raise HTTPException(status_code=413, detail=str(exc)) from exc
-
-        doc = Document(course_id=course_id, filename=file.filename, status=DocumentStatus.uploaded)
-        db.add(doc)
-        db.flush()
-
-        # Job extract chạy nền, có thể sau khi request này đã trả response từ lâu và ở một
-        # tiến trình khác (trên ECS là task khác), nên tệp phải nằm ở nơi worker cũng đọc được:
-        # thư mục chung hoặc S3, xem app/storage.py.
-        storage_key = upload_key(doc.id, file.filename)
-        upload_store().save(pending_path, storage_key)
-    except BaseException:
+                await f.write(block)
+        if size == 0:
+            raise HTTPException(status_code=422, detail="Tệp rỗng.")
+        await run_in_threadpool(upload_store().save, pending_path, upload_key(document_id, filename))
+    finally:
         pending_path.unlink(missing_ok=True)
-        raise
+    return {"id": document_id, "size": size}
 
+
+@router.post("/{document_id}/complete")
+def complete_upload(
+    document_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Step 3 of 3: the file is in the store; check its size and queue the pipeline.
+
+    The course row is locked only here, for one query and an insert, so that two uploads that
+    finish together cannot both pass the one-document-at-a-time check."""
+    doc = _owned_document(db, document_id, current_user, lock_course=True)
+    if doc.status != DocumentStatus.awaiting_upload:
+        raise HTTPException(status_code=409, detail="Tài liệu này đã được tải lên.")
+    store, storage_key = upload_store(), upload_key(doc.id, doc.filename)
+
+    size = store.size(storage_key)
+    if size is None:
+        # The client may call too early or retry after a failed upload: keep the document.
+        raise HTTPException(status_code=409, detail="Chưa nhận được tệp, hãy tải lên trước.")
+    size_limit, size_error = _size_limit(Path(doc.filename).suffix.lower())
     try:
-        job = enqueue_job(
-            db, job_type=JobType.document_pipeline, step="extract",
-            document_id=doc.id, payload={"storage_key": storage_key},
-        )
+        if size > size_limit:
+            # S3 already refuses a larger POST; this is the last guard, e.g. for a stale policy.
+            raise HTTPException(status_code=413, detail=size_error)
+        _refuse_while_processing(db, doc.course_id, other_than=doc.id)
+    except HTTPException:
+        db.delete(doc)
         db.commit()
-    except BaseException:
-        # Không có job nào sẽ đọc tệp này nữa.
-        upload_store().delete(storage_key)
+        store.delete(storage_key)
         raise
 
+    doc.status = DocumentStatus.uploaded
+    job = enqueue_job(
+        db, job_type=JobType.document_pipeline, step="extract",
+        document_id=doc.id, payload={"storage_key": storage_key},
+    )
+    db.commit()
     return {"id": doc.id, "status": doc.status, "job_id": job.id}
 
 
@@ -158,7 +238,8 @@ def list_documents(
         # trước đây len(d.modules) bên dưới lazy-load 1 truy vấn/document
         # (N+1) -- eager-load 1 lần cho toàn bộ danh sách.
         .options(selectinload(Document.modules))
-        .filter(Document.course_id == course_id)
+        # A document whose file never arrived is not one yet; the hourly clean-up removes it.
+        .filter(Document.course_id == course_id, Document.status != DocumentStatus.awaiting_upload)
         .order_by(Document.created_at.desc())
         .all()
     )

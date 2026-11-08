@@ -32,6 +32,7 @@ locals {
     RUN_JOB_WORKER    = "false"
     UPLOAD_STORE      = "s3"
     UPLOAD_S3_BUCKET  = aws_s3_bucket.uploads.bucket
+    UPLOAD_S3_REGION  = var.region
     LLM_GATEWAY_URL   = "http://gateway:4000"
     LLM_MODEL         = var.llm_model
     RERANKER_PROVIDER = var.reranker_provider

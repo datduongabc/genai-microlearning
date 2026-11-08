@@ -10,10 +10,13 @@ from app.api.documents import MAX_UPLOAD_SIZE_BYTES
 from app.config import settings
 from app.db import SessionLocal
 from app.ingestion import document_readers
-from app.ingestion.document_readers import SUPPORTED_EXTENSIONS
+from app.ingestion.document_pipeline import run_document_pipeline_step
+from app.ingestion.document_readers import SUPPORTED_EXTENSIONS, InputLimitError
 from app.main import app
 from app.models import Document, Job
+from app.storage import upload_store
 from tests.auth_helpers import create_and_login
+from tests.upload_helpers import upload_document
 
 client = TestClient(app)
 
@@ -35,10 +38,8 @@ def test_upload_rejects_unsupported_extension():
     token = _create_and_login(f"upload-ext-{suffix}@example.com")
     course_id = _make_course(token, suffix)
 
-    response = client.post(
-        "/documents", params={"course_id": course_id},
-        files={"file": ("virus.exe", b"not a document", "application/octet-stream")},
-        headers={"Authorization": f"Bearer {token}"},
+    response = upload_document(
+        client, course_id, "virus.exe", b"not a document", {"Authorization": f"Bearer {token}"},
     )
     assert response.status_code == 422
 
@@ -49,12 +50,26 @@ def test_upload_rejects_oversized_file():
     course_id = _make_course(token, suffix)
 
     oversized = b"x" * (MAX_UPLOAD_SIZE_BYTES + 1)
-    response = client.post(
-        "/documents", params={"course_id": course_id},
-        files={"file": ("big.html", oversized, "text/html")},
-        headers={"Authorization": f"Bearer {token}"},
-    )
+    response = upload_document(client, course_id, "big.html", oversized, {"Authorization": f"Bearer {token}"})
     assert response.status_code == 413
+
+
+def test_a_body_larger_than_the_declared_name_allows_is_cut_off_while_streaming(tmp_path, monkeypatch):
+    # The declared size is the client's word; the bytes that arrive are checked as they come.
+    monkeypatch.setattr(settings, "upload_storage_dir", str(tmp_path))
+    suffix = uuid.uuid4().hex[:8]
+    token = _create_and_login(f"upload-lie-{suffix}@example.com")
+    headers = {"Authorization": f"Bearer {token}"}
+    course_id = _make_course(token, suffix)
+    started = client.post(
+        "/documents/uploads", params={"course_id": course_id}, json={"filename": "a.html", "size": 10}, headers=headers,
+    ).json()
+
+    response = client.put(started["upload"]["url"], content=b"x" * (MAX_UPLOAD_SIZE_BYTES + 1), headers=headers)
+
+    assert response.status_code == 413
+    assert list(tmp_path.iterdir()) == [], "the part written must be removed"
+    assert client.post(f"/documents/{started['document_id']}/complete", headers=headers).status_code == 409
 
 
 # --- định dạng cũ cần LibreOffice ---------------------------------------------
@@ -69,10 +84,8 @@ def _tai_len(ten_tep: str):
     suffix = uuid.uuid4().hex[:8]
     token = _create_and_login(f"upload-cu-{suffix}@example.com")
     course_id = _make_course(token, suffix)
-    phan_hoi = client.post(
-        "/documents", params={"course_id": course_id},
-        files={"file": (ten_tep, b"noi dung bat ky", "application/octet-stream")},
-        headers={"Authorization": f"Bearer {token}"},
+    phan_hoi = upload_document(
+        client, course_id, ten_tep, b"noi dung bat ky", {"Authorization": f"Bearer {token}"},
     )
     tai_lieu = client.get("/documents", params={"course_id": course_id}, headers={"Authorization": f"Bearer {token}"})
     assert tai_lieu.status_code == 200, "không đọc được danh sách thì phép kiểm \"không tạo tài liệu\" vô nghĩa"
@@ -132,10 +145,7 @@ def upload(tmp_path, monkeypatch):
     def send(filename: str, content: bytes):
         # Mỗi lần tải dùng một môn riêng: môn đang có tài liệu chờ xử lý thì từ chối tải tiếp.
         course_id = _make_course(token, uuid.uuid4().hex[:8])
-        response = client.post(
-            "/documents", params={"course_id": course_id},
-            files={"file": (filename, content, "application/octet-stream")}, headers=headers,
-        )
+        response = upload_document(client, course_id, filename, content, headers)
         if response.status_code == 200:
             created.append(response.json()["id"])
         return response
@@ -194,30 +204,45 @@ def _pptx(slides: int, tmp_path) -> bytes:
     return path.read_bytes()
 
 
+# Số trang và thời lượng cần chính tệp, nên được kiểm ở bước extract của worker chứ không lúc
+# upload: tệp có thể chỉ nằm trên S3. Quá giới hạn là lỗi cuối (không thử lại), tài liệu báo
+# lỗi kèm lý do, và tệp bị xoá.
+
+def _limit_error(response) -> InputLimitError | None:
+    assert response.status_code == 200, response.text
+    with SessionLocal() as db:
+        job = db.get(Job, response.json()["job_id"])
+    try:
+        run_document_pipeline_step(job)
+    except InputLimitError as error:
+        assert upload_store().size(job.payload["storage_key"]) is None, "a refused file has no further use"
+        return error
+    except Exception:
+        return None
+    return None
+
+
 def test_pdf_150_trang_o_bien(upload):
-    assert upload("a.pdf", _pdf(150)).status_code == 200
-    response = upload("b.pdf", _pdf(151))
-    assert response.status_code == 413
-    assert "151 trang" in response.json()["detail"]
+    assert _limit_error(upload("a.pdf", _pdf(150))) is None
+    error = _limit_error(upload("b.pdf", _pdf(151)))
+    assert error is not None and "151 trang" in str(error)
 
 
 def test_pptx_150_slide_o_bien(upload, tmp_path_factory):
     tmp = tmp_path_factory.mktemp("decks")
-    assert upload("a.pptx", _pptx(150, tmp)).status_code == 200
-    response = upload("b.pptx", _pptx(151, tmp))
-    assert response.status_code == 413
-    assert "151 slide" in response.json()["detail"]
+    assert _limit_error(upload("a.pptx", _pptx(150, tmp))) is None
+    error = _limit_error(upload("b.pptx", _pptx(151, tmp)))
+    assert error is not None and "151 slide" in str(error)
 
 
 @pytest.mark.parametrize("name", ["a.mp3", "a.mp4"])
 def test_audio_video_90_phut_o_bien(upload, monkeypatch, name):
     # Cùng phép kiểm với reader: 5400 s cộng 1 s đệm của bộ mã hoá MP3.
     monkeypatch.setattr(document_readers, "_duration_seconds", lambda path: 5401)
-    assert upload(name, b"input").status_code == 200
+    assert _limit_error(upload(name, b"input")) is None
     monkeypatch.setattr(document_readers, "_duration_seconds", lambda path: 5401.5)
-    response = upload(name, b"input")
-    assert response.status_code == 413
-    assert "90 phút" in response.json()["detail"]
+    error = _limit_error(upload(name, b"input"))
+    assert error is not None and "90 phút" in str(error)
 
 
 @pytest.mark.parametrize("duoi", [".srt", ".vtt", ".txt"])

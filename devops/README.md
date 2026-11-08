@@ -48,8 +48,9 @@ Postgres on every search.
 
 Each worker container runs `WORKER_POOL_SIZE` jobs at once (four by default), with `QUESTION_CONCURRENCY` questions at
 a time inside a module and at most `RERANKER_MAX_CONCURRENT` rerank requests at a time per container. Raise the last one
-when adding reranker containers. Uploads are still files
-in the shared bind mount, so running on several hosts needs shared file storage first.
+when adding reranker containers. With `UPLOAD_STORE=local` (the compose default) the browser sends the file to the API,
+which keeps it in the shared bind mount, so running on several hosts needs `UPLOAD_STORE=s3`: the browser then posts
+the file straight to the bucket with a presigned POST, and needs the bucket's CORS to allow the site's origin.
 
 ## Going public
 

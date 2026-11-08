@@ -189,6 +189,8 @@ export function CourseDetailPage() {
   const pipelineActive = documents.some(isPipelineActive);
   const upload = useForm<UploadDocumentFormValues>({ resolver: zodResolver(uploadDocumentSchema) });
   const uploading = upload.formState.isSubmitting;
+  // Share of the file sent, while it is being sent; null otherwise.
+  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const uploadBusy = uploading || pipelineActive;
   const generatingOnServer = documents.some((d) => d.generating);
   const visibleDocuments = documents.filter((d) => matchesFilter(d, statusFilter));
@@ -218,14 +220,16 @@ export function CourseDetailPage() {
     if (!courseId) return;
     setError(null);
     try {
-      // Request trả về ngay (chỉ lưu file + enqueue job) -- xử lý thật
-      // (extract/chunk/embed, và với audio/video là phiên âm qua Gemini) chạy
-      // nền qua job queue. Refresh 1 lần để thấy tài liệu mới ở trạng thái
-      // uploaded; từ đó effect poll ở trên theo dõi tới khi xong.
-      await uploadDocument(courseId, file);
+      // Ends once the file is stored and the job queued; the processing itself (extract/chunk/
+      // embed, and for audio/video the Whisper transcription first) runs in the background.
+      // One refresh shows the new document as uploaded; the polling above follows it from there.
+      setUploadProgress(0);
+      await uploadDocument(courseId, file, setUploadProgress);
       await refresh();
     } catch (err) {
       setError(apiErrorMessage(err, "Tải tài liệu thất bại"));
+    } finally {
+      setUploadProgress(null);
     }
   }
 
@@ -361,7 +365,11 @@ export function CourseDetailPage() {
               : "cursor-pointer hover:bg-terracotta-dark"
           }`}
         >
-          {uploadBusy ? "Đang xử lý tài liệu..." : "Tải tài liệu lên"}
+          {uploadProgress !== null
+            ? `Đang tải lên ${Math.round(uploadProgress * 100)}%`
+            : uploadBusy
+              ? "Đang xử lý tài liệu..."
+              : "Tải tài liệu lên"}
           <input
             type="file"
             className="hidden"
