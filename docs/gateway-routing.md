@@ -7,31 +7,34 @@ read only by the gateway from the runtime environment.
 
 ## Providers and keys
 
-Three keys cover every alias:
+Since 2026-11-08 one key covers every remote alias:
 
 | Key | Aliases | Why this route |
 | --- | --- | --- |
-| `GEMINI_API_KEY` | `gemini-*`, `embed-gemini`, formula re-read | Google's free tier; OpenRouter has no free Gemini |
-| `OPENROUTER_API_KEY` | `claude-*`, `openai-*`, `groq-*`, `gemini-fast-paid`, `embed-openai` | One key and one balance for every paid model |
-| `GROQ_API_KEY` | `transcribe` (Whisper) | Segment timestamps, measured; Whisper via OpenRouter is not yet |
+| `OPENROUTER_API_KEY` | `gemini-*`, `claude-*`, `openai-*`, `groq-*`, `embed-openai`, `transcribe`, formula re-read | One key and one balance for every model |
+| `EMBEDDER_API_KEY` | `embed-default` | The local embedder container |
+
+Whisper (`transcribe`) returns segment timestamps through OpenRouter (`verbose_json`), which
+citations of recordings need. LiteLLM has no OpenRouter transcription route, so the alias
+uses the OpenAI protocol with OpenRouter's `api_base`.
 
 Every OpenRouter alias sends `provider: {order: [<one upstream>], allow_fallbacks: false,
 data_collection: deny}`. Without it OpenRouter picks an upstream per request (price,
 latency, uptime), so two runs of one alias could be served by different hosts and
 quantisations; with it a failing upstream is an error, which experiment mode needs, and
 prompts, which carry course material, only reach upstreams that neither store nor train
-on them. Claude goes to Anthropic, GPT to OpenAI, GPT-OSS, Llama and MiniMax to Groq (the
+on them. Gemini goes to Google AI Studio, Claude to Anthropic, GPT to OpenAI, GPT-OSS, Llama and MiniMax to Groq (the
 upstream of the earlier measurements), and Qwen3.8 27B to DeepInfra (bf16), since Groq
 does not serve it through OpenRouter. OpenRouter bills the upstream's token price and
 takes 5.5% when credit is bought. Results measured before 2026-11-08 called Anthropic,
-OpenAI and Groq directly; `devops/loadtest/real_gateway*.yaml` keep that route so those
-runs can be repeated as they were.
+OpenAI and Groq directly; `devops/loadtest/real_gateway*.yaml` now reach the same models
+through OpenRouter, pinned to the same upstreams.
 
-The two free Gemini aliases back up each other, with LiteLLM's bounded fallback
-attempts preventing an endless cycle. If neither free model can serve a large
+The two Gemini aliases back up each other, with LiteLLM's bounded fallback
+attempts preventing an endless cycle. If neither can serve a large
 request, generation fails. Paid generation aliases are selected explicitly and are
 never fallback targets. Outside experiment mode their ordinary and context-window
-failures fall back to the free `gemini-fast`, then `gemini-flash`:
+failures fall back to `gemini-fast`, then `gemini-flash`:
 
 | Alias | Evaluation use |
 | --- | --- |
@@ -64,7 +67,7 @@ routing, so a rate-limited `gemini-fast` falls back to `gemini-flash`. An empty
 `groq-pro` is a paid lecturer opt-in model, excluded from the judge pool.
 Judge selection, including for modules generated with `groq-pro`, follows the
 [rubric](rubric.md#1-thiết-kế-nghiên-cứu).
-Its fallback targets are free Gemini models; it is never an automatic backup.
+Its fallback targets are Gemini models; it is never an automatic backup.
 
 Planner, Learning Objective, relevance checks and question checks can use the
 internal `gemini-fast-small` / `gemini-flash-small` profiles. The backend selects
@@ -89,10 +92,11 @@ each chosen alias with fallbacks disabled and keep incomplete ratings resumable 
 The deployment requests low reasoning effort so the output allowance can
 include the JSON answer.
 
-LiteLLM retries once, cools failed deployments for 60 seconds, and applies both
+LiteLLM retries once, does not cool a deployment down after a failure (the backend
+retries a 429 itself), and applies both
 ordinary and context-window fallbacks. `routing_strategy: simple-shuffle` spreads
 requests among deployments sharing an alias. The optional `gemini-balanced`
-alias has two distinct free Gemini deployments for actual load balancing. The
+alias has two distinct Gemini deployments for actual load balancing. The
 default single-model aliases favor their primary and use backups only on failure.
 To distribute among more deployments, add them under the same `model_name` in
 this configuration; duplicate entries using the same key and model add no quota.
@@ -120,7 +124,7 @@ still reject model selection with HTTP 422, including credit/billing 429 errors
 such as OpenAI's `insufficient_quota` or `billing_hard_limit_reached`. Plain
 rate-limit 429s, including Gemini `RESOURCE_EXHAUSTED`, are treated as usable,
 because normal generation, including paid aliases, can rely on router fallbacks
-to free Gemini. Experiment generation still refuses fallback and can fail on the
+to Gemini. Experiment generation still refuses fallback and can fail on the
 same quota-limited model.
 
 ## Actual model records

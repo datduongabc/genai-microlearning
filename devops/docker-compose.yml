@@ -179,9 +179,7 @@ services:
     container_name: do-an-gateway
     environment:
       LLM_GATEWAY_KEY: ${LLM_GATEWAY_KEY}
-      GEMINI_API_KEY: ${GEMINI_API_KEY}
       OPENROUTER_API_KEY: ${OPENROUTER_API_KEY}
-      GROQ_API_KEY: ${GROQ_API_KEY}
       EMBEDDER_API_KEY: ${EMBEDDER_API_KEY}
     ports:
       - 127.0.0.1:4000:4000

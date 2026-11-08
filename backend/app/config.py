@@ -61,7 +61,7 @@ class Settings(BaseSettings):
     )
 
     # LLM calls go through the LLM gateway (LiteLLM Proxy, devops/gateway/config.yaml),
-    # the only place that holds the provider API keys (Gemini/OpenAI/Anthropic) and
+    # the only place that holds the provider API key (OpenRouter, for every remote model) and
     # maps the model aliases below to pinned provider models, so a measured result can be
     # reproduced. `llm_model` is the default alias; a generation can ask for another one
     # (app/llm/gateway.py using_model). Changing provider or model is an alias change here
@@ -84,8 +84,8 @@ class Settings(BaseSettings):
     # not be rebuilt (app/ingestion/formula_repair.py). It must accept images; empty turns it off,
     # and those pages then keep the rebuilt text with a warning.
     formula_vision_model: str = "gemini-fast"
-    # At most this many pages of one document are sent, so one badly typeset file cannot spend a
-    # day of the free quota.
+    # At most this many pages of one document are sent, so one badly typeset file cannot spend
+    # much of the model balance.
     formula_vision_max_pages: int = Field(default=40, ge=0)
     # The reranker service of devops/docker-compose.yml, a cross-encoder in a container of its
     # own so the backend image carries no torch. Not behind the gateway: it holds no provider key.

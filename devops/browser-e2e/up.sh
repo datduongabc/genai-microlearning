@@ -86,7 +86,7 @@ export UPLOAD_STORAGE_DIR="$WORK/uploads"
 export LLM_GATEWAY_URL=http://localhost:58004 EMBEDDER_URL=http://localhost:58082 FORMULA_VISION_MODEL=''
 export RERANKER_PROVIDER=jina RERANKER_URL=http://localhost:58099
 # Blank, so that devops/.env's real keys are never used by this run; placeholders where the mocks want one.
-export GEMINI_API_KEY='' OPENROUTER_API_KEY='' GROQ_API_KEY='' TYPESAFE_API_KEY='' MOODLE_TOKEN=''
+export OPENROUTER_API_KEY='' TYPESAFE_API_KEY='' MOODLE_TOKEN=''
 export LLM_GATEWAY_KEY=mock-not-a-real-key EMBEDDER_API_KEY=mock-not-a-real-key
 export MOCK_LLM_MEDIAN_SECONDS=1 MOCK_COMPLETION_TOKENS=200
 cd "$ROOT/backend"

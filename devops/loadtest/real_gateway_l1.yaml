@@ -4,27 +4,41 @@
 model_list:
   - model_name: claude-fast
     litellm_params:
-      model: anthropic/claude-haiku-5-5
+      model: openrouter/anthropic/claude-haiku-5.5
       additional_drop_params: [temperature]
-      api_key: os.environ/ANTHROPIC_API_KEY
+      extra_body:
+        provider: {order: [anthropic], allow_fallbacks: false, data_collection: deny}
+      api_key: os.environ/OPENROUTER_API_KEY
   - model_name: openai-fast
     litellm_params:
-      model: openai/gpt-6-luna
+      model: openrouter/openai/gpt-6-luna
       additional_drop_params: [temperature]
-      api_key: os.environ/OPENAI_API_KEY
+      extra_body:
+        provider: {order: [openai], allow_fallbacks: false, data_collection: deny}
+      api_key: os.environ/OPENROUTER_API_KEY
   - model_name: groq-fast
     litellm_params:
-      model: groq/openai/gpt-oss-20b
+      model: openrouter/openai/gpt-oss-20b
       # As groq-pro in devops/gateway/config.yaml: keeps reasoning bounded so the JSON fits the output allowance.
       reasoning_effort: low
       allowed_openai_params: [reasoning_effort]
-      api_key: os.environ/GROQ_API_KEY
+      extra_body:
+        provider: {order: [groq], allow_fallbacks: false, data_collection: deny}
+      api_key: os.environ/OPENROUTER_API_KEY
   - model_name: groq-pro
     litellm_params:
-      model: groq/openai/gpt-oss-120b
+      model: openrouter/openai/gpt-oss-120b
       reasoning_effort: low
       allowed_openai_params: [reasoning_effort]
-      api_key: os.environ/GROQ_API_KEY
+      extra_body:
+        provider: {order: [groq], allow_fallbacks: false, data_collection: deny}
+      api_key: os.environ/OPENROUTER_API_KEY
+  - model_name: gemini-fast
+    litellm_params:
+      model: openrouter/google/gemini-3.5-flash-lite
+      extra_body:
+        provider: {order: [google-ai-studio], allow_fallbacks: false, data_collection: deny}
+      api_key: os.environ/OPENROUTER_API_KEY
   - model_name: embed-default
     litellm_params:
       model: openai/Qwen3-Embedding-0.6B

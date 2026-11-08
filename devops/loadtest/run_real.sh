@@ -1,20 +1,20 @@
 #!/bin/bash
 # Horizontal scaling with real models. Paid: every module uses about 280,000 tokens.
 #
-#   ./run_real.sh claude-fast        # or openai-fast
+#   ./run_real.sh claude-fast        # or openai-fast, gemini-fast
 #
 # Stops by itself when the provider reports a billing or key error, when every item of a run fails, when the model
 # has used TOKEN_CAP tokens, or when the machine has under 400 MB of memory available. Rate limits do not stop it: they
 # are part of the result. Results land in results/real-<alias>[-<RUN_TAG>].json, and a repeated call skips finished runs.
 cd "$(dirname "$0")" || exit 1
-alias=${1:?usage: run_real.sh claude-fast|openai-fast}
+alias=${1:?usage: run_real.sh claude-fast|openai-fast|gemini-fast}
 # Repeats wait until the 429 fixes are in: repeating a known collapse costs money and adds little.
 if [ -n "$RUN_TAG" ] && [ -z "$ALLOW_REPEAT" ]; then echo "repeat $RUN_TAG skipped"; exit 0; fi
 export LLM_MODEL=$alias
 TOKEN_CAP=${TOKEN_CAP:-30000000}
 OUT=real-$alias${RUN_TAG:+-$RUN_TAG}.json
 mkdir -p results; chmod 777 results
-set -a; source <(grep -E '^(ANTHROPIC|OPENAI|TYPESAFE|GROQ)_API_KEY=' ../.env); set +a
+set -a; source <(grep -E '^(OPENROUTER|TYPESAFE)_API_KEY=' ../.env); set +a
 
 # EXTRA_COMPOSE adds an override, and ONLY limits the run to the labels it names.
 dc() { docker compose -f docker-compose.yml -f docker-compose.real.yml ${EXTRA_COMPOSE:+-f "$EXTRA_COMPOSE"} "$@"; }
