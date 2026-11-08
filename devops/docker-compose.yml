@@ -18,6 +18,10 @@ x-backend-environment: &backend-environment
   LLM_GATEWAY_KEY: ${LLM_GATEWAY_KEY}
   LLM_EXPERIMENT_MODE: ${LLM_EXPERIMENT_MODE:-false}
   RERANKER_URL: http://reranker:80
+  # jina: the reranker service below. jev: TypeSafe's API, which receives the question and the
+  # candidate chunk text (outside the school), so it is off unless set in .env.
+  RERANKER_PROVIDER: ${RERANKER_PROVIDER:-jina}
+  TYPESAFE_API_KEY: ${TYPESAFE_API_KEY:-}
   FORWARDED_ALLOW_IPS: 172.16.0.0/12,192.168.0.0/16,10.0.0.0/8
   # The API hands jobs to the worker service and shares its rate limit counters through Redis.
   RUN_JOB_WORKER: "false"
