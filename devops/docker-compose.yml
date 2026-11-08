@@ -219,6 +219,9 @@ services:
     volumes:
       - ./backend:/app
       - /app/.venv
+      # Uploaded files, shared by the API and the worker. Not in ./backend: the container user
+      # (uid 10001) cannot write to the host's source tree.
+      - uploads:/app/uploads
 
   # Runs the queued jobs, apart from the API so that each scales on its own.
   # No hot reload: restart this service after changing job code.
@@ -233,6 +236,9 @@ services:
     volumes:
       - ./backend:/app
       - /app/.venv
+      # Uploaded files, shared by the API and the worker. Not in ./backend: the container user
+      # (uid 10001) cannot write to the host's source tree.
+      - uploads:/app/uploads
 
   # Only holds rate limit counters, which are safe to lose on a restart, so nothing is persisted.
   redis:
@@ -282,6 +288,7 @@ services:
 
 volumes:
   db_data:
+  uploads:
   embedder_models:
   moodle_data:
   caddy_data:

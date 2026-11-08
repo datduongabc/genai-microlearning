@@ -355,7 +355,7 @@ def test_small_chain_never_reaches_paid_groq_when_both_gemini_models_have_no_quo
     router.reset()
 
 
-PAID_ALIASES = {"claude-fast", "claude-pro", "openai-fast", "openai-pro", "groq-pro"}
+PAID_ALIASES = {"claude-fast", "claude-pro", "openai-fast", "openai-pro", "groq-pro", "gemini-fast-paid"}
 
 
 def test_evaluation_paid_aliases_are_current_and_never_fallback_targets(gateway):
@@ -436,7 +436,7 @@ def test_every_paid_model_goes_through_openrouter_with_its_one_key(gateway):
     are no longer read anywhere."""
     paid = {d["model_name"] for d in _openrouter_deployments(gateway)}
 
-    assert PAID_ALIASES | {"groq-llama", "groq-qwen", "groq-minimax", "embed-openai"} == paid
+    assert PAID_ALIASES | {"groq-llama", "groq-qwen", "groq-minimax", "embed-openai", "gemini-fast-paid"} == paid
     assert {d["litellm_params"]["api_key"] for d in _openrouter_deployments(gateway)} == {
         "os.environ/OPENROUTER_API_KEY"}
 

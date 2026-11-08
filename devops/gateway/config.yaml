@@ -36,6 +36,18 @@ model_list:
     model_info:
       display_name: Gemini 3.5 Flash Lite
       note: nhanh, có hạn mức miễn phí
+  # The same model as gemini-fast, paid through OpenRouter on Google AI Studio: for when the free
+  # daily quota is spent, and for course material that should not reach the free tier, whose
+  # prompts Google may use. No fallback: it is chosen on purpose.
+  - model_name: gemini-fast-paid
+    litellm_params:
+      model: openrouter/google/gemini-3.5-flash-lite
+      extra_body:
+        provider: {order: [google-ai-studio], allow_fallbacks: false, data_collection: deny}
+      api_key: os.environ/OPENROUTER_API_KEY
+    model_info:
+      display_name: Gemini 3.5 Flash Lite (trả phí)
+      note: như Gemini 3.5 Flash Lite, không giới hạn theo ngày
   - model_name: gemini-flash
     litellm_params:
       model: gemini/gemini-3.5-flash
