@@ -3,8 +3,9 @@
 Mỗi câu: truy hồi top-5 đoạn theo đúng điều cần kiểm (sub-objective) -> Question Generator
 (misconception CoT + Bloom's + JSON schema) -> kiểm câu vừa sinh (Syntax/IWF heuristic, và khi bật
 tự kiểm thì model chấm Groundedness, Answerability, Bloom's, Distractors, Wording) -> trượt thì
-sinh lại đúng một lần với lý do trượt. Vòng sinh-kiểm-sinh lại là `_checked` dùng chung với Content. Nhánh không RAG dùng
-đúng hàm này, chỉ thay đoạn truy hồi bằng bài học (Content) đã viết.
+sinh lại đúng một lần với lý do trượt, và giữ bản ít lỗi nhất trong các lượt. Bẫy cú pháp không tốn
+lượt gọi nào nên bản nháp trượt nó được sinh lại thêm tối đa SYNTAX_RETRY lần trước khi model kiểm.
+Nhánh không RAG dùng đúng hàm này, chỉ thay đoạn truy hồi bằng bài học (Content) đã viết.
 Không chấm độ liên quan riêng cho từng câu: Corrective RAG chỉ chạy một lần trước Content.
 
 Practice tái dùng NGUYÊN hàm và gate này (mode="practice"), không tốn hạ tầng riêng.
@@ -23,8 +24,8 @@ from sqlalchemy.orm import Session
 
 from app.generation.common import (
     BLOOM_LEVEL_ANCHORS,
+    MAX_CORRECTION_RETRY,
     OutputLanguage,
-    _checked,
     custom_instructions_instruction,
     failed_criteria,
     output_language_instruction,
@@ -47,6 +48,9 @@ QUESTION_CANDIDATE_K = 15
 ABSOLUTE_WORDS = [
     "luôn luôn", "không bao giờ", "tất cả đều", "duy nhất", "chỉ có",
     "mọi trường hợp", "always", "never", "all of the above", "none of the above",
+    # Found by the two rubric judges in the distractors of 2026-11-08 (docs/measurements/2026-11-08-jev-five-subjects.md):
+    # a distractor saying "entirely", "any", "purely" is eliminated without knowing the lesson.
+    "hoàn toàn", "bất kỳ", "tuyệt đối", "thuần túy", "không hề", "entirely", "completely",
 ]
 
 
@@ -147,6 +151,12 @@ Quy trình BẮT BUỘC (đúng thứ tự):
    prompt bên dưới, không tự suy luận) để quyết định dạng câu hỏi — không chỉ
    dựa vào tên cấp độ suông (vd Learning Objective ở mức "understand" thì câu
    hỏi không được yêu cầu "phân tích"/"đánh giá").
+   Mức Bloom nằm ở VIỆC người học phải làm, không nằm ở lời dẫn: KHÔNG mở đầu
+   bằng "Khi phân tích…", "Đánh giá…" nếu câu hỏi thực chất chỉ đòi nhận lại một
+   câu trong tài liệu. Từ mức understand trở lên, đáp án đúng KHÔNG được chép
+   nguyên văn một câu của tài liệu: diễn đạt lại, hoặc đặt người học vào một
+   tình huống, ví dụ hay đoạn mã cụ thể (khác ví dụ trong tài liệu nhưng chỉ cần
+   kiến thức trong tài liệu để giải) mà họ phải nhận ra, áp dụng hay suy ra.
 3. Viết `reasoning` TRƯỚC khi viết các phương án: nêu đáp án đúng sẽ là gì và
    vì sao (dẫn chiếu trực tiếp tài liệu được cung cấp), rồi với MỖI
    misconception đã phân tích nêu kiểu phương án nhiễu sai mà nó dẫn tới.
@@ -156,11 +166,20 @@ Quy trình BẮT BUỘC (đúng thứ tự):
    `explanation` (giải thích ngắn gọn cho người học, tổng hợp từ `reasoning`:
    vì sao đáp án đúng là đúng và vì sao MỖI phương án nhiễu sai).
 5. Các phương án PHẢI cân bằng độ dài/ngữ pháp với nhau — không để đáp án
-   đúng dài/chi tiết hơn hẳn distractor (dễ đoán). KHÔNG dùng từ mang tính
-   tuyệt đối ("luôn luôn", "không bao giờ", "tất cả", "duy nhất") trong bất
-   kỳ phương án nào — dễ bị loại trừ mà không cần hiểu bài.
-6. Nếu mode="practice", câu hỏi tập trung vào luyện tập/củng cố; vẫn phải
-   đúng Bloom của target và qua cùng gate chất lượng như quiz.
+   đúng dài/chi tiết hơn hẳn distractor (dễ đoán): đáp án đúng thường KHÔNG phải
+   phương án dài nhất, và mỗi phương án nhiễu cụ thể, đầy đủ ngang đáp án đúng.
+   KHÔNG dùng từ mang tính tuyệt đối hay cực đoan ("luôn luôn", "không bao giờ",
+   "tất cả", "duy nhất", "hoàn toàn", "toàn bộ", "bất kỳ", "thuần túy") trong bất
+   kỳ phương án nào — dễ bị loại trừ mà không cần hiểu bài. Phương án nhiễu là
+   một nhầm lẫn mà người học có thể tin thật (đổi vai trò hai khái niệm, áp dụng
+   đúng quy tắc vào sai trường hợp, bỏ sót một điều kiện), KHÔNG phải câu phủ định
+   thẳng nội dung tài liệu hay một khẳng định vô lý.
+6. Nếu mode="practice", đây là câu tổng hợp của cả bài: kiểm ĐÚNG mức Bloom của
+   Learning Objective tổng thể (không phải của từng target), thường bằng một
+   tình huống cần kết hợp nhiều ý của bài; vẫn qua cùng gate chất lượng như quiz.
+7. `explanation` chỉ dùng điều có trong tài liệu: giải thích vì sao phương án
+   nhiễu sai bằng chính nội dung tài liệu, KHÔNG thêm ứng dụng, số liệu, bối
+   cảnh lịch sử hay hệ quả mà tài liệu không nêu.
 """
 
 _QUESTION_SOURCE_RULES = """8. Tài liệu là các đoạn nguồn (SOURCE CHUNK): CHỈ được dùng thông tin THỰC SỰ
@@ -199,7 +218,8 @@ Chấm các tiêu chí sau:
   diễn đạt lại hoặc phát biểu tương đương với key cũng ĐÚNG (is_correct=true),
   dù key chỉ đánh dấu một. KHÔNG hợp lý hóa key bằng reasoning có sẵn.
 - wording_pass: fail nếu đoán được key qua độ dài, mức chi tiết, lặp từ từ
-  stem, ngữ pháp, hoặc nhiễu dùng từ tuyệt đối mà không cần hiểu bài.
+  stem, ngữ pháp, hoặc nhiễu dùng từ tuyệt đối/cực đoan ("hoàn toàn", "toàn
+  bộ", "bất kỳ"…) hay phủ định thẳng tài liệu, loại được mà không cần hiểu bài.
 - answerability_pass: câu hỏi có ĐÚNG 1 đáp án đúng duy nhất, không mâu thuẫn
   nội tại, và KHÔNG có 2 phương án cùng hợp lý (gây khó phân biệt) không?
   `reasoning` đi kèm (viết trước khi có các phương án) nêu đáp án đúng là gì:
@@ -215,7 +235,8 @@ Chấm các tiêu chí sau:
   thực chất đòi hỏi hành vi nhận thức khác (thường bị lệch cao hơn khai báo,
   hoặc dễ dàng mặc định ở mức "understand" dù nguồn/LO hỗ trợ cấp cao hơn) —
   đây chính là lý do cần kiểm chứng ĐỘC LẬP ở bước này, không tin cậy hoàn
-  toàn vào bước sinh.
+  toàn vào bước sinh. Fail nếu lời dẫn nói "phân tích"/"đánh giá"/"áp dụng"
+  nhưng chỉ cần nhận lại một câu có sẵn trong tài liệu là chọn được đáp án.
 """
 
 _QUESTION_CHECK_SOURCE_RULES = """- groundedness_pass (tài liệu là các đoạn nguồn): `stem`, đáp án đúng, và
@@ -278,7 +299,7 @@ def _syntax_iwf_check(question: QuizQuestion) -> list[str]:
 
 @dataclass
 class QuestionCheck:
-    """Kết quả kiểm một câu, theo dạng `<tên>_pass`/`<tên>_reason` mà `_checked` đọc: ba tiêu chí
+    """Kết quả kiểm một câu, theo dạng `<tên>_pass`/`<tên>_reason` mà `failed_criteria` đọc: ba tiêu chí
     model chấm (đạt sẵn khi tắt tự kiểm) cộng bẫy cú pháp, vốn không tốn lượt gọi nào."""
 
     groundedness_pass: bool = True
@@ -365,6 +386,49 @@ def _verify_question(
 # Sinh một câu
 # ---------------------------------------------------------------------------
 
+# Bẫy cú pháp chạy ở máy chủ, không tốn lượt gọi model nào, nên bản nháp trượt nó được sinh lại
+# ngay, trước khi trả tiền cho lượt model tự kiểm. Đây là số lượt sinh thêm tối đa cho cả câu, ngoài
+# MAX_CORRECTION_RETRY lượt sinh lại sau khi model kiểm.
+SYNTAX_RETRY = 2
+
+
+def _syntax_draft(generate, feedback: str | None, budget: list[int]) -> QuizQuestion:
+    """Sinh một bản nháp; trượt bẫy cú pháp thì sinh lại với đúng lỗi đó trong khi `budget[0]` còn,
+    và trả bản ít lỗi cú pháp nhất (hòa thì bản sau, vì nó đã đọc lỗi của bản trước)."""
+    best = generate(feedback)
+    best_issues = _syntax_iwf_check(best)
+    while best_issues and budget[0] > 0:
+        budget[0] -= 1
+        reason = "Syntax/IWF fail: " + "; ".join(best_issues)
+        draft = generate("; ".join(r for r in (feedback, reason) if r))
+        issues = _syntax_iwf_check(draft)
+        if len(issues) <= len(best_issues):
+            best, best_issues = draft, issues
+    return best
+
+
+def _best_attempt(generate, verify) -> tuple[QuizQuestion, QuestionCheck, list[str]]:
+    """Như `_checked` (sinh, kiểm, trượt thì sinh lại với lý do trượt), với hai khác biệt chỉ ở
+    quiz: bản nháp trượt bẫy cú pháp được sinh lại trước khi model kiểm (`_syntax_draft`), và hết
+    lượt thì giữ bản ít tiêu chí trượt nhất, rồi ít lỗi cú pháp nhất, thay cho bản cuối. Bản sinh lại
+    có khi sửa được lỗi cũ nhưng sinh lỗi mới nặng hơn; giữ bản cuối thì bỏ mất bản tốt hơn."""
+    feedback: str | None = None
+    budget = [SYNTAX_RETRY]
+    best = None
+    for _ in range(MAX_CORRECTION_RETRY + 1):
+        question = _syntax_draft(generate, feedback, budget)
+        check = verify(question)
+        failed = failed_criteria(check, QUESTION_CRITERIA)
+        score = (len(failed), len(check.syntax_issues))
+        if best is None or score <= best[0]:
+            best = (score, question, check, failed)
+        if not failed:
+            break
+        feedback = "; ".join(failed)
+    _, question, check, failed = best
+    return question, check, failed
+
+
 def generate_quiz_question(
     db: Session,
     course_id: uuid.UUID,
@@ -423,10 +487,9 @@ def generate_quiz_question(
             system_instruction=instruction + output_language_instruction(output_language) + custom_instructions_instruction(custom_instructions, sourced),
         )
 
-    question, check = _checked(
-        generate, lambda q: _verify_question(q, lo, material, mode, self_check, sourced, query), QUESTION_CRITERIA
+    question, check, failed = _best_attempt(
+        generate, lambda q: _verify_question(q, lo, material, mode, self_check, sourced, query)
     )
-    failed = failed_criteria(check, QUESTION_CRITERIA)
     return {
         "question": question,
         "passed": not failed,
@@ -441,23 +504,27 @@ def generate_quiz_question(
 # ở từng câu thì lại tạo ra mẹo ngược lại ("phương án dài nhất chắc chắn sai"), nên luật đặt ở cấp
 # cả bộ câu hỏi của một module.
 LENGTH_TELL_FEEDBACK = (
-    "Ở mọi câu hỏi của bài, đáp án đúng đều là phương án dài nhất, nên người học đoán được đáp án "
+    "Ở hầu hết câu hỏi của bài, đáp án đúng là phương án dài nhất, nên người học đoán được đáp án "
     "chỉ nhờ độ dài. Viết lại câu này sao cho đáp án đúng không dài hơn các phương án nhiễu: các "
     "phương án nhiễu phải chi tiết và cụ thể ngang đáp án đúng."
 )
 
 
 def question_to_rebalance(questions: list[QuizQuestion]) -> int | None:
-    """Câu nên sinh lại khi đáp án đúng dài nhất ở mọi câu của bộ: câu có đáp án đúng dài vượt
-    trội nhất so với phương án dài kế tiếp. None khi có ít nhất một câu mà đáp án đúng không dài
-    nhất, hoặc bộ chỉ có một câu (một câu đơn lẻ thì dài nhất là chuyện bình thường)."""
+    """Câu nên sinh lại khi đáp án đúng dài nhất ở quá nửa số câu của bộ (ngẫu nhiên thì chỉ
+    khoảng một phần tư): trong các câu đó, câu có đáp án đúng dài vượt trội nhất so với phương án
+    dài kế tiếp. None khi bộ chỉ có một câu (một câu đơn lẻ thì dài nhất là chuyện bình thường).
+
+    Trước 2026-11-08 luật chỉ bắt khi đáp án đúng dài nhất ở MỌI câu, nên bộ 4 câu có 3 câu lộ đáp
+    án vẫn lọt; cả hai judge rubric đều chỉ ra lỗi này (docs/measurements/2026-11-08-jev-five-subjects.md)."""
     if len(questions) < 2:
         return None
-    margins = []
-    for q in questions:
+    margins = {}
+    for index, q in enumerate(questions):
         lengths = [len(c.strip()) for c in q.choices]
         longest_other = max(n for i, n in enumerate(lengths) if i != q.correct_index)
-        if lengths[q.correct_index] <= longest_other:
-            return None
-        margins.append(lengths[q.correct_index] / max(1, longest_other))
-    return max(range(len(margins)), key=margins.__getitem__)
+        if lengths[q.correct_index] > longest_other:
+            margins[index] = lengths[q.correct_index] / max(1, longest_other)
+    if 2 * len(margins) <= len(questions):
+        return None
+    return max(margins, key=margins.__getitem__)

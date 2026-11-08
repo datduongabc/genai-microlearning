@@ -112,6 +112,71 @@ cho hai judge.
 Điểm này không so được với [pilot trước](2026-11-07-module-study-pairs.md): ở đó chưa có judge của cặp chấm đã định, và
 đây không phải nghiên cứu mù có đối chứng mà là điểm tuyệt đối của module RAG.
 
+## Sửa prompt sinh quiz, rồi chấm lại
+
+Sau kết quả trên, prompt sinh câu hỏi (`app/generation/quiz_graph.py`) được sửa theo đúng các lỗi hai judge nêu: mức
+Bloom nằm ở việc người học phải làm chứ không ở lời dẫn ("Khi phân tích…"); từ mức understand trở lên đáp án không
+chép nguyên văn tài liệu; phương án nhiễu là nhầm lẫn có thật, không phủ định thẳng tài liệu; câu practice kiểm ở mức
+Bloom của Learning Objective; lời giải thích chỉ dùng điều có trong tài liệu; thêm "hoàn toàn", "bất kỳ", "tuyệt đối",
+"thuần túy", "không hề" vào danh sách từ tuyệt đối; luật "đáp án đúng dài nhất" của cả bộ câu hỏi bắt khi quá nửa số
+câu như vậy thay vì khi mọi câu như vậy. Mười module được sinh lại trên đúng mười tài liệu (Planner được cache theo
+tài liệu nên chủ đề và Learning Objective giữ nguyên) và chấm lại bằng cùng hai judge. Dữ liệu ở
+`jev-subjects/quiz-prompt/`. Lượt này tốn khoảng 1,45 $.
+
+| Chỉ số trên 40 câu hỏi | Trước | Sau |
+| --- | ---: | ---: |
+| Đáp án đúng là phương án dài nhất | 20/40 | 19/40 |
+| Câu có từ cực đoan trong phương án | 18 | 12 |
+| Lời dẫn mở đầu "Khi phân tích / Đánh giá" | 7 | 0 |
+
+| Tiêu chí (cặp: 10 tài liệu × 2 judge) | Trước | Sau | Chênh, 95% bootstrap theo tài liệu |
+| --- | ---: | ---: | --- |
+| quiz_quality | 2,95 | 2,90 | −0,05 (−0,20 đến +0,10) |
+| bloom_fidelity | 2,90 | 3,10 | +0,20 (0,00 đến +0,40) |
+| accuracy | 4,20 | 4,05 | −0,15 (−0,60 đến +0,30) |
+| Trung bình 8 tiêu chí | 3,76 | 3,78 | +0,03 (−0,16 đến +0,23) |
+
+**Sửa prompt không cải thiện được chất lượng quiz.** Lời dẫn giả mức Bloom biến mất và Bloom nhích lên ở sát ngưỡng
+có ý nghĩa, nhưng hai judge vẫn nêu đúng hai lỗi cũ: đáp án đúng dài nhất (vẫn khoảng một nửa số câu, ngẫu nhiên là một
+phần tư) và phương án nhiễu cực đoan. Nguyên nhân nằm ở vòng sinh-kiểm (`_checked` trong `app/generation/common.py`):
+bẫy cú pháp có bắt được từ cực đoan, nhưng câu chỉ được sinh lại một lần, và nếu lần sinh lại vẫn trượt thì bản cuối
+vẫn được giữ, chỉ gắn cờ trượt. Gemini 3.5 Flash Lite không sửa được trong một lần đó.
+
+## Giữ bản ít lỗi nhất, sinh lại thêm khi trượt bẫy cú pháp
+
+Hai thay đổi trong vòng sinh-kiểm của câu hỏi (`_best_attempt` trong `app/generation/quiz_graph.py`; Content vẫn dùng
+`_checked`). Một: hết lượt thì giữ bản trượt ít tiêu chí nhất, rồi ít lỗi cú pháp nhất, thay cho bản cuối. Hai: bẫy cú
+pháp chạy ở máy chủ, không tốn lượt gọi nào, nên bản nháp trượt nó được sinh lại ngay trước khi model kiểm, tối đa
+`SYNTAX_RETRY = 2` lượt thêm cho cả câu. Mười module được sinh lại trên đúng mười tài liệu, giữ prompt đã sửa ở trên.
+Dữ liệu ở `jev-subjects/quiz-best/`. Lượt sinh tốn 0,45 $. Credit OpenRouter hết sau 17 trên 20 lượt chấm (thiếu
+openai-pro ở một tài liệu và cả hai judge ở tài liệu `414be4da`), nên bảng chấm dưới đây chỉ so trên 17 cặp có đủ cả
+ba lần đo (9 tài liệu).
+
+| Chỉ số trên 40 câu hỏi | Trước | Sửa prompt | Thêm giữ bản tốt nhất |
+| --- | ---: | ---: | ---: |
+| Đáp án đúng là phương án dài nhất | 20/40 | 19/40 | 21/40 |
+| Câu có từ cực đoan trong phương án | 18 | 12 | 6 |
+| Lời dẫn mở đầu "Khi phân tích / Đánh giá" | 7 | 0 | 2 |
+| Lượt gọi model mỗi module (trung bình) | | 19 | 19 |
+| Thời gian sinh một module (trung bình) | | 28,3 s | 43,9 s |
+
+| Tiêu chí (17 cặp tài liệu × judge) | Trước | Sửa prompt | Thêm giữ bản tốt nhất | So với trước, 95% bootstrap |
+| --- | ---: | ---: | ---: | --- |
+| quiz_quality | 2,94 | 2,88 | 3,00 | +0,06 (0,00 đến +0,18) |
+| bloom_fidelity | 2,82 | 3,00 | 2,76 | −0,06 (−0,33 đến +0,28) |
+| accuracy | 4,18 | 4,12 | 4,00 | −0,18 (−0,47 đến +0,18) |
+| hallucination_score | 3,76 | 3,94 | 3,59 | −0,18 (−0,56 đến +0,24) |
+| Trung bình 8 tiêu chí | 3,74 | 3,79 | 3,71 | −0,03 (−0,23 đến +0,18) |
+
+**Lỗi cú pháp giảm, điểm judge không đổi.** Số câu có từ cực đoan giảm từ 18 xuống 6. Lượt gọi trung bình giữ nguyên
+19, vì bản nháp trượt bẫy cú pháp không còn tốn lượt model kiểm. Thời gian trung bình tăng chủ yếu do hai module chậm
+(73 s và 91 s). Điểm quiz_quality của hai judge chỉ nhích 0,06, mọi chênh lệch khác đều nằm trong nhiễu. Judge vẫn nêu
+đáp án đúng dài nhất ở khoảng một nửa số câu: bẫy cú pháp chỉ bắt khi đáp án dài gấp rưỡi phương án dài nhất còn lại,
+nên lượt sinh thêm không chạm tới lỗi này. Lỗi này chỉ thấy rõ ở cấp cả bộ câu. Judge còn chê câu chỉ kiểm nhớ, thấp
+hơn mức Bloom của Learning Objective, và vòng sinh lại không sửa được điều đó. Như vậy với Gemini 3.5 Flash Lite, cả
+sửa prompt lẫn sửa vòng sinh-kiểm đều không nâng được chất lượng quiz theo judge. Hướng còn lại: dùng model mạnh hơn
+riêng cho bước câu hỏi, hoặc đổi thứ tự phương án và cân độ dài bằng code sau khi sinh.
+
 ## So với các lần đo trước
 
 | Lần đo | Model | Rerank | Module | Rerank TB |

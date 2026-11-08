@@ -76,6 +76,19 @@ def test_moderately_long_key_giveaway_is_caught():
     assert quiz._syntax_iwf_check(q)
 
 
+@pytest.mark.parametrize("extreme", [
+    "Giai cấp vô sản phát triển hoàn toàn độc lập với phương thức sản xuất",
+    "Mác không kế thừa bất kỳ tư tưởng nào của người đi trước",
+    "Tác phẩm chỉ bàn về kinh tế thuần túy",
+])
+def test_extreme_wording_found_by_the_rubric_judges_is_caught(extreme):
+    """Distractors of the 2026-11-08 modules that both judges said were eliminated without knowing the lesson."""
+    q = question(choices=["Hide implementation details", extreme, "Bundle state with operations",
+                          "Dispatch by runtime object type"])
+
+    assert any("tuyệt đối" in issue for issue in quiz._syntax_iwf_check(q))
+
+
 def test_strict_review_requires_all_four_option_verdicts():
     with pytest.raises(ValidationError):
         quiz.GroundednessAnswerabilityCheck(**review(option_checks=[]))
