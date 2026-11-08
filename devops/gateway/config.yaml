@@ -4,11 +4,11 @@
 # place that reads the provider API keys, from the environment (never write a
 # key here). A provider whose key is empty simply cannot be used.
 #
-# Two keys cover every alias. GEMINI_API_KEY: Google's free tier, called directly, since
-# OpenRouter has no free Gemini; it also serves the default aliases and embed-gemini.
-# OPENROUTER_API_KEY: every paid model (OpenAI, Anthropic, the open-weight models), billed
-# on one balance. Transcription stays on Groq (GROQ_API_KEY) until Whisper through
-# OpenRouter is measured: it returns segment timestamps only from some upstreams.
+# One provider key covers every remote alias: OPENROUTER_API_KEY, billed on one balance
+# (Gemini, OpenAI, Anthropic, the open-weight models and Whisper). Only the local embedder
+# has a key of its own. Whisper through OpenRouter returns segment timestamps
+# (verbose_json), which citations of recordings need; litellm has no OpenRouter
+# transcription route, so it is called over the OpenAI protocol with OpenRouter's api_base.
 #
 # Each OpenRouter alias pins one upstream (provider.order, allow_fallbacks: false), so a
 # measurement keeps the provider it was made on and a failure is visible instead of
@@ -16,30 +16,20 @@
 # material, off endpoints that store or train on them.
 #
 # Model ids are pinned, never "-latest": Google moves a "-latest" alias to each new
-# release, so results measured on it could not be reproduced. Gemini ids are stable
-# models of the free tier (https://ai.google.dev/gemini-api/docs/models); there is no
-# stable Pro model on the free tier, so the stronger Gemini alias is Flash. OpenRouter
-# slugs are listed at https://openrouter.ai/models.
+# release, so results measured on it could not be reproduced. Gemini is pinned to
+# Google AI Studio, the upstream the earlier free-tier results were measured on.
+# OpenRouter slugs are listed at https://openrouter.ai/models.
 model_list:
   - model_name: transcribe
     litellm_params:
-      model: groq/whisper-large-v3-turbo
-      api_key: os.environ/GROQ_API_KEY
+      model: openai/openai/whisper-large-v3-turbo
+      api_base: https://openrouter.ai/api/v1
+      api_key: os.environ/OPENROUTER_API_KEY
     model_info:
-      display_name: Whisper Large V3 Turbo qua Groq
+      display_name: Whisper Large V3 Turbo qua OpenRouter
       mode: audio_transcription
 
   - model_name: gemini-fast
-    litellm_params:
-      model: gemini/gemini-3.5-flash-lite
-      api_key: os.environ/GEMINI_API_KEY
-    model_info:
-      display_name: Gemini 3.5 Flash Lite
-      note: nhanh, có hạn mức miễn phí
-  # The same model as gemini-fast, paid through OpenRouter on Google AI Studio: for when the free
-  # daily quota is spent, and for course material that should not reach the free tier, whose
-  # prompts Google may use. No fallback: it is chosen on purpose.
-  - model_name: gemini-fast-paid
     litellm_params:
       model: openrouter/google/gemini-3.5-flash-lite
       extra_body:
@@ -47,15 +37,18 @@ model_list:
       api_key: os.environ/OPENROUTER_API_KEY
     model_info:
       mode: chat
-      display_name: Gemini 3.5 Flash Lite (trả phí)
-      note: như Gemini 3.5 Flash Lite, không giới hạn theo ngày
+      display_name: Gemini 3.5 Flash Lite
+      note: nhanh, rẻ; model sinh mặc định
   - model_name: gemini-flash
     litellm_params:
-      model: gemini/gemini-3.5-flash
-      api_key: os.environ/GEMINI_API_KEY
+      model: openrouter/google/gemini-3.5-flash
+      extra_body:
+        provider: {order: [google-ai-studio], allow_fallbacks: false, data_collection: deny}
+      api_key: os.environ/OPENROUTER_API_KEY
     model_info:
+      mode: chat
       display_name: Gemini 3.5 Flash
-      note: chất lượng cao hơn, hạn mức miễn phí thấp hơn
+      note: chất lượng cao hơn, đắt hơn
 
   # Embeddings for retrieval (backend/app/ingestion/embeddings.py), served by the `embedder`
   # service of docker-compose.yml rather than a provider: the free Gemini tier embeds only 1000
@@ -77,15 +70,7 @@ model_list:
 
   # Other embedding models, chosen with EMBEDDING_MODEL. Vectors of two models cannot be
   # compared, so switching means clearing chunks.embedding and running scripts/reembed_chunks.py.
-  # The providers cut their vectors to 768 through the same `dimensions` argument. Groq has no
-  # embedding model, so it cannot serve here.
-  - model_name: embed-gemini
-    litellm_params:
-      model: gemini/gemini-embedding-001
-      api_key: os.environ/GEMINI_API_KEY
-    model_info:
-      display_name: Gemini Embedding
-      mode: embedding
+  # The provider cuts its vectors to 768 through the same `dimensions` argument.
   - model_name: embed-openai
     litellm_params:
       model: openrouter/openai/text-embedding-3-small
@@ -198,38 +183,50 @@ model_list:
   # requests use these; Content, Slides and Example use the large-safe aliases.
   - model_name: gemini-fast-small
     litellm_params:
-      model: gemini/gemini-3.5-flash-lite
-      api_key: os.environ/GEMINI_API_KEY
+      model: openrouter/google/gemini-3.5-flash-lite
+      extra_body:
+        provider: {order: [google-ai-studio], allow_fallbacks: false, data_collection: deny}
+      api_key: os.environ/OPENROUTER_API_KEY
     model_info:
+      mode: chat
       display_name: Gemini (bước nhỏ)
       hidden: true
   - model_name: gemini-flash-small
     litellm_params:
-      model: gemini/gemini-3.5-flash
-      api_key: os.environ/GEMINI_API_KEY
+      model: openrouter/google/gemini-3.5-flash
+      extra_body:
+        provider: {order: [google-ai-studio], allow_fallbacks: false, data_collection: deny}
+      api_key: os.environ/OPENROUTER_API_KEY
     model_info:
+      mode: chat
       display_name: Gemini (bước nhỏ)
       hidden: true
 
-  # Optional free-tier load balancing across two distinct deployments. The
+  # Optional load balancing across two distinct deployments. The
   # normal default stays gemini-fast; experiments must pick a single-model alias.
   - model_name: gemini-balanced
     litellm_params:
-      model: gemini/gemini-3.5-flash-lite
-      api_key: os.environ/GEMINI_API_KEY
+      model: openrouter/google/gemini-3.5-flash-lite
+      extra_body:
+        provider: {order: [google-ai-studio], allow_fallbacks: false, data_collection: deny}
+      api_key: os.environ/OPENROUTER_API_KEY
     model_info:
+      mode: chat
       display_name: Gemini cân bằng tải
       note: phân phối giữa Flash Lite và Flash; không dùng cho thí nghiệm
   - model_name: gemini-balanced
     litellm_params:
-      model: gemini/gemini-3.5-flash
-      api_key: os.environ/GEMINI_API_KEY
+      model: openrouter/google/gemini-3.5-flash
+      extra_body:
+        provider: {order: [google-ai-studio], allow_fallbacks: false, data_collection: deny}
+      api_key: os.environ/OPENROUTER_API_KEY
     model_info:
+      mode: chat
       display_name: Gemini cân bằng tải
       note: phân phối giữa Flash Lite và Flash; không dùng cho thí nghiệm
 
 # LiteLLM owns retries, load balancing and failover.
-# OpenAI, Claude and paid Groq are opt-in; generation never falls back to them.
+# OpenAI, Claude and GPT-OSS are opt-in; generation never falls back to them.
 router_settings:
   routing_strategy: simple-shuffle
   num_retries: 1

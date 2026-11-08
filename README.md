@@ -67,9 +67,7 @@ Chính sách định tuyến, fallback và ghim model khi đo xem ở [docs/gate
 - Docker và Docker Compose. Muốn embed bằng GPU thì cần thêm NVIDIA Container Toolkit.
 - Mã nguồn Moodle 5.2, tải riêng (xem bước 2 bên dưới).
 - Khóa API trong `devops/.env`:
-  - `GEMINI_API_KEY` cho model mặc định.
-  - `OPENROUTER_API_KEY` cho các model trả phí.
-  - `GROQ_API_KEY` cho phiên âm.
+  - `OPENROUTER_API_KEY` cho mọi model: Gemini (mặc định), Claude, GPT, GPT-OSS và Whisper (phiên âm).
   - `TYPESAFE_API_KEY` cho Jev. Muốn rerank ngay trên máy, không gửi đoạn tài liệu cho dịch vụ rerank bên ngoài, thì đặt `RERANKER_PROVIDER=jina`.
 
 ## Chạy hệ thống
