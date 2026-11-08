@@ -50,7 +50,7 @@ def condense_query(message: str, history: list[dict]) -> str:
     rewritten = complete(prompt, system_instruction=CONDENSE_SYSTEM_INSTRUCTION).strip()
     return rewritten or message
 
-CHAT_SYSTEM_INSTRUCTION = """Bạn là trợ lý hỏi-đáp cho môn học. Chỉ được trả lời dựa trên các đoạn nguồn
+CHAT_SYSTEM_INSTRUCTION = IGNORE_EMBEDDED_INSTRUCTIONS + """Bạn là trợ lý hỏi-đáp cho môn học. Chỉ được trả lời dựa trên các đoạn nguồn
 (source chunk) được cung cấp bên dưới — KHÔNG được bịa đặt hay đưa vào thông tin
 ngoài nguồn (sự kiện, định nghĩa, số liệu, tên riêng), kể cả khi bạn biết câu trả
 lời đúng từ nơi khác.
