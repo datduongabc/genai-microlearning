@@ -2,7 +2,7 @@
 
 Terraform cho bản đồ án của `docs/architecture/system-design-v1.md`: một thư mục, một môi trường mỗi lần `apply`, xóa được bằng một lệnh.
 
-**Mới `apply` được một phần trên AWS.** Lần `apply` ngày 2026-11-06 tạo được mạng, RDS, Valkey, ALB, S3, SNS và budget, rồi dừng ở CloudFront vì tài khoản chưa được AWS xác minh (đã xác minh xong ngày 2026-11-10); stack đó đã được xóa. Các ECS service, migration trên RDS, Service Connect, upload thẳng vào S3, autoscaling và cảnh báo chưa từng chạy trên AWS thật: chúng mới chỉ qua `terraform validate` và `terraform test` (plan với AWS giả lập, xem `terraform/tests/`), nên lần `apply` tới vẫn có thể gặp lỗi mà chỉ AWS thật mới báo.
+**Đã chạy trên AWS** từ ngày 2026-11-11 (commit `8c2f1e8`): apply, migration, rollout, frontend và smoke test qua CloudFront đều qua. Lần apply đầu ngày 2026-11-06 dừng ở CloudFront vì tài khoản chưa được xác minh; AWS xác minh xong ngày 2026-11-10. Lần deploy đầu, worker báo `password authentication failed for user "app_worker"` cho tới khi migration tạo xong vai trò DB, rồi tự hết.
 
 ## Có gì
 
