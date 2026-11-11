@@ -30,9 +30,12 @@ resource "aws_db_parameter_group" "main" {
   name   = local.name
   family = "postgres16"
 
+  # A static parameter: RDS stores it as pending-reboot whatever is asked, and leaving the method
+  # to its default made every plan show it as changed. A new instance starts with it in force.
   parameter {
-    name  = "rds.force_ssl"
-    value = "1"
+    name         = "rds.force_ssl"
+    value        = "1"
+    apply_method = "pending-reboot"
   }
   # Logs a statement that runs over a second; the slow ones are what to look at first under load.
   parameter {
