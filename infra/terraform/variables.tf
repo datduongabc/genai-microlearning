@@ -73,9 +73,9 @@ variable "reranker" {
 }
 
 variable "llm_model" {
-  description = "Gateway alias for module generation; see devops/gateway/config.yaml."
+  description = "Gateway alias for chat and module generation; see devops/gateway/config.yaml. The same default as compose and backend/app/config.py, the model the thesis measurements were made on."
   type        = string
-  default     = "openai-fast"
+  default     = "gemini-fast"
 }
 
 # --- Data
