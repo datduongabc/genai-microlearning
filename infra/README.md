@@ -2,7 +2,7 @@
 
 Terraform cho bản đồ án của `docs/architecture/system-design-v1.md`: một thư mục, một môi trường mỗi lần `apply`, xóa được bằng một lệnh.
 
-**Chưa từng `apply` trên AWS.** Đã kiểm bằng `terraform validate` và `terraform test` (plan với AWS giả lập, xem `terraform/tests/`). Lần `apply` đầu tiên vẫn có thể gặp lỗi mà chỉ AWS thật mới báo, ví dụ quota hoặc phiên bản engine.
+**Mới `apply` được một phần trên AWS.** Lần `apply` ngày 2026-11-06 tạo được mạng, RDS, Valkey, ALB, S3, SNS và budget, rồi dừng ở CloudFront vì tài khoản chưa được AWS xác minh (đã xác minh xong ngày 2026-11-10); stack đó đã được xóa. Các ECS service, migration trên RDS, Service Connect, upload thẳng vào S3, autoscaling và cảnh báo chưa từng chạy trên AWS thật: chúng mới chỉ qua `terraform validate` và `terraform test` (plan với AWS giả lập, xem `terraform/tests/`), nên lần `apply` tới vẫn có thể gặp lỗi mà chỉ AWS thật mới báo.
 
 ## Có gì
 
@@ -53,6 +53,24 @@ infra/scripts/deploy.sh
 Thứ tự: build và đẩy image theo commit → chạy migration bằng image mới trong một task riêng → rolling update → frontend → gọi `/api/ready` qua CloudFront. Migration lỗi thì dừng, chưa service nào đổi. Task mới không qua health check thì circuit breaker của ECS tự quay về bản cũ.
 
 Trong lúc rolling update, bản cũ và mới chạy cùng lúc trên schema mới, nên thay đổi phá vỡ tương thích phải tách hai lần deploy: thêm trước, bỏ sau.
+
+## Moodle cho bản AWS
+
+Moodle không nằm trong stack. Để thử LTI với một Moodle thật mà không tốn thêm tiền, chạy Moodle của kho mã trên máy mình và đưa nó ra Internet qua Cloudflare quick tunnel (không cần tài khoản Cloudflare):
+
+```bash
+bash infra/scripts/moodle-tunnel.sh    # sau deploy.sh; Ctrl-C để dừng
+```
+
+Script dựng Moodle 5.2 dùng một lần (Postgres và moodledata trên tmpfs, không đụng stack compose), tạo khóa học, một giảng viên, một sinh viên và công cụ LTI trỏ tới output `url`, đăng ký Moodle này vào database trên AWS bằng một task ECS, rồi in địa chỉ và mật khẩu. Mở khóa học bằng tài khoản giảng viên trước, sau đó tới sinh viên.
+
+Giới hạn:
+
+- **Địa chỉ đổi mỗi lần chạy,** và issuer LTI đổi theo: tài khoản và khóa học tạo qua lần chạy trước không được nhận lại. Giữ script chạy suốt buổi demo; máy ngủ hoặc mất mạng là mất Moodle đó.
+- **Chỉ có LTI** (launch và danh sách lớp). Xuất Book và Quiz sang Moodle cần thêm `moodle_base_url`, `moodle_wwwroot` bằng địa chỉ tunnel và `moodle-token` trong SSM, tức một lần `terraform apply` nữa cho mỗi địa chỉ.
+- Lưu lượng đi qua Cloudflare, nên chỉ dùng với dữ liệu thử.
+
+Cần một địa chỉ ổn định thì thay bằng một EC2 nhỏ chạy Moodle (khoảng $0,02 đến $0,03 một giờ), chưa có trong Terraform này.
 
 ## Xóa
 

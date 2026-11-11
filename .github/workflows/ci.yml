@@ -97,6 +97,7 @@ jobs:
       # Plans against a mocked AWS: no account and no cost (tests/plan.tftest.hcl).
       - run: terraform test
       - run: bash -n ../scripts/deploy.sh
+      - run: bash -n ../scripts/moodle-tunnel.sh
 
   moodle-plugin:
     runs-on: ubuntu-latest

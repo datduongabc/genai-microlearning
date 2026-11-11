@@ -124,6 +124,13 @@ resource "aws_budgets_budget" "monthly" {
   limit_unit   = "USD"
   time_unit    = "MONTHLY"
 
+  # Spend before credits: by default a budget counts what is left after them, which is $0 for as
+  # long as the credit lasts, so none of the warnings below would be sent until it had run out.
+  cost_types {
+    include_credit = false
+    include_refund = false
+  }
+
   dynamic "notification" {
     for_each = var.alarm_email == "" ? [] : [25, 50, 75]
     content {
