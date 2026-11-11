@@ -1,0 +1,4 @@
+# Copy to backend.hcl (ignored by git), then: terraform init -backend-config=backend.hcl
+# The bucket is made once per account, see infra/README.md.
+bucket = "microlearning-tfstate-<account id>"
+key    = "demo/terraform.tfstate" # one key per environment

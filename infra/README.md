@@ -23,7 +23,16 @@ Cần: AWS CLI đã đăng nhập, Docker, Node, `jq`, Terraform ≥ 1.10.
 ```bash
 cd infra/terraform
 cp terraform.tfvars.example terraform.tfvars   # sửa image_tag = commit hiện tại, alarm_email
-terraform init
+
+# 0. Bucket giữ state, một lần cho mỗi tài khoản. State chứa mật khẩu DB sinh ra, nên bucket riêng
+#    tư, mã hóa, chỉ nhận TLS, và có versioning để lấy lại bản cũ khi state hỏng.
+B="microlearning-tfstate-$(aws sts get-caller-identity --query Account --output text)"
+aws s3api create-bucket --bucket "$B" --region ap-southeast-1 --create-bucket-configuration LocationConstraint=ap-southeast-1
+aws s3api put-bucket-versioning --bucket "$B" --versioning-configuration Status=Enabled
+aws s3api put-public-access-block --bucket "$B" --public-access-block-configuration \
+  BlockPublicAcls=true,IgnorePublicAcls=true,BlockPublicPolicy=true,RestrictPublicBuckets=true
+cp backend.hcl.example backend.hcl              # điền tên bucket
+terraform init -backend-config=backend.hcl
 
 # 1. Kho ECR trước, để có chỗ đẩy image.
 terraform apply -target=aws_ecr_repository.repo -target=aws_ecr_lifecycle_policy.keep_recent

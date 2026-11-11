@@ -16,15 +16,15 @@ terraform {
     }
   }
 
-  # State holds the generated database passwords, so it must not sit on a laptop or in git.
-  # Create the bucket once (see README), then uncomment. use_lockfile needs no DynamoDB table.
-  # backend "s3" {
-  #   bucket       = "<account>-microlearning-tfstate"
-  #   key          = "demo/terraform.tfstate"
-  #   region       = "ap-southeast-1"
-  #   encrypt      = true
-  #   use_lockfile = true
-  # }
+  # State holds the generated database passwords, so it must not sit on a laptop or in git. The
+  # bucket and the key come from backend.hcl (ignored by git, see backend.hcl.example): the bucket
+  # is named after the account, and each environment keeps its own key. use_lockfile locks with
+  # an object next to the state, so no DynamoDB table is needed.
+  backend "s3" {
+    region       = "ap-southeast-1"
+    encrypt      = true
+    use_lockfile = true
+  }
 }
 
 provider "aws" {

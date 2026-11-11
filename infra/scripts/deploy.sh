@@ -34,7 +34,9 @@ if [[ "${SKIP_BUILD:-0}" != 1 ]]; then
   REGISTRY="$(repo backend | cut -d/ -f1)"
   aws ecr get-login-password --region "$REGION" | docker login --username AWS --password-stdin "$REGISTRY"
   build() { # name, context
-    docker build --platform linux/amd64 -t "$(repo "$1"):$TAG" "$2"
+    # No provenance attestation: with one, buildx pushes an image index, and ECR's scan on push
+    # skips an index, so no image was ever scanned.
+    docker build --platform linux/amd64 --provenance=false -t "$(repo "$1"):$TAG" "$2"
     docker push "$(repo "$1"):$TAG"
   }
   build backend "$ROOT/backend"
