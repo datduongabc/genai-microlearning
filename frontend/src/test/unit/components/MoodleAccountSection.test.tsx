@@ -21,6 +21,19 @@ describe('MoodleAccountSection', () => {
     expect(document.querySelector('input')).toBeNull()
   })
 
+  it('says Moodle is not connected, with no link form, where the environment has no Moodle', async () => {
+    // AWS on 2026-11-11: the panel read "Không kiểm tra được Moodle" and the course page "try again later".
+    vi.spyOn(api, 'getMoodleAccount').mockResolvedValue({ email: 'lan@x.edu', status: 'unavailable' })
+    const onStatus = vi.fn()
+    render(<MoodleAccountSection onStatus={onStatus} />)
+
+    expect(await screen.findByText('Chưa nối với Moodle')).toBeInTheDocument()
+    expect(screen.getByText(/mở công cụ từ moodle \(lti\) vẫn dùng được/i)).toBeInTheDocument()
+    expect(document.querySelector('input')).toBeNull()
+    expect(screen.queryByText(/thử lại sau/i)).not.toBeInTheDocument()
+    await waitFor(() => expect(onStatus).toHaveBeenLastCalledWith('unavailable'))
+  })
+
   it('shows that app and Moodle accounts are separate when not linked', async () => {
     vi.spyOn(api, 'getMoodleAccount').mockResolvedValue({ email: 'lan@x.edu', status: 'not_linked' })
     render(<MoodleAccountSection />)

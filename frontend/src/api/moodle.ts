@@ -18,7 +18,8 @@ export async function listMoodleCourses() {
   return data
 }
 
-export type MoodleAccountStatus = 'not_linked' | 'linked' | 'pending' | 'rejected' | 'expired'
+// unavailable: this environment has no Moodle web service address, so there is nothing to link.
+export type MoodleAccountStatus = 'not_linked' | 'linked' | 'pending' | 'rejected' | 'expired' | 'unavailable'
 
 export interface MoodleAccount {
   email: string

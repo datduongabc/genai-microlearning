@@ -18,6 +18,15 @@ import httpx
 from app.config import settings
 
 
+class MoodleNotConfigured(Exception):
+    """No Moodle address is set (MOODLE_BASE_URL empty), as on an AWS environment whose LMS reaches
+    the tool by LTI only. Account links and publishing are then unavailable, not failing."""
+
+
+def configured() -> bool:
+    return bool(settings.moodle_base_url.strip())
+
+
 class MoodleError(Exception):
     """Moodle returned an exception envelope or an invalid JSON response."""
 
@@ -43,6 +52,10 @@ def _flatten(prefix: str, value: Any) -> list[tuple[str, str]]:
 
 
 def call(wsfunction: str, **params: Any) -> Any:
+    if not configured():
+        # Without this the request went to "/webservice/rest/server.php", httpx refused a URL with
+        # no scheme, and the lecturer read "could not reach Moodle, try again later".
+        raise MoodleNotConfigured(wsfunction)
     form: dict[str, str] = {
         "wstoken": settings.moodle_token,
         "wsfunction": wsfunction,

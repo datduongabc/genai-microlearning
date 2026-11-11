@@ -43,6 +43,11 @@ logger = logging.getLogger(__name__)
 NRPS_SCOPE = "https://purl.imsglobal.org/spec/lti-nrps/scope/contextmembership.readonly"
 MEMBERSHIP_MEDIA_TYPE = "application/vnd.ims.lti-nrps.v2.membershipcontainer+json"
 ASSERTION_LIFETIME_SECONDS = 300
+# How far back the assertion's iat is set. Moodle's JWT library refuses an iat later than its own
+# clock with no leeway, so an LMS a second behind refused every token (2026-11-11, a Moodle on a
+# laptop against the tool on AWS: "Cannot handle token with iat prior to ..."). Backdating is safe:
+# exp still bounds the assertion, and jti makes it single use.
+ASSERTION_CLOCK_SKEW_SECONDS = 60
 HTTP_TIMEOUT_SECONDS = 10
 # A course of a few thousand people is a few dozen pages; a list that goes on longer is a loop.
 MAX_PAGES = 200
@@ -109,7 +114,8 @@ def _access_token(client: httpx.Client, platform: LtiPlatform) -> str:
     now = int(time.time())
     assertion = jwt.encode(
         {"iss": platform.client_id, "sub": platform.client_id, "aud": platform.token_url,
-         "iat": now, "exp": now + ASSERTION_LIFETIME_SECONDS, "jti": uuid.uuid4().hex},
+         "iat": now - ASSERTION_CLOCK_SKEW_SECONDS, "exp": now + ASSERTION_LIFETIME_SECONDS,
+         "jti": uuid.uuid4().hex},
         key, algorithm="RS256", headers={"kid": public_jwks()["keys"][0]["kid"]},
     )
     response = client.post(platform.token_url, data={

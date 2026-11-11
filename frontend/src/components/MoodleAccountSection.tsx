@@ -10,6 +10,7 @@ const emailSchema = z.object({ email: z.string().trim().email("Email không hợ
 const LABEL: Record<MoodleAccountState, string> = {
   linked: "Đã liên kết", not_linked: "Chưa liên kết", unknown: "Không kiểm tra được Moodle",
   pending: "Chờ xác nhận trong Moodle", rejected: "Yêu cầu đã bị từ chối", expired: "Yêu cầu đã hết hạn",
+  unavailable: "Chưa nối với Moodle",
 };
 
 export function MoodleAccountSection({ onStatus }: { onStatus?: (status: MoodleAccountState) => void }) {
@@ -67,14 +68,20 @@ export function MoodleAccountSection({ onStatus }: { onStatus?: (status: MoodleA
         <span className="font-medium">Tài khoản Moodle:</span>{" "}
         <span className={status === "linked" ? "text-green-700" : "text-gray-600"}>{LABEL[status]}</span>
       </p>
-      {answer?.email && <p className="mt-1 text-sm text-gray-600">{answer.email}</p>}
+      {answer?.email && status !== "unavailable" && <p className="mt-1 text-sm text-gray-600">{answer.email}</p>}
+      {status === "unavailable" && (
+        <p className="mt-1 text-sm text-gray-600">
+          Hệ thống này chưa được nối với Moodle qua web service, nên chưa liên kết tài khoản hay xuất bản sang Moodle được.
+          Mở công cụ từ Moodle (LTI) vẫn dùng được.
+        </p>
+      )}
       {status === "pending" && <p className="mt-2 text-sm text-gray-600">Nếu có tài khoản Moodle phù hợp, hãy đăng nhập Moodle để xác nhận liên kết.</p>}
       {status === "pending" && answer?.confirmation_url && (
         <a href={answer.confirmation_url} target="_blank" rel="noopener noreferrer" className="mt-2 inline-block text-sm text-terracotta underline">
           Mở Moodle để xác nhận
         </a>
       )}
-      {status !== "linked" && status !== "unknown" && (
+      {status !== "linked" && status !== "unknown" && status !== "unavailable" && (
         <form onSubmit={(event) => { void handleSubmit(submit)(event); }} noValidate className="mt-3 flex flex-col gap-2">
           <p className="text-sm text-gray-600">Tài khoản trong ứng dụng và tài khoản Moodle được quản lý riêng. Nhập email Moodle. Nếu có tài khoản Moodle phù hợp, hãy đăng nhập Moodle để xác nhận yêu cầu. Liên kết chỉ hoạt động sau khi bạn xác nhận.</p>
           <label className="text-sm">Email Moodle
