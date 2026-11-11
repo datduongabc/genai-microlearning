@@ -12,6 +12,8 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 
 FROM python:${PYTHON_VERSION}-slim
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 PATH=/opt/venv/bin:$PATH
+# The Debian security fixes published since the base image was built (ECR's scan on push).
+RUN apt-get update && apt-get upgrade -y && rm -rf /var/lib/apt/lists/*
 COPY --from=deps /opt/venv /opt/venv
 RUN adduser --disabled-password --gecos "" --home /home/gateway --uid 10001 gateway
 

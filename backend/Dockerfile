@@ -21,8 +21,10 @@ WORKDIR /app
 
 # Tesseract doc tai lieu quet, ffmpeg tach tieng khoi video truoc khi phien am.
 # Cai khi con la root, truoc khi doi sang nguoi dung thuong.
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    tesseract-ocr tesseract-ocr-vie ffmpeg \
+# upgrade: the Debian base image is released less often than its security fixes, and ECR's scan
+# on push reports what it still lacks. Rebuilding picks up the fixes published since.
+RUN apt-get update && apt-get upgrade -y \
+    && apt-get install -y --no-install-recommends tesseract-ocr tesseract-ocr-vie ffmpeg \
     && rm -rf /var/lib/apt/lists/*
 # Hinh trong slide duoc OCR song song, moi anh mot tien trinh Tesseract: de moi tien trinh
 # tu chia them luong thi chung tranh nhau CPU va cham hon chay tuan tu.

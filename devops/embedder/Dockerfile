@@ -6,6 +6,9 @@ COPY prepare_model.py /prepare_model.py
 RUN python /prepare_model.py
 
 FROM ghcr.io/huggingface/text-embeddings-inference:cpu-1.9.4
+# The TEI image is built on Debian 12 and released less often than its security fixes: openssl,
+# perl and brotli had critical findings in ECR's scan on push that an upgrade removes.
+RUN apt-get update && apt-get upgrade -y && rm -rf /var/lib/apt/lists/*
 COPY --from=model /model /model
 # The same arguments as the embedder of devops/docker-compose.yml, see the reasons there. The
 # API key comes from the API_KEY environment variable, never the image.
