@@ -495,3 +495,13 @@ body { background: var(--bg-canvas); font-size:16px; line-height:24px; }
 
 /* The packet's reference file, above the packet and the form, where a rater looks first. */
 .packet-reference { display:flex; flex-wrap:wrap; align-items:center; gap:4px 12px; margin-top:8px; font-size:14px; }
+
+.flashcard-editor { max-width:760px; display:flex; flex-direction:column; gap:16px; align-items:flex-start; }
+.flashcard-bar { display:flex; flex-wrap:wrap; align-items:center; gap:8px 20px; }
+.flashcard-count { font-size:14px; line-height:20px; color:var(--text-secondary); }
+.flashcard-list { width:100%; display:flex; flex-direction:column; gap:12px; }
+.flashcard-item { padding:16px 20px; background:var(--bg-surface); border:1px solid var(--border-default); border-radius:var(--radius-sm); display:flex; flex-direction:column; gap:10px; }
+.flashcard-head { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.flashcard-item .doc-warning { margin-top:0; }
+.flashcard-field { display:flex; flex-direction:column; gap:6px; font-size:14px; line-height:20px; color:var(--text-secondary); }
+.flashcard-actions { display:flex; flex-wrap:wrap; align-items:center; gap:12px; }

@@ -1,0 +1,242 @@
+import { act, render, screen, waitFor, within } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { AxiosError, type AxiosResponse, type InternalAxiosRequestConfig } from 'axios'
+import { MemoryRouter, Route, Routes } from 'react-router-dom'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { FlashcardEditorPage } from '../../../pages/FlashcardEditorPage'
+import { AuthProvider } from '../../../auth/AuthContext'
+import * as api from '../../../api'
+import type { FlashcardCard, FlashcardSetDetail } from '../../../api'
+
+vi.mock('../../../api', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../../api')>()
+  return Object.fromEntries(
+    Object.entries(actual).map(([name, value]) => [
+      name,
+      typeof value === 'function' && !['apiErrorMessage', 'api'].includes(name) ? vi.fn() : value,
+    ]),
+  )
+})
+
+const card = (n: number, extra: Partial<FlashcardCard> = {}): FlashcardCard => ({
+  front: `Mặt trước ${n}`, back: `Mặt sau ${n}`, citations: ['chunk-1'], author: 'ai', flag: null, ...extra,
+})
+
+const draft = (cards: FlashcardCard[], extra: Partial<FlashcardSetDetail> = {}): FlashcardSetDetail => ({
+  id: 'set-1', document_id: 'doc-1', focus: 'Mảng', output_language: 'vi', model_alias: 'gemini-fast',
+  status: 'draft', card_count: cards.length, published_at: null, created_at: '2026-01-01T00:00:00Z',
+  cards, ...extra,
+})
+
+function renderPage() {
+  return render(
+    <AuthProvider>
+      <MemoryRouter initialEntries={['/flashcard-sets/set-1']}>
+        <Routes>
+          <Route path="/flashcard-sets/:id" element={<FlashcardEditorPage />} />
+        </Routes>
+      </MemoryRouter>
+    </AuthProvider>,
+  )
+}
+
+const axiosFailure = (status: number, detail: string) => {
+  const config = { headers: {} } as InternalAxiosRequestConfig
+  return new AxiosError('failed', 'ERR_BAD_REQUEST', config, null,
+    { status, statusText: '', data: { detail }, headers: {}, config } as AxiosResponse)
+}
+
+beforeEach(() => {
+  vi.clearAllMocks()
+})
+
+afterEach(() => {
+  vi.useRealTimers()
+})
+
+describe('FlashcardEditorPage', () => {
+  it('shows a warning on a flagged card and on a card without a source', async () => {
+    vi.mocked(api.getFlashcardSet).mockResolvedValue(draft([
+      card(1),
+      card(2, { flag: 'Chưa có nguồn', citations: [] }),
+      card(3, { flag: 'Có thể không khớp tài liệu' }),
+    ]))
+
+    renderPage()
+
+    const cards = await screen.findAllByRole('listitem')
+    expect(within(cards[0]).queryByRole('alert')).not.toBeInTheDocument()
+    expect(within(cards[1]).getByRole('alert')).toHaveTextContent('Chưa có nguồn')
+    expect(within(cards[2]).getByRole('alert')).toHaveTextContent('Có thể không khớp tài liệu')
+  })
+
+  it('warns about an uncited card even before the server has flagged it', async () => {
+    vi.mocked(api.getFlashcardSet).mockResolvedValue(draft([card(1, { citations: [] })]))
+
+    renderPage()
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Chưa có nguồn')
+  })
+
+  it('saves edited cards and stops at 15', async () => {
+    const fourteen = Array.from({ length: 14 }, (_, i) => card(i + 1))
+    vi.mocked(api.getFlashcardSet).mockResolvedValue(draft(fourteen))
+    vi.mocked(api.saveFlashcards).mockImplementation(async (_id, cards) =>
+      draft(cards.map((c, i) => card(i + 1, { ...c, author: 'lecturer' }))),
+    )
+
+    renderPage()
+    const add = await screen.findByRole('button', { name: 'Thêm thẻ' })
+    expect(add).toBeEnabled()
+    expect(screen.getByRole('button', { name: 'Lưu thay đổi' })).toBeDisabled()
+
+    await userEvent.click(add)
+    expect(screen.getByRole('button', { name: 'Thêm thẻ' })).toBeDisabled()
+    expect(screen.getByText('15/15 thẻ')).toBeInTheDocument()
+
+    const fronts = screen.getAllByLabelText('Mặt trước')
+    await userEvent.type(fronts[14], 'Câu hỏi mới')
+    await userEvent.type(screen.getAllByLabelText('Mặt sau')[14], 'Trả lời mới')
+    await userEvent.clear(fronts[0])
+    await userEvent.type(fronts[0], 'Sửa rồi')
+    await userEvent.click(screen.getByRole('button', { name: 'Lưu thay đổi' }))
+
+    await waitFor(() => expect(api.saveFlashcards).toHaveBeenCalledTimes(1))
+    const [id, sent] = vi.mocked(api.saveFlashcards).mock.calls[0]
+    expect(id).toBe('set-1')
+    expect(sent).toHaveLength(15)
+    expect(sent[0]).toEqual({ front: 'Sửa rồi', back: 'Mặt sau 1', citations: ['chunk-1'] })
+    expect(sent[14]).toEqual({ front: 'Câu hỏi mới', back: 'Trả lời mới', citations: [] })
+    expect(await screen.findByText('Đã lưu.')).toBeInTheDocument()
+  })
+
+  it('does not save a card with an empty side', async () => {
+    vi.mocked(api.getFlashcardSet).mockResolvedValue(draft([card(1)]))
+
+    renderPage()
+    await userEvent.click(await screen.findByRole('button', { name: 'Thêm thẻ' }))
+
+    expect(screen.getByRole('button', { name: 'Lưu thay đổi' })).toBeDisabled()
+    expect(screen.getByText('Mỗi thẻ cần cả mặt trước và mặt sau.')).toBeInTheDocument()
+  })
+
+  it('removes a card', async () => {
+    vi.mocked(api.getFlashcardSet).mockResolvedValue(draft([card(1), card(2)]))
+    vi.mocked(api.saveFlashcards).mockResolvedValue(draft([card(2)]))
+
+    renderPage()
+    await userEvent.click((await screen.findAllByRole('button', { name: /Xóa thẻ/ }))[0])
+    await userEvent.click(screen.getByRole('button', { name: 'Lưu thay đổi' }))
+
+    expect(vi.mocked(api.saveFlashcards).mock.calls[0][1]).toEqual([
+      { front: 'Mặt trước 2', back: 'Mặt sau 2', citations: ['chunk-1'] },
+    ])
+  })
+
+  it('publishes only after saving', async () => {
+    vi.mocked(api.getFlashcardSet).mockResolvedValue(draft([card(1)]))
+    vi.mocked(api.saveFlashcards).mockResolvedValue(draft([card(1, { front: 'Đã sửa', author: 'lecturer' })]))
+    vi.mocked(api.publishFlashcardSet).mockResolvedValue(draft([card(1)], { published_at: '2026-01-02T00:00:00Z' }))
+
+    renderPage()
+    const publish = await screen.findByRole('button', { name: 'Giao cho người học' })
+    expect(publish).toBeEnabled()
+
+    await userEvent.type(screen.getByLabelText('Mặt trước'), '!')
+    expect(screen.getByRole('button', { name: 'Giao cho người học' })).toBeDisabled()
+    expect(screen.getByText('Lưu thay đổi trước khi giao.')).toBeInTheDocument()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Lưu thay đổi' }))
+    await userEvent.click(await screen.findByRole('button', { name: 'Giao cho người học' }))
+
+    expect(api.publishFlashcardSet).toHaveBeenCalledWith('set-1', true)
+    expect(await screen.findByRole('button', { name: 'Ngừng giao' })).toBeInTheDocument()
+  })
+
+  it('cannot publish an empty set', async () => {
+    vi.mocked(api.getFlashcardSet).mockResolvedValue(draft([]))
+
+    renderPage()
+
+    expect(await screen.findByRole('button', { name: 'Giao cho người học' })).toBeDisabled()
+  })
+
+  it('stops publishing a published set', async () => {
+    vi.mocked(api.getFlashcardSet).mockResolvedValue(draft([card(1)], { published_at: '2026-01-02T00:00:00Z' }))
+    vi.mocked(api.publishFlashcardSet).mockResolvedValue(draft([card(1)]))
+
+    renderPage()
+    await userEvent.click(await screen.findByRole('button', { name: 'Ngừng giao' }))
+
+    expect(api.publishFlashcardSet).toHaveBeenCalledWith('set-1', false)
+    expect(await screen.findByRole('button', { name: 'Giao cho người học' })).toBeInTheDocument()
+  })
+
+  it('says what the server said when saving fails and keeps the edits', async () => {
+    vi.mocked(api.getFlashcardSet).mockResolvedValue(draft([card(1)]))
+    vi.mocked(api.saveFlashcards).mockRejectedValue(axiosFailure(422, 'Trích nguồn phải là đoạn của chính tài liệu này.'))
+
+    renderPage()
+    await userEvent.type(await screen.findByLabelText('Mặt trước'), '!')
+    await userEvent.click(screen.getByRole('button', { name: 'Lưu thay đổi' }))
+
+    expect(await screen.findByText('Trích nguồn phải là đoạn của chính tài liệu này.')).toBeInTheDocument()
+    expect(screen.getByLabelText('Mặt trước')).toHaveValue('Mặt trước 1!')
+  })
+
+  it('follows a generating set until it is a draft', async () => {
+    vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] })
+    vi.mocked(api.getFlashcardSet)
+      .mockResolvedValueOnce(draft([], { status: 'generating' }))
+      .mockResolvedValue(draft([card(1)]))
+
+    renderPage()
+    expect(await screen.findByText('Đang sinh bộ thẻ...')).toBeInTheDocument()
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(10_000)
+    })
+
+    expect(await screen.findByLabelText('Mặt trước')).toHaveValue('Mặt trước 1')
+  })
+
+  it('says a failed generation failed', async () => {
+    vi.mocked(api.getFlashcardSet).mockResolvedValue(draft([], { status: 'failed' }))
+
+    renderPage()
+
+    expect(await screen.findByText(/Sinh bộ thẻ thất bại/)).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Thêm thẻ' })).not.toBeInTheDocument()
+  })
+
+  it('says the set is missing on a 404', async () => {
+    vi.mocked(api.getFlashcardSet).mockRejectedValueOnce(axiosFailure(404, 'nope'))
+    renderPage()
+    expect(await screen.findByText('Không tìm thấy bộ flashcard.')).toBeInTheDocument()
+  })
+
+  it('does not call a failed load a missing set', async () => {
+    vi.mocked(api.getFlashcardSet)
+      .mockRejectedValueOnce(axiosFailure(500, 'boom'))
+      .mockResolvedValue(draft([card(1)]))
+
+    renderPage()
+    expect(await screen.findByText('Không tải được bộ flashcard.')).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Thử lại' }))
+
+    expect(await screen.findByLabelText('Mặt trước')).toBeInTheDocument()
+  })
+
+  it('deletes the set after confirmation', async () => {
+    vi.mocked(api.getFlashcardSet).mockResolvedValue(draft([card(1)]))
+    vi.mocked(api.deleteFlashcardSet).mockResolvedValue(undefined)
+    vi.spyOn(window, 'confirm').mockReturnValueOnce(false).mockReturnValueOnce(true)
+
+    renderPage()
+    const del = await screen.findByRole('button', { name: 'Xóa bộ thẻ' })
+    await userEvent.click(del)
+    expect(api.deleteFlashcardSet).not.toHaveBeenCalled()
+    await userEvent.click(del)
+
+    expect(api.deleteFlashcardSet).toHaveBeenCalledWith('set-1')
+  })
+})

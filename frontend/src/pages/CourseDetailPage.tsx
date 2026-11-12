@@ -2,16 +2,18 @@ import axios from "axios";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import {
   apiErrorMessage,
   deleteDocument,
   deleteModule,
+  generateFlashcards,
   generateModule,
   getModuleJobStatus,
   linkMoodleCourse,
   listCourses,
   listDocuments,
+  listFlashcardSets,
   listModules,
   pollJobStatus,
   retryJob,
@@ -21,6 +23,7 @@ import {
   type Course,
   type DocumentFailure,
   type DocumentInfo,
+  type FlashcardSetSummary,
   type ModuleSummary,
   type MoodleCourse,
 } from "../api";
@@ -103,18 +106,26 @@ function extractionWarningLines(warnings: DocumentInfo["extraction_warnings"]) {
   }));
 }
 
+function flashcardStatusText(set: FlashcardSetSummary): string {
+  if (set.status === "generating") return "Đang sinh...";
+  if (set.status === "failed") return "Sinh thất bại";
+  return `${set.published_at ? "Đã giao" : "Bản nháp"} - ${set.card_count} thẻ`;
+}
+
 interface CoursePageSetters {
   setCourse: (course: Course | null) => void;
   setDocuments: (documents: DocumentInfo[]) => void;
   setModulesByDoc: (modules: Record<string, ModuleSummary[]>) => void;
+  setFlashcardSets: (sets: FlashcardSetSummary[]) => void;
 }
 
 // Hands over the documents as soon as they arrive and their modules a moment
 // later, so the list appears without waiting for one request per document.
 async function loadCoursePage(courseId: string, apply: CoursePageSetters) {
-  const [courses, docs] = await Promise.all([listCourses(), listDocuments(courseId)]);
+  const [courses, docs, sets] = await Promise.all([listCourses(), listDocuments(courseId), listFlashcardSets(courseId)]);
   apply.setCourse(courses.find((c) => c.id === courseId) ?? null);
   apply.setDocuments(docs);
+  apply.setFlashcardSets(sets);
   const entries = await Promise.all(
     docs.map(async (d) => [d.id, await listModules(d.id)] as const),
   );
@@ -130,6 +141,9 @@ export function CourseDetailPage() {
   const [modelAlias, setModelAlias] = useState("");
   const generateDialog = useRef<HTMLDialogElement>(null);
   const generateDocument = useRef<DocumentInfo | null>(null);
+  const flashcardDialog = useRef<HTMLDialogElement>(null);
+  const flashcardDocument = useRef<DocumentInfo | null>(null);
+  const [flashcardSets, setFlashcardSets] = useState<FlashcardSetSummary[]>([]);
   const [modulesByDoc, setModulesByDoc] = useState<
     Record<string, ModuleSummary[]>
   >({});
@@ -150,7 +164,7 @@ export function CourseDetailPage() {
   const [startingIds, setStartingIds] = useState<Set<string>>(new Set());
   const refresh = useCallback(async () => {
     if (!courseId) return;
-    await loadCoursePage(courseId, { setCourse, setDocuments, setModulesByDoc });
+    await loadCoursePage(courseId, { setCourse, setDocuments, setModulesByDoc, setFlashcardSets });
   }, [courseId]);
 
   // The first load drops whatever arrives after the page has gone, and sets
@@ -167,6 +181,7 @@ export function CourseDetailPage() {
           setCourse: guarded(setCourse),
           setDocuments: guarded(setDocuments),
           setModulesByDoc: guarded(setModulesByDoc),
+          setFlashcardSets: guarded(setFlashcardSets),
         })
       : Promise.resolve();
     first
@@ -200,6 +215,7 @@ export function CourseDetailPage() {
   const generatingOnServer = documents.some((d) => d.generating);
   const visibleDocuments = documents.filter((d) => matchesFilter(d, statusFilter));
   const shouldPoll = pipelineActive || generatingOnServer;
+  const setsByDoc = (documentId: string) => flashcardSets.filter((set) => set.document_id === documentId);
   const isGenerating = (doc: DocumentInfo) => doc.generating || startingIds.has(doc.id);
   useEffect(() => {
     if (!shouldPoll || !courseId) return;
@@ -220,6 +236,21 @@ export function CourseDetailPage() {
     if (wasGeneratingOnServer.current && !generatingOnServer) void refresh();
     wasGeneratingOnServer.current = generatingOnServer;
   }, [generatingOnServer, refresh]);
+
+  // A set being generated is a job in the worker: the server's status is the truth, so the list
+  // is read again until none is generating, as it is for documents above.
+  const flashcardsGenerating = flashcardSets.some((set) => set.status === "generating");
+  useEffect(() => {
+    if (!flashcardsGenerating || !courseId) return;
+    const timer = setInterval(async () => {
+      try {
+        setFlashcardSets(await listFlashcardSets(courseId));
+      } catch {
+        // transient failure: the next tick retries
+      }
+    }, DOCUMENT_POLL_INTERVAL_MS);
+    return () => clearInterval(timer);
+  }, [flashcardsGenerating, courseId]);
 
   async function handleUpload({ file }: UploadDocumentFormValues) {
     if (!courseId) return;
@@ -261,6 +292,20 @@ export function CourseDetailPage() {
         next.delete(documentId);
         return next;
       });
+    }
+  }
+
+  async function handleGenerateFlashcards(doc: DocumentInfo, outputLanguage: "vi" | "en", focus: string) {
+    setError(null);
+    try {
+      await generateFlashcards(doc.id, { focus, outputLanguage, modelAlias });
+      setFlashcardSets(await listFlashcardSets(courseId ?? ""));
+    } catch (err) {
+      if (axios.isAxiosError(err) && err.response?.status === 409) {
+        setError(apiErrorMessage(err, "Bộ thẻ này đang được sinh, vui lòng chờ."));
+      } else {
+        setError(apiErrorMessage(err, "Sinh flashcard thất bại"));
+      }
     }
   }
 
@@ -361,6 +406,9 @@ export function CourseDetailPage() {
       <GenerateDialog dialogRef={generateDialog} onGenerate={(language, instructions) => {
         if (generateDocument.current) void handleGenerate(generateDocument.current, language, instructions);
       }} />
+      <GenerateDialog dialogRef={flashcardDialog} kind="flashcards" onGenerate={(language, focus) => {
+        if (flashcardDocument.current) void handleGenerateFlashcards(flashcardDocument.current, language, focus);
+      }} />
       {course && <MoodleLinkSection course={course} onLinked={refresh} />}
       <div className="course-layout">
       <section className="course-documents" aria-labelledby="course-documents-title">
@@ -453,6 +501,14 @@ export function CourseDetailPage() {
                         : "+ Sinh mô-đun"}
                     </button>
                   )}
+                  {d.status === "embedded" && (
+                    <button
+                      onClick={() => { flashcardDocument.current = d; flashcardDialog.current?.showModal(); }}
+                      className="link-action"
+                    >
+                      + Sinh flashcard
+                    </button>
+                  )}
                   <button
                     onClick={() => handleDeleteDocument(d)}
                     disabled={deletingDocId === d.id}
@@ -496,6 +552,20 @@ export function CourseDetailPage() {
                       deleting={deletingModuleId === m.id}
                       onDelete={handleDeleteModule}
                     />
+                  ))}
+                </ul>
+              )}
+              {setsByDoc(d.id).length > 0 && (
+                <ul className="doc-modules" aria-label={`Flashcard sinh từ ${d.filename}`}>
+                  {setsByDoc(d.id).map((set) => (
+                    <li key={set.id} className="module-item">
+                      <Link to={`/flashcard-sets/${set.id}`} className="module-link">
+                        {set.focus ?? "Toàn bộ tài liệu"}
+                      </Link>
+                      <span className="status-pill" data-status={set.status === "failed" ? "failed" : set.status === "generating" ? "processing" : "embedded"}>
+                        {flashcardStatusText(set)}
+                      </span>
+                    </li>
                   ))}
                 </ul>
               )}

@@ -55,6 +55,7 @@ function renderPage() {
 beforeEach(() => {
   vi.clearAllMocks()
   vi.mocked(api.listDocuments).mockResolvedValue([])
+  vi.mocked(api.listFlashcardSets).mockResolvedValue([])
   // Ô chọn model gọi API này ngay khi trang mở, như listDocuments ở trên.
   vi.mocked(api.listModels).mockResolvedValue({ models: [], default: null })
   // The course chat loads its last conversation on open.
@@ -598,6 +599,88 @@ describe('CourseDetailPage - module generation availability', () => {
 
     expect(api.generateModule).toHaveBeenCalledWith('doc-1', '', 'vi', '')
     expect(await screen.findByRole('button', { name: /đang sinh mô-đun/i })).toBeDisabled()
+  })
+})
+
+const flashcardSet: api.FlashcardSetSummary = {
+  id: 'set-1', document_id: 'doc-1', focus: 'Mảng', output_language: 'vi', model_alias: 'gemini-fast',
+  status: 'draft', card_count: 8, published_at: null, created_at: '2026-01-01T00:00:00Z',
+}
+
+describe('CourseDetailPage - flashcard sets', () => {
+  beforeEach(() => {
+    vi.mocked(api.listCourses).mockResolvedValue([unlinkedCourse])
+    vi.mocked(api.listDocuments).mockResolvedValue([sampleDocument])
+    vi.mocked(api.listModules).mockResolvedValue([])
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it('lists flashcard sets under their document with their status', async () => {
+    vi.mocked(api.listFlashcardSets).mockResolvedValue([
+      flashcardSet,
+      { ...flashcardSet, id: 'set-2', focus: null, status: 'generating', card_count: 0 },
+      { ...flashcardSet, id: 'set-3', focus: 'Cây', status: 'failed', card_count: 0 },
+      { ...flashcardSet, id: 'set-4', focus: 'Đồ thị', published_at: '2026-01-02T00:00:00Z' },
+      { ...flashcardSet, id: 'set-5', document_id: 'doc-other', focus: 'Của tài liệu khác' },
+    ])
+    vi.mocked(api.listDocuments).mockResolvedValue([sampleDocument, { ...sampleDocument, id: 'doc-other', filename: 'other.pdf' }])
+
+    renderPage()
+
+    const list = await screen.findByRole('list', { name: 'Flashcard sinh từ syllabus.pdf' })
+    const items = within(list).getAllByRole('listitem')
+    expect(items).toHaveLength(4)
+    expect(within(items[0]).getByRole('link', { name: /Mảng/ })).toHaveAttribute('href', '/flashcard-sets/set-1')
+    expect(items[0]).toHaveTextContent('Bản nháp - 8 thẻ')
+    expect(items[1]).toHaveTextContent('Toàn bộ tài liệu')
+    expect(items[1]).toHaveTextContent('Đang sinh...')
+    expect(items[2]).toHaveTextContent('Sinh thất bại')
+    expect(items[3]).toHaveTextContent('Đã giao - 8 thẻ')
+    const other = screen.getByRole('list', { name: 'Flashcard sinh từ other.pdf' })
+    expect(within(other).getAllByRole('listitem')).toHaveLength(1)
+  })
+
+  it('generates a set with the focus and the chosen model, then shows it as generating', async () => {
+    vi.mocked(api.generateFlashcards).mockResolvedValue({ id: 'set-1', job_id: 'job-1' })
+    vi.mocked(api.listFlashcardSets)
+      .mockResolvedValueOnce([])
+      .mockResolvedValue([{ ...flashcardSet, status: 'generating', card_count: 0 }])
+
+    renderPage()
+    await userEvent.click(await screen.findByRole('button', { name: '+ Sinh flashcard' }))
+    await userEvent.type(screen.getByLabelText(/Trọng tâm/), 'Mảng')
+    await userEvent.click(screen.getByRole('button', { name: 'Sinh flashcard' }))
+
+    expect(api.generateFlashcards).toHaveBeenCalledWith('doc-1', { focus: 'Mảng', outputLanguage: 'vi', modelAlias: '' })
+    expect(await screen.findByText('Đang sinh...')).toBeInTheDocument()
+  })
+
+  it('says an identical set is already being generated when the server answers 409', async () => {
+    vi.mocked(api.generateFlashcards).mockRejectedValue(axiosFailure(409, 'Bộ thẻ này đang được sinh, vui lòng chờ.'))
+
+    renderPage()
+    await userEvent.click(await screen.findByRole('button', { name: '+ Sinh flashcard' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Sinh flashcard' }))
+
+    expect(await screen.findByText('Bộ thẻ này đang được sinh, vui lòng chờ.')).toBeInTheDocument()
+  })
+
+  it('follows a generating set until the server reports it done', async () => {
+    vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] })
+    vi.mocked(api.listFlashcardSets)
+      .mockResolvedValueOnce([{ ...flashcardSet, status: 'generating', card_count: 0 }])
+      .mockResolvedValue([flashcardSet])
+
+    renderPage()
+    expect(await screen.findByText('Đang sinh...')).toBeInTheDocument()
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(10_000)
+    })
+
+    expect(await screen.findByText('Bản nháp - 8 thẻ')).toBeInTheDocument()
   })
 })
 
