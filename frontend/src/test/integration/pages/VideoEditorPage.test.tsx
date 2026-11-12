@@ -444,8 +444,9 @@ describe('VideoEditorPage', () => {
     await act(async () => answerPoll(video([scene(1)], { draft_version: 1, status: 'draft', job: null })))
 
     expect(screen.getByLabelText('Tiêu đề cảnh 1')).toHaveValue('Đã lưu')
-    // The server state of the late answer is taken: the job is over.
-    expect(screen.queryByText('Đang vẽ hình...')).not.toBeInTheDocument()
+    // Nothing of the late answer is taken, not even its job or status: it is older than the save.
+    expect(screen.getByText('Đang vẽ hình...')).toBeInTheDocument()
+    expect(screen.queryByText('Đã vẽ xong hình.')).not.toBeInTheDocument()
     vi.mocked(api.saveVideoScenes).mockClear()
     await userEvent.type(screen.getByLabelText('Tiêu đề cảnh 1'), '!')
     await userEvent.click(screen.getByRole('button', { name: 'Lưu thay đổi' }))
@@ -588,5 +589,28 @@ describe('VideoEditorPage', () => {
     await passTime(3600)
 
     await waitFor(() => expect(screen.getByLabelText('Video đã dựng')).toHaveAttribute('src', 'https://s3.example/v2.mp4'))
+  })
+
+  it('reads a field flag and a scene flag as the description of their fields', async () => {
+    vi.mocked(api.getVideo).mockResolvedValue(video([scene(1, {
+      kind: 'formula', formula: 'x^2', flags: ['Công thức: Sai dấu', 'Lời thoại chỉ có 1 cảnh'],
+    })]))
+
+    renderPage()
+
+    expect(await screen.findByLabelText('Công thức cảnh 1')).toHaveAccessibleDescription('Sai dấu')
+    expect(screen.getByLabelText('Tiêu đề cảnh 1')).toHaveAccessibleDescription('Lời thoại chỉ có 1 cảnh')
+  })
+
+  it('says when every passage found is already in the list', async () => {
+    vi.mocked(api.getVideo).mockResolvedValue(video([scene(1, { sources: [source] })]))
+    vi.mocked(api.listDocumentChunks).mockResolvedValue({ items: [source], total: 1 })
+
+    renderPage()
+    const sentence = within(await screen.findByRole('list', { name: 'Lời thoại cảnh 1' })).getAllByRole('listitem')[0]
+    await userEvent.click(within(sentence).getByRole('button', { name: 'Tìm' }))
+
+    expect(await within(sentence).findByText('Các đoạn khớp đã có trong danh sách.')).toBeInTheDocument()
+    expect(within(sentence).queryByText('Không có đoạn nào khớp.')).not.toBeInTheDocument()
   })
 })

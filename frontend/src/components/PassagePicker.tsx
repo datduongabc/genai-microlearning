@@ -87,7 +87,9 @@ export function PassagePicker({ documentId, name, citations, known, onChange }: 
         </form>
         {searching && <p className="course-hint">Đang tìm...</p>}
         {error && <p className="text-[13px] danger-text">{error}</p>}
-        {results && !searching && found.length === 0 && !error && <p className="course-hint">Không có đoạn nào khớp.</p>}
+        {results && !searching && found.length === 0 && !error && (
+          <p className="course-hint">{results.items.length > 0 ? 'Các đoạn khớp đã có trong danh sách.' : 'Không có đoạn nào khớp.'}</p>
+        )}
         {found.length > 0 && (
           <ul className="passage-choices" aria-label={`Kết quả tìm cho ${name}`}>
             {found.map((p) => (

@@ -267,7 +267,7 @@ export function FlashcardEditorPage() {
                     className="ui-input w-full"
                   />
                 </label>
-                <SourcePassages sources={c.sources} label={`Nguồn của thẻ ${index + 1}`} />
+                <SourcePassages sources={c.sources.filter((p) => c.citations.includes(p.chunk_id))} label={`Nguồn của thẻ ${index + 1}`} />
                 <PassagePicker
                   documentId={saved.document_id}
                   name={`thẻ ${index + 1}`}

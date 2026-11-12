@@ -366,6 +366,32 @@ def test_scenes_keep_their_pictures_and_flags_when_moved_or_removed(world):
     assert media_store().size("videos/v/img-1-b.jpg") is not None
 
 
+def test_a_save_reads_the_video_locked_so_a_picture_committed_meanwhile_is_not_overwritten(world):
+    """The save carries image_key from the stored scenes: read without a lock, a drawing job could
+    commit a new key between that read and the save's commit, and the save would put back the old
+    one. Locked, the job's own locked read waits for the save, then sees the edit."""
+    from sqlalchemy import event
+
+    from app.db import engine, request_engine
+    video_id = make_video(world)
+    statements: list[str] = []
+
+    def capture(_conn, _cursor, statement, *_args):
+        statements.append(statement)
+    for bound in (engine, request_engine):
+        event.listen(bound, "before_cursor_execute", capture)
+    try:
+        response = client.put(f"/videos/{video_id}/scenes", headers=headers(world["owner"]),
+                              json={"draft_version": 1, "scenes": [edit(scene(world), from_index=0)]})
+    finally:
+        for bound in (engine, request_engine):
+            event.remove(bound, "before_cursor_execute", capture)
+
+    assert response.status_code == 200
+    reads = [s for s in statements if s.lstrip().upper().startswith("SELECT") and "FROM videos" in s]
+    assert reads and "FOR UPDATE" in reads[0]
+
+
 def test_files_of_a_removed_scene_stay_while_a_job_may_still_read_them(world):
     first = scene(world, voice_key="videos/v/voice-0-a.wav")
     video_id = make_video(world, [first, scene(world)])

@@ -282,6 +282,16 @@ describe('FlashcardEditorPage', () => {
     expect(screen.queryByRole('list', { name: 'Nguồn của thẻ 2' })).not.toBeInTheDocument()
   })
 
+  it('lists as the card sources only the passages still ticked', async () => {
+    vi.mocked(api.getFlashcardSet).mockResolvedValue(draft([card(1)]))
+
+    renderPage()
+    expect(await screen.findByRole('list', { name: 'Nguồn của thẻ 1' })).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('checkbox', { name: /bai-giang.pdf, trang 3/ }))
+
+    expect(screen.queryByRole('list', { name: 'Nguồn của thẻ 1' })).not.toBeInTheDocument()
+  })
+
   it('goes back to its course, and says so while still generating', async () => {
     vi.mocked(api.getFlashcardSet).mockResolvedValue(draft([], { status: 'generating' }))
 

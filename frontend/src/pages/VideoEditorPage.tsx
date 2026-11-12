@@ -53,13 +53,6 @@ function formatUsd(value: number): string {
   return `$${value.toLocaleString('vi-VN', { maximumFractionDigits: 3 })}`
 }
 
-// What a detail says about the server's side of things, apart from the draft: what a poll that
-// left before a save still brings that is new.
-function serverState(video: VideoDetail): Partial<VideoDetail> {
-  const { status, job, error, rendered_version, duration_seconds, published_at, cost } = video
-  return { status, job, error, rendered_version, duration_seconds, published_at, cost }
-}
-
 interface Base {
   // The draft_version the edits are made on, sent with the save.
   version: number
@@ -116,11 +109,13 @@ export function VideoEditorPage() {
     setBase(next)
   }, [nextKey])
 
-  // A detail from a poll or an action. The lecturer's unsaved edits are never replaced by it; a
-  // draft nobody touched follows the server; and a detail older than the draft in hand (a poll
-  // that left before a save) brings only the server's state.
+  // A detail from a poll or an action. The lecturer's unsaved edits are never replaced by it, and a
+  // draft nobody touched follows the server.
   const follow = useCallback((video: VideoDetail) => {
     const now = latest.current
+    // An answer older than the draft in hand (a poll that left before a save) is dropped whole:
+    // its job, status and rendered video are older than what the save answered with.
+    if (video.draft_version < now.base.version) return
     const ended = now.saved?.job?.job_type ?? now.awaitingJob ?? (now.saved ? STATUS_JOB[now.saved.status] : undefined)
     if (video.job) {
       if (now.awaitingJob) awaitJob(null)
@@ -129,12 +124,6 @@ export function VideoEditorPage() {
       const done = DONE_TEXT[ended]
       if (done && !video.error) setNotice(done)
       awaitJob(null)
-    }
-    if (video.draft_version < now.base.version) {
-      const state = serverState(video)
-      latest.current = { ...latest.current, saved: now.saved && { ...now.saved, ...state } }
-      setSaved((current) => current && { ...current, ...state })
-      return
     }
     const untouched = editsKey(now.scenes) === now.base.edits
     if (untouched && editsKey(toDrafts(video, nextKey)) !== now.base.edits) {

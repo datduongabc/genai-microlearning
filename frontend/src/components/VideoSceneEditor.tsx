@@ -53,13 +53,13 @@ function ItemEditor({ item, name, documentId, sources, flags, onText, onCitation
   const label = name.charAt(0).toUpperCase() + name.slice(1)
   const uncited = item.text.trim() !== '' && item.citations.length === 0
   // What is wrong with the item is read with its field, not only seen next to it.
-  const notes = [...(uncited ? [`${id}-no-source`] : []), ...flags.map((_, i) => `${id}-flag-${i}`)]
+  const notes = describedBy([...(uncited ? [`${id}-no-source`] : []), ...flags.map((_, i) => `${id}-flag-${i}`)])
   return (
     <li className="video-item">
       <div className="video-item-row">
         <textarea
           aria-label={label}
-          aria-describedby={notes.length > 0 ? notes.join(' ') : undefined}
+          aria-describedby={notes}
           value={item.text}
           // One sentence is one line on the server, so a line break would split it in two.
           onChange={(e) => onText(e.target.value.replace(/\n/g, ' '))}
@@ -80,6 +80,8 @@ function ItemEditor({ item, name, documentId, sources, flags, onText, onCitation
     </li>
   )
 }
+
+const describedBy = (ids: string[]) => (ids.length > 0 ? ids.join(' ') : undefined)
 
 export interface SceneSlide {
   videoId: string
@@ -106,7 +108,13 @@ export function VideoSceneEditor({ scene: s, number, count, documentId, slide, c
   onDraw: (index: number) => void
 }) {
   const { origin } = slide
+  const id = useId()
+  // Flags about the whole scene describe its title, and those about a field describe that field.
+  const ofScene = sceneFlags(s.flags)
+  const sceneNotes = ofScene.map((_, i) => `${id}-scene-${i}`)
   const wholeLabel = WHOLE_ITEM_LABEL[s.kind]
+  const ofField = wholeLabel ? flagsFor(s.flags, wholeLabel) : []
+  const fieldNotes = describedBy(ofField.map((_, i) => `${id}-field-${i}`))
   const drawable = origin !== undefined && s.fromIndex !== null && origin.kind === 'illustration' && !!origin.image_prompt?.trim()
   const set = (change: Partial<SceneDraft>) => onChange((scene) => ({ ...scene, ...change }))
   const dismiss = (flag: string) => onChange((scene) => ({ ...scene, flags: scene.flags.filter((f) => f !== flag) }))
@@ -148,8 +156,9 @@ export function VideoSceneEditor({ scene: s, number, count, documentId, slide, c
           </button>
         </div>
       </div>
-      {sceneFlags(s.flags).map((flag, i) => (
-        <FlagNote key={`${i}-${flag}`} flag={flag} dismissLabel={`Bỏ đánh dấu cảnh ${number}`} onDismiss={() => dismiss(flag)} />
+      {ofScene.map((flag, i) => (
+        <FlagNote key={`${i}-${flag}`} id={sceneNotes[i]} flag={flag} dismissLabel={`Bỏ đánh dấu cảnh ${number}`}
+          onDismiss={() => dismiss(flag)} />
       ))}
 
       {origin && s.fromIndex !== null ? (
@@ -194,7 +203,7 @@ export function VideoSceneEditor({ scene: s, number, count, documentId, slide, c
         </label>
         <label className="flashcard-field">
           Tiêu đề
-          <input aria-label={`Tiêu đề cảnh ${number}`} value={s.title} maxLength={300}
+          <input aria-label={`Tiêu đề cảnh ${number}`} aria-describedby={describedBy(sceneNotes)} value={s.title} maxLength={300}
             onChange={(e) => set({ title: e.target.value })} className="ui-input w-full" />
         </label>
       </div>
@@ -215,27 +224,27 @@ export function VideoSceneEditor({ scene: s, number, count, documentId, slide, c
       {s.kind === 'formula' && (
         <label className="flashcard-field">
           Công thức (LaTeX)
-          <textarea aria-label={`Công thức cảnh ${number}`} value={s.formula} maxLength={2000} rows={2}
+          <textarea aria-label={`Công thức cảnh ${number}`} aria-describedby={fieldNotes} value={s.formula} maxLength={2000} rows={2}
             onChange={(e) => set({ formula: e.target.value })} className="ui-input w-full font-mono" />
         </label>
       )}
       {s.kind === 'code' && (
         <label className="flashcard-field">
           Code
-          <textarea aria-label={`Code cảnh ${number}`} value={s.code} maxLength={4000} rows={6} spellCheck={false}
+          <textarea aria-label={`Code cảnh ${number}`} aria-describedby={fieldNotes} value={s.code} maxLength={4000} rows={6} spellCheck={false}
             onChange={(e) => set({ code: e.target.value })} className="ui-input w-full font-mono" />
         </label>
       )}
       {s.kind === 'table' && (
         <label className="flashcard-field">
           Bảng
-          <textarea aria-label={`Bảng cảnh ${number}`} value={s.table} rows={4}
+          <textarea aria-label={`Bảng cảnh ${number}`} aria-describedby={fieldNotes} value={s.table} rows={4}
             onChange={(e) => set({ table: e.target.value })} className="ui-input w-full font-mono" />
           <span className="course-hint">Mỗi dòng một hàng, các ô cách nhau bằng dấu |, nên ô không chứa được dấu |.</span>
         </label>
       )}
-      {wholeLabel && flagsFor(s.flags, wholeLabel).map((flag, i) => (
-        <FlagNote key={`${i}-${flag}`} flag={flag} dismissLabel={`Bỏ đánh dấu ${wholeLabel.toLowerCase()} cảnh ${number}`}
+      {wholeLabel && ofField.map((flag, i) => (
+        <FlagNote key={`${i}-${flag}`} id={`${id}-field-${i}`} flag={flag} dismissLabel={`Bỏ đánh dấu ${wholeLabel.toLowerCase()} cảnh ${number}`}
           onDismiss={() => dismiss(flag)} />
       ))}
       {s.kind === 'illustration' && (
