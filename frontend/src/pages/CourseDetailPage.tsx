@@ -620,7 +620,7 @@ function MoodleLinkSection({ course, onLinked }: { course: Course; onLinked: () 
           <select
             aria-label="Course Moodle có sẵn"
             {...register("moodleCourseId")}
-            className="ui-select min-w-0 flex-1"
+            className="ui-select min-w-0 flex-1 basis-56"
           >
             <option value="">Chọn khóa học bạn có quyền quản lý hoạt động…</option>
             {courses.map((c) => (

@@ -83,8 +83,9 @@ export function MoodleAccountSection({ onStatus }: { onStatus?: (status: MoodleA
       {status !== "linked" && status !== "unknown" && status !== "unavailable" && (
         <form onSubmit={(event) => { void handleSubmit(submit)(event); }} noValidate className="mt-3 flex flex-col gap-2">
           <p className="text-sm muted">Nhập email Moodle của bạn, rồi đăng nhập Moodle để xác nhận liên kết.</p>
-          <label className="text-sm">Email Moodle
-            <input type="email" autoComplete="email" {...register("email")} className="ui-input ml-2" />
+          {/* gap instead of a margin on the input, so a narrow place (the account menu) wraps it flush left. */}
+          <label className="text-sm flex flex-wrap items-center gap-x-2 gap-y-1">Email Moodle
+            <input type="email" autoComplete="email" {...register("email")} className="ui-input" />
           </label>
           {errors.email && <p className="text-sm danger-text">{errors.email.message}</p>}
           <button disabled={isSubmitting} className="ui-button primary self-start">

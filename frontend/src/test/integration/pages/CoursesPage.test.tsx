@@ -98,3 +98,21 @@ describe('CoursesPage - create', () => {
     expect(api.createCourse).not.toHaveBeenCalled()
   })
 })
+
+describe('CoursesPage - load failure', () => {
+  it('says the list could not be loaded instead of claiming there are no courses, and retries', async () => {
+    vi.mocked(api.listCourses)
+      .mockRejectedValueOnce(new Error('500'))
+      .mockResolvedValueOnce([course])
+
+    renderPage()
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Không tải được danh sách môn học.')
+    expect(screen.queryByText(/Chưa có môn học/)).not.toBeInTheDocument()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Thử lại' }))
+
+    expect(await screen.findByText('AI 101')).toBeInTheDocument()
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+  })
+})
