@@ -12,6 +12,7 @@ from app.ingestion.document_pipeline import run_document_pipeline_step
 from app.jobs.queue import enqueue_job, execute_job_step, handle_job_error
 from app.main import app
 from app.models import Course, Document, DocumentStatus, Job, JobType, User
+from tests.job_helpers import claimed
 
 
 @pytest.fixture
@@ -59,7 +60,7 @@ def _upload(world, text):
 def _step(job_id):
     db = SessionLocal()
     try:
-        run_document_pipeline_step(db.get(Job, job_id))
+        run_document_pipeline_step(claimed(db, job_id))
     finally:
         db.close()
 
@@ -93,7 +94,7 @@ def test_a_completely_unreadable_document_keeps_warnings_and_shows_why_it_failed
     try:
         # What the worker loop does with a step that raises.
         with pytest.raises(ValueError) as failure:
-            execute_job_step(db.get(Job, job_id))
+            execute_job_step(claimed(db, job_id))
     finally:
         db.close()
     handle_job_error(job_id, failure.value)

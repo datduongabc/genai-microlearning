@@ -17,7 +17,7 @@ from app.generation.evaluation import (
     _build_prompt,
     judge_module,
 )
-from app.jobs.queue import is_terminal_error, jittered_backoff
+from app.jobs.queue import hold, is_terminal_error, jittered_backoff
 from app.llm import gateway
 from app.llm.catalog import GatewayUnavailable, fetch_model_info
 from app.llm.judge import eligible_judges, is_quota_error, model_family
@@ -175,7 +175,7 @@ def run_study_judge_step(queued: Job) -> None:
             result = outcomes[str(item.id)]
         except Exception as exc:
             db.rollback()
-            job = db.get(Job, queued.id)
+            job = hold(db, queued)
             message = str(exc)[:1000]
             if not is_terminal_error(exc) and job.attempts + 1 < job.max_attempts:
                 job.attempts += 1
@@ -185,6 +185,7 @@ def run_study_judge_step(queued: Job) -> None:
                 return
             result = {"item_id": payload["item_ids"][cursor], "status": "pending", "error": message}
             outcomes = {}
+        job = hold(db, queued)
         results = [outcomes.get(r["item_id"], r) for r in job.payload.get("results", [])]
         job.payload = {**job.payload, "cursor": cursor + 1, "results": [*results, result]}
         job.attempts = 0

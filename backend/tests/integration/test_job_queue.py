@@ -155,6 +155,7 @@ def test_extract_releases_database_reads_before_transcription(seed_document, mon
         doc = seed_document(db)
         job = enqueue_job(db, job_type=JobType.document_pipeline, step="extract", document_id=doc.id,
                           payload={"storage_path": str(tmp_path / "lecture.mp3")})
+        job.status, job.locked_by = JobStatus.running, "test-worker"  # a step runs only on a claimed job
         db.commit()
         execute_job_step(job)
         db.refresh(job)
@@ -504,3 +505,69 @@ def test_sweep_skips_a_job_another_sweeper_is_processing(seed_document):
         holder.close()
     with SessionLocal() as db:
         assert db.get(Job, job_id).status == JobStatus.running
+
+
+def _hand_to(job_id: uuid.UUID, worker_id: str) -> None:
+    """What the sweeper and a second claim do while the first worker is still running the job."""
+    db = SessionLocal()
+    try:
+        job = db.get(Job, job_id)
+        job.locked_by = worker_id
+        job.locked_at = datetime.now(UTC)
+        db.commit()
+    finally:
+        db.close()
+
+
+def test_a_worker_that_lost_its_job_does_not_write_its_failure(seed_document, monkeypatch):
+    """The old worker's error must not put back in the queue, or fail, the job another worker now runs."""
+    from app.jobs import queue
+
+    db = SessionLocal()
+    try:
+        job = db.get(Job, _running_job_locked_long_ago(db, seed_document(db), "old-worker"))
+        db.expunge(job)
+    finally:
+        db.close()
+
+    def lose_then_fail(job):
+        _hand_to(job.id, "new-worker")
+        raise RuntimeError("late failure")
+
+    monkeypatch.setattr(queue, "execute_job_step", lose_then_fail)
+    run_claimed_job(job, "old-worker")
+
+    db = SessionLocal()
+    try:
+        current = db.get(Job, job.id)
+        assert (current.status, current.locked_by, current.attempts) == (JobStatus.running, "new-worker", 0)
+        assert current.last_error is None
+    finally:
+        db.close()
+
+
+def test_a_step_that_lost_its_job_does_not_write_its_result(seed_document):
+    """The chunk step of a job the sweeper gave away keeps its result to itself: the new worker's
+    run is the one that counts, and two runs must not both move the job on."""
+    db = SessionLocal()
+    try:
+        doc = seed_document(db)
+        job = enqueue_job(db, job_type=JobType.document_pipeline, step="chunk", document_id=doc.id,
+                          payload={"units": [{"text": "Một đoạn văn đủ dài để thành một chunk.", "locator": {}}]})
+        job.status, job.locked_by, job.locked_at = JobStatus.running, "old-worker", datetime.now(UTC)
+        db.commit()
+        db.refresh(job)
+        db.expunge(job)
+    finally:
+        db.close()
+
+    _hand_to(job.id, "new-worker")
+    run_claimed_job(job, "old-worker")
+
+    db = SessionLocal()
+    try:
+        current = db.get(Job, job.id)
+        assert (current.step, current.status, current.locked_by) == ("chunk", JobStatus.running, "new-worker")
+        assert "chunks" not in current.payload
+    finally:
+        db.close()

@@ -10,6 +10,7 @@ duy nhất cho "có đang sinh dở không", không cần 2 cơ chế song song)
 import contextvars
 import time
 import uuid
+from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 
@@ -33,6 +34,7 @@ from app.generation.quiz_graph import (
 )
 from app.generation.relevance import CorrectiveResult, corrective_retrieve
 from app.generation.slides import generate_slides
+from app.jobs.queue import hold
 from app.llm.gateway import capture_models, recorded_models, requested_model, using_model
 from app.models import (
     Chunk,
@@ -324,7 +326,10 @@ def run_module_generation(
     db: Session, doc: Document,
     self_check: bool = True, use_retrieval: bool = True, paired_module: Module | None = None,
     output_language: OutputLanguage = "vi", custom_instructions: str = "",
+    before_save: Callable[[Session], None] | None = None,
 ) -> Module:
+    """`before_save` runs right before the module is written, in the transaction that writes it:
+    the job queue checks there that its worker still holds the job (app/jobs/queue.py, hold)."""
     # Keep read values in memory after each commit; expired attributes would silently reopen
     # a transaction when a prompt reads them. Restore the caller's session setting afterwards.
     expire_on_commit = db.expire_on_commit
@@ -332,7 +337,7 @@ def run_module_generation(
     try:
         with timing.capture_timings() as spans:
             return _generate_module(db, doc, self_check, use_retrieval, paired_module,
-                                    output_language, custom_instructions, spans)
+                                    output_language, custom_instructions, spans, before_save)
     finally:
         db.expire_on_commit = expire_on_commit
 
@@ -438,7 +443,7 @@ def _generate_module(
     db: Session, doc: Document, self_check: bool = True,
     use_retrieval: bool = True, paired_module: Module | None = None,
     output_language: OutputLanguage = "vi", custom_instructions: str = "",
-    spans: list[dict] | None = None,
+    spans: list[dict] | None = None, before_save: Callable[[Session], None] | None = None,
 ) -> Module:
     """Planner -> LO -> Content -> Slides -> Example -> Quiz/Practice ->
     Explanation. Nguyên logic chuyển từ _run_generate_module() cũ
@@ -501,6 +506,8 @@ def _generate_module(
     items = _explanation_items(asked)
 
     # Persist the complete result atomically, after every provider call has finished.
+    if before_save is not None:
+        before_save(db)
     db.add(module)
     db.flush()
     for component in (content_component, slides_component, example_component):
@@ -553,6 +560,7 @@ def run_module_generation_step(job: Job) -> None:
                 db, doc, self_check=self_check, use_retrieval=use_retrieval, paired_module=paired_module,
                 output_language=current_job.payload.get("output_language", "vi"),
                 custom_instructions=current_job.payload.get("custom_instructions", ""),
+                before_save=lambda session: hold(session, job),
             )
 
         current_job.module_id = module.id

@@ -282,7 +282,7 @@ def test_the_worker_runs_a_queued_no_rag_job_with_its_paired_module(document, ll
     rag_id = _generate(document)
     db = SessionLocal()
     try:
-        job = Job(job_type=JobType.module_generation, step="generate", status=JobStatus.running,
+        job = Job(job_type=JobType.module_generation, step="generate", status=JobStatus.running, locked_by="test-worker",
                   document_id=document["doc"],
                   payload={"self_check": True, "use_retrieval": False, "paired_module_id": str(rag_id)})
         db.add(job)
@@ -292,7 +292,7 @@ def test_the_worker_runs_a_queued_no_rag_job_with_its_paired_module(document, ll
         db.close()
     document["searches"].clear()
 
-    pipeline.run_module_generation_step(type("J", (), {"id": job_id})())
+    pipeline.run_module_generation_step(type("J", (), {"id": job_id, "locked_by": "test-worker"})())
 
     db = SessionLocal()
     try:
@@ -535,7 +535,11 @@ def test_legacy_default_alias_pair_imports_and_exports_without_regeneration(docu
     response = _post(document, {"use_retrieval": False, "paired_module_id": str(rag_id)})
     assert response.status_code == 200, response.text
     job_id = uuid.UUID(response.json()["job_id"])
-    pipeline.run_module_generation_step(type("J", (), {"id": job_id})())
+    with SessionLocal() as db:  # claimed, as a worker would before running it
+        claimed = db.get(Job, job_id)
+        claimed.status, claimed.locked_by = JobStatus.running, "test-worker"
+        db.commit()
+    pipeline.run_module_generation_step(type("J", (), {"id": job_id, "locked_by": "test-worker"})())
     with SessionLocal() as db:
         job = db.get(Job, job_id)
         assert job.status == JobStatus.done
