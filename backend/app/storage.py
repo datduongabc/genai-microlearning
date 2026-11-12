@@ -36,8 +36,14 @@ PRESIGNED_GET_SECONDS = 5 * 60
 logger = logging.getLogger(__name__)
 
 
+# Without a type, S3 serves a file as binary/octet-stream, and a browser given a presigned link to
+# it downloads the video instead of playing it.
+_MEDIA_TYPES = {".mp4": "video/mp4", ".wav": "audio/wav", ".jpg": "image/jpeg", ".jpeg": "image/jpeg",
+                ".png": "image/png"}
+
+
 class UploadStore(Protocol):
-    def save(self, local_path: Path, key: str) -> None:
+    def save(self, local_path: Path, key: str, content_type: str | None = None) -> None:
         """Take the file at local_path under key. local_path is gone afterwards."""
 
     def local_copy(self, key: str) -> AbstractContextManager[str]:
@@ -61,7 +67,8 @@ class LocalUploadStore:
         """Where the file is, for the API to send it itself: this store has no download URL."""
         return self._path(key)
 
-    def save(self, local_path: Path, key: str) -> None:
+    def save(self, local_path: Path, key: str, content_type: str | None = None) -> None:
+        # The type is S3's to send; the API serves local files by their extension.
         # A key may carry a folder (media/videos/<id>/...), which S3 needs no setup for.
         self._path(key).parent.mkdir(parents=True, exist_ok=True)
         os.replace(local_path, self._path(key))
@@ -87,10 +94,14 @@ class S3UploadStore:
     def _object_key(self, key: str) -> str:
         return f"{self.prefix}{key}"
 
-    def save(self, local_path: Path, key: str) -> None:
+    def save(self, local_path: Path, key: str, content_type: str | None = None) -> None:
+        """`content_type` defaults to the one of the key's extension, for the media a browser plays."""
+        content_type = content_type or _MEDIA_TYPES.get(Path(key).suffix.lower())
+        # Only when known, so that S3 keeps choosing for the uploads it always has.
+        extra = {"ExtraArgs": {"ContentType": content_type}} if content_type else {}
         try:
             # upload_file goes multipart above 8 MB, so a 1 GB video never sits in memory.
-            self.client.upload_file(str(local_path), self.bucket, self._object_key(key))
+            self.client.upload_file(str(local_path), self.bucket, self._object_key(key), **extra)
         finally:
             local_path.unlink(missing_ok=True)
 

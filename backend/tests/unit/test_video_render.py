@@ -307,6 +307,20 @@ def test_blocking_problems_fail_at_once_without_a_paid_call(monkeypatch, store, 
     assert before_save == [video.error]
 
 
+def test_a_lost_picture_fails_at_once_and_says_so(monkeypatch, store, slides):
+    calls = _fake_voices(monkeypatch)
+    video = _video(2)
+    video.scenes = [video.scenes[0], _scene(1, kind="illustration", image_prompt="A queue",
+                                            image_key="videos/v/img-1-gone.jpg", image_prompt_used="A queue")]
+    before_save = []
+    with pytest.raises(ValueError, match="Cảnh 2: hình minh họa bị mất, hãy vẽ lại"):
+        render_video(FakeDb(video), video.id, before_save=before_save.append)
+    # Terminal and before any paid call: a retry would find the file missing again.
+    assert calls == [] and slides.opened == 0
+    assert video.status == MediaStatus.failed and "hình minh họa bị mất" in video.error
+    assert before_save == [video.error]
+
+
 def _save_old_video(store, tmp_path, video) -> str:
     old = f"videos/{video.id}/video-2-000000000000.mp4"
     source = tmp_path / "old.mp4"

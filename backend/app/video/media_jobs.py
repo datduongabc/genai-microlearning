@@ -8,6 +8,7 @@ import re
 import uuid
 from collections.abc import Sequence
 from dataclasses import dataclass
+from pathlib import Path
 
 from app.generation.video_script import Scene
 from app.storage import media_store, staging_dir
@@ -57,7 +58,7 @@ def store_bytes(data: bytes, key: str, stored: list[str]) -> None:
     store_file(pending, key, stored)
 
 
-def store_file(path, key: str, stored: list[str]) -> None:
+def store_file(path: Path, key: str, stored: list[str]) -> None:
     """Moves the file at `path` into the store under `key`; `path` is gone afterwards."""
     try:
         media_store().save(path, key)

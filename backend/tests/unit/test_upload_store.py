@@ -18,6 +18,7 @@ class FakeS3:
 
     def __init__(self):
         self.objects: dict[tuple[str, str], bytes] = {}
+        self.extra_args: dict[tuple[str, str], dict | None] = {}
         self.policies: dict[str, tuple[str, int]] = {}
 
     def generate_presigned_post(self, Bucket, Key, Conditions, ExpiresIn):
@@ -42,8 +43,9 @@ class FakeS3:
             raise ClientError({"Error": {"Code": "404", "Message": "Not Found"}}, "HeadObject")
         return {"ContentLength": len(self.objects[(Bucket, Key)])}
 
-    def upload_file(self, filename, bucket, key):
+    def upload_file(self, filename, bucket, key, ExtraArgs=None):
         self.objects[(bucket, key)] = Path(filename).read_bytes()
+        self.extra_args[(bucket, key)] = ExtraArgs
 
     def download_file(self, bucket, key, filename):
         Path(filename).write_bytes(self.objects[(bucket, key)])
@@ -70,6 +72,31 @@ def test_s3_store_moves_the_file_up_and_hands_out_a_temporary_copy(tmp_path):
     store.delete("doc.pdf")
     store.delete("doc.pdf")
     assert s3.objects == {}
+
+
+@pytest.mark.parametrize(("key", "content_type"), [
+    ("videos/v/video-1-abc.mp4", "video/mp4"),
+    ("videos/v/voice-0-abc.wav", "audio/wav"),
+    ("videos/v/img-0-abc.jpg", "image/jpeg"),
+])
+def test_s3_media_files_carry_their_content_type(tmp_path, key, content_type):
+    """A browser plays a presigned video or voice only when S3 sends its type, not binary/octet-stream."""
+    s3 = FakeS3()
+    pending = tmp_path / "pending"
+    pending.write_bytes(b"x")
+    S3UploadStore("bucket", "media/", client=s3).save(pending, key)
+    assert s3.extra_args[("bucket", f"media/{key}")] == {"ContentType": content_type}
+
+
+def test_an_explicit_content_type_wins_and_an_unknown_one_is_left_to_s3(tmp_path):
+    s3 = FakeS3()
+    store = S3UploadStore("bucket", "uploads/", client=s3)
+    for name, given in (("a.bin", "application/x-thing"), ("doc.pdf", None)):
+        pending = tmp_path / name
+        pending.write_bytes(b"x")
+        store.save(pending, name, content_type=given)
+    assert s3.extra_args[("bucket", "uploads/a.bin")] == {"ContentType": "application/x-thing"}
+    assert s3.extra_args[("bucket", "uploads/doc.pdf")] is None
 
 
 def test_s3_store_removes_the_staged_file_when_the_upload_fails(tmp_path):

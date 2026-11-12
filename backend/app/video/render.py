@@ -225,7 +225,7 @@ def _assemble(slides: Sequence[Path], voices: Sequence[Path], seconds: Sequence[
         # A still slide: stillimage tunes x264 for it, and the stream stays small. Medium rather than a
         # faster preset keeps the slide's text 2 dB sharper (PSNR 41.9 against 39.8 for veryfast).
         "-c:v", "libx264", "-preset", "medium", "-tune", "stillimage", "-crf", "23", "-pix_fmt", "yuv420p",
-        "-r", str(FPS), "-c:a", "aac", "-b:a", AUDIO_BITRATE, "-ar", str(AUDIO_RATE),
+        "-c:a", "aac", "-b:a", AUDIO_BITRATE, "-ar", str(AUDIO_RATE),
         # The index first, so a browser starts playing before the whole file has arrived.
         "-movflags", "+faststart", str(out),
     ]
@@ -325,7 +325,7 @@ def render_video(
         if video is None:
             raise ValueError(f"Video {video_id} not found")
         scenes = [Scene.model_validate(s) for s in video.scenes]
-        problems = prepare_for_render(scenes)
+        problems = prepare_for_render(scenes) + _lost_pictures(scenes)
         if problems:
             error = "Chưa dựng được video: " + "; ".join(problems) + "."
             _fail_now(db, video_id, error, before_save)
@@ -378,6 +378,14 @@ def render_video(
             out = work / "video.mp4"
             _assemble(slides, wavs, lengths, out)
             _publish(db, video_id, video_key(video_id, version), out, version, sum(lengths), before_save)
+
+
+def _lost_pictures(scenes: Sequence[Scene]) -> list[str]:
+    """A picture whose file is gone fails the render before any paid call, and for good: a retry
+    would find it gone again, and only drawing it again brings it back."""
+    store = media_store()
+    return [f"Cảnh {i + 1}: hình minh họa bị mất, hãy vẽ lại" for i, s in enumerate(scenes)
+            if s.kind == "illustration" and s.image_key and store.size(s.image_key) is None]
 
 
 def _read_image(key: str) -> bytes:
