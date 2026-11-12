@@ -30,6 +30,7 @@ dependencies = [
     "bleach>=6.2.0",
     "scipy>=1.18.1",
     "redis>=5",
+    "playwright>=1.65.1",
 ]
 
 [dependency-groups]
