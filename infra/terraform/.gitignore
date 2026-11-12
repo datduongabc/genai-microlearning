@@ -1,4 +1,6 @@
 .terraform/
+# One provider cache per environment other than demo (infra/scripts/tf.sh).
+.terraform-*/
 *.tfstate
 *.tfstate.*
 terraform.tfvars

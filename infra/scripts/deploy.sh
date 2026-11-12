@@ -4,6 +4,9 @@
 #   infra/scripts/deploy.sh            build, migrate, roll out, upload the frontend, smoke test
 #   SKIP_BUILD=1 infra/scripts/deploy.sh   reuse images already pushed for this commit
 #   IMAGES_ONLY=1 infra/scripts/deploy.sh  push the images and stop (first deploy, see README)
+#   ENVIRONMENT=staging infra/scripts/deploy.sh   the same into staging (infra/environments/)
+#   PROMOTE_FROM=staging infra/scripts/deploy.sh  copy this commit's images from staging instead of
+#                                                  building them, so demo runs the bytes staging checked
 #
 # Order matters: the migration runs with the NEW image before any service runs it, and the old
 # tasks keep serving meanwhile, so a schema change must be expand-then-contract (the old code
@@ -12,8 +15,8 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-TF_DIR="$ROOT/infra/terraform"
-tf() { terraform -chdir="$TF_DIR" "$@"; }
+# ENVIRONMENT (default demo) is read by tf.sh, which picks the state and the variables.
+tf() { "$ROOT/infra/scripts/tf.sh" "$@"; }
 
 if [[ -n "$(git -C "$ROOT" status --porcelain)" ]]; then
   echo "The working tree has changes: an image is tagged by commit, so it must be the commit." >&2
@@ -26,7 +29,48 @@ repo() { jq -r --arg k "$1" '.[$k]' <<<"$ECR_JSON"; }
 # Before the first full apply there are no services yet; WITH_RERANKER=1 builds its image then.
 SERVICES="$(tf output -json services 2>/dev/null | jq -r '.[]' || true)"
 
-echo "== Deploying $TAG"
+echo "== Deploying $TAG to ${ENVIRONMENT:-demo}"
+
+# --- 0. Promotion: the images staging ran are pushed into this environment's repositories and their
+# digests compared, so the bytes that reach demo are the ones checked; a rebuild would install
+# whatever Debian published since.
+if [[ -n "${PROMOTE_FROM:-}" ]]; then
+  if [[ "$PROMOTE_FROM" == "${ENVIRONMENT:-demo}" ]]; then
+    echo "PROMOTE_FROM is the environment being deployed." >&2
+    exit 1
+  fi
+  SOURCE_ECR="$(ENVIRONMENT="$PROMOTE_FROM" "$ROOT/infra/scripts/tf.sh" output -json ecr)"
+  REGISTRY="$(repo backend | cut -d/ -f1)"
+  aws ecr get-login-password --region "$REGION" | docker login --username AWS --password-stdin "$REGISTRY" >/dev/null
+  digest() { # repository name, without the registry
+    aws ecr describe-images --region "$REGION" --repository-name "$1" --image-ids imageTag="$TAG" \
+      --query 'imageDetails[0].imageDigest' --output text 2>/dev/null || true
+  }
+  for name in $(jq -r 'keys[]' <<<"$ECR_JSON"); do
+    source_repo="$(jq -r --arg k "$name" '.[$k]' <<<"$SOURCE_ECR" | cut -d/ -f2-)"
+    target_repo="$(repo "$name" | cut -d/ -f2-)"
+    expected="$(digest "$source_repo")"
+    if [[ -z "$expected" || "$expected" == None ]]; then
+      # The reranker exists only with jina; every other image must have run in the source first.
+      if [[ "$name" == reranker ]]; then continue; fi
+      echo "No $source_repo:$TAG: deploy $TAG to $PROMOTE_FROM first." >&2
+      exit 1
+    fi
+    if [[ "$(digest "$target_repo")" != "$expected" ]]; then
+      # Same registry, so the push mounts the layers from the source repository instead of uploading them.
+      docker pull "$REGISTRY/$source_repo:$TAG"
+      docker tag "$REGISTRY/$source_repo:$TAG" "$REGISTRY/$target_repo:$TAG"
+      docker push "$REGISTRY/$target_repo:$TAG"
+    fi
+    pushed="$(digest "$target_repo")"
+    if [[ "$pushed" != "$expected" ]]; then
+      echo "$target_repo:$TAG is $pushed, not $expected as in $PROMOTE_FROM." >&2
+      exit 1
+    fi
+    echo "== $name: $TAG promoted from $PROMOTE_FROM ($pushed)"
+  done
+  SKIP_BUILD=1
+fi
 
 # --- 1. Images. Immutable tags: pushing a tag that exists fails, which is what a rebuild of the
 # same commit should do; set SKIP_BUILD=1 to reuse it.

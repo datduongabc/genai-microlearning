@@ -63,6 +63,47 @@ Thứ tự: build và đẩy image theo commit → chạy migration bằng image
 
 Trong lúc rolling update, bản cũ và mới chạy cùng lúc trên schema mới, nên thay đổi phá vỡ tương thích phải tách hai lần deploy: thêm trước, bỏ sau.
 
+## Staging
+
+Staging là một bản sao của stack ở cỡ nhỏ nhất vẫn chạy đủ mọi service: api và worker tối đa 2 task, `db.t4g.small`, ngân sách riêng $30 một tháng (`infra/environments/staging.tfvars`).
+Một commit được deploy lên staging và kiểm ở đó trước, rồi mới đưa sang demo.
+
+`infra/scripts/tf.sh` chọn môi trường theo biến `ENVIRONMENT` (mặc định `demo`, chạy y như trước).
+Môi trường khác demo có state riêng ở key `<môi trường>/terraform.tfstate` trong cùng bucket, thư mục `.terraform-<môi trường>` riêng, và đọc biến của nó sau `terraform.tfvars`.
+Vì vậy một lệnh của staging không bao giờ đọc hay ghi vào state của demo.
+
+Dựng lần đầu, giống mục "Lần đầu" nhưng qua `tf.sh`:
+
+```bash
+export ENVIRONMENT=staging
+infra/scripts/tf.sh apply -target=aws_ecr_repository.repo -target=aws_ecr_lifecycle_policy.keep_recent
+IMAGES_ONLY=1 infra/scripts/deploy.sh
+infra/scripts/tf.sh apply
+PREFIX=$(infra/scripts/tf.sh output -raw ssm_prefix)   # /microlearning-staging, khác của demo
+aws ssm put-parameter --overwrite --type SecureString --name "$PREFIX/openrouter-api-key" --value "..."
+#   tương tự: typesafe-api-key
+aws ecs update-service --cluster "$(infra/scripts/tf.sh output -raw cluster)" --service gateway --force-new-deployment
+SKIP_BUILD=1 infra/scripts/deploy.sh
+```
+
+Mỗi lần phát hành:
+
+```bash
+ENVIRONMENT=staging infra/scripts/deploy.sh     # build, migrate, roll out, smoke test trên staging
+# kiểm các luồng chính trên địa chỉ staging (output url): tải tài liệu, sinh module, chat, chấm mù, LTI
+PROMOTE_FROM=staging infra/scripts/deploy.sh    # đưa đúng image đó sang demo, không build lại
+```
+
+`PROMOTE_FROM` đẩy image của commit từ kho ECR của staging sang kho của demo và so digest, nên demo chạy đúng những byte đã kiểm trên staging.
+Build lại thì sẽ cài bản Debian mới nhất lúc build và ra image khác.
+Commit chưa từng chạy trên staging thì lệnh dừng trước khi đổi gì.
+
+Staging cũng tốn tiền theo giờ khi đang chạy. Kiểm xong thì xóa:
+
+```bash
+ENVIRONMENT=staging infra/scripts/tf.sh destroy
+```
+
 ## Moodle cho bản AWS
 
 Moodle không nằm trong stack. Để thử LTI với một Moodle thật mà không tốn thêm tiền, chạy Moodle của kho mã trên máy mình và đưa nó ra Internet qua Cloudflare quick tunnel (không cần tài khoản Cloudflare):
