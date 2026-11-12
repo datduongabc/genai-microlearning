@@ -47,3 +47,24 @@ export async function getLearnFlashcardSet(id: string) {
   const { data } = await api.get<LearnFlashcardSet>(`/learn/flashcard-sets/${id}`)
   return data
 }
+
+export interface LearnVideoScene {
+  title: string
+  start_seconds: number
+  sources: string[]
+}
+
+// file_url is a short-lived S3 link, or without S3 an API path that needs the token (see videoFileBlob).
+export interface LearnVideo {
+  id: string
+  course_id: string
+  title: string | null
+  duration_seconds: number | null
+  file_url: string
+  scenes: LearnVideoScene[]
+}
+
+export async function getLearnVideo(id: string) {
+  const { data } = await api.get<LearnVideo>(`/learn/videos/${id}`)
+  return data
+}

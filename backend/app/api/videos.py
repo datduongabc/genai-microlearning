@@ -518,20 +518,30 @@ def delete_video(video_id: uuid.UUID, db: Session = Depends(get_db), current_use
 
 # --- Files ---
 
+def rendered_filename(db: Session, video: Video) -> str:
+    filename = db.scalar(select(Document.filename).where(Document.id == video.document_id)) or "video"
+    return f"{Path(filename).stem or 'video'}.mp4"
+
+
+def rendered_link(db: Session, video: Video, api_path: str) -> dict:
+    """The link to the rendered MP4, for the lecturer's routes and the learner's alike: a few minutes
+    on S3, `api_path` (fetched with the token) without it."""
+    return download_link(media_store(), video.video_key, rendered_filename(db, video), api_path)
+
+
 def _rendered(db: Session, video_id: uuid.UUID, user: User) -> tuple[Video, str]:
     video = _owned_video(db, video_id, user)
     if video.video_key is None:
         raise HTTPException(status_code=404, detail="Video chưa được dựng.")
-    filename = db.scalar(select(Document.filename).where(Document.id == video.document_id)) or "video"
-    return video, f"{Path(filename).stem or 'video'}.mp4"
+    return video, rendered_filename(db, video)
 
 
 @router.get("/videos/{video_id}/file")
 def video_file(video_id: uuid.UUID, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     """Where the lecturer's browser gets the rendered MP4: a link valid for a few minutes on S3, or an
     API path to fetch with the token without it. The page asks again for each play."""
-    video, filename = _rendered(db, video_id, current_user)
-    return download_link(media_store(), video.video_key, filename, f"/videos/{video.id}/file/content")
+    video, _ = _rendered(db, video_id, current_user)
+    return rendered_link(db, video, f"/videos/{video.id}/file/content")
 
 
 @router.get("/videos/{video_id}/file/content")

@@ -64,6 +64,9 @@ class Video(_Media, Base):
     rendered_version: Mapped[int | None]
     video_key: Mapped[str | None]
     duration_seconds: Mapped[float | None]
+    # [{title, start_seconds, citations}] of the render, written with video_key: the draft's scenes
+    # may have been edited since, and learners follow the file they watch.
+    rendered_scenes: Mapped[list | None] = mapped_column(JSONB)
     # Per stage: script, images, voice.
     cost: Mapped[dict] = mapped_column(JSONB, default=dict, server_default="{}")
     served_models: Mapped[list] = mapped_column(JSONB, default=list, server_default="[]")

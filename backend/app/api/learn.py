@@ -7,9 +7,13 @@ from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user, require_course_reader
 from app.api.flashcards import card_sources
+from app.api.media_common import chunk_passages
+from app.api.stored_files import send_stored
+from app.api.videos import rendered_filename, rendered_link
 from app.db import get_db
 from app.models import Course, Document, FlashcardSet, User
 from app.models.media import Video
+from app.storage import media_store
 
 router = APIRouter(prefix="/learn", tags=["learn"], dependencies=[Depends(get_current_user)])
 
@@ -60,3 +64,45 @@ def get_set(set_id: uuid.UUID, db: Session = Depends(get_db), current_user: User
         for card, sources in zip(card_set.cards, card_sources(db, card_set), strict=True)
     ]
     return {"id": card_set.id, "course_id": card_set.course_id, "focus": card_set.focus, "cards": cards}
+
+
+def _watchable_video(db: Session, video_id: uuid.UUID, user: User) -> Video:
+    """A published video with a rendered file, for a reader of its course. Every other case answers the
+    same 404, so nothing tells a hidden video from one that does not exist, and no link goes with it."""
+    not_found = HTTPException(status_code=404, detail="Video not found")
+    video = db.get(Video, video_id)
+    if video is None or video.published_at is None or video.video_key is None:
+        raise not_found
+    try:
+        require_course_reader(db, db.get(Course, video.course_id), user)
+    except HTTPException:
+        raise not_found from None
+    return video
+
+
+@router.get("/videos/{video_id}")
+def get_video(video_id: uuid.UUID, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    video = _watchable_video(db, video_id, current_user)
+    # The scenes of the render, not the draft: the draft can be newer than the file being watched.
+    rendered = video.rendered_scenes or []
+    passages = chunk_passages(db, video.document_id, (c for scene in rendered for c in scene["citations"]))
+    scenes = [
+        {
+            "title": scene["title"], "start_seconds": scene["start_seconds"],
+            # Only the label of a source, once even if several cited passages share it.
+            "sources": list(dict.fromkeys(passages[c]["locator"] for c in scene["citations"] if c in passages)),
+        }
+        for scene in rendered
+    ]
+    return {
+        "id": video.id, "course_id": video.course_id, "title": video.focus,
+        "duration_seconds": video.duration_seconds,
+        "file_url": rendered_link(db, video, f"/learn/videos/{video.id}/file/content")["url"],
+        "scenes": scenes,
+    }
+
+
+@router.get("/videos/{video_id}/file/content")
+def get_video_file(video_id: uuid.UUID, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    video = _watchable_video(db, video_id, current_user)
+    return send_stored(media_store(), video.video_key, rendered_filename(db, video))

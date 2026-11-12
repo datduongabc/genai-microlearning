@@ -570,4 +570,12 @@ a.learn-link:hover { text-decoration:underline; text-underline-offset:2px; }
 .learn-card-text { font:400 20px/30px var(--font-serif); }
 .learn-card-sources { display:flex; flex-direction:column; gap:2px; padding-left:12px; border-left:2px solid var(--highlight); font:400 14px/21px var(--font-sans); color:var(--text-secondary); }
 .learn-hint { margin-top:8px; font-size:14px; line-height:20px; }
+.learn-video { display:block; width:100%; max-width:100%; aspect-ratio:16/9; background:#000; border-radius:var(--radius-lg); }
+.learn-scenes { list-style:none; display:flex; flex-direction:column; margin-top:16px; }
+.learn-scene { display:grid; grid-template-columns:auto 1fr; gap:2px 12px; align-items:baseline; width:100%; max-width:100%; min-height:44px; padding:10px 8px; text-align:left; border-top:1px solid var(--border-default); overflow-wrap:anywhere; cursor:pointer; }
+.learn-scene:hover { background:var(--bg-highlight); }
+.learn-scene[aria-current=true] { background:var(--bg-highlight); box-shadow:inset 3px 0 0 var(--highlight); }
+.learn-scene-time { font-variant-numeric:tabular-nums; color:var(--text-muted); }
+.learn-scene-title { font-weight:600; }
+.learn-scene-source { grid-column:2; font-size:14px; line-height:21px; color:var(--text-secondary); }
 .learn-nav { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-top:16px; }

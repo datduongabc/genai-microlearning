@@ -213,6 +213,8 @@ ATTACKS = [
     ("DELETE", "/videos/{video}", None, {}),
     ("GET", "/learn/courses/{course}/items", None, {}),
     ("GET", "/learn/flashcard-sets/{flashcard_set}", None, {}),
+    ("GET", "/learn/videos/{video}", None, {}),
+    ("GET", "/learn/videos/{video}/file/content", None, {}),
     ("POST", "/jobs/{failed_job}/retry", None, {}),
     # The admin's routes, reached by a lecturer: not found, as if there were nothing there.
     ("POST", "/admin/users/{user}/moodle-unlink", None, {}),

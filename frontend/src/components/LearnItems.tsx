@@ -1,11 +1,10 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { formatClock } from "../lib/duration";
 import { listLearnItems, type LearnItems as Items } from "../api";
 
 function duration(seconds: number | null) {
-  if (seconds == null) return null;
-  const whole = Math.round(seconds);
-  return `${Math.floor(whole / 60)}:${String(whole % 60).padStart(2, "0")}`;
+  return seconds == null ? null : formatClock(seconds);
 }
 
 // What the lecturer published for the course, grouped by the document it was made from.
@@ -54,10 +53,10 @@ export function LearnItems({ courseId }: { courseId: string }) {
             ))}
             {videos.map((video) => (
               <li key={video.id}>
-                <span className="learn-link">
+                <Link to={`/learn/${courseId}/videos/${video.id}`} className="learn-link">
                   <span>Video: {video.focus ?? "Bài giảng"}</span>
                   {duration(video.duration_seconds) && <span className="muted">{duration(video.duration_seconds)}</span>}
-                </span>
+                </Link>
               </li>
             ))}
           </ul>

@@ -89,6 +89,11 @@ def test_the_job_renders_the_video_and_finishes(world, monkeypatch):
         assert video.duration_seconds == pytest.approx(2 * (1 + render.SCENE_PAD_SECONDS), abs=0.05)
         assert all(s["voice_key"] for s in video.scenes)
         assert db.get(Job, job_id).status == JobStatus.done
+        # What learners are shown of the render: each scene starts where the one before it ended.
+        length = 1 + render.SCENE_PAD_SECONDS
+        assert [s["title"] for s in video.rendered_scenes] == ["Cảnh 0", "Cảnh 1"]
+        assert [s["start_seconds"] for s in video.rendered_scenes] == [pytest.approx(0, abs=0.05), pytest.approx(length, abs=0.05)]
+        assert all(len(s["citations"]) == 1 for s in video.rendered_scenes)
     assert _Slides.labels == ["Nguồn: x.pdf, trang 7"] * 2
 
 

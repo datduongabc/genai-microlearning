@@ -379,7 +379,8 @@ def render_video(
                 wavs.append(path)
             out = work / "video.mp4"
             _assemble(slides, wavs, lengths, out)
-            _publish(db, video_id, video_key(video_id, version), out, version, sum(lengths), before_save)
+            _publish(db, video_id, video_key(video_id, version), out, version, sum(lengths), before_save,
+                     rendered_scenes(scenes, lengths))
 
 
 def lost_pictures(scenes: Sequence[Scene]) -> list[str]:
@@ -395,8 +396,19 @@ def _read_image(key: str) -> bytes:
         return Path(path).read_bytes()
 
 
+def rendered_scenes(scenes: Sequence[Scene], lengths: Sequence[float]) -> list[dict]:
+    """What a learner needs of each scene to jump to it: scenes follow each other with no gap, so a
+    scene starts where the lengths before it add up to."""
+    out, start = [], 0.0
+    for scene, length in zip(scenes, lengths, strict=True):
+        out.append({"title": scene.title, "start_seconds": round(start, 3),
+                    "citations": list(dict.fromkeys(scene.citations))})
+        start += length
+    return out
+
+
 def _publish(db: Session, video_id: uuid.UUID, key: str, out: Path, version: int, seconds: float,
-             before_save: Callable[[str | None], None] | None) -> None:
+             before_save: Callable[[str | None], None] | None, scenes: list[dict]) -> None:
     stored: list[str] = []
     try:
         store_file(out, key, stored)
@@ -412,6 +424,7 @@ def _publish(db: Session, video_id: uuid.UUID, key: str, out: Path, version: int
         # The version this render read: an edit made while it ran is a newer draft, still to render.
         current.rendered_version = version
         current.duration_seconds = round(seconds, 3)
+        current.rendered_scenes = scenes
         current.status = MediaStatus.ready
         current.error = None
         db.commit()

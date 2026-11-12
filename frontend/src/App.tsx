@@ -10,6 +10,7 @@ import { LoginPage } from "./pages/LoginPage";
 import { LtiLaunchPage } from "./pages/LtiLaunchPage";
 import { LearnerChatPage } from "./pages/LearnerChatPage";
 import { LearnFlashcardsPage } from "./pages/LearnFlashcardsPage";
+import { LearnVideoPage } from "./pages/LearnVideoPage";
 
 const StudiesPage = lazy(() => import("./pages/StudiesPage").then(m => ({ default: m.StudiesPage })));
 const BlindRatingPage = lazy(() => import("./pages/StudiesPage").then(m => ({ default: m.BlindRatingPage })));
@@ -42,6 +43,7 @@ function App() {
           <Route path="/learn" element={<LearnerChatPage />} />
           <Route path="/learn/:courseId" element={<LearnerChatPage />} />
           <Route path="/learn/:courseId/flashcards/:setId" element={<LearnFlashcardsPage />} />
+          <Route path="/learn/:courseId/videos/:videoId" element={<LearnVideoPage />} />
         </Route>
         <Route element={<ProtectedRoute authorOnly />}>
           <Route path="/studies" element={<Suspense fallback={null}><StudiesPage /></Suspense>} />

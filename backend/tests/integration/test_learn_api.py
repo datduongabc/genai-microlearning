@@ -11,6 +11,7 @@ from app.db import SessionLocal
 from app.main import app
 from app.models import Chunk, Course, CourseMember, Document, DocumentStatus, FlashcardSet, MediaStatus, User
 from app.models.media import Video
+from app.storage import S3UploadStore
 
 client = TestClient(app)
 
@@ -130,3 +131,81 @@ def test_a_source_cited_twice_by_a_card_is_shown_once(world):
 
 def test_the_learn_routes_need_a_login(world):
     assert client.get(f"/learn/courses/{world['course']}/items").status_code == 401
+
+
+def _render(world, **changes):
+    """The video as a render leaves it: a file, and the scenes as they were rendered."""
+    with SessionLocal() as db:
+        video = db.get(Video, world["video"])
+        chunk = db.query(Chunk).filter(Chunk.document_id == world["doc"]).one()
+        video.video_key = "videos/x/v1.mp4"
+        video.rendered_version = 1
+        video.rendered_scenes = [
+            {"title": "Mở đầu", "start_seconds": 0.0, "citations": [str(chunk.id), str(chunk.id)]},
+            {"title": "Heap", "start_seconds": 30.5, "citations": []},
+        ]
+        # The draft is newer than the render, with other titles: learners follow the render.
+        video.scenes = [{"title": "Bản nháp mới", "narration": "x", "citations": []}]
+        for name, value in changes.items():
+            setattr(video, name, value)
+        db.commit()
+
+
+def test_a_member_gets_a_short_lived_link_to_the_rendered_video(world, monkeypatch):
+    _render(world)
+    monkeypatch.setattr("app.api.videos.media_store", lambda: _S3())
+
+    response = client.get(f"/learn/videos/{world['video']}", headers=headers(world["member"]))
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "id": str(world["video"]), "course_id": str(world["course"]), "title": "Video đã giao",
+        "duration_seconds": 61.5, "file_url": "https://s3.example/videos/x/v1.mp4?sig=1",
+        "scenes": [
+            {"title": "Mở đầu", "start_seconds": 0.0, "sources": ["bai-giang.pdf · trang 2"]},
+            {"title": "Heap", "start_seconds": 30.5, "sources": []},
+        ],
+    }
+
+
+def test_without_s3_the_link_is_the_learner_content_route(world):
+    _render(world)
+    h = headers(world["member"])
+
+    body = client.get(f"/learn/videos/{world['video']}", headers=h).json()
+
+    assert body["file_url"] == f"/learn/videos/{world['video']}/file/content"
+    # Fetched with the same token, and answering like the detail does when it must not.
+    assert client.get(body["file_url"], headers=h).status_code in (200, 404)
+    assert client.get(body["file_url"], headers=headers(world["outsider"])).status_code == 404
+
+
+def test_an_unpublished_or_foreign_video_is_404_and_gives_no_link(world):
+    _render(world)
+    with SessionLocal() as db:
+        hidden = db.query(Video).filter(Video.course_id == world["course"], Video.published_at.is_(None)).one()
+        hidden.video_key = "videos/x/hidden.mp4"
+        hidden.rendered_scenes = []
+        unrendered = Video(course_id=world["course"], document_id=world["doc"], output_language="vi",
+                           model_alias="gemini-fast", voice_alias="voice-heygen", image_alias="image-nano-banana",
+                           status=MediaStatus.draft, published_at=datetime.now(UTC))
+        db.add(unrendered)
+        db.commit()
+        hidden_id, unrendered_id = hidden.id, unrendered.id
+    missing = client.get(f"/learn/videos/{uuid.uuid4()}", headers=headers(world["member"]))
+
+    for who, video_id in (("member", hidden_id), ("owner", hidden_id), ("member", unrendered_id),
+                          ("outsider", world["video"])):
+        for path in (f"/learn/videos/{video_id}", f"/learn/videos/{video_id}/file/content"):
+            response = client.get(path, headers=headers(world[who]))
+            assert response.status_code == 404, (who, path)
+            assert response.json() == missing.json()
+            assert "file_url" not in response.text and ".mp4" not in response.text
+
+
+class _S3(S3UploadStore):
+    def __init__(self):
+        pass
+
+    def presigned_get(self, key, filename):
+        return f"https://s3.example/{key}?sig=1"

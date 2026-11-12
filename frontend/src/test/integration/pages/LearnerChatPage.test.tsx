@@ -56,6 +56,7 @@ describe('LearnerChatPage', () => {
     expect(link).toHaveTextContent('8 thẻ')
     expect(screen.getByRole('link', { name: /Bộ thẻ/ })).toHaveAttribute('href', '/learn/course-1/flashcards/s2')
     expect(screen.getByText(/Giới thiệu/).closest('li')).toHaveTextContent('2:05')
+    expect(screen.getByRole('link', { name: /Giới thiệu/ })).toHaveAttribute('href', '/learn/course-1/videos/v1')
     const chat = screen.getByText('chat of course-1')
     expect(screen.getByRole('heading', { name: 'bai-2.pdf' }).compareDocumentPosition(chat))
       .toBe(Node.DOCUMENT_POSITION_FOLLOWING)
