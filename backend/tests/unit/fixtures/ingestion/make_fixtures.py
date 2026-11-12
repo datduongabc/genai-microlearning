@@ -9,7 +9,7 @@ reading it needs no installed font.
     uv run python tests/unit/fixtures/ingestion/make_fixtures.py
 """
 
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 
 import docx
@@ -92,7 +92,7 @@ def write_pptx(path: Path) -> None:
         for c, value in enumerate(row):
             table.cell(r, c).text = value
             table.cell(r, c).text_frame.paragraphs[0].runs[0].font.size = Pt(14)
-    deck.core_properties.created = deck.core_properties.modified = datetime(2026, 11, 12)
+    deck.core_properties.created = deck.core_properties.modified = datetime(2026, 11, 12, tzinfo=UTC)
     deck.save(path)
 
 
