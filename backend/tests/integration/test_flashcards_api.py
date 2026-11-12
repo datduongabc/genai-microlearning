@@ -1,4 +1,5 @@
 """The lecturer's routes for flashcard sets: generate, edit, publish, delete."""
+import json
 import uuid
 from datetime import UTC, datetime
 
@@ -254,7 +255,7 @@ def test_a_learner_cannot_call_author_routes(world):
 
 def test_a_card_comes_back_with_the_passages_it_cites_and_the_set_with_its_course(world):
     with SessionLocal() as db:
-        db.get(Chunk, world["chunk"]).source_ref = "x.txt, trang 3"
+        db.get(Chunk, world["chunk"]).source_ref = json.dumps({"page": 3})
         db.commit()
     chunk = str(world["chunk"])
     gone = str(uuid.uuid4())
@@ -267,7 +268,7 @@ def test_a_card_comes_back_with_the_passages_it_cites_and_the_set_with_its_cours
 
     assert body["course_id"] == str(world["course"])
     assert body["cards"][0]["sources"] == [
-        {"chunk_id": chunk, "locator": "x.txt, trang 3", "content": "A heap is a tree."}]
+        {"chunk_id": chunk, "locator": "x.txt · trang 3", "content": "A heap is a tree."}]
     assert body["cards"][1]["sources"] == []
     summary = client.get(f"/courses/{world['course']}/flashcard-sets", headers=headers(world["owner"])).json()[0]
     assert summary["course_id"] == str(world["course"])
