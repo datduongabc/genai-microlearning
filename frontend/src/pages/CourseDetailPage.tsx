@@ -1,5 +1,5 @@
 import axios from "axios";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useParams } from "react-router-dom";
@@ -102,14 +102,6 @@ function extractionWarningLines(warnings: DocumentInfo["extraction_warnings"]) {
       + (WARNING_ADVICE[code] ?? DEFAULT_WARNING_ADVICE),
   }));
 }
-
-const STATUS_COLOR: Record<string, string> = {
-  uploaded: "text-gray-500",
-  processing: "text-amber-600",
-  chunked: "text-amber-600",
-  embedded: "text-green-700",
-  failed: "text-red-700",
-};
 
 interface CoursePageSetters {
   setCourse: (course: Course | null) => void;
@@ -246,7 +238,7 @@ export function CourseDetailPage() {
       await refresh();
     } catch (err) {
       if (axios.isAxiosError(err) && err.response?.status === 409) {
-        setError("Tài liệu này đang có 1 lượt sinh mô-đun khác đang chạy, vui lòng chờ.");
+        setError("Tài liệu này đang sinh một mô-đun khác. Chờ lượt đó xong rồi thử lại.");
       } else {
         setError(apiErrorMessage(err, "Sinh mô-đun thất bại"));
       }
@@ -352,17 +344,18 @@ export function CourseDetailPage() {
   }
 
   return (
-    <AppShell title="Tài liệu môn học">
+    <AppShell title={course?.name ?? "Tài liệu môn học"}>
       <GenerateDialog dialogRef={generateDialog} onGenerate={(language, instructions) => {
         if (generateDocument.current) void handleGenerate(generateDocument.current, language, instructions);
       }} />
       {course && <MoodleLinkSection course={course} onLinked={refresh} />}
-      <div className="flex flex-wrap items-center gap-4">
+      <div className="course-layout">
+      <section className="course-documents" aria-labelledby="course-documents-title">
+      <h2 id="course-documents-title" className="course-section-title">Tài liệu</h2>
+      <div className="course-toolbar">
         <label
-          className={`inline-flex items-center gap-2 rounded-[3px] bg-terracotta px-5 py-2.5 text-sm font-semibold text-white ${
-            loading || uploadBusy
-              ? "cursor-not-allowed opacity-60"
-              : "cursor-pointer hover:bg-terracotta-dark"
+          className={`ui-button primary ${
+            loading || uploadBusy ? "cursor-not-allowed opacity-60" : "cursor-pointer"
           }`}
         >
           {uploadProgress !== null
@@ -384,38 +377,29 @@ export function CourseDetailPage() {
             accept=".pdf,.pptx,.docx,.html,.htm,.mp3,.wav,.m4a,.flac,.ogg,.aac,.mp4,.mkv,.webm,.mov,.avi"
           />
         </label>
-      </div>
-      <p className="mt-2 text-xs text-gray-500">
-        Nhận PDF, PPTX (tối đa 25 MB, 150 trang/slide); DOCX, HTML (tối đa 25 MB); audio MP3, WAV, M4A, FLAC,
-        OGG, AAC (tối đa 200 MB, 90 phút); video MP4, MKV, WEBM, MOV, AVI (tối đa 1 GB, 90 phút).
-      </p>
-      {/* Hàng riêng chứ không chung hàng với nút tải lên: đây là thiết lập cho các nút
-          "+ Sinh mô-đun" bên dưới, không liên quan tới việc tải tài liệu. Chung hàng thì
-          dòng ghi chú dưới ô chọn còn đẩy ô chọn lệch lên so với các nút bên cạnh. */}
-      <div className="mt-4">
+        {/* Thiết lập cho các nút "Sinh mô-đun" bên dưới, không liên quan tới việc tải tài liệu,
+            nhưng đặt cạnh nút tải để hai thiết lập của cột nằm trên một hàng. */}
         <ModelPicker value={modelAlias} onChange={setModelAlias} />
-
       </div>
+      <p className="course-hint">
+        PDF, PPTX (đến 150 trang), DOCX, HTML: tối đa 25 MB. Audio tối đa 200 MB, video tối đa 1 GB, dài tối đa 90 phút.
+      </p>
       {uploadBusy && (
-        <p className="mt-2 text-xs text-gray-500">
-          Xử lý chạy nền (đọc tài liệu → chia đoạn → embedding; audio/video
-          phiên âm qua Whisper trước) — có thể mất một lúc, đặc biệt với
-          audio/video dài.
+        <p className="course-hint">
+          Đang đọc và lập chỉ mục tài liệu. Audio, video dài có thể mất vài phút.
         </p>
       )}
-      {notice && <p className="mt-3 text-sm text-green-800">{notice}</p>}
-      {error && <p className="mt-3 text-sm text-red-700">{error}</p>}
+      {notice && <p role="status" className="mt-3 text-sm success-text">{notice}</p>}
+      {error && <p className="mt-3 text-sm danger-text">{error}</p>}
 
       {!loading && documents.length > 0 && (
-        <div className="mt-6 flex items-center gap-2">
-          <label htmlFor="document-status-filter" className="text-sm text-gray-600">
-            Trạng thái:
-          </label>
+        <div className="course-filter">
+          <label htmlFor="document-status-filter">Trạng thái:</label>
           <select
             id="document-status-filter"
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
-            className="rounded-[3px] border border-gray-300 px-2 py-1 text-sm"
+            className="ui-select"
           >
             {(Object.keys(FILTER_LABEL) as StatusFilter[]).map((value) => (
               <option key={value} value={value}>
@@ -427,26 +411,24 @@ export function CourseDetailPage() {
       )}
 
       {loading ? (
-        <p className="mt-8 text-sm text-gray-500">Đang tải...</p>
+        <p className="course-empty">Đang tải tài liệu...</p>
       ) : (
-        <ul className="mt-4 flex flex-col divide-y divide-gray-200">
+        <ul className="doc-list">
           {visibleDocuments.map((d) => (
-            <li key={d.id} className="py-5">
-              <div className="flex items-center justify-between gap-4">
-                <div>
-                  <div className="font-medium">{d.filename}</div>
-                  <div
-                    className={`mt-0.5 text-xs font-medium ${STATUS_COLOR[d.status] ?? "text-gray-500"}`}
-                  >
+            <li key={d.id} className="doc-row">
+              <div className="doc-head">
+                <div className="min-w-0">
+                  <div className="doc-name">{d.filename}</div>
+                  <div className="status-pill" data-status={d.status}>
                     {STATUS_LABEL[d.status] ?? d.status}
                   </div>
                 </div>
-                <div className="flex shrink-0 items-center gap-4">
+                <div className="doc-actions">
                   {d.status === "embedded" && (
                     <button
                       onClick={() => { generateDocument.current = d; generateDialog.current?.showModal(); }}
                       disabled={isGenerating(d)}
-                      className="text-sm font-semibold text-terracotta hover:underline disabled:opacity-60"
+                      className="link-action"
                     >
                       {isGenerating(d)
                         ? "Đang sinh mô-đun..."
@@ -456,33 +438,30 @@ export function CourseDetailPage() {
                   <button
                     onClick={() => handleDeleteDocument(d)}
                     disabled={deletingDocId === d.id}
-                    className="text-sm text-red-700 hover:underline disabled:opacity-60"
+                    className="link-action danger"
                   >
                     {deletingDocId === d.id ? "Đang xóa..." : "Xóa"}
                   </button>
                 </div>
               </div>
               {extractionWarningLines(d.extraction_warnings).map((warning) => (
-                <p key={warning.code} className="mt-2 text-sm text-amber-800">
+                <p key={warning.code} className="doc-warning">
                   {warning.text}
                 </p>
               ))}
               {d.failures.length > 0 && (
-                <ul className="mt-2 flex flex-col gap-2">
+                <ul className="mt-3 flex flex-col gap-2">
                   {d.failures.map((f) => (
-                    <li
-                      key={f.job_id}
-                      className="flex flex-wrap items-start justify-between gap-3 rounded-[3px] border border-red-200 bg-red-50 px-3 py-2"
-                    >
-                      <div className="min-w-0 text-sm text-red-800">
-                        <div className="font-medium">{failureTitle(f)}</div>
-                        {f.error && <div className="mt-0.5 break-words text-xs">{f.error}</div>}
+                    <li key={f.job_id} className="doc-failure">
+                      <div className="min-w-0">
+                        <div className="font-semibold">{failureTitle(f)}</div>
+                        {f.error && <div className="mt-0.5 break-words text-[13px] leading-[19px]">{f.error}</div>}
                       </div>
                       <button
                         onClick={() => handleRetry(f)}
                         disabled={retryingJobIds.has(f.job_id)}
                         aria-label={`Thử lại: ${failureTitle(f)} (${d.filename})`}
-                        className="shrink-0 text-sm font-semibold text-terracotta hover:underline disabled:opacity-60"
+                        className="link-action shrink-0"
                       >
                         {retryingJobIds.has(f.job_id) ? "Đang thử lại..." : "Thử lại"}
                       </button>
@@ -491,7 +470,7 @@ export function CourseDetailPage() {
                 </ul>
               )}
               {(modulesByDoc[d.id] ?? []).length > 0 && (
-                <ul className="mt-3 flex flex-col gap-1.5 pl-1">
+                <ul className="doc-modules" aria-label={`Mô-đun sinh từ ${d.filename}`}>
                   {(modulesByDoc[d.id] ?? []).map((m) => (
                     <ModuleListItem
                       key={m.id}
@@ -505,14 +484,25 @@ export function CourseDetailPage() {
             </li>
           ))}
           {documents.length === 0 && (
-            <p className="py-4 text-sm text-gray-500">Chưa có tài liệu nào.</p>
+            <p className="course-empty">Chưa có tài liệu. Tải tài liệu lên để bắt đầu.</p>
           )}
           {documents.length > 0 && visibleDocuments.length === 0 && (
-            <p className="py-4 text-sm text-gray-500">Không có tài liệu nào ở trạng thái này.</p>
+            <p className="course-empty">Không có tài liệu nào ở trạng thái này.</p>
           )}
         </ul>
       )}
-      {courseId && documents.some((d) => d.status === "embedded") && <CourseChat key={courseId} courseId={courseId} />}
+      </section>
+      <div className="course-chat">
+        {courseId && documents.some((d) => d.status === "embedded")
+          ? <CourseChat key={courseId} courseId={courseId} />
+          : !loading && (
+            <section className="chat-panel" aria-label="Hỏi đáp về tài liệu">
+              <h2 className="course-section-title">Hỏi đáp về tài liệu</h2>
+              <p className="course-empty">Dùng được khi có một tài liệu xử lý xong.</p>
+            </section>
+          )}
+      </div>
+      </div>
     </AppShell>
   );
 }
@@ -588,74 +578,59 @@ function MoodleLinkSection({ course, onLinked }: { course: Course; onLinked: () 
 
   const accountSection = <MoodleAccountSection onStatus={setAccount} />;
 
+  const panel = (row: ReactNode) => (
+    <div className="moodle-panel">
+      {accountSection}
+      <div className="moodle-course">{row}</div>
+      {error && <p className="moodle-error danger-text">{error}</p>}
+    </div>
+  );
+
   if (course.moodle_course_id !== null) {
-    return (
-      <div className="mb-6">
-        {accountSection}
-        <div className="flex items-center justify-between text-sm text-gray-600">
-          <p>
-            Đã liên kết với Moodle course id <strong>{course.moodle_course_id}</strong>.
-          </p>
-          <button
-            onClick={handleUnlink}
-            disabled={busy}
-            className="font-semibold text-red-700 hover:underline disabled:opacity-60"
-          >
-            {busy ? "Đang hủy..." : "Hủy liên kết"}
-          </button>
-        </div>
-        {error && <p className="mt-2 text-sm text-red-700">{error}</p>}
-      </div>
+    return panel(
+      <>
+        <p>
+          <span className="moodle-key">Khóa học Moodle:</span>{" "}
+          Đã liên kết với Moodle course id <strong>{course.moodle_course_id}</strong>.
+        </p>
+        <button onClick={handleUnlink} disabled={busy} className="link-action danger">
+          {busy ? "Đang hủy..." : "Hủy liên kết"}
+        </button>
+      </>,
     );
   }
 
   if (account !== "linked") {
-    return (
-      <div className="mb-6">
-        {accountSection}
-        <div className="rounded-[3px] border border-gray-200 p-4">
-          <p className="mb-2 text-sm font-medium">Course này chưa liên kết với Moodle.</p>
-          <p className="text-sm text-gray-600">
-            Bạn cần liên kết tài khoản Moodle trước khi liên kết khóa học. Tài khoản ứng dụng sử dụng mật khẩu riêng.
-          </p>
-          {error && <p className="mt-2 text-sm text-red-700">{error}</p>}
-        </div>
-      </div>
+    return panel(
+      <p>
+        <span className="moodle-key">Khóa học Moodle:</span>{" "}
+        Môn học này chưa liên kết với Moodle. Liên kết tài khoản Moodle trước để chọn khóa học.
+      </p>,
     );
   }
 
-  return (
-    <div className="mb-6">
-      {accountSection}
-      <div className="rounded-[3px] border border-gray-200 p-4">
-        <p className="mb-2 text-sm font-medium">Course này chưa liên kết với Moodle.</p>
-        <form
-          onSubmit={handleSubmit(handleLink, (errors) => setError(errors.moodleCourseId?.message ?? null))}
-          noValidate
-          className="flex flex-wrap gap-2"
-        >
-          <select
-            aria-label="Course Moodle có sẵn"
-            {...register("moodleCourseId")}
-            className="min-w-0 flex-1 basis-full rounded-[3px] border border-gray-300 bg-white px-3 py-1.5 text-sm sm:basis-auto"
-          >
-            <option value="">Chọn khóa học bạn có quyền quản lý hoạt động…</option>
-            {courses.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.fullname} ({c.shortname})
-              </option>
-            ))}
-          </select>
-          <button
-            type="submit"
-            disabled={busy || !chosen}
-            className="whitespace-nowrap rounded-[3px] border border-gray-300 px-3 py-1.5 text-sm hover:bg-gray-50 disabled:opacity-60"
-          >
-            Liên kết
-          </button>
-        </form>
-        {error && <p className="mt-2 text-sm text-red-700">{error}</p>}
-      </div>
-    </div>
+  return panel(
+    <form
+      onSubmit={handleSubmit(handleLink, (errors) => setError(errors.moodleCourseId?.message ?? null))}
+      noValidate
+      className="moodle-link-form"
+    >
+      <span className="moodle-key">Môn học này chưa liên kết với Moodle. Chọn khóa học:</span>
+      <select
+        aria-label="Course Moodle có sẵn"
+        {...register("moodleCourseId")}
+        className="ui-select min-w-0 flex-1"
+      >
+        <option value="">Chọn khóa học bạn có quyền quản lý hoạt động…</option>
+        {courses.map((c) => (
+          <option key={c.id} value={c.id}>
+            {c.fullname} ({c.shortname})
+          </option>
+        ))}
+      </select>
+      <button type="submit" disabled={busy || !chosen} className="ui-button">
+        Liên kết
+      </button>
+    </form>,
   );
 }

@@ -91,7 +91,7 @@ it('downloads slides through the authenticated API client', async () => {
   })
   try {
     renderPage()
-    await userEvent.click(await screen.findByRole('button', { name: 'Tải slide' }))
+    await userEvent.click(await screen.findByRole('button', { name: 'Tải slide (PPTX)' }))
     await waitFor(() => expect(click).toHaveBeenCalledOnce())
     expect(request).toHaveBeenCalledWith('/modules/module-1/slides.pptx', { responseType: 'blob' })
     expect(createURL).toHaveBeenCalledWith(blob)
@@ -109,7 +109,7 @@ describe('ModulePreviewPage - publish to Moodle', () => {
     vi.mocked(api.getMoodleSections).mockResolvedValue([])
     renderPage()
     expect(await screen.findByText('Đối chứng (không RAG) - chỉ dùng cho nghiên cứu')).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: /push to moodle/i })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /^xuất bản lên moodle$/i })).not.toBeInTheDocument()
     expect(api.publishToMoodle).not.toHaveBeenCalled()
   })
 
@@ -118,8 +118,8 @@ describe('ModulePreviewPage - publish to Moodle', () => {
 
     renderPage()
 
-    expect(await screen.findByText(/chưa được liên kết với moodle/i)).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: /push to moodle/i })).not.toBeInTheDocument()
+    expect(await screen.findByText(/chưa liên kết với moodle/i)).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /^xuất bản lên moodle$/i })).not.toBeInTheDocument()
   })
 
   it('disables the push button after a successful publish so it cannot be clicked twice', async () => {
@@ -134,22 +134,22 @@ describe('ModulePreviewPage - publish to Moodle', () => {
 
     renderPage()
 
-    const button = await screen.findByRole('button', { name: /push to moodle/i })
+    const button = await screen.findByRole('button', { name: /^xuất bản lên moodle$/i })
     expect(button).toBeEnabled()
 
     await userEvent.click(button)
 
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: /đã đẩy lên moodle/i })).toBeDisabled()
+      expect(screen.getByRole('button', { name: /đã xuất bản lên moodle/i })).toBeDisabled()
     })
     expect(api.publishToMoodle).toHaveBeenCalledTimes(1)
     // Says what was created, in the order it was created.
-    expect(screen.getByText(/sách nội dung, practice, quiz đã tạo thành công/i)).toBeInTheDocument()
+    expect(screen.getByText(/sách nội dung, bài luyện tập, quiz\./i)).toBeInTheDocument()
 
     // Clicking again (e.g. a stray extra click before React re-renders)
     // must not fire a second request -- moodle_client.create_book/create_quiz
     // are not idempotent, a second call would create duplicate content.
-    await userEvent.click(screen.getByRole('button', { name: /đã đẩy lên moodle/i }))
+    await userEvent.click(screen.getByRole('button', { name: /đã xuất bản lên moodle/i }))
     expect(api.publishToMoodle).toHaveBeenCalledTimes(1)
   })
 
@@ -160,11 +160,11 @@ describe('ModulePreviewPage - publish to Moodle', () => {
 
     renderPage()
 
-    const button = await screen.findByRole('button', { name: /push to moodle/i })
+    const button = await screen.findByRole('button', { name: /^xuất bản lên moodle$/i })
     await userEvent.click(button)
 
-    expect(await screen.findByText(/push to moodle thất bại/i)).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: /push to moodle/i })).not.toBeInTheDocument()
+    expect(await screen.findByText(/xuất bản lên moodle thất bại/i)).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /^xuất bản lên moodle$/i })).not.toBeInTheDocument()
   })
 })
 
@@ -238,9 +238,9 @@ describe('ModulePreviewPage - module structure', () => {
 
     renderPage()
 
-    const explanationCard = (await screen.findByText('Giải thích đáp án')).closest('section') as HTMLElement
+    const explanationCard = (await screen.findByRole('heading', { name: 'Giải thích đáp án' })).closest('section') as HTMLElement
     await user.click(within(explanationCard).getByRole('button', { name: 'Sửa' }))
-    const field = within(explanationCard).getByLabelText('Giải thích Quiz - câu 2')
+    const field = within(explanationCard).getByLabelText('Giải thích Câu kiểm tra 2')
     await user.clear(field)
     await user.type(field, 'LỜI-GIẢI-ĐÃ-SỬA')
     await user.click(within(explanationCard).getByRole('button', { name: 'Lưu' }))
@@ -269,7 +269,8 @@ describe('ModulePreviewPage - reading the module', () => {
     renderPage()
 
     expect(await screen.findByRole('heading', { name: 'TIÊU-ĐỀ-PHẦN' })).toBeInTheDocument()
-    expect(screen.getByRole('listitem')).toHaveTextContent('ý đầu tiên')
+    const content = screen.getByRole('heading', { name: 'Nội dung' }).closest('section') as HTMLElement
+    expect(within(content).getByRole('listitem')).toHaveTextContent('ý đầu tiên')
     expect(screen.queryByText(/## TIÊU-ĐỀ-PHẦN/)).not.toBeInTheDocument()
   })
 
@@ -320,7 +321,7 @@ describe('ModulePreviewPage - reading the module', () => {
 
     const quizCard = (await screen.findByText('CÂU-HỎI')).closest('section') as HTMLElement
     expect(within(quizCard).getByText('Chưa tự kiểm')).toBeInTheDocument()
-    expect(within(quizCard).queryByText('Đạt CRAG groundedness/answerability')).not.toBeInTheDocument()
+    expect(within(quizCard).queryByText('Đạt CRAG')).not.toBeInTheDocument()
   })
 
   it('treats a module saved before the self-check flag existed as self-checked', async () => {
@@ -341,7 +342,7 @@ describe('ModulePreviewPage - reading the module', () => {
     renderPage()
 
     const quizCard = (await screen.findByText('CÂU-HỎI')).closest('section') as HTMLElement
-    expect(within(quizCard).getByText('Đạt CRAG groundedness/answerability')).toBeInTheDocument()
+    expect(within(quizCard).getByText('Đạt CRAG')).toBeInTheDocument()
     expect(within(quizCard).queryByText('Chưa tự kiểm')).not.toBeInTheDocument()
   })
 
@@ -380,6 +381,18 @@ it.each(['quiz', 'practice'] as const)('edits and saves a %s question', async (t
   expect(await screen.findByText('Edited stem')).toBeInTheDocument()
 })
 
+it('shows the explanation students get and folds the AI reasoning until asked for', async () => {
+  vi.mocked(api.getModule).mockResolvedValue({ ...baseModule, components: [
+    { id: 'exp-1', type: 'explanation', content: { items: [{ component: 'quiz', position: 0, reasoning: 'LẬP-LUẬN', explanation_text: 'LỜI-GIẢI' }] }, questions: [] },
+  ] })
+  const user = userEvent.setup()
+  renderPage()
+  expect(await screen.findByText('LỜI-GIẢI')).toBeVisible()
+  expect(screen.getByText('LẬP-LUẬN')).not.toBeVisible()
+  await user.click(screen.getByText('Lập luận của AI'))
+  expect(screen.getByText('LẬP-LUẬN')).toBeVisible()
+})
+
 it('falls back to the question explanation when its Explanation item is empty', async () => {
   const question = { id: 'q1', position: 0, stem: 'Original stem', choices: { options: ['A', 'B'] }, answer_key: '0', explanation: 'Question explanation' }
   vi.mocked(api.getModule).mockResolvedValue({ ...baseModule, components: [
@@ -403,12 +416,12 @@ it('shows the Vietnamese deleted-course error and offers relinking immediately',
   vi.mocked(api.getMoodleSections).mockResolvedValue([])
   vi.mocked(api.publishToMoodle).mockRejectedValue({ isAxiosError: true, response: { data: { detail: message } } })
   renderPage()
-  const button = await screen.findByRole('button', { name: /push to moodle/i })
+  const button = await screen.findByRole('button', { name: /^xuất bản lên moodle$/i })
   vi.mocked(api.getModule).mockResolvedValue(baseModule)
   await userEvent.click(button)
   expect(await screen.findByText(message)).toBeInTheDocument()
-  expect(await screen.findByRole('link', { name: /vào trang course để liên kết trước/i })).toBeInTheDocument()
-  expect(screen.queryByRole('button', { name: /push to moodle/i })).not.toBeInTheDocument()
+  expect(await screen.findByRole('link', { name: /liên kết ở trang môn học/i })).toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: /^xuất bản lên moodle$/i })).not.toBeInTheDocument()
 })
 
 it('refreshes the preview after an applied chat edit and shows the reply', async () => {
@@ -656,7 +669,7 @@ describe('ModulePreviewPage - forms', () => {
       vi.mocked(api.publishToMoodle).mockResolvedValue(result)
       renderPage()
       await userEvent.selectOptions(await screen.findByRole('combobox'), '2')
-      await userEvent.click(screen.getByRole('button', { name: /push to moodle/i }))
+      await userEvent.click(screen.getByRole('button', { name: /^xuất bản lên moodle$/i }))
       await waitFor(() => expect(api.publishToMoodle).toHaveBeenCalledWith('module-1', 2))
     })
 
@@ -666,9 +679,9 @@ describe('ModulePreviewPage - forms', () => {
       vi.mocked(api.publishToMoodle).mockResolvedValue(result)
       renderPage()
       await screen.findByRole('combobox')
-      await userEvent.click(screen.getByRole('checkbox', { name: /thêm vào 1 section mới/i }))
+      await userEvent.click(screen.getByRole('checkbox', { name: /tạo chủ đề mới/i }))
       expect(screen.queryByRole('combobox')).not.toBeInTheDocument()
-      await userEvent.click(screen.getByRole('button', { name: /push to moodle/i }))
+      await userEvent.click(screen.getByRole('button', { name: /^xuất bản lên moodle$/i }))
       await waitFor(() => expect(api.publishToMoodle).toHaveBeenCalledWith('module-1', 3))
     })
   })
@@ -679,7 +692,34 @@ it('hides Moodle publishing when live permission lookup fails', async () => {
   vi.mocked(api.getMoodleSections).mockRejectedValue(new Error('Denied'))
   renderPage()
   expect(await screen.findByText('Không tải được danh sách phần học Moodle')).toBeInTheDocument()
-  expect(screen.queryByRole('button', { name: 'Push to Moodle' })).not.toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: 'Xuất bản lên Moodle' })).not.toBeInTheDocument()
+})
+
+it('says once that Moodle cannot be reached, not again under the publish form', async () => {
+  const unreachable = { isAxiosError: true, response: { data: { detail: 'Không kết nối được tới Moodle, vui lòng thử lại sau.' } } }
+  vi.mocked(api.getModule).mockResolvedValue({ ...baseModule, moodle_course_id: 72 })
+  vi.mocked(api.getMoodleAccount).mockRejectedValue(unreachable)
+  vi.mocked(api.getMoodleSections).mockRejectedValue(unreachable)
+  renderPage()
+  expect(await screen.findByText('Không kết nối được tới Moodle, vui lòng thử lại sau.')).toBeInTheDocument()
+  expect(screen.getAllByText('Không kết nối được tới Moodle, vui lòng thử lại sau.')).toHaveLength(1)
+  expect(api.getMoodleSections).not.toHaveBeenCalled()
+})
+
+it('does not ask Moodle for sections where this environment has no Moodle', async () => {
+  vi.mocked(api.getModule).mockResolvedValue({ ...baseModule, moodle_course_id: 72 })
+  vi.mocked(api.getMoodleAccount).mockResolvedValue({ email: 'teacher@example.com', status: 'unavailable' })
+  renderPage()
+  expect(await screen.findByText(/Mở từ Moodle \(LTI\) vẫn dùng bình thường/)).toBeInTheDocument()
+  expect(api.getMoodleSections).not.toHaveBeenCalled()
+})
+
+it('asks for sections once the linked account has answered', async () => {
+  vi.mocked(api.getModule).mockResolvedValue({ ...baseModule, moodle_course_id: 72 })
+  vi.mocked(api.getMoodleSections).mockResolvedValue([{ sectionnum: 0, name: 'General' }])
+  renderPage()
+  expect(await screen.findByRole('button', { name: /^xuất bản lên moodle$/i })).toBeInTheDocument()
+  expect(api.getMoodleSections).toHaveBeenCalledOnce()
 })
 
 it('shows the served model when generation used a fallback', async () => {
@@ -720,7 +760,7 @@ it('keeps the Content editor open and reports a rejected source marker', async (
   ] })
   vi.mocked(api.updateComponentContent).mockRejectedValue(new Error('Content cites unknown source IDs: S99'))
   renderPage()
-  const section = (await screen.findByText('Nội dung')).closest('section')!
+  const section = (await screen.findByRole('heading', { name: 'Nội dung' })).closest('section')!
   await userEvent.click(within(section).getByRole('button', { name: 'Sửa' }))
   const field = within(section).getByRole('textbox', { name: 'Nội dung' })
   fireEvent.change(field, { target: { value: 'Revised. [S99]' } })

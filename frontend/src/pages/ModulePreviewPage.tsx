@@ -1,10 +1,10 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import Markdown, { type Components } from 'react-markdown'
 import { Link, useParams } from 'react-router-dom'
 import { AppShell } from '../components/AppShell'
-import { MoodleAccountSection } from '../components/MoodleAccountSection'
+import { MoodleAccountSection, type MoodleAccountState } from '../components/MoodleAccountSection'
 import { mathRehypePlugins, mathRemarkPlugins } from '../lib/markdownMath'
 import {
   chatEditSchema,
@@ -45,12 +45,51 @@ import {
   type QuestionInfo,
 } from '../api'
 
+type Citation = NonNullable<ModuleDetail['claim_citations']>[number]
+interface OpenedSource { citation: Citation; number: number }
+
+// The passage a lecturer is checking a statement against. Opening it does not cover the statement:
+// on a wide screen it is the column beside the text, on a phone a sheet over the lower half.
+const SourceContext = createContext<{ opened: OpenedSource | null; open: (source: OpenedSource, from: HTMLElement) => void }>({
+  opened: null, open: () => {},
+})
+
+function SourcePanel({ opened, onClose }: { opened: OpenedSource | null; onClose: () => void }) {
+  const heading = useRef<HTMLHeadingElement>(null)
+  useEffect(() => { if (opened) heading.current?.focus() }, [opened])
+  return (
+    <aside role="dialog" aria-modal="false" aria-label="Nguồn trích dẫn" className="module-source" data-open={opened ? 'true' : 'false'}>
+      {opened ? (
+        <>
+          <div className="module-source-head">
+            <h2 ref={heading} tabIndex={-1} className="module-source-title">
+              Nguồn [{opened.number}]
+              <span className="module-source-place">{opened.citation.locator}</span>
+            </h2>
+            <button type="button" aria-label="Đóng nguồn" onClick={onClose} className="link-button">Đóng</button>
+          </div>
+          <p className="module-source-label">Câu đang kiểm</p>
+          <p className="module-source-claim"><mark>{opened.citation.claim}</mark></p>
+          <p className="module-source-label">Đoạn trong tài liệu</p>
+          {opened.citation.resolution === 'resolved'
+            ? <p className="module-source-passage">{opened.citation.chunk_content}</p>
+            : <p className="muted small">{opened.citation.resolution === 'ambiguous'
+              ? 'Câu này khớp nhiều đoạn nguồn. Đối chiếu tay trước khi xuất bản.'
+              : 'Không tìm thấy đoạn nguồn. Sửa hoặc bỏ trích dẫn trước khi xuất bản.'}</p>}
+        </>
+      ) : (
+        <p className="module-source-empty">Bấm số trích dẫn như [1] trong bài để xem đoạn nguồn ở đây.</p>
+      )}
+    </aside>
+  )
+}
+
 const COMPONENT_LABEL: Record<string, string> = {
   content: 'Nội dung',
   slides: 'Slide bài giảng',
   example: 'Ví dụ minh họa',
-  quiz: 'Câu hỏi kiểm tra (Quiz)',
-  practice: 'Câu hỏi luyện tập (Practice)',
+  quiz: 'Câu hỏi kiểm tra',
+  practice: 'Câu hỏi luyện tập',
   explanation: 'Giải thích đáp án',
 }
 
@@ -58,7 +97,17 @@ export function ModulePreviewPage() {
   const { moduleId } = useParams<{ moduleId: string }>()
   const [module, setModule] = useState<ModuleDetail | null>(null)
   const [loading, setLoading] = useState(true)
-  const [downloadError, setDownloadError] = useState<string | null>(null)
+  const [opened, setOpened] = useState<OpenedSource | null>(null)
+  const openedFrom = useRef<HTMLElement | null>(null)
+  const openSource = useCallback((source: OpenedSource, from: HTMLElement) => {
+    openedFrom.current = from
+    setOpened(source)
+  }, [])
+  const closeSource = useCallback(() => {
+    setOpened(null)
+    // Back to the marker the lecturer opened it from, so reading goes on where it stopped.
+    openedFrom.current?.focus()
+  }, [])
 
   const refresh = useCallback(async () => {
     if (!moduleId) return
@@ -100,53 +149,48 @@ export function ModulePreviewPage() {
 
   return (
     <AppShell title="Xem trước mô-đun">
-      <ModuleHeader module={module} onSaved={refresh} />
-      {module.is_control && (
-        <p className="mt-2 text-sm text-amber-600">Đối chứng (không RAG) - chỉ dùng cho nghiên cứu</p>
-      )}
-      {module.components.some((c) => c.type === 'slides') && (
-        <button
-          className="mt-4 rounded-[3px] bg-navy px-5 py-2.5 text-sm font-semibold text-[#f3f1ea] hover:bg-[#28394b]"
-          onClick={async () => {
-            setDownloadError(null)
-            try {
-              const { data } = await api.get<Blob>(`/modules/${module.id}/slides.pptx`, { responseType: 'blob' })
-              const url = URL.createObjectURL(data)
-              const link = document.createElement('a')
-              link.href = url
-              link.download = `${module.title}.pptx`
-              document.body.append(link)
-              link.click()
-              link.remove()
-              URL.revokeObjectURL(url)
-            } catch (err) {
-              setDownloadError(apiErrorMessage(err, 'Tải slide thất bại'))
-            }
-          }}
-        >
-          Tải slide
-        </button>
-      )}
-      {downloadError && <p role="alert" className="mt-3 text-sm text-red-700">{downloadError}</p>}
-      {!module.is_control && <ModuleChatPanel key={module.id} module={module} onSaved={refresh} />}
-      <div className="mt-8 flex flex-col gap-6">
-        {module.components.map((c) => (
-          <ComponentCard
-            key={c.id}
-            moduleId={module.id}
-            component={c}
-            citations={module.claim_citations}
-            explanations={explanationsByQuestion(module, c.type)}
-            onSaved={refresh}
-          />
-        ))}
-      </div>
-      {!module.is_control && <PublishToMoodleSection
-        moduleId={module.id}
-        courseId={module.course_id}
-        moodleCourseId={module.moodle_course_id}
-        onRefresh={refresh}
-      />}
+      <SourceContext.Provider value={{ opened, open: openSource }}>
+        <div className="module-layout">
+          <nav aria-label="Các phần của mô-đun" className="module-parts">
+            <ol>
+              <li><a href="#part-objective">Mục tiêu</a></li>
+              {module.components.map((c) => (
+                <li key={c.id}><a href={`#part-${c.type}`}>{COMPONENT_LABEL[c.type] ?? c.type}</a></li>
+              ))}
+              {!module.is_control && <li><a href="#part-ai-edit">Chỉnh sửa bằng AI</a></li>}
+              {!module.is_control && <li><a href="#part-publish">Xuất bản</a></li>}
+            </ol>
+          </nav>
+          <div className="module-main">
+            <ModuleHeader module={module} onSaved={refresh} />
+            {module.is_control && (
+              <p className="mt-2 text-sm text-amber-700">Đối chứng (không RAG) - chỉ dùng cho nghiên cứu</p>
+            )}
+            <div className="module-sheet">
+              {module.components.map((c) => (
+                <ComponentCard
+                  key={c.id}
+                  moduleId={module.id}
+                  moduleTitle={module.title}
+                  component={c}
+                  citations={module.claim_citations}
+                  explanations={explanationsByQuestion(module, c.type)}
+                  onSaved={refresh}
+                />
+              ))}
+            </div>
+            {/* After the lesson: the lecturer knows what to change only once it has been read. */}
+            {!module.is_control && <ModuleChatPanel key={module.id} module={module} onSaved={refresh} />}
+            {!module.is_control && <div id="part-publish"><PublishToMoodleSection
+              moduleId={module.id}
+              courseId={module.course_id}
+              moodleCourseId={module.moodle_course_id}
+              onRefresh={refresh}
+            /></div>}
+          </div>
+          <SourcePanel opened={opened} onClose={closeSource} />
+        </div>
+      </SourceContext.Provider>
     </AppShell>
   )
 }
@@ -181,10 +225,8 @@ function ModuleChatPanel({ module, onSaved }: { module: ModuleDetail; onSaved: (
     }
   }
 
-  return <section className="mt-6 rounded-[3px] border border-gray-200 bg-white p-6">
-    <h3 className="text-sm font-semibold">Chỉnh sửa bằng AI</h3>
-    <p className="mt-1 text-sm text-gray-500">Nêu một phần cần sửa, ví dụ: “Rút gọn slide 3” hoặc “Làm câu quiz 2 khó hơn”.</p>
-    <p className="mt-1 text-xs text-gray-500">Số lượt đã áp dụng: {module.chat_edit_count ?? 0}</p>
+  return <section id="part-ai-edit" className="module-ai-edit">
+    <h2 className="module-part-title">Chỉnh sửa bằng AI</h2>
     <div aria-live="polite" className="mt-3 space-y-3 text-sm">
       {turns.map((turn, i) => <div key={i}>
         <p className="text-gray-500">{turn.message}</p>
@@ -192,16 +234,17 @@ function ModuleChatPanel({ module, onSaved }: { module: ModuleDetail; onSaved: (
       </div>)}
     </div>
     <form onSubmit={handleSubmit(send)} noValidate className="mt-3 flex flex-col gap-2">
-      <label htmlFor="module-chat-message" className="text-sm">Yêu cầu chỉnh sửa</label>
+      <label htmlFor="module-chat-message" className="chat-label">Yêu cầu chỉnh sửa</label>
       <textarea id="module-chat-message" maxLength={4000} rows={3} disabled={sending}
-        {...register('message')} className="w-full rounded border border-gray-300 p-3 text-sm outline-none focus:border-terracotta" />
-      {errors.message && <p className="text-xs text-red-600">{errors.message.message}</p>}
+        placeholder="Ví dụ: rút gọn slide 3, làm câu quiz 2 khó hơn"
+        {...register('message')} className="ui-input w-full" />
+      {errors.message && <p className="text-[13px] danger-text">{errors.message.message}</p>}
       <button type="submit" disabled={sending || blank}
-        className="w-fit rounded-[3px] bg-terracotta px-4 py-2 text-sm font-semibold text-white disabled:opacity-60">
+        className="ui-button primary w-fit">
         {sending ? 'Đang chỉnh sửa...' : 'Gửi yêu cầu'}
       </button>
     </form>
-    {error && <p role="alert" className="mt-2 text-sm text-red-700">{error}</p>}
+    {error && <p role="alert" className="mt-2 text-sm danger-text">{error}</p>}
   </section>
 }
 
@@ -232,9 +275,16 @@ function PublishToMoodleSection({
     defaultValues: { sectionNum: 0, addNewSection: false },
   })
   const addNewSection = useWatch({ control, name: 'addNewSection' })
+  // When Moodle itself cannot be reached, the account section above already says so; the failed
+  // section list is the same failure and would repeat the message under it.
+  const [account, setAccount] = useState<MoodleAccountState>('unknown')
+  const accountFailed = account === 'unknown' || account === 'unavailable'
 
   useEffect(() => {
-    if (moodleCourseId === null) return
+    // Sections come from Moodle through the lecturer's linked account: until the account answers,
+    // or when this environment has no Moodle at all (AWS, LTI only), asking would only fail, and
+    // every page view would count a server error against the API's 5xx alarm.
+    if (moodleCourseId === null || accountFailed) return
     let cancelled = false
     getMoodleSections(courseId).then(
       (list) => {
@@ -251,7 +301,7 @@ function PublishToMoodleSection({
       },
     )
     return () => { cancelled = true }
-  }, [courseId, moodleCourseId, courseScope, onRefresh])
+  }, [courseId, moodleCourseId, courseScope, onRefresh, accountFailed])
 
   async function handlePublish({ sectionNum, addNewSection }: PublishToMoodleFormValues) {
     setError(null)
@@ -263,73 +313,75 @@ function PublishToMoodleSection({
       setResult(await publishToMoodle(moduleId, target))
     } catch (err) {
       setAuthorizedCourse(null)
-      setError(apiErrorMessage(err, 'Push to Moodle thất bại'))
+      setError(apiErrorMessage(err, 'Xuất bản lên Moodle thất bại'))
       await onRefresh().catch(() => {})
     }
   }
 
   if (moodleCourseId === null) {
     return (
-      <div className="mt-8 border-t border-gray-200 pt-6">
-        <p className="text-sm text-gray-600">
-          Course của mô-đun này chưa được liên kết với Moodle.{' '}
-          <Link to={`/courses/${courseId}`} className="font-semibold text-terracotta hover:underline">
-            Vào trang course để liên kết trước
+      <section className="module-publish" aria-labelledby="publish-title">
+        <h2 id="publish-title" className="module-part-title">Xuất bản lên Moodle</h2>
+        <p className="text-sm muted">
+          Môn học này chưa liên kết với Moodle.{' '}
+          <Link to={`/courses/${courseId}`} className="link-action">
+            Liên kết ở trang môn học
           </Link>
-          .
         </p>
-        {error && <p role="alert" className="mt-3 text-sm text-red-700">{error}</p>}
-      </div>
+        {error && <p role="alert" className="mt-3 text-sm danger-text">{error}</p>}
+      </section>
     )
   }
 
   return (
-    <div className="mt-8 border-t border-gray-200 pt-6">
-      <MoodleAccountSection />
+    <section className="module-publish" aria-labelledby="publish-title">
+      <h2 id="publish-title" className="module-part-title">Xuất bản lên Moodle</h2>
+      <MoodleAccountSection onStatus={setAccount} />
       {canPublish && <form onSubmit={handleSubmit(handlePublish)} noValidate>
       {!addNewSection && sections.length > 0 && (
-        <div className="mb-3">
-          <label className="mr-2 text-sm text-gray-600">Section:</label>
+        <div className="mt-4 mb-3 flex items-center gap-2 text-sm muted">
+          <label htmlFor="publish-section">Chủ đề trên Moodle:</label>
           <select
+            id="publish-section"
             {...register('sectionNum', { valueAsNumber: true })}
             disabled={result !== null}
-            className="rounded-[3px] border border-gray-300 px-2 py-1 text-sm"
+            className="ui-select"
           >
             {sections.map((s) => (
               <option key={s.sectionnum} value={s.sectionnum}>
-                {s.name || `Section ${s.sectionnum}`}
+                {s.name || `Chủ đề ${s.sectionnum}`}
               </option>
             ))}
           </select>
         </div>
       )}
-      <label className="mb-3 flex items-center gap-2 text-sm text-gray-600">
+      <label className="mb-4 flex items-center gap-2 text-sm muted">
         <input
           type="checkbox"
           {...register('addNewSection')}
           disabled={result !== null}
         />
-        Thêm vào 1 section mới
+        Tạo chủ đề mới
       </label>
 
       <button
         type="submit"
         disabled={publishing || result !== null}
-        className="rounded-[3px] bg-navy px-5 py-2.5 text-sm font-semibold text-[#f3f1ea] hover:bg-[#28394b] disabled:opacity-60"
+        className="ui-button primary"
       >
-        {publishing ? 'Đang đẩy lên Moodle...' : result !== null ? 'Đã đẩy lên Moodle' : 'Push to Moodle'}
+        {publishing ? 'Đang xuất bản...' : result !== null ? 'Đã xuất bản lên Moodle' : 'Xuất bản lên Moodle'}
       </button>
       </form>}
 
       {result && (
-        <p className="mt-3 text-sm text-green-700">
-          Đã đẩy lên Moodle (course id {result.moodle_course_id}): sách nội dung
-          {result.practice_cmid ? ', practice' : ''}
-          {result.quiz_cmid ? ', quiz' : ''} đã tạo thành công.
+        <p role="status" className="mt-3 text-sm success-text">
+          Đã tạo trên Moodle course id {result.moodle_course_id}: sách nội dung
+          {result.practice_cmid ? ', bài luyện tập' : ''}
+          {result.quiz_cmid ? ', quiz' : ''}.
         </p>
       )}
-      {error && <p className="mt-3 text-sm text-red-700">{error}</p>}
-    </div>
+      {error && !(accountFailed && !canPublish) && <p className="mt-3 text-sm danger-text">{error}</p>}
+    </section>
   )
 }
 
@@ -349,18 +401,18 @@ function ModuleHeader({ module, onSaved }: { module: ModuleDetail; onSaved: () =
   }
 
   return (
-    <div className="border-b border-gray-200 pb-6">
+    <div id="part-objective" className="module-header">
       {editing ? (
         <form onSubmit={handleSubmit(handleSave)} noValidate className="flex flex-wrap items-center gap-3">
           <input
             {...register('title')}
             aria-label="Tên mô-đun"
-            className="flex-1 border-0 border-b-[1.5px] border-terracotta bg-transparent font-serif text-xl font-semibold outline-none"
+            className="module-title flex-1 border-0 border-b-[1.5px] border-accent bg-transparent outline-none"
           />
           <button
             type="submit"
             disabled={saving}
-            className="rounded-[3px] bg-terracotta px-4 py-1.5 text-xs font-semibold text-white hover:bg-terracotta-dark disabled:opacity-60"
+            className="rounded-[3px] bg-accent px-4 py-1.5 text-xs font-semibold text-white hover:bg-accent-dark disabled:opacity-60"
           >
             {saving ? 'Đang lưu...' : 'Lưu'}
           </button>
@@ -382,20 +434,20 @@ function ModuleHeader({ module, onSaved }: { module: ModuleDetail; onSaved: () =
             reset({ title: module.title })
             setEditing(true)
           }}
-          className="text-left hover:text-terracotta"
+          className="text-left hover:text-accent"
         >
-          <h2 className="font-serif text-xl font-semibold">{module.title}</h2>
+          <h2 className="module-title">{module.title}</h2>
         </button>
       )}
 
       {!!module.generation_models?.length && (
-        <p className="mt-3 text-xs text-gray-600">
+        <p className="mt-2 text-xs text-gray-600">
           Model sinh: {[...new Set(module.generation_models.map((call) => `${call.requested_alias} → ${call.served_model}`))].join(', ')}
         </p>
       )}
       {module.learning_objective && (
-        <p className="mt-3 text-sm text-gray-600">
-          <span className="font-semibold text-gray-800">Learning Objective: </span>
+        <p className="module-objective">
+          <span className="font-semibold">Mục tiêu học tập: </span>
           {module.learning_objective}
         </p>
       )}
@@ -422,22 +474,22 @@ function explanationsByQuestion(module: ModuleDetail, type: string): Record<numb
 
 function ComponentCard({
   moduleId,
+  moduleTitle,
   component,
   citations,
   explanations,
   onSaved,
 }: {
   moduleId: string
+  moduleTitle: string
   component: ModuleComponentInfo
   citations: ModuleDetail['claim_citations']
   explanations: Record<number, string>
   onSaved: () => Promise<void>
 }) {
   return (
-    <section className="rounded-[3px] border border-gray-200 bg-white p-6">
-      <h3 className="mb-4 text-xs font-semibold uppercase tracking-wider text-terracotta">
-        {COMPONENT_LABEL[component.type] ?? component.type}
-      </h3>
+    <section id={`part-${component.type}`} className="module-part">
+      <h2 className="module-part-title">{COMPONENT_LABEL[component.type] ?? component.type}</h2>
       {component.type === 'content' && (
         <>
           <MarkdownFieldEditor moduleId={moduleId} component={component} citations={citations} onSaved={onSaved} />
@@ -448,14 +500,14 @@ function ComponentCard({
                   <p>{citation.claim}</p>
                   {citation.resolution === 'resolved' ? (
                     <details className="mt-1">
-                      <summary className="cursor-pointer text-xs text-terracotta hover:underline">
+                      <summary className="cursor-pointer text-xs text-accent hover:underline">
                         {citation.locator}
                       </summary>
                       <p className="mt-2 whitespace-pre-wrap rounded bg-gray-50 p-3">{citation.chunk_content}</p>
                     </details>
                   ) : (
                     <p className="mt-1 text-xs text-gray-500">
-                      {citation.locator} — <span>{citation.resolution === 'ambiguous' ? 'trùng nhiều đoạn nguồn, không xác định được' : 'không tìm thấy đoạn nguồn'}</span>
+                      {citation.locator}: <span>{citation.resolution === 'ambiguous' ? 'trùng nhiều đoạn nguồn, không xác định được' : 'không tìm thấy đoạn nguồn'}</span>
                     </p>
                   )}
                 </li>
@@ -465,7 +517,10 @@ function ComponentCard({
         </>
       )}
       {component.type === 'slides' && (
-        <SlidesEditor moduleId={moduleId} component={component} onSaved={onSaved} />
+        <>
+          <SlidesEditor moduleId={moduleId} component={component} onSaved={onSaved} />
+          <SlidesDownload moduleId={moduleId} moduleTitle={moduleTitle} />
+        </>
       )}
       {component.type === 'example' && (
         <ExamplesEditor moduleId={moduleId} component={component} onSaved={onSaved} />
@@ -478,6 +533,32 @@ function ComponentCard({
       )}
     </section>
   )
+}
+
+// At the end of the slides it exports: the file carries their text only, so it is a handout for
+// whoever wants one, not the main action of the page.
+function SlidesDownload({ moduleId, moduleTitle }: { moduleId: string; moduleTitle: string }) {
+  const [error, setError] = useState<string | null>(null)
+  async function download() {
+    setError(null)
+    try {
+      const { data } = await api.get<Blob>(`/modules/${moduleId}/slides.pptx`, { responseType: 'blob' })
+      const url = URL.createObjectURL(data)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `${moduleTitle}.pptx`
+      document.body.append(link)
+      link.click()
+      link.remove()
+      URL.revokeObjectURL(url)
+    } catch (err) {
+      setError(apiErrorMessage(err, 'Tải slide thất bại'))
+    }
+  }
+  return <div className="slides-download">
+    <button type="button" className="link-action" onClick={() => void download()}>Tải slide (PPTX)</button>
+    {error && <p role="alert" className="mt-2 text-sm danger-text">{error}</p>}
+  </div>
 }
 
 function SaveCancelRow({
@@ -495,7 +576,7 @@ function SaveCancelRow({
 }) {
   if (!editing) {
     return (
-      <button onClick={onEdit} className="text-xs font-semibold text-terracotta hover:underline">
+      <button onClick={onEdit} className="text-xs font-semibold text-accent hover:underline">
         Sửa
       </button>
     )
@@ -505,7 +586,7 @@ function SaveCancelRow({
       <button
         onClick={onSave}
         disabled={saving}
-        className="rounded-[3px] bg-terracotta px-4 py-1.5 text-xs font-semibold text-white hover:bg-terracotta-dark disabled:opacity-60"
+        className="rounded-[3px] bg-accent px-4 py-1.5 text-xs font-semibold text-white hover:bg-accent-dark disabled:opacity-60"
       >
         {saving ? 'Đang lưu...' : 'Lưu'}
       </button>
@@ -542,9 +623,8 @@ function MarkdownFieldEditor({
   onSaved: () => Promise<void>
 }) {
   const original = (component.content.markdown as string) ?? ''
-  const sourceDialog = useRef<HTMLDialogElement>(null)
-  const [openedSource, setOpenedSource] = useState<NonNullable<ModuleDetail['claim_citations']>[number] | null>(null)
-  const sources = new Map<string, { number: number; citation: NonNullable<ModuleDetail['claim_citations']>[number] }>()
+  const { opened, open } = useContext(SourceContext)
+  const sources = new Map<string, { number: number; citation: Citation }>()
   for (const citation of citations ?? []) {
     if (citation.source_id && !sources.has(citation.source_id)) {
       sources.set(citation.source_id, { number: sources.size + 1, citation })
@@ -559,11 +639,12 @@ function MarkdownFieldEditor({
     a: ({ href, children }) => {
       const source = sources.get((href ?? '').replace(/^#citation-/, ''))
       return source && href?.startsWith('#citation-') ? (
-        <button type="button" aria-label={`Nguồn ${source.number}`} className="mx-0.5 align-super text-xs font-semibold text-terracotta hover:underline"
-          onClick={() => { setOpenedSource(source.citation); sourceDialog.current?.showModal() }}>
+        <button type="button" aria-label={`Nguồn ${source.number}`} aria-pressed={opened?.citation === source.citation}
+          className="citation-marker"
+          onClick={(event) => open({ citation: source.citation, number: source.number }, event.currentTarget)}>
           [{source.number}]
         </button>
-      ) : <a href={href} className="text-terracotta underline">{children}</a>
+      ) : <a href={href} className="text-accent underline">{children}</a>
     },
   }
   const [editing, setEditing] = useState(false)
@@ -593,22 +674,13 @@ function MarkdownFieldEditor({
           aria-label="Nội dung"
           {...register('markdown')}
           rows={10}
-          className="w-full rounded border border-gray-300 p-3 font-mono text-sm outline-none focus:border-terracotta"
+          className="w-full rounded border border-gray-300 p-3 font-mono text-sm outline-none focus:border-accent"
         />
       ) : (
-        <div className="text-[15px] leading-relaxed">
+        <div className="lesson-text">
           <Markdown components={markdownComponents} remarkPlugins={mathRemarkPlugins} rehypePlugins={mathRehypePlugins}>{rendered}</Markdown>
         </div>
       )}
-      <dialog ref={sourceDialog} aria-label="Nguồn trích dẫn" className="m-auto w-full max-w-2xl rounded-[3px] p-6 backdrop:bg-black/40">
-        <div className="mb-3 flex items-start justify-between gap-4">
-          <h4 className="font-semibold">{openedSource?.locator}</h4>
-          <button type="button" aria-label="Đóng nguồn" onClick={() => sourceDialog.current?.close()} className="text-sm text-terracotta">Đóng</button>
-        </div>
-        {openedSource && (openedSource.resolution === 'resolved' ? (
-          <p className="max-h-[60vh] overflow-y-auto whitespace-pre-wrap text-sm leading-relaxed">{openedSource.chunk_content}</p>
-        ) : <p className="text-sm text-gray-500">{openedSource?.resolution === 'ambiguous' ? 'trùng nhiều đoạn nguồn, không xác định được' : 'không tìm thấy đoạn nguồn'}</p>)}
-      </dialog>
       {saveError && <p role="alert" className="text-sm text-red-600">{saveError}</p>}
       <SaveCancelRow
         editing={editing}
@@ -677,13 +749,13 @@ function SlidesEditor({
               <input
                 aria-label={`Tiêu đề slide ${i + 1}`}
                 {...register(`slides.${i}.title`)}
-                className="w-full border-0 border-b border-gray-300 bg-transparent pb-1 font-semibold outline-none focus:border-terracotta"
+                className="w-full border-0 border-b border-gray-300 bg-transparent pb-1 font-semibold outline-none focus:border-accent"
               />
               <textarea
                 aria-label={`Nội dung slide ${i + 1}`}
                 {...register(`slides.${i}.bulletsText`)}
                 rows={Math.max(2, (editedSlides[i]?.bulletsText ?? '').split('\n').length)}
-                className="mt-2 w-full rounded border border-gray-300 p-2 text-sm outline-none focus:border-terracotta"
+                className="mt-2 w-full rounded border border-gray-300 p-2 text-sm outline-none focus:border-accent"
               />
             </>
           ) : (
@@ -747,10 +819,10 @@ function ExamplesEditor({
     <div className="flex flex-col gap-6">
       {original.map((example, index) => (
         <div key={index} className="flex flex-col gap-3">
-          <div className="text-sm font-semibold">Ví dụ {index + 1}</div>
+          <h3 className="part-subtitle">Ví dụ {index + 1}</h3>
           {(['context', 'analysis'] as const).map((field) => (
             <div key={field}>
-              <div className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-gray-500">
+              <div className="part-label">
                 {field === 'context' ? 'Bối cảnh' : 'Phân tích'}
               </div>
               {editing ? (
@@ -758,10 +830,10 @@ function ExamplesEditor({
                   aria-label={`${field === 'context' ? 'Bối cảnh' : 'Phân tích'} ví dụ ${index + 1}`}
                   {...register(`examples.${index}.${field}`)}
                   rows={4}
-                  className="w-full rounded border border-gray-300 p-3 text-sm outline-none focus:border-terracotta"
+                  className="w-full rounded border border-gray-300 p-3 text-sm outline-none focus:border-accent"
                 />
               ) : (
-                <p className="whitespace-pre-wrap text-[15px] leading-relaxed">{example[field]}</p>
+                <p className="lesson-para">{example[field]}</p>
               )}
             </div>
           ))}
@@ -785,7 +857,7 @@ function ExamplesEditor({
 }
 
 function explanationLabel(item: ExplanationItem): string {
-  return item.component === 'quiz' ? `Quiz - câu ${item.position + 1}` : `Practice - câu ${item.position + 1}`
+  return item.component === 'quiz' ? `Câu kiểm tra ${item.position + 1}` : `Câu luyện tập ${item.position + 1}`
 }
 
 function ExplanationEditor({
@@ -820,24 +892,9 @@ function ExplanationEditor({
     <div className="flex flex-col gap-6">
       {original.map((item, index) => (
         <div key={`${item.component}-${item.position}`} className="flex flex-col gap-3">
-          <div className="text-sm font-semibold">{explanationLabel(item)}</div>
+          <h3 className="part-subtitle">{explanationLabel(item)}</h3>
           <div>
-            <div className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-gray-500">
-              Lập luận (reasoning)
-            </div>
-            {editing ? (
-              <textarea
-                aria-label={`Lập luận ${explanationLabel(item)}`}
-                {...register(`items.${index}.reasoning`)}
-                rows={4}
-                className="w-full rounded border border-gray-300 p-3 text-sm outline-none focus:border-terracotta"
-              />
-            ) : (
-              <p className="whitespace-pre-wrap text-sm text-gray-600">{item.reasoning}</p>
-            )}
-          </div>
-          <div>
-            <div className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-gray-500">
+            <div className="part-label">
               Giải thích
             </div>
             {editing ? (
@@ -845,12 +902,30 @@ function ExplanationEditor({
                 aria-label={`Giải thích ${explanationLabel(item)}`}
                 {...register(`items.${index}.explanation_text`)}
                 rows={4}
-                className="w-full rounded border border-gray-300 p-3 text-sm outline-none focus:border-terracotta"
+                className="ui-input w-full"
               />
             ) : (
-              <p className="whitespace-pre-wrap text-[15px] leading-relaxed">{item.explanation_text}</p>
+              <p className="lesson-para">{item.explanation_text}</p>
             )}
           </div>
+          {/* The reasoning is the AI's own working, for the lecturer only; the explanation above is
+              what students get as quiz feedback in Moodle, so it is shown and the reasoning folded. */}
+          {editing ? (
+            <div>
+              <div className="part-label">Lập luận</div>
+              <textarea
+                aria-label={`Lập luận ${explanationLabel(item)}`}
+                {...register(`items.${index}.reasoning`)}
+                rows={4}
+                className="ui-input w-full"
+              />
+            </div>
+          ) : (
+            <details className="reasoning">
+              <summary>Lập luận của AI</summary>
+              <p className="reasoning-text">{item.reasoning}</p>
+            </details>
+          )}
         </div>
       ))}
       <SaveCancelRow
@@ -893,9 +968,9 @@ function QuizDisplay({
         return (
           <div key={question.id} className="flex flex-col gap-2">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="text-sm font-semibold">Câu {question.position + 1}</span>
+              <h3 className="part-subtitle">Câu {question.position + 1}</h3>
               <span
-                className={`inline-block w-fit rounded-[3px] px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide ${
+                className={`check-badge ${
                   !passed
                     ? 'bg-red-100 text-red-800'
                     : selfChecked
@@ -903,7 +978,7 @@ function QuizDisplay({
                       : 'bg-gray-100 text-gray-700'
                 }`}
               >
-                {!passed ? 'Không đạt CRAG check' : selfChecked ? 'Đạt CRAG groundedness/answerability' : 'Chưa tự kiểm'}
+                {!passed ? 'Không đạt CRAG' : selfChecked ? 'Đạt CRAG' : 'Chưa tự kiểm'}
               </span>
             </div>
             <QuestionEditor moduleId={moduleId} question={question}
@@ -965,12 +1040,12 @@ function QuestionEditor({ moduleId, question, explanation, onSaved }: {
       </div>)}
       <label>Giải thích<textarea aria-label="Giải thích" {...register('explanation')} className="w-full rounded border border-gray-300 p-2" /></label>
       <div className="flex gap-3">
-        <button type="submit" disabled={saving} className="text-sm font-semibold text-terracotta">{saving ? 'Đang lưu...' : 'Lưu'}</button>
+        <button type="submit" disabled={saving} className="text-sm font-semibold text-accent">{saving ? 'Đang lưu...' : 'Lưu'}</button>
         <button type="button" disabled={saving} onClick={() => setEditing(false)} className="text-sm text-gray-500">Hủy</button>
       </div>
     </form> : <>
-      <p className="font-medium">{question.stem}</p>
-      <ul className="flex flex-col gap-1 text-sm">{question.choices.options.map((choice, i) => <li key={i} className={String(i) === question.answer_key ? 'font-semibold text-green-700' : 'text-gray-700'}>{String.fromCharCode(65 + i)}. {choice}{String(i) === question.answer_key ? ' ✓' : ''}</li>)}</ul>
+      <p className="question-stem">{question.stem}</p>
+      <ul className="choice-list">{question.choices.options.map((choice, i) => <li key={i} className={String(i) === question.answer_key ? 'choice-key' : undefined}>{String.fromCharCode(65 + i)}. {choice}{String(i) === question.answer_key ? ' ✓' : ''}</li>)}</ul>
       {explanation && <p className="text-sm text-gray-500"><span className="font-semibold">Giải thích: </span>{explanation}</p>}
       <SaveCancelRow editing={false} saving={saving} onSave={handleSubmit(save)} onCancel={() => setEditing(false)} onEdit={() => {
         reset(formValues())

@@ -67,8 +67,8 @@ export function AdminFailuresPanel({ counts, onChange }: { counts: AdminCounts |
     try {
       const result = await retryFailedJobs(ids);
       const skipped =
-        result.skipped.length > 0 ? ` ${result.skipped.length} job bị bỏ qua vì không còn ở trạng thái lỗi.` : "";
-      setNotice(`Đã đưa ${result.retried.length} job vào hàng đợi chạy lại.${skipped}`);
+        result.skipped.length > 0 ? ` ${result.skipped.length} tác vụ bị bỏ qua vì không còn ở trạng thái lỗi.` : "";
+      setNotice(`Đã đưa ${result.retried.length} tác vụ vào hàng đợi chạy lại.${skipped}`);
       reload();
     } catch (err) {
       setError(apiErrorMessage(err, "Thử lại thất bại"));
@@ -82,14 +82,14 @@ export function AdminFailuresPanel({ counts, onChange }: { counts: AdminCounts |
   return (
     <div>
       <div className="admin-toolbar">
-        <div className="segmented" role="group" aria-label="Loại job">
+        <div className="segmented" role="group" aria-label="Loại tác vụ">
           {(["all", "document_pipeline", "module_generation"] as const).map((type) => <button key={type}
             aria-pressed={filter === type} onClick={() => setFilter(type)}>{type === "all" ? "Tất cả" : JOB_TYPE_LABEL[type]}
             {type !== "all" && counts && ` (${counts.failed_jobs[type] ?? 0})`}</button>)}
         </div>
         <div className="flex gap-3"><button onClick={reload} className="ui-button" aria-label="Làm mới">↻</button>
           <button onClick={() => handleRetry([...selected])} disabled={retrying || selected.size === 0} className="ui-button primary">
-            {selected.size === 0 ? "Thử lại đã chọn" : `Thử lại ${selected.size} job đã chọn`}
+            {selected.size === 0 ? "Thử lại đã chọn" : `Thử lại ${selected.size} tác vụ đã chọn`}
           </button>
         </div>
       </div>
@@ -101,14 +101,14 @@ export function AdminFailuresPanel({ counts, onChange }: { counts: AdminCounts |
         !error && <p className="text-sm text-gray-500">Đang tải...</p>
       ) : jobs.length === 0 ? (
         <p className="rounded-[3px] border border-gray-200 p-4 text-sm text-gray-500">
-          Không có job nào thất bại — mọi thứ đang chạy tốt.
+          Không có tác vụ nào thất bại.
         </p>
       ) : (
         <div className="jobs-table ui-card">
           <table><thead><tr>
             <th><input type="checkbox" aria-label="Chọn tất cả" checked={allPicked}
               onChange={() => setSelected(allPicked ? new Set() : new Set(jobs.map((j) => j.id)))} /></th>
-            <th>Tài liệu</th><th>Loại job</th><th>Người dùng</th><th>Thời gian</th><th>Lỗi</th><th><span className="sr-only">Thao tác</span></th>
+            <th>Tài liệu</th><th>Loại tác vụ</th><th>Người dùng</th><th>Thời gian</th><th>Lỗi</th><th><span className="sr-only">Thao tác</span></th>
           </tr></thead><tbody>
             {jobs.map((job) => <Fragment key={job.id}>
               <tr>

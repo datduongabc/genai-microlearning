@@ -101,7 +101,7 @@ export function AdminUsersPanel({ counts, onChange }: { counts: AdminCounts | nu
     <div className="admin-users">
       <div className="admin-toolbar">
         <div role="group" aria-label="Trạng thái tài khoản" className="segmented">
-          <button aria-pressed={filter === "active"} onClick={() => setFilter("active")}>Đang hoạt động</button>
+          <button aria-pressed={filter === "active"} onClick={() => setFilter("active")}>Đang hoạt động{counts && ` (${counts.users - counts.inactive_users})`}</button>
           <button aria-pressed={filter === "inactive"} onClick={() => setFilter("inactive")}>Đã vô hiệu hóa{counts && ` (${counts.inactive_users})`}</button>
         </div>
         <button className="ui-button primary" aria-expanded={creating} onClick={() => setCreating(!creating)}>{creating ? "Đóng" : "+ Tạo tài khoản"}</button>
@@ -130,7 +130,7 @@ export function AdminUsersPanel({ counts, onChange }: { counts: AdminCounts | nu
                 <div className="flex min-w-0 items-center gap-3">
                   <span className={`avatar${u.is_admin ? " admin" : ""}`} aria-hidden="true">{initials(u.name)}</span>
                   <div className="min-w-0"><div className="flex flex-wrap items-center gap-2 font-semibold">{u.name}
-                    {u.is_admin && <span className="admin-badge">Admin</span>}
+                    {u.is_admin && <span className="admin-badge">Quản trị viên</span>}
                   </div><div className="small muted break-all">{u.email}</div></div>
                 </div>
                 <span className={`small ${u.moodle_status === "linked" ? "success-text" : "muted"}`}>
@@ -168,7 +168,7 @@ export function AdminUsersPanel({ counts, onChange }: { counts: AdminCounts | nu
               )}
             </li>
           ))}
-          {users.length === 0 && <p className="py-4 text-sm text-gray-500">Chưa có tài khoản nào.</p>}
+          {users.length === 0 && <li className="account-empty">Chưa có tài khoản nào.</li>}
         </ul>
       )}
     </div>
@@ -224,7 +224,7 @@ function CreateUserForm({ onCreated }: { onCreated: (user: AdminUser) => void })
         <button
           type="submit"
           disabled={isSubmitting}
-          className="rounded-[3px] bg-terracotta px-4 py-2 text-sm font-semibold text-white hover:bg-terracotta-dark disabled:opacity-60"
+          className="rounded-[3px] bg-accent px-4 py-2 text-sm font-semibold text-white hover:bg-accent-dark disabled:opacity-60"
         >
           {isSubmitting ? "Đang tạo..." : "Tạo tài khoản"}
         </button>
@@ -265,7 +265,7 @@ function ResetPasswordForm({ user, onDone }: { user: AdminUser; onDone: (message
         <button
           type="submit"
           disabled={isSubmitting}
-          className="rounded-[3px] bg-navy px-3 py-1.5 text-sm font-semibold text-[#f3f1ea] hover:bg-[#28394b] disabled:opacity-60"
+          className="rounded-[3px] bg-ink px-3 py-1.5 text-sm font-semibold text-white hover:bg-ink-raised disabled:opacity-60"
         >
           {isSubmitting ? "Đang lưu..." : "Lưu mật khẩu mới"}
         </button>

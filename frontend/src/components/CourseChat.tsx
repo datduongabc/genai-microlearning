@@ -61,10 +61,20 @@ export function CourseChat({ courseId }: { courseId: string }) {
   } = useForm<CourseChatFormValues>({ resolver: zodResolver(courseChatSchema), defaultValues: { message: '' } })
   const blank = !useWatch({ control, name: 'message' }).trim()
 
+  // On the course page the log scrolls inside its column, so it follows the answer being written,
+  // unless the reader has scrolled up to read something earlier.
+  const log = useRef<HTMLDivElement>(null)
+  const following = useRef(true)
+  useEffect(() => {
+    const el = log.current
+    if (el && following.current) el.scrollTop = el.scrollHeight
+  }, [turns])
+
   const updateLast = (change: (turn: Turn) => Turn) =>
     setTurns((previous) => [...previous.slice(0, -1), change(previous[previous.length - 1])])
 
   async function send({ message }: CourseChatFormValues) {
+    following.current = true
     setTurns((previous) => [...previous, { question: message, answer: '', citations: [] }])
     // Not reset(): it would also end isSubmitting while the answer is still arriving.
     setValue('message', '')
@@ -91,38 +101,42 @@ export function CourseChat({ courseId }: { courseId: string }) {
     setLoadError('')
   }
 
-  return <section className="mt-6 rounded-[3px] border border-gray-200 bg-white p-6">
-    <div className="flex items-center justify-between gap-3">
-      <h3 className="text-sm font-semibold">Hỏi đáp về tài liệu</h3>
+  return <section className="chat-panel" aria-labelledby="course-chat-title">
+    <div className="chat-head">
+      <h2 id="course-chat-title" className="course-section-title">Hỏi đáp về tài liệu</h2>
       {turns.length > 0 && <button type="button" onClick={startOver} disabled={sending}
-        className="text-xs text-gray-600 underline disabled:opacity-60">Cuộc trò chuyện mới</button>}
+        className="link-action small-action">Cuộc trò chuyện mới</button>}
     </div>
-    {loading && <p className="mt-3 text-sm text-gray-500">Đang tải cuộc trò chuyện...</p>}
-    {loadError && <p className="mt-3 text-sm text-gray-500">{loadError}</p>}
-    <div role="log" aria-label="Hội thoại" className="mt-3 flex flex-col gap-3">
+    {loading && <p className="chat-note">Đang tải cuộc trò chuyện...</p>}
+    {loadError && <p className="chat-note">{loadError}</p>}
+    {!loading && !loadError && turns.length === 0 && <p className="chat-note">
+      Câu trả lời lấy từ tài liệu của môn học, kèm slide hoặc trang nguồn.
+    </p>}
+    <div role="log" aria-label="Hội thoại" className="chat-log" ref={log}
+      onScroll={(e) => { const el = e.currentTarget; following.current = el.scrollHeight - el.scrollTop - el.clientHeight < 48 }}>
       {turns.map((turn, index) => {
         const writing = sending && index === turns.length - 1
-        return <div key={index} className="text-sm" aria-busy={writing}>
-          {turn.question && <p className="font-medium">{turn.question}</p>}
-          {turn.answer && <div className="mt-1 [&_li]:ml-5 [&_ol]:list-decimal [&_p]:mb-2 [&_strong]:font-semibold [&_ul]:list-disc">
+        return <div key={index} className="chat-turn" aria-busy={writing}>
+          {turn.question && <p className="chat-question">{turn.question}</p>}
+          {turn.answer && <div className="chat-answer">
             <Markdown remarkPlugins={mathRemarkPlugins} rehypePlugins={mathRehypePlugins}>{turn.answer}</Markdown>
           </div>}
-          {writing && !turn.answer && <p className="mt-1 text-gray-500">Đang tìm trong tài liệu...</p>}
-          {turn.citations.length > 0 && <p className="mt-1 text-xs text-gray-500">
+          {writing && !turn.answer && <p className="chat-note">Đang tìm trong tài liệu...</p>}
+          {turn.citations.length > 0 && <p className="chat-sources">
             Nguồn: {[...new Set(turn.citations.map((c) => sourceLabel(c.source_ref)))].join('; ')}
           </p>}
-          {turn.error && <p role="alert" className="mt-1 text-red-700">{turn.error}</p>}
+          {turn.error && <p role="alert" className="danger-text">{turn.error}</p>}
         </div>
       })}
     </div>
     {/* oxlint-disable-next-line react/refs -- handleSubmit is react-hook-form's submit wrapper, not a ref read during render */}
-    <form onSubmit={handleSubmit(send)} noValidate className="mt-3 flex flex-col gap-2">
-      <label htmlFor="course-chat-message" className="text-sm">Câu hỏi của bạn</label>
+    <form onSubmit={handleSubmit(send)} noValidate className="chat-form">
+      <label htmlFor="course-chat-message" className="chat-label">Câu hỏi của bạn</label>
       <textarea id="course-chat-message" maxLength={4000} rows={3} disabled={sending || loading}
-        {...register('message')} className="w-full rounded border border-gray-300 p-3 text-sm outline-none focus:border-terracotta" />
-      {errors.message && <p className="text-xs text-red-600">{errors.message.message}</p>}
+        {...register('message')} className="ui-input w-full" />
+      {errors.message && <p className="danger-text text-[13px]">{errors.message.message}</p>}
       <button type="submit" disabled={sending || loading || blank}
-        className="w-fit rounded-[3px] bg-terracotta px-4 py-2 text-sm font-semibold text-white disabled:opacity-60">
+        className="ui-button primary w-fit">
         {sending ? 'Đang trả lời...' : 'Gửi câu hỏi'}
       </button>
     </form>
