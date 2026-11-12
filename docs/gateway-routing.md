@@ -51,6 +51,11 @@ experiment mode every temperature-0 step silently fell back to free Gemini, whic
 paid-model modules are not deterministic across reruns; the Planner result is still
 cached per document, so the module topic and Learning Objective stay stable.
 
+The model picker offers only aliases that have numbers in `docs/measurements`, as generator or as judge.
+`groq-llama`, `groq-minimax` and `gemini-balanced` stay routable but carry `hidden: true` until they are measured.
+A lecturer whose saved default became hidden generates with the system default instead.
+`tests/unit/test_gateway_config.py` pins the offered set.
+
 Exact provider model IDs and display names are defined in
 [`devops/gateway/config.yaml`](../devops/gateway/config.yaml).
 No paid API call is required to validate configuration. Provider availability and

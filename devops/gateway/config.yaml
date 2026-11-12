@@ -154,6 +154,9 @@ model_list:
     model_info:
       mode: chat
       display_name: llama-3.3-70b-versatile qua Groq
+      # Not offered to lecturers (catalog.py skips hidden): no measurement of it yet. Drop this
+      # line once one is in docs/measurements.
+      hidden: true
       max_input_tokens: 128000
 
   # Groq does not serve this model through OpenRouter; DeepInfra serves it unquantised (bf16).
@@ -177,6 +180,9 @@ model_list:
     model_info:
       mode: chat
       display_name: minimaxai/minimax-m2.7 qua Groq
+      # Not offered to lecturers (catalog.py skips hidden): no measurement of it yet. Drop this
+      # line once one is in docs/measurements.
+      hidden: true
       max_input_tokens: 128000
 
   # Internal small-step profiles keep the same primary model. Only bounded
@@ -214,6 +220,8 @@ model_list:
       mode: chat
       display_name: Gemini cân bằng tải
       note: phân phối giữa Flash Lite và Flash; không dùng cho thí nghiệm
+      # Not offered to lecturers: a mix of two models was never measured as one.
+      hidden: true
   - model_name: gemini-balanced
     litellm_params:
       model: openrouter/google/gemini-3.5-flash
@@ -224,6 +232,8 @@ model_list:
       mode: chat
       display_name: Gemini cân bằng tải
       note: phân phối giữa Flash Lite và Flash; không dùng cho thí nghiệm
+      # Not offered to lecturers: a mix of two models was never measured as one.
+      hidden: true
 
 # LiteLLM owns retries, load balancing and failover.
 # OpenAI, Claude and GPT-OSS are opt-in; generation never falls back to them.

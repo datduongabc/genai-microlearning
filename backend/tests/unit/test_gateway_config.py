@@ -514,3 +514,16 @@ def test_every_openrouter_alias_declares_its_mode(gateway):
                   if (d.get("model_info") or {}).get("mode") not in {"chat", "embedding"}]
 
     assert undeclared == []
+
+
+def test_lecturers_are_offered_only_the_models_that_were_measured(gateway):
+    """The picker lists what docs/measurements has numbers for (as generator or judge); an alias
+    without any stays routable but hidden. Measuring a new one means updating this set too."""
+    from app.llm.catalog import to_choices
+
+    offered = {c.alias for c in to_choices([
+        {"model_name": d["model_name"], "litellm_params": d["litellm_params"], "model_info": d.get("model_info", {})}
+        for d in _deployments(gateway)
+    ])}
+    assert offered == {"gemini-fast", "gemini-flash", "openai-fast", "openai-pro", "claude-fast", "claude-pro",
+                       "groq-pro", "groq-qwen"}
