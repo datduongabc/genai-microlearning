@@ -66,7 +66,7 @@ class DimensionScore(BaseModel):
 
 class HallucinationFinding(BaseModel):
     claim: str = Field(description="Cau/y cu the trong module khong co can cu trong source chunk")
-    field: str = Field(description="Truong chua claim nay: content/quiz/explanation")
+    field: str = Field(description="Phan chua claim nay: content/slides/example/quiz/practice/explanation")
     reason: str
 
 
@@ -93,8 +93,8 @@ khong duoc thien vi theo phong doan nguon goc.
 Cham dung 9 tieu chi sau, thang diem 1-5 cho moi tieu chi (tru hallucination_findings la danh
 sach, khong phai diem so):
 
-1. accuracy: Content/Quiz/Explanation co dung voi SOURCE CHUNK cung cap khong. Cham thap neu co
-thong tin sai lech.
+1. accuracy: Content, example, quiz, practice va explanation co dung voi SOURCE CHUNK cung cap
+khong. Cham thap neu co thong tin sai lech.
 
 2. completeness: So sanh voi TOAN BO source chunk duoc cung cap -- KHONG duoc chi doi chieu voi
 pham vi hep cua learning_objective da chon roi coi la du (loi phuong phap da tung gap: content
@@ -104,18 +104,20 @@ khong nhac toi. Neu y bi bo sot LA CAN THIET de dat chinh learning_objective da 
 thap tuong ung. Neu y bi bo sot la chu de khac, khong lien quan learning_objective (module tu
 gioi han pham vi hop le), ghi nhan trong justification nhung KHONG tru diem.
 
-3. consistency: Moi cau quiz co dung noi dung da day trong content khong; giai thich cua MOI cau
-co khop dap an dung cua chinh cau do khong; cac example co mau thuan voi content khong.
+3. consistency: Moi cau quiz va cau practice co dung noi dung da day trong content khong; giai
+thich cua MOI cau co khop dap an dung cua chinh cau do khong; cac example co mau thuan voi content
+khong.
 
-4. hallucination_score + hallucination_findings: Liet ke CU THE tung claim trong content/quiz/
-explanation KHONG co can cu trong SOURCE CHUNK (field = "content"/"quiz"/"explanation"). Khong
+4. hallucination_score + hallucination_findings: Liet ke CU THE tung claim trong content, slides,
+example, quiz, practice va explanation KHONG co can cu trong SOURCE CHUNK (field = "content"/
+"slides"/"example"/"quiz"/"practice"/"explanation"). Khong
 co claim nao thi hallucination_findings rong va hallucination_score = 5. KHONG duoc bo qua tieu
 chi nay du module co ve sach -- phai kiem tra tung cau.
 
 5. slide_quality: Cac bullet trong slides co tom tat dung, ro rang, do dai hop ly so voi content
 khong.
 
-6. quiz_quality: Cac cau quiz co dung do kho theo bloom_level khai bao khong. Cac distractor co
+6. quiz_quality: Cac cau quiz va cau practice co dung do kho theo bloom_level khai bao khong. Cac distractor co
 hop ly, khong tam thuong/ro rang sai ngay khong. Ca bo cau hoi co de lo dap an khong (vd dap an
 dung luon la phuong an dai nhat), va cac cau co kiem cac y khac nhau cua bai hay lap lai mot y.
 

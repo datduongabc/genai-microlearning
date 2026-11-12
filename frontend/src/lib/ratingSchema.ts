@@ -6,7 +6,7 @@ export const rubric = [
     question: "Thông tin có khớp tài liệu nguồn không?",
     label: "Độ chính xác",
     guide:
-      "Chỉ đối chiếu nội dung, quiz và lời giải với tài liệu nguồn. 5: khớp mọi thông tin; 3: sai chi tiết; 1: sai ý chính hoặc đáp án.",
+      "Chỉ đối chiếu nội dung, ví dụ, quiz, bài luyện tập và lời giải với tài liệu nguồn. 5: khớp mọi thông tin; 3: sai chi tiết; 1: sai ý chính hoặc đáp án.",
   },
   {
     key: "completeness",
@@ -17,17 +17,17 @@ export const rubric = [
   },
   {
     key: "consistency",
-    question: "Quiz, lời giải và ví dụ có khớp nhau không?",
+    question: "Câu hỏi, lời giải và ví dụ có khớp nhau không?",
     label: "Tính nhất quán",
     guide:
-      "Quiz, lời giải và ví dụ có khớp nội dung và đáp án không? 5: tất cả khớp; 3: một chỗ lệch; 1: nhiều mâu thuẫn.",
+      "Quiz, bài luyện tập, lời giải và ví dụ có khớp nội dung và đáp án không? 5: tất cả khớp; 3: một chỗ lệch; 1: nhiều mâu thuẫn.",
   },
   {
     key: "hallucination_score",
     question: "Có khẳng định nào không có căn cứ trong nguồn?",
-    label: "Hallucination",
+    label: "Thông tin bịa",
     guide:
-      "Kiểm từng câu với nguồn; ghi từng claim không có căn cứ. 5: không có (danh sách rỗng); 4: một chi tiết phụ; 3: 2–3 claim hoặc một ý chính; 2: nhiều claim; 1: phần lớn không có căn cứ.",
+      "Kiểm từng câu ở mọi phần (trừ mục tiêu) với nguồn; ghi từng khẳng định không có căn cứ. 5: không có (danh sách rỗng); 4: một chi tiết phụ; 3: 2–3 claim hoặc một ý chính; 2: nhiều claim; 1: phần lớn không có căn cứ.",
   },
   {
     key: "slide_quality",
@@ -38,7 +38,7 @@ export const rubric = [
   },
   {
     key: "quiz_quality",
-    question: "Quiz có hợp lý và đo đúng mục tiêu không?",
+    question: "Quiz và bài luyện tập có hợp lý, đo đúng mục tiêu không?",
     label: "Chất lượng quiz",
     guide:
       "Kiểm độ khó theo Bloom, phương án nhiễu, dấu hiệu lộ đáp án và ý bị lặp. 5: đều hợp lý; 3: vài lỗi; 1: đoán được mà không học.",

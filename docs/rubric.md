@@ -28,7 +28,7 @@ Tên trong ngoặc là tên cột trong tệp điểm và trong kết quả củ
 
 ### 3.1. Độ chính xác (`accuracy`)
 
-Nội dung, câu quiz và lời giải thích có đúng với **tài liệu nguồn** được cung cấp không. Chỉ đối chiếu với tài liệu nguồn, không dựa vào hiểu biết riêng của người chấm về chủ đề.
+Nội dung, ví dụ, câu quiz, bài luyện tập và lời giải thích có đúng với **tài liệu nguồn** được cung cấp không. Chỉ đối chiếu với tài liệu nguồn, không dựa vào hiểu biết riêng của người chấm về chủ đề.
 
 - **5**: mọi thông tin khớp với nguồn.
 - **3**: có một vài chi tiết sai lệch nhưng ý chính vẫn đúng.
@@ -44,7 +44,7 @@ So với **toàn bộ** tài liệu nguồn, không chỉ với phạm vi hẹp 
 
 ### 3.3. Tính nhất quán (`consistency`)
 
-Mỗi câu quiz có hỏi đúng điều đã dạy trong nội dung không; lời giải thích của mỗi câu có khớp với đáp án đúng của chính câu đó không; các ví dụ có mâu thuẫn với nội dung không.
+Mỗi câu quiz và bài luyện tập có hỏi đúng điều đã dạy trong nội dung không; lời giải thích của mỗi câu có khớp với đáp án đúng của chính câu đó không; các ví dụ có mâu thuẫn với nội dung không.
 
 - **5**: mọi câu hỏi, lời giải và ví dụ khớp với nội dung và với nhau.
 - **3**: một câu hỏi về điều nội dung chưa dạy, hoặc một lời giải lệch đáp án.
@@ -52,7 +52,7 @@ Mỗi câu quiz có hỏi đúng điều đã dạy trong nội dung không; l�
 
 ### 3.4. Hallucination (`hallucination_score` và danh sách hallucination)
 
-Liệt kê **từng** câu hoặc ý trong nội dung, quiz hay lời giải thích **không có căn cứ** trong tài liệu nguồn, kèm vị trí (nội dung, quiz, lời giải thích) và lý do. Phải kiểm từng câu, kể cả khi module trông sạch. Một ý diễn đạt lại hoặc suy ra trực tiếp từ nguồn không phải hallucination; một con số, tên riêng, định nghĩa hay khẳng định mà nguồn không có thì là hallucination, kể cả khi nó đúng ngoài đời.
+Liệt kê **từng** câu hoặc ý trong nội dung, slide, ví dụ, quiz, bài luyện tập hay lời giải thích **không có căn cứ** trong tài liệu nguồn, kèm vị trí (một trong sáu phần đó) và lý do. Mục tiêu học tập không thuộc danh sách: nó là đích đến chứ không phải khẳng định, và đã được `bloom_fidelity`, `query_alignment` kiểm. Phải kiểm từng câu, kể cả khi module trông sạch. Một ý diễn đạt lại hoặc suy ra trực tiếp từ nguồn không phải hallucination; một con số, tên riêng, định nghĩa hay khẳng định mà nguồn không có thì là hallucination, kể cả khi nó đúng ngoài đời.
 
 - **5**: không có câu nào không có căn cứ; danh sách rỗng.
 - **4**: một câu không có căn cứ, ở chi tiết phụ.
@@ -72,7 +72,7 @@ Các gạch đầu dòng trên slide có tóm tắt đúng nội dung, rõ ràng
 
 ### 3.6. Chất lượng quiz (`quiz_quality`)
 
-Các câu quiz có đúng độ khó theo mức Bloom khai báo không; phương án nhiễu có hợp lý, không sai lộ liễu không; cả bộ câu hỏi có để lộ đáp án không (ví dụ đáp án đúng luôn là phương án dài nhất); các câu có kiểm những ý khác nhau của bài hay lặp lại một ý.
+Các câu quiz và bài luyện tập có đúng độ khó theo mức Bloom khai báo không; phương án nhiễu có hợp lý, không sai lộ liễu không; cả bộ câu hỏi có để lộ đáp án không (ví dụ đáp án đúng luôn là phương án dài nhất); các câu có kiểm những ý khác nhau của bài hay lặp lại một ý.
 
 - **5**: độ khó đúng mức, phương án nhiễu đều hợp lý, không lộ đáp án, mỗi câu kiểm một ý khác nhau.
 - **3**: có một vài phương án nhiễu sai lộ liễu, hoặc hai câu kiểm cùng một ý.
@@ -194,3 +194,13 @@ Kiểm chứng miễn phí bằng fake judge: 10 claim với 2 claim không có 
 PYTHONPATH=. uv run pytest -q tests/integration/test_claim_evaluation.py tests/integration/test_run_judge.py \
     tests/unit/test_analyze_study.py tests/unit/test_evaluation.py
 ```
+
+## 8. Thay đổi
+
+- **2026-11-11: phủ đủ các phần của module.**
+  Mỗi phần được sinh ở một bước riêng (`_generate_module` trong `backend/app/generation/module_generation_pipeline.py`), và ví dụ đọc đoạn nguồn mà không có bước tự kiểm, nên phần nào cũng có thể chứa khẳng định không có căn cứ.
+  Trước đó, độ chính xác và hallucination chỉ kiểm nội dung, quiz và lời giải thích, còn tính nhất quán và chất lượng quiz không nói rõ có gồm bài luyện tập.
+  Từ ngày này, độ chính xác kiểm thêm ví dụ và bài luyện tập; hallucination kiểm thêm slide, ví dụ và bài luyện tập; tính nhất quán và chất lượng quiz gồm cả bài luyện tập.
+  Lời nhắc của mô hình chấm và form chấm trong ứng dụng đổi cùng lúc.
+  Lượt chấm thử `module-study/judge-groq-qwen.jsonl` dùng rubric cũ, nên không gộp với các lượt chấm chính thức.
+
