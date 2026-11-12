@@ -29,6 +29,7 @@ from app.models import (
     Course,
     Document,
     DocumentStatus,
+    FlashcardSet,
     Job,
     JobStatus,
     JobType,
@@ -74,6 +75,10 @@ def world():
         question = Question(component_id=quiz.id, stem="secret question A", choices={"options": ["A", "B"]}, answer_key="0")
         db.add(question)
         db.flush()
+        flashcards = FlashcardSet(course_id=course.id, document_id=document.id, output_language="vi",
+                                  model_alias="gemini-fast", cards=[])
+        db.add(flashcards)
+        db.flush()
         session = ChatSession(course_id=course.id, user_id=course.owner_id, title="chat of A")
         db.add(session)
         db.flush()
@@ -99,7 +104,7 @@ def world():
             "owner": owner.id, "stranger": stranger.id, "course": course.id, "stranger_course": stranger_course.id,
             "document": document.id, "module": module.id, "component": component.id, "session": session.id,
             "pipeline_job": pipeline_job.id, "failed_job": failed_job.id, "question": question.id,
-            "user": owner.id,
+            "user": owner.id, "flashcard_set": flashcards.id,
             "study": study.id, "study_item": study_item.id, "study_file": study_file.id,
         }
     finally:
@@ -171,6 +176,13 @@ ATTACKS = [
     ("PATCH", "/modules/{module}/components/{component}", None, {"json": {"content": {"markdown": "pwned"}}}),
     ("PATCH", "/modules/{module}/questions/{question}", None, {"json": {"stem": "pwned", "choices": ["A", "B"], "answer_key": 0, "explanation": "pwned"}}),
     ("POST", "/modules/{module}/publish-to-moodle", None, {"json": {"section_num": 0}}),
+    ("POST", "/flashcard-sets", {"document_id": "{document}"}, {"json": {"output_language": "vi"}}),
+    ("GET", "/courses/{course}/flashcard-sets", None, {}),
+    ("GET", "/flashcard-sets/{flashcard_set}", None, {}),
+    ("PUT", "/flashcard-sets/{flashcard_set}/cards", None, {"json": {"cards": []}}),
+    ("POST", "/flashcard-sets/{flashcard_set}/publish", None, {}),
+    ("POST", "/flashcard-sets/{flashcard_set}/unpublish", None, {}),
+    ("DELETE", "/flashcard-sets/{flashcard_set}", None, {}),
     ("POST", "/jobs/{failed_job}/retry", None, {}),
     # The admin's routes, reached by a lecturer: not found, as if there were nothing there.
     ("POST", "/admin/users/{user}/moodle-unlink", None, {}),
@@ -233,7 +245,7 @@ def _send(spec, ids, headers):
 
 OWNER_RESOURCES = (
     "course", "document", "module", "component", "session", "pipeline_job", "failed_job", "question", "user", "study",
-    "study_item", "study_file",
+    "study_item", "study_file", "flashcard_set",
 )
 
 

@@ -15,6 +15,7 @@ from sqlalchemy.orm import Session, joinedload, selectinload
 from app.api.chat import ChatRequest, _get_or_create_session
 from app.api.deletion import check_study_references, commit_deletion
 from app.api.deps import get_current_user
+from app.api.model_alias import usable_alias as _usable_alias
 from app.auth.rate_limit import limiter, user_or_address
 from app.chat.service import HISTORY_TURNS, QuizQuestionEdit, module_edit_count, propose_module_edit
 from app.db import get_db
@@ -95,26 +96,6 @@ def _selected_alias(body: GenerateRequest | None, current_user: User) -> str | N
         # gemini-flash): lùi về cấu hình hệ thống, đừng chặn mọi lượt sinh bằng 422.
         return None
     return _usable_alias(alias)
-
-
-def _usable_alias(alias: str) -> str:
-    """`alias` nếu gateway phục vụ nó và nó dùng được ngay lúc này, không thì 422."""
-    if not catalog.is_available(alias):
-        raise HTTPException(
-            status_code=422,
-            detail=f"Gateway không phục vụ model sinh văn bản nào tên '{alias}'.",
-        )
-    # Có trong danh sách chưa chắc đã dùng được: khóa của nhà cung cấp có thể trống, hết số
-    # dư, hoặc hết hạn mức ngày. Thử ngay bây giờ để báo trong một giây thay vì mười phút.
-    # GatewayUnavailable thì để lọt ra, app/main.py đổi nó thành 503.
-    try:
-        catalog.probe(alias)
-    except catalog.ModelUnusable as error:
-        raise HTTPException(
-            status_code=422,
-            detail=f"Model '{error.alias}' chưa dùng được: {error.reason}. Hãy chọn model khác.",
-        ) from error
-    return alias
 
 
 def _owned_document(
