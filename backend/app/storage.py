@@ -59,7 +59,8 @@ class LocalUploadStore:
         return self._path(key)
 
     def save(self, local_path: Path, key: str) -> None:
-        self.directory.mkdir(parents=True, exist_ok=True)
+        # A key may carry a folder (media/videos/<id>/...), which S3 needs no setup for.
+        self._path(key).parent.mkdir(parents=True, exist_ok=True)
         os.replace(local_path, self._path(key))
 
     @contextmanager
@@ -165,6 +166,44 @@ def study_file_store() -> UploadStore:
     if settings.upload_store == "s3":
         return S3UploadStore(settings.upload_s3_bucket, settings.study_files_s3_prefix)
     return LocalUploadStore(str(Path(settings.upload_storage_dir) / "study-files"))
+
+
+def media_store() -> UploadStore:
+    """Where the images, voice and rendered videos of a document are kept, as long as the document is."""
+    if settings.upload_store == "s3":
+        return S3UploadStore(settings.upload_s3_bucket, settings.media_s3_prefix)
+    return LocalUploadStore(str(Path(settings.upload_storage_dir) / "media"))
+
+
+def media_keys_for_document(db, document_id) -> list[str]:
+    """The stored files of every video of the document: the video, and each scene's image and voice.
+
+    Read before the document is deleted, because the rows go with it by cascade and the keys only
+    live in them."""
+    from sqlalchemy import select
+
+    from app.models.media import Video
+
+    keys: list[str] = []
+    for video_key, scenes in db.execute(select(Video.video_key, Video.scenes).where(Video.document_id == document_id)):
+        named = (s.get(field) for s in scenes or [] for field in ("image_key", "voice_key"))
+        keys.extend(key for key in (video_key, *named) if key)
+    return keys
+
+
+def delete_media_files(keys: list[str]) -> None:
+    store = media_store()
+    for key in keys:
+        store.delete(key)
+
+
+def delete_media_for_document(db, document_id) -> None:
+    """Remove the files of every video of the document.
+
+    For a caller that deletes the document itself: delete_document reads the keys first and deletes
+    the files after its commit, since a file without its row is harmless and a row without its file
+    is a video that cannot play."""
+    delete_media_files(media_keys_for_document(db, document_id))
 
 
 def study_file_key(file_id, filename: str) -> str:

@@ -28,7 +28,15 @@ from app.models import (
     Module,
     User,
 )
-from app.storage import LocalUploadStore, S3UploadStore, staging_dir, upload_key, upload_store
+from app.storage import (
+    LocalUploadStore,
+    S3UploadStore,
+    delete_media_files,
+    media_keys_for_document,
+    staging_dir,
+    upload_key,
+    upload_store,
+)
 
 router = APIRouter(prefix="/documents", tags=["documents"], dependencies=[Depends(get_current_user)])
 
@@ -287,11 +295,13 @@ def delete_document(
 
     check_study_references(db, db.scalars(select(Module.id).where(Module.document_id == document_id)))
     storage_key = upload_key(document_id, doc.filename)
+    media_keys = media_keys_for_document(db, document_id)
     db.delete(doc)
     commit_deletion(db)
 
     # Committed first: a file without its row is harmless, a row whose file is gone is not.
     upload_store().delete(storage_key)
+    delete_media_files(media_keys)
 
     return {"status": "deleted"}
 

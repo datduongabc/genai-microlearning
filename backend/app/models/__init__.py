@@ -7,6 +7,7 @@ from app.models.lti import (
     LtiLoginState,
     LtiPlatform,
 )
+from app.models.media import FlashcardSet, MediaStatus, Video
 from app.models.models import (
     ChatMessage,
     ChatRole,
@@ -39,6 +40,7 @@ __all__ = [
     "Document",
     "DocumentStatus",
     "Evaluation",
+    "FlashcardSet",
     "Job",
     "JobStatus",
     "JobType",
@@ -48,6 +50,7 @@ __all__ = [
     "LtiLaunchCode",
     "LtiLoginState",
     "LtiPlatform",
+    "MediaStatus",
     "Module",
     "ModuleComponent",
     "Question",
@@ -57,4 +60,5 @@ __all__ = [
     "StudyFile",
     "StudyItem",
     "User",
+    "Video",
 ]

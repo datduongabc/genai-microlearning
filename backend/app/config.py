@@ -121,6 +121,8 @@ class Settings(BaseSettings):
     # A study's reference files stay as long as the study does, so they live outside the prefix the
     # bucket's lifecycle rule expires after a few days.
     study_files_s3_prefix: str = "study-files/"
+    # Generated images, voice and videos stay as long as their document, so also outside the expiring prefix.
+    media_s3_prefix: str = "media/"
     # The bucket's region, so that presigned POSTs name its regional endpoint. Empty: boto3's default.
     upload_s3_region: str = ""
 

@@ -67,6 +67,13 @@ data "aws_iam_policy_document" "api_task" {
     actions   = ["s3:PutObject", "s3:GetObject", "s3:DeleteObject"]
     resources = ["${aws_s3_bucket.uploads.arn}/study-files/*"]
   }
+  # Generated images, voice and videos (app/storage.py media_store): the API presigns the video for
+  # playback and deletes a document's files with it.
+  statement {
+    sid       = "Media"
+    actions   = ["s3:PutObject", "s3:GetObject", "s3:DeleteObject"]
+    resources = ["${aws_s3_bucket.uploads.arn}/media/*"]
+  }
 }
 
 data "aws_iam_policy_document" "worker_task" {
@@ -80,6 +87,12 @@ data "aws_iam_policy_document" "worker_task" {
     sid       = "StudyFiles"
     actions   = ["s3:DeleteObject"]
     resources = ["${aws_s3_bucket.uploads.arn}/study-files/*"]
+  }
+  # The worker writes the images, voice and video it generates, and reads them back to render.
+  statement {
+    sid       = "Media"
+    actions   = ["s3:PutObject", "s3:GetObject", "s3:DeleteObject"]
+    resources = ["${aws_s3_bucket.uploads.arn}/media/*"]
   }
   # app/jobs/ecs_protection.py: a worker with a job running asks not to be scaled in.
   statement {

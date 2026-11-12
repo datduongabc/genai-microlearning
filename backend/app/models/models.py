@@ -54,6 +54,10 @@ class JobType(str, enum.Enum):
     document_pipeline = "document_pipeline"
     module_generation = "module_generation"
     study_judge = "study_judge"
+    flashcard_generation = "flashcard_generation"
+    video_script = "video_script"
+    video_images = "video_images"
+    video_render = "video_render"
 
 
 class JobStatus(str, enum.Enum):
