@@ -69,4 +69,29 @@ describe('GenerateDialog', () => {
     expect(screen.getByRole('heading', { name: 'Sinh video' })).toBeInTheDocument()
     expect(screen.getByLabelText(/Trọng tâm/)).toBeInTheDocument()
   })
+
+  it('asks a video for its voice and image model, HeyGen and Nano Banana first, each with its price', async () => {
+    const { onGenerate } = renderDialog('video')
+
+    const voice = screen.getByLabelText('Giọng đọc')
+    const image = screen.getByLabelText('Model vẽ hình')
+    expect(voice).toHaveValue('voice-heygen')
+    expect(image).toHaveValue('image-nano-banana')
+    expect(screen.getByRole('option', { name: /HeyGen Voice 1 Turbo.*khoảng \$0,03 một video 8 phút/ })).toBeInTheDocument()
+    expect(screen.getByRole('option', { name: /Gemini 3.8 Flash TTS.*khoảng \$0,11/ })).toBeInTheDocument()
+    expect(screen.getByRole('option', { name: /Qwen Image 2.1 Turbo.*khoảng \$0,018 một ảnh/ })).toBeInTheDocument()
+
+    await userEvent.selectOptions(voice, 'voice-gemini-lite')
+    await userEvent.selectOptions(image, 'image-qwen')
+    await userEvent.type(screen.getByLabelText(/Trọng tâm/), 'BFS')
+    await userEvent.click(screen.getByRole('button', { name: 'Sinh video' }))
+
+    await waitFor(() => expect(onGenerate).toHaveBeenCalledWith('vi', 'BFS', { voiceAlias: 'voice-gemini-lite', imageAlias: 'image-qwen' }))
+  })
+
+  it('offers no voice or image model to a module or a flashcard set', () => {
+    renderDialog('module')
+    expect(screen.queryByLabelText('Giọng đọc')).not.toBeInTheDocument()
+    expect(screen.queryByLabelText('Model vẽ hình')).not.toBeInTheDocument()
+  })
 })

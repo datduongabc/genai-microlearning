@@ -56,6 +56,7 @@ beforeEach(() => {
   vi.clearAllMocks()
   vi.mocked(api.listDocuments).mockResolvedValue([])
   vi.mocked(api.listFlashcardSets).mockResolvedValue([])
+  vi.mocked(api.listVideos).mockResolvedValue([])
   // Ô chọn model gọi API này ngay khi trang mở, như listDocuments ở trên.
   vi.mocked(api.listModels).mockResolvedValue({ models: [], default: null })
   // The course chat loads its last conversation on open.
@@ -655,7 +656,8 @@ describe('CourseDetailPage - flashcard sets', () => {
 
     renderPage()
     await userEvent.click(await screen.findByRole('button', { name: '+ Sinh flashcard' }))
-    await userEvent.type(screen.getByLabelText(/Trọng tâm/), 'Mảng')
+    // Each kind has its own dialog in the page, so the field is looked up in the open one.
+    await userEvent.type(within(screen.getByRole('dialog', { name: 'Sinh flashcard' })).getByLabelText(/Trọng tâm/), 'Mảng')
     await userEvent.click(screen.getByRole('button', { name: 'Sinh flashcard' }))
 
     expect(api.generateFlashcards).toHaveBeenCalledWith('doc-1', { focus: 'Mảng', outputLanguage: 'vi', modelAlias: '' })
@@ -685,6 +687,90 @@ describe('CourseDetailPage - flashcard sets', () => {
     })
 
     expect(await screen.findByText('Bản nháp - 8 thẻ')).toBeInTheDocument()
+  })
+})
+
+const videoSummary: api.VideoSummary = {
+  id: 'video-1', course_id: 'course-1', document_id: 'doc-1', focus: 'FCFS', output_language: 'vi', model_alias: 'gemini-fast',
+  voice_alias: 'voice-heygen', image_alias: 'image-nano-banana', status: 'draft', scene_count: 9, draft_version: 1,
+  rendered_version: null, duration_seconds: null, error: null, published_at: null, created_at: '2026-01-01T00:00:00Z',
+}
+
+describe('CourseDetailPage - videos', () => {
+  beforeEach(() => {
+    vi.mocked(api.listCourses).mockResolvedValue([unlinkedCourse])
+    vi.mocked(api.listDocuments).mockResolvedValue([sampleDocument])
+    vi.mocked(api.listModules).mockResolvedValue([])
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it('lists videos under their document with their status', async () => {
+    vi.mocked(api.listVideos).mockResolvedValue([
+      videoSummary,
+      { ...videoSummary, id: 'video-2', focus: null, status: 'generating', scene_count: 0 },
+      { ...videoSummary, id: 'video-3', status: 'rendering' },
+      { ...videoSummary, id: 'video-4', status: 'ready', rendered_version: 1, duration_seconds: 291, published_at: '2026-01-02T00:00:00Z' },
+      { ...videoSummary, id: 'video-5', status: 'failed', scene_count: 0, error: 'Sinh lời thoại thất bại' },
+    ])
+
+    renderPage()
+
+    const list = await screen.findByRole('list', { name: 'Video sinh từ syllabus.pdf' })
+    const items = within(list).getAllByRole('listitem')
+    expect(items).toHaveLength(5)
+    expect(within(items[0]).getByRole('link', { name: /FCFS/ })).toHaveAttribute('href', '/videos/video-1')
+    expect(within(items[0]).getByText('Bản nháp - 9 cảnh')).not.toHaveAttribute('data-status')
+    expect(items[1]).toHaveTextContent('Toàn bộ tài liệu')
+    expect(within(items[1]).getByText('Đang sinh lời thoại...')).toHaveAttribute('data-status', 'processing')
+    expect(within(items[2]).getByText('Đang dựng video...')).toHaveAttribute('data-status', 'processing')
+    expect(within(items[3]).getByText('Đã giao - 9 cảnh, 4,9 phút')).toHaveAttribute('data-status', 'embedded')
+    expect(within(items[4]).getByText('Sinh thất bại')).toHaveAttribute('data-status', 'failed')
+  })
+
+  it('generates a video with the focus, the model, the voice and the image model', async () => {
+    vi.mocked(api.generateVideo).mockResolvedValue({ id: 'video-1', job_id: 'job-1' })
+    vi.mocked(api.listVideos)
+      .mockResolvedValueOnce([])
+      .mockResolvedValue([{ ...videoSummary, status: 'generating', scene_count: 0 }])
+
+    renderPage()
+    await userEvent.click(await screen.findByRole('button', { name: '+ Sinh video' }))
+    await userEvent.type(within(screen.getByRole('dialog', { name: 'Sinh video' })).getByLabelText(/Trọng tâm/), 'FCFS')
+    await userEvent.selectOptions(screen.getByLabelText('Model vẽ hình'), 'image-qwen')
+    await userEvent.click(screen.getByRole('button', { name: 'Sinh video' }))
+
+    await waitFor(() => expect(api.generateVideo).toHaveBeenCalledWith('doc-1', {
+      focus: 'FCFS', outputLanguage: 'vi', modelAlias: '', voiceAlias: 'voice-heygen', imageAlias: 'image-qwen',
+    }))
+    expect(await screen.findByText('Đang sinh lời thoại...')).toBeInTheDocument()
+  })
+
+  it('shows the server message when the generation quota is used up', async () => {
+    vi.mocked(api.generateVideo).mockRejectedValue(axiosFailure(429, 'Bạn đã dùng hết lượt sinh hôm nay.'))
+
+    renderPage()
+    await userEvent.click(await screen.findByRole('button', { name: '+ Sinh video' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Sinh video' }))
+
+    expect(await screen.findByText('Bạn đã dùng hết lượt sinh hôm nay.')).toBeInTheDocument()
+  })
+
+  it('follows a video until no job is left', async () => {
+    vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] })
+    vi.mocked(api.listVideos)
+      .mockResolvedValueOnce([{ ...videoSummary, status: 'drawing' }])
+      .mockResolvedValue([videoSummary])
+
+    renderPage()
+    expect(await screen.findByText('Đang vẽ hình...')).toBeInTheDocument()
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(10_000)
+    })
+
+    expect(await screen.findByText('Bản nháp - 9 cảnh')).toBeInTheDocument()
   })
 })
 

@@ -24,6 +24,10 @@ const FlashcardEditorPage = lazy(() =>
   import("./pages/FlashcardEditorPage").then((m) => ({ default: m.FlashcardEditorPage })),
 );
 
+const VideoEditorPage = lazy(() =>
+  import("./pages/VideoEditorPage").then((m) => ({ default: m.VideoEditorPage })),
+);
+
 function App() {
   return (
     <AuthProvider>
@@ -58,6 +62,14 @@ function App() {
             element={
               <Suspense fallback={null}>
                 <FlashcardEditorPage />
+              </Suspense>
+            }
+          />
+          <Route
+            path="/videos/:id"
+            element={
+              <Suspense fallback={null}>
+                <VideoEditorPage />
               </Suspense>
             }
           />

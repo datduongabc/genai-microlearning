@@ -13,11 +13,12 @@ import {
   type FlashcardSetDetail,
 } from '../api'
 import { AppShell } from '../components/AppShell'
+import { SourcePassages } from '../components/SourcePassages'
+import { editorTitle } from '../lib/editorTitle'
+import { confirmLeave, useLeaveGuard } from '../lib/useLeaveGuard'
 
 const POLL_INTERVAL_MS = 3000
 const NO_SOURCE = 'Chưa có nguồn'
-const MAX_TITLE_LENGTH = 60
-const LEAVE_PROMPT = 'Các thay đổi chưa lưu sẽ mất. Rời trang?'
 
 // A card as the lecturer is editing it. `key` keeps a textarea with its card when another card
 // is removed; `flag` is the server's, which only changes when the set is saved.
@@ -94,15 +95,8 @@ export function FlashcardEditorPage() {
     return () => clearInterval(timer)
   }, [generating, id, nextKey])
 
-  // The router in use is not a data router, so useBlocker is unavailable: a closed tab or reload is
-  // caught here, and the back button below asks for itself.
   const unsaved = saved !== null && saved.status === 'draft' && !sameCards(cards, saved.cards)
-  useEffect(() => {
-    if (!unsaved) return
-    const warn = (event: BeforeUnloadEvent) => event.preventDefault()
-    window.addEventListener('beforeunload', warn)
-    return () => window.removeEventListener('beforeunload', warn)
-  }, [unsaved])
+  useLeaveGuard(unsaved)
 
   function retryLoad() {
     setLoading(true)
@@ -111,7 +105,7 @@ export function FlashcardEditorPage() {
   }
 
   function back(courseId: string) {
-    if (unsaved && !window.confirm(LEAVE_PROMPT)) return
+    if (!confirmLeave(unsaved)) return
     navigate(`/courses/${courseId}`)
   }
 
@@ -137,9 +131,7 @@ export function FlashcardEditorPage() {
 
   const setId = id
   const courseId = saved.course_id
-  const fullTitle = saved.focus ? `Flashcard: ${saved.focus}` : 'Flashcard'
-  const title = fullTitle.length > MAX_TITLE_LENGTH ? `${fullTitle.slice(0, MAX_TITLE_LENGTH - 1).trimEnd()}…` : fullTitle
-  const titleProps = { title, fullTitle: title === fullTitle ? undefined : fullTitle }
+  const titleProps = editorTitle('Flashcard', saved.focus)
   const published = saved.published_at !== null
   const dirty = !sameCards(cards, saved.cards)
   const complete = cards.every((c) => c.front.trim() !== '' && c.back.trim() !== '')
@@ -272,18 +264,7 @@ export function FlashcardEditorPage() {
                     className="ui-input w-full"
                   />
                 </label>
-                {c.sources.length > 0 && (
-                  <ul className="flashcard-sources" aria-label={`Nguồn của thẻ ${index + 1}`}>
-                    {c.sources.map((source) => (
-                      <li key={source.chunk_id}>
-                        <details>
-                          <summary>{source.locator || 'Đoạn nguồn'}</summary>
-                          <p className="module-source-passage">{source.content}</p>
-                        </details>
-                      </li>
-                    ))}
-                  </ul>
-                )}
+                <SourcePassages sources={c.sources} label={`Nguồn của thẻ ${index + 1}`} />
               </li>
             )
           })}
