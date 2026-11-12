@@ -183,6 +183,8 @@ ATTACKS = [
     ("POST", "/flashcard-sets/{flashcard_set}/publish", None, {}),
     ("POST", "/flashcard-sets/{flashcard_set}/unpublish", None, {}),
     ("DELETE", "/flashcard-sets/{flashcard_set}", None, {}),
+    ("GET", "/learn/courses/{course}/items", None, {}),
+    ("GET", "/learn/flashcard-sets/{flashcard_set}", None, {}),
     ("POST", "/jobs/{failed_job}/retry", None, {}),
     # The admin's routes, reached by a lecturer: not found, as if there were nothing there.
     ("POST", "/admin/users/{user}/moodle-unlink", None, {}),

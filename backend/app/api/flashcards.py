@@ -68,13 +68,15 @@ def _summary(card_set: FlashcardSet) -> dict:
     }
 
 
-def _detail(db: Session, card_set: FlashcardSet) -> dict:
-    # One query for every card, so a set of 15 cards is not 15 round trips. A chunk that no longer
-    # exists (the document was re-chunked) simply has no source to show.
+def card_sources(db: Session, card_set: FlashcardSet) -> list[list[dict]]:
+    """The passages each card cites, in card order, shared by the lecturer's and the learner's views.
+
+    One query for every card, so a set of 15 cards is not 15 round trips. A chunk that no longer
+    exists (the document was re-chunked) simply has no source to show."""
     wanted = {uuid.UUID(c) for card in card_set.cards for c in card["citations"]}
     chunks = {c.id: c for c in db.scalars(select(Chunk).where(Chunk.document_id == card_set.document_id, Chunk.id.in_(wanted)))} if wanted else {}
     filename = db.get(Document, card_set.document_id).filename
-    cards = []
+    result = []
     for card in card_set.cards:
         sources = []
         for chunk_id in card["citations"]:
@@ -82,7 +84,12 @@ def _detail(db: Session, card_set: FlashcardSet) -> dict:
             if chunk is not None:
                 # Stored locators are JSON; the module editor shows the same readable label built from them.
                 sources.append({"chunk_id": chunk_id, "locator": citation_label(filename, chunk.source_ref or ""), "content": chunk.content})
-        cards.append(card | {"sources": sources})
+        result.append(sources)
+    return result
+
+
+def _detail(db: Session, card_set: FlashcardSet) -> dict:
+    cards = [card | {"sources": sources} for card, sources in zip(card_set.cards, card_sources(db, card_set), strict=True)]
     return _summary(card_set) | {"cards": cards}
 
 
