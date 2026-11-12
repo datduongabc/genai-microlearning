@@ -9,6 +9,10 @@ import { createCourseSchema, type CreateCourseFormValues } from "../lib/formSche
 export function CoursesPage() {
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
+  // A failed load must not fall through to the empty state: "no courses yet" would tell the lecturer
+  // their courses are gone and invite them to create a duplicate.
+  const [loadFailed, setLoadFailed] = useState(false);
+  const [attempt, setAttempt] = useState(0);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const {
@@ -30,13 +34,22 @@ export function CoursesPage() {
       .then((list) => {
         if (!cancelled) setCourses(list);
       })
+      .catch(() => {
+        if (!cancelled) setLoadFailed(true);
+      })
       .finally(() => {
         if (!cancelled) setLoading(false);
       });
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [attempt]);
+
+  function retryLoad() {
+    setLoading(true);
+    setLoadFailed(false);
+    setAttempt((n) => n + 1);
+  }
 
   async function handleCreate(values: CreateCourseFormValues) {
     await createCourse(values.name);
@@ -82,6 +95,11 @@ export function CoursesPage() {
 
       {loading ? (
         <p className="course-empty">Đang tải môn học...</p>
+      ) : loadFailed ? (
+        <div className="course-empty">
+          <p role="alert" className="danger-text">Không tải được danh sách môn học.</p>
+          <button type="button" onClick={retryLoad} className="ui-button mt-3">Thử lại</button>
+        </div>
       ) : courses.length === 0 ? (
         <p className="course-empty">Chưa có môn học. Tạo môn học đầu tiên ở ô bên trên.</p>
       ) : (
