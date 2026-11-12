@@ -884,3 +884,23 @@ describe('CourseDetailPage - OCR warnings', () => {
     expect(screen.getByText(/OCR không đọc được trang 2\. Nội dung có thể thiếu/)).toBeInTheDocument()
   })
 })
+
+describe('CourseDetailPage - load failure', () => {
+  it('says the documents could not be loaded instead of claiming there are none, and retries', async () => {
+    vi.mocked(api.listCourses).mockResolvedValue([unlinkedCourse])
+    vi.mocked(api.listDocuments)
+      .mockRejectedValueOnce(axiosFailure(500, 'boom'))
+      .mockResolvedValue([sampleDocument])
+    vi.mocked(api.listModules).mockResolvedValue([])
+
+    renderPage()
+
+    expect(await screen.findByText('Không tải được tài liệu của môn học.')).toBeInTheDocument()
+    expect(screen.queryByText(/Chưa có tài liệu/)).not.toBeInTheDocument()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Thử lại' }))
+
+    expect(await screen.findByText('syllabus.pdf')).toBeInTheDocument()
+    expect(screen.queryByText('Không tải được tài liệu của môn học.')).not.toBeInTheDocument()
+  })
+})

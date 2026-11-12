@@ -1,4 +1,5 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { AxiosError, type AxiosResponse, type InternalAxiosRequestConfig } from 'axios'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -767,4 +768,30 @@ it('keeps the Content editor open and reports a rejected source marker', async (
   await userEvent.click(within(section).getByRole('button', { name: 'Lưu' }))
   expect(await within(section).findByRole('alert')).toHaveTextContent(/không thể lưu/i)
   expect(field).toHaveValue('Revised. [S99]')
+})
+
+describe('ModulePreviewPage - load failure', () => {
+  const failure = (status: number) => {
+    const config = { headers: {} } as InternalAxiosRequestConfig
+    const response = { status, statusText: '', data: { detail: 'x' }, headers: {}, config }
+    return new AxiosError('failed', 'ERR_BAD_REQUEST', config, null, response as AxiosResponse)
+  }
+
+  it('says a module that does not exist was not found', async () => {
+    vi.mocked(api.getModule).mockRejectedValue(failure(404))
+    renderPage()
+    expect(await screen.findByText('Không tìm thấy mô-đun.')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Thử lại' })).not.toBeInTheDocument()
+  })
+
+  it('says the module could not be loaded when the server fails, and retries', async () => {
+    vi.mocked(api.getModule).mockRejectedValueOnce(failure(500)).mockResolvedValue(baseModule)
+    renderPage()
+    expect(await screen.findByText('Không tải được mô-đun.')).toBeInTheDocument()
+    expect(screen.queryByText('Không tìm thấy mô-đun.')).not.toBeInTheDocument()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Thử lại' }))
+
+    expect(await screen.findByText('Test Module')).toBeInTheDocument()
+  })
 })
