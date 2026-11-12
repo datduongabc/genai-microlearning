@@ -8,6 +8,7 @@ from app.auth.accounts import AccountError, create_account
 from app.auth.audit import log_auth_event
 from app.auth.rate_limit import limiter
 from app.auth.security import create_access_token, hash_password, verify_password
+from app.config import settings
 from app.db import get_db
 from app.models import User
 
@@ -67,9 +68,20 @@ WRONG_CREDENTIALS = "Email hoặc mật khẩu không đúng."
 ACCOUNT_DISABLED = "Tài khoản đã bị vô hiệu hóa. Vui lòng liên hệ admin."
 
 
+REGISTRATION_CLOSED = "Đăng ký tài khoản đã đóng. Hãy nhờ quản trị viên tạo tài khoản, hoặc mở công cụ từ Moodle."
+
+
+@router.get("/options")
+def auth_options():
+    """What the sign-in pages offer, read before anyone signs in."""
+    return {"self_registration": settings.self_registration}
+
+
 @router.post("/register", response_model=UserResponse, status_code=201)
 @limiter.limit("10/minute")
 def register(request: Request, payload: RegisterRequest, db: Session = Depends(get_db)):
+    if not settings.self_registration:
+        raise HTTPException(status_code=403, detail=REGISTRATION_CLOSED)
     try:
         user = create_account(db, email=payload.email, name=payload.name, password=payload.password)
     except AccountError as error:

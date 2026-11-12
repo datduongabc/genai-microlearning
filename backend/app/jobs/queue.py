@@ -132,6 +132,24 @@ def retry_failed_job(db: Session, job_id: uuid.UUID) -> bool:
     return bool(db.scalar(select(func.retry_failed_job(job_id))))
 
 
+class LostJob(Exception):
+    """This worker no longer holds the job: the sweeper gave it to another worker while this one
+    was still running it (no heartbeat for STUCK_THRESHOLD_SECONDS). The other run is the one that
+    counts, so this one ends without writing anything."""
+
+
+def hold(db: Session, job: Job) -> Job:
+    """The job's row, locked until `db` commits, when the worker that claimed `job` still holds it.
+
+    A step calls this right before it writes its result. The lock makes the check and the write one
+    step: the sweeper locks with SKIP LOCKED, so it cannot hand the job away in between. Without
+    the check, a worker that lost its job would still move it on, and both runs would write."""
+    current = db.get(Job, job.id, with_for_update=True, populate_existing=True)
+    if current is None or current.status != JobStatus.running or current.locked_by != job.locked_by:
+        raise LostJob(f"job {job.id} is no longer held by {job.locked_by}")
+    return current
+
+
 def claim_next_job(worker_id: str) -> Job | None:
     """Mở transaction riêng, tự commit -- FOR UPDATE SKIP LOCKED chỉ có tác
     dụng đúng nếu mỗi lần claim là 1 transaction độc lập (nhiều worker/nhiều
@@ -228,15 +246,22 @@ def _run_with_heartbeat(job: Job, worker_id: str) -> None:
     finally:
         stop.set()
         beater.join()
-    if failure is not None:
-        handle_job_error(job.id, failure)
+    if isinstance(failure, LostJob):
+        logger.warning(f"[job_queue] worker {worker_id} lost job {job.id} while running it; its result is dropped")
+    elif failure is not None:
+        handle_job_error(job.id, failure, worker_id=worker_id)
 
 
-def handle_job_error(job_id: uuid.UUID, err: Exception) -> None:
+def handle_job_error(job_id: uuid.UUID, err: Exception, *, worker_id: str | None = None) -> None:
+    """Records a failed attempt. With `worker_id`, only while that worker still holds the job: the
+    error of a run the sweeper already gave away must not requeue or fail the run that replaced it."""
     db = WorkerSessionLocal()
     try:
-        job = db.get(Job, job_id)
+        job = db.get(Job, job_id, with_for_update=worker_id is not None)
         if job is None:
+            return
+        if worker_id is not None and (job.status != JobStatus.running or job.locked_by != worker_id):
+            logger.warning(f"[job_queue] worker {worker_id} lost job {job_id}; its error is dropped: {err}")
             return
         message = str(err)[:500]
         terminal = is_terminal_error(err)

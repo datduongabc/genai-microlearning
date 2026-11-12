@@ -70,6 +70,10 @@ class Settings(BaseSettings):
     llm_gateway_key: str = Field(default="", repr=False)
     llm_model: str = "gemini-fast"
     non_teacher_daily_generation_limit: int = Field(default=3, ge=1)
+    # Off on a public deployment: the quota above is per account, so open registration would let
+    # anyone create accounts to spend the provider credit. Accounts then come from the administrator
+    # or from an LMS launch.
+    self_registration: bool = True
     # Chat messages a day for an account that cannot author, a student who came through the LMS: each one is a
     # paid model call, and nobody else is accountable for them.
     learner_daily_chat_limit: int = Field(default=30, ge=1)

@@ -141,4 +141,5 @@ Kho ECR cũng bị xóa cùng image, nên lần dựng sau bắt đầu lại t�
 - **Ngân sách kết nối DB.** `check "connection_budget"` báo khi `api.max` và `worker.max` cộng lại có thể mở nhiều kết nối hơn RDS nhận. Mặc định: 349 trên 407.
 - **Model embedder nằm trong image** (`devops/embedder`), như reranker. Task mới không phải tải 2,4 GB từ Hugging Face trước khi phục vụ, và không phụ thuộc Hugging Face lúc chạy. Đổi model thì phải nhúng lại toàn bộ chunk, xem `devops/embedder/prepare_model.py`.
 - **Moodle không nằm trong stack này.** Điền `moodle_base_url` nếu có.
+- **Không tự đăng ký tài khoản.** Hạn mức sinh module tính theo tài khoản, nên để ai cũng đăng ký được thì một người tạo nhiều tài khoản để tiêu tiền nhà cung cấp. Biến `self_registration` mặc định tắt: admin tạo tài khoản, còn người mở từ Moodle có tài khoản qua LTI. Bản chạy trên máy (compose) vẫn mở.
 - **Valkey không có mật khẩu,** chỉ có TLS và security group. Nó chỉ giữ bộ đếm rate limit.

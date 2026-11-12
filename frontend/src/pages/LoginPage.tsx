@@ -4,12 +4,14 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { apiErrorMessage } from "../api";
 import { homeFor, useAuth } from "../auth/useAuth";
+import { useSelfRegistration } from "../auth/useSelfRegistration";
 import { loginSchema, type LoginFormValues } from "../lib/authSchemas";
 import { AuthLayout } from "../components/AuthLayout";
 
 const SUPPORT_EMAIL = "dat.duongtandat385@gmail.com";
 
 export function LoginPage() {
+  const selfRegistration = useSelfRegistration();
   const { login } = useAuth();
   const navigate = useNavigate();
   const justRegistered = (useLocation().state as { justRegistered?: boolean } | null)?.justRegistered === true;
@@ -104,7 +106,12 @@ export function LoginPage() {
           {isSubmitting ? "Đang đăng nhập..." : "Đăng nhập"}
         </button>
 
-        <p className="auth-footer">Chưa có tài khoản? <Link to="/register" className="text-accent hover:underline">Đăng ký</Link></p>
+        {selfRegistration === true && (
+          <p className="auth-footer">Chưa có tài khoản? <Link to="/register" className="text-accent hover:underline">Đăng ký</Link></p>
+        )}
+        {selfRegistration === false && (
+          <p className="auth-footer">Chưa có tài khoản? Nhờ quản trị viên tạo tài khoản, hoặc mở công cụ từ Moodle.</p>
+        )}
       </form>
     </AuthLayout>
   );

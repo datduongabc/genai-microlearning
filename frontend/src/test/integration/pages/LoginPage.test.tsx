@@ -4,6 +4,7 @@ import { AxiosError, type AxiosResponse, type InternalAxiosRequestConfig } from 
 import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { LoginPage } from '../../../pages/LoginPage'
+import * as api from '../../../api'
 import * as AuthHookModule from '../../../auth/useAuth'
 
 const mockLogin = vi.fn()
@@ -122,9 +123,10 @@ describe('LoginPage', () => {
   })
 })
 
-it('offers open registration and admin support', () => {
+it('offers open registration and admin support', async () => {
+  vi.spyOn(api, 'getAuthOptions').mockResolvedValue({ self_registration: true })
   renderLoginPage()
-  expect(screen.getByRole('link', { name: 'Đăng ký' })).toHaveAttribute('href', '/register')
+  expect(await screen.findByRole('link', { name: 'Đăng ký' })).toHaveAttribute('href', '/register')
   expect(screen.getByRole('link', { name: 'Quên mật khẩu?' })).toHaveAttribute('href', expect.stringContaining('mailto:'))
   expect(screen.getByRole('link', { name: 'Quên mật khẩu?' })).toHaveAccessibleDescription('Liên hệ quản trị viên để đặt lại mật khẩu.')
 })

@@ -1,3 +1,4 @@
+import axios from 'axios'
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -109,6 +110,8 @@ export function ModulePreviewPage() {
     openedFrom.current?.focus()
   }, [])
 
+  const [loadFailed, setLoadFailed] = useState(false)
+  const [attempt, setAttempt] = useState(0)
   const refresh = useCallback(async () => {
     if (!moduleId) return
     setModule(await getModule(moduleId))
@@ -119,9 +122,16 @@ export function ModulePreviewPage() {
   useEffect(() => {
     let cancelled = false
     const first = moduleId
-      ? getModule(moduleId).then((loaded) => {
-          if (!cancelled) setModule(loaded)
-        })
+      ? getModule(moduleId).then(
+          (loaded) => {
+            if (!cancelled) setModule(loaded)
+          },
+          (err) => {
+            // Only a 404 means the module is gone; anything else is a failed load, which must
+            // not read as "not found" to a lecturer whose module is still there.
+            if (!cancelled && !(axios.isAxiosError(err) && err.response?.status === 404)) setLoadFailed(true)
+          },
+        )
       : Promise.resolve()
     first.finally(() => {
       if (!cancelled) setLoading(false)
@@ -129,7 +139,13 @@ export function ModulePreviewPage() {
     return () => {
       cancelled = true
     }
-  }, [moduleId])
+  }, [moduleId, attempt])
+
+  function retryLoad() {
+    setLoading(true)
+    setLoadFailed(false)
+    setAttempt((n) => n + 1)
+  }
 
   if (loading) {
     return (
@@ -139,10 +155,19 @@ export function ModulePreviewPage() {
     )
   }
 
+  if (loadFailed) {
+    return (
+      <AppShell title="Mô-đun">
+        <p role="alert" className="text-sm danger-text">Không tải được mô-đun.</p>
+        <button type="button" onClick={retryLoad} className="ui-button mt-3">Thử lại</button>
+      </AppShell>
+    )
+  }
+
   if (!module) {
     return (
       <AppShell title="Mô-đun">
-        <p className="text-sm text-red-700">Không tìm thấy mô-đun.</p>
+        <p className="text-sm danger-text">Không tìm thấy mô-đun.</p>
       </AppShell>
     )
   }

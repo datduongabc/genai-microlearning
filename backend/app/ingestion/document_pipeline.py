@@ -12,6 +12,7 @@ from app.ingestion.chunker import Chunk as ChunkerChunk
 from app.ingestion.chunker import chunk_units, document_title
 from app.ingestion.document_readers import DocumentUnit, InputLimitError, preflight_limits, read_document
 from app.ingestion.embeddings import embed_texts
+from app.jobs.queue import hold
 from app.models import Chunk as ChunkModel
 from app.models import Document, DocumentStatus, Job, JobStatus
 from app.retrieval.search import invalidate_sparse_cache
@@ -61,6 +62,7 @@ def _run_extract(job) -> None:
             db.commit()
             raise ValueError("Không đọc được nội dung tài liệu; hãy tải lại bản có lớp chữ.")
 
+        current_job = hold(db, job)
         next_payload = {**current_job.payload, "units": [asdict(u) for u in units]}
         current_job.step = "chunk"
         current_job.status = JobStatus.queued
@@ -82,6 +84,7 @@ def _run_chunk(job) -> None:
         doc = db.get(Document, current_job.document_id)
         chunks = chunk_units(units, title=document_title(doc.filename) if doc is not None else None)
 
+        current_job = hold(db, job)
         next_payload = {**current_job.payload, "chunks": [asdict(c) for c in chunks]}
         del next_payload["units"]
         current_job.step = "embed"
@@ -123,6 +126,7 @@ def _run_embed(job) -> None:
         course_id = doc.course_id
         upload = uploaded_file(current_job.payload)
 
+        current_job = hold(db, job)
         doc.status = DocumentStatus.embedded
         current_job.status = JobStatus.done
         # The chunk text now lives in the chunks table; keeping it in the job

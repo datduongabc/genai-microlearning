@@ -14,6 +14,7 @@ from app.db import SessionLocal
 from app.ingestion.document_pipeline import run_document_pipeline_step
 from app.main import app
 from app.models import Chunk, Course, Document, DocumentStatus, Job, User
+from tests.job_helpers import claimed
 from tests.unit.test_upload_store import FakeS3
 from tests.upload_helpers import upload_document
 
@@ -72,7 +73,7 @@ def _run_until_done(job_id):
     for _ in range(3):
         db = SessionLocal()
         try:
-            run_document_pipeline_step(db.get(Job, job_id))
+            run_document_pipeline_step(claimed(db, job_id))
         finally:
             db.close()
 

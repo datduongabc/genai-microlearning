@@ -24,6 +24,7 @@ from app.models import (
     JobType,
     User,
 )
+from tests.job_helpers import claimed
 
 SAMPLE_TEXT = (
     "<p>Doan mot noi ve khai niem A voi nhieu chi tiet quan trong can duoc giu "
@@ -92,7 +93,7 @@ def test_document_pipeline_extract_chunk_embed_end_to_end(seed_document_with_fil
     # extract
     db = SessionLocal()
     try:
-        job = db.get(Job, job_id)
+        job = claimed(db, job_id)
         run_document_pipeline_step(job)
     finally:
         db.close()
@@ -111,7 +112,7 @@ def test_document_pipeline_extract_chunk_embed_end_to_end(seed_document_with_fil
     # chunk
     db = SessionLocal()
     try:
-        job = db.get(Job, job_id)
+        job = claimed(db, job_id)
         run_document_pipeline_step(job)
     finally:
         db.close()
@@ -132,7 +133,7 @@ def test_document_pipeline_extract_chunk_embed_end_to_end(seed_document_with_fil
     # embed -- real local embedding model, no external API/quota.
     db = SessionLocal()
     try:
-        job = db.get(Job, job_id)
+        job = claimed(db, job_id)
         run_document_pipeline_step(job)
     finally:
         db.close()
@@ -167,7 +168,7 @@ def test_document_pipeline_extract_fails_cleanly_on_unsupported_content(seed_doc
 
     db = SessionLocal()
     try:
-        job = db.get(Job, job_id)
+        job = claimed(db, job_id)
         try:
             run_document_pipeline_step(job)
             raised = False

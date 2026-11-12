@@ -134,6 +134,8 @@ export function CourseDetailPage() {
     Record<string, ModuleSummary[]>
   >({});
   const [loading, setLoading] = useState(true);
+  const [loadFailed, setLoadFailed] = useState(false);
+  const [attempt, setAttempt] = useState(0);
   const [deletingDocId, setDeletingDocId] = useState<string | null>(null);
   const [deletingModuleId, setDeletingModuleId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -167,13 +169,24 @@ export function CourseDetailPage() {
           setModulesByDoc: guarded(setModulesByDoc),
         })
       : Promise.resolve();
-    first.finally(() => {
-      if (!cancelled) setLoading(false);
-    });
+    first
+      // An empty list after a failed load would read "no documents yet": say it failed instead.
+      .catch(() => {
+        if (!cancelled) setLoadFailed(true);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
     return () => {
       cancelled = true;
     };
-  }, [courseId]);
+  }, [courseId, attempt]);
+
+  function retryLoad() {
+    setLoading(true);
+    setLoadFailed(false);
+    setAttempt((n) => n + 1);
+  }
 
   // One document at a time: the upload control stays busy for as long as the
   // server reports a document still uploaded/processing, and this polls until
@@ -412,6 +425,11 @@ export function CourseDetailPage() {
 
       {loading ? (
         <p className="course-empty">Đang tải tài liệu...</p>
+      ) : loadFailed ? (
+        <div className="course-empty">
+          <p role="alert" className="danger-text">Không tải được tài liệu của môn học.</p>
+          <button type="button" onClick={retryLoad} className="ui-button mt-3">Thử lại</button>
+        </div>
       ) : (
         <ul className="doc-list">
           {visibleDocuments.map((d) => (
