@@ -9,8 +9,8 @@ from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user, require_author, require_course_owner
 from app.api.model_alias import usable_alias
-from app.api.modules import citation_label
 from app.auth.rate_limit import limiter, user_or_address
+from app.citations import citation_label
 from app.config import settings
 from app.db import get_db
 from app.generation import fact_check

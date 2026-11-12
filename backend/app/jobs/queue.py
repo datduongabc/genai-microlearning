@@ -283,14 +283,15 @@ def mark_target_failed(db: Session, job: Job) -> None:
             # The video page shows why, as the job's error is not on it; a system failure shows the
             # safe message, as the document list does, since an exception's text is no help there.
             video.error = lecturer_message(job)
-    elif job.job_type == JobType.video_images:
+    elif job.job_type in (JobType.video_images, JobType.video_render):
         video_id = _payload_id(job, "video_id")
         video = db.get(Video, video_id) if video_id is not None else None
         if video is not None:
             video.status = MediaStatus.failed
-            # A run clears the error when it starts (app/video/illustrations.py), so one set now is
-            # this run's own, naming each scene it could not draw; lecturer_message would cut it at
-            # 200 characters. A system failure may have come before that start, so it shows its own.
+            # A run clears the error when it starts (app/video/illustrations.py, render.py), so one set
+            # now is this run's own, naming each scene it could not draw or voice; lecturer_message
+            # would cut it at 200 characters. A system failure may have come before that start, so it
+            # shows its own. A failed render leaves video_key alone: learners keep the video they had.
             if job.system_failure or not video.error:
                 video.error = lecturer_message(job)
 
@@ -393,6 +394,9 @@ def execute_job_step(job: Job) -> None:
     elif job.job_type == JobType.video_images:
         from app.video.illustrations import run_video_images_step
         run_video_images_step(job)
+    elif job.job_type == JobType.video_render:
+        from app.video.render import run_video_render_step
+        run_video_render_step(job)
     elif job.job_type == JobType.study_judge:
         from app.study.judge import run_study_judge_step
         run_study_judge_step(job)

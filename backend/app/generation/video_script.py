@@ -88,6 +88,8 @@ class Scene(BaseModel):
     image_prompt_used: str | None = None
     voice_key: str | None = None
     voice_text_used: str | None = None
+    # The voice model that read it: another voice for the video means every scene is read again.
+    voice_alias_used: str | None = None
 
 
 # What the model returns. Sources sit on each bullet and each sentence, so that one without a

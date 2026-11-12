@@ -14,7 +14,6 @@ drawn is not attached to it, and its file is deleted.
 import hashlib
 import io
 import logging
-import re
 import uuid
 from collections.abc import Callable, Sequence
 from concurrent.futures import ThreadPoolExecutor
@@ -29,7 +28,7 @@ from app.generation.video_script import MAX_ILLUSTRATIONS, Scene
 from app.jobs.queue import hold
 from app.llm.media import IMAGE_MODELS, MediaError, generate_image
 from app.models import Job, JobStatus, MediaStatus, Video
-from app.storage import media_store, staging_dir
+from app.video.media_jobs import SceneFailure, delete_files, refusal_reason, scene_failure_message, store_bytes
 
 logger = logging.getLogger(__name__)
 
@@ -56,7 +55,6 @@ TRIM_THRESHOLD = 18
 # Twice the size the slide shows it at, enough for a 1920x1080 render.
 MAX_SIDE = 1600
 JPEG_QUALITY = 90
-_TITLE_CHARS = 60
 
 
 def image_prompt_for(scene: Scene) -> str:
@@ -117,12 +115,6 @@ class _Drawn:
     key: str | None = None
 
 
-@dataclass
-class _Failed:
-    index: int
-    reason: str
-
-
 def _targets(scenes: list[Scene], scene_indexes: Sequence[int] | None) -> list[int]:
     def drawable(s: Scene) -> bool:
         return s.kind == "illustration" and bool(s.image_prompt and s.image_prompt.strip())
@@ -139,19 +131,7 @@ def _targets(scenes: list[Scene], scene_indexes: Sequence[int] | None) -> list[i
     return sorted(set(scene_indexes))
 
 
-_DATA_POLICY = re.compile(r"data policy|data_collection|data collection", re.IGNORECASE)
-
-
-def _refusal_reason(label: str, refusal: ValueError) -> str:
-    if _DATA_POLICY.search(str(refusal)):
-        # OpenRouter's "No endpoints found matching your data policy": every provider of the model
-        # may keep or train on what it is sent, which course material must never allow.
-        return (f"không có nhà cung cấp nào của model {label} đáp ứng quy định không thu thập dữ liệu "
-                "(data_collection: deny); hãy chọn model ảnh khác")
-    return f"model {label} từ chối: {refusal}"
-
-
-def _draw(alias: str, index: int, scene: Scene) -> _Drawn | _Failed:
+def _draw(alias: str, index: int, scene: Scene) -> _Drawn | SceneFailure:
     """One scene's picture, or why there is none. Never raises: a scene that fails must not cost
     the other scenes the pictures already paid for."""
     label = IMAGE_MODELS[alias].label if alias in IMAGE_MODELS else alias
@@ -171,57 +151,22 @@ def _draw(alias: str, index: int, scene: Scene) -> _Drawn | _Failed:
         except ValueError as refusal:
             # A refusal (no provider that keeps data_collection deny, a prompt it rejects) repeats
             # on every try; the lecturer needs the model and its words to choose another.
-            return _Failed(index, _refusal_reason(label, refusal))
+            return SceneFailure(index, refusal_reason(label, refusal, "ảnh"))
         except Exception:
             logger.exception(f"[video_images] scene {index}: drawing failed unexpectedly")
-            return _Failed(index, f"lỗi hệ thống khi vẽ bằng model {label}")
+            return SceneFailure(index, f"lỗi hệ thống khi vẽ bằng model {label}")
         return _Drawn(index, scene.image_prompt or "", data, image.served_model, image.cost)
-    return _Failed(index, reason)
-
-
-def _failure_message(failures: list[_Failed], scenes: list[Scene]) -> str:
-    """Names each scene as the editor numbers it, with its title, and each reason once."""
-    by_reason: dict[str, list[str]] = {}
-    for f in sorted(failures, key=lambda f: f.index):
-        title = scenes[f.index].title.strip()
-        if len(title) > _TITLE_CHARS:
-            title = title[:_TITLE_CHARS - 1] + "…"
-        by_reason.setdefault(f.reason, []).append(f"cảnh {f.index + 1} ({title})")
-    parts = [f"{', '.join(names)}: {reason}" for reason, names in by_reason.items()]
-    return "Không vẽ được hình cho " + "; ".join(parts) + ". Hãy vẽ lại các cảnh này."
+    return SceneFailure(index, reason)
 
 
 def _store(drawn: list[_Drawn], video_id: uuid.UUID, stored: list[str]) -> None:
-    """Appends each key to `stored` as soon as its file is saved, so that a failure partway still
-    lets the caller delete the files saved before it."""
-    store = media_store()
     for d in drawn:
         d.key = image_key(video_id, d.index, d.data)
-        # In the local store's own directory, so that save() is a rename and not a copy across disks.
-        pending = staging_dir() / f"pending-{uuid.uuid4()}.jpg"
-        pending.write_bytes(d.data)
-        try:
-            store.save(pending, d.key)
-        finally:
-            pending.unlink(missing_ok=True)
-        stored.append(d.key)
+        store_bytes(d.data, d.key, stored)
 
 
 def _delete(keys: list[str]) -> None:
-    """Best effort: a file left behind costs storage, while an exception here would hide the error
-    being handled, or fail a job whose result is already committed."""
-    if not keys:
-        return
-    try:
-        store = media_store()
-    except Exception:
-        logger.exception(f"[video_images] could not open the media store to delete {keys}")
-        return
-    for key in keys:
-        try:
-            store.delete(key)
-        except Exception:
-            logger.exception(f"[video_images] could not delete {key}")
+    delete_files(keys, "video_images")
 
 
 def draw_illustrations(
@@ -251,8 +196,8 @@ def draw_illustrations(
         else:
             results = []
         drawn = [r for r in results if isinstance(r, _Drawn)]
-        failures = [r for r in results if isinstance(r, _Failed)]
-        error = _failure_message(failures, scenes) if failures else None
+        failures = [r for r in results if isinstance(r, SceneFailure)]
+        error = scene_failure_message(failures, scenes, "Không vẽ được hình cho ", "Hãy vẽ lại các cảnh này.") if failures else None
 
         stored: list[str] = []
         try:
