@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -27,6 +27,30 @@ function renderShell(admin = false, route = '/courses') {
 }
 
 describe('AppShell', () => {
+  it('collapses the sidebar to icons, keeps the links named, and remembers it', async () => {
+    localStorage.clear()
+    const first = renderShell()
+    const toggle = screen.getByRole('button', { name: 'Thu gọn thanh bên' })
+    expect(toggle).toHaveAttribute('aria-expanded', 'true')
+    await userEvent.click(toggle)
+    expect(screen.getByRole('button', { name: 'Mở rộng thanh bên' })).toHaveAttribute('aria-expanded', 'false')
+    expect(document.querySelector('[data-sidebar]')).toHaveAttribute('data-sidebar', 'collapsed')
+    expect(screen.getByRole('link', { name: 'Môn học' })).toHaveAttribute('data-tip', 'Môn học')
+    first.unmount()
+    renderShell()
+    expect(document.querySelector('[data-sidebar]')).toHaveAttribute('data-sidebar', 'collapsed')
+    await userEvent.click(screen.getByRole('button', { name: 'Mở rộng thanh bên' }))
+    expect(localStorage.getItem('sidebar-collapsed')).toBe('0')
+  })
+
+  it('still collapses when the browser refuses storage', async () => {
+    vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => { throw new Error('blocked') })
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => { throw new Error('blocked') })
+    renderShell()
+    await userEvent.click(screen.getByRole('button', { name: 'Thu gọn thanh bên' }))
+    expect(document.querySelector('[data-sidebar]')).toHaveAttribute('data-sidebar', 'collapsed')
+  })
+
   it('shows lecturer navigation, a brand home link, and the active route', () => {
     renderShell()
     expect(screen.getByRole('link', { name: /genailms/i })).toHaveAttribute('href', '/courses')
@@ -45,7 +69,7 @@ describe('AppShell', () => {
     await userEvent.click(screen.getByRole('button', { name: /Quản trị viên/ }))
     expect(api.getMoodleAccount).not.toHaveBeenCalled()
     expect(screen.getByText('a@b.com')).toBeInTheDocument()
-    expect(screen.getAllByRole('button')).toHaveLength(2)
+    expect(within(screen.getByRole('region', { name: 'Tài khoản' })).getAllByRole('button')).toHaveLength(1)
     expect(screen.getAllByRole('separator')).toHaveLength(1)
     await userEvent.click(screen.getByRole('button', { name: 'Đăng xuất' }))
     expect(logout).toHaveBeenCalledOnce()

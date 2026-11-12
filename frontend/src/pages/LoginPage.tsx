@@ -48,7 +48,7 @@ export function LoginPage() {
         )}
 
         {error && (
-          <div role="alert" className="rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+          <div role="alert" className="ui-alert">
             {error}
           </div>
         )}
@@ -77,7 +77,7 @@ export function LoginPage() {
           <div className="flex items-center justify-between text-sm">
             <label htmlFor="login-password" className="font-medium">Mật khẩu</label>
             <span className="forgot">
-              <a href={`mailto:${SUPPORT_EMAIL}`} aria-describedby="forgot-tip" className="text-terracotta underline underline-offset-2">Quên mật khẩu?</a>
+              <a href={`mailto:${SUPPORT_EMAIL}`} aria-describedby="forgot-tip" className="text-accent underline underline-offset-2">Quên mật khẩu?</a>
               <span id="forgot-tip" role="tooltip" className="tip">Liên hệ quản trị viên để đặt lại mật khẩu.</span>
             </span>
           </div>
@@ -104,7 +104,7 @@ export function LoginPage() {
           {isSubmitting ? "Đang đăng nhập..." : "Đăng nhập"}
         </button>
 
-        <p className="auth-footer">Chưa có tài khoản? <Link to="/register" className="text-terracotta hover:underline">Đăng ký</Link></p>
+        <p className="auth-footer">Chưa có tài khoản? <Link to="/register" className="text-accent hover:underline">Đăng ký</Link></p>
       </form>
     </AuthLayout>
   );
