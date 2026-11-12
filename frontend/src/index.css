@@ -533,10 +533,17 @@ body { background: var(--bg-canvas); font-size:16px; line-height:24px; }
 .video-item { display:flex; flex-direction:column; gap:6px; }
 .video-item .doc-warning { margin-top:0; }
 .video-item-row { display:flex; align-items:flex-start; gap:8px; }
-.video-item-sources { font-size:13px; line-height:18px; }
-.video-item-sources summary, .video-scene-sources summary { cursor:pointer; color:var(--accent-default); overflow-wrap:anywhere; font-size:13px; line-height:18px; }
-.video-item-sources fieldset { margin-top:6px; display:flex; flex-direction:column; gap:4px; }
-.video-source-choice { display:flex; align-items:center; gap:8px; color:var(--text-primary); overflow-wrap:anywhere; }
+.video-scene-sources summary { cursor:pointer; color:var(--accent-default); overflow-wrap:anywhere; font-size:13px; line-height:18px; }
+/* Picking the sources of one sentence, bullet or card, from the whole document. */
+.passage-picker { font-size:13px; line-height:18px; }
+.passage-picker summary { cursor:pointer; color:var(--accent-default); overflow-wrap:anywhere; }
+.passage-picker-body { margin-top:8px; display:flex; flex-direction:column; gap:8px; }
+.passage-choices { display:flex; flex-direction:column; gap:6px; }
+.passage-choice { display:flex; align-items:flex-start; gap:8px; color:var(--text-primary); }
+.passage-choice input { margin-top:3px; flex:none; }
+.passage-locator { display:block; font-weight:600; overflow-wrap:anywhere; }
+.passage-snippet { display:block; color:var(--text-secondary); overflow-wrap:anywhere; }
+.passage-search { display:flex; gap:8px; }
 .video-scene-sources .flashcard-sources { margin-top:8px; }
 .video-save { width:100%; display:flex; flex-direction:column; gap:8px; }
 .video-step { width:100%; display:flex; flex-direction:column; align-items:flex-start; gap:10px; padding-top:16px; border-top:1px solid var(--border-default); }

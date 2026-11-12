@@ -13,6 +13,7 @@ import {
   type FlashcardSetDetail,
 } from '../api'
 import { AppShell } from '../components/AppShell'
+import { PassagePicker } from '../components/PassagePicker'
 import { SourcePassages } from '../components/SourcePassages'
 import { editorTitle } from '../lib/editorTitle'
 import { confirmLeave, useLeaveGuard } from '../lib/useLeaveGuard'
@@ -227,7 +228,9 @@ export function FlashcardEditorPage() {
 
         <ol className="flashcard-list" aria-label="Các thẻ">
           {cards.map((c, index) => {
-            const warning = c.flag ?? (c.citations.length === 0 ? NO_SOURCE : null)
+            // The server's "no source" flag is out of date once the lecturer has picked a passage.
+            const flag = c.flag === NO_SOURCE && c.citations.length > 0 ? null : c.flag
+            const warning = flag ?? (c.citations.length === 0 ? NO_SOURCE : null)
             return (
               <li key={c.key} className="flashcard-item">
                 <div className="flashcard-head">
@@ -265,6 +268,18 @@ export function FlashcardEditorPage() {
                   />
                 </label>
                 <SourcePassages sources={c.sources} label={`Nguồn của thẻ ${index + 1}`} />
+                <PassagePicker
+                  documentId={saved.document_id}
+                  name={`thẻ ${index + 1}`}
+                  citations={c.citations}
+                  known={c.sources}
+                  onChange={(citations, picked) => {
+                    setNotice(null)
+                    setCards((list) => list.map((x) => (x.key === c.key
+                      ? { ...x, citations, sources: picked ? [...x.sources, picked] : x.sources }
+                      : x)))
+                  }}
+                />
               </li>
             )
           })}

@@ -1,8 +1,9 @@
 import { useState, type RefObject } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { DEFAULT_IMAGE_MODEL, DEFAULT_VOICE, IMAGE_MODEL_CHOICES, VOICE_CHOICES, type MediaChoice } from "../api/videos";
+import type { MediaChoice } from "../api";
 import { generateModuleSchema, type GenerateModuleFormValues } from "../lib/formSchemas";
+import { useMediaModels } from "../lib/useMediaModels";
 
 export type GenerateKind = "module" | "flashcards" | "video";
 
@@ -30,22 +31,26 @@ const KIND_TEXT: Record<GenerateKind, { title: string; field: string; placeholde
   },
 };
 
+// Undefined when the choices could not be loaded: the server then uses its defaults.
 export interface VideoMediaChoice {
-  voiceAlias: string;
-  imageAlias: string;
+  voiceAlias?: string;
+  imageAlias?: string;
 }
 
 function MediaSelect({ label, value, onChange, choices }: {
   label: string;
-  value: string;
+  value: string | undefined;
   onChange: (alias: string) => void;
-  choices: MediaChoice[];
+  // null while the server's list is on its way.
+  choices: MediaChoice[] | null;
 }) {
   return (
     <label className="mt-4 flex flex-col gap-2 text-sm">
       {label}
-      <select aria-label={label} value={value} onChange={(e) => onChange(e.target.value)} className="ui-select w-full">
-        {choices.map((choice) => (
+      <select aria-label={label} value={value ?? ""} onChange={(e) => onChange(e.target.value)} disabled={!choices}
+        className="ui-select w-full disabled:opacity-60">
+        {!choices && <option value="">Đang tải...</option>}
+        {choices?.map((choice) => (
           <option key={choice.alias} value={choice.alias}>
             {choice.label} ({choice.price})
           </option>
@@ -63,8 +68,13 @@ export function GenerateDialog({ dialogRef, onGenerate, kind = "module" }: {
   kind?: GenerateKind;
 }) {
   const text = KIND_TEXT[kind];
-  const [voiceAlias, setVoiceAlias] = useState(DEFAULT_VOICE);
-  const [imageAlias, setImageAlias] = useState(DEFAULT_IMAGE_MODEL);
+  const models = useMediaModels(kind === "video");
+  const choices = models && models !== "failed" ? models : null;
+  // null until the lecturer picks one: the server's default is shown and sent.
+  const [voicePick, setVoicePick] = useState<string | null>(null);
+  const [imagePick, setImagePick] = useState<string | null>(null);
+  const voiceAlias = voicePick ?? choices?.default_voice;
+  const imageAlias = imagePick ?? choices?.default_image;
   const {
     register,
     handleSubmit,
@@ -98,8 +108,16 @@ export function GenerateDialog({ dialogRef, onGenerate, kind = "module" }: {
         {errors.instructions && <p className="mt-1 text-[13px] danger-text">{text.tooLong || errors.instructions.message}</p>}
         {kind === "video" && (
           <>
-            <MediaSelect label="Giọng đọc" value={voiceAlias} onChange={setVoiceAlias} choices={VOICE_CHOICES} />
-            <MediaSelect label="Model vẽ hình" value={imageAlias} onChange={setImageAlias} choices={IMAGE_MODEL_CHOICES} />
+            {models === "failed" ? (
+              <p className="course-hint">
+                Không tải được danh sách giọng và model ảnh: video sẽ dùng giọng và model ảnh mặc định.
+              </p>
+            ) : (
+              <>
+                <MediaSelect label="Giọng đọc" value={voiceAlias} onChange={setVoicePick} choices={choices?.voices ?? null} />
+                <MediaSelect label="Model vẽ hình" value={imageAlias} onChange={setImagePick} choices={choices?.images ?? null} />
+              </>
+            )}
             <p className="course-hint">Giá tham khảo; tiền hình chỉ tính khi bấm Vẽ hình, tiền giọng khi bấm Dựng video.</p>
           </>
         )}

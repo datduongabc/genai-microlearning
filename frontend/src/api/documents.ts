@@ -48,3 +48,18 @@ export async function uploadDocument(courseId: string, file: File, onProgress?: 
   const { data } = await api.post(`/documents/${started.document_id}/complete`)
   return data as { id: string; status: string; job_id: string }
 }
+
+// A passage of a document, as an editor offers it for citing.
+export interface DocumentPassage {
+  chunk_id: string
+  locator: string
+  content: string
+}
+
+// A page of the document's passages in reading order; `q` keeps those whose text contains it.
+export async function listDocumentChunks(documentId: string, { q, offset = 0, limit = 20 }: { q?: string; offset?: number; limit?: number } = {}) {
+  const { data } = await api.get<{ items: DocumentPassage[]; total: number }>(`/documents/${documentId}/chunks`, {
+    params: { offset, limit, ...(q?.trim() ? { q: q.trim() } : {}) },
+  })
+  return data
+}

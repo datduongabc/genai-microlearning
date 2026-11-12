@@ -57,6 +57,14 @@ beforeEach(() => {
   vi.mocked(api.listDocuments).mockResolvedValue([])
   vi.mocked(api.listFlashcardSets).mockResolvedValue([])
   vi.mocked(api.listVideos).mockResolvedValue([])
+  vi.mocked(api.getMediaModels).mockResolvedValue({
+    voices: [{ alias: 'voice-heygen', label: 'HeyGen Voice 1 Turbo', price: 'khoảng $0,03 một video 8 phút' }],
+    images: [
+      { alias: 'image-nano-banana', label: 'Gemini Nano Banana 2.1', price: 'khoảng $0,037 một ảnh' },
+      { alias: 'image-qwen', label: 'Qwen Image 2.1 Turbo', price: 'khoảng $0,018 một ảnh' },
+    ],
+    default_voice: 'voice-heygen', default_image: 'image-nano-banana',
+  })
   // Ô chọn model gọi API này ngay khi trang mở, như listDocuments ở trên.
   vi.mocked(api.listModels).mockResolvedValue({ models: [], default: null })
   // The course chat loads its last conversation on open.
@@ -739,7 +747,7 @@ describe('CourseDetailPage - videos', () => {
     renderPage()
     await userEvent.click(await screen.findByRole('button', { name: '+ Sinh video' }))
     await userEvent.type(within(screen.getByRole('dialog', { name: 'Sinh video' })).getByLabelText(/Trọng tâm/), 'FCFS')
-    await userEvent.selectOptions(screen.getByLabelText('Model vẽ hình'), 'image-qwen')
+    await userEvent.selectOptions(await screen.findByRole('combobox', { name: 'Model vẽ hình' }), 'image-qwen')
     await userEvent.click(screen.getByRole('button', { name: 'Sinh video' }))
 
     await waitFor(() => expect(api.generateVideo).toHaveBeenCalledWith('doc-1', {

@@ -245,6 +245,28 @@ describe('FlashcardEditorPage', () => {
     expect(await screen.findByText('Trang môn học')).toBeInTheDocument()
   })
 
+  it('cites a passage found in the document for a card without a source', async () => {
+    vi.mocked(api.getFlashcardSet).mockResolvedValue(draft([card(1, { citations: [], sources: [] })]))
+    vi.mocked(api.listDocumentChunks).mockResolvedValue({
+      items: [{ chunk_id: 'chunk-9', locator: 'bai-giang.pdf, trang 9', content: 'Danh sách liên kết nối các nút bằng con trỏ.' }],
+      total: 1,
+    })
+    vi.mocked(api.saveFlashcards).mockResolvedValue(draft([card(1)]))
+
+    renderPage()
+    const item = (await screen.findAllByRole('listitem'))[0]
+    expect(within(item).getByText('Chưa có nguồn')).toBeInTheDocument()
+    await userEvent.click(within(item).getByRole('button', { name: 'Tìm' }))
+
+    expect(api.listDocumentChunks).toHaveBeenCalledWith('doc-1', { q: '', offset: 0 })
+    await userEvent.click(await within(item).findByRole('checkbox', { name: /con trỏ/ }))
+    expect(within(item).queryByText('Chưa có nguồn')).not.toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Lưu thay đổi' }))
+
+    await waitFor(() => expect(api.saveFlashcards).toHaveBeenCalled())
+    expect(vi.mocked(api.saveFlashcards).mock.calls[0][1][0].citations).toEqual(['chunk-9'])
+  })
+
   it('shows where each card comes from, with the passage behind a disclosure', async () => {
     vi.mocked(api.getFlashcardSet).mockResolvedValue(draft([card(1), card(2, { citations: [], sources: [] })]))
 

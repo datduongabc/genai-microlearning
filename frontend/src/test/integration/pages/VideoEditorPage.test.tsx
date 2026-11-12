@@ -64,7 +64,22 @@ beforeEach(() => {
   URL.createObjectURL = vi.fn(() => `blob:preview-${++objectUrls}`)
   URL.revokeObjectURL = vi.fn()
   vi.mocked(api.getScenePreview).mockImplementation(async () => new Blob(['png'], { type: 'image/png' }))
+  vi.mocked(api.getMediaModels).mockResolvedValue({
+    voices: [{ alias: 'voice-heygen', label: 'HeyGen Voice 1 Turbo', price: 'khoảng $0,03 một video 8 phút' }],
+    images: [{ alias: 'image-nano-banana', label: 'Gemini Nano Banana 2.1', price: 'khoảng $0,037 một ảnh' }],
+    default_voice: 'voice-heygen', default_image: 'image-nano-banana',
+  })
 })
+
+// Fake timers that still let time pass, so the queries' own waits work. Time is moved in small
+// steps: React runs the effects a step starts only once that step's act() ends.
+async function passTime(ms: number, step = 300) {
+  for (let spent = 0; spent < ms; spent += step) {
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(step)
+    })
+  }
+}
 
 afterEach(() => {
   vi.useRealTimers()
@@ -169,7 +184,7 @@ describe('VideoEditorPage', () => {
 
     renderPage()
     const sentences = within(await screen.findByRole('list', { name: 'Lời thoại cảnh 1' })).getAllByRole('listitem')
-    await userEvent.click(within(sentences[1]).getByRole('checkbox', { name: otherSource.locator }))
+    await userEvent.click(within(sentences[1]).getByRole('checkbox', { name: new RegExp(otherSource.locator) }))
 
     expect(within(sentences[1]).queryByText('Chưa có nguồn')).not.toBeInTheDocument()
     await userEvent.click(screen.getByRole('button', { name: 'Lưu thay đổi' }))
@@ -288,7 +303,7 @@ describe('VideoEditorPage', () => {
   })
 
   it('polls a running job and shows its error', async () => {
-    vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] })
+    vi.useFakeTimers({ shouldAdvanceTime: true })
     vi.mocked(api.getVideo)
       .mockResolvedValueOnce(video([scene(1)], { status: 'rendering', job: { id: 'job-3', job_type: 'video_render', status: 'running' } }))
       .mockResolvedValue(video([scene(1)], { status: 'failed', error: 'Dựng video thất bại: giọng đọc không trả về âm thanh.' }))
@@ -297,16 +312,12 @@ describe('VideoEditorPage', () => {
 
     expect(await screen.findByText('Đang dựng video...')).toHaveAttribute('data-status', 'processing')
     expect(screen.getByRole('button', { name: 'Dựng video' })).toBeDisabled()
-    await act(async () => {
-      await vi.advanceTimersByTimeAsync(3500)
-    })
+    await passTime(3600)
 
     expect(await screen.findByText('Dựng video thất bại: giọng đọc không trả về âm thanh.')).toBeInTheDocument()
     expect(screen.queryByText('Đang dựng video...')).not.toBeInTheDocument()
     const calls = vi.mocked(api.getVideo).mock.calls.length
-    await act(async () => {
-      await vi.advanceTimersByTimeAsync(10_000)
-    })
+    await passTime(10_000, 1000)
     expect(vi.mocked(api.getVideo).mock.calls.length).toBe(calls)
   })
 
@@ -364,12 +375,7 @@ describe('VideoEditorPage', () => {
 
     const { unmount } = renderPage()
     await sceneItems()
-    // In small steps: React runs the effects a step starts only once that step's act() ends.
-    for (let step = 0; step < 20; step++) {
-      await act(async () => {
-        await vi.advanceTimersByTimeAsync(300)
-      })
-    }
+    await passTime(6000)
 
     for (const n of [1, 2, 3, 4]) expect(screen.getByRole('img', { name: `Slide cảnh ${n}` })).toBeInTheDocument()
     expect(most).toBeLessThanOrEqual(2)
@@ -405,16 +411,182 @@ describe('VideoEditorPage', () => {
   })
 
   it('follows a script being generated', async () => {
-    vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] })
+    vi.useFakeTimers({ shouldAdvanceTime: true })
     vi.mocked(api.getVideo)
       .mockResolvedValueOnce(video([], { status: 'generating', job: { id: 'job-1', job_type: 'video_script', status: 'running' } }))
       .mockResolvedValue(video([scene(1)]))
 
     renderPage()
     expect(await screen.findByText('Đang sinh lời thoại...')).toBeInTheDocument()
-    await act(async () => {
-      await vi.advanceTimersByTimeAsync(3500)
-    })
+    await passTime(3600)
     expect(await screen.findByLabelText('Tiêu đề cảnh 1')).toBeInTheDocument()
+  })
+
+  it('keeps the saved draft when a poll that started before the save answers after it', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    const running = { id: 'job-2', job_type: 'video_images' as const, status: 'running' as const }
+    vi.mocked(api.getVideo).mockResolvedValueOnce(video([scene(1)], { status: 'drawing', job: running }))
+    let answerPoll: (v: VideoDetail) => void = () => {}
+    vi.mocked(api.getVideo).mockImplementationOnce(() => new Promise((resolve) => { answerPoll = resolve }))
+    vi.mocked(api.saveVideoScenes).mockResolvedValue(
+      video([scene(1, { title: 'Đã lưu', author: 'lecturer' })], { draft_version: 2, status: 'drawing', job: running }))
+
+    renderPage()
+    const title = await screen.findByLabelText('Tiêu đề cảnh 1')
+    await passTime(3300)
+    // The poll is out; the lecturer saves before it answers.
+    expect(api.getVideo).toHaveBeenCalledTimes(2)
+    await userEvent.clear(title)
+    await userEvent.type(title, 'Đã lưu')
+    await userEvent.click(screen.getByRole('button', { name: 'Lưu thay đổi' }))
+    await screen.findByText('Đã lưu.')
+
+    await act(async () => answerPoll(video([scene(1)], { draft_version: 1, status: 'draft', job: null })))
+
+    expect(screen.getByLabelText('Tiêu đề cảnh 1')).toHaveValue('Đã lưu')
+    // The server state of the late answer is taken: the job is over.
+    expect(screen.queryByText('Đang vẽ hình...')).not.toBeInTheDocument()
+    vi.mocked(api.saveVideoScenes).mockClear()
+    await userEvent.type(screen.getByLabelText('Tiêu đề cảnh 1'), '!')
+    await userEvent.click(screen.getByRole('button', { name: 'Lưu thay đổi' }))
+    await waitFor(() => expect(api.saveVideoScenes).toHaveBeenCalled())
+    expect(vi.mocked(api.saveVideoScenes).mock.calls[0][1]).toBe(2)
+  })
+
+  it('never asks for the detail again while a poll is still out', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    const running = { id: 'job-3', job_type: 'video_render' as const, status: 'running' as const }
+    vi.mocked(api.getVideo).mockResolvedValueOnce(video([scene(1)], { status: 'rendering', job: running }))
+    vi.mocked(api.getVideo).mockImplementation(() => new Promise(() => {}))
+
+    const { unmount } = renderPage()
+    await screen.findByLabelText('Tiêu đề cảnh 1')
+    await passTime(15_000, 1000)
+
+    expect(api.getVideo).toHaveBeenCalledTimes(2)
+    unmount()
+  })
+
+  it('turns an illustration into a text slide when its description is emptied', async () => {
+    const drawn = scene(1, { kind: 'illustration', image_prompt: 'Hàng đợi P1 P2', has_image: true })
+    vi.mocked(api.getVideo).mockResolvedValue(video([drawn]))
+    vi.mocked(api.saveVideoScenes).mockResolvedValue(video([{ ...drawn, image_prompt: null, has_image: false }], { draft_version: 2 }))
+
+    renderPage()
+    const prompt = await screen.findByLabelText('Mô tả hình cảnh 1')
+    expect(screen.getByText(/Xóa hết mô tả rồi lưu thì hình bị bỏ/)).toBeInTheDocument()
+    await waitFor(() => expect(api.getScenePreview).toHaveBeenCalledTimes(1))
+    await userEvent.clear(prompt)
+    await userEvent.click(screen.getByRole('button', { name: 'Lưu thay đổi' }))
+
+    await waitFor(() => expect(api.saveVideoScenes).toHaveBeenCalled())
+    expect(vi.mocked(api.saveVideoScenes).mock.calls[0][2][0].image_prompt).toBeNull()
+    // The slide is asked for again, now printed without the picture, and there is nothing to draw.
+    await waitFor(() => expect(api.getScenePreview).toHaveBeenCalledTimes(2))
+    expect(screen.queryByRole('button', { name: /hình cảnh 1/ })).not.toBeInTheDocument()
+  })
+
+  it('cites any passage of the document, found by a search, with a snippet', async () => {
+    vi.mocked(api.getVideo).mockResolvedValue(video([scene(1, {
+      narration_citations: [['c1'], []], sources: [source],
+    })]))
+    vi.mocked(api.listDocumentChunks).mockResolvedValue({ items: [otherSource], total: 1 })
+    vi.mocked(api.saveVideoScenes).mockResolvedValue(video([scene(1)], { draft_version: 2 }))
+
+    renderPage()
+    const sentences = within(await screen.findByRole('list', { name: 'Lời thoại cảnh 1' })).getAllByRole('listitem')
+    await userEvent.type(within(sentences[1]).getByRole('searchbox', { name: 'Tìm đoạn nguồn cho câu 2 cảnh 1' }), 'quantum')
+    await userEvent.click(within(sentences[1]).getByRole('button', { name: 'Tìm' }))
+
+    expect(api.listDocumentChunks).toHaveBeenCalledWith('doc-1', { q: 'quantum', offset: 0 })
+    const found = await within(sentences[1]).findByRole('checkbox', { name: /Round Robin chia lượt/ })
+    expect(found).not.toBeChecked()
+    await userEvent.click(found)
+
+    expect(within(sentences[1]).queryByText('Chưa có nguồn')).not.toBeInTheDocument()
+    expect(within(sentences[1]).getByText(`Nguồn: ${otherSource.locator}`)).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Lưu thay đổi' }))
+    await waitFor(() => expect(api.saveVideoScenes).toHaveBeenCalled())
+    expect(vi.mocked(api.saveVideoScenes).mock.calls[0][2][0].narration_citations).toEqual([['c1'], ['c2']])
+  })
+
+  it('offers the picker on a scene that has no source yet', async () => {
+    vi.mocked(api.getVideo).mockResolvedValue(video([scene(1)]))
+
+    renderPage()
+    await userEvent.click(await screen.findByRole('button', { name: 'Thêm cảnh' }))
+    const sentence = within(screen.getByRole('list', { name: 'Lời thoại cảnh 2' })).getAllByRole('listitem')[0]
+
+    expect(within(sentence).getByText('Gắn nguồn')).toBeInTheDocument()
+    expect(within(sentence).getByRole('searchbox', { name: 'Tìm đoạn nguồn cho câu 1 cảnh 2' })).toBeInTheDocument()
+  })
+
+  it('reads each flag as the description of its field', async () => {
+    vi.mocked(api.getVideo).mockResolvedValue(video([scene(1, {
+      narration_citations: [['c1'], []], flags: ['Câu 2: Sai số liệu'],
+    })]))
+
+    renderPage()
+
+    expect(await screen.findByLabelText('Câu 2 cảnh 1')).toHaveAccessibleDescription(/Chưa có nguồn.*Sai số liệu/)
+    expect(screen.getByLabelText('Câu 1 cảnh 1')).not.toHaveAccessibleDescription()
+  })
+
+  it('says a table cell cannot hold a bar', async () => {
+    vi.mocked(api.getVideo).mockResolvedValue(video([scene(1, { kind: 'table', table: [['A', 'B']] })]))
+
+    renderPage()
+
+    expect(await screen.findByLabelText('Bảng cảnh 1')).toHaveValue('A | B')
+    expect(screen.getByText(/không chứa được dấu \|/)).toBeInTheDocument()
+  })
+
+  it('says the job is queued and follows it when the detail cannot be read after asking', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    vi.mocked(api.getVideo)
+      .mockResolvedValueOnce(video([scene(1)]))
+      .mockRejectedValueOnce(axiosFailure(500, 'boom'))
+      .mockResolvedValue(video([scene(1)], { status: 'ready', rendered_version: 1 }))
+    vi.mocked(api.renderVideo).mockResolvedValue({ job_id: 'job-3' })
+    vi.mocked(api.getVideoFile).mockResolvedValue({ url: 'https://s3.example/v.mp4', via_api: false, filename: 'v.mp4' })
+
+    renderPage()
+    await userEvent.click(await screen.findByRole('button', { name: 'Dựng video' }))
+
+    expect(await screen.findByText(/Đã gửi yêu cầu dựng video/)).toBeInTheDocument()
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+    await passTime(3600)
+    expect(await screen.findByText('Đã dựng xong video.')).toBeInTheDocument()
+    expect(screen.getByLabelText('Video đã dựng')).toBeInTheDocument()
+  })
+
+  it('shows a redrawn slide even when the drawing was over before the first poll', async () => {
+    const drawn = scene(1, { kind: 'illustration', image_prompt: 'Hàng đợi', has_image: true })
+    vi.mocked(api.getVideo).mockResolvedValue(video([drawn]))
+    vi.mocked(api.drawIllustrations).mockResolvedValue({ job_id: 'job-2', scene_indexes: [0] })
+
+    renderPage()
+    await waitFor(() => expect(api.getScenePreview).toHaveBeenCalledTimes(1))
+    await userEvent.click(screen.getByRole('button', { name: 'Vẽ lại hình cảnh 1' }))
+
+    await waitFor(() => expect(api.getScenePreview).toHaveBeenCalledTimes(2))
+    expect(await screen.findByText('Đã vẽ xong hình.')).toBeInTheDocument()
+  })
+
+  it('starts the player afresh for a new render after a failed one', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    const rendering = { id: 'job-3', job_type: 'video_render' as const, status: 'running' as const }
+    vi.mocked(api.getVideo)
+      .mockResolvedValueOnce(video([scene(1)], { status: 'rendering', rendered_version: 1, job: rendering }))
+      .mockResolvedValue(video([scene(1)], { status: 'ready', rendered_version: 2 }))
+    vi.mocked(api.getVideoFile)
+      .mockRejectedValueOnce(axiosFailure(404, 'Video chưa được dựng.'))
+      .mockResolvedValue({ url: 'https://s3.example/v2.mp4', via_api: false, filename: 'v.mp4' })
+
+    renderPage()
+    expect(await screen.findByText(/Không tải được video đã dựng/)).toBeInTheDocument()
+    await passTime(3600)
+
+    await waitFor(() => expect(screen.getByLabelText('Video đã dựng')).toHaveAttribute('src', 'https://s3.example/v2.mp4'))
   })
 })

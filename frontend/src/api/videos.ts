@@ -105,26 +105,26 @@ export interface MediaChoice {
   price: string
 }
 
-// No route lists these, so they mirror backend/app/llm/media.py VOICES and IMAGE_MODELS (alias,
-// label, price). The server refuses an alias it does not know with 422, so a stale copy fails loudly.
-export const VOICE_CHOICES: MediaChoice[] = [
-  { alias: 'voice-heygen', label: 'HeyGen Voice 1 Turbo', price: 'khoảng $0,03 một video 8 phút' },
-  { alias: 'voice-gemini-lite', label: 'Gemini 3.8 Flash-Lite TTS', price: 'khoảng $0,07 một video 8 phút' },
-  { alias: 'voice-gemini-flash', label: 'Gemini 3.8 Flash TTS', price: 'khoảng $0,11 một video 8 phút' },
-]
-export const IMAGE_MODEL_CHOICES: MediaChoice[] = [
-  { alias: 'image-nano-banana', label: 'Gemini Nano Banana 2.1', price: 'khoảng $0,037 một ảnh' },
-  { alias: 'image-qwen', label: 'Qwen Image 2.1 Turbo', price: 'khoảng $0,018 một ảnh' },
-]
-export const DEFAULT_VOICE = 'voice-heygen'
-export const DEFAULT_IMAGE_MODEL = 'image-nano-banana'
+// The voices and image models a video can be made with (app/llm/media.py), with reference prices.
+export interface MediaModels {
+  voices: MediaChoice[]
+  images: MediaChoice[]
+  default_voice: string
+  default_image: string
+}
+
+export async function getMediaModels() {
+  const { data } = await api.get<MediaModels>('/media-models')
+  return data
+}
 
 export interface VideoGenerateOptions {
   focus?: string
   outputLanguage: 'vi' | 'en'
   modelAlias?: string | null
-  voiceAlias: string
-  imageAlias: string
+  // Left out, the server's default (when the list of choices could not be loaded).
+  voiceAlias?: string
+  imageAlias?: string
 }
 
 // An empty focus is left out so that the server sees "no focus" in one way only.
@@ -136,8 +136,8 @@ export async function generateVideo(
     '/videos',
     {
       output_language: outputLanguage,
-      voice_alias: voiceAlias,
-      image_alias: imageAlias,
+      ...(voiceAlias ? { voice_alias: voiceAlias } : {}),
+      ...(imageAlias ? { image_alias: imageAlias } : {}),
       ...(focus?.trim() ? { focus: focus.trim() } : {}),
       ...(modelAlias ? { model_alias: modelAlias } : {}),
     },

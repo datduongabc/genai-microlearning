@@ -6,8 +6,13 @@ import { getVideoFile, videoFileBlob } from '../api'
 const MAX_LINK_RENEWALS = 2
 
 // The rendered MP4: a short-lived S3 link the player follows itself or, without S3, the file
-// through the API with the token, as a blob.
+// through the API with the token, as a blob. A new render is a new player: a failure, the links
+// renewed and the old source of the previous one do not carry over.
 export function RenderedVideo({ videoId, renderedVersion }: { videoId: string; renderedVersion: number }) {
+  return <Player key={`${videoId}-${renderedVersion}`} videoId={videoId} renderedVersion={renderedVersion} />
+}
+
+function Player({ videoId, renderedVersion }: { videoId: string; renderedVersion: number }) {
   const [src, setSrc] = useState<string | null>(null)
   const [failed, setFailed] = useState(false)
   const [renewal, setRenewal] = useState(0)

@@ -1,8 +1,32 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { createRef } from 'react'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { GenerateDialog } from '../../../components/GenerateDialog'
+import * as videos from '../../../api/videos'
+
+vi.mock('../../../api/videos', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../../api/videos')>()),
+  getMediaModels: vi.fn(),
+}))
+
+const mediaModels = {
+  voices: [
+    { alias: 'voice-heygen', label: 'HeyGen Voice 1 Turbo', price: 'khoảng $0,03 một video 8 phút' },
+    { alias: 'voice-gemini-lite', label: 'Gemini 3.8 Flash-Lite TTS', price: 'khoảng $0,07 một video 8 phút' },
+    { alias: 'voice-gemini-flash', label: 'Gemini 3.8 Flash TTS', price: 'khoảng $0,11 một video 8 phút' },
+  ],
+  images: [
+    { alias: 'image-nano-banana', label: 'Gemini Nano Banana 2.1', price: 'khoảng $0,037 một ảnh' },
+    { alias: 'image-qwen', label: 'Qwen Image 2.1 Turbo', price: 'khoảng $0,018 một ảnh' },
+  ],
+  default_voice: 'voice-heygen',
+  default_image: 'image-nano-banana',
+}
+
+beforeEach(() => {
+  vi.mocked(videos.getMediaModels).mockReset().mockResolvedValue(mediaModels)
+})
 
 function renderDialog(kind?: 'module' | 'flashcards' | 'video') {
   const dialogRef = createRef<HTMLDialogElement>()
@@ -75,7 +99,8 @@ describe('GenerateDialog', () => {
 
     const voice = screen.getByLabelText('Giọng đọc')
     const image = screen.getByLabelText('Model vẽ hình')
-    expect(voice).toHaveValue('voice-heygen')
+    // The choices are the server's.
+    await waitFor(() => expect(voice).toHaveValue('voice-heygen'))
     expect(image).toHaveValue('image-nano-banana')
     expect(screen.getByRole('option', { name: /HeyGen Voice 1 Turbo.*khoảng \$0,03 một video 8 phút/ })).toBeInTheDocument()
     expect(screen.getByRole('option', { name: /Gemini 3.8 Flash TTS.*khoảng \$0,11/ })).toBeInTheDocument()
@@ -89,9 +114,20 @@ describe('GenerateDialog', () => {
     await waitFor(() => expect(onGenerate).toHaveBeenCalledWith('vi', 'BFS', { voiceAlias: 'voice-gemini-lite', imageAlias: 'image-qwen' }))
   })
 
-  it('offers no voice or image model to a module or a flashcard set', () => {
+  it('offers no voice or image model to a module or a flashcard set, and asks the server for none', () => {
     renderDialog('module')
     expect(screen.queryByLabelText('Giọng đọc')).not.toBeInTheDocument()
     expect(screen.queryByLabelText('Model vẽ hình')).not.toBeInTheDocument()
+    expect(videos.getMediaModels).not.toHaveBeenCalled()
+  })
+
+  it('leaves the voice and image model to the server when their list cannot be loaded', async () => {
+    vi.mocked(videos.getMediaModels).mockRejectedValue(new Error('offline'))
+    const { onGenerate } = renderDialog('video')
+
+    expect(await screen.findByText(/Không tải được danh sách giọng và model ảnh/)).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Sinh video' }))
+
+    await waitFor(() => expect(onGenerate).toHaveBeenCalledWith('vi', '', { voiceAlias: undefined, imageAlias: undefined }))
   })
 })
