@@ -91,12 +91,15 @@ jobs:
           curl -fsSLo /tmp/tf.sums "$base/terraform_${TERRAFORM_VERSION}_SHA256SUMS"
           (cd /tmp && grep linux_amd64 tf.sums | sed 's/terraform_.*\.zip/tf.zip/' | sha256sum -c)
           sudo unzip -o -q /tmp/tf.zip -d /usr/local/bin terraform
-      - run: terraform fmt -check -recursive
+      - run: terraform fmt -check -recursive . ../environments
       - run: terraform init -backend=false -input=false
       - run: terraform validate
-      # Plans against a mocked AWS: no account and no cost (tests/plan.tftest.hcl).
-      - run: terraform test
+      # Plans against a mocked AWS: no account and no cost. Each file on its own, because the
+      # staging variables would override the demo sizes plan.tftest.hcl pins.
+      - run: terraform test -filter=tests/plan.tftest.hcl
+      - run: terraform test -filter=tests/staging.tftest.hcl -var-file=../environments/staging.tfvars
       - run: bash -n ../scripts/deploy.sh
+      - run: bash -n ../scripts/tf.sh
       - run: bash -n ../scripts/moodle-tunnel.sh
 
   moodle-plugin:
