@@ -18,7 +18,7 @@ from app.generation.flashcards import MAX_CARDS
 from app.generation.limits import reserve_generations
 from app.jobs.queue import enqueue_job
 from app.llm import catalog
-from app.models import Chunk, Course, Document, FlashcardSet, Job, JobStatus, JobType, MediaStatus, User
+from app.models import Chunk, Course, Document, FlashcardSet, JobType, MediaStatus, User
 
 router = APIRouter(tags=["flashcards"], dependencies=[Depends(get_current_user)])
 
@@ -95,25 +95,30 @@ def generate_flashcards(
 ):
     require_author(current_user)
     body = body or GenerateRequest()
-    # FOR UPDATE: the "already generating" check reads the jobs table, so two requests for one
+    # Validated before the lock: the probe is a network call and must not hold the document row.
+    alias = _chosen_alias(body, current_user)
+    focus = body.focus or None
+    # FOR UPDATE: the duplicate check below reads the sets table, so two identical requests for one
     # document must not run it at the same moment or both would pass.
     doc = db.get(Document, document_id, with_for_update=True)
     if doc is None or doc.course.owner_id != current_user.id:
         raise HTTPException(status_code=404, detail="Document not found")
     if not doc.raw_text:
         raise HTTPException(status_code=422, detail="Document chưa được parse (raw_text rỗng)")
-    alias = _chosen_alias(body, current_user)
 
-    running = db.query(Job.id).filter(
-        Job.job_type == JobType.flashcard_generation, Job.document_id == doc.id,
-        Job.status.in_([JobStatus.queued, JobStatus.running]),
+    # Only an identical request is a double submit: a lecturer may want several sets of one document
+    # (arrays, then linked lists), each with its own focus.
+    duplicate = db.query(FlashcardSet.id).filter(
+        FlashcardSet.document_id == doc.id, FlashcardSet.status == MediaStatus.generating,
+        FlashcardSet.output_language == body.output_language,
+        FlashcardSet.focus.is_not_distinct_from(focus),
     ).first()
-    if running is not None:
-        raise HTTPException(status_code=409, detail="Tài liệu này đang có 1 lượt sinh thẻ khác đang chạy, vui lòng chờ.")
+    if duplicate is not None:
+        raise HTTPException(status_code=409, detail="Bộ thẻ này đang được sinh, vui lòng chờ.")
 
     reserve_generations(db, current_user)
     card_set = FlashcardSet(
-        course_id=doc.course_id, document_id=doc.id, focus=body.focus or None,
+        course_id=doc.course_id, document_id=doc.id, focus=focus,
         output_language=body.output_language, model_alias=alias, status=MediaStatus.generating,
     )
     db.add(card_set)

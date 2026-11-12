@@ -1,5 +1,6 @@
 """The lecturer's routes for flashcard sets: generate, edit, publish, delete."""
 import uuid
+from datetime import UTC, datetime
 
 import pytest
 from fastapi.testclient import TestClient
@@ -63,7 +64,6 @@ def world(monkeypatch):
 
 
 def make_set(world, *, status=MediaStatus.draft, cards=None, published=False):
-    from datetime import UTC, datetime
     with SessionLocal() as db:
         card_set = FlashcardSet(
             course_id=world["course"], document_id=world["doc"], output_language="en", model_alias="gemini-fast",
@@ -92,13 +92,25 @@ def test_generating_reserves_one_generation_and_queues_a_job(world):
         assert db.get(User, world["owner"]).generation_count == 1
 
 
-def test_a_second_request_while_one_is_running_is_refused_without_a_charge(world):
+def test_an_identical_request_while_one_is_running_is_refused_without_a_charge(world):
     url, body = "/flashcard-sets", {"output_language": "vi"}
     params = {"document_id": str(world["doc"])}
     assert client.post(url, params=params, json=body, headers=headers(world["owner"])).status_code == 200
     assert client.post(url, params=params, json=body, headers=headers(world["owner"])).status_code == 409
     with SessionLocal() as db:
         assert db.get(User, world["owner"]).generation_count == 1
+
+
+def test_a_different_focus_during_generation_is_a_second_set(world):
+    params, h = {"document_id": str(world["doc"])}, headers(world["owner"])
+    first = client.post("/flashcard-sets", params=params, json={"output_language": "vi", "focus": "arrays"}, headers=h)
+    second = client.post("/flashcard-sets", params=params, json={"output_language": "vi", "focus": "lists"}, headers=h)
+    third = client.post("/flashcard-sets", params=params, json={"output_language": "vi"}, headers=h)
+
+    assert (first.status_code, second.status_code, third.status_code) == (200, 200, 200)
+    assert first.json()["id"] != second.json()["id"]
+    with SessionLocal() as db:
+        assert db.get(User, world["owner"]).generation_count == 3
 
 
 @pytest.mark.parametrize("body", [
