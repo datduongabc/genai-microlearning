@@ -147,6 +147,7 @@ def _cited(scene: Scene) -> list[str]:
 
 def _scene_out(scene: Scene, passages: dict[str, dict]) -> dict:
     out = scene.model_dump(exclude=set(MEDIA_FIELDS))
+    out["flags"] = _with_source_flags(out["flags"], out)
     drawable = scene.kind == "illustration" and bool(scene.image_prompt and scene.image_prompt.strip())
     return out | {
         "has_image": scene.image_key is not None,
@@ -205,6 +206,19 @@ def _flagged_item(flag: str) -> str | None:
     """The item a fact check flag is about, or None for a flag about the whole scene (a script too short)."""
     label = flag.split(":", 1)[0]
     return label if label in WHOLE_ITEMS.values() or _NUMBERED_ITEM.fullmatch(label) else None
+
+
+def _is_source_flag(flag: str) -> bool:
+    return flag.startswith(f"{NO_SOURCE_FLAG}: ")
+
+
+def _with_source_flags(flags: list[str], scene: dict) -> list[str]:
+    """The flags with "Chưa có nguồn" made again from the citations, one per bullet or sentence that
+    has none. Not stored state but what the scene is, on every save and every read: no save can lose
+    it, the editor cannot dismiss it, and a scene shows it before it was ever saved. The lecturer may
+    write without a source (they answer for it), but the editor shows where."""
+    kept = [f for f in flags if not _is_source_flag(f)]
+    return kept + [f"{NO_SOURCE_FLAG}: {label}" for label, item in _items(scene).items() if len(item) == 2 and not item[1]]
 
 
 def _new_labels(old: dict[str, tuple], new: dict[str, tuple]) -> dict[str, str]:
@@ -268,9 +282,7 @@ def _edited_scene(edit: SceneEdit, before: dict | None, number: int) -> dict:
     new_items = _items(now)
     moved = _new_labels(_items(before), new_items) if before is not None else {}
 
-    # "Chưa có nguồn" is not stored state but what the scene is: made again below from the
-    # citations, so no save can lose it and the editor cannot dismiss it.
-    stored = [f for f in (before["flags"] if before is not None else []) if not f.startswith(f"{NO_SOURCE_FLAG}: ")]
+    stored = [f for f in (before["flags"] if before is not None else []) if not _is_source_flag(f)]
     if edit.flags is not None:
         stored = [f for f in stored if f in set(edit.flags)]
     flags = []
@@ -282,10 +294,7 @@ def _edited_scene(edit: SceneEdit, before: dict | None, number: int) -> dict:
             # A flag about an item that is still there follows it to its new number.
             flags.append(moved[label] + flag[len(label):])
         # A flag about an item that was changed or removed was about the old item, so it goes.
-    for label, item in new_items.items():
-        if len(item) == 2 and not item[1]:
-            # The lecturer may write without a source (they answer for it), but the editor shows where.
-            flags.append(f"{NO_SOURCE_FLAG}: {label}")
+    flags = _with_source_flags(flags, now)
 
     media = {f: before[f] for f in MEDIA_FIELDS} if before is not None else {}
     return Scene(

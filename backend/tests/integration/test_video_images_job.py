@@ -211,3 +211,32 @@ def test_files_of_a_scene_removed_while_drawing_are_deleted_when_the_job_ends(wo
     assert not path.exists()
     with SessionLocal() as db:
         assert db.get(Job, world.job).status == JobStatus.done
+
+
+def test_a_job_that_lost_its_hold_leaves_the_files_to_the_worker_that_has_it(world, monkeypatch, tmp_path):
+    from app.jobs.queue import LostJob
+    from app.storage import media_store
+    removed_voice = f"videos/{world.video}/voice-1-old.wav"
+    with SessionLocal() as db:
+        video = db.get(Video, world.video)
+        video.scenes = [video.scenes[0], {**video.scenes[1], "voice_key": removed_voice}, video.scenes[2]]
+        db.commit()
+    path = media_store().path(removed_voice)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_bytes(b"old voice")
+
+    def fake(alias, prompt, **kw):
+        # The scene is removed, and the sweeper hands the job to another worker while this one draws.
+        with SessionLocal() as db:
+            video = db.get(Video, world.video)
+            if len(video.scenes) == 3:
+                video.scenes = [video.scenes[0], video.scenes[2]]
+            db.get(Job, world.job).locked_by = "w2"
+            db.commit()
+        return GeneratedImage(_png(), "image/png", "x", None)
+
+    monkeypatch.setattr(illustrations, "generate_image", fake)
+    with SessionLocal() as db, pytest.raises(LostJob):
+        execute_job_step(db.get(Job, world.job))
+
+    assert path.exists()

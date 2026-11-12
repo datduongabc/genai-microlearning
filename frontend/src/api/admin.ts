@@ -60,7 +60,8 @@ export async function listFailedJobs(jobType?: FailedJobInfo['job_type']) {
 }
 
 export async function retryFailedJobs(jobIds: string[]) {
-  const { data } = await api.post<{ retried: string[]; skipped: string[] }>('/admin/jobs/retry', {
+  // `reasons` names the skipped jobs that only the video editor may retry, with why.
+  const { data } = await api.post<{ retried: string[]; skipped: string[]; reasons: Record<string, string> }>('/admin/jobs/retry', {
     job_ids: jobIds,
   })
   return data

@@ -25,7 +25,7 @@ from sqlalchemy.orm import Session
 from app.db import WorkerSessionLocal
 from app.generation.media_common import values_kept_across_commits
 from app.generation.video_script import MAX_ILLUSTRATIONS, Scene
-from app.jobs.queue import hold
+from app.jobs.queue import LostJob, hold
 from app.llm.media import IMAGE_MODELS, MediaError, generate_image
 from app.models import Job, JobStatus, MediaStatus, Video
 from app.video.media_jobs import (
@@ -284,6 +284,10 @@ def run_video_images_step(job: Job) -> None:
         keys_at_start = scene_file_keys(video.scenes)
         db.commit()
         draw_illustrations(db, video_id, scene_indexes, before_save=finish)
+    except LostJob:
+        # Another worker runs the job now and may still read these files; its own end cleans up.
+        keys_at_start = set()
+        raise
     finally:
         if keys_at_start:
             delete_unnamed_files(db, video_id, keys_at_start, "video_images")

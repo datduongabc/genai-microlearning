@@ -187,7 +187,7 @@ def test_retry_does_not_touch_a_failure_its_lecturer_already_generated_again(adm
 
     response = client.post("/admin/jobs/retry", json={"job_ids": [str(old)]}, headers=admin)
 
-    assert response.json() == {"retried": [], "skipped": [str(old)]}
+    assert response.json() == {"retried": [], "skipped": [str(old)], "reasons": {}}
     with SessionLocal() as db:
         assert db.get(Job, old).status == JobStatus.failed
 

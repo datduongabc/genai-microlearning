@@ -31,7 +31,7 @@ from sqlalchemy.orm import Session
 from app.db import WorkerSessionLocal
 from app.generation.media_common import values_kept_across_commits
 from app.generation.video_script import MAX_SECONDS, Scene, normalize_narration, prepare_for_render
-from app.jobs.queue import hold
+from app.jobs.queue import LostJob, hold
 from app.llm.media import VOICES, MediaError, synthesize_speech
 from app.models import Job, JobStatus, MediaStatus, Video
 from app.storage import media_store, staging_dir
@@ -446,6 +446,10 @@ def run_video_render_step(job: Job) -> None:
         keys_at_start = scene_file_keys(video.scenes)
         db.commit()
         render_video(db, video_id, hold_job=lambda: hold(db, job), before_save=finish)
+    except LostJob:
+        # Another worker runs the job now and may still read these files; its own end cleans up.
+        keys_at_start = set()
+        raise
     finally:
         if keys_at_start:
             delete_unnamed_files(db, video_id, keys_at_start, "video_render")

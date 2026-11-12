@@ -66,8 +66,11 @@ export function AdminFailuresPanel({ counts, onChange }: { counts: AdminCounts |
     setNotice(null);
     try {
       const result = await retryFailedJobs(ids);
+      const videoOnly = Object.keys(result.reasons).length;
+      const stale = result.skipped.length - videoOnly;
       const skipped =
-        result.skipped.length > 0 ? ` ${result.skipped.length} tác vụ bị bỏ qua vì không còn ở trạng thái lỗi.` : "";
+        (stale > 0 ? ` ${stale} tác vụ bị bỏ qua vì không còn ở trạng thái lỗi.` : "") +
+        (videoOnly > 0 ? ` ${videoOnly} tác vụ video chỉ chạy lại được từ trình sửa video của giảng viên.` : "");
       setNotice(`Đã đưa ${result.retried.length} tác vụ vào hàng đợi chạy lại.${skipped}`);
       reload();
     } catch (err) {

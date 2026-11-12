@@ -310,6 +310,16 @@ def test_an_uncited_sentence_keeps_its_no_source_flag_whatever_the_editor_sends(
     assert body["scenes"][0]["flags"] == ["Chưa có nguồn: Câu 2"]
 
 
+def test_an_uncited_sentence_shows_its_flag_before_the_first_save(world):
+    stored = scene(world, author="lecturer", narration_citations=[[world["chunk"]], []], flags=[])
+    video_id = make_video(world, [stored])
+
+    shown = client.get(f"/videos/{video_id}", headers=headers(world["owner"])).json()["scenes"][0]
+
+    assert shown["flags"] == ["Chưa có nguồn: Câu 2"]
+    assert stored_video(video_id).scenes[0]["flags"] == []
+
+
 def test_a_flag_follows_its_item_when_the_items_before_it_are_removed(world):
     c, c2 = world["chunk"], world["chunk2"]
     stored = scene(world, bullets=["Một", "Hai", "Ba"], bullet_citations=[[c], [c], [c2]],
@@ -549,16 +559,27 @@ def test_drawing_and_rendering_wait_for_the_running_job(world, running):
 def test_a_failed_picture_or_render_is_retried_from_the_editor_only(world, job_type):
     video_id = make_video(world)
     job_id = add_job(world, video_id, job_type, JobStatus.failed)
-    admin = admin_headers()
+    with SessionLocal() as db:
+        other = Job(job_type=JobType.module_generation, step="generate", document_id=world["doc"],
+                    status=JobStatus.failed, attempts=5)
+        db.add(other)
+        db.commit()
+        other_id = other.id
 
     by_lecturer = client.post(f"/jobs/{job_id}/retry", headers=headers(world["owner"]))
-    by_admin = client.post("/admin/jobs/retry", json={"job_ids": [str(job_id)]}, headers=admin)
+    by_admin = client.post("/admin/jobs/retry", json={"job_ids": [str(job_id), str(other_id)]},
+                           headers=admin_headers())
 
     message = "Hãy bấm Vẽ lại / Dựng lại trong trình sửa video."
     assert (by_lecturer.status_code, by_lecturer.json()["detail"]) == (409, message)
-    assert (by_admin.status_code, by_admin.json()["detail"]) == (409, message)
+    # One video job in the admin's batch does not hold back the others.
+    assert by_admin.status_code == 200
+    assert by_admin.json()["retried"] == [str(other_id)]
+    assert by_admin.json()["skipped"] == [str(job_id)]
+    assert by_admin.json()["reasons"] == {str(job_id): message}
     with SessionLocal() as db:
         assert db.get(Job, job_id).status == JobStatus.failed
+        assert db.get(Job, other_id).status == JobStatus.queued
 
 
 # --- Publishing, the file, deleting ---
