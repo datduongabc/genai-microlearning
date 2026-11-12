@@ -81,13 +81,13 @@ The claims are numbered. Judge each claim on its own against the whole evidence,
 above, and return one verdict for every number."""
 
 
-def _judge_items(claims: list[str], passages: list[str]) -> dict[int, ItemVerdict]:
+def _judge_items(claims: list[str], passages: list[str]) -> list[ItemVerdict]:
     reply = claim_evaluation.complete_structured(
         json.dumps({"claims": [{"number": n, "claim": c} for n, c in enumerate(claims, 1)], "evidence": passages},
                    ensure_ascii=False),
         ItemVerdicts, system_instruction=_ITEMS_INSTRUCTION, temperature=0,
     )
-    return {v.number: v for v in reply.verdicts}
+    return reply.verdicts
 
 
 def check_items_against_sources(
@@ -113,14 +113,14 @@ def check_items_against_sources(
                 logger.warning("fact check could not run: %s", err)
                 flags.append([f"{label}: Chưa kiểm được: {str(err)[:120]}" for label, _ in items])
                 continue
-            group: list[str | None] = []
-            for number, (label, _) in enumerate(items, 1):
-                verdict = verdicts.get(number)
-                if verdict is None:
-                    group.append(f"{label}: Chưa kiểm được: model kiểm không trả lời cho mục này")
-                elif verdict.supported:
-                    group.append(None)
-                else:
-                    group.append(f"{label}: {verdict.reason or 'Không được đoạn nguồn xác nhận'}")
-            flags.append(group)
+            numbers = sorted(v.number for v in verdicts)
+            if numbers != list(range(1, len(items) + 1)):
+                # A repeated, missing or shifted number means no verdict can be matched to its item
+                # for sure, and a "supported" given to the wrong item would hide a real error.
+                flags.append([f"{label}: Chưa kiểm được: model kiểm trả lời sai số thứ tự" for label, _ in items])
+                continue
+            by_number = {v.number: v for v in verdicts}
+            flags.append([
+                None if by_number[n].supported else f"{label}: {by_number[n].reason or 'Không được đoạn nguồn xác nhận'}"
+                for n, (label, _) in enumerate(items, 1)])
     return flags

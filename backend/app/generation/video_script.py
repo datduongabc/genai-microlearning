@@ -305,7 +305,7 @@ _TEXT_COMMANDS = "text|textbf|textit|mathrm|mathbf|mathit|mathbb|mathcal|operato
 # Any other command is said by its name, which is how Greek letters (\alpha) and functions (\log)
 # are read; these are layout or ellipses instead.
 _LAYOUT_COMMANDS = {"left": " ", "right": " ", "quad": " ", "qquad": " ", "dots": "...", "ldots": "...",
-                    "cdots": "..."}
+                    "cdots": "...", "vdots": "...", "ddots": "..."}
 _LETTER = r"[^\W_]"
 
 
@@ -406,7 +406,14 @@ def prepare_for_render(scenes: Sequence[Scene | dict]) -> list[str]:
 
 # --- The job ---
 
-def _items(s: _Draft) -> list[tuple[str, str]]:
+def _spoken(s: _Draft, language: str) -> list[tuple[str, list[Chunk]]]:
+    """The narration sentences as they are stored and read, without those that were only markup.
+    Both the stored lines and the judge's "Câu n" come from this list, so the numbers agree."""
+    spoken = [(normalize_narration(text, language).replace("\n", " "), used) for text, used in s.narration]
+    return [(text, used) for text, used in spoken if text]
+
+
+def _items(s: _Draft, language: str) -> list[tuple[str, str]]:
     """What the judge checks in a scene, each named as the lecturer will find it: bullets as "Ý n",
     narration sentences as "Câu n", and the formula, code or table the slide shows."""
     items = [(f"Ý {n}", text) for n, (text, _) in enumerate(s.bullets, 1)]
@@ -416,17 +423,14 @@ def _items(s: _Draft) -> list[tuple[str, str]]:
         items.append(("Code", s.code))
     if s.table:
         items.append(("Bảng", "\n".join(" | ".join(row) for row in s.table)))
-    items.extend((f"Câu {n}", text) for n, (text, _) in enumerate(s.narration, 1))
+    items.extend((f"Câu {n}", text) for n, (text, _) in enumerate(_spoken(s, language), 1))
     return items
 
 
 def _stored(s: _Draft, language: str) -> dict:
-    narration, narration_citations = [], []
-    for text, used in s.narration:
-        spoken = normalize_narration(text, language)
-        if spoken:
-            narration.append(spoken.replace("\n", " "))
-            narration_citations.append([str(c.id) for c in used])
+    spoken = _spoken(s, language)
+    narration = [text for text, _ in spoken]
+    narration_citations = [[str(c.id) for c in used] for _, used in spoken]
     return Scene(
         kind=s.kind, title=s.title, bullets=[text for text, _ in s.bullets],
         formula=text_words_in_formula(s.formula) if s.formula else None, code=s.code, table=s.table,
@@ -480,7 +484,7 @@ def generate_video_script(db: Session, video_id: uuid.UUID, before_save: Callabl
                 _top_up(scenes, query, chunks, language)
 
         verdicts = fact_check.check_items_against_sources(
-            [(_items(s), [c.content for c in s.chunks()]) for s in scenes], video.model_alias)
+            [(_items(s, language), [c.content for c in s.chunks()]) for s in scenes], video.model_alias)
         for s, item_flags in zip(scenes, verdicts, strict=True):
             s.flags.extend(flag for flag in item_flags if flag)
         if len(scenes) < MIN_SCENES:

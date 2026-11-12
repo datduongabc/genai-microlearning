@@ -99,14 +99,6 @@ def test_items_are_judged_one_call_per_group_and_flagged_by_name(monkeypatch):
     assert all(instruction.startswith(claim_evaluation._SUPPORT_INSTRUCTION) for _, instruction in seen)
 
 
-def test_an_item_the_judge_skipped_is_flagged(monkeypatch):
-    monkeypatch.setattr(claim_evaluation, "complete_structured",
-                        lambda prompt, response_model, **kw: response_model(verdicts=[
-                            {"number": 1, "supported": True, "reason": ""}]))
-    flags = fact_check.check_items_against_sources([([("Ý 1", "a"), ("Câu 1", "b")], ["p"])], "gemini-fast")
-    assert flags[0][0] is None and flags[0][1].startswith("Câu 1: Chưa kiểm được")
-
-
 def test_a_judge_outage_flags_every_item_of_the_group_instead_of_raising(monkeypatch):
     def down(*a, **k):
         raise RuntimeError("gateway timed out")
@@ -127,3 +119,13 @@ def test_items_of_an_unknown_generator_are_refused_before_any_call(monkeypatch):
     monkeypatch.setattr(claim_evaluation, "complete_structured", lambda *a, **k: pytest.fail("no call"))
     with pytest.raises(ValueError, match="mystery-1"):
         fact_check.check_items_against_sources([([("Ý 1", "a")], ["p"])], "mystery-1")
+
+
+@pytest.mark.parametrize("numbers", [[1, 1], [0, 1], [1], [1, 2, 3]])
+def test_a_reply_numbered_wrongly_is_not_trusted_for_any_item(monkeypatch, numbers):
+    # Duplicates, 0-based, missing or extra numbers: which verdict belongs to which item is unknown.
+    monkeypatch.setattr(claim_evaluation, "complete_structured", lambda prompt, response_model, **kw: response_model(
+        verdicts=[{"number": n, "supported": True, "reason": ""} for n in numbers]))
+    flags = fact_check.check_items_against_sources([([("Ý 1", "a"), ("Câu 1", "b")], ["p"])], "gemini-fast")
+    assert [f.split(":")[0] for f in flags[0]] == ["Ý 1", "Câu 1"]
+    assert all("Chưa kiểm được" in f for f in flags[0])

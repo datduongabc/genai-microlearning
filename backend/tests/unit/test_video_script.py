@@ -181,6 +181,7 @@ def test_formatting_commands_are_not_read_out():
     assert normalize_narration("$x \\in \\mathbb{R}$, $\\mathcal{O}(n)$") == "x in R, O(n)"
     assert normalize_narration("$a \\quad b \\qquad c\\,d\\;e$") == "a b c d e"
     assert normalize_narration("$P_1, \\dots, P_n$ và $1 \\ldots n$, $\\cdots$") == "P1,..., Pn và 1... n,..."
+    assert normalize_narration("$a \\vdots b \\ddots c$") == "a... b... c"
 
 
 def test_image_prompt_labels_are_written_as_shown(monkeypatch):
@@ -222,6 +223,15 @@ def test_fact_check_flags_a_wrong_narration_sentence_by_its_number(monkeypatch):
     scenes = _script(narration=(LONG, "Each process gets one ninth of the CPU."))
     db, video, _ = _setup(monkeypatch, _chunks(), scenes, verdict=lambda claim: "one ninth" not in claim)
     video_script.generate_video_script(db, video.id)
+    assert video.scenes[0]["flags"] == ["Câu 2: the source says one over n"]
+
+
+def test_sentence_numbers_match_the_stored_narration(monkeypatch):
+    # The middle sentence is only markup, so it is not stored; the judge must not count it either.
+    scenes = _script(narration=(LONG, "$\\quad$", "Each process gets one ninth of the CPU."))
+    db, video, _ = _setup(monkeypatch, _chunks(), scenes, verdict=lambda claim: "one ninth" not in claim)
+    video_script.generate_video_script(db, video.id)
+    assert video.scenes[0]["narration"].split("\n")[1] == "Each process gets one ninth of the CPU."
     assert video.scenes[0]["flags"] == ["Câu 2: the source says one over n"]
 
 
