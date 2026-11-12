@@ -168,6 +168,10 @@ def test_claim_next_job_only_returns_queued_and_due_jobs(seed_document):
     try:
         doc = seed_document(db)
         my_job = enqueue_job(db, job_type=JobType.document_pipeline, step="extract", document_id=doc.id)
+        # The queue is claimed oldest first and the shared test DB holds jobs other tests left
+        # queued. Dating this job to the past puts it ahead of them, so the test does not depend
+        # on how many there are.
+        my_job.created_at = datetime(2000, 1, 1, tzinfo=UTC)
         db.commit()
         my_job_id = my_job.id
     finally:
