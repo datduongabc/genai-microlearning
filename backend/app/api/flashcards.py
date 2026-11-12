@@ -60,15 +60,28 @@ def _owned_set(db: Session, set_id: uuid.UUID, user: User, *, lock: bool = False
 
 def _summary(card_set: FlashcardSet) -> dict:
     return {
-        "id": card_set.id, "document_id": card_set.document_id, "focus": card_set.focus,
+        "id": card_set.id, "course_id": card_set.course_id, "document_id": card_set.document_id, "focus": card_set.focus,
         "output_language": card_set.output_language, "model_alias": card_set.model_alias,
         "status": card_set.status, "card_count": len(card_set.cards), "published_at": card_set.published_at,
         "created_at": card_set.created_at,
     }
 
 
-def _detail(card_set: FlashcardSet) -> dict:
-    return _summary(card_set) | {"cards": card_set.cards}
+def _detail(db: Session, card_set: FlashcardSet) -> dict:
+    # One query for every card, so a set of 15 cards is not 15 round trips. A chunk that no longer
+    # exists (the document was re-chunked) simply has no source to show.
+    wanted = {uuid.UUID(c) for card in card_set.cards for c in card["citations"]}
+    chunks = {c.id: c for c in db.scalars(select(Chunk).where(Chunk.id.in_(wanted)))} if wanted else {}
+    cards = []
+    for card in card_set.cards:
+        sources = []
+        for chunk_id in card["citations"]:
+            chunk = chunks.get(uuid.UUID(chunk_id))
+            if chunk is not None:
+                # The locator is the label the module editor and the chat show for a source.
+                sources.append({"chunk_id": chunk_id, "locator": chunk.source_ref or "", "content": chunk.content})
+        cards.append(card | {"sources": sources})
+    return _summary(card_set) | {"cards": cards}
 
 
 def _chosen_alias(body: GenerateRequest, user: User) -> str:
@@ -145,7 +158,7 @@ def list_flashcard_sets(
 
 @router.get("/flashcard-sets/{set_id}")
 def get_flashcard_set(set_id: uuid.UUID, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    return _detail(_owned_set(db, set_id, current_user))
+    return _detail(db, _owned_set(db, set_id, current_user))
 
 
 @router.put("/flashcard-sets/{set_id}/cards")
@@ -179,7 +192,7 @@ def edit_cards(
         })
     card_set.cards = edited
     db.commit()
-    return _detail(card_set)
+    return _detail(db, card_set)
 
 
 @router.post("/flashcard-sets/{set_id}/publish")
@@ -193,7 +206,7 @@ def publish_flashcard_set(
         card_set.published_at = func.now()
     db.commit()
     db.refresh(card_set)
-    return _detail(card_set)
+    return _detail(db, card_set)
 
 
 @router.post("/flashcard-sets/{set_id}/unpublish")
@@ -203,7 +216,7 @@ def unpublish_flashcard_set(
     card_set = _owned_set(db, set_id, current_user, lock=True)
     card_set.published_at = None
     db.commit()
-    return _detail(card_set)
+    return _detail(db, card_set)
 
 
 @router.delete("/flashcard-sets/{set_id}")

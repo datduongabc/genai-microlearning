@@ -250,3 +250,24 @@ def test_a_learner_cannot_call_author_routes(world):
         ("DELETE", f"/flashcard-sets/{set_id}", {}),
     ]:
         assert client.request(method, path, headers=h, **kwargs).status_code == 403, (method, path)
+
+
+def test_a_card_comes_back_with_the_passages_it_cites_and_the_set_with_its_course(world):
+    with SessionLocal() as db:
+        db.get(Chunk, world["chunk"]).source_ref = "x.txt, trang 3"
+        db.commit()
+    chunk = str(world["chunk"])
+    gone = str(uuid.uuid4())
+    set_id = make_set(world, cards=[
+        {"front": "Q", "back": "A", "citations": [chunk, gone], "author": "model", "flag": None},
+        {"front": "Q2", "back": "A2", "citations": [], "author": "model", "flag": None},
+    ])
+
+    body = client.get(f"/flashcard-sets/{set_id}", headers=headers(world["owner"])).json()
+
+    assert body["course_id"] == str(world["course"])
+    assert body["cards"][0]["sources"] == [
+        {"chunk_id": chunk, "locator": "x.txt, trang 3", "content": "A heap is a tree."}]
+    assert body["cards"][1]["sources"] == []
+    summary = client.get(f"/courses/{world['course']}/flashcard-sets", headers=headers(world["owner"])).json()[0]
+    assert summary["course_id"] == str(world["course"])
