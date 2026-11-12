@@ -297,6 +297,10 @@ def _edited_scene(edit: SceneEdit, before: dict | None, number: int) -> dict:
     flags = _with_source_flags(flags, now)
 
     media = {f: before[f] for f in MEDIA_FIELDS} if before is not None else {}
+    if now["image_prompt"] is None:
+        # No description is the lecturer's way to make it a text slide: the picture goes, and the
+        # save deletes its file with those of removed scenes.
+        media |= {"image_key": None, "image_prompt_used": None}
     return Scene(
         **now, citations=_sources(edit), author="lecturer" if changed else before["author"], flags=flags, **media,
     ).model_dump()
@@ -339,12 +343,12 @@ def edit_scenes(
     if sum(s["kind"] == "illustration" and s["image_prompt"] is not None for s in scenes) > MAX_ILLUSTRATIONS:
         raise HTTPException(status_code=422, detail=f"Video chỉ được có tối đa {MAX_ILLUSTRATIONS} cảnh minh họa.")
 
-    # The files of a scene that is gone are no one's. A job that may still read them (it read the
-    # scenes before this edit) keeps them; they are then left behind, which costs only storage.
+    # The files no scene names any more (a removed scene's, a picture whose description was emptied)
+    # are no one's. A job that may still read them (it read the scenes before this edit) keeps
+    # them; they are then left behind, which costs only storage.
     kept = {s[f] for s in scenes for f in ("image_key", "voice_key") if s.get(f)}
-    dropped = [] if _job_in_flight(db, video, (JobType.video_images, JobType.video_render)) else [
-        stored[i][f] for i in set(range(len(stored))) - {o for o in origins if o is not None}
-        for f in ("image_key", "voice_key") if stored[i].get(f) and stored[i][f] not in kept]
+    dropped = [] if _job_in_flight(db, video, (JobType.video_images, JobType.video_render)) else list(dict.fromkeys(
+        s[f] for s in stored for f in ("image_key", "voice_key") if s.get(f) and s[f] not in kept))
 
     video.scenes = scenes
     video.draft_version += 1
@@ -452,6 +456,18 @@ def queue_render(video_id: uuid.UUID, db: Session = Depends(get_db), current_use
 
 
 # --- Listing, publishing, deleting ---
+
+@router.get("/media-models")
+def list_media_models(current_user: User = Depends(get_current_user)):
+    """The voices and image models a video can be made with, with their reference prices."""
+    require_author(current_user)
+    return {
+        "voices": [{"alias": a, "label": m.label, "price": m.price} for a, m in VOICES.items()],
+        "images": [{"alias": a, "label": m.label, "price": m.price} for a, m in IMAGE_MODELS.items()],
+        "default_voice": DEFAULT_VOICE,
+        "default_image": DEFAULT_IMAGE_MODEL,
+    }
+
 
 @router.get("/courses/{course_id}/videos")
 def list_videos(course_id: uuid.UUID, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):

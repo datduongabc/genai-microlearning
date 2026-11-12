@@ -6,7 +6,7 @@ from typing import Annotated
 
 from fastapi import HTTPException
 from pydantic import BaseModel, StringConstraints
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.api.deps import require_author
@@ -60,6 +60,21 @@ def chunk_passages(db: Session, document_id: uuid.UUID, chunk_ids: Iterable[str]
         return {}
     filename = db.scalar(select(Document.filename).where(Document.id == document_id)) or ""
     chunks = db.scalars(select(Chunk).where(Chunk.document_id == document_id, Chunk.id.in_(wanted)))
+    return {str(c.id): _passage(filename, c) for c in chunks}
+
+
+def _passage(filename: str, chunk: Chunk) -> dict:
     # Stored locators are JSON; every editor shows the same readable label built from them.
-    return {str(c.id): {"chunk_id": str(c.id), "locator": citation_label(filename, c.source_ref or ""),
-                        "content": c.content} for c in chunks}
+    return {"chunk_id": str(chunk.id), "locator": citation_label(filename, chunk.source_ref or ""), "content": chunk.content}
+
+
+def document_passages(db: Session, document: Document, q: str | None, offset: int, limit: int) -> dict:
+    """A page of the document's passages in reading order, for the editors' source picker. `q` is a
+    case-insensitive substring of the text, taken literally: a "%" the lecturer types is a "%"."""
+    where = [Chunk.document_id == document.id]
+    if q and q.strip():
+        escaped = q.strip().replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+        where.append(Chunk.content.ilike(f"%{escaped}%", escape="\\"))
+    total = db.scalar(select(func.count()).select_from(Chunk).where(*where)) or 0
+    chunks = db.scalars(select(Chunk).where(*where).order_by(Chunk.chunk_index, Chunk.id).offset(offset).limit(limit))
+    return {"items": [_passage(document.filename, c) for c in chunks], "total": total}

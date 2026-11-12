@@ -178,6 +178,7 @@ ATTACKS = [
     ("DELETE", "/documents/{document}", None, {}),
     ("GET", "/documents/{document}/status", None, {}),
     ("GET", "/documents/{document}/sections", None, {}),
+    ("GET", "/documents/{document}/chunks", None, {}),
     ("GET", "/documents/jobs/{pipeline_job}", None, {}),
     ("GET", "/modules", {"document_id": "{document}"}, {}),
     ("POST", "/modules/generate", {"document_id": "{document}"}, {}),

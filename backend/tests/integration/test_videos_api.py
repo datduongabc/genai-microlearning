@@ -379,6 +379,82 @@ def test_files_of_a_removed_scene_stay_while_a_job_may_still_read_them(world):
     assert media_store().size("videos/v/voice-0-a.wav") is not None
 
 
+def test_emptying_the_description_drops_the_picture_and_its_file(world):
+    drawn = scene(world, kind="illustration", image_prompt="a queue", image_key="videos/v/img-0-a.jpg",
+                  image_prompt_used="a queue")
+    video_id = make_video(world, [drawn])
+    store_file("videos/v/img-0-a.jpg")
+
+    body = client.put(f"/videos/{video_id}/scenes", headers=headers(world["owner"]), json={
+        "draft_version": 1, "scenes": [edit(drawn, from_index=0, image_prompt="")]}).json()
+
+    stored = stored_video(video_id).scenes[0]
+    assert (stored["image_prompt"], stored["image_key"], stored["image_prompt_used"]) == (None, None, None)
+    assert (body["scenes"][0]["has_image"], body["scenes"][0]["needs_image"]) == (False, False)
+    assert media_store().size("videos/v/img-0-a.jpg") is None
+    # The slide is printed without the picture: a text slide, nothing to draw, nothing missing.
+    assert body["render_problems"] == []
+
+
+def test_a_dropped_picture_stays_on_disk_while_a_job_may_still_read_it(world):
+    drawn = scene(world, kind="illustration", image_prompt="a queue", image_key="videos/v/img-0-a.jpg",
+                  image_prompt_used="a queue")
+    video_id = make_video(world, [drawn])
+    store_file("videos/v/img-0-a.jpg")
+    add_job(world, video_id, JobType.video_images, status=JobStatus.queued)
+
+    client.put(f"/videos/{video_id}/scenes", headers=headers(world["owner"]), json={
+        "draft_version": 1, "scenes": [edit(drawn, from_index=0, image_prompt="")]})
+
+    assert stored_video(video_id).scenes[0]["image_key"] is None
+    assert media_store().size("videos/v/img-0-a.jpg") is not None
+
+
+# --- Voices and image models ---
+
+def test_the_voices_and_image_models_are_listed_with_their_prices(world):
+    body = client.get("/media-models", headers=headers(world["owner"])).json()
+
+    assert body["default_voice"] == "voice-heygen" and body["default_image"] == "image-nano-banana"
+    assert body["voices"][0] == {"alias": "voice-heygen", "label": "HeyGen Voice 1 Turbo",
+                                 "price": "khoảng $0,03 một video 8 phút"}
+    assert [m["alias"] for m in body["images"]] == ["image-nano-banana", "image-qwen"]
+    assert client.get("/media-models", headers=headers(world["learner"])).status_code == 403
+
+
+# --- Passages to cite ---
+
+def test_the_passages_of_a_document_are_listed_in_order_with_their_labels(world):
+    body = client.get(f"/documents/{world['doc']}/chunks", headers=headers(world["owner"])).json()
+
+    assert body["total"] == 2
+    assert [p["chunk_id"] for p in body["items"]] == [world["chunk"], world["chunk2"]]
+    assert body["items"][0] == {"chunk_id": world["chunk"], "locator": "Chapter 5.pdf · trang 9",
+                                "content": "FCFS runs jobs in order."}
+
+
+def test_the_passages_can_be_searched_and_paged(world):
+    h = headers(world["owner"])
+    found = client.get(f"/documents/{world['doc']}/chunks", params={"q": "round ROBIN"}, headers=h).json()
+    second = client.get(f"/documents/{world['doc']}/chunks", params={"offset": 1, "limit": 1}, headers=h).json()
+    literal = client.get(f"/documents/{world['doc']}/chunks", params={"q": "%"}, headers=h).json()
+
+    assert ([p["chunk_id"] for p in found["items"]], found["total"]) == ([world["chunk2"]], 1)
+    assert ([p["chunk_id"] for p in second["items"]], second["total"]) == ([world["chunk2"]], 2)
+    # A search is for the text typed, not a pattern.
+    assert literal == {"items": [], "total": 0}
+    assert client.get(f"/documents/{world['doc']}/chunks", params={"limit": 51}, headers=h).status_code == 422
+
+
+def test_the_passages_are_the_owners_only(world):
+    path = f"/documents/{world['doc']}/chunks"
+    refused = client.get(path, headers=headers(world["other"]))
+
+    assert refused.status_code == 404
+    assert refused.json() == client.get(f"/documents/{uuid.uuid4()}/chunks", headers=headers(world["other"])).json()
+    assert client.get(path, headers=headers(world["learner"])).status_code == 403
+
+
 def _too_many_illustrations(world):
     return [edit(scene(world), kind="illustration", image_prompt=f"picture {i}") for i in range(MAX_ILLUSTRATIONS + 1)]
 
