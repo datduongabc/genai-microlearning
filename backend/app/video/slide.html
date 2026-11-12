@@ -23,8 +23,11 @@ sub { font-size: 0.7em; line-height: 0; }
 .f { margin-top: calc(26px * var(--scale)); font-size: calc(34px * var(--scale)); overflow: hidden; }
 .f .katex-display { margin: 0.4em 0; }
 .tex-error { font-family: 'JetBrains Mono', monospace; font-size: 0.7em; color: #b42318; }
+/* On code too: the browser's own `code { font-family: monospace }` would otherwise win, and a system
+   monospace font lacks the Vietnamese glyphs ("rỗng" came out as "rôñg"). */
+pre, code { font-family: 'JetBrains Mono', monospace; }
 pre { margin: calc(22px * var(--scale)) 0 0; padding: 18px 22px; border-radius: 12px; background: #fff;
-      box-shadow: 0 2px 14px rgba(19, 41, 75, .08); font-family: 'JetBrains Mono', monospace;
+      box-shadow: 0 2px 14px rgba(19, 41, 75, .08);
       font-size: calc(20px * var(--scale)); line-height: 1.45; white-space: pre-wrap; overflow-wrap: anywhere; }
 table { margin-top: calc(22px * var(--scale)); border-collapse: collapse; font-size: calc(22px * var(--scale)); }
 td, th { border: 1px solid var(--line); padding: calc(8px * var(--scale)) 14px; text-align: left; }

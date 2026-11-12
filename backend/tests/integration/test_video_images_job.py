@@ -161,3 +161,23 @@ def test_a_failed_job_without_a_usable_video_id_still_fails_cleanly(world, paylo
     with SessionLocal() as db:
         assert db.get(Job, world.job).status == JobStatus.failed
         assert db.get(Video, world.video).status == MediaStatus.draft
+
+
+def test_a_video_deleted_while_a_scene_failed_ends_the_job_done(world, monkeypatch, tmp_path):
+    def fake(alias, prompt, **kw):
+        if "Gantt" in prompt:
+            raise MediaError("returned no image")
+        with SessionLocal() as db:
+            db.query(Video).filter(Video.id == world.video).delete()
+            db.commit()
+        return GeneratedImage(_png(), "image/png", "x", None)
+
+    monkeypatch.setattr(illustrations, "generate_image", fake)
+    monkeypatch.setattr(illustrations, "PARALLEL_DRAWINGS", 1)
+    with SessionLocal() as db:
+        job = db.get(Job, world.job)
+        db.expunge(job)
+    run_claimed_job(job, "w1")
+    with SessionLocal() as db:
+        assert db.get(Job, world.job).status == JobStatus.done
+    assert _files(tmp_path) == []

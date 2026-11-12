@@ -87,6 +87,10 @@ def test_a_scene_without_an_image_uses_the_text_layout(renderer):
 def test_code_and_table_scenes_render(renderer):
     code = renderer.capture(_scene(kind="code", code="while (true) {\n  // chờ CPU\n}"), None, "")
     assert "chờ CPU" in code.visible_text
+    # The browser's own `code { font-family: monospace }` must not win over the bundled face, whose
+    # Vietnamese glyphs a system monospace font lacks.
+    assert code.code_font.startswith('"JetBrains Mono"')
+    assert code.fonts_loaded["JetBrains Mono 400"] is True
     table = renderer.capture(_scene(kind="table", table=[["Tiến trình", "Burst"], ["P_1", "24"], ["P_2", "3"]]),
                              None, "")
     assert "<table>" in table.dom and "P<sub>1</sub>" in table.dom
@@ -110,7 +114,8 @@ def test_no_network_is_needed_to_render(renderer):
     gets its fonts and its formula: KaTeX and the fonts are bundled."""
     shot = renderer.capture(_scene(kind="formula", formula=r"\frac{a}{b}"), _picture(), "Nguồn: x.pdf")
     assert shot.blocked == []
-    assert shot.fonts_loaded == {"Be Vietnam Pro 400": True, "Be Vietnam Pro 700": True, "KaTeX_Main": True}
+    assert {k: v for k, v in shot.fonts_loaded.items() if k != "JetBrains Mono 400"} == {
+        "Be Vietnam Pro 400": True, "Be Vietnam Pro 700": True, "KaTeX_Main": True}
 
 
 def test_a_request_to_the_network_is_blocked(renderer):
@@ -118,3 +123,17 @@ def test_a_request_to_the_network_is_blocked(renderer):
             "<script>document.body.dataset.ready = 1</script></body></html>")
     shot = renderer.capture_html(page)
     assert shot.blocked == ["https://example.com/x.png"]
+
+
+def test_decomposed_text_is_printed_composed():
+    """Text pasted from a PDF can arrive decomposed (o + circumflex + tilde), which some fonts stack
+    badly; each field is NFC-normalized before it is printed."""
+    import unicodedata
+
+    nfd = unicodedata.normalize("NFD", "rỗng")
+    assert nfd != "rỗng"
+    page = slide_html(_scene(title=nfd, bullets=[nfd, "b"], code=f"// {nfd}", formula=rf"\text{{{nfd}}}",
+                             table=[[nfd], ["x"]]), None, f"Nguồn: {nfd}.pdf")
+    assert nfd not in page
+    # The template itself names the word once, in a comment.
+    assert page.count("rỗng") - slide_html(_scene(), None, "").count("rỗng") == 6

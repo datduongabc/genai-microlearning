@@ -14,6 +14,7 @@ cannot make the worker fetch anything.
 import html
 import mimetypes
 import re
+import unicodedata
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from pathlib import Path
@@ -78,10 +79,23 @@ def _content(scene: Scene) -> str:
     return "\n".join(parts)
 
 
+def _composed(scene: Scene, source_label: str) -> tuple[Scene, str]:
+    """Every printed field in NFC: text pasted from a PDF can arrive decomposed (o, circumflex and
+    tilde apart), which a font may stack badly and which no longer matches the source it cites."""
+    def nfc(text: str | None) -> str | None:
+        return unicodedata.normalize("NFC", text) if text is not None else None
+
+    return scene.model_copy(update={
+        "title": nfc(scene.title), "bullets": [nfc(b) for b in scene.bullets], "formula": nfc(scene.formula),
+        "code": nfc(scene.code), "table": [[nfc(c) for c in row] for row in scene.table] if scene.table else scene.table,
+    }), nfc(source_label)
+
+
 def slide_html(scene: Scene, image: bytes | None, source_label: str, lang: str = "vi") -> str:
     """The page of one slide. `source_label` is printed as given at the foot, for example
     "Nguồn: Chapter 5.pdf, trang 9-10"; an empty one prints nothing. With no picture, the text
     takes the whole slide."""
+    scene, source_label = _composed(scene, source_label)
     return _TEMPLATE.substitute(
         lang=html.escape(lang, quote=True),
         layout="with-image" if image is not None else "text-only",
@@ -104,6 +118,7 @@ class SlideCapture:
     scale: float
     overflows: bool
     tex_error: str | None
+    code_font: str | None
     fonts_loaded: dict[str, bool]
     blocked: list[str]
 
@@ -124,9 +139,11 @@ _INSPECT = """() => ({
   scale: parseFloat(document.body.dataset.scale || '1'),
   overflows: document.body.dataset.overflows === '1',
   texError: document.body.dataset.texError || null,
+  codeFont: document.querySelector('code') ? getComputedStyle(document.querySelector('code')).fontFamily : null,
   fonts: {
     'Be Vietnam Pro 400': document.fonts.check('400 28px "Be Vietnam Pro"', 'Tiến trình'),
     'Be Vietnam Pro 700': document.fonts.check('700 44px "Be Vietnam Pro"', 'Tiến trình'),
+    'JetBrains Mono 400': document.fonts.check('400 20px "JetBrains Mono"', 'rỗng'),
     'KaTeX_Main': [...document.fonts].some(f => f.family.replace(/"/g, '') === 'KaTeX_Main' && f.status === 'loaded'),
   },
 })"""
@@ -205,7 +222,7 @@ class SlideRenderer:
         return SlideCapture(
             png=png, dom=info["dom"], visible_text=info["text"], layout=info["layout"],
             text_width=info["textWidth"], scale=info["scale"], overflows=info["overflows"],
-            tex_error=info["texError"], fonts_loaded=info["fonts"], blocked=blocked,
+            tex_error=info["texError"], code_font=info["codeFont"], fonts_loaded=info["fonts"], blocked=blocked,
         )
 
 

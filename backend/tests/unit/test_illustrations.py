@@ -237,8 +237,16 @@ def test_a_provider_refusal_names_the_model(monkeypatch, store):
     with pytest.raises(ValueError):
         draw_illustrations(FakeDb(video), video.id)
     assert len(calls) == 1  # a refusal repeats, so it is not tried again
-    assert IMAGE_MODELS[ALIAS].label in video.error
-    assert "data policy" in video.error and "Biểu đồ Gantt" in video.error
+    assert IMAGE_MODELS[ALIAS].label in video.error and "Biểu đồ Gantt" in video.error
+    assert "không có nhà cung cấp nào" in video.error and "không thu thập dữ liệu" in video.error
+
+
+def test_another_refusal_quotes_the_provider(monkeypatch, store):
+    video = _video([_scene("Biểu đồ Gantt")])
+    _fake_images(monkeypatch, fail=lambda p: ValueError("HTTP 400: prompt rejected by safety filter"))
+    with pytest.raises(ValueError):
+        draw_illustrations(FakeDb(video), video.id)
+    assert IMAGE_MODELS[ALIAS].label in video.error and "safety filter" in video.error
     assert video.scenes[0]["image_key"] is None
 
 
@@ -288,3 +296,87 @@ def test_nothing_to_draw_makes_no_call(monkeypatch, store):
     calls = _fake_images(monkeypatch)
     draw_illustrations(FakeDb(video), video.id)
     assert calls == [] and video.status == MediaStatus.draft
+
+
+def test_trim_keeps_a_pale_fill():
+    """A pastel box differs from white in one channel only; its luminance alone would count it as
+    background and cut it off."""
+    pale = (255, 249, 196)
+    trimmed = Image.open(io.BytesIO(trim_whitespace(_drawing(box=(300, 250, 699, 519), color=pale))))
+    margin = illustrations.TRIM_MARGIN
+    assert trimmed.size == (400 + 2 * margin, 270 + 2 * margin)
+    assert trimmed.convert("RGB").getpixel((margin + 5, margin + 5)) == pale
+
+
+def test_a_video_deleted_while_a_scene_failed_ends_the_job(monkeypatch, store, tmp_path):
+    video = _video([_scene("A"), _scene("B", prompt="other")])
+    db = FakeDb(video)
+    _fake_images(monkeypatch, fail=lambda p: MediaError("empty") if p.endswith("other") else None)
+    finished = []
+
+    def delete_meanwhile(error):
+        db.gone = True
+        finished.append(error)
+
+    # Nothing is left to show the failure on, so the job ends done, not running and not failed.
+    draw_illustrations(db, video.id, before_save=delete_meanwhile)
+    assert finished[-1] is None
+    assert _stored_files(tmp_path) == []
+
+
+@pytest.mark.parametrize("bad", ["undecodable", "crash"])
+def test_one_bad_drawing_loses_no_other_picture(monkeypatch, store, bad):
+    video = _video([_scene("Hàng đợi", prompt="A queue"), _scene("Biểu đồ Gantt", prompt="A Gantt")])
+
+    def fake(alias, prompt, aspect_ratio="4:3", **kw):
+        if "Gantt" in prompt:
+            if bad == "crash":
+                raise RuntimeError("unexpected")
+            return GeneratedImage(b"not an image", "image/png", SLUG, 0.04)
+        return GeneratedImage(_drawing(), "image/png", SLUG, 0.04)
+
+    monkeypatch.setattr(illustrations, "generate_image", fake)
+    with pytest.raises(ValueError):
+        draw_illustrations(FakeDb(video), video.id)
+    assert video.scenes[0]["image_key"]
+    assert video.scenes[1]["image_key"] is None
+    assert "cảnh 2 (Biểu đồ Gantt)" in video.error and "Hàng đợi" not in video.error
+
+
+def test_a_failure_while_storing_deletes_the_files_already_stored(monkeypatch, store, tmp_path):
+    video = _video([_scene("A", prompt="first"), _scene("B", prompt="second")])
+    _fake_images(monkeypatch)
+    real_save = type(store).save
+    saved = []
+
+    def save_then_fail(self, path, key):
+        if saved:
+            raise OSError("disk full")
+        saved.append(key)
+        real_save(self, path, key)
+
+    monkeypatch.setattr(type(store), "save", save_then_fail)
+    with pytest.raises(OSError):
+        draw_illustrations(FakeDb(video), video.id)
+    assert _stored_files(tmp_path) == []
+
+
+def test_a_cleanup_that_fails_does_not_hide_the_error(monkeypatch, store):
+    video = _video([_scene("A")])
+    _fake_images(monkeypatch)
+    monkeypatch.setattr(type(store), "delete", lambda self, key: (_ for _ in ()).throw(OSError("S3 down")))
+
+    def lost(_error):
+        raise LostJob("gone")
+
+    with pytest.raises(LostJob):
+        draw_illustrations(FakeDb(video), video.id, before_save=lost)
+
+
+def test_a_delete_after_the_commit_that_fails_is_only_logged(monkeypatch, store, caplog):
+    video = _video([_scene("A", used="before", key="videos/v/img-0-old.jpg")])
+    _fake_images(monkeypatch)
+    monkeypatch.setattr(type(store), "delete", lambda self, key: (_ for _ in ()).throw(OSError("S3 down")))
+    draw_illustrations(FakeDb(video), video.id)
+    assert video.scenes[0]["image_key"] != "videos/v/img-0-old.jpg"
+    assert "videos/v/img-0-old.jpg" in caplog.text
