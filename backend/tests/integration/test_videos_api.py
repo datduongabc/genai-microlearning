@@ -30,6 +30,7 @@ from app.models import (
     Video,
 )
 from app.storage import S3UploadStore, media_store
+from tests.auth_helpers import admin_headers
 
 client = TestClient(app)
 
@@ -222,6 +223,8 @@ def test_the_detail_shows_what_the_editor_needs(world):
         {"chunk_id": c2, "locator": "Chapter 5.pdf · trang 10", "content": "Round Robin uses a quantum."},
     ]
     assert body["render_problems"] == ["Cảnh 2: chưa vẽ hình minh họa"]
+    # An outdated picture is a warning, never a reason to refuse the render.
+    assert body["render_warnings"] == ["Cảnh 1: hình được vẽ theo mô tả cũ; bấm Vẽ lại nếu cần"]
     narration_chars = sum(len(s["narration"]) for s in scenes)
     assert body["estimated_seconds"] == pytest.approx(narration_chars / 15, abs=0.1)
 
@@ -241,7 +244,7 @@ def test_editing_a_published_video_keeps_the_rendered_one_for_learners(world):
                           rendered_version=1, video_key="videos/a/v1.mp4", duration_seconds=12.5)
     before = stored_video(video_id)
 
-    response = client.put(f"/videos/{video_id}/scenes", headers=headers(world["owner"]), json={"scenes": [
+    response = client.put(f"/videos/{video_id}/scenes", headers=headers(world["owner"]), json={"draft_version": 1, "scenes": [
         edit(stored, narration="FCFS chạy theo thứ tự đến.\nCâu mới của giảng viên.",
              narration_citations=[[world["chunk"]], [world["chunk"]]])]})
 
@@ -264,7 +267,7 @@ def test_an_edit_keeps_the_flags_of_unchanged_items_and_flags_uncited_new_ones(w
     untouched = scene(world, title="Round Robin", flags=["Câu 1: nghi sai"])
     video_id = make_video(world, [flagged, untouched])
 
-    body = client.put(f"/videos/{video_id}/scenes", headers=headers(world["owner"]), json={"scenes": [
+    body = client.put(f"/videos/{video_id}/scenes", headers=headers(world["owner"]), json={"draft_version": 1, "scenes": [
         edit(flagged, bullets=["Đến trước được phục vụ", "Phục vụ trước"],
              narration="FCFS chạy theo thứ tự đến.\nGiảng viên viết lại câu này.",
              narration_citations=[[c], []]),
@@ -288,11 +291,47 @@ def test_citing_a_passage_clears_the_no_source_flag_and_a_flag_can_be_dismissed(
                    flags=["Chưa có nguồn: Câu 2", "Ý 1: ngược nghĩa"])
     video_id = make_video(world, [stored])
 
-    body = client.put(f"/videos/{video_id}/scenes", headers=headers(world["owner"]), json={"scenes": [
+    body = client.put(f"/videos/{video_id}/scenes", headers=headers(world["owner"]), json={"draft_version": 1, "scenes": [
         edit(stored, narration_citations=[[c], [world["chunk2"]]], flags=[])]}).json()
 
     assert body["scenes"][0]["flags"] == []
     assert body["scenes"][0]["citations"] == [c, world["chunk2"]]
+
+
+def test_an_uncited_sentence_keeps_its_no_source_flag_whatever_the_editor_sends(world):
+    c = world["chunk"]
+    # Stored without its flag (an older save) and sent back unchanged with every flag dismissed.
+    stored = scene(world, author="lecturer", narration_citations=[[c], []], flags=["Câu 1: nghi sai"])
+    video_id = make_video(world, [stored])
+
+    body = client.put(f"/videos/{video_id}/scenes", headers=headers(world["owner"]), json={
+        "draft_version": 1, "scenes": [edit(stored, flags=[])]}).json()
+
+    assert body["scenes"][0]["flags"] == ["Chưa có nguồn: Câu 2"]
+
+
+def test_a_flag_follows_its_item_when_the_items_before_it_are_removed(world):
+    c, c2 = world["chunk"], world["chunk2"]
+    stored = scene(world, bullets=["Một", "Hai", "Ba"], bullet_citations=[[c], [c], [c2]],
+                   narration="Câu A.\nCâu B.", narration_citations=[[c], [c2]],
+                   flags=["Ý 1: sai", "Ý 3: không có trong nguồn", "Câu 2: nghi sai"])
+    video_id = make_video(world, [stored])
+
+    body = client.put(f"/videos/{video_id}/scenes", headers=headers(world["owner"]), json={
+        "draft_version": 1, "scenes": [edit(stored, bullets=["Hai", "Ba"], bullet_citations=[[c], [c2]],
+                                            narration="Câu B.\nCâu A.", narration_citations=[[c2], [c]])]}).json()
+
+    assert body["scenes"][0]["flags"] == ["Ý 2: không có trong nguồn", "Câu 1: nghi sai"]
+
+
+def test_a_save_without_the_draft_it_was_made_from_is_422(world):
+    video_id = make_video(world)
+
+    response = client.put(f"/videos/{video_id}/scenes", json={"scenes": [edit(scene(world))]},
+                          headers=headers(world["owner"]))
+
+    assert response.status_code == 422
+    assert stored_video(video_id).draft_version == 1
 
 
 def test_scenes_keep_their_pictures_and_flags_when_moved_or_removed(world):
@@ -304,7 +343,7 @@ def test_scenes_keep_their_pictures_and_flags_when_moved_or_removed(world):
     for key in ("videos/v/img-0-a.jpg", "videos/v/voice-0-a.wav", "videos/v/img-1-b.jpg"):
         store_file(key)
 
-    body = client.put(f"/videos/{video_id}/scenes", headers=headers(world["owner"]), json={"scenes": [
+    body = client.put(f"/videos/{video_id}/scenes", headers=headers(world["owner"]), json={"draft_version": 1, "scenes": [
         edit(second, from_index=1), edit(first, from_index=None, title="A, viết lại")]}).json()
 
     moved, rewritten = stored_video(video_id).scenes
@@ -324,7 +363,7 @@ def test_files_of_a_removed_scene_stay_while_a_job_may_still_read_them(world):
     add_job(world, video_id, JobType.video_render)
 
     response = client.put(f"/videos/{video_id}/scenes", headers=headers(world["owner"]),
-                          json={"scenes": [edit(scene(world), from_index=1)]})
+                          json={"draft_version": 1, "scenes": [edit(scene(world), from_index=1)]})
 
     assert response.status_code == 200
     assert media_store().size("videos/v/voice-0-a.wav") is not None
@@ -353,7 +392,7 @@ def _too_many_illustrations(world):
 def test_an_unusable_edit_is_rejected_with_422_and_changes_nothing(world, make_scenes):
     video_id = make_video(world, [scene(world), scene(world)])
 
-    response = client.put(f"/videos/{video_id}/scenes", json={"scenes": make_scenes(world)},
+    response = client.put(f"/videos/{video_id}/scenes", json={"draft_version": 1, "scenes": make_scenes(world)},
                           headers=headers(world["owner"]))
 
     assert response.status_code == 422
@@ -363,7 +402,7 @@ def test_an_unusable_edit_is_rejected_with_422_and_changes_nothing(world, make_s
 def test_scenes_cannot_be_edited_while_the_script_is_generating(world):
     video_id = make_video(world, [], status=MediaStatus.generating)
 
-    response = client.put(f"/videos/{video_id}/scenes", json={"scenes": [edit(scene(world))]},
+    response = client.put(f"/videos/{video_id}/scenes", json={"draft_version": 1, "scenes": [edit(scene(world))]},
                           headers=headers(world["owner"]))
 
     assert response.status_code == 409
@@ -383,7 +422,7 @@ def test_an_edit_of_a_draft_that_changed_meanwhile_is_refused(world):
 def test_a_lecturers_edit_is_cleaned_as_the_script_is(world):
     video_id = make_video(world)
 
-    body = client.put(f"/videos/{video_id}/scenes", headers=headers(world["owner"]), json={"scenes": [
+    body = client.put(f"/videos/{video_id}/scenes", headers=headers(world["owner"]), json={"draft_version": 1, "scenes": [
         edit(scene(world), kind="illustration", image_prompt="queue of P_1 and P_2", formula="a+b", code="x = 1",
              narration="  Câu một.  \n\n Câu hai. ", narration_citations=[[world["chunk"]], [world["chunk"]]])]}).json()
 
@@ -506,6 +545,22 @@ def test_drawing_and_rendering_wait_for_the_running_job(world, running):
         assert (owner.video_redraw_count, owner.video_render_count) == (0, 0)
 
 
+@pytest.mark.parametrize("job_type", [JobType.video_images, JobType.video_render])
+def test_a_failed_picture_or_render_is_retried_from_the_editor_only(world, job_type):
+    video_id = make_video(world)
+    job_id = add_job(world, video_id, job_type, JobStatus.failed)
+    admin = admin_headers()
+
+    by_lecturer = client.post(f"/jobs/{job_id}/retry", headers=headers(world["owner"]))
+    by_admin = client.post("/admin/jobs/retry", json={"job_ids": [str(job_id)]}, headers=admin)
+
+    message = "Hãy bấm Vẽ lại / Dựng lại trong trình sửa video."
+    assert (by_lecturer.status_code, by_lecturer.json()["detail"]) == (409, message)
+    assert (by_admin.status_code, by_admin.json()["detail"]) == (409, message)
+    with SessionLocal() as db:
+        assert db.get(Job, job_id).status == JobStatus.failed
+
+
 # --- Publishing, the file, deleting ---
 
 def test_publish_needs_a_rendered_video(world):
@@ -592,6 +647,10 @@ def test_scene_preview_is_a_1280_by_720_png_for_the_owner_only(world):
     assert client.get(f"/videos/{video_id}/scenes/0/preview.png", headers=headers(world["learner"])).status_code == 403
 
 
+def test_a_busy_preview_answers_within_two_seconds():
+    assert videos_api.PREVIEW_WAIT_SECONDS == 1.5
+
+
 def test_a_preview_is_503_while_the_renderers_are_busy(world, monkeypatch):
     busy = threading.BoundedSemaphore(1)
     busy.acquire()
@@ -611,7 +670,7 @@ def _routes(world, video_id):
         ("POST", "/videos", {"params": {"document_id": str(world["doc"])}, "json": {"output_language": "vi"}}),
         ("GET", f"/courses/{world['course']}/videos", {}),
         ("GET", f"/videos/{video_id}", {}),
-        ("PUT", f"/videos/{video_id}/scenes", {"json": {"scenes": [edit(scene(world))]}}),
+        ("PUT", f"/videos/{video_id}/scenes", {"json": {"draft_version": 1, "scenes": [edit(scene(world))]}}),
         ("POST", f"/videos/{video_id}/illustrations", {"json": {}}),
         ("POST", f"/videos/{video_id}/render", {}),
         ("POST", f"/videos/{video_id}/publish", {}),

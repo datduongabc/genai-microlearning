@@ -14,7 +14,7 @@ from app.auth.password_policy import check_password
 from app.auth.rate_limit import limiter, user_or_address
 from app.auth.security import hash_password
 from app.db import get_db
-from app.jobs.queue import retry_failed_job
+from app.jobs.queue import EDITOR_RETRIED_JOBS, EDITOR_RETRY_MESSAGE, retry_failed_job
 from app.models import JobType, User
 from app.moodle.accounts import unlink_account
 
@@ -178,6 +178,11 @@ def retry_jobs(
     """Retries the failed jobs picked on the page. A job that is not failed, that its lecturer
     already generated again, or that does not exist is skipped, and the rest are still retried."""
     ids = list(dict.fromkeys(payload.job_ids))
+    # Read through the view: row level security hides other lecturers' jobs from the admin's session.
+    editor_only = db.scalars(text("SELECT id FROM admin_failed_jobs WHERE id = ANY(:ids) AND job_type::text = ANY(:types)"),
+                             {"ids": ids, "types": [t.value for t in EDITOR_RETRIED_JOBS]}).first()
+    if editor_only is not None:
+        raise HTTPException(status_code=409, detail=EDITOR_RETRY_MESSAGE)
     retried = [job_id for job_id in ids if retry_failed_job(db, job_id)]
     db.commit()
     log_admin_event(

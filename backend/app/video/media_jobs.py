@@ -10,7 +10,10 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
+from sqlalchemy.orm import Session
+
 from app.generation.video_script import Scene
+from app.models import Video
 from app.storage import media_store, staging_dir
 
 logger = logging.getLogger(__name__)
@@ -82,3 +85,26 @@ def delete_files(keys: Sequence[str], tag: str) -> None:
             store.delete(key)
         except Exception:
             logger.exception(f"[{tag}] could not delete {key}")
+
+
+def scene_file_keys(scenes: Sequence[dict]) -> set[str]:
+    """The picture and voice files the scenes name."""
+    return {s[f] for s in scenes for f in ("image_key", "voice_key") if s.get(f)}
+
+
+def delete_unnamed_files(db: Session, video_id: uuid.UUID, keys_at_start: set[str], tag: str) -> None:
+    """Run by a media job after its last write, whether it succeeded or failed: deletes the files its
+    scenes named when it started that the video no longer names. A scene the lecturer removed while
+    the job ran kept its files (the job might still read them), and nothing else would delete them.
+
+    Best effort, like delete_files: the job's result is committed already."""
+    try:
+        # A failed job leaves its transaction aborted; what is read here must be the committed state.
+        db.rollback()
+        video = db.get(Video, video_id, populate_existing=True)
+        named = set() if video is None else scene_file_keys(video.scenes) | {video.video_key}
+        db.commit()
+    except Exception:
+        logger.exception(f"[{tag}] could not read video {video_id} to clean up its files")
+        return
+    delete_files(sorted(keys_at_start - named), tag)

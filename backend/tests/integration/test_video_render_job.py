@@ -114,3 +114,31 @@ def test_a_render_that_names_its_scenes_keeps_its_own_error(world):
     with SessionLocal() as db:
         video = db.get(Video, video_id)
         assert video.status == MediaStatus.failed and video.error == long_error
+
+
+def test_files_of_a_scene_removed_while_rendering_are_deleted_even_when_the_render_fails(world, monkeypatch, tmp_path):
+    from app.llm.media import MediaError
+    from app.storage import media_store
+    _, _, video_id, job_id = world
+    removed_image = f"videos/{video_id}/img-1-old.jpg"
+    with SessionLocal() as db:
+        video = db.get(Video, video_id)
+        video.scenes = [video.scenes[0], {**video.scenes[1], "image_key": removed_image}]
+        db.commit()
+    path = media_store().path(removed_image)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_bytes(b"old picture")
+
+    def no_voice(alias, text, **kw):
+        with SessionLocal() as db:
+            video = db.get(Video, video_id)
+            if len(video.scenes) == 2:
+                video.scenes = [video.scenes[0]]
+                db.commit()
+        raise MediaError("no audio")
+
+    monkeypatch.setattr(render, "synthesize_speech", no_voice)
+    with SessionLocal() as db, pytest.raises(ValueError):
+        execute_job_step(db.get(Job, job_id))
+
+    assert not path.exists()

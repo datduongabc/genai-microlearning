@@ -6,6 +6,7 @@ Learners watch the rendered file (`video_key`, `rendered_version`) while the lec
 when it has finished (app/video/render.py).
 """
 import logging
+import re
 import threading
 import uuid
 from pathlib import Path
@@ -54,7 +55,7 @@ IN_FLIGHT = (JobStatus.queued, JobStatus.running)
 # a browser per open editor tab, so at most this many run at once in one process.
 PREVIEW_SLOTS = threading.BoundedSemaphore(2)
 # Past this a preview answers 503 and the editor asks again, rather than hold the request open.
-PREVIEW_WAIT_SECONDS = 5.0
+PREVIEW_WAIT_SECONDS = 1.5
 # What a scene's media fields are: the jobs fill them and compare the *_used ones to decide what to
 # draw or voice again, so an edit carries them over and never sets them itself.
 MEDIA_FIELDS = ("image_key", "image_prompt_used", "voice_key", "voice_text_used", "voice_alias_used")
@@ -103,7 +104,7 @@ class SceneEdit(BaseModel):
 class ScenesRequest(BaseModel):
     # The draft the editor loaded: a save over a newer one (another tab, a second lecturer window)
     # is refused instead of overwriting it.
-    draft_version: int | None = None
+    draft_version: int
     scenes: Annotated[list[SceneEdit], Field(min_length=1, max_length=MAX_SCENES)]
 
 
@@ -156,6 +157,12 @@ def _scene_out(scene: Scene, passages: dict[str, dict]) -> dict:
     }
 
 
+def _render_warnings(scenes: list[Scene]) -> list[str]:
+    """What the lecturer may want to fix before rendering, without it stopping the render."""
+    return [f"Cảnh {n}: hình được vẽ theo mô tả cũ; bấm Vẽ lại nếu cần" for n, s in enumerate(scenes, 1)
+            if s.kind == "illustration" and s.image_key is not None and s.image_prompt != s.image_prompt_used]
+
+
 def _detail(db: Session, video: Video) -> dict:
     scenes = [Scene.model_validate(s) for s in video.scenes]
     passages = chunk_passages(db, video.document_id, (c for s in scenes for c in _cited(s)))
@@ -165,6 +172,7 @@ def _detail(db: Session, video: Video) -> dict:
         "estimated_seconds": round(estimated_seconds(scenes), 1),
         "max_seconds": MAX_SECONDS,
         "render_problems": prepare_for_render(scenes),
+        "render_warnings": _render_warnings(scenes),
         "job": None if job is None else {"id": job.id, "job_type": job.job_type, "status": job.status},
         "cost": video.cost,
     }
@@ -190,14 +198,29 @@ def _items(scene: dict) -> dict[str, tuple]:
     return items
 
 
+_NUMBERED_ITEM = re.compile(r"(Ý|Câu) \d+")
+
+
 def _flagged_item(flag: str) -> str | None:
-    """The item a flag is about, or None for a flag about the whole scene (a script too short)."""
-    if flag.startswith(f"{NO_SOURCE_FLAG}: "):
-        return flag.removeprefix(f"{NO_SOURCE_FLAG}: ")
+    """The item a fact check flag is about, or None for a flag about the whole scene (a script too short)."""
     label = flag.split(":", 1)[0]
-    if label in WHOLE_ITEMS.values() or label.removeprefix("Ý ").isdigit() or label.removeprefix("Câu ").isdigit():
-        return label
-    return None
+    return label if label in WHOLE_ITEMS.values() or _NUMBERED_ITEM.fullmatch(label) else None
+
+
+def _new_labels(old: dict[str, tuple], new: dict[str, tuple]) -> dict[str, str]:
+    """{old label: new label} for each old item that is still there, found by its text and sources,
+    not by its place: removing bullet 1 makes bullet 3 bullet 2, and its flag must follow it. An old
+    item with no match was changed or removed."""
+    moved: dict[str, str] = {}
+    for prefix in ("Ý ", "Câu "):
+        left = [label for label in old if label.startswith(prefix)]
+        for label in (label for label in new if label.startswith(prefix)):
+            match = next((o for o in left if old[o] == new[label]), None)
+            if match is not None:
+                left.remove(match)
+                moved[match] = label
+    moved.update({label: label for label in WHOLE_ITEMS.values() if label in old and old[label] == new.get(label)})
+    return moved
 
 
 def _aligned(citations: list[list[uuid.UUID]] | None, items: list[str], number: int, what: str) -> list[list[str]]:
@@ -242,18 +265,25 @@ def _edited_scene(edit: SceneEdit, before: dict | None, number: int) -> dict:
     before = Scene.model_validate(before).model_dump() if before is not None else None
     now = _content(edit, number)
     changed = before is None or any(before[f] != now[f] for f in CONTENT_FIELDS)
-    old_items = _items(before) if before is not None else {}
     new_items = _items(now)
-    changed_items = {label for label in old_items.keys() | new_items.keys()
-                     if old_items.get(label) != new_items.get(label)}
+    moved = _new_labels(_items(before), new_items) if before is not None else {}
 
-    flags = list(before["flags"]) if before is not None else []
+    # "Chưa có nguồn" is not stored state but what the scene is: made again below from the
+    # citations, so no save can lose it and the editor cannot dismiss it.
+    stored = [f for f in (before["flags"] if before is not None else []) if not f.startswith(f"{NO_SOURCE_FLAG}: ")]
     if edit.flags is not None:
-        flags = [f for f in flags if f in set(edit.flags)]
-    # A flag about an item the lecturer changed was about the old item. One about the whole scene stays.
-    flags = [f for f in flags if _flagged_item(f) not in changed_items]
+        stored = [f for f in stored if f in set(edit.flags)]
+    flags = []
+    for flag in stored:
+        label = _flagged_item(flag)
+        if label is None:
+            flags.append(flag)
+        elif label in moved:
+            # A flag about an item that is still there follows it to its new number.
+            flags.append(moved[label] + flag[len(label):])
+        # A flag about an item that was changed or removed was about the old item, so it goes.
     for label, item in new_items.items():
-        if label in changed_items and len(item) == 2 and not item[1]:
+        if len(item) == 2 and not item[1]:
             # The lecturer may write without a source (they answer for it), but the editor shows where.
             flags.append(f"{NO_SOURCE_FLAG}: {label}")
 
@@ -287,7 +317,7 @@ def edit_scenes(
     video = _owned_video(db, video_id, current_user, lock=True)
     if video.status == MediaStatus.generating:
         raise HTTPException(status_code=409, detail="Lời thoại đang được sinh, vui lòng chờ xong rồi sửa.")
-    if body.draft_version is not None and body.draft_version != video.draft_version:
+    if body.draft_version != video.draft_version:
         raise HTTPException(status_code=409, detail="Bản nháp đã được lưu ở nơi khác. Hãy tải lại trang rồi sửa tiếp.")
 
     stored = list(video.scenes)

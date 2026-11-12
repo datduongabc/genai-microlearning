@@ -181,3 +181,33 @@ def test_a_video_deleted_while_a_scene_failed_ends_the_job_done(world, monkeypat
     with SessionLocal() as db:
         assert db.get(Job, world.job).status == JobStatus.done
     assert _files(tmp_path) == []
+
+
+def test_files_of_a_scene_removed_while_drawing_are_deleted_when_the_job_ends(world, monkeypatch, tmp_path):
+    from app.storage import media_store
+    removed_voice = f"videos/{world.video}/voice-1-old.wav"
+    with SessionLocal() as db:
+        video = db.get(Video, world.video)
+        video.scenes = [video.scenes[0], {**video.scenes[1], "voice_key": removed_voice}, video.scenes[2]]
+        db.commit()
+    path = media_store().path(removed_voice)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_bytes(b"old voice")
+
+    def fake(alias, prompt, **kw):
+        # The lecturer removes the title scene while the pictures are drawn; the save leaves its
+        # file alone, since this job read the scenes before.
+        with SessionLocal() as db:
+            video = db.get(Video, world.video)
+            if len(video.scenes) == 3:
+                video.scenes = [video.scenes[0], video.scenes[2]]
+                db.commit()
+        return GeneratedImage(_png(), "image/png", "x", None)
+
+    monkeypatch.setattr(illustrations, "generate_image", fake)
+    with SessionLocal() as db:
+        execute_job_step(db.get(Job, world.job))
+
+    assert not path.exists()
+    with SessionLocal() as db:
+        assert db.get(Job, world.job).status == JobStatus.done

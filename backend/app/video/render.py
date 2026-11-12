@@ -38,8 +38,10 @@ from app.storage import media_store, staging_dir
 from app.video.media_jobs import (
     SceneFailure,
     delete_files,
+    delete_unnamed_files,
     refusal_reason,
     scene_failure_message,
+    scene_file_keys,
     store_bytes,
     store_file,
 )
@@ -431,6 +433,7 @@ def run_video_render_step(job: Job) -> None:
         if error is None:
             held.status = JobStatus.done
 
+    keys_at_start: set[str] = set()
     try:
         # Marked while the worker holds the job, so a worker that lost it cannot leave the video rendering.
         hold(db, job)
@@ -440,7 +443,10 @@ def run_video_render_step(job: Job) -> None:
         video.status = MediaStatus.rendering
         # Cleared so that the error the video shows at the end is this run's (queue.mark_target_failed).
         video.error = None
+        keys_at_start = scene_file_keys(video.scenes)
         db.commit()
         render_video(db, video_id, hold_job=lambda: hold(db, job), before_save=finish)
     finally:
+        if keys_at_start:
+            delete_unnamed_files(db, video_id, keys_at_start, "video_render")
         db.close()

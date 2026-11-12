@@ -168,6 +168,7 @@ RATING = {
 }
 
 VIDEO_SCENE = {"kind": "summary", "title": "pwned", "bullets": [], "narration": "pwned"}
+VIDEO_EDIT = {"draft_version": 1, "scenes": [VIDEO_SCENE]}
 
 ATTACKS = [
     ("GET", "/documents", {"course_id": "{course}"}, {}),
@@ -200,7 +201,7 @@ ATTACKS = [
     ("POST", "/videos", {"document_id": "{document}"}, {"json": {"output_language": "vi"}}),
     ("GET", "/courses/{course}/videos", None, {}),
     ("GET", "/videos/{video}", None, {}),
-    ("PUT", "/videos/{video}/scenes", None, {"json": {"scenes": [VIDEO_SCENE]}}),
+    ("PUT", "/videos/{video}/scenes", None, {"json": VIDEO_EDIT}),
     ("POST", "/videos/{video}/illustrations", None, {"json": {}}),
     ("POST", "/videos/{video}/render", None, {}),
     ("POST", "/videos/{video}/publish", None, {}),

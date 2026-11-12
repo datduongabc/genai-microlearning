@@ -28,7 +28,15 @@ from app.generation.video_script import MAX_ILLUSTRATIONS, Scene
 from app.jobs.queue import hold
 from app.llm.media import IMAGE_MODELS, MediaError, generate_image
 from app.models import Job, JobStatus, MediaStatus, Video
-from app.video.media_jobs import SceneFailure, delete_files, refusal_reason, scene_failure_message, store_bytes
+from app.video.media_jobs import (
+    SceneFailure,
+    delete_files,
+    delete_unnamed_files,
+    refusal_reason,
+    scene_failure_message,
+    scene_file_keys,
+    store_bytes,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -263,6 +271,7 @@ def run_video_images_step(job: Job) -> None:
         if error is None:
             held.status = JobStatus.done
 
+    keys_at_start: set[str] = set()
     try:
         # Marked while the worker holds the job, so a worker that lost it cannot leave the video drawing.
         hold(db, job)
@@ -272,7 +281,10 @@ def run_video_images_step(job: Job) -> None:
         video.status = MediaStatus.drawing
         # Cleared so that the error the video shows at the end is this run's (queue.mark_target_failed).
         video.error = None
+        keys_at_start = scene_file_keys(video.scenes)
         db.commit()
         draw_illustrations(db, video_id, scene_indexes, before_save=finish)
     finally:
+        if keys_at_start:
+            delete_unnamed_files(db, video_id, keys_at_start, "video_images")
         db.close()
