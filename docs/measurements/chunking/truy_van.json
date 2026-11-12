@@ -1,0 +1,3502 @@
+[
+  {
+    "course": "advanced-programming",
+    "file": "Chap1_Encapsulation.pptx",
+    "cau_hoi": "Trong sơ đồ lớp của Ball, phương thức nào được dùng để phản chiếu bóng theo chiều ngang và nó trả về kiểu dữ liệu gì?",
+    "chunk_moi": {
+      "chunk_index": 14,
+      "content_sha": "b06f1974f02dcb868ec209b030a1326d95c1771995833a7d017d33bd3ee5cc13"
+    },
+    "chunk_cu": {
+      "chunk_index": 14,
+      "content_sha": "b06f1974f02dcb868ec209b030a1326d95c1771995833a7d017d33bd3ee5cc13",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "advanced-programming",
+    "file": "Chap5_Design_Patterns.pptx",
+    "cau_hoi": "What is the term used to describe the technique where the static creation method creates the singleton object only on its first call and stores it in a private static field?",
+    "chunk_moi": {
+      "chunk_index": 5,
+      "content_sha": "67397815810c9baab055d708d18428da9bc800e1460e21a85ae0ec9aeaefaa82"
+    },
+    "chunk_cu": {
+      "chunk_index": 5,
+      "content_sha": "67397815810c9baab055d708d18428da9bc800e1460e21a85ae0ec9aeaefaa82",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "advanced-programming",
+    "file": "Chap3_Polymorphism.pptx",
+    "cau_hoi": "What value is printed by the program after executing `a.f2()` when `a` is assigned `b` and `a.n` is set to 1?",
+    "chunk_moi": {
+      "chunk_index": 4,
+      "content_sha": "1d559be56c857ab06710b2b2da69814ba0ed6e49d1ff2caa5fd40f9e3daa2885"
+    },
+    "chunk_cu": {
+      "chunk_index": 4,
+      "content_sha": "1d559be56c857ab06710b2b2da69814ba0ed6e49d1ff2caa5fd40f9e3daa2885",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "advanced-programming",
+    "file": "Chap5_Design_Patterns.pptx",
+    "cau_hoi": "What design pattern ensures a class has only one instance and provides global access?",
+    "chunk_moi": {
+      "chunk_index": 16,
+      "content_sha": "6fb47df517a23e06e836a585d26d9ce3adb8c2d98555a90c71f7609c3b2bd3c6"
+    },
+    "chunk_cu": {
+      "chunk_index": 16,
+      "content_sha": "6fb47df517a23e06e836a585d26d9ce3adb8c2d98555a90c71f7609c3b2bd3c6",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "advanced-programming",
+    "file": "Chap2_Inheritance.pptx",
+    "cau_hoi": "What mechanism in inheritance allows a subclass to provide its own implementation of a method, thereby supporting polymorphism?",
+    "chunk_moi": {
+      "chunk_index": 12,
+      "content_sha": "c8950fb2ed2b96bd57789a3304fa67f2996ab53d8566a6a5b3843b689c5ab7eb"
+    },
+    "chunk_cu": {
+      "chunk_index": 12,
+      "content_sha": "c8950fb2ed2b96bd57789a3304fa67f2996ab53d8566a6a5b3843b689c5ab7eb",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "advanced-programming",
+    "file": "Chap5_Design_Patterns.pptx",
+    "cau_hoi": "What is the role of the “Adapter” class in the Object Adapter pattern, and how does it interact with both the Client Interface and the Service?",
+    "chunk_moi": {
+      "chunk_index": 7,
+      "content_sha": "cd9c88ccab147f659c533d3f9050a59ff7c8adcf195937250d96fa1cdc2954ee"
+    },
+    "chunk_cu": {
+      "chunk_index": 7,
+      "content_sha": "cd9c88ccab147f659c533d3f9050a59ff7c8adcf195937250d96fa1cdc2954ee",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "advanced-programming",
+    "file": "Chap5_Design_Patterns.pptx",
+    "cau_hoi": "Design pattern là gì và nó được mô tả như thế nào trong tài liệu?",
+    "chunk_moi": {
+      "chunk_index": 1,
+      "content_sha": "9bf55300ccfc0f3869940e24e0b3146863ea6b8023e2a4e10e8585dcf3dab4c6"
+    },
+    "chunk_cu": {
+      "chunk_index": 1,
+      "content_sha": "9bf55300ccfc0f3869940e24e0b3146863ea6b8023e2a4e10e8585dcf3dab4c6",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "advanced-programming",
+    "file": "Chap2_Inheritance.pptx",
+    "cau_hoi": "What term is used to describe the class that is created from an existing class in order to reuse and extend its functionality?",
+    "chunk_moi": {
+      "chunk_index": 2,
+      "content_sha": "59e5594da8517747a2e645facb80dc3556eb3226e681f5d79b56bd8f0364a6c9"
+    },
+    "chunk_cu": {
+      "chunk_index": 2,
+      "content_sha": "59e5594da8517747a2e645facb80dc3556eb3226e681f5d79b56bd8f0364a6c9",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "advanced-programming",
+    "file": "Chap4_Abstract_Interface.pptx",
+    "cau_hoi": "What modifier can be omitted when declaring an interface according to the syntax shown?",
+    "chunk_moi": {
+      "chunk_index": 3,
+      "content_sha": "6ca80b479949b653510a44ce0e6a67253c62c71488c28cf3b647a4f46830098e"
+    },
+    "chunk_cu": {
+      "chunk_index": 3,
+      "content_sha": "6ca80b479949b653510a44ce0e6a67253c62c71488c28cf3b647a4f46830098e",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "advanced-programming",
+    "file": "Chap1_Encapsulation.pptx",
+    "cau_hoi": "What is the access modifier of the default constructor that the program automatically provides when no constructor is declared?",
+    "chunk_moi": {
+      "chunk_index": 8,
+      "content_sha": "0d28f1c6ac8b05ac701f890a22ae990105c6bffe5546ae50a01a16d247535d1e"
+    },
+    "chunk_cu": {
+      "chunk_index": 8,
+      "content_sha": "0d28f1c6ac8b05ac701f890a22ae990105c6bffe5546ae50a01a16d247535d1e",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "advanced-programming",
+    "file": "Chap5_Design_Patterns.pptx",
+    "cau_hoi": "What two problems related to the Single Responsibility Principle does the Singleton pattern aim to solve?",
+    "chunk_moi": {
+      "chunk_index": 3,
+      "content_sha": "6af604e58d5e8c7a4e38318771dc2d4008f89a7a4258525ea6a684cfcffb4248"
+    },
+    "chunk_cu": {
+      "chunk_index": 3,
+      "content_sha": "6af604e58d5e8c7a4e38318771dc2d4008f89a7a4258525ea6a684cfcffb4248",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "advanced-programming",
+    "file": "Chap5_Design_Patterns.pptx",
+    "cau_hoi": "What is the purpose of multiplying `current_reading()` by 10 when summing temperatures from a `SuperTempReader` instance in the code that does not use the Adapter pattern?",
+    "chunk_moi": {
+      "chunk_index": 9,
+      "content_sha": "509ab897d044b4640c3148f7f91b0bc444da71501118caa0f4c49194b88b25e6"
+    },
+    "chunk_cu": {
+      "chunk_index": 9,
+      "content_sha": "509ab897d044b4640c3148f7f91b0bc444da71501118caa0f4c49194b88b25e6",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "advanced-programming",
+    "file": "Chap2_Inheritance.pptx",
+    "cau_hoi": "Trong lớp Book, phương thức nào trả về một chuỗi chứa tên của tất cả các tác giả và được khai báo với kiểu trả về String?",
+    "chunk_moi": {
+      "chunk_index": 15,
+      "content_sha": "23ec935db5d5afd7e79287148e361600e69c94c45a3ad0236cfb1ece85e84b2e"
+    },
+    "chunk_cu": {
+      "chunk_index": 15,
+      "content_sha": "23ec935db5d5afd7e79287148e361600e69c94c45a3ad0236cfb1ece85e84b2e",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "advanced-programming",
+    "file": "Chap2_Inheritance.pptx",
+    "cau_hoi": "Trong lớp EBook, thuộc tính nào được thêm vào so với lớp Book và được bao gồm trong việc ghi đè phương thức displayDetails()?",
+    "chunk_moi": {
+      "chunk_index": 10,
+      "content_sha": "169439d584b1baddbf6caabfa06b85b66041d2823a0e4ec80e32ab3bb360824d"
+    },
+    "chunk_cu": {
+      "chunk_index": 10,
+      "content_sha": "169439d584b1baddbf6caabfa06b85b66041d2823a0e4ec80e32ab3bb360824d",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "advanced-programming",
+    "file": "Chap1_Encapsulation.pptx",
+    "cau_hoi": "What mechanism automatically executes when an object is created and can cause errors if not properly designed?",
+    "chunk_moi": {
+      "chunk_index": 12,
+      "content_sha": "f36266979303a7033d2d743077395d6a1ed3c957801d3ce9ca03d89e963bf551"
+    },
+    "chunk_cu": {
+      "chunk_index": 12,
+      "content_sha": "f36266979303a7033d2d743077395d6a1ed3c957801d3ce9ca03d89e963bf551",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "advanced-programming",
+    "file": "Chap3_Polymorphism.pptx",
+    "cau_hoi": "What is the difference between the two `foo` method signatures `foo(int i, double d)` and `foo(double d, int i)` as described in the polymorphism overview?",
+    "chunk_moi": {
+      "chunk_index": 2,
+      "content_sha": "b1771131ad29f87ed7a8433fd41fc1f7f9f8f05f6785ad9f24fd75501884dc42"
+    },
+    "chunk_cu": {
+      "chunk_index": 2,
+      "content_sha": "b1771131ad29f87ed7a8433fd41fc1f7f9f8f05f6785ad9f24fd75501884dc42",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "advanced-programming",
+    "file": "Chap3_Polymorphism.pptx",
+    "cau_hoi": "What keyword must be used in C++ to enable dynamic binding?",
+    "chunk_moi": {
+      "chunk_index": 7,
+      "content_sha": "795246646acd12aec4a65daf2180274b98711b961ec792ad61a3a53c38d581f9"
+    },
+    "chunk_cu": {
+      "chunk_index": 7,
+      "content_sha": "795246646acd12aec4a65daf2180274b98711b961ec792ad61a3a53c38d581f9",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "advanced-programming",
+    "file": "Chap5_Design_Patterns.pptx",
+    "cau_hoi": "What is the name of the method defined in the Subscriber interface that the Publisher calls for each object in its subscribers list when an event occurs?",
+    "chunk_moi": {
+      "chunk_index": 13,
+      "content_sha": "19069c826f8307f5239aade8113a29f2c72266a9cd7bac32df236fa8059a61dd"
+    },
+    "chunk_cu": {
+      "chunk_index": 13,
+      "content_sha": "19069c826f8307f5239aade8113a29f2c72266a9cd7bac32df236fa8059a61dd",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "advanced-programming",
+    "file": "Chap1_Encapsulation.pptx",
+    "cau_hoi": "Trong lớp Circle được mô tả, giá trị mặc định của biến instance radius là bao nhiêu?",
+    "chunk_moi": {
+      "chunk_index": 15,
+      "content_sha": "fb3ea6c3b4aecd7acc7f0911b91332926a48d751bca505d03aa9471f2879beef"
+    },
+    "chunk_cu": {
+      "chunk_index": 15,
+      "content_sha": "fb3ea6c3b4aecd7acc7f0911b91332926a48d751bca505d03aa9471f2879beef",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "advanced-programming",
+    "file": "Chap3_Polymorphism.pptx",
+    "cau_hoi": "What values are printed for `a.n` and `b.n` after executing `a.f2(); b.f2();` in the C++ code?",
+    "chunk_moi": {
+      "chunk_index": 3,
+      "content_sha": "b3fbb4dcfbd671b43225f0c5f10f40768da52e2f4edac185c4237fc6f4eee5fb"
+    },
+    "chunk_cu": {
+      "chunk_index": 3,
+      "content_sha": "b3fbb4dcfbd671b43225f0c5f10f40768da52e2f4edac185c4237fc6f4eee5fb",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "advanced-programming",
+    "file": "Chap5_Design_Patterns.pptx",
+    "cau_hoi": "What is the purpose of making the Singleton class’s default constructor private and how does the static getInstance() method ensure that only one instance of the class is ever created?",
+    "chunk_moi": {
+      "chunk_index": 4,
+      "content_sha": "5bcc2acb5655807edaec5fbd6ece98a8c3bfab03c555e8f14080186f0425c4fc"
+    },
+    "chunk_cu": {
+      "chunk_index": 4,
+      "content_sha": "5bcc2acb5655807edaec5fbd6ece98a8c3bfab03c555e8f14080186f0425c4fc",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "advanced-programming",
+    "file": "Chap4_Abstract_Interface.pptx",
+    "cau_hoi": "What line of output is produced when the `shape` reference is reassigned to a `new Square()` and `shape.draw()` is invoked?",
+    "chunk_moi": {
+      "chunk_index": 6,
+      "content_sha": "cac1576939940243db0cb0eb02bfc5c0c9778eaf16db1be3abba73d696068a30"
+    },
+    "chunk_cu": {
+      "chunk_index": 6,
+      "content_sha": "cac1576939940243db0cb0eb02bfc5c0c9778eaf16db1be3abba73d696068a30",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "advanced-programming",
+    "file": "Chap1_Encapsulation.pptx",
+    "cau_hoi": "What is the name of the public method that provides access to the Car object's private attribute `speed`?",
+    "chunk_moi": {
+      "chunk_index": 2,
+      "content_sha": "07a0a367b07fbafb1875975910afe88289d7f07eca925c3e7f069afbf91cd038"
+    },
+    "chunk_cu": {
+      "chunk_index": 2,
+      "content_sha": "07a0a367b07fbafb1875975910afe88289d7f07eca925c3e7f069afbf91cd038",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "advanced-programming",
+    "file": "Chap3_Polymorphism.pptx",
+    "cau_hoi": "What output does the call `a->f2();` produce in the given C++ code, and why does this result illustrate the difference between static binding of `f()` and the lack of dynamic binding for `f2()`?",
+    "chunk_moi": {
+      "chunk_index": 6,
+      "content_sha": "5d5e163f66e744fb9d2c350a2c8d08a53a6fbb171dba4d14f33b6e76100fa066"
+    },
+    "chunk_cu": {
+      "chunk_index": 6,
+      "content_sha": "5d5e163f66e744fb9d2c350a2c8d08a53a6fbb171dba4d14f33b6e76100fa066",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "advanced-programming",
+    "file": "Chap2_Inheritance.pptx",
+    "cau_hoi": "What output is produced by the call `sup.display();` in the first code example where `Superclass sup = sub;` performs object slicing?",
+    "chunk_moi": {
+      "chunk_index": 7,
+      "content_sha": "a5e61234e577c4e3d27ba990c8cf9e3b8aca26785cc6428a3bc108a3c8eeec84"
+    },
+    "chunk_cu": {
+      "chunk_index": 7,
+      "content_sha": "a5e61234e577c4e3d27ba990c8cf9e3b8aca26785cc6428a3bc108a3c8eeec84",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "advanced-programming",
+    "file": "Chap1_Encapsulation.pptx",
+    "cau_hoi": "In the Person class example, which access modifier is applied to the age field?",
+    "chunk_moi": {
+      "chunk_index": 6,
+      "content_sha": "9b6607ba805183d365c8f98b77477c1187fdcbd27ac49f8fcfb0c0f64e0f57c0"
+    },
+    "chunk_cu": {
+      "chunk_index": 6,
+      "content_sha": "9b6607ba805183d365c8f98b77477c1187fdcbd27ac49f8fcfb0c0f64e0f57c0",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "advanced-programming",
+    "file": "Chap5_Design_Patterns.pptx",
+    "cau_hoi": "What term does the text use to describe the requirement that the Class Adapter pattern can only be implemented in languages supporting multiple inheritance, such as C++?",
+    "chunk_moi": {
+      "chunk_index": 8,
+      "content_sha": "15655424a25d147b00976f106f3218416e18d3dac21d7fe2fdb97707c5be50e8"
+    },
+    "chunk_cu": {
+      "chunk_index": 8,
+      "content_sha": "15655424a25d147b00976f106f3218416e18d3dac21d7fe2fdb97707c5be50e8",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "advanced-programming",
+    "file": "Chap5_Design_Patterns.pptx",
+    "cau_hoi": "What method must a class implement to conform to the Subscriber Interface?",
+    "chunk_moi": {
+      "chunk_index": 15,
+      "content_sha": "3bf5c3c8fe9b6396fb01980f3ce95faadefc19f729010c1ab4ece1d634768494"
+    },
+    "chunk_cu": {
+      "chunk_index": 15,
+      "content_sha": "3bf5c3c8fe9b6396fb01980f3ce95faadefc19f729010c1ab4ece1d634768494",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "advanced-programming",
+    "file": "Chap5_Design_Patterns.pptx",
+    "cau_hoi": "What specific problem does the Observer pattern aim to solve in the scenario involving a Customer checking product availability at a Store?",
+    "chunk_moi": {
+      "chunk_index": 11,
+      "content_sha": "5c4e66c9d3e6a4585035b020cb6bcaea447ae6c9f65c9147689e5e7d40622bbd"
+    },
+    "chunk_cu": {
+      "chunk_index": 11,
+      "content_sha": "5c4e66c9d3e6a4585035b020cb6bcaea447ae6c9f65c9147689e5e7d40622bbd",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "advanced-programming",
+    "file": "Chap2_Inheritance.pptx",
+    "cau_hoi": "What default values are assigned to the `brand` and `year` attributes in the `Vehicle` class?",
+    "chunk_moi": {
+      "chunk_index": 9,
+      "content_sha": "2143398493f04e90063ef21bc28a32eaef66e252992321d79ab821d0c0f311df"
+    },
+    "chunk_cu": {
+      "chunk_index": 9,
+      "content_sha": "2143398493f04e90063ef21bc28a32eaef66e252992321d79ab821d0c0f311df",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "advanced-programming",
+    "file": "Chap4_Abstract_Interface.pptx",
+    "cau_hoi": "What is the term used to describe the issue where methods require compile‑time presence for signature checks, leading to rigid inheritance hierarchies?",
+    "chunk_moi": {
+      "chunk_index": 4,
+      "content_sha": "79e9615153114e6615b84ae6b3a45192ce7969a4454e058b8ce8f9e1132f13ed"
+    },
+    "chunk_cu": {
+      "chunk_index": 4,
+      "content_sha": "79e9615153114e6615b84ae6b3a45192ce7969a4454e058b8ce8f9e1132f13ed",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "advanced-programming",
+    "file": "Chap1_Encapsulation.pptx",
+    "cau_hoi": "Which OOP principle is defined as dividing programs into independent, self‑contained classes?",
+    "chunk_moi": {
+      "chunk_index": 4,
+      "content_sha": "5dbc184254566b2397a11fca3fe48eeb031796e2d210f06f7a684fc2e9a48789"
+    },
+    "chunk_cu": {
+      "chunk_index": 4,
+      "content_sha": "5dbc184254566b2397a11fca3fe48eeb031796e2d210f06f7a684fc2e9a48789",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "advanced-programming",
+    "file": "Chap4_Abstract_Interface.pptx",
+    "cau_hoi": "What must a subclass do with all abstract methods if the subclass itself is not declared abstract?",
+    "chunk_moi": {
+      "chunk_index": 2,
+      "content_sha": "d49f5659357f49a0a48f1d607138bb634e36a799c02a2c7ff8051f3b13988cdd"
+    },
+    "chunk_cu": {
+      "chunk_index": 2,
+      "content_sha": "d49f5659357f49a0a48f1d607138bb634e36a799c02a2c7ff8051f3b13988cdd",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "advanced-programming",
+    "file": "Chap1_Encapsulation.pptx",
+    "cau_hoi": "What attributes are required for the Book class in the encapsulation exercise for creating a library system?",
+    "chunk_moi": {
+      "chunk_index": 11,
+      "content_sha": "5befcfba7be94123fe02b3fe5319053663e4d3f83194cac803595f6398cc0606"
+    },
+    "chunk_cu": {
+      "chunk_index": 11,
+      "content_sha": "5befcfba7be94123fe02b3fe5319053663e4d3f83194cac803595f6398cc0606",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "advanced-programming",
+    "file": "Chap4_Abstract_Interface.pptx",
+    "cau_hoi": "What term is used to describe the process where the actual method to be executed is determined at runtime rather than at compile time?",
+    "chunk_moi": {
+      "chunk_index": 5,
+      "content_sha": "6708dea3473e6066d3e68fc11ecfed12349371d5dd29c7a1633aae82e1cdaa70"
+    },
+    "chunk_cu": {
+      "chunk_index": 5,
+      "content_sha": "6708dea3473e6066d3e68fc11ecfed12349371d5dd29c7a1633aae82e1cdaa70",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "advanced-programming",
+    "file": "Chap1_Encapsulation.pptx",
+    "cau_hoi": "What is the default access level for members of a struct compared to a class?",
+    "chunk_moi": {
+      "chunk_index": 7,
+      "content_sha": "84d8652536db7bbaff334c50d72b8f63c0ade0a6fd0b9ed2e9adf8bbb1489de9"
+    },
+    "chunk_cu": {
+      "chunk_index": 7,
+      "content_sha": "84d8652536db7bbaff334c50d72b8f63c0ade0a6fd0b9ed2e9adf8bbb1489de9",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "advanced-programming",
+    "file": "Chap4_Abstract_Interface.pptx",
+    "cau_hoi": "Trong UML diagram trên, nếu một lớp triển khai interface `Shape` mà lại kế thừa interface `Comparable`, lớp đó phải cài đặt phương thức nào của `Comparable`?",
+    "chunk_moi": {
+      "chunk_index": 9,
+      "content_sha": "4df305740d0deca93b65eaecc645b42eb18d7e451bd88e1861763457b288cd0c"
+    },
+    "chunk_cu": {
+      "chunk_index": 9,
+      "content_sha": "4df305740d0deca93b65eaecc645b42eb18d7e451bd88e1861763457b288cd0c",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "advanced-programming",
+    "file": "Chap1_Encapsulation.pptx",
+    "cau_hoi": "Trong sơ đồ lớp trên, biến nào được khai báo với quyền truy cập private và có giá trị mặc định là 1.0?",
+    "chunk_moi": {
+      "chunk_index": 13,
+      "content_sha": "d8f8319e7709f4925058ac1edbd97b51bbf10dbaf748a5e422140760a8b95d98"
+    },
+    "chunk_cu": {
+      "chunk_index": 13,
+      "content_sha": "d8f8319e7709f4925058ac1edbd97b51bbf10dbaf748a5e422140760a8b95d98",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "advanced-programming",
+    "file": "Chap1_Encapsulation.pptx",
+    "cau_hoi": "What are the exact signatures and implementations required for the default constructor, the parameterized constructor, and the constructor chaining method in the Laptop class described in the exercise?",
+    "chunk_moi": {
+      "chunk_index": 10,
+      "content_sha": "b6b71b74a7dc6cc66ca660c762e6a3f78e5fc3b51d777314d86ab03616f7d93e"
+    },
+    "chunk_cu": {
+      "chunk_index": 10,
+      "content_sha": "b6b71b74a7dc6cc66ca660c762e6a3f78e5fc3b51d777314d86ab03616f7d93e",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "advanced-programming",
+    "file": "Chap4_Abstract_Interface.pptx",
+    "cau_hoi": "In class C, which interface's default show() method is explicitly invoked to resolve the diamond problem?",
+    "chunk_moi": {
+      "chunk_index": 7,
+      "content_sha": "e376815b63c7f6250ca7715b1f96a50d5f6fa619a36fb8580ca256402868d965"
+    },
+    "chunk_cu": {
+      "chunk_index": 7,
+      "content_sha": "e376815b63c7f6250ca7715b1f96a50d5f6fa619a36fb8580ca256402868d965",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "advanced-programming",
+    "file": "Chap5_Design_Patterns.pptx",
+    "cau_hoi": "What structural design pattern is defined as a way to convert one interface into another expected by the client, effectively bridging incompatible interfaces?",
+    "chunk_moi": {
+      "chunk_index": 6,
+      "content_sha": "732f39727a668b0d37e4b865ca37b7bc34f7bbc466f99a3be0f332c1be5404e1"
+    },
+    "chunk_cu": {
+      "chunk_index": 6,
+      "content_sha": "732f39727a668b0d37e4b865ca37b7bc34f7bbc466f99a3be0f332c1be5404e1",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "advanced-programming",
+    "file": "Chap2_Inheritance.pptx",
+    "cau_hoi": "Trong lớp Author, phương thức toString() phải trả về chuỗi có định dạng nào, bao gồm các trường nào và ký tự phân cách nào?",
+    "chunk_moi": {
+      "chunk_index": 13,
+      "content_sha": "6db4bc9e09c45b13d627d5fdbad1f1d2a88ba2ec28927ccc1fc8a4185e07abae"
+    },
+    "chunk_cu": {
+      "chunk_index": 13,
+      "content_sha": "6db4bc9e09c45b13d627d5fdbad1f1d2a88ba2ec28927ccc1fc8a4185e07abae",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "advanced-programming",
+    "file": "Chap1_Encapsulation.pptx",
+    "cau_hoi": "What benefit of encapsulation is described as “Allows creation of read‑only or write‑only properties”?",
+    "chunk_moi": {
+      "chunk_index": 9,
+      "content_sha": "563e748438bd028d82b9c07e79057d0f13bc474b4a20293650fdb2421d8d2719"
+    },
+    "chunk_cu": {
+      "chunk_index": 9,
+      "content_sha": "563e748438bd028d82b9c07e79057d0f13bc474b4a20293650fdb2421d8d2719",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "advanced-programming",
+    "file": "Chap4_Abstract_Interface.pptx",
+    "cau_hoi": "What term describes a class that cannot be instantiated but can contain both abstract methods (without implementation) and concrete methods (with implementation)?",
+    "chunk_moi": {
+      "chunk_index": 1,
+      "content_sha": "83dce82809d65157450942bcc9dd02b694e86c427ff0a1ad9cfbd0298d8327a8"
+    },
+    "chunk_cu": {
+      "chunk_index": 1,
+      "content_sha": "83dce82809d65157450942bcc9dd02b694e86c427ff0a1ad9cfbd0298d8327a8",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "advanced-programming",
+    "file": "Chap2_Inheritance.pptx",
+    "cau_hoi": "When a `Superclass` reference is assigned `new Subclass()` and its `display()` method is invoked, what text is printed to the console?",
+    "chunk_moi": {
+      "chunk_index": 8,
+      "content_sha": "1883292766f75c836d8a8de4235020083b01a970ef319d240e43975997b9f1c9"
+    },
+    "chunk_cu": {
+      "chunk_index": 8,
+      "content_sha": "1883292766f75c836d8a8de4235020083b01a970ef319d240e43975997b9f1c9",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "advanced-programming",
+    "file": "Chap1_Encapsulation.pptx",
+    "cau_hoi": "Which method is cited as an example of polymorphism, demonstrating different behavior for Circle and Rectangle objects?",
+    "chunk_moi": {
+      "chunk_index": 3,
+      "content_sha": "703dea807e690203c12f76f5035d11846d6d7f339ce917734b78b58ae6ad2ff3"
+    },
+    "chunk_cu": {
+      "chunk_index": 3,
+      "content_sha": "703dea807e690203c12f76f5035d11846d6d7f339ce917734b78b58ae6ad2ff3",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "advanced-programming",
+    "file": "Chap2_Inheritance.pptx",
+    "cau_hoi": "What exact string format should the Book class’s `toString()` method return, including how it incorporates the Author class’s `toString()` output?",
+    "chunk_moi": {
+      "chunk_index": 14,
+      "content_sha": "dbf339be6aec0ac83a96665b718a4cc82ddd85fce8f82b43affb19cdc4d5d0f1"
+    },
+    "chunk_cu": {
+      "chunk_index": 14,
+      "content_sha": "dbf339be6aec0ac83a96665b718a4cc82ddd85fce8f82b43affb19cdc4d5d0f1",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "advanced-programming",
+    "file": "Chap2_Inheritance.pptx",
+    "cau_hoi": "What exact string format must the Book class’s toString() method produce, including the placeholders for name, authors, price, and quantity?",
+    "chunk_moi": {
+      "chunk_index": 16,
+      "content_sha": "0263e8c9972b6af6a10881fe151cdcd13295b2dd3c7a0a1f6827ab4f1b217864"
+    },
+    "chunk_cu": {
+      "chunk_index": 16,
+      "content_sha": "0263e8c9972b6af6a10881fe151cdcd13295b2dd3c7a0a1f6827ab4f1b217864",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "advanced-programming",
+    "file": "Chap4_Abstract_Interface.pptx",
+    "cau_hoi": "Trong Java, các phương thức trong một interface có mức truy cập mặc định là gì?",
+    "chunk_moi": {
+      "chunk_index": 8,
+      "content_sha": "c57823fa9ff980ebe7e5d87b5cc5802127f76d36cdf7aa17e0f6b29e1fbf1e85"
+    },
+    "chunk_cu": {
+      "chunk_index": 8,
+      "content_sha": "c57823fa9ff980ebe7e5d87b5cc5802127f76d36cdf7aa17e0f6b29e1fbf1e85",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "advanced-programming",
+    "file": "Chap3_Polymorphism.pptx",
+    "cau_hoi": "What is the difference between method overloading and method overriding as defined in the introduction to polymorphism?",
+    "chunk_moi": {
+      "chunk_index": 1,
+      "content_sha": "206cc19b326b03f163b30ffa1a41f9eb465c359339e99c5be01ba17c77b542b8"
+    },
+    "chunk_cu": {
+      "chunk_index": 1,
+      "content_sha": "206cc19b326b03f163b30ffa1a41f9eb465c359339e99c5be01ba17c77b542b8",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "calculus 1",
+    "file": "1. Giới hạn dãy số.pdf",
+    "cau_hoi": "Trong chứng minh dãy \\(a_n = \\frac{2^n}{n!}\\) hội tụ, tại sao tỉ số \\(\\frac{a_{n+1}}{a_n} = \\frac{2}{n+1}\\) luôn nhỏ hơn 1 đối với mọi \\(n > 1\\)?",
+    "chunk_moi": {
+      "chunk_index": 40,
+      "content_sha": "ce4d51c42d53f08bf59d1e54d37c16496383b3861794219d365e7eeb731ecaa9"
+    },
+    "chunk_cu": {
+      "chunk_index": 43,
+      "content_sha": "2c63782d557d44ce52ae7da57647ed2766ae967833f40cc2737636c24fff5371",
+      "trung_tu": 0.7387
+    }
+  },
+  {
+    "course": "calculus 1",
+    "file": "4. Tích phân xác định.pdf",
+    "cau_hoi": "Trong quá trình tính tích phân xác định trên, khi đặt \\(u = x\\) và \\(dv = \\frac{\\sin x\\,dx}{\\cos^2 x}\\), giá trị của \\(v\\) được tìm ra là gì?",
+    "chunk_moi": {
+      "chunk_index": 17,
+      "content_sha": "309a23be69fdeefc44cd391df7e24ad8bc9c1fcca627314e6d8d559fff4df3e7"
+    },
+    "chunk_cu": {
+      "chunk_index": 19,
+      "content_sha": "59512cce0da30c1345be96a294ffb86e1d768f9e9902375dcb6dd1942f3d9067",
+      "trung_tu": 0.975
+    }
+  },
+  {
+    "course": "calculus 1",
+    "file": "5. Tích phân bất định.pdf",
+    "cau_hoi": "Trong phép biến đổi t = tan (x/2) để tính ∫dx/(4 sin x + 3 cos x + 5), mẫu số cuối cùng được đưa về dạng (t + 2)²; kết quả nguyên hàm là gì?",
+    "chunk_moi": {
+      "chunk_index": 37,
+      "content_sha": "6e605c6de445d1825dca8562880fbebe47c5a77f541cae63f64b26734e132bf8"
+    },
+    "chunk_cu": {
+      "chunk_index": 39,
+      "content_sha": "139f15e88a1f66549e4c24acb795e1e8ed5dbaecaab36be5fd8fcdbf3b939c15",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "calculus 1",
+    "file": "3. Đạo hàm và vi phân.pdf",
+    "cau_hoi": "Trong khai triển Maclaurin của \\(f(x)=\\frac{x^{2}}{1+\\sin x}\\) tới bậc 6, hệ số của \\(x^{5}\\) là bao nhiêu?",
+    "chunk_moi": {
+      "chunk_index": 49,
+      "content_sha": "c9a26c5bfde845982e808436eafee7281aa481c89e69ecf0f83d6720fdc31396"
+    },
+    "chunk_cu": {
+      "chunk_index": 52,
+      "content_sha": "cd53f6d2d54c1bde6d69cc6720951f376776bb99331eafe425a2df0ca6c82957",
+      "trung_tu": 0.9886
+    }
+  },
+  {
+    "course": "calculus 1",
+    "file": "3. Đạo hàm và vi phân.pdf",
+    "cau_hoi": "Trong ví dụ tính giới hạn \\(I = \\lim_{x\\to 0}\\frac{x-\\sin x}{\\tan x - x}\\), tại bước biến đổi cuối cùng, tử số được viết dưới dạng \\((1-\\cos x)(1+\\cos x)\\). Theo quy tắc L’Hôpital, mẫu số được biểu diễn bằng \\(\\cos^2 x(1-\\cos x)\\). Khi rút gọn, kết quả giới hạn là bao nhiêu?",
+    "chunk_moi": {
+      "chunk_index": 31,
+      "content_sha": "b0a201b889eabdd678c7423f86fbc203278a807af964255525121d6bab525cd2"
+    },
+    "chunk_cu": {
+      "chunk_index": 33,
+      "content_sha": "ad53e1f3bc64221c0881a5869e88b0987c805e85d86721607f9ea4a1548e21bd",
+      "trung_tu": 0.9691
+    }
+  },
+  {
+    "course": "calculus 1",
+    "file": "3. Đạo hàm và vi phân.pdf",
+    "cau_hoi": "Trong quá trình khảo sát hàm số, công thức tính hệ số a và b của tiệm cận xiên được đưa ra như thế nào?",
+    "chunk_moi": {
+      "chunk_index": 59,
+      "content_sha": "685d6e0012ef1137aabda2d926bff32e6946ffd18c2d2e7e7bb6bcc3cf685919"
+    },
+    "chunk_cu": {
+      "chunk_index": 61,
+      "content_sha": "8f2ab61d91cd16c8a3bbb7385b8280ba8b6bc2b59b29c59996ec7226a0909aeb",
+      "trung_tu": 0.9914
+    }
+  },
+  {
+    "course": "calculus 1",
+    "file": "3. Đạo hàm và vi phân.pdf",
+    "cau_hoi": "Trong công thức suy diễn đạo hàm cấp \\(n\\) ở vị trí \\(x=0\\), hệ số nhân \\(f^{(n-2)}(0)\\) là \\(-\\,(n-1)(n-2)\\). Bạn có nhớ công thức này không?",
+    "chunk_moi": {
+      "chunk_index": 26,
+      "content_sha": "e67918c31423e1c96d2054f6e4bcc35a6ffb9f59d535c3fbf6503baa6f616fb0"
+    },
+    "chunk_cu": {
+      "chunk_index": 28,
+      "content_sha": "e67918c31423e1c96d2054f6e4bcc35a6ffb9f59d535c3fbf6503baa6f616fb0",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "calculus 1",
+    "file": "2. Giới hạn và liên tục hàm một biến.pdf",
+    "cau_hoi": "Giới hạn của \\(\\dfrac{\\arcsin x}{x}\\) khi \\(x\\to 0\\) bằng bao nhiêu?",
+    "chunk_moi": {
+      "chunk_index": 17,
+      "content_sha": "b0663de6e7bf29f3a8c4b69a98d227bd5f76cfe3fd894445c88e7bc81838c84b"
+    },
+    "chunk_cu": {
+      "chunk_index": 19,
+      "content_sha": "5396399ae344881020cdf72cb7bc29c7f8336324bc56b26ab0d5c7c5b7489835",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "calculus 1",
+    "file": "1. Giới hạn dãy số.pdf",
+    "cau_hoi": "Trong định nghĩa dãy số, ánh xạ f được ký hiệu từ tập nào sang tập nào, và ký hiệu chung của dãy số là gì?",
+    "chunk_moi": {
+      "chunk_index": 1,
+      "content_sha": "ed6feed43f6d7630c61488bcf3cb1d0ada7ff92a2443ecc948caefa8c36c17ce"
+    },
+    "chunk_cu": {
+      "chunk_index": 1,
+      "content_sha": "ed6feed43f6d7630c61488bcf3cb1d0ada7ff92a2443ecc948caefa8c36c17ce",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "calculus 1",
+    "file": "2. Giới hạn và liên tục hàm một biến.pdf",
+    "cau_hoi": "Trong định nghĩa về hàm số vô cùng bé, ký hiệu “α(x) ∼ β(x) khi x → a” có nghĩa là giới hạn nào của tỉ số α(x)/β(x) bằng 1?",
+    "chunk_moi": {
+      "chunk_index": 14,
+      "content_sha": "d422c4e2a385c745cfba6a44c4059cc6152e4a2b75f3684585b1c058bcb3929f"
+    },
+    "chunk_cu": {
+      "chunk_index": 16,
+      "content_sha": "d422c4e2a385c745cfba6a44c4059cc6152e4a2b75f3684585b1c058bcb3929f",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "calculus 1",
+    "file": "3. Đạo hàm và vi phân.pdf",
+    "cau_hoi": "Trong ví dụ tính giới hạn \\(I=\\displaystyle\\lim_{x\\to0}x^{\\mu}\\ln x\\) với \\(\\mu>0\\), tại bước chuyển đổi thành \\(\\displaystyle\\lim_{x\\to0}\\frac{\\ln x}{x^{-\\mu}}\\), đạo hàm của mẫu số được viết là \\(-\\mu\\,x^{-\\mu-1}\\); vậy đạo hàm của mẫu số ở bước áp dụng quy tắc L’Hôpital là gì?",
+    "chunk_moi": {
+      "chunk_index": 37,
+      "content_sha": "831ea2bb3f449a8e7d084b4712f3fb1ca8fb0cebc865fd237dcec4c996f60f5f"
+    },
+    "chunk_cu": {
+      "chunk_index": 39,
+      "content_sha": "10e643a4e0580ca16084a9b0e16689155e235a5b0a17a39b000dcaad14cba43a",
+      "trung_tu": 0.9899
+    }
+  },
+  {
+    "course": "calculus 1",
+    "file": "3. Đạo hàm và vi phân.pdf",
+    "cau_hoi": "Trong ví dụ về hàm \\(f(x)=\\frac{x^{3}}{e^{x}}\\), tiệm cận ngang phía bên phải được xác định bằng giới hạn nào và giá trị của nó là bao nhiêu?",
+    "chunk_moi": {
+      "chunk_index": 69,
+      "content_sha": "864f4bef08f6e11e0630dfd5ce59cb8823ce958741ba7e1167d6404654c1094e"
+    },
+    "chunk_cu": {
+      "chunk_index": 71,
+      "content_sha": "864f4bef08f6e11e0630dfd5ce59cb8823ce958741ba7e1167d6404654c1094e",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "calculus 1",
+    "file": "3. Đạo hàm và vi phân.pdf",
+    "cau_hoi": "Trong định lý L’Hôpital cho dạng \\(\\frac{\\infty}{\\infty}\\), điều kiện nào quy định rằng \\(g'(x)\\neq 0\\) trên nửa khoảng \\((a,b]\\)?",
+    "chunk_moi": {
+      "chunk_index": 34,
+      "content_sha": "5176d72fb77ce0ca115c3c29eabf641e8de575592ef3fe22e0969327bcefbe97"
+    },
+    "chunk_cu": {
+      "chunk_index": 32,
+      "content_sha": "7670bc8bff2b85682874efedb122b86952a98c73ac4aa3c15b1d14eed4c6e108",
+      "trung_tu": 0.7238
+    }
+  },
+  {
+    "course": "calculus 1",
+    "file": "6. Tích phân suy rộng.pdf",
+    "cau_hoi": "Trong định lý tích phân suy rộng loại 2, điều kiện nào được đưa ra cho hàm \\(f(x)\\) so với hàm \\(g(x)\\) trên đoạn \\([a,b)\\) để suy ra tính hội tụ hoặc phân kỳ của \\(\\int_a^b f(x)\\,dx\\) dựa trên \\(\\int_a^b g(x)\\,dx\\)?",
+    "chunk_moi": {
+      "chunk_index": 40,
+      "content_sha": "70e94d2a8a95d560f259bcbdba5cb69fc9ed63699c1257545dcef94752c7d62d"
+    },
+    "chunk_cu": {
+      "chunk_index": 43,
+      "content_sha": "3d7560fad7b2c82105a08b8fef543c210116a4faf9df57ada2d792e9d7368430",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "calculus 1",
+    "file": "3. Đạo hàm và vi phân.pdf",
+    "cau_hoi": "Trong định lý L'Hôpital cho giới hạn dạng \\(\\frac{\\infty}{\\infty}\\) tại \\(+\\infty\\), điều kiện nào yêu cầu \\(\\displaystyle \\lim_{x\\to +\\infty}\\frac{f'(x)}{g'(x)}\\) tồn tại và có giá trị hữu hạn hoặc vô cùng?",
+    "chunk_moi": {
+      "chunk_index": 35,
+      "content_sha": "6ca50874c2bcc9915e8820ba38b9a387c47e45635ed59e30e89662dc55230169"
+    },
+    "chunk_cu": {
+      "chunk_index": 34,
+      "content_sha": "e7d47fa97eaa586b56140ca9e85a9c2dedd15bcbadf0d5b7f15ba4461edd7abd",
+      "trung_tu": 0.929
+    }
+  },
+  {
+    "course": "calculus 1",
+    "file": "6. Tích phân suy rộng.pdf",
+    "cau_hoi": "Trong tính chất cơ bản của tích phân suy rộng loại 1, nếu \\(f(x)\\) khả tích trên \\([a,b]\\subset [a,+\\infty)\\) và \\(c>a\\), làm sao để biểu diễn \\(\\int_a^{+\\infty} f(x)\\,dx\\) dưới dạng tổng của hai tích phân hữu hạn?",
+    "chunk_moi": {
+      "chunk_index": 9,
+      "content_sha": "e8dea687559938f36d78704edef19501250c47f580178d4f51214116074f4c88"
+    },
+    "chunk_cu": {
+      "chunk_index": 10,
+      "content_sha": "a0af4b6f19ed4fa40cd9b9abd3d7bb4d50c02ef03c7a43d0dafb90c4cb67a9e1",
+      "trung_tu": 0.7673
+    }
+  },
+  {
+    "course": "calculus 1",
+    "file": "4. Tích phân xác định.pdf",
+    "cau_hoi": "Trong ví dụ tính tích phân I = ∫_(π/6)^(π/4) dx/(cos²x), giá trị cuối cùng của I được tính bằng công thức nào và kết quả cụ thể là bao nhiêu?",
+    "chunk_moi": {
+      "chunk_index": 12,
+      "content_sha": "2adec3a82c158421b2e4f2902b99ac25a57c0e1b28f559a033ae87a5f6f5fe9a"
+    },
+    "chunk_cu": {
+      "chunk_index": 14,
+      "content_sha": "0c9deed774d03a19a8518ad57f151ec008969e6e75daec911a95074e76fe154e",
+      "trung_tu": 0.7984
+    }
+  },
+  {
+    "course": "calculus 1",
+    "file": "1. Giới hạn dãy số.pdf",
+    "cau_hoi": "Trong bất kỳ dãy hội tụ nào \\((x_n)\\subset\\mathbb{R}\\), tính chất nào khẳng định rằng dãy đó luôn bị chặn?",
+    "chunk_moi": {
+      "chunk_index": 11,
+      "content_sha": "e12f5f4cc81a51bb05264233f339b735760fd9d6fc2dca9b914268aaa14ece3c"
+    },
+    "chunk_cu": {
+      "chunk_index": 13,
+      "content_sha": "e12f5f4cc81a51bb05264233f339b735760fd9d6fc2dca9b914268aaa14ece3c",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "calculus 1",
+    "file": "3. Đạo hàm và vi phân.pdf",
+    "cau_hoi": "Trong công thức cho đạo hàm bậc \\(n\\) của hàm \\(\\displaystyle \\left(\\frac{1}{x \\pm 2}\\right)^{(n)}\\), tử số chứa \\((-1)^n n!\\). Theo đó, đạo hàm bậc \\(n\\) của hàm \\(f(x)=\\frac{1}{4}\\left(\\frac{1}{x-2}-\\frac{1}{x+2}\\right)\\) được cho bởi biểu thức nào?",
+    "chunk_moi": {
+      "chunk_index": 23,
+      "content_sha": "f46c3dabeea42affd9db8c945129ab295a84abf69e0abce397d1f9cca6940214"
+    },
+    "chunk_cu": {
+      "chunk_index": 25,
+      "content_sha": "f46c3dabeea42affd9db8c945129ab295a84abf69e0abce397d1f9cca6940214",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "calculus 1",
+    "file": "5. Tích phân bất định.pdf",
+    "cau_hoi": "Trong bảng công thức tích phân bất định cơ bản, công thức cho \\(\\displaystyle \\int x^{\\mu}\\,dx\\) là \\(\\displaystyle \\frac{x^{\\mu+1}}{\\mu+1}+C\\); \\(\\mu\\) phải thỏa mãn điều kiện gì?",
+    "chunk_moi": {
+      "chunk_index": 3,
+      "content_sha": "e3df8b9ff95990512a0fc1539f0430b38e346981c3c8ca00cbe71382d15b5d3f"
+    },
+    "chunk_cu": {
+      "chunk_index": 4,
+      "content_sha": "181914ec01f4716be93180edf4d8ef706d3f918c2fd5ce0fafd4d8979c6c9b8f",
+      "trung_tu": 0.7434
+    }
+  },
+  {
+    "course": "calculus 1",
+    "file": "5. Tích phân bất định.pdf",
+    "cau_hoi": "Trong bảng công thức tích phân bất định, tích phân ∫ sinh x dx cho kết quả là gì?",
+    "chunk_moi": {
+      "chunk_index": 4,
+      "content_sha": "cb0450fabaff68eb02a893ec7196cd64a984291ebaecfe3001edfd971c1e1b75"
+    },
+    "chunk_cu": {
+      "chunk_index": 4,
+      "content_sha": "181914ec01f4716be93180edf4d8ef706d3f918c2fd5ce0fafd4d8979c6c9b8f",
+      "trung_tu": 0.663
+    }
+  },
+  {
+    "course": "calculus 1",
+    "file": "1. Giới hạn dãy số.pdf",
+    "cau_hoi": "Trong ví dụ tính \\(\\displaystyle \\lim_{n\\to\\infty}\\frac{(-1)+\\frac1n}{\\frac1{n^{2}}-(-1)^{n}}\\), tại sao lại chia tử số và mẫu số cho \\((-1)^{n}\\) để đưa dãy về dạng \\(a_n=\\frac{1+\\frac{(-1)^{n}}{n}}{\\frac{(-1)^{n}}{n^{2}}-1}\\)?",
+    "chunk_moi": {
+      "chunk_index": 37,
+      "content_sha": "df0272e48cfc6c7b9525657b53057d65ef30cf2086370ae4ddb3e5b4d8e401d0"
+    },
+    "chunk_cu": {
+      "chunk_index": 40,
+      "content_sha": "df0272e48cfc6c7b9525657b53057d65ef30cf2086370ae4ddb3e5b4d8e401d0",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "calculus 1",
+    "file": "5. Tích phân bất định.pdf",
+    "cau_hoi": "Trong quá trình tính tích phân \\(I=\\displaystyle\\int\\frac{2\\sin x+3\\cos x}{\\sin x+3\\cos x}\\,dx\\), hệ số \\(A\\) được xác định bằng cách giải phương trình nào?",
+    "chunk_moi": {
+      "chunk_index": 46,
+      "content_sha": "e11c6ea157b4aaddbd0fb3812ebd56dbcd627eafc6df06c7ac97c21eb0127166"
+    },
+    "chunk_cu": {
+      "chunk_index": 48,
+      "content_sha": "78e9920b08f7a3f0220fe21144cf7679d697d0ca5566f61316eea58512629e14",
+      "trung_tu": 0.8075
+    }
+  },
+  {
+    "course": "calculus 1",
+    "file": "5. Tích phân bất định.pdf",
+    "cau_hoi": "Để tính tích phân dạng $\\int \\frac{dx}{(x - \\alpha)\\sqrt{ax^2 + bx + c}}$ thuộc dạng tích phân của hàm vô tỉ, ta cần sử dụng phép đặt ẩn phụ nào cho biểu thức $x - \\alpha$?",
+    "chunk_moi": {
+      "chunk_index": 29,
+      "content_sha": "9bf729bcfc0811460589d80d76844fd6c0b4c3ac1f07d61f586723c119f0b756"
+    },
+    "chunk_cu": {
+      "chunk_index": 30,
+      "content_sha": "9a6dd21bf608e0c87505b326991f65564712d36e7c7911b98419ca1709507751",
+      "trung_tu": 0.9864
+    }
+  },
+  {
+    "course": "calculus 1",
+    "file": "2. Giới hạn và liên tục hàm một biến.pdf",
+    "cau_hoi": "Trong các lỗi thường gặp khi xét tính tương đương của các hàm số, tại sao việc thêm một hằng số C≠0 vào cả f(x) và g(x) (tức là f(x)+C và g(x)+C) lại không giữ được tính tương đương khi x→a?",
+    "chunk_moi": {
+      "chunk_index": 22,
+      "content_sha": "f467a8ba1349c04504ef1315c6c375e8f236b724e6cf0ad6b7ccb95c56065741"
+    },
+    "chunk_cu": {
+      "chunk_index": 23,
+      "content_sha": "8a6e26505c1def9d21d85577f5fd0cf84aefa7d5362a4d1ad840c1e131e64558",
+      "trung_tu": 0.9934
+    }
+  },
+  {
+    "course": "calculus 1",
+    "file": "4. Tích phân xác định.pdf",
+    "cau_hoi": "Trong tính chất cơ bản của tích phân xác định, công thức nào cho biết giá trị của ∫_a^a f(x)dx?",
+    "chunk_moi": {
+      "chunk_index": 11,
+      "content_sha": "96f91665efbe02b8fdff6ebc374332e58b9ef3a25e9166e7516604ec98bba03d"
+    },
+    "chunk_cu": {
+      "chunk_index": 12,
+      "content_sha": "af8707d90320cf87e9328da679a568bf6ab38b4a08789ec80c5ddf13621a0a84",
+      "trung_tu": 0.9881
+    }
+  },
+  {
+    "course": "calculus 1",
+    "file": "1. Giới hạn dãy số.pdf",
+    "cau_hoi": "Trong phần chứng minh giới hạn của dãy \\(\\sqrt{n^n-1}\\), tác giả sử dụng bất đẳng thức nào để suy ra \\(0<\\sqrt{n^n-1}<\\sqrt{\\frac{2}{\\,n-1\\,}}\\) cho mọi \\(n>1\\)?",
+    "chunk_moi": {
+      "chunk_index": 28,
+      "content_sha": "ea4cb54d9e01bac55819a0b7c45598163620e6b44622a642c1e54981bf0f6fa6"
+    },
+    "chunk_cu": {
+      "chunk_index": 32,
+      "content_sha": "e8f5bd232279643e62afd8b9285c298c868468022842aeb08630d4a4c769286b",
+      "trung_tu": 0.9783
+    }
+  },
+  {
+    "course": "calculus 1",
+    "file": "3. Đạo hàm và vi phân.pdf",
+    "cau_hoi": "Trong phép tính giới hạn đã cho, tử số được khai triển tới bậc 2 bằng cách sử dụng khai triển Maclaurin của \\(e^{\\cos x}\\) và \\(\\sqrt{(1-4x^{2})^{3}}\\); kết quả cuối cùng của giới hạn là bao nhiêu?",
+    "chunk_moi": {
+      "chunk_index": 58,
+      "content_sha": "8790a88a1457be592cda404ac50aaa1028938e5521690fbcbb3a671af4c3e791"
+    },
+    "chunk_cu": {
+      "chunk_index": 60,
+      "content_sha": "8790a88a1457be592cda404ac50aaa1028938e5521690fbcbb3a671af4c3e791",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "calculus 1",
+    "file": "1. Giới hạn dãy số.pdf",
+    "cau_hoi": "Trong ví dụ về dãy \\(x_n = (-1)^n\\), dãy con nào có giới hạn riêng bằng \\(-1\\) và chỉ ra công thức chỉ số của các phần tử trong dãy con đó?",
+    "chunk_moi": {
+      "chunk_index": 17,
+      "content_sha": "741af9ec2703445d15caeefc7ace3f1c4945ded63309b959e02c68c3be08d296"
+    },
+    "chunk_cu": {
+      "chunk_index": 20,
+      "content_sha": "32d5c4c8890235d7ef4ae33848b4d06c510d9811a12af3752f3b7f390ef50e91",
+      "trung_tu": 0.9896
+    }
+  },
+  {
+    "course": "calculus 1",
+    "file": "3. Đạo hàm và vi phân.pdf",
+    "cau_hoi": "Công thức đạo hàm bậc \\(n\\) của hàm \\((ax + b)^{\\alpha}\\) được viết như thế nào?",
+    "chunk_moi": {
+      "chunk_index": 21,
+      "content_sha": "57efc6fd257137583eeb26044fe89649defec1539152bd0e3a455b2b19d3a4e4"
+    },
+    "chunk_cu": {
+      "chunk_index": 23,
+      "content_sha": "150a0ccb18d3c115f6d357b783795cd25999b5fca5ac24bc9034e4eed4a13f7a",
+      "trung_tu": 0.959
+    }
+  },
+  {
+    "course": "calculus 1",
+    "file": "1. Giới hạn dãy số.pdf",
+    "cau_hoi": "Trong việc tính giới hạn \\(\\displaystyle \\lim_{n\\to\\infty}\\frac{5\\cdot2^{n}-3\\cdot5^{\\,n+1}}{100\\cdot2^{n}+2\\cdot5^{\\,n}}\\), tại bước nào và vì lý do gì ta chia tử số và mẫu số cho \\(5^{n}\\) để đưa dãy về dạng \\(\\displaystyle a_n=\\frac{5\\cdot2^{n}/5^{n}-3\\cdot5}{100\\cdot2^{n}/5^{n}+2}\\)?",
+    "chunk_moi": {
+      "chunk_index": 34,
+      "content_sha": "b51ca52e0073b343ce33e5000ddf1f57accef3272b60b9784f6836affa4a11e8"
+    },
+    "chunk_cu": {
+      "chunk_index": 37,
+      "content_sha": "b51ca52e0073b343ce33e5000ddf1f57accef3272b60b9784f6836affa4a11e8",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "calculus 1",
+    "file": "6. Tích phân suy rộng.pdf",
+    "cau_hoi": "Trong công thức Newton‑Leibnitz cho tích phân suy rộng loại 2, điều kiện hội tụ yêu cầu giới hạn $\\displaystyle\\lim_{\\eta\\to b^-}F(\\eta)$ phải tồn tại và bằng bao nhiêu?",
+    "chunk_moi": {
+      "chunk_index": 32,
+      "content_sha": "582b2df54767917d39a3a49a6604373afa9288d7346844e5157a3d080b481327"
+    },
+    "chunk_cu": {
+      "chunk_index": 35,
+      "content_sha": "ee326356da283ae97333d11f987eb42c40c86cece1d8ac7ef5fe177dca28f673",
+      "trung_tu": 0.991
+    }
+  },
+  {
+    "course": "calculus 1",
+    "file": "6. Tích phân suy rộng.pdf",
+    "cau_hoi": "Trong việc xác định hội tụ của tích phân suy rộng loại 1, tại sao ta không thể xét trực tiếp ∫₀^{∞} dx⁄x² và phải chia tích phân I thành hai phần ∫₀¹ và ∫₁^{+∞}?",
+    "chunk_moi": {
+      "chunk_index": 14,
+      "content_sha": "594186bbacec3318696ebbe6d3e7cc15de965b502f0f0aee38b7776f90617617"
+    },
+    "chunk_cu": {
+      "chunk_index": 16,
+      "content_sha": "dd6cb4a14b765985f160e5df04ddf3c0dbb9840363d823859dbf542c6a4717a2",
+      "trung_tu": 0.9919
+    }
+  },
+  {
+    "course": "calculus 1",
+    "file": "2. Giới hạn và liên tục hàm một biến.pdf",
+    "cau_hoi": "Trong định nghĩa về hàm vô cùng bé (VCB), nếu \\(\\alpha(x)\\) và \\(\\beta(x)\\) đều là các hàm VCB khi \\(x \\to a\\), thì \\(\\alpha(x) \\pm \\beta(x)\\) có tính chất gì?",
+    "chunk_moi": {
+      "chunk_index": 11,
+      "content_sha": "a18134bc7b52965eca15bde9f4727f883d116f798c44a396856f13b4f6cccdd8"
+    },
+    "chunk_cu": {
+      "chunk_index": 13,
+      "content_sha": "ff46accb84ac7949ce249fc117bfe3b63404cefd5e4a5bf259a82d1b1dc60d43",
+      "trung_tu": 0.9911
+    }
+  },
+  {
+    "course": "calculus 1",
+    "file": "6. Tích phân suy rộng.pdf",
+    "cau_hoi": "Trong định nghĩa của tích phân suy rộng loại 1, giới hạn $I = \\lim_{b\\to +\\infty} \\int_{a}^{b} f(x)\\,dx$ phải thỏa mãn như thế nào để tích phân được gọi là hội tụ?",
+    "chunk_moi": {
+      "chunk_index": 1,
+      "content_sha": "2b21dbb24790d9770d425ef209df0d0b78be35c2f2196949ee7b8790fbee0b4b"
+    },
+    "chunk_cu": {
+      "chunk_index": 1,
+      "content_sha": "2b21dbb24790d9770d425ef209df0d0b78be35c2f2196949ee7b8790fbee0b4b",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "calculus 1",
+    "file": "4. Tích phân xác định.pdf",
+    "cau_hoi": "Trong ví dụ tính tích phân I = ∫_{−1}^{1} \\frac{x^{2}\\arctan x}{\\sqrt{1+x^{2}}}\\,dx, tại sao hàm f(x) = \\frac{x^{2}\\arctan x}{\\sqrt{1+x^{2}}} được xác định là hàm lẻ và kết quả của tích phân bằng 0?",
+    "chunk_moi": {
+      "chunk_index": 18,
+      "content_sha": "077740c9ca1f001fd0cd83dd548e039637f9262b9854cf40def53f2fffabcd5d"
+    },
+    "chunk_cu": {
+      "chunk_index": 20,
+      "content_sha": "077740c9ca1f001fd0cd83dd548e039637f9262b9854cf40def53f2fffabcd5d",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "calculus 1",
+    "file": "4. Tích phân xác định.pdf",
+    "cau_hoi": "Trong công thức đổi biến \\(\\displaystyle \\int_a^b f(x)\\,dx = \\int_{\\alpha}^{\\beta} f[\\varphi(t)]\\,\\varphi'(t)\\,dt\\), làm sao xác định các giới hạn mới \\(\\alpha\\) và \\(\\beta\\) khi cho \\(x=\\varphi(t)\\) và các giá trị \\(a=\\varphi(\\alpha),\\; b=\\varphi(\\beta)\\)?",
+    "chunk_moi": {
+      "chunk_index": 14,
+      "content_sha": "1ae5aef30609608ff6b1fcd5b4b240397f655657f9791d21f298057d54fe0391"
+    },
+    "chunk_cu": {
+      "chunk_index": 15,
+      "content_sha": "da739a76f3ef7b76f6b7e414873a418c30b68c427b7b2f6992188888dc95188a",
+      "trung_tu": 0.7546
+    }
+  },
+  {
+    "course": "calculus 1",
+    "file": "3. Đạo hàm và vi phân.pdf",
+    "cau_hoi": "Trong ví dụ tính giới hạn \\(I = \\lim_{x\\to+\\infty} \\frac{x^n}{a^x}\\) với \\(n\\in\\mathbb{N}\\) và \\(a\\ge 1\\), sau khi áp dụng quy tắc L'Hôpital bao nhiêu lần thì tử số trở thành hằng số \\(n!\\) và mẫu số có dạng \\(a^x(\\ln a)^n\\)?",
+    "chunk_moi": {
+      "chunk_index": 36,
+      "content_sha": "8926f201d00b1d708b11618543663d7d31325eb340308fe64bb862a6d131c303"
+    },
+    "chunk_cu": {
+      "chunk_index": 38,
+      "content_sha": "4e9eff2ed7c34c047aec3ca8cac6d7446889bed8938a67a1333f64be437d4b64",
+      "trung_tu": 0.9907
+    }
+  },
+  {
+    "course": "calculus 1",
+    "file": "5. Tích phân bất định.pdf",
+    "cau_hoi": "Trong công thức truy hồi của tích phân bất định, khi đặt \\(u=\\frac{1}{(x^{2}+a^{2})^{n}}\\) và \\(dv=dx\\), biểu thức của \\(du\\) là \\(\\displaystyle du=\\frac{-2n\\,x\\,dx}{(x^{2}+a^{2})^{\\,n+1}}\\)?",
+    "chunk_moi": {
+      "chunk_index": 11,
+      "content_sha": "f136b1d0e975c717cbf669b893cef220070c1d1c962b5bd6cf9080742cfe2528"
+    },
+    "chunk_cu": {
+      "chunk_index": 13,
+      "content_sha": "f136b1d0e975c717cbf669b893cef220070c1d1c962b5bd6cf9080742cfe2528",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "calculus 1",
+    "file": "1. Giới hạn dãy số.pdf",
+    "cau_hoi": "Trong việc áp dụng định lý Weierstrass để xác định giới hạn của dãy \\(x_n\\), tại sao ta chọn nghiệm dương \\(x = \\frac{1+\\sqrt{1+4a}}{2}\\) thay vì nghiệm âm \\(\\frac{1-\\sqrt{1+4a}}{2}\\)?",
+    "chunk_moi": {
+      "chunk_index": 45,
+      "content_sha": "41a880a7e80c7668338342a9804a834424189145432ea4383e27c18dd3e4057d"
+    },
+    "chunk_cu": {
+      "chunk_index": 49,
+      "content_sha": "fdc9cd253969a54aab880e312629c219afa9098a37b4d3f0e50b02c794d7065b",
+      "trung_tu": 0.9878
+    }
+  },
+  {
+    "course": "calculus 1",
+    "file": "3. Đạo hàm và vi phân.pdf",
+    "cau_hoi": "Giá trị của \\(y^{(100)}(1)\\) khi \\(y(x)=\\ln x\\) là bao nhiêu?",
+    "chunk_moi": {
+      "chunk_index": 50,
+      "content_sha": "00ca2ee64e1e2bd1fbcf27c69490413d3ed6a586d1a8e8cb0dd3219c4820ddad"
+    },
+    "chunk_cu": {
+      "chunk_index": 54,
+      "content_sha": "4b50b9e6d0bfe266c3a35e4c83998f3ebc73faf2463059f011794d3a6eb826d5",
+      "trung_tu": 0.7647
+    }
+  },
+  {
+    "course": "calculus 1",
+    "file": "6. Tích phân suy rộng.pdf",
+    "cau_hoi": "Nếu \\(\\alpha = 1\\) và đặt \\(t = \\ln x\\), tích phân mở rộng \\(\\displaystyle I = \\int_{0}^{+\\infty}\\frac{dt}{t^{\\beta}}\\) sẽ hội tụ khi và chỉ khi \\(\\beta\\) thỏa mãn điều kiện nào?",
+    "chunk_moi": {
+      "chunk_index": 23,
+      "content_sha": "97f64ef6e0f4386ab7048e95593f4288cc80db141f1578a1b2f8d749dcc29df8"
+    },
+    "chunk_cu": {
+      "chunk_index": 25,
+      "content_sha": "67f3057e049cf9d938869108e5d343683edecd478065e24b7b04f719f9e12ac1",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "calculus 1",
+    "file": "5. Tích phân bất định.pdf",
+    "cau_hoi": "Trong quá trình tính tích phân \\(\\int \\sqrt{a^{2}-x^{2}}\\,dx\\) bằng phương pháp đổi biến, nếu đặt \\(x = a\\sin t\\) thì \\(dx\\) bằng bao nhiêu?",
+    "chunk_moi": {
+      "chunk_index": 8,
+      "content_sha": "bd4893efaedc05b556a99308a8a23a3f01ac27c8a14d476ba77415bc1b3e3480"
+    },
+    "chunk_cu": {
+      "chunk_index": 9,
+      "content_sha": "2144939ca0de5636cd4280eea9f2b51246cc64b53a81eba9572de2f357274425",
+      "trung_tu": 0.9924
+    }
+  },
+  {
+    "course": "calculus 1",
+    "file": "1. Giới hạn dãy số.pdf",
+    "cau_hoi": "Trong việc áp dụng định lý kẹp để tính giới hạn của dãy \\(a_n=\\frac{1+2^2+\\dots +n^n}{n^n}\\), tại sao bất đẳng thức \\(1=\\frac{n^n}{n^n}\\le a_n\\le\\frac{n^{n+1}-n}{(n-1)n^n}\\) được rút gọn thành \\(a_n<\\frac{n}{n-1}\\)?",
+    "chunk_moi": {
+      "chunk_index": 26,
+      "content_sha": "ebe08e5c34195f78bf05e7f8c02c1271cb78bad44e2061060bff0895238cf79a"
+    },
+    "chunk_cu": {
+      "chunk_index": 30,
+      "content_sha": "ebe08e5c34195f78bf05e7f8c02c1271cb78bad44e2061060bff0895238cf79a",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "calculus 1",
+    "file": "1. Giới hạn dãy số.pdf",
+    "cau_hoi": "Trong định lý Weierstrass, nếu một dãy số thực đơn điệu tăng và bị chặn trên, giới hạn của dãy đó có tính chất gì?",
+    "chunk_moi": {
+      "chunk_index": 20,
+      "content_sha": "5a353d8b037b065dc65831725dc8c102f7f0282c1f140556c62bcd5719d2e8ef"
+    },
+    "chunk_cu": {
+      "chunk_index": 23,
+      "content_sha": "bac6933338ef9c4947c458b65bbeb33524672b64cf7628a52f20c79e305f731b",
+      "trung_tu": 0.7222
+    }
+  },
+  {
+    "course": "calculus 1",
+    "file": "3. Đạo hàm và vi phân.pdf",
+    "cau_hoi": "Trong ví dụ tính giới hạn \\(I = \\lim_{x\\to0}\\frac{\\tan x-\\ln\\left(x+\\sqrt{1+x^{2}}\\right)}{\\sin x-x\\cos x}\\), mẫu số được khai triển Maclaurin thành \\(\\frac{1}{3}x^{3}+o(x^{3})\\); vậy bậc vô cùng nhỏ (VCB) của mẫu số là bao nhiêu?",
+    "chunk_moi": {
+      "chunk_index": 54,
+      "content_sha": "0224e5957f51996a75db7b4381f6690f4de0eff6d644de8e63407cffa54c4d0a"
+    },
+    "chunk_cu": {
+      "chunk_index": 56,
+      "content_sha": "389f4638033c1ca0f030ec6a66a6a12b051e88fe121331f580498a84bb5b79bb",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "calculus 1",
+    "file": "6. Tích phân suy rộng.pdf",
+    "cau_hoi": "Trong ví dụ về tích phân suy rộng loại 2, tại sao ta kết luận rằng \\(\\alpha = \\frac{2}{3} < 1\\) và do đó tích phân \\(I = \\int_{0}^{1} \\frac{\\ln(1+\\sqrt[3]{x})}{e^{\\sin x}-1}\\,dx\\) hội tụ?",
+    "chunk_moi": {
+      "chunk_index": 43,
+      "content_sha": "b6e8995b6bbbd6e1b1074d75822e94354f125cadd0c6e15cff4432af9ec07242"
+    },
+    "chunk_cu": {
+      "chunk_index": 46,
+      "content_sha": "b6e8995b6bbbd6e1b1074d75822e94354f125cadd0c6e15cff4432af9ec07242",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "calculus 1",
+    "file": "1. Giới hạn dãy số.pdf",
+    "cau_hoi": "Trong chứng minh dãy \\(a_n = \\frac{1}{5+1}+\\frac{1}{5^2+1}+ \\dots +\\frac{1}{5^n+1}\\) hội tụ, tại sao ta so sánh \\(a_n\\) với tổng hình học \\( \\frac{1}{5}+\\frac{1}{5^2}+ \\dots +\\frac{1}{5^n}\\) để khẳng định dãy này bị chặn trên?",
+    "chunk_moi": {
+      "chunk_index": 38,
+      "content_sha": "a9fe0ffb667735136f16d1ee3b9f92df846bf1fbb1b8304881d80b9b2a96aa52"
+    },
+    "chunk_cu": {
+      "chunk_index": 41,
+      "content_sha": "b6c2062c1b17faaebdaaa27ceb106fd973b76d1ce60f3fd7311358ebad78d481",
+      "trung_tu": 0.9897
+    }
+  },
+  {
+    "course": "calculus 1",
+    "file": "1. Giới hạn dãy số.pdf",
+    "cau_hoi": "Làm thế nào để chứng minh $x_n > x_{n+1}$ trong phần giới hạn dãy số của TS. Lê Xuân Đại?",
+    "chunk_moi": {
+      "chunk_index": 7,
+      "content_sha": "0bae9760a2bc6abb2436f223f4a9a73f7856592ffb414cc1002296aa5aee78bb"
+    },
+    "chunk_cu": {
+      "chunk_index": 8,
+      "content_sha": "440ea1fd7abaa39de86607d77817efb5b528a1e5f9a49b317bfdfe91b3a3660f",
+      "trung_tu": 0.9744
+    }
+  },
+  {
+    "course": "calculus 1",
+    "file": "6. Tích phân suy rộng.pdf",
+    "cau_hoi": "Trong ví dụ tính tích phân \\(I = \\int_{0}^{1} \\frac{dx}{x}\\), tại sao \\(x = 0\\) được gọi là “điểm kỳ dị” và kết quả cuối cùng của tích phân này là gì?",
+    "chunk_moi": {
+      "chunk_index": 35,
+      "content_sha": "e0683c7a5b97aeb595433334bb74af932173b2a4bc424531e8597892653d9fb9"
+    },
+    "chunk_cu": {
+      "chunk_index": 38,
+      "content_sha": "e0683c7a5b97aeb595433334bb74af932173b2a4bc424531e8597892653d9fb9",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "machine-learning",
+    "file": "Week03.mp4",
+    "cau_hoi": "What is used to find a straight line approximation to the function $f$ during an iteration of Newton's method?",
+    "chunk_moi": {
+      "chunk_index": 83,
+      "content_sha": "0d556f4f19563d6b3f3160af266c76a859eeeeae39fdcc4256d82960dea42ba0"
+    },
+    "chunk_cu": {
+      "chunk_index": 83,
+      "content_sha": "0d556f4f19563d6b3f3160af266c76a859eeeeae39fdcc4256d82960dea42ba0",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "machine-learning",
+    "file": "Week03.mp4",
+    "cau_hoi": "What is the role of the parameter θ when maximizing the log‑likelihood in a tumor malignancy prediction model?",
+    "chunk_moi": {
+      "chunk_index": 68,
+      "content_sha": "14804addfc00ca5388c24538bd049a0c70afc7ca508f483fd2598bc68799e590"
+    },
+    "chunk_cu": {
+      "chunk_index": 68,
+      "content_sha": "14804addfc00ca5388c24538bd049a0c70afc7ca508f483fd2598bc68799e590",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "machine-learning",
+    "file": "Week04.mp3",
+    "cau_hoi": "What is the term used for the function that maps the natural parameter η back to the mean μ of the distribution, and how is it related to the gradient of the log partition function?",
+    "chunk_moi": {
+      "chunk_index": 47,
+      "content_sha": "320a00bc516c485db8d9b5d831a2fa62cb5cfd0268aba3cc54b5c140fcc282af"
+    },
+    "chunk_cu": {
+      "chunk_index": 47,
+      "content_sha": "320a00bc516c485db8d9b5d831a2fa62cb5cfd0268aba3cc54b5c140fcc282af",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "machine-learning",
+    "file": "Week03.mp4",
+    "cau_hoi": "What is the shape of the Hessian matrix when the parameter vector θ is an ℝⁿ⁺¹ vector, and how does this relate to the vector of derivatives of the log‑likelihood with respect to θ?",
+    "chunk_moi": {
+      "chunk_index": 90,
+      "content_sha": "e48dfcd9051c2b0b3523d3b6ac407f3ff1b88c0e90691511516f7af42b376a55"
+    },
+    "chunk_cu": {
+      "chunk_index": 90,
+      "content_sha": "e48dfcd9051c2b0b3523d3b6ac407f3ff1b88c0e90691511516f7af42b376a55",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "machine-learning",
+    "file": "Week02.mp4",
+    "cau_hoi": "What is the role of the elements \\(A_{11}\\) and \\(A_{12}\\) when applying the definition of a matrix derivative as described in the passage?",
+    "chunk_moi": {
+      "chunk_index": 73,
+      "content_sha": "fe71bf700cc043d405c544ec1ed4a106d9cdf03f4d07d066f6db074ddd1abca5"
+    },
+    "chunk_cu": {
+      "chunk_index": 73,
+      "content_sha": "fe71bf700cc043d405c544ec1ed4a106d9cdf03f4d07d066f6db074ddd1abca5",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "machine-learning",
+    "file": "Week04.mp3",
+    "cau_hoi": "What term in the passage describes the function that becomes convex when you minimize it, and how is it related to the sign flip of the likelihood?",
+    "chunk_moi": {
+      "chunk_index": 31,
+      "content_sha": "be0db9a9d1aeb7a19952bb8491251c718286ee41774b19da7b1a68e9c023a736"
+    },
+    "chunk_cu": {
+      "chunk_index": 31,
+      "content_sha": "be0db9a9d1aeb7a19952bb8491251c718286ee41774b19da7b1a68e9c023a736",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "machine-learning",
+    "file": "Week02.mp4",
+    "cau_hoi": "What does the linear regression algorithm aim to minimize, specifically involving the hypothesis \\(h_{\\theta}(x)\\) and the observed values \\(y\\)?",
+    "chunk_moi": {
+      "chunk_index": 16,
+      "content_sha": "cfb70d2ab62f8840f12871054a47a84e5a6f51b4bd44f76ea0484f20fd053757"
+    },
+    "chunk_cu": {
+      "chunk_index": 16,
+      "content_sha": "cfb70d2ab62f8840f12871054a47a84e5a6f51b4bd44f76ea0484f20fd053757",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "machine-learning",
+    "file": "Week04.mp3",
+    "cau_hoi": "What term does the excerpt use to describe the label \\(P(Y)\\) when it is represented as a probability distribution that assigns 1 to the correct class and 0 to all others?",
+    "chunk_moi": {
+      "chunk_index": 69,
+      "content_sha": "138cac25aa9f9eb43b4a252b2bf96e051e5b811e7d87b0d3306c35737497c21f"
+    },
+    "chunk_cu": {
+      "chunk_index": 69,
+      "content_sha": "138cac25aa9f9eb43b4a252b2bf96e051e5b811e7d87b0d3306c35737497c21f",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "machine-learning",
+    "file": "Week03.mp4",
+    "cau_hoi": "What algorithm does the speaker recommend using when the dataset has only a few features (e.g., two or three) but a large number of observations?",
+    "chunk_moi": {
+      "chunk_index": 24,
+      "content_sha": "83765afa33eb4bf26bb47b4bec9bb512a661ff453dbc4f97bfce65cf616b9bcc"
+    },
+    "chunk_cu": {
+      "chunk_index": 24,
+      "content_sha": "83765afa33eb4bf26bb47b4bec9bb512a661ff453dbc4f97bfce65cf616b9bcc",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "machine-learning",
+    "file": "Week03.mp4",
+    "cau_hoi": "What notation is used to denote the distribution of εᵢ, and what are the specified mean and variance parameters of that distribution?",
+    "chunk_moi": {
+      "chunk_index": 29,
+      "content_sha": "849525219560eecdd98724b4c14fbd3f7e1a0f37ec55d1a020dcb24ced9d8e4d"
+    },
+    "chunk_cu": {
+      "chunk_index": 29,
+      "content_sha": "849525219560eecdd98724b4c14fbd3f7e1a0f37ec55d1a020dcb24ced9d8e4d",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "machine-learning",
+    "file": "Week05.mp3",
+    "cau_hoi": "What is the probability density function called that is repeatedly used when implementing machine learning algorithms, as described in the lecture notes?",
+    "chunk_moi": {
+      "chunk_index": 13,
+      "content_sha": "7e122cc4ef434830f738757fe01637e1a8d40f655d53c34804704ae77cf0769c"
+    },
+    "chunk_cu": {
+      "chunk_index": 13,
+      "content_sha": "7e122cc4ef434830f738757fe01637e1a8d40f655d53c34804704ae77cf0769c",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "machine-learning",
+    "file": "Week05.mp3",
+    "cau_hoi": "What distribution is stated to generate \\(x\\) when \\(y = 0\\) in the discussion?",
+    "chunk_moi": {
+      "chunk_index": 72,
+      "content_sha": "827d972fa02451b1bfcf63915c66ee17f77a06f45cb4e2d04eafe580c6088562"
+    },
+    "chunk_cu": {
+      "chunk_index": 72,
+      "content_sha": "827d972fa02451b1bfcf63915c66ee17f77a06f45cb4e2d04eafe580c6088562",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "machine-learning",
+    "file": "Week02.mp4",
+    "cau_hoi": "What does gradient descent aim to minimize when we initialize θ₀ and θ₁ and start “standing on this little hill” in the context described?",
+    "chunk_moi": {
+      "chunk_index": 22,
+      "content_sha": "f4c9159f293cc0380dd6e042615edfaf5c54c488cb23db0f6b490a53167713e1"
+    },
+    "chunk_cu": {
+      "chunk_index": 22,
+      "content_sha": "f4c9159f293cc0380dd6e042615edfaf5c54c488cb23db0f6b490a53167713e1",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "machine-learning",
+    "file": "Week02.mp4",
+    "cau_hoi": "What is the name of the method that allows you to compute the optimal parameters θ for exactly linear regression in a single step, without using gradient descent?",
+    "chunk_moi": {
+      "chunk_index": 65,
+      "content_sha": "8557bc35c444813b997f531c1c940b3acf2304a40693a41da2aab3dd49fd6cfe"
+    },
+    "chunk_cu": {
+      "chunk_index": 65,
+      "content_sha": "8557bc35c444813b997f531c1c940b3acf2304a40693a41da2aab3dd49fd6cfe",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "machine-learning",
+    "file": "Week05.mp3",
+    "cau_hoi": "What is the key distinction between the conditional likelihood used in logistic regression (maximizing P(Y | X)) and the likelihood objective for generative learning algorithms (maximizing P(X, Y))?",
+    "chunk_moi": {
+      "chunk_index": 28,
+      "content_sha": "a98f55fdd82755a69ff42769ae8496067391642413de76269d0c4902c82c1d7f"
+    },
+    "chunk_cu": {
+      "chunk_index": 28,
+      "content_sha": "a98f55fdd82755a69ff42769ae8496067391642413de76269d0c4902c82c1d7f",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "machine-learning",
+    "file": "Week02.mp4",
+    "cau_hoi": "What is the value of m (the number of training examples) in the dataset described, and which specific exponential learning‑rate values are suggested for testing (e.g., 0.01, 0.02, 0.04, 0.08)?",
+    "chunk_moi": {
+      "chunk_index": 43,
+      "content_sha": "53197c52584a05eb48e01c695170f919e7a63f41327d25c9e7b6691801622200"
+    },
+    "chunk_cu": {
+      "chunk_index": 43,
+      "content_sha": "53197c52584a05eb48e01c695170f919e7a63f41327d25c9e7b6691801622200",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "machine-learning",
+    "file": "Week03.mp4",
+    "cau_hoi": "What is the notation used for the horizontal distance in the derivation from θ₀ to θ₁, and how does the excerpt distinguish between its uppercase and lowercase Greek forms?",
+    "chunk_moi": {
+      "chunk_index": 85,
+      "content_sha": "f4b54d080f7a6019ade280737ec18ad6ebea5cbc44ed46a4df29b706b988b530"
+    },
+    "chunk_cu": {
+      "chunk_index": 85,
+      "content_sha": "f4b54d080f7a6019ade280737ec18ad6ebea5cbc44ed46a4df29b706b988b530",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "machine-learning",
+    "file": "Week04.mp3",
+    "cau_hoi": "What role does the parameter θ play in training the model, and why are we not learning any of the parameters of the exponential family distribution?",
+    "chunk_moi": {
+      "chunk_index": 41,
+      "content_sha": "ff697a97bbc12caa293091f3cc45c472b999e905805ea0427c1011e79d3c327b"
+    },
+    "chunk_cu": {
+      "chunk_index": 41,
+      "content_sha": "ff697a97bbc12caa293091f3cc45c472b999e905805ea0427c1011e79d3c327b",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "machine-learning",
+    "file": "Week05.mp3",
+    "cau_hoi": "What notation does the speaker introduce when describing “the max over y of p of x given y, p of y, divided by p of x,” and how does he relate it to the familiar “argmax” concept?",
+    "chunk_moi": {
+      "chunk_index": 37,
+      "content_sha": "baca3ed3253ed9e021aaf1501b991e18d5cc72e263b8b0a357ce1ce234176ce2"
+    },
+    "chunk_cu": {
+      "chunk_index": 37,
+      "content_sha": "baca3ed3253ed9e021aaf1501b991e18d5cc72e263b8b0a357ce1ce234176ce2",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "machine-learning",
+    "file": "Week03.mp4",
+    "cau_hoi": "What is the expression for the likelihood function that involves the product notation “∏_{i=1}^{m} h(x_i)” when applying maximum likelihood estimation in this context?",
+    "chunk_moi": {
+      "chunk_index": 66,
+      "content_sha": "7981ae512d1d3ec714d75595fc0ff8c0075233d8360697ba57a7ea0a19b1888d"
+    },
+    "chunk_cu": {
+      "chunk_index": 66,
+      "content_sha": "7981ae512d1d3ec714d75595fc0ff8c0075233d8360697ba57a7ea0a19b1888d",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "machine-learning",
+    "file": "Week05.mp3",
+    "cau_hoi": "What happens to the Gaussian density when you change its covariance from the identity matrix to twice the identity, and then increase the off‑diagonal entries from 0 to 0.5?",
+    "chunk_moi": {
+      "chunk_index": 16,
+      "content_sha": "47494c53ed36d05ba2baa17827f930363203dc0508b6ba285db50314159b1275"
+    },
+    "chunk_cu": {
+      "chunk_index": 16,
+      "content_sha": "47494c53ed36d05ba2baa17827f930363203dc0508b6ba285db50314159b1275",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "machine-learning",
+    "file": "Week05.mp3",
+    "cau_hoi": "What is the name of the model mentioned that maps an email to a feature vector x, and which specific resource does it initially use to create that vector?",
+    "chunk_moi": {
+      "chunk_index": 76,
+      "content_sha": "a24059fbcc6dc3bdc7a49b7b06a214aace4e5558eb9b347d83cd46bc8ba39152"
+    },
+    "chunk_cu": {
+      "chunk_index": 76,
+      "content_sha": "a24059fbcc6dc3bdc7a49b7b06a214aace4e5558eb9b347d83cd46bc8ba39152",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "machine-learning",
+    "file": "Week05.mp3",
+    "cau_hoi": "What reasoning does the speaker give for using a single covariance matrix when fitting a Gaussian to both classes, and how does this differ from the intuitive argument based on estimating the mean of a coin toss (μ₀ and μ₁)?",
+    "chunk_moi": {
+      "chunk_index": 35,
+      "content_sha": "fbf5b74373243b3ff33b3fa4c97d15e965d26264002c4644d9662849b6ae0c86"
+    },
+    "chunk_cu": {
+      "chunk_index": 35,
+      "content_sha": "fbf5b74373243b3ff33b3fa4c97d15e965d26264002c4644d9662849b6ae0c86",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "machine-learning",
+    "file": "Week04.mp3",
+    "cau_hoi": "What is the term used for the natural parameter \\( \\eta \\) that links to the mean of the distribution via the canonical response function in GLM update rules?",
+    "chunk_moi": {
+      "chunk_index": 46,
+      "content_sha": "dae3b87b38ad3d61982cf94b3dd0de37c470d043d57fa48aa364b22fcfcfa94f"
+    },
+    "chunk_cu": {
+      "chunk_index": 46,
+      "content_sha": "dae3b87b38ad3d61982cf94b3dd0de37c470d043d57fa48aa364b22fcfcfa94f",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "machine-learning",
+    "file": "Week02.mp4",
+    "cau_hoi": "What does the passage say about how the choice of initial parameters can affect the point that gradient descent ultimately reaches?",
+    "chunk_moi": {
+      "chunk_index": 24,
+      "content_sha": "147caf2ce5e644d796a3cae53aba1c07b4924ac693109d73b146c8e2f9b7be6a"
+    },
+    "chunk_cu": {
+      "chunk_index": 24,
+      "content_sha": "147caf2ce5e644d796a3cae53aba1c07b4924ac693109d73b146c8e2f9b7be6a",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "machine-learning",
+    "file": "Week05.mp3",
+    "cau_hoi": "What does the term “text classification” refer to when distinguishing between spam and non‑spam emails or categorizing product descriptions like a Roomba listing on eBay?",
+    "chunk_moi": {
+      "chunk_index": 75,
+      "content_sha": "5280ed6dd5350c1e0bf50bad608a7a3b95e4f5dfee39f1bb7e97c456dd5f325a"
+    },
+    "chunk_cu": {
+      "chunk_index": 75,
+      "content_sha": "5280ed6dd5350c1e0bf50bad608a7a3b95e4f5dfee39f1bb7e97c456dd5f325a",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "machine-learning",
+    "file": "Week02.mp4",
+    "cau_hoi": "What shape does the excerpt say the contours (level curves) of the quadratic function form?",
+    "chunk_moi": {
+      "chunk_index": 40,
+      "content_sha": "0abd3e2ac1c20b2b869bde9a58fd32aa67c0367ca5a97b19ddf97485896417a3"
+    },
+    "chunk_cu": {
+      "chunk_index": 40,
+      "content_sha": "0abd3e2ac1c20b2b869bde9a58fd32aa67c0367ca5a97b19ddf97485896417a3",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "machine-learning",
+    "file": "Week04.mp3",
+    "cau_hoi": "In the described multi‑class classification example, which two input dimensions are labeled as X₁ and X₂ that help visualize the input space for the three classes (circles, squares, and triangles)?",
+    "chunk_moi": {
+      "chunk_index": 62,
+      "content_sha": "65ca9dac8d8f56d069fbc7598847a03ec7363f75821ff0dfeaedb9ad89b9c2a4"
+    },
+    "chunk_cu": {
+      "chunk_index": 62,
+      "content_sha": "65ca9dac8d8f56d069fbc7598847a03ec7363f75821ff0dfeaedb9ad89b9c2a4",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "machine-learning",
+    "file": "Week02.mp4",
+    "cau_hoi": "What is the shape of the matrix that represents the derivative of \\(F(A)\\) with respect to \\(A\\) when \\(A\\) is a \\(2 \\times 2\\) matrix, and how are its entries obtained according to the explanation?",
+    "chunk_moi": {
+      "chunk_index": 72,
+      "content_sha": "0cebc26ebdf912d6526e8cfb401428654fdd8fb088609b4f56f48263596567d9"
+    },
+    "chunk_cu": {
+      "chunk_index": 72,
+      "content_sha": "0cebc26ebdf912d6526e8cfb401428654fdd8fb088609b4f56f48263596567d9",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "machine-learning",
+    "file": "Week02.mp4",
+    "cau_hoi": "What are the three components of the feature vector \\(x\\) described, and which one is always set to 1?",
+    "chunk_moi": {
+      "chunk_index": 9,
+      "content_sha": "36f53aeca14228421a9f5ed83568ad4ce30518e0390159ee20c6f4579e8636af"
+    },
+    "chunk_cu": {
+      "chunk_index": 9,
+      "content_sha": "36f53aeca14228421a9f5ed83568ad4ce30518e0390159ee20c6f4579e8636af",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "machine-learning",
+    "file": "Week03.mp4",
+    "cau_hoi": "What factor determines the size of the neighborhood used to fit the local straight line, and how is this factor described in terms of the Gaussian density’s width?",
+    "chunk_moi": {
+      "chunk_index": 19,
+      "content_sha": "bf3e4bdee40e49509cb37207a1b9b571c9b429ed031845e574bf19afc0057e01"
+    },
+    "chunk_cu": {
+      "chunk_index": 19,
+      "content_sha": "bf3e4bdee40e49509cb37207a1b9b571c9b429ed031845e574bf19afc0057e01",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "machine-learning",
+    "file": "Week03.mp4",
+    "cau_hoi": "What role does the central limit theorem play in justifying the Gaussian distribution as the default noise model, and how does this change when applying generalized linear models to non‑Gaussian distributions such as the Poisson?",
+    "chunk_moi": {
+      "chunk_index": 44,
+      "content_sha": "68640edadd4cc4d5d2266f90eb7fdbc6d761b622ebf0a8ffff849924ba1e5f25"
+    },
+    "chunk_cu": {
+      "chunk_index": 44,
+      "content_sha": "68640edadd4cc4d5d2266f90eb7fdbc6d761b622ebf0a8ffff849924ba1e5f25",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "machine-learning",
+    "file": "Week04.mp3",
+    "cau_hoi": "What does the term “\\( \\hat{P}(Y \\mid X) \\)” represent in the described normalization process, and how is it computed using the expression “\\( \\frac{e^{\\theta^{\\top}x}}{\\sum_{i\\in\\triangle\\square\\circ} e^{\\theta_i^{\\top}x}} \\)”?",
+    "chunk_moi": {
+      "chunk_index": 68,
+      "content_sha": "193f4ea09242d3947577202759b67639e1c53a6f8b93d1e0ea1ed4534e2a942b"
+    },
+    "chunk_cu": {
+      "chunk_index": 68,
+      "content_sha": "193f4ea09242d3947577202759b67639e1c53a6f8b93d1e0ea1ed4534e2a942b",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "machine-learning",
+    "file": "Week03.mp4",
+    "cau_hoi": "What is the name of the function g(z) described as having an S‑shaped curve that maps any input z to an output between 0 and 1?",
+    "chunk_moi": {
+      "chunk_index": 57,
+      "content_sha": "8cab2eb25b44a27cde29464fb0f10fccb52d27646199c24fb110885f65a63ac2"
+    },
+    "chunk_cu": {
+      "chunk_index": 57,
+      "content_sha": "8cab2eb25b44a27cde29464fb0f10fccb52d27646199c24fb110885f65a63ac2",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "machine-learning",
+    "file": "Week03.mp4",
+    "cau_hoi": "What reason does the speaker give for Newton's method potentially being much faster than gradient descent when the number of parameters is not too large?",
+    "chunk_moi": {
+      "chunk_index": 93,
+      "content_sha": "7158ff95a6fdf764e1517ac270ce9830d4d633a55bd727ecbbe6cc5ccfbeb30f"
+    },
+    "chunk_cu": {
+      "chunk_index": 93,
+      "content_sha": "7158ff95a6fdf764e1517ac270ce9830d4d633a55bd727ecbbe6cc5ccfbeb30f",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "machine-learning",
+    "file": "Week05.mp3",
+    "cau_hoi": "What generative learning algorithm is introduced as a motivating example for email spam classification in the discussion of continuous valued features X?",
+    "chunk_moi": {
+      "chunk_index": 74,
+      "content_sha": "46cbd5cacfde4579686f0f484bfd19d31260446e642c182332e3f7116fc5750b"
+    },
+    "chunk_cu": {
+      "chunk_index": 74,
+      "content_sha": "46cbd5cacfde4579686f0f484bfd19d31260446e642c182332e3f7116fc5750b",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "machine-learning",
+    "file": "Week03.mp4",
+    "cau_hoi": "What property of Newton's method is described as causing the error to shrink from 0.01 to 0.0001 in a single iteration?",
+    "chunk_moi": {
+      "chunk_index": 88,
+      "content_sha": "1bb902a27ec93d4ecfca3788a3ed194b167a5ddc29c8adee73aa6a9cbcbf3305"
+    },
+    "chunk_cu": {
+      "chunk_index": 88,
+      "content_sha": "1bb902a27ec93d4ecfca3788a3ed194b167a5ddc29c8adee73aa6a9cbcbf3305",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "machine-learning",
+    "file": "Week05.mp3",
+    "cau_hoi": "What are the dimensions of the mean vector μ and the covariance matrix Σ when the random vector Z is two‑dimensional in ℝⁿ?",
+    "chunk_moi": {
+      "chunk_index": 12,
+      "content_sha": "f1519e2d359d83273c961c7113c9dd034cc3046c3afb66b715513d646b27f397"
+    },
+    "chunk_cu": {
+      "chunk_index": 12,
+      "content_sha": "f1519e2d359d83273c961c7113c9dd034cc3046c3afb66b715513d646b27f397",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "machine-learning",
+    "file": "Week03.mp4",
+    "cau_hoi": "What class of algorithms is described as having no local optimal problems when derived, and includes both linear regression and logistic regression?",
+    "chunk_moi": {
+      "chunk_index": 74,
+      "content_sha": "9f7c4e54a704fbbb56f59448ffac5d1cdb14c1f4e2735490cd7f38a17153151c"
+    },
+    "chunk_cu": {
+      "chunk_index": 74,
+      "content_sha": "9f7c4e54a704fbbb56f59448ffac5d1cdb14c1f4e2735490cd7f38a17153151c",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "machine-learning",
+    "file": "Week02.mp4",
+    "cau_hoi": "What is the name of the equation derived by taking the derivative of \\(J(\\theta)\\) with respect to \\(\\theta\\), setting it equal to zero, and solving for \\(\\theta\\) to directly reach the global minimum of the cost function?",
+    "chunk_moi": {
+      "chunk_index": 75,
+      "content_sha": "1c75c4a7fddde4b342e62c93b7038398da21b18f541d2cf7027e7bed9cd972f9"
+    },
+    "chunk_cu": {
+      "chunk_index": 75,
+      "content_sha": "1c75c4a7fddde4b342e62c93b7038398da21b18f541d2cf7027e7bed9cd972f9",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "machine-learning",
+    "file": "Week02.mp4",
+    "cau_hoi": "What are the two axes labeled in the gradient descent visualization, and why does the speaker mention that the actual parameter vector includes a third component even though only two axes are shown?",
+    "chunk_moi": {
+      "chunk_index": 21,
+      "content_sha": "93171a8ec1913d8fafc4d10b77ee18af8d5cef85d205cbfd07e85aad42bd8d6d"
+    },
+    "chunk_cu": {
+      "chunk_index": 21,
+      "content_sha": "93171a8ec1913d8fafc4d10b77ee18af8d5cef85d205cbfd07e85aad42bd8d6d",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "machine-learning",
+    "file": "Week05.mp3",
+    "cau_hoi": "What is the role of the “zero‑unsolving” step when taking the derivative of the log‑likelihood and setting it equal to zero in order to find the parameter values that maximize the likelihood?",
+    "chunk_moi": {
+      "chunk_index": 36,
+      "content_sha": "5f2d9cc19840c72f1965b0e0e890af3f1e7f0c24d6322505f6392f8a889a2af7"
+    },
+    "chunk_cu": {
+      "chunk_index": 36,
+      "content_sha": "5f2d9cc19840c72f1965b0e0e890af3f1e7f0c24d6322505f6392f8a889a2af7",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "machine-learning",
+    "file": "Week04.mp3",
+    "cau_hoi": "What term does the lecture notes use to describe softmax regression as a member of the GLM family?",
+    "chunk_moi": {
+      "chunk_index": 60,
+      "content_sha": "f8a14e4beb8ea8d64b2129d7c7fb562ec6b9291f25dfc95c69852b099b41e5f4"
+    },
+    "chunk_cu": {
+      "chunk_index": 60,
+      "content_sha": "f8a14e4beb8ea8d64b2129d7c7fb562ec6b9291f25dfc95c69852b099b41e5f4",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "machine-learning",
+    "file": "Week03.mp4",
+    "cau_hoi": "What expression does the speaker refer to when they say “power of yᵢ times 1 − h(xᵢ) to the power of 1 − yᵢ” in the context of deriving the log‑likelihood for maximum likelihood estimation?",
+    "chunk_moi": {
+      "chunk_index": 67,
+      "content_sha": "0b3ca67c9eb809f0f802142f9bd321a72e6b502f53c6251307ace6e1f6f50377"
+    },
+    "chunk_cu": {
+      "chunk_index": 67,
+      "content_sha": "0b3ca67c9eb809f0f802142f9bd321a72e6b502f53c6251307ace6e1f6f50377",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "machine-learning",
+    "file": "Week02.mp4",
+    "cau_hoi": "What does the expression “x₁ᵀ θ, x₂ᵀ θ, …, x_mᵀ θ” represent in the context of matrix‑vector multiplication described?",
+    "chunk_moi": {
+      "chunk_index": 82,
+      "content_sha": "c3c1e0dcb14e6d9c19ba5a21f293019b3654bf026b96dbacc3277b53d2f35b3f"
+    },
+    "chunk_cu": {
+      "chunk_index": 82,
+      "content_sha": "c3c1e0dcb14e6d9c19ba5a21f293019b3654bf026b96dbacc3277b53d2f35b3f",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "machine-learning",
+    "file": "Week05.mp3",
+    "cau_hoi": "What specific term does the passage use to describe the curve that results from evaluating the probability formula across a dense grid on the x‑axis and connecting the resulting points?",
+    "chunk_moi": {
+      "chunk_index": 51,
+      "content_sha": "83a6cc81457f7ec0a842858c096570f663347a8daecaad756bd002eafb85e87f"
+    },
+    "chunk_cu": {
+      "chunk_index": 51,
+      "content_sha": "83a6cc81457f7ec0a842858c096570f663347a8daecaad756bd002eafb85e87f",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "machine-learning",
+    "file": "Week02.mp4",
+    "cau_hoi": "What is the name of the algorithm introduced for finding the value of θ that minimizes the cost function J(θ) in the context of linear regression?",
+    "chunk_moi": {
+      "chunk_index": 19,
+      "content_sha": "ebab0bf3ddab448dc137177223b30dfd22a4059db4268b79811eba8cde0ea4c6"
+    },
+    "chunk_cu": {
+      "chunk_index": 19,
+      "content_sha": "ebab0bf3ddab448dc137177223b30dfd22a4059db4268b79811eba8cde0ea4c6",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "machine-learning",
+    "file": "Week05.mp3",
+    "cau_hoi": "What does the speaker identify as the biggest problem with the algorithm, and which technique (mentioned for Wednesday) is suggested to address it?",
+    "chunk_moi": {
+      "chunk_index": 89,
+      "content_sha": "a3484f31cec04e7b34f67397d0de2485e5352d3cd7520cea1e1220dfcdf28636"
+    },
+    "chunk_cu": {
+      "chunk_index": 89,
+      "content_sha": "a3484f31cec04e7b34f67397d0de2485e5352d3cd7520cea1e1220dfcdf28636",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "machine-learning",
+    "file": "Week02.mp4",
+    "cau_hoi": "What reason does the passage give for why stochastic gradient descent never truly converges, even though it moves toward the global minimum?",
+    "chunk_moi": {
+      "chunk_index": 56,
+      "content_sha": "94b4b2c636a1d1ba6cd91d95167a18f96677534507faf2ef6aa0ad637cb01fdc"
+    },
+    "chunk_cu": {
+      "chunk_index": 56,
+      "content_sha": "94b4b2c636a1d1ba6cd91d95167a18f96677534507faf2ef6aa0ad637cb01fdc",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "machine-learning",
+    "file": "Week04.mp3",
+    "cau_hoi": "What does the passage say about the sign of the expression when a point lies to the left of the line defined by “θ triangle transpose X = 0”?",
+    "chunk_moi": {
+      "chunk_index": 65,
+      "content_sha": "f300989c791596b5510c0ed381ce286aa8b061d33a85b86c545266c63d651119"
+    },
+    "chunk_cu": {
+      "chunk_index": 65,
+      "content_sha": "f300989c791596b5510c0ed381ce286aa8b061d33a85b86c545266c63d651119",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "operating-system",
+    "file": "Chapter 5_CPU Scheduling.pdf",
+    "cau_hoi": "What are the possible values returned by `pthread_attr_getscope` and how does the program differentiate between `PTHREAD_SCOPE_PROCESS` and `PTHREAD_SCOPE_SYSTEM`?",
+    "chunk_moi": {
+      "chunk_index": 16,
+      "content_sha": "5df90012d35d471c966a0cf0073d8ea8feed268fbb1c2653fb3a57653b893387"
+    },
+    "chunk_cu": {
+      "chunk_index": 16,
+      "content_sha": "5df90012d35d471c966a0cf0073d8ea8feed268fbb1c2653fb3a57653b893387",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "operating-system",
+    "file": "Chapter 3_Processes.pdf",
+    "cau_hoi": "What special IP address is used as the loopback address to refer to the system on which a process is running?",
+    "chunk_moi": {
+      "chunk_index": 29,
+      "content_sha": "6a584b68f7f9387ea09b5570a35af41ac5da36e3f643892074f91150881ff9dc"
+    },
+    "chunk_cu": {
+      "chunk_index": 29,
+      "content_sha": "6a584b68f7f9387ea09b5570a35af41ac5da36e3f643892074f91150881ff9dc",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "operating-system",
+    "file": "Chapter 6_Synchronization Tools.pdf",
+    "cau_hoi": "What initial value is assigned to the shared variable `turn` in Proposal solution 1?",
+    "chunk_moi": {
+      "chunk_index": 7,
+      "content_sha": "70e196845809de8d5c9a49e876f5b12148b7968fdae0505c97443ff0b867d62d"
+    },
+    "chunk_cu": {
+      "chunk_index": 7,
+      "content_sha": "70e196845809de8d5c9a49e876f5b12148b7968fdae0505c97443ff0b867d62d",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "operating-system",
+    "file": "Chapter 6_Synchronization Tools.pdf",
+    "cau_hoi": "What output will be printed by Thread 1 if Thread 2 executes the assignments in the order `flag = true; x = 100;` instead of `x = 100; flag = true;`?",
+    "chunk_moi": {
+      "chunk_index": 11,
+      "content_sha": "e3bd18fb7856377db129a13fe006414a18bce0c5f5b87e21b506a4c8f82ebdb3"
+    },
+    "chunk_cu": {
+      "chunk_index": 11,
+      "content_sha": "e3bd18fb7856377db129a13fe006414a18bce0c5f5b87e21b506a4c8f82ebdb3",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "operating-system",
+    "file": "Chapter 5_CPU Scheduling.pdf",
+    "cau_hoi": "What is the average waiting time for the five processes (P₁–P₅) when scheduled with Round‑Robin using a quantum of 5 time units, given their burst times (10, 29, 3, 7, 12) and arrival times (0, 2, 5, 3, 6)?",
+    "chunk_moi": {
+      "chunk_index": 29,
+      "content_sha": "2ec939e06591c813b7fb73bc048b6556f3d4fc77b3584c57634f0ab097e87135"
+    },
+    "chunk_cu": {
+      "chunk_index": 29,
+      "content_sha": "2ec939e06591c813b7fb73bc048b6556f3d4fc77b3584c57634f0ab097e87135",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "operating-system",
+    "file": "Chapter 5_CPU Scheduling.pdf",
+    "cau_hoi": "What numeric ranges does the Linux 2.5 scheduler use for real‑time priorities and for nice values?",
+    "chunk_moi": {
+      "chunk_index": 31,
+      "content_sha": "aab34af1dd68a28e6b4b4d47d7eed1770eac69e84150ec268acea438fe82c8fb"
+    },
+    "chunk_cu": {
+      "chunk_index": 31,
+      "content_sha": "aab34af1dd68a28e6b4b4d47d7eed1770eac69e84150ec268acea438fe82c8fb",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "operating-system",
+    "file": "Chapter 5_CPU Scheduling.pdf",
+    "cau_hoi": "What is the maximum time a process can wait in a Round‑Robin scheduler before it gets CPU access again, expressed in terms of the number of processes \\(n\\) and the time quantum \\(q\\)?",
+    "chunk_moi": {
+      "chunk_index": 9,
+      "content_sha": "3a8693ce2a7e73e583f578a92eb9e7a165e227c6729fa1d1114d68e5e0f97249"
+    },
+    "chunk_cu": {
+      "chunk_index": 9,
+      "content_sha": "3a8693ce2a7e73e583f578a92eb9e7a165e227c6729fa1d1114d68e5e0f97249",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "operating-system",
+    "file": "Chapter 5_CPU Scheduling.pdf",
+    "cau_hoi": "What is the value of α used in the exponential averaging formula for predicting the next CPU burst length, and what initial burst time τ₀ is specified?",
+    "chunk_moi": {
+      "chunk_index": 7,
+      "content_sha": "74da7153064b6a2df3d4127542f4b0d5bec251fde141b2613739e001c336a25a"
+    },
+    "chunk_cu": {
+      "chunk_index": 7,
+      "content_sha": "74da7153064b6a2df3d4127542f4b0d5bec251fde141b2613739e001c336a25a",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "operating-system",
+    "file": "Chapter 5_CPU Scheduling.pdf",
+    "cau_hoi": "What are the specific sections listed in the outline of Chapter 5 on CPU Scheduling?",
+    "chunk_moi": {
+      "chunk_index": 0,
+      "content_sha": "8ebb1467db30faed5ed65aa2ed6b538029bc879aca51de2082192a2381ef8c67"
+    },
+    "chunk_cu": {
+      "chunk_index": 0,
+      "content_sha": "8ebb1467db30faed5ed65aa2ed6b538029bc879aca51de2082192a2381ef8c67",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "operating-system",
+    "file": "Chapter 6_Synchronization Tools.pdf",
+    "cau_hoi": "What term describes the abstract data type that uses condition variables to allow processes to wait for and signal changes in conditions, and is highlighted as a high‑level form of process synchronization?",
+    "chunk_moi": {
+      "chunk_index": 32,
+      "content_sha": "74a938ee1a0adef567b83432c705c66fe426f22446017047a977964e20f21637"
+    },
+    "chunk_cu": {
+      "chunk_index": 32,
+      "content_sha": "74a938ee1a0adef567b83432c705c66fe426f22446017047a977964e20f21637",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "operating-system",
+    "file": "Chapter 6_Synchronization Tools.pdf",
+    "cau_hoi": "What are the two atomic operations defined for a semaphore, and how does the `wait` operation modify the semaphore's value and process list when the resulting value becomes negative?",
+    "chunk_moi": {
+      "chunk_index": 19,
+      "content_sha": "83392e5068be2b9191dec52545816071394c6c83820981b90663e5b55dea46cb"
+    },
+    "chunk_cu": {
+      "chunk_index": 19,
+      "content_sha": "83392e5068be2b9191dec52545816071394c6c83820981b90663e5b55dea46cb",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "operating-system",
+    "file": "Chapter 4_Threads & Concurency.pdf",
+    "cau_hoi": "What are the two possible cancellation modes for a thread mentioned in the threading issues section?",
+    "chunk_moi": {
+      "chunk_index": 17,
+      "content_sha": "24338b86e69e283c690de4a3a42041ddcc7007bc7ffe8ae785563b3fe463bd21"
+    },
+    "chunk_cu": {
+      "chunk_index": 17,
+      "content_sha": "24338b86e69e283c690de4a3a42041ddcc7007bc7ffe8ae785563b3fe463bd21",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "operating-system",
+    "file": "Chapter 6_Synchronization Tools.pdf",
+    "cau_hoi": "What is the difference between a counting semaphore and a binary semaphore, and how can a counting semaphore be implemented using a binary semaphore in the context of the wait() and signal() operations?",
+    "chunk_moi": {
+      "chunk_index": 20,
+      "content_sha": "a14d629b3decd0b5d818db0434f431a4ab962fd38ca5ab31961c2f8426eec953"
+    },
+    "chunk_cu": {
+      "chunk_index": 20,
+      "content_sha": "a14d629b3decd0b5d818db0434f431a4ab962fd38ca5ab31961c2f8426eec953",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "operating-system",
+    "file": "Chapter 5_CPU Scheduling.pdf",
+    "cau_hoi": "What is the term used to describe the time it takes for the dispatcher to stop one process and start another running?",
+    "chunk_moi": {
+      "chunk_index": 3,
+      "content_sha": "24134a453ef014f83d50537ffdc9e7d1fabb3401c70c32d431f3e89282f74c54"
+    },
+    "chunk_cu": {
+      "chunk_index": 3,
+      "content_sha": "24134a453ef014f83d50537ffdc9e7d1fabb3401c70c32d431f3e89282f74c54",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "operating-system",
+    "file": "Chapter 4_Threads & Concurency.pdf",
+    "cau_hoi": "What is the name of the function used to wait for the created thread to finish execution in the pthread example?",
+    "chunk_moi": {
+      "chunk_index": 13,
+      "content_sha": "7d13610665a74587b45a6296c74890adcd099f69da42a17ce5906d0b4fa1f689"
+    },
+    "chunk_cu": {
+      "chunk_index": 13,
+      "content_sha": "7d13610665a74587b45a6296c74890adcd099f69da42a17ce5906d0b4fa1f689",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "operating-system",
+    "file": "Chapter 3_Processes.pdf",
+    "cau_hoi": "What is the maximum number of usable elements in the bounded buffer implementation that defines `BUFFER_SIZE` as 10?",
+    "chunk_moi": {
+      "chunk_index": 20,
+      "content_sha": "da618a52a617889491716fbeb88d03c5e3abc11dd731a4be5e9be8e40839c554"
+    },
+    "chunk_cu": {
+      "chunk_index": 20,
+      "content_sha": "da618a52a617889491716fbeb88d03c5e3abc11dd731a4be5e9be8e40839c554",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "operating-system",
+    "file": "Chapter 5_CPU Scheduling.pdf",
+    "cau_hoi": "What is the average waiting time calculated for the FCFS scheduling example where the processes have burst times 24 ms, 3 ms, and 3 ms and all arrive at time 0?",
+    "chunk_moi": {
+      "chunk_index": 4,
+      "content_sha": "97e18d8aac03a720626a838ec95f9d73093b178b30bfe7466125c438be438665"
+    },
+    "chunk_cu": {
+      "chunk_index": 4,
+      "content_sha": "97e18d8aac03a720626a838ec95f9d73093b178b30bfe7466125c438be438665",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "operating-system",
+    "file": "Chapter 5_CPU Scheduling.pdf",
+    "cau_hoi": "What is the average waiting time for the non‑preemptive Shortest‑Job‑First schedule of the four processes (P1, P2, P3, P4) given their arrival times 0, 1, 2, 3 and burst times 8 ms, 4 ms, 9 ms, 5 ms respectively?",
+    "chunk_moi": {
+      "chunk_index": 8,
+      "content_sha": "6354dfb786f1ffe0ed9157b638d4d21a232c6dc9b3876108207575f0a7dc03f1"
+    },
+    "chunk_cu": {
+      "chunk_index": 8,
+      "content_sha": "6354dfb786f1ffe0ed9157b638d4d21a232c6dc9b3876108207575f0a7dc03f1",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "operating-system",
+    "file": "Chapter 5_CPU Scheduling.pdf",
+    "cau_hoi": "What is the term used to describe the alternating pattern of CPU execution followed by I/O wait that is highlighted as a key concern in CPU scheduling?",
+    "chunk_moi": {
+      "chunk_index": 1,
+      "content_sha": "8c29f441648471d40866e8cf43335875f94b1db3c9f8e341a1e83d05d6aa29d2"
+    },
+    "chunk_cu": {
+      "chunk_index": 1,
+      "content_sha": "8c29f441648471d40866e8cf43335875f94b1db3c9f8e341a1e83d05d6aa29d2",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "operating-system",
+    "file": "Chapter 2_Operating System Structures.pdf",
+    "cau_hoi": "What are the three most common APIs listed for accessing system calls?",
+    "chunk_moi": {
+      "chunk_index": 7,
+      "content_sha": "8b340109db27168b0fa1708ff5e331394a1879a51e3ecae326601b6a9d064afe"
+    },
+    "chunk_cu": {
+      "chunk_index": 7,
+      "content_sha": "8b340109db27168b0fa1708ff5e331394a1879a51e3ecae326601b6a9d064afe",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "operating-system",
+    "file": "Chapter 3_Processes.pdf",
+    "cau_hoi": "In the producer code, which condition is used to detect that the circular buffer is full before inserting a new item?",
+    "chunk_moi": {
+      "chunk_index": 21,
+      "content_sha": "c7d5e3ca47a79308acf547d41a105f052a05d5b5daf49b33927451b14b2278da"
+    },
+    "chunk_cu": {
+      "chunk_index": 21,
+      "content_sha": "c7d5e3ca47a79308acf547d41a105f052a05d5b5daf49b33927451b14b2278da",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "operating-system",
+    "file": "Chapter 6_Synchronization Tools.pdf",
+    "cau_hoi": "In the monitor implementation of the bounded buffer, which condition variable is signaled immediately after a producer inserts a resource into the “resources” array?",
+    "chunk_moi": {
+      "chunk_index": 25,
+      "content_sha": "9c5cbf141068a7072bc0ffc6c2535fa4e069ad59af96645fd8806edbae7d3441"
+    },
+    "chunk_cu": {
+      "chunk_index": 25,
+      "content_sha": "9c5cbf141068a7072bc0ffc6c2535fa4e069ad59af96645fd8806edbae7d3441",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "operating-system",
+    "file": "Chapter 6_Synchronization Tools.pdf",
+    "cau_hoi": "In the deadlock scenario described, which process executes `wait(Q)` after `P_0` has already executed `wait(S)`?",
+    "chunk_moi": {
+      "chunk_index": 28,
+      "content_sha": "b6f462f76daa103a6bed1163da5a4ce7f2a5a5f18b7b9e0f23c5ac01f92118ed"
+    },
+    "chunk_cu": {
+      "chunk_index": 28,
+      "content_sha": "b6f462f76daa103a6bed1163da5a4ce7f2a5a5f18b7b9e0f23c5ac01f92118ed",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "operating-system",
+    "file": "Chapter 6_Synchronization Tools.pdf",
+    "cau_hoi": "What is the purpose of the expression `(out + 1) % BUFFER_SIZE` in the consumer loop, and how does it relate to the variable `out`?",
+    "chunk_moi": {
+      "chunk_index": 3,
+      "content_sha": "31dbc76feff4bd3416882a3c3f40dfb452c9550d8e1df207a4815c465f573b4e"
+    },
+    "chunk_cu": {
+      "chunk_index": 3,
+      "content_sha": "31dbc76feff4bd3416882a3c3f40dfb452c9550d8e1df207a4815c465f573b4e",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "operating-system",
+    "file": "Chapter 3_Processes.pdf",
+    "cau_hoi": "In direct communication, which primitive is used to send a message to a specific process, and what are its two arguments?",
+    "chunk_moi": {
+      "chunk_index": 23,
+      "content_sha": "871555886e8290d195c82cb10f29f8645a0142935d1b4f805a4333a23451031c"
+    },
+    "chunk_cu": {
+      "chunk_index": 23,
+      "content_sha": "871555886e8290d195c82cb10f29f8645a0142935d1b4f805a4333a23451031c",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "operating-system",
+    "file": "Chapter 3_Processes.pdf",
+    "cau_hoi": "In the example program that calls `fork();` twice in succession, how many processes are created in total?",
+    "chunk_moi": {
+      "chunk_index": 12,
+      "content_sha": "d9a85c43136906816ca075ed139ef1e5de874fafa897210f7f8d04fddc7899c4"
+    },
+    "chunk_cu": {
+      "chunk_index": 12,
+      "content_sha": "d9a85c43136906816ca075ed139ef1e5de874fafa897210f7f8d04fddc7899c4",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "operating-system",
+    "file": "Chapter 4_Threads & Concurency.pdf",
+    "cau_hoi": "What members are defined inside the `struct char_print_parms` that is used to pass arguments to the thread function?",
+    "chunk_moi": {
+      "chunk_index": 15,
+      "content_sha": "ac0eb8072e7eb5ff5f1ac850ea0cc96a94cba1e90241e4d30869a5de8697652e"
+    },
+    "chunk_cu": {
+      "chunk_index": 15,
+      "content_sha": "ac0eb8072e7eb5ff5f1ac850ea0cc96a94cba1e90241e4d30869a5de8697652e",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "operating-system",
+    "file": "Chapter 5_CPU Scheduling.pdf",
+    "cau_hoi": "What inequality must be satisfied among a periodic task’s processing time t, its deadline d, and its period p?",
+    "chunk_moi": {
+      "chunk_index": 22,
+      "content_sha": "bbe0d72dd3df9d35ba4e10824a19e4b65722c3529d66b37d2e70780c3d6acd94"
+    },
+    "chunk_cu": {
+      "chunk_index": 22,
+      "content_sha": "bbe0d72dd3df9d35ba4e10824a19e4b65722c3529d66b37d2e70780c3d6acd94",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "operating-system",
+    "file": "Chapter 5_CPU Scheduling.pdf",
+    "cau_hoi": "What are the average turnaround times for processes P₁–P₅ when scheduled using FCFS, SJF, and Round‑Robin with a quantum of 10, given the burst times 10, 29, 3, 7, and 12?",
+    "chunk_moi": {
+      "chunk_index": 28,
+      "content_sha": "ff13b41459c900e46a3d417f8c16779e0d16e400327e2d3beb21ed553087d47f"
+    },
+    "chunk_cu": {
+      "chunk_index": 28,
+      "content_sha": "ff13b41459c900e46a3d417f8c16779e0d16e400327e2d3beb21ed553087d47f",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "operating-system",
+    "file": "Chapter 3_Processes.pdf",
+    "cau_hoi": "What component of the operating system stores a process’s context during a context switch?",
+    "chunk_moi": {
+      "chunk_index": 8,
+      "content_sha": "fbc8af7a833d6fecfbb9c3129ed21c345950ff2f76a430b3ab3ac3a9c53fe3d6"
+    },
+    "chunk_cu": {
+      "chunk_index": 8,
+      "content_sha": "fbc8af7a833d6fecfbb9c3129ed21c345950ff2f76a430b3ab3ac3a9c53fe3d6",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "operating-system",
+    "file": "Chapter 2_Operating System Structures.pdf",
+    "cau_hoi": "Trong ví dụ về Thư viện C chuẩn, hàm printf() cuối cùng sẽ gọi hệ thống gọi nào để thực hiện việc ghi ra?",
+    "chunk_moi": {
+      "chunk_index": 13,
+      "content_sha": "e66b8be6092f332fa1b1a006c6cf185caba46128f7f8a3e181cc90b3c1c90491"
+    },
+    "chunk_cu": {
+      "chunk_index": 13,
+      "content_sha": "e66b8be6092f332fa1b1a006c6cf185caba46128f7f8a3e181cc90b3c1c90491",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "operating-system",
+    "file": "Chapter 5_CPU Scheduling.pdf",
+    "cau_hoi": "What scheduling rule does a multilevel queue employ to choose a process when it maintains separate queues for each priority level?",
+    "chunk_moi": {
+      "chunk_index": 13,
+      "content_sha": "5987f8b6a0a137a0ec7176ea26eeed957920032b7652bc017bd70f879d4ac05d"
+    },
+    "chunk_cu": {
+      "chunk_index": 13,
+      "content_sha": "5987f8b6a0a137a0ec7176ea26eeed957920032b7652bc017bd70f879d4ac05d",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "operating-system",
+    "file": "Chapter 3_Processes.pdf",
+    "cau_hoi": "What port number is specified when creating the `ServerSocket` in the Java `DateServer` example?",
+    "chunk_moi": {
+      "chunk_index": 30,
+      "content_sha": "66dad7c5ace9b54a6fbfbfda687af0374555259ff0a91ece2255134f4bf4a38d"
+    },
+    "chunk_cu": {
+      "chunk_index": 30,
+      "content_sha": "66dad7c5ace9b54a6fbfbfda687af0374555259ff0a91ece2255134f4bf4a38d",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "operating-system",
+    "file": "Chapter 4_Threads & Concurency.pdf",
+    "cau_hoi": "What mechanism do scheduler activations use to inform the thread library about changes in the number of kernel threads, and what intermediate data structure typically represents a virtual processor for scheduling user threads?",
+    "chunk_moi": {
+      "chunk_index": 21,
+      "content_sha": "fa54d5d0ea8c88ee6bc25fdaa4b397f25c60d87c36458c0c35e6c4f0fde80704"
+    },
+    "chunk_cu": {
+      "chunk_index": 21,
+      "content_sha": "fa54d5d0ea8c88ee6bc25fdaa4b397f25c60d87c36458c0c35e6c4f0fde80704",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "operating-system",
+    "file": "Chapter 4_Threads & Concurency.pdf",
+    "cau_hoi": "What are the three primary user‑level thread libraries listed in the text?",
+    "chunk_moi": {
+      "chunk_index": 6,
+      "content_sha": "f1695fe1f2e2cd7a9d6bda93dd53d9ba1d36039fa5d4137f1707234f9f5c3701"
+    },
+    "chunk_cu": {
+      "chunk_index": 6,
+      "content_sha": "f1695fe1f2e2cd7a9d6bda93dd53d9ba1d36039fa5d4137f1707234f9f5c3701",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "operating-system",
+    "file": "Chapter 4_Threads & Concurency.pdf",
+    "cau_hoi": "Which implicit threading approach listed together with thread pools and fork‑join is named Grand Central Dispatch?",
+    "chunk_moi": {
+      "chunk_index": 1,
+      "content_sha": "a1c3cd50a0a09a0ce84f7a3f38004cfcb9478bf537898187067819ece66d4721"
+    },
+    "chunk_cu": {
+      "chunk_index": 1,
+      "content_sha": "a1c3cd50a0a09a0ce84f7a3f38004cfcb9478bf537898187067819ece66d4721",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "operating-system",
+    "file": "Chapter 6_Synchronization Tools.pdf",
+    "cau_hoi": "What is the initial value assigned to the `counter` variable that tracks the number of full buffers in the producer‑consumer solution?",
+    "chunk_moi": {
+      "chunk_index": 2,
+      "content_sha": "c3ad81a33dc44e6e95332444e7215441894f1c7e2162ad69bf1461813a24e0f2"
+    },
+    "chunk_cu": {
+      "chunk_index": 2,
+      "content_sha": "c3ad81a33dc44e6e95332444e7215441894f1c7e2162ad69bf1461813a24e0f2",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "operating-system",
+    "file": "Chapter 3_Processes.pdf",
+    "cau_hoi": "Trong mô tả trạng thái của một tiến trình, trạng thái nào biểu thị tiến trình đang chờ một sự kiện xảy ra?",
+    "chunk_moi": {
+      "chunk_index": 3,
+      "content_sha": "82835953951ee249299cabd6da78cb5e2dad61014341c8984746c2d5aecd94ba"
+    },
+    "chunk_cu": {
+      "chunk_index": 3,
+      "content_sha": "82835953951ee249299cabd6da78cb5e2dad61014341c8984746c2d5aecd94ba",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "operating-system",
+    "file": "Chapter 5_CPU Scheduling.pdf",
+    "cau_hoi": "What are the two distinct levels of scheduling described for a multithreaded multicore system?",
+    "chunk_moi": {
+      "chunk_index": 20,
+      "content_sha": "1d9a0c15171a1e90401ea95e275454e80ed797577811f92b2ee2db61086d59ec"
+    },
+    "chunk_cu": {
+      "chunk_index": 20,
+      "content_sha": "1d9a0c15171a1e90401ea95e275454e80ed797577811f92b2ee2db61086d59ec",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "operating-system",
+    "file": "Chapter 3_Processes.pdf",
+    "cau_hoi": "Trong mô hình biểu diễn lập lịch tiến trình được mô tả, khi nào một “context switch” xảy ra và quá trình nào được lưu trạng thái vào PCB?",
+    "chunk_moi": {
+      "chunk_index": 7,
+      "content_sha": "d2b5004d9608c01c6a5caa6a833fc1cfce1ab2d8a9b284fd0f0bdcd8ab5f8bb3"
+    },
+    "chunk_cu": {
+      "chunk_index": 7,
+      "content_sha": "d2b5004d9608c01c6a5caa6a833fc1cfce1ab2d8a9b284fd0f0bdcd8ab5f8bb3",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "operating-system",
+    "file": "Chapter 6_Synchronization Tools.pdf",
+    "cau_hoi": "What is the name of the specific algorithm introduced in Chapter 6 to solve the critical‑section problem?",
+    "chunk_moi": {
+      "chunk_index": 0,
+      "content_sha": "cafc72ceb9f5effc4ae89577d4699aed610f846b360309a15f508ff05f840df8"
+    },
+    "chunk_cu": {
+      "chunk_index": 0,
+      "content_sha": "cafc72ceb9f5effc4ae89577d4699aed610f846b360309a15f508ff05f840df8",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "operating-system",
+    "file": "Chapter 4_Threads & Concurency.pdf",
+    "cau_hoi": "Does fork() duplicate only the calling thread or all threads?",
+    "chunk_moi": {
+      "chunk_index": 18,
+      "content_sha": "98340b231f5769705bebf8d8874537acde688bb322e3387fe3abf91e8f81a32b"
+    },
+    "chunk_cu": {
+      "chunk_index": 18,
+      "content_sha": "98340b231f5769705bebf8d8874537acde688bb322e3387fe3abf91e8f81a32b",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "operating-system",
+    "file": "Chapter 4_Threads & Concurency.pdf",
+    "cau_hoi": "What benefit of threads is defined as allowing continued execution when part of a process is blocked, especially important for user interfaces?",
+    "chunk_moi": {
+      "chunk_index": 3,
+      "content_sha": "dd2ba0120bd5055bfb665a6850231f7410daeefbe5824bed9c09e4ec2ad50450"
+    },
+    "chunk_cu": {
+      "chunk_index": 3,
+      "content_sha": "dd2ba0120bd5055bfb665a6850231f7410daeefbe5824bed9c09e4ec2ad50450",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "operating-system",
+    "file": "Chapter 2_Operating System Structures.pdf",
+    "cau_hoi": "What operating system is described as having an “Aqua” GUI interface built on top of a UNIX kernel, while also providing shells for command‑line access?",
+    "chunk_moi": {
+      "chunk_index": 6,
+      "content_sha": "a80bc40ddda80762d47eaa8774995a6fc5dbe237e99c6c94b566325cf724bb4b"
+    },
+    "chunk_cu": {
+      "chunk_index": 6,
+      "content_sha": "a80bc40ddda80762d47eaa8774995a6fc5dbe237e99c6c94b566325cf724bb4b",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "operating-system",
+    "file": "Chapter 4_Threads & Concurency.pdf",
+    "cau_hoi": "What happens to all peer user‑level threads when any one of them becomes blocked?",
+    "chunk_moi": {
+      "chunk_index": 8,
+      "content_sha": "d9a996a72b3b3a8db9c3f8688a686f39abe421c9d15252d8f77805f7dff47141"
+    },
+    "chunk_cu": {
+      "chunk_index": 8,
+      "content_sha": "d9a996a72b3b3a8db9c3f8688a686f39abe421c9d15252d8f77805f7dff47141",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "operating-system",
+    "file": "Chapter 6_Synchronization Tools.pdf",
+    "cau_hoi": "What priority does the current owner of resource R receive under the priority inheritance protocol when the highest‑priority thread (P₁) is waiting to acquire it?",
+    "chunk_moi": {
+      "chunk_index": 29,
+      "content_sha": "2b494997684e24d6a05ba96e5322638de1088ce919e94194781a75ee43143114"
+    },
+    "chunk_cu": {
+      "chunk_index": 29,
+      "content_sha": "2b494997684e24d6a05ba96e5322638de1088ce919e94194781a75ee43143114",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "operating-system",
+    "file": "Chapter 6_Synchronization Tools.pdf",
+    "cau_hoi": "What placement of `memory_barrier()` in the two threads guarantees that Thread 1 will print the value 100?",
+    "chunk_moi": {
+      "chunk_index": 13,
+      "content_sha": "51fa51f24895c23435acad78a848b4c1ee900ac10481dbeeaedcdd1a486a1447"
+    },
+    "chunk_cu": {
+      "chunk_index": 13,
+      "content_sha": "51fa51f24895c23435acad78a848b4c1ee900ac10481dbeeaedcdd1a486a1447",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "operating-system",
+    "file": "Chapter 2_Operating System Structures.pdf",
+    "cau_hoi": "What term is used to describe the loadable components that allow each core part of a modern operating system to be added to the kernel on demand, as mentioned in the discussion of microkernel system structure?",
+    "chunk_moi": {
+      "chunk_index": 18,
+      "content_sha": "65d2ea459d0ce32930b5fd41c0e9b5d09d965676e79627754eb5adeebfa9874a"
+    },
+    "chunk_cu": {
+      "chunk_index": 18,
+      "content_sha": "65d2ea459d0ce32930b5fd41c0e9b5d09d965676e79627754eb5adeebfa9874a",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "operating-system",
+    "file": "Chapter 4_Threads & Concurency.pdf",
+    "cau_hoi": "What are the advantages of using thread pools in operating systems according to the given text?",
+    "chunk_moi": {
+      "chunk_index": 16,
+      "content_sha": "af3239ba1f2734580f287c67a36c7946700df87e8e6a3799c1f2a93694a2ec77"
+    },
+    "chunk_cu": {
+      "chunk_index": 16,
+      "content_sha": "af3239ba1f2734580f287c67a36c7946700df87e8e6a3799c1f2a93694a2ec77",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "operating-system",
+    "file": "Chapter 2_Operating System Structures.pdf",
+    "cau_hoi": "Linux System Structure có điểm khác biệt cốt lõi nào về mặt thiết kế kiến trúc so với kiến trúc của hệ thống Traditional UNIX?",
+    "chunk_moi": {
+      "chunk_index": 16,
+      "content_sha": "3d691d898a28138558c9b6ead9f46a1efe28f8a7064c86fe0b346d85c1c12c45"
+    },
+    "chunk_cu": {
+      "chunk_index": 16,
+      "content_sha": "3d691d898a28138558c9b6ead9f46a1efe28f8a7064c86fe0b346d85c1c12c45",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "scientific-socialism",
+    "file": "Chapter1.pptx",
+    "cau_hoi": "Tập I bộ Tư bản của C.Mác được xuất bản vào năm nào?",
+    "chunk_moi": {
+      "chunk_index": 14,
+      "content_sha": "01e424783d007f8d21a759b2722cefcc3a59150f4185487cc72546efbbb16fc9"
+    },
+    "chunk_cu": {
+      "chunk_index": 14,
+      "content_sha": "01e424783d007f8d21a759b2722cefcc3a59150f4185487cc72546efbbb16fc9",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "scientific-socialism",
+    "file": "Chapter2.pptx",
+    "cau_hoi": "Giai cấp công nhân giữ vai trò quyết định sự phát triển của xã hội hiện đại nhờ những yếu tố nào?",
+    "chunk_moi": {
+      "chunk_index": 13,
+      "content_sha": "fe1e31c66f38a0034f3317d766727c9067607291c67bb13015cefc0d8349f561"
+    },
+    "chunk_cu": {
+      "chunk_index": 13,
+      "content_sha": "fe1e31c66f38a0034f3317d766727c9067607291c67bb13015cefc0d8349f561",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "scientific-socialism",
+    "file": "Chapter1.pptx",
+    "cau_hoi": "Theo nghĩa hẹp, Chủ nghĩa xã hội khoa học là một trong ba bộ phận của chủ nghĩa nào?",
+    "chunk_moi": {
+      "chunk_index": 1,
+      "content_sha": "d2e872f4def0607e6cab3e942e8b01d874aff266dc7376bad606e4544a6e9303"
+    },
+    "chunk_cu": {
+      "chunk_index": 1,
+      "content_sha": "d2e872f4def0607e6cab3e942e8b01d874aff266dc7376bad606e4544a6e9303",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "scientific-socialism",
+    "file": "Chapter2.pptx",
+    "cau_hoi": "Giai cấp công nhân muốn tiến hành xóa bỏ chế độ tư hữu tư nhân về tài liệu sản xuất, thay thế bằng chế độ gì?",
+    "chunk_moi": {
+      "chunk_index": 10,
+      "content_sha": "cde1f938b6bc4cde33278bc08e43af4bdf6b73a8d5cc31fd0fb72181c32a0e52"
+    },
+    "chunk_cu": {
+      "chunk_index": 10,
+      "content_sha": "cde1f938b6bc4cde33278bc08e43af4bdf6b73a8d5cc31fd0fb72181c32a0e52",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "scientific-socialism",
+    "file": "Chapter1.pptx",
+    "cau_hoi": "Nội dung của câu hỏi ôn tập thứ ba trong phần củng cố bài học về ý nghĩa của việc nghiên cứu Chủ nghĩa xã hội khoa học là gì?",
+    "chunk_moi": {
+      "chunk_index": 25,
+      "content_sha": "95c7c71de527d8729a1a625969b66f40e0819f82c3fa3c1d376fe2e46133a112"
+    },
+    "chunk_cu": {
+      "chunk_index": 25,
+      "content_sha": "95c7c71de527d8729a1a625969b66f40e0819f82c3fa3c1d376fe2e46133a112",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "scientific-socialism",
+    "file": "Chapter 3.pptx",
+    "cau_hoi": "Trong các mục được liệt kê, mục nào nêu ra “xây dựng Đảng trong sạch, vững mạnh”?",
+    "chunk_moi": {
+      "chunk_index": 18,
+      "content_sha": "02c2b625d9edb72e3869bf05a4d8d6fa256921dd573dd4f100c0324ff7cb9f7b"
+    },
+    "chunk_cu": {
+      "chunk_index": 18,
+      "content_sha": "02c2b625d9edb72e3869bf05a4d8d6fa256921dd573dd4f100c0324ff7cb9f7b",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "scientific-socialism",
+    "file": "Chapter 3.pptx",
+    "cau_hoi": "Nội dung của quan điểm \"Sáu là\" trong tài liệu bao gồm những nhiệm vụ trọng tâm nào?",
+    "chunk_moi": {
+      "chunk_index": 17,
+      "content_sha": "e5bf8ee13ccfff8138a09a53ce1e6cb05a988ec58ff585783ca388fee192e386"
+    },
+    "chunk_cu": {
+      "chunk_index": 17,
+      "content_sha": "e5bf8ee13ccfff8138a09a53ce1e6cb05a988ec58ff585783ca388fee192e386",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "scientific-socialism",
+    "file": "Chapter 3.pptx",
+    "cau_hoi": "Phương hướng nào được nêu là thứ hai trong việc xây dựng chủ nghĩa xã hội ở Việt Nam hiện nay?",
+    "chunk_moi": {
+      "chunk_index": 16,
+      "content_sha": "6148dbd06b54d382c652afa7e253610db7f7045d5759446f3089211aed81d82b"
+    },
+    "chunk_cu": {
+      "chunk_index": 16,
+      "content_sha": "6148dbd06b54d382c652afa7e253610db7f7045d5759446f3089211aed81d82b",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "scientific-socialism",
+    "file": "Chapter 3.pptx",
+    "cau_hoi": "Trong đoạn trích, Hồ Chí Minh định nghĩa “văn hoá” là “sự tổng hợp của mọi phương thức sinh hoạt cùng với biểu hiện của nó mà loài người đã sản sinh ra nhằm thích ứng những nhu cầu đời sống và yêu cầu của sự sinh tồn” như thế nào?",
+    "chunk_moi": {
+      "chunk_index": 7,
+      "content_sha": "3f2b2b7c919105b7ed23128af3cce7543b240030bbf6c622fc3c98c51926ebf2"
+    },
+    "chunk_cu": {
+      "chunk_index": 7,
+      "content_sha": "3f2b2b7c919105b7ed23128af3cce7543b240030bbf6c622fc3c98c51926ebf2",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "scientific-socialism",
+    "file": "Chapter2.pptx",
+    "cau_hoi": "Trong chiến lược của GCCN Việt Nam, mục tiêu “đào tạo bồi dưỡng nâng cao trình độ mọi mặt cho công nhân” được liệt kê ở mục số bao nhiêu?",
+    "chunk_moi": {
+      "chunk_index": 28,
+      "content_sha": "82d4ac5ea1f171e63462efcbf48cf603636ef1f32200d6f70592314893c8859f"
+    },
+    "chunk_cu": {
+      "chunk_index": 28,
+      "content_sha": "82d4ac5ea1f171e63462efcbf48cf603636ef1f32200d6f70592314893c8859f",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "scientific-socialism",
+    "file": "Chapter 3.pptx",
+    "cau_hoi": "Điều kiện kinh tế dẫn đến sự ra đời của chủ nghĩa xã hội là gì?",
+    "chunk_moi": {
+      "chunk_index": 4,
+      "content_sha": "4492ef2fc0ca0aa5a176144417f6a7d8aff5d4a6476dd4f4728c90073fee4a35"
+    },
+    "chunk_cu": {
+      "chunk_index": 4,
+      "content_sha": "4492ef2fc0ca0aa5a176144417f6a7d8aff5d4a6476dd4f4728c90073fee4a35",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "scientific-socialism",
+    "file": "Chapter2.pptx",
+    "cau_hoi": "Trong trích dẫn, Marx và Engels mô tả cảm giác của giai cấp hữu sản về sự tự tha hóa như thế nào?",
+    "chunk_moi": {
+      "chunk_index": 9,
+      "content_sha": "f8a81b929478b52fc9e06085e93f0ed00a8eab26cdff6c827d10c3a0a3cdf7b7"
+    },
+    "chunk_cu": {
+      "chunk_index": 9,
+      "content_sha": "f8a81b929478b52fc9e06085e93f0ed00a8eab26cdff6c827d10c3a0a3cdf7b7",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "scientific-socialism",
+    "file": "Chapter1.pptx",
+    "cau_hoi": "Trong mô hình thực nghiệm CSCN của công xưởng Nuilanac, nguyên tắc “làm theo năng lực, hưởng theo nhu cầu” được áp dụng như thế nào?",
+    "chunk_moi": {
+      "chunk_index": 9,
+      "content_sha": "b7ba5a80ba096a0e90f9ef330f46d24c88e871b2b01cd84038ad60b67aad90ca"
+    },
+    "chunk_cu": {
+      "chunk_index": 9,
+      "content_sha": "b7ba5a80ba096a0e90f9ef330f46d24c88e871b2b01cd84038ad60b67aad90ca",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "scientific-socialism",
+    "file": "Chapter2.pptx",
+    "cau_hoi": "Vì sao giai cấp công nhân có thể tập hợp, đoàn kết và lãnh đạo đông đảo quần chúng nhân dân lao động?",
+    "chunk_moi": {
+      "chunk_index": 14,
+      "content_sha": "005f6f84943aca276b0d7546d8341c828e40825f2c3439a7649a8bc3fad092e5"
+    },
+    "chunk_cu": {
+      "chunk_index": 14,
+      "content_sha": "005f6f84943aca276b0d7546d8341c828e40825f2c3439a7649a8bc3fad092e5",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "scientific-socialism",
+    "file": "Chapter2.pptx",
+    "cau_hoi": "Trong quan điểm của Marx và Engels, tại sao giai cấp vô sản được coi là “giai cấp thực sự cách mạng” trong khi các giai cấp khác chỉ là “tầng lớp trung đẳng”?",
+    "chunk_moi": {
+      "chunk_index": 16,
+      "content_sha": "c98f7f8a3014b1e0224d27fd3b26857720c97c4dd16f9d2243f39cdce5ce99a1"
+    },
+    "chunk_cu": {
+      "chunk_index": 16,
+      "content_sha": "c98f7f8a3014b1e0224d27fd3b26857720c97c4dd16f9d2243f39cdce5ce99a1",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "scientific-socialism",
+    "file": "Chapter2.pptx",
+    "cau_hoi": "Nội dung kinh tế trong tài liệu bao gồm những nhiệm vụ trọng tâm nào?",
+    "chunk_moi": {
+      "chunk_index": 25,
+      "content_sha": "28e11c65911c01cd6cb32216c485d1aa0dcff7496a12159593dd4fe896af2ebd"
+    },
+    "chunk_cu": {
+      "chunk_index": 25,
+      "content_sha": "28e11c65911c01cd6cb32216c485d1aa0dcff7496a12159593dd4fe896af2ebd",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "scientific-socialism",
+    "file": "Chapter2.pptx",
+    "cau_hoi": "Theo V.I. Lenin, yếu tố chủ quan nào được coi là quan trọng nhất để giai cấp công nhân thực hiện sứ mệnh lịch sử?",
+    "chunk_moi": {
+      "chunk_index": 18,
+      "content_sha": "9735e82c29998ea182e8f0b321ff838cfbeb5c122920cf6f3d004b7f055a1a58"
+    },
+    "chunk_cu": {
+      "chunk_index": 18,
+      "content_sha": "9735e82c29998ea182e8f0b321ff838cfbeb5c122920cf6f3d004b7f055a1a58",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "scientific-socialism",
+    "file": "Chapter1.pptx",
+    "cau_hoi": "Ai là người được ghi là sáng lập Chủ nghĩa xã hội khoa học và đồng thời là lãnh tụ của Phong trào Cách mạng Quốc tế?",
+    "chunk_moi": {
+      "chunk_index": 10,
+      "content_sha": "8243a66c2e4d4de9fdaa7dabcd29cf7beeb68cc96d8b94fe29a95887a8a542c3"
+    },
+    "chunk_cu": {
+      "chunk_index": 10,
+      "content_sha": "8243a66c2e4d4de9fdaa7dabcd29cf7beeb68cc96d8b94fe29a95887a8a542c3",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "scientific-socialism",
+    "file": "Chapter 3.pptx",
+    "cau_hoi": "Theo định nghĩa nào, chủ nghĩa xã hội được mô tả là “một xã hội được thiết lập sau thắng lợi của cuộc cách mạng xã hội chủ nghĩa của giai cấp công nhân dưới sự lãnh đạo của Đảng cộng sản”?",
+    "chunk_moi": {
+      "chunk_index": 3,
+      "content_sha": "5f4985bb2271dce30c8049b03aaecbee42e99a7258fe3a52568b05d277fad5d0"
+    },
+    "chunk_cu": {
+      "chunk_index": 3,
+      "content_sha": "5f4985bb2271dce30c8049b03aaecbee42e99a7258fe3a52568b05d277fad5d0",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "scientific-socialism",
+    "file": "Chapter1.pptx",
+    "cau_hoi": "Trong bối cảnh lịch sử nào, cách mạng công nghiệp đã hoàn thành ở Anh vào đầu thế kỷ 19?",
+    "chunk_moi": {
+      "chunk_index": 2,
+      "content_sha": "3dc750240682eead9cc1802dda7a88c4ef7729f5b4e05e4c95926a7faca2734e"
+    },
+    "chunk_cu": {
+      "chunk_index": 2,
+      "content_sha": "3dc750240682eead9cc1802dda7a88c4ef7729f5b4e05e4c95926a7faca2734e",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "scientific-socialism",
+    "file": "Chapter1.pptx",
+    "cau_hoi": "Theo C.Mác và Ph.Ăngghen, ba phát kiến vĩ đại được liệt kê trong chương này là gì?",
+    "chunk_moi": {
+      "chunk_index": 12,
+      "content_sha": "b9392f834adf5a1e0a76c960349c61ec8db13a1ffab637f23c94283081226713"
+    },
+    "chunk_cu": {
+      "chunk_index": 12,
+      "content_sha": "b9392f834adf5a1e0a76c960349c61ec8db13a1ffab637f23c94283081226713",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "scientific-socialism",
+    "file": "Chapter1.pptx",
+    "cau_hoi": "Phương pháp kết hợp lịch sử - lôgíc là gì trong các phương pháp nghiên cứu của CNXHKH?",
+    "chunk_moi": {
+      "chunk_index": 24,
+      "content_sha": "f72931424ede1838a662bc3cba2388b48a9481bca0d747486f18fc7ee5419ee4"
+    },
+    "chunk_cu": {
+      "chunk_index": 24,
+      "content_sha": "f72931424ede1838a662bc3cba2388b48a9481bca0d747486f18fc7ee5419ee4",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "scientific-socialism",
+    "file": "Chapter2.pptx",
+    "cau_hoi": "Trong quan điểm của Mác‑Lênin, giai cấp công nhân hiện đại được mô tả như thế nào so với “giai cấp vô sản hiện đại” và “giai cấp công nhân cơ khí”?",
+    "chunk_moi": {
+      "chunk_index": 1,
+      "content_sha": "b31d5c3e6223bd803d669c52767d3f0d5fe91bf76d70f89fe1b745d9f6f07aec"
+    },
+    "chunk_cu": {
+      "chunk_index": 1,
+      "content_sha": "b31d5c3e6223bd803d669c52767d3f0d5fe91bf76d70f89fe1b745d9f6f07aec",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "scientific-socialism",
+    "file": "Chapter1.pptx",
+    "cau_hoi": "Trong giai đoạn “Thời kỳ sau Công xã Pari đến 1895”, Lenin đã vận dụng và phát triển CNXHKH qua các tác phẩm nào, trong đó có “Nguồn gốc của gia đình, của chế độ tư hữu và của NN”?",
+    "chunk_moi": {
+      "chunk_index": 15,
+      "content_sha": "c199d1b5fa5fdf840ea18380629f4073b124b70fdc04d7ef6154d0b93cefc4e1"
+    },
+    "chunk_cu": {
+      "chunk_index": 15,
+      "content_sha": "c199d1b5fa5fdf840ea18380629f4073b124b70fdc04d7ef6154d0b93cefc4e1",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "scientific-socialism",
+    "file": "Chapter2.pptx",
+    "cau_hoi": "Trong tiêu chí “Về phương diện CT - XH” của GCCN, người lao động được mô tả là những ai có đặc điểm gì liên quan đến việc không có hoặc hầu như không có tài liệu sản xuất?",
+    "chunk_moi": {
+      "chunk_index": 4,
+      "content_sha": "e94f2e8a5832caab179d67285357851da3032d44464f39a5718681522ca055b1"
+    },
+    "chunk_cu": {
+      "chunk_index": 4,
+      "content_sha": "e94f2e8a5832caab179d67285357851da3032d44464f39a5718681522ca055b1",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "scientific-socialism",
+    "file": "Chapter1.pptx",
+    "cau_hoi": "Trong 5 bài học, khái niệm nào được dùng để mô tả việc “đóng vai Marx chống lại Marx” và ai là người đưa ra ý tưởng này?",
+    "chunk_moi": {
+      "chunk_index": 20,
+      "content_sha": "baf35e5881c4f618b4920e5d33132b0a08c0fe64fd2eb692879c5d525e0c8cc8"
+    },
+    "chunk_cu": {
+      "chunk_index": 20,
+      "content_sha": "baf35e5881c4f618b4920e5d33132b0a08c0fe64fd2eb692879c5d525e0c8cc8",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "scientific-socialism",
+    "file": "Chapter1.pptx",
+    "cau_hoi": "Trong giai đoạn từ năm 1844 đến 1848, C.Mác và Ph.Ăngghen đã có sự chuyển biến như thế nào về thế giới quan và lập trường chính trị?",
+    "chunk_moi": {
+      "chunk_index": 11,
+      "content_sha": "5b6d8b5000b167662b37884a54570c9667dc6666651630996ad576f9a6cd3a6f"
+    },
+    "chunk_cu": {
+      "chunk_index": 11,
+      "content_sha": "5b6d8b5000b167662b37884a54570c9667dc6666651630996ad576f9a6cd3a6f",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "scientific-socialism",
+    "file": "Chapter 3.pptx",
+    "cau_hoi": "Trong chương 3, nguyên tắc “Nhân dân lao động làm chủ” được mô tả như thế nào và nó liên quan đến việc bảo đảm gì cho các dân tộc?",
+    "chunk_moi": {
+      "chunk_index": 6,
+      "content_sha": "f766eb8a206467016b80aab328034d5acfbd0d4242ba592e2ba32734d688aeed"
+    },
+    "chunk_cu": {
+      "chunk_index": 6,
+      "content_sha": "f766eb8a206467016b80aab328034d5acfbd0d4242ba592e2ba32734d688aeed",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "scientific-socialism",
+    "file": "Chapter 3.pptx",
+    "cau_hoi": "Trong lý thuyết xã hội chủ nghĩa, câu nào nêu rằng “sự phát triển tự do của mỗi người là điều kiện phát triển tự do của tất cả mọi người”?",
+    "chunk_moi": {
+      "chunk_index": 5,
+      "content_sha": "d56e3e14210dae0b7af50278db6b2eb7705df5516dcab1c51a1fc3a5578c94c9"
+    },
+    "chunk_cu": {
+      "chunk_index": 5,
+      "content_sha": "d56e3e14210dae0b7af50278db6b2eb7705df5516dcab1c51a1fc3a5578c94c9",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "scientific-socialism",
+    "file": "Chapter2.pptx",
+    "cau_hoi": "Trong tác phẩm “Bản thảo kinh tế - triết học năm 1844”, Mác đã nhấn mạnh vai trò lịch sử của giai cấp vô sản trong việc gì?",
+    "chunk_moi": {
+      "chunk_index": 8,
+      "content_sha": "41e8d9f190ca7d9f01c0a277d4c7e9b65192706536703a4fc8f0503f519e232b"
+    },
+    "chunk_cu": {
+      "chunk_index": 8,
+      "content_sha": "41e8d9f190ca7d9f01c0a277d4c7e9b65192706536703a4fc8f0503f519e232b",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "scientific-socialism",
+    "file": "Chapter1.pptx",
+    "cau_hoi": "Trong tác phẩm *Utopia* của Thomas More, ngày làm việc được quy định là bao nhiêu giờ?",
+    "chunk_moi": {
+      "chunk_index": 7,
+      "content_sha": "02a3a06614e03e9d9a3b9d1010666ad8f89e57bf31ee8ed8a192840362cdc8a8"
+    },
+    "chunk_cu": {
+      "chunk_index": 7,
+      "content_sha": "02a3a06614e03e9d9a3b9d1010666ad8f89e57bf31ee8ed8a192840362cdc8a8",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "scientific-socialism",
+    "file": "Chapter 3.pptx",
+    "cau_hoi": "Trong quá độ 1954, tài liệu nêu ra loại sổ nào được sử dụng để quản lý lương thực?",
+    "chunk_moi": {
+      "chunk_index": 13,
+      "content_sha": "4ca763da80e5c4cce5ab1e51cd33bfb3fb5951198c85bc4203cf3bfb47288451"
+    },
+    "chunk_cu": {
+      "chunk_index": 13,
+      "content_sha": "4ca763da80e5c4cce5ab1e51cd33bfb3fb5951198c85bc4203cf3bfb47288451",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "scientific-socialism",
+    "file": "Chapter1.pptx",
+    "cau_hoi": "Ai là nhà lãnh đạo Trung Quốc được nhắc đến trong đoạn trích là người khởi xướng cải cách năm 1978?",
+    "chunk_moi": {
+      "chunk_index": 21,
+      "content_sha": "0a22fb3559e21cda9ec41f3cb689538d160c2449b6ce19ccefe681a44248baa0"
+    },
+    "chunk_cu": {
+      "chunk_index": 21,
+      "content_sha": "0a22fb3559e21cda9ec41f3cb689538d160c2449b6ce19ccefe681a44248baa0",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "scientific-socialism",
+    "file": "Chapter1.pptx",
+    "cau_hoi": "Trong quan điểm của Claude Henri Saint‑Simon, tiêu chí nào được dùng để đo mức độ giải phóng của xã hội?",
+    "chunk_moi": {
+      "chunk_index": 8,
+      "content_sha": "9eaab5a60e4abb7b37065346a4d66a52fe736e5fee8b5245ac6c40b7600224be"
+    },
+    "chunk_cu": {
+      "chunk_index": 8,
+      "content_sha": "9eaab5a60e4abb7b37065346a4d66a52fe736e5fee8b5245ac6c40b7600224be",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "scientific-socialism",
+    "file": "Chapter2.pptx",
+    "cau_hoi": "Tại Hội nghị lần thứ sáu, Ban chấp hành Trung ương khóa X, Đảng CSVN đã xác định giai cấp công nhân Việt Nam bao gồm những thành phần nào?",
+    "chunk_moi": {
+      "chunk_index": 23,
+      "content_sha": "f7fd21d6a6f46c77666f25dc26c8a6bcc6c7a131e5f12c9be3446c25cf1e47ea"
+    },
+    "chunk_cu": {
+      "chunk_index": 23,
+      "content_sha": "f7fd21d6a6f46c77666f25dc26c8a6bcc6c7a131e5f12c9be3446c25cf1e47ea",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "scientific-socialism",
+    "file": "Chapter 3.pptx",
+    "cau_hoi": "Theo Hồ Chí Minh, con đường duy nhất để cứu nước và giải phóng dân tộc là gì?",
+    "chunk_moi": {
+      "chunk_index": 11,
+      "content_sha": "e099add9d4aeb617b4e518642e0249123d1ac2f1d70c2656a277c2be19f4945a"
+    },
+    "chunk_cu": {
+      "chunk_index": 11,
+      "content_sha": "e099add9d4aeb617b4e518642e0249123d1ac2f1d70c2656a277c2be19f4945a",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "scientific-socialism",
+    "file": "Chapter2.pptx",
+    "cau_hoi": "Theo Marx, tại sao giáo viên hay bác sĩ làm việc trong doanh nghiệp tư nhân lại được xem là thuộc “giai cấp công nhân” trong khi họ không tham gia sản xuất vật chất?",
+    "chunk_moi": {
+      "chunk_index": 3,
+      "content_sha": "9956c72651e6aae85653e1fcb04fe9f2f3a589b610eedf4baac65cd4033bede7"
+    },
+    "chunk_cu": {
+      "chunk_index": 3,
+      "content_sha": "9956c72651e6aae85653e1fcb04fe9f2f3a589b610eedf4baac65cd4033bede7",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "scientific-socialism",
+    "file": "Chapter1.pptx",
+    "cau_hoi": "Trong “Tuyên ngôn của Đảng Cộng sản”, cụm từ nào được dùng để kêu gọi toàn bộ giai cấp vô sản “đoàn kết lại”?",
+    "chunk_moi": {
+      "chunk_index": 13,
+      "content_sha": "c32e1bb1aca447b797e2967a473729eab7a7bf96a9cc6f1b014fa25008bcb730"
+    },
+    "chunk_cu": {
+      "chunk_index": 13,
+      "content_sha": "c32e1bb1aca447b797e2967a473729eab7a7bf96a9cc6f1b014fa25008bcb730",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "scientific-socialism",
+    "file": "Chapter 3.pptx",
+    "cau_hoi": "Trong đặc điểm của thời kỳ quá độ lên chủ nghĩa xã hội, quan hệ nào được mô tả là tồn tại đan xen lẫn nhau và vừa thống nhất vừa đấu tranh?",
+    "chunk_moi": {
+      "chunk_index": 8,
+      "content_sha": "40a0595b03fad47d1687463dba2f944a65cefd4e58ca42eff211eae275b24481"
+    },
+    "chunk_cu": {
+      "chunk_index": 8,
+      "content_sha": "40a0595b03fad47d1687463dba2f944a65cefd4e58ca42eff211eae275b24481",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "scientific-socialism",
+    "file": "Chapter1.pptx",
+    "cau_hoi": "Đại hội XIX của Đảng Cộng sản Trung Quốc đã đặt ra mục tiêu xây dựng Trung Quốc thành cường quốc hiện đại hóa xã hội chủ nghĩa với những đặc điểm gì vào năm 2050?",
+    "chunk_moi": {
+      "chunk_index": 22,
+      "content_sha": "a6a3c905f426995c7d49df9f55684f129c95fe5c11740f675fe9ec0d5310772e"
+    },
+    "chunk_cu": {
+      "chunk_index": 22,
+      "content_sha": "a6a3c905f426995c7d49df9f55684f129c95fe5c11740f675fe9ec0d5310772e",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "scientific-socialism",
+    "file": "Chapter2.pptx",
+    "cau_hoi": "Trong các giải pháp xây dựng giai cấp công nhân Việt Nam hiện nay, liên minh giai cấp công nhân được đề xuất gắn kết với hai nhóm xã hội nào?",
+    "chunk_moi": {
+      "chunk_index": 27,
+      "content_sha": "4d0b2c4050858c1fc0f9087514299b7e5f6f99cef93ca1ed37fb0fd0f1692eb2"
+    },
+    "chunk_cu": {
+      "chunk_index": 27,
+      "content_sha": "4d0b2c4050858c1fc0f9087514299b7e5f6f99cef93ca1ed37fb0fd0f1692eb2",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "scientific-socialism",
+    "file": "Chapter 3.pptx",
+    "cau_hoi": "Đặc trưng bản chất thứ ba của chủ nghĩa xã hội ở Việt Nam có nền kinh tế phát triển cao dựa trên những yếu tố nào?",
+    "chunk_moi": {
+      "chunk_index": 14,
+      "content_sha": "e9bd43bf48917db0bd8c2ec92a6d135173a4c03cf5e1effbd55fb6f1deaafec0"
+    },
+    "chunk_cu": {
+      "chunk_index": 14,
+      "content_sha": "e9bd43bf48917db0bd8c2ec92a6d135173a4c03cf5e1effbd55fb6f1deaafec0",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "scientific-socialism",
+    "file": "Chapter2.pptx",
+    "cau_hoi": "Trong đoạn văn, “GCCN” được mô tả là nhân tố nào?",
+    "chunk_moi": {
+      "chunk_index": 21,
+      "content_sha": "db0a239ed62d9775683cb71c7611625e38c389e3faac35c1db6063fd43eb08ab"
+    },
+    "chunk_cu": {
+      "chunk_index": 21,
+      "content_sha": "db0a239ed62d9775683cb71c7611625e38c389e3faac35c1db6063fd43eb08ab",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "scientific-socialism",
+    "file": "Chapter1.pptx",
+    "cau_hoi": "Trong đoạn trích, khái niệm “chế độ toàn trị” được đề cập như thế nào và nó liên quan gì đến “cực quyền” của Đảng?",
+    "chunk_moi": {
+      "chunk_index": 19,
+      "content_sha": "f7ae65c7304c06868c305d1359a763589f61049fe1a36e1e00f877e3cc9ac696"
+    },
+    "chunk_cu": {
+      "chunk_index": 19,
+      "content_sha": "f7ae65c7304c06868c305d1359a763589f61049fe1a36e1e00f877e3cc9ac696",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "scientific-socialism",
+    "file": "Chapter2.pptx",
+    "cau_hoi": "Trong đoạn trích, các quốc gia nào được liệt kê trong nhóm “GROUP OF EIGHT”?",
+    "chunk_moi": {
+      "chunk_index": 20,
+      "content_sha": "2458ae85d9cea22eb3a6bf8983defe609a2567937c84caf39c47aec84ef6e66b"
+    },
+    "chunk_cu": {
+      "chunk_index": 20,
+      "content_sha": "2458ae85d9cea22eb3a6bf8983defe609a2567937c84caf39c47aec84ef6e66b",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "scientific-socialism",
+    "file": "Chapter1.pptx",
+    "cau_hoi": "Trong triết học Hegel, khái niệm nào luôn sinh ra đối lập và cùng với nó tạo nên một khái niệm mới được gọi là gì?",
+    "chunk_moi": {
+      "chunk_index": 6,
+      "content_sha": "76aeeccd3a89eed447df5967247715533c1a41047150432899f4f4e387174b68"
+    },
+    "chunk_cu": {
+      "chunk_index": 6,
+      "content_sha": "76aeeccd3a89eed447df5967247715533c1a41047150432899f4f4e387174b68",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "scientific-socialism",
+    "file": "Chapter1.pptx",
+    "cau_hoi": "Trong chính sách Kinh tế Mới (NEP) của Liên Xô, việc chấm dứt chính sách trưng thu lương thực ở nông thôn và cho phép các hình thức sở hữu nào được thực hiện?",
+    "chunk_moi": {
+      "chunk_index": 17,
+      "content_sha": "5b10ab36fe4b209943aefbd268f374d1331a86a43f42950b862fd2893e6cf722"
+    },
+    "chunk_cu": {
+      "chunk_index": 17,
+      "content_sha": "5b10ab36fe4b209943aefbd268f374d1331a86a43f42950b862fd2893e6cf722",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "scientific-socialism",
+    "file": "Chapter1.pptx",
+    "cau_hoi": "V.I.Lênin đặc biệt quan tâm đến vấn đề nào liên quan đến “cải cách hành chính bộ máy NN”?",
+    "chunk_moi": {
+      "chunk_index": 16,
+      "content_sha": "281c57405e9010f3e7e22409f1839e1338b4398fce0145a9bb45772cd4fe18ec"
+    },
+    "chunk_cu": {
+      "chunk_index": 16,
+      "content_sha": "281c57405e9010f3e7e22409f1839e1338b4398fce0145a9bb45772cd4fe18ec",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "scientific-socialism",
+    "file": "Chapter1.pptx",
+    "cau_hoi": "Trong chính sách kinh tế mới, năm nào được ghi nhận là ngày chấm dứt chính thức của NEP khi nghị quyết về việc xóa bỏ hoàn toàn thương nghiệp tư nhân tại Liên Xô được thông qua?",
+    "chunk_moi": {
+      "chunk_index": 18,
+      "content_sha": "09085ed77bc99f234b674ac0d73f0bdf12347d9da0e6ce134c09ccf20ad57c5f"
+    },
+    "chunk_cu": {
+      "chunk_index": 18,
+      "content_sha": "09085ed77bc99f234b674ac0d73f0bdf12347d9da0e6ce134c09ccf20ad57c5f",
+      "trung_tu": 1.0
+    }
+  },
+  {
+    "course": "scientific-socialism",
+    "file": "Chapter2.pptx",
+    "cau_hoi": "Theo quan điểm cơ bản của chủ nghĩa Mác‑Lênin, sứ mệnh lịch sử thế giới của giai cấp công nhân được mô tả như thế nào?",
+    "chunk_moi": {
+      "chunk_index": 0,
+      "content_sha": "f35a611678122bbc1dc080624e1b3221801a797c883fe05126e448c68c412f22"
+    },
+    "chunk_cu": {
+      "chunk_index": 0,
+      "content_sha": "f35a611678122bbc1dc080624e1b3221801a797c883fe05126e448c68c412f22",
+      "trung_tu": 1.0
+    }
+  }
+]

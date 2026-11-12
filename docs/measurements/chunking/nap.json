@@ -1,0 +1,163 @@
+[
+  {
+    "course": "advanced-programming",
+    "file": "Chap1_Encapsulation.pptx",
+    "chunks_cu": 17,
+    "chunks_moi": 17,
+    "giong_nhau": 17
+  },
+  {
+    "course": "advanced-programming",
+    "file": "Chap2_Inheritance.pptx",
+    "chunks_cu": 18,
+    "chunks_moi": 18,
+    "giong_nhau": 18
+  },
+  {
+    "course": "advanced-programming",
+    "file": "Chap3_Polymorphism.pptx",
+    "chunks_cu": 10,
+    "chunks_moi": 10,
+    "giong_nhau": 10
+  },
+  {
+    "course": "advanced-programming",
+    "file": "Chap4_Abstract_Interface.pptx",
+    "chunks_cu": 11,
+    "chunks_moi": 11,
+    "giong_nhau": 11
+  },
+  {
+    "course": "advanced-programming",
+    "file": "Chap5_Design_Patterns.pptx",
+    "chunks_cu": 18,
+    "chunks_moi": 18,
+    "giong_nhau": 18
+  },
+  {
+    "course": "calculus 1",
+    "file": "1. Giới hạn dãy số.pdf",
+    "chunks_cu": 55,
+    "chunks_moi": 50,
+    "giong_nhau": 22
+  },
+  {
+    "course": "calculus 1",
+    "file": "2. Giới hạn và liên tục hàm một biến.pdf",
+    "chunks_cu": 40,
+    "chunks_moi": 38,
+    "giong_nhau": 11
+  },
+  {
+    "course": "calculus 1",
+    "file": "3. Đạo hàm và vi phân.pdf",
+    "chunks_cu": 77,
+    "chunks_moi": 75,
+    "giong_nhau": 31
+  },
+  {
+    "course": "calculus 1",
+    "file": "4. Tích phân xác định.pdf",
+    "chunks_cu": 21,
+    "chunks_moi": 19,
+    "giong_nhau": 10
+  },
+  {
+    "course": "calculus 1",
+    "file": "5. Tích phân bất định.pdf",
+    "chunks_cu": 50,
+    "chunks_moi": 47,
+    "giong_nhau": 10
+  },
+  {
+    "course": "calculus 1",
+    "file": "6. Tích phân suy rộng.pdf",
+    "chunks_cu": 49,
+    "chunks_moi": 46,
+    "giong_nhau": 16
+  },
+  {
+    "course": "machine-learning",
+    "file": "Week02.mp4",
+    "chunks_cu": 91,
+    "chunks_moi": 91,
+    "giong_nhau": 91
+  },
+  {
+    "course": "machine-learning",
+    "file": "Week03.mp4",
+    "chunks_cu": 95,
+    "chunks_moi": 95,
+    "giong_nhau": 95
+  },
+  {
+    "course": "machine-learning",
+    "file": "Week04.mp3",
+    "chunks_cu": 72,
+    "chunks_moi": 72,
+    "giong_nhau": 72
+  },
+  {
+    "course": "machine-learning",
+    "file": "Week05.mp3",
+    "chunks_cu": 91,
+    "chunks_moi": 91,
+    "giong_nhau": 91
+  },
+  {
+    "course": "operating-system",
+    "file": "Chapter 2_Operating System Structures.pdf",
+    "chunks_cu": 22,
+    "chunks_moi": 22,
+    "giong_nhau": 22
+  },
+  {
+    "course": "operating-system",
+    "file": "Chapter 3_Processes.pdf",
+    "chunks_cu": 33,
+    "chunks_moi": 33,
+    "giong_nhau": 33
+  },
+  {
+    "course": "operating-system",
+    "file": "Chapter 4_Threads & Concurency.pdf",
+    "chunks_cu": 25,
+    "chunks_moi": 25,
+    "giong_nhau": 25
+  },
+  {
+    "course": "operating-system",
+    "file": "Chapter 5_CPU Scheduling.pdf",
+    "chunks_cu": 34,
+    "chunks_moi": 34,
+    "giong_nhau": 34
+  },
+  {
+    "course": "operating-system",
+    "file": "Chapter 6_Synchronization Tools.pdf",
+    "chunks_cu": 33,
+    "chunks_moi": 33,
+    "giong_nhau": 33
+  },
+  {
+    "course": "scientific-socialism",
+    "file": "Chapter 3.pptx",
+    "chunks_cu": 19,
+    "chunks_moi": 19,
+    "giong_nhau": 19
+  },
+  {
+    "course": "scientific-socialism",
+    "file": "Chapter1.pptx",
+    "chunks_cu": 26,
+    "chunks_moi": 26,
+    "giong_nhau": 26
+  },
+  {
+    "course": "scientific-socialism",
+    "file": "Chapter2.pptx",
+    "chunks_cu": 30,
+    "chunks_moi": 30,
+    "giong_nhau": 30
+  }
+]
