@@ -527,3 +527,16 @@ def test_lecturers_are_offered_only_the_models_that_were_measured(gateway):
     ])}
     assert offered == {"gemini-fast", "gemini-flash", "openai-fast", "openai-pro", "claude-fast", "claude-pro",
                        "groq-pro", "groq-qwen"}
+
+
+def test_voice_and_image_models_go_through_an_authenticated_openrouter_pass_through(gateway):
+    """model_list cannot hold them (no LiteLLM route for OpenRouter speech), so the gateway forwards
+    /openrouter/* itself. Without auth: true anyone who reaches the gateway would spend the
+    OpenRouter balance, and a key written here would be a committed secret."""
+    (endpoint,) = gateway["general_settings"]["pass_through_endpoints"]
+
+    assert endpoint["path"] == "/openrouter"
+    assert endpoint["target"] == "https://openrouter.ai/api/v1"
+    assert endpoint["include_subpath"] is True
+    assert endpoint["auth"] is True
+    assert endpoint["headers"] == {"Authorization": "Bearer os.environ/OPENROUTER_API_KEY"}
