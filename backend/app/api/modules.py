@@ -18,6 +18,8 @@ from app.api.deps import get_current_user
 from app.auth.rate_limit import limiter, user_or_address
 from app.chat.service import HISTORY_TURNS, QuizQuestionEdit, module_edit_count, propose_module_edit
 from app.db import get_db
+from app.export import scorm
+from app.export.lesson import build_book_chapters, failing_questions
 from app.generation.common import OutputLanguage
 from app.generation.content import ContentOutput, resolve_citations
 from app.generation.example import ExampleOutput
@@ -404,6 +406,29 @@ def export_slides(
         content=output.getvalue(),
         media_type="application/vnd.openxmlformats-officedocument.presentationml.presentation",
         headers={"Content-Disposition": f"attachment; filename*=UTF-8''{quote(module.title + '.pptx', safe='')}"},
+    )
+
+
+@router.get("/{module_id}/scorm.zip")
+def export_scorm(
+    module_id: uuid.UUID, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)
+):
+    """The module as a SCORM 1.2 package for any LMS, under the same rules as publishing to Moodle."""
+    module = _owned_module(db, module_id, current_user)
+    if is_control(db, module.id):
+        raise HTTPException(status_code=422, detail="Mô-đun đối chứng (không RAG) chỉ dùng cho nghiên cứu, không xuất ra ngoài được.")
+    failing = failing_questions(module)
+    if failing:
+        raise HTTPException(
+            status_code=422,
+            detail="Còn câu hỏi chưa đạt gate chất lượng; sửa hoặc sinh lại trước khi xuất gói SCORM: " + "; ".join(failing),
+        )
+    if not build_book_chapters(module):
+        raise HTTPException(status_code=422, detail="Mô-đun chưa có nội dung nào để xuất.")
+    return Response(
+        content=scorm.build_package(module),
+        media_type="application/zip",
+        headers={"Content-Disposition": f"attachment; filename*=UTF-8''{quote(module.title + ' - SCORM.zip', safe='')}"},
     )
 
 

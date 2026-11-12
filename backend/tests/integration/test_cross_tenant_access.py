@@ -165,6 +165,7 @@ ATTACKS = [
     ("GET", "/modules/{module}", None, {}),
     ("POST", "/modules/{module}/chat-edit", None, {"json": {"message": "shorten slide 1"}}),
     ("GET", "/modules/{module}/slides.pptx", None, {}),
+    ("GET", "/modules/{module}/scorm.zip", None, {}),
     ("PATCH", "/modules/{module}", {"title": "pwned"}, {}),
     ("DELETE", "/modules/{module}", None, {}),
     ("PATCH", "/modules/{module}/components/{component}", None, {"json": {"content": {"markdown": "pwned"}}}),

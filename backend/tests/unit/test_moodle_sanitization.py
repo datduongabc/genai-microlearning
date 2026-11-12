@@ -1,4 +1,4 @@
-from app.api.moodle import _clean_html
+from app.export.lesson import clean_html as _clean_html
 
 
 def test_clean_html_strips_event_handler_attributes():

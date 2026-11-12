@@ -29,6 +29,7 @@ import {
 import {
   api,
   apiErrorMessage,
+  blobErrorMessage,
   chatEditModule,
   getMoodleSections,
   getModule,
@@ -211,7 +212,7 @@ export function ModulePreviewPage() {
               courseId={module.course_id}
               moodleCourseId={module.moodle_course_id}
               onRefresh={refresh}
-            /></div>}
+            /><ScormDownload moduleId={module.id} moduleTitle={module.title} /></div>}
           </div>
           <SourcePanel opened={opened} onClose={closeSource} />
         </div>
@@ -560,6 +561,49 @@ function ComponentCard({
   )
 }
 
+// The API needs the access token, so a file comes down as a blob rather than through a plain link.
+async function saveFile(path: string, filename: string) {
+  const { data } = await api.get<Blob>(path, { responseType: 'blob' })
+  const url = URL.createObjectURL(data)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = filename
+  document.body.append(link)
+  link.click()
+  link.remove()
+  URL.revokeObjectURL(url)
+}
+
+// For an LMS the system is not connected to, or a Moodle course nobody linked: one zip the
+// lecturer uploads there as a SCORM activity, which records the quiz score.
+function ScormDownload({ moduleId, moduleTitle }: { moduleId: string; moduleTitle: string }) {
+  const [error, setError] = useState<string | null>(null)
+  const [downloading, setDownloading] = useState(false)
+  async function download() {
+    setError(null)
+    setDownloading(true)
+    try {
+      await saveFile(`/modules/${moduleId}/scorm.zip`, `${moduleTitle} - SCORM.zip`)
+    } catch (err) {
+      setError(await blobErrorMessage(err, 'Tải gói SCORM thất bại'))
+    } finally {
+      setDownloading(false)
+    }
+  }
+  return (
+    <section className="module-publish" aria-labelledby="scorm-title">
+      <h2 id="scorm-title" className="module-part-title">Tải gói SCORM</h2>
+      <p className="text-sm muted mb-3">
+        Một tệp zip theo chuẩn SCORM 1.2 cho Moodle hoặc LMS khác: nội dung, luyện tập và bài kiểm tra; LMS ghi lại điểm.
+      </p>
+      <button type="button" className="ui-button" disabled={downloading} onClick={() => void download()}>
+        {downloading ? 'Đang tạo gói...' : 'Tải gói SCORM (.zip)'}
+      </button>
+      {error && <p role="alert" className="mt-3 text-sm danger-text">{error}</p>}
+    </section>
+  )
+}
+
 // At the end of the slides it exports: the file carries their text only, so it is a handout for
 // whoever wants one, not the main action of the page.
 function SlidesDownload({ moduleId, moduleTitle }: { moduleId: string; moduleTitle: string }) {
@@ -567,17 +611,9 @@ function SlidesDownload({ moduleId, moduleTitle }: { moduleId: string; moduleTit
   async function download() {
     setError(null)
     try {
-      const { data } = await api.get<Blob>(`/modules/${moduleId}/slides.pptx`, { responseType: 'blob' })
-      const url = URL.createObjectURL(data)
-      const link = document.createElement('a')
-      link.href = url
-      link.download = `${moduleTitle}.pptx`
-      document.body.append(link)
-      link.click()
-      link.remove()
-      URL.revokeObjectURL(url)
+      await saveFile(`/modules/${moduleId}/slides.pptx`, `${moduleTitle}.pptx`)
     } catch (err) {
-      setError(apiErrorMessage(err, 'Tải slide thất bại'))
+      setError(await blobErrorMessage(err, 'Tải slide thất bại'))
     }
   }
   return <div className="slides-download">

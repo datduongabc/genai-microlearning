@@ -14,7 +14,7 @@ vi.mock('../../../api', async (importOriginal) => {
   return { chatEditModule: vi.fn(), ...Object.fromEntries(
     Object.entries(actual).map(([name, value]) => [
       name,
-      typeof value === 'function' && !['api', 'apiErrorMessage'].includes(name) ? vi.fn() : value,
+      typeof value === 'function' && !['api', 'apiErrorMessage', 'blobErrorMessage'].includes(name) ? vi.fn() : value,
     ]),
   ) }
 })
@@ -102,6 +102,51 @@ it('downloads slides through the authenticated API client', async () => {
     click.mockRestore()
     vi.unstubAllGlobals()
   }
+})
+
+describe('ModulePreviewPage - SCORM package', () => {
+  it('downloads the package even when the course is not linked to Moodle', async () => {
+    vi.mocked(api.getModule).mockResolvedValue(baseModule)
+    const blob = new Blob(['zip'])
+    const request = vi.spyOn(api.api, 'get').mockResolvedValue({ data: blob })
+    vi.stubGlobal('URL', { createObjectURL: vi.fn().mockReturnValue('blob:scorm'), revokeObjectURL: vi.fn() })
+    const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function (this: HTMLAnchorElement) {
+      expect(this.download).toBe('Test Module - SCORM.zip')
+    })
+    try {
+      renderPage()
+      await userEvent.click(await screen.findByRole('button', { name: 'Tải gói SCORM (.zip)' }))
+      await waitFor(() => expect(click).toHaveBeenCalledOnce())
+      expect(request).toHaveBeenCalledWith('/modules/module-1/scorm.zip', { responseType: 'blob' })
+    } finally {
+      request.mockRestore()
+      click.mockRestore()
+      vi.unstubAllGlobals()
+    }
+  })
+
+  it("shows the server's reason when the package is refused", async () => {
+    vi.mocked(api.getModule).mockResolvedValue(baseModule)
+    const body = new Blob([JSON.stringify({ detail: 'Còn câu hỏi chưa đạt gate chất lượng: quiz 1' })], { type: 'application/json' })
+    const refused = new AxiosError('422', 'ERR_BAD_REQUEST', undefined, undefined, {
+      status: 422, data: body, statusText: '', headers: {}, config: {} as InternalAxiosRequestConfig,
+    } as AxiosResponse)
+    const request = vi.spyOn(api.api, 'get').mockRejectedValue(refused)
+    try {
+      renderPage()
+      await userEvent.click(await screen.findByRole('button', { name: 'Tải gói SCORM (.zip)' }))
+      expect(await screen.findByRole('alert')).toHaveTextContent('Còn câu hỏi chưa đạt gate chất lượng: quiz 1')
+    } finally {
+      request.mockRestore()
+    }
+  })
+
+  it('is not offered for a control module', async () => {
+    vi.mocked(api.getModule).mockResolvedValue({ ...baseModule, is_control: true })
+    renderPage()
+    await screen.findByText('Đối chứng (không RAG) - chỉ dùng cho nghiên cứu')
+    expect(screen.queryByRole('button', { name: 'Tải gói SCORM (.zip)' })).not.toBeInTheDocument()
+  })
 })
 
 describe('ModulePreviewPage - publish to Moodle', () => {
