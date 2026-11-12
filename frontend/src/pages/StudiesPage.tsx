@@ -4,6 +4,7 @@ import Markdown from "react-markdown";
 import { AppShell } from "../components/AppShell";
 import { Tabs } from "../components/Tabs";
 import { RatingForm } from "../components/RatingForm";
+import { mathRehypePlugins, mathRemarkPlugins } from "../lib/markdownMath";
 import {
   myStudies,
   myStudyItems,
@@ -105,6 +106,8 @@ function Packet({ item }: { item: BlindItem }) {
         <div className="space-y-3 break-words">
           <Markdown
             skipHtml
+            remarkPlugins={mathRemarkPlugins}
+            rehypePlugins={mathRehypePlugins}
             components={{
               a: ({ children }) => <span>{children}</span>,
               img: ({ alt }) => <span>{alt}</span>,

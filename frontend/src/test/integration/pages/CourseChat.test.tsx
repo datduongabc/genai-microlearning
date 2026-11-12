@@ -47,6 +47,27 @@ describe('CourseChat', () => {
     localStorage.clear()
   })
 
+  it('typesets the LaTeX of an answer instead of showing its source', async () => {
+    // The answer of 2026-11-11 on AWS: "$\\alpha \\beta$" and the tuple of a DFA came out as raw LaTeX.
+    const answer = 'Phép nối $\\alpha \\beta$ và DFA $M = (K, \\Sigma, \\delta, s, F)$.'
+    fetchMock.mockResolvedValueOnce(stream(event('done', saved(answer))))
+    const { container } = render(<CourseChat courseId="course-1" />)
+
+    await ask('Biểu thức chính quy là gì?')
+    await waitFor(() => expect(container.querySelectorAll('.katex')).toHaveLength(2))
+    expect(container.textContent).not.toContain('$')
+    expect(container.querySelector('.katex-error')).toBeNull()
+  })
+
+  it('shows a formula the model got wrong as its source, and the rest of the answer', async () => {
+    fetchMock.mockResolvedValueOnce(stream(event('done', saved('Trước $\\frac{1}{$ sau.'))))
+    const { container } = render(<CourseChat courseId="course-1" />)
+
+    await ask('Hỏi')
+    expect(await screen.findByText(/sau\./)).toBeInTheDocument()
+    expect(container.textContent).toContain('Trước')
+  })
+
   it('shows the answer with its sources and keeps the session for the next question', async () => {
     fetchMock.mockResolvedValueOnce(stream(event('session', { session_id: 's1' }), ': ping\n\n', event('delta', { text: 'Tiến ' }),
       event('delta', { text: 'trình' }), event('done', saved('Tiến trình là chương trình đang chạy.'))))

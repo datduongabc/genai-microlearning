@@ -5,6 +5,7 @@ import Markdown, { type Components } from 'react-markdown'
 import { Link, useParams } from 'react-router-dom'
 import { AppShell } from '../components/AppShell'
 import { MoodleAccountSection } from '../components/MoodleAccountSection'
+import { mathRehypePlugins, mathRemarkPlugins } from '../lib/markdownMath'
 import {
   chatEditSchema,
   examplesContentSchema,
@@ -596,7 +597,7 @@ function MarkdownFieldEditor({
         />
       ) : (
         <div className="text-[15px] leading-relaxed">
-          <Markdown components={markdownComponents}>{rendered}</Markdown>
+          <Markdown components={markdownComponents} remarkPlugins={mathRemarkPlugins} rehypePlugins={mathRehypePlugins}>{rendered}</Markdown>
         </div>
       )}
       <dialog ref={sourceDialog} aria-label="Nguồn trích dẫn" className="m-auto w-full max-w-2xl rounded-[3px] p-6 backdrop:bg-black/40">

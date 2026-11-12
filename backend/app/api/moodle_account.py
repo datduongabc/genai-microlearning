@@ -62,6 +62,8 @@ def request_link(request: Request, payload: LinkRequest, db: Session = Depends(g
 @limiter.limit('60/minute', key_func=user_or_address)
 def get_account(request: Request, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     _lock_account(db, current_user)
+    if not client.configured():
+        return {'status': 'unavailable', 'email': current_user.email}
     status = 'not_linked'
     email = current_user.email
     notice = None

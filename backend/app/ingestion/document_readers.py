@@ -55,7 +55,28 @@ class DocumentUnit:
 
 
 MIN_TEXT_LEN_PER_PAGE = 20
-HEADING_RE = re.compile(r"^\s*(\d+(\.\d+)*)\.?\s+\S")
+# A numbered section heading: "2.3 Lexical rules", "1 Khái niệm dãy số". Every line that merely
+# starts with a number used to count, and on lecture PDFs that is mostly something else: the page
+# counter "4 / 33" of a handout, code and data ("100 INT_LIT", "0 => { 0 }"), and the items of a
+# numbered list ("1 Nếu α > 1 thì I = ..."). Each one cut a chunk and gave it that label.
+_SECTION_NUMBER_RE = re.compile(r"^\s*(\d{1,2}(?:\.\d{1,2}){0,3})\.?\s+(?=\S)")
+_NOT_A_TITLE_RE = re.compile(r"[=<>≤≥⩽⩾∫∑→⇒∼:;,()\[\]{}|/]")
+MAX_HEADING_WORDS = 8
+
+
+def is_numbered_heading(line: str) -> bool:
+    """A section number, then a short title: one that starts with a capital letter, holds no formula
+    or sentence punctuation, and does not end like a sentence. A list item is a sentence."""
+    match = _SECTION_NUMBER_RE.match(line)
+    if not match:
+        return False
+    title = line[match.end():].strip()
+    return (
+        title[:1].isupper()
+        and len(title.split()) <= MAX_HEADING_WORDS
+        and not _NOT_A_TITLE_RE.search(title)
+        and not title.endswith(".")
+    )
 
 
 def _figure_pages(doc: pymupdf.Document) -> dict[str, int]:
@@ -178,7 +199,7 @@ def read_pdf(path: str) -> list[DocumentUnit]:
                 warnings = []
 
         for line_index, line in enumerate(lines_all):
-            if line_index not in record["code_lines"] and HEADING_RE.match(line):
+            if line_index not in record["code_lines"] and is_numbered_heading(line):
                 flush()
                 current_lines, current_heading = [line], line.strip()
             else:
