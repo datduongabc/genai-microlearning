@@ -3,7 +3,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from app.generation import fact_check, flashcards
+from app.generation import fact_check, flashcards, media_common
 from app.generation.claim_evaluation import SupportVerdict
 from app.jobs.queue import LostJob
 from app.models import MediaStatus
@@ -99,7 +99,7 @@ def test_retrieval_uses_the_focus_adaptively_within_the_document(monkeypatch):
 def test_without_a_focus_the_planners_first_concept_is_the_query(monkeypatch):
     db, card_set, queries = _setup(monkeypatch, _chunks(), [_draft("q")], focus=None)
     concepts = [SimpleNamespace(name="Later", summary="s2", priority=2), SimpleNamespace(name="First", summary="s1", priority=1)]
-    monkeypatch.setattr(flashcards, "_get_or_cache_planner", lambda *a, **k: SimpleNamespace(concepts=concepts))
+    monkeypatch.setattr(media_common, "_get_or_cache_planner", lambda *a, **k: SimpleNamespace(concepts=concepts))
     flashcards.generate_flashcards(db, card_set.id)
     assert queries[0][0] == "First: s1"
 

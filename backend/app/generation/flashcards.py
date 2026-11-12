@@ -6,7 +6,6 @@ from collections.abc import Callable
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
-from app.db import WorkerSessionLocal
 from app.generation import fact_check
 from app.generation.common import (
     IGNORE_EMBEDDED_INSTRUCTIONS,
@@ -15,10 +14,9 @@ from app.generation.common import (
     output_language_instruction,
     resolve_source_id,
 )
-from app.generation.module_generation_pipeline import _get_or_cache_planner
-from app.jobs.queue import hold
+from app.generation.media_common import focus_query, run_generation_step, values_kept_across_commits
 from app.llm.gateway import complete_structured, using_model
-from app.models import Document, FlashcardSet, Job, JobStatus, MediaStatus
+from app.models import Document, FlashcardSet, Job, MediaStatus
 from app.retrieval.search import ChunkScope
 from app.retrieval.search import retrieve_for_generation as retrieve
 
@@ -45,25 +43,12 @@ List in `sources` the IDs of the chunks the back is taken from (for example ["S2
 Do not write a card you cannot ground in a chunk. Cover different ideas; do not repeat one."""
 
 
-def _query(db: Session, doc: Document, card_set: FlashcardSet) -> str:
-    if card_set.focus and card_set.focus.strip():
-        return card_set.focus.strip()
-    # No focus: the topic the planner ranks first, as a module of this document would be about.
-    concepts = _get_or_cache_planner(db, doc, card_set.output_language).concepts
-    first = min(concepts, key=lambda c: c.priority)
-    return f"{first.name}: {first.summary}"
-
-
 def generate_flashcards(
     db: Session, flashcard_set_id: uuid.UUID, before_save: Callable[[], None] | None = None,
 ) -> None:
     """`before_save` runs right before the cards are written, in the transaction that writes them:
     the job queue checks there that its worker still holds the job (app/jobs/queue.py, hold)."""
-    # Read values stay in memory across the commits, so no prompt reopens a transaction by reading
-    # an expired attribute while a model is being called.
-    expire_on_commit = db.expire_on_commit
-    db.expire_on_commit = False
-    try:
+    with values_kept_across_commits(db):
         card_set = db.get(FlashcardSet, flashcard_set_id)
         if card_set is None:
             raise ValueError(f"Flashcard set {flashcard_set_id} not found")
@@ -76,7 +61,7 @@ def generate_flashcards(
         fact_check.judge_alias(card_set.model_alias)
 
         with using_model(card_set.model_alias):
-            query = _query(db, doc, card_set)
+            query = focus_query(db, doc, card_set)
             db.commit()
             chunks = retrieve(db, doc.course_id, query, top_k=None, min_k=8, scope=ChunkScope(doc.id))
             db.commit()
@@ -111,19 +96,7 @@ def generate_flashcards(
         card_set.cards = stored
         card_set.status = MediaStatus.draft
         db.commit()
-    finally:
-        db.expire_on_commit = expire_on_commit
 
 
 def run_flashcard_step(job: Job) -> None:
-    set_id = uuid.UUID(job.payload["flashcard_set_id"])
-    db = WorkerSessionLocal()
-
-    def finish() -> None:
-        # In the same transaction as the cards, so a set is never ready with its job still running.
-        hold(db, job).status = JobStatus.done
-
-    try:
-        generate_flashcards(db, set_id, before_save=finish)
-    finally:
-        db.close()
+    run_generation_step(job, "flashcard_set_id", generate_flashcards)
