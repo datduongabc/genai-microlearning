@@ -22,6 +22,11 @@ SYSTEM_FAILURE_MESSAGE = ("Hệ thống tạm thời không xử lý được (d
                           "Hãy bấm Thử lại sau ít phút; nếu vẫn lỗi, báo quản trị viên.")
 
 
+def lecturer_message(job: Job) -> str:
+    """What the lecturer is shown for a failed job."""
+    return SYSTEM_FAILURE_MESSAGE if job.system_failure else (job.last_error or "")[:MAX_ERROR_CHARS]
+
+
 def _open_failure_filter():
     newer = aliased(Job)
     return (
@@ -46,6 +51,6 @@ def open_failures(db: Session, document_ids: list[uuid.UUID]) -> dict[uuid.UUID,
         failures.setdefault(job.document_id, []).append({
             "job_id": job.id,
             "job_type": job.job_type,
-            "error": SYSTEM_FAILURE_MESSAGE if job.system_failure else (job.last_error or "")[:MAX_ERROR_CHARS],
+            "error": lecturer_message(job),
         })
     return failures

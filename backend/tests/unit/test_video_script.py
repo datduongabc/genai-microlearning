@@ -1,11 +1,11 @@
+import json
 import uuid
 from types import SimpleNamespace
 
 import pytest
 
 from app import timing
-from app.generation import fact_check, media_common, video_script
-from app.generation.claim_evaluation import SupportVerdict
+from app.generation import claim_evaluation, media_common, video_script
 from app.generation.video_script import (
     CHARS_PER_SECOND,
     MAX_ILLUSTRATIONS,
@@ -70,9 +70,20 @@ def _setup(monkeypatch, chunks, scenes, focus="FCFS", verdict=lambda claim: True
 
     monkeypatch.setattr(video_script, "retrieve", lambda _db, _course, query, **kw: chunks)
     monkeypatch.setattr(video_script, "complete_structured", fake_complete)
-    monkeypatch.setattr(fact_check, "_support", lambda claim, passages, options: SupportVerdict(
-        supported=verdict(claim), reason="the source says one over n"))
+    monkeypatch.setattr(claim_evaluation, "complete_structured", _judge(verdict))
     return db, video, calls
+
+
+def _judge(verdict, asked=None):
+    """The item judge: one call per scene, a verdict for each numbered item."""
+    def fake(prompt, response_model, **kwargs):
+        payload = json.loads(prompt)
+        if asked is not None:
+            asked.append(payload)
+        return response_model(verdicts=[
+            {"number": c["number"], "supported": verdict(c["claim"]), "reason": "the source says one over n"}
+            for c in payload["claims"]])
+    return fake
 
 
 def test_more_than_five_illustrations_become_text_scenes(monkeypatch):
@@ -158,6 +169,20 @@ def test_narration_reads_common_symbols_as_words():
     assert normalize_narration("time_quantum $q$") == "time quantum q"
 
 
+def test_fractions_read_their_parts_cleanly():
+    assert normalize_narration("$\\frac{P_{1}}{2}$") == "P1 phần 2"
+    assert normalize_narration("$\\frac{x^{2}}{2}$") == "x mũ 2 phần 2"
+    assert normalize_narration("$\\frac{W_{1}+W_{2}}{2}$") == "W1+W2 phần 2"
+    assert normalize_narration("$\\frac{\\text{tổng}}{n}$") == "tổng phần n"
+    assert "frac" not in normalize_narration("$\\frac{\\frac{a_{1}}{b}}{c^{2}}$")
+
+
+def test_formatting_commands_are_not_read_out():
+    assert normalize_narration("$x \\in \\mathbb{R}$, $\\mathcal{O}(n)$") == "x in R, O(n)"
+    assert normalize_narration("$a \\quad b \\qquad c\\,d\\;e$") == "a b c d e"
+    assert normalize_narration("$P_1, \\dots, P_n$ và $1 \\ldots n$, $\\cdots$") == "P1,..., Pn và 1... n,..."
+
+
 def test_image_prompt_labels_are_written_as_shown(monkeypatch):
     scenes = _script(kind="illustration", image_prompt="Gantt chart: P_1 0-24, P_{2} 24-27, $P_3$ 27-30")
     db, video, _ = _setup(monkeypatch, _chunks(), scenes)
@@ -177,6 +202,8 @@ def test_formula_words_keep_commands_and_existing_text():
     assert fix("\\text{Thời gian chờ} = \\frac{a}{b}") == "\\text{Thời gian chờ} = \\frac{a}{b}"
     assert fix("\\begin{aligned} W &= 0 \\end{aligned}") == "\\begin{aligned} W &= 0 \\end{aligned}"
     assert fix("Waiting = q \\times (n-1)") == "\\text{Waiting} = q \\times (n-1)"
+    # The column spec of an array is not a word.
+    assert fix("\\begin{array}{llll} a & b \\end{array}") == "\\begin{array}{llll} a & b \\end{array}"
 
 
 def test_fact_check_flags_a_wrong_bullet(monkeypatch):
@@ -185,21 +212,31 @@ def test_fact_check_flags_a_wrong_bullet(monkeypatch):
     db, video, _ = _setup(monkeypatch, _chunks(), scenes, verdict=lambda claim: "one ninth" not in claim)
     video_script.generate_video_script(db, video.id)
     assert [bool(s["flags"]) for s in video.scenes] == [False, False, True] + [False] * (MIN_SCENES - 3)
-    assert "one over n" in video.scenes[2]["flags"][0]
+    # The flag names the item the judge doubts, not just the scene.
+    assert video.scenes[2]["flags"] == ["Ý 2: the source says one over n"]
     # A flag is for the lecturer to read, not a reason to refuse the render.
     assert prepare_for_render(video.scenes) == []
 
 
-def test_the_judge_reads_the_slide_and_the_narration_against_the_cited_passages(monkeypatch):
+def test_fact_check_flags_a_wrong_narration_sentence_by_its_number(monkeypatch):
+    scenes = _script(narration=(LONG, "Each process gets one ninth of the CPU."))
+    db, video, _ = _setup(monkeypatch, _chunks(), scenes, verdict=lambda claim: "one ninth" not in claim)
+    video_script.generate_video_script(db, video.id)
+    assert video.scenes[0]["flags"] == ["Câu 2: the source says one over n"]
+
+
+def test_the_judge_reads_each_item_of_a_scene_against_its_passages_in_one_call(monkeypatch):
     chunks = _chunks(3)
-    scenes = _script(sources=("S2",), formula=None)
+    scenes = _script(sources=("S2",))
+    scenes[1].update(kind="formula", formula="W = q")
     db, video, _ = _setup(monkeypatch, chunks, scenes)
     asked = []
-    monkeypatch.setattr(fact_check, "_support", lambda claim, passages, options: asked.append((claim, passages))
-                        or SupportVerdict(supported=True, reason=""))
+    monkeypatch.setattr(claim_evaluation, "complete_structured", _judge(lambda claim: True, asked))
     video_script.generate_video_script(db, video.id)
-    claim, passages = asked[0]
-    assert "first point" in claim and LONG in claim and passages == ["passage 1"]
+    assert len(asked) == len(video.scenes)
+    assert [c["claim"] for c in asked[0]["claims"]] == ["first point", "second point", LONG]
+    assert asked[0]["evidence"] == ["passage 1"]
+    assert "W = q" in [c["claim"] for c in asked[1]["claims"]]
 
 
 def test_uncited_model_sentences_are_dropped(monkeypatch):
@@ -227,11 +264,21 @@ def test_uncited_model_sentences_are_dropped(monkeypatch):
     assert all(s["author"] == "model" for s in video.scenes)
 
 
-def test_a_script_left_with_too_few_scenes_is_saved_with_a_flag(monkeypatch):
+def test_a_script_the_model_wrote_too_short_is_saved_with_a_flag(monkeypatch):
     db, video, _ = _setup(monkeypatch, _chunks(), _script(5))
     video_script.generate_video_script(db, video.id)
     assert video.status == MediaStatus.draft and len(video.scenes) == 5
-    assert any("5 cảnh" in flag for flag in video.scenes[0]["flags"])
+    flag = video.scenes[0]["flags"][-1]
+    assert "5 cảnh" in flag and "model chỉ viết" in flag and "bị bỏ" not in flag
+
+
+def test_a_script_left_short_by_dropped_scenes_says_so(monkeypatch):
+    scenes = _script(7)
+    scenes[3]["narration"][0]["sources"] = []
+    db, video, _ = _setup(monkeypatch, _chunks(), scenes)
+    video_script.generate_video_script(db, video.id)
+    flag = video.scenes[0]["flags"][-1]
+    assert "6 cảnh" in flag and "1 cảnh" in flag and "bị bỏ" in flag
 
 
 def test_a_script_with_no_cited_scene_fails(monkeypatch):

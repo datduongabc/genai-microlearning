@@ -4,9 +4,13 @@ The model that wrote a statement tends to agree with it, so the check runs on a 
 family. A statement the judge does not find in its passages is flagged with the judge's reason,
 never dropped: the lecturer decides what to do with it."""
 
+import json
 import logging
 
-from app.generation.claim_evaluation import _support
+from pydantic import BaseModel
+
+from app.generation import claim_evaluation
+from app.generation.claim_evaluation import _SUPPORT_INSTRUCTION, _support
 from app.llm.gateway import using_model
 
 logger = logging.getLogger(__name__)
@@ -57,4 +61,66 @@ def check_against_sources(statements: list[tuple[str, list[str]]], generator_ali
                 flags.append(f"Chưa kiểm được: {str(err)[:120]}")
                 continue
             flags.append(None if verdict.supported else (verdict.reason or "Không được đoạn nguồn xác nhận"))
+    return flags
+
+
+class ItemVerdict(BaseModel):
+    number: int
+    supported: bool
+    reason: str
+
+
+class ItemVerdicts(BaseModel):
+    verdicts: list[ItemVerdict]
+
+
+# The single-claim criteria, unchanged, so the two checks cannot drift apart; only how the answer
+# is laid out differs.
+_ITEMS_INSTRUCTION = _SUPPORT_INSTRUCTION + """
+The claims are numbered. Judge each claim on its own against the whole evidence, by the criteria
+above, and return one verdict for every number."""
+
+
+def _judge_items(claims: list[str], passages: list[str]) -> dict[int, ItemVerdict]:
+    reply = claim_evaluation.complete_structured(
+        json.dumps({"claims": [{"number": n, "claim": c} for n, c in enumerate(claims, 1)], "evidence": passages},
+                   ensure_ascii=False),
+        ItemVerdicts, system_instruction=_ITEMS_INSTRUCTION, temperature=0,
+    )
+    return {v.number: v for v in reply.verdicts}
+
+
+def check_items_against_sources(
+    groups: list[tuple[list[tuple[str, str]], list[str]]], generator_alias: str,
+) -> list[list[str | None]]:
+    """For each group of (label, item) sharing passages, such as the bullets and sentences of one
+    video scene: None for an item the passages support, otherwise "label: why not".
+
+    One judge call per group, not per item: every call sends the passages again, and a scene has
+    a dozen items. The guarantees of check_against_sources hold: another family judges, an unknown
+    alias fails before any call, and an outage flags every item of the group instead of raising."""
+    judge = judge_alias(generator_alias)
+    flags: list[list[str | None]] = []
+    with using_model(judge):
+        for items, passages in groups:
+            if not passages:
+                flags.append([f"{label}: Chưa có đoạn nguồn để kiểm" for label, _ in items])
+                continue
+            try:
+                verdicts = _judge_items([text for _, text in items], passages)
+            except Exception as err:
+                # The check flags, it never blocks: an outage must not cost the lecturer the script.
+                logger.warning("fact check could not run: %s", err)
+                flags.append([f"{label}: Chưa kiểm được: {str(err)[:120]}" for label, _ in items])
+                continue
+            group: list[str | None] = []
+            for number, (label, _) in enumerate(items, 1):
+                verdict = verdicts.get(number)
+                if verdict is None:
+                    group.append(f"{label}: Chưa kiểm được: model kiểm không trả lời cho mục này")
+                elif verdict.supported:
+                    group.append(None)
+                else:
+                    group.append(f"{label}: {verdict.reason or 'Không được đoạn nguồn xác nhận'}")
+            flags.append(group)
     return flags

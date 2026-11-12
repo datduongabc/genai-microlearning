@@ -28,6 +28,7 @@ from sqlalchemy.orm import Session
 
 from app.config import settings
 from app.db import WorkerSessionLocal
+from app.jobs.failures import lecturer_message
 from app.jobs.maintenance import purge_old_records
 from app.llm.gateway import waiting_on_rate_limits
 from app.lti.roster import sync_rosters
@@ -279,8 +280,9 @@ def mark_target_failed(db: Session, job: Job) -> None:
         video = db.get(Video, video_id) if video_id is not None else None
         if video is not None:
             video.status = MediaStatus.failed
-            # The video page shows why, as the job's error is not on it.
-            video.error = job.last_error
+            # The video page shows why, as the job's error is not on it; a system failure shows the
+            # safe message, as the document list does, since an exception's text is no help there.
+            video.error = lecturer_message(job)
 
 
 def handle_job_error(job_id: uuid.UUID, err: Exception, *, worker_id: str | None = None) -> None:

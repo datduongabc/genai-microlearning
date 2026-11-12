@@ -208,19 +208,22 @@ def _cited(items: list[CitedText], chunks: list[Chunk]) -> list[tuple[str, list[
     return kept
 
 
-def _kept_scenes(drafts: list[SceneDraft], chunks: list[Chunk]) -> list[_Draft]:
+def _kept_scenes(drafts: list[SceneDraft], chunks: list[Chunk]) -> tuple[list[_Draft], int]:
+    """The scenes kept, and how many were removed for want of sources."""
     scenes = []
+    dropped = 0
     for d in drafts:
         bullets = _cited(d.bullets, chunks)[:MAX_BULLETS]
         narration = _cited(d.narration, chunks)
         if len(bullets) < MIN_BULLETS or not narration:
+            dropped += 1
             continue
         scenes.append(_Draft(kind=d.kind, title=d.title.strip(), bullets=bullets, narration=narration,
                              formula=d.formula, code=d.code, table=d.table, image_prompt=d.image_prompt))
     if len(scenes) > MAX_SCENES:
         # The closing summary is what a cut from the end would lose, so the cut is made before it.
         scenes = scenes[:MAX_SCENES - 1] + scenes[-1:]
-    return scenes
+    return scenes, dropped
 
 
 def _blank(value: str | None) -> bool:
@@ -297,7 +300,12 @@ _SAID = {
 _SYMBOL_COMMANDS = {"le": "le", "leq": "le", "ge": "ge", "geq": "ge", "ne": "ne", "neq": "ne", "times": "times",
                     "cdot": "times", "approx": "approx", "to": "to", "rightarrow": "to", "sum": "sum", "infty": "infty",
                     "lt": "lt", "gt": "gt"}
-_TEXT_COMMANDS = "text|textbf|textit|mathrm|mathbf|mathit|operatorname"
+# Commands whose argument is said as it is: they only change how it looks.
+_TEXT_COMMANDS = "text|textbf|textit|mathrm|mathbf|mathit|mathbb|mathcal|operatorname"
+# Any other command is said by its name, which is how Greek letters (\alpha) and functions (\log)
+# are read; these are layout or ellipses instead.
+_LAYOUT_COMMANDS = {"left": " ", "right": " ", "quad": " ", "qquad": " ", "dots": "...", "ldots": "...",
+                    "cdots": "..."}
 _LETTER = r"[^\W_]"
 
 
@@ -318,20 +326,23 @@ def normalize_narration(text: str, language: str = "vi") -> str:
     lines = []
     for line in text.split("\n"):
         line = _MARKER.sub("", line)
-        line = re.sub(rf"\\(?:{_TEXT_COMMANDS})\s*\{{([^{{}}]*)\}}", r"\1", line)
-        # Innermost first, so a fraction inside a fraction is read too.
+        # Innermost group first, so the parts of a fraction are read before the fraction itself:
+        # \frac{P_{1}}{2} needs its subscript joined before the fraction pattern can match it.
         while True:
+            replaced = re.sub(rf"\\(?:{_TEXT_COMMANDS})\s*\{{([^{{}}]*)\}}", r"\1", line)
+            replaced = re.sub(r"\^\s*\{([^{}]*)\}|\^\s*(\w)",
+                              lambda m: said["power"].format((m[1] if m[1] is not None else m[2]).strip()), replaced)
+            replaced = _subscripts_joined(replaced)
             replaced = re.sub(r"\\[dt]?frac\s*\{([^{}]*)\}\s*\{([^{}]*)\}",
-                              lambda m: said["frac"].format(m[1].strip(), m[2].strip()), line)
+                              lambda m: said["frac"].format(m[1].strip(), m[2].strip()), replaced)
             replaced = re.sub(r"\\sqrt\s*\{([^{}]*)\}", lambda m: said["sqrt"].format(m[1].strip()), replaced)
             if replaced == line:
                 break
             line = replaced
-        line = re.sub(r"\^\s*\{([^{}]*)\}|\^\s*(\w)", lambda m: said["power"].format((m[1] or m[2]).strip()), line)
+        # Spacing commands (\, \; \quad) are layout, not words.
+        line = re.sub(r"\\[,;:! ]", " ", line)
         line = re.sub(r"\\([A-Za-z]+)", lambda m: f" {said[_SYMBOL_COMMANDS[m[1]]]} " if m[1] in _SYMBOL_COMMANDS
-                      # Greek letters and the like: their name is how they are said.
-                      else (f" {m[1]} " if m[1] not in ("left", "right") else " "), line)
-        line = _subscripts_joined(line)
+                      else _LAYOUT_COMMANDS.get(m[1], f" {m[1]} "), line)
         line = re.sub(r"[_$\\{}]", " ", line)
         line = re.sub(r"[ \t]+", " ", line)
         line = re.sub(r" +([.,;:!?)])", r"\1", line)
@@ -347,7 +358,8 @@ def labels_as_shown(image_prompt: str) -> str:
 
 
 _FORMULA_TOKEN = re.compile(
-    rf"(?P<keep>\\(?:{_TEXT_COMMANDS}|begin|end)\s*\{{[^{{}}]*\}}|\\[A-Za-z]+)"
+    # The group after \begin{array} is a column spec such as {llll}, not a word.
+    rf"(?P<keep>\\begin\s*\{{[^{{}}]*\}}(?:\s*\{{[^{{}}]*\}})?|\\(?:{_TEXT_COMMANDS}|end)\s*\{{[^{{}}]*\}}|\\[A-Za-z]+)"
     r"|(?P<words>[^\W\d_]+(?:\\ [^\W\d_]+)+|[^\W\d_]{4,})"
 )
 
@@ -394,18 +406,18 @@ def prepare_for_render(scenes: Sequence[Scene | dict]) -> list[str]:
 
 # --- The job ---
 
-def _statement(s: _Draft) -> str:
-    """The whole scene as the judge reads it: one call per scene, not per sentence, because each call
-    sends the cited passages again, and a script has several dozen bullets and sentences."""
-    parts = [s.title, *(f"- {text}" for text, _ in s.bullets)]
+def _items(s: _Draft) -> list[tuple[str, str]]:
+    """What the judge checks in a scene, each named as the lecturer will find it: bullets as "Ý n",
+    narration sentences as "Câu n", and the formula, code or table the slide shows."""
+    items = [(f"Ý {n}", text) for n, (text, _) in enumerate(s.bullets, 1)]
     if s.formula:
-        parts.append(s.formula)
+        items.append(("Công thức", s.formula))
     if s.code:
-        parts.append(s.code)
+        items.append(("Code", s.code))
     if s.table:
-        parts.extend(" | ".join(row) for row in s.table)
-    parts.append(" ".join(text for text, _ in s.narration))
-    return "\n".join(parts)
+        items.append(("Bảng", "\n".join(" | ".join(row) for row in s.table)))
+    items.extend((f"Câu {n}", text) for n, (text, _) in enumerate(s.narration, 1))
+    return items
 
 
 def _stored(s: _Draft, language: str) -> dict:
@@ -459,7 +471,7 @@ def generate_video_script(db: Session, video_id: uuid.UUID, before_save: Callabl
                 f"FOCUS: {query}\n\n{format_source_chunks(chunks)}", ScriptDraft,
                 system_instruction=_SCRIPT_INSTRUCTION + output_language_instruction(language), temperature=0.3,
             )
-            scenes = _kept_scenes(draft.scenes, chunks)
+            scenes, dropped = _kept_scenes(draft.scenes, chunks)
             if not scenes:
                 raise ValueError("Model không viết được cảnh nào có trích nguồn từ tài liệu; hãy thử lại "
                                  "hoặc đổi trọng tâm")
@@ -467,15 +479,17 @@ def generate_video_script(db: Session, video_id: uuid.UUID, before_save: Callabl
             if sum(s.narration_chars() for s in scenes) < TOP_UP_BELOW * TARGET_CHARS:
                 _top_up(scenes, query, chunks, language)
 
-        verdicts = fact_check.check_against_sources(
-            [(_statement(s), [c.content for c in s.chunks()]) for s in scenes], video.model_alias)
-        for s, flag in zip(scenes, verdicts, strict=True):
-            if flag:
-                s.flags.append(flag)
+        verdicts = fact_check.check_items_against_sources(
+            [(_items(s), [c.content for c in s.chunks()]) for s in scenes], video.model_alias)
+        for s, item_flags in zip(scenes, verdicts, strict=True):
+            s.flags.extend(flag for flag in item_flags if flag)
         if len(scenes) < MIN_SCENES:
+            # Why it is short tells the lecturer what to do: sources missing suggests another focus.
+            why = (f"{dropped} cảnh không trích được nguồn đã bị bỏ" if dropped
+                   else "model chỉ viết từng ấy cảnh")
             scenes[0].flags.append(
-                f"Lời thoại chỉ còn {len(scenes)} cảnh (nên có {MIN_SCENES} đến {MAX_SCENES}), vì các cảnh không "
-                "trích được nguồn đã bị bỏ: hãy thêm cảnh hoặc sinh lại")
+                f"Lời thoại chỉ có {len(scenes)} cảnh (nên có {MIN_SCENES} đến {MAX_SCENES}) vì {why}: "
+                "hãy thêm cảnh hoặc sinh lại")
         stored = [_stored(s, language) for s in scenes]
 
         if before_save is not None:

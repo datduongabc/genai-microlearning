@@ -5,7 +5,7 @@ import pytest
 
 from app.db import SessionLocal
 from app.generation import claim_evaluation, video_script
-from app.generation.claim_evaluation import SupportVerdict
+from app.jobs.failures import SYSTEM_FAILURE_MESSAGE
 from app.jobs.queue import enqueue_job, execute_job_step, handle_job_error, sweep_stuck_jobs
 from app.models import Chunk, Course, Document, DocumentStatus, Job, JobStatus, JobType, MediaStatus, User, Video
 
@@ -54,8 +54,8 @@ def test_the_job_writes_the_script_and_finishes(world, monkeypatch):
     monkeypatch.setattr(video_script, "retrieve", lambda *a, **k: [chunk])
     monkeypatch.setattr(video_script, "complete_structured", lambda prompt, model, **kw: model(
         scenes=[_scene(i) for i in range(video_script.MIN_SCENES)]))
-    monkeypatch.setattr(claim_evaluation, "complete_structured",
-                        lambda *a, **k: SupportVerdict(supported=True, reason=""))
+    monkeypatch.setattr(claim_evaluation, "complete_structured", lambda prompt, model, **k: model(verdicts=[
+        {"number": n, "supported": True, "reason": ""} for n in range(1, 4)]))
     with SessionLocal() as db:
         execute_job_step(db.get(Job, job_id))
     with SessionLocal() as db:
@@ -76,6 +76,17 @@ def test_a_job_that_runs_out_of_attempts_marks_the_video_failed(world):
         assert video.status == MediaStatus.failed and video.error == "document is empty"
 
 
+def test_a_system_failure_shows_the_safe_message_not_the_exception(world):
+    _, _, video_id, job_id, _ = world
+    with SessionLocal() as db:
+        db.get(Job, job_id).max_attempts = 1
+        db.commit()
+    handle_job_error(job_id, RuntimeError("litellm.InternalServerError: upstream 500 at 10.0.0.7"), worker_id="w1")
+    with SessionLocal() as db:
+        video = db.get(Video, video_id)
+        assert video.status == MediaStatus.failed and video.error == SYSTEM_FAILURE_MESSAGE
+
+
 def test_a_swept_job_past_its_attempts_marks_the_video_failed(world):
     _, _, video_id, job_id, _ = world
     with SessionLocal() as db:
@@ -86,7 +97,8 @@ def test_a_swept_job_past_its_attempts_marks_the_video_failed(world):
     sweep_stuck_jobs()
     with SessionLocal() as db:
         assert db.get(Job, job_id).status == JobStatus.failed
-        assert db.get(Video, video_id).status == MediaStatus.failed
+        video = db.get(Video, video_id)
+        assert video.status == MediaStatus.failed and video.error == SYSTEM_FAILURE_MESSAGE
 
 
 @pytest.mark.parametrize("payload", [{}, {"video_id": "not-a-uuid"}])
