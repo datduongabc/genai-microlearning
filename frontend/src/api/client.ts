@@ -145,3 +145,16 @@ export function apiErrorMessage(error: unknown, fallback: string): string {
   }
   return fallback
 }
+
+// A request made with responseType 'blob' gets its error body as a Blob too, so the server's
+// message would be lost: read it back as JSON first.
+export async function blobErrorMessage(error: unknown, fallback: string): Promise<string> {
+  if (axios.isAxiosError(error) && error.response?.data instanceof Blob) {
+    try {
+      error.response.data = JSON.parse(await error.response.data.text())
+    } catch {
+      error.response.data = undefined // not JSON: a proxy's page, say; the status still decides
+    }
+  }
+  return apiErrorMessage(error, fallback)
+}
