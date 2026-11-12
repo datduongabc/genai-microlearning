@@ -1,0 +1,59 @@
+{
+  "lecture.pdf": [
+    {
+      "heading": "Chương 1. Giới hạn dãy số",
+      "unit_headings": [
+        "Chương 1. Giới hạn dãy số",
+        "1 Khái niệm dãy số",
+        "1.1 Dãy bị chặn",
+        "2 Giới hạn của dãy số"
+      ],
+      "strategy": "page_level",
+      "tokens": 211,
+      "content": "lecture\nChương 1. Giới hạn dãy số\n1 Khái niệm dãy số\nMột dãy số là một hàm số xác định trên tập các số tự nhiên, nhận giá trị thực.\nTa thường ký hiệu dãy số là (x_n) và gọi x_n là số hạng tổng quát của dãy.\n1 Nếu α > 1 thì dãy a_n = n^α tiến ra vô cùng khi n tăng.\n2 Nếu 0 < α < 1 thì dãy vẫn tăng nhưng chậm hơn tuyến tính.\n1.1 Dãy bị chặn\nDãy (x_n) bị chặn trên nếu tồn tại số M sao cho x_n ≤ M với mọi n.\n1 / 3\n2 Giới hạn của dãy số\nDãy (x_n) có giới hạn L nếu với mọi ε > 0 tồn tại N sao cho |x_n − L| < ε khi n > N.\nVí dụ: lim (1 + 1/n)^n = e, một giới hạn quan trọng trong giải tích.\n100 INT_LIT\n0 => { 0 }\n65000 words of lecture notes were transcribed for this chapter.\n2 / 3"
+    },
+    {
+      "heading": "3 Lexical rules",
+      "unit_headings": [
+        "3 Lexical rules",
+        "2.3 Regular expressions"
+      ],
+      "strategy": "page_level",
+      "tokens": 64,
+      "content": "lecture\n3 Lexical rules\nA scanner groups characters into tokens by the longest match rule.\nEach token class is described by a regular expression over the input alphabet.\n2.3 Regular expressions\nThe union, concatenation and Kleene star build every regular language.\n3 / 3"
+    }
+  ],
+  "slides.pptx": [
+    {
+      "heading": "Encapsulation",
+      "unit_headings": [
+        null,
+        null
+      ],
+      "strategy": "page_level",
+      "tokens": 44,
+      "content": "slides\nEncapsulation\nA class hides its fields behind methods.\nGetters and setters control access.\nAccess modifiers\nprivate: only the class itself\nprotected: the class and its subclasses\npublic: every caller"
+    },
+    {
+      "heading": "Lợi ích của đóng gói",
+      "unit_headings": [
+        null,
+        null
+      ],
+      "strategy": "page_level",
+      "tokens": 79,
+      "content": "slides\nLợi ích của đóng gói\nGiảm phụ thuộc giữa các lớp.\nDễ thay đổi cài đặt bên trong.\nComparison\nModifier: private; Same class: yes; Subclass: no; Other: no\nModifier: protected; Same class: yes; Subclass: yes; Other: no\nModifier: public; Same class: yes; Subclass: yes; Other: yes"
+    }
+  ],
+  "notes.docx": [
+    {
+      "heading": "Process scheduling",
+      "unit_headings": [
+        "Process scheduling"
+      ],
+      "strategy": "recursive",
+      "tokens": 86,
+      "content": "notes\nProcess scheduling\nThe scheduler picks the next process from the ready queue.\n\nFirst-come, first-served\nProcesses run in arrival order, so a long job delays every job behind it.\n\nRound robin\nEach process runs for one time quantum and then goes to the back of the queue.\n\nAlgorithm: FCFS\nAverage wait: 17 ms\n\nAlgorithm: RR\nAverage wait: 5.66 ms"
+    }
+  ]
+}
