@@ -505,3 +505,8 @@ body { background: var(--bg-canvas); font-size:16px; line-height:24px; }
 .flashcard-item .doc-warning { margin-top:0; }
 .flashcard-field { display:flex; flex-direction:column; gap:6px; font-size:14px; line-height:20px; color:var(--text-secondary); }
 .flashcard-actions { display:flex; flex-wrap:wrap; align-items:center; gap:12px; }
+.flashcard-sources { display:flex; flex-direction:column; gap:6px; font-size:13px; line-height:18px; }
+.flashcard-sources summary { cursor:pointer; color:var(--accent-default); overflow-wrap:anywhere; }
+.flashcard-sources summary:hover { text-decoration:underline; text-underline-offset:3px; }
+.flashcard-sources .module-source-passage { margin-top:8px; }
+.flashcard-link { display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; overflow-wrap:anywhere; }

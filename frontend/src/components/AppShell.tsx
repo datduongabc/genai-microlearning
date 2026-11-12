@@ -25,7 +25,8 @@ function readCollapsed() {
   try { return window.localStorage.getItem(COLLAPSED_KEY) === "1"; } catch { return false; }
 }
 
-export function AppShell({ title, children }: { title: string; children: ReactNode }) {
+// `fullTitle` is for a title that was cut short: the whole text stays available on hover.
+export function AppShell({ title, fullTitle, children }: { title: string; fullTitle?: string; children: ReactNode }) {
   const { user, logout } = useAuth();
   const [open, setOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(readCollapsed);
@@ -117,6 +118,6 @@ export function AppShell({ title, children }: { title: string; children: ReactNo
         </button>
       </div>
     </aside>
-    <main id="main-content" className="shell-main" tabIndex={-1}><div className="shell-content"><h1 className="page-title">{title}</h1>{children}</div></main>
+    <main id="main-content" className="shell-main" tabIndex={-1}><div className="shell-content"><h1 className="page-title" title={fullTitle}>{title}</h1>{children}</div></main>
   </div>;
 }

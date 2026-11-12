@@ -603,7 +603,7 @@ describe('CourseDetailPage - module generation availability', () => {
 })
 
 const flashcardSet: api.FlashcardSetSummary = {
-  id: 'set-1', document_id: 'doc-1', focus: 'Mảng', output_language: 'vi', model_alias: 'gemini-fast',
+  id: 'set-1', course_id: 'course-1', document_id: 'doc-1', focus: 'Mảng', output_language: 'vi', model_alias: 'gemini-fast',
   status: 'draft', card_count: 8, published_at: null, created_at: '2026-01-01T00:00:00Z',
 }
 
@@ -639,6 +639,10 @@ describe('CourseDetailPage - flashcard sets', () => {
     expect(items[1]).toHaveTextContent('Đang sinh...')
     expect(items[2]).toHaveTextContent('Sinh thất bại')
     expect(items[3]).toHaveTextContent('Đã giao - 8 thẻ')
+    // A draft is neutral, a published set is done, and "processing" means generating only.
+    expect(within(items[0]).getByText('Bản nháp - 8 thẻ')).not.toHaveAttribute('data-status')
+    expect(within(items[1]).getByText('Đang sinh...')).toHaveAttribute('data-status', 'processing')
+    expect(within(items[3]).getByText('Đã giao - 8 thẻ')).toHaveAttribute('data-status', 'embedded')
     const other = screen.getByRole('list', { name: 'Flashcard sinh từ other.pdf' })
     expect(within(other).getAllByRole('listitem')).toHaveLength(1)
   })

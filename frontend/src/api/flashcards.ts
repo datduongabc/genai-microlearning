@@ -1,11 +1,19 @@
 import { api } from './client'
 
+// A passage a card cites, as the server resolved it from the card's chunk id.
+export interface FlashcardSource {
+  chunk_id: string
+  locator: string
+  content: string
+}
+
 export interface FlashcardCard {
   front: string
   back: string
   // Chunk ids of the document the card was drawn from.
   citations: string[]
-  author: 'ai' | 'lecturer'
+  sources: FlashcardSource[]
+  author: 'model' | 'lecturer'
   // A reason the lecturer should look at the card again; null when nothing is wrong.
   flag: string | null
 }
@@ -14,6 +22,7 @@ export type FlashcardCardEdit = Pick<FlashcardCard, 'front' | 'back' | 'citation
 
 export interface FlashcardSetSummary {
   id: string
+  course_id: string
   document_id: string
   focus: string | null
   output_language: 'vi' | 'en'

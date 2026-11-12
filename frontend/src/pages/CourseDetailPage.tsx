@@ -301,11 +301,8 @@ export function CourseDetailPage() {
       await generateFlashcards(doc.id, { focus, outputLanguage, modelAlias });
       setFlashcardSets(await listFlashcardSets(courseId ?? ""));
     } catch (err) {
-      if (axios.isAxiosError(err) && err.response?.status === 409) {
-        setError(apiErrorMessage(err, "Bộ thẻ này đang được sinh, vui lòng chờ."));
-      } else {
-        setError(apiErrorMessage(err, "Sinh flashcard thất bại"));
-      }
+      // The 409 carries its own explanation (an identical set is already being generated).
+      setError(apiErrorMessage(err, "Sinh flashcard thất bại"));
     }
   }
 
@@ -559,10 +556,10 @@ export function CourseDetailPage() {
                 <ul className="doc-modules" aria-label={`Flashcard sinh từ ${d.filename}`}>
                   {setsByDoc(d.id).map((set) => (
                     <li key={set.id} className="module-item">
-                      <Link to={`/flashcard-sets/${set.id}`} className="module-link">
+                      <Link to={`/flashcard-sets/${set.id}`} className="module-link flashcard-link" title={set.focus ?? undefined}>
                         {set.focus ?? "Toàn bộ tài liệu"}
                       </Link>
-                      <span className="status-pill" data-status={set.status === "failed" ? "failed" : set.status === "generating" ? "processing" : "embedded"}>
+                      <span className="status-pill" data-status={set.status === "failed" ? "failed" : set.status === "generating" ? "processing" : set.published_at ? "embedded" : undefined}>
                         {flashcardStatusText(set)}
                       </span>
                     </li>

@@ -19,11 +19,12 @@ vi.mock('../../../api', async (importOriginal) => {
 })
 
 const card = (n: number, extra: Partial<FlashcardCard> = {}): FlashcardCard => ({
-  front: `Mặt trước ${n}`, back: `Mặt sau ${n}`, citations: ['chunk-1'], author: 'ai', flag: null, ...extra,
+  front: `Mặt trước ${n}`, back: `Mặt sau ${n}`, citations: ['chunk-1'], author: 'model', flag: null,
+  sources: [{ chunk_id: 'chunk-1', locator: 'bai-giang.pdf, trang 3', content: 'Một mảng là dãy ô liên tiếp.' }], ...extra,
 })
 
 const draft = (cards: FlashcardCard[], extra: Partial<FlashcardSetDetail> = {}): FlashcardSetDetail => ({
-  id: 'set-1', document_id: 'doc-1', focus: 'Mảng', output_language: 'vi', model_alias: 'gemini-fast',
+  id: 'set-1', course_id: 'course-1', document_id: 'doc-1', focus: 'Mảng', output_language: 'vi', model_alias: 'gemini-fast',
   status: 'draft', card_count: cards.length, published_at: null, created_at: '2026-01-01T00:00:00Z',
   cards, ...extra,
 })
@@ -33,6 +34,7 @@ function renderPage() {
     <AuthProvider>
       <MemoryRouter initialEntries={['/flashcard-sets/set-1']}>
         <Routes>
+          <Route path="/courses/:courseId" element={<p>Trang môn học</p>} />
           <Route path="/flashcard-sets/:id" element={<FlashcardEditorPage />} />
         </Routes>
       </MemoryRouter>
@@ -57,17 +59,19 @@ afterEach(() => {
 describe('FlashcardEditorPage', () => {
   it('shows a warning on a flagged card and on a card without a source', async () => {
     vi.mocked(api.getFlashcardSet).mockResolvedValue(draft([
-      card(1),
-      card(2, { flag: 'Chưa có nguồn', citations: [] }),
-      card(3, { flag: 'Có thể không khớp tài liệu' }),
+      card(1, { sources: [] }),
+      card(2, { flag: 'Chưa có nguồn', citations: [], sources: [] }),
+      card(3, { flag: 'Có thể không khớp tài liệu', sources: [] }),
     ]))
 
     renderPage()
 
     const cards = await screen.findAllByRole('listitem')
-    expect(within(cards[0]).queryByRole('alert')).not.toBeInTheDocument()
-    expect(within(cards[1]).getByRole('alert')).toHaveTextContent('Chưa có nguồn')
-    expect(within(cards[2]).getByRole('alert')).toHaveTextContent('Có thể không khớp tài liệu')
+    expect(within(cards[0]).queryByText('Chưa có nguồn')).not.toBeInTheDocument()
+    expect(within(cards[1]).getByText('Chưa có nguồn')).toBeInTheDocument()
+    expect(within(cards[2]).getByText('Có thể không khớp tài liệu')).toBeInTheDocument()
+    // Static text: a screen reader reads it with the card instead of being interrupted by it.
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
   })
 
   it('warns about an uncited card even before the server has flagged it', async () => {
@@ -75,7 +79,7 @@ describe('FlashcardEditorPage', () => {
 
     renderPage()
 
-    expect(await screen.findByRole('alert')).toHaveTextContent('Chưa có nguồn')
+    expect(await screen.findByText('Chưa có nguồn')).toBeInTheDocument()
   })
 
   it('saves edited cards and stops at 15', async () => {
@@ -94,9 +98,9 @@ describe('FlashcardEditorPage', () => {
     expect(screen.getByRole('button', { name: 'Thêm thẻ' })).toBeDisabled()
     expect(screen.getByText('15/15 thẻ')).toBeInTheDocument()
 
-    const fronts = screen.getAllByLabelText('Mặt trước')
+    const fronts = screen.getAllByLabelText(/^Mặt trước thẻ/)
     await userEvent.type(fronts[14], 'Câu hỏi mới')
-    await userEvent.type(screen.getAllByLabelText('Mặt sau')[14], 'Trả lời mới')
+    await userEvent.type(screen.getAllByLabelText(/^Mặt sau thẻ/)[14], 'Trả lời mới')
     await userEvent.clear(fronts[0])
     await userEvent.type(fronts[0], 'Sửa rồi')
     await userEvent.click(screen.getByRole('button', { name: 'Lưu thay đổi' }))
@@ -142,7 +146,7 @@ describe('FlashcardEditorPage', () => {
     const publish = await screen.findByRole('button', { name: 'Giao cho người học' })
     expect(publish).toBeEnabled()
 
-    await userEvent.type(screen.getByLabelText('Mặt trước'), '!')
+    await userEvent.type(screen.getByLabelText('Mặt trước thẻ 1'), '!')
     expect(screen.getByRole('button', { name: 'Giao cho người học' })).toBeDisabled()
     expect(screen.getByText('Lưu thay đổi trước khi giao.')).toBeInTheDocument()
 
@@ -177,11 +181,11 @@ describe('FlashcardEditorPage', () => {
     vi.mocked(api.saveFlashcards).mockRejectedValue(axiosFailure(422, 'Trích nguồn phải là đoạn của chính tài liệu này.'))
 
     renderPage()
-    await userEvent.type(await screen.findByLabelText('Mặt trước'), '!')
+    await userEvent.type(await screen.findByLabelText('Mặt trước thẻ 1'), '!')
     await userEvent.click(screen.getByRole('button', { name: 'Lưu thay đổi' }))
 
     expect(await screen.findByText('Trích nguồn phải là đoạn của chính tài liệu này.')).toBeInTheDocument()
-    expect(screen.getByLabelText('Mặt trước')).toHaveValue('Mặt trước 1!')
+    expect(screen.getByLabelText('Mặt trước thẻ 1')).toHaveValue('Mặt trước 1!')
   })
 
   it('follows a generating set until it is a draft', async () => {
@@ -196,7 +200,7 @@ describe('FlashcardEditorPage', () => {
       await vi.advanceTimersByTimeAsync(10_000)
     })
 
-    expect(await screen.findByLabelText('Mặt trước')).toHaveValue('Mặt trước 1')
+    expect(await screen.findByLabelText('Mặt trước thẻ 1')).toHaveValue('Mặt trước 1')
   })
 
   it('says a failed generation failed', async () => {
@@ -223,7 +227,7 @@ describe('FlashcardEditorPage', () => {
     expect(await screen.findByText('Không tải được bộ flashcard.')).toBeInTheDocument()
     await userEvent.click(screen.getByRole('button', { name: 'Thử lại' }))
 
-    expect(await screen.findByLabelText('Mặt trước')).toBeInTheDocument()
+    expect(await screen.findByLabelText('Mặt trước thẻ 1')).toBeInTheDocument()
   })
 
   it('deletes the set after confirmation', async () => {
@@ -238,5 +242,102 @@ describe('FlashcardEditorPage', () => {
     await userEvent.click(del)
 
     expect(api.deleteFlashcardSet).toHaveBeenCalledWith('set-1')
+    expect(await screen.findByText('Trang môn học')).toBeInTheDocument()
+  })
+
+  it('shows where each card comes from, with the passage behind a disclosure', async () => {
+    vi.mocked(api.getFlashcardSet).mockResolvedValue(draft([card(1), card(2, { citations: [], sources: [] })]))
+
+    renderPage()
+
+    const sources = await screen.findByRole('list', { name: 'Nguồn của thẻ 1' })
+    const label = within(sources).getByText('bai-giang.pdf, trang 3')
+    const details = label.closest('details')!
+    expect(details).not.toHaveAttribute('open')
+    await userEvent.click(label)
+    expect(details).toHaveAttribute('open')
+    expect(within(details).getByText('Một mảng là dãy ô liên tiếp.')).toBeVisible()
+    expect(screen.queryByRole('list', { name: 'Nguồn của thẻ 2' })).not.toBeInTheDocument()
+  })
+
+  it('goes back to its course, and says so while still generating', async () => {
+    vi.mocked(api.getFlashcardSet).mockResolvedValue(draft([], { status: 'generating' }))
+
+    renderPage()
+    await userEvent.click(await screen.findByRole('button', { name: 'Quay lại' }))
+
+    expect(await screen.findByText('Trang môn học')).toBeInTheDocument()
+  })
+
+  it('asks before leaving with unsaved edits, and stays when the lecturer says no', async () => {
+    vi.mocked(api.getFlashcardSet).mockResolvedValue(draft([card(1)]))
+    const confirm = vi.spyOn(window, 'confirm').mockReturnValueOnce(false).mockReturnValueOnce(true)
+
+    renderPage()
+    await userEvent.type(await screen.findByLabelText('Mặt trước thẻ 1'), '!')
+    await userEvent.click(screen.getByRole('button', { name: 'Quay lại' }))
+    expect(screen.queryByText('Trang môn học')).not.toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Quay lại' }))
+
+    expect(confirm).toHaveBeenCalledTimes(2)
+    expect(await screen.findByText('Trang môn học')).toBeInTheDocument()
+  })
+
+  it('leaves without asking when nothing is unsaved', async () => {
+    vi.mocked(api.getFlashcardSet).mockResolvedValue(draft([card(1)]))
+    const confirm = vi.spyOn(window, 'confirm')
+
+    renderPage()
+    await userEvent.click(await screen.findByRole('button', { name: 'Quay lại' }))
+
+    expect(confirm).not.toHaveBeenCalled()
+    expect(await screen.findByText('Trang môn học')).toBeInTheDocument()
+  })
+
+  it('warns the browser about unsaved edits only while there are some', async () => {
+    vi.mocked(api.getFlashcardSet).mockResolvedValue(draft([card(1)]))
+
+    renderPage()
+    const field = await screen.findByLabelText('Mặt trước thẻ 1')
+    const closing = () => {
+      const event = new Event('beforeunload', { cancelable: true })
+      window.dispatchEvent(event)
+      return event.defaultPrevented
+    }
+    expect(closing()).toBe(false)
+    await userEvent.type(field, '!')
+    expect(closing()).toBe(true)
+  })
+
+  it('tells the lecturer that a published set needs saving to reach the learners', async () => {
+    vi.mocked(api.getFlashcardSet).mockResolvedValue(draft([card(1)], { published_at: '2026-01-02T00:00:00Z' }))
+
+    renderPage()
+    await userEvent.type(await screen.findByLabelText('Mặt trước thẻ 1'), '!')
+
+    expect(screen.getByText('Lưu để cập nhật cho người học.')).toBeInTheDocument()
+  })
+
+  it('shortens a long focus in the title and keeps the whole text on hover', async () => {
+    const focus = 'Mảng và danh sách liên kết '.repeat(6).trim()
+    vi.mocked(api.getFlashcardSet).mockResolvedValue(draft([card(1)], { focus }))
+
+    renderPage()
+
+    const heading = await screen.findByRole('heading', { level: 1 })
+    expect(heading.textContent!.length).toBeLessThanOrEqual(60)
+    expect(heading.textContent).toMatch(/…$/)
+    expect(heading).toHaveAttribute('title', `Flashcard: ${focus}`)
+  })
+
+  it('shows a draft as neutral and a published set as done', async () => {
+    vi.mocked(api.getFlashcardSet).mockResolvedValue(draft([card(1)]))
+    const first = renderPage()
+    expect(await screen.findByText('Bản nháp')).not.toHaveAttribute('data-status')
+    first.unmount()
+
+    vi.mocked(api.getFlashcardSet).mockResolvedValue(draft([card(1)], { published_at: '2026-01-02T00:00:00Z' }))
+    renderPage()
+    expect(await screen.findByText('Đã giao cho người học')).toHaveAttribute('data-status', 'embedded')
   })
 })
