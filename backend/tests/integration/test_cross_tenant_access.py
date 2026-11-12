@@ -293,7 +293,9 @@ def test_a_lecturer_cannot_use_the_admin_pages(world, layers):
 # /ready is called by the load balancer, which has no login. It says only whether the database answers.
 # The LTI routes come before any sign-in: the LMS's signature, the one-time state and the
 # one-time launch code protect them instead (tests/integration/test_lti_launch.py).
-PUBLIC = {"/auth/register", "/health", "/ready", "/auth/login", "/auth/refresh", "/auth/logout",
+# /auth/options is read by the sign-in page before anyone signs in; it says only whether
+# self registration is open.
+PUBLIC = {"/auth/register", "/auth/options", "/health", "/ready", "/auth/login", "/auth/refresh", "/auth/logout",
           "/lti/login", "/lti/launch", "/lti/session", "/lti/jwks"}
 RESOURCE_QUERY = {"course_id", "document_id"}
 BODY_METHODS = {"POST", "PATCH", "PUT"}
