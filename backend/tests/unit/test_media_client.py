@@ -168,3 +168,51 @@ def test_a_busy_provider_is_a_media_error_so_the_job_retries(status):
 
     with pytest.raises(media.MediaError):
         media.generate_image("image-qwen", "a diagram", client=_client(handler))
+
+
+def _png() -> bytes:
+    return b"\x89PNG\r\n\x1a\n" + b"rest"
+
+
+@pytest.mark.parametrize(("data", "mime"), [
+    (b"\x89PNG\r\n\x1a\n....", "image/png"),
+    (b"\xff\xd8\xff\xe0....", "image/jpeg"),
+    (b"RIFF\x00\x00\x00\x00WEBPVP8 ", "image/webp"),
+])
+def test_the_images_endpoint_mime_comes_from_the_magic_bytes(data, mime):
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, json={"data": [{"b64_json": base64.b64encode(data).decode()}]})
+
+    assert media.generate_image("image-qwen", "x", client=_client(handler)).mime == mime
+
+
+def test_a_data_url_without_a_media_type_falls_back_to_the_magic_bytes():
+    def handler(request: httpx.Request) -> httpx.Response:
+        url = "data:;base64," + base64.b64encode(b"\xff\xd8\xff\xe0....").decode()
+        return httpx.Response(200, json={"choices": [{"message": {"images": [{"image_url": {"url": url}}]}}]})
+
+    assert media.generate_image("image-nano-banana", "x", client=_client(handler)).mime == "image/jpeg"
+
+
+def test_a_chat_image_that_is_not_a_data_url_is_a_value_error():
+    """Fetching a remote URL is not supported, and retrying would get the same reply."""
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, json={"choices": [{"message": {"images": [{"image_url": {"url": "https://x.test/a.png"}}]}}]})
+
+    with pytest.raises(ValueError, match="data URL"):
+        media.generate_image("image-nano-banana", "x", client=_client(handler))
+
+
+def test_speech_cost_is_estimated_from_the_characters_when_the_provider_gives_none():
+    text = "a" * 2000
+    speech = media.synthesize_speech("voice-heygen", text, client=_client(_pcm_reply("audio/pcm;rate=44100")))
+
+    assert speech.cost == pytest.approx(2 * media.VOICES["voice-heygen"].usd_per_1k_chars_estimate)
+
+
+def test_a_4xx_message_names_the_http_status():
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(404, json={"error": {"message": "No allowed providers"}})
+
+    with pytest.raises(ValueError, match=r"^HTTP 404: No allowed providers"):
+        media.synthesize_speech("voice-heygen", "hi", client=_client(handler))

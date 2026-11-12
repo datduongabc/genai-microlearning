@@ -529,14 +529,16 @@ def test_lecturers_are_offered_only_the_models_that_were_measured(gateway):
                        "groq-pro", "groq-qwen"}
 
 
-def test_voice_and_image_models_go_through_an_authenticated_openrouter_pass_through(gateway):
-    """model_list cannot hold them (no LiteLLM route for OpenRouter speech), so the gateway forwards
-    /openrouter/* itself. Without auth: true anyone who reaches the gateway would spend the
-    OpenRouter balance, and a key written here would be a committed secret."""
-    (endpoint,) = gateway["general_settings"]["pass_through_endpoints"]
+def test_only_the_three_routes_of_the_media_client_are_passed_through_with_auth(gateway):
+    """model_list cannot hold voice and image models (no LiteLLM route for OpenRouter speech), so
+    the gateway forwards exactly the routes media.py uses. Without auth: true anyone who reaches
+    the gateway would spend the OpenRouter balance; include_subpath would open every other
+    OpenRouter route to a holder of the gateway key."""
+    endpoints = gateway["general_settings"]["pass_through_endpoints"]
 
-    assert endpoint["path"] == "/openrouter"
-    assert endpoint["target"] == "https://openrouter.ai/api/v1"
-    assert endpoint["include_subpath"] is True
-    assert endpoint["auth"] is True
-    assert endpoint["headers"] == {"Authorization": "Bearer os.environ/OPENROUTER_API_KEY"}
+    assert {e["path"] for e in endpoints} == {"/openrouter/audio/speech", "/openrouter/chat/completions", "/openrouter/images"}
+    for e in endpoints:
+        assert e["target"] == "https://openrouter.ai/api/v1" + e["path"].removeprefix("/openrouter")
+        assert e["auth"] is True
+        assert not e.get("include_subpath")
+        assert e["headers"] == {"Authorization": "Bearer os.environ/OPENROUTER_API_KEY"}

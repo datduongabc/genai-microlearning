@@ -33,6 +33,9 @@ class VoiceModel:
     voice: str
     label: str
     price: str
+    # Derived from the per-8-minute-video figures of the spec at about 900 characters a minute
+    # (7200 characters), because a speech reply is raw audio with no usage to read a cost from.
+    usd_per_1k_chars_estimate: float
 
 
 @dataclass(frozen=True)
@@ -45,9 +48,9 @@ class ImageModel:
 
 
 VOICES: dict[str, VoiceModel] = {
-    "voice-heygen": VoiceModel("heygen/heygen-voice-1-turbo", "heygen", "nadine", "HeyGen Voice 1 Turbo", "khoảng $0,03 một video 8 phút"),
-    "voice-gemini-lite": VoiceModel("google/gemini-3.8-flash-lite-tts", "google-ai-studio", "Kore", "Gemini 3.8 Flash-Lite TTS", "khoảng $0,07 một video 8 phút"),
-    "voice-gemini-flash": VoiceModel("google/gemini-3.8-flash-tts", "google-ai-studio", "Kore", "Gemini 3.8 Flash TTS", "khoảng $0,11 một video 8 phút"),
+    "voice-heygen": VoiceModel("heygen/heygen-voice-1-turbo", "heygen", "nadine", "HeyGen Voice 1 Turbo", "khoảng $0,03 một video 8 phút", 0.0042),
+    "voice-gemini-lite": VoiceModel("google/gemini-3.8-flash-lite-tts", "google-ai-studio", "Kore", "Gemini 3.8 Flash-Lite TTS", "khoảng $0,07 một video 8 phút", 0.0097),
+    "voice-gemini-flash": VoiceModel("google/gemini-3.8-flash-tts", "google-ai-studio", "Kore", "Gemini 3.8 Flash TTS", "khoảng $0,11 một video 8 phút", 0.0153),
 }
 IMAGE_MODELS: dict[str, ImageModel] = {
     "image-nano-banana": ImageModel("google/gemini-nano-banana-2.1", "google-ai-studio", "chat", "Gemini Nano Banana 2.1", "khoảng $0,037 một ảnh"),
@@ -96,7 +99,7 @@ def _post(client: httpx.Client | None, path: str, body: dict) -> httpx.Response:
         raise MediaError(f"provider busy ({response.status_code}): {_error_message(response)}")
     if response.status_code >= 400:
         # A refusal repeats on every retry, so it stops the job instead.
-        raise ValueError(_error_message(response))
+        raise ValueError(f"HTTP {response.status_code}: {_error_message(response)}")
     return response
 
 
@@ -106,6 +109,17 @@ def _error_message(response: httpx.Response) -> str:
         return str(error["message"] if isinstance(error, dict) else error)
     except (ValueError, KeyError, TypeError):
         return response.text[:300] or f"HTTP {response.status_code}"
+
+
+def _sniff_mime(data: bytes) -> str:
+    """The images endpoint names no type, and a data URL may leave it out."""
+    if data.startswith(b"\x89PNG"):
+        return "image/png"
+    if data.startswith(b"\xff\xd8\xff"):
+        return "image/jpeg"
+    if data[:4] == b"RIFF" and data[8:12] == b"WEBP":
+        return "image/webp"
+    return "image/png"
 
 
 def synthesize_speech(alias: str, text: str, *, client: httpx.Client | None = None) -> Speech:
@@ -120,8 +134,8 @@ def synthesize_speech(alias: str, text: str, *, client: httpx.Client | None = No
     match = re.search(r"rate=(\d+)", response.headers.get("content-type", ""))
     if not response.content or match is None:
         raise MediaError(f"{alias} returned no audio or no sample rate")
-    # The reply is raw audio, so there is no usage body to read a cost from.
-    return Speech(response.content, int(match.group(1)), model.slug, None)
+    estimated_cost = len(text) / 1000 * model.usd_per_1k_chars_estimate
+    return Speech(response.content, int(match.group(1)), model.slug, estimated_cost)
 
 
 def generate_image(alias: str, prompt: str, aspect_ratio: str = "4:3", *, client: httpx.Client | None = None) -> GeneratedImage:
@@ -144,14 +158,22 @@ def generate_image(alias: str, prompt: str, aspect_ratio: str = "4:3", *, client
         body = response.json()
         if model.endpoint == "chat":
             url = body["choices"][0]["message"]["images"][0]["image_url"]["url"]
-            header, _, encoded = url.partition(",")
-            mime = header.removeprefix("data:").split(";")[0] or "image/png"
+            if not url.startswith("data:"):
+                # Not transient: the same request would return the same kind of URL.
+                not_data_url = True
+            else:
+                not_data_url = False
+                header, _, encoded = url.partition(",")
+                mime = header.removeprefix("data:").split(";")[0]
         else:
-            encoded, mime = body["data"][0]["b64_json"], "image/png"
-        data = base64.b64decode(encoded)
+            not_data_url, mime, encoded = False, "", body["data"][0]["b64_json"]
+        data = base64.b64decode(encoded) if not not_data_url else b""
     except (ValueError, KeyError, IndexError, TypeError) as exc:
         raise MediaError(f"{alias} returned no image") from exc
+    if not_data_url:
+        raise ValueError(f"{alias} returned an image URL, not a data URL; fetching it is not supported")
     if not data:
         raise MediaError(f"{alias} returned an empty image")
+    mime = mime or _sniff_mime(data)
     cost = (body.get("usage") or {}).get("cost")
     return GeneratedImage(data, mime, model.slug, cost)
