@@ -34,6 +34,7 @@ from app.models import (
     Job,
     JobStatus,
     JobType,
+    MediaStatus,
     Module,
     ModuleComponent,
     Question,
@@ -41,6 +42,7 @@ from app.models import (
     StudyFile,
     StudyItem,
     User,
+    Video,
 )
 from tests.integration.test_studies import human_packet
 
@@ -80,6 +82,15 @@ def world():
                                   model_alias="gemini-fast", cards=[], published_at=datetime.now(UTC))
         db.add(flashcards)
         db.flush()
+        # Published and rendered, so that each attack on it is refused by the ownership check and not
+        # by a missing file or a draft state that would refuse the owner too.
+        video = Video(course_id=course.id, document_id=document.id, output_language="vi", model_alias="gemini-fast",
+                      voice_alias="voice-heygen", image_alias="image-nano-banana", status=MediaStatus.ready,
+                      scenes=[{"kind": "summary", "title": "secret scene of A", "bullets": ["a", "b"],
+                               "narration": "secret narration of A", "citations": []}],
+                      draft_version=1, rendered_version=1, video_key="videos/a/v1.mp4", published_at=datetime.now(UTC))
+        db.add(video)
+        db.flush()
         session = ChatSession(course_id=course.id, user_id=course.owner_id, title="chat of A")
         db.add(session)
         db.flush()
@@ -105,7 +116,7 @@ def world():
             "owner": owner.id, "stranger": stranger.id, "course": course.id, "stranger_course": stranger_course.id,
             "document": document.id, "module": module.id, "component": component.id, "session": session.id,
             "pipeline_job": pipeline_job.id, "failed_job": failed_job.id, "question": question.id,
-            "user": owner.id, "flashcard_set": flashcards.id,
+            "user": owner.id, "flashcard_set": flashcards.id, "video": video.id,
             "study": study.id, "study_item": study_item.id, "study_file": study_file.id,
         }
     finally:
@@ -156,6 +167,8 @@ RATING = {
     )},
 }
 
+VIDEO_SCENE = {"kind": "summary", "title": "pwned", "bullets": [], "narration": "pwned"}
+
 ATTACKS = [
     ("GET", "/documents", {"course_id": "{course}"}, {}),
     ("POST", "/documents/uploads", {"course_id": "{course}"}, {"json": {"filename": "x.html", "size": 2}}),
@@ -184,6 +197,18 @@ ATTACKS = [
     ("POST", "/flashcard-sets/{flashcard_set}/publish", None, {}),
     ("POST", "/flashcard-sets/{flashcard_set}/unpublish", None, {}),
     ("DELETE", "/flashcard-sets/{flashcard_set}", None, {}),
+    ("POST", "/videos", {"document_id": "{document}"}, {"json": {"output_language": "vi"}}),
+    ("GET", "/courses/{course}/videos", None, {}),
+    ("GET", "/videos/{video}", None, {}),
+    ("PUT", "/videos/{video}/scenes", None, {"json": {"scenes": [VIDEO_SCENE]}}),
+    ("POST", "/videos/{video}/illustrations", None, {"json": {}}),
+    ("POST", "/videos/{video}/render", None, {}),
+    ("POST", "/videos/{video}/publish", None, {}),
+    ("POST", "/videos/{video}/unpublish", None, {}),
+    ("GET", "/videos/{video}/file", None, {}),
+    ("GET", "/videos/{video}/file/content", None, {}),
+    ("GET", "/videos/{video}/scenes/{scene_index}/preview.png", None, {}),
+    ("DELETE", "/videos/{video}", None, {}),
     ("GET", "/learn/courses/{course}/items", None, {}),
     ("GET", "/learn/flashcard-sets/{flashcard_set}", None, {}),
     ("POST", "/jobs/{failed_job}/retry", None, {}),
@@ -248,18 +273,19 @@ def _send(spec, ids, headers):
 
 OWNER_RESOURCES = (
     "course", "document", "module", "component", "session", "pipeline_job", "failed_job", "question", "user", "study",
-    "study_item", "study_file", "flashcard_set",
+    "study_item", "study_file", "flashcard_set", "video",
 )
 
 
 def _ids_of_the_owner(world):
     # stranger_course is the attacker's own course: it exists, and is theirs.
     # A rater number is no resource of anyone: the same one is asked either way.
-    return {name: world[name] for name in (*OWNER_RESOURCES, "stranger_course")} | {"rater_number": 1}
+    return {name: world[name] for name in (*OWNER_RESOURCES, "stranger_course")} | {"rater_number": 1, "scene_index": 0}
 
 
 def _ids_that_do_not_exist(world):
-    return {name: uuid.uuid4() for name in OWNER_RESOURCES} | {"stranger_course": world["stranger_course"], "rater_number": 1}
+    return {name: uuid.uuid4() for name in OWNER_RESOURCES} | {"stranger_course": world["stranger_course"], "rater_number": 1,
+                                                             "scene_index": 0}
 
 
 @pytest.mark.parametrize("spec", ATTACKS, ids=[f"{s[0]} {s[1]}" for s in ATTACKS])
@@ -283,6 +309,9 @@ def test_nothing_of_the_owner_was_changed_by_the_attacks(world, layers):
     assert module.json()["title"] == "Module of A"
     assert "secret A" in module.text
     assert [d["filename"] for d in documents.json()] == ["a.txt"]
+    video = client.get(f"/videos/{world['video']}", headers=world["owner_headers"]).json()
+    assert (video["scenes"][0]["title"], video["draft_version"]) == ("secret scene of A", 1)
+    assert video["published_at"] is not None and video["rendered_version"] == 1
     # The invited owner still finds the study that the stranger was told is not there, unrated.
     study = client.get(f"/studies/mine/{world['study']}/items", headers=world["owner_headers"]).json()
     assert [(item["id"], item["rating"]) for item in study["items"]] == [(str(world["study_item"]), None)]

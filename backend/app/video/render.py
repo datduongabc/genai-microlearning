@@ -325,7 +325,7 @@ def render_video(
         if video is None:
             raise ValueError(f"Video {video_id} not found")
         scenes = [Scene.model_validate(s) for s in video.scenes]
-        problems = prepare_for_render(scenes) + _lost_pictures(scenes)
+        problems = prepare_for_render(scenes) + lost_pictures(scenes)
         if problems:
             error = "Chưa dựng được video: " + "; ".join(problems) + "."
             _fail_now(db, video_id, error, before_save)
@@ -380,7 +380,7 @@ def render_video(
             _publish(db, video_id, video_key(video_id, version), out, version, sum(lengths), before_save)
 
 
-def _lost_pictures(scenes: Sequence[Scene]) -> list[str]:
+def lost_pictures(scenes: Sequence[Scene]) -> list[str]:
     """A picture whose file is gone fails the render before any paid call, and for good: a retry
     would find it gone again, and only drawing it again brings it back."""
     store = media_store()

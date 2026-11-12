@@ -115,7 +115,9 @@ class _Drawn:
     key: str | None = None
 
 
-def _targets(scenes: list[Scene], scene_indexes: Sequence[int] | None) -> list[int]:
+def scenes_to_draw(scenes: list[Scene], scene_indexes: Sequence[int] | None) -> list[int]:
+    """The scenes a run draws. Also what the API counts against the daily limit, so the count is
+    the pictures that will be paid for. Raises ValueError, with a message for the lecturer."""
     def drawable(s: Scene) -> bool:
         return s.kind == "illustration" and bool(s.image_prompt and s.image_prompt.strip())
 
@@ -185,7 +187,7 @@ def draw_illustrations(
         if video is None:
             raise ValueError(f"Video {video_id} not found")
         scenes = [Scene.model_validate(s) for s in video.scenes]
-        targets = _targets(scenes, scene_indexes)
+        targets = scenes_to_draw(scenes, scene_indexes)
         alias = video.image_alias
         # No transaction stays open while the model draws.
         db.commit()

@@ -77,6 +77,10 @@ class Settings(BaseSettings):
     # Chat messages a day for an account that cannot author, a student who came through the LMS: each one is a
     # paid model call, and nobody else is accountable for them.
     learner_daily_chat_limit: int = Field(default=30, ge=1)
+    # Pictures drawn and videos rendered a day, per account and for every account: each is paid
+    # (about $0.04 a picture, $0.03 to $0.11 of voice a render), and neither takes a generation.
+    video_redraws_per_day: int = Field(default=20, ge=1)
+    video_renders_per_day: int = Field(default=10, ge=1)
     # Pin the selected alias for evaluation; the gateway may still retry that model.
     llm_experiment_mode: bool = False
     # Times one call in a background job waits and asks again after a 429, so a brief limit does not

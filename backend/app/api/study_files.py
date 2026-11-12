@@ -19,6 +19,7 @@ from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user, require_admin
 from app.api.documents import _checked_suffix, _size_limit
+from app.api.stored_files import download_link, send_stored
 from app.db import get_db
 from app.models import Study, StudyFile, StudyItem, User
 from app.storage import LocalUploadStore, S3UploadStore, staging_dir, study_file_key, study_file_store
@@ -55,22 +56,11 @@ def _file(db: Session, study_id: uuid.UUID, file_id: uuid.UUID, *, status: str |
 
 
 def _download(key: str, filename: str, api_path: str) -> dict:
-    """Where the browser gets the file: an S3 link it follows itself, or, without S3, an API path
-    it fetches with its token."""
-    store = study_file_store()
-    if isinstance(store, S3UploadStore):
-        return {"url": store.presigned_get(key, filename), "via_api": False, "filename": filename}
-    return {"url": api_path, "via_api": True, "filename": filename}
+    return download_link(study_file_store(), key, filename, api_path)
 
 
 def _send(key: str, filename: str) -> FileResponse:
-    store = study_file_store()
-    if not isinstance(store, LocalUploadStore):
-        raise HTTPException(status_code=404, detail="Not found")
-    path = store.path(key)
-    if not path.is_file():
-        raise HTTPException(status_code=404, detail="File not found")
-    return FileResponse(path, filename=filename)
+    return send_stored(study_file_store(), key, filename)
 
 
 @router.get("/{study_id}/files", dependencies=[Depends(require_admin)])

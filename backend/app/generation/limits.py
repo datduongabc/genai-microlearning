@@ -1,4 +1,5 @@
-"""Reserve module generations in the same transaction that enqueues their jobs."""
+"""Reserve module generations, and the pictures and renders of videos, in the same transaction that
+enqueues their jobs."""
 from datetime import UTC, datetime
 
 from fastapi import HTTPException
@@ -42,3 +43,29 @@ def reserve_generations(db: Session, user: User, count: int = 1) -> None:
         ))
     user.generation_day = today
     user.generation_count = used + count
+
+
+def _count_today(db: Session, user: User, kind: str, count: int, limit: int, refusal: str) -> None:
+    """`count` more of `kind` today, the account row locked as reserve_generations locks it."""
+    db.refresh(user, with_for_update=True)
+    if not user.is_active:
+        raise HTTPException(status_code=401, detail="Tài khoản đã bị vô hiệu hóa.")
+    today = datetime.now(UTC).date()
+    used = getattr(user, f"{kind}_count") if getattr(user, f"{kind}_day") == today else 0
+    if used + count > limit:
+        raise HTTPException(status_code=429, detail=refusal.format(limit=limit, left=max(limit - used, 0)))
+    setattr(user, f"{kind}_day", today)
+    setattr(user, f"{kind}_count", used + count)
+
+
+def reserve_video_redraws(db: Session, user: User, images: int) -> None:
+    """Counts the pictures asked for, not the requests: a request for five costs five times one.
+
+    For every account, Moodle-linked or not: each picture is paid, and nobody else is accountable for them."""
+    _count_today(db, user, "video_redraw", images, settings.video_redraws_per_day,
+                 "Mỗi ngày (UTC) bạn được vẽ tối đa {limit} hình; hôm nay còn {left} hình. Hãy quay lại vào ngày mai.")
+
+
+def reserve_video_render(db: Session, user: User) -> None:
+    _count_today(db, user, "video_render", 1, settings.video_renders_per_day,
+                 "Mỗi ngày (UTC) bạn được dựng video tối đa {limit} lần. Hãy quay lại vào ngày mai.")

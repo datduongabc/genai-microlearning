@@ -105,6 +105,12 @@ class User(Base):
     # Chat messages today, counted for accounts that cannot author (settings.learner_daily_chat_limit).
     chat_day: Mapped[date | None] = mapped_column(Date, nullable=True)
     chat_count: Mapped[int] = mapped_column(default=0, server_default="0")
+    # Pictures drawn and videos rendered today: each is paid, so each has a daily limit of its own
+    # (settings.video_redraws_per_day, video_renders_per_day; app/generation/limits.py).
+    video_redraw_day: Mapped[date | None] = mapped_column(Date, nullable=True)
+    video_redraw_count: Mapped[int] = mapped_column(default=0, server_default="0")
+    video_render_day: Mapped[date | None] = mapped_column(Date, nullable=True)
+    video_render_count: Mapped[int] = mapped_column(default=0, server_default="0")
     created_at: Mapped[datetime] = created_at_column()
 
 

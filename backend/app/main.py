@@ -23,6 +23,7 @@ from app.api import (
     moodle_account,
     studies,
     study_files,
+    videos,
 )
 from app.auth.rate_limit import limiter, user_or_address
 from app.config import Settings, settings
@@ -105,6 +106,7 @@ def create_app(app_settings: Settings = settings) -> FastAPI:
     api.include_router(documents.router)
     api.include_router(modules.router)
     api.include_router(flashcards.router)
+    api.include_router(videos.router)
     api.include_router(learn.router)
     api.include_router(moodle.router)
     api.include_router(moodle_account.router)

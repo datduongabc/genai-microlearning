@@ -200,6 +200,10 @@ def _media_keys(db, *conditions) -> list[str]:
     return keys
 
 
+def media_keys_for_video(db, video_id) -> list[str]:
+    return _media_keys(db, Video.id == video_id)
+
+
 def media_keys_for_document(db, document_id) -> list[str]:
     return _media_keys(db, Video.document_id == document_id)
 

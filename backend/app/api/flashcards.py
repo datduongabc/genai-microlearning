@@ -8,29 +8,16 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user, require_author, require_course_owner
-from app.api.model_alias import usable_alias
+from app.api.media_common import NO_SOURCE_FLAG, GenerateRequest, chunk_passages, owned_media, require_own_chunks
+from app.api.model_alias import generation_alias
 from app.auth.rate_limit import limiter, user_or_address
-from app.citations import citation_label
-from app.config import settings
 from app.db import get_db
-from app.generation import fact_check
-from app.generation.common import OutputLanguage
 from app.generation.flashcards import MAX_CARDS
 from app.generation.limits import reserve_generations
 from app.jobs.queue import enqueue_job
-from app.llm import catalog
-from app.models import Chunk, Course, Document, FlashcardSet, JobType, MediaStatus, User
+from app.models import Course, Document, FlashcardSet, JobType, MediaStatus, User
 
 router = APIRouter(tags=["flashcards"], dependencies=[Depends(get_current_user)])
-
-NO_SOURCE_FLAG = "Chưa có nguồn"
-
-
-class GenerateRequest(BaseModel):
-    focus: Annotated[str, StringConstraints(strip_whitespace=True, max_length=1000)] | None = None
-    output_language: OutputLanguage = "vi"
-    model_alias: str | None = None
-
 
 class CardEdit(BaseModel):
     front: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=1000)]
@@ -48,15 +35,7 @@ class CardsRequest(BaseModel):
 
 
 def _owned_set(db: Session, set_id: uuid.UUID, user: User, *, lock: bool = False) -> FlashcardSet:
-    require_author(user)
-    card_set = db.get(FlashcardSet, set_id, with_for_update=lock)
-    if card_set is None:
-        raise HTTPException(status_code=404, detail="Flashcard set not found")
-    # Both a missing set and someone else's answer 404, so an id does not confirm itself.
-    course = db.get(Course, card_set.course_id)
-    if course is None or course.owner_id != user.id:
-        raise HTTPException(status_code=404, detail="Flashcard set not found")
-    return card_set
+    return owned_media(db, FlashcardSet, set_id, user, not_found="Flashcard set not found", lock=lock)
 
 
 def _summary(card_set: FlashcardSet) -> dict:
@@ -69,44 +48,14 @@ def _summary(card_set: FlashcardSet) -> dict:
 
 
 def card_sources(db: Session, card_set: FlashcardSet) -> list[list[dict]]:
-    """The passages each card cites, in card order, shared by the lecturer's and the learner's views.
-
-    One query for every card, so a set of 15 cards is not 15 round trips. A chunk that no longer
-    exists (the document was re-chunked) simply has no source to show."""
-    wanted = {uuid.UUID(c) for card in card_set.cards for c in card["citations"]}
-    chunks = {c.id: c for c in db.scalars(select(Chunk).where(Chunk.document_id == card_set.document_id, Chunk.id.in_(wanted)))} if wanted else {}
-    filename = db.get(Document, card_set.document_id).filename
-    result = []
-    for card in card_set.cards:
-        sources = []
-        for chunk_id in card["citations"]:
-            chunk = chunks.get(uuid.UUID(chunk_id))
-            if chunk is not None:
-                # Stored locators are JSON; the module editor shows the same readable label built from them.
-                sources.append({"chunk_id": chunk_id, "locator": citation_label(filename, chunk.source_ref or ""), "content": chunk.content})
-        result.append(sources)
-    return result
+    """The passages each card cites, in card order, shared by the lecturer's and the learner's views."""
+    passages = chunk_passages(db, card_set.document_id, (c for card in card_set.cards for c in card["citations"]))
+    return [[passages[c] for c in card["citations"] if c in passages] for card in card_set.cards]
 
 
 def _detail(db: Session, card_set: FlashcardSet) -> dict:
     cards = [card | {"sources": sources} for card, sources in zip(card_set.cards, card_sources(db, card_set), strict=True)]
     return _summary(card_set) | {"cards": cards}
-
-
-def _chosen_alias(body: GenerateRequest, user: User) -> str:
-    if body.model_alias is not None:
-        alias = usable_alias(body.model_alias)
-    elif user.default_model_alias is not None and catalog.is_available(user.default_model_alias):
-        alias = usable_alias(user.default_model_alias)
-    else:
-        alias = settings.llm_model
-    # The worker fact-checks with a model of another family and fails on an alias that has none;
-    # refusing here costs nothing, while failing there is after the reserved generation.
-    try:
-        fact_check.judge_alias(alias)
-    except ValueError as error:
-        raise HTTPException(status_code=422, detail=f"Model '{alias}' không có model kiểm chứng khác họ.") from error
-    return alias
 
 
 @router.post("/flashcard-sets")
@@ -118,7 +67,7 @@ def generate_flashcards(
     require_author(current_user)
     body = body or GenerateRequest()
     # Validated before the lock: the probe is a network call and must not hold the document row.
-    alias = _chosen_alias(body, current_user)
+    alias = generation_alias(body.model_alias, current_user)
     focus = body.focus or None
     # FOR UPDATE: the duplicate check below reads the sets table, so two identical requests for one
     # document must not run it at the same moment or both would pass.
@@ -181,10 +130,7 @@ def edit_cards(
     if card_set.published_at is not None and not body.cards:
         raise HTTPException(status_code=422, detail="Bộ thẻ đang công khai không thể để trống, hãy ẩn nó trước.")
 
-    cited = {c for card in body.cards for c in card.citations}
-    known = set(db.scalars(select(Chunk.id).where(Chunk.document_id == card_set.document_id, Chunk.id.in_(cited))))
-    if cited - known:
-        raise HTTPException(status_code=422, detail="Trích nguồn phải là đoạn của chính tài liệu này.")
+    require_own_chunks(db, card_set.document_id, {c for card in body.cards for c in card.citations})
 
     stored = card_set.cards
     edited = []
