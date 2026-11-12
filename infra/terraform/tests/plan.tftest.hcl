@@ -66,6 +66,10 @@ run "demo_with_the_self_hosted_reranker" {
     error_message = "A presigned POST must name the bucket's regional endpoint."
   }
   assert {
+    condition     = local.tasks.api.environment.SELF_REGISTRATION == "false"
+    error_message = "A public deployment must not let anyone register: the quota is per account."
+  }
+  assert {
     condition     = one(aws_s3_bucket_cors_configuration.uploads.cors_rule).allowed_methods == toset(["POST"])
     error_message = "The browser may only POST to the uploads bucket."
   }

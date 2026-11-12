@@ -43,3 +43,12 @@ export async function register(name: string, email: string, password: string) {
   const { data } = await api.post<UserInfo>('/auth/register', { name, email, password })
   return data
 }
+
+export interface AuthOptions {
+  self_registration: boolean
+}
+
+export async function getAuthOptions() {
+  const { data } = await api.get<AuthOptions>('/auth/options')
+  return data
+}

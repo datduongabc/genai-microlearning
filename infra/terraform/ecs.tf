@@ -40,6 +40,7 @@ locals {
     MOODLE_BASE_URL   = var.moodle_base_url
     MOODLE_WWWROOT    = var.moodle_wwwroot
     WORKER_POOL_SIZE  = tostring(var.worker.pool_size)
+    SELF_REGISTRATION = tostring(var.self_registration)
     # The LTI redirect URI is built from it, and must match what the LMS has registered.
     PUBLIC_URL = "https://${aws_cloudfront_distribution.main.domain_name}"
   }

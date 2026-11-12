@@ -5,8 +5,10 @@ import { Link, useNavigate } from "react-router-dom";
 import { apiErrorMessage, register as registerUser } from "../api";
 import { registerSchema, type RegisterFormValues } from "../lib/authSchemas";
 import { AuthLayout } from "../components/AuthLayout";
+import { useSelfRegistration } from "../auth/useSelfRegistration";
 
 export function RegisterPage() {
+  const selfRegistration = useSelfRegistration();
   const navigate = useNavigate();
   const [error, setError] = useState<string | null>(null);
 
@@ -24,6 +26,20 @@ export function RegisterPage() {
     } catch (err) {
       setError(apiErrorMessage(err, "Đăng ký thất bại"));
     }
+  }
+
+  if (selfRegistration === false) {
+    return (
+      <AuthLayout>
+        <div className="auth-form">
+          <h1>Tạo tài khoản</h1>
+          <p role="status">
+            Đăng ký tài khoản đã đóng. Hãy nhờ quản trị viên tạo tài khoản, hoặc mở công cụ từ Moodle.
+          </p>
+          <p className="auth-footer"><Link to="/login" className="text-accent hover:underline">Đăng nhập</Link></p>
+        </div>
+      </AuthLayout>
+    );
   }
 
   return (

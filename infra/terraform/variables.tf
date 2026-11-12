@@ -72,6 +72,12 @@ variable "reranker" {
   default     = { cpu = 4096, memory = 8192, count = 1 }
 }
 
+variable "self_registration" {
+  description = "Whether anyone may create an account at /register. Off for a public address: the daily generation quota is per account, so open registration lets anyone create accounts to spend the provider credit. The administrator creates accounts, and an LMS launch creates them for its users."
+  type        = bool
+  default     = false
+}
+
 variable "llm_model" {
   description = "Gateway alias for chat and module generation; see devops/gateway/config.yaml. The same default as compose and backend/app/config.py, the model the thesis measurements were made on."
   type        = string
