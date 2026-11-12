@@ -94,10 +94,14 @@ def get_video(video_id: uuid.UUID, db: Session = Depends(get_db), current_user: 
         }
         for scene in rendered
     ]
+    link = rendered_link(db, video, f"/learn/videos/{video.id}/file/content")
     return {
         "id": video.id, "course_id": video.course_id, "title": video.focus,
         "duration_seconds": video.duration_seconds,
-        "file_url": rendered_link(db, video, f"/learn/videos/{video.id}/file/content")["url"],
+        # The render these scenes and this file belong to: a page that asks for a new link can tell
+        # from it that the lecturer rendered again meanwhile.
+        "rendered_version": video.rendered_version,
+        "file_url": link["url"], "via_api": link["via_api"],
         "scenes": scenes,
     }
 

@@ -570,7 +570,7 @@ a.learn-link:hover { text-decoration:underline; text-underline-offset:2px; }
 .learn-card-text { font:400 20px/30px var(--font-serif); }
 .learn-card-sources { display:flex; flex-direction:column; gap:2px; padding-left:12px; border-left:2px solid var(--highlight); font:400 14px/21px var(--font-sans); color:var(--text-secondary); }
 .learn-hint { margin-top:8px; font-size:14px; line-height:20px; }
-.learn-video { display:block; width:100%; max-width:100%; aspect-ratio:16/9; background:#000; border-radius:var(--radius-lg); }
+.learn-video { display:block; max-width:100%; }
 .learn-scenes { list-style:none; display:flex; flex-direction:column; margin-top:16px; }
 .learn-scene { display:grid; grid-template-columns:auto 1fr; gap:2px 12px; align-items:baseline; width:100%; max-width:100%; min-height:44px; padding:10px 8px; text-align:left; border-top:1px solid var(--border-default); overflow-wrap:anywhere; cursor:pointer; }
 .learn-scene:hover { background:var(--bg-highlight); }

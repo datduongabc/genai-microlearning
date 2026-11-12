@@ -24,7 +24,7 @@ const indexCss = readFileSync(resolve(process.cwd(), 'src/index.css'), 'utf8')
 
 const video = {
   id: 'v1', course_id: 'course-1', title: 'Giới thiệu heap', duration_seconds: 125,
-  file_url: 'https://s3.example/v1.mp4?sig=1',
+  rendered_version: 1, via_api: false, file_url: 'https://s3.example/v1.mp4?sig=1',
   scenes: [
     { title: 'Mở đầu', start_seconds: 0, sources: ['bai-giang.pdf · trang 2'] },
     { title: 'Heap là gì', start_seconds: 30.5, sources: ['bai-giang.pdf · trang 3', 'bai-2.pdf'] },
@@ -114,15 +114,72 @@ describe('LearnVideoPage', () => {
     fireEvent.loadedMetadata(player())
     expect(player().currentTime).toBe(42)
     expect(HTMLMediaElement.prototype.play).toHaveBeenCalled()
+  })
 
-    // Only once: a file that still fails is not asked for again and again.
+  it('starts at the matching scene of a newer render when the new link comes with one', async () => {
+    const newer = {
+      ...video, rendered_version: 2, file_url: 'https://s3.example/v2.mp4?sig=1',
+      scenes: [
+        { title: 'Mở đầu mới', start_seconds: 0, sources: [] },
+        { title: 'Heap mới', start_seconds: 50, sources: [] },
+      ],
+    }
+    vi.mocked(api.getLearnVideo).mockResolvedValueOnce(video).mockResolvedValueOnce(newer)
+    renderPage()
+    await screen.findByRole('heading', { name: 'Giới thiệu heap' })
+    player().currentTime = 40
+    fireEvent.timeUpdate(player())
+    fireEvent.error(player())
+
+    await waitFor(() => expect(player()).toHaveAttribute('src', newer.file_url))
+    fireEvent.loadedMetadata(player())
+
+    // Scene 2 (index 1) was playing: it is at 50 s in the new file, and 40 s would be elsewhere.
+    expect(player().currentTime).toBe(50)
+    expect(screen.getByRole('status')).toHaveTextContent('Giảng viên vừa cập nhật video.')
+    expect(screen.getByRole('button', { name: /Heap mới/ })).toHaveAttribute('aria-current', 'true')
+    expect(screen.queryByRole('button', { name: /Tổng kết/ })).not.toBeInTheDocument()
+  })
+
+  it('starts at the beginning when the scene that was playing is gone from the newer render', async () => {
+    const newer = {
+      ...video, rendered_version: 2, file_url: 'https://s3.example/v2.mp4?sig=1',
+      scenes: [{ title: 'Chỉ một cảnh', start_seconds: 0, sources: [] }],
+    }
+    vi.mocked(api.getLearnVideo).mockResolvedValueOnce(video).mockResolvedValueOnce(newer)
+    renderPage()
+    await screen.findByRole('heading', { name: 'Giới thiệu heap' })
+    player().currentTime = 100
+    fireEvent.timeUpdate(player())
+    fireEvent.error(player())
+
+    await waitFor(() => expect(player()).toHaveAttribute('src', newer.file_url))
+    fireEvent.loadedMetadata(player())
+
+    expect(player().currentTime).toBe(0)
+  })
+
+  it('renews again at a second expiry once the file has played, but not for a file that never loads', async () => {
+    const link = (n: number) => ({ ...video, file_url: `https://s3.example/v1.mp4?sig=${n}` })
+    vi.mocked(api.getLearnVideo).mockResolvedValueOnce(link(2)).mockResolvedValueOnce(link(3))
+    renderPage()
+    await screen.findByRole('heading', { name: 'Giới thiệu heap' })
+
+    fireEvent.error(player())
+    await waitFor(() => expect(player()).toHaveAttribute('src', link(2).file_url))
+    fireEvent.loadedMetadata(player())
+    fireEvent.error(player())
+    await waitFor(() => expect(player()).toHaveAttribute('src', link(3).file_url))
+
+    // The third link never loads: no fourth.
     fireEvent.error(player())
     expect(await screen.findByRole('alert')).toHaveTextContent('Không phát được video')
-    expect(api.getLearnVideo).toHaveBeenCalledTimes(2)
+    // The page's own load, and the two renewals.
+    expect(api.getLearnVideo).toHaveBeenCalledTimes(3)
   })
 
   it('fetches the file with the token when there is no S3 link', async () => {
-    vi.mocked(api.getLearnVideo).mockResolvedValue({ ...video, file_url: '/learn/videos/v1/file/content' })
+    vi.mocked(api.getLearnVideo).mockResolvedValue({ ...video, via_api: true, file_url: '/learn/videos/v1/file/content' })
     vi.mocked(api.videoFileBlob).mockResolvedValue(new Blob(['x']))
     URL.createObjectURL = vi.fn(() => 'blob:v1')
     URL.revokeObjectURL = vi.fn()
@@ -148,15 +205,18 @@ describe('LearnVideoPage', () => {
     await screen.findByRole('heading', { name: 'Giới thiệu heap' })
     // jsdom has no layout, so what can be checked is that nothing is given a width that a phone cannot fit.
     // That the video is full width and the page does not scroll sideways at 390 px is checked in a real browser.
-    expect(player()).toHaveClass('learn-video')
-    expect(player().getAttribute('style')).toBeNull()
-    const video_rule = /\.learn-video\s*\{([^}]*)\}/.exec(indexCss)?.[1] ?? ''
+        expect(player().getAttribute('style')).toBeNull()
+    expect(player()).toHaveClass('video-player')
+    const video_rule = /\.video-player\s*\{([^}]*)\}/.exec(indexCss)?.[1] ?? ''
+    const learn_rule = /\.learn-video\s*\{([^}]*)\}/.exec(indexCss)?.[1] ?? ''
     expect(video_rule).toMatch(/width:\s*100%/)
-    expect(video_rule).toMatch(/max-width:\s*100%/)
+    expect(learn_rule).toMatch(/max-width:\s*100%/)
+    // The colour is a token, not a literal.
+    expect(video_rule + learn_rule).not.toMatch(/#[0-9a-f]{3,6}/i)
     const scene = screen.getByRole('button', { name: /Mở đầu/ })
     expect(scene).toHaveClass('learn-scene')
     const scene_rule = /\.learn-scene\s*\{([^}]*)\}/.exec(indexCss)?.[1] ?? ''
     expect(scene_rule).toMatch(/overflow-wrap:\s*anywhere/)
-    for (const rule of [video_rule, scene_rule]) expect(rule).not.toMatch(/(?<![-\w])(min-)?width:\s*\d+px/)
+    for (const rule of [video_rule, learn_rule, scene_rule]) expect(rule).not.toMatch(/(?<![-\w])(min-)?width:\s*\d+px/)
   })
 })

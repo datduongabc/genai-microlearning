@@ -60,7 +60,10 @@ export interface LearnVideo {
   course_id: string
   title: string | null
   duration_seconds: number | null
+  // The render the scenes and the file belong to; a new link can come with a newer one.
+  rendered_version: number
   file_url: string
+  via_api: boolean
   scenes: LearnVideoScene[]
 }
 

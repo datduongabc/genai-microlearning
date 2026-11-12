@@ -160,7 +160,8 @@ def test_a_member_gets_a_short_lived_link_to_the_rendered_video(world, monkeypat
     assert response.status_code == 200
     assert response.json() == {
         "id": str(world["video"]), "course_id": str(world["course"]), "title": "Video đã giao",
-        "duration_seconds": 61.5, "file_url": "https://s3.example/videos/x/v1.mp4?sig=1",
+        "duration_seconds": 61.5, "rendered_version": 1, "via_api": False,
+        "file_url": "https://s3.example/videos/x/v1.mp4?sig=1",
         "scenes": [
             {"title": "Mở đầu", "start_seconds": 0.0, "sources": ["bai-giang.pdf · trang 2"]},
             {"title": "Heap", "start_seconds": 30.5, "sources": []},
@@ -168,15 +169,22 @@ def test_a_member_gets_a_short_lived_link_to_the_rendered_video(world, monkeypat
     }
 
 
-def test_without_s3_the_link_is_the_learner_content_route(world):
+def test_without_s3_the_link_is_the_learner_content_route(world, tmp_path, monkeypatch):
+    monkeypatch.setattr("app.config.settings.upload_storage_dir", str(tmp_path))
     _render(world)
+    (tmp_path / "media" / "videos" / "x").mkdir(parents=True)
+    (tmp_path / "media" / "videos" / "x" / "v1.mp4").write_bytes(b"0123456789")
     h = headers(world["member"])
 
     body = client.get(f"/learn/videos/{world['video']}", headers=h).json()
 
-    assert body["file_url"] == f"/learn/videos/{world['video']}/file/content"
-    # Fetched with the same token, and answering like the detail does when it must not.
-    assert client.get(body["file_url"], headers=h).status_code in (200, 404)
+    assert body["file_url"] == f"/learn/videos/{world['video']}/file/content" and body["via_api"] is True
+    # The file itself, whole and by range, as a browser asks for the middle of a video.
+    whole = client.get(body["file_url"], headers=h)
+    assert (whole.status_code, whole.content) == (200, b"0123456789")
+    part = client.get(body["file_url"], headers=h | {"Range": "bytes=0-1"})
+    assert (part.status_code, part.content) == (206, b"01")
+    # Answering like the detail does when it must not.
     assert client.get(body["file_url"], headers=headers(world["outsider"])).status_code == 404
 
 
