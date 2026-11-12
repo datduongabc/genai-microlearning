@@ -13,6 +13,7 @@ resource id is added without being put here."""
 
 import re
 import uuid
+from datetime import UTC, datetime
 
 import pytest
 from fastapi.testclient import TestClient
@@ -76,7 +77,7 @@ def world():
         db.add(question)
         db.flush()
         flashcards = FlashcardSet(course_id=course.id, document_id=document.id, output_language="vi",
-                                  model_alias="gemini-fast", cards=[])
+                                  model_alias="gemini-fast", cards=[], published_at=datetime.now(UTC))
         db.add(flashcards)
         db.flush()
         session = ChatSession(course_id=course.id, user_id=course.owner_id, title="chat of A")

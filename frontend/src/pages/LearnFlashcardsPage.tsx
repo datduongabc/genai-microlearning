@@ -3,8 +3,14 @@ import { Link, useParams } from "react-router-dom";
 import { getLearnFlashcardSet, type LearnFlashcardSet } from "../api";
 import { LearnerShell } from "../components/LearnerShell";
 
+// Keyed by the set, so that moving to another one starts again on its first card instead of
+// carrying over the old index, the flipped side or a failed load.
 export function LearnFlashcardsPage() {
   const { courseId, setId } = useParams();
+  return <LearnFlashcardsStudy key={setId} courseId={courseId} setId={setId} />;
+}
+
+function LearnFlashcardsStudy({ courseId, setId }: { courseId?: string; setId?: string }) {
   const [set, setSet] = useState<LearnFlashcardSet | null>(null);
   const [failed, setFailed] = useState(false);
   const [index, setIndex] = useState(0);

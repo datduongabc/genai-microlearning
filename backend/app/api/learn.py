@@ -54,9 +54,9 @@ def get_set(set_id: uuid.UUID, db: Session = Depends(get_db), current_user: User
         require_course_reader(db, db.get(Course, card_set.course_id), current_user)
     except HTTPException:
         raise HTTPException(status_code=404, detail="Flashcard set not found") from None
-    # Only the label of a source: the passage text and the lecturer's review flags are not the learner's.
+    # Only the label of a source, once even if several cited passages share it: the passage text and the lecturer's review flags are not the learner's.
     cards = [
-        {"front": card["front"], "back": card["back"], "sources": [s["locator"] for s in sources]}
+        {"front": card["front"], "back": card["back"], "sources": list(dict.fromkeys(s["locator"] for s in sources))}
         for card, sources in zip(card_set.cards, card_sources(db, card_set), strict=True)
     ]
     return {"id": card_set.id, "course_id": card_set.course_id, "focus": card_set.focus, "cards": cards}

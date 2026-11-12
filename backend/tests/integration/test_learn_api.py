@@ -116,5 +116,17 @@ def test_the_learner_view_has_no_review_flags(world):
     assert "flag" not in response.text and "author" not in response.text and "A heap is a tree." not in response.text
 
 
+def test_a_source_cited_twice_by_a_card_is_shown_once(world):
+    with SessionLocal() as db:
+        card_set = db.get(FlashcardSet, world["published"])
+        cited = card_set.cards[0]["citations"][0]
+        card_set.cards = [{**card_set.cards[0], "citations": [cited, cited]}]
+        db.commit()
+
+    body = client.get(f"/learn/flashcard-sets/{world['published']}", headers=headers(world["member"])).json()
+
+    assert body["cards"][0]["sources"] == ["bai-giang.pdf · trang 2"]
+
+
 def test_the_learn_routes_need_a_login(world):
     assert client.get(f"/learn/courses/{world['course']}/items").status_code == 401
