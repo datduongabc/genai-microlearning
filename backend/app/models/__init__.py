@@ -26,7 +26,7 @@ from app.models.models import (
     RefreshToken,
     User,
 )
-from app.models.study import Rating, Study, StudyItem
+from app.models.study import Rating, Study, StudyFile, StudyItem
 
 __all__ = [
     "ChatMessage",
@@ -54,6 +54,7 @@ __all__ = [
     "Rating",
     "RefreshToken",
     "Study",
+    "StudyFile",
     "StudyItem",
     "User",
 ]

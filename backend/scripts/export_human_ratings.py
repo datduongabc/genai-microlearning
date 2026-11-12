@@ -19,65 +19,24 @@ Rồi phân tích cả nhóm, gồm độ tin cậy giữa các người chấm 
 """
 
 import argparse
-import csv
-import json
 import sys
 import uuid
 from pathlib import Path
 
 from sqlalchemy import select
 
-from app.api.studies import _rating_out
 from app.db import SessionLocal
-from app.models import Rating, StudyItem, User
-from scripts.analyze_study import CRITERIA
-
-
-def _notes(findings: list[dict] | None) -> str:
-    return "\n".join(f"{f.get('field', '')}: {f.get('claim', '')} ({f.get('reason', '')})" for f in findings or [])
+from app.models import StudyItem
+from app.study.results import human_ratings, judge_jsonl, pair_ids, rater_csv
 
 
 def _pair_ids(items: list[StudyItem]) -> dict[str, str]:
-    """Mã cặp theo mã ẩn danh: mỗi gói rag_llm với đúng một gói llm_no_rag cùng LO và mục tiêu con."""
-    by_objective: dict[tuple, dict[str, list[StudyItem]]] = {}
-    for item in items:
-        key = (item.packet.get("learning_objective"), tuple(item.packet.get("sub_objectives") or []))
-        by_objective.setdefault(key, {}).setdefault(item.group, []).append(item)
-    pair_ids = {item.anon_code: item.anon_code for item in items}
-    unpaired = []
-    for groups in by_objective.values():
-        rag, no_rag = groups.get("rag_llm", []), groups.get("llm_no_rag", [])
-        if len(rag) == 1 and len(no_rag) == 1:
-            pair_ids[no_rag[0].anon_code] = rag[0].anon_code
-        else:
-            unpaired += [item.anon_code for item in rag + no_rag]
+    """Mã cặp theo mã ẩn danh (app/study/results.py); báo những gói không ghép được."""
+    pairs, unpaired = pair_ids(items)
     if unpaired:
-        print(f"Cảnh báo: không ghép được cặp cho {', '.join(sorted(unpaired))} (thiếu bạn cặp hoặc nhiều gói "
+        print(f"Cảnh báo: không ghép được cặp cho {', '.join(unpaired)} (thiếu bạn cặp hoặc nhiều gói "
               "cùng LO và mục tiêu con); các gói này bị loại khỏi phép kiểm ghép cặp.")
-    return pair_ids
-
-
-def _export_judge(db, study_id: uuid.UUID, out: Path) -> Path | None:
-    rows = db.execute(
-        select(StudyItem, Rating)
-        .join(Rating, Rating.study_item_id == StudyItem.id)
-        .where(StudyItem.study_id == study_id, Rating.rater_kind == "llm_judge")
-        .order_by(StudyItem.anon_code, Rating.judge_alias)
-    ).all()
-    if not rows:
-        return None
-    pair_ids = _pair_ids(db.scalars(select(StudyItem).where(StudyItem.study_id == study_id)).all())
-    path = out / "judge.jsonl"
-    with open(path, "w", encoding="utf-8") as handle:
-        for item, rating in rows:
-            line = {
-                "anon_id": item.anon_code, "pair_id": pair_ids[item.anon_code], "group": item.group,
-                "judge": rating.judge_alias, "judge_model": rating.judge_model,
-                "evaluation": _rating_out(rating, item.anon_code),
-            }
-            handle.write(json.dumps(line, ensure_ascii=False) + "\n")
-    print(f"{path.name}: {len(rows)} lượt chấm của mô hình chấm")
-    return path
+    return pairs
 
 
 def export(study_id: uuid.UUID, out: Path) -> list[Path]:
@@ -90,29 +49,20 @@ def export(study_id: uuid.UUID, out: Path) -> list[Path]:
             "để tệp cũ không bị phân tích như một người chấm thêm."
         )
     with SessionLocal() as db:
-        rows = db.execute(
-            select(User.email, StudyItem.anon_code, Rating)
-            .join(StudyItem, Rating.study_item_id == StudyItem.id)
-            .join(User, Rating.user_id == User.id)
-            .where(StudyItem.study_id == study_id, Rating.rater_kind == "human")
-            .order_by(User.email, StudyItem.anon_code)
-        ).all()
-        out.mkdir(parents=True, exist_ok=True)
-        judge = _export_judge(db, study_id, out)
-    by_email: dict[str, list[tuple[str, Rating]]] = {}
-    for email, code, rating in rows:
-        by_email.setdefault(email, []).append((code, rating))
-
-    written = [judge] if judge else []
-    for n, (email, ratings) in enumerate(sorted(by_email.items()), start=1):
+        humans = human_ratings(db, study_id)
+        _pair_ids(list(db.scalars(select(StudyItem).where(StudyItem.study_id == study_id))))
+        judge = judge_jsonl(db, study_id)
+    out.mkdir(parents=True, exist_ok=True)
+    written = []
+    if judge:
+        path = out / "judge.jsonl"
+        path.write_text(judge, encoding="utf-8")
+        print(f"{path.name}: {judge.count(chr(10))} lượt chấm của mô hình chấm")
+        written.append(path)
+    # Same numbering as the admin page: by email among raters who rated at least one packet.
+    for n, (email, ratings) in enumerate(humans.items(), start=1):
         path = out / f"rater-{n}.csv"
-        with open(path, "w", encoding="utf-8", newline="") as handle:
-            writer = csv.writer(handle)
-            writer.writerow(["anon_id", *CRITERIA, "hallucination_notes"])
-            for code, rating in ratings:
-                writer.writerow([
-                    code, *(getattr(rating, c)["score"] for c in CRITERIA), _notes(rating.hallucination_findings),
-                ])
+        path.write_text(rater_csv(ratings), encoding="utf-8", newline="")
         print(f"{path.name}: {email} ({len(ratings)} gói)")
         written.append(path)
     return written

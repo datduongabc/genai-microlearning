@@ -20,6 +20,7 @@ from app.api import (
     moodle,
     moodle_account,
     studies,
+    study_files,
 )
 from app.auth.rate_limit import limiter, user_or_address
 from app.config import Settings, settings
@@ -107,6 +108,7 @@ def create_app(app_settings: Settings = settings) -> FastAPI:
     api.include_router(jobs.router)
     api.include_router(model_selection.router)
     api.include_router(studies.router)
+    api.include_router(study_files.router)
     api.include_router(lti.router)
 
     @api.get("/health")

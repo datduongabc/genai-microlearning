@@ -36,11 +36,11 @@ from pathlib import Path
 from scipy import stats
 
 from app.generation.claim_evaluation import ClaimEvaluation
-from app.generation.evaluation import DimensionScore, ModuleEvaluation
+from app.generation.evaluation import ModuleEvaluation
+from app.study.results import CRITERIA
 
-# Tám tiêu chí chấm điểm, theo đúng thứ tự của rubric. Tiêu chí thứ chín là danh sách
+# CRITERIA là tám tiêu chí chấm điểm, theo đúng thứ tự của rubric. Tiêu chí thứ chín là danh sách
 # hallucination_findings, được phân tích bằng McNemar chứ không bằng điểm.
-CRITERIA = [name for name, field in ModuleEvaluation.model_fields.items() if field.annotation is DimensionScore]
 SCALE = range(1, 6)
 
 

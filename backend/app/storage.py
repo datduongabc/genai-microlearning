@@ -19,12 +19,16 @@ from contextlib import AbstractContextManager, contextmanager
 from functools import cache
 from pathlib import Path
 from typing import Protocol
+from urllib.parse import quote
 
 from app.config import settings
 
 # How long a presigned POST stays valid. A 1 GB video over a 10 Mbit/s line takes about 14 minutes;
 # S3 checks the expiry when the upload starts, not when it ends.
 PRESIGNED_POST_SECONDS = 15 * 60
+# How long a download link stays valid: S3 checks it when the download starts, and the page asks
+# for a fresh one on every click.
+PRESIGNED_GET_SECONDS = 5 * 60
 
 logger = logging.getLogger(__name__)
 
@@ -49,6 +53,10 @@ class LocalUploadStore:
 
     def _path(self, key: str) -> Path:
         return self.directory / key
+
+    def path(self, key: str) -> Path:
+        """Where the file is, for the API to send it itself: this store has no download URL."""
+        return self._path(key)
 
     def save(self, local_path: Path, key: str) -> None:
         self.directory.mkdir(parents=True, exist_ok=True)
@@ -119,6 +127,17 @@ class S3UploadStore:
             ExpiresIn=PRESIGNED_POST_SECONDS,
         )
 
+    def presigned_get(self, key: str, filename: str) -> str:
+        """A link that downloads the file under filename, valid for PRESIGNED_GET_SECONDS.
+
+        The browser follows it as a plain navigation, so the bucket needs no CORS rule for GET."""
+        quoted = quote(filename)
+        return self.client.generate_presigned_url(
+            "get_object", ExpiresIn=PRESIGNED_GET_SECONDS, Params={
+                "Bucket": self.bucket, "Key": self._object_key(key),
+                "ResponseContentDisposition": f"attachment; filename*=UTF-8''{quoted}",
+            })
+
 
 @cache
 def _s3_client():
@@ -139,6 +158,17 @@ def upload_store() -> UploadStore:
     if settings.upload_store == "s3":
         return S3UploadStore(settings.upload_s3_bucket, settings.upload_s3_prefix)
     return LocalUploadStore(settings.upload_storage_dir)
+
+
+def study_file_store() -> UploadStore:
+    """Where a study's reference files are kept, for as long as the study keeps them."""
+    if settings.upload_store == "s3":
+        return S3UploadStore(settings.upload_s3_bucket, settings.study_files_s3_prefix)
+    return LocalUploadStore(str(Path(settings.upload_storage_dir) / "study-files"))
+
+
+def study_file_key(file_id, filename: str) -> str:
+    return f"{file_id}{Path(filename).suffix.lower()}"
 
 
 def uploaded_file(payload: dict) -> tuple[UploadStore, str] | None:

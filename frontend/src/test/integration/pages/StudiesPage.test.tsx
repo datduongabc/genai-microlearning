@@ -25,6 +25,7 @@ const item = {
   id: "i1",
   anon_code: "M01",
   rating: null,
+  reference: null,
   packet: {
     anon_id: "M01",
     topic: "Chủ đề",
@@ -40,6 +41,7 @@ const item = {
   },
 };
 const data = { study, items: [item], rated: 0, total: 1 };
+const noResults = { criteria: [], total: 0, raters: [], has_judge: false, unpaired: [], items: [] };
 beforeEach(() => {
   vi.clearAllMocks();
   vi.spyOn(auth, "useAuth").mockReturnValue({
@@ -54,6 +56,9 @@ beforeEach(() => {
   vi.mocked(api.myStudyItems).mockResolvedValue(data);
   vi.mocked(api.listStudies).mockResolvedValue([study]);
   vi.mocked(api.getRaters).mockResolvedValue({ emails: ["lan@example.com"] });
+  vi.mocked(api.getStudyResults).mockResolvedValue(noResults);
+  vi.mocked(api.listStudyFiles).mockResolvedValue([]);
+  vi.mocked(api.getStudyItems).mockResolvedValue([]);
 });
 function blind() {
   return render(
@@ -98,7 +103,7 @@ it("renders the whole anonymous packet and saves/edits all rubric criteria", asy
   expect(screen.getByRole("heading", { name: "Khẳng định không có căn cứ (0)" })).toBeInTheDocument();
   await user.click(screen.getByRole("button", { name: "Thêm khẳng định không có căn cứ" }));
   expect(screen.getByRole("heading", { name: "Khẳng định không có căn cứ (1)" })).toBeInTheDocument();
-  await user.type(screen.getByLabelText("Claim 1"), "Khẳng định");
+  await user.type(screen.getByLabelText("Khẳng định 1"), "Khẳng định");
   await user.type(screen.getByLabelText("Lý do 1"), "Không có nguồn");
   await user.click(screen.getByRole("button", { name: "Lưu đánh giá" }));
   expect(await screen.findByText("Đã lưu đánh giá.")).toBeInTheDocument();
@@ -130,7 +135,7 @@ it("keeps a criterion opened by a failed save open while its comment is typed", 
   await user.type(within(criterion).getByRole("textbox", { name: /Nhận xét/ }), "C");
   await waitFor(() => expect(within(criterion).queryByRole("alert")).not.toBeInTheDocument());
   expect(criterion).toHaveAttribute("open");
-  expect(within(criterion).getByText("Quiz, lời giải và ví dụ có khớp nhau không?")).toBeInTheDocument();
+  expect(within(criterion).getByText("Câu hỏi, lời giải và ví dụ có khớp nhau không?")).toBeInTheDocument();
 });
 it("keeps edits and progress unchanged after a failed save", async () => {
   const score = { score: 3, justification: "Đã chấm" };
@@ -344,4 +349,155 @@ it("opens sources first and switches packet tabs with arrow keys", async () => {
   expect(screen.getByRole("tab", { name: "Nội dung" })).toHaveFocus();
   expect(screen.getByText("Nội dung bài")).toBeVisible();
   expect(screen.queryByText("Nguồn đối chiếu")).not.toBeInTheDocument();
+});
+
+it("shows only the packet picked when moving between packets and back", async () => {
+  const second = {
+    ...item,
+    id: "i2",
+    anon_code: "M02",
+    packet: { ...item.packet, anon_id: "M02", source_chunks: ["Nguồn của gói hai"] },
+  };
+  vi.mocked(api.myStudyItems).mockResolvedValue({ ...data, items: [item, second], total: 2 });
+  const user = userEvent.setup();
+  blind();
+  await screen.findByText("Nguồn đối chiếu");
+  const packets = within(screen.getByRole("navigation", { name: "Gói chấm" }));
+  await user.click(packets.getByRole("link", { name: /M02/ }));
+  await screen.findByText("Nguồn của gói hai");
+  await user.click(packets.getByRole("link", { name: /M01/ }));
+  await screen.findByText("Nguồn đối chiếu");
+  // The packet left behind must be gone, not kept beside the one now rated.
+  expect(screen.queryByText("Nguồn của gói hai")).not.toBeInTheDocument();
+  expect(screen.getAllByRole("article")).toHaveLength(1);
+});
+
+it("offers every part of the module that can hold an unsupported claim, but not the objective", async () => {
+  const user = userEvent.setup();
+  blind();
+  await screen.findByText("Nguồn đối chiếu");
+  await user.click(screen.getByRole("button", { name: /Thêm/ }));
+  const location = screen.getByRole("combobox", { name: /Vị trí 1/ });
+  expect(within(location).getAllByRole("option").map((o) => o.textContent)).toEqual(
+    ["Nội dung", "Slide", "Ví dụ", "Quiz", "Bài luyện tập", "Lời giải thích"],
+  );
+});
+
+it("shows the admin each rater's progress, and per packet the scores, findings and group", async () => {
+  const scores = Object.fromEntries(["accuracy", "completeness"].map((c) => [c, { score: 4, justification: `Lý do ${c}` }]));
+  vi.mocked(api.getStudyResults).mockResolvedValue({
+    criteria: ["accuracy", "completeness"], total: 2, has_judge: false, unpaired: [],
+    raters: [{ email: "lan@example.com", number: 1, rated: 1, invited: true }, { email: "minh@example.com", number: null, rated: 0, invited: true }],
+    items: [
+      { id: "i1", anon_code: "M01", group: "rag_llm", pair_code: "M01", topic: "Chủ đề", ratings: [{
+        rater: "Người chấm 1", kind: "human", scores, notes: "Ổn",
+        findings: [{ claim: "Câu bịa", field: "example", reason: "Nguồn không có" }],
+      }] },
+      { id: "i2", anon_code: "M02", group: "llm_no_rag", pair_code: "M01", topic: "Chủ đề", ratings: [] },
+    ],
+  });
+  vi.mocked(api.downloadStudyFile).mockResolvedValue(new Blob(["anon_id"]));
+  URL.createObjectURL = vi.fn(() => "blob:x");
+  URL.revokeObjectURL = vi.fn();
+  const user = userEvent.setup();
+  render(<AdminStudiesPanel />);
+  await user.click(await screen.findByRole("button", { name: /Nghiên cứu/ }));
+  const results = await screen.findByRole("region", { name: "Kết quả chấm" });
+  const progress = within(within(results).getByRole("list", { name: "Tiến độ người chấm" }));
+  expect(progress.getByText("Người chấm 1")).toBeInTheDocument();
+  expect(progress.getByText("Chưa chấm gói nào")).toBeInTheDocument();
+  expect(within(results).getByLabelText("Tiến độ lan@example.com")).toHaveAttribute("value", "1");
+  // Only packets someone rated are listed; the group is the admin's to see.
+  expect(within(results).queryByText("M02")).not.toBeInTheDocument();
+  await user.click(within(results).getByText("M01"));
+  expect(within(results).getByText("RAG")).toBeVisible();
+  expect(within(results).getByRole("cell", { name: "Độ chính xác" })).toBeVisible();
+  expect(within(results).getByText("Câu bịa")).toBeVisible();
+  expect(within(results).getByText("Ví dụ")).toBeVisible();
+  await user.click(within(results).getByRole("button", { name: "Tải CSV" }));
+  expect(api.downloadStudyFile).toHaveBeenCalledWith("s1", "raters/1.csv");
+});
+
+const summary = (id: string, code: string, group: "rag_llm" | "llm_no_rag" | "human", pair: string | null) => ({
+  id, anon_code: code, group, module_id: group === "rag_llm" ? pair : null, pair_id: pair,
+  reference_file_id: null, packet: { topic: `Chủ đề ${code}` },
+});
+const lecture = { id: "f1", filename: "Bài giảng 3.pdf", size: 1258291, created_at: "" };
+
+async function openStudy() {
+  render(<AdminStudiesPanel />);
+  await userEvent.click(await screen.findByRole("button", { name: /Nghiên cứu/ }));
+  return screen.findByRole("region", { name: "Tài liệu gốc" });
+}
+
+it("gives a pair one file picker, so both packets always share the file", async () => {
+  vi.mocked(api.getStudyItems).mockResolvedValue([
+    summary("a", "M01", "rag_llm", "p1"), summary("b", "M04", "llm_no_rag", "p1"), summary("c", "M02", "human", null),
+  ]);
+  vi.mocked(api.listStudyFiles).mockResolvedValue([lecture]);
+  vi.mocked(api.setItemReference).mockResolvedValue([
+    { id: "a", reference_file_id: "f1" }, { id: "b", reference_file_id: "f1" }, { id: "c", reference_file_id: null },
+  ]);
+  const region = await openStudy();
+  expect(within(region).getByText("1,2 MB")).toBeInTheDocument();
+  const pair = within(region).getByRole("combobox", { name: "Tài liệu gốc của M01, M04" });
+  expect(within(region).getByRole("combobox", { name: "Tài liệu gốc của M02" })).toHaveValue("");
+
+  await userEvent.selectOptions(pair, "f1");
+
+  expect(api.setItemReference).toHaveBeenCalledWith("s1", "a", "f1");
+  await waitFor(() => expect(pair).toHaveValue("f1"));
+  expect(within(region).getByRole("combobox", { name: "Tài liệu gốc của M02" })).toHaveValue("");
+});
+
+it("uploads a file to the study and offers it to every packet", async () => {
+  vi.mocked(api.getStudyItems).mockResolvedValue([summary("c", "M02", "human", null)]);
+  vi.mocked(api.uploadStudyFile).mockResolvedValue(lecture);
+  const region = await openStudy();
+  expect(within(region).getByText("Chưa có file nào.")).toBeInTheDocument();
+  const file = new File(["%PDF"], "Bài giảng 3.pdf", { type: "application/pdf" });
+
+  await userEvent.upload(within(region).getByLabelText("Tải file lên"), file);
+
+  expect(api.uploadStudyFile).toHaveBeenCalledWith("s1", file, expect.any(Function));
+  expect(await within(region).findByRole("button", { name: "Tải Bài giảng 3.pdf" })).toBeInTheDocument();
+  expect(within(region).getByRole("option", { name: "Bài giảng 3.pdf" })).toBeInTheDocument();
+});
+
+it("asks before deleting a file and clears it from the packets that used it", async () => {
+  vi.mocked(api.getStudyItems).mockResolvedValue([{ ...summary("c", "M02", "human", null), reference_file_id: "f1" }]);
+  vi.mocked(api.listStudyFiles).mockResolvedValue([lecture]);
+  vi.mocked(api.deleteStudyFile).mockResolvedValue();
+  const confirm = vi.spyOn(window, "confirm").mockReturnValueOnce(false).mockReturnValueOnce(true);
+  try {
+    const region = await openStudy();
+    const remove = within(region).getByRole("button", { name: "Xóa Bài giảng 3.pdf" });
+    await userEvent.click(remove);
+    expect(api.deleteStudyFile).not.toHaveBeenCalled();
+
+    await userEvent.click(remove);
+
+    expect(api.deleteStudyFile).toHaveBeenCalledWith("s1", "f1");
+    await waitFor(() => expect(within(region).getByRole("combobox", { name: "Tài liệu gốc của M02" })).toHaveValue(""));
+    expect(within(region).getByText("Chưa có file nào.")).toBeInTheDocument();
+  } finally {
+    confirm.mockRestore();
+  }
+});
+
+it("offers the rater the packet's own file, and nothing when there is none", async () => {
+  vi.mocked(api.myStudyItems).mockResolvedValue({ ...data, items: [
+    { ...item, reference: { filename: "Bài giảng 3.pdf", size: 1258291 } },
+    { ...item, id: "i2", anon_code: "M02" },
+  ] });
+  vi.mocked(api.downloadPacketReference).mockResolvedValue();
+  blind();
+  expect(await screen.findByText("Bài giảng 3.pdf")).toBeInTheDocument();
+
+  await userEvent.click(screen.getByRole("button", { name: "Tải xuống" }));
+
+  expect(api.downloadPacketReference).toHaveBeenCalledWith("s1", "i1");
+  await userEvent.click(screen.getByRole("link", { name: "M02" }));
+  await waitFor(() => expect(screen.queryByText("Bài giảng 3.pdf")).not.toBeInTheDocument());
+  expect(screen.queryByRole("button", { name: "Tải xuống" })).not.toBeInTheDocument();
 });
