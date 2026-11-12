@@ -152,7 +152,7 @@ def test_the_role_is_read_from_the_database_not_from_the_token(admin):
 
 
 def test_the_token_of_an_account_that_was_never_active_or_is_forged_is_refused():
-    forged = jwt.encode({"sub": str(uuid.uuid4())}, "not-the-secret", algorithm="HS256")
+    forged = jwt.encode({"sub": str(uuid.uuid4())}, "not-the-secret-but-long-enough-for-hs256", algorithm="HS256")
 
     assert client.get("/admin/users", headers={"Authorization": f"Bearer {forged}"}).status_code == 401
 

@@ -8,7 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import Response
 from pptx import Presentation
 from pydantic import BaseModel, Field, StringConstraints, ValidationError, model_validator
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.api.chat import ChatRequest, _get_or_create_session
@@ -414,8 +414,10 @@ def delete_module(
         Module.id.in_([j.module_id for j in paired_jobs if j.module_id is not None]),
     )))
     check_study_references(db, {module.id, *control_ids})
-    for control in db.query(Module).filter(Module.id.in_(control_ids)):
-        db.delete(control)
+    # Bulk DELETE runs now, before the RAG module goes. Deleting both through the ORM in one flush
+    # raced with the paired_module_id cascade, so the control row was sometimes already gone.
+    if control_ids:
+        db.execute(delete(Module).where(Module.id.in_(control_ids)))
     # Job đối chứng lỗi không có module để cascade, mà giữ lại thì nó mãi trỏ tới module không còn.
     for job in paired_jobs:
         if job.module_id is None:
