@@ -192,7 +192,7 @@ describe('CourseDetailPage - Moodle linking', () => {
     })
 
     expect(await within(account).findByText('Chưa liên kết')).toBeInTheDocument()
-    expect(within(account).getByText(/tài khoản trong ứng dụng và tài khoản moodle/i)).toBeInTheDocument()
+    expect(within(account).getByText(/nhập email moodle của bạn/i)).toBeInTheDocument()
   })
 
 
@@ -231,6 +231,35 @@ describe('CourseDetailPage - unlink Moodle', () => {
       expect(api.unlinkMoodleCourse).toHaveBeenCalledWith('course-1')
     })
     expect(await screen.findByText(/chưa liên kết với moodle/i)).toBeInTheDocument()
+  })
+
+  it('keeps the not-linked line in place while the account answers, with no "link first" flash', async () => {
+    let answer!: (value: { email: string; status: 'linked' }) => void
+    vi.mocked(api.getMoodleAccount).mockReturnValue(new Promise((resolve) => { answer = resolve }))
+    vi.mocked(api.listCourses).mockResolvedValue([unlinkedCourse])
+    renderPage()
+    const line = await screen.findByText('Môn học này chưa liên kết với Moodle.')
+    expect(screen.queryByText(/liên kết tài khoản moodle trước/i)).not.toBeInTheDocument()
+
+    await act(async () => answer({ email: 'lan@x.edu', status: 'linked' }))
+
+    expect(await screen.findByRole('combobox', { name: /course moodle/i })).toBeInTheDocument()
+    expect(line).toBeInTheDocument()
+  })
+
+  it('asks for the account link first only where Moodle exists', async () => {
+    vi.mocked(api.listCourses).mockResolvedValue([unlinkedCourse])
+    vi.mocked(api.getMoodleAccount).mockResolvedValue({ email: 'lan@x.edu', status: 'not_linked' })
+    const { unmount } = renderPage()
+    expect(await screen.findByText('Liên kết tài khoản Moodle trước để chọn khóa học.')).toBeInTheDocument()
+    unmount()
+
+    vi.mocked(api.getMoodleAccount).mockResolvedValue({ email: 'lan@x.edu', status: 'unavailable' })
+    renderPage()
+    expect(await screen.findByText(/mở từ moodle \(lti\) vẫn dùng bình thường/i)).toBeInTheDocument()
+    expect(screen.getByText('Môn học này chưa liên kết với Moodle.')).toBeInTheDocument()
+    expect(screen.queryByText(/liên kết tài khoản moodle trước/i)).not.toBeInTheDocument()
+    expect(screen.queryByRole('combobox', { name: /course moodle/i })).not.toBeInTheDocument()
   })
 })
 
@@ -533,7 +562,7 @@ describe('CourseDetailPage - module generation availability', () => {
     expect(screen.getByRole('dialog')).toBeInTheDocument()
     await userEvent.selectOptions(screen.getByRole('combobox', { name: /ngôn ngữ đầu ra/i }), 'en')
     await userEvent.type(screen.getByLabelText(/Hướng dẫn thêm/), 'Giải thích kỹ DLDFS và IDS')
-    await userEvent.click(screen.getByRole('button', { name: 'Sinh' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Sinh mô-đun' }))
 
     expect(api.generateModule).toHaveBeenCalledWith('doc-1', 'groq-pro', 'en', 'Giải thích kỹ DLDFS và IDS')
   })
@@ -553,7 +582,7 @@ describe('CourseDetailPage - module generation availability', () => {
 
     renderPage()
     await userEvent.click(await screen.findByRole('button', { name: /\+ sinh mô-đun/i }))
-    await userEvent.click(screen.getByRole('button', { name: 'Sinh' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Sinh mô-đun' }))
 
     expect(await screen.findByText(/chưa có API key hợp lệ/)).toBeInTheDocument()
   })
@@ -565,7 +594,7 @@ describe('CourseDetailPage - module generation availability', () => {
 
     renderPage()
     await userEvent.click(await screen.findByRole('button', { name: /\+ sinh mô-đun/i }))
-    await userEvent.click(screen.getByRole('button', { name: 'Sinh' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Sinh mô-đun' }))
 
     expect(api.generateModule).toHaveBeenCalledWith('doc-1', '', 'vi', '')
     expect(await screen.findByRole('button', { name: /đang sinh mô-đun/i })).toBeDisabled()
@@ -810,7 +839,7 @@ describe('CourseDetailPage - failed work and retry', () => {
 
     renderPage()
     await userEvent.click(await screen.findByRole('button', { name: /\+ sinh mô-đun/i }))
-    await userEvent.click(screen.getByRole('button', { name: 'Sinh' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Sinh mô-đun' }))
 
     expect(await screen.findByText('Sinh mô-đun thất bại')).toBeInTheDocument()
     expect(screen.getAllByText('Hết hạn mức')).toHaveLength(1)

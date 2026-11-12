@@ -5,7 +5,10 @@ import { AppShell } from "../components/AppShell";
 import { Tabs } from "../components/Tabs";
 import { RatingForm } from "../components/RatingForm";
 import { mathRehypePlugins, mathRemarkPlugins } from "../lib/markdownMath";
+import { apiErrorMessage } from "../api/client";
+import { formatSize } from "../lib/fileSize";
 import {
+  downloadPacketReference,
   myStudies,
   myStudyItems,
   saveRating,
@@ -39,7 +42,7 @@ export function StudiesPage() {
       <ul className="space-y-4">
         {studies?.map((study) => (
           <li key={study.id} className="rounded border bg-white p-4">
-            <Link to={`/studies/${study.id}`} className="font-semibold text-terracotta">
+            <Link to={`/studies/${study.id}`} className="font-semibold text-accent">
               {study.name}
             </Link>
             <p>
@@ -158,6 +161,26 @@ function Packet({ item }: { item: BlindItem }) {
   );
 }
 
+// The file the admin picked for this packet, for the rater to open in an app of their own.
+function PacketReference({ studyId, item }: { studyId: string; item: BlindItem }) {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  if (!item.reference) return null;
+  const { filename, size } = item.reference;
+  return (
+    <div className="packet-reference">
+      <span>Tài liệu gốc: <strong className="[overflow-wrap:anywhere]">{filename}</strong> <span className="muted">({formatSize(size)})</span></span>
+      <button type="button" className="link-action" disabled={busy} onClick={async () => {
+        setBusy(true); setError("");
+        try { await downloadPacketReference(studyId, item.id); }
+        catch (e) { setError(apiErrorMessage(e, "Không tải được tài liệu gốc.")); }
+        finally { setBusy(false); }
+      }}>{busy ? "Đang tải…" : "Tải xuống"}</button>
+      {error && <span role="alert" className="danger-text">{error}</span>}
+    </div>
+  );
+}
+
 export function BlindRatingPage() {
   const { studyId, itemId } = useParams();
   const [data, setData] = useState<BlindStudy | null>(null);
@@ -192,6 +215,7 @@ export function BlindRatingPage() {
           <div className="rating-context">
             <div><nav aria-label="Đường dẫn" className="small muted mb-2"><Link to="/studies">Chấm nghiên cứu</Link> / {data.study.name}{item && ` / ${item.anon_code}`}</nav>
               {item && <p>{item.packet.topic}</p>}
+              {item && <PacketReference key={item.id} studyId={studyId!} item={item} />}
             </div>
             <div className="rating-progress"><span className="small muted">Đã chấm {data.rated}/{data.total}</span>
               <progress aria-label="Tiến độ chấm" value={data.rated} max={data.total || 1} />
@@ -213,12 +237,14 @@ export function BlindRatingPage() {
           {item ? (
             <>
               <div className="rating-columns">
-              <Packet key={item.id} item={item} />
+              {/* Siblings need keys of their own: sharing item.id left the packet just left in place
+                  beside the next one, so the page kept every packet visited. */}
+              <Packet key={`packet-${item.id}`} item={item} />
               {data.study.status === "closed" ? (
                 <p>Nghiên cứu đã đóng.</p>
               ) : (
                 <RatingForm
-                  key={item.id}
+                  key={`rating-${item.id}`}
                   code={item.anon_code}
                   bloomLevel={item.packet.bloom_level}
                   rating={item.rating}

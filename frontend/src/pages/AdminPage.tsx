@@ -23,8 +23,8 @@ export function AdminPage() {
     };
   }, [countLoads]);
   const tabs: { id: Tab; label: string }[] = [
-    { id: "users", label: counts ? `Tài khoản (${counts.users})` : "Tài khoản" },
-    { id: "failures", label: "Job lỗi" },
+    { id: "users", label: "Tài khoản" },
+    { id: "failures", label: "Tác vụ lỗi" },
     { id: "studies", label: "Nghiên cứu" },
   ];
 

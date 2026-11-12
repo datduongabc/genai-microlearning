@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { getRaters, listStudies, setRaters, type Study } from "../api/studies";
 import { apiErrorMessage } from "../api/client";
 import { raterEmailsSchema } from "../lib/ratingSchema";
+import { StudyReferences } from "./StudyReferences";
+import { StudyResults } from "./StudyResults";
 
 export function AdminStudiesPanel() {
   const [studies, setStudies] = useState<Study[] | null>(null);
@@ -53,6 +55,7 @@ export function AdminStudiesPanel() {
       {!studies && !error && <p>Đang tải…</p>}
       {studies?.length === 0 && <p>Chưa có nghiên cứu.</p>}
     </nav>
+    <div className="study-main">
     <div className="ui-card study-detail">
       {selected ? <><h2>{selected.name}</h2><p className="small muted">Rubric {selected.rubric_version}</p></>
         : <p>Chọn nghiên cứu</p>}
@@ -88,6 +91,9 @@ export function AdminStudiesPanel() {
         <button disabled={busy} className="ui-button primary mt-4">{busy ? "Đang lưu…" : "Lưu người chấm"}</button>
         {message && <p role="status" className="mt-3">{message}</p>}
       </form>}
+    </div>
+    {studyId && <StudyReferences key={`refs-${studyId}-${picks}`} studyId={studyId} />}
+    {studyId && <StudyResults key={`results-${studyId}-${picks}`} studyId={studyId} />}
     </div>
   </section>;
 }

@@ -2,6 +2,7 @@ import { isAxiosError } from "axios";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/useAuth";
+import { Brand } from "../components/AuthLayout";
 
 // Where an LTI launch from the LMS lands (backend/app/api/lti.py). The fragment carries a code
 // that works once, for a minute, so it is read once and wiped from the address bar at once.
@@ -32,13 +33,14 @@ export function LtiLaunchPage() {
   }, [loginWithLaunchCode, navigate]);
 
   return (
-    <main className="mx-auto max-w-xl px-4 py-12">
+    <main className="launch-page">
+      <Brand />
       {error ? (
-        <div role="alert" className="rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+        <div role="alert" className="ui-alert">
           {error}
         </div>
       ) : (
-        <p role="status" className="text-sm">Đang mở khóa học…</p>
+        <p role="status" className="launch-status">Đang mở khóa học…</p>
       )}
     </main>
   );

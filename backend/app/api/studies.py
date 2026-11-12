@@ -3,6 +3,7 @@ import uuid
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import Response
 from pydantic import BaseModel, EmailStr, Field, StringConstraints, model_validator
 from sqlalchemy import func, select, text
 from sqlalchemy.dialects.postgresql import insert
@@ -16,6 +17,7 @@ from app.jobs.queue import enqueue_job
 from app.models import Job, JobStatus, JobType, Rating, Study, StudyItem, User
 from app.study.items import assign_codes, existing_pair, shuffle_for_rater
 from app.study.judge import validate_judge
+from app.study.results import human_ratings, judge_jsonl, rater_csv, study_results
 
 router = APIRouter(prefix="/studies", tags=["studies"])
 Nonempty = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=200)]
@@ -48,7 +50,8 @@ def _items(db: Session, study_id: uuid.UUID) -> list[StudyItem]:
 
 def _item_out(item: StudyItem) -> dict:
     return {"id": item.id, "anon_code": item.anon_code, "group": item.group,
-            "module_id": item.module_id, "packet": item.packet}
+            "module_id": item.module_id, "pair_id": item.pair_id, "packet": item.packet,
+            "reference_file_id": item.reference_file_id}
 
 
 @router.post("", status_code=201, dependencies=[Depends(require_admin)])
@@ -74,13 +77,18 @@ def _my_study(db: Session, study_id: uuid.UUID):
 
 
 def _my_items(db: Session, study_id: uuid.UUID, user_id: uuid.UUID):
-    items = db.execute(text("SELECT * FROM blind_study_items WHERE study_id = :id ORDER BY anon_code"),
-                       {"id": study_id}).mappings().all()
+    items = db.execute(text("""
+        SELECT i.*, f.filename AS reference_filename, f.size AS reference_size
+        FROM blind_study_items i LEFT JOIN blind_study_files f ON f.id = i.reference_file_id
+        WHERE i.study_id = :id ORDER BY i.anon_code
+    """), {"id": study_id}).mappings().all()
     ratings = {rating.study_item_id: rating for rating in db.scalars(
         select(Rating).where(Rating.user_id == user_id,
                              Rating.study_item_id.in_([item["id"] for item in items])))}
     return [{"id": item["id"], "anon_code": item["anon_code"],
              "packet": ModuleContentInput.model_validate(item["packet"]).model_dump(),
+             "reference": {"filename": item["reference_filename"], "size": item["reference_size"]}
+             if item["reference_filename"] is not None else None,
              "rating": _rating_out(ratings[item["id"]], item["anon_code"]) if item["id"] in ratings else None}
             for item in items]
 
@@ -161,6 +169,38 @@ def set_raters(study_id: uuid.UUID, body: Raters, db: Session = Depends(get_db))
     study.rater_emails = emails
     db.commit()
     return {"emails": emails}
+
+
+def _study_or_404(db: Session, study_id: uuid.UUID) -> Study:
+    study = db.get(Study, study_id)
+    if study is None:
+        raise HTTPException(status_code=404, detail="Study not found")
+    return study
+
+
+@router.get("/{study_id}/results", dependencies=[Depends(require_admin)])
+def results(study_id: uuid.UUID, db: Session = Depends(get_db)):
+    return study_results(db, _study_or_404(db, study_id))
+
+
+@router.get("/{study_id}/results/raters/{number}.csv", dependencies=[Depends(require_admin)])
+def rater_file(study_id: uuid.UUID, number: int, db: Session = Depends(get_db)):
+    _study_or_404(db, study_id)
+    raters = list(human_ratings(db, study_id).values())
+    if not 1 <= number <= len(raters):
+        raise HTTPException(status_code=404, detail="No rater with this number has rated yet")
+    return Response(rater_csv(raters[number - 1]), media_type="text/csv; charset=utf-8",
+                    headers={"Content-Disposition": f'attachment; filename="rater-{number}.csv"'})
+
+
+@router.get("/{study_id}/results/judge.jsonl", dependencies=[Depends(require_admin)])
+def judge_file(study_id: uuid.UUID, db: Session = Depends(get_db)):
+    _study_or_404(db, study_id)
+    lines = judge_jsonl(db, study_id)
+    if not lines:
+        raise HTTPException(status_code=404, detail="The judge has not rated this study")
+    return Response(lines, media_type="application/x-ndjson; charset=utf-8",
+                    headers={"Content-Disposition": 'attachment; filename="judge.jsonl"'})
 
 
 @router.get("/{study_id}", dependencies=[Depends(require_admin)])

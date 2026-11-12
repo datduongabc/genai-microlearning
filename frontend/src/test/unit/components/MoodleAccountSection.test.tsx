@@ -28,7 +28,7 @@ describe('MoodleAccountSection', () => {
     render(<MoodleAccountSection onStatus={onStatus} />)
 
     expect(await screen.findByText('Chưa nối với Moodle')).toBeInTheDocument()
-    expect(screen.getByText(/mở công cụ từ moodle \(lti\) vẫn dùng được/i)).toBeInTheDocument()
+    expect(screen.getByText(/mở từ moodle \(lti\) vẫn dùng bình thường/i)).toBeInTheDocument()
     expect(document.querySelector('input')).toBeNull()
     expect(screen.queryByText(/thử lại sau/i)).not.toBeInTheDocument()
     await waitFor(() => expect(onStatus).toHaveBeenLastCalledWith('unavailable'))
@@ -39,7 +39,7 @@ describe('MoodleAccountSection', () => {
     render(<MoodleAccountSection />)
 
     expect(await screen.findByText('Chưa liên kết')).toBeInTheDocument()
-    expect(screen.getByText(/tài khoản trong ứng dụng và tài khoản moodle/i)).toBeInTheDocument()
+    expect(screen.getByText(/nhập email moodle của bạn/i)).toBeInTheDocument()
     expect(document.querySelector('input[type=password]')).toBeNull()
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })

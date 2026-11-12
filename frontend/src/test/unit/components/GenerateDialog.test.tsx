@@ -18,14 +18,14 @@ describe('GenerateDialog', () => {
   it('starts with Vietnamese and no guidance, and hands over the trimmed choices', async () => {
     const { dialogRef, onGenerate } = renderDialog()
 
-    await userEvent.click(screen.getByRole('button', { name: 'Sinh' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Sinh mô-đun' }))
 
     await waitFor(() => expect(onGenerate).toHaveBeenCalledWith('vi', ''))
     expect(dialogRef.current!.close).toHaveBeenCalled()
 
     await userEvent.selectOptions(screen.getByLabelText(/Ngôn ngữ đầu ra/), 'en')
     await userEvent.type(screen.getByLabelText(/Hướng dẫn thêm/), '  Explain IDS ')
-    await userEvent.click(screen.getByRole('button', { name: 'Sinh' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Sinh mô-đun' }))
 
     await waitFor(() => expect(onGenerate).toHaveBeenLastCalledWith('en', 'Explain IDS'))
   })
@@ -34,7 +34,7 @@ describe('GenerateDialog', () => {
     const { dialogRef, onGenerate } = renderDialog()
 
     fireEvent.change(screen.getByLabelText(/Hướng dẫn thêm/), { target: { value: 'a'.repeat(1001) } })
-    await userEvent.click(screen.getByRole('button', { name: 'Sinh' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Sinh mô-đun' }))
 
     expect(await screen.findByText('Hướng dẫn tối đa 1000 ký tự')).toBeInTheDocument()
     expect(onGenerate).not.toHaveBeenCalled()

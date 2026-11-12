@@ -18,9 +18,23 @@ function AccountIcon({ kind }: { kind: "link" | "unlink" | "logout" }) {
   </svg>;
 }
 
+// Remembered in this browser only: a layout preference, not worth a request. Storage that is
+// blocked or full leaves the sidebar working, just not remembered.
+const COLLAPSED_KEY = "sidebar-collapsed";
+function readCollapsed() {
+  try { return window.localStorage.getItem(COLLAPSED_KEY) === "1"; } catch { return false; }
+}
+
 export function AppShell({ title, children }: { title: string; children: ReactNode }) {
   const { user, logout } = useAuth();
   const [open, setOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState(readCollapsed);
+  function toggleCollapsed() {
+    setCollapsed((was) => {
+      try { window.localStorage.setItem(COLLAPSED_KEY, was ? "0" : "1"); } catch { /* not remembered */ }
+      return !was;
+    });
+  }
   const [account, setAccount] = useState<MoodleAccount | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -57,14 +71,22 @@ export function AppShell({ title, children }: { title: string; children: ReactNo
     finally { setBusy(false); }
   }
 
-  return <div className="min-h-screen bg-cream">
+  return <div className="min-h-screen bg-paper" data-sidebar={collapsed ? "collapsed" : "expanded"}>
     <a className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded focus:bg-white focus:px-3 focus:py-2" href="#main-content">Đến nội dung chính</a>
     <aside className="sidebar" aria-label="Thanh bên">
-      <Link to={homeFor(user?.is_admin)}><Brand /></Link>
+      <div className="sidebar-head">
+        <Link to={homeFor(user?.is_admin)} aria-label="GENAILMS, trang chủ"><Brand /></Link>
+        <button type="button" className="sidebar-toggle" onClick={toggleCollapsed} aria-expanded={!collapsed}
+          aria-label={collapsed ? "Mở rộng thanh bên" : "Thu gọn thanh bên"} data-tip={collapsed ? "Mở rộng thanh bên" : undefined}>
+          <svg className="shell-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            {collapsed ? <path d="m6 7 5 5-5 5m7-10 5 5-5 5" /> : <path d="m18 7-5 5 5 5m-7-10-5 5 5 5" />}
+          </svg>
+        </button>
+      </div>
       <nav className="shell-nav" aria-label="Điều hướng chính">
-        <NavLink to="/courses"><NavIcon kind="book" />Môn học</NavLink>
-        <NavLink to="/studies"><NavIcon kind="rating" />Chấm nghiên cứu</NavLink>
-        {user?.is_admin && <NavLink to="/admin"><NavIcon kind="admin" />Quản trị</NavLink>}
+        <NavLink to="/courses" data-tip="Môn học"><NavIcon kind="book" /><span className="shell-label">Môn học</span></NavLink>
+        <NavLink to="/studies" data-tip="Chấm nghiên cứu"><NavIcon kind="rating" /><span className="shell-label">Chấm nghiên cứu</span></NavLink>
+        {user?.is_admin && <NavLink to="/admin" data-tip="Quản trị"><NavIcon kind="admin" /><span className="shell-label">Quản trị</span></NavLink>}
       </nav>
       <div className="account" ref={container} onKeyDown={event => {
         if (event.key === "Escape") { event.preventDefault(); close(); }
@@ -88,9 +110,9 @@ export function AppShell({ title, children }: { title: string; children: ReactNo
           {(!user?.is_admin && account || error) && <hr />}
           <button className="menu-item" onClick={logout} data-leaves-page><AccountIcon kind="logout" />Đăng xuất</button>
         </div>}
-        <button className="account-trigger" ref={trigger} aria-label={`Tài khoản ${user?.name}, ${user?.is_admin ? "Quản trị viên" : "Giảng viên"}`} aria-expanded={open} aria-controls="account-menu" onClick={() => { setError(null); setAccount(null); setOpen(!open); }}>
+        <button className="account-trigger" data-tip={user?.name} ref={trigger} aria-label={`Tài khoản ${user?.name}, ${user?.is_admin ? "Quản trị viên" : "Giảng viên"}`} aria-expanded={open} aria-controls="account-menu" onClick={() => { setError(null); setAccount(null); setOpen(!open); }}>
           <span className="avatar" aria-hidden="true">{user && initials(user.name)}</span>
-          <span className="min-w-0 flex-1"><span className="block truncate font-semibold">{user?.name}</span><span className="brand-sub">{user?.is_admin ? "Quản trị viên" : "Giảng viên"}</span></span>
+          <span className="shell-label min-w-0 flex-1"><span className="block truncate font-semibold">{user?.name}</span><span className="brand-sub">{user?.is_admin ? "Quản trị viên" : "Giảng viên"}</span></span>
           <svg className="shell-icon account-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
         </button>
       </div>

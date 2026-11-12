@@ -190,3 +190,33 @@ def test_the_real_client_presigns_for_the_buckets_regional_endpoint(monkeypatch)
 
     assert target["url"] == "https://my-bucket.s3.ap-southeast-1.amazonaws.com/"
     assert target["fields"]["key"] == "uploads/doc.pdf"
+
+
+def test_a_download_link_names_the_file_and_stays_in_the_prefix(monkeypatch):
+    # Signed offline, like the POST above. A Vietnamese file name must survive the header.
+    monkeypatch.setattr(settings, "upload_s3_region", "ap-southeast-1")
+    monkeypatch.setenv("AWS_ACCESS_KEY_ID", "AKIDEXAMPLE")
+    monkeypatch.setenv("AWS_SECRET_ACCESS_KEY", "secret")
+    storage._s3_client.cache_clear()
+    try:
+        url = S3UploadStore("my-bucket", "study-files/").presigned_get("f1.pdf", "Bài giảng 3.pdf")
+    finally:
+        storage._s3_client.cache_clear()
+
+    from urllib.parse import parse_qs, urlparse
+    parsed = urlparse(url)
+    assert parsed.netloc == "my-bucket.s3.ap-southeast-1.amazonaws.com"
+    assert parsed.path == "/study-files/f1.pdf"
+    query = parse_qs(parsed.query)
+    assert query["response-content-disposition"] == ["attachment; filename*=UTF-8''B%C3%A0i%20gi%E1%BA%A3ng%203.pdf"]
+    assert query["X-Amz-Expires"] == [str(storage.PRESIGNED_GET_SECONDS)]
+
+
+def test_study_files_have_their_own_place(monkeypatch, tmp_path):
+    monkeypatch.setattr(settings, "upload_storage_dir", str(tmp_path))
+    assert storage.study_file_store().path("f.pdf") == tmp_path / "study-files" / "f.pdf"
+    monkeypatch.setattr(settings, "upload_store", "s3")
+    monkeypatch.setattr(settings, "upload_s3_bucket", "b")
+    store = storage.study_file_store()
+    assert (store.bucket, store.prefix) == ("b", "study-files/")
+    assert storage.study_file_key("f", "Slides.PPTX") == "f.pptx"

@@ -141,7 +141,8 @@ describe('AdminPage - accounts', () => {
   it('labels the accounts tab and the deactivated filter with full counts and refreshes them after a change', async () => {
     vi.mocked(api.setUserActive).mockResolvedValue(lan)
     renderPage()
-    expect(await screen.findByRole('tab', { name: 'Tài khoản (45)' })).toBeInTheDocument()
+    expect(await screen.findByRole('tab', { name: 'Tài khoản' })).toBeInTheDocument()
+    expect(await screen.findByRole('button', { name: 'Đang hoạt động (42)' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Đã vô hiệu hóa (3)' })).toBeInTheDocument()
 
     vi.mocked(api.getAdminCounts).mockResolvedValue({ users: 45, inactive_users: 4, failed_jobs: {} })
@@ -149,6 +150,7 @@ describe('AdminPage - accounts', () => {
     await userEvent.click(menuButton(row))
     await userEvent.click(within(row).getByRole('button', { name: 'Vô hiệu hóa' }))
     expect(await screen.findByRole('button', { name: 'Đã vô hiệu hóa (4)' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Đang hoạt động (41)' })).toBeInTheDocument()
   })
 
   it('deactivates and reactivates an account after confirmation', async () => {
@@ -187,7 +189,7 @@ describe('AdminPage - accounts', () => {
     renderPage()
     await screen.findByText('lan@example.com')
     expect(api.listUsers).toHaveBeenLastCalledWith(true)
-    expect(screen.getByRole('button', { name: 'Đang hoạt động' })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByRole('button', { name: /^Đang hoạt động/ })).toHaveAttribute('aria-pressed', 'true')
     expect(screen.getByRole('button', { name: /^Đã vô hiệu hóa/ })).toHaveAttribute('aria-pressed', 'false')
   })
 
@@ -214,7 +216,7 @@ describe('AdminPage - accounts', () => {
 describe('AdminPage - failed jobs', () => {
   async function openFailures() {
     renderPage()
-    await userEvent.click(await screen.findByRole('tab', { name: 'Job lỗi' }))
+    await userEvent.click(await screen.findByRole('tab', { name: 'Tác vụ lỗi' }))
   }
 
   it('labels each job type filter with its full count of failed jobs', async () => {
@@ -228,7 +230,7 @@ describe('AdminPage - failed jobs', () => {
   it('shows a friendly message when nothing failed', async () => {
     await openFailures()
 
-    expect(await screen.findByText(/không có job nào thất bại/i)).toBeInTheDocument()
+    expect(await screen.findByText(/không có tác vụ nào thất bại/i)).toBeInTheDocument()
   })
 
   it('lists the failed jobs of every lecturer with who, course, file and error', async () => {
@@ -264,7 +266,7 @@ describe('AdminPage - failed jobs', () => {
     await userEvent.click(await screen.findByRole('button', { name: 'Thử lại j1.pdf' }))
 
     await waitFor(() => expect(api.retryFailedJobs).toHaveBeenCalledWith(['j1']))
-    expect(await screen.findByText(/đã đưa 1 job vào hàng đợi/i)).toBeInTheDocument()
+    expect(await screen.findByText(/đã đưa 1 tác vụ vào hàng đợi/i)).toBeInTheDocument()
   })
 
   it('retries the picked jobs together, or all of them with select-all', async () => {
@@ -276,13 +278,13 @@ describe('AdminPage - failed jobs', () => {
 
     await userEvent.click(screen.getByRole('checkbox', { name: 'Chọn j1.pdf' }))
     await userEvent.click(screen.getByRole('checkbox', { name: 'Chọn j3.pdf' }))
-    await userEvent.click(screen.getByRole('button', { name: 'Thử lại 2 job đã chọn' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Thử lại 2 tác vụ đã chọn' }))
 
     await waitFor(() => expect(api.retryFailedJobs).toHaveBeenCalledWith(['j1', 'j3']))
-    expect(await screen.findByText(/1 job bị bỏ qua/i)).toBeInTheDocument()
+    expect(await screen.findByText(/1 tác vụ bị bỏ qua/i)).toBeInTheDocument()
 
     await userEvent.click(screen.getByRole('checkbox', { name: 'Chọn tất cả' }))
-    await userEvent.click(screen.getByRole('button', { name: 'Thử lại 3 job đã chọn' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Thử lại 3 tác vụ đã chọn' }))
     await waitFor(() => expect(api.retryFailedJobs).toHaveBeenLastCalledWith(['j1', 'j2', 'j3']))
   })
 
@@ -293,7 +295,7 @@ describe('AdminPage - failed jobs', () => {
 
     await userEvent.click(await screen.findByRole('button', { name: 'Thử lại j1.pdf' }))
 
-    expect(await screen.findByText(/không có job nào thất bại/i)).toBeInTheDocument()
+    expect(await screen.findByText(/không có tác vụ nào thất bại/i)).toBeInTheDocument()
   })
 })
 
@@ -332,8 +334,8 @@ it('moves admin tabs with the keyboard and returns Home to accounts', async () =
   const accounts = screen.getByRole('tab', { name: /^Tài khoản/ })
   accounts.focus()
   await userEvent.keyboard('{ArrowRight}')
-  expect(screen.getByRole('tab', { name: 'Job lỗi' })).toHaveFocus()
-  expect(await screen.findByText(/không có job nào thất bại/i)).toBeVisible()
+  expect(screen.getByRole('tab', { name: 'Tác vụ lỗi' })).toHaveFocus()
+  expect(await screen.findByText(/không có tác vụ nào thất bại/i)).toBeVisible()
   await userEvent.keyboard('{Home}')
   expect(accounts).toHaveFocus()
   expect(await screen.findByText('lan@example.com')).toBeVisible()

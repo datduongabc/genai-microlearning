@@ -67,39 +67,39 @@ export function CoursesPage() {
 
   return (
     <AppShell title="Môn học">
-      <form onSubmit={handleSubmit(handleCreate)} noValidate className="mb-8 flex flex-wrap gap-3">
+      <form onSubmit={handleSubmit(handleCreate)} noValidate className="course-create">
         <input
           {...register("name")}
-          placeholder="Tên môn học mới"
-          className="flex-1 border-0 border-b-[1.5px] border-gray-300 bg-transparent py-2 text-[15px] outline-none focus:border-terracotta"
+          aria-label="Tên môn học mới"
+          placeholder="Tên môn học mới, ví dụ: Chương trình dịch"
+          className="ui-input min-w-0 flex-1"
         />
-        <button
-          disabled={creating}
-          className="rounded-[3px] bg-terracotta px-5 text-sm font-semibold text-white hover:bg-terracotta-dark disabled:opacity-60"
-        >
+        <button disabled={creating} className="ui-button primary">
           {creating ? "Đang tạo..." : "Tạo môn học"}
         </button>
-        {errors.name && <p className="basis-full text-xs text-red-600">{errors.name.message}</p>}
+        {errors.name && <p className="basis-full text-[13px] danger-text">{errors.name.message}</p>}
       </form>
 
       {loading ? (
-        <p className="text-sm text-gray-500">Đang tải...</p>
+        <p className="course-empty">Đang tải môn học...</p>
       ) : courses.length === 0 ? (
-        <p className="text-sm text-gray-500">Chưa có môn học nào.</p>
+        <p className="course-empty">Chưa có môn học. Tạo môn học đầu tiên ở ô bên trên.</p>
       ) : (
-        <ul className="flex flex-col divide-y divide-gray-200">
+        <ul className="course-list">
           {courses.map((c) => (
-            <li key={c.id} className="flex items-center justify-between py-4">
-              <Link
-                to={`/courses/${c.id}`}
-                className="font-medium hover:text-terracotta"
-              >
-                {c.name}
-              </Link>
+            <li key={c.id} className="course-row">
+              <div className="min-w-0">
+                <Link to={`/courses/${c.id}`} className="course-name">
+                  {c.name}
+                </Link>
+                <div className="course-meta">
+                  {c.moodle_course_id !== null ? `Đã liên kết Moodle course id ${c.moodle_course_id}` : "Chưa liên kết Moodle"}
+                </div>
+              </div>
               <button
                 onClick={() => handleDelete(c)}
                 disabled={deletingId === c.id}
-                className="text-sm text-red-700 hover:underline disabled:opacity-60"
+                className="link-action danger"
               >
                 {deletingId === c.id ? "Đang xóa..." : "Xóa"}
               </button>

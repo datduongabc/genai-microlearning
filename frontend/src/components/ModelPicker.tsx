@@ -70,13 +70,13 @@ export function ModelPicker({ value, onChange }: Props) {
   return (
     <div className="flex flex-col gap-1">
       <div className="flex flex-wrap items-center gap-3">
-        <label className="inline-flex items-center gap-2 text-sm text-gray-600">
+        <label className="model-picker">
           Model sinh
           <select
             value={loadFailed ? THEO_CAU_HINH : value}
             onChange={(e) => onChange(e.target.value)}
             disabled={loadFailed}
-            className="h-10 rounded-[3px] border border-gray-300 bg-white px-2 text-sm disabled:opacity-60"
+            className="ui-select disabled:opacity-60"
           >
             <option value={THEO_CAU_HINH}>Theo cấu hình hệ thống</option>
             {models.map((m) => (
@@ -91,19 +91,19 @@ export function ModelPicker({ value, onChange }: Props) {
             type="button"
             onClick={handleSaveDefault}
             disabled={saving}
-            className="text-sm font-semibold text-terracotta hover:underline disabled:opacity-60"
+            className="link-action"
           >
             {saving ? 'Đang lưu...' : 'Đặt làm mặc định'}
           </button>
         )}
       </div>
-      {dangChon?.note && <p className="text-xs text-gray-500">{dangChon.note}</p>}
+      {dangChon?.note && <p className="course-hint">{dangChon.note}</p>}
       {loadFailed && (
-        <p className="text-xs text-gray-500">
+        <p className="course-hint">
           Không tải được danh sách model, sẽ sinh bằng model theo cấu hình hệ thống.
         </p>
       )}
-      {saveError && <p className="text-xs text-red-700">{saveError}</p>}
+      {saveError && <p className="text-[13px] danger-text">{saveError}</p>}
     </div>
   )
 }

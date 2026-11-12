@@ -77,7 +77,7 @@ describe('CoursesPage - create', () => {
 
     renderPage()
 
-    const field = await screen.findByPlaceholderText('Tên môn học mới')
+    const field = await screen.findByLabelText('Tên môn học mới')
     await userEvent.type(field, '  AI 101  ')
     await userEvent.click(screen.getByRole('button', { name: 'Tạo môn học' }))
 
@@ -91,7 +91,7 @@ describe('CoursesPage - create', () => {
 
     renderPage()
 
-    await userEvent.type(await screen.findByPlaceholderText('Tên môn học mới'), '   ')
+    await userEvent.type(await screen.findByLabelText('Tên môn học mới'), '   ')
     await userEvent.click(screen.getByRole('button', { name: 'Tạo môn học' }))
 
     expect(await screen.findByText('Vui lòng nhập tên môn học')).toBeInTheDocument()

@@ -36,6 +36,7 @@ from app.models import (
     ModuleComponent,
     Question,
     Study,
+    StudyFile,
     StudyItem,
     User,
 )
@@ -87,7 +88,11 @@ def world():
         study = Study(name="Admin study", rubric_version="v1", rater_emails=[owner.email.lower()])
         db.add(study)
         db.flush()
-        study_item = StudyItem(study_id=study.id, group="human", anon_code="M01", packet={**human_packet(), "anon_id": "M01"})
+        study_file = StudyFile(study_id=study.id, filename="reference.pdf", size=3, status="ready")
+        db.add(study_file)
+        db.flush()
+        study_item = StudyItem(study_id=study.id, group="human", anon_code="M01", packet={**human_packet(), "anon_id": "M01"},
+                               reference_file_id=study_file.id)
         db.add(study_item)
         db.commit()
         ids = {
@@ -95,7 +100,7 @@ def world():
             "document": document.id, "module": module.id, "component": component.id, "session": session.id,
             "pipeline_job": pipeline_job.id, "failed_job": failed_job.id, "question": question.id,
             "user": owner.id,
-            "study": study.id, "study_item": study_item.id,
+            "study": study.id, "study_item": study_item.id, "study_file": study_file.id,
         }
     finally:
         db.close()
@@ -181,6 +186,20 @@ ATTACKS = [
     ("PUT", "/studies/mine/{study}/items/{study_item}/rating", None, {"json": RATING}),
     ("POST", "/studies/{study}/judge", None, {"json": {}}),
     ("GET", "/studies/{study}/judge/{failed_job}", None, {}),
+    ("GET", "/studies/{study}/results", None, {}),
+    ("GET", "/studies/{study}/results/raters/{rater_number}.csv", None, {}),
+    ("GET", "/studies/{study}/results/judge.jsonl", None, {}),
+    ("GET", "/studies/{study}/files", None, {}),
+    ("POST", "/studies/{study}/files", None, {"json": {"filename": "x.pdf", "size": 2}}),
+    ("PUT", "/studies/{study}/files/{study_file}/content", None, {"content": b"hi"}),
+    ("POST", "/studies/{study}/files/{study_file}/complete", None, {}),
+    ("DELETE", "/studies/{study}/files/{study_file}", None, {}),
+    ("GET", "/studies/{study}/files/{study_file}/download", None, {}),
+    ("GET", "/studies/{study}/files/{study_file}/content", None, {}),
+    ("PUT", "/studies/{study}/items/{study_item}/reference", None, {"json": {"file_id": None}}),
+    # The reference file of a packet the owner was invited to rate.
+    ("GET", "/studies/mine/{study}/items/{study_item}/reference", None, {}),
+    ("GET", "/studies/mine/{study}/items/{study_item}/reference/content", None, {}),
     ("DELETE", "/courses/{course}", None, {}),
     ("POST", "/courses/{course}/link-moodle", None, {"json": {"moodle_course_id": 999}}),
     ("DELETE", "/courses/{course}/link-moodle", None, {}),
@@ -213,17 +232,18 @@ def _send(spec, ids, headers):
 
 OWNER_RESOURCES = (
     "course", "document", "module", "component", "session", "pipeline_job", "failed_job", "question", "user", "study",
-    "study_item",
+    "study_item", "study_file",
 )
 
 
 def _ids_of_the_owner(world):
     # stranger_course is the attacker's own course: it exists, and is theirs.
-    return {name: world[name] for name in (*OWNER_RESOURCES, "stranger_course")}
+    # A rater number is no resource of anyone: the same one is asked either way.
+    return {name: world[name] for name in (*OWNER_RESOURCES, "stranger_course")} | {"rater_number": 1}
 
 
 def _ids_that_do_not_exist(world):
-    return {name: uuid.uuid4() for name in OWNER_RESOURCES} | {"stranger_course": world["stranger_course"]}
+    return {name: uuid.uuid4() for name in OWNER_RESOURCES} | {"stranger_course": world["stranger_course"], "rater_number": 1}
 
 
 @pytest.mark.parametrize("spec", ATTACKS, ids=[f"{s[0]} {s[1]}" for s in ATTACKS])

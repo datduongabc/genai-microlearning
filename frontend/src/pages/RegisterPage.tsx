@@ -36,7 +36,7 @@ export function RegisterPage() {
         <h1>Tạo tài khoản</h1>
 
         {error && (
-          <div role="alert" className="rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+          <div role="alert" className="ui-alert">
             {error}
           </div>
         )}
@@ -127,7 +127,7 @@ export function RegisterPage() {
           <span>Đã có tài khoản? </span>
           <Link
             to="/login"
-            className="font-semibold text-terracotta hover:underline"
+            className="font-semibold text-accent hover:underline"
           >
             Đăng nhập
           </Link>
