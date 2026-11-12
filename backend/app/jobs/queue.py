@@ -298,6 +298,12 @@ def handle_job_error(job_id: uuid.UUID, err: Exception, *, worker_id: str | None
             if doc is not None:
                 doc.status = DocumentStatus.failed
                 db.commit()
+        elif job.job_type == JobType.flashcard_generation:
+            from app.models import FlashcardSet, MediaStatus
+            card_set = db.get(FlashcardSet, uuid.UUID(job.payload["flashcard_set_id"]))
+            if card_set is not None:
+                card_set.status = MediaStatus.failed
+                db.commit()
     finally:
         db.close()
 
@@ -349,6 +355,13 @@ def execute_job_step(job: Job) -> None:
     elif job.job_type == JobType.module_generation:
         from app.generation.module_generation_pipeline import run_module_generation_step
         run_module_generation_step(job)
+    elif job.job_type == JobType.flashcard_generation:
+        from app.generation.flashcards import run_flashcard_step
+        db = WorkerSessionLocal()
+        try:
+            run_flashcard_step(db, job)
+        finally:
+            db.close()
     elif job.job_type == JobType.study_judge:
         from app.study.judge import run_study_judge_step
         run_study_judge_step(job)
