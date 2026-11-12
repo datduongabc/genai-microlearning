@@ -2,7 +2,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import CheckConstraint, ForeignKey, Index, Text, UniqueConstraint, text
+from sqlalchemy import BigInteger, CheckConstraint, ForeignKey, Index, Text, UniqueConstraint, text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -44,6 +44,23 @@ class StudyItem(Base):
     # Provenance stays outside the blinded packet. NULL means legacy/unknown.
     generator_model: Mapped[str | None]
     generation_models: Mapped[list | None] = mapped_column(JSONB)
+    # What the raters open beside the packet; the admin sets it, the same for both members of a pair.
+    reference_file_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("study_files.id", ondelete="SET NULL"), index=True)
+    created_at: Mapped[datetime] = created_at_column()
+
+
+class StudyFile(Base):
+    """A reference file of a study (alembic 0031). Its bytes are in study_file_store() under
+    study_file_key(); the row exists from the upload request on, ready once the file is there."""
+    __tablename__ = "study_files"
+    __table_args__ = (CheckConstraint("status IN ('awaiting_upload', 'ready')", name="ck_study_files_status"),)
+
+    id: Mapped[uuid.UUID] = uuid_pk()
+    study_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("studies.id", ondelete="CASCADE"), index=True)
+    filename: Mapped[str]
+    size: Mapped[int] = mapped_column(BigInteger)
+    status: Mapped[str] = mapped_column(default="awaiting_upload", server_default="awaiting_upload")
     created_at: Mapped[datetime] = created_at_column()
 
 

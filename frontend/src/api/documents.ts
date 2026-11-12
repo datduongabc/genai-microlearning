@@ -1,5 +1,5 @@
-import axios, { type AxiosProgressEvent } from 'axios'
 import { api } from './client'
+import { sendFile, type UploadTarget } from './upload'
 
 // A failed job that still needs the lecturer: the document itself (document_pipeline) or one
 // module generation (module_generation).
@@ -33,12 +33,6 @@ export async function deleteDocument(documentId: string) {
 
 // Where step 2 sends the file: a presigned S3 POST on AWS (url + form fields), or the API itself
 // with the local store (PUT, a path under the API's base URL).
-interface UploadTarget {
-  method: 'POST' | 'PUT'
-  url: string
-  fields: Record<string, string>
-}
-
 // Three steps, so that the file goes straight to S3 instead of through an API task:
 // 1. ask where to send it (the server checks the format and size and creates the document),
 // 2. send it, reporting progress, 3. report it sent, which queues the background pipeline.
@@ -49,23 +43,7 @@ export async function uploadDocument(courseId: string, file: File, onProgress?: 
     { filename: file.name, size: file.size },
     { params: { course_id: courseId } },
   )
-  const { upload } = started
-  const reportProgress = (event: AxiosProgressEvent) => {
-    if (onProgress && event.total) onProgress(event.loaded / event.total)
-  }
-
-  if (upload.method === 'POST') {
-    // A plain request to S3: no API base URL, and no Authorization header, which S3 would reject.
-    const form = new FormData()
-    for (const [name, value] of Object.entries(upload.fields)) form.append(name, value)
-    form.append('file', file) // S3 ignores every field after the file
-    await axios.post(upload.url, form, { onUploadProgress: reportProgress })
-  } else {
-    await api.put(upload.url, file, {
-      headers: { 'Content-Type': 'application/octet-stream' },
-      onUploadProgress: reportProgress,
-    })
-  }
+  await sendFile(started.upload, file, onProgress)
 
   const { data } = await api.post(`/documents/${started.document_id}/complete`)
   return data as { id: string; status: string; job_id: string }

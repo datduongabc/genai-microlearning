@@ -114,6 +114,9 @@ class Settings(BaseSettings):
     upload_store: Literal["local", "s3"] = "local"
     upload_s3_bucket: str = ""
     upload_s3_prefix: str = "uploads/"
+    # A study's reference files stay as long as the study does, so they live outside the prefix the
+    # bucket's lifecycle rule expires after a few days.
+    study_files_s3_prefix: str = "study-files/"
     # The bucket's region, so that presigned POSTs name its regional endpoint. Empty: boto3's default.
     upload_s3_region: str = ""
 

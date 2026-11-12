@@ -59,6 +59,14 @@ data "aws_iam_policy_document" "api_task" {
     actions   = ["s3:PutObject", "s3:GetObject", "s3:DeleteObject"]
     resources = ["${aws_s3_bucket.uploads.arn}/uploads/*"]
   }
+  # A study's reference files (app/api/study_files.py): the same presigned POST and size check, a
+  # presigned GET for the raters' downloads, and a delete when the admin removes one. Their own
+  # prefix, which the lifecycle rule does not expire.
+  statement {
+    sid       = "StudyFiles"
+    actions   = ["s3:PutObject", "s3:GetObject", "s3:DeleteObject"]
+    resources = ["${aws_s3_bucket.uploads.arn}/study-files/*"]
+  }
 }
 
 data "aws_iam_policy_document" "worker_task" {
@@ -66,6 +74,12 @@ data "aws_iam_policy_document" "worker_task" {
     sid       = "Uploads"
     actions   = ["s3:GetObject", "s3:DeleteObject"]
     resources = ["${aws_s3_bucket.uploads.arn}/uploads/*"]
+  }
+  # The hourly clean-up removes a reference file whose upload was never completed.
+  statement {
+    sid       = "StudyFiles"
+    actions   = ["s3:DeleteObject"]
+    resources = ["${aws_s3_bucket.uploads.arn}/study-files/*"]
   }
   # app/jobs/ecs_protection.py: a worker with a job running asks not to be scaled in.
   statement {
