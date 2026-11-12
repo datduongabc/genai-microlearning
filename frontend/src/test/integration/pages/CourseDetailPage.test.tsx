@@ -232,6 +232,35 @@ describe('CourseDetailPage - unlink Moodle', () => {
     })
     expect(await screen.findByText(/chưa liên kết với moodle/i)).toBeInTheDocument()
   })
+
+  it('keeps the not-linked line in place while the account answers, with no "link first" flash', async () => {
+    let answer!: (value: { email: string; status: 'linked' }) => void
+    vi.mocked(api.getMoodleAccount).mockReturnValue(new Promise((resolve) => { answer = resolve }))
+    vi.mocked(api.listCourses).mockResolvedValue([unlinkedCourse])
+    renderPage()
+    const line = await screen.findByText('Môn học này chưa liên kết với Moodle.')
+    expect(screen.queryByText(/liên kết tài khoản moodle trước/i)).not.toBeInTheDocument()
+
+    await act(async () => answer({ email: 'lan@x.edu', status: 'linked' }))
+
+    expect(await screen.findByRole('combobox', { name: /course moodle/i })).toBeInTheDocument()
+    expect(line).toBeInTheDocument()
+  })
+
+  it('asks for the account link first only where Moodle exists', async () => {
+    vi.mocked(api.listCourses).mockResolvedValue([unlinkedCourse])
+    vi.mocked(api.getMoodleAccount).mockResolvedValue({ email: 'lan@x.edu', status: 'not_linked' })
+    const { unmount } = renderPage()
+    expect(await screen.findByText('Liên kết tài khoản Moodle trước để chọn khóa học.')).toBeInTheDocument()
+    unmount()
+
+    vi.mocked(api.getMoodleAccount).mockResolvedValue({ email: 'lan@x.edu', status: 'unavailable' })
+    renderPage()
+    expect(await screen.findByText(/mở từ moodle \(lti\) vẫn dùng bình thường/i)).toBeInTheDocument()
+    expect(screen.getByText('Môn học này chưa liên kết với Moodle.')).toBeInTheDocument()
+    expect(screen.queryByText(/liên kết tài khoản moodle trước/i)).not.toBeInTheDocument()
+    expect(screen.queryByRole('combobox', { name: /course moodle/i })).not.toBeInTheDocument()
+  })
 })
 
 describe('CourseDetailPage - delete document', () => {

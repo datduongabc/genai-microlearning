@@ -600,37 +600,40 @@ function MoodleLinkSection({ course, onLinked }: { course: Course; onLinked: () 
     );
   }
 
-  if (account !== "linked") {
-    return panel(
-      <p>
-        <span className="moodle-key">Khóa học Moodle:</span>{" "}
-        Môn học này chưa liên kết với Moodle. Liên kết tài khoản Moodle trước để chọn khóa học.
-      </p>,
-    );
-  }
-
+  // One form whose first line never changes, whatever the account answers: the line used to be
+  // a different element before and after the answer, so it flashed "link your account first"
+  // to a lecturer whose account was linked.
   return panel(
     <form
       onSubmit={handleSubmit(handleLink, (errors) => setError(errors.moodleCourseId?.message ?? null))}
       noValidate
       className="moodle-link-form"
     >
-      <span className="moodle-key">Môn học này chưa liên kết với Moodle. Chọn khóa học:</span>
-      <select
-        aria-label="Course Moodle có sẵn"
-        {...register("moodleCourseId")}
-        className="ui-select min-w-0 flex-1"
-      >
-        <option value="">Chọn khóa học bạn có quyền quản lý hoạt động…</option>
-        {courses.map((c) => (
-          <option key={c.id} value={c.id}>
-            {c.fullname} ({c.shortname})
-          </option>
-        ))}
-      </select>
-      <button type="submit" disabled={busy || !chosen} className="ui-button">
-        Liên kết
-      </button>
+      <span className="moodle-key">Môn học này chưa liên kết với Moodle.</span>
+      {/* Where Moodle is unavailable the account section above already says so. */}
+      {account !== "unknown" && account !== "unavailable" && account !== "linked" && (
+        <span>Liên kết tài khoản Moodle trước để chọn khóa học.</span>
+      )}
+      {account === "linked" && (
+        <>
+          <span>Chọn khóa học:</span>
+          <select
+            aria-label="Course Moodle có sẵn"
+            {...register("moodleCourseId")}
+            className="ui-select min-w-0 flex-1"
+          >
+            <option value="">Chọn khóa học bạn có quyền quản lý hoạt động…</option>
+            {courses.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.fullname} ({c.shortname})
+              </option>
+            ))}
+          </select>
+          <button type="submit" disabled={busy || !chosen} className="ui-button">
+            Liên kết
+          </button>
+        </>
+      )}
     </form>,
   );
 }
