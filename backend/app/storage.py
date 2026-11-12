@@ -21,7 +21,10 @@ from pathlib import Path
 from typing import Protocol
 from urllib.parse import quote
 
+from sqlalchemy import select
+
 from app.config import settings
+from app.models.media import Video
 
 # How long a presigned POST stays valid. A 1 GB video over a 10 Mbit/s line takes about 14 minutes;
 # S3 checks the expiry when the upload starts, not when it ends.
@@ -175,35 +178,31 @@ def media_store() -> UploadStore:
     return LocalUploadStore(str(Path(settings.upload_storage_dir) / "media"))
 
 
-def media_keys_for_document(db, document_id) -> list[str]:
-    """The stored files of every video of the document: the video, and each scene's image and voice.
+def _media_keys(db, *conditions) -> list[str]:
+    """The stored files of the videos matching the conditions: the video, and each scene's image and voice.
 
-    Read before the document is deleted, because the rows go with it by cascade and the keys only
-    live in them."""
-    from sqlalchemy import select
-
-    from app.models.media import Video
-
+    Read before the rows are deleted, because they go by cascade and the keys only live in them."""
     keys: list[str] = []
-    for video_key, scenes in db.execute(select(Video.video_key, Video.scenes).where(Video.document_id == document_id)):
+    for video_key, scenes in db.execute(select(Video.video_key, Video.scenes).where(*conditions)):
         named = (s.get(field) for s in scenes or [] for field in ("image_key", "voice_key"))
         keys.extend(key for key in (video_key, *named) if key)
     return keys
 
 
+def media_keys_for_document(db, document_id) -> list[str]:
+    return _media_keys(db, Video.document_id == document_id)
+
+
+def media_keys_for_course(db, course_id) -> list[str]:
+    return _media_keys(db, Video.course_id == course_id)
+
+
 def delete_media_files(keys: list[str]) -> None:
+    """Delete after the rows' deletion is committed: a file without its row is harmless, a row
+    without its file is a video that cannot play."""
     store = media_store()
     for key in keys:
         store.delete(key)
-
-
-def delete_media_for_document(db, document_id) -> None:
-    """Remove the files of every video of the document.
-
-    For a caller that deletes the document itself: delete_document reads the keys first and deletes
-    the files after its commit, since a file without its row is harmless and a row without its file
-    is a video that cannot play."""
-    delete_media_files(media_keys_for_document(db, document_id))
 
 
 def study_file_key(file_id, filename: str) -> str:
