@@ -50,3 +50,20 @@ def test_a_statement_without_passages_is_flagged_without_asking_the_judge(monkey
     monkeypatch.setattr(claim_evaluation, "complete_structured",
                         lambda *a, **k: pytest.fail("no passage, nothing to ask"))
     assert fact_check.check_against_sources([("claim", [])], "gemini-fast")[0]
+
+
+def test_a_judge_outage_flags_the_statement_instead_of_raising(monkeypatch):
+    calls = []
+
+    def flaky(claim, passages, options):
+        calls.append(claim)
+        if claim == "second":
+            raise RuntimeError("gateway timed out")
+        return SupportVerdict(supported=True, reason="")
+
+    monkeypatch.setattr(fact_check, "_support", flaky)
+    flags = fact_check.check_against_sources(
+        [("first", ["a"]), ("second", ["b"]), ("third", ["c"])], "gemini-fast")
+    assert flags[0] is None and flags[2] is None
+    assert flags[1].startswith("Chưa kiểm được: ") and "gateway timed out" in flags[1]
+    assert calls == ["first", "second", "third"]

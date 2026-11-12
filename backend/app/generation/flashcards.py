@@ -6,6 +6,7 @@ from collections.abc import Callable
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
+from app.db import WorkerSessionLocal
 from app.generation import fact_check
 from app.generation.common import (
     IGNORE_EMBEDDED_INSTRUCTIONS,
@@ -71,6 +72,9 @@ def generate_flashcards(
             raise ValueError("Document chưa được parse (raw_text rỗng)")
         language: OutputLanguage = card_set.output_language  # type: ignore[assignment]
 
+        # Fail on an alias that has no judge of another family before any paid call.
+        fact_check.judge_alias(card_set.model_alias)
+
         with using_model(card_set.model_alias):
             query = _query(db, doc, card_set)
             db.commit()
@@ -86,19 +90,20 @@ def generate_flashcards(
             cited = [resolve_source_id(chunks, code) for code in item.sources]
             used = list({c.id: c for c in cited if c is not None}.values())
             # A card whose source cannot be found cannot be checked or traced, so it is not kept.
-            if not used or not item.front.strip() or not item.back.strip():
+            front, back = item.front.strip(), item.back.strip()
+            if not used or not front or not back:
                 continue
-            cards.append((item, used))
+            cards.append((front, back, used))
         cards = cards[:MAX_CARDS]
 
         flags = fact_check.check_against_sources(
-            [(f"{item.front}\n{item.back}", [c.content for c in used]) for item, used in cards],
+            [(f"{front}\n{back}", [c.content for c in used]) for front, back, used in cards],
             card_set.model_alias,
         )
         stored = [
-            {"front": item.front.strip(), "back": item.back.strip(), "citations": [str(c.id) for c in used],
+            {"front": front, "back": back, "citations": [str(c.id) for c in used],
              "author": "model", "flag": flag}
-            for (item, used), flag in zip(cards, flags, strict=True)
+            for (front, back, used), flag in zip(cards, flags, strict=True)
         ]
 
         if before_save is not None:
@@ -110,11 +115,15 @@ def generate_flashcards(
         db.expire_on_commit = expire_on_commit
 
 
-def run_flashcard_step(db: Session, job: Job) -> None:
+def run_flashcard_step(job: Job) -> None:
     set_id = uuid.UUID(job.payload["flashcard_set_id"])
+    db = WorkerSessionLocal()
 
     def finish() -> None:
         # In the same transaction as the cards, so a set is never ready with its job still running.
         hold(db, job).status = JobStatus.done
 
-    generate_flashcards(db, set_id, before_save=finish)
+    try:
+        generate_flashcards(db, set_id, before_save=finish)
+    finally:
+        db.close()

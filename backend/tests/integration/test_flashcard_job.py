@@ -75,3 +75,30 @@ def test_a_job_that_runs_out_of_attempts_marks_the_set_failed(world):
     with SessionLocal() as db:
         assert db.get(Job, job_id).status == JobStatus.failed
         assert db.get(FlashcardSet, set_id).status == MediaStatus.failed
+
+
+def test_a_swept_job_past_its_attempts_marks_the_set_failed(world):
+    from datetime import UTC, datetime, timedelta
+
+    from app.jobs.queue import sweep_stuck_jobs
+    _, _, set_id, job_id, _ = world
+    with SessionLocal() as db:
+        job = db.get(Job, job_id)
+        job.locked_at = datetime.now(UTC) - timedelta(hours=1)
+        job.attempts, job.max_attempts = 4, 5
+        db.commit()
+    sweep_stuck_jobs()
+    with SessionLocal() as db:
+        assert db.get(Job, job_id).status == JobStatus.failed
+        assert db.get(FlashcardSet, set_id).status == MediaStatus.failed
+
+
+@pytest.mark.parametrize("payload", [{}, {"flashcard_set_id": "not-a-uuid"}])
+def test_a_failed_job_without_a_usable_set_id_still_fails_cleanly(world, payload):
+    _, _, _, job_id, _ = world
+    with SessionLocal() as db:
+        db.get(Job, job_id).payload = payload
+        db.commit()
+    handle_job_error(job_id, ValueError("x"), worker_id="w1")
+    with SessionLocal() as db:
+        assert db.get(Job, job_id).status == JobStatus.failed

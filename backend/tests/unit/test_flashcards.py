@@ -123,3 +123,20 @@ def test_the_set_is_generated_with_its_own_model(monkeypatch):
         used.append(requested_model()), model(cards=[_draft("q")]))[1])
     flashcards.generate_flashcards(db, card_set.id)
     assert used == ["openai-fast"]
+
+
+def test_an_unknown_alias_fails_before_any_retrieval(monkeypatch):
+    db, card_set, queries = _setup(monkeypatch, _chunks(), [_draft("q")], alias="mystery-1")
+    with pytest.raises(ValueError, match="mystery-1"):
+        flashcards.generate_flashcards(db, card_set.id)
+    assert queries == []
+
+
+def test_front_and_back_are_stripped_once_for_judge_and_storage(monkeypatch):
+    db, card_set, _ = _setup(monkeypatch, _chunks(), [{"front": "  q \n", "back": " a  ", "sources": ["S1"]}])
+    judged = []
+    monkeypatch.setattr(fact_check, "_support", lambda claim, passages, options: judged.append(claim) or SupportVerdict(
+        supported=True, reason=""))
+    flashcards.generate_flashcards(db, card_set.id)
+    assert judged == ["q\na"]
+    assert (card_set.cards[0]["front"], card_set.cards[0]["back"]) == ("q", "a")

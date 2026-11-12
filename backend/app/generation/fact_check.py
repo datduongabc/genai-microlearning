@@ -4,8 +4,12 @@ The model that wrote a statement tends to agree with it, so the check runs on a 
 family. A statement the judge does not find in its passages is flagged with the judge's reason,
 never dropped: the lecturer decides what to do with it."""
 
+import logging
+
 from app.generation.claim_evaluation import _support
 from app.llm.gateway import using_model
+
+logger = logging.getLogger(__name__)
 
 # Family of a gateway alias, by its prefix (devops/gateway/config.yaml). Groq serves other makers'
 # models, so its aliases are named one by one after the model behind them.
@@ -43,8 +47,14 @@ def check_against_sources(statements: list[tuple[str, list[str]]], generator_ali
     with using_model(judge):
         for statement, passages in statements:
             if not passages:
-                flags.append("No source passage to check against")
+                flags.append("Chưa có đoạn nguồn để kiểm")
                 continue
-            verdict = _support(statement, passages, {})
-            flags.append(None if verdict.supported else (verdict.reason or "Not supported by the cited passages"))
+            try:
+                verdict = _support(statement, passages, {})
+            except Exception as err:
+                # The check flags, it never blocks: an outage must not cost the lecturer the cards.
+                logger.warning("fact check could not run: %s", err)
+                flags.append(f"Chưa kiểm được: {str(err)[:120]}")
+                continue
+            flags.append(None if verdict.supported else (verdict.reason or "Không được đoạn nguồn xác nhận"))
     return flags

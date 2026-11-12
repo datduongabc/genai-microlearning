@@ -252,6 +252,26 @@ def _run_with_heartbeat(job: Job, worker_id: str) -> None:
         handle_job_error(job.id, failure, worker_id=worker_id)
 
 
+def mark_target_failed(db: Session, job: Job) -> None:
+    """What a job was making is failed along with it, so the lecturer sees an error and not a spinner
+    that never ends. The one place both a job that fails (handle_job_error) and one the sweeper gives
+    up on come through; a new job type that makes something adds its branch here. The caller commits."""
+    from app.models import Document, DocumentStatus, FlashcardSet, MediaStatus
+    if job.job_type == JobType.document_pipeline and job.document_id is not None:
+        doc = db.get(Document, job.document_id)
+        if doc is not None:
+            doc.status = DocumentStatus.failed
+    elif job.job_type == JobType.flashcard_generation:
+        try:
+            set_id = uuid.UUID(str((job.payload or {}).get("flashcard_set_id")))
+        except ValueError:
+            logger.error(f"[job_queue] job {job.id} has no usable flashcard_set_id")
+            return
+        card_set = db.get(FlashcardSet, set_id)
+        if card_set is not None:
+            card_set.status = MediaStatus.failed
+
+
 def handle_job_error(job_id: uuid.UUID, err: Exception, *, worker_id: str | None = None) -> None:
     """Records a failed attempt. With `worker_id`, only while that worker still holds the job: the
     error of a run the sweeper already gave away must not requeue or fail the run that replaced it."""
@@ -292,18 +312,8 @@ def handle_job_error(job_id: uuid.UUID, err: Exception, *, worker_id: str | None
         job.locked_by = None
         db.commit()
 
-        if job.job_type == JobType.document_pipeline and job.document_id is not None:
-            from app.models import Document, DocumentStatus
-            doc = db.get(Document, job.document_id)
-            if doc is not None:
-                doc.status = DocumentStatus.failed
-                db.commit()
-        elif job.job_type == JobType.flashcard_generation:
-            from app.models import FlashcardSet, MediaStatus
-            card_set = db.get(FlashcardSet, uuid.UUID(job.payload["flashcard_set_id"]))
-            if card_set is not None:
-                card_set.status = MediaStatus.failed
-                db.commit()
+        mark_target_failed(db, job)
+        db.commit()
     finally:
         db.close()
 
@@ -329,11 +339,7 @@ def sweep_stuck_jobs() -> None:
                 job.system_failure = True
                 job.locked_at = None
                 job.locked_by = None
-                if job.job_type == JobType.document_pipeline and job.document_id is not None:
-                    from app.models import Document, DocumentStatus
-                    doc = db.get(Document, job.document_id)
-                    if doc is not None:
-                        doc.status = DocumentStatus.failed
+                mark_target_failed(db, job)
             else:
                 job.status = JobStatus.queued
                 job.attempts = new_attempts
@@ -357,11 +363,7 @@ def execute_job_step(job: Job) -> None:
         run_module_generation_step(job)
     elif job.job_type == JobType.flashcard_generation:
         from app.generation.flashcards import run_flashcard_step
-        db = WorkerSessionLocal()
-        try:
-            run_flashcard_step(db, job)
-        finally:
-            db.close()
+        run_flashcard_step(job)
     elif job.job_type == JobType.study_judge:
         from app.study.judge import run_study_judge_step
         run_study_judge_step(job)
