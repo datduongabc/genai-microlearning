@@ -273,6 +273,7 @@ export function FlashcardEditorPage() {
                   name={`thẻ ${index + 1}`}
                   citations={c.citations}
                   known={c.sources}
+                  listChosen={false}
                   onChange={(citations, picked) => {
                     setNotice(null)
                     setCards((list) => list.map((x) => (x.key === c.key

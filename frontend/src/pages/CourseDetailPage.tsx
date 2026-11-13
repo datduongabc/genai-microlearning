@@ -141,9 +141,11 @@ function mediaPillStatus(running: boolean, failed: boolean, published: boolean):
   return published ? "embedded" : undefined;
 }
 
-function MediaListItem({ to, focus, status, statusText }: { to: string; focus: string | null; status?: string; statusText: string }) {
+// The kind is written out because a set and a video made from the same focus carry the same title.
+function MediaListItem({ kind, to, focus, status, statusText }: { kind: "Flashcard" | "Video"; to: string; focus: string | null; status?: string; statusText: string }) {
   return (
     <li className="module-item">
+      <span className="media-kind">{kind}</span>
       <Link to={to} className="module-link flashcard-link" title={focus ?? undefined}>
         {focus ?? "Toàn bộ tài liệu"}
       </Link>
@@ -557,7 +559,7 @@ export function CourseDetailPage() {
           {visibleDocuments.map((d) => (
             <li key={d.id} className="doc-row">
               <div className="doc-head">
-                <div className="min-w-0">
+                <div className="doc-title">
                   <div className="doc-name">{d.filename}</div>
                   <div className="status-pill" data-status={d.status}>
                     {STATUS_LABEL[d.status] ?? d.status}
@@ -642,6 +644,7 @@ export function CourseDetailPage() {
                   {setsByDoc(d.id).map((set) => (
                     <MediaListItem
                       key={set.id}
+                      kind="Flashcard"
                       to={`/flashcard-sets/${set.id}`}
                       focus={set.focus}
                       status={mediaPillStatus(set.status === "generating", set.status === "failed", set.published_at !== null)}
@@ -655,6 +658,7 @@ export function CourseDetailPage() {
                   {videosByDoc(d.id).map((video) => (
                     <MediaListItem
                       key={video.id}
+                      kind="Video"
                       to={`/videos/${video.id}`}
                       focus={video.focus}
                       status={mediaPillStatus(

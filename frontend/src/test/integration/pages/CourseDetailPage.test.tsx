@@ -644,6 +644,8 @@ describe('CourseDetailPage - flashcard sets', () => {
     expect(items).toHaveLength(4)
     expect(within(items[0]).getByRole('link', { name: /Mảng/ })).toHaveAttribute('href', '/flashcard-sets/set-1')
     expect(items[0]).toHaveTextContent('Bản nháp - 8 thẻ')
+    // A set and a video with the same focus must not look alike.
+    expect(within(items[0]).getByText('Flashcard')).toBeInTheDocument()
     expect(items[1]).toHaveTextContent('Toàn bộ tài liệu')
     expect(items[1]).toHaveTextContent('Đang sinh...')
     expect(items[2]).toHaveTextContent('Sinh thất bại')
@@ -730,6 +732,7 @@ describe('CourseDetailPage - videos', () => {
     const items = within(list).getAllByRole('listitem')
     expect(items).toHaveLength(5)
     expect(within(items[0]).getByRole('link', { name: /FCFS/ })).toHaveAttribute('href', '/videos/video-1')
+    expect(within(items[0]).getByText('Video')).toBeInTheDocument()
     expect(within(items[0]).getByText('Bản nháp - 9 cảnh')).not.toHaveAttribute('data-status')
     expect(items[1]).toHaveTextContent('Toàn bộ tài liệu')
     expect(within(items[1]).getByText('Đang sinh lời thoại...')).toHaveAttribute('data-status', 'processing')

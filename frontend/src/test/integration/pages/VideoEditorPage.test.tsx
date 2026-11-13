@@ -228,6 +228,25 @@ describe('VideoEditorPage', () => {
     expect(await screen.findByText('Đang vẽ hình...')).toBeInTheDocument()
   })
 
+  it('says the price of a picture once, without the unit twice', async () => {
+    vi.mocked(api.getVideo).mockResolvedValue(video([scene(1)]))
+
+    renderPage()
+
+    expect(await screen.findByText(/Mỗi hình khoảng \$0,037 \(Gemini Nano Banana 2.1\)\./)).toBeInTheDocument()
+  })
+
+  it('shows a finished picture job in the drawing section, not in the save area', async () => {
+    vi.mocked(api.getVideo).mockResolvedValue(video([scene(1, { kind: 'illustration', image_prompt: 'Hàng đợi', has_image: true })]))
+    vi.mocked(api.drawIllustrations).mockResolvedValue({ job_id: 'job-2', scene_indexes: [0] })
+
+    renderPage()
+    await userEvent.click(await screen.findByRole('button', { name: 'Vẽ lại hình cảnh 1' }))
+
+    const notice = await screen.findByText('Đã vẽ xong hình.')
+    expect(notice.closest('section')).toBe(screen.getByRole('region', { name: 'Vẽ hình' }))
+  })
+
   it('draws every picture that is missing or outdated with one button', async () => {
     vi.mocked(api.getVideo).mockResolvedValue(video([
       scene(1, { kind: 'illustration', image_prompt: 'Một hàng đợi', needs_image: true }),
@@ -240,7 +259,7 @@ describe('VideoEditorPage', () => {
 
     expect(api.drawIllustrations).toHaveBeenCalledWith('video-1', undefined)
     expect(await screen.findByText(/hôm nay còn 0 hình/)).toBeInTheDocument()
-    expect(screen.getByText(/khoảng \$0,037 một ảnh/)).toBeInTheDocument()
+    expect(screen.getByText(/Mỗi hình khoảng \$0,037 \(/)).toBeInTheDocument()
   })
 
   it('asks before rendering over the warnings, and renders when confirmed', async () => {
@@ -557,7 +576,8 @@ describe('VideoEditorPage', () => {
     expect(await screen.findByText(/Đã gửi yêu cầu dựng video/)).toBeInTheDocument()
     expect(screen.queryByRole('alert')).not.toBeInTheDocument()
     await passTime(3600)
-    expect(await screen.findByText('Đã dựng xong video.')).toBeInTheDocument()
+    const done = await screen.findByText('Đã dựng xong video.')
+    expect(done.closest('section')).toBe(screen.getByRole('region', { name: 'Dựng video' }))
     expect(screen.getByLabelText('Video đã dựng')).toBeInTheDocument()
   })
 

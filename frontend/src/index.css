@@ -297,9 +297,12 @@ body { background: var(--bg-canvas); font-size:16px; line-height:24px; }
 .doc-list > .course-empty { padding:20px 24px; }
 .doc-row { padding:18px 24px; border-top:1px solid var(--border-default); }
 .doc-row:first-child { border-top:0; }
-.doc-head { display:flex; align-items:center; justify-content:space-between; gap:16px; }
+.doc-head { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:8px 16px; }
+/* The name asks for a readable width of its own, so when the actions do not fit beside it they
+   wrap onto the next line instead of squeezing the name to a letter a line. */
+.doc-title { flex:1 1 16rem; min-width:min(16rem,100%); }
 .doc-name { font-weight:600; overflow-wrap:anywhere; }
-.doc-actions { display:flex; flex-shrink:0; align-items:center; gap:20px; }
+.doc-actions { display:flex; flex-wrap:wrap; align-items:center; gap:6px 20px; max-width:100%; }
 .status-pill { display:inline-flex; align-items:center; gap:6px; margin-top:2px; font-size:13px; line-height:18px; color:var(--text-secondary); }
 .status-pill::before { content:""; width:7px; height:7px; border-radius:50%; background:var(--border-strong); }
 .status-pill[data-status=processing]::before, .status-pill[data-status=chunked]::before { background:var(--status-warning); }
@@ -312,9 +315,11 @@ body { background: var(--bg-canvas); font-size:16px; line-height:24px; }
 /* The modules made from a document hang under it, as its children. */
 .doc-modules { margin:14px 0 0 2px; padding-left:16px; border-left:2px solid var(--border-default); display:flex; flex-direction:column; gap:8px; }
 .module-item { display:flex; flex-wrap:wrap; align-items:baseline; gap:4px 14px; }
+.media-kind { flex:none; min-width:4.5rem; font-size:12px; line-height:24px; font-weight:600; letter-spacing:.02em; text-transform:uppercase; color:var(--text-muted); }
+.module-item > .module-link { min-width:0; overflow-wrap:anywhere; }
 .module-link { font:500 16px/24px var(--font-serif); color:var(--text-primary); }
 .module-link:hover { color:var(--accent-default); text-decoration:underline; text-underline-offset:3px; }
-.control-badge { margin-left:8px; padding:1px 8px; border-radius:999px; background:var(--bg-warning-soft); color:var(--status-warning); font:500 12px/18px var(--font-sans); white-space:nowrap; }
+.control-badge { margin-left:8px; padding:1px 8px; border-radius:999px; background:var(--bg-warning-soft); color:var(--status-warning); font:500 12px/18px var(--font-sans); display:inline-block; max-width:100%; vertical-align:middle; }
 
 .moodle-panel { margin-bottom:28px; padding:14px 20px; background:var(--bg-surface); border:1px solid var(--border-default); border-radius:var(--radius-sm); font-size:14px; line-height:21px; display:flex; flex-direction:column; gap:10px; }
 .moodle-key { font-weight:600; color:var(--text-primary); }

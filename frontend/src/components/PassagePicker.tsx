@@ -20,15 +20,22 @@ function Choice({ passage, checked, onChange }: { passage: DocumentPassage; chec
   )
 }
 
+function pickerSummary(chosen: DocumentPassage[], listChosen: boolean): string {
+  if (chosen.length === 0) return 'Gắn nguồn'
+  return listChosen ? `Nguồn: ${chosen.map((p) => p.locator || 'Đoạn nguồn').join('; ')}` : 'Đổi nguồn'
+}
+
 // The sources of one item a lecturer wrote (a sentence, a bullet, a card): the passages already
 // known to the editor, and any other passage of the document, found by a search. A picked passage
 // is handed up with its text, so the editor can show its label without asking again.
-export function PassagePicker({ documentId, name, citations, known, onChange }: {
+export function PassagePicker({ documentId, name, citations, known, listChosen = true, onChange }: {
   documentId: string
   // "câu 2 cảnh 1", "thẻ 3": what the controls are named after.
   name: string
   citations: string[]
   known: DocumentPassage[]
+  // False when the page already lists the chosen passages, so the summary does not say it twice.
+  listChosen?: boolean
   onChange: (citations: string[], picked?: DocumentPassage) => void
 }) {
   const [query, setQuery] = useState('')
@@ -64,7 +71,7 @@ export function PassagePicker({ documentId, name, citations, known, onChange }: 
 
   return (
     <details className="passage-picker">
-      <summary>{chosen.length > 0 ? `Nguồn: ${chosen.map((p) => p.locator || 'Đoạn nguồn').join('; ')}` : 'Gắn nguồn'}</summary>
+      <summary>{pickerSummary(chosen, listChosen)}</summary>
       <div className="passage-picker-body">
         {known.length > 0 && (
           <fieldset aria-label={`Chọn nguồn cho ${name}`} className="passage-choices">

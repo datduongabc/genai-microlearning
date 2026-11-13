@@ -282,6 +282,17 @@ describe('FlashcardEditorPage', () => {
     expect(screen.queryByRole('list', { name: 'Nguồn của thẻ 2' })).not.toBeInTheDocument()
   })
 
+  it('names a card source once, not again in the picker summary', async () => {
+    vi.mocked(api.getFlashcardSet).mockResolvedValue(draft([card(1)]))
+
+    renderPage()
+
+    const sources = await screen.findByRole('list', { name: 'Nguồn của thẻ 1' })
+    expect(within(sources).getByText('bai-giang.pdf, trang 3')).toBeInTheDocument()
+    expect(screen.queryByText(/^Nguồn: /)).not.toBeInTheDocument()
+    expect(screen.getByText('Đổi nguồn')).toBeInTheDocument()
+  })
+
   it('lists as the card sources only the passages still ticked', async () => {
     vi.mocked(api.getFlashcardSet).mockResolvedValue(draft([card(1)]))
 

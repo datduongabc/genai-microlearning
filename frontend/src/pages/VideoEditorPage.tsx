@@ -49,6 +49,12 @@ const QUEUED_TEXT: Partial<Record<JobType, string>> = {
   video_render: 'Đã gửi yêu cầu dựng video; trang sẽ tự cập nhật khi xong.',
 }
 
+// The catalogue words a price as "khoảng $0,037 một ảnh" for the model picker; beside "Mỗi hình" the
+// unit would be said twice.
+function perImage(price: string): string {
+  return price.replace(/ một ảnh$/, '')
+}
+
 function formatUsd(value: number): string {
   return `$${value.toLocaleString('vi-VN', { maximumFractionDigits: 3 })}`
 }
@@ -73,7 +79,13 @@ export function VideoEditorPage() {
   const [busy, setBusy] = useState<'save' | 'draw' | 'render' | 'publish' | 'delete' | 'reload' | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [stale, setStale] = useState(false)
-  const [notice, setNotice] = useState<string | null>(null)
+  // A notice is shown beside the control that caused it: a finished job in its own section, the
+  // rest (saved, edited) above the save button.
+  const [shownNotice, setShownNotice] = useState<{ text: string; area: 'save' | JobType } | null>(null)
+  const setNotice = useCallback((text: string | null, area: 'save' | JobType = 'save') => {
+    setShownNotice(text === null ? null : { text, area })
+  }, [])
+  const noticeIn = (area: 'save' | JobType) => (shownNotice?.area === area ? shownNotice.text : null)
   // Goes up when a drawing job ends, so an illustration's slide is asked for again even when a
   // redraw changed nothing but the picture.
   const [picturesDrawn, setPicturesDrawn] = useState(0)
@@ -122,7 +134,7 @@ export function VideoEditorPage() {
     } else if (ended) {
       if (ended === 'video_images') setPicturesDrawn((n) => n + 1)
       const done = DONE_TEXT[ended]
-      if (done && !video.error) setNotice(done)
+      if (done && !video.error) setNotice(done, ended)
       awaitJob(null)
     }
     const untouched = editsKey(now.scenes) === now.base.edits
@@ -133,7 +145,7 @@ export function VideoEditorPage() {
     latest.current = { ...latest.current, saved: video }
     setSaved(video)
     if (untouched) setBase((b) => ({ ...b, version: video.draft_version }))
-  }, [adopt, awaitJob, nextKey])
+  }, [adopt, awaitJob, nextKey, setNotice])
 
   // The first load, and the retry after a failed one. A result that arrives after the page has
   // gone is dropped, and state is set only from promise callbacks.
@@ -337,7 +349,7 @@ export function VideoEditorPage() {
     try {
       follow(await getVideo(videoId))
     } catch {
-      setNotice(QUEUED_TEXT[job] ?? null)
+      setNotice(QUEUED_TEXT[job] ?? null, job)
     } finally {
       setBusy(null)
     }
@@ -436,7 +448,7 @@ export function VideoEditorPage() {
           {overLong && (
             <p className="text-sm danger-text">Quá {formatMinutes(saved.max_seconds)} phút: hãy rút ngắn lời thoại trước khi dựng.</p>
           )}
-          {notice && <p role="status" className="text-sm success-text">{notice}</p>}
+          {noticeIn('save') && <p role="status" className="text-sm success-text">{noticeIn('save')}</p>}
           {error && <p role="alert" className="text-sm danger-text">{error}</p>}
           <div className="flashcard-actions">
             <button type="button" onClick={save} disabled={!dirty || missingTitle || busy !== null} className="ui-button primary">
@@ -454,12 +466,13 @@ export function VideoEditorPage() {
           <h2 id="video-draw-title" className="course-section-title">Vẽ hình</h2>
           <p className="course-hint">
             Chỉ cảnh minh họa có mô tả mới được vẽ, tối đa 5 cảnh.
-            {imageModel && ` Mỗi hình ${imageModel.price} (${imageModel.label}).`}
+            {imageModel && ` Mỗi hình ${perImage(imageModel.price)} (${imageModel.label}).`}
           </p>
           {toDraw === 0 && <p className="course-hint">Mọi hình đã khớp với mô tả.</p>}
           <button type="button" onClick={() => draw()} disabled={!canStartJob || toDraw === 0} className="ui-button">
             {busy === 'draw' ? 'Đang gửi...' : 'Vẽ hình'}
           </button>
+          {noticeIn('video_images') && <p role="status" className="text-sm success-text">{noticeIn('video_images')}</p>}
         </section>
 
         <section className="video-step" aria-labelledby="video-render-title">
@@ -480,6 +493,7 @@ export function VideoEditorPage() {
           >
             {busy === 'render' ? 'Đang gửi...' : rendered === null ? 'Dựng video' : 'Dựng lại video'}
           </button>
+          {noticeIn('video_render') && <p role="status" className="text-sm success-text">{noticeIn('video_render')}</p>}
         </section>
 
         <section className="video-step" aria-labelledby="video-result-title">
