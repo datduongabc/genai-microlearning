@@ -8,7 +8,7 @@ import pytest
 from pptx import Presentation
 
 from app.ingestion import document_readers
-from app.ingestion.document_readers import InputLimitError, preflight_limits
+from app.ingestion.document_readers import InputLimitError, preflight_limits, read_document
 
 
 def _deck_with_extra_member(path, member_bytes: int) -> str:
@@ -50,3 +50,14 @@ def test_a_blank_page_with_a_huge_mediabox_is_rendered_under_the_pixel_cap(tmp_p
     (width, height), = rendered
     assert width * height <= document_readers._MAX_RENDER_PIXELS
 
+
+def test_a_nul_byte_in_a_pdf_heading_is_stripped_from_the_locator(tmp_path):
+    path = tmp_path / "nul.pdf"
+    with pymupdf.open() as doc:
+        page = doc.new_page()
+        page.insert_text((50, 60), "1 Gioi\x00thieu He dieu hanh", fontname="helv", fontsize=14)
+        page.insert_text((50, 100), "Noi dung cua phan gioi thieu he dieu hanh.", fontname="helv", fontsize=11)
+        doc.save(path)
+    units = read_document(str(path), course_id="c")
+    assert units[0].locator["heading"] == "1 Gioithieu He dieu hanh"
+    assert all("\x00" not in u.text for u in units)

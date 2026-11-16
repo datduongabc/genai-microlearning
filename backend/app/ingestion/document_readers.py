@@ -746,8 +746,9 @@ def read_document(path: str, *, course_id: str, source_id: str | None = None) ->
         # Scheduling.pdf" crashed the whole upload transaction on this,
         # losing the chunks already inserted alongside it). Strip at this
         # single choke point so it's covered regardless of which reader
-        # produced the text.
+        # produced the text. jsonb rejects it too, and headings come from the same lines.
         u.text = u.text.replace("\x00", "")
+        u.locator = {k: v.replace("\x00", "") if isinstance(v, str) else v for k, v in u.locator.items()}
         u.course_id = course_id
         u.source_id = source_id
     return units
