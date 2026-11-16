@@ -13,6 +13,7 @@ import {
   type FlashcardSetDetail,
 } from '../api'
 import { AppShell } from '../components/AppShell'
+import { AutoGrowTextarea } from '../components/AutoGrowTextarea'
 import { PassagePicker } from '../components/PassagePicker'
 import { SourcePassages } from '../components/SourcePassages'
 import { editorTitle } from '../lib/editorTitle'
@@ -250,7 +251,7 @@ export function FlashcardEditorPage() {
                 {warning && <p className="doc-warning">{warning}</p>}
                 <label className="flashcard-field">
                   Mặt trước
-                  <textarea
+                  <AutoGrowTextarea
                     aria-label={`Mặt trước thẻ ${index + 1}`}
                     value={c.front}
                     onChange={(e) => edit(c.key, { front: e.target.value })}
@@ -261,7 +262,7 @@ export function FlashcardEditorPage() {
                 </label>
                 <label className="flashcard-field">
                   Mặt sau
-                  <textarea
+                  <AutoGrowTextarea
                     aria-label={`Mặt sau thẻ ${index + 1}`}
                     value={c.back}
                     onChange={(e) => edit(c.key, { back: e.target.value })}

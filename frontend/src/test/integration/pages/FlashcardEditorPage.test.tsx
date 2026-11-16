@@ -126,6 +126,21 @@ describe('FlashcardEditorPage', () => {
     expect(await screen.findByText('Đã lưu.')).toBeInTheDocument()
   })
 
+  it('grows each side to its text, so a long answer is read whole, not cut by the box', async () => {
+    // Live run 2 at 390 px: the back kept 3 rows and its fourth line was cut in half.
+    const scrollHeight = vi.spyOn(HTMLTextAreaElement.prototype, 'scrollHeight', 'get')
+      .mockImplementation(function (this: HTMLTextAreaElement) { return this.value.length > 20 ? 140 : 40 })
+    vi.mocked(api.getFlashcardSet).mockResolvedValue(draft([card(1, { back: 'Một câu trả lời dài hơn ba dòng của ô.' })]))
+    renderPage()
+
+    const back = await screen.findByLabelText('Mặt sau thẻ 1')
+    expect(back.style.height).toBe('140px')
+    await userEvent.clear(back)
+    await userEvent.type(back, 'Ngắn')
+    expect(back.style.height).toBe('40px')
+    scrollHeight.mockRestore()
+  })
+
   it('does not save a card with an empty side', async () => {
     vi.mocked(api.getFlashcardSet).mockResolvedValue(draft([card(1)]))
 

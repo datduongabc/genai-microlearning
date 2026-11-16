@@ -509,6 +509,9 @@ body { background: var(--bg-canvas); font-size:16px; line-height:24px; }
 .flashcard-head { display:flex; align-items:center; justify-content:space-between; gap:12px; }
 .flashcard-item .doc-warning { margin-top:0; }
 .flashcard-field { display:flex; flex-direction:column; gap:6px; font-size:14px; line-height:20px; color:var(--text-secondary); }
+/* Grown to its text by the component, so a handle to resize it would only fight that. The scroll stays
+   for a moment the height is behind the text (a font still loading), so nothing is ever cut off. */
+.auto-grow { resize:none; overflow-y:auto; }
 .flashcard-actions { display:flex; flex-wrap:wrap; align-items:center; gap:12px; }
 .flashcard-sources { display:flex; flex-direction:column; gap:6px; font-size:13px; line-height:18px; }
 .flashcard-sources summary { cursor:pointer; color:var(--accent-default); overflow-wrap:anywhere; }
