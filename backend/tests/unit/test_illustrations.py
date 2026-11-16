@@ -313,6 +313,54 @@ def test_a_description_edited_while_drawing_does_not_get_the_old_picture(monkeyp
     assert _stored_files(tmp_path) == []
 
 
+def test_a_reorder_while_the_job_waits_draws_the_scene_that_was_counted(monkeypatch, store):
+    """The job is given the descriptions it was counted for, and draws each for the scene that holds
+    it when the job starts, wherever that scene has moved."""
+    good = "videos/v/img-good.jpg"
+    # When queued: scene 1 needed a picture, scene 2 had an up-to-date one.
+    video = _video([_scene("Hiện tại", prompt="Up to date", used="Up to date", key=good),
+                    _scene("Cần vẽ", prompt="Needs a picture")])
+    calls = _fake_images(monkeypatch)
+
+    draw_illustrations(FakeDb(video), video.id, [1], prompts=["Needs a picture"])
+
+    assert [c[1] for c in calls] == [image_prompt_for(Scene.model_validate(video.scenes[1]))]
+    assert video.scenes[0]["image_key"] == good
+    assert video.scenes[1]["image_key"] and video.scenes[1]["image_prompt_used"] == "Needs a picture"
+
+
+def test_a_description_that_no_scene_holds_any_more_is_not_drawn(monkeypatch, store):
+    video = _video([_scene("A", prompt="Edited since")])
+    calls = _fake_images(monkeypatch)
+
+    draw_illustrations(FakeDb(video), video.id, [0], prompts=["What was counted"])
+
+    assert calls == []
+    assert video.scenes[0]["image_key"] is None and video.status == MediaStatus.draft
+
+
+def test_a_picture_drawn_while_its_scene_moved_is_attached_where_the_scene_is_now(monkeypatch, store, tmp_path):
+    video = _video([_scene("A", prompt="First"), _scene("B", prompt="Second"), _scene("C", kind="title")])
+    moved = []
+
+    def reorder_then_draw(prompt):
+        if not moved:
+            # The lecturer saves a new order while the model draws: C, B, A.
+            video.scenes = list(reversed(video.scenes))
+            moved.append(True)
+
+    _fake_images(monkeypatch, fail=reorder_then_draw)
+    monkeypatch.setattr(illustrations, "PARALLEL_DRAWINGS", 1)
+
+    draw_illustrations(FakeDb(video), video.id, [0, 1], prompts=["First", "Second"])
+
+    titles = [s["title"] for s in video.scenes]
+    assert titles == ["C", "B", "A"]
+    assert video.scenes[1]["image_prompt_used"] == "Second" and video.scenes[2]["image_prompt_used"] == "First"
+    # Both paid pictures are kept, none thrown away as unused.
+    assert sorted(_stored_files(tmp_path)) == sorted([video.scenes[1]["image_key"], video.scenes[2]["image_key"]])
+
+
 def test_nothing_to_draw_makes_no_call(monkeypatch, store):
     video = _video([_scene("A", prompt="Same", used="Same", key="videos/v/a.jpg"), _scene("B", kind="summary")])
     calls = _fake_images(monkeypatch)

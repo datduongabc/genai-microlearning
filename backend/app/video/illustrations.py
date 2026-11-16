@@ -7,8 +7,9 @@ drawn again, or the scenes the lecturer names, so an edit to one scene costs one
 
 When a picture cannot be drawn, the scene keeps its description and its old picture, the pictures
 that were drawn are kept (they are paid for), and the job fails naming the scenes, for the
-lecturer to draw again (Review Focus 2). A picture whose scene changed or vanished while it was
-drawn is not attached to it, and its file is deleted.
+lecturer to draw again (Review Focus 2). Pictures go to scenes by description, not position, so a
+reorder while the job waits or draws loses nothing; a picture whose description no scene holds any
+more (edited or removed while it was drawn) is not attached, and its file is deleted.
 """
 
 import hashlib
@@ -141,6 +142,38 @@ def scenes_to_draw(scenes: list[Scene], scene_indexes: Sequence[int] | None) -> 
     return sorted(set(scene_indexes))
 
 
+def _holds(scene: Scene, prompt: str) -> bool:
+    return scene.kind == "illustration" and scene.image_prompt == prompt
+
+
+def _needs_picture(scene: Scene) -> bool:
+    return scene.image_key is None or scene.image_prompt_used != scene.image_prompt
+
+
+def holder(scenes: Sequence[Scene], prompt: str, index: int, taken: set[int]) -> int | None:
+    """The scene that holds `prompt` now, for a picture of it last seen at `index`: the lecturer may
+    have reordered the scenes since. The one still at `index` comes first, then one still to be
+    drawn, so that two scenes with the same description each get the picture meant for them. None
+    when no scene holds it any more."""
+    held = [i for i, s in enumerate(scenes) if i not in taken and _holds(s, prompt)]
+    if not held:
+        return None
+    return min(held, key=lambda i: (i != index, not _needs_picture(scenes[i]), i))
+
+
+def _targets_now(scenes: list[Scene], scene_indexes: Sequence[int], prompts: Sequence[str]) -> list[int]:
+    """The scenes that hold, when the job starts, the descriptions the API counted. One that no
+    scene holds any more (edited or removed meanwhile) is not drawn."""
+    targets: list[int] = []
+    for index, prompt in zip(scene_indexes, prompts, strict=True):
+        found = holder(scenes, prompt, index, set(targets))
+        if found is None:
+            logger.info(f"[video_images] no scene holds the description counted for scene {index} any more")
+        else:
+            targets.append(found)
+    return sorted(targets)
+
+
 def _draw(alias: str, index: int, scene: Scene) -> _Drawn | SceneFailure:
     """One scene's picture, or why there is none. Never raises: a scene that fails must not cost
     the other scenes the pictures already paid for."""
@@ -183,10 +216,13 @@ def _delete(keys: list[str]) -> None:
 
 def draw_illustrations(
     db: Session, video_id: uuid.UUID, scene_indexes: Sequence[int] | None = None,
-    *, before_save: Callable[[str | None], None] | None = None,
+    *, prompts: Sequence[str] | None = None, before_save: Callable[[str | None], None] | None = None,
 ) -> None:
     """Draws the illustration scenes whose description differs from the one their picture was
     drawn from, or the scenes at `scene_indexes` (0-based), and saves the pictures that were drawn.
+    With `prompts`, the descriptions the API counted at those indexes, each is drawn for the scene
+    that holds it now, as the lecturer may have reordered the scenes while the job waited.
+    Each picture is attached to the scene that holds its description when it is saved.
 
     `before_save(error)` runs right before the result is written, in the transaction that writes
     it, with the message the job fails with, or None: the job queue checks there that its worker
@@ -197,7 +233,10 @@ def draw_illustrations(
         if video is None:
             raise ValueError(f"Video {video_id} not found")
         scenes = [Scene.model_validate(s) for s in video.scenes]
-        targets = scenes_to_draw(scenes, scene_indexes)
+        if prompts is not None and scene_indexes is not None:
+            targets = _targets_now(scenes, scene_indexes, prompts)
+        else:
+            targets = scenes_to_draw(scenes, scene_indexes)
         alias = video.image_alias
         # No transaction stays open while the model draws.
         db.commit()
@@ -232,11 +271,15 @@ def draw_illustrations(
             now = [Scene.model_validate(s) for s in current.scenes]
             replaced: list[str] = []
             unused: list[str] = []
+            attached: set[int] = set()
             for d in drawn:
-                scene = now[d.index] if d.index < len(now) else None
-                if scene is None or scene.kind != "illustration" or scene.image_prompt != d.prompt:
+                # By description, not index: a scene moved while it was drawn keeps its picture.
+                found = holder(now, d.prompt, d.index, attached)
+                if found is None:
                     unused.append(d.key)
                     continue
+                attached.add(found)
+                scene = now[found]
                 if scene.image_key and scene.image_key != d.key:
                     replaced.append(scene.image_key)
                 scene.image_key, scene.image_prompt_used = d.key, d.prompt
@@ -266,6 +309,8 @@ def run_video_images_step(job: Job) -> None:
     payload = job.payload or {}
     video_id = uuid.UUID(payload["video_id"])
     scene_indexes = payload.get("scene_indexes")
+    # Jobs queued before the descriptions were carried have none; those draw by index.
+    prompts = payload.get("prompts")
     db = WorkerSessionLocal()
 
     def finish(error: str | None) -> None:
@@ -285,7 +330,7 @@ def run_video_images_step(job: Job) -> None:
         video.error = None
         keys_at_start = scene_file_keys(video.scenes)
         db.commit()
-        draw_illustrations(db, video_id, scene_indexes, before_save=finish)
+        draw_illustrations(db, video_id, scene_indexes, prompts=prompts, before_save=finish)
     except LostJob:
         # Another worker runs the job now and may still read these files; its own end cleans up.
         keys_at_start = set()

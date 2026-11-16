@@ -96,6 +96,26 @@ def test_the_listed_scenes_are_the_ones_drawn(world, monkeypatch):
     assert len(prompts) == 1 and "A Gantt" in prompts[0]
 
 
+def test_a_reorder_between_queueing_and_running_draws_the_scene_that_was_counted(world, monkeypatch):
+    """The payload carries the descriptions counted, so the job draws the scene that holds each one
+    when it starts, not whatever scene has moved to the counted index."""
+    with SessionLocal() as db:
+        db.get(Job, world.job).payload = {"video_id": str(world.video), "scene_indexes": [2], "prompts": ["A Gantt"]}
+        video = db.get(Video, world.video)
+        video.scenes = [video.scenes[2], video.scenes[1], video.scenes[0]]
+        db.commit()
+    prompts = []
+    monkeypatch.setattr(illustrations, "generate_image", lambda alias, prompt, **kw: prompts.append(prompt) or
+                        GeneratedImage(_png(), "image/png", "x", None))
+    with SessionLocal() as db:
+        execute_job_step(db.get(Job, world.job))
+    assert len(prompts) == 1 and "A Gantt" in prompts[0]
+    with SessionLocal() as db:
+        video = db.get(Video, world.video)
+        assert video.scenes[0]["title"] == "Gantt" and video.scenes[0]["image_key"]
+        assert video.scenes[2]["image_key"] is None
+
+
 def test_a_scene_without_an_image_fails_the_job_once_and_names_it(world, monkeypatch, tmp_path):
     """Review Focus 2 through the worker: the job fails for good, not by retrying, the video
     shows the full message, and the scene that was drawn keeps its picture."""

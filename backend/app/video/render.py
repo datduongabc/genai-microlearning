@@ -4,6 +4,7 @@ Each scene is read by one TTS call, so a scene that fails costs only that scene'
 scene whose narration and voice model are unchanged since its voice was made keeps that voice, so
 an edit to one scene pays for one voice. The voices are saved as soon as they are made, before the
 video is assembled: they are paid for, and a render that fails afterwards keeps them for the next.
+Each goes to the scene that reads its narration when it is saved, wherever that scene has moved.
 
 The measured length is checked before anything is assembled: the estimate from the narration's
 length (app/generation/video_script.py) can be wrong for a slow voice, and the 8-minute cap is on
@@ -253,6 +254,20 @@ def _fail_now(db: Session, video_id: uuid.UUID, error: str, before_save: Callabl
     db.commit()
 
 
+def _reader(scenes: Sequence[Scene], voice: _Voice, lang: str, alias: str, taken: set[int]) -> int | None:
+    """The scene that reads `voice`'s narration now, for a voice made for the scene at its index:
+    the lecturer may have reordered the scenes meanwhile. The one still at that index comes first,
+    then one without this voice yet, so that two scenes with the same narration each get theirs."""
+    reads = [i for i, s in enumerate(scenes) if i not in taken and normalize_narration(s.narration, lang) == voice.spoken]
+    if not reads:
+        return None
+
+    def has_it(s: Scene) -> bool:
+        return bool(s.voice_key) and s.voice_text_used == voice.spoken and s.voice_alias_used == alias
+
+    return min(reads, key=lambda i: (i != voice.index, has_it(scenes[i]), i))
+
+
 def _save_voices(
     db: Session, video_id: uuid.UUID, alias: str, lang: str, made: list[_Voice], error: str | None,
     hold_job: Callable[[], None] | None, before_save: Callable[[str | None], None] | None,
@@ -283,12 +298,15 @@ def _save_voices(
         now = [Scene.model_validate(s) for s in current.scenes]
         replaced: list[str] = []
         unused: list[str] = []
+        attached: set[int] = set()
         for v in made:
-            scene = now[v.index] if v.index < len(now) else None
-            if (scene is None or current.voice_alias != alias
-                    or normalize_narration(scene.narration, lang) != v.spoken):
+            # By narration and voice, not index: a scene moved while it was voiced keeps its voice.
+            found = None if current.voice_alias != alias else _reader(now, v, lang, alias, attached)
+            if found is None:
                 unused.append(v.key)
                 continue
+            attached.add(found)
+            scene = now[found]
             if scene.voice_key and scene.voice_key != v.key:
                 replaced.append(scene.voice_key)
             scene.voice_key, scene.voice_text_used, scene.voice_alias_used = v.key, v.spoken, alias

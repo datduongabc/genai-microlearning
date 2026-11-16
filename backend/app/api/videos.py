@@ -436,7 +436,10 @@ def queue_illustrations(
     # were paid for (storing them, the commit), and a queue retry would draw them all again. Vẽ lại
     # is the retry, and it counts what it draws.
     job = enqueue_job(db, job_type=JobType.video_images, step="images", document_id=video.document_id,
-                      payload={"video_id": str(video.id), "scene_indexes": targets}, max_attempts=1)
+                      payload={"video_id": str(video.id), "scene_indexes": targets,
+                               # What was counted: the job draws each for the scene that holds it then.
+                               "prompts": [scenes[i].image_prompt for i in targets]},
+                      max_attempts=1)
     db.commit()
     return {"job_id": job.id, "scene_indexes": targets}
 

@@ -599,6 +599,8 @@ def test_drawing_queues_the_scenes_asked_for(world):
         jobs = db.query(Job).filter(Job.payload["video_id"].astext == str(video_id)).order_by(Job.created_at).all()
         assert [(j.job_type, j.payload["scene_indexes"], j.document_id) for j in jobs] == [
             (JobType.video_images, [0, 1, 2], world["doc"]), (JobType.video_images, [1], world["doc"])]
+        # The descriptions counted travel with the job, which draws them wherever their scenes move.
+        assert [j.payload["prompts"] for j in jobs] == [["picture 0", "picture 1", "picture 2"], ["picture 1"]]
         assert db.get(User, world["owner"]).video_redraw_count == 4
         assert db.get(User, world["owner"]).generation_count == 0
 

@@ -471,6 +471,25 @@ def test_narration_edited_while_voicing_does_not_get_the_old_voice(monkeypatch, 
     assert _stored(tmp_path, "voice-*") == [video.scenes[0]["voice_key"]]
 
 
+def test_voices_made_while_the_scenes_were_reordered_follow_their_scenes(monkeypatch, store, slides, tmp_path):
+    """A voice is attached to the scene that reads its narration with its voice, wherever it moved,
+    so a reorder during the render throws no paid voice away."""
+    _fake_voices(monkeypatch)
+    video = _video(3)
+    narrations = [s["narration"] for s in video.scenes]
+
+    def reorder_meanwhile():
+        video.scenes = [video.scenes[2], video.scenes[0], video.scenes[1]]
+        video.draft_version = 4
+
+    render_video(FakeDb(video), video.id, hold_job=reorder_meanwhile)
+
+    assert [s["narration"] for s in video.scenes] == [narrations[2], narrations[0], narrations[1]]
+    for s in video.scenes:
+        assert s["voice_key"] and s["voice_text_used"] == normalize_narration(s["narration"], "vi")
+    assert sorted(_stored(tmp_path, "voice-*")) == sorted(s["voice_key"] for s in video.scenes)
+
+
 def test_cost_and_served_models_are_added(monkeypatch, store, slides):
     _fake_voices(monkeypatch, cost=0.003)
     video = _video(2, cost={"script": {"usd": None}, "voice": {"usd": 0.01, "characters": 100, "estimated": True}},
