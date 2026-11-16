@@ -261,6 +261,18 @@ def test_deleting_a_failed_set_deletes_its_job_so_the_document_is_no_longer_fail
     assert [(f["job_id"], f["job_type"]) for f in _failures(world)] == [(str(other_job), "flashcard_generation")]
 
 
+def test_a_retried_set_is_generating_again_so_it_cannot_be_deleted_mid_run(world):
+    h = headers(world["owner"])
+    set_id = make_set(world, status=MediaStatus.failed)
+    job_id = _failed_job(world, set_id)
+
+    assert client.post(f"/jobs/{job_id}/retry", headers=h).status_code == 200
+
+    with SessionLocal() as db:
+        assert db.get(FlashcardSet, set_id).status == MediaStatus.generating
+    assert client.delete(f"/flashcard-sets/{set_id}", headers=h).status_code == 409
+
+
 def test_another_lecturer_gets_404_everywhere(world):
     set_id = make_set(world, cards=[card()])
     h = headers(world["other"])

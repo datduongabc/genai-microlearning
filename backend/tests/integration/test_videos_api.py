@@ -815,6 +815,19 @@ def test_a_failed_picture_or_render_is_not_listed_on_its_document(world):
     assert [(f["job_id"], f["job_type"]) for f in failures] == [(str(script), "video_script")]
 
 
+def test_a_retried_script_makes_the_video_generating_again_so_it_cannot_be_edited_mid_run(world):
+    h = headers(world["owner"])
+    video_id = make_video(world, status=MediaStatus.failed, error="Model từ chối")
+    job_id = add_job(world, video_id, JobType.video_script, JobStatus.failed)
+
+    assert client.post(f"/jobs/{job_id}/retry", headers=h).status_code == 200
+
+    video = stored_video(video_id)
+    assert (video.status, video.error) == (MediaStatus.generating, None)
+    assert client.put(f"/videos/{video_id}/scenes", json={"scenes": [edit(scene(world))], "draft_version": 1},
+                      headers=h).status_code == 409
+
+
 # --- The slide preview ---
 
 def test_scene_preview_is_a_1280_by_720_png_for_the_owner_only(world):
