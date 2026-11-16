@@ -23,7 +23,7 @@ from app.api.model_alias import generation_alias
 from app.api.stored_files import download_link, send_stored
 from app.auth.rate_limit import limiter, user_or_address
 from app.db import get_db
-from app.generation.limits import reserve_generations, reserve_video_redraws, reserve_video_render
+from app.generation.limits import has_full_access, reserve_generations, reserve_video_redraws, reserve_video_render
 from app.generation.video_script import (
     MAX_BULLETS,
     MAX_ILLUSTRATIONS,
@@ -368,8 +368,9 @@ def generate_video(
 ):
     require_author(current_user)
     body = body or VideoRequest()
-    # Validated before the lock: the probe is a network call and must not hold the document row.
+    # Before the lock: the model probe and the Moodle check are network calls and must not hold a row.
     alias = generation_alias(body.model_alias, current_user)
+    full_access = has_full_access(db, current_user)
     if body.voice_alias not in VOICES:
         raise HTTPException(status_code=422, detail=f"Không có giọng đọc nào tên '{body.voice_alias}'.")
     if body.image_alias not in IMAGE_MODELS:
@@ -391,7 +392,7 @@ def generate_video(
     if duplicate is not None:
         raise HTTPException(status_code=409, detail="Video này đang được sinh lời thoại, vui lòng chờ.")
 
-    reserve_generations(db, current_user)
+    reserve_generations(db, current_user, full_access=full_access)
     video = Video(
         course_id=doc.course_id, document_id=doc.id, focus=focus, output_language=body.output_language,
         model_alias=alias, voice_alias=body.voice_alias, image_alias=body.image_alias, status=MediaStatus.generating,

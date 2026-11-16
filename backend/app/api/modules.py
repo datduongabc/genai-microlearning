@@ -25,7 +25,7 @@ from app.generation.common import OutputLanguage
 from app.generation.content import ContentOutput, resolve_citations
 from app.generation.example import ExampleOutput
 from app.generation.inline_citations import MARKER, citation_content
-from app.generation.limits import reserve_generations
+from app.generation.limits import has_full_access, reserve_generations
 from app.generation.module_generation_pipeline import (
     IncompleteModuleError,
     control_payload,
@@ -114,7 +114,9 @@ def _owned_module(db: Session, module_id: uuid.UUID, current_user: User) -> Modu
     return module
 
 
-def _generate_without_retrieval(db: Session, doc: Document, body: GenerateRequest, current_user: User):
+def _generate_without_retrieval(
+    db: Session, doc: Document, body: GenerateRequest, current_user: User, full_access: bool,
+):
     """Một job sinh bản đối chứng không RAG (nhóm llm_no_rag) của module RAG `paired_module_id`: cùng
     Learning Objective, cùng tài liệu, và theo mặc định cùng model và cờ tự kiểm đã sinh module RAG đó,
     để khác biệt giữa hai bản chỉ còn là RAG."""
@@ -151,7 +153,7 @@ def _generate_without_retrieval(db: Session, doc: Document, body: GenerateReques
     if running is not None:
         raise HTTPException(status_code=409, detail="Tài liệu này đang có 1 lượt sinh mô-đun khác đang chạy, vui lòng chờ.")
 
-    reserve_generations(db, current_user)
+    reserve_generations(db, current_user, full_access=full_access)
     job = enqueue_job(
         db, job_type=JobType.module_generation, step="generate", document_id=doc.id,
         payload=control_payload(paired.id, alias, self_check, paired_payload.get("output_language", "vi"),
@@ -167,6 +169,11 @@ def generate_module(
     request: Request, document_id: uuid.UUID, body: GenerateRequest | None = None,
     db: Session = Depends(get_db), current_user: User = Depends(get_current_user),
 ):
+    without_retrieval = body is not None and (not body.use_retrieval or body.paired_module_id is not None)
+    # Network calls before the lock (Moodle, and the model probe), so the document row is not held
+    # while they wait. The control arm reads its model from the paired module, so it probes later.
+    full_access = has_full_access(db, current_user)
+    alias = None if without_retrieval else _selected_alias(body, current_user)
     # FOR UPDATE: the "already generating" checks below read the jobs table, so
     # two requests for one document must not run them at the same moment or
     # both would pass and start the same work twice.
@@ -174,10 +181,9 @@ def generate_module(
     if not doc.raw_text:
         raise HTTPException(status_code=422, detail="Document chưa được parse (raw_text rỗng)")
 
-    if body is not None and (not body.use_retrieval or body.paired_module_id is not None):
-        return _generate_without_retrieval(db, doc, body, current_user)
+    if body is not None and without_retrieval:
+        return _generate_without_retrieval(db, doc, body, current_user, full_access)
 
-    alias = _selected_alias(body, current_user)
     self_check = body.self_check if body is not None else True
 
     output_language = body.output_language if body is not None else "vi"
@@ -205,7 +211,7 @@ def generate_module(
     # generate_module() thật đo được mất 10+ phút (17 lệnh gọi LLM tuần tự) --
     # chạy nền qua job queue thay vì giữ request HTTP chờ suốt, xem
     # app/services/module_generation_pipeline.py + job_queue.py.
-    reserve_generations(db, current_user)
+    reserve_generations(db, current_user, full_access=full_access)
     job = enqueue_job(
         db, job_type=JobType.module_generation, step="generate", document_id=document_id,
         payload=generation_payload(alias, self_check, output_language, custom_instructions),

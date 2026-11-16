@@ -13,6 +13,10 @@ from app.moodle.errors import MOODLE_FAILURES
 
 
 def has_full_access(db: Session, user: User) -> bool:
+    """Whether the account generates without the daily limit: it is linked to a Moodle course its
+    Moodle user may still teach. Asks Moodle, so the caller calls it before locking any row: Moodle
+    can take seconds (4 s when its host name does not resolve), and a row held meanwhile keeps the
+    lecturer's other requests waiting."""
     if user.moodle_user_id is None:
         return False
     linked_ids = set(db.scalars(select(Course.moodle_course_id).where(
@@ -26,12 +30,13 @@ def has_full_access(db: Session, user: User) -> bool:
     return bool(identity['exists'] and linked_ids.intersection(course['id'] for course in identity['courses']))
 
 
-def reserve_generations(db: Session, user: User, count: int = 1) -> None:
+def reserve_generations(db: Session, user: User, *, full_access: bool, count: int = 1) -> None:
+    """`full_access` is has_full_access, asked by the caller before it locked anything."""
     # Different documents can generate concurrently; serialize counters on the account.
     db.refresh(user, with_for_update=True)
     if not user.is_active:
         raise HTTPException(status_code=401, detail="Tài khoản đã bị vô hiệu hóa.")
-    if has_full_access(db, user):
+    if full_access:
         return
     today = datetime.now(UTC).date()
     used = user.generation_count if user.generation_day == today else 0

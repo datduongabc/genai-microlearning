@@ -13,7 +13,7 @@ from app.api.model_alias import generation_alias
 from app.auth.rate_limit import limiter, user_or_address
 from app.db import get_db
 from app.generation.flashcards import MAX_CARDS
-from app.generation.limits import reserve_generations
+from app.generation.limits import has_full_access, reserve_generations
 from app.jobs.queue import enqueue_job
 from app.models import Course, Document, FlashcardSet, JobType, MediaStatus, User
 
@@ -66,8 +66,9 @@ def generate_flashcards(
 ):
     require_author(current_user)
     body = body or GenerateRequest()
-    # Validated before the lock: the probe is a network call and must not hold the document row.
+    # Before the lock: the model probe and the Moodle check are network calls and must not hold a row.
     alias = generation_alias(body.model_alias, current_user)
+    full_access = has_full_access(db, current_user)
     focus = body.focus or None
     # FOR UPDATE: the duplicate check below reads the sets table, so two identical requests for one
     # document must not run it at the same moment or both would pass.
@@ -87,7 +88,7 @@ def generate_flashcards(
     if duplicate is not None:
         raise HTTPException(status_code=409, detail="Bộ thẻ này đang được sinh, vui lòng chờ.")
 
-    reserve_generations(db, current_user)
+    reserve_generations(db, current_user, full_access=full_access)
     card_set = FlashcardSet(
         course_id=doc.course_id, document_id=doc.id, focus=focus,
         output_language=body.output_language, model_alias=alias, status=MediaStatus.generating,
