@@ -5,7 +5,7 @@ import Markdown from 'react-markdown'
 import { getLatestCourseChat, streamCourseChat, type ChatCitation, type ChatReply } from '../api'
 import { courseChatSchema, type CourseChatFormValues } from '../lib/formSchemas'
 import { sourceLabel } from '../lib/sourceLabel'
-import { mathRehypePlugins, mathRemarkPlugins } from '../lib/markdownMath'
+import { modelMarkdownProps } from '../lib/markdownMath'
 
 interface Turn {
   question: string
@@ -119,7 +119,7 @@ export function CourseChat({ courseId }: { courseId: string }) {
         return <div key={index} className="chat-turn" aria-busy={writing}>
           {turn.question && <p className="chat-question">{turn.question}</p>}
           {turn.answer && <div className="chat-answer">
-            <Markdown remarkPlugins={mathRemarkPlugins} rehypePlugins={mathRehypePlugins}>{turn.answer}</Markdown>
+            <Markdown {...modelMarkdownProps}>{turn.answer}</Markdown>
           </div>}
           {writing && !turn.answer && <p className="chat-note">Đang tìm trong tài liệu...</p>}
           {turn.citations.length > 0 && <p className="chat-sources">

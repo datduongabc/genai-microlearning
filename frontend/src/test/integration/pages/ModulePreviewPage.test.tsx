@@ -320,6 +320,19 @@ describe('ModulePreviewPage - reading the module', () => {
     expect(screen.queryByText(/## TIÊU-ĐỀ-PHẦN/)).not.toBeInTheDocument()
   })
 
+  it('loads no image the generated content asks for', async () => {
+    vi.mocked(api.getModule).mockResolvedValue({
+      ...baseModule,
+      components: [
+        { id: 'content-1', type: 'content', content: { markdown: 'Bài học. ![](https://evil.example/p)' }, questions: [] },
+      ],
+    })
+    const { container } = renderPage()
+
+    expect(await screen.findByText(/Bài học\./)).toBeInTheDocument()
+    expect(container.querySelector('img')).toBeNull()
+  })
+
   it('shows under each question the explanation the teacher edited, which is the one Moodle gets', async () => {
     vi.mocked(api.getModule).mockResolvedValue({
       ...baseModule,

@@ -6,7 +6,7 @@ import Markdown, { type Components } from 'react-markdown'
 import { Link, useParams } from 'react-router-dom'
 import { AppShell } from '../components/AppShell'
 import { MoodleAccountSection, type MoodleAccountState } from '../components/MoodleAccountSection'
-import { mathRehypePlugins, mathRemarkPlugins } from '../lib/markdownMath'
+import { modelMarkdownProps } from '../lib/markdownMath'
 import {
   chatEditSchema,
   examplesContentSchema,
@@ -739,7 +739,7 @@ function MarkdownFieldEditor({
         />
       ) : (
         <div className="lesson-text">
-          <Markdown components={markdownComponents} remarkPlugins={mathRemarkPlugins} rehypePlugins={mathRehypePlugins}>{rendered}</Markdown>
+          <Markdown {...modelMarkdownProps} components={markdownComponents}>{rendered}</Markdown>
         </div>
       )}
       {saveError && <p role="alert" className="text-sm text-red-600">{saveError}</p>}
