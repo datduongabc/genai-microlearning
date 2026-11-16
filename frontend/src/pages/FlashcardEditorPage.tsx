@@ -18,7 +18,7 @@ import { PassagePicker } from '../components/PassagePicker'
 import { SourcePassages } from '../components/SourcePassages'
 import { editorTitle } from '../lib/editorTitle'
 import { flashcardSpent } from '../lib/spent'
-import { confirmLeave, useLeaveGuard } from '../lib/useLeaveGuard'
+import { useLeaveGuard } from '../lib/useLeaveGuard'
 
 const POLL_INTERVAL_MS = 3000
 const NO_SOURCE = 'Chưa có nguồn'
@@ -99,7 +99,7 @@ export function FlashcardEditorPage() {
   }, [generating, id, nextKey])
 
   const unsaved = saved !== null && saved.status === 'draft' && !sameCards(cards, saved.cards)
-  useLeaveGuard(unsaved)
+  const allowLeave = useLeaveGuard(unsaved)
 
   function retryLoad() {
     setLoading(true)
@@ -108,7 +108,6 @@ export function FlashcardEditorPage() {
   }
 
   function back(courseId: string) {
-    if (!confirmLeave(unsaved)) return
     navigate(`/courses/${courseId}`)
   }
 
@@ -181,6 +180,8 @@ export function FlashcardEditorPage() {
     setError(null)
     try {
       await deleteFlashcardSet(setId)
+      // What was being edited is gone, so its unsaved edits are not worth a question.
+      allowLeave()
       navigate(`/courses/${courseId}`)
     } catch (err) {
       setError(apiErrorMessage(err, 'Xóa bộ thẻ thất bại'))

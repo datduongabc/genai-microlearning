@@ -200,7 +200,7 @@ export function VideoEditorPage() {
 
   const dirty = editsKey(scenes) !== base.edits
   const unsaved = saved !== null && saved.status !== 'generating' && dirty
-  useLeaveGuard(unsaved)
+  const allowLeave = useLeaveGuard(unsaved)
 
   function retryLoad() {
     setLoading(true)
@@ -247,7 +247,7 @@ export function VideoEditorPage() {
   const canStartJob = !dirty && !jobRunning && busy === null
 
   const backLink = (
-    <Link to={`/courses/${courseId}`} onClick={(e) => { if (!confirmLeave(unsaved)) e.preventDefault() }} className="link-action">
+    <Link to={`/courses/${courseId}`} className="link-action">
       Quay lại
     </Link>
   )
@@ -258,6 +258,8 @@ export function VideoEditorPage() {
     setError(null)
     try {
       await deleteVideo(videoId)
+      // What was being edited is gone, so its unsaved edits are not worth a question.
+      allowLeave()
       navigate(`/courses/${courseId}`)
     } catch (err) {
       setError(apiErrorMessage(err, 'Xóa video thất bại'))

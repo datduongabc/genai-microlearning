@@ -1,10 +1,11 @@
 import { act, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { AxiosError, type AxiosResponse, type InternalAxiosRequestConfig } from 'axios'
-import { MemoryRouter, Route, Routes } from 'react-router-dom'
+import { createMemoryRouter, createRoutesFromElements, Route, RouterProvider } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { VideoEditorPage } from '../../../pages/VideoEditorPage'
 import { AuthProvider } from '../../../auth/AuthContext'
+import { ProtectedRoute } from '../../../auth/ProtectedRoute'
 import * as api from '../../../api'
 import type { VideoDetail, VideoScene } from '../../../api'
 
@@ -41,17 +42,20 @@ const video = (scenes: VideoScene[], extra: Partial<VideoDetail> = {}): VideoDet
   render_problems: [], render_warnings: [], job: null, cost: null, ...extra,
 })
 
+// A data router, as in main.tsx: the leave guard needs one for useBlocker. The other pages are
+// stand-ins, to tell where a navigation went.
 function renderPage() {
-  return render(
-    <AuthProvider>
-      <MemoryRouter initialEntries={['/videos/video-1']}>
-        <Routes>
-          <Route path="/courses/:courseId" element={<p>Trang môn học</p>} />
-          <Route path="/videos/:id" element={<VideoEditorPage />} />
-        </Routes>
-      </MemoryRouter>
-    </AuthProvider>,
-  )
+  const router = createMemoryRouter(createRoutesFromElements(
+    <>
+      <Route path="/login" element={<p>Trang đăng nhập</p>} />
+      <Route path="/courses" element={<p>Danh sách môn học</p>} />
+      <Route path="/courses/:courseId" element={<p>Trang môn học</p>} />
+      <Route element={<ProtectedRoute />}>
+        <Route path="/videos/:id" element={<VideoEditorPage />} />
+      </Route>
+    </>,
+  ), { initialEntries: ['/courses', '/videos/video-1'], initialIndex: 1 })
+  return { router, ...render(<AuthProvider><RouterProvider router={router} /></AuthProvider>) }
 }
 
 const axiosFailure = (status: number, detail: string) => {
@@ -62,6 +66,9 @@ const axiosFailure = (status: number, detail: string) => {
 
 let objectUrls = 0
 beforeEach(() => {
+  localStorage.setItem('auth', JSON.stringify({
+    token: 't', refreshToken: 'r', user: { id: 'u1', email: 'lan@x.edu', name: 'Lan', can_author: true, is_admin: false },
+  }))
   vi.clearAllMocks()
   objectUrls = 0
   // jsdom has no object URLs: each blob gets a distinct name so a test can tell slides apart.
@@ -87,6 +94,7 @@ async function passTime(ms: number, step = 300) {
 
 afterEach(() => {
   vi.useRealTimers()
+  localStorage.clear()
   vi.restoreAllMocks()
 })
 
@@ -434,6 +442,70 @@ describe('VideoEditorPage', () => {
 
     await userEvent.click(screen.getByRole('link', { name: 'Quay lại' }))
     expect(await screen.findByText('Trang môn học')).toBeInTheDocument()
+  })
+
+  it('asks before the sidebar leaves unsaved edits, and stays when the lecturer says no', async () => {
+    vi.mocked(api.getVideo).mockResolvedValue(video([scene(1)]))
+    const confirm = vi.spyOn(window, 'confirm').mockReturnValueOnce(false).mockReturnValueOnce(true)
+
+    renderPage()
+    await userEvent.type(await screen.findByLabelText('Câu 1 cảnh 1'), '!')
+    const sidebar = within(screen.getByRole('navigation', { name: 'Điều hướng chính' }))
+    await userEvent.click(sidebar.getByRole('link', { name: 'Môn học' }))
+    expect(confirm).toHaveBeenCalledWith('Các thay đổi chưa lưu sẽ mất. Rời trang?')
+    expect(screen.queryByText('Danh sách môn học')).not.toBeInTheDocument()
+    expect((screen.getByLabelText('Câu 1 cảnh 1') as HTMLTextAreaElement).value).toContain('!')
+
+    await userEvent.click(sidebar.getByRole('link', { name: 'Môn học' }))
+    expect(await screen.findByText('Danh sách môn học')).toBeInTheDocument()
+    expect(confirm).toHaveBeenCalledTimes(2)
+  })
+
+  it('asks before the browser Back button leaves unsaved edits', async () => {
+    vi.mocked(api.getVideo).mockResolvedValue(video([scene(1)]))
+    const confirm = vi.spyOn(window, 'confirm').mockReturnValueOnce(false).mockReturnValueOnce(true)
+
+    const { router } = renderPage()
+    await userEvent.type(await screen.findByLabelText('Câu 1 cảnh 1'), '!')
+    await act(() => router.navigate(-1))
+    expect(confirm).toHaveBeenCalledTimes(1)
+    expect(screen.getByLabelText('Câu 1 cảnh 1')).toBeInTheDocument()
+
+    await act(() => router.navigate(-1))
+    expect(await screen.findByText('Danh sách môn học')).toBeInTheDocument()
+  })
+
+  it('asks before logging out with unsaved edits, once, and logs out when told to', async () => {
+    vi.mocked(api.getVideo).mockResolvedValue(video([scene(1)]))
+    vi.mocked(api.getMoodleAccount).mockResolvedValue({ email: 'lan@x.edu', status: 'not_linked' })
+    const confirm = vi.spyOn(window, 'confirm').mockReturnValueOnce(false).mockReturnValueOnce(true)
+
+    renderPage()
+    await userEvent.type(await screen.findByLabelText('Câu 1 cảnh 1'), '!')
+    await userEvent.click(screen.getByRole('button', { name: /^Tài khoản Lan/ }))
+    await userEvent.click(screen.getByRole('button', { name: 'Đăng xuất' }))
+    expect(confirm).toHaveBeenCalledTimes(1)
+    expect(screen.getByLabelText('Câu 1 cảnh 1')).toBeInTheDocument()
+    expect(api.logout).not.toHaveBeenCalled()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Đăng xuất' }))
+    expect(await screen.findByText('Trang đăng nhập')).toBeInTheDocument()
+    expect(api.logout).toHaveBeenCalledWith('r')
+    // The redirect to the login page that follows is not asked about a second time.
+    expect(confirm).toHaveBeenCalledTimes(2)
+  })
+
+  it('leaves for the course page without asking once it is deleted, unsaved edits and all', async () => {
+    vi.mocked(api.getVideo).mockResolvedValue(video([scene(1)]))
+    vi.mocked(api.deleteVideo).mockResolvedValue(undefined)
+    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(true)
+
+    renderPage()
+    await userEvent.type(await screen.findByLabelText('Câu 1 cảnh 1'), '!')
+    await userEvent.click(screen.getByRole('button', { name: 'Xóa video' }))
+
+    expect(await screen.findByText('Trang môn học')).toBeInTheDocument()
+    expect(confirm).toHaveBeenCalledTimes(1) // the delete's own question only
   })
 
   it('shows a missing video as not found, and a failed load with a retry', async () => {

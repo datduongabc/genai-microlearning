@@ -5,6 +5,7 @@ import { apiErrorMessage, getMoodleAccount, unlinkMoodleAccount, MOODLE_ACCOUNT_
 import { Brand } from "./AuthLayout";
 import { MoodleAccountSection, type MoodleAccountState } from "./MoodleAccountSection";
 import { initials } from "../lib/initials";
+import { confirmLeavingUnsavedWork } from "../lib/useLeaveGuard";
 
 function NavIcon({ kind }: { kind: "book" | "rating" | "admin" }) {
   return <svg className="shell-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -109,7 +110,7 @@ export function AppShell({ title, fullTitle, children }: { title: string; fullTi
           </> : account && <MoodleAccountSection onStatus={linked} />)}
           {error && <p role="alert" className="account-info text-red-700">{error}</p>}
           {(!user?.is_admin && account || error) && <hr />}
-          <button className="menu-item" onClick={logout} data-leaves-page><AccountIcon kind="logout" />Đăng xuất</button>
+          <button className="menu-item" onClick={() => { if (confirmLeavingUnsavedWork()) logout(); }} data-leaves-page><AccountIcon kind="logout" />Đăng xuất</button>
         </div>}
         <button className="account-trigger" data-tip={user?.name} ref={trigger} aria-label={`Tài khoản ${user?.name}, ${user?.is_admin ? "Quản trị viên" : "Giảng viên"}`} aria-expanded={open} aria-controls="account-menu" onClick={() => { setError(null); setAccount(null); setOpen(!open); }}>
           <span className="avatar" aria-hidden="true">{user && initials(user.name)}</span>
