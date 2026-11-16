@@ -19,7 +19,11 @@ vi.mock('../../../api', async (importOriginal) => {
 })
 
 const source = { chunk_id: 'c1', locator: 'Chapter 5.pdf · trang 9', content: 'FCFS phục vụ tiến trình theo thứ tự đến.' }
-const otherSource = { chunk_id: 'c2', locator: 'Chapter 5.pdf · trang 10', content: 'Round Robin chia lượt theo lượng tử.' }
+const otherSource = {
+  chunk_id: 'c2', locator: 'Chapter 5.pdf · trang 10',
+  content: 'Chapter 5 › RR\nOperating System Concepts\nRound Robin chia lượt theo lượng tử.',
+  snippet: 'Round Robin chia lượt theo lượng tử.',
+}
 
 const scene = (n: number, extra: Partial<VideoScene> = {}): VideoScene => ({
   kind: 'summary', title: `Cảnh ${n}`, bullets: [`Ý một của cảnh ${n}`, `Ý hai của cảnh ${n}`],
@@ -521,6 +525,8 @@ describe('VideoEditorPage', () => {
     expect(api.listDocumentChunks).toHaveBeenCalledWith('doc-1', { q: 'quantum', offset: 0 })
     const found = await within(sentences[1]).findByRole('checkbox', { name: /Round Robin chia lượt/ })
     expect(found).not.toBeChecked()
+    // The server's snippet is shown, not the passage's header.
+    expect(within(sentences[1]).queryByText(/Operating System Concepts/)).not.toBeInTheDocument()
     await userEvent.click(found)
 
     expect(within(sentences[1]).queryByText('Chưa có nguồn')).not.toBeInTheDocument()

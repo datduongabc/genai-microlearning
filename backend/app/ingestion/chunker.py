@@ -68,7 +68,7 @@ def document_title(filename: str) -> str:
     return re.sub(r"\s+", " ", stem.replace("_", " ")).strip()
 
 
-def _locator_heading(locator: dict) -> str | None:
+def locator_heading(locator: dict) -> str | None:
     first = locator["spans"][0] if locator.get("spans") else locator
     return first.get("heading") or first.get("slide_title") or None
 
@@ -118,7 +118,7 @@ def chunk_units(units: list[DocumentUnit], title: str | None = None) -> list[Chu
         current_group.append(unit)
     flush_group()
     for chunk in chunks:
-        line = context_line(title, _locator_heading(chunk.locator), chunk.content)
+        line = context_line(title, locator_heading(chunk.locator), chunk.content)
         if line:
             chunk.content = f"{line}\n{chunk.content}"
             chunk.token_count = estimate_tokens(chunk.content)

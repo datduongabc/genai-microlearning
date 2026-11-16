@@ -14,7 +14,7 @@ function Choice({ passage, checked, onChange }: { passage: DocumentPassage; chec
       <input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} />
       <span className="min-w-0">
         <span className="passage-locator">{passage.locator || 'Đoạn nguồn'}</span>
-        <span className="passage-snippet">{snippet(passage.content)}</span>
+        <span className="passage-snippet">{passage.snippet || snippet(passage.content)}</span>
       </span>
     </label>
   )

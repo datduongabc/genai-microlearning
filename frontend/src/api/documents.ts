@@ -54,6 +54,9 @@ export interface DocumentPassage {
   chunk_id: string
   locator: string
   content: string
+  // What the source picker shows: the passage's own words, around the search match when there is
+  // one, without the PDF's running header. Absent on a passage the page built itself.
+  snippet?: string
 }
 
 // A page of the document's passages in reading order; `q` keeps those whose text contains it.
