@@ -95,7 +95,9 @@ resource "aws_cloudfront_response_headers_policy" "security" {
         "script-src 'self'",
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
         "font-src 'self' https://fonts.gstatic.com data:", # Vite inlines one KaTeX font
-        "img-src 'self' data:",
+        "img-src 'self' data: blob:",                      # slide previews come down with the token and show as blobs
+        # Videos play from a presigned GET on the bucket, or without S3 from a blob of the API file.
+        "media-src 'self' blob: https://${aws_s3_bucket.uploads.bucket_regional_domain_name}",
         "connect-src 'self' https://${aws_s3_bucket.uploads.bucket_regional_domain_name}",
         "object-src 'none'",
         "base-uri 'self'",
