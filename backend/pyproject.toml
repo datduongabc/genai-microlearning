@@ -48,6 +48,11 @@ markers = [
     "rate_limits: runs with the per-client rate limits switched on (they are off in every other test)",
 ]
 addopts = "-m 'not live_llm'"
+# shortcut: slowapi 0.1.10 (the latest) calls asyncio.iscoroutinefunction, which Python 3.16 removes;
+# replace slowapi or patch it before the image moves past Python 3.15.
+filterwarnings = [
+    "ignore:'asyncio.iscoroutinefunction' is deprecated:DeprecationWarning:slowapi.extension",
+]
 
 [tool.ruff]
 # The length the code is written to; most lines keep within it. It is not enforced (E501 is off) and
