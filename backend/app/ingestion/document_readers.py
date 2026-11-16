@@ -37,7 +37,7 @@ from pptx.oxml import parse_xml
 from pptx.shapes.picture import Picture
 
 from app.config import settings
-from app.ingestion.figures import is_content_figure, is_page_scan, new_text, ocr_figures
+from app.ingestion.figures import MAX_RENDER_PIXELS, is_content_figure, is_page_scan, new_text, ocr_figures
 from app.ingestion.formula_repair import repair_page
 from app.ingestion.pdf_layout import page_lines, suspect_formula_lines, title_candidates
 from app.llm.gateway import transcribe_audio
@@ -79,14 +79,9 @@ def is_numbered_heading(line: str) -> bool:
     )
 
 
-# A render is width x height x 3 bytes: 25 MP is 75 MB, so a page with a huge MediaBox (legal,
-# a few bytes of PDF) cannot ask the worker for gigabytes.
-_MAX_RENDER_PIXELS = 25_000_000
-
-
 def _render_dpi(rect: pymupdf.Rect, dpi: int) -> int:
     area = rect.width * rect.height
-    return dpi if area <= 0 else max(1, min(dpi, int(72 * math.sqrt(_MAX_RENDER_PIXELS / area))))
+    return dpi if area <= 0 else max(1, min(dpi, int(72 * math.sqrt(MAX_RENDER_PIXELS / area))))
 
 
 def _figure_pages(doc: pymupdf.Document) -> dict[str, int]:

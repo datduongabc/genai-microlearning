@@ -228,6 +228,18 @@ def test_a_transparent_diagram_is_read_on_white_and_a_small_one_is_enlarged():
     assert image.width == 1000
 
 
+def test_a_tall_narrow_image_is_enlarged_only_up_to_the_render_pixel_cap(monkeypatch):
+    # A spy, so a regression fails here instead of asking this process for gigabytes.
+    resize = Image.Image.resize
+    def bounded(self, size, *args, **kwargs):
+        assert size[0] * size[1] <= figures.MAX_RENDER_PIXELS, size
+        return resize(self, size, *args, **kwargs)
+    monkeypatch.setattr(Image.Image, "resize", bounded)
+    image = figures._prepare(_png(size=(27, 40000)))
+    assert image.width > 27
+    assert image.width * image.height <= figures.MAX_RENDER_PIXELS
+
+
 def test_figure_text_already_in_the_page_text_is_not_added_twice():
     assert not figures.new_text("Process State Diagram", "Process State Diagram and more")
     assert figures.new_text("new ready running waiting terminated", "Process State")

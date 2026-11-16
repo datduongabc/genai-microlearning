@@ -7,7 +7,7 @@ import pymupdf
 import pytest
 from pptx import Presentation
 
-from app.ingestion import document_readers
+from app.ingestion import document_readers, figures
 from app.ingestion.document_readers import InputLimitError, preflight_limits, read_document
 
 
@@ -48,7 +48,7 @@ def test_a_blank_page_with_a_huge_mediabox_is_rendered_under_the_pixel_cap(tmp_p
                         lambda img, lang: rendered.append(img.size) or "")
     document_readers.read_pdf(str(path))
     (width, height), = rendered
-    assert width * height <= document_readers._MAX_RENDER_PIXELS
+    assert width * height <= figures.MAX_RENDER_PIXELS
 
 
 def test_a_nul_byte_in_a_pdf_heading_is_stripped_from_the_locator(tmp_path):
