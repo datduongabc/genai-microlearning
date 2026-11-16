@@ -11,7 +11,7 @@ import uuid
 from sqlalchemy import exists, select
 from sqlalchemy.orm import Session, aliased
 
-from app.models import Job, JobStatus
+from app.models import Job, JobStatus, JobType
 
 # What the lecturer reads on screen: the first part of the worker's message, which can run to
 # 500 characters of a provider's exception text.
@@ -20,6 +20,16 @@ MAX_ERROR_CHARS = 200
 # nothing they can act on. It stays in last_error for the admin.
 SYSTEM_FAILURE_MESSAGE = ("Hệ thống tạm thời không xử lý được (dịch vụ mô hình hoặc kết nối gặp sự cố). "
                           "Hãy bấm Thử lại sau ít phút; nếu vẫn lỗi, báo quản trị viên.")
+
+
+# A failed picture or render is tried again from the video editor ("Vẽ lại", "Dựng lại"), never by
+# a plain retry: those routes lock the video, wait for a job in flight, and count the day's limit.
+EDITOR_RETRIED_JOBS = (JobType.video_images, JobType.video_render)
+
+
+def lecturer_message(job: Job) -> str:
+    """What the lecturer is shown for a failed job."""
+    return SYSTEM_FAILURE_MESSAGE if job.system_failure else (job.last_error or "")[:MAX_ERROR_CHARS]
 
 
 def _open_failure_filter():
@@ -38,7 +48,10 @@ def open_failures(db: Session, document_ids: list[uuid.UUID]) -> dict[uuid.UUID,
     """The open failures of each document, newest first. Documents without any are absent."""
     rows = db.scalars(
         select(Job)
-        .where(Job.document_id.in_(document_ids), *_open_failure_filter())
+        # A failed picture or render is shown and retried in the video editor, which reads the
+        # video's own error; listed here, it would mark a healthy document as failed.
+        .where(Job.document_id.in_(document_ids), Job.job_type.not_in(EDITOR_RETRIED_JOBS),
+               *_open_failure_filter())
         .order_by(Job.created_at.desc())
     ).all()
     failures: dict[uuid.UUID, list[dict]] = {}
@@ -46,6 +59,6 @@ def open_failures(db: Session, document_ids: list[uuid.UUID]) -> dict[uuid.UUID,
         failures.setdefault(job.document_id, []).append({
             "job_id": job.id,
             "job_type": job.job_type,
-            "error": SYSTEM_FAILURE_MESSAGE if job.system_failure else (job.last_error or "")[:MAX_ERROR_CHARS],
+            "error": lecturer_message(job),
         })
     return failures

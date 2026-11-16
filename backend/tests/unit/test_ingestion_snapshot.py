@@ -17,7 +17,7 @@ from pathlib import Path
 import pytest
 
 from app.config import settings
-from app.ingestion.chunker import _locator_heading, chunk_units, document_title
+from app.ingestion.chunker import chunk_units, document_title, locator_heading
 from app.ingestion.document_readers import read_document
 
 FIXTURES = Path(__file__).parent / "fixtures" / "ingestion"
@@ -33,7 +33,7 @@ def _span_headings(locator: dict) -> list[str | None]:
 def _read_and_cut(name: str) -> list[dict]:
     units = read_document(str(FIXTURES / name), course_id="snapshot")
     return [
-        {"heading": _locator_heading(c.locator), "unit_headings": _span_headings(c.locator), "strategy": c.strategy,
+        {"heading": locator_heading(c.locator), "unit_headings": _span_headings(c.locator), "strategy": c.strategy,
          "tokens": c.token_count, "content": c.content}
         for c in chunk_units(units, title=document_title(name))
     ]

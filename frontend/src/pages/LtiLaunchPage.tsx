@@ -21,7 +21,8 @@ export function LtiLaunchPage() {
     if (started.current) return;
     started.current = true;
     const code = new URLSearchParams(window.location.hash.slice(1)).get("code");
-    window.history.replaceState(null, "", window.location.pathname);
+    // Keep the router's index in the state: it is what lets the leave guard see a Back.
+    window.history.replaceState(window.history.state, "", window.location.pathname);
     if (!code) return;
     loginWithLaunchCode(code)
       .then(({ courseId, owner }) =>

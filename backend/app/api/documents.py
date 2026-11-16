@@ -2,14 +2,15 @@ import uuid
 from pathlib import Path
 
 import anyio
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.concurrency import run_in_threadpool
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 
 from app.api.deletion import check_study_references, commit_deletion
-from app.api.deps import get_current_user, require_course_owner
+from app.api.deps import get_current_user, require_author, require_course_owner
+from app.api.media_common import document_passages
 from app.auth.rate_limit import limiter, user_or_address
 from app.db import get_db
 from app.ingestion.document_readers import (
@@ -28,7 +29,15 @@ from app.models import (
     Module,
     User,
 )
-from app.storage import LocalUploadStore, S3UploadStore, staging_dir, upload_key, upload_store
+from app.storage import (
+    LocalUploadStore,
+    S3UploadStore,
+    delete_media_files,
+    media_keys_for_document,
+    staging_dir,
+    upload_key,
+    upload_store,
+)
 
 router = APIRouter(prefix="/documents", tags=["documents"], dependencies=[Depends(get_current_user)])
 
@@ -287,13 +296,29 @@ def delete_document(
 
     check_study_references(db, db.scalars(select(Module.id).where(Module.document_id == document_id)))
     storage_key = upload_key(document_id, doc.filename)
+    media_keys = media_keys_for_document(db, document_id)
     db.delete(doc)
     commit_deletion(db)
 
     # Committed first: a file without its row is harmless, a row whose file is gone is not.
     upload_store().delete(storage_key)
+    delete_media_files(media_keys)
 
     return {"status": "deleted"}
+
+
+@router.get("/{document_id}/chunks")
+def list_document_chunks(
+    document_id: uuid.UUID,
+    q: str | None = Query(default=None, max_length=200),
+    offset: int = Query(default=0, ge=0),
+    limit: int = Query(default=20, ge=1, le=50),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """The document's passages, for a lecturer citing one in a flashcard or a video scene they wrote."""
+    require_author(current_user)
+    return document_passages(db, _owned_document(db, document_id, current_user), q, offset, limit)
 
 
 @router.get("/{document_id}/status")

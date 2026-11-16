@@ -104,3 +104,30 @@ def test_ci_tests_on_the_python_the_image_runs():
     steps = [s for s in workflow["jobs"]["backend"]["steps"] if s.get("uses", "").startswith("astral-sh/setup-uv@")]
 
     assert [str(s.get("with", {}).get("python-version")) for s in steps] == [image]
+
+
+def _locked_version(package: str) -> str:
+    lock = (REPO_ROOT / "backend" / "uv.lock").read_text(encoding="utf-8")
+    return re.search(rf'^name = "{package}"\nversion = "([^"]+)"', lock, re.MULTILINE).group(1)
+
+
+def test_the_image_installs_the_chromium_of_the_locked_playwright():
+    """Each Playwright drives one Chromium build: a browser installed by another version is not found
+    at run time, and every slide render fails."""
+    runtime = _stage("runtime")
+    pinned = re.search(r"^ARG PLAYWRIGHT_VERSION=(\S+)$", runtime, re.MULTILINE).group(1)
+    assert pinned == _locked_version("playwright")
+    assert re.search(r"playwright install --with-deps --only-shell chromium", runtime)
+    browsers = re.search(r"^ENV PLAYWRIGHT_BROWSERS_PATH=(\S+)$", runtime, re.MULTILINE).group(1)
+    # compose bind-mounts the source over /app, which would hide a browser installed there.
+    assert not browsers.startswith("/app")
+
+
+def test_ci_installs_chromium_before_the_backend_tests():
+    import yaml
+
+    workflow = yaml.safe_load((REPO_ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8"))
+    runs = [s.get("run", "") for s in workflow["jobs"]["backend"]["steps"]]
+    install = next(i for i, r in enumerate(runs) if "playwright install" in r and "chromium" in r)
+    tests = next(i for i, r in enumerate(runs) if "pytest" in r)
+    assert install < tests

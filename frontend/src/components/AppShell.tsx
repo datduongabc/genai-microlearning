@@ -5,6 +5,7 @@ import { apiErrorMessage, getMoodleAccount, unlinkMoodleAccount, MOODLE_ACCOUNT_
 import { Brand } from "./AuthLayout";
 import { MoodleAccountSection, type MoodleAccountState } from "./MoodleAccountSection";
 import { initials } from "../lib/initials";
+import { confirmLeavingUnsavedWork } from "../lib/useLeaveGuard";
 
 function NavIcon({ kind }: { kind: "book" | "rating" | "admin" }) {
   return <svg className="shell-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -25,7 +26,8 @@ function readCollapsed() {
   try { return window.localStorage.getItem(COLLAPSED_KEY) === "1"; } catch { return false; }
 }
 
-export function AppShell({ title, children }: { title: string; children: ReactNode }) {
+// `fullTitle` is for a title that was cut short: the whole text stays available on hover.
+export function AppShell({ title, fullTitle, children }: { title: string; fullTitle?: string; children: ReactNode }) {
   const { user, logout } = useAuth();
   const [open, setOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(readCollapsed);
@@ -108,7 +110,7 @@ export function AppShell({ title, children }: { title: string; children: ReactNo
           </> : account && <MoodleAccountSection onStatus={linked} />)}
           {error && <p role="alert" className="account-info text-red-700">{error}</p>}
           {(!user?.is_admin && account || error) && <hr />}
-          <button className="menu-item" onClick={logout} data-leaves-page><AccountIcon kind="logout" />Đăng xuất</button>
+          <button className="menu-item" onClick={() => { if (confirmLeavingUnsavedWork()) logout(); }} data-leaves-page><AccountIcon kind="logout" />Đăng xuất</button>
         </div>}
         <button className="account-trigger" data-tip={user?.name} ref={trigger} aria-label={`Tài khoản ${user?.name}, ${user?.is_admin ? "Quản trị viên" : "Giảng viên"}`} aria-expanded={open} aria-controls="account-menu" onClick={() => { setError(null); setAccount(null); setOpen(!open); }}>
           <span className="avatar" aria-hidden="true">{user && initials(user.name)}</span>
@@ -117,6 +119,6 @@ export function AppShell({ title, children }: { title: string; children: ReactNo
         </button>
       </div>
     </aside>
-    <main id="main-content" className="shell-main" tabIndex={-1}><div className="shell-content"><h1 className="page-title">{title}</h1>{children}</div></main>
+    <main id="main-content" className="shell-main" tabIndex={-1}><div className="shell-content"><h1 className="page-title" title={fullTitle}>{title}</h1>{children}</div></main>
   </div>;
 }

@@ -13,7 +13,7 @@ from app.models import Course, Document, Module, User
 from app.moodle import client as moodle_client
 from app.moodle.accounts import require_course_author, teacher_courses
 from app.moodle.errors import MOODLE_FAILURES, moodle_failure
-from app.storage import upload_key, upload_store
+from app.storage import delete_media_files, media_keys_for_course, upload_key, upload_store
 
 router = APIRouter(prefix="/courses", tags=["courses"], dependencies=[Depends(get_current_user)])
 
@@ -125,11 +125,13 @@ def delete_course(
     # A document whose pipeline never finished still has its upload; see delete_document.
     storage_keys = [upload_key(doc_id, filename) for doc_id, filename in
                     db.execute(select(Document.id, Document.filename).where(Document.course_id == course_id))]
+    media_keys = media_keys_for_course(db, course_id)
     db.delete(course)
     commit_deletion(db)
     store = upload_store()
     for key in storage_keys:
         store.delete(key)
+    delete_media_files(media_keys)
     return {"status": "deleted"}
 
 

@@ -57,7 +57,10 @@ async def _params(request: Request) -> dict[str, str]:
     return params
 
 
-@router.api_route("/lti/login", methods=["GET", "POST"])
+# Moodle may start the login with either method. One route for both would give the OpenAPI schema
+# the same operation id twice, so each method is registered on its own.
+@router.get("/lti/login", operation_id="lti_login_get")
+@router.post("/lti/login", operation_id="lti_login_post")
 @limiter.limit("60/minute")
 async def lti_login(request: Request, db: Session = Depends(get_db)):
     params = await _params(request)

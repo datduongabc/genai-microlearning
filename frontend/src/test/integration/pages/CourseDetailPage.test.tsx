@@ -55,6 +55,16 @@ function renderPage() {
 beforeEach(() => {
   vi.clearAllMocks()
   vi.mocked(api.listDocuments).mockResolvedValue([])
+  vi.mocked(api.listFlashcardSets).mockResolvedValue([])
+  vi.mocked(api.listVideos).mockResolvedValue([])
+  vi.mocked(api.getMediaModels).mockResolvedValue({
+    voices: [{ alias: 'voice-heygen', label: 'HeyGen Voice 1 Turbo', price: 'khoảng $0,03 một video 8 phút' }],
+    images: [
+      { alias: 'image-nano-banana', label: 'Gemini Nano Banana 2.1', price: 'khoảng $0,037 một ảnh' },
+      { alias: 'image-qwen', label: 'Qwen Image 2.1 Turbo', price: 'khoảng $0,018 một ảnh' },
+    ],
+    default_voice: 'voice-heygen', default_image: 'image-nano-banana',
+  })
   // Ô chọn model gọi API này ngay khi trang mở, như listDocuments ở trên.
   vi.mocked(api.listModels).mockResolvedValue({ models: [], default: null })
   // The course chat loads its last conversation on open.
@@ -601,6 +611,289 @@ describe('CourseDetailPage - module generation availability', () => {
   })
 })
 
+const flashcardSet: api.FlashcardSetSummary = {
+  id: 'set-1', course_id: 'course-1', document_id: 'doc-1', focus: 'Mảng', output_language: 'vi', model_alias: 'gemini-fast',
+  status: 'draft', card_count: 8, published_at: null, created_at: '2026-01-01T00:00:00Z', cost: null,
+}
+
+describe('CourseDetailPage - flashcard sets', () => {
+  beforeEach(() => {
+    vi.mocked(api.listCourses).mockResolvedValue([unlinkedCourse])
+    vi.mocked(api.listDocuments).mockResolvedValue([sampleDocument])
+    vi.mocked(api.listModules).mockResolvedValue([])
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it('lists flashcard sets under their document with their status', async () => {
+    vi.mocked(api.listFlashcardSets).mockResolvedValue([
+      flashcardSet,
+      { ...flashcardSet, id: 'set-2', focus: null, status: 'generating', card_count: 0 },
+      { ...flashcardSet, id: 'set-3', focus: 'Cây', status: 'failed', card_count: 0 },
+      { ...flashcardSet, id: 'set-4', focus: 'Đồ thị', published_at: '2026-01-02T00:00:00Z' },
+      { ...flashcardSet, id: 'set-5', document_id: 'doc-other', focus: 'Của tài liệu khác' },
+    ])
+    vi.mocked(api.listDocuments).mockResolvedValue([sampleDocument, { ...sampleDocument, id: 'doc-other', filename: 'other.pdf' }])
+
+    renderPage()
+
+    const list = await screen.findByRole('list', { name: 'Flashcard sinh từ syllabus.pdf' })
+    const items = within(list).getAllByRole('listitem')
+    expect(items).toHaveLength(4)
+    expect(within(items[0]).getByRole('link', { name: /Mảng/ })).toHaveAttribute('href', '/flashcard-sets/set-1')
+    expect(items[0]).toHaveTextContent('Bản nháp - 8 thẻ')
+    // A set and a video with the same focus must not look alike.
+    expect(within(items[0]).getByText('Flashcard')).toBeInTheDocument()
+    expect(items[1]).toHaveTextContent('Toàn bộ tài liệu')
+    expect(items[1]).toHaveTextContent('Đang sinh...')
+    expect(items[2]).toHaveTextContent('Sinh thất bại')
+    expect(items[3]).toHaveTextContent('Đã giao - 8 thẻ')
+    // A draft is neutral, a published set is done, and "processing" means generating only.
+    expect(within(items[0]).getByText('Bản nháp - 8 thẻ')).not.toHaveAttribute('data-status')
+    expect(within(items[1]).getByText('Đang sinh...')).toHaveAttribute('data-status', 'processing')
+    expect(within(items[3]).getByText('Đã giao - 8 thẻ')).toHaveAttribute('data-status', 'embedded')
+    const other = screen.getByRole('list', { name: 'Flashcard sinh từ other.pdf' })
+    expect(within(other).getAllByRole('listitem')).toHaveLength(1)
+  })
+
+  it('generates a set with the focus and the chosen model, then shows it as generating', async () => {
+    vi.mocked(api.generateFlashcards).mockResolvedValue({ id: 'set-1', job_id: 'job-1' })
+    vi.mocked(api.listFlashcardSets)
+      .mockResolvedValueOnce([])
+      .mockResolvedValue([{ ...flashcardSet, status: 'generating', card_count: 0 }])
+
+    renderPage()
+    await userEvent.click(await screen.findByRole('button', { name: '+ Sinh flashcard' }))
+    // Each kind has its own dialog in the page, so the field is looked up in the open one.
+    await userEvent.type(within(screen.getByRole('dialog', { name: 'Sinh flashcard' })).getByLabelText(/Trọng tâm/), 'Mảng')
+    await userEvent.click(screen.getByRole('button', { name: 'Sinh flashcard' }))
+
+    expect(api.generateFlashcards).toHaveBeenCalledWith('doc-1', { focus: 'Mảng', outputLanguage: 'vi', modelAlias: '' })
+    expect(await screen.findByText('Đang sinh...')).toBeInTheDocument()
+  })
+
+  it('shows a pending set at once and takes no second submit while the request is out', async () => {
+    let answer!: (value: { id: string; job_id: string }) => void
+    vi.mocked(api.generateFlashcards).mockReturnValue(new Promise((resolve) => { answer = resolve }))
+    vi.mocked(api.listFlashcardSets)
+      .mockResolvedValueOnce([])
+      .mockResolvedValue([{ ...flashcardSet, status: 'generating', card_count: 0 }])
+
+    renderPage()
+    await userEvent.click(await screen.findByRole('button', { name: '+ Sinh flashcard' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Sinh flashcard' }))
+
+    const list = await screen.findByRole('list', { name: 'Flashcard sinh từ syllabus.pdf' })
+    const pending = within(list).getByRole('listitem')
+    expect(pending).toHaveTextContent('Toàn bộ tài liệu')
+    expect(within(pending).getByText('Đang gửi yêu cầu...')).toHaveAttribute('data-status', 'processing')
+    expect(screen.getByRole('button', { name: '+ Sinh flashcard' })).toBeDisabled()
+
+    answer({ id: 'set-1', job_id: 'job-1' })
+    expect(await screen.findByText('Đang sinh...')).toBeInTheDocument()
+    expect(screen.queryByText('Đang gửi yêu cầu...')).not.toBeInTheDocument()
+  })
+
+  it('says an identical set is already being generated when the server answers 409', async () => {
+    vi.mocked(api.generateFlashcards).mockRejectedValue(axiosFailure(409, 'Bộ thẻ này đang được sinh, vui lòng chờ.'))
+
+    renderPage()
+    await userEvent.click(await screen.findByRole('button', { name: '+ Sinh flashcard' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Sinh flashcard' }))
+
+    expect(await screen.findByText('Bộ thẻ này đang được sinh, vui lòng chờ.')).toBeInTheDocument()
+  })
+
+  it('follows a generating set until the server reports it done', async () => {
+    vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] })
+    vi.mocked(api.listFlashcardSets)
+      .mockResolvedValueOnce([{ ...flashcardSet, status: 'generating', card_count: 0 }])
+      .mockResolvedValue([flashcardSet])
+
+    renderPage()
+    expect(await screen.findByText('Đang sinh...')).toBeInTheDocument()
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(10_000)
+    })
+
+    expect(await screen.findByText('Bản nháp - 8 thẻ')).toBeInTheDocument()
+  })
+})
+
+const videoSummary: api.VideoSummary = {
+  id: 'video-1', course_id: 'course-1', document_id: 'doc-1', focus: 'FCFS', output_language: 'vi', model_alias: 'gemini-fast',
+  voice_alias: 'voice-heygen', image_alias: 'image-nano-banana', status: 'draft', scene_count: 9, draft_version: 1,
+  rendered_version: null, duration_seconds: null, error: null, published_at: null, created_at: '2026-01-01T00:00:00Z',
+}
+
+describe('CourseDetailPage - videos', () => {
+  beforeEach(() => {
+    vi.mocked(api.listCourses).mockResolvedValue([unlinkedCourse])
+    vi.mocked(api.listDocuments).mockResolvedValue([sampleDocument])
+    vi.mocked(api.listModules).mockResolvedValue([])
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it('lists videos under their document with their status', async () => {
+    vi.mocked(api.listVideos).mockResolvedValue([
+      videoSummary,
+      { ...videoSummary, id: 'video-2', focus: null, status: 'generating', scene_count: 0 },
+      { ...videoSummary, id: 'video-3', status: 'rendering' },
+      { ...videoSummary, id: 'video-4', status: 'ready', rendered_version: 1, duration_seconds: 291, published_at: '2026-01-02T00:00:00Z' },
+      { ...videoSummary, id: 'video-5', status: 'failed', scene_count: 0, error: 'Sinh lời thoại thất bại' },
+    ])
+
+    renderPage()
+
+    const list = await screen.findByRole('list', { name: 'Video sinh từ syllabus.pdf' })
+    const items = within(list).getAllByRole('listitem')
+    expect(items).toHaveLength(5)
+    expect(within(items[0]).getByRole('link', { name: /FCFS/ })).toHaveAttribute('href', '/videos/video-1')
+    expect(within(items[0]).getByText('Video')).toBeInTheDocument()
+    expect(within(items[0]).getByText('Bản nháp - 9 cảnh')).not.toHaveAttribute('data-status')
+    expect(items[1]).toHaveTextContent('Toàn bộ tài liệu')
+    expect(within(items[1]).getByText('Đang sinh lời thoại...')).toHaveAttribute('data-status', 'processing')
+    expect(within(items[2]).getByText('Đang dựng video...')).toHaveAttribute('data-status', 'processing')
+    // Floored, as the player floors its clock: 291 s is 4,85 minutes, not 4,9.
+    expect(within(items[3]).getByText('Đã giao - 9 cảnh, 4,8 phút')).toHaveAttribute('data-status', 'embedded')
+    expect(within(items[4]).getByText('Sinh thất bại')).toHaveAttribute('data-status', 'failed')
+  })
+
+  it('generates a video with the focus, the model, the voice and the image model', async () => {
+    vi.mocked(api.generateVideo).mockResolvedValue({ id: 'video-1', job_id: 'job-1' })
+    vi.mocked(api.listVideos)
+      .mockResolvedValueOnce([])
+      .mockResolvedValue([{ ...videoSummary, status: 'generating', scene_count: 0 }])
+
+    renderPage()
+    await userEvent.click(await screen.findByRole('button', { name: '+ Sinh video' }))
+    await userEvent.type(within(screen.getByRole('dialog', { name: 'Sinh video' })).getByLabelText(/Trọng tâm/), 'FCFS')
+    await userEvent.selectOptions(await screen.findByRole('combobox', { name: 'Model vẽ hình' }), 'image-qwen')
+    await userEvent.click(screen.getByRole('button', { name: 'Sinh video' }))
+
+    await waitFor(() => expect(api.generateVideo).toHaveBeenCalledWith('doc-1', {
+      focus: 'FCFS', outputLanguage: 'vi', modelAlias: '', voiceAlias: 'voice-heygen', imageAlias: 'image-qwen',
+    }))
+    expect(await screen.findByText('Đang sinh lời thoại...')).toBeInTheDocument()
+  })
+
+  it('shows a pending row at once and takes no second submit while the request is out', async () => {
+    // The request can take seconds (live run 2: 8 s); until it returns the lecturer must see it was taken.
+    let answer!: (value: { id: string; job_id: string }) => void
+    vi.mocked(api.generateVideo).mockReturnValue(new Promise((resolve) => { answer = resolve }))
+    vi.mocked(api.listVideos)
+      .mockResolvedValueOnce([])
+      .mockResolvedValue([{ ...videoSummary, status: 'generating', scene_count: 0 }])
+
+    renderPage()
+    await userEvent.click(await screen.findByRole('button', { name: '+ Sinh video' }))
+    await userEvent.type(within(screen.getByRole('dialog', { name: 'Sinh video' })).getByLabelText(/Trọng tâm/), 'FCFS')
+    await userEvent.click(screen.getByRole('button', { name: 'Sinh video' }))
+
+    const list = await screen.findByRole('list', { name: 'Video sinh từ syllabus.pdf' })
+    const pending = within(list).getByRole('listitem')
+    expect(pending).toHaveTextContent('FCFS')
+    expect(pending).toHaveAttribute('aria-busy', 'true')
+    expect(within(pending).getByText('Đang gửi yêu cầu...')).toHaveAttribute('data-status', 'processing')
+    expect(screen.getByRole('button', { name: '+ Sinh video' })).toBeDisabled()
+    expect(api.generateVideo).toHaveBeenCalledTimes(1)
+
+    answer({ id: 'video-1', job_id: 'job-1' })
+    expect(await screen.findByText('Đang sinh lời thoại...')).toBeInTheDocument()
+    expect(screen.queryByText('Đang gửi yêu cầu...')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '+ Sinh video' })).toBeEnabled()
+  })
+
+  it('says the video started, not that it failed, when only the list cannot be reloaded after it', async () => {
+    vi.mocked(api.generateVideo).mockResolvedValue({ id: 'video-1', job_id: 'job-1' })
+    vi.mocked(api.listVideos).mockResolvedValueOnce([]).mockRejectedValue(new Error('network down'))
+
+    renderPage()
+    await userEvent.click(await screen.findByRole('button', { name: '+ Sinh video' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Sinh video' }))
+
+    expect(await screen.findByText('Đã bắt đầu sinh video.')).toBeInTheDocument()
+    expect(await screen.findByText(/không tải lại được danh sách/i)).toBeInTheDocument()
+    expect(screen.queryByText(/sinh video thất bại/i)).not.toBeInTheDocument()
+    expect(screen.queryByText('Đang gửi yêu cầu...')).not.toBeInTheDocument()
+  })
+
+  it('says the set started, not that it failed, when only the list cannot be reloaded after it', async () => {
+    vi.mocked(api.generateFlashcards).mockResolvedValue({ id: 'set-1', job_id: 'job-1' })
+    vi.mocked(api.listFlashcardSets).mockResolvedValueOnce([]).mockRejectedValue(new Error('network down'))
+
+    renderPage()
+    await userEvent.click(await screen.findByRole('button', { name: '+ Sinh flashcard' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Sinh flashcard' }))
+
+    expect(await screen.findByText('Đã bắt đầu sinh bộ flashcard.')).toBeInTheDocument()
+    expect(await screen.findByText(/không tải lại được danh sách/i)).toBeInTheDocument()
+    expect(screen.queryByText(/sinh flashcard thất bại/i)).not.toBeInTheDocument()
+  })
+
+  it('drops the pending row when the request is refused', async () => {
+    vi.mocked(api.generateVideo).mockRejectedValue(axiosFailure(409, 'Video này đang được sinh lời thoại, vui lòng chờ.'))
+    vi.mocked(api.listVideos).mockResolvedValue([])
+
+    renderPage()
+    await userEvent.click(await screen.findByRole('button', { name: '+ Sinh video' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Sinh video' }))
+
+    expect(await screen.findByText('Video này đang được sinh lời thoại, vui lòng chờ.')).toBeInTheDocument()
+    expect(screen.queryByText('Đang gửi yêu cầu...')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '+ Sinh video' })).toBeEnabled()
+  })
+
+  it('dates the rows that share a title, and only those', async () => {
+    vi.mocked(api.listVideos).mockResolvedValue([
+      { ...videoSummary, id: 'video-1', created_at: '2026-11-13T09:05:00Z' },
+      { ...videoSummary, id: 'video-2', created_at: '2026-11-16T00:20:15Z' },
+      { ...videoSummary, id: 'video-3', focus: 'SJF' },
+    ])
+
+    renderPage()
+
+    const list = await screen.findByRole('list', { name: 'Video sinh từ syllabus.pdf' })
+    const items = within(list).getAllByRole('listitem')
+    const times = items.map((item) => item.querySelector('time'))
+    expect(times[0]).toHaveAttribute('dateTime', '2026-11-13T09:05:00Z')
+    expect(times[1]).toHaveAttribute('dateTime', '2026-11-16T00:20:15Z')
+    expect(times[0]?.textContent).toMatch(/^tạo \d{2}:\d{2} \d{2}\/\d{2}$/)
+    expect(times[0]?.textContent).not.toBe(times[1]?.textContent)
+    expect(times[2]).toBeNull()
+  })
+
+  it('shows the server message when the generation quota is used up', async () => {
+    vi.mocked(api.generateVideo).mockRejectedValue(axiosFailure(429, 'Bạn đã dùng hết lượt sinh hôm nay.'))
+
+    renderPage()
+    await userEvent.click(await screen.findByRole('button', { name: '+ Sinh video' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Sinh video' }))
+
+    expect(await screen.findByText('Bạn đã dùng hết lượt sinh hôm nay.')).toBeInTheDocument()
+  })
+
+  it('follows a video until no job is left', async () => {
+    vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] })
+    vi.mocked(api.listVideos)
+      .mockResolvedValueOnce([{ ...videoSummary, status: 'drawing' }])
+      .mockResolvedValue([videoSummary])
+
+    renderPage()
+    expect(await screen.findByText('Đang vẽ hình...')).toBeInTheDocument()
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(10_000)
+    })
+
+    expect(await screen.findByText('Bản nháp - 9 cảnh')).toBeInTheDocument()
+  })
+})
+
 describe('CourseDetailPage - delete module', () => {
   const module: ModuleSummary = {
     id: 'module-1', title: 'Giới thiệu AI', learning_objective: null, bloom_level: null,
@@ -786,6 +1079,22 @@ describe('CourseDetailPage - failed work and retry', () => {
 
     renderPage()
     expect(await screen.findByText('Sinh mô-đun thất bại')).toBeInTheDocument()
+  })
+
+  it('names a failed flashcard set or video script for what it is, not as a module', async () => {
+    vi.mocked(api.listDocuments).mockResolvedValue([{
+      ...sampleDocument,
+      failures: [
+        { job_id: 'job-f', job_type: 'flashcard_generation', error: 'Model từ chối' },
+        { job_id: 'job-v', job_type: 'video_script', error: 'Kịch bản hỏng' },
+      ],
+    }])
+
+    renderPage()
+
+    expect(await screen.findByText('Sinh bộ thẻ thất bại')).toBeInTheDocument()
+    expect(screen.getByText('Sinh lời thoại video thất bại')).toBeInTheDocument()
+    expect(screen.queryByText('Sinh mô-đun thất bại')).not.toBeInTheDocument()
   })
 
   it('retries the failed job from the lecturer screen and reloads the list', async () => {

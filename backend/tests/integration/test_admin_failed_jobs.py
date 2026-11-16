@@ -14,9 +14,11 @@ from app.models import (
     Course,
     Document,
     DocumentStatus,
+    FlashcardSet,
     Job,
     JobStatus,
     JobType,
+    MediaStatus,
     Module,
     User,
 )
@@ -180,6 +182,27 @@ def test_retry_skips_what_is_not_failed_or_does_not_exist_and_retries_the_rest(a
         assert db.get(Job, done).status == JobStatus.done
 
 
+def test_an_admin_retrying_another_lecturers_failed_set_makes_it_generating_again(admin):
+    # Row level security hides the set from the admin's own session; only the SECURITY DEFINER
+    # function of migration 0036 can reset it.
+    job_id, document = _failed(_lecturer(), JobType.flashcard_generation)
+    with SessionLocal() as db:
+        course_id = db.get(Document, document).course_id
+        card_set = FlashcardSet(course_id=course_id, document_id=document, output_language="vi",
+                                model_alias="gemini-fast", status=MediaStatus.failed, cards=[])
+        db.add(card_set)
+        db.flush()
+        db.get(Job, job_id).payload = {"flashcard_set_id": str(card_set.id)}
+        db.commit()
+        set_id = card_set.id
+
+    response = client.post("/admin/jobs/retry", json={"job_ids": [str(job_id)]}, headers=admin)
+
+    assert response.json()["retried"] == [str(job_id)]
+    with SessionLocal() as db:
+        assert db.get(FlashcardSet, set_id).status == MediaStatus.generating
+
+
 def test_retry_does_not_touch_a_failure_its_lecturer_already_generated_again(admin):
     owner = _lecturer()
     old, document = _failed(owner, JobType.module_generation, created_at=datetime.now(UTC) - timedelta(hours=1))
@@ -187,7 +210,7 @@ def test_retry_does_not_touch_a_failure_its_lecturer_already_generated_again(adm
 
     response = client.post("/admin/jobs/retry", json={"job_ids": [str(old)]}, headers=admin)
 
-    assert response.json() == {"retried": [], "skipped": [str(old)]}
+    assert response.json() == {"retried": [], "skipped": [str(old)], "reasons": {}}
     with SessionLocal() as db:
         assert db.get(Job, old).status == JobStatus.failed
 

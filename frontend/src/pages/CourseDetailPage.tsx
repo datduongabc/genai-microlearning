@@ -2,17 +2,21 @@ import axios from "axios";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import {
   apiErrorMessage,
   deleteDocument,
   deleteModule,
+  generateFlashcards,
   generateModule,
+  generateVideo,
   getModuleJobStatus,
   linkMoodleCourse,
   listCourses,
   listDocuments,
+  listFlashcardSets,
   listModules,
+  listVideos,
   pollJobStatus,
   retryJob,
   listMoodleCourses,
@@ -21,14 +25,17 @@ import {
   type Course,
   type DocumentFailure,
   type DocumentInfo,
+  type FlashcardSetSummary,
   type ModuleSummary,
   type MoodleCourse,
+  type VideoSummary,
 } from "../api";
 import { AppShell } from "../components/AppShell";
 import { CourseChat } from "../components/CourseChat";
 import { ModelPicker } from "../components/ModelPicker";
 import { MoodleAccountSection, type MoodleAccountState } from "../components/MoodleAccountSection";
-import { GenerateDialog } from "../components/GenerateDialog";
+import { GenerateDialog, type VideoMediaChoice } from "../components/GenerateDialog";
+import { formatMinutes } from "../lib/duration";
 import {
   linkMoodleCourseSchema,
   uploadDocumentSchema,
@@ -80,6 +87,8 @@ function matchesFilter(doc: DocumentInfo, filter: StatusFilter): boolean {
 
 function failureTitle(failure: DocumentFailure): string {
   if (failure.job_type === "document_pipeline") return "Xử lý tài liệu thất bại";
+  if (failure.job_type === "flashcard_generation") return "Sinh bộ thẻ thất bại";
+  if (failure.job_type === "video_script") return "Sinh lời thoại video thất bại";
   return "Sinh mô-đun thất bại";
 }
 
@@ -103,18 +112,108 @@ function extractionWarningLines(warnings: DocumentInfo["extraction_warnings"]) {
   }));
 }
 
+function flashcardStatusText(set: FlashcardSetSummary): string {
+  if (set.status === "generating") return "Đang sinh...";
+  if (set.status === "failed") return "Sinh thất bại";
+  return `${set.published_at ? "Đã giao" : "Bản nháp"} - ${set.card_count} thẻ`;
+}
+
+// The statuses a video has while one of its jobs runs in the worker.
+const VIDEO_JOB_TEXT: Partial<Record<VideoSummary["status"], string>> = {
+  generating: "Đang sinh lời thoại...",
+  drawing: "Đang vẽ hình...",
+  rendering: "Đang dựng video...",
+};
+
+function videoStatusText(video: VideoSummary): string {
+  const running = VIDEO_JOB_TEXT[video.status];
+  if (running) return running;
+  // A failed picture or render leaves the scenes to edit; only a failed script leaves nothing.
+  if (video.status === "failed" && video.scene_count === 0) return "Sinh thất bại";
+  if (video.status === "failed") return "Có lỗi, mở để xem";
+  const length = video.duration_seconds === null ? "" : `, ${formatMinutes(video.duration_seconds)} phút`;
+  return `${video.published_at ? "Đã giao" : "Bản nháp"} - ${video.scene_count} cảnh${length}`;
+}
+
+// What a list row's pill means: neutral for a draft, green once published, "processing" only
+// while a job runs, red when it failed.
+function mediaPillStatus(running: boolean, failed: boolean, published: boolean): string | undefined {
+  if (failed) return "failed";
+  if (running) return "processing";
+  return published ? "embedded" : undefined;
+}
+
+type MediaKind = "Flashcard" | "Video";
+
+// When an item was made, as "tạo 00:20 16/11" in the lecturer's time: enough to tell two items of one
+// focus apart, which live run 2's page could only do by their card or scene counts.
+function createdText(iso: string): string {
+  const at = new Date(iso);
+  const two = (n: number) => String(n).padStart(2, "0");
+  return `tạo ${two(at.getHours())}:${two(at.getMinutes())} ${two(at.getDate())}/${two(at.getMonth() + 1)}`;
+}
+
+// The creation time of each item whose title another item of its document's list also has, by id.
+function sharedTitleDates(items: { id: string; document_id: string; focus: string | null; created_at: string }[]) {
+  const title = (item: (typeof items)[number]) => `${item.document_id}\n${item.focus ?? ""}`;
+  const count = new Map<string, number>();
+  items.forEach((item) => count.set(title(item), (count.get(title(item)) ?? 0) + 1));
+  return new Map(items.filter((item) => (count.get(title(item)) ?? 0) > 1).map((item) => [item.id, item.created_at]));
+}
+
+// The kind is written out because a set and a video made from the same focus carry the same title.
+function MediaListItem({ kind, to, focus, status, statusText, created }: {
+  kind: MediaKind; to: string; focus: string | null; status?: string; statusText: string; created?: string;
+}) {
+  return (
+    <li className="module-item">
+      <span className="media-kind">{kind}</span>
+      <Link to={to} className="module-link flashcard-link" title={focus ?? undefined}>
+        {focus ?? "Toàn bộ tài liệu"}
+      </Link>
+      {created && <time className="media-created" dateTime={created}>{createdText(created)}</time>}
+      <span className="status-pill" data-status={status}>{statusText}</span>
+    </li>
+  );
+}
+
+// A request the server has not answered yet. It can take seconds (live run 2: 8 s), and until it
+// answered the page showed nothing, so the lecturer could not tell the click was taken.
+interface PendingMedia {
+  key: number;
+  documentId: string;
+  kind: MediaKind;
+  focus: string | null;
+}
+
+function PendingMediaItem({ item }: { item: PendingMedia }) {
+  return (
+    <li className="module-item" aria-busy="true">
+      <span className="media-kind">{item.kind}</span>
+      <span className="module-link">{item.focus ?? "Toàn bộ tài liệu"}</span>
+      <span className="status-pill" data-status="processing">Đang gửi yêu cầu...</span>
+    </li>
+  );
+}
+
 interface CoursePageSetters {
   setCourse: (course: Course | null) => void;
   setDocuments: (documents: DocumentInfo[]) => void;
   setModulesByDoc: (modules: Record<string, ModuleSummary[]>) => void;
+  setFlashcardSets: (sets: FlashcardSetSummary[]) => void;
+  setVideos: (videos: VideoSummary[]) => void;
 }
 
 // Hands over the documents as soon as they arrive and their modules a moment
 // later, so the list appears without waiting for one request per document.
 async function loadCoursePage(courseId: string, apply: CoursePageSetters) {
-  const [courses, docs] = await Promise.all([listCourses(), listDocuments(courseId)]);
+  const [courses, docs, sets, videos] = await Promise.all([
+    listCourses(), listDocuments(courseId), listFlashcardSets(courseId), listVideos(courseId),
+  ]);
   apply.setCourse(courses.find((c) => c.id === courseId) ?? null);
   apply.setDocuments(docs);
+  apply.setFlashcardSets(sets);
+  apply.setVideos(videos);
   const entries = await Promise.all(
     docs.map(async (d) => [d.id, await listModules(d.id)] as const),
   );
@@ -130,6 +229,12 @@ export function CourseDetailPage() {
   const [modelAlias, setModelAlias] = useState("");
   const generateDialog = useRef<HTMLDialogElement>(null);
   const generateDocument = useRef<DocumentInfo | null>(null);
+  const flashcardDialog = useRef<HTMLDialogElement>(null);
+  const flashcardDocument = useRef<DocumentInfo | null>(null);
+  const [flashcardSets, setFlashcardSets] = useState<FlashcardSetSummary[]>([]);
+  const videoDialog = useRef<HTMLDialogElement>(null);
+  const videoDocument = useRef<DocumentInfo | null>(null);
+  const [videos, setVideos] = useState<VideoSummary[]>([]);
   const [modulesByDoc, setModulesByDoc] = useState<
     Record<string, ModuleSummary[]>
   >({});
@@ -148,9 +253,14 @@ export function CourseDetailPage() {
   // job (so a double-click cannot send two requests); after that, and after
   // a refresh or navigation, `doc.generating` from the server is the truth.
   const [startingIds, setStartingIds] = useState<Set<string>>(new Set());
+  // Flashcard and video requests on their way, one of each kind per document: a second click before
+  // the first answers would only be refused as a duplicate. The ref answers at once, the state draws.
+  const [pendingMedia, setPendingMedia] = useState<PendingMedia[]>([]);
+  const pendingKeys = useRef(new Set<string>());
+  const nextPending = useRef(0);
   const refresh = useCallback(async () => {
     if (!courseId) return;
-    await loadCoursePage(courseId, { setCourse, setDocuments, setModulesByDoc });
+    await loadCoursePage(courseId, { setCourse, setDocuments, setModulesByDoc, setFlashcardSets, setVideos });
   }, [courseId]);
 
   // The first load drops whatever arrives after the page has gone, and sets
@@ -167,6 +277,8 @@ export function CourseDetailPage() {
           setCourse: guarded(setCourse),
           setDocuments: guarded(setDocuments),
           setModulesByDoc: guarded(setModulesByDoc),
+          setFlashcardSets: guarded(setFlashcardSets),
+          setVideos: guarded(setVideos),
         })
       : Promise.resolve();
     first
@@ -200,7 +312,11 @@ export function CourseDetailPage() {
   const generatingOnServer = documents.some((d) => d.generating);
   const visibleDocuments = documents.filter((d) => matchesFilter(d, statusFilter));
   const shouldPoll = pipelineActive || generatingOnServer;
+  const setsByDoc = (documentId: string) => flashcardSets.filter((set) => set.document_id === documentId);
+  const videosByDoc = (documentId: string) => videos.filter((video) => video.document_id === documentId);
   const isGenerating = (doc: DocumentInfo) => doc.generating || startingIds.has(doc.id);
+  const setDates = sharedTitleDates(flashcardSets);
+  const videoDates = sharedTitleDates(videos);
   useEffect(() => {
     if (!shouldPoll || !courseId) return;
     const timer = setInterval(async () => {
@@ -220,6 +336,35 @@ export function CourseDetailPage() {
     if (wasGeneratingOnServer.current && !generatingOnServer) void refresh();
     wasGeneratingOnServer.current = generatingOnServer;
   }, [generatingOnServer, refresh]);
+
+  // A set being generated is a job in the worker: the server's status is the truth, so the list
+  // is read again until none is generating, as it is for documents above.
+  const flashcardsGenerating = flashcardSets.some((set) => set.status === "generating");
+  useEffect(() => {
+    if (!flashcardsGenerating || !courseId) return;
+    const timer = setInterval(async () => {
+      try {
+        setFlashcardSets(await listFlashcardSets(courseId));
+      } catch {
+        // transient failure: the next tick retries
+      }
+    }, DOCUMENT_POLL_INTERVAL_MS);
+    return () => clearInterval(timer);
+  }, [flashcardsGenerating, courseId]);
+
+  // The same for videos, while any of them has a job in the worker.
+  const videosRunning = videos.some((video) => VIDEO_JOB_TEXT[video.status] !== undefined);
+  useEffect(() => {
+    if (!videosRunning || !courseId) return;
+    const timer = setInterval(async () => {
+      try {
+        setVideos(await listVideos(courseId));
+      } catch {
+        // transient failure: the next tick retries
+      }
+    }, DOCUMENT_POLL_INTERVAL_MS);
+    return () => clearInterval(timer);
+  }, [videosRunning, courseId]);
 
   async function handleUpload({ file }: UploadDocumentFormValues) {
     if (!courseId) return;
@@ -262,6 +407,63 @@ export function CourseDetailPage() {
         return next;
       });
     }
+  }
+
+  const isSending = (doc: DocumentInfo, kind: MediaKind) => pendingMedia.some((p) => p.documentId === doc.id && p.kind === kind);
+  const pendingFor = (doc: DocumentInfo, kind: MediaKind) => pendingMedia.filter((p) => p.documentId === doc.id && p.kind === kind);
+
+  // Shows the request as a row under its document until the list it lands in has been read again.
+  async function sendMediaRequest(doc: DocumentInfo, kind: MediaKind, focus: string, send: () => Promise<void>) {
+    const guard = `${kind}:${doc.id}`;
+    if (pendingKeys.current.has(guard)) return;
+    pendingKeys.current.add(guard);
+    const item = { key: nextPending.current++, documentId: doc.id, kind, focus: focus.trim() || null };
+    setPendingMedia((items) => [...items, item]);
+    setError(null);
+    try {
+      await send();
+    } finally {
+      pendingKeys.current.delete(guard);
+      setPendingMedia((items) => items.filter((p) => p.key !== item.key));
+    }
+  }
+
+  // The paid request and the reload of the list after it fail apart: told "failed" when only the
+  // reload did, a lecturer would generate again and pay twice for the same thing.
+  async function startGeneration(
+    generate: () => Promise<unknown>, reload: () => Promise<void>, failed: string, started: string,
+  ) {
+    setNotice(null);
+    try {
+      await generate();
+    } catch (err) {
+      // A 409 (the same item is being generated) and a 429 (quota) carry their own Vietnamese wording.
+      setError(apiErrorMessage(err, failed));
+      return;
+    }
+    try {
+      await reload();
+    } catch (err) {
+      // Said only then: otherwise the new row in the list says it.
+      setNotice(`${started}.`);
+      setError(`${apiErrorMessage(err, "Không tải lại được danh sách")}. ${started}, hãy tải lại trang để theo dõi.`);
+    }
+  }
+
+  async function handleGenerateFlashcards(doc: DocumentInfo, outputLanguage: "vi" | "en", focus: string) {
+    await sendMediaRequest(doc, "Flashcard", focus, () => startGeneration(
+      () => generateFlashcards(doc.id, { focus, outputLanguage, modelAlias }),
+      async () => setFlashcardSets(await listFlashcardSets(courseId ?? "")),
+      "Sinh flashcard thất bại", "Đã bắt đầu sinh bộ flashcard",
+    ));
+  }
+
+  async function handleGenerateVideo(doc: DocumentInfo, outputLanguage: "vi" | "en", focus: string, media: VideoMediaChoice) {
+    await sendMediaRequest(doc, "Video", focus, () => startGeneration(
+      () => generateVideo(doc.id, { focus, outputLanguage, modelAlias, ...media }),
+      async () => setVideos(await listVideos(courseId ?? "")),
+      "Sinh video thất bại", "Đã bắt đầu sinh video",
+    ));
   }
 
   async function handleDeleteDocument(doc: DocumentInfo) {
@@ -361,6 +563,12 @@ export function CourseDetailPage() {
       <GenerateDialog dialogRef={generateDialog} onGenerate={(language, instructions) => {
         if (generateDocument.current) void handleGenerate(generateDocument.current, language, instructions);
       }} />
+      <GenerateDialog dialogRef={flashcardDialog} kind="flashcards" onGenerate={(language, focus) => {
+        if (flashcardDocument.current) void handleGenerateFlashcards(flashcardDocument.current, language, focus);
+      }} />
+      <GenerateDialog dialogRef={videoDialog} kind="video" onGenerate={(language, focus, media) => {
+        if (videoDocument.current && media) void handleGenerateVideo(videoDocument.current, language, focus, media);
+      }} />
       {course && <MoodleLinkSection course={course} onLinked={refresh} />}
       <div className="course-layout">
       <section className="course-documents" aria-labelledby="course-documents-title">
@@ -435,7 +643,7 @@ export function CourseDetailPage() {
           {visibleDocuments.map((d) => (
             <li key={d.id} className="doc-row">
               <div className="doc-head">
-                <div className="min-w-0">
+                <div className="doc-title">
                   <div className="doc-name">{d.filename}</div>
                   <div className="status-pill" data-status={d.status}>
                     {STATUS_LABEL[d.status] ?? d.status}
@@ -451,6 +659,24 @@ export function CourseDetailPage() {
                       {isGenerating(d)
                         ? "Đang sinh mô-đun..."
                         : "+ Sinh mô-đun"}
+                    </button>
+                  )}
+                  {d.status === "embedded" && (
+                    <button
+                      onClick={() => { flashcardDocument.current = d; flashcardDialog.current?.showModal(); }}
+                      disabled={isSending(d, "Flashcard")}
+                      className="link-action"
+                    >
+                      + Sinh flashcard
+                    </button>
+                  )}
+                  {d.status === "embedded" && (
+                    <button
+                      onClick={() => { videoDocument.current = d; videoDialog.current?.showModal(); }}
+                      disabled={isSending(d, "Video")}
+                      className="link-action"
+                    >
+                      + Sinh video
                     </button>
                   )}
                   <button
@@ -495,6 +721,41 @@ export function CourseDetailPage() {
                       module={m}
                       deleting={deletingModuleId === m.id}
                       onDelete={handleDeleteModule}
+                    />
+                  ))}
+                </ul>
+              )}
+              {(setsByDoc(d.id).length > 0 || isSending(d, "Flashcard")) && (
+                <ul className="doc-modules" aria-label={`Flashcard sinh từ ${d.filename}`}>
+                  {/* The newest come first, which is where the set being asked for will be. */}
+                  {pendingFor(d, "Flashcard").map((item) => <PendingMediaItem key={item.key} item={item} />)}
+                  {setsByDoc(d.id).map((set) => (
+                    <MediaListItem
+                      key={set.id}
+                      kind="Flashcard"
+                      to={`/flashcard-sets/${set.id}`}
+                      focus={set.focus}
+                      status={mediaPillStatus(set.status === "generating", set.status === "failed", set.published_at !== null)}
+                      statusText={flashcardStatusText(set)}
+                      created={setDates.get(set.id)}
+                    />
+                  ))}
+                </ul>
+              )}
+              {(videosByDoc(d.id).length > 0 || isSending(d, "Video")) && (
+                <ul className="doc-modules" aria-label={`Video sinh từ ${d.filename}`}>
+                  {pendingFor(d, "Video").map((item) => <PendingMediaItem key={item.key} item={item} />)}
+                  {videosByDoc(d.id).map((video) => (
+                    <MediaListItem
+                      key={video.id}
+                      kind="Video"
+                      to={`/videos/${video.id}`}
+                      focus={video.focus}
+                      status={mediaPillStatus(
+                        VIDEO_JOB_TEXT[video.status] !== undefined, video.status === "failed", video.published_at !== null,
+                      )}
+                      statusText={videoStatusText(video)}
+                      created={videoDates.get(video.id)}
                     />
                   ))}
                 </ul>

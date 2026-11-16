@@ -1,0 +1,94 @@
+<!doctype html>
+<!-- One slide of a narrated video, 1280x720 CSS pixels. app/video/slides.py fills the placeholders and
+     serves the page, the picture and the assets from its own origin; nothing comes from the network. -->
+<html lang="$lang">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="assets/fonts/fonts.css">
+<link rel="stylesheet" href="assets/katex/katex.min.css">
+<script src="assets/katex/katex.min.js"></script>
+<style>
+:root { --scale: 1; --ink: #13294b; --muted: #5b6b86; --accent: #17b6d6; --line: #c9d3e3; --paper: #f7f8fb; }
+html, body { margin: 0; }
+body { width: 1280px; height: 720px; overflow: hidden; position: relative; background: var(--paper);
+       color: var(--ink); font-family: 'Be Vietnam Pro', sans-serif; }
+.bar { position: absolute; left: 0; top: 0; bottom: 0; width: 12px; background: var(--accent); }
+.s { position: absolute; inset: 0; display: flex; gap: 40px; padding: 56px 64px 72px; box-sizing: border-box; }
+.t { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
+h1 { font-size: calc(44px * var(--scale)); line-height: 1.2; margin: 0 0 calc(28px * var(--scale)); font-weight: 700; }
+.title h1 { font-size: calc(56px * var(--scale)); }
+ul { margin: 0; padding-left: 28px; font-size: calc(28px * var(--scale)); line-height: 1.5; }
+li { margin: calc(6px * var(--scale)) 0; }
+sub { font-size: 0.7em; line-height: 0; }
+.f { margin-top: calc(26px * var(--scale)); font-size: calc(34px * var(--scale)); overflow: hidden; }
+.f .katex-display { margin: 0.4em 0; }
+.tex-error { font-family: 'JetBrains Mono', monospace; font-size: 0.7em; color: #b42318; }
+/* On code too: the browser's own `code { font-family: monospace }` would otherwise win, and a system
+   monospace font lacks the Vietnamese glyphs ("rỗng" came out as "rôñg"). */
+pre, code { font-family: 'JetBrains Mono', monospace; }
+pre { margin: calc(22px * var(--scale)) 0 0; padding: 18px 22px; border-radius: 12px; background: #fff;
+      box-shadow: 0 2px 14px rgba(19, 41, 75, .08);
+      font-size: calc(20px * var(--scale)); line-height: 1.45; white-space: pre-wrap; overflow-wrap: anywhere; }
+table { margin-top: calc(22px * var(--scale)); border-collapse: collapse; font-size: calc(22px * var(--scale)); }
+td, th { border: 1px solid var(--line); padding: calc(8px * var(--scale)) 14px; text-align: left; }
+th { background: #e6eef9; }
+.img { flex: 0 0 560px; display: flex; align-items: center; justify-content: center; }
+.img img { max-width: 560px; max-height: 520px; padding: 24px; box-sizing: border-box; border-radius: 14px;
+           background: #fff; box-shadow: 0 2px 14px rgba(19, 41, 75, .08); }
+.src { position: absolute; left: 64px; right: 64px; bottom: 26px; font-size: 16px; color: var(--muted);
+       white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+</style>
+</head>
+<body class="$layout">
+<div class="s $kind"><div class="bar"></div>
+<div class="t">$content</div>
+$image
+</div>
+$source
+<script>
+// Called directly rather than through auto-render: auto-render left formulas unrendered in the trial.
+for (const el of document.querySelectorAll('[data-tex]')) {
+  try {
+    katex.render(el.dataset.tex, el, { displayMode: el.classList.contains('f'), throwOnError: true });
+  } catch (err) {
+    // The lecturer sees the formula as written, in red, on the preview, instead of a slide that never renders.
+    el.textContent = el.dataset.tex;
+    el.classList.add('tex-error');
+    document.body.dataset.texError = err.message;
+  }
+}
+
+// Shrinks the text until the column holds it: a lecturer's edit can make a scene longer than the layout.
+function overflows() {
+  const box = document.querySelector('.t');
+  const items = box.children;
+  if (!items.length) return false;
+  const height = items[items.length - 1].getBoundingClientRect().bottom - items[0].getBoundingClientRect().top;
+  const wide = [...box.querySelectorAll('.f, table, pre')].some(e => e.scrollWidth > box.clientWidth + 1);
+  return height > box.clientHeight + 1 || wide;
+}
+function fit() {
+  let scale = 1;
+  while (overflows() && scale > 0.5) {
+    scale = Math.round((scale - 0.05) * 100) / 100;
+    document.documentElement.style.setProperty('--scale', scale);
+  }
+  document.body.dataset.scale = scale;
+  document.body.dataset.overflows = overflows() ? '1' : '0';
+}
+
+(async () => {
+  const text = document.body.innerText;
+  // Fonts load only once text needs them, and document.fonts.ready does not wait for a load that
+  // has not started yet, so each face is asked for with the slide's own text first.
+  await Promise.all(['400 28px "Be Vietnam Pro"', '700 44px "Be Vietnam Pro"', '400 20px "JetBrains Mono"']
+    .map(font => document.fonts.load(font, text).catch(() => null)));
+  await Promise.all([...document.images].map(img => img.decode().catch(() => null)));
+  await document.fonts.ready;
+  fit();
+  await document.fonts.ready;
+  document.body.dataset.ready = '1';
+})();
+</script>
+</body>
+</html>

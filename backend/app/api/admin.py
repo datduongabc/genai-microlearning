@@ -14,7 +14,8 @@ from app.auth.password_policy import check_password
 from app.auth.rate_limit import limiter, user_or_address
 from app.auth.security import hash_password
 from app.db import get_db
-from app.jobs.queue import retry_failed_job
+from app.jobs.failures import EDITOR_RETRIED_JOBS
+from app.jobs.queue import EDITOR_RETRY_MESSAGE, retry_failed_job
 from app.models import JobType, User
 from app.moodle.accounts import unlink_account
 
@@ -176,15 +177,23 @@ def retry_jobs(
     admin: User = Depends(require_admin),
 ):
     """Retries the failed jobs picked on the page. A job that is not failed, that its lecturer
-    already generated again, or that does not exist is skipped, and the rest are still retried."""
+    already generated again, or that does not exist is skipped, and the rest are still retried.
+
+    A failed picture or render is skipped too, with the reason in `reasons`: only the video editor
+    retries those, since it locks the video, waits for a job in flight and counts the day's limit."""
     ids = list(dict.fromkeys(payload.job_ids))
-    retried = [job_id for job_id in ids if retry_failed_job(db, job_id)]
+    # Read through the view: row level security hides other lecturers' jobs from the admin's session.
+    editor_only = set(db.scalars(
+        text("SELECT id FROM admin_failed_jobs WHERE id = ANY(:ids) AND job_type::text = ANY(:types)"),
+        {"ids": ids, "types": [t.value for t in EDITOR_RETRIED_JOBS]}))
+    retried = [job_id for job_id in ids if job_id not in editor_only and retry_failed_job(db, job_id)]
     db.commit()
     log_admin_event(
         audit.ADMIN_RETRY_JOBS, request, actor_id=admin.id,
         detail={"job_ids": [str(j) for j in retried], "skipped": len(ids) - len(retried)},
     )
-    return {"retried": retried, "skipped": [j for j in ids if j not in set(retried)]}
+    return {"retried": retried, "skipped": [j for j in ids if j not in set(retried)],
+            "reasons": {j: EDITOR_RETRY_MESSAGE for j in ids if j in editor_only}}
 
 
 @router.post("/users/{user_id}/moodle-unlink")

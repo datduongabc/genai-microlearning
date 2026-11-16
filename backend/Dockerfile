@@ -26,6 +26,17 @@ WORKDIR /app
 RUN apt-get update && apt-get upgrade -y \
     && apt-get install -y --no-install-recommends tesseract-ocr tesseract-ocr-vie ffmpeg \
     && rm -rf /var/lib/apt/lists/*
+# Chromium for the video slides (app/video/slides.py), which the worker renders and the API previews.
+# Only the headless shell, not the full browser: a screenshot needs nothing else. Installed by the
+# Playwright of uv.lock (tests/unit/test_backend_image.py keeps them equal), since each Playwright
+# drives one Chromium build; its --with-deps adds the system libraries. uv is mounted, not copied,
+# and the browsers live outside /app, so compose's bind mount over /app does not hide them.
+ARG PLAYWRIGHT_VERSION=1.65.1
+ENV PLAYWRIGHT_BROWSERS_PATH=/opt/ms-playwright
+RUN --mount=from=uv,source=/uv,target=/usr/local/bin/uv \
+    --mount=from=uv,source=/uvx,target=/usr/local/bin/uvx \
+    UV_NO_CACHE=1 uvx --from "playwright==${PLAYWRIGHT_VERSION}" playwright install --with-deps --only-shell chromium \
+    && rm -rf /var/lib/apt/lists/* /root/.cache /root/.local
 # Hinh trong slide duoc OCR song song, moi anh mot tien trinh Tesseract: de moi tien trinh
 # tu chia them luong thi chung tranh nhau CPU va cham hon chay tuan tu.
 ENV OMP_THREAD_LIMIT=1

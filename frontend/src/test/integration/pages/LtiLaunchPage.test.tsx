@@ -1,8 +1,12 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { act, render, screen, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { AxiosError, type AxiosResponse, type InternalAxiosRequestConfig } from 'axios'
-import { MemoryRouter, Route, Routes } from 'react-router-dom'
+import {
+  createBrowserRouter, createRoutesFromElements, MemoryRouter, Route, RouterProvider, Routes, useNavigate,
+} from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { LtiLaunchPage } from '../../../pages/LtiLaunchPage'
+import { useLeaveGuard } from '../../../lib/useLeaveGuard'
 import * as AuthHookModule from '../../../auth/useAuth'
 
 const loginWithLaunchCode = vi.fn()
@@ -63,5 +67,37 @@ describe('LtiLaunchPage', () => {
 
     expect(await screen.findByRole('alert')).toHaveTextContent('Hãy mở lại hoạt động từ LMS')
     expect(loginWithLaunchCode).not.toHaveBeenCalled()
+  })
+
+  // The wipe must keep the router's own entry in history.state: without its index, Back to the
+  // launch entry is a move the router cannot place, and it lets an editor with edits go unasked.
+  it('still asks before Back leaves an editor with unsaved edits, after the launch', async () => {
+    loginWithLaunchCode.mockResolvedValue({ courseId: 'course-1', owner: true })
+    window.history.replaceState(null, '', '/lti/launch#code=abc123')
+    const Course = () => {
+      const navigate = useNavigate()
+      return <button onClick={() => navigate('/editor')}>open editor</button>
+    }
+    const Editor = () => {
+      useLeaveGuard(true)
+      return <p>editor</p>
+    }
+    const router = createBrowserRouter(createRoutesFromElements(
+      <>
+        <Route path="/lti/launch" element={<LtiLaunchPage />} />
+        <Route path="/courses/:courseId" element={<Course />} />
+        <Route path="/editor" element={<Editor />} />
+      </>,
+    ))
+    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false)
+    render(<RouterProvider router={router} />)
+
+    await userEvent.click(await screen.findByText('open editor'))
+    expect(await screen.findByText('editor')).toBeInTheDocument()
+    await act(() => router.navigate(-1))
+
+    expect(confirm).toHaveBeenCalledTimes(1)
+    expect(screen.getByText('editor')).toBeInTheDocument()
+    router.dispose()
   })
 })

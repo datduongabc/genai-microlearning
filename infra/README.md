@@ -11,7 +11,7 @@ Terraform cho bản đồ án của `docs/architecture/system-design-v1.md`: m�
 | Mạng | VPC 2 AZ, subnet public cho task, subnet data không có đường ra Internet, S3 gateway endpoint | Không NAT: task có IP công khai, không có rule inbound từ Internet |
 | Vào | CloudFront (`/api/*` tới ALB, còn lại là frontend trong S3), ALB chỉ nhận từ CloudFront | ALB kiểm header bí mật `X-Origin-Verify`, health check `/ready` |
 | Tính toán | ECS Fargate: `api`, `worker`, `llm-gateway`, `embedder`, và `reranker` khi `reranker_provider = "jina"` | Service Connect: tên `gateway`, `embedder`, `reranker` giống compose |
-| Dữ liệu | RDS PostgreSQL 16 (pgvector, bắt buộc TLS), ElastiCache Valkey một node, S3 cho tệp tải lên | Trình duyệt gửi tệp thẳng vào S3 bằng presigned POST (CORS chỉ cho phép POST từ địa chỉ CloudFront); tệp tự hết hạn sau 7 ngày, phòng job lỗi bỏ lại |
+| Dữ liệu | RDS PostgreSQL 16 (pgvector, bắt buộc TLS), ElastiCache Valkey một node, S3 cho tệp tải lên và media | Trình duyệt gửi tệp thẳng vào S3 bằng presigned POST (CORS chỉ cho phép POST từ địa chỉ CloudFront); tệp tự hết hạn sau 7 ngày, phòng job lỗi bỏ lại |
 | Bí mật | Parameter Store SecureString | Khóa nhà cung cấp chỉ tới `llm-gateway`; URL chủ DB chỉ tới task migrate |
 | Scale | `api` theo request/task và CPU; `worker` theo `JobsReady`; `embedder` theo CPU | Worker có job đang chạy được bảo vệ khỏi scale-in |
 | Giám sát | Log JSON 14 ngày, cảnh báo qua SNS, AWS Budgets $50/$100/$150 | Cảnh báo Jev chỉ có khi `reranker_provider = "jev"` |
@@ -103,6 +103,22 @@ Staging cũng tốn tiền theo giờ khi đang chạy. Kiểm xong thì xóa:
 ```bash
 ENVIRONMENT=staging infra/scripts/tf.sh destroy
 ```
+
+## Video và flashcard
+
+- **Kho `media/`.** Hình, giọng và video do worker sinh nằm trong cùng bucket uploads, dưới tiền tố `media/` (`media_s3_prefix`).
+  Tiền tố `uploads/` tự hết hạn sau 7 ngày, còn `media/` thì không: tệp ở lại cùng tài liệu và bị xóa khi tài liệu bị xóa.
+  `api` có quyền `PutObject`, `GetObject`, `DeleteObject` trên `media/*` để ký link phát video và xóa tệp, `worker` có cùng ba quyền để ghi và đọc lại khi dựng (`iam.tf`, statement `Media`).
+- **Chromium trong image backend.** Slide của video được dựng bằng Chromium (headless shell của Playwright, cài ở `backend/Dockerfile` cùng `ffmpeg`).
+  Worker dựng slide khi sinh video, `api` dùng nó để xem trước slide, nên cả hai chạy image `backend` này và không cần image riêng.
+  Nhớ rằng `PLAYWRIGHT_VERSION` phải bằng bản trong `uv.lock` (`tests/unit/test_backend_image.py` kiểm).
+- **Model giọng và hình.** Danh sách nằm trong `backend/app/llm/media.py`: giọng `voice-heygen` (mặc định), `voice-gemini-lite`, `voice-gemini-flash`; hình `image-nano-banana` (mặc định), `image-qwen`.
+  Giảng viên chọn trong hộp sinh.
+  Cả hai đi qua OpenRouter bằng khóa `openrouter-api-key` đã có trong SSM, và khóa đó vẫn chỉ tới `llm-gateway`: `devops/gateway/config.yaml` chuyển đúng ba đường `/openrouter/audio/speech`, `/openrouter/chat/completions`, `/openrouter/images`.
+  Không có biến Terraform riêng cho nhà cung cấp giọng hay hình; đổi model là sửa `media.py`.
+- **Hạn mức và chi phí.** Mỗi lần vẽ hình khoảng $0,037 (Nano Banana) hoặc $0,018 (Qwen), mỗi lần dựng tốn $0,03 đến $0,11 tiền giọng.
+  `VIDEO_REDRAWS_PER_DAY` (mặc định 20) và `VIDEO_RENDERS_PER_DAY` (mặc định 10) giới hạn hai việc này, còn sinh video hoặc bộ thẻ tính vào hạn mức sinh hiện có.
+  Số đo thật: [video thử](../docs/measurements/2026-11-12-video-trial.md).
 
 ## Moodle cho bản AWS
 

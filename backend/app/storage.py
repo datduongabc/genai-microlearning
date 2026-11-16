@@ -21,7 +21,10 @@ from pathlib import Path
 from typing import Protocol
 from urllib.parse import quote
 
+from sqlalchemy import select
+
 from app.config import settings
+from app.models.media import Video
 
 # How long a presigned POST stays valid. A 1 GB video over a 10 Mbit/s line takes about 14 minutes;
 # S3 checks the expiry when the upload starts, not when it ends.
@@ -33,8 +36,14 @@ PRESIGNED_GET_SECONDS = 5 * 60
 logger = logging.getLogger(__name__)
 
 
+# Without a type, S3 serves a file as binary/octet-stream, and a browser given a presigned link to
+# it downloads the video instead of playing it.
+_MEDIA_TYPES = {".mp4": "video/mp4", ".wav": "audio/wav", ".jpg": "image/jpeg", ".jpeg": "image/jpeg",
+                ".png": "image/png"}
+
+
 class UploadStore(Protocol):
-    def save(self, local_path: Path, key: str) -> None:
+    def save(self, local_path: Path, key: str, content_type: str | None = None) -> None:
         """Take the file at local_path under key. local_path is gone afterwards."""
 
     def local_copy(self, key: str) -> AbstractContextManager[str]:
@@ -58,8 +67,10 @@ class LocalUploadStore:
         """Where the file is, for the API to send it itself: this store has no download URL."""
         return self._path(key)
 
-    def save(self, local_path: Path, key: str) -> None:
-        self.directory.mkdir(parents=True, exist_ok=True)
+    def save(self, local_path: Path, key: str, content_type: str | None = None) -> None:
+        # The type is S3's to send; the API serves local files by their extension.
+        # A key may carry a folder (media/videos/<id>/...), which S3 needs no setup for.
+        self._path(key).parent.mkdir(parents=True, exist_ok=True)
         os.replace(local_path, self._path(key))
 
     @contextmanager
@@ -83,10 +94,14 @@ class S3UploadStore:
     def _object_key(self, key: str) -> str:
         return f"{self.prefix}{key}"
 
-    def save(self, local_path: Path, key: str) -> None:
+    def save(self, local_path: Path, key: str, content_type: str | None = None) -> None:
+        """`content_type` defaults to the one of the key's extension, for the media a browser plays."""
+        content_type = content_type or _MEDIA_TYPES.get(Path(key).suffix.lower())
+        # Only when known, so that S3 keeps choosing for the uploads it always has.
+        extra = {"ExtraArgs": {"ContentType": content_type}} if content_type else {}
         try:
             # upload_file goes multipart above 8 MB, so a 1 GB video never sits in memory.
-            self.client.upload_file(str(local_path), self.bucket, self._object_key(key))
+            self.client.upload_file(str(local_path), self.bucket, self._object_key(key), **extra)
         finally:
             local_path.unlink(missing_ok=True)
 
@@ -165,6 +180,44 @@ def study_file_store() -> UploadStore:
     if settings.upload_store == "s3":
         return S3UploadStore(settings.upload_s3_bucket, settings.study_files_s3_prefix)
     return LocalUploadStore(str(Path(settings.upload_storage_dir) / "study-files"))
+
+
+def media_store() -> UploadStore:
+    """Where the images, voice and rendered videos of a document are kept, as long as the document is."""
+    if settings.upload_store == "s3":
+        return S3UploadStore(settings.upload_s3_bucket, settings.media_s3_prefix)
+    return LocalUploadStore(str(Path(settings.upload_storage_dir) / "media"))
+
+
+def _media_keys(db, *conditions) -> list[str]:
+    """The stored files of the videos matching the conditions: the video, and each scene's image and voice.
+
+    Read before the rows are deleted, because they go by cascade and the keys only live in them."""
+    keys: list[str] = []
+    for video_key, scenes in db.execute(select(Video.video_key, Video.scenes).where(*conditions)):
+        named = (s.get(field) for s in scenes or [] for field in ("image_key", "voice_key"))
+        keys.extend(key for key in (video_key, *named) if key)
+    return keys
+
+
+def media_keys_for_video(db, video_id) -> list[str]:
+    return _media_keys(db, Video.id == video_id)
+
+
+def media_keys_for_document(db, document_id) -> list[str]:
+    return _media_keys(db, Video.document_id == document_id)
+
+
+def media_keys_for_course(db, course_id) -> list[str]:
+    return _media_keys(db, Video.course_id == course_id)
+
+
+def delete_media_files(keys: list[str]) -> None:
+    """Delete after the rows' deletion is committed: a file without its row is harmless, a row
+    without its file is a video that cannot play."""
+    store = media_store()
+    for key in keys:
+        store.delete(key)
 
 
 def study_file_key(file_id, filename: str) -> str:

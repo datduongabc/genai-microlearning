@@ -72,9 +72,9 @@ def test_study_migration_round_trip():
             conn.execute(text("DELETE FROM modules WHERE id=:id"), {"id": rag_id})
             assert conn.scalar(text("SELECT count(*) FROM modules WHERE id=:id"), {"id": control_id}) == 0
         # head also has what later migrations added: LTI (0026), course membership (0027) and the
-        # studies' reference files (0031).
+        # studies' reference files (0031) and videos and flashcard sets (0032).
         lti = {"lti_platforms", "lti_deployments", "lti_identities", "lti_contexts", "lti_login_states", "lti_launch_codes",
-               "course_members", "study_files"}
+               "course_members", "study_files", "videos", "flashcard_sets"}
         assert set(inspect(engine).get_table_names()) - previous - lti == {"studies", "study_items", "ratings"}
         assert previous - set(inspect(engine).get_table_names()) == {"document_sections"}
         # Downgrade judge permissions while preserving blind rating.

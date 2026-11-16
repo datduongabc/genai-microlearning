@@ -29,6 +29,16 @@ def rate_limits(request, monkeypatch):
 
 
 @pytest.fixture(autouse=True)
+def media_waits(monkeypatch):
+    """A busy voice or image provider is waited for before the second try (app/llm/media.py). No
+    test sleeps for it: the waits are recorded here, for the tests that are about them."""
+    from app.llm import media
+    waits: list[float] = []
+    monkeypatch.setattr(media, "sleep", waits.append)
+    return waits
+
+
+@pytest.fixture(autouse=True)
 def one_question_at_a_time(monkeypatch):
     """Many tests script model replies in call order. A test of the parallel path asks for more."""
     monkeypatch.setattr(settings, "question_concurrency", 1)

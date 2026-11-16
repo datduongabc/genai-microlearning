@@ -297,12 +297,20 @@ body { background: var(--bg-canvas); font-size:16px; line-height:24px; }
 .doc-list > .course-empty { padding:20px 24px; }
 .doc-row { padding:18px 24px; border-top:1px solid var(--border-default); }
 .doc-row:first-child { border-top:0; }
-.doc-head { display:flex; align-items:center; justify-content:space-between; gap:16px; }
+.doc-head { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:8px 16px; }
+/* The name asks for a readable width of its own, so when the actions do not fit beside it they
+   wrap onto the next line instead of squeezing the name to a letter a line. */
+.doc-title { flex:1 1 16rem; min-width:min(16rem,100%); }
 .doc-name { font-weight:600; overflow-wrap:anywhere; }
-.doc-actions { display:flex; flex-shrink:0; align-items:center; gap:20px; }
+.doc-actions { display:flex; flex-wrap:wrap; align-items:center; gap:6px 20px; max-width:100%; }
 .status-pill { display:inline-flex; align-items:center; gap:6px; margin-top:2px; font-size:13px; line-height:18px; color:var(--text-secondary); }
 .status-pill::before { content:""; width:7px; height:7px; border-radius:50%; background:var(--border-strong); }
 .status-pill[data-status=processing]::before, .status-pill[data-status=chunked]::before { background:var(--status-warning); }
+/* Something is under way: the dot pulses, so a running row does not read as one that stopped. */
+@media (prefers-reduced-motion: no-preference) {
+  .status-pill[data-status=processing]::before { animation:status-pulse 1.2s ease-in-out infinite; }
+}
+@keyframes status-pulse { 50% { opacity:.3; } }
 .status-pill[data-status=embedded] { color:var(--status-success); }
 .status-pill[data-status=embedded]::before { background:var(--status-success); }
 .status-pill[data-status=failed] { color:var(--status-danger); }
@@ -312,9 +320,12 @@ body { background: var(--bg-canvas); font-size:16px; line-height:24px; }
 /* The modules made from a document hang under it, as its children. */
 .doc-modules { margin:14px 0 0 2px; padding-left:16px; border-left:2px solid var(--border-default); display:flex; flex-direction:column; gap:8px; }
 .module-item { display:flex; flex-wrap:wrap; align-items:baseline; gap:4px 14px; }
+.media-kind { flex:none; min-width:4.5rem; font-size:12px; line-height:24px; font-weight:600; letter-spacing:.02em; text-transform:uppercase; color:var(--text-muted); }
+.module-item > .module-link { min-width:0; overflow-wrap:anywhere; }
+.media-created { flex:none; font-size:13px; line-height:18px; font-variant-numeric:tabular-nums; color:var(--text-muted); }
 .module-link { font:500 16px/24px var(--font-serif); color:var(--text-primary); }
 .module-link:hover { color:var(--accent-default); text-decoration:underline; text-underline-offset:3px; }
-.control-badge { margin-left:8px; padding:1px 8px; border-radius:999px; background:var(--bg-warning-soft); color:var(--status-warning); font:500 12px/18px var(--font-sans); white-space:nowrap; }
+.control-badge { margin-left:8px; padding:1px 8px; border-radius:999px; background:var(--bg-warning-soft); color:var(--status-warning); font:500 12px/18px var(--font-sans); display:inline-block; max-width:100%; vertical-align:middle; }
 
 .moodle-panel { margin-bottom:28px; padding:14px 20px; background:var(--bg-surface); border:1px solid var(--border-default); border-radius:var(--radius-sm); font-size:14px; line-height:21px; display:flex; flex-direction:column; gap:10px; }
 .moodle-key { font-weight:600; color:var(--text-primary); }
@@ -495,3 +506,92 @@ body { background: var(--bg-canvas); font-size:16px; line-height:24px; }
 
 /* The packet's reference file, above the packet and the form, where a rater looks first. */
 .packet-reference { display:flex; flex-wrap:wrap; align-items:center; gap:4px 12px; margin-top:8px; font-size:14px; }
+
+.flashcard-editor { max-width:760px; display:flex; flex-direction:column; gap:16px; align-items:flex-start; }
+.flashcard-bar { display:flex; flex-wrap:wrap; align-items:center; gap:8px 20px; }
+.flashcard-count { font-size:14px; line-height:20px; color:var(--text-secondary); }
+.flashcard-list { width:100%; display:flex; flex-direction:column; gap:12px; }
+.flashcard-item { padding:16px 20px; background:var(--bg-surface); border:1px solid var(--border-default); border-radius:var(--radius-sm); display:flex; flex-direction:column; gap:10px; }
+.flashcard-head { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.flashcard-item .doc-warning { margin-top:0; }
+.flashcard-field { display:flex; flex-direction:column; gap:6px; font-size:14px; line-height:20px; color:var(--text-secondary); }
+/* Grown to its text by the component, so a handle to resize it would only fight that. The scroll stays
+   for a moment the height is behind the text (a font still loading), so nothing is ever cut off. */
+.auto-grow { resize:none; overflow-y:auto; }
+.flashcard-actions { display:flex; flex-wrap:wrap; align-items:center; gap:12px; }
+.flashcard-sources { display:flex; flex-direction:column; gap:6px; font-size:13px; line-height:18px; }
+.flashcard-sources summary { cursor:pointer; color:var(--accent-default); overflow-wrap:anywhere; }
+.flashcard-sources summary:hover { text-decoration:underline; text-underline-offset:3px; }
+.flashcard-sources .module-source-passage { margin-top:8px; }
+.flashcard-link { display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; overflow-wrap:anywhere; }
+
+/* --- The lecturer's video editor: each scene is its slide, then what the slide and the voice say. */
+.video-editor { max-width:860px; display:flex; flex-direction:column; gap:16px; align-items:flex-start; }
+.video-editor > * { max-width:100%; }
+.video-scenes { width:100%; display:flex; flex-direction:column; gap:16px; }
+.video-scene { gap:12px; }
+.video-scene .flashcard-head { flex-wrap:wrap; }
+.video-scene-title { display:flex; flex-wrap:wrap; align-items:center; gap:8px; }
+.video-scene-actions { display:flex; flex-wrap:wrap; gap:12px; }
+.video-flag-badge { font-size:13px; line-height:18px; font-weight:600; color:var(--status-warning); background:var(--bg-warning-soft); border-radius:var(--radius-sm); padding:1px 8px; }
+.video-flag { margin-top:0; display:flex; flex-wrap:wrap; align-items:baseline; justify-content:space-between; gap:4px 12px; }
+.video-flag span { min-width:0; overflow-wrap:anywhere; }
+.video-slide-figure { width:100%; display:flex; flex-direction:column; gap:4px; }
+.video-slide { width:100%; aspect-ratio:16 / 9; background:var(--bg-subtle); border:1px solid var(--border-default); border-radius:var(--radius-sm); overflow:hidden; display:grid; place-items:center; }
+.video-slide img { width:100%; height:100%; object-fit:contain; display:block; }
+.video-slide-empty { display:flex; flex-direction:column; align-items:center; gap:6px; padding:12px; text-align:center; font-size:14px; line-height:20px; color:var(--text-muted); }
+.video-picture-row { display:flex; flex-wrap:wrap; align-items:baseline; gap:4px 12px; }
+.video-picture-row .course-hint { margin-top:0; }
+.video-scene-fields { display:grid; grid-template-columns:minmax(0, 10rem) minmax(0, 1fr); gap:12px; }
+.video-items { display:flex; flex-direction:column; gap:10px; color:var(--text-primary); }
+.video-item { display:flex; flex-direction:column; gap:6px; }
+.video-item .doc-warning { margin-top:0; }
+.video-item-row { display:flex; align-items:flex-start; gap:8px; }
+.video-scene-sources summary { cursor:pointer; color:var(--accent-default); overflow-wrap:anywhere; font-size:13px; line-height:18px; }
+/* Picking the sources of one sentence, bullet or card, from the whole document. */
+.passage-picker { font-size:13px; line-height:18px; }
+.passage-picker summary { cursor:pointer; color:var(--accent-default); overflow-wrap:anywhere; }
+.passage-picker-body { margin-top:8px; display:flex; flex-direction:column; gap:8px; }
+.passage-choices { display:flex; flex-direction:column; gap:6px; }
+.passage-choice { display:flex; align-items:flex-start; gap:8px; color:var(--text-primary); }
+.passage-choice input { margin-top:3px; flex:none; }
+.passage-locator { display:block; font-weight:600; overflow-wrap:anywhere; }
+.passage-snippet { display:block; color:var(--text-secondary); overflow-wrap:anywhere; }
+.passage-search { display:flex; gap:8px; }
+.video-scene-sources .flashcard-sources { margin-top:8px; }
+.video-save { width:100%; display:flex; flex-direction:column; gap:8px; }
+.video-step { width:100%; display:flex; flex-direction:column; align-items:flex-start; gap:10px; padding-top:16px; border-top:1px solid var(--border-default); }
+.video-step .course-section-title { margin-bottom:0; }
+.video-step .course-hint, .video-step .doc-warning { margin-top:0; }
+.video-problems { display:flex; flex-direction:column; gap:4px; }
+.video-player { width:100%; aspect-ratio:16 / 9; background:var(--bg-navy); border-radius:var(--radius-sm); }
+@media (max-width: 640px) {
+  .video-scene-fields { grid-template-columns:minmax(0, 1fr); }
+}
+
+/* --- What a student studies: published sets and videos, and the flashcard. */
+.learn-items { margin-bottom:32px; display:flex; flex-direction:column; gap:16px; }
+.learn-group { padding:16px; }
+.learn-group-title { font:600 17px/24px var(--font-serif); margin-bottom:8px; overflow-wrap:anywhere; }
+.learn-list { list-style:none; display:flex; flex-direction:column; }
+.learn-link { display:flex; flex-wrap:wrap; align-items:baseline; justify-content:space-between; gap:4px 12px; min-height:44px; padding:10px 0; border-top:1px solid var(--border-default); overflow-wrap:anywhere; }
+a.learn-link { color:var(--accent-default); font-weight:600; }
+a.learn-link:hover { text-decoration:underline; text-underline-offset:2px; }
+.learn-back { margin-bottom:12px; }
+.learn-card { display:flex; flex-direction:column; justify-content:center; gap:12px; width:100%; max-width:100%; min-height:240px; padding:24px 20px; text-align:left; background:var(--bg-surface); border:1px solid var(--border-strong); border-radius:var(--radius-lg); box-shadow:0 1px 0 var(--border-default); overflow-wrap:anywhere; white-space:pre-wrap; cursor:pointer; }
+.learn-card:hover { border-color:var(--accent-default); }
+.learn-card-side { font-size:13px; line-height:18px; font-weight:600; color:var(--text-muted); text-transform:uppercase; letter-spacing:.04em; }
+.learn-card-text { font:400 20px/30px var(--font-serif); }
+.learn-card-sources { display:flex; flex-direction:column; gap:2px; padding-left:12px; border-left:2px solid var(--highlight); font:400 14px/21px var(--font-sans); color:var(--text-secondary); }
+.learn-hint { margin-top:8px; font-size:14px; line-height:20px; }
+.learn-video { display:block; max-width:100%; }
+.learn-scenes { list-style:none; display:flex; flex-direction:column; margin-top:16px; }
+.learn-scenes-source { margin-top:16px; font-size:14px; line-height:21px; color:var(--text-secondary); overflow-wrap:anywhere; }
+.learn-scenes-source + .learn-scenes { margin-top:8px; }
+.learn-scene { display:grid; grid-template-columns:auto 1fr; gap:2px 12px; align-items:baseline; width:100%; max-width:100%; min-height:44px; padding:10px 8px; text-align:left; border-top:1px solid var(--border-default); overflow-wrap:anywhere; cursor:pointer; }
+.learn-scene:hover { background:var(--bg-highlight); }
+.learn-scene[aria-current=true] { background:var(--bg-highlight); box-shadow:inset 3px 0 0 var(--highlight); }
+.learn-scene-time { font-variant-numeric:tabular-nums; color:var(--text-muted); }
+.learn-scene-title { font-weight:600; }
+.learn-scene-source { grid-column:2; font-size:14px; line-height:21px; color:var(--text-secondary); }
+.learn-nav { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-top:16px; }

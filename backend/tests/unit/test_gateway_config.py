@@ -527,3 +527,27 @@ def test_lecturers_are_offered_only_the_models_that_were_measured(gateway):
     ])}
     assert offered == {"gemini-fast", "gemini-flash", "openai-fast", "openai-pro", "claude-fast", "claude-pro",
                        "groq-pro", "groq-qwen"}
+
+
+def test_only_the_three_routes_of_the_media_client_are_passed_through_with_auth(gateway):
+    """model_list cannot hold voice and image models (no LiteLLM route for OpenRouter speech), so
+    the gateway forwards exactly the routes media.py uses. Without auth: true anyone who reaches
+    the gateway would spend the OpenRouter balance; include_subpath would open every other
+    OpenRouter route to a holder of the gateway key."""
+    endpoints = gateway["general_settings"]["pass_through_endpoints"]
+
+    assert {e["path"] for e in endpoints} == {"/openrouter/audio/speech", "/openrouter/chat/completions", "/openrouter/images"}
+    for e in endpoints:
+        assert e["target"] == "https://openrouter.ai/api/v1" + e["path"].removeprefix("/openrouter")
+        assert e["auth"] is True
+        assert not e.get("include_subpath")
+        assert e["headers"] == {"Authorization": "Bearer os.environ/OPENROUTER_API_KEY"}
+
+
+def test_litellm_asks_openrouter_for_the_price_of_every_call():
+    """The price the lecturer sees is OpenRouter's `usage.cost`, which LiteLLM requests by itself
+    on every OpenRouter call; a version that stopped doing so would leave every price unknown."""
+    from litellm.llms.openrouter.chat import transformation
+
+    source = Path(transformation.__file__).read_text(encoding="utf-8")
+    assert '"usage"' in source and '"include": True' in source

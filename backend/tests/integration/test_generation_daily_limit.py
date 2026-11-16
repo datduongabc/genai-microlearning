@@ -3,6 +3,8 @@ import uuid
 
 import pytest
 from fastapi.testclient import TestClient
+from sqlalchemy import text
+from sqlalchemy.exc import OperationalError
 
 from app.auth.rate_limit import limiter
 from app.auth.security import create_access_token
@@ -178,3 +180,38 @@ def test_invalid_input_does_not_consume_and_retry_does_not_charge_again(world):
     assert response.status_code == 200 and response.json()['retried'] == [job_id]
     with SessionLocal() as db:
         assert db.get(User, uid).generation_count == 1
+
+
+@pytest.mark.parametrize('path', ['/modules/generate', '/videos', '/flashcard-sets'])
+def test_the_moodle_check_runs_with_no_row_locked(world, monkeypatch, path):
+    """Moodle can take seconds to answer (4 s when its name does not resolve). A request that held
+    the account or the document row meanwhile kept every other request of the lecturer waiting:
+    the live run's "Sinh video" took 8 s to come back."""
+    uid, cid, docs = world
+    with SessionLocal() as db:
+        db.get(User, uid).moodle_user_id = 10_000 + uuid.uuid4().int % 10**9
+        db.get(Course, cid).moodle_course_id = 101
+        db.commit()
+    seen = []
+
+    def teacher_courses(user_id):
+        with SessionLocal() as other:
+            for table, row in (('users', uid), ('documents', docs[0])):
+                try:
+                    other.execute(text(f'SELECT 1 FROM {table} WHERE id = :id FOR UPDATE NOWAIT'), {'id': row})
+                    seen.append((table, 'free'))
+                except OperationalError:
+                    seen.append((table, 'locked'))
+                other.rollback()
+        return {'exists': True, 'email': 'teacher@example.com', 'courses': [{'id': 101}]}
+
+    monkeypatch.setattr(moodle, 'teacher_courses', teacher_courses)
+    response = generate_at(world, path, 0)
+    assert response.status_code == 200, response.text
+    assert seen == [('users', 'free'), ('documents', 'free')]
+
+
+def generate_at(world, path, index):
+    user, _, docs = world
+    return client.post(path, params={'document_id': str(docs[index])},
+                       headers={'Authorization': 'Bearer ' + create_access_token(user)})

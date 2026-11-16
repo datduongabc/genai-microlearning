@@ -1,4 +1,3 @@
-import json
 import uuid
 from datetime import UTC, datetime
 from io import BytesIO
@@ -9,14 +8,16 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import Response
 from pptx import Presentation
 from pydantic import BaseModel, Field, StringConstraints, ValidationError, model_validator
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.api.chat import ChatRequest, _get_or_create_session
 from app.api.deletion import check_study_references, commit_deletion
 from app.api.deps import get_current_user
+from app.api.model_alias import usable_alias as _usable_alias
 from app.auth.rate_limit import limiter, user_or_address
 from app.chat.service import HISTORY_TURNS, QuizQuestionEdit, module_edit_count, propose_module_edit
+from app.citations import citation_label
 from app.db import get_db
 from app.export import scorm
 from app.export.lesson import build_book_chapters, failing_questions
@@ -24,7 +25,7 @@ from app.generation.common import OutputLanguage
 from app.generation.content import ContentOutput, resolve_citations
 from app.generation.example import ExampleOutput
 from app.generation.inline_citations import MARKER, citation_content
-from app.generation.limits import reserve_generations
+from app.generation.limits import has_full_access, reserve_generations
 from app.generation.module_generation_pipeline import (
     IncompleteModuleError,
     control_payload,
@@ -97,26 +98,6 @@ def _selected_alias(body: GenerateRequest | None, current_user: User) -> str | N
     return _usable_alias(alias)
 
 
-def _usable_alias(alias: str) -> str:
-    """`alias` nếu gateway phục vụ nó và nó dùng được ngay lúc này, không thì 422."""
-    if not catalog.is_available(alias):
-        raise HTTPException(
-            status_code=422,
-            detail=f"Gateway không phục vụ model sinh văn bản nào tên '{alias}'.",
-        )
-    # Có trong danh sách chưa chắc đã dùng được: khóa của nhà cung cấp có thể trống, hết số
-    # dư, hoặc hết hạn mức ngày. Thử ngay bây giờ để báo trong một giây thay vì mười phút.
-    # GatewayUnavailable thì để lọt ra, app/main.py đổi nó thành 503.
-    try:
-        catalog.probe(alias)
-    except catalog.ModelUnusable as error:
-        raise HTTPException(
-            status_code=422,
-            detail=f"Model '{error.alias}' chưa dùng được: {error.reason}. Hãy chọn model khác.",
-        ) from error
-    return alias
-
-
 def _owned_document(
     db: Session, document_id: uuid.UUID, current_user: User, *, lock: bool = False
 ) -> Document:
@@ -133,7 +114,9 @@ def _owned_module(db: Session, module_id: uuid.UUID, current_user: User) -> Modu
     return module
 
 
-def _generate_without_retrieval(db: Session, doc: Document, body: GenerateRequest, current_user: User):
+def _generate_without_retrieval(
+    db: Session, doc: Document, body: GenerateRequest, current_user: User, full_access: bool,
+):
     """Một job sinh bản đối chứng không RAG (nhóm llm_no_rag) của module RAG `paired_module_id`: cùng
     Learning Objective, cùng tài liệu, và theo mặc định cùng model và cờ tự kiểm đã sinh module RAG đó,
     để khác biệt giữa hai bản chỉ còn là RAG."""
@@ -170,7 +153,7 @@ def _generate_without_retrieval(db: Session, doc: Document, body: GenerateReques
     if running is not None:
         raise HTTPException(status_code=409, detail="Tài liệu này đang có 1 lượt sinh mô-đun khác đang chạy, vui lòng chờ.")
 
-    reserve_generations(db, current_user)
+    reserve_generations(db, current_user, full_access=full_access)
     job = enqueue_job(
         db, job_type=JobType.module_generation, step="generate", document_id=doc.id,
         payload=control_payload(paired.id, alias, self_check, paired_payload.get("output_language", "vi"),
@@ -186,6 +169,11 @@ def generate_module(
     request: Request, document_id: uuid.UUID, body: GenerateRequest | None = None,
     db: Session = Depends(get_db), current_user: User = Depends(get_current_user),
 ):
+    without_retrieval = body is not None and (not body.use_retrieval or body.paired_module_id is not None)
+    # Network calls before the lock (Moodle, and the model probe), so the document row is not held
+    # while they wait. The control arm reads its model from the paired module, so it probes later.
+    full_access = has_full_access(db, current_user)
+    alias = None if without_retrieval else _selected_alias(body, current_user)
     # FOR UPDATE: the "already generating" checks below read the jobs table, so
     # two requests for one document must not run them at the same moment or
     # both would pass and start the same work twice.
@@ -193,10 +181,9 @@ def generate_module(
     if not doc.raw_text:
         raise HTTPException(status_code=422, detail="Document chưa được parse (raw_text rỗng)")
 
-    if body is not None and (not body.use_retrieval or body.paired_module_id is not None):
-        return _generate_without_retrieval(db, doc, body, current_user)
+    if body is not None and without_retrieval:
+        return _generate_without_retrieval(db, doc, body, current_user, full_access)
 
-    alias = _selected_alias(body, current_user)
     self_check = body.self_check if body is not None else True
 
     output_language = body.output_language if body is not None else "vi"
@@ -224,7 +211,7 @@ def generate_module(
     # generate_module() thật đo được mất 10+ phút (17 lệnh gọi LLM tuần tự) --
     # chạy nền qua job queue thay vì giữ request HTTP chờ suốt, xem
     # app/services/module_generation_pipeline.py + job_queue.py.
-    reserve_generations(db, current_user)
+    reserve_generations(db, current_user, full_access=full_access)
     job = enqueue_job(
         db, job_type=JobType.module_generation, step="generate", document_id=document_id,
         payload=generation_payload(alias, self_check, output_language, custom_instructions),
@@ -283,44 +270,6 @@ _COMPONENT_ORDER = {
     ComponentType.practice: 4,
     ComponentType.explanation: 5,
 }
-
-
-def citation_label(filename: str, locator: str) -> str:
-    """A display label only: the saved locator remains exact for source resolution."""
-    try:
-        parsed = json.loads(locator)
-    except (ValueError, TypeError):
-        return filename if locator.lstrip().startswith(("{", "[")) else locator
-    if not isinstance(parsed, dict):
-        return filename
-    spans = parsed.get("spans")
-    spans = spans if isinstance(spans, list) else [parsed]
-    spans = [span for span in spans if isinstance(span, dict)]
-    parts = [filename]
-    for key, word, offset in (
-        ("page", "trang", 0),
-        ("slide_index", "slide", 0),
-        ("table_index", "bảng", 1),
-        ("row_index", "hàng", 1),
-        ("paragraph_index", "đoạn", 1),
-    ):
-        numbers = sorted({span[key] + offset for span in spans if isinstance(span.get(key), int)})
-        ranges = []
-        for number in numbers:
-            if ranges and number == ranges[-1][1] + 1:
-                ranges[-1][1] = number
-            else:
-                ranges.append([number, number])
-        if ranges:
-            parts.append(f"{word} " + ", ".join(str(a) if a == b else f"{a}–{b}" for a, b in ranges))
-    times = [span[key] for span in spans for key in ("start_ms", "end_ms") if isinstance(span.get(key), int)]
-    if times:
-        parts.append("–".join(f"{t // 60000:02d}:{t // 1000 % 60:02d}" for t in (min(times), max(times))))
-    parts.append(next(
-        (span[key] for span in spans for key in ("heading", "slide_title") if isinstance(span.get(key), str) and span[key]),
-        None,
-    ))
-    return " · ".join(part for part in parts if part)
 
 
 @router.get("/{module_id}")
@@ -471,8 +420,10 @@ def delete_module(
         Module.id.in_([j.module_id for j in paired_jobs if j.module_id is not None]),
     )))
     check_study_references(db, {module.id, *control_ids})
-    for control in db.query(Module).filter(Module.id.in_(control_ids)):
-        db.delete(control)
+    # Bulk DELETE runs now, before the RAG module goes. Deleting both through the ORM in one flush
+    # raced with the paired_module_id cascade, so the control row was sometimes already gone.
+    if control_ids:
+        db.execute(delete(Module).where(Module.id.in_(control_ids)))
     # Job đối chứng lỗi không có module để cascade, mà giữ lại thì nó mãi trỏ tới module không còn.
     for job in paired_jobs:
         if job.module_id is None:

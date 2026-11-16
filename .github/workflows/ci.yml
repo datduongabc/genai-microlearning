@@ -50,6 +50,8 @@ jobs:
           # The Python of backend/Dockerfile: the tests run on what the image runs.
           python-version: "3.14"
       - run: uv sync
+      # The slide tests render with a real headless Chromium (app/video/slides.py).
+      - run: uv run playwright install --with-deps --only-shell chromium
       # docker-compose's db service creates the vector extension via
       # docker/init-pgvector.sql on first boot -- the CI service container
       # has no such init hook, so it's created explicitly here instead.

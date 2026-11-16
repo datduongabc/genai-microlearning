@@ -260,7 +260,7 @@ describe('AdminPage - failed jobs', () => {
 
   it('retries one job from its own button', async () => {
     vi.mocked(api.listFailedJobs).mockResolvedValue([failedJob('j1'), failedJob('j2')])
-    vi.mocked(api.retryFailedJobs).mockResolvedValue({ retried: ['j1'], skipped: [] })
+    vi.mocked(api.retryFailedJobs).mockResolvedValue({ retried: ['j1'], skipped: [], reasons: {} })
     await openFailures()
 
     await userEvent.click(await screen.findByRole('button', { name: 'Thử lại j1.pdf' }))
@@ -271,7 +271,7 @@ describe('AdminPage - failed jobs', () => {
 
   it('retries the picked jobs together, or all of them with select-all', async () => {
     vi.mocked(api.listFailedJobs).mockResolvedValue([failedJob('j1'), failedJob('j2'), failedJob('j3')])
-    vi.mocked(api.retryFailedJobs).mockResolvedValue({ retried: ['j1', 'j3'], skipped: ['j2'] })
+    vi.mocked(api.retryFailedJobs).mockResolvedValue({ retried: ['j1', 'j3'], skipped: ['j2'], reasons: {} })
     await openFailures()
     await screen.findByText('j1.pdf')
     expect(screen.getByRole('button', { name: 'Thử lại đã chọn' })).toBeDisabled()
@@ -288,9 +288,23 @@ describe('AdminPage - failed jobs', () => {
     await waitFor(() => expect(api.retryFailedJobs).toHaveBeenLastCalledWith(['j1', 'j2', 'j3']))
   })
 
+  it('says that a failed video job is retried from the video editor, not here', async () => {
+    vi.mocked(api.listFailedJobs).mockResolvedValue([failedJob('j1'), failedJob('j2')])
+    vi.mocked(api.retryFailedJobs).mockResolvedValue({
+      retried: ['j1'], skipped: ['j2'], reasons: { j2: 'Hãy bấm Vẽ lại / Dựng lại trong trình sửa video.' },
+    })
+    await openFailures()
+
+    await userEvent.click(await screen.findByRole('checkbox', { name: 'Chọn tất cả' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Thử lại 2 tác vụ đã chọn' }))
+
+    expect(await screen.findByText(/1 tác vụ video chỉ chạy lại được từ trình sửa video của giảng viên/i)).toBeInTheDocument()
+    expect(screen.queryByText(/không còn ở trạng thái lỗi/i)).not.toBeInTheDocument()
+  })
+
   it('reloads the list after a retry so what ran again is gone', async () => {
     vi.mocked(api.listFailedJobs).mockResolvedValueOnce([failedJob('j1')]).mockResolvedValue([])
-    vi.mocked(api.retryFailedJobs).mockResolvedValue({ retried: ['j1'], skipped: [] })
+    vi.mocked(api.retryFailedJobs).mockResolvedValue({ retried: ['j1'], skipped: [], reasons: {} })
     await openFailures()
 
     await userEvent.click(await screen.findByRole('button', { name: 'Thử lại j1.pdf' }))

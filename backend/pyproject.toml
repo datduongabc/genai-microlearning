@@ -30,10 +30,12 @@ dependencies = [
     "bleach>=6.2.0",
     "scipy>=1.18.1",
     "redis>=5",
+    "playwright>=1.65.1",
 ]
 
 [dependency-groups]
 dev = [
+    "imageio-ffmpeg>=0.8.1",
     "pytest>=9.1.1",
     "ruff>=0.16.7",
 ]
