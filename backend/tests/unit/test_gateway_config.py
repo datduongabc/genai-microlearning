@@ -551,3 +551,14 @@ def test_litellm_asks_openrouter_for_the_price_of_every_call():
 
     source = Path(transformation.__file__).read_text(encoding="utf-8")
     assert '"usage"' in source and '"include": True' in source
+
+
+def test_the_backend_waits_out_the_gateways_worst_case(gateway):
+    from app.llm.gateway import GATEWAY_TIMEOUT_SECONDS
+
+    # The gateway owns retries and fallbacks; a client timeout shorter than its whole chain would cut it off
+    # mid-chain and the abandoned upstream calls would still be billed.
+    settings = gateway["router_settings"]
+    longest_chain = 1 + max(len(backups) for chain in settings["fallbacks"] for backups in chain.values())
+    worst = settings["timeout"] * (1 + settings["num_retries"]) * longest_chain
+    assert worst < GATEWAY_TIMEOUT_SECONDS <= worst * 1.2

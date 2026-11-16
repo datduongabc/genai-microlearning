@@ -24,6 +24,9 @@ from app.config import settings
 # A 429 that says the account has no money or the wrong plan: waiting will not help.
 _NOT_A_RATE_LIMIT = re.compile(r"insufficient_quota|billing|credit balance|no credits", re.IGNORECASE)
 MAX_RATE_LIMIT_WAIT_SECONDS = 60.0
+# The gateway owns retries and fallbacks (devops/gateway/config.yaml router_settings): 120 s x 2 tries x 3 models
+# in the longest chain. Without this the client retried the whole chain itself and waited up to 100 minutes.
+GATEWAY_TIMEOUT_SECONDS = 750
 
 # Model do giảng viên chọn cho riêng một lượt sinh. Để trong ContextVar chứ không truyền
 # qua tham số: một lượt sinh đi qua mười chỗ gọi rải khắp generation, chat và ingestion,
@@ -172,6 +175,8 @@ def _completion(*, small_step: bool = False, **kwargs):
         api_base=settings.llm_gateway_url,
         api_key=settings.llm_gateway_key,
         extra_body=extra_body,
+        max_retries=0,
+        timeout=GATEWAY_TIMEOUT_SECONDS,
         **kwargs,
     )
     calls = _model_calls.get()
@@ -196,6 +201,7 @@ async def stream_text(prompt: str, system_instruction: str | None = None) -> Asy
     stream = await litellm.acompletion(
         model=f"openai/{alias}", api_base=settings.llm_gateway_url, api_key=settings.llm_gateway_key,
         extra_body=extra_body, messages=messages, stream=True,
+        max_retries=0, timeout=GATEWAY_TIMEOUT_SECONDS,
     )
     async for chunk in stream:
         text = chunk.choices[0].delta.content if chunk.choices else None
