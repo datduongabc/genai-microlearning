@@ -19,6 +19,7 @@ import { VideoSceneEditor } from '../components/VideoSceneEditor'
 import { formatMinutes } from '../lib/duration'
 import { editorTitle } from '../lib/editorTitle'
 import { createLimiter } from '../lib/limiter'
+import { videoSpent } from '../lib/spent'
 import { useMediaModels } from '../lib/useMediaModels'
 import { confirmLeave, useLeaveGuard } from '../lib/useLeaveGuard'
 import { editsKey, estimatedSeconds, newScene, toDrafts, toEdits, type SceneDraft } from '../lib/videoDraft'
@@ -53,10 +54,6 @@ const QUEUED_TEXT: Partial<Record<JobType, string>> = {
 // unit would be said twice.
 function perImage(price: string): string {
   return price.replace(/ một ảnh$/, '')
-}
-
-function formatUsd(value: number): string {
-  return `$${value.toLocaleString('vi-VN', { maximumFractionDigits: 3 })}`
 }
 
 interface Base {
@@ -246,7 +243,7 @@ export function VideoEditorPage() {
   const toDraw = saved.scenes.filter((s) => s.needs_image || s.image_outdated).length
   // The saved scenes as edits, to tell which scene's slide no longer shows what is being edited.
   const savedEdits = toEdits(toDrafts(saved, () => 0)).map((e) => JSON.stringify(e))
-  const spent = Object.values(saved.cost ?? {}).reduce((sum, part) => sum + (part?.usd ?? 0), 0)
+  const spent = videoSpent(saved.cost)
   const canStartJob = !dirty && !jobRunning && busy === null
 
   const backLink = (
@@ -402,7 +399,7 @@ export function VideoEditorPage() {
           <span className={`flashcard-count${overLong ? ' danger-text' : ''}`}>
             Độ dài ước tính: {formatMinutes(seconds)} phút (tối đa {formatMinutes(saved.max_seconds)} phút)
           </span>
-          {spent > 0 && <span className="flashcard-count">Đã tốn khoảng {formatUsd(spent)}</span>}
+          {spent && <span className="flashcard-count">{spent}</span>}
         </div>
         <p className="course-hint">
           Sửa lời thoại và chữ trên slide, lưu, rồi vẽ hình, dựng video và giao cho sinh viên.

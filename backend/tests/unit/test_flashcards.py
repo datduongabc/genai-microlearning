@@ -178,3 +178,24 @@ def test_the_instruction_asks_for_cards_in_the_sets_language(monkeypatch):
     db, card_set, _ = _setup(monkeypatch, _chunks(), [_draft("q")])
     flashcards.generate_flashcards(db, card_set.id)
     assert "Write ALL output in English" in card_set.asked[0][1]
+
+
+def test_the_set_records_what_its_model_calls_cost(monkeypatch):
+    from app import timing
+    db, card_set, _ = _setup(monkeypatch, _chunks(), [_draft("q")])
+    inner = flashcards.complete_structured
+
+    def priced(prompt, model, **kw):
+        timing.record("llm", 1.0, prompt_tokens=500, completion_tokens=80, cost_usd=0.002)
+        return inner(prompt, model, **kw)
+
+    def priced_judge(claim, passages, options):
+        timing.record("llm", 1.0, prompt_tokens=100, completion_tokens=5, cost_usd=0.0005)
+        return SupportVerdict(supported=True, reason="")
+
+    monkeypatch.setattr(flashcards, "complete_structured", priced)
+    monkeypatch.setattr(fact_check, "_support", priced_judge)
+    flashcards.generate_flashcards(db, card_set.id)
+    assert card_set.cost == {"usd": 0.0025, "calls": 2, "priced_calls": 2,
+                             "prompt_tokens": 600, "completion_tokens": 85}
+    assert card_set.served_models == []

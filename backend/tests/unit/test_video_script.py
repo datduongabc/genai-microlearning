@@ -339,7 +339,7 @@ def test_the_script_cost_is_recorded(monkeypatch):
     inner = video_script.complete_structured
 
     def counted(prompt, model, **kw):
-        timing.record("llm", 1.0, prompt_tokens=1000, completion_tokens=200)
+        timing.record("llm", 1.0, prompt_tokens=1000, completion_tokens=200, cost_usd=0.004)
         return inner(prompt, model, **kw)
 
     monkeypatch.setattr(video_script, "complete_structured", counted)
@@ -347,8 +347,7 @@ def test_the_script_cost_is_recorded(monkeypatch):
     script_cost = video.cost["script"]
     assert script_cost["prompt_tokens"] == 1000 and script_cost["completion_tokens"] == 200
     assert script_cost["llm_calls"] == 1
-    # The gateway does not pass the provider's price back, so no amount is made up.
-    assert script_cost["usd"] is None
+    assert script_cost["usd"] == 0.004 and script_cost["priced_calls"] == 1
 
 
 def test_the_prompt_carries_the_rules_of_the_trial(monkeypatch):

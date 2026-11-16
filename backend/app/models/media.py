@@ -51,6 +51,10 @@ class FlashcardSet(_Media, Base):
 
     # {front, back, citations: [chunk id], author: "model" | "lecturer", flag: str | None}
     cards: Mapped[list] = mapped_column(JSONB, default=list, server_default="[]")
+    # {usd, calls, priced_calls, prompt_tokens, completion_tokens} of the generation's text-model calls;
+    # `usd` adds only the calls the gateway could price (see llm_cost in app/generation/media_common.py).
+    cost: Mapped[dict] = mapped_column(JSONB, default=dict, server_default="{}")
+    served_models: Mapped[list] = mapped_column(JSONB, default=list, server_default="[]")
 
 
 class Video(_Media, Base):

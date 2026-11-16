@@ -43,7 +43,7 @@ def _summary(card_set: FlashcardSet) -> dict:
         "id": card_set.id, "course_id": card_set.course_id, "document_id": card_set.document_id, "focus": card_set.focus,
         "output_language": card_set.output_language, "model_alias": card_set.model_alias,
         "status": card_set.status, "card_count": len(card_set.cards), "published_at": card_set.published_at,
-        "created_at": card_set.created_at,
+        "created_at": card_set.created_at, "cost": card_set.cost,
     }
 
 

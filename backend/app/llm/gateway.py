@@ -8,6 +8,7 @@ import base64
 import contextlib
 import contextvars
 import json
+import math
 import random
 import re
 import time
@@ -104,6 +105,18 @@ def _rate_limit_wait(error: litellm.RateLimitError, attempt: int) -> float:
     return min(wait, MAX_RATE_LIMIT_WAIT_SECONDS) * random.uniform(1.0, 1.5)
 
 
+def _response_cost(response) -> float | None:
+    """What the gateway says the call cost, in USD. LiteLLM fills `x-litellm-response-cost` from OpenRouter's
+    own `usage.cost` and only falls back to its price map when the provider sends none. Unknown stays None:
+    a zero would read as a free call, and a header such as "None" is the proxy saying it has no price."""
+    headers = (getattr(response, "_hidden_params", None) or {}).get("additional_headers") or {}
+    try:
+        cost = float(headers.get("llm_provider-x-litellm-response-cost", ""))
+    except (TypeError, ValueError):
+        return None
+    return cost if math.isfinite(cost) and cost >= 0 else None
+
+
 def _call_with_rate_limit_retries(alias: str, routed_alias: str, **request):
     retries = settings.llm_rate_limit_retries if _waits_on_rate_limit.get() else 0
     for attempt in range(retries + 1):
@@ -120,6 +133,7 @@ def _call_with_rate_limit_retries(alias: str, routed_alias: str, **request):
                 span["prompt_tokens"] = getattr(usage, "prompt_tokens", None)
                 span["completion_tokens"] = getattr(usage, "completion_tokens", None)
                 span["served_model"] = getattr(response, "model", None)
+                span["cost_usd"] = _response_cost(response)
                 return response
         with timing.timed("llm_backoff"):
             time.sleep(wait)

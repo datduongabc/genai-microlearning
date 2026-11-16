@@ -45,6 +45,7 @@ from app.generation.common import (
 )
 from app.generation.media_common import (
     focus_passages,
+    llm_cost,
     run_generation_step,
     topics_line,
     values_kept_across_commits,
@@ -540,14 +541,12 @@ def _stored(s: _Draft, language: str) -> dict:
 
 
 def _script_cost(spans: list[dict], length: dict) -> dict:
-    """The gateway does not pass the provider's price back through complete_structured, so the
-    amount is left empty rather than estimated; the tokens of every call, the judge's included, are
-    what is known. `length` is what each step wrote: the live run's short video could not be traced
-    to the draft, the top-up or the citations, since none of it was kept."""
-    calls = [s for s in spans if s["kind"] == "llm"]
-    return {"usd": None, "llm_calls": len(calls),
-            "prompt_tokens": sum(s.get("prompt_tokens") or 0 for s in calls),
-            "completion_tokens": sum(s.get("completion_tokens") or 0 for s in calls), "length": length}
+    """The script, top-up and fact-check calls, priced by the gateway (see llm_cost); the judge's
+    tokens are in as well. `length` is what each step wrote: the live run's short video could not be
+    traced to the draft, the top-up or the citations, since none of it was kept."""
+    cost = llm_cost(spans)
+    cost["llm_calls"] = cost.pop("calls")
+    return {**cost, "length": length}
 
 
 def _total_chars(scenes: list[_Draft]) -> int:

@@ -542,3 +542,12 @@ def test_only_the_three_routes_of_the_media_client_are_passed_through_with_auth(
         assert e["auth"] is True
         assert not e.get("include_subpath")
         assert e["headers"] == {"Authorization": "Bearer os.environ/OPENROUTER_API_KEY"}
+
+
+def test_litellm_asks_openrouter_for_the_price_of_every_call():
+    """The price the lecturer sees is OpenRouter's `usage.cost`, which LiteLLM requests by itself
+    on every OpenRouter call; a version that stopped doing so would leave every price unknown."""
+    from litellm.llms.openrouter.chat import transformation
+
+    source = Path(transformation.__file__).read_text(encoding="utf-8")
+    assert '"usage"' in source and '"include": True' in source

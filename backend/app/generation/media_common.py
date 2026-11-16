@@ -28,6 +28,17 @@ _MIN_TOPIC_CHARS = 3
 _TOPIC_SEPARATOR = re.compile(r"\s*[,;]\s*|\s+(?:và|and|&|vs\.?|versus)\s+", re.IGNORECASE)
 
 
+def llm_cost(spans: list[dict]) -> dict:
+    """What the text-model calls of one generation cost, from the timing spans the gateway fills in.
+    `usd` adds only the calls whose price is known and `priced_calls` says how many those are, so a
+    total with gaps can be told from a complete one instead of passing as a smaller real number."""
+    calls = [s for s in spans if s["kind"] == "llm"]
+    priced = [s["cost_usd"] for s in calls if s.get("cost_usd") is not None]
+    return {"usd": round(sum(priced), 6) if priced else None, "calls": len(calls), "priced_calls": len(priced),
+            "prompt_tokens": sum(s.get("prompt_tokens") or 0 for s in calls),
+            "completion_tokens": sum(s.get("completion_tokens") or 0 for s in calls)}
+
+
 def focus_query(db: Session, doc: Document, item) -> str:
     """`item` is a FlashcardSet or a Video: both carry `focus` and `output_language`."""
     if item.focus and item.focus.strip():

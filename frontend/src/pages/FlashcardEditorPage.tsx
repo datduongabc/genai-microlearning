@@ -16,6 +16,7 @@ import { AppShell } from '../components/AppShell'
 import { PassagePicker } from '../components/PassagePicker'
 import { SourcePassages } from '../components/SourcePassages'
 import { editorTitle } from '../lib/editorTitle'
+import { flashcardSpent } from '../lib/spent'
 import { confirmLeave, useLeaveGuard } from '../lib/useLeaveGuard'
 
 const POLL_INTERVAL_MS = 3000
@@ -134,6 +135,7 @@ export function FlashcardEditorPage() {
   const courseId = saved.course_id
   const titleProps = editorTitle('Flashcard', saved.focus)
   const published = saved.published_at !== null
+  const spent = flashcardSpent(saved.cost)
   const dirty = !sameCards(cards, saved.cards)
   const complete = cards.every((c) => c.front.trim() !== '' && c.back.trim() !== '')
   const full = cards.length >= MAX_FLASHCARDS
@@ -224,6 +226,7 @@ export function FlashcardEditorPage() {
             {published ? 'Đã giao cho người học' : 'Bản nháp'}
           </span>
           <span className="flashcard-count">{cards.length}/{MAX_FLASHCARDS} thẻ</span>
+          {spent && <span className="flashcard-count">{spent}</span>}
         </div>
 
         <ol className="flashcard-list" aria-label="Các thẻ">

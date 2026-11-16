@@ -26,6 +26,7 @@ const card = (n: number, extra: Partial<FlashcardCard> = {}): FlashcardCard => (
 const draft = (cards: FlashcardCard[], extra: Partial<FlashcardSetDetail> = {}): FlashcardSetDetail => ({
   id: 'set-1', course_id: 'course-1', document_id: 'doc-1', focus: 'Mảng', output_language: 'vi', model_alias: 'gemini-fast',
   status: 'draft', card_count: cards.length, published_at: null, created_at: '2026-01-01T00:00:00Z',
+  cost: null,
   cards, ...extra,
 })
 
@@ -72,6 +73,17 @@ describe('FlashcardEditorPage', () => {
     expect(within(cards[2]).getByText('Có thể không khớp tài liệu')).toBeInTheDocument()
     // Static text: a screen reader reads it with the card instead of being interrupted by it.
     expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+  })
+
+  it('shows what the set cost, and says when part of it has no price', async () => {
+    vi.mocked(api.getFlashcardSet).mockResolvedValue(draft([card(1)], { cost: { usd: 0.0031, calls: 2, priced_calls: 2 } }))
+    const first = renderPage()
+    expect(await screen.findByText('Đã tốn khoảng $0,003')).toBeInTheDocument()
+    first.unmount()
+
+    vi.mocked(api.getFlashcardSet).mockResolvedValue(draft([card(1)], { cost: { usd: 0.003, calls: 3, priced_calls: 2 } }))
+    renderPage()
+    expect(await screen.findByText('Đã tốn ít nhất $0,003 (chưa rõ giá của 1 lần gọi model)')).toBeInTheDocument()
   })
 
   it('warns about an uncited card even before the server has flagged it', async () => {

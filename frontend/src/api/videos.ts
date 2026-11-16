@@ -1,5 +1,6 @@
 import { api } from './client'
 import type { FlashcardSource } from './flashcards'
+import type { VideoCost } from '../lib/spent'
 import type { DownloadTarget } from './upload'
 
 // A passage a scene cites, resolved by the server from its chunk id (the same shape a card has).
@@ -58,10 +59,6 @@ export interface VideoJob {
   status: 'queued' | 'running'
 }
 
-interface CostPart {
-  usd?: number | null
-}
-
 export interface VideoDetail extends VideoSummary {
   scenes: VideoScene[]
   estimated_seconds: number
@@ -72,7 +69,7 @@ export interface VideoDetail extends VideoSummary {
   render_warnings: string[]
   // The newest queued or running job of this video; poll while it is set.
   job: VideoJob | null
-  cost: { script?: CostPart; images?: CostPart; voice?: CostPart } | null
+  cost: VideoCost | null
 }
 
 export interface SceneEdit {

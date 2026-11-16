@@ -214,6 +214,19 @@ def test_listing_and_deleting(world):
     assert [(s["id"], s["card_count"], s["status"]) for s in listed] == [(str(set_id), 2, "draft")]
     assert client.get(f"/flashcard-sets/{set_id}", headers=h).json()["cards"][0]["front"] == "Q"
 
+
+def test_the_lecturer_sees_the_cost_of_a_set_and_the_learner_does_not(world):
+    cost = {"usd": 0.0031, "calls": 2, "priced_calls": 2, "prompt_tokens": 600, "completion_tokens": 85}
+    set_id = make_set(world, cards=[card()])
+    with SessionLocal() as db:
+        db.get(FlashcardSet, set_id).cost = cost
+        db.get(FlashcardSet, set_id).published_at = datetime.now(UTC)
+        db.commit()
+    h = headers(world["owner"])
+
+    assert client.get(f"/flashcard-sets/{set_id}", headers=h).json()["cost"] == cost
+    assert client.get(f"/courses/{world['course']}/flashcard-sets", headers=h).json()[0]["cost"] == cost
+
     assert client.delete(f"/flashcard-sets/{set_id}", headers=h).status_code == 200
     assert client.get(f"/flashcard-sets/{set_id}", headers=h).status_code == 404
 

@@ -118,6 +118,21 @@ describe('VideoEditorPage', () => {
     expect(screen.getByRole('link', { name: 'Quay lại' })).toHaveAttribute('href', '/courses/course-1')
   })
 
+  it('counts the script in what the video cost, and says when part of it is unknown', async () => {
+    vi.mocked(api.getVideo).mockResolvedValue(video([scene(1)], {
+      cost: { script: { usd: 0.01, llm_calls: 10, priced_calls: 10 }, images: { usd: 0.07 }, voice: { usd: 0.005 } },
+    }))
+    const first = renderPage()
+    expect(await screen.findByText('Đã tốn khoảng $0,085')).toBeInTheDocument()
+    first.unmount()
+
+    vi.mocked(api.getVideo).mockResolvedValue(video([scene(1)], {
+      cost: { script: { usd: 0.01, llm_calls: 10, priced_calls: 8 }, images: { usd: 0.07 } },
+    }))
+    renderPage()
+    expect(await screen.findByText(/Đã tốn ít nhất \$0,08 \(chưa rõ giá của 2 lần gọi model viết lời thoại\)/)).toBeInTheDocument()
+  })
+
   it('shows the estimated length and blocks render over 8 minutes', async () => {
     // 10170 characters at 15 a second is 678 seconds, 11,3 minutes.
     const long = scene(1, { narration: 'a'.repeat(10170), narration_citations: [['c1']] })
