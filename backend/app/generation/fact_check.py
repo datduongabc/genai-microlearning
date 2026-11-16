@@ -107,11 +107,22 @@ The claims are numbered. Judge each claim on its own against the whole evidence,
 above, and return one verdict for every number."""
 
 
+# Items are a video scene's slide and narration, and narration greets the viewer and says what comes
+# next: the script prompt asks for that. Live run 2's judge flagged scene 1's greeting and plan as
+# unsupported, so every video began with a scene to review. Told to the judge rather than skipping the
+# title scene, whose other sentences state facts that must still be checked.
+_FRAMING_RULE = """
+A sentence that only greets the viewer, says what the lesson or the next scene is about, or links one scene to
+the next (for example "Chào các bạn, hôm nay chúng ta tìm hiểu FCFS và Round Robin", "Tiếp theo, hãy xem một
+ví dụ") makes no claim about the subject: it is supported. A sentence that also states a fact about the subject
+is judged on that fact."""
+
+
 def _judge_items(claims: list[str], passages: list[str], language: OutputLanguage) -> list[ItemVerdict]:
     reply = claim_evaluation.complete_structured(
         json.dumps({"claims": [{"number": n, "claim": c} for n, c in enumerate(claims, 1)], "evidence": passages},
                    ensure_ascii=False),
-        ItemVerdicts, system_instruction=_with_language(_ITEMS_INSTRUCTION, language), temperature=0,
+        ItemVerdicts, system_instruction=_with_language(_ITEMS_INSTRUCTION + _FRAMING_RULE, language), temperature=0,
     )
     return reply.verdicts
 

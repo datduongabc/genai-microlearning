@@ -159,3 +159,24 @@ def test_the_judge_is_told_a_claim_may_translate_its_evidence(monkeypatch):
     fact_check.check_items_against_sources([([("Câu 1", "a")], ["p"])], "gemini-fast", "vi")
     assert "translation" in seen[0] and "meaning, not the wording" in seen[0]
     assert '"số không" is 0' in seen[0]
+
+
+def test_the_item_judge_passes_greeting_and_framing_sentences(monkeypatch):
+    # Live run 2 flagged scene 1's "Chào mừng các bạn đến với bài học ..." and "Chúng ta sẽ tập trung
+    # tìm hiểu hai thuật toán ...": the script prompt asks for them, so every video began flagged.
+    seen = []
+    monkeypatch.setattr(claim_evaluation, "complete_structured", lambda prompt, response_model, **kw: (
+        seen.append(kw["system_instruction"]), _item_verdicts()(prompt, response_model, **kw))[1])
+    fact_check.check_items_against_sources([([("Câu 1", "a")], ["p"])], "gemini-fast", "vi")
+    assert "only greets" in seen[0] and '"Chào các bạn, hôm nay' in seen[0]
+    # A framing sentence that also states something is still judged on what it states.
+    assert "judged on that" in seen[0]
+
+
+def test_the_card_judge_has_no_framing_rule(monkeypatch):
+    # A card has no greeting: a card front that "announces" a topic is a question to be answered.
+    seen = []
+    monkeypatch.setattr(claim_evaluation, "complete_structured", lambda prompt, response_model, **kw: (
+        seen.append(kw["system_instruction"]), SupportVerdict(supported=True, reason=""))[1])
+    fact_check.check_against_sources([("claim", ["passage"])], "gemini-fast", "vi")
+    assert "only greets" not in seen[0]
