@@ -462,7 +462,7 @@ def test_slide_text_is_asked_for_in_the_videos_language(monkeypatch, language, n
     video.output_language = language
     video_script.generate_video_script(db, video.id)
     system = calls[0][2]["system_instruction"]
-    assert f"Titles, bullets and table cells are written in {named}" in system
+    assert f"of a formula are written in {named}" in system
     # Copying the deck's English bullets into a Vietnamese video is what this replaces.
     assert "keep the English term where the source uses it" not in system
     if language == "vi":
@@ -555,3 +555,66 @@ def test_the_judge_is_asked_to_answer_in_the_videos_language(monkeypatch):
                         lambda prompt, model, **kw: seen.append(kw["system_instruction"]) or inner(prompt, model, **kw))
     video_script.generate_video_script(db, video.id)
     assert seen and all("Write `reason` in Vietnamese" in s for s in seen)
+
+
+# --- Live run 2 (2026-11-16): 2 pictures of the 3 to 5 asked, P4 and P5 invented, English left on slides ---
+
+def test_the_prompt_says_which_scenes_are_pictures_without_forcing_them(monkeypatch):
+    db, video, calls = _setup(monkeypatch, _chunks(), _script())
+    video_script.generate_video_script(db, video.id)
+    system = calls[0][2]["system_instruction"]
+    for kind in ("Gantt chart", "timeline", "ready queue"):
+        assert kind in system
+    assert "every worked example" in system
+    # Not forced: a definition or a list has no picture in it, and fewer is right then.
+    assert "write fewer illustrations" in system
+
+
+def test_the_image_prompt_may_use_only_what_its_chunk_gives(monkeypatch):
+    db, video, calls = _setup(monkeypatch, _chunks(), _script())
+    video_script.generate_video_script(db, video.id)
+    system = calls[0][2]["system_instruction"]
+    assert "only the processes and figures of the chunks the scene cites" in system
+    assert "never add a process" in system
+
+
+def test_an_image_prompt_naming_processes_or_figures_its_sources_lack_is_flagged(monkeypatch):
+    chunks = _chunks(2)
+    chunks[0].content = "Example of RR with Time Quantum q = 4\nProcess Burst Time\nP_1 24\nP2 3\nP 3 3\n0 4 7 10 30"
+    scenes = _script()
+    scenes[3].update(kind="illustration",
+                     image_prompt="A Gantt chart of P4, P5, P1, P2, P3 with q = 4, marks 0, 4, 7, 10, 12 and 30")
+    db, video, _ = _setup(monkeypatch, chunks, scenes)
+    video_script.generate_video_script(db, video.id)
+    flags = video.scenes[3]["flags"]
+    assert flags == ["Mô tả hình có P4, P5, 12, không có trong đoạn nguồn của cảnh: hãy sửa mô tả trước khi vẽ"]
+
+
+def test_an_image_prompt_true_to_its_sources_is_not_flagged(monkeypatch):
+    chunks = _chunks(2)
+    chunks[0].content = "Suppose P_1 , P_2 , P_3 burst 24, 3, 3\n0 24 27 30"
+    scenes = _script()
+    scenes[3].update(kind="illustration", image_prompt="A Gantt chart: P1 from 0 to 24, P2 to 27, P3 to 30")
+    db, video, _ = _setup(monkeypatch, chunks, scenes)
+    video_script.generate_video_script(db, video.id)
+    assert video.scenes[3]["flags"] == []
+
+
+def test_table_headers_and_formula_words_are_asked_for_in_vietnamese(monkeypatch):
+    db, video, calls = _setup(monkeypatch, _chunks(), _script())
+    video_script.generate_video_script(db, video.id)
+    system = calls[0][2]["system_instruction"]
+    assert "the table's header row and the words in \\text{} of a formula" in system
+    assert '"Tiến trình | Thời gian chạy (ms)", not "Process | Burst Time"' in system
+    assert "\\text{Thời gian chờ trung bình}" in system
+    # The English example was what the model copied into a Vietnamese slide.
+    assert "\\text{Average waiting time}" not in system
+
+
+def test_an_english_video_keeps_english_formula_words(monkeypatch):
+    db, video, calls = _setup(monkeypatch, _chunks(), _script())
+    video.output_language = "en"
+    video_script.generate_video_script(db, video.id)
+    system = calls[0][2]["system_instruction"]
+    assert "\\text{Average waiting time}" in system
+    assert "Thời gian" not in system

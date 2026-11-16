@@ -164,15 +164,24 @@ _NARRATION_RULES = f"""Narration:
 Terms: in Vietnamese, preemption is "trưng dụng"; keep the English names of algorithms."""
 
 
+# The example the model copies: live run 2's Vietnamese formulas kept the English one word for word.
+_FORMULA_EXAMPLE = {
+    "vi": "\\text{Thời gian chờ trung bình} = \\frac{0 + 24 + 27}{3} = 17, "
+          "\\text{Thời gian chuyển ngữ cảnh} < 10\\,\\mu s \\ll q.",
+    "en": "\\text{Average waiting time} = \\frac{0 + 24 + 27}{3} = 17.",
+}
+
+
 def _slide_language_rule(language: OutputLanguage) -> str:
-    """The live run's Vietnamese video showed the deck's English bullets as they were, and its table
-    header in English: the prompt then said to keep the English term where the source uses it."""
-    rule = (f"Titles, bullets and table cells are written in {_LANGUAGE_NAMES[language]}, like the narration; never copy "
-            "the source's English bullets or table header as they are.")
+    """The first live run's Vietnamese video showed the deck's English bullets as they were; the second
+    still copied one table header ("Process | Burst Time") and the formulas' \\text{} words."""
+    rule = (f"Titles, bullets, table cells, the table's header row and the words in \\text{{}} of a formula are written in "
+            f"{_LANGUAGE_NAMES[language]}, like the narration; never copy the source's English bullets, table header or "
+            "formula words as they are.")
     if language == "vi":
         rule += (' A technical term may follow in English in brackets, for example "trưng dụng (preemption)", '
                  '"hàng đợi sẵn sàng (ready queue)"; the names of algorithms stay as they are (FCFS, Round Robin). '
-                 'A table header reads, for example, "Tiến trình", "Thời gian chạy (ms)".')
+                 'A table header reads, for example, "Tiến trình | Thời gian chạy (ms)", not "Process | Burst Time".')
     return rule
 
 
@@ -194,10 +203,15 @@ Every bullet and every narration sentence lists in `sources` the IDs of the chun
 Scenes:
 - Write {ASKED_SCENES[0]} to {ASKED_SCENES[1]} scenes. The first is of kind title and introduces the topic; the last is of kind
   summary and recaps it. Use summary for the last scene only.
-- Use 3 to {MAX_ILLUSTRATIONS} scenes of kind illustration, never more than {MAX_ILLUSTRATIONS}: one wherever a picture helps to
-  understand a concept, such as the Gantt chart of a worked example, a ready queue, the order processes run in, or how
-  a parameter changes the result. A scene walking through an example with figures is usually an illustration, unless
-  its figures are a table or a formula.
+- Use 3 to {MAX_ILLUSTRATIONS} scenes of kind illustration, never more than {MAX_ILLUSTRATIONS}. These are the scenes that are pictures:
+  - the schedule of a worked example: the Gantt chart of the order its processes run in, with its time marks
+    (FCFS, SJF, Round Robin with its q). Draw every worked example the chunks give, each in its own scene;
+  - a process timeline: when each process arrives, waits, runs and finishes;
+  - a queue: the ready queue, or the order processes are taken from it and put back at its end;
+  - how a parameter changes the result, such as the same processes run with a small and a large time quantum.
+  A scene that walks through such a schedule is an illustration: its figures go in the picture and its narration (the
+  burst times alone may be a table scene before it). A definition, a list of criteria or a comparison has no picture in it: when the chunks hold fewer than 3
+  of the things above, write fewer illustrations rather than a picture that shows nothing.
 - A formula goes in a scene of kind formula, as LaTeX in `formula`; a short code excerpt in kind code; a small table
   of figures in kind table, as rows with the header row first. Take them from the source chunks.
 - bullets: {MIN_BULLETS} to {MAX_BULLETS} very short points shown on the slide. They add to what the slide's table, formula or code
@@ -205,14 +219,15 @@ Scenes:
 - {_slide_language_rule(language)}
 
 image_prompt, for illustration scenes only, in English:
-- Describe one concrete picture, faithful to the source.
+- Describe one concrete picture, faithful to the source. Use only the processes and figures of the chunks the scene cites:
+  never add a process or a figure they do not give (no P4 or P5 when the example has P1, P2 and P3).
 - Give every figure and label the picture shows, exactly as in the source: burst times, the time marks of a Gantt
   chart, the order of the processes. Never leave a number for the image model to make up.
 - Write each label as it will appear in the picture: "P1", not "P_1" or "$P_1$".
 - Flat vector style, white background, no text other than those labels and figures.
 
-formula: words inside a formula go in \\text{{...}}, for example
-\\text{{Average waiting time}} = \\frac{{0 + 24 + 27}}{{3}}, so that they are not set in italics like variables.
+formula: words inside a formula go in \\text{{...}}, so that they are not set in italics like variables, and they are
+written in {_LANGUAGE_NAMES[language]}: {_FORMULA_EXAMPLE[language]}
 
 {_NARRATION_RULES}"""
 
@@ -620,6 +635,11 @@ def generate_video_script(db: Session, video_id: uuid.UUID, before_save: Callabl
                   "uncited_sentences_dropped": uncited, "top_up_uncited_sentences_dropped": topped.uncited_sentences,
                   "scenes_topped_up": topped.chosen, "scenes_lengthened": topped.lengthened, "chunks": len(chunks)}
 
+        for s in scenes:
+            invented = _invented_in_picture(s)
+            if invented:
+                s.flags.append(f"Mô tả hình có {', '.join(invented)}, không có trong đoạn nguồn của cảnh: "
+                               "hãy sửa mô tả trước khi vẽ")
         verdicts = fact_check.check_items_against_sources(
             [(_items(s, language), [c.content for c in s.chunks()]) for s in scenes], video.model_alias, language)
         for s, item_flags in zip(scenes, verdicts, strict=True):
