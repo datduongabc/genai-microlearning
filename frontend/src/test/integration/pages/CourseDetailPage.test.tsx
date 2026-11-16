@@ -809,6 +809,33 @@ describe('CourseDetailPage - videos', () => {
     expect(screen.getByRole('button', { name: '+ Sinh video' })).toBeEnabled()
   })
 
+  it('says the video started, not that it failed, when only the list cannot be reloaded after it', async () => {
+    vi.mocked(api.generateVideo).mockResolvedValue({ id: 'video-1', job_id: 'job-1' })
+    vi.mocked(api.listVideos).mockResolvedValueOnce([]).mockRejectedValue(new Error('network down'))
+
+    renderPage()
+    await userEvent.click(await screen.findByRole('button', { name: '+ Sinh video' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Sinh video' }))
+
+    expect(await screen.findByText('Đã bắt đầu sinh video.')).toBeInTheDocument()
+    expect(await screen.findByText(/không tải lại được danh sách/i)).toBeInTheDocument()
+    expect(screen.queryByText(/sinh video thất bại/i)).not.toBeInTheDocument()
+    expect(screen.queryByText('Đang gửi yêu cầu...')).not.toBeInTheDocument()
+  })
+
+  it('says the set started, not that it failed, when only the list cannot be reloaded after it', async () => {
+    vi.mocked(api.generateFlashcards).mockResolvedValue({ id: 'set-1', job_id: 'job-1' })
+    vi.mocked(api.listFlashcardSets).mockResolvedValueOnce([]).mockRejectedValue(new Error('network down'))
+
+    renderPage()
+    await userEvent.click(await screen.findByRole('button', { name: '+ Sinh flashcard' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Sinh flashcard' }))
+
+    expect(await screen.findByText('Đã bắt đầu sinh bộ flashcard.')).toBeInTheDocument()
+    expect(await screen.findByText(/không tải lại được danh sách/i)).toBeInTheDocument()
+    expect(screen.queryByText(/sinh flashcard thất bại/i)).not.toBeInTheDocument()
+  })
+
   it('drops the pending row when the request is refused', async () => {
     vi.mocked(api.generateVideo).mockRejectedValue(axiosFailure(409, 'Video này đang được sinh lời thoại, vui lòng chờ.'))
     vi.mocked(api.listVideos).mockResolvedValue([])

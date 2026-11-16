@@ -428,28 +428,42 @@ export function CourseDetailPage() {
     }
   }
 
+  // The paid request and the reload of the list after it fail apart: told "failed" when only the
+  // reload did, a lecturer would generate again and pay twice for the same thing.
+  async function startGeneration(
+    generate: () => Promise<unknown>, reload: () => Promise<void>, failed: string, started: string,
+  ) {
+    setNotice(null);
+    try {
+      await generate();
+    } catch (err) {
+      // A 409 (the same item is being generated) and a 429 (quota) carry their own Vietnamese wording.
+      setError(apiErrorMessage(err, failed));
+      return;
+    }
+    try {
+      await reload();
+    } catch (err) {
+      // Said only then: otherwise the new row in the list says it.
+      setNotice(`${started}.`);
+      setError(`${apiErrorMessage(err, "Không tải lại được danh sách")}. ${started}, hãy tải lại trang để theo dõi.`);
+    }
+  }
+
   async function handleGenerateFlashcards(doc: DocumentInfo, outputLanguage: "vi" | "en", focus: string) {
-    await sendMediaRequest(doc, "Flashcard", focus, async () => {
-      try {
-        await generateFlashcards(doc.id, { focus, outputLanguage, modelAlias });
-        setFlashcardSets(await listFlashcardSets(courseId ?? ""));
-      } catch (err) {
-        // The 409 carries its own explanation (an identical set is already being generated).
-        setError(apiErrorMessage(err, "Sinh flashcard thất bại"));
-      }
-    });
+    await sendMediaRequest(doc, "Flashcard", focus, () => startGeneration(
+      () => generateFlashcards(doc.id, { focus, outputLanguage, modelAlias }),
+      async () => setFlashcardSets(await listFlashcardSets(courseId ?? "")),
+      "Sinh flashcard thất bại", "Đã bắt đầu sinh bộ flashcard",
+    ));
   }
 
   async function handleGenerateVideo(doc: DocumentInfo, outputLanguage: "vi" | "en", focus: string, media: VideoMediaChoice) {
-    await sendMediaRequest(doc, "Video", focus, async () => {
-      try {
-        await generateVideo(doc.id, { focus, outputLanguage, modelAlias, ...media });
-        setVideos(await listVideos(courseId ?? ""));
-      } catch (err) {
-        // A 409 (the same video is being generated) and a 429 (quota) carry their own Vietnamese wording.
-        setError(apiErrorMessage(err, "Sinh video thất bại"));
-      }
-    });
+    await sendMediaRequest(doc, "Video", focus, () => startGeneration(
+      () => generateVideo(doc.id, { focus, outputLanguage, modelAlias, ...media }),
+      async () => setVideos(await listVideos(courseId ?? "")),
+      "Sinh video thất bại", "Đã bắt đầu sinh video",
+    ));
   }
 
   async function handleDeleteDocument(doc: DocumentInfo) {
