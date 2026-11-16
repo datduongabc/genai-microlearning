@@ -18,6 +18,7 @@ from app.generation.video_script import (
     prepare_for_render,
 )
 from app.jobs.queue import LostJob
+from app.llm import catalog
 from app.models import MediaStatus
 
 
@@ -55,7 +56,7 @@ def _script(n=MIN_SCENES, **fields):
     return [_scene(title=f"scene {i}", **fields) for i in range(n)]
 
 
-def _setup(monkeypatch, chunks, scenes, focus="FCFS", verdict=lambda claim: True, alias="gemini-fast", top_up=None):
+def _setup(monkeypatch, chunks, scenes, focus="FCFS", verdict=lambda claim: True, alias="gemini-flash", top_up=None):
     doc = SimpleNamespace(id=uuid.uuid4(), course_id=uuid.uuid4(), raw_text="text", planner_concepts=None)
     video = SimpleNamespace(
         id=uuid.uuid4(), document_id=doc.id, course_id=doc.course_id, focus=focus, output_language="vi",
@@ -70,6 +71,8 @@ def _setup(monkeypatch, chunks, scenes, focus="FCFS", verdict=lambda claim: True
         return model(scenes=top_up or [])
 
     monkeypatch.setattr(media_common, "retrieve", lambda _db, _course, query, **kw: chunks)
+    # Every alias counts as served: these tests are about the script, not about a dropped alias.
+    monkeypatch.setattr(catalog, "is_available", lambda _alias: True)
     monkeypatch.setattr(video_script, "complete_structured", fake_complete)
     monkeypatch.setattr(claim_evaluation, "complete_structured", _judge(verdict))
     return db, video, calls

@@ -557,15 +557,15 @@ describe('CourseDetailPage - module generation availability', () => {
   it('generates with the teacher saved default model preselected', async () => {
     vi.mocked(api.listDocuments).mockResolvedValue([sampleDocument])
     vi.mocked(api.listModels).mockResolvedValue({
-      models: [{ alias: 'groq-pro', label: 'GPT-OSS 120B qua Groq', provider: 'groq', note: null }],
-      default: 'groq-pro',
+      models: [{ alias: 'deepseek-flash', label: 'DeepSeek V4.1 Flash', provider: 'deepseek', note: null }],
+      default: 'deepseek-flash',
     })
     vi.mocked(api.generateModule).mockResolvedValue({ job_id: 'job-1', status: 'queued' })
     vi.mocked(api.pollJobStatus).mockReturnValue(new Promise(() => {}))
 
     renderPage()
     await waitFor(() =>
-      expect((screen.getByRole('combobox', { name: /model sinh/i }) as HTMLSelectElement).value).toBe('groq-pro'),
+      expect((screen.getByRole('combobox', { name: /model sinh/i }) as HTMLSelectElement).value).toBe('deepseek-flash'),
     )
     await userEvent.click(await screen.findByRole('button', { name: /\+ sinh mô-đun/i }))
     expect(api.generateModule).not.toHaveBeenCalled()
@@ -574,7 +574,7 @@ describe('CourseDetailPage - module generation availability', () => {
     await userEvent.type(screen.getByLabelText(/Hướng dẫn thêm/), 'Giải thích kỹ DLDFS và IDS')
     await userEvent.click(screen.getByRole('button', { name: 'Sinh mô-đun' }))
 
-    expect(api.generateModule).toHaveBeenCalledWith('doc-1', 'groq-pro', 'en', 'Giải thích kỹ DLDFS và IDS')
+    expect(api.generateModule).toHaveBeenCalledWith('doc-1', 'deepseek-flash', 'en', 'Giải thích kỹ DLDFS và IDS')
   })
 
   it('shows why a chosen model cannot be used instead of a generic failure', async () => {
@@ -612,7 +612,7 @@ describe('CourseDetailPage - module generation availability', () => {
 })
 
 const flashcardSet: api.FlashcardSetSummary = {
-  id: 'set-1', course_id: 'course-1', document_id: 'doc-1', focus: 'Mảng', output_language: 'vi', model_alias: 'gemini-fast',
+  id: 'set-1', course_id: 'course-1', document_id: 'doc-1', focus: 'Mảng', output_language: 'vi', model_alias: 'gemini-flash',
   status: 'draft', card_count: 8, published_at: null, created_at: '2026-01-01T00:00:00Z', cost: null,
 }
 
@@ -723,7 +723,7 @@ describe('CourseDetailPage - flashcard sets', () => {
 })
 
 const videoSummary: api.VideoSummary = {
-  id: 'video-1', course_id: 'course-1', document_id: 'doc-1', focus: 'FCFS', output_language: 'vi', model_alias: 'gemini-fast',
+  id: 'video-1', course_id: 'course-1', document_id: 'doc-1', focus: 'FCFS', output_language: 'vi', model_alias: 'gemini-flash',
   voice_alias: 'voice-heygen', image_alias: 'image-nano-banana', status: 'draft', scene_count: 9, draft_version: 1,
   rendered_version: null, duration_seconds: null, error: null, published_at: null, created_at: '2026-01-01T00:00:00Z',
 }

@@ -1,7 +1,7 @@
 """Indirect prompt injection: course material that carries instructions, through chat and Content generation.
 
-    PYTHONPATH=. python scripts/injection_eval.py --alias gemini-fast \\
-        --answers ../docs/measurements/chat-eval/answers-gemini-fast-v2.jsonl \\
+    PYTHONPATH=. python scripts/injection_eval.py --alias gemini-flash \\
+        --answers ../docs/measurements/chat-eval/answers-gemini-flash.jsonl \\
         --packets ../docs/measurements/module-study/packets --out ../docs/measurements/injection/run.jsonl
 
 Each attack is written into the passage a question was made from, in the middle of its text, so it reaches

@@ -15,7 +15,7 @@ vi.mock('../../api', async (importOriginal) => {
 
 const video = {
   id: 'video-1', course_id: 'course-1', document_id: 'doc-1', focus: 'FCFS', output_language: 'vi',
-  model_alias: 'gemini-fast', voice_alias: 'voice-heygen', image_alias: 'image-nano-banana', status: 'draft',
+  model_alias: 'gemini-flash', voice_alias: 'voice-heygen', image_alias: 'image-nano-banana', status: 'draft',
   scene_count: 1, draft_version: 1, rendered_version: null, duration_seconds: null, error: null,
   published_at: null, created_at: '2026-11-12T00:00:00Z', estimated_seconds: 60, max_seconds: 480,
   render_problems: [], render_warnings: [], job: null, cost: null,

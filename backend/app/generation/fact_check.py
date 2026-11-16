@@ -16,23 +16,14 @@ from app.llm.gateway import using_model
 
 logger = logging.getLogger(__name__)
 
-# Family of a gateway alias, by its prefix (devops/gateway/config.yaml). Groq serves other makers'
-# models, so its aliases are named one by one after the model behind them.
-_FAMILY_BY_ALIAS = {
-    "groq-pro": "openai",  # gpt-oss
-    "groq-llama": "meta",
-    "groq-qwen": "alibaba",
-    "groq-minimax": "minimax",
-}
-_FAMILY_BY_PREFIX = {"gemini": "google", "claude": "anthropic", "openai": "openai"}
+# Family of a gateway alias, by its prefix (devops/gateway/config.yaml).
+_FAMILY_BY_PREFIX = {"gemini": "google", "claude": "anthropic", "openai": "openai", "deepseek": "deepseek"}
 
 # Cheap judges first: a set is checked card by card. The first one of another family is used.
 _JUDGES = ("claude-fast", "openai-fast")
 
 
 def alias_family(alias: str) -> str:
-    if alias in _FAMILY_BY_ALIAS:
-        return _FAMILY_BY_ALIAS[alias]
     family = _FAMILY_BY_PREFIX.get(alias.split("-")[0])
     if family is None:
         # Guessing would let a model check its own work without anyone knowing.

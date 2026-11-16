@@ -20,10 +20,9 @@ Thêm --mon để chạy lại một môn mà không đụng vào các môn còn
 không chạy được giữ nguyên và bảng tổng tính lại từ toàn bộ thứ hạng đã lưu.
 
 Pha sinh truy vấn ghi tệp sau từng câu và chạy lại thì chỉ hỏi những chunk chưa có
-câu hỏi, để lỗi giữa chừng không bỏ phí phần đã sinh. groq-pro nay chạy trên gói trả
-phí của Groq nên mỗi lần sinh đều bị tính tiền (vài cent cho một benchmark); nếu Groq
-từ chối vì hết hạn mức thì script dừng, chạy lại đúng lệnh cũ để làm tiếp. Muốn sinh
-lại từ đầu thì xoá tệp truy vấn.
+câu hỏi, để lỗi giữa chừng không bỏ phí phần đã sinh. Mỗi lần sinh đều bị tính tiền
+(vài cent cho một benchmark); nếu nhà cung cấp từ chối vì hết hạn mức thì script dừng,
+chạy lại đúng lệnh cũ để làm tiếp. Muốn sinh lại từ đầu thì xoá tệp truy vấn.
 
 PHẢI chạy bên trong container backend, không chạy trên máy thật: tesseract chỉ có
 trong ảnh, mà thiếu nó thì các trang PDF không có lớp văn bản sẽ rỗng và corpus
@@ -78,7 +77,7 @@ TRUY_VAN_MOI_MON = 50
 TOI_THIEU_KY_TU = 300
 HAT_GIONG = 20260923
 
-MO_HINH_SINH_CAU_HOI = "groq-pro"
+MO_HINH_SINH_CAU_HOI = "gemini-flash"
 SO_CHUNK_LAY_VE = 10
 CAC_MUC_K = (1, 3, 5, 8, 10)
 
@@ -91,8 +90,7 @@ TEP_THU_HANG = "thu_hang_5mon.json"
 TEP_KET_QUA = "ket_qua_5mon.json"
 TEP_NAP = "nap_5mon.json"
 
-# groq-pro (gpt-oss-120b) nay ở gói trả phí, trần thật cao hơn nhiều. 8.000 token mỗi phút
-# là nhịp cố ý giữ chậm để chặn chi phí, không phải hạn mức gói miễn phí: chờ sau mỗi câu
+# 8.000 token mỗi phút là nhịp cố ý giữ chậm để chặn chi phí, không phải hạn mức của nhà cung cấp: chờ sau mỗi câu
 # cho đủ phần token vừa dùng theo nhịp này.
 TOKEN_MOI_PHUT = 8000
 

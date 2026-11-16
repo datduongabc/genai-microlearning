@@ -150,28 +150,28 @@ def test_the_report_covers_both_judges_and_the_human(tmp_path, study):
 def test_one_file_holding_two_judges_is_split_by_judge(tmp_path, study):
     """run_judge ghi mô hình chấm thứ hai vào cùng tệp: phân tích tách thành hai mô hình chấm, không
     gộp điểm của cả hai vào một bảng."""
-    mixed = _write(tmp_path / "r.jsonl", _lines_of(study, "claude-pro") + _lines_of(study, "groq-pro"))
+    mixed = _write(tmp_path / "r.jsonl", _lines_of(study, "claude-fast") + _lines_of(study, "deepseek-flash"))
     out = tmp_path / "report.json"
 
     analyze_study.main([mixed, "--out", str(out)])
 
     report = json.loads(out.read_text(encoding="utf-8"))
-    assert set(report["judges"]) == {"claude-pro", "groq-pro"}
+    assert set(report["judges"]) == {"claude-fast", "deepseek-flash"}
     for judge in report["judges"].values():
         assert judge["wilcoxon"]["accuracy"]["n"] == 4
         assert judge["wilcoxon"]["accuracy"]["p"] == pytest.approx(0.125)
-    assert report["agreement"]["claude-pro~groq-pro"]["accuracy"]["n"] == 8
-    assert report["agreement"]["claude-pro~groq-pro"]["accuracy"]["kappa"] == pytest.approx(1.0)
+    assert report["agreement"]["claude-fast~deepseek-flash"]["accuracy"]["n"] == 8
+    assert report["agreement"]["claude-fast~deepseek-flash"]["accuracy"]["kappa"] == pytest.approx(1.0)
 
 
 def test_a_packet_judged_twice_by_the_same_judge_is_refused(tmp_path, study):
-    first = _write(tmp_path / "a.jsonl", _lines_of(study, "claude-pro"))
-    again = _write(tmp_path / "b.jsonl", _lines_of(study, "claude-pro")[:1])
+    first = _write(tmp_path / "a.jsonl", _lines_of(study, "claude-fast"))
+    again = _write(tmp_path / "b.jsonl", _lines_of(study, "claude-fast")[:1])
 
     with pytest.raises(SystemExit) as refused:
         analyze_study.load_judgements([first, again])
 
-    assert "claude-pro" in str(refused.value.code)
+    assert "claude-fast" in str(refused.value.code)
 
 
 # --- Độ tin cậy giữa nhiều người chấm ----------------------------------------------------------

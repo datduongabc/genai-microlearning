@@ -9,14 +9,11 @@ from app.generation.evaluation import (
 )
 
 GATEWAY = [
-    {"model_name": "openai-pro", "litellm_params": {"model": "openai/gpt-6.1-sol"}},
-    {"model_name": "groq-llama", "litellm_params": {"model": "groq/llama-3.3-70b-versatile"}},
-    {"model_name": "groq-qwen", "litellm_params": {"model": "groq/qwen/qwen3.8-27b"}},
-    {"model_name": "gemini-fast", "litellm_params": {"model": "gemini/gemini-flash-lite-latest"}},
-    {"model_name": "claude-pro", "litellm_params": {"model": "anthropic/claude-sonnet-5"}},
-    {"model_name": "groq-pro", "litellm_params": {"model": "groq/openai/gpt-oss-120b"},
+    {"model_name": "openai-fast", "litellm_params": {"model": "openrouter/openai/gpt-6-luna"}},
+    {"model_name": "deepseek-flash", "litellm_params": {"model": "openrouter/deepseek/deepseek-v4.1-flash"},
      "model_info": {"max_input_tokens": 128000}},
-    {"model_name": "openai-fast", "litellm_params": {"model": "openai/gpt-4o-mini"}},
+    {"model_name": "gemini-flash", "litellm_params": {"model": "openrouter/google/gemini-3.8-flash"}},
+    {"model_name": "claude-fast", "litellm_params": {"model": "openrouter/anthropic/claude-haiku-5.5"}},
 ]
 
 

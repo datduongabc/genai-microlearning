@@ -79,12 +79,12 @@ def world():
         db.add(question)
         db.flush()
         flashcards = FlashcardSet(course_id=course.id, document_id=document.id, output_language="vi",
-                                  model_alias="gemini-fast", cards=[], published_at=datetime.now(UTC))
+                                  model_alias="gemini-flash", cards=[], published_at=datetime.now(UTC))
         db.add(flashcards)
         db.flush()
         # Published and rendered, so that each attack on it is refused by the ownership check and not
         # by a missing file or a draft state that would refuse the owner too.
-        video = Video(course_id=course.id, document_id=document.id, output_language="vi", model_alias="gemini-fast",
+        video = Video(course_id=course.id, document_id=document.id, output_language="vi", model_alias="gemini-flash",
                       voice_alias="voice-heygen", image_alias="image-nano-banana", status=MediaStatus.ready,
                       scenes=[{"kind": "summary", "title": "secret scene of A", "bullets": ["a", "b"],
                                "narration": "secret narration of A", "citations": []}],

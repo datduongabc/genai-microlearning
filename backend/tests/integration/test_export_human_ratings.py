@@ -77,7 +77,7 @@ def _judge_every_item(blind) -> dict[str, dict]:
         for n, item in enumerate(sorted(items, key=lambda i: i.anon_code)):
             body = evaluation(item.anon_code)
             body["accuracy"]["score"] = n % 5 + 1
-            upsert_rating(db, item, "groq-pro", "groq/openai/gpt-oss-120b", ModuleEvaluation.model_validate(body))
+            upsert_rating(db, item, "deepseek-flash", "groq/openai/gpt-oss-120b", ModuleEvaluation.model_validate(body))
         db.commit()
         return {item.anon_code: {"group": item.group} for item in items}
 
@@ -92,7 +92,7 @@ def test_in_app_judge_ratings_are_exported_with_the_raters_codes_and_analysed_to
     assert sorted(p.name for p in written) == ["judge.jsonl", "rater-1.csv", "rater-2.csv"]
     lines = [json.loads(line) for line in (tmp_path / "judge.jsonl").read_text(encoding="utf-8").splitlines()]
     assert {line["anon_id"] for line in lines} == set(items)
-    assert {line["judge"] for line in lines} == {"groq-pro"}
+    assert {line["judge"] for line in lines} == {"deepseek-flash"}
     assert {line["judge_model"] for line in lines} == {"groq/openai/gpt-oss-120b"}
     assert all(line["group"] == items[line["anon_id"]]["group"] for line in lines)
     by_group = {}
@@ -110,8 +110,8 @@ def test_in_app_judge_ratings_are_exported_with_the_raters_codes_and_analysed_to
 
     report = json.loads(report_path.read_text(encoding="utf-8"))
     rater = "rater-1" if len(analyze_study.load_human(str(tmp_path / "rater-1.csv"))) == len(first) else "rater-2"
-    assert report["agreement"][f"groq-pro~{rater}"]["accuracy"]["n"] == len(first)
-    assert report["judges"]["groq-pro"]["wilcoxon"]["accuracy"]["n"] == 1
+    assert report["agreement"][f"deepseek-flash~{rater}"]["accuracy"]["n"] == len(first)
+    assert report["judges"]["deepseek-flash"]["wilcoxon"]["accuracy"]["n"] == 1
 
 
 def test_a_directory_holding_an_earlier_judge_export_is_refused(blind, tmp_path):

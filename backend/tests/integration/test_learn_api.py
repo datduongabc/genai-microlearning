@@ -45,7 +45,7 @@ def world():
 
         def card_set(published, focus):
             s = FlashcardSet(
-                course_id=course.id, document_id=doc.id, output_language="vi", model_alias="gemini-fast",
+                course_id=course.id, document_id=doc.id, output_language="vi", model_alias="gemini-flash",
                 focus=focus, status=MediaStatus.draft, published_at=datetime.now(UTC) if published else None,
                 cards=[{"front": "Heap?", "back": "A tree.", "citations": [str(chunk.id)], "author": "model",
                         "flag": "Chưa có nguồn"}])
@@ -53,10 +53,10 @@ def world():
             db.flush()
             return s
         published, draft = card_set(True, "Heap"), card_set(False, "Nháp")
-        video = Video(course_id=course.id, document_id=doc.id, output_language="vi", model_alias="gemini-fast",
+        video = Video(course_id=course.id, document_id=doc.id, output_language="vi", model_alias="gemini-flash",
                       voice_alias="voice-heygen", image_alias="image-nano-banana", focus="Video đã giao",
                       status=MediaStatus.ready, published_at=datetime.now(UTC), duration_seconds=61.5)
-        hidden_video = Video(course_id=course.id, document_id=doc.id, output_language="vi", model_alias="gemini-fast",
+        hidden_video = Video(course_id=course.id, document_id=doc.id, output_language="vi", model_alias="gemini-flash",
                              voice_alias="voice-heygen", image_alias="image-nano-banana", focus="Video nháp",
                              status=MediaStatus.draft)
         db.add_all([video, hidden_video])
@@ -197,7 +197,7 @@ def test_an_unpublished_or_foreign_video_is_404_and_gives_no_link(world):
         hidden.video_key = "videos/x/hidden.mp4"
         hidden.rendered_scenes = []
         unrendered = Video(course_id=world["course"], document_id=world["doc"], output_language="vi",
-                           model_alias="gemini-fast", voice_alias="voice-heygen", image_alias="image-nano-banana",
+                           model_alias="gemini-flash", voice_alias="voice-heygen", image_alias="image-nano-banana",
                            status=MediaStatus.draft, published_at=datetime.now(UTC))
         db.add(unrendered)
         db.commit()

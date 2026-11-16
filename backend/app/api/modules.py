@@ -564,7 +564,7 @@ def chat_edit_module(
     chunks = [*chunks, *(c for c in scope_chunks if str(c.id) in cited)]
     generation = generation_payload_of(db, module.id)
     try:
-        with using_model(generation.get("model_alias")):
+        with using_model(catalog.served_or_default(generation.get("model_alias"))):
             edit = propose_module_edit(
                 message, module, chunks, history, generation.get("output_language", "vi"), citations)
         applied = edit.target is not None

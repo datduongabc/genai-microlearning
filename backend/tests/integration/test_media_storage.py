@@ -31,7 +31,7 @@ def world(tmp_path, monkeypatch):
         document = Document(course_id=course.id, filename="notes.pdf")
         db.add(document)
         db.flush()
-        db.add(Video(course_id=course.id, document_id=document.id, output_language="vi", model_alias="gemini-fast",
+        db.add(Video(course_id=course.id, document_id=document.id, output_language="vi", model_alias="gemini-flash",
                      voice_alias="voice-heygen", image_alias="image-nano-banana", video_key=KEYS[0],
                      scenes=[{"image_key": KEYS[1], "voice_key": KEYS[3]}, {"image_key": KEYS[2]}]))
         db.commit()

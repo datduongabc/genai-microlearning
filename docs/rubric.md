@@ -7,8 +7,15 @@ Rubric này dùng chung cho mô hình chấm (`judge_module` trong `backend/app/
 - **Hai nhóm ghép cặp.** Với mỗi chủ đề có một module sinh bằng RAG (nhóm `rag_llm`) và một module sinh không RAG trên cùng Learning Objective, cùng model sinh (nhóm `llm_no_rag`). Để không lẫn khác biệt giữa các model vào so sánh RAG, tuân theo [chế độ thí nghiệm và kiểm tra model thực sự đã sinh](gateway-routing.md#experiments).
 - **Cùng tài liệu đối chiếu.** Hai module của một cặp được chấm trên cùng một bộ đoạn nguồn; quy tắc phạm vi và độ phủ ở [mục 7](#7-r9-claim-không-có-căn-cứ-và-độ-chính-xác-trích-dẫn). Không lấy bộ đối chiếu từ những chunk mà bản RAG tự trích dẫn.
 - **Chấm mù.** Người chấm và mô hình chấm chỉ thấy mã ẩn danh (dạng `M-3fa9c2d1`), không thấy nhóm, tên môn, tên tệp hay tên model.
-- **Hai mô hình chấm khác hãng với model sinh và khác hãng nhau.** Ưu tiên `claude-pro` (Anthropic), `openai-pro` (GPT-6.1 Sol, OpenAI), `gemini-fast` (Google); bỏ hãng thực sự đã sinh gói theo guard chung `app/llm/judge.py`. Gói Claude dùng OpenAI + Gemini; gói OpenAI dùng Claude + Gemini; gói Gemini dùng Claude + OpenAI. `gemini-fast` trỏ tới `gemini-3.5-flash-lite`, model miễn phí đã xác minh trên [bảng giá Google](https://ai.google.dev/gemini-api/docs/pricing); `gemini-3.5-flash` của alias `gemini-flash` chưa có trong danh sách chính thức nên không dùng làm judge.
-- **Ứng viên hết quota hoặc không dùng được.** 429, gói vượt `max_input_tokens`, `NotFoundError`, `PermissionDeniedError`, lỗi API 403 hoặc vượt cửa sổ ngữ cảnh thì thử ứng viên kế tiếp. Các lỗi khác giữ cơ chế retry/pending của từng runner. Hai gói của một cặp cần hoàn tất cùng hai alias chấm; alias dự phòng cho một gói cũng chấm gói kia. Thử hãng còn đủ điều kiện theo thứ tự pool, sau các alias ưu tiên là `groq-llama` (Meta), `groq-qwen` (Alibaba), `groq-minimax` (MiniMax), model ID trong [gateway](../devops/gateway/config.yaml) đã đối chiếu [danh sách Groq](https://console.groq.com/docs/models) ngày 2026-10-17. Llama/MiniMax có thể cần quyền Enterprise; Qwen/MiniMax là preview, khả dụng tùy tài khoản. Không dùng GPT-OSS trong pool. Mỗi lượt ghim model, tắt fallback gateway và lưu alias/model thực sự chấm. Nếu hết ứng viên thì giữ lượt còn thiếu để chạy tiếp, không coi một lượt là đủ hai; không xóa điểm đã lưu.
+- **Hai mô hình chấm khác hãng với model sinh và khác hãng nhau.** Pool theo thứ tự ưu tiên: `claude-fast` (Claude Haiku 5.5, Anthropic), `openai-fast` (GPT-6 Luna, OpenAI), `gemini-flash` (Gemini 3.8 Flash, Google), `deepseek-flash` (DeepSeek V4.1 Flash, DeepSeek); bỏ hãng thực sự đã sinh gói theo guard chung `app/llm/judge.py`.
+  Gói Claude dùng OpenAI + Gemini; gói OpenAI dùng Claude + Gemini; gói Gemini và gói DeepSeek dùng Claude + OpenAI.
+  Các lượt chấm đã lưu trước 2026-11-16 dùng pool cũ (`claude-pro`, `openai-pro`, `gemini-fast` và các alias Groq); kết quả của chúng giữ nguyên trong `docs/measurements`.
+- **Ứng viên hết quota hoặc không dùng được.** 429, gói vượt `max_input_tokens`, `NotFoundError`, `PermissionDeniedError`, lỗi API 403 hoặc vượt cửa sổ ngữ cảnh thì thử ứng viên kế tiếp.
+  Các lỗi khác giữ cơ chế retry/pending của từng runner.
+  Hai gói của một cặp cần hoàn tất cùng hai alias chấm; alias dự phòng cho một gói cũng chấm gói kia.
+  Thử hãng còn đủ điều kiện theo thứ tự pool; mỗi gói có ba ứng viên khác hãng sinh.
+  Mỗi lượt ghim model, tắt fallback gateway và lưu alias/model thực sự chấm.
+  Nếu hết ứng viên thì giữ lượt còn thiếu để chạy tiếp, không coi một lượt là đủ hai; không xóa điểm đã lưu.
 
 ## 2. Thang điểm chung
 

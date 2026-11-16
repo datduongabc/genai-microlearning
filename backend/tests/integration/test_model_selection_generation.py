@@ -30,12 +30,12 @@ client = TestClient(app)
 
 GATEWAY_GIA_LAP = [
     {
-        "model_name": "gemini-fast",
-        "litellm_params": {"model": "gemini/gemini-3.5-flash-lite"},
+        "model_name": "gemini-flash",
+        "litellm_params": {"model": "gemini/gemini-3.8-flash"},
         "model_info": {"mode": "chat"},
     },
     {
-        "model_name": "groq-pro",
+        "model_name": "deepseek-flash",
         "litellm_params": {"model": "groq/openai/gpt-oss-120b"},
         "model_info": {"mode": "chat"},
     },
@@ -108,20 +108,20 @@ def test_alias_chon_luc_bam_sinh_di_vao_payload_cua_job():
 
     phan_hoi = client.post(
         f"/modules/generate?document_id={doc_id}",
-        json={"model_alias": "groq-pro"},
+        json={"model_alias": "deepseek-flash"},
         headers={"Authorization": f"Bearer {token}"},
     )
 
     assert phan_hoi.status_code == 200, phan_hoi.text
-    assert _payload_cua_job(doc_id)["model_alias"] == "groq-pro"
+    assert _payload_cua_job(doc_id)["model_alias"] == "deepseek-flash"
 
 
 def test_khong_chon_gi_thi_dung_mac_dinh_cua_giang_vien():
-    token, doc_id = _tai_lieu_cua_giang_vien(mac_dinh="groq-pro")
+    token, doc_id = _tai_lieu_cua_giang_vien(mac_dinh="deepseek-flash")
 
     client.post(f"/modules/generate?document_id={doc_id}", headers={"Authorization": f"Bearer {token}"})
 
-    assert _payload_cua_job(doc_id)["model_alias"] == "groq-pro"
+    assert _payload_cua_job(doc_id)["model_alias"] == "deepseek-flash"
 
 
 def test_mac_dinh_da_luu_ma_gateway_da_bo_thi_sinh_bang_cau_hinh_he_thong():
@@ -173,15 +173,15 @@ def test_mac_dinh_da_luu_ma_gateway_da_bo_thi_danh_sach_bao_mac_dinh_he_thong():
 
 
 def test_chon_luc_bam_sinh_thang_mac_dinh_cua_giang_vien():
-    token, doc_id = _tai_lieu_cua_giang_vien(mac_dinh="groq-pro")
+    token, doc_id = _tai_lieu_cua_giang_vien(mac_dinh="deepseek-flash")
 
     client.post(
         f"/modules/generate?document_id={doc_id}",
-        json={"model_alias": "gemini-fast"},
+        json={"model_alias": "gemini-flash"},
         headers={"Authorization": f"Bearer {token}"},
     )
 
-    assert _payload_cua_job(doc_id)["model_alias"] == "gemini-fast"
+    assert _payload_cua_job(doc_id)["model_alias"] == "gemini-flash"
 
 
 def test_khong_chon_va_khong_co_mac_dinh_thi_payload_khong_ghi_alias_nao():
@@ -213,7 +213,7 @@ def test_worker_chay_luot_sinh_bang_dung_model_trong_payload(monkeypatch):
     token, doc_id = _tai_lieu_cua_giang_vien()
     client.post(
         f"/modules/generate?document_id={doc_id}",
-        json={"model_alias": "groq-pro"},
+        json={"model_alias": "deepseek-flash"},
         headers={"Authorization": f"Bearer {token}"},
     )
     db = SessionLocal()
@@ -238,8 +238,38 @@ def test_worker_chay_luot_sinh_bang_dung_model_trong_payload(monkeypatch):
     monkeypatch.setattr(pipeline, "run_module_generation", gia_lap_sinh)
     pipeline.run_module_generation_step(type("J", (), {"id": job_id})())
 
-    assert thay["model"] == "groq-pro"
+    assert thay["model"] == "deepseek-flash"
     assert thay["self_check"] is True
+
+
+def test_a_queued_job_whose_alias_the_gateway_dropped_runs_on_the_default(monkeypatch):
+    """A failed job retried after the gateway dropped its model must not fail again on that alias."""
+    from app.generation import module_generation_pipeline as pipeline
+
+    token, doc_id = _tai_lieu_cua_giang_vien()
+    client.post(f"/modules/generate?document_id={doc_id}", json={"model_alias": "deepseek-flash"},
+                headers={"Authorization": f"Bearer {token}"})
+    db = SessionLocal()
+    try:
+        job = db.query(Job).filter(Job.document_id == doc_id).one()
+        job.payload = {**job.payload, "model_alias": "groq-fast"}
+        db.commit()
+        job_id = job.id
+    finally:
+        db.close()
+    thay = {}
+
+    def gia_lap_sinh(db, doc, section=None, self_check=True, **kwargs):
+        thay["model"] = llm.active_model()
+        module = Module(document_id=doc.id, course_id=doc.course_id, title="M")
+        db.add(module)
+        db.flush()
+        return module
+
+    monkeypatch.setattr(pipeline, "run_module_generation", gia_lap_sinh)
+    pipeline.run_module_generation_step(type("J", (), {"id": job_id})())
+
+    assert thay["model"] == settings.llm_model
 
 
 def test_tat_tu_kiem_luc_bam_sinh_di_vao_payload_va_toi_worker(monkeypatch):
@@ -314,7 +344,7 @@ def test_chon_model_ma_gateway_dang_sap_thi_bao_503(monkeypatch):
 
     phan_hoi = client.post(
         f"/modules/generate?document_id={doc_id}",
-        json={"model_alias": "groq-pro"},
+        json={"model_alias": "deepseek-flash"},
         headers={"Authorization": f"Bearer {token}"},
     )
 
@@ -327,11 +357,11 @@ def test_model_da_chon_duoc_thu_truoc_khi_xep_hang():
 
     client.post(
         f"/modules/generate?document_id={doc_id}",
-        json={"model_alias": "groq-pro"},
+        json={"model_alias": "deepseek-flash"},
         headers={"Authorization": f"Bearer {token}"},
     )
 
-    assert da_thu == ["groq-pro"]
+    assert da_thu == ["deepseek-flash"]
 
 
 def test_duong_mac_dinh_khong_thu_gi_ca():
@@ -353,12 +383,12 @@ def test_model_da_chon_khong_dung_duoc_thi_bao_422_va_khong_tao_job(monkeypatch)
 
     phan_hoi = client.post(
         f"/modules/generate?document_id={doc_id}",
-        json={"model_alias": "groq-pro"},
+        json={"model_alias": "deepseek-flash"},
         headers={"Authorization": f"Bearer {token}"},
     )
 
     assert phan_hoi.status_code == 422
-    assert "groq-pro" in phan_hoi.json()["detail"]
+    assert "deepseek-flash" in phan_hoi.json()["detail"]
     assert "api key" in phan_hoi.json()["detail"].lower()
     assert _so_job(doc_id) == 0
 
@@ -369,7 +399,7 @@ def test_mac_dinh_cua_giang_vien_khong_dung_duoc_cung_bi_chan(monkeypatch):
         raise catalog.ModelUnusable(alias, "đã hết hạn mức hoặc đang bị giới hạn tốc độ, thử lại sau")
 
     monkeypatch.setattr(catalog, "probe", model_hong)
-    token, doc_id = _tai_lieu_cua_giang_vien(mac_dinh="groq-pro")
+    token, doc_id = _tai_lieu_cua_giang_vien(mac_dinh="deepseek-flash")
 
     phan_hoi = client.post(f"/modules/generate?document_id={doc_id}", headers={"Authorization": f"Bearer {token}"})
 
@@ -386,7 +416,7 @@ def test_phep_thu_thay_gateway_sap_thi_bao_503(monkeypatch):
 
     phan_hoi = client.post(
         f"/modules/generate?document_id={doc_id}",
-        json={"model_alias": "groq-pro"},
+        json={"model_alias": "deepseek-flash"},
         headers={"Authorization": f"Bearer {token}"},
     )
 

@@ -46,7 +46,7 @@ def test_gateway_context_window_rejection_is_recognised_but_other_errors_are_not
     response = httpx.Response(400, request=httpx.Request("POST", "http://gateway/chat/completions"))
     with pytest.raises(litellm.BadRequestError) as rejected:
         exception_type(
-            model="openai/groq-pro", custom_llm_provider="openai",
+            model="openai/deepseek-flash", custom_llm_provider="openai",
             original_exception=litellm.llms.openai.common_utils.OpenAIError(
                 status_code=400, message=message, request=response.request, response=response),
         )

@@ -36,7 +36,7 @@ Báo cáo cuối kỳ: [`final-report/report.pdf`](final-report/report.pdf). Đ�
 | Backend (`api`, `worker`) | Python 3.14, FastAPI, SQLAlchemy 2, Alembic. Cùng một image, hai tiến trình. |
 | Dữ liệu | PostgreSQL 16 với pgvector: dữ liệu, vector, hàng đợi job và Row Level Security. |
 | Bộ đếm rate limit | Redis 7 khi chạy local, Valkey trong thiết kế AWS. Mất dữ liệu ở đây không mất việc. |
-| Cổng mô hình | LiteLLM. Giữ một khóa duy nhất của OpenRouter; mọi model (Gemini mặc định, Claude, GPT, GPT-OSS, Whisper) đều đi qua OpenRouter. |
+| Cổng mô hình | LiteLLM. Giữ một khóa duy nhất của OpenRouter; mọi model (Gemini mặc định, Claude, GPT, DeepSeek, Whisper) đều đi qua OpenRouter. |
 | Embedding | Text Embeddings Inference với Qwen3-Embedding-0.6B, chạy GPU hoặc CPU. |
 | Rerank | Jev (TypeSafe), hoặc Jina reranker v2 INT8 tự host (chỉ được dùng phi thương mại). |
 | Frontend | React 19, TypeScript, Vite, Tailwind CSS. |
@@ -67,7 +67,7 @@ Chính sách định tuyến, fallback và ghim model khi đo xem ở [docs/gate
 - Docker và Docker Compose. Muốn embed bằng GPU thì cần thêm NVIDIA Container Toolkit.
 - Mã nguồn Moodle 5.2, tải riêng (xem bước 2 bên dưới).
 - Khóa API trong `devops/.env`:
-  - `OPENROUTER_API_KEY` cho mọi model: Gemini (mặc định), Claude, GPT, GPT-OSS và Whisper (phiên âm).
+  - `OPENROUTER_API_KEY` cho mọi model: Gemini (mặc định), Claude, GPT, DeepSeek và Whisper (phiên âm).
   - `TYPESAFE_API_KEY` cho Jev. Muốn rerank ngay trên máy, không gửi đoạn tài liệu cho dịch vụ rerank bên ngoài, thì đặt `RERANKER_PROVIDER=jina`.
 
 ## Chạy hệ thống
@@ -125,7 +125,7 @@ Dựng lại image để script tự sửa: `./devops/scripts/compose.sh up -d -
 
 | Biến | Mặc định | Ý nghĩa |
 | --- | --- | --- |
-| `LLM_MODEL` | `gemini-fast` | Alias sinh mặc định. |
+| `LLM_MODEL` | `deepseek-flash` | Alias sinh mặc định, chọn theo `docs/measurements/2026-11-16-four-chat-models.md`. |
 | `LLM_EXPERIMENT_MODE` | `false` | Ghim model và tắt fallback khi đo. |
 | `RERANKER_PROVIDER` | `jev` | `jev` hoặc `jina`. |
 | `WORKER_POOL_SIZE` | `4` | Số job một worker chạy cùng lúc. |

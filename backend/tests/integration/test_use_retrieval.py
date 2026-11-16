@@ -311,7 +311,7 @@ def test_the_worker_runs_a_queued_no_rag_job_with_its_paired_module(document, ll
 @pytest.fixture
 def api(document, monkeypatch):
     monkeypatch.setattr(catalog, "fetch_model_info", lambda: [
-        {"model_name": "groq-pro", "litellm_params": {"model": "groq/x"}, "model_info": {"mode": "chat"}},
+        {"model_name": "deepseek-flash", "litellm_params": {"model": "groq/x"}, "model_info": {"mode": "chat"}},
     ])
     monkeypatch.setattr(catalog, "probe", lambda alias: None)
     catalog.clear_cache()
@@ -324,7 +324,7 @@ def api(document, monkeypatch):
         db.flush()
         db.add(Job(job_type=JobType.module_generation, step="generate", status=JobStatus.done,
                    document_id=document["doc"], module_id=module.id,
-                   payload={"self_check": False, "model_alias": "groq-pro"}))
+                   payload={"self_check": False, "model_alias": "deepseek-flash"}))
         db.commit()
         document["module"] = module.id
     finally:
@@ -354,7 +354,7 @@ def test_a_no_rag_job_is_queued_with_the_paired_module_model_and_self_check(api)
     assert response.status_code == 200, response.text
     job = _no_rag_job(api)
     assert job.payload == {
-        "self_check": False, "output_language": "vi", "model_alias": "groq-pro", "use_retrieval": False,
+        "self_check": False, "output_language": "vi", "model_alias": "deepseek-flash", "use_retrieval": False,
         "paired_module_id": str(api["module"]),
     }
 
@@ -458,7 +458,7 @@ def test_each_arm_persists_actual_served_models_and_api_exposes_them(document, m
             SimpleNamespace(message=SimpleNamespace(content=json.dumps(output.model_dump()))),
         ])
     monkeypatch.setattr(litellm, "completion", completion)
-    with gateway.using_model("gemini-fast"):
+    with gateway.using_model("gemini-flash"):
         rag_id = _generate(document, self_check=False)
         served = "gpt-4o-mini"
         control_id = _generate(document, self_check=False, use_retrieval=False, paired_module_id=rag_id)
@@ -467,14 +467,14 @@ def test_each_arm_persists_actual_served_models_and_api_exposes_them(document, m
         rag, control = db.get(Module, rag_id), db.get(Module, control_id)
         assert {c["served_model"] for c in rag.generation_models} == {"gemini-3.5-flash"}
         assert {c["served_model"] for c in control.generation_models} == {"gpt-4o-mini"}
-        assert {c["requested_alias"] for c in control.generation_models} == {"gemini-fast"}
+        assert {c["requested_alias"] for c in control.generation_models} == {"gemini-flash"}
         db.add_all([
             Job(job_type=JobType.module_generation, step="generate", status=JobStatus.done,
                 document_id=rag.document_id, module_id=rag.id,
-                payload=pipeline.generation_payload("gemini-fast", False)),
+                payload=pipeline.generation_payload("gemini-flash", False)),
             Job(job_type=JobType.module_generation, step="generate", status=JobStatus.done,
                 document_id=control.document_id, module_id=control.id,
-                payload=pipeline.control_payload(rag.id, "gemini-fast", False)),
+                payload=pipeline.control_payload(rag.id, "gemini-flash", False)),
         ])
         db.commit()
         from app.generation.study_packets import StudyFile

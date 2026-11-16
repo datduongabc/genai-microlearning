@@ -72,5 +72,5 @@ def run_planner(document_text: str, output_language: OutputLanguage = "vi", cust
     # Search" cho cung IntroAI-week.01.pdf o cac lan chay truoc).
     return complete_structured(
         prompt, PlannerOutput, system_instruction=PLANNER_SYSTEM_INSTRUCTION
-        + output_language_instruction(output_language) + custom_instructions_instruction(custom_instructions), temperature=0.0, small_step=True,
+        + output_language_instruction(output_language) + custom_instructions_instruction(custom_instructions), temperature=0.0,
     )

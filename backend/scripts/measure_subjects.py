@@ -20,7 +20,7 @@ ROOT = REPO / "docs/documents"
 SUBJECTS = sys.argv[2].split(",")
 QUESTIONS = json.loads((REPO / "docs/measurements/chat-eval/questions.json").read_text(encoding="utf-8"))
 OUT = open(sys.argv[1], "a", encoding="utf-8")  # noqa: SIM115 -- appended to for the whole run
-MODEL = "gemini-fast"
+MODEL = "gemini-flash"
 
 
 def emit(**row):

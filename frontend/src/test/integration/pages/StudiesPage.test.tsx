@@ -81,6 +81,7 @@ it("lists invitations with personal progress", async () => {
   );
   expect(screen.getByText("Đã chấm 0/1")).toBeInTheDocument();
 });
+// It types into all nine rubric comments, about 1.6 s alone: under the full parallel run it passed 5 s.
 it("renders the whole anonymous packet and saves/edits all rubric criteria", async () => {
   const user = userEvent.setup();
   vi.mocked(api.saveRating).mockImplementation(async (_s, _i, body) => body);
@@ -123,7 +124,7 @@ it("renders the whole anonymous packet and saves/edits all rubric criteria", asy
       expect.objectContaining({ accuracy: { score: 2, justification: "Có căn cứ" } }),
     ),
   );
-});
+}, 15_000);
 it("keeps a criterion opened by a failed save open while its comment is typed", async () => {
   const user = userEvent.setup();
   blind();

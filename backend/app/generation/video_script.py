@@ -54,6 +54,7 @@ from app.generation.media_common import (
     values_kept_across_commits,
     without_doubled_words,
 )
+from app.llm import catalog
 from app.llm.gateway import capture_models, complete_structured, using_model
 from app.models import Chunk, Document, Job, MediaStatus, Video
 
@@ -616,6 +617,7 @@ def generate_video_script(db: Session, video_id: uuid.UUID, before_save: Callabl
             raise ValueError("Document chưa được parse (raw_text rỗng)")
         language: OutputLanguage = video.output_language  # type: ignore[assignment]
 
+        video.model_alias = catalog.served_or_default(video.model_alias)
         # Fail on an alias that has no judge of another family before any paid call.
         fact_check.judge_alias(video.model_alias)
 

@@ -7,7 +7,15 @@ from app.db import SessionLocal
 from app.generation import claim_evaluation, media_common, video_script
 from app.jobs.failures import SYSTEM_FAILURE_MESSAGE
 from app.jobs.queue import enqueue_job, execute_job_step, handle_job_error, sweep_stuck_jobs
+from app.llm import catalog
+from app.llm.gateway import requested_model
 from app.models import Chunk, Course, Document, DocumentStatus, Job, JobStatus, JobType, MediaStatus, User, Video
+
+
+@pytest.fixture(autouse=True)
+def served(monkeypatch):
+    """The aliases the gateway serves, without a running gateway."""
+    monkeypatch.setattr(catalog, "is_available", lambda alias: alias in {"gemini-flash", "claude-fast"})
 
 
 @pytest.fixture
@@ -25,7 +33,7 @@ def world():
         chunk = Chunk(document_id=doc.id, course_id=course.id, chunk_index=0, content="FCFS runs jobs in order.")
         db.add(chunk)
         video = Video(course_id=course.id, document_id=doc.id, focus="FCFS", output_language="vi",
-                      model_alias="gemini-fast", voice_alias="heygen", image_alias="nano-banana")
+                      model_alias="gemini-flash", voice_alias="heygen", image_alias="nano-banana")
         db.add(video)
         db.flush()
         job = enqueue_job(db, job_type=JobType.video_script, step="script", document_id=doc.id,
@@ -66,6 +74,29 @@ def test_the_job_writes_the_script_and_finishes(world, monkeypatch):
         assert video.scenes[0]["citations"] == [str(chunk_id)]
         assert video.cost["script"]["usd"] is None  # the faked model call is never priced
         assert db.get(Job, job_id).status == JobStatus.done
+
+
+def test_a_video_made_with_an_alias_the_gateway_dropped_is_scripted_with_the_default(world, monkeypatch):
+    from app.config import settings
+
+    _, _, video_id, job_id, chunk_id = world
+    with SessionLocal() as db:
+        db.get(Video, video_id).model_alias = "groq-pro"
+        db.commit()
+        chunk = db.get(Chunk, chunk_id)
+        db.expunge(chunk)
+    writers = []
+    monkeypatch.setattr(media_common, "retrieve", lambda *a, **k: [chunk])
+    monkeypatch.setattr(video_script, "complete_structured", lambda prompt, model, **kw: writers.append(
+        requested_model()) or model(scenes=[_scene(i) for i in range(video_script.MIN_SCENES)]))
+    monkeypatch.setattr(claim_evaluation, "complete_structured", lambda prompt, model, **k: model(verdicts=[
+        {"number": n, "supported": True, "reason": ""} for n in range(1, 4)]))
+    with SessionLocal() as db:
+        execute_job_step(db.get(Job, job_id))
+    with SessionLocal() as db:
+        video = db.get(Video, video_id)
+        assert video.status == MediaStatus.draft
+        assert writers == [settings.llm_model] and video.model_alias == settings.llm_model
 
 
 def test_a_job_that_runs_out_of_attempts_marks_the_video_failed(world):

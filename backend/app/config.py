@@ -68,7 +68,7 @@ class Settings(BaseSettings):
     # or a mapping change in the gateway config, never a code change.
     llm_gateway_url: str = "http://localhost:4000"
     llm_gateway_key: str = Field(default="", repr=False)
-    llm_model: str = "gemini-fast"
+    llm_model: str = "deepseek-flash"
     non_teacher_daily_generation_limit: int = Field(default=3, ge=1)
     # Off on a public deployment: the quota above is per account, so open registration would let
     # anyone create accounts to spend the provider credit. Accounts then come from the administrator
@@ -91,7 +91,7 @@ class Settings(BaseSettings):
     # The gateway alias that re-reads, from the rendered page, PDF formulas whose text layer could
     # not be rebuilt (app/ingestion/formula_repair.py). It must accept images; empty turns it off,
     # and those pages then keep the rebuilt text with a warning.
-    formula_vision_model: str = "gemini-fast"
+    formula_vision_model: str = "gemini-flash"
     # At most this many pages of one document are sent, so one badly typeset file cannot spend
     # much of the model balance.
     formula_vision_max_pages: int = Field(default=40, ge=0)

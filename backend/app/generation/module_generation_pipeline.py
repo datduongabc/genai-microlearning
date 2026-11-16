@@ -35,6 +35,7 @@ from app.generation.quiz_graph import (
 from app.generation.relevance import CorrectiveResult, corrective_retrieve
 from app.generation.slides import generate_slides
 from app.jobs.queue import hold
+from app.llm import catalog
 from app.llm.gateway import capture_models, recorded_models, requested_model, using_model
 from app.models import (
     Chunk,
@@ -555,7 +556,10 @@ def run_module_generation_step(job: Job) -> None:
             paired_module = db.get(Module, uuid.UUID(paired_id)) if paired_id else None
             if paired_module is None:
                 raise ValueError(f"Paired module {paired_id} not found")
-        with using_model(current_job.payload.get("model_alias")):
+        alias = current_job.payload.get("model_alias")
+        # A no-RAG control keeps the alias of its RAG pair even when it is gone: on another model the pair
+        # would no longer differ only in retrieval.
+        with using_model(catalog.served_or_default(alias) if use_retrieval else alias):
             run_module_generation(
                 db, doc, self_check=self_check, use_retrieval=use_retrieval, paired_module=paired_module,
                 output_language=current_job.payload.get("output_language", "vi"),

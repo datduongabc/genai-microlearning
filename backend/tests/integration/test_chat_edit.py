@@ -132,6 +132,24 @@ def test_unclear_turn_changes_nothing_but_is_persisted(lesson, monkeypatch):
         assert len(db.get(ChatSession, uuid.UUID(response.json()["session_id"])).messages) == 2
 
 
+def test_a_module_made_with_an_alias_the_gateway_dropped_is_edited_with_the_default(lesson, monkeypatch):
+    from app.config import settings
+    from app.llm import catalog
+    from app.llm.gateway import requested_model
+
+    ids, _ = lesson
+    with SessionLocal() as db:
+        job = db.query(Job).filter(Job.module_id == ids["module"]).one()
+        job.payload = {**job.payload, "model_alias": "groq-pro"}
+        db.commit()
+    monkeypatch.setattr(catalog, "is_available", lambda alias: alias == settings.llm_model)
+    used = []
+    monkeypatch.setattr(service, "complete_structured", lambda prompt, response_model, **kw: used.append(
+        requested_model()) or response_model(target=None, question_number=None, revised=None, reply="?"))
+    assert send(lesson, "hello").status_code == 200
+    assert used == [settings.llm_model]
+
+
 def test_non_owner_gets_404(lesson):
     ids, _ = lesson
     other = create_and_login(client, f"other-chat-{uuid.uuid4().hex}@example.com")
@@ -341,7 +359,7 @@ def test_content_edit_of_legacy_ambiguous_citations_can_leave_them_uncited(lesso
 
 
 def test_recorded_quiz_one_reply_edits_the_first_question(lesson, monkeypatch):
-    # Adapted from a real gemini-fast output for "câu quiz 1" (key renamed to question_number, reply aligned).
+    # Adapted from a real Gemini output for "câu quiz 1" (key renamed to question_number, reply aligned).
     recorded = json.loads((Path(__file__).parent / "fixtures/quiz_chat_wrong_position.json").read_text())
     ids, _ = lesson
     with SessionLocal() as db:
