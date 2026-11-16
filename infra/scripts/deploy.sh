@@ -161,7 +161,9 @@ aws ecs wait services-stable --region "$REGION" --cluster "$CLUSTER" --services 
 echo "== Frontend"
 BUCKET="$(tf output -raw frontend_bucket)"
 (cd "$ROOT/frontend" && npm ci && npm run build)
-aws s3 sync "$ROOT/frontend/dist/assets" "s3://$BUCKET/assets" --delete --cache-control "public,max-age=31536000,immutable"
+# No --delete for assets: a tab opened before this deploy still loads its old lazy chunks by name.
+# shortcut: old hashed files pile up in the bucket, add an S3 lifecycle rule if that ever matters.
+aws s3 sync "$ROOT/frontend/dist/assets" "s3://$BUCKET/assets" --cache-control "public,max-age=31536000,immutable"
 aws s3 sync "$ROOT/frontend/dist" "s3://$BUCKET" --delete --exclude "assets/*" --cache-control "no-cache"
 aws cloudfront create-invalidation --distribution-id "$(tf output -raw cloudfront_distribution_id)" --paths "/index.html" >/dev/null
 
