@@ -68,7 +68,7 @@ class Settings(BaseSettings):
     # or a mapping change in the gateway config, never a code change.
     llm_gateway_url: str = "http://localhost:4000"
     llm_gateway_key: str = Field(default="", repr=False)
-    llm_model: str = "gemini-flash"
+    llm_model: str = "deepseek-flash"
     non_teacher_daily_generation_limit: int = Field(default=3, ge=1)
     # Off on a public deployment: the quota above is per account, so open registration would let
     # anyone create accounts to spend the provider credit. Accounts then come from the administrator

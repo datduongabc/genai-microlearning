@@ -125,7 +125,7 @@ Dựng lại image để script tự sửa: `./devops/scripts/compose.sh up -d -
 
 | Biến | Mặc định | Ý nghĩa |
 | --- | --- | --- |
-| `LLM_MODEL` | `gemini-flash` | Alias sinh mặc định. |
+| `LLM_MODEL` | `deepseek-flash` | Alias sinh mặc định, chọn theo `docs/measurements/2026-11-16-four-chat-models.md`. |
 | `LLM_EXPERIMENT_MODE` | `false` | Ghim model và tắt fallback khi đo. |
 | `RERANKER_PROVIDER` | `jev` | `jev` hoặc `jina`. |
 | `WORKER_POOL_SIZE` | `4` | Số job một worker chạy cùng lúc. |

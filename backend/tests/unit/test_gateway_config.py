@@ -437,9 +437,8 @@ def test_every_openrouter_alias_declares_its_mode(gateway):
 
 
 def test_lecturers_are_offered_exactly_the_four_chosen_chat_models(gateway):
-    """The four chat models the project chose to offer. Gemini 3.8 Flash and DeepSeek V4.1 Flash have no
-    numbers in docs/measurements yet; Claude Haiku 5.5 and GPT-6 Luna do. Offering another model means
-    updating this set too."""
+    """The four chat models the project chose to offer, all measured in
+    docs/measurements/2026-11-16-four-chat-models.md. Offering another model means updating this set too."""
     from app.llm.catalog import to_choices
 
     offered = {c.alias for c in to_choices([

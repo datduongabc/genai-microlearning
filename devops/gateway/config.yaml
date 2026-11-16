@@ -38,7 +38,7 @@ model_list:
     model_info:
       mode: chat
       display_name: Gemini 3.8 Flash
-      note: nhanh, đọc được ảnh; model sinh mặc định
+      note: bám nguồn tốt nhất, đắt nhất; đọc được ảnh
 
   # Embeddings for retrieval (backend/app/ingestion/embeddings.py), served by the `embedder`
   # service of docker-compose.yml rather than a provider: the free Gemini tier embeds only 1000
@@ -106,7 +106,7 @@ model_list:
     model_info:
       mode: chat
       display_name: DeepSeek V4.1 Flash
-      note: nhanh, rẻ
+      note: rẻ, bám nguồn tốt; model sinh mặc định
 
 # LiteLLM owns retries and failover.
 # OpenAI, Claude and DeepSeek are opt-in; generation never falls back to them.
@@ -120,7 +120,7 @@ router_settings:
   disable_cooldowns: true
   enable_pre_call_checks: true
   optional_pre_call_checks: [enforce_model_rate_limits]
-  # gemini-flash, the default, has no fallback: it is the only Gemini model left.
+  # gemini-flash has no fallback: it is the last resort of the others, the default deepseek-flash included.
   fallbacks:
     - openai-fast: [gemini-flash]
     - claude-fast: [gemini-flash]

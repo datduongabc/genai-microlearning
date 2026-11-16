@@ -1,7 +1,8 @@
 # Gateway routing and reproducible experiments
 
 Demo and normal use enable failover by default.
-The backend default is `gemini-flash` (Gemini 3.8 Flash).
+The backend default is `deepseek-flash` (DeepSeek V4.1 Flash), chosen in `docs/measurements/2026-11-16-four-chat-models.md`: chat quality within 0.03 of the best and near the lowest measured cost.
+The formula re-read stays on `gemini-flash`, which reads images best.
 `devops/gateway/config.yaml` owns provider selection, retries, rate checks and fallback chains.
 Provider keys are read only by the gateway from the runtime environment.
 
@@ -29,18 +30,17 @@ Lecturers choose among exactly four chat models:
 
 | Alias | Model | Upstream |
 | --- | --- | --- |
-| `gemini-flash` | Gemini 3.8 Flash, the default; reads images | Google AI Studio |
+| `gemini-flash` | Gemini 3.8 Flash; reads images, formula re-read | Google AI Studio |
 | `claude-fast` | Claude Haiku 5.5 | Anthropic |
 | `openai-fast` | GPT-6 Luna | OpenAI |
-| `deepseek-flash` | DeepSeek V4.1 Flash | DeepInfra, endpoint `deepinfra/fp8` |
+| `deepseek-flash` | DeepSeek V4.1 Flash, the default | DeepInfra, endpoint `deepinfra/fp8` |
 
 `deepseek-flash` names the endpoint `deepinfra/fp8` rather than the provider `deepinfra`.
 The bare provider slug also matches DeepInfra's priority endpoint, at another price.
-Claude Haiku 5.5 and GPT-6 Luna have numbers in `docs/measurements`; Gemini 3.8 Flash and DeepSeek V4.1 Flash do not yet.
+All four have chat Ragas and prompt-injection numbers in `docs/measurements/2026-11-16-four-chat-models.md`; module cost per model is not measured yet.
 `tests/unit/test_gateway_config.py` pins the offered set.
 
-`gemini-flash` has no fallback, since it is the only Gemini model.
-The three opt-in aliases are never fallback targets.
+`gemini-flash` has no fallback; it is the fallback of the other three.
 Outside experiment mode their ordinary and context-window failures fall back to `gemini-flash`.
 
 Claude Haiku 5.5 and GPT-6 Luna accept only `temperature=1`.
