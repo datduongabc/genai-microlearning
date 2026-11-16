@@ -4,6 +4,8 @@
 *.tfstate
 *.tfstate.*
 terraform.tfvars
+# The image tag each environment runs, written by infra/scripts/deploy.sh.
+image-*.tfvars
 *.tfplan
 crash.log
 backend.hcl

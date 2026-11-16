@@ -22,7 +22,9 @@ Cần: AWS CLI đã đăng nhập, Docker, Node, `jq`, Terraform ≥ 1.10.
 
 ```bash
 cd infra/terraform
-cp terraform.tfvars.example terraform.tfvars   # sửa image_tag = commit hiện tại, alarm_email
+cp terraform.tfvars.example terraform.tfvars   # sửa alarm_email
+# Tag image sẽ đẩy ở bước 1. Từ đó deploy.sh tự ghi tệp này (bị git bỏ qua) mỗi lần rollout.
+echo "image_tag = \"$(git rev-parse --short=7 HEAD)\"" > image-demo.tfvars
 
 # 0. Bucket giữ state, một lần cho mỗi tài khoản. State chứa mật khẩu DB sinh ra, nên bucket riêng
 #    tư, mã hóa, chỉ nhận TLS, và có versioning để lấy lại bản cũ khi state hỏng.
@@ -35,13 +37,13 @@ cp backend.hcl.example backend.hcl              # điền tên bucket
 terraform init -backend-config=backend.hcl
 
 # 1. Kho ECR trước, để có chỗ đẩy image.
-terraform apply -target=aws_ecr_repository.repo -target=aws_ecr_lifecycle_policy.keep_recent
+../scripts/tf.sh apply -target=aws_ecr_repository.repo -target=aws_ecr_lifecycle_policy.keep_recent
 IMAGES_ONLY=1 ../scripts/deploy.sh             # thêm WITH_RERANKER=1 nếu dùng jina
 
 # 2. Phần còn lại. Service khởi động trước migration, nên api chưa qua /ready và lần deploy đầu có
 #    thể bị circuit breaker đánh dấu thất bại; bước 4 khởi động lại service đó sau migration.
 #    Topic SNS mới gửi email xác nhận tới alarm_email: bấm Confirm, mỗi lần tạo lại stack.
-terraform apply
+../scripts/tf.sh apply
 
 # 3. Khóa nhà cung cấp. Terraform không bao giờ thấy chúng và không ghi đè sau lần tạo.
 PREFIX=$(terraform output -raw ssm_prefix)
@@ -63,6 +65,10 @@ Thứ tự: build và đẩy image theo commit → chạy migration bằng image
 
 Trong lúc rolling update, bản cũ và mới chạy cùng lúc trên schema mới, nên thay đổi phá vỡ tương thích phải tách hai lần deploy: thêm trước, bỏ sau.
 
+Tag đang chạy được ghi vào `infra/terraform/image-<môi trường>.tfvars` (bị git bỏ qua), và `tf.sh` truyền tệp đó cho `plan` và `apply`.
+Vì vậy mọi thay đổi hạ tầng khác chạy qua `infra/scripts/tf.sh apply`, không chạy `terraform apply` trực tiếp: tag cũ để trong `terraform.tfvars` sẽ đưa mọi service về image cũ.
+Thiếu tệp đó thì `tf.sh` dừng: chạy `deploy.sh`, hoặc tự ghi tag đang chạy (`echo 'image_tag = "<commit>"' > infra/terraform/image-demo.tfvars`).
+
 ## Staging
 
 Staging là một bản sao của stack ở cỡ nhỏ nhất vẫn chạy đủ mọi service: api và worker tối đa 2 task, `db.t4g.small`, ngân sách riêng $30 một tháng (`infra/environments/staging.tfvars`).
@@ -76,6 +82,7 @@ Dựng lần đầu, giống mục "Lần đầu" nhưng qua `tf.sh`:
 
 ```bash
 export ENVIRONMENT=staging
+echo "image_tag = \"$(git rev-parse --short=7 HEAD)\"" > infra/terraform/image-staging.tfvars
 infra/scripts/tf.sh apply -target=aws_ecr_repository.repo -target=aws_ecr_lifecycle_policy.keep_recent
 IMAGES_ONLY=1 infra/scripts/deploy.sh
 infra/scripts/tf.sh apply
@@ -133,7 +140,7 @@ Script dựng Moodle 5.2 dùng một lần (Postgres và moodledata trên tmpfs,
 Giới hạn:
 
 - **Địa chỉ đổi mỗi lần chạy,** và issuer LTI đổi theo: tài khoản và khóa học tạo qua lần chạy trước không được nhận lại. Giữ script chạy suốt buổi demo; máy ngủ hoặc mất mạng là mất Moodle đó.
-- **Chỉ có LTI** (launch và danh sách lớp). Xuất Book và Quiz sang Moodle cần thêm `moodle_base_url`, `moodle_wwwroot` bằng địa chỉ tunnel và `moodle-token` trong SSM, tức một lần `terraform apply` nữa cho mỗi địa chỉ.
+- **Chỉ có LTI** (launch và danh sách lớp). Xuất Book và Quiz sang Moodle cần thêm `moodle_base_url`, `moodle_wwwroot` bằng địa chỉ tunnel và `moodle-token` trong SSM, tức một lần `infra/scripts/tf.sh apply` nữa cho mỗi địa chỉ.
 - Lưu lượng đi qua Cloudflare, nên chỉ dùng với dữ liệu thử.
 
 Cần một địa chỉ ổn định thì thay bằng một EC2 nhỏ chạy Moodle (khoảng $0,02 đến $0,03 một giờ), chưa có trong Terraform này.
@@ -141,7 +148,7 @@ Cần một địa chỉ ổn định thì thay bằng một EC2 nhỏ chạy Mo
 ## Xóa
 
 ```bash
-terraform destroy
+infra/scripts/tf.sh destroy
 ```
 
 Còn lại sau khi xóa: snapshot cuối của RDS (`microlearning-<environment>-final-<8 ký tự hex>`, tên mới mỗi lần nên không đụng snapshot của lần trước). Muốn xóa hẳn: `aws rds delete-db-snapshot --db-snapshot-identifier <tên>`.

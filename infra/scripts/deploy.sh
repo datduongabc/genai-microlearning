@@ -124,7 +124,16 @@ fi
 
 # --- 3. Roll the services out to the new image.
 echo "== Rolling out"
-tf apply -input=false -auto-approve -var "image_tag=$TAG"
+# The tag goes to the file tf.sh reads, so a later infra apply keeps this image instead of rolling
+# back. A failed apply puts the previous tag back.
+TAG_FILE="$ROOT/infra/terraform/image-${ENVIRONMENT:-demo}.tfvars"
+PREVIOUS_TAG_FILE="$(cat "$TAG_FILE" 2>/dev/null || true)"
+echo "image_tag = \"$TAG\"" >"$TAG_FILE"
+if ! tf apply -input=false -auto-approve; then
+  if [[ -n "$PREVIOUS_TAG_FILE" ]]; then echo "$PREVIOUS_TAG_FILE" >"$TAG_FILE"; else rm -f "$TAG_FILE"; fi
+  echo "Not rolled out: the apply failed." >&2
+  exit 1
+fi
 # On the first deploy the services start before this migration has made the database roles, so
 # api fails /ready and the circuit breaker may fail that deployment. With nothing to roll back to,
 # it stays failed, and the apply above changes nothing because the tag is the same. Start it again
