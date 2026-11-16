@@ -24,6 +24,7 @@ from app.generation.media_common import (
     values_kept_across_commits,
     without_doubled_words,
 )
+from app.llm import catalog
 from app.llm.gateway import capture_models, complete_structured, using_model
 from app.models import Document, FlashcardSet, Job, MediaStatus
 
@@ -78,6 +79,7 @@ def generate_flashcards(
             raise ValueError("Document chưa được parse (raw_text rỗng)")
         language: OutputLanguage = card_set.output_language  # type: ignore[assignment]
 
+        card_set.model_alias = catalog.served_or_default(card_set.model_alias)
         # Fail on an alias that has no judge of another family before any paid call.
         fact_check.judge_alias(card_set.model_alias)
 

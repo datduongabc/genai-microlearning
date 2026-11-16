@@ -99,7 +99,7 @@ def test_inconsistent_complete_metadata_and_invalid_spans_are_rejected(judge, mo
 
 def write_pair(folder, coverage="complete"):
     for group in ("rag_llm", "llm_no_rag"):
-        study = sp.StudyFile(pair_id="pair", group=group, generator_model="gemini-fast",
+        study = sp.StudyFile(pair_id="pair", group=group, generator_model="gemini-flash",
             packet=_packet().model_copy(update={"content_markdown": "Fact\nFake", "source_chunks": ["Fact"]}),
             reference=reference(1, coverage), claim_citations=[] if group == "rag_llm" else None)
         (folder / f"pair-{group}.json").write_text(study.model_dump_json(), encoding="utf-8")
@@ -108,15 +108,14 @@ def write_pair(folder, coverage="complete"):
 def test_runner_persists_resumes_analyzes_and_refuses_changed_packet(tmp_path, judge):
     write_pair(tmp_path)
     out = tmp_path / "out.jsonl"
-    args = [str(tmp_path), "--judge", "groq-pro", "--out", str(out)]
+    args = [str(tmp_path), "--judge", "claude-fast", "--out", str(out)]
     run_claim_judge.main(args)
     count = len(judge)
-    assert all(kwargs.get("reasoning_effort") == "low" for _, _, kwargs in judge)
     run_claim_judge.main(args)
     assert len(judge) == count
     rows = [json.loads(line) for line in out.read_text().splitlines()]
     assert len(rows) == 2 and all(r["claim_evaluation"]["unsupported_rate"] == .5 for r in rows)
-    report = analyze_study.analyze_claims([str(out)])["groq-pro"]
+    report = analyze_study.analyze_claims([str(out)])["claude-fast"]
     assert report["rag_llm"]["unsupported_rate"] == .5
     assert report["llm_no_rag"]["citation_packets"] == 0
     path = tmp_path / "pair-rag_llm.json"
@@ -130,7 +129,7 @@ def test_runner_persists_resumes_analyzes_and_refuses_changed_packet(tmp_path, j
 
 def test_unfair_evidence_and_same_family_refused_before_calls(tmp_path, judge):
     write_pair(tmp_path)
-    args = [str(tmp_path), "--judge", "gemini-fast", "--out", str(tmp_path / "out.jsonl")]
+    args = [str(tmp_path), "--judge", "gemini-flash", "--out", str(tmp_path / "out.jsonl")]
     with pytest.raises(SystemExit, match="google"):
         run_claim_judge.main(args)
     path = tmp_path / "pair-rag_llm.json"
@@ -145,8 +144,8 @@ def test_unfair_evidence_and_same_family_refused_before_calls(tmp_path, judge):
 def test_analysis_excludes_partial_reference_packets(tmp_path, judge):
     write_pair(tmp_path, "partial")
     out = tmp_path / "out.jsonl"
-    run_claim_judge.main([str(tmp_path), "--judge", "groq-pro", "--out", str(out)])
-    report = analyze_study.analyze_claims([str(out)])["groq-pro"]["rag_llm"]
+    run_claim_judge.main([str(tmp_path), "--judge", "claude-fast", "--out", str(out)])
+    report = analyze_study.analyze_claims([str(out)])["claude-fast"]["rag_llm"]
     assert report["excluded_packets"] == 1 and report["total_claims"] == 0
     assert report["unsupported_rate"] is None
 
@@ -156,27 +155,27 @@ def test_analysis_excludes_partial_reference_packets(tmp_path, judge):
 def test_analysis_refuses_conflicting_models_across_distinct_packets(tmp_path, judge, group, coverage):
     write_pair(tmp_path, coverage)
     first, second = tmp_path / "first.jsonl", tmp_path / "second.jsonl"
-    run_claim_judge.main([str(tmp_path), "--judge", "groq-pro", "--out", str(first)])
+    run_claim_judge.main([str(tmp_path), "--judge", "claude-fast", "--out", str(first)])
     rows = [json.loads(line) for line in first.read_text().splitlines()]
     row = next(row for row in rows if row["group"] == group)
     row["anon_id"] = "distinct-packet"
     row["judge_model"] = "groq/openai/gpt-oss-20b"
     second.write_text(json.dumps(row) + "\n", encoding="utf-8")
 
-    with pytest.raises(SystemExit, match="conflicting R9 judge_model for groq-pro"):
+    with pytest.raises(SystemExit, match="conflicting R9 judge_model for claude-fast"):
         analyze_study.analyze_claims([str(first), str(second)])
 
 
 def test_analysis_pools_consistent_models_across_files(tmp_path, judge):
     write_pair(tmp_path)
     first, second = tmp_path / "first.jsonl", tmp_path / "second.jsonl"
-    run_claim_judge.main([str(tmp_path), "--judge", "groq-pro", "--out", str(first)])
+    run_claim_judge.main([str(tmp_path), "--judge", "claude-fast", "--out", str(first)])
     rows = [json.loads(line) for line in first.read_text().splitlines()]
     for row in rows:
         row["anon_id"] += "-second"
     second.write_text("".join(json.dumps(row) + "\n" for row in rows), encoding="utf-8")
 
-    report = analyze_study.analyze_claims([str(first), str(second)])["groq-pro"]
+    report = analyze_study.analyze_claims([str(first), str(second)])["claude-fast"]
 
     for group in ("rag_llm", "llm_no_rag"):
         assert report[group]["packets"] == 2
@@ -189,7 +188,7 @@ def test_analysis_pools_consistent_models_across_files(tmp_path, judge):
 def test_interrupted_output_rejudges_tail_and_another_judge_runs_all(tmp_path, judge):
     write_pair(tmp_path)
     out = tmp_path / "out.jsonl"
-    args = [str(tmp_path), "--judge", "groq-pro", "--out", str(out)]
+    args = [str(tmp_path), "--judge", "claude-fast", "--out", str(out)]
     run_claim_judge.main(args)
     complete = out.read_bytes().splitlines(keepends=True)
     out.write_bytes(complete[0] + complete[1][:50])
@@ -197,19 +196,19 @@ def test_interrupted_output_rejudges_tail_and_another_judge_runs_all(tmp_path, j
     run_claim_judge.main(args)
     assert len(judge) == 3  # extraction and two claim checks for only the lost packet
     judge.clear()
-    run_claim_judge.main([str(tmp_path), "--judge", "claude-pro", "--out", str(out)])
+    run_claim_judge.main([str(tmp_path), "--judge", "openai-fast", "--out", str(out)])
     assert len(judge) == 6
     assert len(out.read_text().splitlines()) == 4
 
 
 def test_resume_refuses_alias_repointed_to_another_model(tmp_path, judge, monkeypatch):
     write_pair(tmp_path)
-    args = [str(tmp_path), "--judge", "groq-pro", "--out", str(tmp_path / "out.jsonl")]
+    args = [str(tmp_path), "--judge", "claude-fast", "--out", str(tmp_path / "out.jsonl")]
     run_claim_judge.main(args)
     judge.clear()
     models = [dict(m) for m in GATEWAY]
-    models[next(i for i, m in enumerate(models) if m["model_name"] == "groq-pro")] = {
-        "model_name": "groq-pro", "litellm_params": {"model": "groq/openai/gpt-oss-20b"}}
+    models[next(i for i, m in enumerate(models) if m["model_name"] == "claude-fast")] = {
+        "model_name": "claude-fast", "litellm_params": {"model": "openrouter/anthropic/claude-sonnet-5.5"}}
     monkeypatch.setattr(run_judge, "fetch_model_info", lambda: models)
     with pytest.raises(SystemExit, match="Judge model changed"):
         run_claim_judge.main(args)
@@ -227,7 +226,7 @@ def test_export_persists_shared_reference_and_only_rag_citations(tmp_path, monke
     citation = ce.StoredCitation(claim="Fact", locator="p1", chunk_id="0",
                                  chunk_content="Fact", resolution="resolved")
     monkeypatch.setattr(export_study_pair, "SessionLocal", ExportSession)
-    monkeypatch.setattr(export_study_pair, "model_that_made", lambda *a: "gemini-fast")
+    monkeypatch.setattr(export_study_pair, "model_that_made", lambda *a: "gemini-flash")
     monkeypatch.setattr(export_study_pair, "self_check_of", lambda *a: True)
     monkeypatch.setattr(export_study_pair, "study_pair", lambda *a: (_packet(), _packet()))
     monkeypatch.setattr(export_study_pair, "study_evidence", lambda *a: (reference(), [citation]))
@@ -250,11 +249,11 @@ def test_r8_analysis_cli_includes_separate_r9_results(tmp_path, judge, monkeypat
         model=next(m["litellm_params"]["model"] for m in GATEWAY if m["model_name"] == run_judge.gateway.active_model()),
         choices=[SimpleNamespace(message=SimpleNamespace(content="ok"))]))
     run_judge.main([str(tmp_path), "--out", str(rubric)])
-    run_claim_judge.main([str(tmp_path), "--judge", "groq-pro", "--out", str(claims)])
+    run_claim_judge.main([str(tmp_path), "--judge", "claude-fast", "--out", str(claims)])
     analyze_study.main([str(rubric), "--claims", str(claims), "--out", str(report)])
     result = json.loads(report.read_text())
-    assert result["claims"]["groq-pro"]["rag_llm"]["unsupported_rate"] == .5
-    assert result["judges"]["claude-pro"]["means"]["rag_llm"]["accuracy"] == 4
+    assert result["claims"]["claude-fast"]["rag_llm"]["unsupported_rate"] == .5
+    assert result["judges"]["openai-fast"]["means"]["rag_llm"]["accuracy"] == 4
 
 
 def test_rubric_judges_can_be_limited_to_named_pool_aliases(tmp_path, judge, monkeypatch):
@@ -267,9 +266,9 @@ def test_rubric_judges_can_be_limited_to_named_pool_aliases(tmp_path, judge, mon
     monkeypatch.setattr("litellm.completion", lambda **kwargs: SimpleNamespace(
         model=next(m["litellm_params"]["model"] for m in GATEWAY if m["model_name"] == run_judge.gateway.active_model()),
         choices=[SimpleNamespace(message=SimpleNamespace(content="ok"))]))
-    run_judge.main([str(tmp_path), "--out", str(out), "--judges", "groq-llama,groq-qwen"])
+    run_judge.main([str(tmp_path), "--out", str(out), "--judges", "openai-fast,deepseek-flash"])
     rows = [json.loads(line) for line in out.read_text().splitlines()]
-    assert sorted({r["judge"] for r in rows}) == ["groq-llama", "groq-qwen"] and len(rows) == 4
+    assert sorted({r["judge"] for r in rows}) == ["deepseek-flash", "openai-fast"] and len(rows) == 4
     with pytest.raises(SystemExit, match="Không thuộc pool"):
         run_judge.main([str(tmp_path), "--out", str(out), "--judges", "groq-pro"])
 

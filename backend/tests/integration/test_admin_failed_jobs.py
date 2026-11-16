@@ -189,7 +189,7 @@ def test_an_admin_retrying_another_lecturers_failed_set_makes_it_generating_agai
     with SessionLocal() as db:
         course_id = db.get(Document, document).course_id
         card_set = FlashcardSet(course_id=course_id, document_id=document, output_language="vi",
-                                model_alias="gemini-fast", status=MediaStatus.failed, cards=[])
+                                model_alias="gemini-flash", status=MediaStatus.failed, cards=[])
         db.add(card_set)
         db.flush()
         db.get(Job, job_id).payload = {"flashcard_set_id": str(card_set.id)}

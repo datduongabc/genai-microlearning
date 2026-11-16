@@ -41,7 +41,7 @@ def world(tmp_path, monkeypatch):
         db.add(doc)
         db.flush()
         video = Video(course_id=course.id, document_id=doc.id, focus="FCFS", output_language="vi",
-                      model_alias="gemini-fast", voice_alias="voice-heygen", image_alias="image-nano-banana",
+                      model_alias="gemini-flash", voice_alias="voice-heygen", image_alias="image-nano-banana",
                       status=MediaStatus.draft,
                       scenes=[_scene("Hàng đợi"), _scene("Mở đầu", kind="title"), _scene("Gantt", prompt="A Gantt")])
         db.add(video)

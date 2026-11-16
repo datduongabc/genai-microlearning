@@ -35,7 +35,7 @@ def headers(user_id):
 @pytest.fixture
 def world(monkeypatch):
     monkeypatch.setattr(limiter, "enabled", False)
-    monkeypatch.setattr(catalog, "is_available", lambda alias: alias in {"gemini-fast", "claude-pro"})
+    monkeypatch.setattr(catalog, "is_available", lambda alias: alias in {"gemini-flash", "claude-fast"})
     monkeypatch.setattr(catalog, "probe", lambda alias: None)
     with SessionLocal() as db:
         def user(name, **extra):
@@ -69,7 +69,7 @@ def world(monkeypatch):
 def make_set(world, *, status=MediaStatus.draft, cards=None, published=False):
     with SessionLocal() as db:
         card_set = FlashcardSet(
-            course_id=world["course"], document_id=world["doc"], output_language="en", model_alias="gemini-fast",
+            course_id=world["course"], document_id=world["doc"], output_language="en", model_alias="gemini-flash",
             status=status, cards=cards or [], published_at=datetime.now(UTC) if published else None)
         db.add(card_set)
         db.commit()
@@ -82,14 +82,14 @@ def card(front="Q", back="A", citations=None, **extra):
 
 def test_generating_reserves_one_generation_and_queues_a_job(world):
     response = client.post("/flashcard-sets", params={"document_id": str(world["doc"])},
-                           json={"focus": "heaps", "output_language": "en", "model_alias": "gemini-fast"},
+                           json={"focus": "heaps", "output_language": "en", "model_alias": "gemini-flash"},
                            headers=headers(world["owner"]))
 
     assert response.status_code == 200
     with SessionLocal() as db:
         card_set = db.get(FlashcardSet, uuid.UUID(response.json()["id"]))
         job = db.get(Job, uuid.UUID(response.json()["job_id"]))
-        assert (card_set.status, card_set.focus, card_set.model_alias) == (MediaStatus.generating, "heaps", "gemini-fast")
+        assert (card_set.status, card_set.focus, card_set.model_alias) == (MediaStatus.generating, "heaps", "gemini-flash")
         assert (job.job_type, job.document_id, job.payload) == (
             JobType.flashcard_generation, world["doc"], {"flashcard_set_id": str(card_set.id)})
         assert db.get(User, world["owner"]).generation_count == 1

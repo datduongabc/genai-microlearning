@@ -1,6 +1,6 @@
 """Rubric scores (docs/rubric.md, 9 criteria) of stored modules, each by several judges, outside a study.
 
-    PYTHONPATH=. python scripts/judge_modules.py --out ratings.jsonl --judges claude-pro,openai-pro <module_id>...
+    PYTHONPATH=. python scripts/judge_modules.py --out ratings.jsonl --judges claude-fast,openai-fast <module_id>...
 
 Each module becomes the packet a study rater would get (app/generation/study_packets.py: the module's
 components and its reference chunks), and each judge scores it once, pinned with fallbacks off; the
@@ -31,7 +31,7 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("modules", nargs="+")
     parser.add_argument("--out", type=Path, required=True)
-    parser.add_argument("--judges", default="claude-pro,openai-pro")
+    parser.add_argument("--judges", default="claude-fast,openai-fast")
     args = parser.parse_args()
     judges = args.judges.split(",")
     done = set()

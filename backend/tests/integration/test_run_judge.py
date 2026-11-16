@@ -14,7 +14,7 @@ from scripts import run_judge
 from tests.integration.judge_helpers import GATEWAY, _evaluation, _packet
 
 
-def _write_pairs(folder, pairs: int, generator: str = "gemini-fast") -> None:
+def _write_pairs(folder, pairs: int, generator: str = "gemini-flash") -> None:
     for n in range(pairs):
         for group in ("rag_llm", "llm_no_rag"):
             study = StudyFile(pair_id=f"cap-{n}", group=group, generator_model=generator, packet=_packet())
@@ -48,7 +48,7 @@ def _lines(path) -> list[dict]:
 
 def test_every_packet_gives_exactly_two_cross_family_lines(tmp_path, judge):
     _write_pairs(tmp_path, pairs=3)
-    out = tmp_path / "ket-qua" / "claude-pro.jsonl"
+    out = tmp_path / "ket-qua" / "claude-fast.jsonl"
 
     run_judge.main([str(tmp_path), "--out", str(out)])
 
@@ -57,7 +57,7 @@ def test_every_packet_gives_exactly_two_cross_family_lines(tmp_path, judge):
     assert {(line["pair_id"], line["group"]) for line in lines} == {
         (f"cap-{n}", g) for n in range(3) for g in ("rag_llm", "llm_no_rag")
     }
-    assert {line["judge"] for line in lines} == {"claude-pro", "openai-pro"}
+    assert {line["judge"] for line in lines} == {"claude-fast", "openai-fast"}
 
 
 def test_the_judge_sees_an_anonymous_code_that_does_not_name_the_group(tmp_path, judge):
@@ -73,12 +73,12 @@ def test_the_judge_sees_an_anonymous_code_that_does_not_name_the_group(tmp_path,
 
 
 def test_a_judge_of_the_same_family_as_the_generator_is_never_called(tmp_path, judge):
-    """gpt-oss chạy trên Groq vẫn là model của OpenAI; gói do GPT-4o mini sinh không được OpenAI chấm."""
+    """Gói do GPT-6 Luna sinh không được OpenAI chấm."""
     _write_pairs(tmp_path, pairs=1, generator="openai-fast")
 
     run_judge.main([str(tmp_path), "--out", str(tmp_path / "o.jsonl")])
 
-    assert {call["alias"] for call in judge} == {"claude-pro", "gemini-fast"}
+    assert {call["alias"] for call in judge} == {"claude-fast", "gemini-flash"}
 
 
 @pytest.mark.parametrize(("model", "family"), [
@@ -87,6 +87,7 @@ def test_a_judge_of_the_same_family_as_the_generator_is_never_called(tmp_path, j
     ("groq/openai/gpt-oss-120b", "openai"),
     ("openai/gpt-4o", "openai"),
     ("groq/llama-3.3-70b-versatile", "meta"),
+    ("openrouter/deepseek/deepseek-v4.1-flash", "deepseek"),
 ])
 def test_model_family(model, family):
     assert model_family(model) == family
@@ -117,7 +118,7 @@ def test_completed_pairs_are_not_rejudged(tmp_path, judge):
     run_judge.main([str(tmp_path), "--out", str(out)])
 
     assert len(judge) == 0
-    assert sorted(line["judge"] for line in _lines(out)) == ["claude-pro"] * 4 + ["openai-pro"] * 4
+    assert sorted(line["judge"] for line in _lines(out)) == ["claude-fast"] * 4 + ["openai-fast"] * 4
 
 
 def test_a_line_cut_mid_character_by_an_interrupted_run_is_trimmed_and_judged_again(tmp_path, judge):
@@ -137,15 +138,15 @@ def test_a_line_cut_mid_character_by_an_interrupted_run_is_trimmed_and_judged_ag
 
 
 def test_guard_uses_all_actual_served_models_even_if_requested_alias_is_different(tmp_path, judge):
-    """Gói xin gemini-fast nhưng GPT-OSS thực sự sinh: không chấm bằng OpenAI, vẫn chấm bằng Gemini."""
-    study = StudyFile(pair_id="pair", group="rag_llm", generator_model="gemini-fast", packet=_packet(),
-                      generation_models=[{"requested_alias": "gemini-fast", "routed_alias": "gemini-fast",
+    """Gói xin gemini-flash nhưng GPT-OSS thực sự sinh: không chấm bằng OpenAI, vẫn chấm bằng Gemini."""
+    study = StudyFile(pair_id="pair", group="rag_llm", generator_model="gemini-flash", packet=_packet(),
+                      generation_models=[{"requested_alias": "gemini-flash", "routed_alias": "gemini-flash",
                                           "served_model": "gpt-oss-120b"}])
     (tmp_path / "fallback.json").write_text(study.model_dump_json(), encoding="utf-8")
 
     run_judge.main([str(tmp_path), "--out", str(tmp_path / "o.jsonl")])
 
-    assert {call["alias"] for call in judge} == {"claude-pro", "gemini-fast"}
+    assert {call["alias"] for call in judge} == {"claude-fast", "gemini-flash"}
 
 
 def test_runner_pins_requests_without_extra_judge_records(tmp_path, monkeypatch):
@@ -178,7 +179,7 @@ def test_quota_without_substitute_is_resumable(tmp_path, judge, monkeypatch):
     out = tmp_path / 'ratings.jsonl'
     real = run_judge.judge_module
     def quota(packet, **kwargs):
-        if run_judge.gateway.active_model() != 'claude-pro':
+        if run_judge.gateway.active_model() != 'claude-fast':
             raise litellm.RateLimitError('quota', model='gpt', llm_provider='openai')
         return real(packet, **kwargs)
     monkeypatch.setattr(run_judge, 'judge_module', quota)
@@ -191,19 +192,19 @@ def test_quota_without_substitute_is_resumable(tmp_path, judge, monkeypatch):
     assert len(judge) == 4
 
 
-def test_quota_uses_groq_substitute_and_records_actual_model(tmp_path, judge, monkeypatch):
+def test_quota_uses_a_substitute_and_records_actual_model(tmp_path, judge, monkeypatch):
     import litellm
     _write_pairs(tmp_path, pairs=1)
     out = tmp_path / 'ratings.jsonl'
     real = run_judge.judge_module
     def quota(packet, **kwargs):
-        if run_judge.gateway.active_model() == 'openai-pro':
+        if run_judge.gateway.active_model() == 'openai-fast':
             raise litellm.RateLimitError('quota', model='gpt', llm_provider='openai')
         return real(packet, **kwargs)
     monkeypatch.setattr(run_judge, 'judge_module', quota)
     run_judge.main([str(tmp_path), '--out', str(out)])
-    assert {r['judge'] for r in _lines(out)} == {'claude-pro', 'groq-llama'}
-    assert {model_family(r['judge_model']) for r in _lines(out)} == {'anthropic', 'meta'}
+    assert {r['judge'] for r in _lines(out)} == {'claude-fast', 'deepseek-flash'}
+    assert {model_family(r['judge_model']) for r in _lines(out)} == {'anthropic', 'deepseek'}
 
 
 def _quota():
@@ -218,7 +219,7 @@ def test_quota_on_the_second_member_moves_the_whole_pair_to_the_same_substitute(
     real = run_judge.judge_module
     openai_calls = []
     def quota(packet, **kwargs):
-        if run_judge.gateway.active_model() == 'openai-pro':
+        if run_judge.gateway.active_model() == 'openai-fast':
             openai_calls.append(packet.anon_id)
             if len(openai_calls) > 1:
                 raise _quota()
@@ -228,9 +229,9 @@ def test_quota_on_the_second_member_moves_the_whole_pair_to_the_same_substitute(
     run_judge.main([str(tmp_path), '--out', str(out)])
 
     by_judge = load_judgements([str(out)])
-    assert len(pairs(by_judge['claude-pro'])) == 1
-    assert len(pairs(by_judge['groq-llama'])) == 1
-    assert len(by_judge['openai-pro']) == 1  # The half-finished alias is kept, not deleted.
+    assert len(pairs(by_judge['claude-fast'])) == 1
+    assert len(pairs(by_judge['deepseek-flash'])) == 1
+    assert len(by_judge['openai-fast']) == 1  # The half-finished alias is kept, not deleted.
     judge.clear()
     monkeypatch.setattr(run_judge, 'judge_module', real)  # Quota recovers before the rerun.
     run_judge.main([str(tmp_path), '--out', str(out)])
@@ -239,14 +240,14 @@ def test_quota_on_the_second_member_moves_the_whole_pair_to_the_same_substitute(
 
 
 @pytest.mark.parametrize('status', [403, 500])
-def test_http_quota_then_denied_candidate_uses_substitute_but_server_errors_stay_pending(
+def test_http_denied_candidate_uses_substitute_but_server_errors_stay_pending(
         tmp_path, monkeypatch, status):
     import httpx
     from openai import OpenAI
 
     from app.config import settings
 
-    _write_pairs(tmp_path, pairs=1, generator='claude-pro')
+    _write_pairs(tmp_path, pairs=1, generator='claude-fast')
     out = tmp_path / 'ratings.jsonl'
     sent = []
 
@@ -254,7 +255,7 @@ def test_http_quota_then_denied_candidate_uses_substitute_but_server_errors_stay
         body = json.loads(request.content)
         alias = body['model']
         sent.append(alias)
-        code = 429 if alias == 'gemini-fast' else status if alias == 'groq-llama' else 200
+        code = status if alias == 'gemini-flash' else 200
         if code != 200:
             return httpx.Response(code, json={'error': {'message': 'candidate unavailable',
                                                        'type': 'provider_error', 'code': str(code)}})
@@ -279,14 +280,14 @@ def test_http_quota_then_denied_candidate_uses_substitute_but_server_errors_stay
         else:
             run_judge.main([str(tmp_path), '--out', str(out)])
 
-    assert sent == ['openai-pro', 'openai-pro', 'gemini-fast', 'groq-llama'] + (
-        ['groq-qwen', 'groq-qwen'] if status == 403 else [])
+    assert sent == ['openai-fast', 'openai-fast', 'gemini-flash'] + (
+        ['deepseek-flash', 'deepseek-flash'] if status == 403 else [])
     assert {r['judge'] for r in _lines(out)} == (
-        {'openai-pro', 'groq-qwen'} if status == 403 else {'openai-pro'})
+        {'openai-fast', 'deepseek-flash'} if status == 403 else {'openai-fast'})
 
 
 def test_a_packet_over_a_candidate_budget_uses_the_next_candidate(tmp_path, judge, monkeypatch):
-    small = [{**m, 'model_info': {'max_input_tokens': 10}} if m['model_name'] == 'openai-pro' else m
+    small = [{**m, 'model_info': {'max_input_tokens': 10}} if m['model_name'] == 'openai-fast' else m
              for m in GATEWAY]
     monkeypatch.setattr(run_judge, 'fetch_model_info', lambda: small)
     _write_pairs(tmp_path, pairs=1)
@@ -294,8 +295,8 @@ def test_a_packet_over_a_candidate_budget_uses_the_next_candidate(tmp_path, judg
 
     run_judge.main([str(tmp_path), '--out', str(out)])
 
-    assert {r['judge'] for r in _lines(out)} == {'claude-pro', 'groq-llama'}
-    assert 'openai-pro' not in {call['alias'] for call in judge}
+    assert {r['judge'] for r in _lines(out)} == {'claude-fast', 'deepseek-flash'}
+    assert 'openai-fast' not in {call['alias'] for call in judge}
 
 
 def test_a_failing_pair_is_reported_and_later_pairs_are_still_judged(tmp_path, judge, monkeypatch):

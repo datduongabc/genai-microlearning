@@ -135,7 +135,7 @@ def rag_module(monkeypatch):
             {"component": "quiz", "position": 1, "reasoning": "r", "explanation_text": "ĐÃ-SỬA-2"},
         ]})
         db.add(Job(job_type=JobType.module_generation, step="generate", status=JobStatus.done,
-                   document_id=doc.id, module_id=module.id, payload={"model_alias": "groq-pro"}))
+                   document_id=doc.id, module_id=module.id, payload={"model_alias": "deepseek-flash"}))
         db.commit()
         ids = {"user": user.id, "course": course.id, "module": module.id, "document": doc.id}
     finally:
@@ -152,7 +152,7 @@ def rag_module(monkeypatch):
         db.close()
 
 
-def _pair(rag_module, alias="groq-pro", self_check=True):
+def _pair(rag_module, alias="deepseek-flash", self_check=True):
     db = SessionLocal()
     try:
         return study_packets.study_pair(db, db.get(Module, rag_module.ids["module"]), alias, self_check)
@@ -203,15 +203,15 @@ def test_the_control_has_the_same_structure_one_question_per_sub_objective_and_a
 
 
 def test_the_control_is_generated_with_the_model_given_for_the_pair(rag_module, llm):
-    _pair(rag_module, alias="groq-pro")
+    _pair(rag_module, alias="deepseek-flash")
 
-    assert {call["alias"] for call in llm.calls} == {"groq-pro"}
+    assert {call["alias"] for call in llm.calls} == {"deepseek-flash"}
 
 
 def test_the_model_of_the_pair_is_the_one_that_made_the_rag_module(rag_module):
     db = SessionLocal()
     try:
-        assert model_that_made(db, rag_module.ids["module"]) == "groq-pro"
+        assert model_that_made(db, rag_module.ids["module"]) == "deepseek-flash"
         assert model_that_made(db, uuid.uuid4()) is None
     finally:
         db.close()
@@ -228,7 +228,7 @@ def test_each_exported_file_records_the_model_that_made_its_own_packet(rag_modul
         path = tmp_path / f"{module_id}-{group}.json"
         return study_packets.StudyFile.model_validate_json(path.read_text(encoding="utf-8")).generator_model
 
-    assert generator("rag_llm") == "groq-pro"
+    assert generator("rag_llm") == "deepseek-flash"
     assert generator("llm_no_rag") == "claude-fast"
     assert {call["alias"] for call in llm.calls} == {"claude-fast"}
 
@@ -246,7 +246,7 @@ def test_neither_packet_carries_anything_that_reveals_its_group_or_source(rag_mo
 
     for packet in (rag, control):
         dumped = json.dumps(packet.model_dump(), ensure_ascii=False)
-        for secret in (COURSE_NAME, FILENAME, "groq-pro", "rag", "no_rag"):
+        for secret in (COURSE_NAME, FILENAME, "deepseek-flash", "rag", "no_rag"):
             assert secret not in dumped
 
 
@@ -327,12 +327,12 @@ def _controls_of(rag_module) -> list[Job]:
 
 
 def test_the_control_is_recorded_with_the_payload_an_api_queued_control_carries(rag_module, llm):
-    _pair(rag_module, alias="groq-pro", self_check=False)
+    _pair(rag_module, alias="deepseek-flash", self_check=False)
 
     [job] = _controls_of(rag_module)
     assert job.status == JobStatus.done and job.job_type == JobType.module_generation
     assert job.payload == {
-        "self_check": False, "output_language": "vi", "model_alias": "groq-pro", "use_retrieval": False,
+        "self_check": False, "output_language": "vi", "model_alias": "deepseek-flash", "use_retrieval": False,
         "paired_module_id": str(rag_module.ids["module"]),
     }
     db = SessionLocal()
@@ -364,7 +364,7 @@ def test_a_control_is_refused_as_the_rag_module_of_a_pair(rag_module, llm, tmp_p
     db = SessionLocal()
     try:
         with pytest.raises(ValueError, match="đối chứng"):
-            study_packets.study_pair(db, db.get(Module, job.module_id), "groq-pro")
+            study_packets.study_pair(db, db.get(Module, job.module_id), "deepseek-flash")
     finally:
         db.close()
     with pytest.raises(SystemExit, match="đối chứng"):

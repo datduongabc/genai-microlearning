@@ -20,7 +20,7 @@ model_list:
   - model_name: groq-fast
     litellm_params:
       model: openrouter/openai/gpt-oss-20b
-      # As groq-pro in devops/gateway/config.yaml: keeps reasoning bounded so the JSON fits the output allowance.
+      # Keeps reasoning bounded so the JSON fits the output allowance.
       reasoning_effort: low
       allowed_openai_params: [reasoning_effort]
       extra_body:

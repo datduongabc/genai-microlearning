@@ -18,9 +18,9 @@ x-backend-environment: &backend-environment
   LLM_GATEWAY_KEY: ${LLM_GATEWAY_KEY}
   LLM_EXPERIMENT_MODE: ${LLM_EXPERIMENT_MODE:-false}
   # The alias chat and generation use when none is chosen (backend/app/config.py).
-  LLM_MODEL: ${LLM_MODEL:-gemini-fast}
+  LLM_MODEL: ${LLM_MODEL:-gemini-flash}
   # The alias that re-reads a PDF page whose formulas look broken (must accept images).
-  FORMULA_VISION_MODEL: ${FORMULA_VISION_MODEL:-gemini-fast}
+  FORMULA_VISION_MODEL: ${FORMULA_VISION_MODEL:-gemini-flash}
   RERANKER_URL: http://reranker:80
   # jev (default, approved 2026-11-08): TypeSafe's API, which receives the question and the
   # candidate chunk text, outside the school; it needs TYPESAFE_API_KEY. jina: the reranker service below.

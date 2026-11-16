@@ -46,8 +46,9 @@ def refuse_same_family(judge: str, generators: list[tuple[str, str | None, list]
     return models[judge]
 
 
-# Ordered preferred families, then explicitly pinned Groq alternatives.
-JUDGE_POOL = ("claude-pro", "openai-pro", "gemini-fast", "groq-llama", "groq-qwen", "groq-minimax")
+# In order of preference; eligible_judges drops every one of a generator's family, so each generator
+# keeps at least two judges of other families.
+JUDGE_POOL = ("claude-fast", "openai-fast", "gemini-flash", "deepseek-flash")
 
 
 def eligible_judges(generators: list[tuple[str, str | None, list]], model_info: list[dict]) -> list[dict]:

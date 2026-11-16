@@ -34,7 +34,7 @@ def world(tmp_path, monkeypatch):
         scenes = [Scene(kind="summary", title=f"Cảnh {i}", bullets=["a", "b"], narration=f"Câu {i}.",
                         citations=[str(chunk.id)]).model_dump() for i in range(2)]
         video = Video(course_id=course.id, document_id=doc.id, focus="FCFS", output_language="vi",
-                      model_alias="gemini-fast", voice_alias="voice-heygen", image_alias="image-nano-banana",
+                      model_alias="gemini-flash", voice_alias="voice-heygen", image_alias="image-nano-banana",
                       scenes=scenes, status=MediaStatus.draft, draft_version=2, error="an old error")
         db.add(video)
         db.flush()

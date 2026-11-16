@@ -29,26 +29,16 @@ model_list:
       display_name: Whisper Large V3 Turbo qua OpenRouter
       mode: audio_transcription
 
-  - model_name: gemini-fast
-    litellm_params:
-      model: openrouter/google/gemini-3.5-flash-lite
-      extra_body:
-        provider: {order: [google-ai-studio], allow_fallbacks: false, data_collection: deny}
-      api_key: os.environ/OPENROUTER_API_KEY
-    model_info:
-      mode: chat
-      display_name: Gemini 3.5 Flash Lite
-      note: nhanh, rẻ; model sinh mặc định
   - model_name: gemini-flash
     litellm_params:
-      model: openrouter/google/gemini-3.5-flash
+      model: openrouter/google/gemini-3.8-flash
       extra_body:
         provider: {order: [google-ai-studio], allow_fallbacks: false, data_collection: deny}
       api_key: os.environ/OPENROUTER_API_KEY
     model_info:
       mode: chat
-      display_name: Gemini 3.5 Flash
-      note: chất lượng cao hơn, đắt hơn
+      display_name: Gemini 3.8 Flash
+      note: nhanh, đọc được ảnh; model sinh mặc định
 
   # Embeddings for retrieval (backend/app/ingestion/embeddings.py), served by the `embedder`
   # service of docker-compose.yml rather than a provider: the free Gemini tier embeds only 1000
@@ -92,17 +82,6 @@ model_list:
       mode: chat
       display_name: GPT-6 Luna
       note: nhanh
-  - model_name: openai-pro
-    litellm_params:
-      model: openrouter/openai/gpt-6.1-sol
-      additional_drop_params: [temperature]
-      extra_body:
-        provider: {order: [openai], allow_fallbacks: false, data_collection: deny}
-      api_key: os.environ/OPENROUTER_API_KEY
-    model_info:
-      mode: chat
-      display_name: GPT-6.1 Sol
-      note: chất lượng cao hơn, chậm hơn
 
   - model_name: claude-fast
     litellm_params:
@@ -115,128 +94,22 @@ model_list:
       mode: chat
       display_name: Claude Haiku 5.5
       note: nhanh
-  - model_name: claude-pro
+  # "deepinfra/fp8" is one endpoint: the bare "deepinfra" also matches DeepInfra's priority tier, at
+  # another price (https://openrouter.ai/api/v1/models/deepseek/deepseek-v4.1-flash/endpoints,
+  # checked 2026-11-16: structured outputs, $0.14/$0.42 per million tokens).
+  - model_name: deepseek-flash
     litellm_params:
-      model: openrouter/anthropic/claude-sonnet-5.5
-      additional_drop_params: [temperature]
+      model: openrouter/deepseek/deepseek-v4.1-flash
       extra_body:
-        provider: {order: [anthropic], allow_fallbacks: false, data_collection: deny}
+        provider: {order: [deepinfra/fp8], allow_fallbacks: false, data_collection: deny}
       api_key: os.environ/OPENROUTER_API_KEY
     model_info:
       mode: chat
-      display_name: Claude Sonnet 5.5
-      note: chất lượng cao hơn, chậm hơn
+      display_name: DeepSeek V4.1 Flash
+      note: nhanh, rẻ
 
-  # Lecturer opt-in model, served by Groq through OpenRouter; GPT-OSS is not in the judge pool.
-  - model_name: groq-pro
-    litellm_params:
-      model: openrouter/openai/gpt-oss-120b
-      reasoning_effort: low
-      allowed_openai_params: [reasoning_effort]
-      extra_body:
-        provider: {order: [groq], allow_fallbacks: false, data_collection: deny}
-      api_key: os.environ/OPENROUTER_API_KEY
-    model_info:
-      mode: chat
-      display_name: GPT-OSS 120B qua Groq
-      note: trả phí, model sinh tùy chọn
-      max_input_tokens: 128000
-      max_output_tokens: 2048
-
-  # Evaluation alternatives, on the upstream they were measured on (checked against
-  # https://openrouter.ai/api/v1/models/<slug>/endpoints on 2026-11-08).
-  - model_name: groq-llama
-    litellm_params:
-      model: openrouter/meta-llama/llama-3.3-70b-instruct
-      extra_body:
-        provider: {order: [groq], allow_fallbacks: false, data_collection: deny}
-      api_key: os.environ/OPENROUTER_API_KEY
-    model_info:
-      mode: chat
-      display_name: llama-3.3-70b-versatile qua Groq
-      # Not offered to lecturers (catalog.py skips hidden): no measurement of it yet. Drop this
-      # line once one is in docs/measurements.
-      hidden: true
-      max_input_tokens: 128000
-
-  # Groq does not serve this model through OpenRouter; DeepInfra serves it unquantised (bf16).
-  - model_name: groq-qwen
-    litellm_params:
-      model: openrouter/qwen/qwen3.8-27b
-      extra_body:
-        provider: {order: [deepinfra], allow_fallbacks: false, data_collection: deny}
-      api_key: os.environ/OPENROUTER_API_KEY
-    model_info:
-      mode: chat
-      display_name: qwen/qwen3.8-27b qua DeepInfra
-      max_input_tokens: 128000
-
-  - model_name: groq-minimax
-    litellm_params:
-      model: openrouter/minimax/minimax-m2.7
-      extra_body:
-        provider: {order: [groq], allow_fallbacks: false, data_collection: deny}
-      api_key: os.environ/OPENROUTER_API_KEY
-    model_info:
-      mode: chat
-      display_name: minimaxai/minimax-m2.7 qua Groq
-      # Not offered to lecturers (catalog.py skips hidden): no measurement of it yet. Drop this
-      # line once one is in docs/measurements.
-      hidden: true
-      max_input_tokens: 128000
-
-  # Internal small-step profiles keep the same primary model. Only bounded
-  # requests use these; Content, Slides and Example use the large-safe aliases.
-  - model_name: gemini-fast-small
-    litellm_params:
-      model: openrouter/google/gemini-3.5-flash-lite
-      extra_body:
-        provider: {order: [google-ai-studio], allow_fallbacks: false, data_collection: deny}
-      api_key: os.environ/OPENROUTER_API_KEY
-    model_info:
-      mode: chat
-      display_name: Gemini (bước nhỏ)
-      hidden: true
-  - model_name: gemini-flash-small
-    litellm_params:
-      model: openrouter/google/gemini-3.5-flash
-      extra_body:
-        provider: {order: [google-ai-studio], allow_fallbacks: false, data_collection: deny}
-      api_key: os.environ/OPENROUTER_API_KEY
-    model_info:
-      mode: chat
-      display_name: Gemini (bước nhỏ)
-      hidden: true
-
-  # Optional load balancing across two distinct deployments. The
-  # normal default stays gemini-fast; experiments must pick a single-model alias.
-  - model_name: gemini-balanced
-    litellm_params:
-      model: openrouter/google/gemini-3.5-flash-lite
-      extra_body:
-        provider: {order: [google-ai-studio], allow_fallbacks: false, data_collection: deny}
-      api_key: os.environ/OPENROUTER_API_KEY
-    model_info:
-      mode: chat
-      display_name: Gemini cân bằng tải
-      note: phân phối giữa Flash Lite và Flash; không dùng cho thí nghiệm
-      # Not offered to lecturers: a mix of two models was never measured as one.
-      hidden: true
-  - model_name: gemini-balanced
-    litellm_params:
-      model: openrouter/google/gemini-3.5-flash
-      extra_body:
-        provider: {order: [google-ai-studio], allow_fallbacks: false, data_collection: deny}
-      api_key: os.environ/OPENROUTER_API_KEY
-    model_info:
-      mode: chat
-      display_name: Gemini cân bằng tải
-      note: phân phối giữa Flash Lite và Flash; không dùng cho thí nghiệm
-      # Not offered to lecturers: a mix of two models was never measured as one.
-      hidden: true
-
-# LiteLLM owns retries, load balancing and failover.
-# OpenAI, Claude and GPT-OSS are opt-in; generation never falls back to them.
+# LiteLLM owns retries and failover.
+# OpenAI, Claude and DeepSeek are opt-in; generation never falls back to them.
 router_settings:
   routing_strategy: simple-shuffle
   num_retries: 1
@@ -247,26 +120,15 @@ router_settings:
   disable_cooldowns: true
   enable_pre_call_checks: true
   optional_pre_call_checks: [enforce_model_rate_limits]
+  # gemini-flash, the default, has no fallback: it is the only Gemini model left.
   fallbacks:
-    - gemini-fast: [gemini-flash]
-    - gemini-flash: [gemini-fast]
-    - gemini-fast-small: [gemini-flash-small]
-    - gemini-flash-small: [gemini-fast-small]
-    - groq-pro: [gemini-fast, gemini-flash]
-    - openai-fast: [gemini-fast, gemini-flash]
-    - openai-pro: [gemini-fast, gemini-flash]
-    - claude-fast: [gemini-fast, gemini-flash]
-    - claude-pro: [gemini-fast, gemini-flash]
+    - openai-fast: [gemini-flash]
+    - claude-fast: [gemini-flash]
+    - deepseek-flash: [gemini-flash]
   context_window_fallbacks:
-    - gemini-fast: [gemini-flash]
-    - gemini-flash: [gemini-fast]
-    - gemini-fast-small: [gemini-fast, gemini-flash]
-    - gemini-flash-small: [gemini-flash, gemini-fast]
-    - groq-pro: [gemini-fast, gemini-flash]
-    - openai-fast: [gemini-fast, gemini-flash]
-    - openai-pro: [gemini-fast, gemini-flash]
-    - claude-fast: [gemini-fast, gemini-flash]
-    - claude-pro: [gemini-fast, gemini-flash]
+    - openai-fast: [gemini-flash]
+    - claude-fast: [gemini-flash]
+    - deepseek-flash: [gemini-flash]
 
 general_settings:
   master_key: os.environ/LLM_GATEWAY_KEY

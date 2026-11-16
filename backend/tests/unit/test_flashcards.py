@@ -6,6 +6,7 @@ import pytest
 from app.generation import fact_check, flashcards, media_common
 from app.generation.claim_evaluation import SupportVerdict
 from app.jobs.queue import LostJob
+from app.llm import catalog
 from app.models import MediaStatus
 
 
@@ -27,12 +28,14 @@ def _chunks(n=3):
     return [SimpleNamespace(id=uuid.uuid4(), chunk_index=i, content=f"passage {i}", source_ref=None) for i in range(n)]
 
 
-def _setup(monkeypatch, chunks, drafts, focus="heaps", verdict=lambda prompt: True, alias="gemini-fast"):
+def _setup(monkeypatch, chunks, drafts, focus="heaps", verdict=lambda prompt: True, alias="gemini-flash"):
     doc = SimpleNamespace(id=uuid.uuid4(), course_id=uuid.uuid4(), raw_text="text", planner_concepts=None)
     card_set = SimpleNamespace(
         id=uuid.uuid4(), document_id=doc.id, course_id=doc.course_id, focus=focus, output_language="en",
         model_alias=alias, status=MediaStatus.generating, cards=[])
     db = FakeDb(doc, card_set)
+    # Every alias counts as served: these tests are about generation, not about a dropped alias.
+    monkeypatch.setattr(catalog, "is_available", lambda _alias: True)
     queries = []
     monkeypatch.setattr(media_common, "retrieve", lambda _db, _course, query, **kw: queries.append((query, kw)) or chunks)
     asked = []

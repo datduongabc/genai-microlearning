@@ -35,14 +35,14 @@ from ragas.metrics import Faithfulness, ResponseRelevancy
 
 # Which company trained the model behind a gateway alias or a served model name (devops/gateway/config.yaml).
 FAMILIES = {
-    "gemini": "google", "claude": "anthropic", "openai": "openai", "gpt": "openai",
-    "groq-pro": "openai", "groq-llama": "meta", "llama": "meta", "groq-qwen": "alibaba", "qwen": "alibaba",
-    "groq-minimax": "minimax", "minimax": "minimax",
+    "gemini": "google", "claude": "anthropic", "openai": "openai", "gpt": "openai", "deepseek": "deepseek",
+    # Served model names of earlier runs, which the answer files keep.
+    "llama": "meta", "qwen": "alibaba", "minimax": "minimax",
 }
 
 
-# The gateway's fallbacks would let another model judge when the judge fails (groq-pro falls back to
-# gemini-fast, the family that wrote the answers), so they are turned off, and the provider's own model
+# The gateway's fallbacks would let another model judge when the judge fails (claude-fast falls back to
+# gemini-flash, which may be the family that wrote the answers), so they are turned off, and the provider's own model
 # name is asked back and recorded for every call, as app/llm/gateway.py does for an experiment.
 PINNED = {"disable_fallbacks": True, "metadata": {"_complexity_router_return_raw_model_name": True}}
 

@@ -47,12 +47,12 @@ def _as(user_id):
 
 def _video(ids, **kw):
     return Video(course_id=ids["course"], document_id=ids["document"], output_language="vi",
-                 model_alias="gemini-fast", voice_alias="voice-heygen", image_alias="image-nano-banana", **kw)
+                 model_alias="gemini-flash", voice_alias="voice-heygen", image_alias="image-nano-banana", **kw)
 
 
 def _set(ids, **kw):
     return FlashcardSet(course_id=ids["course"], document_id=ids["document"], output_language="vi",
-                        model_alias="gemini-fast", **kw)
+                        model_alias="gemini-flash", **kw)
 
 
 def test_owner_reads_and_writes_their_course_videos_and_sets(world):

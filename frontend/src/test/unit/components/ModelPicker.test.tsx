@@ -18,8 +18,8 @@ vi.mock('../../../api', async (importOriginal) => {
 
 const danhSach: ModelList = {
   models: [
-    { alias: 'gemini-fast', label: 'Gemini Flash Lite', provider: 'gemini', note: 'nhanh, có hạn mức miễn phí' },
-    { alias: 'groq-pro', label: 'GPT-OSS 120B qua Groq', provider: 'groq', note: null },
+    { alias: 'gemini-flash', label: 'Gemini 3.8 Flash', provider: 'google', note: 'nhanh, đọc được ảnh' },
+    { alias: 'deepseek-flash', label: 'DeepSeek V4.1 Flash', provider: 'deepseek', note: null },
   ],
   default: null,
 }
@@ -53,67 +53,67 @@ describe('ModelPicker', () => {
     vi.mocked(api.listModels).mockResolvedValue(danhSach)
     render(<Khung />)
 
-    expect(await screen.findByRole('option', { name: 'Gemini Flash Lite (gemini)' })).toBeInTheDocument()
-    expect(screen.getByRole('option', { name: 'GPT-OSS 120B qua Groq (groq)' })).toBeInTheDocument()
+    expect(await screen.findByRole('option', { name: 'Gemini 3.8 Flash (google)' })).toBeInTheDocument()
+    expect(screen.getByRole('option', { name: 'DeepSeek V4.1 Flash (deepseek)' })).toBeInTheDocument()
   })
 
   it('chưa có mặc định thì chọn sẵn cấu hình hệ thống', async () => {
     vi.mocked(api.listModels).mockResolvedValue(danhSach)
     render(<Khung />)
 
-    await screen.findByRole('option', { name: 'Gemini Flash Lite (gemini)' })
+    await screen.findByRole('option', { name: 'Gemini 3.8 Flash (google)' })
     expect(oChon().value).toBe('')
   })
 
   it('có mặc định đã lưu thì chọn sẵn nó và báo lên cha', async () => {
-    vi.mocked(api.listModels).mockResolvedValue({ ...danhSach, default: 'groq-pro' })
+    vi.mocked(api.listModels).mockResolvedValue({ ...danhSach, default: 'deepseek-flash' })
     const onChange = vi.fn()
     render(<Khung onChange={onChange} />)
 
-    await waitFor(() => expect(oChon().value).toBe('groq-pro'))
-    expect(onChange).toHaveBeenCalledWith('groq-pro')
+    await waitFor(() => expect(oChon().value).toBe('deepseek-flash'))
+    expect(onChange).toHaveBeenCalledWith('deepseek-flash')
   })
 
   it('hiện ghi chú của model đang chọn để giảng viên biết nên chọn cái nào', async () => {
     vi.mocked(api.listModels).mockResolvedValue(danhSach)
     render(<Khung />)
-    await screen.findByRole('option', { name: 'Gemini Flash Lite (gemini)' })
+    await screen.findByRole('option', { name: 'Gemini 3.8 Flash (google)' })
 
-    await userEvent.selectOptions(oChon(), 'gemini-fast')
+    await userEvent.selectOptions(oChon(), 'gemini-flash')
 
-    expect(screen.getByText('nhanh, có hạn mức miễn phí')).toBeInTheDocument()
+    expect(screen.getByText('nhanh, đọc được ảnh')).toBeInTheDocument()
   })
 
   it('chỉ hiện nút đặt mặc định khi lựa chọn khác với mặc định đã lưu', async () => {
     vi.mocked(api.listModels).mockResolvedValue(danhSach)
     render(<Khung />)
-    await screen.findByRole('option', { name: 'Gemini Flash Lite (gemini)' })
+    await screen.findByRole('option', { name: 'Gemini 3.8 Flash (google)' })
 
     expect(screen.queryByRole('button', { name: /đặt làm mặc định/i })).not.toBeInTheDocument()
-    await userEvent.selectOptions(oChon(), 'groq-pro')
+    await userEvent.selectOptions(oChon(), 'deepseek-flash')
     expect(screen.getByRole('button', { name: /đặt làm mặc định/i })).toBeInTheDocument()
   })
 
   it('đặt làm mặc định thì lưu đúng alias và nút biến mất', async () => {
     vi.mocked(api.listModels).mockResolvedValue(danhSach)
-    vi.mocked(api.setDefaultModel).mockResolvedValue({ ...danhSach, default: 'groq-pro' })
+    vi.mocked(api.setDefaultModel).mockResolvedValue({ ...danhSach, default: 'deepseek-flash' })
     render(<Khung />)
-    await screen.findByRole('option', { name: 'Gemini Flash Lite (gemini)' })
+    await screen.findByRole('option', { name: 'Gemini 3.8 Flash (google)' })
 
-    await userEvent.selectOptions(oChon(), 'groq-pro')
+    await userEvent.selectOptions(oChon(), 'deepseek-flash')
     await userEvent.click(screen.getByRole('button', { name: /đặt làm mặc định/i }))
 
-    expect(api.setDefaultModel).toHaveBeenCalledWith('groq-pro')
+    expect(api.setDefaultModel).toHaveBeenCalledWith('deepseek-flash')
     await waitFor(() =>
       expect(screen.queryByRole('button', { name: /đặt làm mặc định/i })).not.toBeInTheDocument(),
     )
   })
 
   it('chọn lại cấu hình hệ thống rồi đặt mặc định thì xoá mặc định đã lưu', async () => {
-    vi.mocked(api.listModels).mockResolvedValue({ ...danhSach, default: 'groq-pro' })
+    vi.mocked(api.listModels).mockResolvedValue({ ...danhSach, default: 'deepseek-flash' })
     vi.mocked(api.setDefaultModel).mockResolvedValue({ ...danhSach, default: null })
     render(<Khung />)
-    await waitFor(() => expect(oChon().value).toBe('groq-pro'))
+    await waitFor(() => expect(oChon().value).toBe('deepseek-flash'))
 
     await userEvent.selectOptions(oChon(), '')
     await userEvent.click(screen.getByRole('button', { name: /đặt làm mặc định/i }))
@@ -144,9 +144,9 @@ describe('ModelPicker', () => {
     vi.mocked(api.listModels).mockResolvedValue(danhSach)
     vi.mocked(api.setDefaultModel).mockRejectedValue(new Error('422'))
     render(<Khung />)
-    await screen.findByRole('option', { name: 'Gemini Flash Lite (gemini)' })
+    await screen.findByRole('option', { name: 'Gemini 3.8 Flash (google)' })
 
-    await userEvent.selectOptions(oChon(), 'groq-pro')
+    await userEvent.selectOptions(oChon(), 'deepseek-flash')
     await userEvent.click(screen.getByRole('button', { name: /đặt làm mặc định/i }))
 
     expect(await screen.findByText(/không lưu được mặc định/i)).toBeInTheDocument()

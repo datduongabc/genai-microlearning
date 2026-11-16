@@ -119,6 +119,18 @@ def is_available(alias: str) -> bool:
     return any(c.alias == alias for c in available_models())
 
 
+def served_or_default(alias: str | None) -> str | None:
+    """A stored alias (a row, a queued job) the gateway has since dropped runs on the configured model, so a retry
+    or an edit of old work does not fail on it. A gateway that does not answer cannot tell: the alias is kept, and
+    the call itself then fails as the outage it is."""
+    if alias is None:
+        return None
+    try:
+        return alias if is_available(alias) else settings.llm_model
+    except GatewayUnavailable:
+        return alias
+
+
 def probe(alias: str) -> None:
     """Thử một lệnh một token tới đúng model đã chọn, ngay lúc bấm sinh.
 
@@ -140,8 +152,6 @@ def probe(alias: str) -> None:
                 messages=[{"role": "user", "content": "ping"}], max_tokens=1,
                 extra_body={"disable_fallbacks": True},
             )
-    except ValueError as error:
-        raise ModelUnusable(alias, str(error)) from error
     # Trước tiên: gateway không với tới được thì mọi model đều hỏng như nhau, nên đổi model
     # không giúp gì. Phải đứng trước câu bắt tổng quát vì nó cũng là một openai.APIError.
     except openai.APIConnectionError as error:

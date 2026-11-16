@@ -79,9 +79,9 @@ variable "self_registration" {
 }
 
 variable "llm_model" {
-  description = "Gateway alias for chat and module generation; see devops/gateway/config.yaml. The same default as compose and backend/app/config.py, the model the thesis measurements were made on."
+  description = "Gateway alias for chat and module generation; see devops/gateway/config.yaml. The same default as compose and backend/app/config.py."
   type        = string
-  default     = "gemini-fast"
+  default     = "gemini-flash"
 }
 
 # --- Data

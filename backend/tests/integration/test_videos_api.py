@@ -42,7 +42,7 @@ def headers(user_id):
 @pytest.fixture
 def world(monkeypatch, tmp_path):
     monkeypatch.setattr(limiter, "enabled", False)
-    monkeypatch.setattr(catalog, "is_available", lambda alias: alias in {"gemini-fast", "claude-pro"})
+    monkeypatch.setattr(catalog, "is_available", lambda alias: alias in {"gemini-flash", "claude-fast"})
     monkeypatch.setattr(catalog, "probe", lambda alias: None)
     monkeypatch.setattr(settings, "upload_storage_dir", str(tmp_path))
     with SessionLocal() as db:
@@ -100,7 +100,7 @@ def make_video(world, scenes=None, *, status=MediaStatus.draft, published=False,
     with SessionLocal() as db:
         video = Video(
             course_id=world["course"], document_id=world["doc"], focus="FCFS", output_language="vi",
-            model_alias="gemini-fast", voice_alias="voice-heygen", image_alias="image-nano-banana",
+            model_alias="gemini-flash", voice_alias="voice-heygen", image_alias="image-nano-banana",
             scenes=scenes if scenes is not None else [scene(world)], status=status,
             published_at=datetime.now(UTC) if published else None, **extra)
         db.add(video)
@@ -147,7 +147,7 @@ def png(size=(400, 300), color="steelblue") -> bytes:
 
 def test_generating_reserves_one_generation(world):
     response = client.post("/videos", params={"document_id": str(world["doc"])}, headers=headers(world["owner"]), json={
-        "focus": "FCFS", "output_language": "vi", "model_alias": "gemini-fast",
+        "focus": "FCFS", "output_language": "vi", "model_alias": "gemini-flash",
         "voice_alias": "voice-gemini-lite", "image_alias": "image-qwen"})
 
     assert response.status_code == 200
@@ -155,7 +155,7 @@ def test_generating_reserves_one_generation(world):
         video = db.get(Video, uuid.UUID(response.json()["id"]))
         job = db.get(Job, uuid.UUID(response.json()["job_id"]))
         assert (video.status, video.focus, video.model_alias, video.voice_alias, video.image_alias) == (
-            MediaStatus.generating, "FCFS", "gemini-fast", "voice-gemini-lite", "image-qwen")
+            MediaStatus.generating, "FCFS", "gemini-flash", "voice-gemini-lite", "image-qwen")
         assert (job.job_type, job.document_id, job.payload) == (
             JobType.video_script, world["doc"], {"video_id": str(video.id)})
         assert db.get(User, world["owner"]).generation_count == 1

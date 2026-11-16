@@ -6,6 +6,8 @@ from app.db import SessionLocal
 from app.generation import claim_evaluation, flashcards, media_common
 from app.generation.claim_evaluation import SupportVerdict
 from app.jobs.queue import enqueue_job, execute_job_step, handle_job_error
+from app.llm import catalog
+from app.llm.gateway import requested_model
 from app.models import (
     Chunk,
     Course,
@@ -18,6 +20,12 @@ from app.models import (
     MediaStatus,
     User,
 )
+
+
+@pytest.fixture(autouse=True)
+def served(monkeypatch):
+    """The aliases the gateway serves, without a running gateway."""
+    monkeypatch.setattr(catalog, "is_available", lambda alias: alias in {"gemini-flash", "claude-fast"})
 
 
 @pytest.fixture
@@ -35,7 +43,7 @@ def world():
         chunk = Chunk(document_id=doc.id, course_id=course.id, chunk_index=0, content="A heap is a tree.")
         db.add(chunk)
         card_set = FlashcardSet(course_id=course.id, document_id=doc.id, focus="heaps", output_language="en",
-                                model_alias="gemini-fast")
+                                model_alias="gemini-flash")
         db.add(card_set)
         db.flush()
         job = enqueue_job(db, job_type=JobType.flashcard_generation, step="generate", document_id=doc.id,
@@ -68,6 +76,29 @@ def test_the_job_fills_the_set_and_finishes(world, monkeypatch):
         assert card_set.cards[0]["citations"] == [str(chunk_id)]
         assert card_set.cost["calls"] == 0 and card_set.cost["usd"] is None
         assert db.get(Job, job_id).status == JobStatus.done
+
+
+def test_a_set_made_with_an_alias_the_gateway_dropped_is_generated_with_the_default(world, monkeypatch):
+    from app.config import settings
+
+    _, _, set_id, job_id, chunk_id = world
+    with SessionLocal() as db:
+        db.get(FlashcardSet, set_id).model_alias = "groq-pro"
+        db.commit()
+        chunk = db.get(Chunk, chunk_id)
+        db.expunge(chunk)
+    writers = []
+    monkeypatch.setattr(media_common, "retrieve", lambda *a, **k: [chunk])
+    monkeypatch.setattr(flashcards, "complete_structured", lambda prompt, model, **kw: writers.append(
+        requested_model()) or model(cards=[{"front": "What is a heap?", "back": "A tree.", "sources": ["S1"]}]))
+    monkeypatch.setattr(claim_evaluation, "complete_structured",
+                        lambda *a, **k: SupportVerdict(supported=True, reason=""))
+    with SessionLocal() as db:
+        execute_job_step(db.get(Job, job_id))
+    with SessionLocal() as db:
+        card_set = db.get(FlashcardSet, set_id)
+        assert card_set.status == MediaStatus.draft
+        assert writers == [settings.llm_model] and card_set.model_alias == settings.llm_model
 
 
 def test_a_job_that_runs_out_of_attempts_marks_the_set_failed(world):

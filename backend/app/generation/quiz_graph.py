@@ -358,12 +358,12 @@ def _verify_question(
     )
     if sourced:
         check = complete_structured(
-            prompt, GroundednessAnswerabilityCheck, system_instruction=GROUNDEDNESS_SYSTEM_INSTRUCTION, small_step=True
+            prompt, GroundednessAnswerabilityCheck, system_instruction=GROUNDEDNESS_SYSTEM_INSTRUCTION
         )
         result.groundedness_pass, result.groundedness_reason = check.groundedness_pass, check.groundedness_reason
     else:
         check = complete_structured(
-            prompt, AnswerabilityCheck, system_instruction=NO_SOURCE_QUESTION_CHECK_SYSTEM_INSTRUCTION, small_step=True
+            prompt, AnswerabilityCheck, system_instruction=NO_SOURCE_QUESTION_CHECK_SYSTEM_INSTRUCTION
         )
     result.answerability_pass, result.answerability_reason = check.answerability_pass, check.answerability_reason
     correct = [i for i, option in enumerate(check.option_checks) if option.is_correct]

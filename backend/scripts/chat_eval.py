@@ -3,7 +3,7 @@
     PYTHONPATH=. python scripts/chat_eval.py select --questions ../docs/measurements/truy_van_5mon.json \\
         --out ../docs/measurements/chat-eval/questions.json
     PYTHONPATH=. python scripts/chat_eval.py answer --questions ../docs/measurements/chat-eval/questions.json \\
-        --alias gemini-fast --out ../docs/measurements/chat-eval/answers-gemini-fast.jsonl
+        --alias gemini-flash --out ../docs/measurements/chat-eval/answers-gemini-flash.jsonl
 
 `select` takes every fifth question of each subject from the retrieval set (250 questions, one source
 chunk each, docs/measurements/2026-11-04-five-subject-baseline.md): 10 per subject, 50 in all. It stores

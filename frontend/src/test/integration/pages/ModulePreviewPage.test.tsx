@@ -812,10 +812,10 @@ it('asks for sections once the linked account has answered', async () => {
 it('shows the served model when generation used a fallback', async () => {
   vi.mocked(api.getModule).mockResolvedValue({
     ...baseModule,
-    generation_models: [{ requested_alias: 'gemini-fast', routed_alias: 'gemini-fast', served_model: 'gemini-3.5-flash' }],
+    generation_models: [{ requested_alias: 'gemini-flash', routed_alias: 'gemini-flash', served_model: 'google/gemini-3.8-flash' }],
   })
   renderPage()
-  expect(await screen.findByText(/Model sinh: gemini-fast → gemini-3.5-flash/)).toBeInTheDocument()
+  expect(await screen.findByText(/Model sinh: gemini-flash → google\/gemini-3.8-flash/)).toBeInTheDocument()
 })
 
 it('renders numbered inline citations in reading order and opens the exact chunk', async () => {

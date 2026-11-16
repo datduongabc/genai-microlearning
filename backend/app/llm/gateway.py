@@ -26,9 +26,9 @@ from app.config import settings
 # A 429 that says the account has no money or the wrong plan: waiting will not help.
 _NOT_A_RATE_LIMIT = re.compile(r"insufficient_quota|billing|credit balance|no credits", re.IGNORECASE)
 MAX_RATE_LIMIT_WAIT_SECONDS = 60.0
-# The gateway owns retries and fallbacks (devops/gateway/config.yaml router_settings): 120 s x 2 tries x 3 models
+# The gateway owns retries and fallbacks (devops/gateway/config.yaml router_settings): 120 s x 2 tries x 2 models
 # in the longest chain. Without this the client retried the whole chain itself and waited up to 100 minutes.
-GATEWAY_TIMEOUT_SECONDS = 750
+GATEWAY_TIMEOUT_SECONDS = 540
 
 # Model do giảng viên chọn cho riêng một lượt sinh. Để trong ContextVar chứ không truyền
 # qua tham số: một lượt sinh đi qua mười chỗ gọi rải khắp generation, chat và ingestion,
@@ -164,35 +164,20 @@ def _call_with_rate_limit_retries(alias: str, routed_alias: str, **request):
             time.sleep(wait)
 
 
-def _completion(*, small_step: bool = False, **kwargs):
+def _completion(**kwargs):
     alias = active_model()
-    routed_alias = alias
-    pinned = settings.llm_experiment_mode or _experiment.get()
     extra_body = dict(kwargs.pop("extra_body", None) or {})
     # Keep the provider model in the HTTP response instead of the proxy's routing alias.
     extra_body["metadata"] = {
         **extra_body.get("metadata", {}), RETURN_RAW_MODEL_NAME_METADATA_KEY: True,
     }
-    if pinned:
-        if alias == "gemini-balanced" or alias.endswith("-small"):
-            raise ValueError("Experiments require a single-model alias, not a routing profile")
+    if settings.llm_experiment_mode or _experiment.get():
         extra_body["disable_fallbacks"] = True
-    elif small_step and alias in {"gemini-fast", "gemini-flash"}:
-        # Reserve output and schema tokens too;
-        # Content never opts in, even in the no-RAG arm with a short prompt.
-        schema = kwargs.get("response_format")
-        schema_text = json.dumps(schema.model_json_schema() if isinstance(schema, type) else schema)
-        input_tokens = litellm.token_counter(model="gpt-4o", messages=kwargs["messages"])
-        input_tokens += litellm.token_counter(model="gpt-4o", text=schema_text)
-        output_tokens = kwargs.get("max_tokens", 2048)
-        if output_tokens <= 2048 and input_tokens + output_tokens <= 6000:
-            routed_alias = f"{alias}-small"
-            kwargs["max_tokens"] = output_tokens
     # "openai/" only means "speak the OpenAI-compatible protocol to api_base";
     # the gateway decides which provider actually serves the alias.
     response = _call_with_rate_limit_retries(
-        alias, routed_alias,
-        model=f"openai/{routed_alias}",
+        alias, alias,
+        model=f"openai/{alias}",
         api_base=settings.llm_gateway_url,
         api_key=settings.llm_gateway_key,
         extra_body=extra_body,
@@ -202,7 +187,7 @@ def _completion(*, small_step: bool = False, **kwargs):
     calls = _model_calls.get()
     served = getattr(response, "model", None)
     if calls is not None and isinstance(served, str):
-        calls.append({"requested_alias": alias, "routed_alias": routed_alias, "served_model": served})
+        calls.append({"requested_alias": alias, "routed_alias": alias, "served_model": served})
     return response
 
 
@@ -210,12 +195,7 @@ async def stream_text(prompt: str, system_instruction: str | None = None) -> Asy
     """The reply piece by piece, without holding a thread while it waits. Retries stay with the gateway: once a
     word has reached the reader, the reply cannot start over."""
     alias = active_model()
-    if settings.llm_experiment_mode or _experiment.get():
-        if alias == "gemini-balanced" or alias.endswith("-small"):
-            raise ValueError("Experiments require a single-model alias, not a routing profile")
-        extra_body = {"disable_fallbacks": True}
-    else:
-        extra_body = {}
+    extra_body = {"disable_fallbacks": True} if settings.llm_experiment_mode or _experiment.get() else {}
     messages = [{"role": "system", "content": system_instruction}] if system_instruction else []
     messages.append({"role": "user", "content": prompt})
     stream = await litellm.acompletion(

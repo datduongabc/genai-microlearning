@@ -25,7 +25,7 @@ const card = (n: number, extra: Partial<FlashcardCard> = {}): FlashcardCard => (
 })
 
 const draft = (cards: FlashcardCard[], extra: Partial<FlashcardSetDetail> = {}): FlashcardSetDetail => ({
-  id: 'set-1', course_id: 'course-1', document_id: 'doc-1', focus: 'Mảng', output_language: 'vi', model_alias: 'gemini-fast',
+  id: 'set-1', course_id: 'course-1', document_id: 'doc-1', focus: 'Mảng', output_language: 'vi', model_alias: 'gemini-flash',
   status: 'draft', card_count: cards.length, published_at: null, created_at: '2026-01-01T00:00:00Z',
   cost: null,
   cards, ...extra,

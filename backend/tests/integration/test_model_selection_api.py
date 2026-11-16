@@ -17,12 +17,12 @@ client = TestClient(app)
 
 GATEWAY_GIA_LAP = [
     {
-        "model_name": "gemini-fast",
+        "model_name": "gemini-flash",
         "litellm_params": {"model": "gemini/gemini-3.5-flash-lite"},
         "model_info": {"mode": "chat", "display_name": "Gemini Flash Lite", "note": "nhanh, miễn phí"},
     },
     {
-        "model_name": "groq-pro",
+        "model_name": "deepseek-flash",
         "litellm_params": {"model": "groq/openai/gpt-oss-120b"},
         "model_info": {"mode": "chat"},
     },
@@ -62,7 +62,7 @@ def test_khach_chua_dang_nhap_khong_xem_duoc_danh_sach():
 def test_danh_sach_chi_gom_model_sinh_van_ban_kem_nhan_va_nha_cung_cap():
     body = client.get("/models", headers=_dang_nhap()).json()
 
-    assert [m["alias"] for m in body["models"]] == ["gemini-fast", "groq-pro"]
+    assert [m["alias"] for m in body["models"]] == ["gemini-flash", "deepseek-flash"]
     assert body["models"][0]["label"] == "Gemini Flash Lite"
     assert body["models"][0]["provider"] == "gemini"
     assert body["models"][0]["note"] == "nhanh, miễn phí"
@@ -70,9 +70,9 @@ def test_danh_sach_chi_gom_model_sinh_van_ban_kem_nhan_va_nha_cung_cap():
 
 def test_thieu_nhan_thi_tra_ve_chinh_alias():
     body = client.get("/models", headers=_dang_nhap()).json()
-    groq = next(m for m in body["models"] if m["alias"] == "groq-pro")
+    groq = next(m for m in body["models"] if m["alias"] == "deepseek-flash")
 
-    assert groq["label"] == "groq-pro"
+    assert groq["label"] == "deepseek-flash"
 
 
 def test_giang_vien_moi_thi_chua_co_mac_dinh():
@@ -84,15 +84,15 @@ def test_giang_vien_moi_thi_chua_co_mac_dinh():
 def test_dat_mac_dinh_roi_xem_lai_thi_thay():
     headers = _dang_nhap()
 
-    dat = client.put("/models/default", json={"alias": "groq-pro"}, headers=headers)
+    dat = client.put("/models/default", json={"alias": "deepseek-flash"}, headers=headers)
 
     assert dat.status_code == 200
-    assert client.get("/models", headers=headers).json()["default"] == "groq-pro"
+    assert client.get("/models", headers=headers).json()["default"] == "deepseek-flash"
 
 
 def test_xoa_mac_dinh_bang_cach_dat_ve_null():
     headers = _dang_nhap()
-    client.put("/models/default", json={"alias": "groq-pro"}, headers=headers)
+    client.put("/models/default", json={"alias": "deepseek-flash"}, headers=headers)
 
     client.put("/models/default", json={"alias": None}, headers=headers)
 
@@ -134,7 +134,7 @@ def test_mac_dinh_cua_nguoi_nay_khong_anh_huong_nguoi_khac():
     mot = _dang_nhap()
     hai = _dang_nhap()
 
-    client.put("/models/default", json={"alias": "groq-pro"}, headers=mot)
+    client.put("/models/default", json={"alias": "deepseek-flash"}, headers=mot)
 
     assert client.get("/models", headers=hai).json()["default"] is None
 
@@ -172,9 +172,9 @@ def test_gateway_tra_ma_loi_thi_cung_bao_503(monkeypatch):
 def test_luu_mac_dinh_thi_model_duoc_thu_truoc():
     """Mặc định được dùng cho mọi lượt sinh về sau, nên lưu một model chưa dùng được làm mặc
     định là để dành một lỗi cho mọi lần bấm sinh tiếp theo. Báo ngay lúc lưu thì hơn."""
-    client.put("/models/default", json={"alias": "groq-pro"}, headers=_dang_nhap())
+    client.put("/models/default", json={"alias": "deepseek-flash"}, headers=_dang_nhap())
 
-    assert da_thu == ["groq-pro"]
+    assert da_thu == ["deepseek-flash"]
 
 
 def test_model_chua_dung_duoc_thi_khong_luu_lam_mac_dinh(monkeypatch):
@@ -184,7 +184,7 @@ def test_model_chua_dung_duoc_thi_khong_luu_lam_mac_dinh(monkeypatch):
     monkeypatch.setattr(catalog, "probe", model_hong)
     headers = _dang_nhap()
 
-    phan_hoi = client.put("/models/default", json={"alias": "groq-pro"}, headers=headers)
+    phan_hoi = client.put("/models/default", json={"alias": "deepseek-flash"}, headers=headers)
 
     assert phan_hoi.status_code == 422
     assert "api key" in phan_hoi.json()["detail"].lower()

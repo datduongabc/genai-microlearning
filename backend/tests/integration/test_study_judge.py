@@ -88,7 +88,7 @@ def test_enqueue_parse_all_scores_pin_served_model_and_upsert(world, fake):
     assert all(r["status"] == "done" for r in result["results"])
     assert len(fake) == 4
     for request in fake:
-        assert request["model"] in {"openai/claude-pro", "openai/openai-pro"}
+        assert request["model"] in {"openai/claude-fast", "openai/openai-fast"}
         assert request["extra_body"]["disable_fallbacks"] is True
         assert request["max_tokens"] == judge.OUTPUT_TOKENS
         assert request["max_retries"] == 0
@@ -98,7 +98,7 @@ def test_enqueue_parse_all_scores_pin_served_model_and_upsert(world, fake):
         assert len(rows) == 4
         for row in rows:
             assert row.rater_kind == "llm_judge" and row.user_id is None
-            assert row.judge_alias in {"claude-pro", "openai-pro"}
+            assert row.judge_alias in {"claude-fast", "openai-fast"}
             assert row.judge_family in {"anthropic", "openai"}
             assert row.accuracy == {"score": 4, "justification": "ổn"}
             assert row.hallucination_findings == []
@@ -117,7 +117,7 @@ def test_quota_substitution_uses_next_distinct_family(world, fake, monkeypatch):
     jid = start(world, sid).json()["job_id"]
     real = judge.judge_module
     def evaluate(packet, **kwargs):
-        if judge.gateway.active_model() == 'openai-pro':
+        if judge.gateway.active_model() == 'openai-fast':
             raise litellm.RateLimitError('quota', llm_provider='openai', model='gpt')
         return real(packet, **kwargs)
     monkeypatch.setattr(judge, 'judge_module', evaluate)
@@ -134,7 +134,7 @@ def test_quota_without_substitute_preserves_first_rating_and_resumes(world, fake
     jid = start(world, sid).json()["job_id"]
     real = judge.judge_module
     def evaluate(packet, **kwargs):
-        if judge.gateway.active_model() != 'claude-pro':
+        if judge.gateway.active_model() != 'claude-fast':
             raise litellm.RateLimitError('quota', llm_provider='openai', model='gpt')
         return real(packet, **kwargs)
     monkeypatch.setattr(judge, 'judge_module', evaluate)
@@ -192,7 +192,7 @@ def test_quota_on_the_second_member_moves_the_whole_pair_to_the_same_substitute(
     real = judge.judge_module
     openai_calls = []
     def evaluate(packet, **kwargs):
-        if judge.gateway.active_model() == 'openai-pro':
+        if judge.gateway.active_model() == 'openai-fast':
             openai_calls.append(packet.anon_id)
             if len(openai_calls) > 1:
                 raise litellm.RateLimitError('quota', llm_provider='openai', model='gpt')
@@ -204,8 +204,8 @@ def test_quota_on_the_second_member_moves_the_whole_pair_to_the_same_substitute(
         aliases = [{r.judge_alias for r in db.scalars(select(Rating).where(Rating.study_item_id == item.id))}
                    for item in db.scalars(select(StudyItem).where(StudyItem.study_id == uuid.UUID(sid)))]
     assert len(aliases) == 2
-    assert aliases[0] & aliases[1] == {'claude-pro', 'groq-llama'}
-    assert sorted(len(a) for a in aliases) == [2, 3]  # The half-finished openai-pro rating is kept.
+    assert aliases[0] & aliases[1] == {'claude-fast', 'deepseek-flash'}
+    assert sorted(len(a) for a in aliases) == [2, 3]  # The half-finished openai-fast rating is kept.
 
 
 def test_a_pending_first_member_is_refreshed_when_its_sibling_step_completes_the_pair(world, fake, monkeypatch):
@@ -214,7 +214,7 @@ def test_a_pending_first_member_is_refreshed_when_its_sibling_step_completes_the
     jid = start(world, sid).json()['job_id']
     real = judge.judge_module
     def quota(packet, **kwargs):
-        if judge.gateway.active_model() != 'claude-pro':
+        if judge.gateway.active_model() != 'claude-fast':
             raise litellm.RateLimitError('quota', llm_provider='openai', model='gpt')
         return real(packet, **kwargs)
     monkeypatch.setattr(judge, 'judge_module', quota)
@@ -231,7 +231,7 @@ def test_a_pending_first_member_is_refreshed_when_its_sibling_step_completes_the
 
 
 def test_a_packet_over_a_candidate_budget_uses_the_next_candidate(world, fake, monkeypatch):
-    small = [{**m, 'model_info': {'max_input_tokens': 10}} if m['model_name'] == 'claude-pro' else m
+    small = [{**m, 'model_info': {'max_input_tokens': 10}} if m['model_name'] == 'claude-fast' else m
              for m in GATEWAY]
     monkeypatch.setattr(judge, 'fetch_model_info', lambda: small)
     sid = create_study(world)
@@ -239,9 +239,9 @@ def test_a_packet_over_a_candidate_budget_uses_the_next_candidate(world, fake, m
     jid = start(world, sid).json()['job_id']
     step(jid)
     assert status(world, sid, jid)['completed'] == 1
-    assert all(r['model'] != 'openai/claude-pro' for r in fake)
+    assert all(r['model'] != 'openai/claude-fast' for r in fake)
     with SessionLocal() as db:
-        assert {r.judge_alias for r in db.scalars(select(Rating))} == {'openai-pro', 'gemini-fast'}
+        assert {r.judge_alias for r in db.scalars(select(Rating))} == {'openai-fast', 'gemini-flash'}
 
 
 def test_whole_large_packet_is_judged_once_without_splitting_or_truncation(world, fake):
@@ -298,7 +298,7 @@ def test_gateway_context_window_rejection_skips_each_candidate_without_retrying(
         calls.append(1)
         raise litellm.BadRequestError(
             "OpenAIException - litellm.ContextWindowExceededError: litellm._pre_call_checks: "
-            "Context Window exceeded for given call.", model="groq-pro", llm_provider="openai")
+            "Context Window exceeded for given call.", model="claude-fast", llm_provider="openai")
 
     monkeypatch.setattr(judge, "judge_module", rejected)
     step(jid)
@@ -387,9 +387,10 @@ def test_judge_endpoints_are_admin_only(world, fake, headers_name, code):
 
 
 @pytest.mark.parametrize('generator,families', [
-    ('claude-pro', {'openai', 'google'}),
+    ('claude-fast', {'openai', 'google'}),
     ('openai-fast', {'anthropic', 'google'}),
-    ('gemini-fast', {'anthropic', 'openai'}),
+    ('gemini-flash', {'anthropic', 'openai'}),
+    ('deepseek-flash', {'anthropic', 'openai'}),
 ])
 def test_each_generator_gets_two_cross_family_ratings(world, fake, generator, families):
     sid = create_study(world)
