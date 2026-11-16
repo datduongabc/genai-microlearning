@@ -6,7 +6,7 @@ import Markdown, { type Components } from 'react-markdown'
 import { Link, useParams } from 'react-router-dom'
 import { AppShell } from '../components/AppShell'
 import { MoodleAccountSection, type MoodleAccountState } from '../components/MoodleAccountSection'
-import { mathRehypePlugins, mathRemarkPlugins } from '../lib/markdownMath'
+import { modelMarkdownProps } from '../lib/markdownMath'
 import {
   chatEditSchema,
   examplesContentSchema,
@@ -419,11 +419,17 @@ function ModuleHeader({ module, onSaved }: { module: ModuleDetail; onSaved: () =
     reset,
     formState: { errors, isSubmitting: saving },
   } = useForm<ModuleTitleFormValues>({ resolver: zodResolver(moduleTitleSchema), defaultValues: { title: module.title } })
+  const [error, setError] = useState('')
 
   async function handleSave({ title }: ModuleTitleFormValues) {
-    await updateModuleTitle(module.id, title)
-    await onSaved()
-    setEditing(false)
+    setError('')
+    try {
+      await updateModuleTitle(module.id, title)
+      await onSaved()
+      setEditing(false)
+    } catch (err) {
+      setError(apiErrorMessage(err, SAVE_FAILED))
+    }
   }
 
   return (
@@ -446,6 +452,7 @@ function ModuleHeader({ module, onSaved }: { module: ModuleDetail; onSaved: () =
             type="button"
             onClick={() => {
               reset({ title: module.title })
+              setError('')
               setEditing(false)
             }}
             className="text-xs font-semibold text-gray-500 hover:text-gray-700"
@@ -453,6 +460,7 @@ function ModuleHeader({ module, onSaved }: { module: ModuleDetail; onSaved: () =
             Hủy
           </button>
           {errors.title && <p className="basis-full text-xs text-red-600">{errors.title.message}</p>}
+          {error && <p role="alert" className="basis-full text-sm danger-text">{error}</p>}
         </form>
       ) : (
         <button
@@ -622,6 +630,8 @@ function SlidesDownload({ moduleId, moduleTitle }: { moduleId: string; moduleTit
   </div>
 }
 
+const SAVE_FAILED = 'Không thể lưu thay đổi. Vui lòng thử lại.'
+
 function SaveCancelRow({
   editing,
   saving,
@@ -632,29 +642,43 @@ function SaveCancelRow({
   editing: boolean
   saving: boolean
   onEdit: () => void
-  onSave: () => void
+  onSave: () => Promise<void>
   onCancel: () => void
 }) {
+  // Here, so that every editor reports a failed save: otherwise the button goes back to "Lưu"
+  // with nothing said, and the lecturer moves on and loses the edit.
+  const [error, setError] = useState('')
+  async function save() {
+    setError('')
+    try {
+      await onSave()
+    } catch (err) {
+      setError(apiErrorMessage(err, SAVE_FAILED))
+    }
+  }
   if (!editing) {
     return (
-      <button onClick={onEdit} className="text-xs font-semibold text-accent hover:underline">
+      <button onClick={() => { setError(''); onEdit() }} className="text-xs font-semibold text-accent hover:underline">
         Sửa
       </button>
     )
   }
   return (
-    <div className="flex gap-3">
-      <button
-        onClick={onSave}
-        disabled={saving}
-        className="rounded-[3px] bg-accent px-4 py-1.5 text-xs font-semibold text-white hover:bg-accent-dark disabled:opacity-60"
-      >
-        {saving ? 'Đang lưu...' : 'Lưu'}
-      </button>
-      <button onClick={onCancel} className="text-xs font-semibold text-gray-500 hover:text-gray-700">
-        Hủy
-      </button>
-    </div>
+    <>
+      <div className="flex gap-3">
+        <button
+          onClick={() => void save()}
+          disabled={saving}
+          className="rounded-[3px] bg-accent px-4 py-1.5 text-xs font-semibold text-white hover:bg-accent-dark disabled:opacity-60"
+        >
+          {saving ? 'Đang lưu...' : 'Lưu'}
+        </button>
+        <button onClick={() => { setError(''); onCancel() }} className="text-xs font-semibold text-gray-500 hover:text-gray-700">
+          Hủy
+        </button>
+      </div>
+      {error && <p role="alert" className="text-sm danger-text">{error}</p>}
+    </>
   )
 }
 
@@ -709,7 +733,6 @@ function MarkdownFieldEditor({
     },
   }
   const [editing, setEditing] = useState(false)
-  const [saveError, setSaveError] = useState('')
   const {
     register,
     handleSubmit,
@@ -718,14 +741,9 @@ function MarkdownFieldEditor({
   } = useForm<MarkdownContentFormValues>({ resolver: zodResolver(markdownContentSchema), defaultValues: { markdown: original } })
 
   async function handleSave({ markdown }: MarkdownContentFormValues) {
-    setSaveError('')
-    try {
-      await updateComponentContent(moduleId, component.id, { ...component.content, markdown })
-      await onSaved()
-      setEditing(false)
-    } catch (err) {
-      setSaveError(apiErrorMessage(err, 'Không thể lưu nội dung. Kiểm tra mã nguồn trích dẫn rồi thử lại.'))
-    }
+    await updateComponentContent(moduleId, component.id, { ...component.content, markdown })
+    await onSaved()
+    setEditing(false)
   }
 
   return (
@@ -739,21 +757,18 @@ function MarkdownFieldEditor({
         />
       ) : (
         <div className="lesson-text">
-          <Markdown components={markdownComponents} remarkPlugins={mathRemarkPlugins} rehypePlugins={mathRehypePlugins}>{rendered}</Markdown>
+          <Markdown {...modelMarkdownProps} components={markdownComponents}>{rendered}</Markdown>
         </div>
       )}
-      {saveError && <p role="alert" className="text-sm text-red-600">{saveError}</p>}
       <SaveCancelRow
         editing={editing}
         saving={saving}
         onEdit={() => {
-          setSaveError('')
           reset({ markdown: original })
           setEditing(true)
         }}
         onSave={handleSubmit(handleSave)}
         onCancel={() => {
-          setSaveError('')
           reset({ markdown: original })
           setEditing(false)
         }}

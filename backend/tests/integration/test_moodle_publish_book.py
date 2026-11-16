@@ -383,6 +383,29 @@ def test_a_moodle_failure_is_reported_as_a_bad_gateway(published, monkeypatch):
     assert response.status_code == 502
 
 
+def test_a_failure_after_the_book_says_what_was_already_created(published, moodle, monkeypatch):
+    """A retry would add a second Book: the lecturer must know which activities already exist."""
+    def failing_quiz(*args, **kwargs):
+        raise httpx.ReadTimeout("quiz save took too long")
+
+    monkeypatch.setattr(moodle_client, "create_quiz", failing_quiz)
+
+    response = published.publish(full_module(published))
+
+    assert response.status_code == 502
+    assert "Book (cmid 101)" in response.json()["detail"]
+    assert response.json()["detail"].startswith(UNREACHABLE)
+
+
+def test_a_failure_before_anything_was_created_names_nothing(published, monkeypatch):
+    def failing_book(*args, **kwargs):
+        raise httpx.ConnectError("down")
+
+    monkeypatch.setattr(moodle_client, "create_book", failing_book)
+
+    assert published.publish(full_module(published)).json()["detail"] == UNREACHABLE
+
+
 def test_the_practice_gets_immediate_feedback_and_the_quiz_keeps_deferred_feedback(published, moodle):
     published.publish(full_module(published))
 

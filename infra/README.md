@@ -22,7 +22,10 @@ Cần: AWS CLI đã đăng nhập, Docker, Node, `jq`, Terraform ≥ 1.10.
 
 ```bash
 cd infra/terraform
-cp terraform.tfvars.example terraform.tfvars   # sửa image_tag = commit hiện tại, alarm_email
+cp terraform.tfvars.example terraform.tfvars   # sửa alarm_email
+# Tag image sẽ đẩy ở bước 1. State mới chưa giữ tag nào, nên bước 1 và 2 truyền nó qua IMAGE_TAG;
+# từ đó tag nằm trong state (output image_tag) và deploy.sh cập nhật nó mỗi lần rollout.
+TAG=$(git rev-parse --short=7 HEAD)
 
 # 0. Bucket giữ state, một lần cho mỗi tài khoản. State chứa mật khẩu DB sinh ra, nên bucket riêng
 #    tư, mã hóa, chỉ nhận TLS, và có versioning để lấy lại bản cũ khi state hỏng.
@@ -35,13 +38,13 @@ cp backend.hcl.example backend.hcl              # điền tên bucket
 terraform init -backend-config=backend.hcl
 
 # 1. Kho ECR trước, để có chỗ đẩy image.
-terraform apply -target=aws_ecr_repository.repo -target=aws_ecr_lifecycle_policy.keep_recent
+IMAGE_TAG=$TAG ../scripts/tf.sh apply -target=aws_ecr_repository.repo -target=aws_ecr_lifecycle_policy.keep_recent
 IMAGES_ONLY=1 ../scripts/deploy.sh             # thêm WITH_RERANKER=1 nếu dùng jina
 
 # 2. Phần còn lại. Service khởi động trước migration, nên api chưa qua /ready và lần deploy đầu có
 #    thể bị circuit breaker đánh dấu thất bại; bước 4 khởi động lại service đó sau migration.
 #    Topic SNS mới gửi email xác nhận tới alarm_email: bấm Confirm, mỗi lần tạo lại stack.
-terraform apply
+IMAGE_TAG=$TAG ../scripts/tf.sh apply
 
 # 3. Khóa nhà cung cấp. Terraform không bao giờ thấy chúng và không ghi đè sau lần tạo.
 PREFIX=$(terraform output -raw ssm_prefix)
@@ -59,9 +62,18 @@ SKIP_BUILD=1 ../scripts/deploy.sh
 infra/scripts/deploy.sh
 ```
 
+Chỉ commit đã nằm trên `origin/main` (đã qua review và CI) mới được deploy; commit khác thì script dừng trước khi build.
+Ở bước rolling update, Terraform in plan và chờ gõ `yes`: đọc plan trước, nhất là khi có tài nguyên bị thay thế (RDS thay thế là một database mới, rỗng).
+
 Thứ tự: build và đẩy image theo commit → chạy migration bằng image mới trong một task riêng → rolling update → frontend → gọi `/api/ready` qua CloudFront. Migration lỗi thì dừng, chưa service nào đổi. Task mới không qua health check thì circuit breaker của ECS tự quay về bản cũ.
 
 Trong lúc rolling update, bản cũ và mới chạy cùng lúc trên schema mới, nên thay đổi phá vỡ tương thích phải tách hai lần deploy: thêm trước, bỏ sau.
+
+Tag đang chạy nằm trong state của môi trường (output `image_tag`), và `tf.sh` đọc nó rồi truyền lại cho mọi `plan` và `apply`, nên một lệnh từ bất kỳ bản checkout nào cũng giữ đúng image của lần deploy cuối.
+`deploy.sh` đặt `IMAGE_TAG` thành commit đang rollout cho lần apply của nó; `IMAGE_TAG` luôn thắng tag trong state.
+Vì vậy mọi thay đổi hạ tầng khác chạy qua `infra/scripts/tf.sh apply`, không chạy `terraform apply` trực tiếp: tag cũ để trong `terraform.tfvars` sẽ đưa mọi service về image cũ.
+State chưa có output đó (stack mới, hoặc lần apply đầu sau khi output này được thêm) thì `tf.sh` dừng: chạy `deploy.sh`, hoặc đặt tag đang chạy cho đúng một lệnh (`IMAGE_TAG=<commit> infra/scripts/tf.sh apply`, tag lấy từ `aws ecs describe-services`).
+Đừng `export IMAGE_TAG`: biến còn lại trong shell sẽ thắng tag trong state ở lần sau và đưa service về image cũ.
 
 ## Staging
 
@@ -76,9 +88,10 @@ Dựng lần đầu, giống mục "Lần đầu" nhưng qua `tf.sh`:
 
 ```bash
 export ENVIRONMENT=staging
-infra/scripts/tf.sh apply -target=aws_ecr_repository.repo -target=aws_ecr_lifecycle_policy.keep_recent
+TAG=$(git rev-parse --short=7 HEAD)
+IMAGE_TAG=$TAG infra/scripts/tf.sh apply -target=aws_ecr_repository.repo -target=aws_ecr_lifecycle_policy.keep_recent
 IMAGES_ONLY=1 infra/scripts/deploy.sh
-infra/scripts/tf.sh apply
+IMAGE_TAG=$TAG infra/scripts/tf.sh apply
 PREFIX=$(infra/scripts/tf.sh output -raw ssm_prefix)   # /microlearning-staging, khác của demo
 aws ssm put-parameter --overwrite --type SecureString --name "$PREFIX/openrouter-api-key" --value "..."
 #   tương tự: typesafe-api-key
@@ -133,7 +146,7 @@ Script dựng Moodle 5.2 dùng một lần (Postgres và moodledata trên tmpfs,
 Giới hạn:
 
 - **Địa chỉ đổi mỗi lần chạy,** và issuer LTI đổi theo: tài khoản và khóa học tạo qua lần chạy trước không được nhận lại. Giữ script chạy suốt buổi demo; máy ngủ hoặc mất mạng là mất Moodle đó.
-- **Chỉ có LTI** (launch và danh sách lớp). Xuất Book và Quiz sang Moodle cần thêm `moodle_base_url`, `moodle_wwwroot` bằng địa chỉ tunnel và `moodle-token` trong SSM, tức một lần `terraform apply` nữa cho mỗi địa chỉ.
+- **Chỉ có LTI** (launch và danh sách lớp). Xuất Book và Quiz sang Moodle cần thêm `moodle_base_url`, `moodle_wwwroot` bằng địa chỉ tunnel và `moodle-token` trong SSM, tức một lần `infra/scripts/tf.sh apply` nữa cho mỗi địa chỉ.
 - Lưu lượng đi qua Cloudflare, nên chỉ dùng với dữ liệu thử.
 
 Cần một địa chỉ ổn định thì thay bằng một EC2 nhỏ chạy Moodle (khoảng $0,02 đến $0,03 một giờ), chưa có trong Terraform này.
@@ -141,7 +154,7 @@ Cần một địa chỉ ổn định thì thay bằng một EC2 nhỏ chạy Mo
 ## Xóa
 
 ```bash
-terraform destroy
+infra/scripts/tf.sh destroy
 ```
 
 Còn lại sau khi xóa: snapshot cuối của RDS (`microlearning-<environment>-final-<8 ký tự hex>`, tên mới mỗi lần nên không đụng snapshot của lần trước). Muốn xóa hẳn: `aws rds delete-db-snapshot --db-snapshot-identifier <tên>`.

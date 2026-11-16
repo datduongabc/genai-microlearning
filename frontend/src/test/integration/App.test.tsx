@@ -54,4 +54,22 @@ describe('App', () => {
 
     expect(await screen.findByLabelText('Câu 1 cảnh 1')).toBeInTheDocument()
   })
+
+  // A data router catches render errors in its own default screen; this fails if the route errors
+  // stop reaching ErrorBoundary and its reload wording.
+  it('shows the reload screen when a page fails to render', async () => {
+    vi.doMock('../../pages/CoursesPage', () => ({
+      CoursesPage: () => {
+        throw new TypeError('Failed to fetch dynamically imported module: /assets/x.js')
+      },
+    }))
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    window.history.pushState(null, '', '/courses')
+    const { default: App } = await import('../../App')
+
+    render(<App />)
+
+    expect(await screen.findByText('Đã có phiên bản mới, tải lại trang.')).toBeInTheDocument()
+    vi.doUnmock('../../pages/CoursesPage')
+  })
 })

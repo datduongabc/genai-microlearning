@@ -9,6 +9,7 @@ vài ký tự rời với độ tin cậy thấp và bị bỏ, nên chúng khô
 
 import io
 import logging
+import math
 import re
 from concurrent.futures import ThreadPoolExecutor
 
@@ -17,6 +18,9 @@ from PIL import Image
 
 logger = logging.getLogger(__name__)
 
+# A render is width x height x 3 bytes: 25 MP is 75 MB, so a page with a huge MediaBox (legal,
+# a few bytes of PDF) or a tall, narrow picture cannot ask the worker for gigabytes.
+MAX_RENDER_PIXELS = 25_000_000
 # Phần diện tích trang tối thiểu: biểu tượng, logo, mũi tên trang trí đều nhỏ hơn.
 MIN_FIGURE_AREA = 0.04
 # Cùng một ảnh trên chừng này trang trở lên là một phần của mẫu slide, không phải nội dung.
@@ -64,9 +68,10 @@ def _prepare(blob: bytes) -> Image.Image:
     else:
         image = image.convert("RGB")
     # Chữ nhỏ trong ảnh thu nhỏ trên slide: Tesseract đọc tốt nhất khi chữ cao khoảng 30 điểm ảnh.
-    if image.width < 1000:
-        scale = 1000 / image.width
-        image = image.resize((round(image.width * scale), round(image.height * scale)), Image.LANCZOS)
+    # The width also stops where width x height would pass the render pixel cap.
+    width = min(1000, int(math.sqrt(MAX_RENDER_PIXELS * image.width / image.height)))
+    if width > image.width:
+        image = image.resize((width, image.height * width // image.width), Image.LANCZOS)
     return image
 
 

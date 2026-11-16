@@ -22,6 +22,12 @@ if [[ -n "$(git -C "$ROOT" status --porcelain)" ]]; then
   echo "The working tree has changes: an image is tagged by commit, so it must be the commit." >&2
   exit 1
 fi
+# Only a commit on main has been reviewed and passed CI; this runs from a laptop, not from CI.
+git -C "$ROOT" fetch --quiet origin main
+if ! git -C "$ROOT" merge-base --is-ancestor HEAD origin/main; then
+  echo "HEAD is not on origin/main: merge it through a pull request first." >&2
+  exit 1
+fi
 TAG="$(git -C "$ROOT" rev-parse --short=7 HEAD)"
 REGION="$(tf output -raw region 2>/dev/null || echo "${AWS_REGION:-ap-southeast-1}")"
 ECR_JSON="$(tf output -json ecr)"
@@ -124,7 +130,13 @@ fi
 
 # --- 3. Roll the services out to the new image.
 echo "== Rolling out"
-tf apply -input=false -auto-approve -var "image_tag=$TAG"
+# The apply stores the tag in the state (output image_tag), where tf.sh reads it, so a later infra
+# apply keeps this image instead of rolling back. The plan is shown and waits for "yes": it applies
+# every other difference too, and a forced replacement of the database would otherwise pass unseen.
+if ! IMAGE_TAG="$TAG" tf apply; then
+  echo "Not rolled out: the apply was declined or failed." >&2
+  exit 1
+fi
 # On the first deploy the services start before this migration has made the database roles, so
 # api fails /ready and the circuit breaker may fail that deployment. With nothing to roll back to,
 # it stays failed, and the apply above changes nothing because the tag is the same. Start it again
@@ -144,7 +156,9 @@ aws ecs wait services-stable --region "$REGION" --cluster "$CLUSTER" --services 
 echo "== Frontend"
 BUCKET="$(tf output -raw frontend_bucket)"
 (cd "$ROOT/frontend" && npm ci && npm run build)
-aws s3 sync "$ROOT/frontend/dist/assets" "s3://$BUCKET/assets" --delete --cache-control "public,max-age=31536000,immutable"
+# No --delete for assets: a tab opened before this deploy still loads its old lazy chunks by name.
+# shortcut: old hashed files pile up in the bucket, add an S3 lifecycle rule if that ever matters.
+aws s3 sync "$ROOT/frontend/dist/assets" "s3://$BUCKET/assets" --cache-control "public,max-age=31536000,immutable"
 aws s3 sync "$ROOT/frontend/dist" "s3://$BUCKET" --delete --exclude "assets/*" --cache-control "no-cache"
 aws cloudfront create-invalidation --distribution-id "$(tf output -raw cloudfront_distribution_id)" --paths "/index.html" >/dev/null
 

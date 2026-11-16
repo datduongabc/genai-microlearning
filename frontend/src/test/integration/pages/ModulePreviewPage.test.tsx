@@ -320,6 +320,19 @@ describe('ModulePreviewPage - reading the module', () => {
     expect(screen.queryByText(/## TIÊU-ĐỀ-PHẦN/)).not.toBeInTheDocument()
   })
 
+  it('loads no image the generated content asks for', async () => {
+    vi.mocked(api.getModule).mockResolvedValue({
+      ...baseModule,
+      components: [
+        { id: 'content-1', type: 'content', content: { markdown: 'Bài học. ![](https://evil.example/p)' }, questions: [] },
+      ],
+    })
+    const { container } = renderPage()
+
+    expect(await screen.findByText(/Bài học\./)).toBeInTheDocument()
+    expect(container.querySelector('img')).toBeNull()
+  })
+
   it('shows under each question the explanation the teacher edited, which is the one Moodle gets', async () => {
     vi.mocked(api.getModule).mockResolvedValue({
       ...baseModule,
@@ -646,6 +659,34 @@ describe('ModulePreviewPage - forms', () => {
     await waitFor(() => expect(api.updateComponentContent).toHaveBeenCalledWith('module-1', 'slides-1', {
       slides: [{ title: 'Một mới', bullets: ['a', 'b', 'c'], notes: 'n' }, { title: 'Hai', bullets: ['c'] }],
     }))
+  })
+
+  it('keeps the slides editor open and says so when the save fails', async () => {
+    vi.mocked(api.getModule).mockResolvedValue(withComponent({
+      id: 'slides-1', type: 'slides', content: { slides: [{ title: 'Một', bullets: ['a'] }] }, questions: [],
+    }))
+    vi.mocked(api.updateComponentContent).mockRejectedValue(new Error('Network Error'))
+    renderPage()
+    await userEvent.click(await screen.findByRole('button', { name: 'Sửa' }))
+    const title = screen.getByRole('textbox', { name: 'Tiêu đề slide 1' })
+    await userEvent.type(title, ' mới')
+    await userEvent.click(screen.getByRole('button', { name: 'Lưu' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent(/không thể lưu/i)
+    expect(title).toHaveValue('Một mới')
+    await userEvent.click(screen.getByRole('button', { name: 'Hủy' }))
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+  })
+
+  it('keeps the title field open and says so when the rename fails', async () => {
+    vi.mocked(api.getModule).mockResolvedValue(baseModule)
+    vi.mocked(api.updateModuleTitle).mockRejectedValue(new Error('Network Error'))
+    renderPage()
+    await userEvent.click(await screen.findByRole('heading', { name: 'Test Module' }))
+    const field = screen.getByRole('textbox', { name: 'Tên mô-đun' })
+    await userEvent.type(field, ' 2')
+    await userEvent.click(screen.getByRole('button', { name: 'Lưu' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent(/không thể lưu/i)
+    expect(field).toHaveValue('Test Module 2')
   })
 
   it('saves an edited example and keeps the others', async () => {

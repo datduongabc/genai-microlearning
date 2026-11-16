@@ -7,6 +7,12 @@ output "url" {
   value       = "https://${aws_cloudfront_distribution.main.domain_name}"
 }
 
+# The tag the services run. infra/scripts/tf.sh passes it back to every plan and apply, so an infra
+# change from any checkout keeps the images the last deploy rolled out.
+output "image_tag" {
+  value = var.image_tag
+}
+
 output "cluster" {
   value = aws_ecs_cluster.main.name
 }

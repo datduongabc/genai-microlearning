@@ -1,5 +1,6 @@
 """A rate limit waits inside the one call, so it does not restart a whole job."""
 
+import socket
 from types import SimpleNamespace
 
 import httpx
@@ -160,3 +161,56 @@ def test_a_background_job_waits_on_a_rate_limit(monkeypatch):
     finally:
         gateway._waits_on_rate_limit.reset(token)
     assert seen == [True]
+
+
+def _counting_completion(monkeypatch, then=None):
+    monkeypatch.setattr(settings, "llm_gateway_key", "test-key")
+    calls = []
+    real = litellm.completion
+
+    def counted(**kwargs):
+        calls.append(1)
+        if then and len(calls) > 1:
+            return then
+        return real(**kwargs)
+
+    monkeypatch.setattr(litellm, "completion", counted)
+    return calls
+
+
+@pytest.mark.filterwarnings("ignore:There is no current event loop:DeprecationWarning")  # litellm on Python 3.12
+def test_a_refused_connection_to_the_gateway_is_tried_once_more(monkeypatch, no_waiting):
+    # Port 1 refuses at once: the request never left this host, so no model saw it.
+    monkeypatch.setattr(settings, "llm_gateway_url", "http://127.0.0.1:1")
+    calls = _counting_completion(monkeypatch, then=_reply())
+    assert gateway.complete("hello") == "ok"
+    assert len(calls) == 2 and len(no_waiting) == 1
+
+
+@pytest.mark.filterwarnings("ignore:There is no current event loop:DeprecationWarning")  # litellm on Python 3.12
+def test_a_gateway_that_stays_down_fails_after_one_retry(monkeypatch, no_waiting):
+    monkeypatch.setattr(settings, "llm_gateway_url", "http://127.0.0.1:1")
+    calls = _counting_completion(monkeypatch)
+    with pytest.raises(litellm.InternalServerError):
+        gateway.complete("hello")
+    assert len(calls) == 2
+
+
+@pytest.mark.filterwarnings("ignore:There is no current event loop:DeprecationWarning")  # litellm on Python 3.12
+def test_a_timeout_or_a_server_error_is_not_retried_since_a_model_may_have_billed_it(monkeypatch, no_waiting):
+    with socket.create_server(("127.0.0.1", 0)) as silent:  # accepts and never answers
+        monkeypatch.setattr(settings, "llm_gateway_url", f"http://127.0.0.1:{silent.getsockname()[1]}")
+        calls = _counting_completion(monkeypatch)
+        with pytest.raises(litellm.Timeout):
+            gateway.complete("hello", timeout=0.2)
+        assert len(calls) == 1
+
+    def server_error(**_):
+        calls.append(1)
+        raise litellm.InternalServerError("upstream 500", llm_provider="openai", model="m")
+
+    monkeypatch.setattr(litellm, "completion", server_error)
+    with pytest.raises(litellm.InternalServerError):
+        gateway.complete("hello")
+    assert len(calls) == 2
+    assert not no_waiting

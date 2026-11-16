@@ -2,6 +2,7 @@
 LLM gateway (LiteLLM Proxy), which is the only place that holds provider API
 keys and maps a model alias to a real provider/model."""
 
+import asyncio
 import json
 from types import SimpleNamespace
 
@@ -329,3 +330,27 @@ def test_each_completion_records_its_latency_and_token_usage_in_the_current_stag
     assert (call["kind"], call["stage"], call["prompt_tokens"], call["completion_tokens"]) == ("llm", "slides", 120, 30)
     assert call["served_model"] == "gemini-2.5-flash"
     assert call["seconds"] >= 0
+
+
+def test_the_backend_does_not_retry_on_top_of_the_gateway_and_gives_up_after_its_worst_case(monkeypatch, captured):
+    llm.complete("hello")
+    assert captured["max_retries"] == 0
+    assert captured["timeout"] == llm.GATEWAY_TIMEOUT_SECONDS
+
+    streamed: dict = {}
+
+    async def fake_acompletion(**kwargs):
+        streamed.update(kwargs)
+
+        async def chunks():
+            yield SimpleNamespace(choices=[SimpleNamespace(delta=SimpleNamespace(content="hi"))])
+        return chunks()
+
+    monkeypatch.setattr(litellm, "acompletion", fake_acompletion)
+
+    async def read():
+        return [text async for text in llm.stream_text("hello")]
+
+    assert asyncio.run(read()) == ["hi"]
+    assert streamed["max_retries"] == 0
+    assert streamed["timeout"] == llm.GATEWAY_TIMEOUT_SECONDS

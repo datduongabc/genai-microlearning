@@ -23,6 +23,14 @@ final class link_requests_test extends \advanced_testcase {
         $this->assertEquals($user->id, $status['moodle_user_id']);
     }
 
+    public function test_the_matched_user_gets_no_message_that_could_pass_a_stranger_as_them(): void {
+        $this->resetAfterTest();
+        $user = $this->getDataGenerator()->create_user(['email' => 'person@example.com']);
+        $sink = $this->redirectMessages();
+        $this->request_for($user);
+        $this->assertSame(0, $sink->count());
+    }
+
     public function test_another_moodle_user_cannot_confirm_the_request(): void {
         $this->resetAfterTest();
         $owner = $this->getDataGenerator()->create_user();

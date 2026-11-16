@@ -14,7 +14,9 @@ import re
 import time
 from collections.abc import AsyncIterator
 
+import httpx
 import litellm
+import openai
 from litellm.constants import RETURN_RAW_MODEL_NAME_METADATA_KEY
 from pydantic import BaseModel, ValidationError
 
@@ -24,6 +26,9 @@ from app.config import settings
 # A 429 that says the account has no money or the wrong plan: waiting will not help.
 _NOT_A_RATE_LIMIT = re.compile(r"insufficient_quota|billing|credit balance|no credits", re.IGNORECASE)
 MAX_RATE_LIMIT_WAIT_SECONDS = 60.0
+# The gateway owns retries and fallbacks (devops/gateway/config.yaml router_settings): 120 s x 2 tries x 3 models
+# in the longest chain. Without this the client retried the whole chain itself and waited up to 100 minutes.
+GATEWAY_TIMEOUT_SECONDS = 750
 
 # Model do giảng viên chọn cho riêng một lượt sinh. Để trong ContextVar chứ không truyền
 # qua tham số: một lượt sinh đi qua mười chỗ gọi rải khắp generation, chat và ingestion,
@@ -117,9 +122,21 @@ def _response_cost(response) -> float | None:
     return cost if math.isfinite(cost) and cost >= 0 else None
 
 
+def _never_connected(error: BaseException) -> bool:
+    # litellm wraps openai's error, which wraps httpx's. Only a connection that was never made reached
+    # no model; a timeout or a reply cut off after the request was sent may have been billed.
+    while error is not None:
+        if isinstance(error, openai.APIConnectionError) and not isinstance(error, openai.APITimeoutError):
+            return isinstance(error.__cause__, httpx.ConnectError)
+        error = error.__cause__ or error.__context__
+    return False
+
+
 def _call_with_rate_limit_retries(alias: str, routed_alias: str, **request):
     retries = settings.llm_rate_limit_retries if _waits_on_rate_limit.get() else 0
-    for attempt in range(retries + 1):
+    attempt = 0
+    reconnected = False
+    while True:
         with timing.timed("llm", requested_alias=alias, routed_alias=routed_alias) as span:
             try:
                 response = litellm.completion(**request)
@@ -128,6 +145,14 @@ def _call_with_rate_limit_retries(alias: str, routed_alias: str, **request):
                 if attempt == retries or _NOT_A_RATE_LIMIT.search(str(error)):
                     raise
                 wait = _rate_limit_wait(error, attempt)
+                attempt += 1
+            except Exception as error:
+                # With max_retries=0 the client no longer retries a gateway that is restarting: one more
+                # try, once, costs nothing, where a failed call requeues the whole job.
+                if reconnected or not _never_connected(error):
+                    raise
+                reconnected = True
+                wait = 2
             else:
                 usage = getattr(response, "usage", None)
                 span["prompt_tokens"] = getattr(usage, "prompt_tokens", None)
@@ -137,7 +162,6 @@ def _call_with_rate_limit_retries(alias: str, routed_alias: str, **request):
                 return response
         with timing.timed("llm_backoff"):
             time.sleep(wait)
-    raise AssertionError("unreachable")
 
 
 def _completion(*, small_step: bool = False, **kwargs):
@@ -172,7 +196,8 @@ def _completion(*, small_step: bool = False, **kwargs):
         api_base=settings.llm_gateway_url,
         api_key=settings.llm_gateway_key,
         extra_body=extra_body,
-        **kwargs,
+        # A caller such as the study judge may set its own, shorter bound.
+        **{"max_retries": 0, "timeout": GATEWAY_TIMEOUT_SECONDS, **kwargs},
     )
     calls = _model_calls.get()
     served = getattr(response, "model", None)
@@ -196,6 +221,7 @@ async def stream_text(prompt: str, system_instruction: str | None = None) -> Asy
     stream = await litellm.acompletion(
         model=f"openai/{alias}", api_base=settings.llm_gateway_url, api_key=settings.llm_gateway_key,
         extra_body=extra_body, messages=messages, stream=True,
+        max_retries=0, timeout=GATEWAY_TIMEOUT_SECONDS,
     )
     async for chunk in stream:
         text = chunk.choices[0].delta.content if chunk.choices else None

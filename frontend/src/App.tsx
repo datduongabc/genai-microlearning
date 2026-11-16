@@ -1,6 +1,7 @@
 import { lazy, Suspense } from "react";
-import { createBrowserRouter, createRoutesFromElements, Navigate, Route, RouterProvider } from "react-router-dom";
+import { createBrowserRouter, createRoutesFromElements, Navigate, Route, RouterProvider, useRouteError } from "react-router-dom";
 import { AuthProvider } from "./auth/AuthContext";
+import { ErrorBoundary } from "./components/ErrorBoundary";
 import { ProtectedRoute } from "./auth/ProtectedRoute";
 import { AdminPage } from "./pages/AdminPage";
 import { CourseDetailPage } from "./pages/CourseDetailPage";
@@ -29,9 +30,14 @@ const VideoEditorPage = lazy(() =>
   import("./pages/VideoEditorPage").then((m) => ({ default: m.VideoEditorPage })),
 );
 
+// The data router catches render errors itself; hand them on to ErrorBoundary, which knows the reload wording.
+function RethrowRouteError(): never {
+  throw useRouteError();
+}
+
 // A data router, so that an editor can ask before its unsaved edits are left (useBlocker).
 const router = createBrowserRouter(createRoutesFromElements(
-  <>
+  <Route errorElement={<RethrowRouteError />}>
     <Route path="/login" element={<LoginPage />} />
     <Route path="/register" element={<RegisterPage />} />
     <Route path="/lti/launch" element={<LtiLaunchPage />} />
@@ -76,14 +82,16 @@ const router = createBrowserRouter(createRoutesFromElements(
       />
     </Route>
     <Route path="*" element={<Navigate to="/courses" replace />} />
-  </>,
+  </Route>,
 ));
 
 // AuthProvider wraps the router: the routes need the session, and nothing in it needs the router.
 function App() {
   return (
     <AuthProvider>
-      <RouterProvider router={router} />
+      <ErrorBoundary>
+        <RouterProvider router={router} />
+      </ErrorBoundary>
     </AuthProvider>
   );
 }

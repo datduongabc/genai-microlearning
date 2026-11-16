@@ -31,6 +31,9 @@ class PublishRequest(BaseModel):
     section_num: int = Field(default=0, ge=0, le=1000)
 
 
+_PARTS = (("book_cmid", "Book"), ("practice_cmid", "Practice"), ("quiz_cmid", "Quiz"))
+
+
 @router.post("/{module_id}/publish-to-moodle")
 @limiter.limit("20/minute", key_func=user_or_address)
 def publish_to_moodle(
@@ -72,15 +75,13 @@ def publish_to_moodle(
     if not chapters:
         raise HTTPException(status_code=422, detail="Mô-đun chưa có nội dung nào để đẩy lên Moodle.")
 
+    result = {"moodle_course_id": course.moodle_course_id}
     try:
         # Re-check the linked user before any activity write.
         require_course_author(db, current_user, course.moodle_course_id)
-        result = {
-            "moodle_course_id": course.moodle_course_id,
-            "book_cmid": moodle_client.create_book(
-                course.moodle_course_id, plain(module.title) or "Mô-đun", chapters, payload.section_num, actor_user_id=actor_user_id
-            ),
-        }
+        result["book_cmid"] = moodle_client.create_book(
+            course.moodle_course_id, plain(module.title) or "Mô-đun", chapters, payload.section_num, actor_user_id=actor_user_id
+        )
 
         # Practice comes before the quiz: it is the rehearsal.
         practice = find_component(module, ComponentType.practice)
@@ -99,6 +100,13 @@ def publish_to_moodle(
                 actor_user_id=actor_user_id, behaviour="deferredfeedback",
             )
     except MOODLE_FAILURES as e:
-        raise moodle_failure(e, db, course) from e
+        failure = moodle_failure(e, db, course)
+        # shortcut: the lecturer is told what exists instead of the next publish skipping it; store the cmids
+        # on the module if duplicates after a partial failure keep happening.
+        created = [f"{name} (cmid {result[key]})" for key, name in _PARTS if key in result]
+        if created:
+            failure.detail += (f" Đã tạo trên Moodle trước khi lỗi: {', '.join(created)}; "
+                               "xóa các hoạt động này trên Moodle trước khi xuất bản lại để không bị trùng.")
+        raise failure from e
 
     return result

@@ -1,7 +1,8 @@
 # Staging: the same stack as demo at the smallest sizes that still run every service, where a commit
 # is deployed and checked before it is promoted to demo (infra/README.md, "Staging"). Applied with
 #   ENVIRONMENT=staging infra/scripts/tf.sh apply
-# terraform.tfvars (image_tag, alarm_email) is read too; values here take precedence.
+# terraform.tfvars (alarm_email) is read too; values here take precedence. The image tag comes from
+# infra/terraform/image-staging.tfvars, which deploy.sh writes.
 
 environment = "staging"
 

@@ -12,7 +12,7 @@ import unicodedata
 from concurrent.futures import ThreadPoolExecutor, wait
 from dataclasses import dataclass, field
 from typing import Any
-from zipfile import BadZipFile
+from zipfile import BadZipFile, ZipFile
 
 import openai
 import pymupdf
@@ -37,7 +37,7 @@ from pptx.oxml import parse_xml
 from pptx.shapes.picture import Picture
 
 from app.config import settings
-from app.ingestion.figures import is_content_figure, is_page_scan, new_text, ocr_figures
+from app.ingestion.figures import MAX_RENDER_PIXELS, is_content_figure, is_page_scan, new_text, ocr_figures
 from app.ingestion.formula_repair import repair_page
 from app.ingestion.pdf_layout import page_lines, suspect_formula_lines, title_candidates
 from app.llm.gateway import transcribe_audio
@@ -79,6 +79,11 @@ def is_numbered_heading(line: str) -> bool:
     )
 
 
+def _render_dpi(rect: pymupdf.Rect, dpi: int) -> int:
+    area = rect.width * rect.height
+    return dpi if area <= 0 else max(1, min(dpi, int(72 * math.sqrt(MAX_RENDER_PIXELS / area))))
+
+
 def _figure_pages(doc: pymupdf.Document) -> dict[str, int]:
     """Số trang có mặt mỗi ảnh, theo mã băm nội dung ảnh."""
     pages: dict[str, set[int]] = {}
@@ -98,7 +103,7 @@ def _page_figures(page: pymupdf.Page, figure_pages: dict[str, int], page_text: s
         ratio = box.width * box.height / area
         if (not box.is_empty and is_content_figure(ratio, figure_pages[info["digest"]])
                 and not is_page_scan(ratio, page_text)):
-            images.append(page.get_pixmap(clip=box, dpi=200).tobytes("png"))
+            images.append(page.get_pixmap(clip=box, dpi=_render_dpi(box, 200)).tobytes("png"))
     return images
 
 
@@ -146,7 +151,7 @@ def read_pdf(path: str) -> list[DocumentUnit]:
             page_records.append(record)
             if len(record["text"].strip()) < MIN_TEXT_LEN_PER_PAGE:
                 try:
-                    pix = page.get_pixmap(dpi=200)
+                    pix = page.get_pixmap(dpi=_render_dpi(page.rect, 200))
                     img = Image.open(io.BytesIO(pix.tobytes("png")))
                     ocr_text = pytesseract.image_to_string(img, lang="vie+eng")
                     if not ocr_text.strip():
@@ -164,7 +169,7 @@ def read_pdf(path: str) -> list[DocumentUnit]:
             if suspect_formula_lines([lines[i] for i in sorted(math_lines)]):
                 # Chỉ vẽ trang sẽ thật sự gửi cho model; các trang còn lại chỉ nhận cảnh báo.
                 sent = settings.formula_vision_model and len(repairs) < settings.formula_vision_max_pages
-                repairs.append((record, page.get_pixmap(dpi=150).tobytes("png") if sent else None))
+                repairs.append((record, page.get_pixmap(dpi=_render_dpi(page.rect, 150)).tobytes("png") if sent else None))
             for text in ocr_figures(_page_figures(page, figure_pages, record["text"])):
                 if text and new_text(text, "\n".join([record["text"], *record["figures"]])):
                     record["figures"].append(text)
@@ -474,6 +479,9 @@ SUPPORTED_EXTENSIONS = {".pdf", ".docx", ".pptx", ".html", ".htm"} | _AUDIO_VIDE
 
 # Giới hạn đầu vào đã chốt: tài liệu tối đa 150 trang/slide, audio/video tối đa 90 phút.
 MAX_DOCUMENT_PAGES = 150
+# python-docx and python-pptx read every zip member into memory on open, so the unpacked size,
+# not the 25 MB upload, is what the worker has to hold.
+MAX_UNPACKED_BYTES = 200 * 1024 * 1024
 
 
 class InputLimitError(ValueError):
@@ -540,6 +548,18 @@ def preflight_limits(path: str) -> None:
     nền vẫn báo lỗi cụ thể hơn cho trường hợp đó.
     """
     ext = os.path.splitext(path)[1].lower()
+    if ext in (".docx", ".pptx"):
+        try:
+            # Reads only the central directory; zipfile stops at the declared size, so it cannot lie.
+            with ZipFile(path) as archive:
+                unpacked = sum(info.file_size for info in archive.infolist())
+        except BadZipFile:
+            unpacked = 0
+        if unpacked > MAX_UNPACKED_BYTES:
+            raise InputLimitError(
+                f"Tệp giải nén ra {unpacked // (1024 * 1024)} MB, vượt giới hạn "
+                f"{MAX_UNPACKED_BYTES // (1024 * 1024)} MB; hãy nén lại ảnh hoặc tách tệp."
+            )
     try:
         if ext == ".pdf":
             with pymupdf.open(path) as doc:
@@ -721,8 +741,9 @@ def read_document(path: str, *, course_id: str, source_id: str | None = None) ->
         # Scheduling.pdf" crashed the whole upload transaction on this,
         # losing the chunks already inserted alongside it). Strip at this
         # single choke point so it's covered regardless of which reader
-        # produced the text.
+        # produced the text. jsonb rejects it too, and headings come from the same lines.
         u.text = u.text.replace("\x00", "")
+        u.locator = {k: v.replace("\x00", "") if isinstance(v, str) else v for k, v in u.locator.items()}
         u.course_id = course_id
         u.source_id = source_id
     return units

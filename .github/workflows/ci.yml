@@ -102,6 +102,7 @@ jobs:
       - run: terraform test -filter=tests/staging.tftest.hcl -var-file=../environments/staging.tfvars
       - run: bash -n ../scripts/deploy.sh
       - run: bash -n ../scripts/tf.sh
+      - run: bash ../scripts/tf.test.sh
       - run: bash -n ../scripts/moodle-tunnel.sh
 
   moodle-plugin:

@@ -326,10 +326,10 @@ def run_module_generation(
     db: Session, doc: Document,
     self_check: bool = True, use_retrieval: bool = True, paired_module: Module | None = None,
     output_language: OutputLanguage = "vi", custom_instructions: str = "",
-    before_save: Callable[[Session], None] | None = None,
+    before_save: Callable[[Session, Module], None] | None = None,
 ) -> Module:
-    """`before_save` runs right before the module is written, in the transaction that writes it:
-    the job queue checks there that its worker still holds the job (app/jobs/queue.py, hold)."""
+    """`before_save` runs once the module has its id, in the transaction that writes it: the job queue
+    checks there that its worker still holds the job and marks it done (app/jobs/queue.py, hold)."""
     # Keep read values in memory after each commit; expired attributes would silently reopen
     # a transaction when a prompt reads them. Restore the caller's session setting afterwards.
     expire_on_commit = db.expire_on_commit
@@ -443,7 +443,7 @@ def _generate_module(
     db: Session, doc: Document, self_check: bool = True,
     use_retrieval: bool = True, paired_module: Module | None = None,
     output_language: OutputLanguage = "vi", custom_instructions: str = "",
-    spans: list[dict] | None = None, before_save: Callable[[Session], None] | None = None,
+    spans: list[dict] | None = None, before_save: Callable[[Session, Module], None] | None = None,
 ) -> Module:
     """Planner -> LO -> Content -> Slides -> Example -> Quiz/Practice ->
     Explanation. Nguyên logic chuyển từ _run_generate_module() cũ
@@ -506,10 +506,10 @@ def _generate_module(
     items = _explanation_items(asked)
 
     # Persist the complete result atomically, after every provider call has finished.
-    if before_save is not None:
-        before_save(db)
     db.add(module)
     db.flush()
+    if before_save is not None:
+        before_save(db, module)
     for component in (content_component, slides_component, example_component):
         component.module_id = module.id
         db.add(component)
@@ -556,15 +556,16 @@ def run_module_generation_step(job: Job) -> None:
             if paired_module is None:
                 raise ValueError(f"Paired module {paired_id} not found")
         with using_model(current_job.payload.get("model_alias")):
-            module = run_module_generation(
+            run_module_generation(
                 db, doc, self_check=self_check, use_retrieval=use_retrieval, paired_module=paired_module,
                 output_language=current_job.payload.get("output_language", "vi"),
                 custom_instructions=current_job.payload.get("custom_instructions", ""),
-                before_save=lambda session: hold(session, job),
+                before_save=lambda session, module: _finish(hold(session, job), module),
             )
-
-        current_job.module_id = module.id
-        current_job.status = JobStatus.done
-        db.commit()
     finally:
         db.close()
+
+
+def _finish(job: Job, module: Module) -> None:
+    job.module_id = module.id
+    job.status = JobStatus.done

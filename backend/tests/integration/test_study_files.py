@@ -67,6 +67,11 @@ def test_upload_lists_the_file_with_its_real_size(blind):
     assert "filename*=utf-8''B%C3%A0i%20gi%E1%BA%A3ng%203.pdf" in content.headers["content-disposition"]
 
 
+def test_a_reference_file_larger_than_an_api_body_still_uploads(blind):
+    body = b"x" * (settings.max_request_body_bytes + 1)
+    assert _upload(blind, body=body)["size"] == len(body)
+
+
 def test_a_format_or_size_a_document_could_not_have_is_refused_before_transfer(blind):
     base = f"/studies/{blind['sid']}/files"
     assert client.post(base, headers=blind["headers"], json={"filename": "a.exe", "size": 1}).status_code == 422

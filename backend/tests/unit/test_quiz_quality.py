@@ -163,7 +163,9 @@ def test_exhausted_failure_still_completes_the_generation_job_with_its_module(mo
             pass
 
     monkeypatch.setattr(pipeline, "WorkerSessionLocal", DB)
-    monkeypatch.setattr(pipeline, "run_module_generation", lambda *a, **kw: module)
+    monkeypatch.setattr(pipeline, "hold", lambda session, held: held)
+    monkeypatch.setattr(pipeline, "run_module_generation",
+                        lambda db, *a, before_save, **kw: before_save(db, module) or module)
     pipeline.run_module_generation_step(job)
     assert job.status is JobStatus.done
     assert job.module_id == module.id

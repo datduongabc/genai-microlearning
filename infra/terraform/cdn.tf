@@ -80,6 +80,43 @@ data "aws_cloudfront_origin_request_policy" "all_viewer_except_host" {
   name = "Managed-AllViewerExceptHostHeader"
 }
 
+# The page renders model output, so a prompt-injected document is the likely attacker: the CSP keeps
+# the page from loading or sending anything to a host of its choosing. connect-src holds the uploads
+# bucket for the browser's presigned POST. override = false, because the api sets its own, stricter
+# headers (app/middleware.py) and the LTI error page must stay frameable by any LMS.
+resource "aws_cloudfront_response_headers_policy" "security" {
+  name = "${local.name}-security"
+
+  security_headers_config {
+    content_security_policy {
+      override = false
+      content_security_policy = join("; ", [
+        "default-src 'self'",
+        "script-src 'self'",
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+        "font-src 'self' https://fonts.gstatic.com data:", # Vite inlines one KaTeX font
+        "img-src 'self' data: blob:",                      # slide previews come down with the token and show as blobs
+        # Videos play from a presigned GET on the bucket, or without S3 from a blob of the API file.
+        "media-src 'self' blob: https://${aws_s3_bucket.uploads.bucket_regional_domain_name}",
+        "connect-src 'self' https://${aws_s3_bucket.uploads.bucket_regional_domain_name}",
+        "object-src 'none'",
+        "base-uri 'self'",
+        "form-action 'self'",
+        # Moodle opens the tool in a new window, but an LMS set to embed it needs to frame the page.
+        "frame-ancestors ${try(regex("^https?://[^/]+", var.moodle_wwwroot), "'none'")}",
+      ])
+    }
+    strict_transport_security {
+      override                   = false
+      access_control_max_age_sec = 31536000
+      include_subdomains         = true
+    }
+    content_type_options {
+      override = false
+    }
+  }
+}
+
 resource "aws_cloudfront_distribution" "main" {
   enabled             = true
   comment             = local.name
@@ -116,12 +153,13 @@ resource "aws_cloudfront_distribution" "main" {
   }
 
   default_cache_behavior {
-    target_origin_id       = "frontend"
-    viewer_protocol_policy = "redirect-to-https"
-    allowed_methods        = ["GET", "HEAD"]
-    cached_methods         = ["GET", "HEAD"]
-    cache_policy_id        = data.aws_cloudfront_cache_policy.optimized.id
-    compress               = true
+    target_origin_id           = "frontend"
+    viewer_protocol_policy     = "redirect-to-https"
+    allowed_methods            = ["GET", "HEAD"]
+    cached_methods             = ["GET", "HEAD"]
+    cache_policy_id            = data.aws_cloudfront_cache_policy.optimized.id
+    compress                   = true
+    response_headers_policy_id = aws_cloudfront_response_headers_policy.security.id
 
     function_association {
       event_type   = "viewer-request"
@@ -130,13 +168,14 @@ resource "aws_cloudfront_distribution" "main" {
   }
 
   ordered_cache_behavior {
-    path_pattern             = "/api/*"
-    target_origin_id         = "api"
-    viewer_protocol_policy   = "redirect-to-https"
-    allowed_methods          = ["GET", "HEAD", "OPTIONS", "PUT", "POST", "PATCH", "DELETE"]
-    cached_methods           = ["GET", "HEAD"]
-    cache_policy_id          = data.aws_cloudfront_cache_policy.disabled.id
-    origin_request_policy_id = data.aws_cloudfront_origin_request_policy.all_viewer_except_host.id
+    path_pattern               = "/api/*"
+    target_origin_id           = "api"
+    viewer_protocol_policy     = "redirect-to-https"
+    allowed_methods            = ["GET", "HEAD", "OPTIONS", "PUT", "POST", "PATCH", "DELETE"]
+    cached_methods             = ["GET", "HEAD"]
+    cache_policy_id            = data.aws_cloudfront_cache_policy.disabled.id
+    origin_request_policy_id   = data.aws_cloudfront_origin_request_policy.all_viewer_except_host.id
+    response_headers_policy_id = aws_cloudfront_response_headers_policy.security.id
     # Compressing a chat stream would hold its events back until a block fills.
     compress = false
 
