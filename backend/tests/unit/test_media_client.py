@@ -242,7 +242,8 @@ def test_a_retry_after_given_as_a_date_is_read_as_seconds_from_now():
     assert 15 <= busy.value.retry_after <= 20
 
 
-@pytest.mark.parametrize("header", [{}, {"Retry-After": "soon"}])
+@pytest.mark.parametrize("header", [{}, {"Retry-After": "soon"}, {"Retry-After": "NaN"},
+                                    {"Retry-After": "inf"}, {"Retry-After": "-5"}])
 def test_without_a_usable_retry_after_the_wait_is_a_short_backoff(header):
     with pytest.raises(media.MediaError) as busy:
         media.generate_image("image-qwen", "a diagram", client=_client(_busy(header)))

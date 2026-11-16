@@ -30,7 +30,7 @@ def has_full_access(db: Session, user: User) -> bool:
     return bool(identity['exists'] and linked_ids.intersection(course['id'] for course in identity['courses']))
 
 
-def reserve_generations(db: Session, user: User, *, full_access: bool, count: int = 1) -> None:
+def reserve_generations(db: Session, user: User, *, full_access: bool, count: int = 1, noun: str = "mô-đun") -> None:
     """`full_access` is has_full_access, asked by the caller before it locked anything."""
     # Different documents can generate concurrently; serialize counters on the account.
     db.refresh(user, with_for_update=True)
@@ -43,7 +43,7 @@ def reserve_generations(db: Session, user: User, *, full_access: bool, count: in
     limit = settings.non_teacher_daily_generation_limit
     if used + count > limit:
         raise HTTPException(status_code=429, detail=(
-            f"Bạn được sinh tối đa {limit} mô-đun mỗi ngày (UTC). "
+            f"Bạn được sinh tối đa {limit} {noun} mỗi ngày (UTC). "
             "Liên kết môn học Moodle mà bạn có quyền quản lý hoạt động để dùng đầy đủ."
         ))
     user.generation_day = today

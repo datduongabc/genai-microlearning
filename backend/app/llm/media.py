@@ -8,6 +8,7 @@ the upstream tag and `data_collection: deny` live here and are sent in every req
 """
 
 import base64
+import math
 import re
 import time
 from dataclasses import dataclass
@@ -63,16 +64,17 @@ def _retry_after(response: httpx.Response) -> float | None:
     if not value:
         return None
     try:
-        return float(value)
+        seconds = float(value)
     except ValueError:
-        pass
-    try:
-        when = parsedate_to_datetime(value)
-    except (TypeError, ValueError):
-        return None
-    if when.tzinfo is None:
-        when = when.replace(tzinfo=UTC)
-    return (when - datetime.now(UTC)).total_seconds()
+        try:
+            when = parsedate_to_datetime(value)
+        except (TypeError, ValueError):
+            return None
+        if when.tzinfo is None:
+            when = when.replace(tzinfo=UTC)
+        seconds = (when - datetime.now(UTC)).total_seconds()
+    # NaN, infinity and a negative wait are no wait to honour: sleep(nan) raises, so the default backoff applies.
+    return seconds if math.isfinite(seconds) and seconds >= 0 else None
 
 
 @dataclass(frozen=True)

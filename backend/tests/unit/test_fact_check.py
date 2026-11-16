@@ -180,3 +180,20 @@ def test_the_card_judge_has_no_framing_rule(monkeypatch):
         seen.append(kw["system_instruction"]), SupportVerdict(supported=True, reason=""))[1])
     fact_check.check_against_sources([("claim", ["passage"])], "gemini-fast", "vi")
     assert "only greets" not in seen[0]
+
+
+def test_a_vietnamese_lesson_asks_the_judge_to_name_the_evidence_in_vietnamese(monkeypatch):
+    # The input key is "evidence", and a judge that copies it puts an English word in a flag the
+    # lecturer reads.
+    seen = {}
+
+    def fake(prompt, response_model, **kwargs):
+        seen[kwargs["system_instruction"]] = None
+        return SupportVerdict(supported=True, reason="")
+
+    monkeypatch.setattr(claim_evaluation, "complete_structured", fake)
+    fact_check.check_against_sources([("claim", ["passage"])], "gemini-fast", "vi")
+    fact_check.check_against_sources([("claim", ["passage"])], "gemini-fast", "en")
+
+    vi, en = seen
+    assert "đoạn nguồn" in vi and "đoạn nguồn" not in en

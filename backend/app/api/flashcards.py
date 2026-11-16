@@ -88,7 +88,7 @@ def generate_flashcards(
     if duplicate is not None:
         raise HTTPException(status_code=409, detail="Bộ thẻ này đang được sinh, vui lòng chờ.")
 
-    reserve_generations(db, current_user, full_access=full_access)
+    reserve_generations(db, current_user, full_access=full_access, noun="bộ flashcard")
     card_set = FlashcardSet(
         course_id=doc.course_id, document_id=doc.id, focus=focus,
         output_language=body.output_language, model_alias=alias, status=MediaStatus.generating,

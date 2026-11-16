@@ -392,7 +392,7 @@ def generate_video(
     if duplicate is not None:
         raise HTTPException(status_code=409, detail="Video này đang được sinh lời thoại, vui lòng chờ.")
 
-    reserve_generations(db, current_user, full_access=full_access)
+    reserve_generations(db, current_user, full_access=full_access, noun="video")
     video = Video(
         course_id=doc.course_id, document_id=doc.id, focus=focus, output_language=body.output_language,
         model_alias=alias, voice_alias=body.voice_alias, image_alias=body.image_alias, status=MediaStatus.generating,

@@ -48,6 +48,10 @@ def judge_alias(generator_alias: str) -> str:
 _LANGUAGE_NAMES = {"vi": "Vietnamese", "en": "English"}
 
 
+# The input key is "evidence", which a judge copies into its reason as an English word.
+_EVIDENCE_NAME = {"vi": ' Call the evidence "đoạn nguồn" in it, never "evidence".'}
+
+
 def _with_language(criteria: str, language: OutputLanguage) -> str:
     """The judge's criteria, then what a lesson in `language` adds to them. The documents are often
     English and the lesson Vietnamese, so a claim is a translation of its evidence: the live run's
@@ -58,7 +62,7 @@ The claim may be in another language than the evidence: it is often a translatio
 for example a Vietnamese sentence about an English slide. Judge the meaning, not the wording: a faithful
 translation is supported. Numbers may be spelled out as spoken words: "số không" is 0,
 "hai mươi bốn" is 24, "one over n" is 1/n.
-Write `reason` in {_LANGUAGE_NAMES[language]}."""
+Write `reason` in {_LANGUAGE_NAMES[language]}.{_EVIDENCE_NAME.get(language, "")}"""
 
 
 def _support(claim: str, passages: list[str], language: OutputLanguage) -> SupportVerdict:

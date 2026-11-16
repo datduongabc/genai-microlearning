@@ -161,6 +161,17 @@ def test_generating_reserves_one_generation(world):
         assert db.get(User, world["owner"]).generation_count == 1
 
 
+def test_the_daily_generation_limit_names_videos_not_modules(world, monkeypatch):
+    monkeypatch.setattr(settings, "non_teacher_daily_generation_limit", 1)
+    params, h = {"document_id": str(world["doc"])}, headers(world["owner"])
+    assert client.post("/videos", params=params, json={"output_language": "vi", "focus": "a"}, headers=h).status_code == 200
+
+    over = client.post("/videos", params=params, json={"output_language": "vi", "focus": "b"}, headers=h)
+
+    assert over.status_code == 429
+    assert "1 video mỗi ngày" in over.json()["detail"] and "mô-đun" not in over.json()["detail"]
+
+
 def test_the_default_voice_and_image_model_are_used_when_none_is_asked(world):
     response = client.post("/videos", params={"document_id": str(world["doc"])}, json={"output_language": "en"},
                            headers=headers(world["owner"]))

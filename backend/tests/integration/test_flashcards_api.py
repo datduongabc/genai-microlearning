@@ -8,6 +8,7 @@ from fastapi.testclient import TestClient
 
 from app.auth.rate_limit import limiter
 from app.auth.security import create_access_token
+from app.config import settings
 from app.db import SessionLocal
 from app.llm import catalog
 from app.main import app
@@ -92,6 +93,17 @@ def test_generating_reserves_one_generation_and_queues_a_job(world):
         assert (job.job_type, job.document_id, job.payload) == (
             JobType.flashcard_generation, world["doc"], {"flashcard_set_id": str(card_set.id)})
         assert db.get(User, world["owner"]).generation_count == 1
+
+
+def test_the_daily_generation_limit_names_flashcard_sets_not_modules(world, monkeypatch):
+    monkeypatch.setattr(settings, "non_teacher_daily_generation_limit", 1)
+    params, h = {"document_id": str(world["doc"])}, headers(world["owner"])
+    assert client.post("/flashcard-sets", params=params, json={"output_language": "vi", "focus": "a"}, headers=h).status_code == 200
+
+    over = client.post("/flashcard-sets", params=params, json={"output_language": "vi", "focus": "b"}, headers=h)
+
+    assert over.status_code == 429
+    assert "1 bộ flashcard mỗi ngày" in over.json()["detail"] and "mô-đun" not in over.json()["detail"]
 
 
 def test_an_identical_request_while_one_is_running_is_refused_without_a_charge(world):
