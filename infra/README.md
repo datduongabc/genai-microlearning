@@ -23,8 +23,9 @@ Cần: AWS CLI đã đăng nhập, Docker, Node, `jq`, Terraform ≥ 1.10.
 ```bash
 cd infra/terraform
 cp terraform.tfvars.example terraform.tfvars   # sửa alarm_email
-# Tag image sẽ đẩy ở bước 1. Từ đó deploy.sh tự ghi tệp này (bị git bỏ qua) mỗi lần rollout.
-echo "image_tag = \"$(git rev-parse --short=7 HEAD)\"" > image-demo.tfvars
+# Tag image sẽ đẩy ở bước 1. State mới chưa giữ tag nào, nên bước 1 và 2 truyền nó qua IMAGE_TAG;
+# từ đó tag nằm trong state (output image_tag) và deploy.sh cập nhật nó mỗi lần rollout.
+TAG=$(git rev-parse --short=7 HEAD)
 
 # 0. Bucket giữ state, một lần cho mỗi tài khoản. State chứa mật khẩu DB sinh ra, nên bucket riêng
 #    tư, mã hóa, chỉ nhận TLS, và có versioning để lấy lại bản cũ khi state hỏng.
@@ -37,13 +38,13 @@ cp backend.hcl.example backend.hcl              # điền tên bucket
 terraform init -backend-config=backend.hcl
 
 # 1. Kho ECR trước, để có chỗ đẩy image.
-../scripts/tf.sh apply -target=aws_ecr_repository.repo -target=aws_ecr_lifecycle_policy.keep_recent
+IMAGE_TAG=$TAG ../scripts/tf.sh apply -target=aws_ecr_repository.repo -target=aws_ecr_lifecycle_policy.keep_recent
 IMAGES_ONLY=1 ../scripts/deploy.sh             # thêm WITH_RERANKER=1 nếu dùng jina
 
 # 2. Phần còn lại. Service khởi động trước migration, nên api chưa qua /ready và lần deploy đầu có
 #    thể bị circuit breaker đánh dấu thất bại; bước 4 khởi động lại service đó sau migration.
 #    Topic SNS mới gửi email xác nhận tới alarm_email: bấm Confirm, mỗi lần tạo lại stack.
-../scripts/tf.sh apply
+IMAGE_TAG=$TAG ../scripts/tf.sh apply
 
 # 3. Khóa nhà cung cấp. Terraform không bao giờ thấy chúng và không ghi đè sau lần tạo.
 PREFIX=$(terraform output -raw ssm_prefix)
@@ -68,9 +69,11 @@ Thứ tự: build và đẩy image theo commit → chạy migration bằng image
 
 Trong lúc rolling update, bản cũ và mới chạy cùng lúc trên schema mới, nên thay đổi phá vỡ tương thích phải tách hai lần deploy: thêm trước, bỏ sau.
 
-Tag đang chạy được ghi vào `infra/terraform/image-<môi trường>.tfvars` (bị git bỏ qua), và `tf.sh` truyền tệp đó cho `plan` và `apply`.
+Tag đang chạy nằm trong state của môi trường (output `image_tag`), và `tf.sh` đọc nó rồi truyền lại cho mọi `plan` và `apply`, nên một lệnh từ bất kỳ bản checkout nào cũng giữ đúng image của lần deploy cuối.
+`deploy.sh` đặt `IMAGE_TAG` thành commit đang rollout cho lần apply của nó; `IMAGE_TAG` luôn thắng tag trong state.
 Vì vậy mọi thay đổi hạ tầng khác chạy qua `infra/scripts/tf.sh apply`, không chạy `terraform apply` trực tiếp: tag cũ để trong `terraform.tfvars` sẽ đưa mọi service về image cũ.
-Thiếu tệp đó thì `tf.sh` dừng: chạy `deploy.sh`, hoặc tự ghi tag đang chạy (`echo 'image_tag = "<commit>"' > infra/terraform/image-demo.tfvars`).
+State chưa có output đó (stack mới, hoặc lần apply đầu sau khi output này được thêm) thì `tf.sh` dừng: chạy `deploy.sh`, hoặc đặt tag đang chạy cho đúng một lệnh (`IMAGE_TAG=<commit> infra/scripts/tf.sh apply`, tag lấy từ `aws ecs describe-services`).
+Đừng `export IMAGE_TAG`: biến còn lại trong shell sẽ thắng tag trong state ở lần sau và đưa service về image cũ.
 
 ## Staging
 
@@ -85,10 +88,10 @@ Dựng lần đầu, giống mục "Lần đầu" nhưng qua `tf.sh`:
 
 ```bash
 export ENVIRONMENT=staging
-echo "image_tag = \"$(git rev-parse --short=7 HEAD)\"" > infra/terraform/image-staging.tfvars
-infra/scripts/tf.sh apply -target=aws_ecr_repository.repo -target=aws_ecr_lifecycle_policy.keep_recent
+TAG=$(git rev-parse --short=7 HEAD)
+IMAGE_TAG=$TAG infra/scripts/tf.sh apply -target=aws_ecr_repository.repo -target=aws_ecr_lifecycle_policy.keep_recent
 IMAGES_ONLY=1 infra/scripts/deploy.sh
-infra/scripts/tf.sh apply
+IMAGE_TAG=$TAG infra/scripts/tf.sh apply
 PREFIX=$(infra/scripts/tf.sh output -raw ssm_prefix)   # /microlearning-staging, khác của demo
 aws ssm put-parameter --overwrite --type SecureString --name "$PREFIX/openrouter-api-key" --value "..."
 #   tương tự: typesafe-api-key

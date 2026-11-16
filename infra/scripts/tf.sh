@@ -8,15 +8,14 @@
 # bucket of backend.hcl and its provider cache in .terraform-<environment>, so a staging command
 # can never read or write the demo state. Its sizes come from infra/environments/<environment>.tfvars.
 #
-# The image tag comes from infra/terraform/image-<environment>.tfvars (git-ignored), which deploy.sh
-# writes with the tag it rolls out. A tag kept anywhere else goes stale after the next deploy, and an
-# apply with a stale tag rolls every service back to that image.
+# The image tag is the one the environment's state holds (output image_tag), or IMAGE_TAG, which
+# deploy.sh sets for its rollout. A tag kept anywhere else, such as a file in one checkout, goes stale
+# after a deploy from another, and an apply with a stale tag rolls every service back to that image.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 TF_DIR="$ROOT/infra/terraform"
 ENVIRONMENT="${ENVIRONMENT:-demo}"
-IMAGE="$TF_DIR/image-$ENVIRONMENT.tfvars"
 
 VAR_FILES=()
 if [[ "$ENVIRONMENT" != demo ]]; then
@@ -33,21 +32,20 @@ if [[ "$ENVIRONMENT" != demo ]]; then
   fi
 fi
 
-case "${1:-}" in
-  plan | apply)
-    if [[ ! -f "$IMAGE" ]]; then
-      echo "No $IMAGE, so the tag running in $ENVIRONMENT is unknown." >&2
-      echo "Run ENVIRONMENT=$ENVIRONMENT infra/scripts/deploy.sh, which writes it, or write the tag that is" >&2
-      echo "deployed now by hand: echo 'image_tag = \"<commit>\"' > $IMAGE" >&2
-      exit 1
-    fi ;;
-esac
-if [[ -f "$IMAGE" ]]; then VAR_FILES+=("-var-file=$IMAGE"); fi
-
 # Only the commands that evaluate variables take a var file; `output` and `state` refuse one.
 case "${1:-}" in
   plan | apply | destroy | import | refresh | console)
     command="$1"; shift
+    # A state from before the image_tag output, or a new stack, has none.
+    tag="${IMAGE_TAG:-$(terraform -chdir="$TF_DIR" output -raw image_tag || true)}"
+    if [[ -n "$tag" ]]; then
+      VAR_FILES+=(-var "image_tag=$tag")
+    elif [[ "$command" == plan || "$command" == apply ]]; then
+      echo "The state of $ENVIRONMENT holds no image tag, so the tag running there is unknown." >&2
+      echo "Run ENVIRONMENT=$ENVIRONMENT infra/scripts/deploy.sh, or set IMAGE_TAG to the tag deployed now" >&2
+      echo "for this one command: IMAGE_TAG=<commit> infra/scripts/tf.sh $command" >&2
+      exit 1
+    fi
     exec terraform -chdir="$TF_DIR" "$command" ${VAR_FILES[@]+"${VAR_FILES[@]}"} "$@" ;;
   *)
     exec terraform -chdir="$TF_DIR" "$@" ;;

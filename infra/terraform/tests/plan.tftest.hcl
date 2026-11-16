@@ -33,6 +33,10 @@ run "demo_with_the_self_hosted_reranker" {
     error_message = "jina needs the reranker service."
   }
   assert {
+    condition     = output.image_tag == "50d64a7"
+    error_message = "infra/scripts/tf.sh reads the deployed tag back from this output."
+  }
+  assert {
     condition     = length(aws_subnet.public) == 2 && length(aws_subnet.data) == 2
     error_message = "Two AZs, even where the region has three."
   }

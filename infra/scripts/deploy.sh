@@ -130,15 +130,10 @@ fi
 
 # --- 3. Roll the services out to the new image.
 echo "== Rolling out"
-# The tag goes to the file tf.sh reads, so a later infra apply keeps this image instead of rolling
-# back. The plan is shown and waits for "yes": it applies every other difference too, and a forced
-# replacement of the database would otherwise pass unseen. A declined or failed apply puts the
-# previous tag back.
-TAG_FILE="$ROOT/infra/terraform/image-${ENVIRONMENT:-demo}.tfvars"
-PREVIOUS_TAG_FILE="$(cat "$TAG_FILE" 2>/dev/null || true)"
-echo "image_tag = \"$TAG\"" >"$TAG_FILE"
-if ! tf apply; then
-  if [[ -n "$PREVIOUS_TAG_FILE" ]]; then echo "$PREVIOUS_TAG_FILE" >"$TAG_FILE"; else rm -f "$TAG_FILE"; fi
+# The apply stores the tag in the state (output image_tag), where tf.sh reads it, so a later infra
+# apply keeps this image instead of rolling back. The plan is shown and waits for "yes": it applies
+# every other difference too, and a forced replacement of the database would otherwise pass unseen.
+if ! IMAGE_TAG="$TAG" tf apply; then
   echo "Not rolled out: the apply was declined or failed." >&2
   exit 1
 fi
