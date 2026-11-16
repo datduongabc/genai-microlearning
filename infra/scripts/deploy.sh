@@ -22,6 +22,12 @@ if [[ -n "$(git -C "$ROOT" status --porcelain)" ]]; then
   echo "The working tree has changes: an image is tagged by commit, so it must be the commit." >&2
   exit 1
 fi
+# Only a commit on main has been reviewed and passed CI; this runs from a laptop, not from CI.
+git -C "$ROOT" fetch --quiet origin main
+if ! git -C "$ROOT" merge-base --is-ancestor HEAD origin/main; then
+  echo "HEAD is not on origin/main: merge it through a pull request first." >&2
+  exit 1
+fi
 TAG="$(git -C "$ROOT" rev-parse --short=7 HEAD)"
 REGION="$(tf output -raw region 2>/dev/null || echo "${AWS_REGION:-ap-southeast-1}")"
 ECR_JSON="$(tf output -json ecr)"
@@ -125,13 +131,15 @@ fi
 # --- 3. Roll the services out to the new image.
 echo "== Rolling out"
 # The tag goes to the file tf.sh reads, so a later infra apply keeps this image instead of rolling
-# back. A failed apply puts the previous tag back.
+# back. The plan is shown and waits for "yes": it applies every other difference too, and a forced
+# replacement of the database would otherwise pass unseen. A declined or failed apply puts the
+# previous tag back.
 TAG_FILE="$ROOT/infra/terraform/image-${ENVIRONMENT:-demo}.tfvars"
 PREVIOUS_TAG_FILE="$(cat "$TAG_FILE" 2>/dev/null || true)"
 echo "image_tag = \"$TAG\"" >"$TAG_FILE"
-if ! tf apply -input=false -auto-approve; then
+if ! tf apply; then
   if [[ -n "$PREVIOUS_TAG_FILE" ]]; then echo "$PREVIOUS_TAG_FILE" >"$TAG_FILE"; else rm -f "$TAG_FILE"; fi
-  echo "Not rolled out: the apply failed." >&2
+  echo "Not rolled out: the apply was declined or failed." >&2
   exit 1
 fi
 # On the first deploy the services start before this migration has made the database roles, so

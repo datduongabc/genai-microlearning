@@ -61,6 +61,9 @@ SKIP_BUILD=1 ../scripts/deploy.sh
 infra/scripts/deploy.sh
 ```
 
+Chỉ commit đã nằm trên `origin/main` (đã qua review và CI) mới được deploy; commit khác thì script dừng trước khi build.
+Ở bước rolling update, Terraform in plan và chờ gõ `yes`: đọc plan trước, nhất là khi có tài nguyên bị thay thế (RDS thay thế là một database mới, rỗng).
+
 Thứ tự: build và đẩy image theo commit → chạy migration bằng image mới trong một task riêng → rolling update → frontend → gọi `/api/ready` qua CloudFront. Migration lỗi thì dừng, chưa service nào đổi. Task mới không qua health check thì circuit breaker của ECS tự quay về bản cũ.
 
 Trong lúc rolling update, bản cũ và mới chạy cùng lúc trên schema mới, nên thay đổi phá vỡ tương thích phải tách hai lần deploy: thêm trước, bỏ sau.
