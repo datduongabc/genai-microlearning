@@ -306,6 +306,11 @@ body { background: var(--bg-canvas); font-size:16px; line-height:24px; }
 .status-pill { display:inline-flex; align-items:center; gap:6px; margin-top:2px; font-size:13px; line-height:18px; color:var(--text-secondary); }
 .status-pill::before { content:""; width:7px; height:7px; border-radius:50%; background:var(--border-strong); }
 .status-pill[data-status=processing]::before, .status-pill[data-status=chunked]::before { background:var(--status-warning); }
+/* Something is under way: the dot pulses, so a running row does not read as one that stopped. */
+@media (prefers-reduced-motion: no-preference) {
+  .status-pill[data-status=processing]::before { animation:status-pulse 1.2s ease-in-out infinite; }
+}
+@keyframes status-pulse { 50% { opacity:.3; } }
 .status-pill[data-status=embedded] { color:var(--status-success); }
 .status-pill[data-status=embedded]::before { background:var(--status-success); }
 .status-pill[data-status=failed] { color:var(--status-danger); }
@@ -317,6 +322,7 @@ body { background: var(--bg-canvas); font-size:16px; line-height:24px; }
 .module-item { display:flex; flex-wrap:wrap; align-items:baseline; gap:4px 14px; }
 .media-kind { flex:none; min-width:4.5rem; font-size:12px; line-height:24px; font-weight:600; letter-spacing:.02em; text-transform:uppercase; color:var(--text-muted); }
 .module-item > .module-link { min-width:0; overflow-wrap:anywhere; }
+.media-created { flex:none; font-size:13px; line-height:18px; font-variant-numeric:tabular-nums; color:var(--text-muted); }
 .module-link { font:500 16px/24px var(--font-serif); color:var(--text-primary); }
 .module-link:hover { color:var(--accent-default); text-decoration:underline; text-underline-offset:3px; }
 .control-badge { margin-left:8px; padding:1px 8px; border-radius:999px; background:var(--bg-warning-soft); color:var(--status-warning); font:500 12px/18px var(--font-sans); display:inline-block; max-width:100%; vertical-align:middle; }

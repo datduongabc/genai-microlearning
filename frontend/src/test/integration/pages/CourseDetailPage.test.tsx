@@ -674,6 +674,28 @@ describe('CourseDetailPage - flashcard sets', () => {
     expect(await screen.findByText('Đang sinh...')).toBeInTheDocument()
   })
 
+  it('shows a pending set at once and takes no second submit while the request is out', async () => {
+    let answer!: (value: { id: string; job_id: string }) => void
+    vi.mocked(api.generateFlashcards).mockReturnValue(new Promise((resolve) => { answer = resolve }))
+    vi.mocked(api.listFlashcardSets)
+      .mockResolvedValueOnce([])
+      .mockResolvedValue([{ ...flashcardSet, status: 'generating', card_count: 0 }])
+
+    renderPage()
+    await userEvent.click(await screen.findByRole('button', { name: '+ Sinh flashcard' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Sinh flashcard' }))
+
+    const list = await screen.findByRole('list', { name: 'Flashcard sinh từ syllabus.pdf' })
+    const pending = within(list).getByRole('listitem')
+    expect(pending).toHaveTextContent('Toàn bộ tài liệu')
+    expect(within(pending).getByText('Đang gửi yêu cầu...')).toHaveAttribute('data-status', 'processing')
+    expect(screen.getByRole('button', { name: '+ Sinh flashcard' })).toBeDisabled()
+
+    answer({ id: 'set-1', job_id: 'job-1' })
+    expect(await screen.findByText('Đang sinh...')).toBeInTheDocument()
+    expect(screen.queryByText('Đang gửi yêu cầu...')).not.toBeInTheDocument()
+  })
+
   it('says an identical set is already being generated when the server answers 409', async () => {
     vi.mocked(api.generateFlashcards).mockRejectedValue(axiosFailure(409, 'Bộ thẻ này đang được sinh, vui lòng chờ.'))
 
@@ -758,6 +780,65 @@ describe('CourseDetailPage - videos', () => {
       focus: 'FCFS', outputLanguage: 'vi', modelAlias: '', voiceAlias: 'voice-heygen', imageAlias: 'image-qwen',
     }))
     expect(await screen.findByText('Đang sinh lời thoại...')).toBeInTheDocument()
+  })
+
+  it('shows a pending row at once and takes no second submit while the request is out', async () => {
+    // The request can take seconds (live run 2: 8 s); until it returns the lecturer must see it was taken.
+    let answer!: (value: { id: string; job_id: string }) => void
+    vi.mocked(api.generateVideo).mockReturnValue(new Promise((resolve) => { answer = resolve }))
+    vi.mocked(api.listVideos)
+      .mockResolvedValueOnce([])
+      .mockResolvedValue([{ ...videoSummary, status: 'generating', scene_count: 0 }])
+
+    renderPage()
+    await userEvent.click(await screen.findByRole('button', { name: '+ Sinh video' }))
+    await userEvent.type(within(screen.getByRole('dialog', { name: 'Sinh video' })).getByLabelText(/Trọng tâm/), 'FCFS')
+    await userEvent.click(screen.getByRole('button', { name: 'Sinh video' }))
+
+    const list = await screen.findByRole('list', { name: 'Video sinh từ syllabus.pdf' })
+    const pending = within(list).getByRole('listitem')
+    expect(pending).toHaveTextContent('FCFS')
+    expect(pending).toHaveAttribute('aria-busy', 'true')
+    expect(within(pending).getByText('Đang gửi yêu cầu...')).toHaveAttribute('data-status', 'processing')
+    expect(screen.getByRole('button', { name: '+ Sinh video' })).toBeDisabled()
+    expect(api.generateVideo).toHaveBeenCalledTimes(1)
+
+    answer({ id: 'video-1', job_id: 'job-1' })
+    expect(await screen.findByText('Đang sinh lời thoại...')).toBeInTheDocument()
+    expect(screen.queryByText('Đang gửi yêu cầu...')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '+ Sinh video' })).toBeEnabled()
+  })
+
+  it('drops the pending row when the request is refused', async () => {
+    vi.mocked(api.generateVideo).mockRejectedValue(axiosFailure(409, 'Video này đang được sinh lời thoại, vui lòng chờ.'))
+    vi.mocked(api.listVideos).mockResolvedValue([])
+
+    renderPage()
+    await userEvent.click(await screen.findByRole('button', { name: '+ Sinh video' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Sinh video' }))
+
+    expect(await screen.findByText('Video này đang được sinh lời thoại, vui lòng chờ.')).toBeInTheDocument()
+    expect(screen.queryByText('Đang gửi yêu cầu...')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '+ Sinh video' })).toBeEnabled()
+  })
+
+  it('dates the rows that share a title, and only those', async () => {
+    vi.mocked(api.listVideos).mockResolvedValue([
+      { ...videoSummary, id: 'video-1', created_at: '2026-11-13T09:05:00Z' },
+      { ...videoSummary, id: 'video-2', created_at: '2026-11-16T00:20:15Z' },
+      { ...videoSummary, id: 'video-3', focus: 'SJF' },
+    ])
+
+    renderPage()
+
+    const list = await screen.findByRole('list', { name: 'Video sinh từ syllabus.pdf' })
+    const items = within(list).getAllByRole('listitem')
+    const times = items.map((item) => item.querySelector('time'))
+    expect(times[0]).toHaveAttribute('dateTime', '2026-11-13T09:05:00Z')
+    expect(times[1]).toHaveAttribute('dateTime', '2026-11-16T00:20:15Z')
+    expect(times[0]?.textContent).toMatch(/^tạo \d{2}:\d{2} \d{2}\/\d{2}$/)
+    expect(times[0]?.textContent).not.toBe(times[1]?.textContent)
+    expect(times[2]).toBeNull()
   })
 
   it('shows the server message when the generation quota is used up', async () => {

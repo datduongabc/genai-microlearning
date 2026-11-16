@@ -141,15 +141,55 @@ function mediaPillStatus(running: boolean, failed: boolean, published: boolean):
   return published ? "embedded" : undefined;
 }
 
+type MediaKind = "Flashcard" | "Video";
+
+// When an item was made, as "tạo 00:20 16/11" in the lecturer's time: enough to tell two items of one
+// focus apart, which live run 2's page could only do by their card or scene counts.
+function createdText(iso: string): string {
+  const at = new Date(iso);
+  const two = (n: number) => String(n).padStart(2, "0");
+  return `tạo ${two(at.getHours())}:${two(at.getMinutes())} ${two(at.getDate())}/${two(at.getMonth() + 1)}`;
+}
+
+// The creation time of each item whose title another item of its document's list also has, by id.
+function sharedTitleDates(items: { id: string; document_id: string; focus: string | null; created_at: string }[]) {
+  const title = (item: (typeof items)[number]) => `${item.document_id}\n${item.focus ?? ""}`;
+  const count = new Map<string, number>();
+  items.forEach((item) => count.set(title(item), (count.get(title(item)) ?? 0) + 1));
+  return new Map(items.filter((item) => (count.get(title(item)) ?? 0) > 1).map((item) => [item.id, item.created_at]));
+}
+
 // The kind is written out because a set and a video made from the same focus carry the same title.
-function MediaListItem({ kind, to, focus, status, statusText }: { kind: "Flashcard" | "Video"; to: string; focus: string | null; status?: string; statusText: string }) {
+function MediaListItem({ kind, to, focus, status, statusText, created }: {
+  kind: MediaKind; to: string; focus: string | null; status?: string; statusText: string; created?: string;
+}) {
   return (
     <li className="module-item">
       <span className="media-kind">{kind}</span>
       <Link to={to} className="module-link flashcard-link" title={focus ?? undefined}>
         {focus ?? "Toàn bộ tài liệu"}
       </Link>
+      {created && <time className="media-created" dateTime={created}>{createdText(created)}</time>}
       <span className="status-pill" data-status={status}>{statusText}</span>
+    </li>
+  );
+}
+
+// A request the server has not answered yet. It can take seconds (live run 2: 8 s), and until it
+// answered the page showed nothing, so the lecturer could not tell the click was taken.
+interface PendingMedia {
+  key: number;
+  documentId: string;
+  kind: MediaKind;
+  focus: string | null;
+}
+
+function PendingMediaItem({ item }: { item: PendingMedia }) {
+  return (
+    <li className="module-item" aria-busy="true">
+      <span className="media-kind">{item.kind}</span>
+      <span className="module-link">{item.focus ?? "Toàn bộ tài liệu"}</span>
+      <span className="status-pill" data-status="processing">Đang gửi yêu cầu...</span>
     </li>
   );
 }
@@ -211,6 +251,11 @@ export function CourseDetailPage() {
   // job (so a double-click cannot send two requests); after that, and after
   // a refresh or navigation, `doc.generating` from the server is the truth.
   const [startingIds, setStartingIds] = useState<Set<string>>(new Set());
+  // Flashcard and video requests on their way, one of each kind per document: a second click before
+  // the first answers would only be refused as a duplicate. The ref answers at once, the state draws.
+  const [pendingMedia, setPendingMedia] = useState<PendingMedia[]>([]);
+  const pendingKeys = useRef(new Set<string>());
+  const nextPending = useRef(0);
   const refresh = useCallback(async () => {
     if (!courseId) return;
     await loadCoursePage(courseId, { setCourse, setDocuments, setModulesByDoc, setFlashcardSets, setVideos });
@@ -268,6 +313,8 @@ export function CourseDetailPage() {
   const setsByDoc = (documentId: string) => flashcardSets.filter((set) => set.document_id === documentId);
   const videosByDoc = (documentId: string) => videos.filter((video) => video.document_id === documentId);
   const isGenerating = (doc: DocumentInfo) => doc.generating || startingIds.has(doc.id);
+  const setDates = sharedTitleDates(flashcardSets);
+  const videoDates = sharedTitleDates(videos);
   useEffect(() => {
     if (!shouldPoll || !courseId) return;
     const timer = setInterval(async () => {
@@ -360,26 +407,47 @@ export function CourseDetailPage() {
     }
   }
 
-  async function handleGenerateFlashcards(doc: DocumentInfo, outputLanguage: "vi" | "en", focus: string) {
+  const isSending = (doc: DocumentInfo, kind: MediaKind) => pendingMedia.some((p) => p.documentId === doc.id && p.kind === kind);
+  const pendingFor = (doc: DocumentInfo, kind: MediaKind) => pendingMedia.filter((p) => p.documentId === doc.id && p.kind === kind);
+
+  // Shows the request as a row under its document until the list it lands in has been read again.
+  async function sendMediaRequest(doc: DocumentInfo, kind: MediaKind, focus: string, send: () => Promise<void>) {
+    const guard = `${kind}:${doc.id}`;
+    if (pendingKeys.current.has(guard)) return;
+    pendingKeys.current.add(guard);
+    const item = { key: nextPending.current++, documentId: doc.id, kind, focus: focus.trim() || null };
+    setPendingMedia((items) => [...items, item]);
     setError(null);
     try {
-      await generateFlashcards(doc.id, { focus, outputLanguage, modelAlias });
-      setFlashcardSets(await listFlashcardSets(courseId ?? ""));
-    } catch (err) {
-      // The 409 carries its own explanation (an identical set is already being generated).
-      setError(apiErrorMessage(err, "Sinh flashcard thất bại"));
+      await send();
+    } finally {
+      pendingKeys.current.delete(guard);
+      setPendingMedia((items) => items.filter((p) => p.key !== item.key));
     }
   }
 
+  async function handleGenerateFlashcards(doc: DocumentInfo, outputLanguage: "vi" | "en", focus: string) {
+    await sendMediaRequest(doc, "Flashcard", focus, async () => {
+      try {
+        await generateFlashcards(doc.id, { focus, outputLanguage, modelAlias });
+        setFlashcardSets(await listFlashcardSets(courseId ?? ""));
+      } catch (err) {
+        // The 409 carries its own explanation (an identical set is already being generated).
+        setError(apiErrorMessage(err, "Sinh flashcard thất bại"));
+      }
+    });
+  }
+
   async function handleGenerateVideo(doc: DocumentInfo, outputLanguage: "vi" | "en", focus: string, media: VideoMediaChoice) {
-    setError(null);
-    try {
-      await generateVideo(doc.id, { focus, outputLanguage, modelAlias, ...media });
-      setVideos(await listVideos(courseId ?? ""));
-    } catch (err) {
-      // A 409 (the same video is being generated) and a 429 (quota) carry their own Vietnamese wording.
-      setError(apiErrorMessage(err, "Sinh video thất bại"));
-    }
+    await sendMediaRequest(doc, "Video", focus, async () => {
+      try {
+        await generateVideo(doc.id, { focus, outputLanguage, modelAlias, ...media });
+        setVideos(await listVideos(courseId ?? ""));
+      } catch (err) {
+        // A 409 (the same video is being generated) and a 429 (quota) carry their own Vietnamese wording.
+        setError(apiErrorMessage(err, "Sinh video thất bại"));
+      }
+    });
   }
 
   async function handleDeleteDocument(doc: DocumentInfo) {
@@ -580,6 +648,7 @@ export function CourseDetailPage() {
                   {d.status === "embedded" && (
                     <button
                       onClick={() => { flashcardDocument.current = d; flashcardDialog.current?.showModal(); }}
+                      disabled={isSending(d, "Flashcard")}
                       className="link-action"
                     >
                       + Sinh flashcard
@@ -588,6 +657,7 @@ export function CourseDetailPage() {
                   {d.status === "embedded" && (
                     <button
                       onClick={() => { videoDocument.current = d; videoDialog.current?.showModal(); }}
+                      disabled={isSending(d, "Video")}
                       className="link-action"
                     >
                       + Sinh video
@@ -639,8 +709,10 @@ export function CourseDetailPage() {
                   ))}
                 </ul>
               )}
-              {setsByDoc(d.id).length > 0 && (
+              {(setsByDoc(d.id).length > 0 || isSending(d, "Flashcard")) && (
                 <ul className="doc-modules" aria-label={`Flashcard sinh từ ${d.filename}`}>
+                  {/* The newest come first, which is where the set being asked for will be. */}
+                  {pendingFor(d, "Flashcard").map((item) => <PendingMediaItem key={item.key} item={item} />)}
                   {setsByDoc(d.id).map((set) => (
                     <MediaListItem
                       key={set.id}
@@ -649,12 +721,14 @@ export function CourseDetailPage() {
                       focus={set.focus}
                       status={mediaPillStatus(set.status === "generating", set.status === "failed", set.published_at !== null)}
                       statusText={flashcardStatusText(set)}
+                      created={setDates.get(set.id)}
                     />
                   ))}
                 </ul>
               )}
-              {videosByDoc(d.id).length > 0 && (
+              {(videosByDoc(d.id).length > 0 || isSending(d, "Video")) && (
                 <ul className="doc-modules" aria-label={`Video sinh từ ${d.filename}`}>
+                  {pendingFor(d, "Video").map((item) => <PendingMediaItem key={item.key} item={item} />)}
                   {videosByDoc(d.id).map((video) => (
                     <MediaListItem
                       key={video.id}
@@ -665,6 +739,7 @@ export function CourseDetailPage() {
                         VIDEO_JOB_TEXT[video.status] !== undefined, video.status === "failed", video.published_at !== null,
                       )}
                       statusText={videoStatusText(video)}
+                      created={videoDates.get(video.id)}
                     />
                   ))}
                 </ul>
