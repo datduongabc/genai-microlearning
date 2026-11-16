@@ -28,6 +28,24 @@ _MIN_TOPIC_CHARS = 3
 _TOPIC_SEPARATOR = re.compile(r"\s*[,;]\s*|\s+(?:và|and|&|vs\.?|versus)\s+", re.IGNORECASE)
 
 
+# One glossary for the video and the flashcards, so a lesson says one word for one idea. Live run 2's
+# card said "trưng thu" (to requisition) for preemption, while the video of the same focus said
+# "trưng dụng"; the card also began a Vietnamese sentence with an English noun phrase.
+_VIETNAMESE_TERMS = """Terms in Vietnamese: write the Vietnamese term; the English one may follow it in brackets.
+- preemption: "trưng dụng" (never "trưng thu"); preemptive: "có trưng dụng"; non-preemptive: "không trưng dụng"
+- process: "tiến trình"; thread: "luồng"; scheduler: "bộ lập lịch"; ready queue: "hàng đợi sẵn sàng"
+- context switch: "chuyển ngữ cảnh"; time quantum: "lượng tử thời gian"; burst time: "thời gian chạy"
+- waiting time: "thời gian chờ"; turnaround time: "thời gian hoàn thành"; response time: "thời gian phản hồi";
+  throughput: "thông lượng"
+- The names of algorithms stay as they are (FCFS, SJF, Round Robin), but a sentence is Vietnamese around them:
+  "Lập lịch FCFS là ...", not "FCFS scheduling là ..."."""
+
+
+def term_rules(language: str) -> str:
+    """The glossary a lesson in `language` is written with: empty for English, the source's own terms."""
+    return _VIETNAMESE_TERMS if language == "vi" else ""
+
+
 def llm_cost(spans: list[dict]) -> dict:
     """What the text-model calls of one generation cost, from the timing spans the gateway fills in.
     `usd` adds only the calls whose price is known and `priced_calls` says how many those are, so a

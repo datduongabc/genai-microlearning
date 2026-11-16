@@ -19,6 +19,7 @@ from app.generation.media_common import (
     focus_passages,
     llm_cost,
     run_generation_step,
+    term_rules,
     topics_line,
     values_kept_across_commits,
     without_doubled_words,
@@ -48,10 +49,19 @@ The back may use ONLY what the source chunks say: no outside knowledge, nothing 
 List in `sources` the IDs of the chunks the back is taken from (for example ["S2"]).
 Do not write a card you cannot ground in a chunk. Cover different ideas; do not repeat one.
 
-Stay on the TOPIC. When TOPICS lists several, write cards on every topic in TOPICS, about as many on
-each, and every card is about one of them: a chunk that is about something else (another algorithm, an
-exercise, a summary of the chapter) is only there for context, so write no card from it.
-Check every sentence once more before you return it: no word written twice in a row ("việc việc")."""
+Stay on the TOPIC. When TOPICS lists several, write cards on every topic in TOPICS:
+at least 2 cards on each topic in TOPICS, and about as many on each. Every card is about one of them: a chunk that is about something else (another
+algorithm, an exercise, a summary of the chapter) is only there for context, so write no card from it.
+
+When the chunks work through an example with figures (the waiting time of each process in a schedule, and their
+average), at least one card works through it: the front gives the example's data and asks for the result, and the
+back gives the steps and the result with the chunk's own figures, for example "P1 = 0, P2 = 24, P3 = 27, so the
+average is (0 + 24 + 27)/3 = 17".
+
+The back answers exactly what the front asks, and nothing else in its place: a front that asks about waiting time
+and response time is answered with waiting time and response time, not turnaround time.
+Check every card once more before you return it: the back answers its front, and no word is written twice in a
+row ("việc việc")."""
 
 
 def generate_flashcards(
@@ -76,7 +86,8 @@ def generate_flashcards(
             chunks = found.chunks
             draft = complete_structured(
                 f"TOPIC: {found.query}\n{topics_line(found)}\n{format_source_chunks(chunks)}", FlashcardDraft,
-                system_instruction=_INSTRUCTION + output_language_instruction(language), temperature=0.2,
+                system_instruction=_INSTRUCTION + f"\n{term_rules(language)}" + output_language_instruction(language),
+                temperature=0.2,
             )
 
         cards = []

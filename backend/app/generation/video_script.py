@@ -48,6 +48,7 @@ from app.generation.media_common import (
     focus_passages,
     llm_cost,
     run_generation_step,
+    term_rules,
     topics_line,
     values_kept_across_commits,
     without_doubled_words,
@@ -160,8 +161,7 @@ _NARRATION_RULES = f"""Narration:
 - One sentence per item of `narration`, each with its own `sources`.
 - The voice reads the text as written, so read symbols and fractions as the words they mean, never as
   LaTeX or symbols: in Vietnamese "một phần n", "n trừ một nhân q"; in English "one over n",
-  "n minus one times q". Write labels as they are said: P1, not P_1.
-Terms: in Vietnamese, preemption is "trưng dụng"; keep the English names of algorithms."""
+  "n minus one times q". Write labels as they are said: P1, not P_1."""
 
 
 # The example the model copies: live run 2's Vietnamese formulas kept the English one word for word.
@@ -229,7 +229,8 @@ image_prompt, for illustration scenes only, in English:
 formula: words inside a formula go in \\text{{...}}, so that they are not set in italics like variables, and they are
 written in {_LANGUAGE_NAMES[language]}: {_FORMULA_EXAMPLE[language]}
 
-{_NARRATION_RULES}"""
+{_NARRATION_RULES}
+{term_rules(language)}"""
 
 
 _TOP_UP_INSTRUCTION = IGNORE_EMBEDDED_INSTRUCTIONS + f"""The narration of some scenes of a narrated lecture video came out
@@ -414,7 +415,8 @@ def _top_up(scenes: list[_Draft], query: str, chunks: list[Chunk], language: Out
                       f"{NARRATION_MIN_CHARS} characters, {_LOW} to {_HIGH} sentences): {narration}")
     reply = complete_structured(
         f"FOCUS: {query}\n\n" + "\n\n".join(listed) + f"\n\n{format_source_chunks(chunks)}", TopUpDraft,
-        system_instruction=_TOP_UP_INSTRUCTION + output_language_instruction(language), temperature=0.3,
+        system_instruction=_TOP_UP_INSTRUCTION + f"\n{term_rules(language)}" + output_language_instruction(language),
+        temperature=0.3,
     )
     result = _TopUpResult(chosen=len(chosen))
     for item in reply.scenes:

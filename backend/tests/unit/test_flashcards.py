@@ -199,3 +199,42 @@ def test_the_set_records_what_its_model_calls_cost(monkeypatch):
     assert card_set.cost == {"usd": 0.0025, "calls": 2, "priced_calls": 2,
                              "prompt_tokens": 600, "completion_tokens": 85}
     assert card_set.served_models == []
+
+
+# --- Live run 2 (2026-11-16): FCFS 2 cards and RR 5, no worked example, "trưng thu", a mismatched answer ---
+
+def test_each_named_topic_is_asked_for_at_least_two_cards(monkeypatch):
+    db, card_set, _ = _setup(monkeypatch, _chunks(), [_draft("q")], focus="FCFS và Round Robin")
+    flashcards.generate_flashcards(db, card_set.id)
+    assert "at least 2 cards on each topic in TOPICS" in card_set.asked[0][1]
+
+
+def test_a_card_works_through_a_worked_example(monkeypatch):
+    db, card_set, _ = _setup(monkeypatch, _chunks(), [_draft("q")])
+    flashcards.generate_flashcards(db, card_set.id)
+    system = card_set.asked[0][1]
+    assert "at least one card works through it" in system
+    # Not forced: a chunk set without an example has none to work through.
+    assert "When the chunks work through an example" in system
+
+
+def test_a_cards_answer_must_answer_its_question(monkeypatch):
+    db, card_set, _ = _setup(monkeypatch, _chunks(), [_draft("q")])
+    flashcards.generate_flashcards(db, card_set.id)
+    system = card_set.asked[0][1]
+    assert "The back answers exactly what the front asks" in system
+
+
+def test_a_vietnamese_set_gets_the_shared_term_glossary(monkeypatch):
+    db, card_set, _ = _setup(monkeypatch, _chunks(), [_draft("q")])
+    card_set.output_language = "vi"
+    flashcards.generate_flashcards(db, card_set.id)
+    system = card_set.asked[0][1]
+    assert media_common.term_rules("vi") in system
+    assert '"trưng dụng" (never "trưng thu")' in system
+
+
+def test_an_english_set_has_no_vietnamese_glossary(monkeypatch):
+    db, card_set, _ = _setup(monkeypatch, _chunks(), [_draft("q")])
+    flashcards.generate_flashcards(db, card_set.id)
+    assert "trưng" not in card_set.asked[0][1]

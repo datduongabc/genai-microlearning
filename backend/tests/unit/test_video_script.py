@@ -618,3 +618,13 @@ def test_an_english_video_keeps_english_formula_words(monkeypatch):
     system = calls[0][2]["system_instruction"]
     assert "\\text{Average waiting time}" in system
     assert "Thời gian" not in system
+
+
+def test_the_script_and_its_top_up_share_the_flashcards_term_glossary(monkeypatch):
+    short = [_scene(title=f"s{i}", narration=("y" * 300 + ".",)) for i in range(MIN_SCENES)]
+    db, video, calls = _setup(monkeypatch, _chunks(), short)
+    video_script.generate_video_script(db, video.id)
+    glossary = media_common.term_rules("vi")
+    assert '"trưng dụng" (never "trưng thu")' in glossary
+    assert glossary in calls[0][2]["system_instruction"]
+    assert glossary in calls[1][2]["system_instruction"]
