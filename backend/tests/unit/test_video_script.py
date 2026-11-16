@@ -151,6 +151,33 @@ def test_a_top_up_without_sources_keeps_the_old_narration(monkeypatch):
     assert video.scenes[0]["narration"] == "y" * 300 + "."
 
 
+@pytest.mark.parametrize("error", [ValueError("reply did not match TopUpDraft"), RuntimeError("gateway 503")])
+def test_a_top_up_that_fails_keeps_the_paid_draft(monkeypatch, caplog, error):
+    """The top-up is an optional second call: a malformed reply must not fail the video, and an
+    outage must not requeue the job to pay for the draft again."""
+    short = [_scene(title=f"s{i}", narration=("y" * 300 + ".",)) for i in range(MIN_SCENES)]
+    db, video, calls = _setup(monkeypatch, _chunks(), short)
+    script_only = video_script.complete_structured
+
+    def failing_top_up(prompt, model, **kw):
+        if model is video_script.TopUpDraft:
+            calls.append((prompt, model, kw))
+            raise error
+        return script_only(prompt, model, **kw)
+
+    monkeypatch.setattr(video_script, "complete_structured", failing_top_up)
+
+    video_script.generate_video_script(db, video.id)
+
+    assert [c[1] for c in calls] == [video_script.ScriptDraft, video_script.TopUpDraft]
+    assert video.status == MediaStatus.draft
+    assert [s["narration"] for s in video.scenes] == ["y" * 300 + "."] * MIN_SCENES
+    length = video.cost["script"]["length"]
+    assert length["top_up_failed"] is True
+    assert (length["scenes_lengthened"], length["after_top_up_chars"]) == (0, length["draft_chars"])
+    assert "top-up" in caplog.text
+
+
 def test_a_script_over_eight_minutes_is_refused_before_render():
     # 9 scenes of 900 characters read for 9 minutes at 15 characters a second.
     scenes = [Scene(kind="summary", title="t", bullets=["a", "b"], narration="x" * 900, citations=[]).model_dump()
@@ -502,7 +529,7 @@ def test_the_length_at_each_step_is_recorded(monkeypatch):
     assert length == {
         "draft_chars": 8 * 301, "after_top_up_chars": 7 * 301 + 501,
         "uncited_sentences_dropped": 1, "top_up_uncited_sentences_dropped": 1,
-        "scenes_topped_up": 8, "scenes_lengthened": 1, "chunks": 3,
+        "scenes_topped_up": 8, "scenes_lengthened": 1, "chunks": 3, "top_up_failed": False,
     }
 
 

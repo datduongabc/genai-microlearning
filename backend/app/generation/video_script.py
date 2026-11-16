@@ -23,6 +23,7 @@ checks below decide what is kept, before the lecturer reviews it:
   flag for the lecturer, never a reason to drop the scene or refuse the render.
 """
 
+import logging
 import math
 import re
 import unicodedata
@@ -55,6 +56,8 @@ from app.generation.media_common import (
 )
 from app.llm.gateway import capture_models, complete_structured, using_model
 from app.models import Chunk, Document, Job, MediaStatus, Video
+
+logger = logging.getLogger(__name__)
 
 TARGET_SECONDS = 300
 MAX_SECONDS = 480
@@ -631,11 +634,21 @@ def generate_video_script(db: Session, video_id: uuid.UUID, before_save: Callabl
             _settle_kinds(scenes)
             draft_chars = _total_chars(scenes)
             topped = _TopUpResult()
+            top_up_failed = False
             if _needs_top_up(scenes):
-                topped = _top_up(scenes, query, chunks, language)
+                # Optional, after the paid draft: a malformed reply would fail the video, and an outage
+                # would requeue the job to pay for the draft again. A short draft is kept, as the
+                # module docstring says, and the lecturer can lengthen it in the editor.
+                try:
+                    topped = _top_up(scenes, query, chunks, language)
+                except Exception:
+                    logger.warning(f"[video_script] video {video_id}: the top-up failed, the draft is kept as it is",
+                                   exc_info=True)
+                    top_up_failed = True
         length = {"draft_chars": draft_chars, "after_top_up_chars": _total_chars(scenes),
                   "uncited_sentences_dropped": uncited, "top_up_uncited_sentences_dropped": topped.uncited_sentences,
-                  "scenes_topped_up": topped.chosen, "scenes_lengthened": topped.lengthened, "chunks": len(chunks)}
+                  "scenes_topped_up": topped.chosen, "scenes_lengthened": topped.lengthened, "chunks": len(chunks),
+                  "top_up_failed": top_up_failed}
 
         for s in scenes:
             invented = _invented_in_picture(s)
