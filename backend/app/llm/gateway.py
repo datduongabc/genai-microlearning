@@ -175,9 +175,8 @@ def _completion(*, small_step: bool = False, **kwargs):
         api_base=settings.llm_gateway_url,
         api_key=settings.llm_gateway_key,
         extra_body=extra_body,
-        max_retries=0,
-        timeout=GATEWAY_TIMEOUT_SECONDS,
-        **kwargs,
+        # A caller such as the study judge may set its own, shorter bound.
+        **{"max_retries": 0, "timeout": GATEWAY_TIMEOUT_SECONDS, **kwargs},
     )
     calls = _model_calls.get()
     served = getattr(response, "model", None)
