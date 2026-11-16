@@ -25,9 +25,10 @@ const indexCss = readFileSync(resolve(process.cwd(), 'src/index.css'), 'utf8')
 const video = {
   id: 'v1', course_id: 'course-1', title: 'Giới thiệu heap', duration_seconds: 125,
   rendered_version: 1, via_api: false, file_url: 'https://s3.example/v1.mp4?sig=1',
+  source_document: 'bai-giang.pdf',
   scenes: [
-    { title: 'Mở đầu', start_seconds: 0, sources: ['bai-giang.pdf · trang 2'] },
-    { title: 'Heap là gì', start_seconds: 30.5, sources: ['bai-giang.pdf · trang 3', 'bai-2.pdf'] },
+    { title: 'Mở đầu', start_seconds: 0, sources: ['trang 2'] },
+    { title: 'Heap là gì', start_seconds: 30.5, sources: ['trang 3 · Heap', 'trang 4'] },
     { title: 'Tổng kết', start_seconds: 95, sources: [] },
   ],
 }
@@ -70,8 +71,11 @@ describe('LearnVideoPage', () => {
     const second = screen.getByRole('button', { name: /Heap là gì/ })
     // Floored, as the player shows it.
     expect(second).toHaveTextContent('0:30')
-    expect(second).toHaveTextContent('Nguồn: bai-giang.pdf · trang 3')
-    expect(second).toHaveTextContent('Nguồn: bai-2.pdf')
+    // The file is named once for the list; each scene says only where in it, on one line.
+    expect(screen.getByText('Nguồn: bai-giang.pdf')).toBeInTheDocument()
+    expect(screen.getAllByText(/bai-giang\.pdf/)).toHaveLength(1)
+    expect(second.querySelectorAll('.learn-scene-source')).toHaveLength(1)
+    expect(second).toHaveTextContent('Nguồn: trang 3 · Heap; trang 4')
     expect(screen.getByRole('button', { name: /Tổng kết/ })).toHaveTextContent('1:35')
   })
 

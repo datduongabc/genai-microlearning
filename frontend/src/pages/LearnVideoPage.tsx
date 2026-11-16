@@ -132,6 +132,9 @@ function Watch({ video: first }: { video: LearnVideo }) {
           onError={onError}
         />
       )}
+      {video.scenes.length > 0 && video.source_document && (
+        <p className="learn-scenes-source">Nguồn: {video.source_document}</p>
+      )}
       {video.scenes.length > 0 && (
         <ol className="learn-scenes" aria-label="Các cảnh">
           {video.scenes.map((scene, i) => (
@@ -143,9 +146,10 @@ function Watch({ video: first }: { video: LearnVideo }) {
               >
                 <span className="learn-scene-time">{formatClock(scene.start_seconds)}</span>
                 <span className="learn-scene-title">{scene.title}</span>
-                {scene.sources.map((source) => (
-                  <span key={source} className="learn-scene-source">Nguồn: {source}</span>
-                ))}
+                {/* One line: a line per source made a scene of five sources 290 px tall at 390 wide. */}
+                {scene.sources.length > 0 && (
+                  <span className="learn-scene-source">Nguồn: {scene.sources.join("; ")}</span>
+                )}
               </button>
             </li>
           ))}

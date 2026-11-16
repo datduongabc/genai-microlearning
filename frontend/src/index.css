@@ -577,6 +577,8 @@ a.learn-link:hover { text-decoration:underline; text-underline-offset:2px; }
 .learn-hint { margin-top:8px; font-size:14px; line-height:20px; }
 .learn-video { display:block; max-width:100%; }
 .learn-scenes { list-style:none; display:flex; flex-direction:column; margin-top:16px; }
+.learn-scenes-source { margin-top:16px; font-size:14px; line-height:21px; color:var(--text-secondary); overflow-wrap:anywhere; }
+.learn-scenes-source + .learn-scenes { margin-top:8px; }
 .learn-scene { display:grid; grid-template-columns:auto 1fr; gap:2px 12px; align-items:baseline; width:100%; max-width:100%; min-height:44px; padding:10px 8px; text-align:left; border-top:1px solid var(--border-default); overflow-wrap:anywhere; cursor:pointer; }
 .learn-scene:hover { background:var(--bg-highlight); }
 .learn-scene[aria-current=true] { background:var(--bg-highlight); box-shadow:inset 3px 0 0 var(--highlight); }

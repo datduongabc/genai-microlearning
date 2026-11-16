@@ -7,11 +7,11 @@ from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user, require_course_reader
 from app.api.flashcards import card_sources
-from app.api.media_common import chunk_passages
 from app.api.stored_files import send_stored
 from app.api.videos import rendered_filename, rendered_link
+from app.citations import citation_label
 from app.db import get_db
-from app.models import Course, Document, FlashcardSet, User
+from app.models import Chunk, Course, Document, FlashcardSet, User
 from app.models.media import Video
 from app.storage import media_store
 
@@ -80,17 +80,33 @@ def _watchable_video(db: Session, video_id: uuid.UUID, user: User) -> Video:
     return video
 
 
+def _chunk_places(db: Session, document_id: uuid.UUID, chunk_ids: set[str]) -> dict[str, str]:
+    """{chunk id: where it is in the document ("trang 9 · FCFS")}, for the cited chunks that still exist.
+    Without the file name: every source of a video is in its one document, named once beside the list."""
+    wanted = set()
+    for chunk_id in chunk_ids:
+        try:
+            wanted.add(uuid.UUID(chunk_id))
+        except ValueError:
+            continue
+    if not wanted:
+        return {}
+    rows = db.execute(select(Chunk.id, Chunk.source_ref).where(Chunk.document_id == document_id, Chunk.id.in_(wanted)))
+    return {str(chunk_id): citation_label("", source_ref or "") for chunk_id, source_ref in rows}
+
+
 @router.get("/videos/{video_id}")
 def get_video(video_id: uuid.UUID, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     video = _watchable_video(db, video_id, current_user)
     # The scenes of the render, not the draft: the draft can be newer than the file being watched.
     rendered = video.rendered_scenes or []
-    passages = chunk_passages(db, video.document_id, (c for scene in rendered for c in scene["citations"]))
+    places = _chunk_places(db, video.document_id, {c for scene in rendered for c in scene["citations"]})
     scenes = [
         {
             "title": scene["title"], "start_seconds": scene["start_seconds"],
-            # Only the label of a source, once even if several cited passages share it.
-            "sources": list(dict.fromkeys(passages[c]["locator"] for c in scene["citations"] if c in passages)),
+            # Where in the document, once even if several cited passages share it. The file is named
+            # once for the video: on every line it took a scene of five sources 290 px at 390 wide.
+            "sources": list(dict.fromkeys(places[c] for c in scene["citations"] if places.get(c))),
         }
         for scene in rendered
     ]
@@ -102,6 +118,7 @@ def get_video(video_id: uuid.UUID, db: Session = Depends(get_db), current_user: 
         # from it that the lecturer rendered again meanwhile.
         "rendered_version": video.rendered_version,
         "file_url": link["url"], "via_api": link["via_api"],
+        "source_document": db.scalar(select(Document.filename).where(Document.id == video.document_id)),
         "scenes": scenes,
     }
 

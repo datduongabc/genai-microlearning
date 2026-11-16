@@ -64,6 +64,8 @@ export interface LearnVideo {
   rendered_version: number
   file_url: string
   via_api: boolean
+  // The file every scene's sources are in, named once; a scene's sources say only where in it.
+  source_document: string | null
   scenes: LearnVideoScene[]
 }
 

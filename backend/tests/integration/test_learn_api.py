@@ -162,8 +162,10 @@ def test_a_member_gets_a_short_lived_link_to_the_rendered_video(world, monkeypat
         "id": str(world["video"]), "course_id": str(world["course"]), "title": "Video đã giao",
         "duration_seconds": 61.5, "rendered_version": 1, "via_api": False,
         "file_url": "https://s3.example/videos/x/v1.mp4?sig=1",
+        # Every source of a video is in its one document, so the file is named once, not on every line.
+        "source_document": "bai-giang.pdf",
         "scenes": [
-            {"title": "Mở đầu", "start_seconds": 0.0, "sources": ["bai-giang.pdf · trang 2"]},
+            {"title": "Mở đầu", "start_seconds": 0.0, "sources": ["trang 2"]},
             {"title": "Heap", "start_seconds": 30.5, "sources": []},
         ],
     }
