@@ -41,6 +41,8 @@ def _serve(cost_header: str | None):
 def _span_of_one_call(monkeypatch, cost_header):
     server = _serve(cost_header)
     monkeypatch.setattr(settings, "llm_gateway_url", f"http://127.0.0.1:{server.server_port}")
+    # CI has no gateway key; the OpenAI client refuses to send a call without one.
+    monkeypatch.setattr(settings, "llm_gateway_key", "test-key")
     try:
         with timing.capture_timings() as spans:
             assert gateway.complete("hello") == "hi"
