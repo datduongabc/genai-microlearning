@@ -39,7 +39,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // access token giờ chỉ sống 1h nên api.ts tự refresh ngầm khi cần --
     // logout() phải chủ động thu hồi refresh_token ở server (không chỉ xóa
     // local), nếu không token đó vẫn dùng được tới khi tự hết hạn sau 7 ngày.
-    if (state.refreshToken) void authApi.logout(state.refreshToken);
+    // Đọc từ localStorage, không từ state: client.ts ghi token mới vào đó mỗi lần
+    // refresh, còn token trong state là token lúc login, server đã thu hồi rồi.
+    const { refreshToken } = readStoredAuth();
+    if (refreshToken) void authApi.logout(refreshToken);
     setState({ token: null, refreshToken: null, user: null });
   }
 

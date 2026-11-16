@@ -80,4 +80,29 @@ describe('AuthProvider', () => {
     await waitFor(() => expect(localStorage.getItem('auth')).toBeNull())
     expect(api.logout).toHaveBeenCalledWith('refresh-123')
   })
+
+  it('logout revokes the refresh token the background refresh stored, not the spent login one', async () => {
+    vi.mocked(api.login).mockResolvedValue({
+      access_token: 'tok-123',
+      refresh_token: 'refresh-123',
+      token_type: 'bearer',
+      user: { id: '1', email: 'a@b.com', name: 'A', is_admin: false },
+    })
+    vi.mocked(api.logout).mockResolvedValue(undefined)
+
+    render(
+      <AuthProvider>
+        <Probe />
+      </AuthProvider>,
+    )
+
+    await userEvent.click(screen.getByText('login'))
+    await waitFor(() => expect(JSON.parse(localStorage.getItem('auth')!).refreshToken).toBe('refresh-123'))
+    // What client.ts does when it renews the access token: the login one is revoked server-side.
+    const stored = JSON.parse(localStorage.getItem('auth')!)
+    localStorage.setItem('auth', JSON.stringify({ ...stored, token: 'tok-456', refreshToken: 'refresh-456' }))
+    await userEvent.click(screen.getByText('logout'))
+
+    expect(api.logout).toHaveBeenCalledWith('refresh-456')
+  })
 })
