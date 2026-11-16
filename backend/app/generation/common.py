@@ -26,7 +26,15 @@ def output_language_instruction(language: OutputLanguage = "vi") -> str:
 
 # The fence lines around untrusted text. A document or guidance that carries one would end the data early
 # and put the rest outside it, where IGNORE_EMBEDDED_INSTRUCTIONS no longer covers it.
-_FENCE = re.compile(r"-{3,}\s*(BEGIN|END)\s+(SOURCE|LECTURER)\b[^\n]*", re.IGNORECASE)
+# A model takes a marker as the end of the data whatever the dashes around it, so any dash run or
+# none counts. Only the marker goes: the rest of its line can be real text, such as code on a slide.
+# The planner's bare "BEGIN/END SOURCE" is an ordinary phrase, so it needs dashes or a line of its own.
+_DASHES = "[-\u2010-\u2015\u2212]"
+_FENCE = re.compile(
+    rf"(?:{_DASHES}+[ \t]*)?\b(?:BEGIN|END)\s+(?:SOURCE\s+CHUNK|LECTURER\s+GUIDANCE)\s+DATA\b(?:[ \t]*{_DASHES}+)?"
+    rf"|(?:{_DASHES}{{2,}}|^)[ \t]*\b(?:BEGIN|END)\s+SOURCE[ \t]*(?:{_DASHES}{{2,}}|$)",
+    re.IGNORECASE | re.MULTILINE,
+)
 
 
 def unfenced(text: str) -> str:
