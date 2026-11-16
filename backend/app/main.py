@@ -69,11 +69,12 @@ async def lifespan(app: FastAPI):
         stop_worker()
 
 
-_UPLOAD_CONTENT_PATH = re.compile(r"/documents/[0-9a-fA-F-]{36}/content")
+_UUID = "[0-9a-fA-F-]{36}"
+_UPLOAD_CONTENT_PATH = re.compile(rf"/(documents/{_UUID}|studies/{_UUID}/files/{_UUID})/content")
 
 
 def _is_upload(scope) -> bool:
-    """PUT /documents/{id}/content, the file itself: it has its own limit per format."""
+    """PUT of a document's or a study reference file's content, the file itself: each has its own limit."""
     return scope["method"] == "PUT" and _UPLOAD_CONTENT_PATH.fullmatch(scope["path"]) is not None
 
 
