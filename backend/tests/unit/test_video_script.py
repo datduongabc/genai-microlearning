@@ -39,8 +39,9 @@ def _chunks(n=3):
     return [SimpleNamespace(id=uuid.uuid4(), chunk_index=i, content=f"passage {i}", source_ref=None) for i in range(n)]
 
 
-# 450 characters: inside the 420 to 550 a scene is asked for, so a script of these is not topped up.
-LONG = "x" * 449 + "."
+# 520 characters: inside the 420 to 550 a scene is asked for, and 8 of them reach the 4,000 characters
+# of a 4-minute video, so a script of these is not topped up.
+LONG = "x" * 519 + "."
 
 
 def _scene(kind="summary", title="t", bullets=("first point", "second point"), narration=(LONG,), sources=("S1",),
@@ -117,6 +118,29 @@ def test_a_long_enough_script_is_not_topped_up(monkeypatch):
     db, video, calls = _setup(monkeypatch, _chunks(), _script())
     video_script.generate_video_script(db, video.id)
     assert len(calls) == 1
+
+
+def test_a_script_under_the_four_minute_floor_is_topped_up_though_every_scene_is_long_enough(monkeypatch):
+    # 8 x 450 = 3,600 characters: every scene reaches 420, yet at the voice's measured 15.9 characters a
+    # second this is 3:46, under the 4 minutes asked. The old 0.8 x target rule let it through.
+    scenes = [_scene(title=f"s{i}", narration=("y" * (449 + i) + ".",)) for i in range(MIN_SCENES)]
+    db, video, calls = _setup(monkeypatch, _chunks(), scenes)
+    video_script.generate_video_script(db, video.id)
+    assert [c[1] for c in calls] == [video_script.ScriptDraft, video_script.TopUpDraft]
+    asked = calls[1][0]
+    # No scene is short, so the shortest third is lengthened.
+    assert "SCENE 1:" in asked and "SCENE 3:" in asked and "SCENE 4:" not in asked
+
+
+def test_a_scene_under_its_minimum_is_topped_up_though_the_total_is_long_enough(monkeypatch):
+    # Run 2: 3,960 characters in all, but two scenes under 420; a slightly shorter draft lands under 4 minutes.
+    scenes = _script(9)
+    scenes[4] = _scene(title="short", narration=("y" * 403 + ".",))
+    db, video, calls = _setup(monkeypatch, _chunks(), scenes)
+    video_script.generate_video_script(db, video.id)
+    assert [c[1] for c in calls] == [video_script.ScriptDraft, video_script.TopUpDraft]
+    asked = calls[1][0]
+    assert "SCENE 5: short" in asked and asked.count("SCENE ") == 1
 
 
 def test_a_top_up_without_sources_keeps_the_old_narration(monkeypatch):

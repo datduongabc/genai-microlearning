@@ -43,7 +43,8 @@ def world():
 def _scene(i):
     cited = [{"text": f"point {i}", "sources": ["S1"]}, {"text": f"point {i}b", "sources": ["S1"]}]
     return {"kind": "summary", "title": f"scene {i}", "bullets": cited,
-            "narration": [{"text": "x" * 480 + ".", "sources": ["S1"]}]}
+            # Long enough that 8 scenes reach the 4-minute floor, so no top-up is asked for.
+            "narration": [{"text": "x" * 520 + ".", "sources": ["S1"]}]}
 
 
 def test_the_job_writes_the_script_and_finishes(world, monkeypatch):

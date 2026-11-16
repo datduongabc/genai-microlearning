@@ -10,8 +10,9 @@ checks below decide what is kept, before the lecturer reviews it:
   a flag on its first scene: the lecturer can add scenes or generate again, and failing it would
   throw away the scenes that are good. Only a script with no scene left at all fails.
 - At most MAX_ILLUSTRATIONS scenes are illustrations, since each costs an image model call.
-- A script well under TARGET_SECONDS is topped up once: in the trial the model wrote about four
-  minutes when asked for five, and in the first live run 2:18. The top-up asks for a stated length
+- A script under MIN_CHARS, or with a scene under NARRATION_MIN_CHARS, is topped up once: in the
+  trial the model wrote about four minutes when asked for five, in the first live run 2:18, and in
+  the second 4:10, just above the minimum. The top-up asks for a stated length
   per scene, and what each step wrote is recorded with the script's cost, so a short video can be
   traced to the draft, the top-up or the citations.
 - A bullet that only repeats the slide's table or formula is removed, as long as two remain.
@@ -71,9 +72,10 @@ NARRATION_TARGET_CHARS = 480
 # were asked for 420 to 550 characters and came out at 2 or 3 sentences, 211 to 331 characters.
 NARRATION_SENTENCES = (5, 7)
 TARGET_CHARS = TARGET_SECONDS * CHARS_PER_SECOND
-# Below this share of the target the script is topped up. A little under is fine: the voice and the
-# pauses between slides add some length, and asking for more every time costs a call every time.
-TOP_UP_BELOW = 0.8
+# The least the model is asked for, and below it the script is topped up. The 4-minute minimum at 15
+# characters a second would be 3,600, but the voice read 15.9 a second in live run 2, which made
+# 3,960 characters 4:10, ten seconds above the minimum; 4,000 is still 4:11 at that rate.
+MIN_CHARS = TARGET_CHARS - 500
 MIN_BULLETS, MAX_BULLETS = 2, 4
 
 SceneKind = Literal["title", "illustration", "formula", "code", "table", "summary"]
@@ -177,7 +179,7 @@ def _slide_language_rule(language: OutputLanguage) -> str:
 def _script_instruction(language: OutputLanguage) -> str:
     return IGNORE_EMBEDDED_INSTRUCTIONS + f"""You write the script of a narrated lecture video that a student watches
 at home before class. It must last about {TARGET_SECONDS // 60} minutes (4 to 6). The voice reads about {CHARS_PER_SECOND} characters a
-second, so the narration of all scenes together is about {TARGET_CHARS} characters ({TARGET_CHARS - 500} to {TARGET_CHARS + 500}).
+second, so the narration of all scenes together is about {TARGET_CHARS} characters ({MIN_CHARS} to {TARGET_CHARS + 500}).
 Too short is the usual failure: 2000 characters would be a video of only 2 minutes. The video is a list of scenes; each
 scene is one slide shown while a voice reads its narration.
 
@@ -216,7 +218,7 @@ formula: words inside a formula go in \\text{{...}}, for example
 
 
 _TOP_UP_INSTRUCTION = IGNORE_EMBEDDED_INSTRUCTIONS + f"""The narration of some scenes of a narrated lecture video came out
-too short: the video must last about {TARGET_SECONDS // 60} minutes and is well under. For each scene given, write its narration
+too short: the video must last about {TARGET_SECONDS // 60} minutes and at least 4. For each scene given, write its narration
 again so that it has {_LOW} to {_HIGH} sentences and at least {NARRATION_MIN_CHARS} characters, about {NARRATION_TARGET_CHARS} characters. Keep what it
 says, and add to it: explain what its slide shows and why it matters, walk through its example and its figures step by
 step. Use ONLY what the source chunks say. Every sentence lists in `sources` the IDs of the chunks it is taken from,
@@ -336,6 +338,35 @@ def _without_repeats(s: _Draft) -> list[tuple[str, list[Chunk]]]:
         return s.bullets
     fresh = [(text, used) for text, used in s.bullets if not _words(text) <= shown]
     return fresh if len(fresh) >= MIN_BULLETS else s.bullets
+
+
+def _needs_top_up(scenes: list[_Draft]) -> bool:
+    """Under the floor in all, or any scene under what a scene is asked for. Live run 2 passed the old
+    rule (0.8 x target) at 3,960 characters with two scenes under 420, and came out 10 s above 4
+    minutes: a slightly shorter draft would have skipped the top-up and been under."""
+    return _total_chars(scenes) < MIN_CHARS or any(s.narration_chars() < NARRATION_MIN_CHARS for s in scenes)
+
+
+# A process label as a slide or its PDF text writes it: P1, P 1, P_1, P_{1}.
+_PROCESS = re.compile(r"\bP\s?_?\{?(\d+)\}?")
+_FIGURE = re.compile(r"\d+(?:[.,]\d+)?")
+
+
+def _invented_in_picture(s: _Draft) -> list[str]:
+    """The processes and figures the image prompt names that no chunk the scene cites has. Live run 2's
+    Round Robin picture showed P4 and P5, which exist nowhere in the source: the script model wrote
+    them into the prompt, and the image model drew what it was told. Flagged, not removed: the
+    lecturer fixes the description before paying for the picture."""
+    if not s.image_prompt:
+        return []
+    source = " ".join(c.content for c in s.chunks())
+    labels = {f"P{n}" for n in _PROCESS.findall(source)}
+    figures = set(_FIGURE.findall(source))
+    asked = labels_as_shown(s.image_prompt)
+    named = [f"P{n}" for n in _PROCESS.findall(asked)]
+    shown = _FIGURE.findall(_PROCESS.sub(" ", asked))
+    missing = [label for label in named if label not in labels] + [f for f in shown if f not in figures]
+    return list(dict.fromkeys(missing))
 
 
 def _scenes_to_top_up(scenes: list[_Draft]) -> list[int]:
@@ -583,7 +614,7 @@ def generate_video_script(db: Session, video_id: uuid.UUID, before_save: Callabl
             _settle_kinds(scenes)
             draft_chars = _total_chars(scenes)
             topped = _TopUpResult()
-            if draft_chars < TOP_UP_BELOW * TARGET_CHARS:
+            if _needs_top_up(scenes):
                 topped = _top_up(scenes, query, chunks, language)
         length = {"draft_chars": draft_chars, "after_top_up_chars": _total_chars(scenes),
                   "uncited_sentences_dropped": uncited, "top_up_uncited_sentences_dropped": topped.uncited_sentences,
