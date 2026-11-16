@@ -18,28 +18,9 @@ final class link_requests {
             'timecreated' => time(), 'timemodified' => time(),
         ];
         $DB->insert_record('local_lms_bridge_requests', $request);
-        $url = new \moodle_url('/local/lms_bridge/confirm.php', ['request' => $request->requestid]);
-        if ($userid) {
-            self::notify($request, $url);
-        }
+        // No notification to the matched user: the app name and email it would show are unverified, so a
+        // stranger could pass as the owner. Only the requester opens the confirmation link the app gives them.
         return ['request_id' => $request->requestid, 'status' => 'pending'];
-    }
-
-    private static function notify(\stdClass $request, \moodle_url $url): void {
-        $message = new \core\message\message();
-        $message->component = 'local_lms_bridge';
-        $message->name = 'accountlink';
-        $message->userfrom = \core_user::get_noreply_user();
-        $message->userto = $request->userid;
-        $message->subject = get_string('linksubject', 'local_lms_bridge');
-        $message->fullmessage = get_string('linkmessage', 'local_lms_bridge', (object) ['name' => $request->appname, 'email' => $request->appemail]);
-        $message->fullmessageformat = FORMAT_PLAIN;
-        $message->fullmessagehtml = '';
-        $message->smallmessage = $message->fullmessage;
-        $message->notification = 1;
-        $message->contexturl = $url->out(false);
-        $message->contexturlname = $message->subject;
-        message_send($message);
     }
 
     private static function get(string $requestid): \stdClass {
