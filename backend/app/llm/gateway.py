@@ -14,7 +14,9 @@ import re
 import time
 from collections.abc import AsyncIterator
 
+import httpx
 import litellm
+import openai
 from litellm.constants import RETURN_RAW_MODEL_NAME_METADATA_KEY
 from pydantic import BaseModel, ValidationError
 
@@ -120,9 +122,21 @@ def _response_cost(response) -> float | None:
     return cost if math.isfinite(cost) and cost >= 0 else None
 
 
+def _never_connected(error: BaseException) -> bool:
+    # litellm wraps openai's error, which wraps httpx's. Only a connection that was never made reached
+    # no model; a timeout or a reply cut off after the request was sent may have been billed.
+    while error is not None:
+        if isinstance(error, openai.APIConnectionError) and not isinstance(error, openai.APITimeoutError):
+            return isinstance(error.__cause__, httpx.ConnectError)
+        error = error.__cause__ or error.__context__
+    return False
+
+
 def _call_with_rate_limit_retries(alias: str, routed_alias: str, **request):
     retries = settings.llm_rate_limit_retries if _waits_on_rate_limit.get() else 0
-    for attempt in range(retries + 1):
+    attempt = 0
+    reconnected = False
+    while True:
         with timing.timed("llm", requested_alias=alias, routed_alias=routed_alias) as span:
             try:
                 response = litellm.completion(**request)
@@ -131,6 +145,14 @@ def _call_with_rate_limit_retries(alias: str, routed_alias: str, **request):
                 if attempt == retries or _NOT_A_RATE_LIMIT.search(str(error)):
                     raise
                 wait = _rate_limit_wait(error, attempt)
+                attempt += 1
+            except Exception as error:
+                # With max_retries=0 the client no longer retries a gateway that is restarting: one more
+                # try, once, costs nothing, where a failed call requeues the whole job.
+                if reconnected or not _never_connected(error):
+                    raise
+                reconnected = True
+                wait = 2
             else:
                 usage = getattr(response, "usage", None)
                 span["prompt_tokens"] = getattr(usage, "prompt_tokens", None)
@@ -140,7 +162,6 @@ def _call_with_rate_limit_retries(alias: str, routed_alias: str, **request):
                 return response
         with timing.timed("llm_backoff"):
             time.sleep(wait)
-    raise AssertionError("unreachable")
 
 
 def _completion(*, small_step: bool = False, **kwargs):
