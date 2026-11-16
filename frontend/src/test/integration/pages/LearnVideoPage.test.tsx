@@ -68,7 +68,8 @@ describe('LearnVideoPage', () => {
     expect(player()).toHaveAttribute('preload', 'metadata')
     expect(player()).toHaveAttribute('playsinline')
     const second = screen.getByRole('button', { name: /Heap là gì/ })
-    expect(second).toHaveTextContent('0:31')
+    // Floored, as the player shows it.
+    expect(second).toHaveTextContent('0:30')
     expect(second).toHaveTextContent('Nguồn: bai-giang.pdf · trang 3')
     expect(second).toHaveTextContent('Nguồn: bai-2.pdf')
     expect(screen.getByRole('button', { name: /Tổng kết/ })).toHaveTextContent('1:35')

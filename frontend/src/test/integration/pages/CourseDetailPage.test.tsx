@@ -737,7 +737,8 @@ describe('CourseDetailPage - videos', () => {
     expect(items[1]).toHaveTextContent('Toàn bộ tài liệu')
     expect(within(items[1]).getByText('Đang sinh lời thoại...')).toHaveAttribute('data-status', 'processing')
     expect(within(items[2]).getByText('Đang dựng video...')).toHaveAttribute('data-status', 'processing')
-    expect(within(items[3]).getByText('Đã giao - 9 cảnh, 4,9 phút')).toHaveAttribute('data-status', 'embedded')
+    // Floored, as the player floors its clock: 291 s is 4,85 minutes, not 4,9.
+    expect(within(items[3]).getByText('Đã giao - 9 cảnh, 4,8 phút')).toHaveAttribute('data-status', 'embedded')
     expect(within(items[4]).getByText('Sinh thất bại')).toHaveAttribute('data-status', 'failed')
   })
 
