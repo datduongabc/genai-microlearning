@@ -119,9 +119,6 @@ def enqueue_job(
     return job
 
 
-# A failed picture or render is tried again from the video editor ("Vẽ lại", "Dựng lại"), never by
-# a plain retry: those routes lock the video, wait for a job in flight, and count the day's limit.
-EDITOR_RETRIED_JOBS = (JobType.video_images, JobType.video_render)
 EDITOR_RETRY_MESSAGE = "Hãy bấm Vẽ lại / Dựng lại trong trình sửa video."
 
 

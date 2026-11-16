@@ -14,7 +14,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from pydantic import BaseModel, Field, StringConstraints, field_validator
-from sqlalchemy import func, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user, require_author, require_course_owner
@@ -510,6 +510,10 @@ def delete_video(video_id: uuid.UUID, db: Session = Depends(get_db), current_use
     # A job of this video would fail on the missing row, or store files no row names any more.
     _refuse_while_busy(db, video)
     keys = media_keys_for_video(db, video.id)
+    # Its jobs have no row to cascade from; a failed one kept would list the document as failed,
+    # with a retry that can only fail on the missing video.
+    db.execute(delete(Job).where(Job.document_id == video.document_id,
+                                 Job.payload["video_id"].astext == str(video.id)))
     db.delete(video)
     db.commit()
     # Committed first: a file without its row is harmless, a row whose file is gone is not.

@@ -4,7 +4,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field, StringConstraints, field_validator
-from sqlalchemy import func, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user, require_author, require_course_owner
@@ -15,7 +15,7 @@ from app.db import get_db
 from app.generation.flashcards import MAX_CARDS
 from app.generation.limits import has_full_access, reserve_generations
 from app.jobs.queue import enqueue_job
-from app.models import Course, Document, FlashcardSet, JobType, MediaStatus, User
+from app.models import Course, Document, FlashcardSet, Job, JobType, MediaStatus, User
 
 router = APIRouter(tags=["flashcards"], dependencies=[Depends(get_current_user)])
 
@@ -184,6 +184,10 @@ def delete_flashcard_set(
     if card_set.status == MediaStatus.generating:
         raise HTTPException(status_code=409, detail="Bộ thẻ đang được sinh, vui lòng chờ xong rồi xóa.")
     # A flashcard set owns no files, so unlike a module or a video there is nothing to remove from storage.
+    # Its jobs have no row to cascade from; a failed one kept would list the document as failed,
+    # with a retry that can only fail on the missing set.
+    db.execute(delete(Job).where(Job.document_id == card_set.document_id,
+                                 Job.payload["flashcard_set_id"].astext == str(card_set.id)))
     db.delete(card_set)
     db.commit()
     return {"deleted": True}

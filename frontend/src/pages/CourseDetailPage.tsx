@@ -87,6 +87,8 @@ function matchesFilter(doc: DocumentInfo, filter: StatusFilter): boolean {
 
 function failureTitle(failure: DocumentFailure): string {
   if (failure.job_type === "document_pipeline") return "Xử lý tài liệu thất bại";
+  if (failure.job_type === "flashcard_generation") return "Sinh bộ thẻ thất bại";
+  if (failure.job_type === "video_script") return "Sinh lời thoại video thất bại";
   return "Sinh mô-đun thất bại";
 }
 

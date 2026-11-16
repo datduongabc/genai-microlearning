@@ -783,6 +783,38 @@ def test_deleting_waits_for_a_running_job_then_removes_the_row_and_its_files(wor
     assert all(media_store().size(k) is None for k in keys)
 
 
+def test_deleting_a_video_deletes_its_jobs_so_no_failure_outlives_it(world):
+    h = headers(world["owner"])
+    video_id = make_video(world, status=MediaStatus.failed)
+    keep_id = make_video(world, status=MediaStatus.failed)
+    script = add_job(world, video_id, JobType.video_script, JobStatus.failed)
+    render = add_job(world, video_id, JobType.video_render, JobStatus.done)
+    kept = add_job(world, keep_id, JobType.video_script, JobStatus.done)
+
+    assert client.delete(f"/videos/{video_id}", headers=h).status_code == 200
+
+    with SessionLocal() as db:
+        assert db.get(Job, script) is None and db.get(Job, render) is None
+        assert db.get(Job, kept) is not None
+    listed = client.get("/documents", params={"course_id": str(world["course"])}, headers=h).json()
+    assert all(d["failures"] == [] for d in listed)
+
+
+def test_a_failed_picture_or_render_is_not_listed_on_its_document(world):
+    """The video editor shows those errors, and only its own buttons can retry them, so the
+    course page would list a healthy document as failed with a retry that always answers 409."""
+    h = headers(world["owner"])
+    video_id = make_video(world, status=MediaStatus.failed)
+    add_job(world, video_id, JobType.video_images, JobStatus.failed)
+    add_job(world, video_id, JobType.video_render, JobStatus.failed)
+    script = add_job(world, video_id, JobType.video_script, JobStatus.failed)
+
+    listed = client.get("/documents", params={"course_id": str(world["course"])}, headers=h).json()
+    failures = next(d for d in listed if d["id"] == str(world["doc"]))["failures"]
+
+    assert [(f["job_id"], f["job_type"]) for f in failures] == [(str(script), "video_script")]
+
+
 # --- The slide preview ---
 
 def test_scene_preview_is_a_1280_by_720_png_for_the_owner_only(world):

@@ -5,7 +5,8 @@ from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user
 from app.db import get_db
-from app.jobs.queue import EDITOR_RETRIED_JOBS, EDITOR_RETRY_MESSAGE, retry_failed_job
+from app.jobs.failures import EDITOR_RETRIED_JOBS
+from app.jobs.queue import EDITOR_RETRY_MESSAGE, retry_failed_job
 from app.models import Document, Job, JobStatus, User
 
 router = APIRouter(prefix="/jobs", tags=["jobs"], dependencies=[Depends(get_current_user)])

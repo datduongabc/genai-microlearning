@@ -1054,6 +1054,22 @@ describe('CourseDetailPage - failed work and retry', () => {
     expect(await screen.findByText('Sinh mô-đun thất bại')).toBeInTheDocument()
   })
 
+  it('names a failed flashcard set or video script for what it is, not as a module', async () => {
+    vi.mocked(api.listDocuments).mockResolvedValue([{
+      ...sampleDocument,
+      failures: [
+        { job_id: 'job-f', job_type: 'flashcard_generation', error: 'Model từ chối' },
+        { job_id: 'job-v', job_type: 'video_script', error: 'Kịch bản hỏng' },
+      ],
+    }])
+
+    renderPage()
+
+    expect(await screen.findByText('Sinh bộ thẻ thất bại')).toBeInTheDocument()
+    expect(screen.getByText('Sinh lời thoại video thất bại')).toBeInTheDocument()
+    expect(screen.queryByText('Sinh mô-đun thất bại')).not.toBeInTheDocument()
+  })
+
   it('retries the failed job from the lecturer screen and reloads the list', async () => {
     vi.mocked(api.listDocuments)
       .mockResolvedValueOnce([{ ...sampleDocument, failures: [generationFailure] }])

@@ -18,6 +18,7 @@ from app.models import (
     DocumentStatus,
     FlashcardSet,
     Job,
+    JobStatus,
     JobType,
     MediaStatus,
     User,
@@ -229,6 +230,35 @@ def test_the_lecturer_sees_the_cost_of_a_set_and_the_learner_does_not(world):
 
     assert client.delete(f"/flashcard-sets/{set_id}", headers=h).status_code == 200
     assert client.get(f"/flashcard-sets/{set_id}", headers=h).status_code == 404
+
+
+def _failed_job(world, set_id):
+    with SessionLocal() as db:
+        job = Job(job_type=JobType.flashcard_generation, step="generate", document_id=world["doc"],
+                  status=JobStatus.failed, attempts=5, last_error="Model từ chối",
+                  payload={"flashcard_set_id": str(set_id)})
+        db.add(job)
+        db.commit()
+        return job.id
+
+
+def _failures(world):
+    listed = client.get("/documents", params={"course_id": str(world["course"])}, headers=headers(world["owner"]))
+    return next(d for d in listed.json() if d["id"] == str(world["doc"]))["failures"]
+
+
+def test_deleting_a_failed_set_deletes_its_job_so_the_document_is_no_longer_failed(world):
+    set_id, other_id = make_set(world, status=MediaStatus.failed), make_set(world, status=MediaStatus.failed)
+    other_job, job_id = _failed_job(world, other_id), _failed_job(world, set_id)
+    assert [f["job_id"] for f in _failures(world)] == [str(job_id)]
+
+    assert client.delete(f"/flashcard-sets/{set_id}", headers=headers(world["owner"])).status_code == 200
+
+    with SessionLocal() as db:
+        assert db.get(Job, job_id) is None
+        assert db.get(Job, other_job) is not None
+    # The other set's failure was hidden by the newer job; with that one gone it shows again.
+    assert [(f["job_id"], f["job_type"]) for f in _failures(world)] == [(str(other_job), "flashcard_generation")]
 
 
 def test_another_lecturer_gets_404_everywhere(world):

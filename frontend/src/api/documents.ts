@@ -1,11 +1,12 @@
 import { api } from './client'
 import { sendFile, type UploadTarget } from './upload'
 
-// A failed job that still needs the lecturer: the document itself (document_pipeline) or one
-// module generation (module_generation).
+// A failed job that still needs the lecturer: the document itself (document_pipeline), one
+// module generation (module_generation), or a flashcard set or video script that failed to
+// generate. A failed picture or render is not here: the video editor shows and retries it.
 export interface DocumentFailure {
   job_id: string
-  job_type: 'document_pipeline' | 'module_generation'
+  job_type: 'document_pipeline' | 'module_generation' | 'flashcard_generation' | 'video_script'
   error: string
 }
 
