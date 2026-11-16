@@ -142,7 +142,7 @@ run "the_page_may_talk_only_to_itself_and_the_uploads_bucket" {
     error_message = "The browser posts uploads to the bucket and talks to nothing else: ${aws_cloudfront_response_headers_policy.security.security_headers_config[0].content_security_policy[0].content_security_policy}"
   }
   assert {
-    condition     = strcontains(aws_cloudfront_response_headers_policy.security.security_headers_config[0].content_security_policy[0].content_security_policy, "img-src 'self' data:;") && endswith(aws_cloudfront_response_headers_policy.security.security_headers_config[0].content_security_policy[0].content_security_policy, "frame-ancestors 'none'")
+    condition     = strcontains(aws_cloudfront_response_headers_policy.security.security_headers_config[0].content_security_policy[0].content_security_policy, "img-src 'self' data:;") && strcontains(aws_cloudfront_response_headers_policy.security.security_headers_config[0].content_security_policy[0].content_security_policy, "font-src 'self' https://fonts.gstatic.com data:;") && endswith(aws_cloudfront_response_headers_policy.security.security_headers_config[0].content_security_policy[0].content_security_policy, "frame-ancestors 'none'")
     error_message = "No outside images, and no framing without an LMS: ${aws_cloudfront_response_headers_policy.security.security_headers_config[0].content_security_policy[0].content_security_policy}"
   }
   assert {

@@ -94,7 +94,7 @@ resource "aws_cloudfront_response_headers_policy" "security" {
         "default-src 'self'",
         "script-src 'self'",
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-        "font-src 'self' https://fonts.gstatic.com",
+        "font-src 'self' https://fonts.gstatic.com data:", # Vite inlines one KaTeX font
         "img-src 'self' data:",
         "connect-src 'self' https://${aws_s3_bucket.uploads.bucket_regional_domain_name}",
         "object-src 'none'",
