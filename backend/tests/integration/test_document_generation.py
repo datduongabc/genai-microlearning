@@ -341,3 +341,25 @@ def test_provider_failure_leaves_no_partial_module_and_keeps_retry_policy(docume
         assert job.attempts == 1
         assert job.module_id is None
         assert db.query(Module).filter(Module.document_id == document_world["doc"]).count() == 0
+
+
+def test_the_module_and_its_job_being_done_are_one_commit(document_world, seen, monkeypatch):
+    """A worker killed right after the module is saved must not leave the job running: the sweeper would
+    requeue it and the whole paid generation would run again into a second module."""
+    generate = pipeline.run_module_generation
+
+    def killed_after_saving(*args, **kwargs):
+        generate(*args, **kwargs)
+        raise SystemExit("worker killed")
+
+    monkeypatch.setattr(pipeline, "run_module_generation", killed_after_saving)
+    with SessionLocal() as db:
+        job = Job(job_type=JobType.module_generation, step="generate", status=JobStatus.running,
+                  document_id=document_world["doc"])
+        db.add(job)
+        db.commit()
+        with pytest.raises(SystemExit):
+            pipeline.run_module_generation_step(job)
+        db.expire_all()
+        module = db.query(Module).filter(Module.document_id == document_world["doc"]).one()
+        assert (job.status, job.module_id) == (JobStatus.done, module.id)
