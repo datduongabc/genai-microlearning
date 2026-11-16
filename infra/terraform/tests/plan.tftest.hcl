@@ -14,6 +14,13 @@ variables {
   image_tag = "50d64a7"
 }
 
+# Known at plan time, so the CSP that names it can be checked.
+override_resource {
+  target          = aws_s3_bucket.uploads
+  override_during = plan
+  values          = { bucket_regional_domain_name = "up.s3.ap-southeast-1.amazonaws.com" }
+}
+
 run "demo_with_the_self_hosted_reranker" {
   command = plan
 
@@ -119,4 +126,43 @@ run "worker_cannot_scale_to_zero" {
   }
 
   expect_failures = [var.worker]
+}
+
+run "the_page_may_talk_only_to_itself_and_the_uploads_bucket" {
+  command = plan
+
+  override_resource {
+    target          = aws_cloudfront_response_headers_policy.security
+    override_during = plan
+    values          = { id = "security-headers" }
+  }
+
+  assert {
+    condition     = strcontains(aws_cloudfront_response_headers_policy.security.security_headers_config[0].content_security_policy[0].content_security_policy, "connect-src 'self' https://up.s3.ap-southeast-1.amazonaws.com;")
+    error_message = "The browser posts uploads to the bucket and talks to nothing else: ${aws_cloudfront_response_headers_policy.security.security_headers_config[0].content_security_policy[0].content_security_policy}"
+  }
+  assert {
+    condition     = strcontains(aws_cloudfront_response_headers_policy.security.security_headers_config[0].content_security_policy[0].content_security_policy, "img-src 'self' data:;") && endswith(aws_cloudfront_response_headers_policy.security.security_headers_config[0].content_security_policy[0].content_security_policy, "frame-ancestors 'none'")
+    error_message = "No outside images, and no framing without an LMS: ${aws_cloudfront_response_headers_policy.security.security_headers_config[0].content_security_policy[0].content_security_policy}"
+  }
+  assert {
+    condition = alltrue([
+      aws_cloudfront_distribution.main.default_cache_behavior[0].response_headers_policy_id == "security-headers",
+      aws_cloudfront_distribution.main.ordered_cache_behavior[0].response_headers_policy_id == "security-headers",
+    ])
+    error_message = "Both behaviours carry the security headers."
+  }
+}
+
+run "an_lms_may_frame_the_page" {
+  command = plan
+
+  variables {
+    moodle_wwwroot = "https://moodle.example.edu/lms"
+  }
+
+  assert {
+    condition     = endswith(aws_cloudfront_response_headers_policy.security.security_headers_config[0].content_security_policy[0].content_security_policy, "frame-ancestors https://moodle.example.edu")
+    error_message = "frame-ancestors is the LMS origin: ${aws_cloudfront_response_headers_policy.security.security_headers_config[0].content_security_policy[0].content_security_policy}"
+  }
 }
