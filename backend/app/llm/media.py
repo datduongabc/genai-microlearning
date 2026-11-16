@@ -9,7 +9,10 @@ the upstream tag and `data_collection: deny` live here and are sent in every req
 
 import base64
 import re
+import time
 from dataclasses import dataclass
+from datetime import UTC, datetime
+from email.utils import parsedate_to_datetime
 
 import httpx
 
@@ -22,8 +25,54 @@ REQUEST_TIMEOUT_SECONDS = 240.0
 _PROVIDER_PIN = {"allow_fallbacks": False, "data_collection": "deny"}
 
 
+# Before the second try of a call that raised MediaError. The render voices 3 scenes at once and
+# the pictures job draws 5, so a 429 met at once is met again by a try made at once.
+RETRY_WAIT_SECONDS = 5.0
+# A provider's Retry-After is honoured up to this: the job holds a worker while it waits, and past
+# it the scene fails for the lecturer to try again later rather than the job sitting idle.
+MAX_RETRY_WAIT_SECONDS = 30.0
+# Patched by the tests, so that none of them waits.
+sleep = time.sleep
+
+
 class MediaError(Exception):
-    """A reply with no audio or image, or a busy provider: transient, the job retries."""
+    """A reply with no audio or image, a busy provider (429 or 5xx) or an unreachable gateway:
+    transient. The job step that made the call waits (wait_before_retry) and tries it once more;
+    if that fails too, the scene fails and the lecturer tries again from the editor. The job itself
+    is not retried for it. `retry_after` is the provider's Retry-After in seconds, when it sent one."""
+
+    def __init__(self, message: str, retry_after: float | None = None):
+        super().__init__(message)
+        self.retry_after = retry_after
+
+
+def retry_delay(error: MediaError, attempt: int) -> float:
+    """How long to wait after the `attempt`-th try (1-based) failed with `error`."""
+    if error.retry_after is not None:
+        return min(max(error.retry_after, 0.0), MAX_RETRY_WAIT_SECONDS)
+    return min(RETRY_WAIT_SECONDS * attempt, MAX_RETRY_WAIT_SECONDS)
+
+
+def wait_before_retry(error: MediaError, attempt: int) -> None:
+    sleep(retry_delay(error, attempt))
+
+
+def _retry_after(response: httpx.Response) -> float | None:
+    """Retry-After as seconds from now: a number of seconds or an HTTP date (RFC 9110)."""
+    value = (response.headers.get("retry-after") or "").strip()
+    if not value:
+        return None
+    try:
+        return float(value)
+    except ValueError:
+        pass
+    try:
+        when = parsedate_to_datetime(value)
+    except (TypeError, ValueError):
+        return None
+    if when.tzinfo is None:
+        when = when.replace(tzinfo=UTC)
+    return (when - datetime.now(UTC)).total_seconds()
 
 
 @dataclass(frozen=True)
@@ -96,7 +145,8 @@ def _post(client: httpx.Client | None, path: str, body: dict) -> httpx.Response:
         if owned:
             client.close()
     if response.status_code == 429 or response.status_code >= 500:
-        raise MediaError(f"provider busy ({response.status_code}): {_error_message(response)}")
+        raise MediaError(f"provider busy ({response.status_code}): {_error_message(response)}",
+                         retry_after=_retry_after(response))
     if response.status_code >= 400:
         # A refusal repeats on every retry, so it stops the job instead.
         raise ValueError(f"HTTP {response.status_code}: {_error_message(response)}")

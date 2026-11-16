@@ -216,3 +216,46 @@ def test_a_4xx_message_names_the_http_status():
 
     with pytest.raises(ValueError, match=r"^HTTP 404: No allowed providers"):
         media.synthesize_speech("voice-heygen", "hi", client=_client(handler))
+
+
+def _busy(headers):
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(429, json={"error": {"message": "rate limited"}}, headers=headers)
+    return handler
+
+
+def test_a_busy_reply_carries_the_wait_the_provider_asks_for():
+    with pytest.raises(media.MediaError) as busy:
+        media.generate_image("image-qwen", "a diagram", client=_client(_busy({"Retry-After": "7"})))
+    assert busy.value.retry_after == 7
+    assert media.retry_delay(busy.value, attempt=1) == 7
+
+
+def test_a_retry_after_given_as_a_date_is_read_as_seconds_from_now():
+    from datetime import UTC, datetime, timedelta
+    from email.utils import format_datetime
+    when = format_datetime(datetime.now(UTC) + timedelta(seconds=20), usegmt=True)
+
+    with pytest.raises(media.MediaError) as busy:
+        media.synthesize_speech("voice-heygen", "hi", client=_client(_busy({"Retry-After": when})))
+
+    assert 15 <= busy.value.retry_after <= 20
+
+
+@pytest.mark.parametrize("header", [{}, {"Retry-After": "soon"}])
+def test_without_a_usable_retry_after_the_wait_is_a_short_backoff(header):
+    with pytest.raises(media.MediaError) as busy:
+        media.generate_image("image-qwen", "a diagram", client=_client(_busy(header)))
+    assert busy.value.retry_after is None
+    assert media.retry_delay(busy.value, attempt=1) == media.RETRY_WAIT_SECONDS
+
+
+def test_a_long_retry_after_is_capped():
+    """A job holds a worker while it waits; past the cap the scene fails and the lecturer can try later."""
+    assert media.retry_delay(media.MediaError("busy", retry_after=3600), attempt=1) == media.MAX_RETRY_WAIT_SECONDS
+    assert media.retry_delay(media.MediaError("busy", retry_after=-5), attempt=1) == 0
+
+
+def test_waiting_sleeps_for_the_delay(media_waits):
+    media.wait_before_retry(media.MediaError("busy", retry_after=3), attempt=1)
+    assert media_waits == [3]

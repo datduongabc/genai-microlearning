@@ -8,7 +8,7 @@ from PIL import Image, ImageDraw
 
 from app.generation.video_script import Scene
 from app.jobs.queue import LostJob
-from app.llm.media import IMAGE_MODELS, GeneratedImage, MediaError
+from app.llm.media import IMAGE_MODELS, RETRY_WAIT_SECONDS, GeneratedImage, MediaError
 from app.models import MediaStatus
 from app.storage import media_store
 from app.video import illustrations
@@ -228,6 +228,28 @@ def test_a_second_try_that_gets_an_image_succeeds(monkeypatch, store):
     _fake_images(monkeypatch, fail=lambda p: tries.append(p) or (MediaError("empty") if len(tries) == 1 else None))
     draw_illustrations(FakeDb(video), video.id)
     assert video.scenes[0]["image_key"] and video.status == MediaStatus.draft
+
+
+def test_a_busy_provider_is_waited_for_before_the_second_try(monkeypatch, store, media_waits):
+    tries = []
+    video = _video([_scene("A")])
+    _fake_images(monkeypatch, fail=lambda p: tries.append(p) or (
+        MediaError("429", retry_after=9) if len(tries) == 1 else None))
+
+    draw_illustrations(FakeDb(video), video.id)
+
+    assert media_waits == [9]
+    assert video.scenes[0]["image_key"] and video.status == MediaStatus.draft
+
+
+def test_the_last_try_is_not_waited_after(monkeypatch, store, media_waits):
+    video = _video([_scene("A")])
+    _fake_images(monkeypatch, fail=lambda p: MediaError("503"))
+
+    with pytest.raises(ValueError):
+        draw_illustrations(FakeDb(video), video.id)
+
+    assert media_waits == [RETRY_WAIT_SECONDS] * (illustrations.IMAGE_ATTEMPTS - 1)
 
 
 def test_a_provider_refusal_names_the_model(monkeypatch, store):

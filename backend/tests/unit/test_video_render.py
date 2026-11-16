@@ -391,6 +391,18 @@ def test_a_failed_voice_keeps_the_others_and_names_the_scene(monkeypatch, store,
     assert [m["served_model"] for m in video.served_models] == [SLUG, SLUG]
 
 
+def test_a_busy_voice_provider_is_waited_for_before_the_second_try(monkeypatch, store, slides, media_waits):
+    tries = []
+    _fake_voices(monkeypatch, fail=lambda text: (tries.append(text) or MediaError("429", retry_after=4))
+                 if "số 1" in text and not tries else None)
+    video = _video(3)
+
+    render_video(FakeDb(video), video.id)
+
+    assert media_waits == [4]
+    assert video.status == MediaStatus.ready and all(s["voice_key"] for s in video.scenes)
+
+
 def test_a_voice_refusal_names_the_data_policy(monkeypatch, store, slides):
     calls = _fake_voices(monkeypatch, fail=lambda text: ValueError(
         "HTTP 404: No endpoints found matching your data policy"))

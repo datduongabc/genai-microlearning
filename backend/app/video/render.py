@@ -36,7 +36,7 @@ from app.db import WorkerSessionLocal
 from app.generation.media_common import values_kept_across_commits
 from app.generation.video_script import MAX_SECONDS, Scene, normalize_narration, prepare_for_render
 from app.jobs.queue import LostJob, hold
-from app.llm.media import VOICES, MediaError, synthesize_speech
+from app.llm.media import VOICES, MediaError, synthesize_speech, wait_before_retry
 from app.models import Job, JobStatus, MediaStatus, Video
 from app.storage import media_store, staging_dir
 from app.video.media_jobs import (
@@ -138,13 +138,15 @@ def _speak(alias: str, index: int, spoken: str) -> _Voice | SceneFailure:
     other scenes the voices already paid for."""
     label = VOICES[alias].label if alias in VOICES else alias
     reason = ""
-    for _ in range(VOICE_ATTEMPTS):
+    for attempt in range(1, VOICE_ATTEMPTS + 1):
         try:
             speech = synthesize_speech(alias, voice_input(spoken))
             wav = as_wav(speech.pcm, speech.sample_rate)
             seconds = wav_seconds(wav)
-        except MediaError:
+        except MediaError as busy:
             reason = f"model {label} không trả về âm thanh"
+            if attempt < VOICE_ATTEMPTS:
+                wait_before_retry(busy, attempt)
             continue
         except ValueError as refusal:
             # A refusal (no provider that keeps data_collection deny, a text it rejects) repeats on

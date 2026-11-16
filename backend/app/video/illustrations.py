@@ -26,7 +26,7 @@ from app.db import WorkerSessionLocal
 from app.generation.media_common import values_kept_across_commits
 from app.generation.video_script import MAX_ILLUSTRATIONS, Scene
 from app.jobs.queue import LostJob, hold
-from app.llm.media import IMAGE_MODELS, MediaError, generate_image
+from app.llm.media import IMAGE_MODELS, MediaError, generate_image, wait_before_retry
 from app.models import Job, JobStatus, MediaStatus, Video
 from app.video.media_jobs import (
     SceneFailure,
@@ -146,12 +146,14 @@ def _draw(alias: str, index: int, scene: Scene) -> _Drawn | SceneFailure:
     the other scenes the pictures already paid for."""
     label = IMAGE_MODELS[alias].label if alias in IMAGE_MODELS else alias
     reason = ""
-    for _ in range(IMAGE_ATTEMPTS):
+    for attempt in range(1, IMAGE_ATTEMPTS + 1):
         try:
             image = generate_image(alias, image_prompt_for(scene), aspect_ratio=ASPECT_RATIO)
             data = _as_jpeg(trim_whitespace(image.data))
-        except MediaError:
+        except MediaError as busy:
             reason = f"model {label} không trả về hình"
+            if attempt < IMAGE_ATTEMPTS:
+                wait_before_retry(busy, attempt)
             continue
         except (UnidentifiedImageError, Image.DecompressionBombError, OSError, SyntaxError):
             # What came back is not a picture Pillow can read; like an empty reply, often a one-off.
