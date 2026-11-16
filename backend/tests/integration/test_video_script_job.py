@@ -4,7 +4,7 @@ from datetime import UTC, datetime, timedelta
 import pytest
 
 from app.db import SessionLocal
-from app.generation import claim_evaluation, video_script
+from app.generation import claim_evaluation, media_common, video_script
 from app.jobs.failures import SYSTEM_FAILURE_MESSAGE
 from app.jobs.queue import enqueue_job, execute_job_step, handle_job_error, sweep_stuck_jobs
 from app.models import Chunk, Course, Document, DocumentStatus, Job, JobStatus, JobType, MediaStatus, User, Video
@@ -51,7 +51,7 @@ def test_the_job_writes_the_script_and_finishes(world, monkeypatch):
     with SessionLocal() as db:
         chunk = db.get(Chunk, chunk_id)
         db.expunge(chunk)
-    monkeypatch.setattr(video_script, "retrieve", lambda *a, **k: [chunk])
+    monkeypatch.setattr(media_common, "retrieve", lambda *a, **k: [chunk])
     monkeypatch.setattr(video_script, "complete_structured", lambda prompt, model, **kw: model(
         scenes=[_scene(i) for i in range(video_script.MIN_SCENES)]))
     monkeypatch.setattr(claim_evaluation, "complete_structured", lambda prompt, model, **k: model(verdicts=[

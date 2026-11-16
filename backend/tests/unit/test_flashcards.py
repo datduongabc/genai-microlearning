@@ -24,7 +24,7 @@ class FakeDb:
 
 
 def _chunks(n=3):
-    return [SimpleNamespace(id=uuid.uuid4(), content=f"passage {i}", source_ref=None) for i in range(n)]
+    return [SimpleNamespace(id=uuid.uuid4(), chunk_index=i, content=f"passage {i}", source_ref=None) for i in range(n)]
 
 
 def _setup(monkeypatch, chunks, drafts, focus="heaps", verdict=lambda prompt: True, alias="gemini-fast"):
@@ -34,8 +34,11 @@ def _setup(monkeypatch, chunks, drafts, focus="heaps", verdict=lambda prompt: Tr
         model_alias=alias, status=MediaStatus.generating, cards=[])
     db = FakeDb(doc, card_set)
     queries = []
-    monkeypatch.setattr(flashcards, "retrieve", lambda _db, _course, query, **kw: queries.append((query, kw)) or chunks)
-    monkeypatch.setattr(flashcards, "complete_structured", lambda prompt, model, **kw: model(cards=drafts))
+    monkeypatch.setattr(media_common, "retrieve", lambda _db, _course, query, **kw: queries.append((query, kw)) or chunks)
+    asked = []
+    monkeypatch.setattr(flashcards, "complete_structured", lambda prompt, model, **kw: (
+        asked.append((prompt, kw["system_instruction"])), model(cards=drafts))[1])
+    card_set.asked = asked
     monkeypatch.setattr(fact_check, "_support", lambda claim, passages, options: SupportVerdict(
         supported=verdict(claim), reason="not in the passage"))
     return db, card_set, queries
@@ -140,3 +143,38 @@ def test_front_and_back_are_stripped_once_for_judge_and_storage(monkeypatch):
     flashcards.generate_flashcards(db, card_set.id)
     assert judged == ["q\na"]
     assert (card_set.cards[0]["front"], card_set.cards[0]["back"]) == ("q", "a")
+
+
+def test_a_focus_naming_two_topics_retrieves_and_asks_for_each(monkeypatch):
+    # Live run: "FCFS và Round Robin" gave no card on FCFS and four on other scheduling.
+    db, card_set, queries = _setup(monkeypatch, _chunks(), [_draft("q")], focus="FCFS và Round Robin")
+    flashcards.generate_flashcards(db, card_set.id)
+    assert [q for q, _ in queries] == ["FCFS", "Round Robin"]
+    prompt, system = card_set.asked[0]
+    assert "TOPICS: FCFS; Round Robin" in prompt
+    assert "every topic in TOPICS" in system
+
+
+def test_a_word_the_model_wrote_twice_is_kept_once(monkeypatch):
+    db, card_set, _ = _setup(monkeypatch, _chunks(), [
+        {"front": "Round Robin khác FCFS ở ở đâu?", "back": "ngoại trừ việc việc chia sẻ thời gian", "sources": ["S1"]}])
+    flashcards.generate_flashcards(db, card_set.id)
+    card = card_set.cards[0]
+    assert (card["front"], card["back"]) == ("Round Robin khác FCFS ở đâu?", "ngoại trừ việc chia sẻ thời gian")
+
+
+@pytest.mark.parametrize("language", ["vi", "en"])
+def test_the_judge_answers_in_the_sets_language(monkeypatch, language):
+    db, card_set, _ = _setup(monkeypatch, _chunks(), [_draft("q")])
+    card_set.output_language = language
+    seen = []
+    monkeypatch.setattr(fact_check, "_support", lambda claim, passages, lang: seen.append(lang) or SupportVerdict(
+        supported=True, reason=""))
+    flashcards.generate_flashcards(db, card_set.id)
+    assert seen == [language]
+
+
+def test_the_instruction_asks_for_cards_in_the_sets_language(monkeypatch):
+    db, card_set, _ = _setup(monkeypatch, _chunks(), [_draft("q")])
+    flashcards.generate_flashcards(db, card_set.id)
+    assert "Write ALL output in English" in card_set.asked[0][1]

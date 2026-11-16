@@ -14,11 +14,15 @@ from app.generation.common import (
     output_language_instruction,
     resolve_source_id,
 )
-from app.generation.media_common import focus_query, run_generation_step, values_kept_across_commits
+from app.generation.media_common import (
+    focus_passages,
+    run_generation_step,
+    topics_line,
+    values_kept_across_commits,
+    without_doubled_words,
+)
 from app.llm.gateway import complete_structured, using_model
 from app.models import Document, FlashcardSet, Job, MediaStatus
-from app.retrieval.search import ChunkScope
-from app.retrieval.search import retrieve_for_generation as retrieve
 
 MAX_CARDS = 15
 
@@ -40,7 +44,12 @@ Write at most {MAX_CARDS} cards. Each card tests one idea of the theory: the fro
 or names a term, the back answers it in one to three sentences.
 The back may use ONLY what the source chunks say: no outside knowledge, nothing the chunks do not state.
 List in `sources` the IDs of the chunks the back is taken from (for example ["S2"]).
-Do not write a card you cannot ground in a chunk. Cover different ideas; do not repeat one."""
+Do not write a card you cannot ground in a chunk. Cover different ideas; do not repeat one.
+
+Stay on the TOPIC. When TOPICS lists several, write cards on every topic in TOPICS, about as many on
+each, and every card is about one of them: a chunk that is about something else (another algorithm, an
+exercise, a summary of the chapter) is only there for context, so write no card from it.
+Check every sentence once more before you return it: no word written twice in a row ("việc việc")."""
 
 
 def generate_flashcards(
@@ -61,12 +70,10 @@ def generate_flashcards(
         fact_check.judge_alias(card_set.model_alias)
 
         with using_model(card_set.model_alias):
-            query = focus_query(db, doc, card_set)
-            db.commit()
-            chunks = retrieve(db, doc.course_id, query, top_k=None, min_k=8, scope=ChunkScope(doc.id))
-            db.commit()
+            found = focus_passages(db, doc, card_set)
+            chunks = found.chunks
             draft = complete_structured(
-                f"TOPIC: {query}\n\n{format_source_chunks(chunks)}", FlashcardDraft,
+                f"TOPIC: {found.query}\n{topics_line(found)}\n{format_source_chunks(chunks)}", FlashcardDraft,
                 system_instruction=_INSTRUCTION + output_language_instruction(language), temperature=0.2,
             )
 
@@ -75,7 +82,7 @@ def generate_flashcards(
             cited = [resolve_source_id(chunks, code) for code in item.sources]
             used = list({c.id: c for c in cited if c is not None}.values())
             # A card whose source cannot be found cannot be checked or traced, so it is not kept.
-            front, back = item.front.strip(), item.back.strip()
+            front, back = without_doubled_words(item.front.strip()), without_doubled_words(item.back.strip())
             if not used or not front or not back:
                 continue
             cards.append((front, back, used))
@@ -83,7 +90,7 @@ def generate_flashcards(
 
         flags = fact_check.check_against_sources(
             [(f"{front}\n{back}", [c.content for c in used]) for front, back, used in cards],
-            card_set.model_alias,
+            card_set.model_alias, language,
         )
         stored = [
             {"front": front, "back": back, "citations": [str(c.id) for c in used],

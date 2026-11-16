@@ -11,7 +11,10 @@ checks below decide what is kept, before the lecturer reviews it:
   throw away the scenes that are good. Only a script with no scene left at all fails.
 - At most MAX_ILLUSTRATIONS scenes are illustrations, since each costs an image model call.
 - A script well under TARGET_SECONDS is topped up once: in the trial the model wrote about four
-  minutes when asked for five.
+  minutes when asked for five, and in the first live run 2:18. The top-up asks for a stated length
+  per scene, and what each step wrote is recorded with the script's cost, so a short video can be
+  traced to the draft, the top-up or the citations.
+- A bullet that only repeats the slide's table or formula is removed, as long as two remain.
 - What reaches the voice, the image model and the formula renderer is normalized: no LaTeX or
   underscores in narration, labels in image prompts written as they are shown, words in formulas
   set in \\text{}.
@@ -21,6 +24,7 @@ checks below decide what is kept, before the lecturer reviews it:
 
 import math
 import re
+import unicodedata
 import uuid
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
@@ -37,12 +41,17 @@ from app.generation.common import (
     format_source_chunks,
     output_language_instruction,
     resolve_source_id,
+    source_id,
 )
-from app.generation.media_common import focus_query, run_generation_step, values_kept_across_commits
+from app.generation.media_common import (
+    focus_passages,
+    run_generation_step,
+    topics_line,
+    values_kept_across_commits,
+    without_doubled_words,
+)
 from app.llm.gateway import capture_models, complete_structured, using_model
 from app.models import Chunk, Document, Job, MediaStatus, Video
-from app.retrieval.search import ChunkScope
-from app.retrieval.search import retrieve_for_generation as retrieve
 
 TARGET_SECONDS = 300
 MAX_SECONDS = 480
@@ -51,8 +60,15 @@ CHARS_PER_SECOND = 15
 MAX_ILLUSTRATIONS = 5
 MIN_SCENES = 8
 MAX_SCENES = 10
+# Asked for: the trial asked for 9 or 10 and reached about 4 minutes; asking for 8 to 10 got the
+# minimum, 8, in the live run. MIN_SCENES stays what a script is flagged under.
+ASKED_SCENES = (9, MAX_SCENES)
 NARRATION_MIN_CHARS = 420
 NARRATION_MAX_CHARS = 550
+NARRATION_TARGET_CHARS = 480
+# A model keeps a count of sentences far better than a count of characters: the live run's scenes
+# were asked for 420 to 550 characters and came out at 2 or 3 sentences, 211 to 331 characters.
+NARRATION_SENTENCES = (5, 7)
 TARGET_CHARS = TARGET_SECONDS * CHARS_PER_SECOND
 # Below this share of the target the script is topped up. A little under is fine: the voice and the
 # pauses between slides add some length, and asking for more every time costs a call every time.
@@ -126,32 +142,64 @@ class TopUpDraft(BaseModel):
     scenes: list[TopUpScene]
 
 
+_LANGUAGE_NAMES = {"vi": "Vietnamese", "en": "English"}
+_LOW, _HIGH = NARRATION_SENTENCES
+
 _NARRATION_RULES = f"""Narration:
-- Natural speech, as the lecturer would say it in class. Explain worked examples step by step, with their figures.
-- {NARRATION_MIN_CHARS} to {NARRATION_MAX_CHARS} characters per scene.
+- Natural speech, as the lecturer would say it in class.
+- Every scene's narration has {_LOW} to {_HIGH} sentences and at least {NARRATION_MIN_CHARS} characters
+  ({NARRATION_MIN_CHARS} to {NARRATION_MAX_CHARS}, about {NARRATION_TARGET_CHARS}), whatever its kind, the title and the summary
+  scenes included. A scene of 2 or 3 sentences is far too short.
+- Say more than the slide: explain what each bullet means and why it matters; walk through a worked example
+  step by step with its figures (each process, its burst time, when it starts and ends, how long it waits);
+  link the scene to the one before. Explaining, restating and walking through what a chunk states is not
+  outside knowledge: cite that chunk. Many sentences may cite the same chunk.
 - One sentence per item of `narration`, each with its own `sources`.
 - The voice reads the text as written, so read symbols and fractions as the words they mean, never as
   LaTeX or symbols: in Vietnamese "một phần n", "n trừ một nhân q"; in English "one over n",
   "n minus one times q". Write labels as they are said: P1, not P_1.
 Terms: in Vietnamese, preemption is "trưng dụng"; keep the English names of algorithms."""
 
-_SCRIPT_INSTRUCTION = IGNORE_EMBEDDED_INSTRUCTIONS + f"""You write the script of a short narrated lecture video that a student
-watches at home before class, about {TARGET_SECONDS // 60} minutes long: about {TARGET_CHARS} characters of narration in all
-({TARGET_CHARS - 500} to {TARGET_CHARS + 500}). The video is a list of scenes; each scene is one slide shown while a voice
-reads its narration. It is about the FOCUS given.
+
+def _slide_language_rule(language: OutputLanguage) -> str:
+    """The live run's Vietnamese video showed the deck's English bullets as they were, and its table
+    header in English: the prompt then said to keep the English term where the source uses it."""
+    rule = (f"Titles, bullets and table cells are written in {_LANGUAGE_NAMES[language]}, like the narration; never copy "
+            "the source's English bullets or table header as they are.")
+    if language == "vi":
+        rule += (' A technical term may follow in English in brackets, for example "trưng dụng (preemption)", '
+                 '"hàng đợi sẵn sàng (ready queue)"; the names of algorithms stay as they are (FCFS, Round Robin). '
+                 'A table header reads, for example, "Tiến trình", "Thời gian chạy (ms)".')
+    return rule
+
+
+def _script_instruction(language: OutputLanguage) -> str:
+    return IGNORE_EMBEDDED_INSTRUCTIONS + f"""You write the script of a narrated lecture video that a student watches
+at home before class. It must last about {TARGET_SECONDS // 60} minutes (4 to 6). The voice reads about {CHARS_PER_SECOND} characters a
+second, so the narration of all scenes together is about {TARGET_CHARS} characters ({TARGET_CHARS - 500} to {TARGET_CHARS + 500}).
+Too short is the usual failure: 2000 characters would be a video of only 2 minutes. The video is a list of scenes; each
+scene is one slide shown while a voice reads its narration.
+
+It is about the FOCUS given. When TOPICS lists several, cover every topic in TOPICS, each in scenes of its own and about
+as much on each. A chunk about something else (another algorithm, an exercise, the chapter's summary) is only context:
+write no scene about it.
 
 Use ONLY what the source chunks say: no outside knowledge, nothing the chunks do not state.
 Every bullet and every narration sentence lists in `sources` the IDs of the chunks it is taken from
 (for example ["S2"]). A bullet or sentence without a source is removed.
 
 Scenes:
-- Write {MIN_SCENES} to {MAX_SCENES} scenes. The first is of kind title and introduces the topic; the last is of kind
+- Write {ASKED_SCENES[0]} to {ASKED_SCENES[1]} scenes. The first is of kind title and introduces the topic; the last is of kind
   summary and recaps it. Use summary for the last scene only.
-- At most {MAX_ILLUSTRATIONS} scenes of kind illustration, only where a picture helps to understand a concept
-  (for example a Gantt chart or a queue).
+- Use 3 to {MAX_ILLUSTRATIONS} scenes of kind illustration, never more than {MAX_ILLUSTRATIONS}: one wherever a picture helps to
+  understand a concept, such as the Gantt chart of a worked example, a ready queue, the order processes run in, or how
+  a parameter changes the result. A scene walking through an example with figures is usually an illustration, unless
+  its figures are a table or a formula.
 - A formula goes in a scene of kind formula, as LaTeX in `formula`; a short code excerpt in kind code; a small table
   of figures in kind table, as rows with the header row first. Take them from the source chunks.
-- bullets: {MIN_BULLETS} to {MAX_BULLETS} very short points shown on the slide; keep the English term where the source uses it.
+- bullets: {MIN_BULLETS} to {MAX_BULLETS} very short points shown on the slide. They add to what the slide's table, formula or code
+  shows: never repeat the table's header or its rows, or the formula, as a bullet.
+- {_slide_language_rule(language)}
 
 image_prompt, for illustration scenes only, in English:
 - Describe one concrete picture, faithful to the source.
@@ -165,10 +213,14 @@ formula: words inside a formula go in \\text{{...}}, for example
 
 {_NARRATION_RULES}"""
 
+
 _TOP_UP_INSTRUCTION = IGNORE_EMBEDDED_INSTRUCTIONS + f"""The narration of some scenes of a narrated lecture video came out
-too short. For each scene given, write its narration again, longer: say more about what its slide shows, explain its
-example and its figures, and why it matters. Use ONLY what the source chunks say; every sentence lists in `sources`
-the IDs of the chunks it is taken from. Return each scene with the number it was given, as `index`.
+too short: the video must last about {TARGET_SECONDS // 60} minutes and is well under. For each scene given, write its narration
+again so that it has {_LOW} to {_HIGH} sentences and at least {NARRATION_MIN_CHARS} characters, about {NARRATION_TARGET_CHARS} characters. Keep what it
+says, and add to it: explain what its slide shows and why it matters, walk through its example and its figures step by
+step. Use ONLY what the source chunks say. Every sentence lists in `sources` the IDs of the chunks it is taken from,
+such as the chunks the scene already cites: a sentence without a source is removed, and a new narration that ends up no
+longer than the old one is thrown away. Return each scene with the number it was given, as `index`.
 
 {_NARRATION_RULES}"""
 
@@ -198,25 +250,32 @@ class _Draft:
 _MARKER = re.compile(r"\[\s*S\d+\s*\]", re.IGNORECASE)
 
 
-def _cited(items: list[CitedText], chunks: list[Chunk]) -> list[tuple[str, list[Chunk]]]:
+def _cited(items: list[CitedText], chunks: list[Chunk]) -> tuple[list[tuple[str, list[Chunk]]], int]:
+    """The items that cite a passage given, and how many were removed for citing none."""
     kept = []
+    dropped = 0
     for item in items:
         # A model sometimes copies the marker into the text as well; it must not be shown or read.
-        text = re.sub(r"\s{2,}", " ", _MARKER.sub("", item.text)).strip()
+        text = without_doubled_words(re.sub(r"\s{2,}", " ", _MARKER.sub("", item.text)).strip())
         resolved = [resolve_source_id(chunks, code) for code in item.sources]
         used = list({c.id: c for c in resolved if c is not None}.values())
         if text and used:
             kept.append((text, used))
-    return kept
+        elif text:
+            dropped += 1
+    return kept, dropped
 
 
-def _kept_scenes(drafts: list[SceneDraft], chunks: list[Chunk]) -> tuple[list[_Draft], int]:
-    """The scenes kept, and how many were removed for want of sources."""
+def _kept_scenes(drafts: list[SceneDraft], chunks: list[Chunk]) -> tuple[list[_Draft], int, int]:
+    """The scenes kept, how many were removed for want of sources, and how many narration
+    sentences were removed for citing nothing."""
     scenes = []
     dropped = 0
+    uncited_sentences = 0
     for d in drafts:
-        bullets = _cited(d.bullets, chunks)[:MAX_BULLETS]
-        narration = _cited(d.narration, chunks)
+        bullets, _ = _cited(d.bullets, chunks)
+        narration, uncited = _cited(d.narration, chunks)
+        uncited_sentences += uncited
         if len(bullets) < MIN_BULLETS or not narration:
             dropped += 1
             continue
@@ -225,7 +284,7 @@ def _kept_scenes(drafts: list[SceneDraft], chunks: list[Chunk]) -> tuple[list[_D
     if len(scenes) > MAX_SCENES:
         # The closing summary is what a cut from the end would lose, so the cut is made before it.
         scenes = scenes[:MAX_SCENES - 1] + scenes[-1:]
-    return scenes, dropped
+    return scenes, dropped, uncited_sentences
 
 
 def _blank(value: str | None) -> bool:
@@ -254,6 +313,28 @@ def _settle_kinds(scenes: list[_Draft]) -> None:
         s.formula = s.formula.strip() if s.kind == "formula" else None
         s.code = s.code if s.kind == "code" else None
         s.table = s.table if s.kind == "table" else None
+        s.bullets = _without_repeats(s)[:MAX_BULLETS]
+
+
+def _words(text: str) -> set[str]:
+    """The words and figures of a text, however the model wrote them: P_1, P₁ and P1 are one."""
+    flat = _subscripts_joined(unicodedata.normalize("NFKC", text))
+    return set(re.findall(r"[^\W_]+", re.sub(r"\\[A-Za-z]+", " ", flat).casefold()))
+
+
+def _without_repeats(s: _Draft) -> list[tuple[str, list[Chunk]]]:
+    """The bullets without those that only repeat the slide's table or formula, which the slide
+    already shows: the live run turned a table's header into a bullet above the same table. They
+    stay when removing them would leave too few bullets, which would cost the scene its slide."""
+    shown = set()
+    if s.table:
+        shown = _words(" ".join(cell for row in s.table for cell in row))
+    elif s.formula:
+        shown = _words(s.formula)
+    if not shown:
+        return s.bullets
+    fresh = [(text, used) for text, used in s.bullets if not _words(text) <= shown]
+    return fresh if len(fresh) >= MIN_BULLETS else s.bullets
 
 
 def _scenes_to_top_up(scenes: list[_Draft]) -> list[int]:
@@ -264,28 +345,43 @@ def _scenes_to_top_up(scenes: list[_Draft]) -> list[int]:
     return sorted(short or by_length[:math.ceil(len(scenes) / 3)])
 
 
-def _top_up(scenes: list[_Draft], query: str, chunks: list[Chunk], language: OutputLanguage) -> None:
+@dataclass
+class _TopUpResult:
+    chosen: int = 0
+    lengthened: int = 0
+    uncited_sentences: int = 0
+
+
+def _top_up(scenes: list[_Draft], query: str, chunks: list[Chunk], language: OutputLanguage) -> _TopUpResult:
     chosen = _scenes_to_top_up(scenes)
+    ids = {c.id: source_id(n) for n, c in enumerate(chunks)}
     listed = []
     for i in chosen:
         s = scenes[i]
         bullets = "\n".join(f"- {text}" for text, _ in s.bullets)
         narration = " ".join(text for text, _ in s.narration)
-        listed.append(f"SCENE {i + 1}: {s.title}\nSlide:\n{bullets}\nNarration now ({s.narration_chars()} characters):"
-                      f" {narration}")
+        # The IDs it already cites, so the longer narration has a source at hand for every sentence.
+        cites = ", ".join(ids[c.id] for c in s.chunks() if c.id in ids)
+        listed.append(f"SCENE {i + 1}: {s.title}\nThis scene cites {cites}.\nSlide:\n{bullets}\n"
+                      f"Narration now ({s.narration_chars()} characters, {len(s.narration)} sentences; wanted: at least "
+                      f"{NARRATION_MIN_CHARS} characters, {_LOW} to {_HIGH} sentences): {narration}")
     reply = complete_structured(
         f"FOCUS: {query}\n\n" + "\n\n".join(listed) + f"\n\n{format_source_chunks(chunks)}", TopUpDraft,
         system_instruction=_TOP_UP_INSTRUCTION + output_language_instruction(language), temperature=0.3,
     )
+    result = _TopUpResult(chosen=len(chosen))
     for item in reply.scenes:
         i = item.index - 1
         if i not in chosen:
             continue
-        narration = _cited(item.narration, chunks)
+        narration, uncited = _cited(item.narration, chunks)
+        result.uncited_sentences += uncited
         # Same rule as the first draft: what cites nothing is removed, so a reply that came back
         # uncited, or shorter, leaves the scene as it was.
         if len(" ".join(text for text, _ in narration)) > scenes[i].narration_chars():
             scenes[i].narration = narration
+            result.lengthened += 1
+    return result
 
 
 # --- What reaches the voice, the image model and the formula renderer ---
@@ -443,14 +539,19 @@ def _stored(s: _Draft, language: str) -> dict:
     ).model_dump()
 
 
-def _script_cost(spans: list[dict]) -> dict:
+def _script_cost(spans: list[dict], length: dict) -> dict:
     """The gateway does not pass the provider's price back through complete_structured, so the
     amount is left empty rather than estimated; the tokens of every call, the judge's included, are
-    what is known."""
+    what is known. `length` is what each step wrote: the live run's short video could not be traced
+    to the draft, the top-up or the citations, since none of it was kept."""
     calls = [s for s in spans if s["kind"] == "llm"]
     return {"usd": None, "llm_calls": len(calls),
             "prompt_tokens": sum(s.get("prompt_tokens") or 0 for s in calls),
-            "completion_tokens": sum(s.get("completion_tokens") or 0 for s in calls)}
+            "completion_tokens": sum(s.get("completion_tokens") or 0 for s in calls), "length": length}
+
+
+def _total_chars(scenes: list[_Draft]) -> int:
+    return sum(s.narration_chars() for s in scenes)
 
 
 def generate_video_script(db: Session, video_id: uuid.UUID, before_save: Callable[[], None] | None = None) -> None:
@@ -469,24 +570,28 @@ def generate_video_script(db: Session, video_id: uuid.UUID, before_save: Callabl
         fact_check.judge_alias(video.model_alias)
 
         with using_model(video.model_alias):
-            query = focus_query(db, doc, video)
-            db.commit()
-            chunks = retrieve(db, doc.course_id, query, top_k=None, min_k=8, scope=ChunkScope(doc.id))
-            db.commit()
+            found = focus_passages(db, doc, video)
+            query, chunks = found.query, found.chunks
             draft = complete_structured(
-                f"FOCUS: {query}\n\n{format_source_chunks(chunks)}", ScriptDraft,
-                system_instruction=_SCRIPT_INSTRUCTION + output_language_instruction(language), temperature=0.3,
+                f"FOCUS: {query}\n{topics_line(found)}\n{format_source_chunks(chunks)}", ScriptDraft,
+                system_instruction=_script_instruction(language) + output_language_instruction(language),
+                temperature=0.3,
             )
-            scenes, dropped = _kept_scenes(draft.scenes, chunks)
+            scenes, dropped, uncited = _kept_scenes(draft.scenes, chunks)
             if not scenes:
                 raise ValueError("Model không viết được cảnh nào có trích nguồn từ tài liệu; hãy thử lại "
                                  "hoặc đổi trọng tâm")
             _settle_kinds(scenes)
-            if sum(s.narration_chars() for s in scenes) < TOP_UP_BELOW * TARGET_CHARS:
-                _top_up(scenes, query, chunks, language)
+            draft_chars = _total_chars(scenes)
+            topped = _TopUpResult()
+            if draft_chars < TOP_UP_BELOW * TARGET_CHARS:
+                topped = _top_up(scenes, query, chunks, language)
+        length = {"draft_chars": draft_chars, "after_top_up_chars": _total_chars(scenes),
+                  "uncited_sentences_dropped": uncited, "top_up_uncited_sentences_dropped": topped.uncited_sentences,
+                  "scenes_topped_up": topped.chosen, "scenes_lengthened": topped.lengthened, "chunks": len(chunks)}
 
         verdicts = fact_check.check_items_against_sources(
-            [(_items(s, language), [c.content for c in s.chunks()]) for s in scenes], video.model_alias)
+            [(_items(s, language), [c.content for c in s.chunks()]) for s in scenes], video.model_alias, language)
         for s, item_flags in zip(scenes, verdicts, strict=True):
             s.flags.extend(flag for flag in item_flags if flag)
         if len(scenes) < MIN_SCENES:
@@ -504,7 +609,7 @@ def generate_video_script(db: Session, video_id: uuid.UUID, before_save: Callabl
         video.status = MediaStatus.draft
         video.draft_version = 1
         video.error = None
-        video.cost = {**(video.cost or {}), "script": _script_cost(spans)}
+        video.cost = {**(video.cost or {}), "script": _script_cost(spans, length)}
         video.served_models = list(served)
         db.commit()
 

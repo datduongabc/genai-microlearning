@@ -219,8 +219,10 @@ def test_the_detail_shows_what_the_editor_needs(world):
     assert (third["image_outdated"], third["needs_image"]) == (False, False)
     assert "image_key" not in first and "voice_key" not in first
     assert first["sources"] == [
-        {"chunk_id": c, "locator": "Chapter 5.pdf · trang 9", "content": "FCFS runs jobs in order."},
-        {"chunk_id": c2, "locator": "Chapter 5.pdf · trang 10", "content": "Round Robin uses a quantum."},
+        {"chunk_id": c, "locator": "Chapter 5.pdf · trang 9", "content": "FCFS runs jobs in order.",
+         "snippet": "FCFS runs jobs in order."},
+        {"chunk_id": c2, "locator": "Chapter 5.pdf · trang 10", "content": "Round Robin uses a quantum.",
+         "snippet": "Round Robin uses a quantum."},
     ]
     assert body["render_problems"] == ["Cảnh 2: chưa vẽ hình minh họa"]
     # An outdated picture is a warning, never a reason to refuse the render.
@@ -456,7 +458,40 @@ def test_the_passages_of_a_document_are_listed_in_order_with_their_labels(world)
     assert body["total"] == 2
     assert [p["chunk_id"] for p in body["items"]] == [world["chunk"], world["chunk2"]]
     assert body["items"][0] == {"chunk_id": world["chunk"], "locator": "Chapter 5.pdf · trang 9",
-                                "content": "FCFS runs jobs in order."}
+                                "content": "FCFS runs jobs in order.", "snippet": "FCFS runs jobs in order."}
+
+
+def test_a_passages_snippet_skips_the_pdfs_running_header_and_shows_the_match(world):
+    # Live run: every snippet began "Chapter 5 CPU Scheduling › ... Operating System Concepts Silberschatz, Galvin
+    # and Gagne ©2018", which used up the line before any of the passage's own words.
+    header = "Operating System Concepts\nSilberschatz, Galvin and Gagne ©2018"
+    pages = [("FCFS Scheduling (Cont.)", "Suppose that the processes arrive in the order: P2 , P3 , P1"),
+             ("Round Robin (RR) Scheduling", ("Each process gets a small unit of CPU time (time quantum q), usually "
+                                              "10-100 milliseconds. After this time has elapsed, the process is "
+                                              "preempted and added to the end of the ready queue")),
+             ("Dispatcher", "Dispatcher module gives control of the CPU to the process selected")]
+    with SessionLocal() as db:
+        doc = Document(course_id=world["course"], filename="Chapter 5_CPU Scheduling.pdf",
+                       status=DocumentStatus.embedded, raw_text="x")
+        db.add(doc)
+        db.flush()
+        db.add_all([Chunk(document_id=doc.id, course_id=world["course"], chunk_index=i,
+                          content=f"Chapter 5 CPU Scheduling › {title}\n{10 + i}\n{header}\n{title}\n{text}",
+                          source_ref=json.dumps({"spans": [{"page": 10 + i, "heading": title}]}))
+                    for i, (title, text) in enumerate(pages)])
+        db.commit()
+        doc_id = doc.id
+    h = headers(world["owner"])
+
+    listed = client.get(f"/documents/{doc_id}/chunks", headers=h).json()["items"]
+    found = client.get(f"/documents/{doc_id}/chunks", params={"q": "time quantum"}, headers=h).json()["items"]
+
+    assert [p["snippet"][:24] for p in listed] == ["FCFS Scheduling (Cont.) ", "Round Robin (RR) Schedul",
+                                                   "Dispatcher Dispatcher mo"]
+    assert len(found) == 1 and "time quantum q" in found[0]["snippet"]
+    assert "Silberschatz" not in found[0]["snippet"]
+    # The passage itself is untouched: the snippet is only what the picker shows.
+    assert found[0]["content"].startswith("Chapter 5 CPU Scheduling › Round Robin")
 
 
 def test_the_passages_can_be_searched_and_paged(world):

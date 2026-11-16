@@ -268,7 +268,8 @@ def test_a_card_comes_back_with_the_passages_it_cites_and_the_set_with_its_cours
 
     assert body["course_id"] == str(world["course"])
     assert body["cards"][0]["sources"] == [
-        {"chunk_id": chunk, "locator": "x.txt · trang 3", "content": "A heap is a tree."}]
+        {"chunk_id": chunk, "locator": "x.txt · trang 3", "content": "A heap is a tree.",
+         "snippet": "A heap is a tree."}]
     assert body["cards"][1]["sources"] == []
     summary = client.get(f"/courses/{world['course']}/flashcard-sets", headers=headers(world["owner"])).json()[0]
     assert summary["course_id"] == str(world["course"])

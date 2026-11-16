@@ -36,7 +36,7 @@ class FakeDb:
 
 
 def _chunks(n=3):
-    return [SimpleNamespace(id=uuid.uuid4(), content=f"passage {i}", source_ref=None) for i in range(n)]
+    return [SimpleNamespace(id=uuid.uuid4(), chunk_index=i, content=f"passage {i}", source_ref=None) for i in range(n)]
 
 
 # 450 characters: inside the 420 to 550 a scene is asked for, so a script of these is not topped up.
@@ -68,7 +68,7 @@ def _setup(monkeypatch, chunks, scenes, focus="FCFS", verdict=lambda claim: True
             return model(scenes=scenes)
         return model(scenes=top_up or [])
 
-    monkeypatch.setattr(video_script, "retrieve", lambda _db, _course, query, **kw: chunks)
+    monkeypatch.setattr(media_common, "retrieve", lambda _db, _course, query, **kw: chunks)
     monkeypatch.setattr(video_script, "complete_structured", fake_complete)
     monkeypatch.setattr(claim_evaluation, "complete_structured", _judge(verdict))
     return db, video, calls
@@ -365,7 +365,7 @@ def test_the_prompt_carries_the_rules_of_the_trial(monkeypatch):
 def test_retrieval_uses_the_focus_adaptively_within_the_document(monkeypatch):
     db, video, _ = _setup(monkeypatch, _chunks(), _script(), focus="Round Robin")
     queries = []
-    monkeypatch.setattr(video_script, "retrieve", lambda _db, _course, query, **kw: queries.append((query, kw))
+    monkeypatch.setattr(media_common, "retrieve", lambda _db, _course, query, **kw: queries.append((query, kw))
                         or _chunks())
     video_script.generate_video_script(db, video.id)
     query, kwargs = queries[0]
@@ -376,7 +376,7 @@ def test_retrieval_uses_the_focus_adaptively_within_the_document(monkeypatch):
 def test_without_a_focus_the_planners_first_concept_is_the_query(monkeypatch):
     db, video, _ = _setup(monkeypatch, _chunks(), _script(), focus=None)
     queries = []
-    monkeypatch.setattr(video_script, "retrieve", lambda _db, _course, query, **kw: queries.append(query) or _chunks())
+    monkeypatch.setattr(media_common, "retrieve", lambda _db, _course, query, **kw: queries.append(query) or _chunks())
     concepts = [SimpleNamespace(name="Later", summary="s2", priority=2), SimpleNamespace(name="First", summary="s1",
                                                                                          priority=1)]
     monkeypatch.setattr(media_common, "_get_or_cache_planner", lambda *a, **k: SimpleNamespace(concepts=concepts))
@@ -410,3 +410,125 @@ def test_the_script_is_written_with_the_videos_model(monkeypatch):
         used.append(requested_model()), model(scenes=_script()))[1])
     video_script.generate_video_script(db, video.id)
     assert used == ["openai-fast"]
+
+
+# --- Length, illustrations and the language of the slide (live run of 2026-11-13: 2:18 of 5 minutes) ---
+
+def test_the_prompt_asks_each_scene_for_its_length_in_sentences_and_characters(monkeypatch):
+    db, video, calls = _setup(monkeypatch, _chunks(), _script())
+    video_script.generate_video_script(db, video.id)
+    system = calls[0][2]["system_instruction"]
+    low, high = video_script.NARRATION_SENTENCES
+    assert f"{low} to {high} sentences" in system
+    assert f"at least {video_script.NARRATION_MIN_CHARS} characters" in system
+    # The whole and what too short means, in minutes the model can picture.
+    assert f"{video_script.TARGET_CHARS}" in system and "2 minutes" in system
+
+
+def test_the_prompt_asks_for_illustrations_wherever_a_picture_helps(monkeypatch):
+    db, video, calls = _setup(monkeypatch, _chunks(), _script())
+    video_script.generate_video_script(db, video.id)
+    system = calls[0][2]["system_instruction"]
+    assert f"3 to {MAX_ILLUSTRATIONS} scenes of kind illustration" in system
+    assert f"never more than {MAX_ILLUSTRATIONS}" in system
+
+
+@pytest.mark.parametrize(("language", "named"), [("vi", "Vietnamese"), ("en", "English")])
+def test_slide_text_is_asked_for_in_the_videos_language(monkeypatch, language, named):
+    db, video, calls = _setup(monkeypatch, _chunks(), _script())
+    video.output_language = language
+    video_script.generate_video_script(db, video.id)
+    system = calls[0][2]["system_instruction"]
+    assert f"Titles, bullets and table cells are written in {named}" in system
+    # Copying the deck's English bullets into a Vietnamese video is what this replaces.
+    assert "keep the English term where the source uses it" not in system
+    if language == "vi":
+        assert "trưng dụng (preemption)" in system
+
+
+def test_a_focus_naming_two_topics_asks_for_both(monkeypatch):
+    db, video, calls = _setup(monkeypatch, _chunks(), _script(), focus="FCFS và Round Robin")
+    video_script.generate_video_script(db, video.id)
+    prompt, _, kwargs = calls[0]
+    assert "TOPICS: FCFS; Round Robin" in prompt
+    assert "every topic in TOPICS" in kwargs["system_instruction"]
+
+
+def test_the_top_up_names_the_length_wanted_and_each_scenes_sources(monkeypatch):
+    chunks = _chunks(3)
+    short = [_scene(title=f"s{i}", narration=("y" * 300 + ".",), sources=("S2",)) for i in range(MIN_SCENES)]
+    db, video, calls = _setup(monkeypatch, chunks, short)
+    video_script.generate_video_script(db, video.id)
+    asked, _, kwargs = calls[1]
+    assert "SCENE 1: s0" in asked and "cites S2" in asked
+    system = kwargs["system_instruction"]
+    low, high = video_script.NARRATION_SENTENCES
+    assert f"at least {video_script.NARRATION_MIN_CHARS} characters" in system
+    assert f"{low} to {high} sentences" in system
+    assert f"about {video_script.NARRATION_TARGET_CHARS} characters" in system
+
+
+def test_the_length_at_each_step_is_recorded(monkeypatch):
+    short = [_scene(title=f"s{i}", narration=("y" * 300 + ".",)) for i in range(MIN_SCENES)]
+    short[1]["narration"].append({"text": "An uncited sentence.", "sources": []})
+    longer = {"index": 1, "narration": [{"text": "z" * 500 + ".", "sources": ["S1"]},
+                                        {"text": "Uncited too.", "sources": ["S9"]}]}
+    db, video, _ = _setup(monkeypatch, _chunks(), short, top_up=[longer])
+    video_script.generate_video_script(db, video.id)
+    length = video.cost["script"]["length"]
+    assert length == {
+        "draft_chars": 8 * 301, "after_top_up_chars": 7 * 301 + 501,
+        "uncited_sentences_dropped": 1, "top_up_uncited_sentences_dropped": 1,
+        "scenes_topped_up": 8, "scenes_lengthened": 1, "chunks": 3,
+    }
+
+
+def test_a_bullet_repeating_the_tables_header_or_rows_is_dropped(monkeypatch):
+    scenes = _script()
+    scenes[1].update(kind="table", table=[["Process", "Burst Time (ms)"], ["P_1", "24"], ["P_2", "3"]],
+                     bullets=[{"text": t, "sources": ["S1"]} for t in
+                              ("Process Burst Time (ms)", "P_1 24, P_2 3", "P1 chạy trước", "P2 chờ 24 ms")])
+    db, video, _ = _setup(monkeypatch, _chunks(), scenes)
+    video_script.generate_video_script(db, video.id)
+    assert video.scenes[1]["bullets"] == ["P1 chạy trước", "P2 chờ 24 ms"]
+    assert len(video.scenes[1]["bullet_citations"]) == 2
+
+
+def test_a_bullet_repeating_the_formula_is_dropped(monkeypatch):
+    scenes = _script()
+    scenes[1].update(kind="formula", formula="\\text{Average waiting time} = \\frac{0 + 24 + 27}{3} = 17",
+                     bullets=[{"text": t, "sources": ["S1"]} for t in
+                              ("Thời gian chờ: P1 = 0, P2 = 24, P3 = 27", "Average waiting time = (0 + 24 + 27)/3 = 17",
+                               "Trung bình là 17 ms")])
+    db, video, _ = _setup(monkeypatch, _chunks(), scenes)
+    video_script.generate_video_script(db, video.id)
+    assert video.scenes[1]["bullets"] == ["Thời gian chờ: P1 = 0, P2 = 24, P3 = 27", "Trung bình là 17 ms"]
+
+
+def test_a_repeating_bullet_stays_when_the_slide_would_be_left_too_bare(monkeypatch):
+    scenes = _script()
+    scenes[1].update(kind="table", table=[["Process", "Burst"], ["P1", "24"]],
+                     bullets=[{"text": t, "sources": ["S1"]} for t in ("Process Burst", "P1 chạy 24 ms")])
+    db, video, _ = _setup(monkeypatch, _chunks(), scenes)
+    video_script.generate_video_script(db, video.id)
+    # Dropping it would cost the scene its slide, and the scene with it.
+    assert video.scenes[1]["bullets"] == ["Process Burst", "P1 chạy 24 ms"]
+
+
+def test_a_word_the_model_wrote_twice_is_said_and_shown_once(monkeypatch):
+    scenes = _script(narration=(LONG, "Ngoại trừ việc việc chia sẻ thời gian."),
+                     bullets=("chia sẻ sẻ thời gian", "second point"))
+    db, video, _ = _setup(monkeypatch, _chunks(), scenes)
+    video_script.generate_video_script(db, video.id)
+    assert video.scenes[0]["narration"].endswith("Ngoại trừ việc chia sẻ thời gian.")
+    assert video.scenes[0]["bullets"][0] == "chia sẻ thời gian"
+
+
+def test_the_judge_is_asked_to_answer_in_the_videos_language(monkeypatch):
+    db, video, _ = _setup(monkeypatch, _chunks(), _script())
+    seen = []
+    inner = _judge(lambda claim: True)
+    monkeypatch.setattr(claim_evaluation, "complete_structured",
+                        lambda prompt, model, **kw: seen.append(kw["system_instruction"]) or inner(prompt, model, **kw))
+    video_script.generate_video_script(db, video.id)
+    assert seen and all("Write `reason` in Vietnamese" in s for s in seen)

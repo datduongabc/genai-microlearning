@@ -3,7 +3,7 @@ import uuid
 import pytest
 
 from app.db import SessionLocal
-from app.generation import claim_evaluation, flashcards
+from app.generation import claim_evaluation, flashcards, media_common
 from app.generation.claim_evaluation import SupportVerdict
 from app.jobs.queue import enqueue_job, execute_job_step, handle_job_error
 from app.models import (
@@ -55,7 +55,7 @@ def test_the_job_fills_the_set_and_finishes(world, monkeypatch):
     with SessionLocal() as db:
         chunk = db.get(Chunk, chunk_id)
         db.expunge(chunk)
-    monkeypatch.setattr(flashcards, "retrieve", lambda *a, **k: [chunk])
+    monkeypatch.setattr(media_common, "retrieve", lambda *a, **k: [chunk])
     monkeypatch.setattr(flashcards, "complete_structured", lambda prompt, model, **kw: model(
         cards=[{"front": "What is a heap?", "back": "A tree.", "sources": ["S1"]}]))
     monkeypatch.setattr(claim_evaluation, "complete_structured",

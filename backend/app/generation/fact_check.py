@@ -10,7 +10,8 @@ import logging
 from pydantic import BaseModel
 
 from app.generation import claim_evaluation
-from app.generation.claim_evaluation import _SUPPORT_INSTRUCTION, _support
+from app.generation.claim_evaluation import _SUPPORT_INSTRUCTION, SupportVerdict
+from app.generation.common import OutputLanguage
 from app.llm.gateway import using_model
 
 logger = logging.getLogger(__name__)
@@ -44,7 +45,32 @@ def judge_alias(generator_alias: str) -> str:
     return next(j for j in _JUDGES if alias_family(j) != generator_family)
 
 
-def check_against_sources(statements: list[tuple[str, list[str]]], generator_alias: str) -> list[str | None]:
+_LANGUAGE_NAMES = {"vi": "Vietnamese", "en": "English"}
+
+
+def _with_language(criteria: str, language: OutputLanguage) -> str:
+    """The judge's criteria, then what a lesson in `language` adds to them. The documents are often
+    English and the lesson Vietnamese, so a claim is a translation of its evidence: the live run's
+    judge, reading wording, took "thời điểm số không" (time zero) for "not in that order". Its
+    reason is read by the lecturer, in the editor of a lesson in that language."""
+    return criteria + f"""
+The claim may be in another language than the evidence: it is often a translation or a paraphrase of it,
+for example a Vietnamese sentence about an English slide. Judge the meaning, not the wording: a faithful
+translation is supported. Numbers may be spelled out as spoken words: "số không" is 0,
+"hai mươi bốn" is 24, "one over n" is 1/n.
+Write `reason` in {_LANGUAGE_NAMES[language]}."""
+
+
+def _support(claim: str, passages: list[str], language: OutputLanguage) -> SupportVerdict:
+    return claim_evaluation.complete_structured(
+        json.dumps({"claim": claim, "evidence": passages}, ensure_ascii=False),
+        SupportVerdict, system_instruction=_with_language(_SUPPORT_INSTRUCTION, language), temperature=0,
+    )
+
+
+def check_against_sources(
+    statements: list[tuple[str, list[str]]], generator_alias: str, language: OutputLanguage,
+) -> list[str | None]:
     """For each (statement, passages): None when the passages support it, otherwise why not."""
     judge = judge_alias(generator_alias)
     flags: list[str | None] = []
@@ -54,7 +80,7 @@ def check_against_sources(statements: list[tuple[str, list[str]]], generator_ali
                 flags.append("Chưa có đoạn nguồn để kiểm")
                 continue
             try:
-                verdict = _support(statement, passages, {})
+                verdict = _support(statement, passages, language)
             except Exception as err:
                 # The check flags, it never blocks: an outage must not cost the lecturer the cards.
                 logger.warning("fact check could not run: %s", err)
@@ -81,17 +107,17 @@ The claims are numbered. Judge each claim on its own against the whole evidence,
 above, and return one verdict for every number."""
 
 
-def _judge_items(claims: list[str], passages: list[str]) -> list[ItemVerdict]:
+def _judge_items(claims: list[str], passages: list[str], language: OutputLanguage) -> list[ItemVerdict]:
     reply = claim_evaluation.complete_structured(
         json.dumps({"claims": [{"number": n, "claim": c} for n, c in enumerate(claims, 1)], "evidence": passages},
                    ensure_ascii=False),
-        ItemVerdicts, system_instruction=_ITEMS_INSTRUCTION, temperature=0,
+        ItemVerdicts, system_instruction=_with_language(_ITEMS_INSTRUCTION, language), temperature=0,
     )
     return reply.verdicts
 
 
 def check_items_against_sources(
-    groups: list[tuple[list[tuple[str, str]], list[str]]], generator_alias: str,
+    groups: list[tuple[list[tuple[str, str]], list[str]]], generator_alias: str, language: OutputLanguage,
 ) -> list[list[str | None]]:
     """For each group of (label, item) sharing passages, such as the bullets and sentences of one
     video scene: None for an item the passages support, otherwise "label: why not".
@@ -107,7 +133,7 @@ def check_items_against_sources(
                 flags.append([f"{label}: Chưa có đoạn nguồn để kiểm" for label, _ in items])
                 continue
             try:
-                verdicts = _judge_items([text for _, text in items], passages)
+                verdicts = _judge_items([text for _, text in items], passages, language)
             except Exception as err:
                 # The check flags, it never blocks: an outage must not cost the lecturer the script.
                 logger.warning("fact check could not run: %s", err)
