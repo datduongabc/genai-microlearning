@@ -432,8 +432,11 @@ def queue_illustrations(
         raise HTTPException(status_code=422, detail="Không có cảnh minh họa nào cần vẽ: mọi hình đã khớp với mô tả.")
 
     reserve_video_redraws(db, current_user, len(targets))
+    # Tried once: _draw catches every model error, so what fails the job comes after the pictures
+    # were paid for (storing them, the commit), and a queue retry would draw them all again. Vẽ lại
+    # is the retry, and it counts what it draws.
     job = enqueue_job(db, job_type=JobType.video_images, step="images", document_id=video.document_id,
-                      payload={"video_id": str(video.id), "scene_indexes": targets})
+                      payload={"video_id": str(video.id), "scene_indexes": targets}, max_attempts=1)
     db.commit()
     return {"job_id": job.id, "scene_indexes": targets}
 

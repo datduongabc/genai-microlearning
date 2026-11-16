@@ -12,6 +12,10 @@ the video. Over it, the job fails and the script stays as it is, for the lecture
 Learners keep the video they had until the new one is stored and its key committed (Review Focus
 1): the old file is deleted only then, and a render that fails partway leaves `video_key`,
 `rendered_version` and the old file as they were.
+
+Unlike the pictures job, the render keeps the queue's retries, since a retry is what recovers a
+Chromium or ffmpeg failure. The price: when storing or committing the voices just made fails, they
+are deleted with the run, and the retry pays for them again.
 """
 
 import io

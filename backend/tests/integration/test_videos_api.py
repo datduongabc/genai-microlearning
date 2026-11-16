@@ -603,6 +603,18 @@ def test_drawing_queues_the_scenes_asked_for(world):
         assert db.get(User, world["owner"]).generation_count == 0
 
 
+def test_a_drawing_job_is_tried_once_so_a_failure_after_paying_does_not_draw_again(world):
+    """Every model error is caught inside the job, so what reaches the queue comes after the
+    pictures were paid for (storing them, the commit); a queue retry would draw them all again.
+    The editor's Vẽ lại is the retry, and it counts the pictures."""
+    video_id = make_video(world, _illustrations(world, 2))
+
+    response = client.post(f"/videos/{video_id}/illustrations", json={}, headers=headers(world["owner"]))
+
+    with SessionLocal() as db:
+        assert db.get(Job, uuid.UUID(response.json()["job_id"])).max_attempts == 1
+
+
 @pytest.mark.parametrize("scene_indexes", [[7], [-1]])
 def test_drawing_a_scene_that_has_no_picture_to_draw_is_422(world, scene_indexes):
     video_id = make_video(world, [scene(world)] + _illustrations(world, 1))
