@@ -125,13 +125,14 @@ Còn một lỗi vừa và các lỗi nhẹ sau:
   Hình này qua được bước kiểm hình ("Mọi hình đã khớp với mô tả"), vì mô tả không nói hình có mỗi tiến trình một hàng.
 - Lời thoại cảnh 5 nói sai về hiệu ứng đoàn xe (nói về thứ tự P2, P3, P1, nơi nó đã hết).
   Bộ kiểm chứng đã cờ đúng, nhưng video đã giao không được sửa trong lần chạy này.
-- Lời kiểm chứng vẫn có từ "Evidence"
-  ở 4 cờ.
+- Lời kiểm chứng vẫn có từ "Evidence" ở 4 cờ.
+  Commit c77f56a đã dặn bộ kiểm chứng gọi là "đoạn nguồn"; bộ thẻ sinh sau đó không có cờ nào, nên chưa đo lại được trên video.
 - Chữ trên slide diễn đạt công thức bằng lời ("n trừ một nhân q") thay vì giữ công thức.
 - Cảnh 2 có một gạch đầu dòng lặp lại hàng của bảng ngay dưới nó.
 - Danh sách của sinh viên có nhiều video và bộ thẻ trùng tên, chỉ phân biệt bằng độ dài hoặc số thẻ.
   Trang giảng viên có giờ tạo, trang sinh viên chưa có.
 - Lời từ chối khi hết hạn mức ngày ghi "mô-đun" dù đang sinh thẻ hoặc video, và chỉ hiện sau khi người dùng điền xong hộp và chờ khoảng 6 giây.
+  Commit c77f56a đã sửa chữ thành "video" hoặc "bộ flashcard"; lời từ chối vẫn chỉ hiện sau khi gửi.
 - Bộ thẻ không có thẻ cho ví dụ Round Robin q = 4.
   Cả 4 thẻ Round Robin trích cùng một chunk.
 - Một thẻ viết "P_1, P_2, P_3"
@@ -140,7 +141,7 @@ Còn một lỗi vừa và các lỗi nhẹ sau:
 - Mỗi yêu cầu sinh mất khoảng 6 giây vì hai lần tra Moodle thất bại.
   Đây là lỗi môi trường đo, không phải của nhánh.
 
-Những mục này đã được ghi lại, chưa sửa trong nhánh.
+Trừ hai mục có ghi commit sửa, những mục này đã được ghi lại và chưa sửa trong nhánh.
 
 ## Giới hạn của phép đo
 
