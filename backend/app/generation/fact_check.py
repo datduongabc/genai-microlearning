@@ -13,11 +13,10 @@ from app.generation import claim_evaluation
 from app.generation.claim_evaluation import _SUPPORT_INSTRUCTION, SupportVerdict
 from app.generation.common import OutputLanguage
 from app.llm.gateway import using_model
+from app.llm.judge import known_family
 
 logger = logging.getLogger(__name__)
 
-# Family of a gateway alias, by its prefix (devops/gateway/config.yaml).
-_FAMILY_BY_PREFIX = {"gemini": "google", "claude": "anthropic", "openai": "openai", "deepseek": "deepseek"}
 
 # Cheap judges first: a set is checked card by card. The first one of another family is used.
 _JUDGES = ("claude-fast", "openai-fast")
@@ -27,7 +26,8 @@ _PINNED = {"disable_fallbacks": True}
 
 
 def alias_family(alias: str) -> str:
-    family = _FAMILY_BY_PREFIX.get(alias.split("-")[0])
+    # The study judge's table, so a new model is known to both checks or to neither.
+    family = known_family(alias)
     if family is None:
         # Guessing would let a model check its own work without anyone knowing.
         raise ValueError(f"Cannot tell which model family the alias '{alias}' belongs to")

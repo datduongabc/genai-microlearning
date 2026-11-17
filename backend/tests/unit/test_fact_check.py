@@ -214,3 +214,11 @@ def test_the_judge_is_pinned_so_an_outage_cannot_fall_back_to_the_generators_fam
     assert single[0].startswith("Chưa kiểm được: ")
     assert items[0][0].startswith("Slide: Chưa kiểm được: ")
     assert len(seen) == 2 and all(body == {"disable_fallbacks": True} for body in seen)
+
+
+@pytest.mark.parametrize("alias", ["gemini-flash", "claude-fast", "openai-fast", "deepseek-flash", "qwen-fast"])
+def test_the_fact_check_and_the_study_judge_read_a_family_from_the_same_table(alias):
+    """Two tables drifted: a new `qwen-fast` was known to the study judge and refused by the fact check."""
+    from app.llm.judge import model_family
+
+    assert fact_check.alias_family(alias) == model_family(alias)

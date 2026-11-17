@@ -7,17 +7,24 @@ _FAMILY_BY_NAME = (
     ("gemma", "google"),
     ("claude", "anthropic"),
     ("gpt", "openai"),
+    ("openai", "openai"),
+    ("deepseek", "deepseek"),
     ("llama", "meta"),
     ("qwen", "alibaba"),
     ("minimax", "minimax"),
 )
 
 
+def known_family(name: str) -> str | None:
+    """The family a model name or a gateway alias starts with, or None when no prefix of the table matches."""
+    last = name.lower().split("/")[-1]
+    return next((family for prefix, family in _FAMILY_BY_NAME if last.startswith(prefix)), None)
+
+
 def model_family(litellm_model: str) -> str:
     parts = litellm_model.lower().split("/")
-    for prefix, family in _FAMILY_BY_NAME:
-        if parts[-1].startswith(prefix):
-            return family
+    if family := known_family(litellm_model):
+        return family
     # "groq/<hãng>/<model>" thì đoạn giữa là hãng; còn lại lấy nhà cung cấp.
     return parts[-2] if len(parts) >= 3 else parts[0]
 
