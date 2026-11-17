@@ -140,8 +140,7 @@ def test_a_line_cut_mid_character_by_an_interrupted_run_is_trimmed_and_judged_ag
 def test_guard_uses_all_actual_served_models_even_if_requested_alias_is_different(tmp_path, judge):
     """Gói xin gemini-flash nhưng GPT-OSS thực sự sinh: không chấm bằng OpenAI, vẫn chấm bằng Gemini."""
     study = StudyFile(pair_id="pair", group="rag_llm", generator_model="gemini-flash", packet=_packet(),
-                      generation_models=[{"requested_alias": "gemini-flash", "routed_alias": "gemini-flash",
-                                          "served_model": "gpt-oss-120b"}])
+                      generation_models=[{"requested_alias": "gemini-flash", "served_model": "gpt-oss-120b"}])
     (tmp_path / "fallback.json").write_text(study.model_dump_json(), encoding="utf-8")
 
     run_judge.main([str(tmp_path), "--out", str(tmp_path / "o.jsonl")])

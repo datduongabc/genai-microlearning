@@ -320,7 +320,7 @@ def _save_voices(
             "estimated": True,
         }}
         current.served_models = [*(current.served_models or []), *(
-            {"requested_alias": alias, "routed_alias": alias, "served_model": v.served_model} for v in made)]
+            {"requested_alias": alias, "served_model": v.served_model} for v in made)]
         if error is not None:
             current.status = MediaStatus.failed
             current.error = error

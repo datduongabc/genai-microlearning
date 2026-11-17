@@ -100,8 +100,9 @@ same quota-limited model.
 
 Migration `0011_module_generation_models` adds nullable JSONB
 `modules.generation_models`. Each completed generation saves every successful chat
-response in order as `requested_alias`, `routed_alias`, and `served_model` from the
-response. Multiple served models are kept: a module can use a backup on one step
+response in order as `requested_alias` and `served_model` from the
+response. Records saved before 2026-11-17 also carry `routed_alias`, which always equalled `requested_alias`.
+Multiple served models are kept: a module can use a backup on one step
 and its primary on another. The module preview displays the requested alias and
 served models, and `GET /modules/{id}` returns the complete record. Historical
 modules remain NULL; their served models cannot be inferred from a mutable alias.

@@ -135,12 +135,12 @@ def _never_connected(error: BaseException) -> bool:
     return False
 
 
-def _call_with_rate_limit_retries(alias: str, routed_alias: str, **request):
+def _call_with_rate_limit_retries(alias: str, **request):
     retries = settings.llm_rate_limit_retries if _waits_on_rate_limit.get() else 0
     attempt = 0
     reconnected = False
     while True:
-        with timing.timed("llm", requested_alias=alias, routed_alias=routed_alias) as span:
+        with timing.timed("llm", requested_alias=alias) as span:
             try:
                 response = litellm.completion(**request)
             except litellm.RateLimitError as error:
@@ -179,7 +179,7 @@ def _completion(**kwargs):
     # "openai/" only means "speak the OpenAI-compatible protocol to api_base";
     # the gateway decides which provider actually serves the alias.
     response = _call_with_rate_limit_retries(
-        alias, alias,
+        alias,
         model=f"openai/{alias}",
         api_base=settings.llm_gateway_url,
         api_key=settings.llm_gateway_key,
@@ -190,7 +190,7 @@ def _completion(**kwargs):
     calls = _model_calls.get()
     served = getattr(response, "model", None)
     if calls is not None and isinstance(served, str):
-        calls.append({"requested_alias": alias, "routed_alias": alias, "served_model": served})
+        calls.append({"requested_alias": alias, "served_model": served})
     return response
 
 

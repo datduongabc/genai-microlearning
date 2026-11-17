@@ -812,7 +812,7 @@ it('asks for sections once the linked account has answered', async () => {
 it('shows the served model when generation used a fallback', async () => {
   vi.mocked(api.getModule).mockResolvedValue({
     ...baseModule,
-    generation_models: [{ requested_alias: 'gemini-flash', routed_alias: 'gemini-flash', served_model: 'google/gemini-3.8-flash' }],
+    generation_models: [{ requested_alias: 'gemini-flash', served_model: 'google/gemini-3.8-flash' }],
   })
   renderPage()
   expect(await screen.findByText(/Model sinh: gemini-flash → google\/gemini-3.8-flash/)).toBeInTheDocument()

@@ -291,7 +291,7 @@ def draw_illustrations(
                 "images": (images.get("images") or 0) + len(drawn),
             }}
             current.served_models = [*(current.served_models or []), *(
-                {"requested_alias": alias, "routed_alias": alias, "served_model": d.served_model} for d in drawn)]
+                {"requested_alias": alias, "served_model": d.served_model} for d in drawn)]
             current.status = MediaStatus.failed if error else MediaStatus.draft
             current.error = error
             db.commit()

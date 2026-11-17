@@ -493,7 +493,7 @@ def test_voices_made_while_the_scenes_were_reordered_follow_their_scenes(monkeyp
 def test_cost_and_served_models_are_added(monkeypatch, store, slides):
     _fake_voices(monkeypatch, cost=0.003)
     video = _video(2, cost={"script": {"usd": None}, "voice": {"usd": 0.01, "characters": 100, "estimated": True}},
-                   served_models=[{"requested_alias": "x", "routed_alias": "x", "served_model": "m"}])
+                   served_models=[{"requested_alias": "x", "served_model": "m"}])
     render_video(FakeDb(video), video.id)
     assert video.cost["voice"]["usd"] == pytest.approx(0.016)
     assert video.cost["voice"]["estimated"] is True
