@@ -41,7 +41,7 @@ export function StudiesPage() {
       {studies?.length === 0 && <p>Bạn chưa được mời chấm nghiên cứu nào.</p>}
       <ul className="space-y-4">
         {studies?.map((study) => (
-          <li key={study.id} className="rounded border bg-white p-4">
+          <li key={study.id} className="ui-card p-4">
             <Link to={`/studies/${study.id}`} className="font-semibold text-accent">
               {study.name}
             </Link>

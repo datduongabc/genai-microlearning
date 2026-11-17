@@ -54,7 +54,7 @@ describe('LearnerChatPage', () => {
     const link = screen.getByRole('link', { name: /Mảng/ })
     expect(link).toHaveAttribute('href', '/learn/course-1/flashcards/s1')
     expect(link).toHaveTextContent(/8 thẻ\s*16\/11/)
-    expect(screen.getByRole('link', { name: /Bộ thẻ/ })).toHaveAttribute('href', '/learn/course-1/flashcards/s2')
+    expect(screen.getByRole('link', { name: 'Bộ thẻ, 1 thẻ, giao 15/11' })).toHaveAttribute('href', '/learn/course-1/flashcards/s2')
     expect(screen.getByText(/Giới thiệu/).closest('li')).toHaveTextContent(/2:05\s*14\/11/)
     expect(screen.getByRole('link', { name: /Giới thiệu/ })).toHaveAttribute('href', '/learn/course-1/videos/v1')
     const chat = screen.getByText('chat of course-1')

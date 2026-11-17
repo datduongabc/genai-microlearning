@@ -106,6 +106,7 @@ export function CoursesPage() {
         <ul className="course-list">
           {courses.map((c) => (
             <li key={c.id} className="course-row">
+              <span className="course-tile" aria-hidden="true">{c.name.trim().charAt(0).toUpperCase()}</span>
               <div className="min-w-0">
                 <Link to={`/courses/${c.id}`} className="course-name">
                   {c.name}
