@@ -559,6 +559,9 @@ def run_module_generation_step(job: Job) -> None:
         alias = current_job.payload.get("model_alias")
         # A no-RAG control keeps the alias of its RAG pair even when it is gone: on another model the pair
         # would no longer differ only in retrieval.
+        if not use_retrieval and alias and catalog.served_or_default(alias) != alias:
+            # The gateway's 400 is not a ValueError, so the queue would retry it five times for nothing.
+            raise ValueError(f"Model '{alias}' of the pair is no longer offered")
         with using_model(catalog.served_or_default(alias) if use_retrieval else alias):
             run_module_generation(
                 db, doc, self_check=self_check, use_retrieval=use_retrieval, paired_module=paired_module,
