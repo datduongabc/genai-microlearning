@@ -278,6 +278,27 @@ def test_without_retrieval_a_paired_module_is_required(document, llm):
     assert llm == []
 
 
+def test_a_no_rag_job_whose_pair_model_is_gone_fails_at_once_and_says_why(document, llm, monkeypatch):
+    """The control keeps its pair's alias on purpose. When the gateway no longer offers it, every call would get a 400
+    the queue retries as transient: a ValueError is terminal, and names the model."""
+    from app.llm import catalog
+
+    rag_id = _generate(document)
+    monkeypatch.setattr(catalog, "is_available", lambda alias: alias != "gemini-fast")
+    with SessionLocal() as db:
+        job = Job(job_type=JobType.module_generation, step="generate", status=JobStatus.running, locked_by="test-worker",
+                  document_id=document["doc"], payload={"self_check": True, "use_retrieval": False,
+                                                        "paired_module_id": str(rag_id), "model_alias": "gemini-fast"})
+        db.add(job)
+        db.commit()
+        job_id = job.id
+    llm.clear()
+
+    with pytest.raises(ValueError, match="gemini-fast"):
+        pipeline.run_module_generation_step(type("J", (), {"id": job_id, "locked_by": "test-worker"})())
+    assert llm == []
+
+
 def test_the_worker_runs_a_queued_no_rag_job_with_its_paired_module(document, llm):
     rag_id = _generate(document)
     db = SessionLocal()

@@ -51,7 +51,7 @@ export interface ModuleDetail {
   learning_objective: string | null
   bloom_level: string | null
   sub_objectives?: string[] | null
-  generation_models?: { requested_alias: string; routed_alias: string; served_model: string }[] | null
+  generation_models?: { requested_alias: string; served_model: string }[] | null
   course_id: string
   moodle_course_id: number | null
   components: ModuleComponentInfo[]

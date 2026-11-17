@@ -14,8 +14,8 @@ import asyncio
 import concurrent.futures
 import json
 import re
-import sys
 import statistics
+import sys
 import time
 import uuid
 from datetime import UTC, datetime
@@ -168,10 +168,13 @@ def chat(concurrency: int, messages: int, label: str, out: str) -> None:
         user = users[i % len(users)]
         started = time.perf_counter()
         try:
-            with httpx.Client(timeout=300) as client:
-                response = client.post(f"{BASE}/courses/{user['course_id']}/chat",
-                                       json={"message": QUESTIONS[i % len(QUESTIONS)]},
-                                       headers={"Authorization": f"Bearer {user['token']}"})
+            with httpx.Client(timeout=300) as client, client.stream(
+                    "POST", f"{BASE}/courses/{user['course_id']}/chat/stream",
+                    json={"message": QUESTIONS[i % len(QUESTIONS)]},
+                    headers={"Authorization": f"Bearer {user['token']}"}) as response:
+                # The latency is up to the last event: the stream closes after `done` or `error`.
+                for _ in response.iter_lines():
+                    pass
             return response.status_code, time.perf_counter() - started
         except httpx.HTTPError:
             return 0, time.perf_counter() - started

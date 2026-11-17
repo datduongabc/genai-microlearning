@@ -24,7 +24,7 @@ from app.generation.content import ContentOutput
 from app.generation.example import ExampleOutput
 from app.generation.inline_citations import MARKER
 from app.generation.slides import SlidesOutput
-from app.llm.gateway import complete, complete_structured, stream_text
+from app.llm.gateway import REQUEST_TIMEOUT_SECONDS, complete_structured, stream_text
 from app.models import ChatMessage, ChatSession, Chunk, Module
 
 HISTORY_TURNS = 4
@@ -36,19 +36,6 @@ ngữ cảnh, dùng để tìm kiếm tài liệu — thay thế đại từ ("n
 không thêm giải thích/tiền tố nào khác.
 """
 
-
-def condense_query(message: str, history: list[dict]) -> str:
-    """Query rewriting cho hội thoại nhiều lượt: retrieve() không thấy lịch sử
-    hội thoại, nên 1 câu hỏi dùng đại từ tham chiếu lượt trước ("nó có mấy
-    tính chất?") sẽ tìm sai/không ra chunk liên quan nếu dùng nguyên văn.
-    Viết lại thành câu hỏi độc lập trước khi truy xuất. Bước trả lời nhận cả
-    câu hỏi gốc (giọng và ngôn ngữ người hỏi) lẫn bản viết lại (nghĩa của nó)."""
-    if not history:
-        return message
-    history_text = "\n".join(f"{m['role']}: {m['content']}" for m in history)
-    prompt = f"LỊCH SỬ HỘI THOẠI:\n{history_text}\n\nCÂU HỎI MỚI NHẤT: {message}"
-    rewritten = complete(prompt, system_instruction=CONDENSE_SYSTEM_INSTRUCTION).strip()
-    return rewritten or message
 
 CHAT_SYSTEM_INSTRUCTION = IGNORE_EMBEDDED_INSTRUCTIONS + """Bạn là trợ lý hỏi-đáp cho môn học. Chỉ được trả lời dựa trên các đoạn nguồn
 (source chunk) được cung cấp bên dưới — KHÔNG được bịa đặt hay đưa vào thông tin
@@ -157,7 +144,7 @@ class ChatAnswer(BaseModel):
 
 
 def _answer_prompt(query: str, context_chunks: list[Chunk], history: list[dict], standalone: str | None = None) -> str:
-    """`standalone` is the question as condense_query() rewrote it for the search. The sources were found for that
+    """`standalone` is the question as condense_query_streamed() rewrote it for the search. The sources were found for that
     one, and a follow-up such as "con cai kia thi sao" read alone matches none of them, so the model is told what it
     means. The language is still read from the question as asked."""
     history_text = ""
@@ -254,7 +241,12 @@ async def stream_answer(
 
 
 async def condense_query_streamed(message: str, history: list[dict]) -> str:
-    """condense_query() without holding a thread while the model answers."""
+    """Query rewriting cho hội thoại nhiều lượt: retrieve() không thấy lịch sử
+    hội thoại, nên 1 câu hỏi dùng đại từ tham chiếu lượt trước ("nó có mấy
+    tính chất?") sẽ tìm sai/không ra chunk liên quan nếu dùng nguyên văn.
+    Viết lại thành câu hỏi độc lập trước khi truy xuất. Bước trả lời nhận cả
+    câu hỏi gốc (giọng và ngôn ngữ người hỏi) lẫn bản viết lại (nghĩa của nó).
+    Streamed, so no thread is held while the model answers."""
     if not history:
         return message
     history_text = "\n".join(f"{m['role']}: {m['content']}" for m in history)
@@ -333,7 +325,8 @@ def propose_module_edit(message: str, module: Module, chunks: list[Chunk], histo
               f"HISTORY: {json.dumps(history, ensure_ascii=False)}\n"
               f"{source_block(chunks)}\nYÊU CẦU: {message}")
     return complete_structured(
-        prompt, ModuleEdit, temperature=0.0,
+        # The lecturer waits on this inside the request.
+        prompt, ModuleEdit, temperature=0.0, timeout=REQUEST_TIMEOUT_SECONDS,
         system_instruction=EDIT_SYSTEM_INSTRUCTION + output_language_instruction(output_language)
         + "\nEXCEPTION: reply luôn viết bằng tiếng Việt ngắn gọn, có dấu.",
     )

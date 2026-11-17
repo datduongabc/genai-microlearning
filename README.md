@@ -41,7 +41,7 @@ Báo cáo cuối kỳ: [`final-report/report.pdf`](final-report/report.pdf). Đ�
 | Rerank | Jev (TypeSafe), hoặc Jina reranker v2 INT8 tự host (chỉ được dùng phi thương mại). |
 | Frontend | React 19, TypeScript, Vite, Tailwind CSS. |
 | LMS | Moodle 5.2 với plugin `local_lms_bridge`, kèm LTI 1.3. |
-| Hạ tầng | Docker Compose và Caddy. Terraform cho AWS đã viết xong nhưng chưa kích hoạt. |
+| Hạ tầng | Docker Compose và Caddy khi chạy local. Terraform cho AWS (ECS Fargate, CloudFront), đã chạy trên AWS từ ngày 2026-11-11, xem [infra/README.md](infra/README.md). |
 
 Các service đều không giữ trạng thái, nên thêm task là scale được.
 Backend không bao giờ cầm khóa nhà cung cấp: nó chỉ biết địa chỉ gateway, một khóa nội bộ và tên alias.
@@ -158,10 +158,10 @@ npm run build
 
 | Bộ test | Số test |
 | --- | ---: |
-| Backend unit / integration / e2e | 488 / 1.106 / 2 |
-| Frontend unit / integration | 72 / 205 |
+| Backend unit / integration / e2e | 779 / 1.360 / 2 |
+| Frontend unit / integration | 104 / 340 |
 | Plugin Moodle (PHPUnit) | 18 |
-| Terraform (`terraform test`, provider giả lập) | 5 |
+| Terraform (`terraform test`, provider giả lập) | 8 |
 
 CI (`.github/workflows/ci.yml`) có bốn job: `backend`, `frontend`, `infra` và `moodle-plugin`.
 
@@ -185,7 +185,7 @@ Load test và kiểm thử lỗi nằm trong `devops/loadtest`. Kịch bản tr�
 
 - Chất lượng quiz còn thấp: đáp án đúng thường là phương án dài nhất, câu hỏi chủ yếu ở mức nhớ.
 - Chưa có người chấm thật; điểm rubric mới đến từ model judge trên ít mô-đun.
-- Mọi số đo tải đều chạy trên một máy; bản triển khai AWS chưa từng chạy.
+- Mọi số đo tải đều chạy trên một máy; bản triển khai AWS mới qua smoke test, chưa được đo tải.
 - Compose vẫn phục vụ frontend bằng Vite dev server.
 - Mỗi khóa học có một giảng viên; chưa có LTI Deep Linking và chưa trả điểm về Moodle.
 

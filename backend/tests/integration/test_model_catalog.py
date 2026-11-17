@@ -188,6 +188,13 @@ def test_thu_dung_model_da_chon_va_chi_xin_mot_token(ghi_lai_lenh_thu):
     assert ghi_lai_lenh_thu["extra_body"]["disable_fallbacks"] is True
 
 
+def test_the_probe_gives_up_long_before_cloudfront_does(ghi_lai_lenh_thu):
+    """The probe runs while the lecturer waits on "Sinh", and CloudFront answers 504 at 60 s."""
+    catalog.probe("deepseek-flash")
+
+    assert ghi_lai_lenh_thu["timeout"] <= 20
+
+
 def test_khoa_trong_hoac_sai_thi_bao_chua_co_khoa(monkeypatch):
     monkeypatch.setattr(litellm, "completion", _nem(
         litellm_errors.AuthenticationError(message="401", llm_provider="openai", model="gpt-4o")

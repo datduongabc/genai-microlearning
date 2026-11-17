@@ -1,5 +1,5 @@
 # Copy to terraform.tfvars (ignored by git). Nothing is required. The image tag is not set here:
-# infra/scripts/deploy.sh writes it to image-<environment>.tfvars and infra/scripts/tf.sh reads it.
+# infra/scripts/deploy.sh stores it in the state (output image_tag), and infra/scripts/tf.sh reads it from there.
 
 # environment       = "demo"
 # alarm_email       = "you@example.com"

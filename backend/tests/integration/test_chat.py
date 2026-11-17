@@ -1,10 +1,25 @@
+import asyncio
+
 import pytest
 
-from app.chat.service import answer_question, condense_query
+from app.chat.service import answer_question, condense_query_streamed
 
 
-def test_condense_query_no_history_returns_message_unchanged():
-    assert condense_query("OOP là gì?", []) == "OOP là gì?"
+def _streams(monkeypatch, reply, asked=None):
+    from app.chat import service
+
+    async def model(prompt, system_instruction=None):
+        if asked is not None:
+            asked.append(prompt)
+        yield reply
+
+    monkeypatch.setattr(service, "stream_text", model)
+
+
+def test_a_question_without_history_is_searched_as_asked_without_a_model_call(monkeypatch):
+    _streams(monkeypatch, "must not be asked", asked := [])
+    assert asyncio.run(condense_query_streamed("OOP là gì?", [])) == "OOP là gì?"
+    assert asked == []
 
 
 def test_answer_question_no_context_chunks_returns_not_covered_without_llm_call():
@@ -18,24 +33,21 @@ def test_answer_question_no_context_chunks_returns_not_covered_without_llm_call(
 
 
 def test_a_follow_up_question_is_rewritten_with_the_history_before_it_is_searched(monkeypatch):
-    from app.chat import service
-
     asked = []
-    monkeypatch.setattr(service, "complete", lambda prompt, **kw: asked.append(prompt) or "Heap có mấy tính chất?")
+    _streams(monkeypatch, "Heap có mấy tính chất?", asked)
     history = [{"role": "user", "content": "Heap là gì?"}, {"role": "assistant", "content": "Heap là cây nhị phân..."}]
 
-    rewritten = condense_query("Nó có mấy tính chất?", history)
+    rewritten = asyncio.run(condense_query_streamed("Nó có mấy tính chất?", history))
 
     assert rewritten == "Heap có mấy tính chất?"
     assert "Heap là gì?" in asked[0] and "Nó có mấy tính chất?" in asked[0]
 
 
 def test_an_empty_rewrite_falls_back_to_the_question_as_asked(monkeypatch):
-    from app.chat import service
+    _streams(monkeypatch, "   ")
 
-    monkeypatch.setattr(service, "complete", lambda prompt, **kw: "   ")
-
-    assert condense_query("Nó có mấy tính chất?", [{"role": "user", "content": "Heap là gì?"}]) == "Nó có mấy tính chất?"
+    assert asyncio.run(condense_query_streamed(
+        "Nó có mấy tính chất?", [{"role": "user", "content": "Heap là gì?"}])) == "Nó có mấy tính chất?"
 
 
 def test_citations_the_model_invents_are_dropped_and_only_retrieved_chunks_are_kept(monkeypatch):
@@ -85,6 +97,7 @@ def test_chat_keeps_eighth_source_and_persists_its_citation(monkeypatch, questio
     from app.models import Chunk, Course, Document, DocumentStatus, RefreshToken, User
     from app.retrieval import search
     from tests.auth_helpers import create_and_login
+    from tests.sse import events
 
     client = TestClient(app)
     token = create_and_login(client, f"cross-language-{uuid.uuid4().hex}@example.com")["access_token"]
@@ -104,12 +117,9 @@ def test_chat_keeps_eighth_source_and_persists_its_citation(monkeypatch, questio
         db.commit()
         evidence_id = str(chunks[-1].id)
 
-    def model(prompt, schema, **kw):
-        assert schema is service.ChatDraft
+    async def model(prompt, system_instruction=None):
         assert f"CÂU HỎI: {question}" in prompt
-        if evidence in prompt:
-            return schema(answer="The root moves down.", source_ids=["S8"])
-        return schema(answer="Tài liệu môn học không đề cập nội dung này", source_ids=[])
+        yield "The root moves down [S8]." if evidence in prompt else "Tài liệu môn học không đề cập nội dung này"
 
     def scored(query, candidates, attempts=None):
         assert query == question
@@ -117,17 +127,18 @@ def test_chat_keeps_eighth_source_and_persists_its_citation(monkeypatch, questio
         return sorted(((c, 0.1 if c.content == evidence else 0.2) for c in candidates),
                       key=lambda pair: pair[1], reverse=True)
 
-    monkeypatch.setattr(service, "complete_structured", model)
+    monkeypatch.setattr(service, "stream_text", model)
     monkeypatch.setattr(search, "rerank_scored", scored)
     try:
-        response = client.post(f"/courses/{course_id}/chat", json={"message": question}, headers=headers)
+        response = client.post(f"/courses/{course_id}/chat/stream", json={"message": question}, headers=headers)
         assert response.status_code == 200
-        result = response.json()
-        assert result["message"]["content"] == "The root moves down."
-        assert result["message"]["citations"] == [{"chunk_id": evidence_id, "source_ref": '{"page": 12}'}]
-        history = client.get(f"/courses/{course_id}/chat/{result['session_id']}/history", headers=headers).json()
+        result = dict(events(response))
+        assert result["done"]["content"].startswith("The root moves down")
+        assert result["done"]["citations"] == [{"chunk_id": evidence_id, "source_ref": '{"page": 12}'}]
+        history = client.get(f"/courses/{course_id}/chat/{result['session']['session_id']}/history",
+                             headers=headers).json()
         assert history[0]["content"] == question
-        assert history[1]["citations"] == result["message"]["citations"]
+        assert history[1]["citations"] == result["done"]["citations"]
     finally:
         with SessionLocal() as db:
             db.query(Course).filter(Course.id == uuid.UUID(course_id)).delete(synchronize_session=False)

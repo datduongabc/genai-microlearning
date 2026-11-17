@@ -13,18 +13,21 @@ from app.generation import claim_evaluation
 from app.generation.claim_evaluation import _SUPPORT_INSTRUCTION, SupportVerdict
 from app.generation.common import OutputLanguage
 from app.llm.gateway import using_model
+from app.llm.judge import known_family
 
 logger = logging.getLogger(__name__)
 
-# Family of a gateway alias, by its prefix (devops/gateway/config.yaml).
-_FAMILY_BY_PREFIX = {"gemini": "google", "claude": "anthropic", "openai": "openai", "deepseek": "deepseek"}
 
 # Cheap judges first: a set is checked card by card. The first one of another family is used.
 _JUDGES = ("claude-fast", "openai-fast")
+# Every judge alias falls back to gemini-flash in the gateway, so an unpinned judge call could be served by the
+# generator's own family. Pinned, an outage raises and the statement is flagged "Chưa kiểm được" instead.
+_PINNED = {"disable_fallbacks": True}
 
 
 def alias_family(alias: str) -> str:
-    family = _FAMILY_BY_PREFIX.get(alias.split("-")[0])
+    # The study judge's table, so a new model is known to both checks or to neither.
+    family = known_family(alias)
     if family is None:
         # Guessing would let a model check its own work without anyone knowing.
         raise ValueError(f"Cannot tell which model family the alias '{alias}' belongs to")
@@ -60,6 +63,7 @@ def _support(claim: str, passages: list[str], language: OutputLanguage) -> Suppo
     return claim_evaluation.complete_structured(
         json.dumps({"claim": claim, "evidence": passages}, ensure_ascii=False),
         SupportVerdict, system_instruction=_with_language(_SUPPORT_INSTRUCTION, language), temperature=0,
+        extra_body=_PINNED,
     )
 
 
@@ -118,6 +122,7 @@ def _judge_items(claims: list[str], passages: list[str], language: OutputLanguag
         json.dumps({"claims": [{"number": n, "claim": c} for n, c in enumerate(claims, 1)], "evidence": passages},
                    ensure_ascii=False),
         ItemVerdicts, system_instruction=_with_language(_ITEMS_INSTRUCTION + _FRAMING_RULE, language), temperature=0,
+        extra_body=_PINNED,
     )
     return reply.verdicts
 

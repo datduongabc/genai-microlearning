@@ -164,7 +164,7 @@ Kho ECR cũng bị xóa cùng image, nên lần dựng sau bắt đầu lại t�
 ## Quyết định và giới hạn
 
 - **Worker không về 0.** Chính worker báo độ sâu hàng đợi. Không còn worker nào thì không có metric, và không gì scale nó lên lại. Biến `worker.min` bị chặn ở mức tối thiểu 1.
-- **Scale-in không giết job.** Worker có job đang chạy xin ECS bảo vệ (`app/jobs/ecs_protection.py`). Khi task bị dừng vì deploy, worker cho job 100 s để xong, rồi trả job về hàng đợi mà không tính là một lần thử. Trước đây job đó phải chờ sweeper 15 phút.
+- **Scale-in không giết job.** Worker có job đang chạy xin ECS bảo vệ (`app/jobs/ecs_protection.py`). Khi task bị dừng vì deploy, worker cho job 100 s để xong, rồi trả job về hàng đợi mà không tính là một lần thử. Trước đây job đó phải chờ sweeper 5 phút (`STUCK_THRESHOLD_SECONDS`).
 - **Địa chỉ client.** Uvicorn chỉ tin VPC (ALB) và dải IP của CloudFront, nên rate limit theo IP thấy đúng địa chỉ người dùng mà người dùng không giả được. Tin `*` thì client tự ghi được `X-Forwarded-For`.
 - **CloudFront tới ALB là HTTP.** HTTPS ở chặng này cần tên miền và chứng chỉ riêng. Chặng người dùng tới CloudFront vẫn là HTTPS.
 - **Ngân sách kết nối DB.** `check "connection_budget"` báo khi `api.max` và `worker.max` cộng lại có thể mở nhiều kết nối hơn RDS nhận. Mặc định: 349 trên 407.

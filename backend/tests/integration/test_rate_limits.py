@@ -83,7 +83,7 @@ def test_one_email_tried_over_and_over_is_slowed_by_the_address_limit_too():
 
 
 CASES = [
-    ("chat", 20, lambda h: client.post(f"/courses/{uuid.uuid4()}/chat", json={"message": "hi"}, headers=h)),
+    ("chat", 20, lambda h: client.post(f"/courses/{uuid.uuid4()}/chat/stream", json={"message": "hi"}, headers=h)),
     ("generate", 10, lambda h: client.post("/modules/generate", params={"document_id": str(uuid.uuid4())}, headers=h)),
     ("moodle-link-request", 10, lambda h: client.post("/moodle/account/link-requests", json={"email": "invalid"}, headers=h)),
     ("publish", 20, lambda h: client.post(f"/modules/{uuid.uuid4()}/publish-to-moodle", json={"section_num": 0}, headers=h)),

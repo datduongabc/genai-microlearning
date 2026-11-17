@@ -27,6 +27,7 @@ from app.models import (
     User,
 )
 from scripts.register_lti_platform import register
+from tests.sse import events
 
 client = TestClient(app, follow_redirects=False)
 
@@ -185,10 +186,11 @@ def test_a_learner_joins_the_course_the_instructor_opened_and_can_only_chat(lms,
         # The lecturer reaches the same one, so the student's 404 is a refusal, not a wrong path.
         assert getattr(client, method)(path, headers=owner).status_code not in (404, 405), path
     # The chat: a course with no material yet answers that it is not covered, without a model call.
-    answer = client.post(f"/courses/{course}/chat", json={"message": "Tiến trình là gì?"}, headers=headers)
+    answer = client.post(f"/courses/{course}/chat/stream", json={"message": "Tiến trình là gì?"}, headers=headers)
     assert answer.status_code == 200, answer.text
+    assert [name for name, _ in events(answer)][-1] == "done"
     latest = client.get(f"/courses/{course}/chat/latest", headers=headers).json()
-    assert latest["session_id"] == answer.json()["session_id"]
+    assert latest["session_id"] == dict(events(answer))["session"]["session_id"]
     # The lecturer does not read the student's chat.
     assert client.get(f"/courses/{course}/chat/latest", headers=_bearer(lecturer)).json()["session_id"] is None
     assert client.get(f"/courses/{course}/chat/{latest['session_id']}/history",
@@ -211,12 +213,12 @@ def test_a_learner_has_a_daily_chat_limit(lms, monkeypatch):
     student = trade(launch(lms, **STUDENT)).json()
     course = student["course_id"]
 
-    assert client.post(f"/courses/{course}/chat", json={"message": "a"}, headers=_bearer(student)).status_code == 200
+    assert client.post(f"/courses/{course}/chat/stream", json={"message": "a"}, headers=_bearer(student)).status_code == 200
     refused = client.post(f"/courses/{course}/chat/stream", json={"message": "b"}, headers=_bearer(student))
     assert refused.status_code == 429
     # Lecturers are not counted.
     for message in ("a", "b"):
-        assert client.post(f"/courses/{course}/chat", json={"message": message},
+        assert client.post(f"/courses/{course}/chat/stream", json={"message": message},
                            headers=_bearer(lecturer)).status_code == 200
 
 

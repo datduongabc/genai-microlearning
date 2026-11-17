@@ -9,8 +9,8 @@
 chunk each, docs/measurements/2026-11-04-five-subject-baseline.md): 10 per subject, 50 in all. It stores
 the source chunk's text with each question, so the set does not depend on the database it came from.
 
-`answer` asks each question the way POST /courses/{id}/chat does (search_for_chat, rerank_for_chat,
-answer_question; one turn, no history), pinned to one alias with the gateway's fallbacks off, and
+`answer` asks each question with the course chat's search (search_for_chat, rerank_for_chat) and
+answer_question (one turn, no history), pinned to one alias with the gateway's fallbacks off, and
 writes one JSON line per question: the answer, the eight context chunks the model was given, the
 chunks it cited, the model the gateway actually served, whether the reranker answered, and whether
 the source chunk was among the contexts. A run that stops is resumed: questions already in the

@@ -29,6 +29,9 @@ MAX_RATE_LIMIT_WAIT_SECONDS = 60.0
 # The gateway owns retries and fallbacks (devops/gateway/config.yaml router_settings): 120 s x 2 tries x 2 models
 # in the longest chain. Without this the client retried the whole chain itself and waited up to 100 minutes.
 GATEWAY_TIMEOUT_SECONDS = 540
+# For a call made while a web request waits on it: CloudFront answers 504 at 60 s (infra cdn.tf), and a call still
+# running after that only holds one of the API task's request slots. The job path keeps GATEWAY_TIMEOUT_SECONDS.
+REQUEST_TIMEOUT_SECONDS = 55
 
 # Model do giảng viên chọn cho riêng một lượt sinh. Để trong ContextVar chứ không truyền
 # qua tham số: một lượt sinh đi qua mười chỗ gọi rải khắp generation, chat và ingestion,
@@ -132,12 +135,12 @@ def _never_connected(error: BaseException) -> bool:
     return False
 
 
-def _call_with_rate_limit_retries(alias: str, routed_alias: str, **request):
+def _call_with_rate_limit_retries(alias: str, **request):
     retries = settings.llm_rate_limit_retries if _waits_on_rate_limit.get() else 0
     attempt = 0
     reconnected = False
     while True:
-        with timing.timed("llm", requested_alias=alias, routed_alias=routed_alias) as span:
+        with timing.timed("llm", requested_alias=alias) as span:
             try:
                 response = litellm.completion(**request)
             except litellm.RateLimitError as error:
@@ -176,7 +179,7 @@ def _completion(**kwargs):
     # "openai/" only means "speak the OpenAI-compatible protocol to api_base";
     # the gateway decides which provider actually serves the alias.
     response = _call_with_rate_limit_retries(
-        alias, alias,
+        alias,
         model=f"openai/{alias}",
         api_base=settings.llm_gateway_url,
         api_key=settings.llm_gateway_key,
@@ -187,7 +190,7 @@ def _completion(**kwargs):
     calls = _model_calls.get()
     served = getattr(response, "model", None)
     if calls is not None and isinstance(served, str):
-        calls.append({"requested_alias": alias, "routed_alias": alias, "served_model": served})
+        calls.append({"requested_alias": alias, "served_model": served})
     return response
 
 

@@ -1,6 +1,5 @@
 """The chat stream over real HTTP, search and persistence, with the model boundaries offline."""
 
-import json
 import uuid
 from datetime import UTC, datetime, timedelta
 
@@ -25,15 +24,7 @@ from app.models import (
 )
 from app.retrieval import search
 from tests.auth_helpers import create_and_login
-
-
-def _events(response) -> list[tuple[str, dict]]:
-    events = []
-    for block in response.text.split("\n\n"):
-        if block.startswith("event:"):
-            name, data = block.split("\n", 1)
-            events.append((name.removeprefix("event: "), json.loads(data.removeprefix("data: "))))
-    return events
+from tests.sse import events as _events
 
 
 @pytest.fixture
@@ -158,36 +149,10 @@ def test_a_failed_reranker_costs_the_order_not_the_answer(world, monkeypatch):
     assert events[-1][0] == "done"
 
 
-def test_the_plain_endpoint_also_answers_when_the_reranker_fails(world, monkeypatch):
-    """Found by devops/loadtest/run_failures.sh: POST /chat used the generation search, whose reranker
-    retries five times and raises, so a stopped reranker turned every message into a 500."""
-    client, headers, course_id, _ = world
-
-    def fail(query, chunks, attempts):
-        assert attempts == search.CHAT_RERANK_ATTEMPTS
-        raise search.httpx.ConnectError("reranker down")
-
-    monkeypatch.setattr(search, "rerank_scored", fail)
-    monkeypatch.setattr(service, "complete_structured",
-                        lambda prompt, schema, **kw: schema(answer="Heap là cây.", source_ids=["S1"]))
-
-    response = client.post(f"/courses/{course_id}/chat", json={"message": "Heap?"}, headers=headers)
-
-    assert response.status_code == 200
-    assert response.json()["message"]["content"] == "Heap là cây."
-
-
-@pytest.mark.parametrize("path", ["/chat/stream", "/chat"])
-def test_without_the_embedder_chat_searches_by_keyword(world, monkeypatch, passthrough_rerank, path):
+def test_without_the_embedder_chat_searches_by_keyword(world, monkeypatch, passthrough_rerank):
     client, headers, course_id, _ = world
     prompts = []
     _scripted_model(monkeypatch, "Heap là cây [S1].", prompts=prompts)
-
-    def plain(prompt, schema, **kw):
-        prompts.append(prompt)
-        return schema(answer="Heap là cây.", source_ids=["S1"])
-
-    monkeypatch.setattr(service, "complete_structured", plain)
 
     def down(text):
         raise search.httpx.ConnectError("embedder down")
@@ -201,7 +166,7 @@ def test_without_the_embedder_chat_searches_by_keyword(world, monkeypatch, passt
             ["Queues are first in first out.", "Graphs have vertices and edges.", "Sorting orders a list."]))
         db.commit()
 
-    response = client.post(f"/courses/{course_id}{path}", json={"message": "heap binary tree"}, headers=headers)
+    response = client.post(f"/courses/{course_id}/chat/stream", json={"message": "heap binary tree"}, headers=headers)
 
     assert response.status_code == 200
     answer_prompt = prompts[-1]
@@ -331,3 +296,11 @@ def test_latest_of_someone_elses_course_is_refused(world):
     response = client.get(f"/courses/{course_id}/chat/latest", headers={"Authorization": f"Bearer {other}"})
 
     assert response.status_code in (403, 404)
+
+
+def test_the_plain_endpoint_is_gone(world):
+    """The app chats only through the stream, which commits before any model call; the plain route held the
+    student's row lock across two model calls."""
+    client, headers, course_id, _ = world
+
+    assert client.post(f"/courses/{course_id}/chat", json={"message": "Heap?"}, headers=headers).status_code in (404, 405)

@@ -236,8 +236,7 @@ def test_successful_calls_record_the_served_model_not_the_requested_alias(monkey
     monkeypatch.setattr(litellm, "completion", fake)
     with llm.capture_models() as calls, llm.using_model("gemini-flash"):
         assert llm.complete_structured("hello", _Answer).value == 42
-    assert calls == [{"requested_alias": "gemini-flash", "routed_alias": "gemini-flash",
-                      "served_model": "gemini-3.8-flash"}]
+    assert calls == [{"requested_alias": "gemini-flash", "served_model": "gemini-3.8-flash"}]
     with llm.capture_models() as next_calls:
         assert next_calls == []
 
@@ -274,7 +273,7 @@ def test_served_model_survives_the_http_response(monkeypatch, alias, pinned, ser
         )
 
     assert result.value == 42
-    assert calls == [{"requested_alias": alias, "routed_alias": alias, "served_model": served}]
+    assert calls == [{"requested_alias": alias, "served_model": served}]
     assert sent[0]["metadata"]["run"] == "test"
     assert sent[0].get("disable_fallbacks", False) is pinned
 

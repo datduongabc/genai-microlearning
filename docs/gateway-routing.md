@@ -66,6 +66,7 @@ See `docs/measurements/2026-10-27-formula-figure-reader.md`.
 
 Judge selection follows the [rubric](rubric.md#1-thiết-kế-nghiên-cứu).
 The fact check of flashcards and video scripts uses `claude-fast`, or `openai-fast` for a Claude generator.
+Its calls run with fallbacks off, so a judge outage flags the statement as "Chưa kiểm được" instead of letting `gemini-flash` check it.
 
 LiteLLM retries once, does not cool a deployment down after a failure (the backend retries a 429 itself), and applies both ordinary and context-window fallbacks.
 To distribute among more deployments, add them under the same `model_name` in this configuration; duplicate entries using the same key and model add no quota.
@@ -99,8 +100,9 @@ same quota-limited model.
 
 Migration `0011_module_generation_models` adds nullable JSONB
 `modules.generation_models`. Each completed generation saves every successful chat
-response in order as `requested_alias`, `routed_alias`, and `served_model` from the
-response. Multiple served models are kept: a module can use a backup on one step
+response in order as `requested_alias` and `served_model` from the
+response. Records saved before 2026-11-17 also carry `routed_alias`, which always equalled `requested_alias`.
+Multiple served models are kept: a module can use a backup on one step
 and its primary on another. The module preview displays the requested alias and
 served models, and `GET /modules/{id}` returns the complete record. Historical
 modules remain NULL; their served models cannot be inferred from a mutable alias.
