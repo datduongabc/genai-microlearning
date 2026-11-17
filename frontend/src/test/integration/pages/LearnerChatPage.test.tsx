@@ -41,10 +41,10 @@ describe('LearnerChatPage', () => {
   it('lists the published sets and videos by document, above the chat', async () => {
     vi.mocked(api.listLearnItems).mockResolvedValue({
       flashcard_sets: [
-        { id: 's1', focus: 'Mảng', card_count: 8, document: doc('d1', 'bai-1.pdf') },
-        { id: 's2', focus: null, card_count: 1, document: doc('d2', 'bai-2.pdf') },
+        { id: 's1', focus: 'Mảng', card_count: 8, published_at: '2026-11-16T03:00:00', document: doc('d1', 'bai-1.pdf') },
+        { id: 's2', focus: null, card_count: 1, published_at: '2026-11-15T03:00:00', document: doc('d2', 'bai-2.pdf') },
       ],
-      videos: [{ id: 'v1', focus: 'Giới thiệu', duration_seconds: 125, document: doc('d1', 'bai-1.pdf') }],
+      videos: [{ id: 'v1', focus: 'Giới thiệu', duration_seconds: 125, published_at: '2026-11-14T03:00:00', document: doc('d1', 'bai-1.pdf') }],
     })
 
     renderAt('/learn/course-1')
@@ -53,9 +53,9 @@ describe('LearnerChatPage', () => {
     expect(screen.getByRole('heading', { name: 'bai-2.pdf' })).toBeInTheDocument()
     const link = screen.getByRole('link', { name: /Mảng/ })
     expect(link).toHaveAttribute('href', '/learn/course-1/flashcards/s1')
-    expect(link).toHaveTextContent('8 thẻ')
+    expect(link).toHaveTextContent('8 thẻ · giao 16/11')
     expect(screen.getByRole('link', { name: /Bộ thẻ/ })).toHaveAttribute('href', '/learn/course-1/flashcards/s2')
-    expect(screen.getByText(/Giới thiệu/).closest('li')).toHaveTextContent('2:05')
+    expect(screen.getByText(/Giới thiệu/).closest('li')).toHaveTextContent('2:05 · giao 14/11')
     expect(screen.getByRole('link', { name: /Giới thiệu/ })).toHaveAttribute('href', '/learn/course-1/videos/v1')
     const chat = screen.getByText('chat of course-1')
     expect(screen.getByRole('heading', { name: 'bai-2.pdf' }).compareDocumentPosition(chat))

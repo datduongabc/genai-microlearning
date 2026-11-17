@@ -658,22 +658,22 @@ function SaveCancelRow({
   }
   if (!editing) {
     return (
-      <button onClick={() => { setError(''); onEdit() }} className="text-xs font-semibold text-accent hover:underline">
+      <button onClick={() => { setError(''); onEdit() }} className="ui-button self-start">
         Sửa
       </button>
     )
   }
   return (
     <>
-      <div className="flex gap-3">
+      <div className="flex gap-3 self-start">
         <button
           onClick={() => void save()}
           disabled={saving}
-          className="rounded-[3px] bg-accent px-4 py-1.5 text-xs font-semibold text-white hover:bg-accent-dark disabled:opacity-60"
+          className="ui-button primary"
         >
           {saving ? 'Đang lưu...' : 'Lưu'}
         </button>
-        <button onClick={() => { setError(''); onCancel() }} className="text-xs font-semibold text-gray-500 hover:text-gray-700">
+        <button onClick={() => { setError(''); onCancel() }} className="ui-button">
           Hủy
         </button>
       </div>

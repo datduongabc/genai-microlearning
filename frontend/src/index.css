@@ -279,6 +279,11 @@ body { background: var(--bg-canvas); font-size:16px; line-height:24px; }
 .link-action.danger { color:var(--status-danger); font-weight:500; }
 .link-action:disabled { opacity:.6; text-decoration:none; }
 .small-action { font-size:13px; line-height:18px; }
+/* One delete per line of a script would put a dozen red words on a scene; red only when aimed at. */
+.link-action.quiet-danger { color:var(--text-muted); font-weight:500; }
+.link-action.quiet-danger:hover, .link-action.quiet-danger:focus-visible { color:var(--status-danger); }
+/* Text actions are 18-20px tall: enough for a mouse, too small for a finger. */
+@media (pointer:coarse) { .link-action { display:inline-flex; align-items:center; min-height:32px; } }
 .ui-dialog { margin:auto; width:100%; max-width:32rem; padding:24px; border-radius:var(--radius-lg); border:1px solid var(--border-default); background:var(--bg-surface); color:var(--text-primary); box-shadow:var(--shadow-overlay); font-size:15px; }
 .ui-dialog::backdrop { background:rgba(27,39,51,.45); }
 .ui-dialog-title { font:600 21px/28px var(--font-serif); margin-bottom:16px; }
@@ -303,6 +308,8 @@ body { background: var(--bg-canvas); font-size:16px; line-height:24px; }
 .doc-title { flex:1 1 16rem; min-width:min(16rem,100%); }
 .doc-name { font-weight:600; overflow-wrap:anywhere; }
 .doc-actions { display:flex; flex-wrap:wrap; align-items:center; gap:6px 20px; max-width:100%; }
+/* Four actions do not fit a phone row, and wrapping left "Xóa" alone on a line: two columns instead. */
+@media (max-width:480px) { .doc-actions { display:grid; grid-template-columns:repeat(2, max-content); gap:4px 24px; } }
 .status-pill { display:inline-flex; align-items:center; gap:6px; margin-top:2px; font-size:13px; line-height:18px; color:var(--text-secondary); }
 .status-pill::before { content:""; width:7px; height:7px; border-radius:50%; background:var(--border-strong); }
 .status-pill[data-status=processing]::before, .status-pill[data-status=chunked]::before { background:var(--status-warning); }

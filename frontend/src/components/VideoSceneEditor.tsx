@@ -67,7 +67,7 @@ function ItemEditor({ item, name, documentId, sources, flags, onText, onCitation
           rows={2}
           className="ui-input w-full"
         />
-        <button type="button" onClick={onRemove} aria-label={`Xóa ${name}`} className="link-action danger small-action">
+        <button type="button" onClick={onRemove} aria-label={`Xóa ${name}`} className="link-action quiet-danger small-action">
           Xóa
         </button>
       </div>
