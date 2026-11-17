@@ -21,6 +21,9 @@ _FAMILY_BY_PREFIX = {"gemini": "google", "claude": "anthropic", "openai": "opena
 
 # Cheap judges first: a set is checked card by card. The first one of another family is used.
 _JUDGES = ("claude-fast", "openai-fast")
+# Every judge alias falls back to gemini-flash in the gateway, so an unpinned judge call could be served by the
+# generator's own family. Pinned, an outage raises and the statement is flagged "Chưa kiểm được" instead.
+_PINNED = {"disable_fallbacks": True}
 
 
 def alias_family(alias: str) -> str:
@@ -60,6 +63,7 @@ def _support(claim: str, passages: list[str], language: OutputLanguage) -> Suppo
     return claim_evaluation.complete_structured(
         json.dumps({"claim": claim, "evidence": passages}, ensure_ascii=False),
         SupportVerdict, system_instruction=_with_language(_SUPPORT_INSTRUCTION, language), temperature=0,
+        extra_body=_PINNED,
     )
 
 
@@ -118,6 +122,7 @@ def _judge_items(claims: list[str], passages: list[str], language: OutputLanguag
         json.dumps({"claims": [{"number": n, "claim": c} for n, c in enumerate(claims, 1)], "evidence": passages},
                    ensure_ascii=False),
         ItemVerdicts, system_instruction=_with_language(_ITEMS_INSTRUCTION + _FRAMING_RULE, language), temperature=0,
+        extra_body=_PINNED,
     )
     return reply.verdicts
 

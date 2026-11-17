@@ -189,3 +189,28 @@ def test_a_vietnamese_lesson_asks_the_judge_to_name_the_evidence_in_vietnamese(m
 
     vi, en = seen
     assert "đoạn nguồn" in vi and "đoạn nguồn" not in en
+
+
+def test_the_judge_is_pinned_so_an_outage_cannot_fall_back_to_the_generators_family(monkeypatch):
+    """Every judge alias falls back to gemini-flash in the gateway: unpinned, Gemini would check its own cards.
+    Pinned, a judge outage is an error, and the statement is flagged for the lecturer instead of approved."""
+    from types import SimpleNamespace
+
+    from app.llm import gateway
+
+    seen = []
+
+    def fake_completion(**kwargs):
+        seen.append(kwargs.get("extra_body"))
+        if (kwargs.get("extra_body") or {}).get("disable_fallbacks"):
+            raise RuntimeError("claude-fast unavailable")
+        # Unpinned, the gateway would have served this from gemini-flash and approved it.
+        return SimpleNamespace(choices=[SimpleNamespace(message=SimpleNamespace(
+            content='{"supported": true, "reason": "", "verdicts": [{"number": 1, "supported": true, "reason": ""}]}'))])
+
+    monkeypatch.setattr(gateway, "_completion", fake_completion)
+    single = fact_check.check_against_sources([("claim", ["passage"])], "gemini-flash", "vi")
+    items = fact_check.check_items_against_sources([([("Slide", "bullet")], ["passage"])], "gemini-flash", "vi")
+    assert single[0].startswith("Chưa kiểm được: ")
+    assert items[0][0].startswith("Slide: Chưa kiểm được: ")
+    assert len(seen) == 2 and all(body == {"disable_fallbacks": True} for body in seen)
