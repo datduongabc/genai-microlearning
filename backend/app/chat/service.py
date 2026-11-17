@@ -24,7 +24,7 @@ from app.generation.content import ContentOutput
 from app.generation.example import ExampleOutput
 from app.generation.inline_citations import MARKER
 from app.generation.slides import SlidesOutput
-from app.llm.gateway import GATEWAY_TIMEOUT_SECONDS, REQUEST_TIMEOUT_SECONDS, complete, complete_structured, stream_text
+from app.llm.gateway import REQUEST_TIMEOUT_SECONDS, complete_structured, stream_text
 from app.models import ChatMessage, ChatSession, Chunk, Module
 
 HISTORY_TURNS = 4
@@ -36,20 +36,6 @@ ngữ cảnh, dùng để tìm kiếm tài liệu — thay thế đại từ ("n
 không thêm giải thích/tiền tố nào khác.
 """
 
-
-def condense_query(message: str, history: list[dict]) -> str:
-    """Query rewriting cho hội thoại nhiều lượt: retrieve() không thấy lịch sử
-    hội thoại, nên 1 câu hỏi dùng đại từ tham chiếu lượt trước ("nó có mấy
-    tính chất?") sẽ tìm sai/không ra chunk liên quan nếu dùng nguyên văn.
-    Viết lại thành câu hỏi độc lập trước khi truy xuất. Bước trả lời nhận cả
-    câu hỏi gốc (giọng và ngôn ngữ người hỏi) lẫn bản viết lại (nghĩa của nó)."""
-    if not history:
-        return message
-    history_text = "\n".join(f"{m['role']}: {m['content']}" for m in history)
-    prompt = f"LỊCH SỬ HỘI THOẠI:\n{history_text}\n\nCÂU HỎI MỚI NHẤT: {message}"
-    # Only POST /chat condenses this way, while the reader waits on the request.
-    rewritten = complete(prompt, system_instruction=CONDENSE_SYSTEM_INSTRUCTION, timeout=REQUEST_TIMEOUT_SECONDS).strip()
-    return rewritten or message
 
 CHAT_SYSTEM_INSTRUCTION = IGNORE_EMBEDDED_INSTRUCTIONS + """Bạn là trợ lý hỏi-đáp cho môn học. Chỉ được trả lời dựa trên các đoạn nguồn
 (source chunk) được cung cấp bên dưới — KHÔNG được bịa đặt hay đưa vào thông tin
@@ -158,7 +144,7 @@ class ChatAnswer(BaseModel):
 
 
 def _answer_prompt(query: str, context_chunks: list[Chunk], history: list[dict], standalone: str | None = None) -> str:
-    """`standalone` is the question as condense_query() rewrote it for the search. The sources were found for that
+    """`standalone` is the question as condense_query_streamed() rewrote it for the search. The sources were found for that
     one, and a follow-up such as "con cai kia thi sao" read alone matches none of them, so the model is told what it
     means. The language is still read from the question as asked."""
     history_text = ""
@@ -174,14 +160,13 @@ def _answer_prompt(query: str, context_chunks: list[Chunk], history: list[dict],
 
 
 def answer_question(query: str, context_chunks: list[Chunk], history: list[dict],
-                    standalone: str | None = None, timeout: float = GATEWAY_TIMEOUT_SECONDS) -> ChatAnswer:
-    """`timeout` is shorter for POST /chat, where a reader waits; the evaluation scripts keep the gateway's."""
+                    standalone: str | None = None) -> ChatAnswer:
     if not context_chunks:
         return ChatAnswer(answer=not_covered(question_language(query)), citations=[])
 
     prompt = _answer_prompt(query, context_chunks, history, standalone)
 
-    draft = complete_structured(prompt, ChatDraft, system_instruction=CHAT_SYSTEM_INSTRUCTION, timeout=timeout)
+    draft = complete_structured(prompt, ChatDraft, system_instruction=CHAT_SYSTEM_INSTRUCTION)
 
     # Model chỉ trích dẫn bằng ID ngắn của chunk trong prompt; ID không có trong context_chunks
     # (model bịa) bị bỏ, không đoán.
@@ -256,7 +241,12 @@ async def stream_answer(
 
 
 async def condense_query_streamed(message: str, history: list[dict]) -> str:
-    """condense_query() without holding a thread while the model answers."""
+    """Query rewriting cho hội thoại nhiều lượt: retrieve() không thấy lịch sử
+    hội thoại, nên 1 câu hỏi dùng đại từ tham chiếu lượt trước ("nó có mấy
+    tính chất?") sẽ tìm sai/không ra chunk liên quan nếu dùng nguyên văn.
+    Viết lại thành câu hỏi độc lập trước khi truy xuất. Bước trả lời nhận cả
+    câu hỏi gốc (giọng và ngôn ngữ người hỏi) lẫn bản viết lại (nghĩa của nó).
+    Streamed, so no thread is held while the model answers."""
     if not history:
         return message
     history_text = "\n".join(f"{m['role']}: {m['content']}" for m in history)

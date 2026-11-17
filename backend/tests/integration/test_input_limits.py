@@ -76,7 +76,7 @@ def test_a_course_name_is_stored_trimmed(world):
 def test_a_chat_message_has_a_maximum_length_that_is_checked_before_anything_else(world):
     too_long = "x" * (MAX_CHAT_MESSAGE_CHARS + 1)
 
-    response = client.post(f"/courses/{world['course']}/chat", json={"message": too_long}, headers=world["headers"])
+    response = client.post(f"/courses/{world['course']}/chat/stream", json={"message": too_long}, headers=world["headers"])
 
     assert response.status_code == 422
     ChatRequest(message="x" * MAX_CHAT_MESSAGE_CHARS)

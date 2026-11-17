@@ -158,7 +158,7 @@ npm run build
 
 | Bộ test | Số test |
 | --- | ---: |
-| Backend unit / integration / e2e | 779 / 1.366 / 2 |
+| Backend unit / integration / e2e | 779 / 1.360 / 2 |
 | Frontend unit / integration | 104 / 340 |
 | Plugin Moodle (PHPUnit) | 18 |
 | Terraform (`terraform test`, provider giả lập) | 8 |

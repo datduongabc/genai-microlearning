@@ -17,16 +17,13 @@ from app.auth.rate_limit import limiter, user_or_address
 from app.chat.service import (
     HISTORY_TURNS,
     ChatAnswer,
-    answer_question,
-    condense_query,
     condense_query_streamed,
     stream_answer,
 )
 from app.config import settings
 from app.db import RequestSessionLocal, get_db
-from app.llm.gateway import REQUEST_TIMEOUT_SECONDS
 from app.models import ChatMessage, ChatRole, ChatSession, Course, User
-from app.retrieval.search import rerank_for_chat, retrieve_for_chat, search_for_chat
+from app.retrieval.search import retrieve_for_chat
 
 router = APIRouter(prefix="/courses/{course_id}/chat", tags=["chat"], dependencies=[Depends(get_current_user)])
 
@@ -34,7 +31,6 @@ router = APIRouter(prefix="/courses/{course_id}/chat", tags=["chat"], dependenci
 # Every message is at least two model calls (condensing the question, answering it),
 # and a long one is more expensive still.
 MAX_CHAT_MESSAGE_CHARS = 4000
-# Shared by both ways to send a message, so that the second is not a way around the first's budget.
 chat_limit = limiter.shared_limit("20/minute", scope="chat", key_func=user_or_address)
 # A silent connection can be closed by a proxy on the way, and the answer may take this long to start.
 HEARTBEAT_SECONDS = 15
@@ -59,11 +55,6 @@ class ChatMessageResponse(BaseModel):
     citations: list[CitationResponse]
 
 
-class ChatResponse(BaseModel):
-    session_id: uuid.UUID
-    message: ChatMessageResponse
-
-
 def _get_or_create_session(db: Session, course_id: uuid.UUID, session_id: uuid.UUID | None, title_seed: str,
     user_id: uuid.UUID, module_id: uuid.UUID | None = None,
 ) -> ChatSession:
@@ -79,61 +70,6 @@ def _get_or_create_session(db: Session, course_id: uuid.UUID, session_id: uuid.U
     db.add(session)
     db.flush()
     return session
-
-
-@router.post("", response_model=ChatResponse)
-@chat_limit  # two model calls or more per message
-def post_chat_message(
-    request: Request, course_id: uuid.UUID, payload: ChatRequest, db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-):
-    require_course_reader(db, db.get(Course, course_id), current_user)
-
-    message = payload.message.strip()
-    if not message:
-        raise HTTPException(status_code=400, detail="message is required")
-    count_learner_chat(db, current_user)
-
-    session = _get_or_create_session(db, course_id, payload.session_id, message, current_user.id)
-
-    user_message = ChatMessage(session_id=session.id, role=ChatRole.user, content=message, citations=[])
-    db.add(user_message)
-    db.flush()
-
-    history_rows = (
-        db.query(ChatMessage)
-        .filter(ChatMessage.session_id == session.id, ChatMessage.id != user_message.id)
-        .order_by(ChatMessage.created_at.desc())
-        .limit(HISTORY_TURNS)
-        .all()
-    )
-    history = [{"role": r.role.value, "content": r.content} for r in reversed(history_rows)]
-
-    retrieval_query = condense_query(message, history)
-    # The same search as the stream, so a failed reranker or embedder degrades the answer the same way.
-    context_chunks = rerank_for_chat(retrieval_query, search_for_chat(db, course_id, retrieval_query), top_k=8)
-    answer = answer_question(message, context_chunks, history, standalone=retrieval_query,
-                             timeout=REQUEST_TIMEOUT_SECONDS)
-
-    assistant_message = ChatMessage(
-        session_id=session.id,
-        role=ChatRole.assistant,
-        content=answer.answer,
-        citations=[c.model_dump() for c in answer.citations],
-    )
-    db.add(assistant_message)
-    db.commit()
-    db.refresh(assistant_message)
-
-    return ChatResponse(
-        session_id=session.id,
-        message=ChatMessageResponse(
-            id=assistant_message.id,
-            role=assistant_message.role.value,
-            content=assistant_message.content,
-            citations=assistant_message.citations,
-        ),
-    )
 
 
 @dataclass(frozen=True)

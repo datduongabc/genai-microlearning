@@ -56,11 +56,19 @@ for subject in SUBJECTS:
 
     for q in [q for q in QUESTIONS if q["course"] == subject]:
         t0 = time.time()
-        r = c.post(f"/courses/{cid}/chat", json={"message": q["cau_hoi"]})
+        m, event = {}, None
+        with c.stream("POST", f"/courses/{cid}/chat/stream", json={"message": q["cau_hoi"]}) as r:
+            lines = list(r.iter_lines())
+        for line in lines:
+            if line.startswith("event: "):
+                event = line.removeprefix("event: ")
+            # "done" carries the saved message, "error" a detail; deltas are only its pieces.
+            elif line.startswith("data: ") and event in ("done", "error"):
+                m = json.loads(line.removeprefix("data: "))
+        text = m.get("content") or m.get("detail") or "\n".join(lines)
         dt = time.time() - t0
-        m = r.json().get("message", {}) if r.status_code == 200 else {}
         emit(event="chat", subject=subject, status=r.status_code, seconds=round(dt, 2),
-             citations=len(m.get("citations") or []), answer=(m.get("content") or r.text)[:400])
+             citations=len(m.get("citations") or []), answer=text[:400])
 
     # Two modules: the first two files of the subject, in name order.
     for document_id in docs[:2]:

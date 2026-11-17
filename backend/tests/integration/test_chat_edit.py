@@ -193,7 +193,7 @@ def test_sessions_are_module_scoped_and_follow_up_keeps_turn_order(lesson, monke
     response = client.post(f"/modules/{other_id}/chat-edit", headers=headers,
         json={"message": "slide 1", "session_id": first["session_id"]})
     assert response.status_code == 404
-    assert client.post(f"/courses/{ids['course']}/chat", headers=headers,
+    assert client.post(f"/courses/{ids['course']}/chat/stream", headers=headers,
         json={"message": "what is a stack?", "session_id": first["session_id"]}).status_code == 404
     assert client.get(f"/courses/{ids['course']}/chat/{first['session_id']}/history", headers=headers).status_code == 404
 

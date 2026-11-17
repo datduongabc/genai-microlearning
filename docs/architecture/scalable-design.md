@@ -156,8 +156,9 @@ không lỗi, khoảng 146 rps mỗi container.
 
 ### Chat
 
-`POST /courses/{id}/chat` hiện lưu tin nhắn rồi gọi LLM hai lần trong cùng một transaction, không stream, trên luồng của API. Mỗi tin
-giữ một suất API và một kết nối database trong lúc chờ. Đây là khoảng trống lớn nhất của kiến trúc hiện tại.
+Lúc viết thiết kế này, `POST /courses/{id}/chat` lưu tin nhắn rồi gọi LLM hai lần trong cùng một transaction, không stream, trên luồng của API.
+Mỗi tin giữ một suất API và một kết nối database trong lúc chờ.
+Nay chat chỉ còn `POST /courses/{id}/chat/stream`, đã làm các mục 2 đến 4 dưới đây; đường không stream bị xoá ngày 2026-11-17.
 
 Thiết kế mới:
 
