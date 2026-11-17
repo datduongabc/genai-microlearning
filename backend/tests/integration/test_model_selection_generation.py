@@ -39,6 +39,11 @@ GATEWAY_GIA_LAP = [
         "litellm_params": {"model": "groq/openai/gpt-oss-120b"},
         "model_info": {"mode": "chat"},
     },
+    {
+        "model_name": "openai-fast",
+        "litellm_params": {"model": "openrouter/openai/gpt-6-luna"},
+        "model_info": {"mode": "chat"},
+    },
 ]
 
 

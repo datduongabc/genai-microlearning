@@ -81,7 +81,7 @@ model_list:
     model_info:
       mode: chat
       display_name: GPT-6 Luna
-      note: nhanh
+      note: rẻ nhất khi đo, chất lượng ngang nhóm đầu; model sinh mặc định
 
   - model_name: claude-fast
     litellm_params:
@@ -106,10 +106,10 @@ model_list:
     model_info:
       mode: chat
       display_name: DeepSeek V4.1 Flash
-      note: rẻ, bám nguồn tốt; model sinh mặc định
+      note: rẻ, bám nguồn tốt; chậm khi viết lời thoại video
 
 # LiteLLM owns retries and failover.
-# OpenAI, Claude and DeepSeek are opt-in; generation never falls back to them.
+# Generation never falls back to OpenAI, Claude or DeepSeek; gemini-flash is the only fallback target.
 router_settings:
   routing_strategy: simple-shuffle
   num_retries: 1
@@ -120,7 +120,7 @@ router_settings:
   disable_cooldowns: true
   enable_pre_call_checks: true
   optional_pre_call_checks: [enforce_model_rate_limits]
-  # gemini-flash has no fallback: it is the last resort of the others, the default deepseek-flash included.
+  # gemini-flash has no fallback: it is the last resort of the others, the default openai-fast included.
   fallbacks:
     - openai-fast: [gemini-flash]
     - claude-fast: [gemini-flash]

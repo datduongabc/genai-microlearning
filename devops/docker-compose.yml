@@ -18,7 +18,7 @@ x-backend-environment: &backend-environment
   LLM_GATEWAY_KEY: ${LLM_GATEWAY_KEY}
   LLM_EXPERIMENT_MODE: ${LLM_EXPERIMENT_MODE:-false}
   # The alias chat and generation use when none is chosen (backend/app/config.py).
-  LLM_MODEL: ${LLM_MODEL:-deepseek-flash}
+  LLM_MODEL: ${LLM_MODEL:-openai-fast}
   # The alias that re-reads a PDF page whose formulas look broken (must accept images).
   FORMULA_VISION_MODEL: ${FORMULA_VISION_MODEL:-gemini-flash}
   RERANKER_URL: http://reranker:80

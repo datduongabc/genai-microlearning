@@ -1,7 +1,9 @@
 # Gateway routing and reproducible experiments
 
 Demo and normal use enable failover by default.
-The backend default is `deepseek-flash` (DeepSeek V4.1 Flash), chosen in `docs/measurements/2026-11-16-four-chat-models.md`: chat quality within 0.03 of the best and near the lowest measured cost.
+The backend default is `openai-fast` (GPT-6 Luna).
+By the rule in `docs/measurements/2026-11-16-four-chat-models.md` (cheapest model within 0.03 of the best chat score) it is the cheapest in every measured task: chat, 131 injection cases, and flashcards with a video script (`docs/measurements/2026-11-16-four-models-rest.md`).
+Module generation cost per model is not measured yet.
 The formula re-read stays on `gemini-flash`, which reads images best.
 `devops/gateway/config.yaml` owns provider selection, retries, rate checks and fallback chains.
 Provider keys are read only by the gateway from the runtime environment.
@@ -32,8 +34,8 @@ Lecturers choose among exactly four chat models:
 | --- | --- | --- |
 | `gemini-flash` | Gemini 3.8 Flash; reads images, formula re-read | Google AI Studio |
 | `claude-fast` | Claude Haiku 5.5 | Anthropic |
-| `openai-fast` | GPT-6 Luna | OpenAI |
-| `deepseek-flash` | DeepSeek V4.1 Flash, the default | DeepInfra, endpoint `deepinfra/fp8` |
+| `openai-fast` | GPT-6 Luna, the default | OpenAI |
+| `deepseek-flash` | DeepSeek V4.1 Flash | DeepInfra, endpoint `deepinfra/fp8` |
 
 `deepseek-flash` names the endpoint `deepinfra/fp8` rather than the provider `deepinfra`.
 The bare provider slug also matches DeepInfra's priority endpoint, at another price.
