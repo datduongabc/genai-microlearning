@@ -24,7 +24,7 @@ from app.generation.content import ContentOutput
 from app.generation.example import ExampleOutput
 from app.generation.inline_citations import MARKER
 from app.generation.slides import SlidesOutput
-from app.llm.gateway import complete, complete_structured, stream_text
+from app.llm.gateway import GATEWAY_TIMEOUT_SECONDS, REQUEST_TIMEOUT_SECONDS, complete, complete_structured, stream_text
 from app.models import ChatMessage, ChatSession, Chunk, Module
 
 HISTORY_TURNS = 4
@@ -47,7 +47,8 @@ def condense_query(message: str, history: list[dict]) -> str:
         return message
     history_text = "\n".join(f"{m['role']}: {m['content']}" for m in history)
     prompt = f"LỊCH SỬ HỘI THOẠI:\n{history_text}\n\nCÂU HỎI MỚI NHẤT: {message}"
-    rewritten = complete(prompt, system_instruction=CONDENSE_SYSTEM_INSTRUCTION).strip()
+    # Only POST /chat condenses this way, while the reader waits on the request.
+    rewritten = complete(prompt, system_instruction=CONDENSE_SYSTEM_INSTRUCTION, timeout=REQUEST_TIMEOUT_SECONDS).strip()
     return rewritten or message
 
 CHAT_SYSTEM_INSTRUCTION = IGNORE_EMBEDDED_INSTRUCTIONS + """Bạn là trợ lý hỏi-đáp cho môn học. Chỉ được trả lời dựa trên các đoạn nguồn
@@ -173,13 +174,14 @@ def _answer_prompt(query: str, context_chunks: list[Chunk], history: list[dict],
 
 
 def answer_question(query: str, context_chunks: list[Chunk], history: list[dict],
-                    standalone: str | None = None) -> ChatAnswer:
+                    standalone: str | None = None, timeout: float = GATEWAY_TIMEOUT_SECONDS) -> ChatAnswer:
+    """`timeout` is shorter for POST /chat, where a reader waits; the evaluation scripts keep the gateway's."""
     if not context_chunks:
         return ChatAnswer(answer=not_covered(question_language(query)), citations=[])
 
     prompt = _answer_prompt(query, context_chunks, history, standalone)
 
-    draft = complete_structured(prompt, ChatDraft, system_instruction=CHAT_SYSTEM_INSTRUCTION)
+    draft = complete_structured(prompt, ChatDraft, system_instruction=CHAT_SYSTEM_INSTRUCTION, timeout=timeout)
 
     # Model chỉ trích dẫn bằng ID ngắn của chunk trong prompt; ID không có trong context_chunks
     # (model bịa) bị bỏ, không đoán.
@@ -333,7 +335,8 @@ def propose_module_edit(message: str, module: Module, chunks: list[Chunk], histo
               f"HISTORY: {json.dumps(history, ensure_ascii=False)}\n"
               f"{source_block(chunks)}\nYÊU CẦU: {message}")
     return complete_structured(
-        prompt, ModuleEdit, temperature=0.0,
+        # The lecturer waits on this inside the request.
+        prompt, ModuleEdit, temperature=0.0, timeout=REQUEST_TIMEOUT_SECONDS,
         system_instruction=EDIT_SYSTEM_INSTRUCTION + output_language_instruction(output_language)
         + "\nEXCEPTION: reply luôn viết bằng tiếng Việt ngắn gọn, có dấu.",
     )

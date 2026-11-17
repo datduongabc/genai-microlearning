@@ -331,3 +331,29 @@ def test_latest_of_someone_elses_course_is_refused(world):
     response = client.get(f"/courses/{course_id}/chat/latest", headers={"Authorization": f"Bearer {other}"})
 
     assert response.status_code in (403, 404)
+
+
+def test_the_plain_endpoint_gives_up_before_cloudfront_does(world, monkeypatch, passthrough_rerank):
+    """CloudFront answers 504 at 60 s: a model call still waiting after that only holds one of the task's slots."""
+    import types
+
+    import litellm
+
+    client, headers, course_id, _ = world
+    timeouts = []
+
+    def fake(**kwargs):
+        timeouts.append(kwargs["timeout"])
+        content = json.dumps({"answer": "Heap là cây.", "source_ids": ["S1"]}) if kwargs.get("response_format") \
+            else "Heap là gì?"
+        return types.SimpleNamespace(model="x", usage=None, choices=[
+            types.SimpleNamespace(message=types.SimpleNamespace(content=content))])
+
+    monkeypatch.setattr(litellm, "completion", fake)
+    first = client.post(f"/courses/{course_id}/chat", json={"message": "Heap?"}, headers=headers)
+    # The second turn has history, so the question is condensed first: both calls are bounded.
+    second = client.post(f"/courses/{course_id}/chat", json={"message": "Nó là gì?",
+                                                              "session_id": first.json()["session_id"]}, headers=headers)
+
+    assert second.status_code == 200
+    assert len(timeouts) == 3 and all(t < 60 for t in timeouts)

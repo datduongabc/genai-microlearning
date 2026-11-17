@@ -150,7 +150,8 @@ def probe(alias: str) -> None:
         with using_model(alias):
             _completion(
                 messages=[{"role": "user", "content": "ping"}], max_tokens=1,
-                extra_body={"disable_fallbacks": True},
+                # One token answers in seconds; the lecturer waits on it behind CloudFront's 60 s.
+                extra_body={"disable_fallbacks": True}, timeout=20,
             )
     # Trước tiên: gateway không với tới được thì mọi model đều hỏng như nhau, nên đổi model
     # không giúp gì. Phải đứng trước câu bắt tổng quát vì nó cũng là một openai.APIError.

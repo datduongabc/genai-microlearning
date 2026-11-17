@@ -488,3 +488,19 @@ def test_chat_remaps_old_codes_to_the_edit_prompt_and_rederives_saved_citations(
         assert saved['inline_citations'][0]['chunk_id'] == second_id
         assert saved['inline_citations'][0]['claim'] == 'Insertion has logarithmic cost.'
         assert saved['source_map']['S2']['chunk_id'] == second_id
+
+
+def test_a_chat_edit_gives_up_before_cloudfront_does(lesson, monkeypatch):
+    """CloudFront answers 504 at 60 s: a model call still waiting after that only holds one of the task's slots."""
+    import litellm
+
+    timeouts = []
+
+    def fake(**kwargs):
+        timeouts.append(kwargs["timeout"])
+        return SimpleNamespace(model="x", usage=None, choices=[SimpleNamespace(message=SimpleNamespace(content=json.dumps(
+            {"target": None, "question_number": None, "revised": None, "reply": "Bạn muốn sửa slide nào?"})))])
+
+    monkeypatch.setattr(litellm, "completion", fake)
+    assert send(lesson).status_code == 200
+    assert timeouts and all(t < 60 for t in timeouts)

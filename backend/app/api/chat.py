@@ -24,6 +24,7 @@ from app.chat.service import (
 )
 from app.config import settings
 from app.db import RequestSessionLocal, get_db
+from app.llm.gateway import REQUEST_TIMEOUT_SECONDS
 from app.models import ChatMessage, ChatRole, ChatSession, Course, User
 from app.retrieval.search import rerank_for_chat, retrieve_for_chat, search_for_chat
 
@@ -111,7 +112,8 @@ def post_chat_message(
     retrieval_query = condense_query(message, history)
     # The same search as the stream, so a failed reranker or embedder degrades the answer the same way.
     context_chunks = rerank_for_chat(retrieval_query, search_for_chat(db, course_id, retrieval_query), top_k=8)
-    answer = answer_question(message, context_chunks, history, standalone=retrieval_query)
+    answer = answer_question(message, context_chunks, history, standalone=retrieval_query,
+                             timeout=REQUEST_TIMEOUT_SECONDS)
 
     assistant_message = ChatMessage(
         session_id=session.id,

@@ -29,6 +29,9 @@ MAX_RATE_LIMIT_WAIT_SECONDS = 60.0
 # The gateway owns retries and fallbacks (devops/gateway/config.yaml router_settings): 120 s x 2 tries x 2 models
 # in the longest chain. Without this the client retried the whole chain itself and waited up to 100 minutes.
 GATEWAY_TIMEOUT_SECONDS = 540
+# For a call made while a web request waits on it: CloudFront answers 504 at 60 s (infra cdn.tf), and a call still
+# running after that only holds one of the API task's request slots. The job path keeps GATEWAY_TIMEOUT_SECONDS.
+REQUEST_TIMEOUT_SECONDS = 55
 
 # Model do giảng viên chọn cho riêng một lượt sinh. Để trong ContextVar chứ không truyền
 # qua tham số: một lượt sinh đi qua mười chỗ gọi rải khắp generation, chat và ingestion,
