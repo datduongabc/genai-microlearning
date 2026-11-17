@@ -3,11 +3,11 @@ import { Link } from "react-router-dom";
 import { formatClock } from "../lib/duration";
 import { listLearnItems, type LearnItems as Items } from "../api";
 
-// "giao 16/11": two items of one focus differ only by when the lecturer handed them out.
-function deliveredText(iso: string) {
+// Two items of one focus differ only by when the lecturer handed them out, so each row ends with that day.
+function Delivered({ iso }: { iso: string }) {
   const at = new Date(iso);
   const two = (n: number) => String(n).padStart(2, "0");
-  return `giao ${two(at.getDate())}/${two(at.getMonth() + 1)}`;
+  return <time dateTime={iso} title="Ngày giao" className="learn-date">{two(at.getDate())}/{two(at.getMonth() + 1)}</time>;
 }
 
 function duration(seconds: number | null) {
@@ -54,7 +54,7 @@ export function LearnItems({ courseId }: { courseId: string }) {
               <li key={set.id}>
                 <Link to={`/learn/${courseId}/flashcards/${set.id}`} className="learn-link">
                   <span>{set.focus ?? "Bộ thẻ"}</span>
-                  <span className="muted">{set.card_count} thẻ · {deliveredText(set.published_at)}</span>
+                  <span className="learn-meta"><span>{set.card_count} thẻ</span><Delivered iso={set.published_at} /></span>
                 </Link>
               </li>
             ))}
@@ -62,8 +62,9 @@ export function LearnItems({ courseId }: { courseId: string }) {
               <li key={video.id}>
                 <Link to={`/learn/${courseId}/videos/${video.id}`} className="learn-link">
                   <span>Video: {video.focus ?? "Bài giảng"}</span>
-                  <span className="muted">
-                    {[duration(video.duration_seconds), deliveredText(video.published_at)].filter(Boolean).join(" · ")}
+                  <span className="learn-meta">
+                    <span>{duration(video.duration_seconds)}</span>
+                    <Delivered iso={video.published_at} />
                   </span>
                 </Link>
               </li>

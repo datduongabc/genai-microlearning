@@ -568,6 +568,8 @@ body { background: var(--bg-canvas); font-size:16px; line-height:24px; }
 .learn-list { list-style:none; display:flex; flex-direction:column; }
 .learn-link { display:flex; flex-wrap:wrap; align-items:baseline; justify-content:space-between; gap:4px 12px; min-height:44px; padding:10px 0; border-top:1px solid var(--border-default); overflow-wrap:anywhere; }
 a.learn-link { color:var(--accent-default); font-weight:600; }
+.learn-meta { display:flex; gap:20px; color:var(--text-muted); font-weight:500; font-variant-numeric:tabular-nums; }
+.learn-date { min-width:3.2em; text-align:right; }
 a.learn-link:hover { text-decoration:underline; text-underline-offset:2px; }
 .learn-back { margin-bottom:12px; }
 .learn-card { display:flex; flex-direction:column; justify-content:center; gap:12px; width:100%; max-width:100%; min-height:240px; padding:24px 20px; text-align:left; background:var(--bg-surface); border:1px solid var(--border-strong); border-radius:var(--radius-lg); box-shadow:0 1px 0 var(--border-default); overflow-wrap:anywhere; white-space:pre-wrap; cursor:pointer; }
