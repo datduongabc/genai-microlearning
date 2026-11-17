@@ -66,6 +66,7 @@ See `docs/measurements/2026-10-27-formula-figure-reader.md`.
 
 Judge selection follows the [rubric](rubric.md#1-thiết-kế-nghiên-cứu).
 The fact check of flashcards and video scripts uses `claude-fast`, or `openai-fast` for a Claude generator.
+Its calls run with fallbacks off, so a judge outage flags the statement as "Chưa kiểm được" instead of letting `gemini-flash` check it.
 
 LiteLLM retries once, does not cool a deployment down after a failure (the backend retries a 429 itself), and applies both ordinary and context-window fallbacks.
 To distribute among more deployments, add them under the same `model_name` in this configuration; duplicate entries using the same key and model add no quota.
