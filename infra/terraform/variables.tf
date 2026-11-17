@@ -38,8 +38,11 @@ variable "worker" {
 }
 
 variable "embedder" {
+  # 4 GB: with --max-batch-tokens 1024 (devops/embedder) the batch the model runs is capped
+  # whatever the client sends, and the measured cgroup peak, cache included, is 3.20 GiB
+  # (docs/measurements/2026-10-14-crosslingual-rerank.md). It scales out on CPU instead of up.
   type    = object({ cpu = number, memory = number, min = number, max = number })
-  default = { cpu = 4096, memory = 8192, min = 1, max = 2 }
+  default = { cpu = 2048, memory = 4096, min = 1, max = 2 }
 }
 
 variable "gateway" {
