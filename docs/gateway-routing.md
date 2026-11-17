@@ -4,7 +4,7 @@ Demo and normal use enable failover by default.
 The backend default is `openai-fast` (GPT-6 Luna).
 By the rule in `docs/measurements/2026-11-16-four-chat-models.md` (cheapest model within 0.03 of the best chat score) it is the cheapest in every measured task: chat, 131 injection cases, and flashcards with a video script (`docs/measurements/2026-11-16-four-models-rest.md`).
 Module generation cost per model is not measured yet.
-The formula re-read stays on `gemini-flash`, which reads images best.
+The formula re-read uses `claude-fast` (Claude Haiku 5.5): on 12 flagged PDF pages it passed the acceptance check on 12/12, as `gemini-flash` did, at $0.0004 a page against $0.0101 and a median 4.9 s against 15.5 s (`docs/measurements/2026-11-16-four-models-rest.md`, step 3).
 `devops/gateway/config.yaml` owns provider selection, retries, rate checks and fallback chains.
 Provider keys are read only by the gateway from the runtime environment.
 
@@ -32,8 +32,8 @@ Lecturers choose among exactly four chat models:
 
 | Alias | Model | Upstream |
 | --- | --- | --- |
-| `gemini-flash` | Gemini 3.8 Flash; reads images, formula re-read | Google AI Studio |
-| `claude-fast` | Claude Haiku 5.5 | Anthropic |
+| `gemini-flash` | Gemini 3.8 Flash | Google AI Studio |
+| `claude-fast` | Claude Haiku 5.5; formula re-read | Anthropic |
 | `openai-fast` | GPT-6 Luna, the default | OpenAI |
 | `deepseek-flash` | DeepSeek V4.1 Flash | DeepInfra, endpoint `deepinfra/fp8` |
 
@@ -60,7 +60,9 @@ Provider availability and credit still require explicit deployment verification.
 Embeddings remain local Qwen3-Embedding-0.6B through `embed-default`.
 No fallbacks apply to embeddings or transcription.
 
-PDF ingestion sends a rendered page to `FORMULA_VISION_MODEL` (default `gemini-flash`, which must accept images) only when its rebuilt formulas still look broken, at most `FORMULA_VISION_MAX_PAGES` (default 40) pages per document.
+PDF ingestion sends a rendered page to `FORMULA_VISION_MODEL` (default `claude-fast`; the alias must accept images) only when its rebuilt formulas still look broken, at most `FORMULA_VISION_MAX_PAGES` (default 40) pages per document.
+Outside experiment mode a failed `claude-fast` call falls back to `gemini-flash`, like any other call of that alias.
+There is no ground truth per page: the measurement counts pages that pass the acceptance check (at least 90% of the text layer's words kept, at most 10% new words), which shows the transcript keeps the text, not that its formulas are right.
 An empty `FORMULA_VISION_MODEL` turns the re-read off; such pages keep the rebuilt text and get a `formula_unverified` warning.
 See `docs/measurements/2026-10-27-formula-figure-reader.md`.
 
