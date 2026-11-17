@@ -90,8 +90,10 @@ class Settings(BaseSettings):
     embedding_model: str = "embed-default"
     # The gateway alias that re-reads, from the rendered page, PDF formulas whose text layer could
     # not be rebuilt (app/ingestion/formula_repair.py). It must accept images; empty turns it off,
-    # and those pages then keep the rebuilt text with a warning.
-    formula_vision_model: str = "gemini-flash"
+    # and those pages then keep the rebuilt text with a warning. Claude Haiku: on 12 flagged pages it
+    # passed the acceptance check on as many pages as Gemini 3.8 Flash at about 1/25 of the cost
+    # (docs/measurements/2026-11-16-four-models-rest.md, step 3).
+    formula_vision_model: str = "claude-fast"
     # At most this many pages of one document are sent, so one badly typeset file cannot spend
     # much of the model balance.
     formula_vision_max_pages: int = Field(default=40, ge=0)
