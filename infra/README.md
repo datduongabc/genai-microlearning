@@ -160,7 +160,8 @@ infra/scripts/stack-power.sh status   # task đang chạy/mong muốn của từ
 ```
 
 Chạy `down` sau mỗi buổi demo hay đo, khi vài giờ tới không ai dùng.
-Lúc chạy, stack tốn khoảng $14,4 một ngày, trong đó Fargate khoảng $9,7 và RDS khoảng $2,4.
+Với embedder 4 vCPU, 8 GB, stack đang chạy tốn khoảng $14,4 một ngày, trong đó Fargate khoảng $9,7 và RDS khoảng $2,4.
+Với embedder 2 vCPU, 4 GB, ước tính khoảng $11,4 một ngày: (0,2465 − 0,1233) $/giờ × 24 giờ = $2,96 bớt ở Fargate, chưa đối chiếu với hóa đơn.
 Lúc dừng, còn tính tiền ALB, Valkey, IPv4 công khai của ALB, ổ đĩa RDS và S3: ước tính khoảng $1 đến $1,5 một ngày, chưa đo trên hóa đơn.
 `up` mất khoảng 10 đến 15 phút, phần lớn là chờ RDS khởi động.
 `ENVIRONMENT=staging` dùng được như với `tf.sh`.
