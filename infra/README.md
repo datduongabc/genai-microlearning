@@ -160,8 +160,7 @@ infra/scripts/stack-power.sh status   # task đang chạy/mong muốn của từ
 ```
 
 Chạy `down` sau mỗi buổi demo hay đo, khi vài giờ tới không ai dùng.
-Với embedder 4 vCPU, 8 GB, stack đang chạy tốn khoảng $14,4 một ngày, trong đó Fargate khoảng $9,7 và RDS khoảng $2,4.
-Với embedder 2 vCPU, 4 GB, ước tính khoảng $11,4 một ngày: (0,2465 − 0,1233) $/giờ × 24 giờ = $2,96 bớt ở Fargate, chưa đối chiếu với hóa đơn.
+Lúc chạy, stack tốn khoảng $14,4 một ngày, trong đó Fargate khoảng $9,7 và RDS khoảng $2,4.
 Lúc dừng, còn tính tiền ALB, Valkey, IPv4 công khai của ALB, ổ đĩa RDS và S3: ước tính khoảng $1 đến $1,5 một ngày, chưa đo trên hóa đơn.
 `up` mất khoảng 10 đến 15 phút, phần lớn là chờ RDS khởi động.
 `ENVIRONMENT=staging` dùng được như với `tf.sh`.
@@ -191,7 +190,7 @@ Kho ECR cũng bị xóa cùng image, nên lần dựng sau bắt đầu lại t�
 - **Địa chỉ client.** Uvicorn chỉ tin VPC (ALB) và dải IP của CloudFront, nên rate limit theo IP thấy đúng địa chỉ người dùng mà người dùng không giả được. Tin `*` thì client tự ghi được `X-Forwarded-For`.
 - **CloudFront tới ALB là HTTP.** HTTPS ở chặng này cần tên miền và chứng chỉ riêng. Chặng người dùng tới CloudFront vẫn là HTTPS.
 - **Ngân sách kết nối DB.** `check "connection_budget"` báo khi `api.max` và `worker.max` cộng lại có thể mở nhiều kết nối hơn RDS nhận. Mặc định: 349 trên 407.
-- **Embedder 2 vCPU, 4 GB, scale ngang.** Đỉnh bộ nhớ đo được là 3,20 GiB (cgroup, kể cả cache) với `--max-batch-tokens 1024`, giới hạn lô model chạy dù backend gửi 100 chunk một lần; còn khoảng 0,8 GiB dư. Task nhỏ hơn nên chạm ngưỡng CPU 60% sớm hơn và autoscaling thêm task sớm hơn (tối đa `embedder.max`): đó là thiết kế, scale ra thay vì lên. Cỡ task chỉ là cỡ khởi đầu. Staging vẫn giữ 4 vCPU, 8 GB trong `staging.tfvars`.
+- **Embedder 4 vCPU, 8 GB, vì CPU.** Ngày 2026-11-17 đã thử 2 vCPU, 4 GB trên AWS: nạp một PDF giải tích 1,2 MB, embedder ở 98% CPU hơn 8 phút, health check hết giờ, và ECS thay task hai lần (14:14 và 14:18 UTC), mỗi lần giết lượt nhúng đang chạy. Autoscaling thêm task thứ hai, cũng ở 98%. Bộ nhớ chỉ đạt đỉnh 57% của 4 GB, nên giới hạn là CPU, không phải bộ nhớ: đừng giảm cỡ này nếu chưa đo lại lúc nạp tài liệu.
 - **Model embedder nằm trong image** (`devops/embedder`), như reranker. Task mới không phải tải 2,4 GB từ Hugging Face trước khi phục vụ, và không phụ thuộc Hugging Face lúc chạy. Đổi model thì phải nhúng lại toàn bộ chunk, xem `devops/embedder/prepare_model.py`.
 - **Moodle không nằm trong stack này.** Điền `moodle_base_url` nếu có.
 - **Không tự đăng ký tài khoản.** Hạn mức sinh module tính theo tài khoản, nên để ai cũng đăng ký được thì một người tạo nhiều tài khoản để tiêu tiền nhà cung cấp. Biến `self_registration` mặc định tắt: admin tạo tài khoản, còn người mở từ Moodle có tài khoản qua LTI. Bản chạy trên máy (compose) vẫn mở.
