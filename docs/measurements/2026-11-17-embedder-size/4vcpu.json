@@ -1,0 +1,53 @@
+{
+ "course": "c9973cd5-146b-4248-9139-3eb5d87d1038",
+ "docs": [
+  {
+   "file": "1. Giới hạn dãy số.pdf",
+   "mb": 1.17,
+   "upload_s": 1.4,
+   "ingest_s": 73.9,
+   "status": "embedded",
+   "chunks": 20,
+   "status_detail": {
+    "status": "embedded"
+   }
+  },
+  {
+   "file": "Chapter 5_CPU Scheduling.pdf",
+   "mb": 3.16,
+   "upload_s": 0.8,
+   "ingest_s": 55.0,
+   "status": "embedded",
+   "chunks": 20,
+   "status_detail": {
+    "status": "embedded"
+   }
+  }
+ ],
+ "chat": [
+  {
+   "q": "Round Robin khác FCFS ở điểm nào?",
+   "status": 200,
+   "first_token_s": 3.92,
+   "total_s": 4.52,
+   "citations": 1,
+   "answer": "Round Robin (RR) tương tự FCFS nhưng có **ngắt (preemption)**: mỗi tiến trình được chạy tối đa một khoảng thời gian gọi là quantum; hết quantum mà chưa xong thì"
+  },
+  {
+   "q": "What is the convoy effect?",
+   "status": 200,
+   "first_token_s": 2.25,
+   "total_s": 2.47,
+   "citations": 1,
+   "answer": "The convoy effect occurs when short processes are queued behind a long process, so they all wait for the long process to leave the CPU."
+  },
+  {
+   "q": "Thời gian chờ trung bình của SJF được tính thế nào?",
+   "status": 200,
+   "first_token_s": 6.99,
+   "total_s": 7.69,
+   "citations": 3,
+   "answer": "Với SJF, khi CPU trống, chọn tiến trình có CPU burst kế tiếp ngắn nhất.  Tính thời gian chờ của từng tiến trình, cộng các thời gian đó rồi chia cho số tiến trìn"
+  }
+ ]
+}
