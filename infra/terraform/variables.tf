@@ -29,7 +29,9 @@ variable "api" {
 variable "worker" {
   description = "min must stay 1 or more: the workers report the queue depth that scales them, so at 0 nothing could scale them up again."
   type        = object({ cpu = number, memory = number, min = number, max = number, pool_size = number })
-  default     = { cpu = 1024, memory = 3072, min = 1, max = 8, pool_size = 4 }
+  # max 2: each worker may open 32 connections (checks.tf), and db.t4g.small accepts about 187.
+  # More workers need a larger db_instance_class (8 fit db.t4g.medium) or PgBouncer.
+  default = { cpu = 1024, memory = 3072, min = 1, max = 2, pool_size = 4 }
 
   validation {
     condition     = var.worker.min >= 1 && var.worker.max >= var.worker.min
@@ -90,14 +92,15 @@ variable "llm_model" {
 # --- Data
 
 variable "db_instance_class" {
-  type    = string
-  default = "db.t4g.medium"
+  description = "A starting size: changing it restarts the instance for a few minutes, at once (apply_immediately)."
+  type        = string
+  default     = "db.t4g.small"
 }
 
 variable "db_max_connections" {
-  description = "max_connections of db_instance_class with the default parameter group, used to check the connection budget. db.t4g.medium (4 GiB): about 410."
+  description = "max_connections of db_instance_class with the default parameter group, used to check the connection budget. db.t4g.small (2 GiB): about 190; db.t4g.medium (4 GiB): about 410."
   type        = number
-  default     = 410
+  default     = 190
 }
 
 variable "db_multi_az" {
