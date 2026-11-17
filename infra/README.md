@@ -151,6 +151,28 @@ Giới hạn:
 
 Cần một địa chỉ ổn định thì thay bằng một EC2 nhỏ chạy Moodle (khoảng $0,02 đến $0,03 một giờ), chưa có trong Terraform này.
 
+## Tạm dừng khi không dùng
+
+```bash
+infra/scripts/stack-power.sh down     # mọi service ECS về 0 task, ngưng autoscaling, dừng RDS
+infra/scripts/stack-power.sh up       # bật RDS, đưa service về mức tối thiểu, gọi /api/ready
+infra/scripts/stack-power.sh status   # task đang chạy/mong muốn của từng service, trạng thái RDS
+```
+
+Chạy `down` sau mỗi buổi demo hay đo, khi vài giờ tới không ai dùng.
+Lúc chạy, stack tốn khoảng $14,4 một ngày, trong đó Fargate khoảng $9,7 và RDS khoảng $2,4.
+Lúc dừng, còn tính tiền ALB, Valkey, IPv4 công khai của ALB, ổ đĩa RDS và S3: ước tính khoảng $1 đến $1,5 một ngày, chưa đo trên hóa đơn.
+`up` mất khoảng 10 đến 15 phút, phần lớn là chờ RDS khởi động.
+`ENVIRONMENT=staging` dùng được như với `tf.sh`.
+
+RDS tự bật lại sau 7 ngày dừng và tính tiền từ lúc đó, nên trong vòng một tuần phải chạy `down` lại.
+`down` trên stack đã về 0 task chỉ dừng lại database.
+
+Trong lúc dừng, chạy `up` trước mọi `tf.sh apply` hay `deploy.sh`.
+`deploy.sh` tự dừng khi RDS không ở trạng thái `available`, vì migration và smoke test cần database.
+`tf.sh apply` không bật task và không bật lại autoscaling (service bỏ qua `desired_count`, scalable target bỏ qua `suspended_state`), nhưng AWS không cho sửa một RDS đang dừng, và đổi `min`/`max` của scalable target có thể bật task của service đó khi chưa có database.
+Script đọc cluster, database và số task từ output của Terraform (`cluster`, `db_instance`, `service_counts`); state cũ chưa có hai output sau thì chạy `tf.sh apply` một lần.
+
 ## Xóa
 
 ```bash

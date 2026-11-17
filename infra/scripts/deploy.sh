@@ -30,6 +30,17 @@ if ! git -C "$ROOT" merge-base --is-ancestor HEAD origin/main; then
 fi
 TAG="$(git -C "$ROOT" rev-parse --short=7 HEAD)"
 REGION="$(tf output -raw region 2>/dev/null || echo "${AWS_REGION:-ap-southeast-1}")"
+# The migration and the smoke test need the database, which stack-power.sh down stops. A state
+# from before the db_instance output has no paused stack.
+DB="$(tf output -raw db_instance 2>/dev/null || true)"
+if [[ -n "$DB" ]]; then
+  DB_STATUS="$(aws rds describe-db-instances --region "$REGION" --db-instance-identifier "$DB" \
+    --query 'DBInstances[0].DBInstanceStatus' --output text)"
+  if [[ "$DB_STATUS" != available ]]; then
+    echo "RDS $DB is $DB_STATUS, not available: run infra/scripts/stack-power.sh up first." >&2
+    exit 1
+  fi
+fi
 ECR_JSON="$(tf output -json ecr)"
 repo() { jq -r --arg k "$1" '.[$k]' <<<"$ECR_JSON"; }
 # Before the first full apply there are no services yet; WITH_RERANKER=1 builds its image then.

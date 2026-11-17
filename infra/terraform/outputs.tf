@@ -47,6 +47,16 @@ output "services" {
   value = keys(aws_ecs_service.service)
 }
 
+# What infra/scripts/stack-power.sh pauses and starts again: the count each service starts with
+# (a service with a scalable target is given that target's minimum instead), and the database.
+output "service_counts" {
+  value = { for name, service in local.services : name => service.count }
+}
+
+output "db_instance" {
+  value = aws_db_instance.main.identifier
+}
+
 output "connections_at_full_scale" {
   value = local.connections_peak
 }

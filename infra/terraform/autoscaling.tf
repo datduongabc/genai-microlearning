@@ -13,6 +13,12 @@ resource "aws_appautoscaling_target" "service" {
   resource_id        = "service/${aws_ecs_cluster.main.name}/${aws_ecs_service.service[each.key].name}"
   min_capacity       = each.value.min
   max_capacity       = each.value.max
+
+  lifecycle {
+    # infra/scripts/stack-power.sh suspends scaling while the stack is paused; an apply then must
+    # not resume it and start tasks against a stopped database.
+    ignore_changes = [suspended_state]
+  }
 }
 
 # --- api: requests per task, and CPU for the chat streams that are few requests but long ones.
