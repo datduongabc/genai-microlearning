@@ -43,7 +43,7 @@ hình demo chỉ rẻ hơn khoảng 15% mỗi giờ so với kiến trúc đầy
   `worker-generate`, `worker-ingest`. Không chia microservice, vì không có nhóm nào cần deploy độc lập.
 - **Điểm nghẽn là reranker và quota LLM.** Thiết kế cô lập chúng và xuống cấp có kiểm soát thay vì để cả hệ thống đứng.
 - **$200 đủ để dựng, đo và bảo vệ** (khoảng $132, hoặc $159 với 20% dự phòng sai số), với điều kiện chỉ bật khi dùng. Vận hành
-  liên tục thì không đủ: khoảng $694/tháng, chưa tính LLM.
+  liên tục thì không đủ: khoảng $784/tháng, chưa tính LLM.
 
 ## 2. Nguyên tắc thiết kế
 
@@ -118,7 +118,7 @@ flowchart TB
 | `worker-generate` | Sinh module, chờ LLM là chính | 0,5 vCPU, 1 GB, Spot | Job đang chờ | Job nằm trong hàng đợi |
 | `worker-ingest` | Đọc PDF, OCR, nhúng, tốn CPU | 2 vCPU, 4 GB, giảm được về 0 | Job đang chờ | Job nằm trong hàng đợi |
 | `reranker` | Chấm lại ứng viên | 4 vCPU, 8 GB | CPU, độ trễ | 429, client thử lại rồi dùng hybrid |
-| `embedder` | Nhúng truy vấn và tài liệu | 2 vCPU, 4 GB | CPU, độ trễ | 429, client thử lại |
+| `embedder` | Nhúng truy vấn và tài liệu | 4 vCPU, 8 GB | CPU, độ trễ | 429, client thử lại |
 | `llm-gateway` | Định tuyến LLM, giữ khóa, quota | 0,5 vCPU, 1 GB | CPU | Xếp hàng theo quota |
 
 Cỡ `worker-generate` dựa trên số đo: khoảng 230 đến 310 MB, CPU rất thấp vì chủ yếu chờ LLM. Cỡ `worker-ingest` là ước tính, cần đo
@@ -280,32 +280,32 @@ tính, để ước tính an toàn.
 | Task 4 vCPU, 8 GB | 0,2465 |
 | ALB, cố định và mỗi LCU | 0,0252 và 0,008 |
 | Valkey t4g.micro, t4g.small | 0,0192 và 0,0384 |
-| RDS t4g.small, t4g.medium, m7g.large, Single-AZ | 0,051, 0,102 và 0,234 |
+| RDS t4g.medium, m7g.large, Single-AZ | 0,102 và 0,234 |
 | NAT Gateway, giá từ nguồn thứ cấp | 0,059, và 0,059/GB |
 | IPv4 công khai, mỗi địa chỉ | 0,005 |
 | EC2 c6i.xlarge cho k6, t3.medium cho Moodle demo | 0,196 và 0,0528 |
 
 | Cấu hình | Thành phần | $/giờ |
 | --- | --- | ---: |
-| **Demo** | Mỗi service 1 task, embedder 2 vCPU, 4 GB, RDS t4g.small, Valkey micro, Moodle trên EC2 | **0,89** |
+| **Demo** | Mỗi service 1 task, RDS t4g.medium, Valkey micro, Moodle trên EC2 | **1,06** |
 | **Đo tải, cơ sở** | `api` x 4, `chat` x 2, `worker-generate` x 8, gateway giả lập x 2, `reranker` x 4, `embedder` x 2, RDS m7g.large, Valkey small, k6 | **2,69** |
 | **Đo tải, tối đa** | Như trên, thêm `api` lên 8, `worker-generate` lên 16, `reranker` lên 8 | **4,17** |
 
 | Hạng mục | Đầu vào | USD |
 | --- | --- | ---: |
-| ECS Fargate | 75 giờ demo, 5 giờ đo tải cơ sở, 5 giờ đo tải tối đa | 74,41 |
+| ECS Fargate | 75 giờ demo, 5 giờ đo tải cơ sở, 5 giờ đo tải tối đa | 86,11 |
 | CloudWatch | 4 GB log, 10 alarm, 5 metric mỗi tháng x 2 | 10,84 |
-| RDS instance và storage | 75 giờ t4g.small, 10 giờ m7g.large, 20 GB gp3 x 2 tháng | 11,69 |
+| RDS instance và storage | 85 giờ, 20 GB gp3 x 2 tháng | 15,51 |
 | EC2 cho Moodle và k6 | 75 giờ và 10 giờ | 5,92 |
 | NAT, ALB, IPv4 | 85 giờ | 10,03 |
 | Valkey, S3, ECR | | 3,82 |
-| **Tổng** | | **116,71** |
+| **Tổng** | | **132,24** |
 
-Cộng 20% dự phòng sai số là khoảng $140, còn lại khoảng $60 trong $200. Với cỡ cũ (embedder 4 vCPU, 8 GB, RDS t4g.medium) tổng là $132,24. Giá t4g.small lấy bằng nửa t4g.medium, như AWS định giá họ t4g, chưa đối chiếu Price List API. Đây là cỡ khởi đầu: hệ thống scale ngang qua autoscaling, còn cỡ task hay cỡ RDS là một biến, nâng khi số đo cần. Đây là kế hoạch về số giờ, không phải số đo. Tính từ Price List API, chưa phải bản xuất từ AWS Pricing Calculator.
+Cộng 20% dự phòng sai số là khoảng $159, còn lại khoảng $41 trong $200. Đây là kế hoạch về số giờ, không phải số đo. Tính từ Price List API, chưa phải bản xuất từ AWS Pricing Calculator.
 
 Giữ ngân sách bằng cách: AWS Budgets cảnh báo ở $50, $100, $150, xóa môi trường sau mỗi đợt, không để gì chạy qua đêm, đo tải bằng LLM giả lập.
 
-**Vận hành thật, ngoài $200:** khoảng $694/tháng cho một bộ nhỏ chạy liên tục với 2 task `api`, RDS Multi-AZ và `worker-ingest` về 0 khi rảnh. Chưa tính giảm giá từ Spot hay Savings Plans. Reranker và embedder là $270, tức 39% (embedder 2 vCPU, 4 GB; với embedder 4 vCPU, 8 GB thì tổng là $784). Giá Fargate Spot tại Singapore thấp hơn on-demand khoảng 69% theo giá hiện tại, nhưng thay đổi theo thời gian.
+**Vận hành thật, ngoài $200:** khoảng $784/tháng cho một bộ nhỏ chạy liên tục với 2 task `api`, RDS Multi-AZ và `worker-ingest` về 0 khi rảnh. Chưa tính giảm giá từ Spot hay Savings Plans. Reranker và embedder là $360, tức 46%. Giá Fargate Spot tại Singapore thấp hơn on-demand khoảng 69% theo giá hiện tại, nhưng thay đổi theo thời gian.
 
 **Tiền LLM không nằm trong credit AWS.** Khoảng $0,056/module với Claude Haiku 5.5 và $0,24/module với Gemini 3.5 Flash-Lite. Giá lấy từ trang tổng hợp, cần đối chiếu.
 

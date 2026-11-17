@@ -160,8 +160,7 @@ infra/scripts/stack-power.sh status   # task đang chạy/mong muốn của từ
 ```
 
 Chạy `down` sau mỗi buổi demo hay đo, khi vài giờ tới không ai dùng.
-Với cỡ cũ (embedder 4 vCPU, 8 GB và `db.t4g.medium`), stack đang chạy tốn khoảng $14,4 một ngày, trong đó Fargate khoảng $9,7 và RDS khoảng $2,4.
-Với cỡ hiện tại (embedder 2 vCPU, 4 GB và `db.t4g.small`), ước tính khoảng $10,2 một ngày: embedder bớt khoảng $3 và RDS khoảng $1,2.
+Lúc chạy, stack tốn khoảng $14,4 một ngày, trong đó Fargate khoảng $9,7 và RDS khoảng $2,4.
 Lúc dừng, còn tính tiền ALB, Valkey, IPv4 công khai của ALB, ổ đĩa RDS và S3: ước tính khoảng $1 đến $1,5 một ngày, chưa đo trên hóa đơn.
 `up` mất khoảng 10 đến 15 phút, phần lớn là chờ RDS khởi động.
 `ENVIRONMENT=staging` dùng được như với `tf.sh`.
@@ -190,8 +189,7 @@ Kho ECR cũng bị xóa cùng image, nên lần dựng sau bắt đầu lại t�
 - **Scale-in không giết job.** Worker có job đang chạy xin ECS bảo vệ (`app/jobs/ecs_protection.py`). Khi task bị dừng vì deploy, worker cho job 100 s để xong, rồi trả job về hàng đợi mà không tính là một lần thử. Trước đây job đó phải chờ sweeper 5 phút (`STUCK_THRESHOLD_SECONDS`).
 - **Địa chỉ client.** Uvicorn chỉ tin VPC (ALB) và dải IP của CloudFront, nên rate limit theo IP thấy đúng địa chỉ người dùng mà người dùng không giả được. Tin `*` thì client tự ghi được `X-Forwarded-For`.
 - **CloudFront tới ALB là HTTP.** HTTPS ở chặng này cần tên miền và chứng chỉ riêng. Chặng người dùng tới CloudFront vẫn là HTTPS.
-- **Đổi cỡ RDS là khởi động lại.** `apply_immediately = true`, nên đổi `db_instance_class` có hiệu lực ngay ở lần `tf.sh apply`, không chờ cửa sổ bảo trì: RDS Single-AZ khởi động lại và không nhận kết nối trong vài phút; api trả lỗi `/ready`, job chờ trong hàng đợi. Chạy khi không có demo, và khi stack không tạm dừng (AWS không sửa RDS đang dừng).
-- **Ngân sách kết nối DB.** `check "connection_budget"` báo khi `api.max` và `worker.max` cộng lại có thể mở nhiều kết nối hơn RDS nhận. Mặc định: 157 trên 187 (4 api, 2 worker, `db.t4g.small`); 8 worker cần `db.t4g.medium` (349 trên 407) hoặc PgBouncer.
+- **Ngân sách kết nối DB.** `check "connection_budget"` báo khi `api.max` và `worker.max` cộng lại có thể mở nhiều kết nối hơn RDS nhận. Mặc định: 349 trên 407.
 - **Embedder 2 vCPU, 4 GB, scale ngang.** Đỉnh bộ nhớ đo được là 3,20 GiB (cgroup, kể cả cache) với `--max-batch-tokens 1024`, giới hạn lô model chạy dù backend gửi 100 chunk một lần; còn khoảng 0,8 GiB dư. Task nhỏ hơn nên chạm ngưỡng CPU 60% sớm hơn và autoscaling thêm task sớm hơn (tối đa `embedder.max`): đó là thiết kế, scale ra thay vì lên. Cỡ task chỉ là cỡ khởi đầu. Staging vẫn giữ 4 vCPU, 8 GB trong `staging.tfvars`.
 - **Model embedder nằm trong image** (`devops/embedder`), như reranker. Task mới không phải tải 2,4 GB từ Hugging Face trước khi phục vụ, và không phụ thuộc Hugging Face lúc chạy. Đổi model thì phải nhúng lại toàn bộ chunk, xem `devops/embedder/prepare_model.py`.
 - **Moodle không nằm trong stack này.** Điền `moodle_base_url` nếu có.

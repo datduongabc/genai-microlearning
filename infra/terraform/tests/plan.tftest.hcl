@@ -45,7 +45,7 @@ run "demo_with_the_self_hosted_reranker" {
     error_message = "No Jev alarm while Jev is not used."
   }
   assert {
-    condition     = local.connections_peak == 4 * 22 + 2 * 32 + 5
+    condition     = local.connections_peak == 4 * 22 + 8 * 32 + 5
     error_message = "Connection budget changed: ${local.connections_peak}."
   }
   assert {
