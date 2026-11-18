@@ -1,5 +1,6 @@
 """A flashcard set from one document and a focus, fact-checked by a model of another family."""
 
+import time
 import uuid
 from collections.abc import Callable
 
@@ -70,6 +71,7 @@ def generate_flashcards(
 ) -> None:
     """`before_save` runs right before the cards are written, in the transaction that writes them:
     the job queue checks there that its worker still holds the job (app/jobs/queue.py, hold)."""
+    started = time.perf_counter()
     with values_kept_across_commits(db), timing.capture_timings() as spans, capture_models() as served:
         card_set = db.get(FlashcardSet, flashcard_set_id)
         if card_set is None:
@@ -116,7 +118,8 @@ def generate_flashcards(
         if before_save is not None:
             before_save()
         card_set.cards = stored
-        card_set.cost = llm_cost(spans)
+        # The wall time too, as a module keeps it: how long a lecturer waited for the set.
+        card_set.cost = {**llm_cost(spans), "seconds": round(time.perf_counter() - started, 1)}
         card_set.served_models = list(served)
         card_set.status = MediaStatus.draft
         db.commit()

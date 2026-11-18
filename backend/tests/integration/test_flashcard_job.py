@@ -75,6 +75,7 @@ def test_the_job_fills_the_set_and_finishes(world, monkeypatch):
         assert card_set.status == MediaStatus.draft
         assert card_set.cards[0]["citations"] == [str(chunk_id)]
         assert card_set.cost["calls"] == 0 and card_set.cost["usd"] is None
+        assert card_set.cost["seconds"] >= 0
         assert db.get(Job, job_id).status == JobStatus.done
 
 

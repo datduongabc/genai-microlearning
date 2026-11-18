@@ -73,6 +73,7 @@ def test_the_job_writes_the_script_and_finishes(world, monkeypatch):
         assert len(video.scenes) == video_script.MIN_SCENES
         assert video.scenes[0]["citations"] == [str(chunk_id)]
         assert video.cost["script"]["usd"] is None  # the faked model call is never priced
+        assert video.cost["script"]["seconds"] >= 0
         assert db.get(Job, job_id).status == JobStatus.done
 
 

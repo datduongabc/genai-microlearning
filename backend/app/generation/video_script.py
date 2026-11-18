@@ -26,6 +26,7 @@ checks below decide what is kept, before the lecturer reviews it:
 import logging
 import math
 import re
+import time
 import unicodedata
 import uuid
 from collections.abc import Callable, Sequence
@@ -608,6 +609,7 @@ def _total_chars(scenes: list[_Draft]) -> int:
 def generate_video_script(db: Session, video_id: uuid.UUID, before_save: Callable[[], None] | None = None) -> None:
     """`before_save` runs right before the script is written, in the transaction that writes it:
     the job queue checks there that its worker still holds the job (app/jobs/queue.py, hold)."""
+    started = time.perf_counter()
     with values_kept_across_commits(db), timing.capture_timings() as spans, capture_models() as served:
         video = db.get(Video, video_id)
         if video is None:
@@ -676,7 +678,7 @@ def generate_video_script(db: Session, video_id: uuid.UUID, before_save: Callabl
         video.status = MediaStatus.draft
         video.draft_version = 1
         video.error = None
-        video.cost = {**(video.cost or {}), "script": _script_cost(spans, length)}
+        video.cost = {**(video.cost or {}), "script": {**_script_cost(spans, length), "seconds": round(time.perf_counter() - started, 1)}}
         video.served_models = list(served)
         db.commit()
 

@@ -199,8 +199,10 @@ def test_the_set_records_what_its_model_calls_cost(monkeypatch):
     monkeypatch.setattr(flashcards, "complete_structured", priced)
     monkeypatch.setattr(fact_check, "_support", priced_judge)
     flashcards.generate_flashcards(db, card_set.id)
+    seconds = card_set.cost.pop("seconds")
     assert card_set.cost == {"usd": 0.0025, "calls": 2, "priced_calls": 2,
                              "prompt_tokens": 600, "completion_tokens": 85}
+    assert seconds >= 0
     assert card_set.served_models == []
 
 

@@ -1,5 +1,3 @@
-from datetime import UTC, datetime
-
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy import select, text
@@ -8,6 +6,7 @@ from sqlalchemy.orm import Session
 from app.auth.security import decode_token, token_user_id
 from app.config import settings
 from app.db import get_db
+from app.generation.limits import today
 from app.models import Course, CourseMember, User
 
 bearer_scheme = HTTPBearer(auto_error=False)
@@ -95,10 +94,10 @@ def count_learner_chat(db: Session, user: User) -> None:
     if user.can_author:
         return
     db.refresh(user, with_for_update=True)
-    today = datetime.now(UTC).date()
-    used = user.chat_count if user.chat_day == today else 0
+    day = today()
+    used = user.chat_count if user.chat_day == day else 0
     if used >= settings.learner_daily_chat_limit:
         raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail=(
-            f"Bạn đã hỏi đủ {settings.learner_daily_chat_limit} câu hôm nay (UTC). Hãy quay lại vào ngày mai."))
-    user.chat_day = today
+            f"Bạn đã hỏi đủ {settings.learner_daily_chat_limit} câu hôm nay. Hãy quay lại vào ngày mai."))
+    user.chat_day = day
     user.chat_count = used + 1
