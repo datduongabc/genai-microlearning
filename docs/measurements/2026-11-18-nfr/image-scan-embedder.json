@@ -1,0 +1,1010 @@
+[
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/embedder:0a25965 (debian 12.15)",
+  "id": "CVE-2026-53613",
+  "pkg": "bsdutils",
+  "installed": "1:2.38.1-5+deb12u3",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/embedder:0a25965 (debian 12.15)",
+  "id": "CVE-2026-53615",
+  "pkg": "bsdutils",
+  "installed": "1:2.38.1-5+deb12u3",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/embedder:0a25965 (debian 12.15)",
+  "id": "CVE-2026-78410",
+  "pkg": "bsdutils",
+  "installed": "1:2.38.1-5+deb12u3",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/embedder:0a25965 (debian 12.15)",
+  "id": "CVE-2026-12064",
+  "pkg": "curl",
+  "installed": "7.88.1-10+deb12u15",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/embedder:0a25965 (debian 12.15)",
+  "id": "CVE-2026-6276",
+  "pkg": "curl",
+  "installed": "7.88.1-10+deb12u15",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/embedder:0a25965 (debian 12.15)",
+  "id": "CVE-2026-8286",
+  "pkg": "curl",
+  "installed": "7.88.1-10+deb12u15",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/embedder:0a25965 (debian 12.15)",
+  "id": "CVE-2026-8458",
+  "pkg": "curl",
+  "installed": "7.88.1-10+deb12u15",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/embedder:0a25965 (debian 12.15)",
+  "id": "CVE-2026-8927",
+  "pkg": "curl",
+  "installed": "7.88.1-10+deb12u15",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/embedder:0a25965 (debian 12.15)",
+  "id": "CVE-2026-41992",
+  "pkg": "gzip",
+  "installed": "1.12-1",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/embedder:0a25965 (debian 12.15)",
+  "id": "CVE-2026-54369",
+  "pkg": "libacl1",
+  "installed": "2.3.1-3",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/embedder:0a25965 (debian 12.15)",
+  "id": "CVE-2026-53613",
+  "pkg": "libblkid1",
+  "installed": "2.38.1-5+deb12u3",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/embedder:0a25965 (debian 12.15)",
+  "id": "CVE-2026-53615",
+  "pkg": "libblkid1",
+  "installed": "2.38.1-5+deb12u3",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/embedder:0a25965 (debian 12.15)",
+  "id": "CVE-2026-78410",
+  "pkg": "libblkid1",
+  "installed": "2.38.1-5+deb12u3",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/embedder:0a25965 (debian 12.15)",
+  "id": "CVE-2026-12064",
+  "pkg": "libcurl4",
+  "installed": "7.88.1-10+deb12u15",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/embedder:0a25965 (debian 12.15)",
+  "id": "CVE-2026-6276",
+  "pkg": "libcurl4",
+  "installed": "7.88.1-10+deb12u15",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/embedder:0a25965 (debian 12.15)",
+  "id": "CVE-2026-8286",
+  "pkg": "libcurl4",
+  "installed": "7.88.1-10+deb12u15",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/embedder:0a25965 (debian 12.15)",
+  "id": "CVE-2026-8458",
+  "pkg": "libcurl4",
+  "installed": "7.88.1-10+deb12u15",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/embedder:0a25965 (debian 12.15)",
+  "id": "CVE-2026-8927",
+  "pkg": "libcurl4",
+  "installed": "7.88.1-10+deb12u15",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/embedder:0a25965 (debian 12.15)",
+  "id": "CVE-2026-107364",
+  "pkg": "libgssapi-krb5-2",
+  "installed": "1.20.1-2+deb12u5",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/embedder:0a25965 (debian 12.15)",
+  "id": "CVE-2026-112315",
+  "pkg": "libgssapi-krb5-2",
+  "installed": "1.20.1-2+deb12u5",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/embedder:0a25965 (debian 12.15)",
+  "id": "CVE-2026-112316",
+  "pkg": "libgssapi-krb5-2",
+  "installed": "1.20.1-2+deb12u5",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/embedder:0a25965 (debian 12.15)",
+  "id": "CVE-2026-112317",
+  "pkg": "libgssapi-krb5-2",
+  "installed": "1.20.1-2+deb12u5",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/embedder:0a25965 (debian 12.15)",
+  "id": "CVE-2026-112318",
+  "pkg": "libgssapi-krb5-2",
+  "installed": "1.20.1-2+deb12u5",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/embedder:0a25965 (debian 12.15)",
+  "id": "CVE-2026-112319",
+  "pkg": "libgssapi-krb5-2",
+  "installed": "1.20.1-2+deb12u5",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/embedder:0a25965 (debian 12.15)",
+  "id": "CVE-2026-112320",
+  "pkg": "libgssapi-krb5-2",
+  "installed": "1.20.1-2+deb12u5",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/embedder:0a25965 (debian 12.15)",
+  "id": "CVE-2026-112321",
+  "pkg": "libgssapi-krb5-2",
+  "installed": "1.20.1-2+deb12u5",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/embedder:0a25965 (debian 12.15)",
+  "id": "CVE-2026-112322",
+  "pkg": "libgssapi-krb5-2",
+  "installed": "1.20.1-2+deb12u5",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/embedder:0a25965 (debian 12.15)",
+  "id": "CVE-2026-112323",
+  "pkg": "libgssapi-krb5-2",
+  "installed": "1.20.1-2+deb12u5",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/embedder:0a25965 (debian 12.15)",
+  "id": "CVE-2026-118380",
+  "pkg": "libgssapi-krb5-2",
+  "installed": "1.20.1-2+deb12u5",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/embedder:0a25965 (debian 12.15)",
+  "id": "CVE-2026-119079",
+  "pkg": "libgssapi-krb5-2",
+  "installed": "1.20.1-2+deb12u5",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/embedder:0a25965 (debian 12.15)",
+  "id": "CVE-2026-71199",
+  "pkg": "libgssapi-krb5-2",
+  "installed": "1.20.1-2+deb12u5",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/embedder:0a25965 (debian 12.15)",
+  "id": "CVE-2026-71200",
+  "pkg": "libgssapi-krb5-2",
+  "installed": "1.20.1-2+deb12u5",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/embedder:0a25965 (debian 12.15)",
+  "id": "CVE-2026-107364",
+  "pkg": "libk5crypto3",
+  "installed": "1.20.1-2+deb12u5",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/embedder:0a25965 (debian 12.15)",
+  "id": "CVE-2026-112315",
+  "pkg": "libk5crypto3",
+  "installed": "1.20.1-2+deb12u5",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/embedder:0a25965 (debian 12.15)",
+  "id": "CVE-2026-112316",
+  "pkg": "libk5crypto3",
+  "installed": "1.20.1-2+deb12u5",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/embedder:0a25965 (debian 12.15)",
+  "id": "CVE-2026-112317",
+  "pkg": "libk5crypto3",
+  "installed": "1.20.1-2+deb12u5",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/embedder:0a25965 (debian 12.15)",
+  "id": "CVE-2026-112318",
+  "pkg": "libk5crypto3",
+  "installed": "1.20.1-2+deb12u5",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/embedder:0a25965 (debian 12.15)",
+  "id": "CVE-2026-112319",
+  "pkg": "libk5crypto3",
+  "installed": "1.20.1-2+deb12u5",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/embedder:0a25965 (debian 12.15)",
+  "id": "CVE-2026-112320",
+  "pkg": "libk5crypto3",
+  "installed": "1.20.1-2+deb12u5",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/embedder:0a25965 (debian 12.15)",
+  "id": "CVE-2026-112321",
+  "pkg": "libk5crypto3",
+  "installed": "1.20.1-2+deb12u5",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/embedder:0a25965 (debian 12.15)",
+  "id": "CVE-2026-112322",
+  "pkg": "libk5crypto3",
+  "installed": "1.20.1-2+deb12u5",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/embedder:0a25965 (debian 12.15)",
+  "id": "CVE-2026-112323",
+  "pkg": "libk5crypto3",
+  "installed": "1.20.1-2+deb12u5",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/embedder:0a25965 (debian 12.15)",
+  "id": "CVE-2026-118380",
+  "pkg": "libk5crypto3",
+  "installed": "1.20.1-2+deb12u5",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/embedder:0a25965 (debian 12.15)",
+  "id": "CVE-2026-119079",
+  "pkg": "libk5crypto3",
+  "installed": "1.20.1-2+deb12u5",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/embedder:0a25965 (debian 12.15)",
+  "id": "CVE-2026-71199",
+  "pkg": "libk5crypto3",
+  "installed": "1.20.1-2+deb12u5",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/embedder:0a25965 (debian 12.15)",
+  "id": "CVE-2026-71200",
+  "pkg": "libk5crypto3",
+  "installed": "1.20.1-2+deb12u5",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/embedder:0a25965 (debian 12.15)",
+  "id": "CVE-2026-107364",
+  "pkg": "libkrb5-3",
+  "installed": "1.20.1-2+deb12u5",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/embedder:0a25965 (debian 12.15)",
+  "id": "CVE-2026-112315",
+  "pkg": "libkrb5-3",
+  "installed": "1.20.1-2+deb12u5",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/embedder:0a25965 (debian 12.15)",
+  "id": "CVE-2026-112316",
+  "pkg": "libkrb5-3",
+  "installed": "1.20.1-2+deb12u5",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/embedder:0a25965 (debian 12.15)",
+  "id": "CVE-2026-112317",
+  "pkg": "libkrb5-3",
+  "installed": "1.20.1-2+deb12u5",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/embedder:0a25965 (debian 12.15)",
+  "id": "CVE-2026-112318",
+  "pkg": "libkrb5-3",
+  "installed": "1.20.1-2+deb12u5",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/embedder:0a25965 (debian 12.15)",
+  "id": "CVE-2026-112319",
+  "pkg": "libkrb5-3",
+  "installed": "1.20.1-2+deb12u5",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/embedder:0a25965 (debian 12.15)",
+  "id": "CVE-2026-112320",
+  "pkg": "libkrb5-3",
+  "installed": "1.20.1-2+deb12u5",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/embedder:0a25965 (debian 12.15)",
+  "id": "CVE-2026-112321",
+  "pkg": "libkrb5-3",
+  "installed": "1.20.1-2+deb12u5",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/embedder:0a25965 (debian 12.15)",
+  "id": "CVE-2026-112322",
+  "pkg": "libkrb5-3",
+  "installed": "1.20.1-2+deb12u5",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/embedder:0a25965 (debian 12.15)",
+  "id": "CVE-2026-112323",
+  "pkg": "libkrb5-3",
+  "installed": "1.20.1-2+deb12u5",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/embedder:0a25965 (debian 12.15)",
+  "id": "CVE-2026-118380",
+  "pkg": "libkrb5-3",
+  "installed": "1.20.1-2+deb12u5",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/embedder:0a25965 (debian 12.15)",
+  "id": "CVE-2026-119079",
+  "pkg": "libkrb5-3",
+  "installed": "1.20.1-2+deb12u5",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/embedder:0a25965 (debian 12.15)",
+  "id": "CVE-2026-71199",
+  "pkg": "libkrb5-3",
+  "installed": "1.20.1-2+deb12u5",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/embedder:0a25965 (debian 12.15)",
+  "id": "CVE-2026-71200",
+  "pkg": "libkrb5-3",
+  "installed": "1.20.1-2+deb12u5",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/embedder:0a25965 (debian 12.15)",
+  "id": "CVE-2026-107364",
+  "pkg": "libkrb5support0",
+  "installed": "1.20.1-2+deb12u5",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/embedder:0a25965 (debian 12.15)",
+  "id": "CVE-2026-112315",
+  "pkg": "libkrb5support0",
+  "installed": "1.20.1-2+deb12u5",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/embedder:0a25965 (debian 12.15)",
+  "id": "CVE-2026-112316",
+  "pkg": "libkrb5support0",
+  "installed": "1.20.1-2+deb12u5",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/embedder:0a25965 (debian 12.15)",
+  "id": "CVE-2026-112317",
+  "pkg": "libkrb5support0",
+  "installed": "1.20.1-2+deb12u5",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/embedder:0a25965 (debian 12.15)",
+  "id": "CVE-2026-112318",
+  "pkg": "libkrb5support0",
+  "installed": "1.20.1-2+deb12u5",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/embedder:0a25965 (debian 12.15)",
+  "id": "CVE-2026-112319",
+  "pkg": "libkrb5support0",
+  "installed": "1.20.1-2+deb12u5",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/embedder:0a25965 (debian 12.15)",
+  "id": "CVE-2026-112320",
+  "pkg": "libkrb5support0",
+  "installed": "1.20.1-2+deb12u5",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/embedder:0a25965 (debian 12.15)",
+  "id": "CVE-2026-112321",
+  "pkg": "libkrb5support0",
+  "installed": "1.20.1-2+deb12u5",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/embedder:0a25965 (debian 12.15)",
+  "id": "CVE-2026-112322",
+  "pkg": "libkrb5support0",
+  "installed": "1.20.1-2+deb12u5",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/embedder:0a25965 (debian 12.15)",
+  "id": "CVE-2026-112323",
+  "pkg": "libkrb5support0",
+  "installed": "1.20.1-2+deb12u5",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/embedder:0a25965 (debian 12.15)",
+  "id": "CVE-2026-118380",
+  "pkg": "libkrb5support0",
+  "installed": "1.20.1-2+deb12u5",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/embedder:0a25965 (debian 12.15)",
+  "id": "CVE-2026-119079",
+  "pkg": "libkrb5support0",
+  "installed": "1.20.1-2+deb12u5",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/embedder:0a25965 (debian 12.15)",
+  "id": "CVE-2026-71199",
+  "pkg": "libkrb5support0",
+  "installed": "1.20.1-2+deb12u5",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/embedder:0a25965 (debian 12.15)",
+  "id": "CVE-2026-71200",
+  "pkg": "libkrb5support0",
+  "installed": "1.20.1-2+deb12u5",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/embedder:0a25965 (debian 12.15)",
+  "id": "CVE-2023-2953",
+  "pkg": "libldap-2.5-0",
+  "installed": "2.5.13+dfsg-5",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/embedder:0a25965 (debian 12.15)",
+  "id": "CVE-2026-53613",
+  "pkg": "libmount1",
+  "installed": "2.38.1-5+deb12u3",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/embedder:0a25965 (debian 12.15)",
+  "id": "CVE-2026-53615",
+  "pkg": "libmount1",
+  "installed": "2.38.1-5+deb12u3",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/embedder:0a25965 (debian 12.15)",
+  "id": "CVE-2026-78410",
+  "pkg": "libmount1",
+  "installed": "2.38.1-5+deb12u3",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/embedder:0a25965 (debian 12.15)",
+  "id": "CVE-2025-6020",
+  "pkg": "libpam-modules",
+  "installed": "1.5.2-6+deb12u2",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/embedder:0a25965 (debian 12.15)",
+  "id": "CVE-2025-6020",
+  "pkg": "libpam-modules-bin",
+  "installed": "1.5.2-6+deb12u2",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/embedder:0a25965 (debian 12.15)",
+  "id": "CVE-2025-6020",
+  "pkg": "libpam-runtime",
+  "installed": "1.5.2-6+deb12u2",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/embedder:0a25965 (debian 12.15)",
+  "id": "CVE-2025-6020",
+  "pkg": "libpam0g",
+  "installed": "1.5.2-6+deb12u2",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/embedder:0a25965 (debian 12.15)",
+  "id": "CVE-2026-53613",
+  "pkg": "libsmartcols1",
+  "installed": "2.38.1-5+deb12u3",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/embedder:0a25965 (debian 12.15)",
+  "id": "CVE-2026-53615",
+  "pkg": "libsmartcols1",
+  "installed": "2.38.1-5+deb12u3",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/embedder:0a25965 (debian 12.15)",
+  "id": "CVE-2026-78410",
+  "pkg": "libsmartcols1",
+  "installed": "2.38.1-5+deb12u3",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/embedder:0a25965 (debian 12.15)",
+  "id": "CVE-2026-16742",
+  "pkg": "libsystemd0",
+  "installed": "252.39-1~deb12u2",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/embedder:0a25965 (debian 12.15)",
+  "id": "CVE-2025-69720",
+  "pkg": "libtinfo6",
+  "installed": "6.4-4",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/embedder:0a25965 (debian 12.15)",
+  "id": "CVE-2026-16742",
+  "pkg": "libudev1",
+  "installed": "252.39-1~deb12u2",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/embedder:0a25965 (debian 12.15)",
+  "id": "CVE-2026-53613",
+  "pkg": "libuuid1",
+  "installed": "2.38.1-5+deb12u3",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/embedder:0a25965 (debian 12.15)",
+  "id": "CVE-2026-53615",
+  "pkg": "libuuid1",
+  "installed": "2.38.1-5+deb12u3",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/embedder:0a25965 (debian 12.15)",
+  "id": "CVE-2026-78410",
+  "pkg": "libuuid1",
+  "installed": "2.38.1-5+deb12u3",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/embedder:0a25965 (debian 12.15)",
+  "id": "CVE-2026-6653",
+  "pkg": "libxml2",
+  "installed": "2.9.14+dfsg-1.3~deb12u6",
+  "fixed": null,
+  "severity": "CRITICAL"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/embedder:0a25965 (debian 12.15)",
+  "id": "CVE-2026-74860",
+  "pkg": "libxml2",
+  "installed": "2.9.14+dfsg-1.3~deb12u6",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/embedder:0a25965 (debian 12.15)",
+  "id": "CVE-2026-86138",
+  "pkg": "libxml2",
+  "installed": "2.9.14+dfsg-1.3~deb12u6",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/embedder:0a25965 (debian 12.15)",
+  "id": "CVE-2026-86140",
+  "pkg": "libxml2",
+  "installed": "2.9.14+dfsg-1.3~deb12u6",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/embedder:0a25965 (debian 12.15)",
+  "id": "CVE-2026-86142",
+  "pkg": "libxml2",
+  "installed": "2.9.14+dfsg-1.3~deb12u6",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/embedder:0a25965 (debian 12.15)",
+  "id": "CVE-2026-86143",
+  "pkg": "libxml2",
+  "installed": "2.9.14+dfsg-1.3~deb12u6",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/embedder:0a25965 (debian 12.15)",
+  "id": "CVE-2026-86144",
+  "pkg": "libxml2",
+  "installed": "2.9.14+dfsg-1.3~deb12u6",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/embedder:0a25965 (debian 12.15)",
+  "id": "CVE-2026-53613",
+  "pkg": "mount",
+  "installed": "2.38.1-5+deb12u3",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/embedder:0a25965 (debian 12.15)",
+  "id": "CVE-2026-53615",
+  "pkg": "mount",
+  "installed": "2.38.1-5+deb12u3",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/embedder:0a25965 (debian 12.15)",
+  "id": "CVE-2026-78410",
+  "pkg": "mount",
+  "installed": "2.38.1-5+deb12u3",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/embedder:0a25965 (debian 12.15)",
+  "id": "CVE-2025-69720",
+  "pkg": "ncurses-base",
+  "installed": "6.4-4",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/embedder:0a25965 (debian 12.15)",
+  "id": "CVE-2025-69720",
+  "pkg": "ncurses-bin",
+  "installed": "6.4-4",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/embedder:0a25965 (debian 12.15)",
+  "id": "CVE-2026-9538",
+  "pkg": "perl-base",
+  "installed": "5.36.0-7+deb12u4",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/embedder:0a25965 (debian 12.15)",
+  "id": "CVE-2026-53613",
+  "pkg": "util-linux",
+  "installed": "2.38.1-5+deb12u3",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/embedder:0a25965 (debian 12.15)",
+  "id": "CVE-2026-53615",
+  "pkg": "util-linux",
+  "installed": "2.38.1-5+deb12u3",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/embedder:0a25965 (debian 12.15)",
+  "id": "CVE-2026-78410",
+  "pkg": "util-linux",
+  "installed": "2.38.1-5+deb12u3",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/embedder:0a25965 (debian 12.15)",
+  "id": "CVE-2026-53613",
+  "pkg": "util-linux-extra",
+  "installed": "2.38.1-5+deb12u3",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/embedder:0a25965 (debian 12.15)",
+  "id": "CVE-2026-53615",
+  "pkg": "util-linux-extra",
+  "installed": "2.38.1-5+deb12u3",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/embedder:0a25965 (debian 12.15)",
+  "id": "CVE-2026-78410",
+  "pkg": "util-linux-extra",
+  "installed": "2.38.1-5+deb12u3",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/embedder:0a25965 (debian 12.15)",
+  "id": "CVE-2023-45853",
+  "pkg": "zlib1g",
+  "installed": "1:1.2.13.dfsg-1",
+  "fixed": null,
+  "severity": "CRITICAL"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/embedder:0a25965 (debian 12.15)",
+  "id": "CVE-2026-85091",
+  "pkg": "zlib1g",
+  "installed": "1:1.2.13.dfsg-1",
+  "fixed": null,
+  "severity": "HIGH"
+ }
+]

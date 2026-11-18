@@ -4,10 +4,12 @@
     python drive_generation.py generate --modules 8 --label workers-1x4
     python drive_generation.py chat --concurrency 25 --messages 50 --label chat-api-1
     python drive_generation.py check --out real-claude-fast.json --token-cap 30000000
+    python drive_generation.py ack --concurrency 40 --label ack-40
 
 `seed` reads and embeds one real lecture once and copies its chunks to every course. `generate` waits
 for the jobs, then adds a row with throughput, tokens and per-stage timings to the results file. `chat` sends
-real chat messages and records throughput and latency. `check` fails when the last row broke a stop condition."""
+real chat messages and records throughput and latency. `ack` times how long the API takes to answer an
+upload or a generation request (NFR02), without the file transfer. `check` fails when the last row broke a stop condition."""
 
 import argparse
 import asyncio
@@ -241,6 +243,47 @@ def chat_stream(concurrency: int, messages: int, label: str, out: str, rate: flo
                   "latency_seconds": _stats([r["total"] for r in done])})
 
 
+def ack(concurrency: int, label: str, out: str) -> None:
+    """Every seeded user at once, `concurrency` at a time: ask to upload a small PDF, send it (not timed:
+    NFR02 excludes the transfer), complete the upload, then ask for a module, a flashcard set and a video
+    from the seeded document. Each request is timed from send to answer; the work they queue is not."""
+    users = json.loads(USERS_FILE.read_text())
+    pdf = Path(LECTURE).read_bytes()
+    times: dict[str, list[float]] = {}
+    failures: dict[str, int] = {}
+
+    def timed(client: httpx.Client, name: str, method: str, url: str, **kwargs) -> httpx.Response:
+        started = time.perf_counter()
+        response = client.request(method, f"{BASE}{url}", **kwargs)
+        times.setdefault(name, []).append(time.perf_counter() - started)
+        if response.status_code >= 300:
+            failures[name] = failures.get(name, 0) + 1
+            print(f"{name}: {response.status_code} {response.text[:120]}", flush=True)
+        return response
+
+    def one(user: dict) -> None:
+        with httpx.Client(timeout=60, headers={"Authorization": f"Bearer {user['token']}"}) as client:
+            asked = timed(client, "upload_request", "POST", "/documents/uploads", params={"course_id": user["course_id"]},
+                          json={"filename": "lecture.pdf", "size": len(pdf)})
+            if asked.status_code < 300:
+                document_id = asked.json()["document_id"]
+                client.put(f"{BASE}/documents/{document_id}/content", content=pdf)
+                timed(client, "upload_complete", "POST", f"/documents/{document_id}/complete")
+            document = {"document_id": user["document_id"]}
+            timed(client, "generate_module", "POST", "/modules/generate", params=document)
+            timed(client, "generate_flashcards", "POST", "/flashcard-sets", params=document)
+            timed(client, "generate_video", "POST", "/videos", params=document)
+
+    t0 = time.perf_counter()
+    with concurrent.futures.ThreadPoolExecutor(concurrency) as pool:
+        list(pool.map(one, users))
+    row = {"label": label, "at": datetime.now(UTC).isoformat(), "users": len(users), "concurrency": concurrency,
+           "wall_seconds": round(time.perf_counter() - t0, 1), "failures": failures,
+           "requests": {name: _stats(values) for name, values in times.items()}}
+    _append(out, row)
+    print(json.dumps(row, indent=1))
+
+
 def check(out: str, token_cap: int) -> None:
     target = RESULTS / out
     if not target.exists():
@@ -262,7 +305,7 @@ def check(out: str, token_cap: int) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("step", choices=["seed", "generate", "chat", "chat-stream", "check"])
+    parser.add_argument("step", choices=["seed", "generate", "chat", "chat-stream", "ack", "check"])
     parser.add_argument("--users", type=int, default=40)
     parser.add_argument("--modules", type=int, default=8)
     parser.add_argument("--label", default="run")
@@ -279,6 +322,8 @@ def main() -> None:
         generate(args.modules, args.label, args.out, args.max_seconds)
     elif args.step == "chat":
         chat(args.concurrency, args.messages, args.label, args.out)
+    elif args.step == "ack":
+        ack(args.concurrency, args.label, args.out)
     elif args.step == "chat-stream":
         chat_stream(args.concurrency, args.messages, args.label, args.out, args.rate)
     else:

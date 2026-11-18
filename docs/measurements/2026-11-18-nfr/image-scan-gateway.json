@@ -1,0 +1,479 @@
+[
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/gateway:0a25965 (debian 13.7)",
+  "id": "CVE-2026-76642",
+  "pkg": "bsdutils",
+  "installed": "1:2.41.5-0+deb13u1",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/gateway:0a25965 (debian 13.7)",
+  "id": "CVE-2026-78408",
+  "pkg": "bsdutils",
+  "installed": "1:2.41.5-0+deb13u1",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/gateway:0a25965 (debian 13.7)",
+  "id": "CVE-2026-78409",
+  "pkg": "bsdutils",
+  "installed": "1:2.41.5-0+deb13u1",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/gateway:0a25965 (debian 13.7)",
+  "id": "CVE-2026-78410",
+  "pkg": "bsdutils",
+  "installed": "1:2.41.5-0+deb13u1",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/gateway:0a25965 (debian 13.7)",
+  "id": "CVE-2026-54369",
+  "pkg": "libacl1",
+  "installed": "2.3.2-2+b1",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/gateway:0a25965 (debian 13.7)",
+  "id": "CVE-2026-76642",
+  "pkg": "libblkid1",
+  "installed": "2.41.5-0+deb13u1",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/gateway:0a25965 (debian 13.7)",
+  "id": "CVE-2026-78408",
+  "pkg": "libblkid1",
+  "installed": "2.41.5-0+deb13u1",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/gateway:0a25965 (debian 13.7)",
+  "id": "CVE-2026-78409",
+  "pkg": "libblkid1",
+  "installed": "2.41.5-0+deb13u1",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/gateway:0a25965 (debian 13.7)",
+  "id": "CVE-2026-78410",
+  "pkg": "libblkid1",
+  "installed": "2.41.5-0+deb13u1",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/gateway:0a25965 (debian 13.7)",
+  "id": "CVE-2026-76642",
+  "pkg": "liblastlog2-2",
+  "installed": "2.41.5-0+deb13u1",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/gateway:0a25965 (debian 13.7)",
+  "id": "CVE-2026-78408",
+  "pkg": "liblastlog2-2",
+  "installed": "2.41.5-0+deb13u1",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/gateway:0a25965 (debian 13.7)",
+  "id": "CVE-2026-78409",
+  "pkg": "liblastlog2-2",
+  "installed": "2.41.5-0+deb13u1",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/gateway:0a25965 (debian 13.7)",
+  "id": "CVE-2026-78410",
+  "pkg": "liblastlog2-2",
+  "installed": "2.41.5-0+deb13u1",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/gateway:0a25965 (debian 13.7)",
+  "id": "CVE-2026-76642",
+  "pkg": "libmount1",
+  "installed": "2.41.5-0+deb13u1",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/gateway:0a25965 (debian 13.7)",
+  "id": "CVE-2026-78408",
+  "pkg": "libmount1",
+  "installed": "2.41.5-0+deb13u1",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/gateway:0a25965 (debian 13.7)",
+  "id": "CVE-2026-78409",
+  "pkg": "libmount1",
+  "installed": "2.41.5-0+deb13u1",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/gateway:0a25965 (debian 13.7)",
+  "id": "CVE-2026-78410",
+  "pkg": "libmount1",
+  "installed": "2.41.5-0+deb13u1",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/gateway:0a25965 (debian 13.7)",
+  "id": "CVE-2025-69720",
+  "pkg": "libncursesw6",
+  "installed": "6.5+20250216-2",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/gateway:0a25965 (debian 13.7)",
+  "id": "CVE-2026-76642",
+  "pkg": "libsmartcols1",
+  "installed": "2.41.5-0+deb13u1",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/gateway:0a25965 (debian 13.7)",
+  "id": "CVE-2026-78408",
+  "pkg": "libsmartcols1",
+  "installed": "2.41.5-0+deb13u1",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/gateway:0a25965 (debian 13.7)",
+  "id": "CVE-2026-78409",
+  "pkg": "libsmartcols1",
+  "installed": "2.41.5-0+deb13u1",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/gateway:0a25965 (debian 13.7)",
+  "id": "CVE-2026-78410",
+  "pkg": "libsmartcols1",
+  "installed": "2.41.5-0+deb13u1",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/gateway:0a25965 (debian 13.7)",
+  "id": "CVE-2026-119373",
+  "pkg": "libsqlite3-0",
+  "installed": "3.46.1-7+deb13u2",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/gateway:0a25965 (debian 13.7)",
+  "id": "CVE-2026-119374",
+  "pkg": "libsqlite3-0",
+  "installed": "3.46.1-7+deb13u2",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/gateway:0a25965 (debian 13.7)",
+  "id": "CVE-2026-119379",
+  "pkg": "libsqlite3-0",
+  "installed": "3.46.1-7+deb13u2",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/gateway:0a25965 (debian 13.7)",
+  "id": "CVE-2026-16742",
+  "pkg": "libsystemd0",
+  "installed": "257.13-1~deb13u1",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/gateway:0a25965 (debian 13.7)",
+  "id": "CVE-2025-69720",
+  "pkg": "libtinfo6",
+  "installed": "6.5+20250216-2",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/gateway:0a25965 (debian 13.7)",
+  "id": "CVE-2026-16742",
+  "pkg": "libudev1",
+  "installed": "257.13-1~deb13u1",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/gateway:0a25965 (debian 13.7)",
+  "id": "CVE-2026-76642",
+  "pkg": "libuuid1",
+  "installed": "2.41.5-0+deb13u1",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/gateway:0a25965 (debian 13.7)",
+  "id": "CVE-2026-78408",
+  "pkg": "libuuid1",
+  "installed": "2.41.5-0+deb13u1",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/gateway:0a25965 (debian 13.7)",
+  "id": "CVE-2026-78409",
+  "pkg": "libuuid1",
+  "installed": "2.41.5-0+deb13u1",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/gateway:0a25965 (debian 13.7)",
+  "id": "CVE-2026-78410",
+  "pkg": "libuuid1",
+  "installed": "2.41.5-0+deb13u1",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/gateway:0a25965 (debian 13.7)",
+  "id": "CVE-2026-76642",
+  "pkg": "login",
+  "installed": "1:4.16.0-2+really2.41.5-0+deb13u1",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/gateway:0a25965 (debian 13.7)",
+  "id": "CVE-2026-78408",
+  "pkg": "login",
+  "installed": "1:4.16.0-2+really2.41.5-0+deb13u1",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/gateway:0a25965 (debian 13.7)",
+  "id": "CVE-2026-78409",
+  "pkg": "login",
+  "installed": "1:4.16.0-2+really2.41.5-0+deb13u1",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/gateway:0a25965 (debian 13.7)",
+  "id": "CVE-2026-78410",
+  "pkg": "login",
+  "installed": "1:4.16.0-2+really2.41.5-0+deb13u1",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/gateway:0a25965 (debian 13.7)",
+  "id": "CVE-2026-76642",
+  "pkg": "mount",
+  "installed": "2.41.5-0+deb13u1",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/gateway:0a25965 (debian 13.7)",
+  "id": "CVE-2026-78408",
+  "pkg": "mount",
+  "installed": "2.41.5-0+deb13u1",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/gateway:0a25965 (debian 13.7)",
+  "id": "CVE-2026-78409",
+  "pkg": "mount",
+  "installed": "2.41.5-0+deb13u1",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/gateway:0a25965 (debian 13.7)",
+  "id": "CVE-2026-78410",
+  "pkg": "mount",
+  "installed": "2.41.5-0+deb13u1",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/gateway:0a25965 (debian 13.7)",
+  "id": "CVE-2025-69720",
+  "pkg": "ncurses-base",
+  "installed": "6.5+20250216-2",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/gateway:0a25965 (debian 13.7)",
+  "id": "CVE-2025-69720",
+  "pkg": "ncurses-bin",
+  "installed": "6.5+20250216-2",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/gateway:0a25965 (debian 13.7)",
+  "id": "CVE-2026-9538",
+  "pkg": "perl-base",
+  "installed": "5.40.1-6+deb13u1",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/gateway:0a25965 (debian 13.7)",
+  "id": "CVE-2026-76642",
+  "pkg": "util-linux",
+  "installed": "2.41.5-0+deb13u1",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/gateway:0a25965 (debian 13.7)",
+  "id": "CVE-2026-78408",
+  "pkg": "util-linux",
+  "installed": "2.41.5-0+deb13u1",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/gateway:0a25965 (debian 13.7)",
+  "id": "CVE-2026-78409",
+  "pkg": "util-linux",
+  "installed": "2.41.5-0+deb13u1",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "os-pkgs",
+  "target": "772530610627.dkr.ecr.ap-southeast-1.amazonaws.com/microlearning-demo/gateway:0a25965 (debian 13.7)",
+  "id": "CVE-2026-78410",
+  "pkg": "util-linux",
+  "installed": "2.41.5-0+deb13u1",
+  "fixed": null,
+  "severity": "HIGH"
+ },
+ {
+  "class": "lang-pkgs",
+  "target": "Python",
+  "id": "CVE-2026-114612",
+  "pkg": "litellm",
+  "installed": "1.100.1",
+  "fixed": "1.100.4, 1.101.3, 1.102.2, 1.103.1, 1.104.0rc2",
+  "severity": "HIGH"
+ },
+ {
+  "class": "lang-pkgs",
+  "target": "Python",
+  "id": "CVE-2026-114613",
+  "pkg": "msgpack",
+  "installed": "1.1.2",
+  "fixed": "1.2.3",
+  "severity": "HIGH"
+ },
+ {
+  "class": "lang-pkgs",
+  "target": "Python",
+  "id": "GHSA-6v7p-g79w-8964",
+  "pkg": "msgpack",
+  "installed": "1.1.2",
+  "fixed": "1.2.1",
+  "severity": "HIGH"
+ },
+ {
+  "class": "lang-pkgs",
+  "target": "Python",
+  "id": "CVE-2025-47273",
+  "pkg": "setuptools",
+  "installed": "70.3.0",
+  "fixed": "78.1.1",
+  "severity": "HIGH"
+ },
+ {
+  "class": "lang-pkgs",
+  "target": "Python",
+  "id": "CVE-2026-97687",
+  "pkg": "urllib3",
+  "installed": "2.7.0",
+  "fixed": "2.8.0",
+  "severity": "HIGH"
+ },
+ {
+  "class": "lang-pkgs",
+  "target": "Python",
+  "id": "CVE-2026-97689",
+  "pkg": "urllib3",
+  "installed": "2.7.0",
+  "fixed": "2.8.0",
+  "severity": "HIGH"
+ }
+]
