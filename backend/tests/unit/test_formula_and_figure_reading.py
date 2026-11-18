@@ -399,7 +399,7 @@ def test_a_screenshot_read_with_low_confidence_overall_gives_no_text(monkeypatch
     assert _ocr_figure(_png()) == ""
 
 
-# Production does not turn warnings into errors: PIL only warns below twice its own limit and decodes.
+# Pillow only warns below twice its own limit, and decodes the picture anyway; the warning is noise here.
 @pytest.mark.filterwarnings("ignore::PIL.Image.DecompressionBombWarning")
 def test_a_huge_picture_in_a_small_file_is_skipped_before_it_is_decoded(monkeypatch):
     import resource

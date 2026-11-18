@@ -10,7 +10,7 @@ dependencies = [
     "fastapi>=0.141.1",
     "httpx>=0.28.1",
     "langchain-text-splitters>=0.3.0",
-    "litellm>=1.100.1",
+    "litellm>=1.103.1",
     "lxml>=5.0",
     "pgvector>=0.5.0",
     "pillow>=10.0",
@@ -52,6 +52,8 @@ addopts = "-m 'not live_llm'"
 # replace slowapi or patch it before the image moves past Python 3.15.
 filterwarnings = [
     "ignore:'asyncio.iscoroutinefunction' is deprecated:DeprecationWarning:slowapi.extension",
+    # LiteLLM 1.103.1's own response types, read by pydantic when the gateway client is built.
+    "ignore:Item 'summary' on TypedDict class 'ChatCompletionReasoningItem' is using the `ReadOnly` qualifier:UserWarning",
 ]
 
 [tool.ruff]

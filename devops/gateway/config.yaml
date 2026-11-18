@@ -132,9 +132,9 @@ router_settings:
 
 general_settings:
   master_key: os.environ/LLM_GATEWAY_KEY
-  # Voice and image models (backend/app/llm/media.py). LiteLLM 1.100.1 has no OpenRouter route
-  # for speech, and its image route cannot reach the chat-completions form Nano Banana is served
-  # in, so model_list cannot hold them. The brief's fallback is used instead: exactly the three
+  # Voice and image models (backend/app/llm/media.py). LiteLLM 1.100.1 had no OpenRouter route
+  # for speech (1.103.1 still has none), and its image route could not reach the chat-completions
+  # form Nano Banana is served in, so model_list cannot hold them. The brief's fallback is used instead: exactly the three
   # routes media.py calls are forwarded to OpenRouter with the key added here, so the backend
   # still holds no provider key. No include_subpath, so no other OpenRouter route is reachable.
   # auth: true makes the gateway key required (free in this LiteLLM version).

@@ -26,6 +26,9 @@ WORKDIR /app
 RUN apt-get update && apt-get upgrade -y \
     && apt-get install -y --no-install-recommends tesseract-ocr tesseract-ocr-vie ffmpeg \
     && rm -rf /var/lib/apt/lists/*
+# The base image's pip is never used here (uv installs everything), and it carries its own
+# outdated copies of urllib3, msgpack and setuptools, which Trivy counts against the image.
+RUN python -m pip uninstall -y -q pip
 # Chromium for the video slides (app/video/slides.py), which the worker renders and the API previews.
 # Only the headless shell, not the full browser: a screenshot needs nothing else. Installed by the
 # Playwright of uv.lock (tests/unit/test_backend_image.py keeps them equal), since each Playwright
