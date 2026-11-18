@@ -900,3 +900,31 @@ describe('ModulePreviewPage - load failure', () => {
     expect(await screen.findByText('Test Module')).toBeInTheDocument()
   })
 })
+
+describe('ModulePreviewPage - keyboard focus', () => {
+  it('keeps the focus in the editor when its buttons are swapped for fields and back', async () => {
+    vi.mocked(api.getModule).mockResolvedValue({
+      ...baseModule,
+      components: [{ id: 'content-1', type: 'content', content: { markdown: 'Lesson' }, questions: [] }],
+    })
+    vi.mocked(api.updateComponentContent).mockResolvedValue(undefined as never)
+    const user = userEvent.setup()
+    renderPage()
+    await screen.findByText('Lesson')
+    const part = document.getElementById('part-content')!
+    within(part).getByRole('button', { name: 'Sửa' }).focus()
+    await user.keyboard('{Enter}')
+    await waitFor(() => expect(within(part).getByRole('textbox')).toHaveFocus())
+    await user.tab()
+    await user.tab()
+    expect(within(part).getByRole('button', { name: 'Hủy' })).toHaveFocus()
+    await user.keyboard('{Enter}')
+    await waitFor(() => expect(within(part).getByRole('button', { name: 'Sửa' })).toHaveFocus())
+    within(part).getByRole('button', { name: 'Sửa' }).focus()
+    await user.keyboard('{Enter}')
+    await user.tab()
+    await user.keyboard('{Enter}')
+    await waitFor(() => expect(api.updateComponentContent).toHaveBeenCalled())
+    await waitFor(() => expect(within(part).getByRole('button', { name: 'Sửa' })).toHaveFocus())
+  })
+})
