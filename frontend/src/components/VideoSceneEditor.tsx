@@ -12,6 +12,8 @@ import {
   type ItemDraft,
   type SceneDraft,
 } from '../lib/videoDraft'
+import { AutoGrowTextarea } from './AutoGrowTextarea'
+import { CitationMarkers } from './CitationMarkers'
 import { PassagePicker } from './PassagePicker'
 import { ScenePreview, SlidePlaceholder } from './ScenePreview'
 import { SourcePassages } from './SourcePassages'
@@ -57,7 +59,7 @@ function ItemEditor({ item, name, documentId, sources, flags, onText, onCitation
   return (
     <li className="video-item">
       <div className="video-item-row">
-        <textarea
+        <AutoGrowTextarea
           aria-label={label}
           aria-describedby={notes}
           value={item.text}
@@ -76,6 +78,7 @@ function ItemEditor({ item, name, documentId, sources, flags, onText, onCitation
         <FlagNote key={`${i}-${flag}`} id={`${id}-flag-${i}`} flag={flag} dismissLabel={`Bỏ đánh dấu ${name}`}
           onDismiss={() => onDismiss(flag)} />
       ))}
+      <CitationMarkers sources={sources} citations={item.citations} label={`Nguồn của ${name}`} />
       <PassagePicker documentId={documentId} name={name} citations={item.citations} known={sources} onChange={onCitations} />
     </li>
   )
@@ -224,21 +227,21 @@ export function VideoSceneEditor({ scene: s, number, count, documentId, slide, c
       {s.kind === 'formula' && (
         <label className="flashcard-field">
           Công thức (LaTeX)
-          <textarea aria-label={`Công thức cảnh ${number}`} aria-describedby={fieldNotes} value={s.formula} maxLength={2000} rows={2}
+          <AutoGrowTextarea aria-label={`Công thức cảnh ${number}`} aria-describedby={fieldNotes} value={s.formula} maxLength={2000} rows={2}
             onChange={(e) => set({ formula: e.target.value })} className="ui-input w-full font-mono" />
         </label>
       )}
       {s.kind === 'code' && (
         <label className="flashcard-field">
           Code
-          <textarea aria-label={`Code cảnh ${number}`} aria-describedby={fieldNotes} value={s.code} maxLength={4000} rows={6} spellCheck={false}
+          <AutoGrowTextarea aria-label={`Code cảnh ${number}`} aria-describedby={fieldNotes} value={s.code} maxLength={4000} rows={6} spellCheck={false}
             onChange={(e) => set({ code: e.target.value })} className="ui-input w-full font-mono" />
         </label>
       )}
       {s.kind === 'table' && (
         <label className="flashcard-field">
           Bảng
-          <textarea aria-label={`Bảng cảnh ${number}`} aria-describedby={fieldNotes} value={s.table} rows={4}
+          <AutoGrowTextarea aria-label={`Bảng cảnh ${number}`} aria-describedby={fieldNotes} value={s.table} rows={4}
             onChange={(e) => set({ table: e.target.value })} className="ui-input w-full font-mono" />
           <span className="course-hint">Mỗi dòng là một hàng. Các ô cách nhau bằng dấu |.</span>
         </label>
@@ -250,7 +253,7 @@ export function VideoSceneEditor({ scene: s, number, count, documentId, slide, c
       {s.kind === 'illustration' && (
         <label className="flashcard-field">
           Mô tả hình minh họa
-          <textarea aria-label={`Mô tả hình cảnh ${number}`} value={s.imagePrompt} maxLength={2000} rows={3}
+          <AutoGrowTextarea aria-label={`Mô tả hình cảnh ${number}`} value={s.imagePrompt} maxLength={2000} rows={3}
             onChange={(e) => set({ imagePrompt: e.target.value })} className="ui-input w-full" />
           <span className="course-hint">
             Ghi rõ số liệu và nhãn cần có trong hình. Để trống mô tả thì slide chỉ có chữ.

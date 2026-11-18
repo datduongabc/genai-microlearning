@@ -17,7 +17,7 @@ import {
 import { AppShell } from '../components/AppShell'
 import { AutoGrowTextarea } from '../components/AutoGrowTextarea'
 import { PassagePicker } from '../components/PassagePicker'
-import { SourcePassages } from '../components/SourcePassages'
+import { CitationMarkers } from '../components/CitationMarkers'
 import { editorTitle } from '../lib/editorTitle'
 import { flashcardSpent } from '../lib/spent'
 import { useLeaveGuard } from '../lib/useLeaveGuard'
@@ -270,13 +270,12 @@ export function FlashcardEditorPage() {
                     className="ui-input w-full"
                   />
                 </label>
-                <SourcePassages sources={c.sources.filter((p) => c.citations.includes(p.chunk_id))} label={`Nguồn của thẻ ${index + 1}`} />
+                <CitationMarkers sources={c.sources} citations={c.citations} label={`Nguồn của thẻ ${index + 1}`} />
                 <PassagePicker
                   documentId={saved.document_id}
                   name={`thẻ ${index + 1}`}
                   citations={c.citations}
                   known={c.sources}
-                  listChosen={false}
                   onChange={(citations, picked) => {
                     setCards((list) => list.map((x) => (x.key === c.key
                       ? { ...x, citations, sources: picked ? [...x.sources, picked] : x.sources }

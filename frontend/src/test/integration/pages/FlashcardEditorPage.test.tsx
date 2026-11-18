@@ -303,19 +303,22 @@ describe('FlashcardEditorPage', () => {
     expect(vi.mocked(api.saveFlashcards).mock.calls[0][1][0].citations).toEqual(['chunk-9'])
   })
 
-  it('shows where each card comes from, with the passage behind a disclosure', async () => {
+  it('shows where each card comes from as a numbered marker that opens its passage', async () => {
     vi.mocked(api.getFlashcardSet).mockResolvedValue(draft([card(1), card(2, { citations: [], sources: [] })]))
 
     renderPage()
 
-    const sources = await screen.findByRole('list', { name: 'Nguồn của thẻ 1' })
-    const label = within(sources).getByText('bai-giang.pdf, trang 3')
-    const details = label.closest('details')!
-    expect(details).not.toHaveAttribute('open')
-    await userEvent.click(label)
-    expect(details).toHaveAttribute('open')
-    expect(within(details).getByText('Một mảng là dãy ô liên tiếp.')).toBeVisible()
-    expect(screen.queryByRole('list', { name: 'Nguồn của thẻ 2' })).not.toBeInTheDocument()
+    const sources = await screen.findByRole('group', { name: 'Nguồn của thẻ 1' })
+    const marker = within(sources).getByRole('button', { name: 'Nguồn 1: bai-giang.pdf, trang 3' })
+    expect(marker).toHaveTextContent('[1]')
+    expect(marker).toHaveAttribute('aria-expanded', 'false')
+    expect(within(sources).queryByText('Một mảng là dãy ô liên tiếp.')).not.toBeInTheDocument()
+    await userEvent.click(marker)
+    expect(marker).toHaveAttribute('aria-expanded', 'true')
+    expect(within(sources).getByText('Một mảng là dãy ô liên tiếp.')).toBeVisible()
+    await userEvent.click(marker)
+    expect(within(sources).queryByText('Một mảng là dãy ô liên tiếp.')).not.toBeInTheDocument()
+    expect(screen.queryByRole('group', { name: 'Nguồn của thẻ 2' })).not.toBeInTheDocument()
   })
 
   it('names a card source once, not again in the picker summary', async () => {
@@ -323,20 +326,20 @@ describe('FlashcardEditorPage', () => {
 
     renderPage()
 
-    const sources = await screen.findByRole('list', { name: 'Nguồn của thẻ 1' })
-    expect(within(sources).getByText('bai-giang.pdf, trang 3')).toBeInTheDocument()
+    expect(await screen.findByRole('group', { name: 'Nguồn của thẻ 1' })).toBeInTheDocument()
     expect(screen.queryByText(/^Nguồn: /)).not.toBeInTheDocument()
     expect(screen.getByText('Đổi nguồn')).toBeInTheDocument()
   })
 
-  it('lists as the card sources only the passages still ticked', async () => {
+  it('marks as the card sources only the passages still ticked', async () => {
     vi.mocked(api.getFlashcardSet).mockResolvedValue(draft([card(1)]))
 
     renderPage()
-    expect(await screen.findByRole('list', { name: 'Nguồn của thẻ 1' })).toBeInTheDocument()
+    expect(await screen.findByRole('group', { name: 'Nguồn của thẻ 1' })).toBeInTheDocument()
     await userEvent.click(screen.getByRole('checkbox', { name: /bai-giang.pdf, trang 3/ }))
 
-    expect(screen.queryByRole('list', { name: 'Nguồn của thẻ 1' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('group', { name: 'Nguồn của thẻ 1' })).not.toBeInTheDocument()
+    expect(screen.getByText('Gắn nguồn')).toBeInTheDocument()
   })
 
   it('goes back to its course, and says so while still generating', async () => {
