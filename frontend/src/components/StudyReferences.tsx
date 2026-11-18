@@ -53,7 +53,7 @@ export function StudyReferences({ studyId }: { studyId: string }) {
   }
 
   async function remove(file: StudyFile) {
-    if (!await confirmAction({ title: `Xóa ${file.filename}?`, description: "Các gói đang dùng file này sẽ không còn tài liệu gốc.", action: "Xóa file", destructive: true })) return;
+    if (!await confirmAction({ title: `Xóa ${file.filename}?`, description: "Các gói đang dùng tệp này sẽ không còn tài liệu gốc.", action: "Xóa tệp", destructive: true })) return;
     setError("");
     try {
       await deleteStudyFile(studyId, file.id);
@@ -84,12 +84,12 @@ export function StudyReferences({ studyId }: { studyId: string }) {
   }
   return <section className="ui-card study-results" aria-labelledby="study-references-title">
     <h2 id="study-references-title">Tài liệu gốc</h2>
-    <p className="small muted">Người chấm tải file của gói đang chấm để đối chiếu. Hai gói cùng cặp luôn dùng chung một file.</p>
+    <p className="small muted">Người chấm tải tệp này về để đối chiếu khi chấm. Hai gói cùng cặp dùng chung một tệp.</p>
     {error && <p role="alert" className="ui-alert">{error}</p>}
 
-    <h3 className="results-subtitle">File</h3>
-    {files.length === 0 ? <p className="small muted">Chưa có file nào.</p> : (
-      <ul className="reference-files" aria-label="File tài liệu gốc">
+    <h3 className="results-subtitle">Tệp đã tải lên</h3>
+    {files.length === 0 ? <p className="small muted">Chưa có tệp nào.</p> : (
+      <ul className="reference-files" aria-label="Tệp tài liệu gốc">
         {files.map((file) => <li key={file.id}>
           <div className="min-w-0">
             <div className="font-semibold [overflow-wrap:anywhere]">{file.filename}</div>
@@ -106,7 +106,7 @@ export function StudyReferences({ studyId }: { studyId: string }) {
     )}
     <div className="reference-upload">
       <label className="ui-button" aria-disabled={progress !== null || undefined}>
-        {progress === null ? "Tải file lên" : `Đang tải lên ${Math.round(progress * 100)}%`}
+        {progress === null ? "Tải tệp lên" : `Đang tải lên ${Math.round(progress * 100)}%`}
         <input ref={input} type="file" className="sr-only" disabled={progress !== null}
           onChange={(e) => { const file = e.target.files?.[0]; if (file) void upload(file); }} />
       </label>

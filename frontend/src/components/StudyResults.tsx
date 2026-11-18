@@ -50,8 +50,8 @@ export function StudyResults({ studyId }: { studyId: string }) {
       <ul className="results-raters" aria-label="Tiến độ người chấm">
         {results.raters.map((r) => <li key={r.email}>
           <div className="min-w-0">
-            <div className="font-semibold">{r.number ? `Người chấm ${r.number}` : "Chưa chấm gói nào"}</div>
-            <div className="small muted [overflow-wrap:anywhere]">{r.email}{!r.invited && " (đã thôi mời)"}</div>
+            <div className="font-semibold [overflow-wrap:anywhere]">{r.email}</div>
+            <div className="small muted">{r.number ? `Người chấm ${r.number}` : "Chưa chấm gói nào"}{!r.invited && ", đã thôi mời"}</div>
           </div>
           <div className="results-progress">
             <span className="small">{r.rated}/{results.total}</span>

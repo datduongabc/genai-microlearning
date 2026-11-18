@@ -456,10 +456,10 @@ it("uploads a file to the study and offers it to every packet", async () => {
   vi.mocked(api.getStudyItems).mockResolvedValue([summary("c", "M02", "human", null)]);
   vi.mocked(api.uploadStudyFile).mockResolvedValue(lecture);
   const region = await openStudy();
-  expect(within(region).getByText("Chưa có file nào.")).toBeInTheDocument();
+  expect(within(region).getByText("Chưa có tệp nào.")).toBeInTheDocument();
   const file = new File(["%PDF"], "Bài giảng 3.pdf", { type: "application/pdf" });
 
-  await userEvent.upload(within(region).getByLabelText("Tải file lên"), file);
+  await userEvent.upload(within(region).getByLabelText("Tải tệp lên"), file);
 
   expect(api.uploadStudyFile).toHaveBeenCalledWith("s1", file, expect.any(Function));
   expect(await within(region).findByRole("button", { name: "Tải Bài giảng 3.pdf" })).toBeInTheDocument();
@@ -481,7 +481,7 @@ it("asks before deleting a file and clears it from the packets that used it", as
 
     expect(api.deleteStudyFile).toHaveBeenCalledWith("s1", "f1");
     await waitFor(() => expect(within(region).getByRole("combobox", { name: "Tài liệu gốc của M02" })).toHaveValue(""));
-    expect(within(region).getByText("Chưa có file nào.")).toBeInTheDocument();
+    expect(within(region).getByText("Chưa có tệp nào.")).toBeInTheDocument();
   } finally {
     confirm.mockRestore();
   }
