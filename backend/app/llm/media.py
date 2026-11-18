@@ -1,6 +1,6 @@
 """Voice and image models, called through the LLM gateway.
 
-LiteLLM 1.100.1 has no OpenRouter route for speech, and its image route cannot reach the
+LiteLLM 1.100.1 had no OpenRouter route for speech (1.103.1 still has none), and its image route could not reach the
 chat-completions form Nano Banana needs, so devops/gateway/config.yaml forwards
 `/openrouter/*` to OpenRouter as an authenticated pass-through (the gateway keeps the
 provider key). A pass-through cannot add a provider pin by itself, so the alias table,

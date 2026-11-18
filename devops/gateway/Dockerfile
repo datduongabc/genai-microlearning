@@ -4,7 +4,7 @@ ARG PYTHON_VERSION=3.14
 # LiteLLM is installed into a virtual environment here and only that is copied on: uv and its
 # cache stay out of the image that runs.
 FROM python:${PYTHON_VERSION}-slim AS deps
-ARG LITELLM_VERSION=1.100.1
+ARG LITELLM_VERSION=1.103.1
 COPY --from=ghcr.io/astral-sh/uv:0.12.23 /uv /usr/local/bin/uv
 ENV UV_COMPILE_BYTECODE=1 UV_LINK_MODE=copy UV_PYTHON_DOWNLOADS=0 UV_HTTP_TIMEOUT=60
 RUN --mount=type=cache,target=/root/.cache/uv \
@@ -14,6 +14,9 @@ FROM python:${PYTHON_VERSION}-slim
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 PATH=/opt/venv/bin:$PATH
 # The Debian security fixes published since the base image was built (ECR's scan on push).
 RUN apt-get update && apt-get upgrade -y && rm -rf /var/lib/apt/lists/*
+# The base image's pip is never used (the venv comes from the stage above), and it carries its
+# own outdated copies of urllib3, msgpack and setuptools.
+RUN python -m pip uninstall -y -q pip
 COPY --from=deps /opt/venv /opt/venv
 RUN adduser --disabled-password --gecos "" --home /home/gateway --uid 10001 gateway
 
