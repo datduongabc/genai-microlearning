@@ -207,8 +207,8 @@ body { background: var(--bg-canvas); font-size:16px; line-height:24px; }
 .rating-footer span { font-size:14px; color:var(--text-secondary); }
 .rating-context { display:flex; align-items:center; justify-content:space-between; gap:24px; }
 .rating-progress { display:flex; flex-direction:column; align-items:flex-end; gap:4px; flex:none; }
-.rating-progress progress { width:220px; height:6px; border-radius:var(--radius-sm); overflow:hidden; accent-color:var(--accent-default); }
-.rating-progress progress::-webkit-progress-bar { background:var(--bg-subtle); }
+.rating-progress progress { width:220px; height:6px; border-radius:var(--radius-sm); overflow:hidden; accent-color:var(--accent-default); border:0; background:var(--border-default); }
+.rating-progress progress::-webkit-progress-bar { background:var(--border-default); }
 .rating-progress progress::-webkit-progress-value { background:var(--accent-default); }
 .rating-progress progress::-moz-progress-bar { background:var(--accent-default); }
 .rubric-guide { font-size:14px; line-height:20px; color:var(--text-secondary); margin-bottom:12px; }
@@ -366,7 +366,8 @@ body { background: var(--bg-canvas); font-size:16px; line-height:24px; }
 /* --- Chat about a course's documents, on the course page and for students. */
 .chat-panel { padding:20px 24px 24px; background:var(--bg-surface); border:1px solid var(--border-default); border-radius:var(--radius-sm); display:flex; flex-direction:column; min-height:0; }
 .course-chat .chat-panel { position:sticky; top:32px; max-height:calc(100vh - 64px); }
-.chat-head { display:flex; align-items:baseline; justify-content:space-between; gap:12px; }
+.chat-head { display:flex; flex-wrap:wrap; align-items:baseline; justify-content:space-between; gap:4px 12px; }
+.chat-head .small-action { white-space:nowrap; }
 .chat-note { margin-top:12px; font-size:14px; line-height:21px; color:var(--text-secondary); }
 .chat-log { margin-top:12px; display:flex; flex-direction:column; gap:20px; overflow-y:auto; min-height:0; flex:1; }
 .chat-log:empty { display:none; }
@@ -422,10 +423,6 @@ body { background: var(--bg-canvas); font-size:16px; line-height:24px; }
 .launch-page { max-width:520px; margin:0 auto; padding:72px 16px; display:flex; flex-direction:column; gap:24px; }
 .launch-status { font-size:15px; color:var(--text-secondary); }
 @media(max-width:520px) { .learner-header { flex-wrap:wrap; } }
-/* The page heading already names the chat for students. */
-.learner-main .chat-head h2 { position:absolute; width:1px; height:1px; overflow:hidden; clip-path:inset(50%); white-space:nowrap; }
-.learner-main .chat-head { justify-content:flex-end; }
-.learner-main .chat-head + .chat-note { margin-top:0; }
 .packet .source-passage { font-family:var(--font-sans); font-size:14px; line-height:22px; }
 .slides-download { margin-top:16px; padding-top:12px; border-top:1px dashed var(--border-default); }
 .module-ai-edit { scroll-margin-top:24px; }
