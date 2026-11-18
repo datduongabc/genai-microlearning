@@ -2,8 +2,10 @@ import { useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { getLearnVideo, type LearnVideo } from "../api";
 import { LearnerShell } from "../components/LearnerShell";
+import { captionsLabel, captionsUrl } from "../lib/captions";
 import { formatClock } from "../lib/duration";
 import { useRenderedSource } from "../lib/useRenderedSource";
+import { useDocumentTitle } from "../lib/documentTitle";
 
 // Keyed by the video, so that moving to another one drops the old player, its position and a failed load.
 export function LearnVideoPage() {
@@ -67,6 +69,8 @@ function Watch({ video: first }: { video: LearnVideo }) {
   );
   // The new link comes with the scenes of its render, which may be a newer one than the file shown.
   const video = fresh ?? first;
+  const captions = captionsUrl(video.captions);
+  useDocumentTitle(video.title ?? "Bài giảng");
 
   const play = (element: HTMLVideoElement) => {
     // A browser may refuse to play without a gesture; the controls are right there then.
@@ -130,7 +134,9 @@ function Watch({ video: first }: { video: LearnVideo }) {
           onTimeUpdate={timeUpdate}
           onLoadedMetadata={metadataLoaded}
           onError={onError}
-        />
+        >
+          {captions && <track kind="captions" src={captions} srcLang={video.language} label={captionsLabel(video.language)} />}
+        </video>
       )}
       {video.scenes.length > 0 && video.source_document && (
         <p className="learn-scenes-source">Nguồn: {video.source_document}</p>

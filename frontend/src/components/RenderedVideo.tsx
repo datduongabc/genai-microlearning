@@ -1,4 +1,5 @@
 import { getVideoFile } from '../api'
+import { captionsLabel, captionsUrl, type CaptionCue } from '../lib/captions'
 import { useRenderedSource } from '../lib/useRenderedSource'
 
 // An S3 link lasts five minutes, so a player left open that fails to load asks for a new one, a
@@ -7,11 +8,17 @@ const MAX_LINK_RENEWALS = 2
 
 // A new render is a new player: a failure, the links renewed and the old source of the previous one
 // do not carry over.
-export function RenderedVideo({ videoId, renderedVersion }: { videoId: string; renderedVersion: number }) {
-  return <Player key={`${videoId}-${renderedVersion}`} videoId={videoId} />
+export function RenderedVideo({ videoId, renderedVersion, captions, language }: {
+  videoId: string
+  renderedVersion: number
+  captions: CaptionCue[]
+  language: string
+}) {
+  return <Player key={`${videoId}-${renderedVersion}`} videoId={videoId} captions={captions} language={language} />
 }
 
-function Player({ videoId }: { videoId: string }) {
+function Player({ videoId, captions, language }: { videoId: string; captions: CaptionCue[]; language: string }) {
+  const track = captionsUrl(captions)
   const { src, failed, onError, loaded } = useRenderedSource(() => getVideoFile(videoId), {
     maxRenewals: MAX_LINK_RENEWALS,
   })
@@ -26,6 +33,8 @@ function Player({ videoId }: { videoId: string }) {
       onError={onError}
       onLoadedMetadata={loaded}
       className="video-player"
-    />
+    >
+      {track && <track kind="captions" src={track} srcLang={language} label={captionsLabel(language)} />}
+    </video>
   )
 }

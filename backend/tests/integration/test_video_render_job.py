@@ -1,6 +1,7 @@
 import json
 import shutil
 import uuid
+from itertools import pairwise
 from typing import ClassVar
 
 import pytest
@@ -94,6 +95,11 @@ def test_the_job_renders_the_video_and_finishes(world, monkeypatch):
         assert [s["title"] for s in video.rendered_scenes] == ["Cảnh 0", "Cảnh 1"]
         assert [s["start_seconds"] for s in video.rendered_scenes] == [pytest.approx(0, abs=0.05), pytest.approx(length, abs=0.05)]
         assert all(len(s["citations"]) == 1 for s in video.rendered_scenes)
+        # Captions: each sentence of a scene's voice, back to back over the second it speaks.
+        for scene, start in zip(video.rendered_scenes, [0, length], strict=True):
+            cues = scene["captions"]
+            assert cues and cues[0][0] == pytest.approx(start, abs=0.05) and cues[-1][1] == pytest.approx(start + 1, abs=0.05)
+            assert all(a[1] == b[0] for a, b in pairwise(cues))
     assert _Slides.labels == ["Nguồn: x.pdf, trang 7"] * 2
 
 

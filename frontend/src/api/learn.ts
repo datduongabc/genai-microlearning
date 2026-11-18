@@ -1,3 +1,4 @@
+import type { CaptionCue } from '../lib/captions'
 import { api } from './client'
 
 interface LearnDocument {
@@ -69,6 +70,8 @@ export interface LearnVideo {
   // The file every scene's sources are in, named once; a scene's sources say only where in it.
   source_document: string | null
   scenes: LearnVideoScene[]
+  language: string
+  captions: CaptionCue[]
 }
 
 export async function getLearnVideo(id: string) {

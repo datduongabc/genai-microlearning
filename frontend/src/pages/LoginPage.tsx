@@ -7,10 +7,12 @@ import { homeFor, useAuth } from "../auth/useAuth";
 import { useSelfRegistration } from "../auth/useSelfRegistration";
 import { loginSchema, type LoginFormValues } from "../lib/authSchemas";
 import { AuthLayout } from "../components/AuthLayout";
+import { useDocumentTitle } from "../lib/documentTitle";
 
 const SUPPORT_EMAIL = "dat.duongtandat385@gmail.com";
 
 export function LoginPage() {
+  useDocumentTitle("Đăng nhập");
   const selfRegistration = useSelfRegistration();
   const { login } = useAuth();
   const navigate = useNavigate();

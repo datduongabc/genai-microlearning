@@ -26,6 +26,8 @@ const video = {
   id: 'v1', course_id: 'course-1', title: 'Giới thiệu heap', duration_seconds: 125,
   rendered_version: 1, via_api: false, file_url: 'https://s3.example/v1.mp4?sig=1',
   source_document: 'bai-giang.pdf',
+  language: 'vi',
+  captions: [] as [number, number, string][],
   scenes: [
     { title: 'Mở đầu', start_seconds: 0, sources: ['trang 2'] },
     { title: 'Heap là gì', start_seconds: 30.5, sources: ['trang 3 · Heap', 'trang 4'] },
@@ -223,5 +225,27 @@ describe('LearnVideoPage', () => {
     const scene_rule = /\.learn-scene\s*\{([^}]*)\}/.exec(indexCss)?.[1] ?? ''
     expect(scene_rule).toMatch(/overflow-wrap:\s*anywhere/)
     for (const rule of [video_rule, learn_rule, scene_rule]) expect(rule).not.toMatch(/(?<![-\w])(min-)?width:\s*\d+px/)
+  })
+})
+
+describe('LearnVideoPage - captions', () => {
+  it('gives the player a captions track of the narration, with the model text escaped', async () => {
+    vi.mocked(api.getLearnVideo).mockResolvedValue({ ...video, captions: [[0, 2.5, 'Heap <b> & stack.'], [2.5, 61.25, 'Câu hai.']] })
+    renderPage()
+    await screen.findByRole('heading', { name: 'Giới thiệu heap' })
+    const track = player().querySelector('track')!
+    expect(track).toHaveAttribute('kind', 'captions')
+    expect(track).toHaveAttribute('srclang', 'vi')
+    const src = track.getAttribute('src')!
+    expect(src.startsWith('data:text/vtt;charset=utf-8,')).toBe(true)
+    expect(decodeURIComponent(src.slice(src.indexOf(',') + 1))).toBe(
+      'WEBVTT\n\n00:00:00.000 --> 00:00:02.500\nHeap &lt;b&gt; &amp; stack.\n\n00:00:02.500 --> 00:01:01.250\nCâu hai.\n',
+    )
+  })
+
+  it('has no track for a render made before captions were kept', async () => {
+    renderPage()
+    await screen.findByRole('heading', { name: 'Giới thiệu heap' })
+    expect(player().querySelector('track')).toBeNull()
   })
 })

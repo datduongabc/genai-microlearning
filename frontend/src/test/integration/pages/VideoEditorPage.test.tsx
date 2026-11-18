@@ -40,7 +40,7 @@ const video = (scenes: VideoScene[], extra: Partial<VideoDetail> = {}): VideoDet
   model_alias: 'gemini-flash', voice_alias: 'voice-heygen', image_alias: 'image-nano-banana', status: 'draft',
   scene_count: scenes.length, draft_version: 1, rendered_version: null, duration_seconds: null, error: null,
   published_at: null, created_at: '2026-11-12T00:00:00Z', scenes, estimated_seconds: 60, max_seconds: 480,
-  render_problems: [], render_warnings: [], job: null, cost: null, ...extra,
+  render_problems: [], render_warnings: [], job: null, cost: null, captions: [], ...extra,
 })
 
 // A data router, as in main.tsx: the leave guard needs one for useBlocker. The other pages are

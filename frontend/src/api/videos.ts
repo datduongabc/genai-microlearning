@@ -1,3 +1,4 @@
+import type { CaptionCue } from '../lib/captions'
 import { api } from './client'
 import type { FlashcardSource } from './flashcards'
 import type { VideoCost } from '../lib/spent'
@@ -70,6 +71,8 @@ export interface VideoDetail extends VideoSummary {
   // The newest queued or running job of this video; poll while it is set.
   job: VideoJob | null
   cost: VideoCost | null
+  // Of the rendered file, not the draft; empty before the first render.
+  captions: CaptionCue[]
 }
 
 export interface SceneEdit {

@@ -6,8 +6,10 @@ import { apiErrorMessage, register as registerUser } from "../api";
 import { registerSchema, type RegisterFormValues } from "../lib/authSchemas";
 import { AuthLayout } from "../components/AuthLayout";
 import { useSelfRegistration } from "../auth/useSelfRegistration";
+import { useDocumentTitle } from "../lib/documentTitle";
 
 export function RegisterPage() {
+  useDocumentTitle("Tạo tài khoản");
   const selfRegistration = useSelfRegistration();
   const navigate = useNavigate();
   const [error, setError] = useState<string | null>(null);

@@ -14,6 +14,7 @@ from app.db import get_db
 from app.models import Chunk, Course, Document, FlashcardSet, User
 from app.models.media import Video
 from app.storage import media_store
+from app.video.render import rendered_captions
 
 router = APIRouter(prefix="/learn", tags=["learn"], dependencies=[Depends(get_current_user)])
 
@@ -122,6 +123,8 @@ def get_video(video_id: uuid.UUID, db: Session = Depends(get_db), current_user: 
         "file_url": link["url"], "via_api": link["via_api"],
         "source_document": db.scalar(select(Document.filename).where(Document.id == video.document_id)),
         "scenes": scenes,
+        "language": video.output_language,
+        "captions": rendered_captions(video),
     }
 
 

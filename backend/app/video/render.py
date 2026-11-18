@@ -404,7 +404,7 @@ def render_video(
             out = work / "video.mp4"
             _assemble(slides, wavs, lengths, out)
             _publish(db, video_id, video_key(video_id, version), out, version, sum(lengths), before_save,
-                     rendered_scenes(scenes, lengths))
+                     rendered_scenes(scenes, lengths, [voices[i] for i in range(len(scenes))]))
 
 
 def lost_pictures(scenes: Sequence[Scene]) -> list[str]:
@@ -420,15 +420,36 @@ def _read_image(key: str) -> bytes:
         return Path(path).read_bytes()
 
 
-def rendered_scenes(scenes: Sequence[Scene], lengths: Sequence[float]) -> list[dict]:
-    """What a learner needs of each scene to jump to it: scenes follow each other with no gap, so a
-    scene starts where the lengths before it add up to."""
+def rendered_scenes(scenes: Sequence[Scene], lengths: Sequence[float], voices: Sequence[_Voice]) -> list[dict]:
+    """What a learner needs of each scene to jump to it, and its captions: scenes follow each other
+    with no gap, so a scene starts where the lengths before it add up to."""
     out, start = [], 0.0
-    for scene, length in zip(scenes, lengths, strict=True):
+    for scene, length, voice in zip(scenes, lengths, voices, strict=True):
         out.append({"title": scene.title, "start_seconds": round(start, 3),
-                    "citations": list(dict.fromkeys(scene.citations))})
+                    "citations": list(dict.fromkeys(scene.citations)),
+                    "captions": caption_cues(voice.spoken, start, voice.seconds)})
         start += length
     return out
+
+
+def caption_cues(spoken: str, start: float, seconds: float) -> list[list]:
+    """One caption per sentence of what the voice says, as [start, end, text]. The voice speaks from
+    the start of its scene and gives no times of its own, so its length is shared out by the
+    sentences' lengths; the pad after it stays silent and uncaptioned."""
+    sentences = [s.strip() for s in spoken.split("\n") if s.strip()]
+    total = sum(len(s) for s in sentences)
+    cues, at = [], start
+    for sentence in sentences:
+        end = at + seconds * len(sentence) / total
+        cues.append([round(at, 3), round(end, 3), sentence])
+        at = end
+    return cues
+
+
+def rendered_captions(video: Video) -> list[list]:
+    """The captions of the file being watched. A render from before captions were kept has none
+    until it is rendered again, which reuses its voices and costs nothing."""
+    return [cue for scene in video.rendered_scenes or [] for cue in scene.get("captions", [])]
 
 
 def _publish(db: Session, video_id: uuid.UUID, key: str, out: Path, version: int, seconds: float,

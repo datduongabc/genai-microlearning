@@ -528,3 +528,11 @@ def test_a_nine_scene_video_renders_with_real_slides(monkeypatch, store, tmp_pat
     assert probe["duration"] == pytest.approx(video.duration_seconds, abs=0.05)
     assert 9 * (2.0 + PAD) <= video.duration_seconds <= 9 * (2.0 + PAD + 1 / render.FPS)
     print(f"\n9-scene render: {elapsed:.1f} s, {path.stat().st_size} bytes, {probe['duration']:.2f} s, {path}")
+
+
+def test_captions_share_the_voice_by_sentence_length():
+    cues = render.caption_cues("Một hai.\nMột hai ba bốn.\n", 10.0, 3.0)
+    assert [c[2] for c in cues] == ["Một hai.", "Một hai ba bốn."]
+    assert cues[0][0] == 10.0 and cues[-1][1] == 13.0
+    # The longer sentence is on screen longer, in proportion to its length.
+    assert (cues[1][1] - cues[1][0]) / (cues[0][1] - cues[0][0]) == pytest.approx(len("Một hai ba bốn.") / len("Một hai."), rel=0.01)
