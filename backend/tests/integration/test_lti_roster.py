@@ -184,7 +184,23 @@ def test_nobody_is_removed_when_the_list_cannot_be_trusted(nrps, fault, monkeypa
     assert _members(lecturer["course_id"]) == {student["user"]["id"], other["user"]["id"]}
     with SessionLocal() as db:
         context = db.scalar(select(LtiContext).where(LtiContext.course_id == lecturer["course_id"]))
-        assert context.roster_synced_at is None, "looked at again on the next check"
+        assert context.roster_synced_at is None, "still due"
+        assert context.roster_checked_at is not None, "but behind the others"
+
+
+def test_a_list_that_could_not_be_read_is_tried_again_only_after_a_while(nrps):
+    lecturer, _student, other = _class(nrps.lms)
+    nrps.list_status = 503
+    now = datetime.now(UTC) + timedelta(days=1)
+    assert _sync(now)["skipped"] >= 1
+    nrps.list_status = 200
+    nrps.pages = [[TEACHER_ROW, member(OTHER["sub"])]]
+    calls = len(nrps.calls)
+
+    soon = _sync(now + roster.RETRY_AFTER_SKIP - timedelta(minutes=1))
+    assert soon["courses"] == soon["skipped"] == 0 and len(nrps.calls) == calls
+    assert _sync(now + roster.RETRY_AFTER_SKIP + timedelta(minutes=1))["removed"] == 1
+    assert _members(lecturer["course_id"]) == {other["user"]["id"]}
 
 
 def test_nobody_is_removed_while_another_lms_course_opening_the_same_course_has_no_list(nrps):

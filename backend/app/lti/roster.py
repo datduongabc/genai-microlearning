@@ -31,7 +31,7 @@ import httpx
 import jwt
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric.rsa import RSAPrivateKey
-from sqlalchemy import delete, or_, select
+from sqlalchemy import delete, func, or_, select, update
 
 from app.config import settings
 from app.db import WorkerSessionLocal
@@ -53,6 +53,9 @@ HTTP_TIMEOUT_SECONDS = 10
 MAX_PAGES = 200
 # Courses looked at per check, so one check cannot hold the worker thread for long.
 COURSES_PER_CHECK = 50
+# A course whose list could not be read is tried again after this, not on every check: an LMS that
+# is down costs a timeout per course, in the thread that also sweeps stuck jobs.
+RETRY_AFTER_SKIP = timedelta(minutes=15)
 ELIGIBLE_ROLES = LEARNER_ROLES | INSTRUCTOR_ROLES
 
 # Tests swap in an httpx.MockTransport.
@@ -183,8 +186,11 @@ def sync_rosters(now: datetime | None = None) -> dict[str, int]:
         due = db.scalars(
             select(LtiContext.course_id)
             .where(LtiContext.memberships_url.is_not(None),
-                   or_(LtiContext.roster_synced_at.is_(None), LtiContext.roster_synced_at < cutoff))
+                   or_(LtiContext.roster_synced_at.is_(None), LtiContext.roster_synced_at < cutoff),
+                   or_(LtiContext.roster_checked_at.is_(None), LtiContext.roster_checked_at < now - RETRY_AFTER_SKIP))
             .group_by(LtiContext.course_id)
+            # The longest untried first, so courses that keep failing cannot take every place.
+            .order_by(func.min(LtiContext.roster_checked_at).nulls_first())
             .limit(COURSES_PER_CHECK)
         ).all()
         if not due:
@@ -196,6 +202,9 @@ def sync_rosters(now: datetime | None = None) -> dict[str, int]:
                 except (RosterUnavailable, httpx.HTTPError, ValueError) as error:
                     # ValueError: a body that is not JSON. The course is looked at again next check.
                     db.rollback()
+                    db.execute(update(LtiContext).where(LtiContext.course_id == course_id)
+                               .values(roster_checked_at=now))
+                    db.commit()
                     counts["skipped"] += 1
                     logger.warning("lti_roster skipped course=%s: %s", course_id, error)
                     continue
@@ -236,5 +245,5 @@ def _sync_course(db, client: httpx.Client, course_id: uuid.UUID, now: datetime) 
         for user_id in sorted(gone, key=str):
             logger.info("lti_roster removed course=%s user=%s", course_id, user_id)
     for context in contexts:
-        context.roster_synced_at = now
+        context.roster_synced_at = context.roster_checked_at = now
     return len(gone)
