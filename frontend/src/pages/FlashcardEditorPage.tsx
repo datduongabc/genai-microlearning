@@ -133,6 +133,7 @@ export function FlashcardEditorPage() {
   }
 
   const setId = id
+  const draftVersion = saved.draft_version
   const courseId = saved.course_id
   const titleProps = editorTitle('Flashcard', saved.focus)
   const published = saved.published_at !== null
@@ -149,7 +150,7 @@ export function FlashcardEditorPage() {
     setBusy('save')
     setError(null)
     try {
-      const set = await saveFlashcards(setId, cards.map(({ front, back, citations }) => ({ front, back, citations })))
+      const set = await saveFlashcards(setId, draftVersion, cards.map(({ front, back, citations }) => ({ front, back, citations })))
       setSaved(set)
       setCards(toDrafts(set, nextKey))
       toast.success('Đã lưu.')

@@ -652,7 +652,7 @@ describe('CourseDetailPage - module generation availability', () => {
 
 const flashcardSet: api.FlashcardSetSummary = {
   id: 'set-1', course_id: 'course-1', document_id: 'doc-1', focus: 'Mảng', output_language: 'vi', model_alias: 'gemini-flash',
-  status: 'draft', card_count: 8, published_at: null, created_at: '2026-01-01T00:00:00Z', cost: null,
+  status: 'draft', card_count: 8, published_at: null, created_at: '2026-01-01T00:00:00Z', cost: null, draft_version: 1,
 }
 
 describe('CourseDetailPage - flashcard sets', () => {

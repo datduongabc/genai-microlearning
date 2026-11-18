@@ -31,6 +31,8 @@ class CardEdit(BaseModel):
 
 
 class CardsRequest(BaseModel):
+    # The version the edits were made on (the set's draft_version when the editor read it).
+    draft_version: int
     cards: Annotated[list[CardEdit], Field(max_length=MAX_CARDS)]
 
 
@@ -44,6 +46,7 @@ def _summary(card_set: FlashcardSet) -> dict:
         "output_language": card_set.output_language, "model_alias": card_set.model_alias,
         "status": card_set.status, "card_count": len(card_set.cards), "published_at": card_set.published_at,
         "created_at": card_set.created_at, "cost": card_set.cost,
+        "draft_version": card_set.draft_version,
     }
 
 
@@ -128,6 +131,8 @@ def edit_cards(
     card_set = _owned_set(db, set_id, current_user, lock=True)
     if card_set.status != MediaStatus.draft:
         raise HTTPException(status_code=409, detail="Chỉ sửa được bộ flashcard đã tạo xong.")
+    if body.draft_version != card_set.draft_version:
+        raise HTTPException(status_code=409, detail="Bộ thẻ đã được lưu ở nơi khác. Hãy tải lại trang rồi sửa tiếp.")
     if card_set.published_at is not None and not body.cards:
         raise HTTPException(status_code=422, detail="Bộ flashcard đang giao cho sinh viên không được để trống. Hãy ngừng giao trước.")
 
@@ -147,6 +152,7 @@ def edit_cards(
             "flag": None if citations else NO_SOURCE_FLAG,
         })
     card_set.cards = edited
+    card_set.draft_version += 1
     db.commit()
     return _detail(db, card_set)
 

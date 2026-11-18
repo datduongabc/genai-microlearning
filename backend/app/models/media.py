@@ -51,6 +51,9 @@ class FlashcardSet(_Media, Base):
 
     # {front, back, citations: [chunk id], author: "model" | "lecturer", flag: str | None}
     cards: Mapped[list] = mapped_column(JSONB, default=list, server_default="[]")
+    # Raised by every saved edit: a save made on an older version is refused, as for a video's
+    # draft, so a second tab cannot silently undo the first one's edits.
+    draft_version: Mapped[int] = mapped_column(default=1, server_default="1")
     # {usd, calls, priced_calls, prompt_tokens, completion_tokens} of the generation's text-model calls;
     # `usd` adds only the calls the gateway could price (see llm_cost in app/generation/media_common.py).
     cost: Mapped[dict] = mapped_column(JSONB, default=dict, server_default="{}")

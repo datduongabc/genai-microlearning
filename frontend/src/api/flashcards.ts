@@ -34,6 +34,8 @@ export interface FlashcardSetSummary {
   created_at: string
   // What the text-model calls of this set cost; empty for a set made before costs were kept.
   cost: CallsCost | null
+  // Sent back with a save: the server refuses one made on an older version (another tab saved).
+  draft_version: number
 }
 
 export interface FlashcardSetDetail extends FlashcardSetSummary {
@@ -70,8 +72,8 @@ export async function getFlashcardSet(id: string) {
   return data
 }
 
-export async function saveFlashcards(id: string, cards: FlashcardCardEdit[]) {
-  const { data } = await api.put<FlashcardSetDetail>(`/flashcard-sets/${id}/cards`, { cards })
+export async function saveFlashcards(id: string, draftVersion: number, cards: FlashcardCardEdit[]) {
+  const { data } = await api.put<FlashcardSetDetail>(`/flashcard-sets/${id}/cards`, { draft_version: draftVersion, cards })
   return data
 }
 
