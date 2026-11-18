@@ -1,3 +1,5 @@
+import { Ellipsis, Trash2 } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../components/ui/dropdown-menu";
 import { confirmAction } from "../lib/confirm";
 import { useCallback, useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
@@ -85,7 +87,7 @@ export function CoursesPage() {
         <input
           {...register("name")}
           aria-label="Tên môn học mới"
-          placeholder="Tên môn học mới, ví dụ: Chương trình dịch"
+          placeholder="Ví dụ: Hệ điều hành"
           className="ui-input min-w-0 flex-1"
         />
         <button disabled={creating} className="ui-button primary">
@@ -112,17 +114,20 @@ export function CoursesPage() {
                 <Link to={`/courses/${c.id}`} className="course-name">
                   {c.name}
                 </Link>
-                <div className="course-meta">
-                  {c.moodle_course_id !== null ? `Đã liên kết khóa học Moodle #${c.moodle_course_id}` : "Chưa liên kết Moodle"}
-                </div>
+                {/* Most courses are not linked, so only a link is worth a line. */}
+                {c.moodle_course_id !== null && <div className="course-meta">Đã liên kết khóa học Moodle #{c.moodle_course_id}</div>}
               </div>
-              <button
-                onClick={() => handleDelete(c)}
-                disabled={deletingId === c.id}
-                className="link-action danger"
-              >
-                {deletingId === c.id ? "Đang xóa…" : "Xóa"}
-              </button>
+              {/* Delete sits behind a menu: a red word on every row pulled the eye to the riskiest action. */}
+              <DropdownMenu>
+                <DropdownMenuTrigger className="icon-button" aria-label={`Thao tác khác với ${c.name}`}>
+                  <Ellipsis aria-hidden="true" />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="doc-menu">
+                  <DropdownMenuItem variant="destructive" disabled={deletingId === c.id} onSelect={() => void handleDelete(c)}>
+                    <Trash2 aria-hidden="true" />{deletingId === c.id ? "Đang xóa…" : "Xóa môn học"}
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </li>
           ))}
         </ul>
