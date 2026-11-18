@@ -8,7 +8,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 
-from app.api.deletion import check_study_references, commit_deletion
+from app.api.deletion import check_study_references, commit_deletion, refuse_while_working
 from app.api.deps import get_current_user, require_author, require_course_owner
 from app.api.media_common import document_passages
 from app.auth.rate_limit import limiter, user_or_address
@@ -295,6 +295,7 @@ def delete_document(
         raise HTTPException(status_code=404, detail="Document not found")
 
     check_study_references(db, db.scalars(select(Module.id).where(Module.document_id == document_id)))
+    refuse_while_working(db, [document_id])
     storage_key = upload_key(document_id, doc.filename)
     media_keys = media_keys_for_document(db, document_id)
     db.delete(doc)

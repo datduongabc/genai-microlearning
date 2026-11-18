@@ -136,3 +136,40 @@ class TestDeleteDocument:
         )
         assert response.status_code == 404
         assert _row_exists(Document, document_id)
+
+
+def _add_job(document_id: str, status) -> None:
+    from app.models import Job, JobStatus, JobType
+    db = SessionLocal()
+    try:
+        db.add(Job(job_type=JobType.module_generation, step="generate", document_id=uuid.UUID(document_id),
+                   status=JobStatus(status)))
+        db.commit()
+    finally:
+        db.close()
+
+
+def test_a_document_with_a_running_job_is_not_deleted():
+    token, _ = _make_authed_user()
+    course_id = _make_course(token)
+    auth = {"Authorization": f"Bearer {token}"}
+    document_id, _, _ = _make_document_with_children(course_id)
+    _add_job(document_id, "running")
+
+    assert client.delete(f"/documents/{document_id}", headers=auth).status_code == 409
+    assert client.delete(f"/courses/{course_id}", headers=auth).status_code == 409
+    assert _row_exists(Document, document_id)
+    assert _row_exists(Course, course_id)
+
+
+def test_a_queued_finished_or_failed_job_does_not_block_deletion():
+    token, _ = _make_authed_user()
+    course_id = _make_course(token)
+    auth = {"Authorization": f"Bearer {token}"}
+    document_id, _, _ = _make_document_with_children(course_id)
+    _add_job(document_id, "queued")
+    _add_job(document_id, "done")
+    _add_job(document_id, "failed")
+
+    assert client.delete(f"/documents/{document_id}", headers=auth).status_code == 200
+    assert client.delete(f"/courses/{course_id}", headers=auth).status_code == 200

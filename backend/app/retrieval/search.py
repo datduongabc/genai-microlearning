@@ -261,8 +261,8 @@ def rerank_for_chat(query: str, candidates: list[Chunk], top_k: int = 8) -> list
 
 def retrieve_for_chat(reads: Session, course_id: UUID, query: str, top_k: int = 8, candidate_k: int = 30) -> list[Chunk]:
     """Closes `reads` before reranking, so a slow reranker holds no connection."""
-    candidates = search_for_chat(reads, course_id, query, candidate_k)
-    reads.close()
+    with reads:
+        candidates = search_for_chat(reads, course_id, query, candidate_k)
     return rerank_for_chat(query, candidates, top_k)
 
 

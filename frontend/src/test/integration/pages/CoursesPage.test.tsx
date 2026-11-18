@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { CoursesPage } from '../../../pages/CoursesPage'
+import { Toaster } from '../../../components/ui/sonner'
 import { AuthProvider } from '../../../auth/AuthContext'
 import * as api from '../../../api'
 import type { Course } from '../../../api'
@@ -72,6 +73,21 @@ describe('CoursesPage - delete', () => {
     await waitFor(() => {
       expect(screen.queryByText('AI 101')).not.toBeInTheDocument()
     })
+  })
+
+  it('says why the course was not deleted, and keeps it in the list', async () => {
+    const refusal = 'Tài liệu đang được xử lý hoặc đang sinh nội dung, vui lòng chờ xong rồi xóa.'
+    vi.mocked(api.listCourses).mockResolvedValue([course])
+    vi.mocked(api.deleteCourse).mockRejectedValue(new Error('409'))
+    vi.mocked(api.apiErrorMessage).mockReturnValue(refusal)
+    vi.spyOn(window, 'confirm').mockReturnValue(true)
+
+    render(<><Toaster /><AuthProvider><MemoryRouter><CoursesPage /></MemoryRouter></AuthProvider></>)
+    await chooseDelete()
+
+    expect(await screen.findByText(refusal)).toBeInTheDocument()
+    expect(api.apiErrorMessage).toHaveBeenCalledWith(expect.any(Error), 'Xóa môn học thất bại')
+    expect(screen.getByText('AI 101')).toBeInTheDocument()
   })
 })
 
