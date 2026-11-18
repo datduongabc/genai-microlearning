@@ -12,7 +12,7 @@ export interface ChatReply {
   citations: ChatCitation[]
 }
 
-export type ChatEvent =
+type ChatEvent =
   | { name: 'session'; data: { session_id: string } }
   | { name: 'delta'; data: { text: string } }
   | { name: 'done'; data: ChatReply }
@@ -76,7 +76,7 @@ export async function streamCourseChat(
   }
 }
 
-export interface LatestCourseChat {
+interface LatestCourseChat {
   session_id: string | null
   messages: ChatReply[]
 }

@@ -86,7 +86,7 @@ function ItemEditor({ item, name, documentId, sources, flags, onText, onCitation
 
 const describedBy = (ids: string[]) => (ids.length > 0 ? ids.join(' ') : undefined)
 
-export interface SceneSlide {
+interface SceneSlide {
   videoId: string
   limiter: Limiter
   picturesDrawn: number

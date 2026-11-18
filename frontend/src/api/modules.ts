@@ -71,7 +71,7 @@ export interface ModuleDetail {
   }[] | null
 }
 
-export interface JobStatusInfo {
+interface JobStatusInfo {
   id: string
   step: string
   status: 'queued' | 'running' | 'done' | 'failed'

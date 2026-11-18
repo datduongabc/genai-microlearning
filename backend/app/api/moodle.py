@@ -3,6 +3,7 @@ from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
+from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user
@@ -77,21 +78,29 @@ def publish_to_moodle(
     chapters = build_book_chapters(module)
     if not chapters:
         raise HTTPException(status_code=422, detail="Mô-đun chưa có nội dung nào để đẩy lên Moodle.")
-    # shortcut: two publishes started in the same second both pass this check; claim the row first if that is ever seen.
+    # Held until this request commits: a double click or a second tab would otherwise pass the
+    # check below too and put everything on Moodle twice. A lock, not a row lock, so editing the
+    # module is not held up while Moodle takes its seconds.
+    if not db.scalar(text("SELECT pg_try_advisory_xact_lock(hashtextextended(:key, 0))"),
+                     {"key": f"moodle-publish:{module.id}"}):
+        raise HTTPException(status_code=409, detail="Mô-đun đang được xuất bản lên Moodle. Hãy chờ lần này xong.")
+    db.refresh(module)  # what a publish that just finished wrote
     if module.moodle_published_at is not None and not payload.republish:
         raise HTTPException(status_code=409, detail="Mô-đun này đã được xuất bản lên Moodle. Xuất bản lại sẽ tạo thêm một bản nữa.")
 
-    result = {"moodle_course_id": course.moodle_course_id}
+    # A publish that failed part way left these on Moodle: they are kept, not created again.
+    result = {"moodle_course_id": course.moodle_course_id, **(module.moodle_partial_cmids or {})}
     try:
         # Re-check the linked user before any activity write.
         require_course_author(db, current_user, course.moodle_course_id)
-        result["book_cmid"] = moodle_client.create_book(
-            course.moodle_course_id, plain(module.title) or "Mô-đun", chapters, payload.section_num, actor_user_id=actor_user_id
-        )
+        if "book_cmid" not in result:
+            result["book_cmid"] = moodle_client.create_book(
+                course.moodle_course_id, plain(module.title) or "Mô-đun", chapters, payload.section_num, actor_user_id=actor_user_id
+            )
 
         # Practice comes before the quiz: it is the rehearsal.
         practice = find_component(module, ComponentType.practice)
-        if practice and practice.questions:
+        if practice and practice.questions and "practice_cmid" not in result:
             result["practice_cmid"] = moodle_client.create_quiz(
                 course.moodle_course_id, f"{plain(module.title)} - Practice",
                 build_questions(practice, explanations(module, ComponentType.practice)), payload.section_num,
@@ -99,7 +108,7 @@ def publish_to_moodle(
             )
 
         quiz = find_component(module, ComponentType.quiz)
-        if quiz and quiz.questions:
+        if quiz and quiz.questions and "quiz_cmid" not in result:
             result["quiz_cmid"] = moodle_client.create_quiz(
                 course.moodle_course_id, f"{plain(module.title)} - Quiz",
                 build_questions(quiz, explanations(module, ComponentType.quiz)), payload.section_num,
@@ -107,17 +116,15 @@ def publish_to_moodle(
             )
     except MOODLE_FAILURES as e:
         failure = moodle_failure(e, db, course)
-        # shortcut: the lecturer is told what exists instead of the next publish skipping it; store the cmids
-        # on the module if duplicates after a partial failure keep happening.
         created = [f"{name} (cmid {result[key]})" for key, name in _PARTS if key in result]
         if created:
-            # Something is on Moodle now, so a retry must ask like any second publish.
-            module.moodle_published_at = datetime.now(UTC)
+            module.moodle_partial_cmids = {key: result[key] for key, _ in _PARTS if key in result}
             db.commit()
-            failure.detail += (f" Đã tạo trên Moodle trước khi lỗi: {', '.join(created)}. "
-                               "Hãy xóa các hoạt động này trên Moodle trước khi xuất bản lại để không bị trùng.")
+            failure.detail += (f" Đã có trên Moodle: {', '.join(created)}. Lần xuất bản tiếp theo chỉ tạo các phần "
+                               "còn thiếu, nên đừng xóa các hoạt động này.")
         raise failure from e
 
     module.moodle_published_at = datetime.now(UTC)
+    module.moodle_partial_cmids = None
     db.commit()
     return result

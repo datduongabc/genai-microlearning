@@ -44,7 +44,7 @@ export async function register(name: string, email: string, password: string) {
   return data
 }
 
-export interface AuthOptions {
+interface AuthOptions {
   self_registration: boolean
 }
 
