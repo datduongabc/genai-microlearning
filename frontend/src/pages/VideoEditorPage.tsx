@@ -453,21 +453,7 @@ export function VideoEditorPage() {
           </div>
         </div>
 
-        <section className="video-step" aria-labelledby="video-draw-title">
-          <h2 id="video-draw-title" className="course-section-title">Vẽ hình</h2>
-          <p className="course-hint">
-            Chỉ cảnh minh họa có mô tả mới được vẽ, tối đa 5 cảnh.
-            {imageModel && ` Mỗi hình ${perImage(imageModel.price)} (${imageModel.label}).`}
-          </p>
-          {toDraw === 0 && <p className="course-hint">Mọi hình đã khớp với mô tả.</p>}
-          <button type="button" onClick={() => draw()} disabled={!canStartJob || toDraw === 0} className="ui-button">
-            {busy === 'draw' ? 'Đang gửi…' : 'Vẽ hình'}
-          </button>
-        </section>
-
-        <section className="video-step" aria-labelledby="video-render-title">
-          <h2 id="video-render-title" className="course-section-title">Dựng video</h2>
-          {voice && <p className="course-hint">Giọng {voice.label}, {voice.price}. Cảnh không đổi dùng lại giọng đã tạo.</p>}
+        <section className="video-step" aria-label="Video">
           {saved.render_problems.length > 0 && (
             <ul className="video-problems" aria-label="Chưa dựng được vì">
               {saved.render_problems.map((problem, i) => <li key={`${i}-${problem}`} className="text-sm danger-text">{problem}</li>)}
@@ -475,21 +461,39 @@ export function VideoEditorPage() {
           )}
           {saved.render_warnings.map((warning, i) => <p key={`${i}-${warning}`} className="doc-warning">{warning}</p>)}
           {needsSave && <p className="course-hint">{needsSave}</p>}
-          <button
-            type="button"
-            onClick={() => void startRender()}
-            disabled={!canStartJob || saved.render_problems.length > 0}
-            className="ui-button primary"
-          >
-            {busy === 'render' ? 'Đang gửi…' : rendered === null ? 'Dựng video' : 'Dựng lại video'}
-          </button>
-        </section>
-
-        <section className="video-step" aria-labelledby="video-result-title">
-          <h2 id="video-result-title" className="course-section-title">Xem video</h2>
-          {rendered === null ? (
-            <p className="course-hint">Chưa có video đã dựng.</p>
-          ) : (
+          <div className="flashcard-actions">
+            {/* The prices stay in reach as a tooltip: both steps are billed. */}
+            <button
+              type="button"
+              onClick={() => draw()}
+              disabled={!canStartJob || toDraw === 0}
+              title={`${toDraw === 0 ? 'Mọi hình đã khớp với mô tả.' : 'Vẽ hình cho cảnh minh họa có mô tả, tối đa 5 cảnh.'}${
+                imageModel ? ` Mỗi hình ${perImage(imageModel.price)} (${imageModel.label}).` : ''}`}
+              className="ui-button"
+            >
+              {busy === 'draw' ? 'Đang gửi…' : 'Vẽ hình'}
+            </button>
+            <button
+              type="button"
+              onClick={() => void startRender()}
+              disabled={!canStartJob || saved.render_problems.length > 0}
+              title={voice ? `Giọng ${voice.label}, ${voice.price}. Cảnh không đổi dùng lại giọng đã tạo.` : undefined}
+              className="ui-button primary"
+            >
+              {busy === 'render' ? 'Đang gửi…' : rendered === null ? 'Dựng video' : 'Dựng lại video'}
+            </button>
+            <button
+              type="button"
+              onClick={() => void act('publish', () => publishVideo(videoId, !published), published ? 'Ngừng giao thất bại' : 'Giao video thất bại')}
+              disabled={busy !== null || (!published && rendered === null)}
+              title={!published && rendered === null ? 'Dựng video trước khi giao.' : undefined}
+              className="ui-button"
+            >
+              {busy === 'publish' ? 'Đang xử lý…' : published ? 'Ngừng giao' : 'Giao cho sinh viên'}
+            </button>
+            {deleteButton}
+          </div>
+          {rendered !== null && (
             <>
               {(saved.draft_version > rendered || dirty) && (
                 <p className="doc-warning">
@@ -503,22 +507,6 @@ export function VideoEditorPage() {
               )}
             </>
           )}
-        </section>
-
-        <section className="video-step" aria-labelledby="video-publish-title">
-          <h2 id="video-publish-title" className="course-section-title">Giao cho sinh viên</h2>
-          {rendered === null && <p className="course-hint">Dựng video trước khi giao.</p>}
-          <div className="flashcard-actions">
-            <button
-              type="button"
-              onClick={() => void act('publish', () => publishVideo(videoId, !published), published ? 'Ngừng giao thất bại' : 'Giao video thất bại')}
-              disabled={busy !== null || (!published && rendered === null)}
-              className="ui-button"
-            >
-              {busy === 'publish' ? 'Đang xử lý…' : published ? 'Ngừng giao' : 'Giao cho sinh viên'}
-            </button>
-            {deleteButton}
-          </div>
         </section>
       </div>
     </AppShell>
