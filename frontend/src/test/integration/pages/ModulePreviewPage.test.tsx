@@ -928,3 +928,17 @@ describe('ModulePreviewPage - keyboard focus', () => {
     await waitFor(() => expect(within(part).getByRole('button', { name: 'Sửa' })).toHaveFocus())
   })
 })
+
+describe('ModulePreviewPage - heading levels', () => {
+  it('puts the Markdown headings of a part one level under the part title', async () => {
+    vi.mocked(api.getModule).mockResolvedValue({
+      ...baseModule,
+      components: [{ id: 'content-1', type: 'content', content: { markdown: '## Khái niệm\n\nA.\n\n### Chi tiết\n\nB.\n\n#### Ghi chú\n\nC.' }, questions: [] }],
+    })
+    renderPage()
+    expect(await screen.findByRole('heading', { name: 'Khái niệm', level: 3 })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Nội dung', level: 2 })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Chi tiết', level: 4 })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Ghi chú', level: 5 })).toBeInTheDocument()
+  })
+})

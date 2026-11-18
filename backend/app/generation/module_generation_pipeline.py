@@ -8,6 +8,7 @@ app/api/modules.py, không đổi hành vi) -- chỉ đổi cách được gọi
 duy nhất cho "có đang sinh dở không", không cần 2 cơ chế song song)."""
 
 import contextvars
+import logging
 import time
 import uuid
 from collections.abc import Callable
@@ -51,6 +52,8 @@ from app.models import (
 from app.models import Question as QuestionModel
 from app.retrieval.search import ChunkScope, expand_with_parent_context
 from app.retrieval.search import retrieve_for_generation as retrieve
+
+logger = logging.getLogger(__name__)
 
 
 def _get_or_cache_planner(
@@ -245,6 +248,12 @@ def _save_questions(
     tự kiểm của từng câu chỉ vào bảng evaluations khi model thực sự đã kiểm câu đó; nhánh không RAG
     không chấm groundedness nên tiêu chí mang tên khác."""
     checked = "groundedness_answerability_pass" if use_retrieval else "answerability_pass"
+    if self_check:
+        # Question writing is the weakest step (the report's rubric study): its own checks, counted
+        # over every module made, show it getting worse before a lecturer has to say so.
+        logger.info("ai_quality module_questions", extra={
+            "questions": len(asked), "failed_check": sum(1 for a in asked if not a.state.get("passed", False)),
+        })
     for component_type in (ComponentType.quiz, ComponentType.practice):
         mine = [a for a in asked if a.type == component_type]
         component = ModuleComponent(

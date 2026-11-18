@@ -222,3 +222,33 @@ def test_the_fact_check_and_the_study_judge_read_a_family_from_the_same_table(al
     from app.llm.judge import model_family
 
     assert fact_check.alias_family(alias) == model_family(alias)
+
+
+def _quality(caplog) -> dict:
+    [record] = [r for r in caplog.records if r.getMessage() == "ai_quality fact_check"]
+    return {k: getattr(record, k) for k in ("kind", "checked", "unsupported", "no_passage", "judge_failed")}
+
+
+def test_each_check_is_counted_for_the_quality_metrics(monkeypatch, caplog):
+    """A rejected statement is unsupported; one with no passage, or one the judge could not answer,
+    is neither, so a judge that is down shows as such and not as worse drafts."""
+    def judge(claim, passages, language):
+        if claim == "down":
+            raise RuntimeError("gateway timed out")
+        return SupportVerdict(supported=claim != "wrong", reason="no")
+
+    monkeypatch.setattr(fact_check, "_support", judge)
+    caplog.set_level("INFO", logger=fact_check.__name__)
+    fact_check.check_against_sources(
+        [("right", ["a"]), ("wrong", ["b"]), ("down", ["c"]), ("bare", [])], "gemini-flash", "vi")
+    assert _quality(caplog) == {"kind": "statements", "checked": 2, "unsupported": 1, "no_passage": 1, "judge_failed": 1}
+
+
+def test_items_are_counted_per_item_for_the_quality_metrics(monkeypatch, caplog):
+    monkeypatch.setattr(fact_check, "_judge_items", lambda claims, passages, language: [
+        fact_check.ItemVerdict(number=1, supported=True, reason=""),
+        fact_check.ItemVerdict(number=2, supported=False, reason="no")])
+    caplog.set_level("INFO", logger=fact_check.__name__)
+    fact_check.check_items_against_sources(
+        [([("Ý 1", "a"), ("Ý 2", "b")], ["p"]), ([("Câu 1", "c")], [])], "gemini-flash", "vi")
+    assert _quality(caplog) == {"kind": "items", "checked": 2, "unsupported": 1, "no_passage": 1, "judge_failed": 0}

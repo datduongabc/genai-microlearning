@@ -45,6 +45,18 @@ run "demo_with_the_self_hosted_reranker" {
     error_message = "No Jev alarm while Jev is not used."
   }
   assert {
+    condition     = length(aws_cloudwatch_log_metric_filter.quality) == 2 * length(local.quality_metrics) && aws_cloudwatch_log_metric_filter.quality["ChatRefused-api"].metric_transformation[0].value == "$.refused"
+    error_message = "Every quality field is counted from both the api and the worker logs."
+  }
+  assert {
+    condition     = contains(keys(aws_cloudwatch_metric_alarm.alarm), "fact-check-failing")
+    error_message = "A failing fact-check judge must raise an alarm: drafts would go out unchecked."
+  }
+  assert {
+    condition     = length(jsondecode(aws_cloudwatch_dashboard.quality.dashboard_body).widgets) == 3
+    error_message = "The AI quality dashboard has its three rates."
+  }
+  assert {
     condition     = local.connections_peak == 4 * 22 + 8 * 32 + 5
     error_message = "Connection budget changed: ${local.connections_peak}."
   }
