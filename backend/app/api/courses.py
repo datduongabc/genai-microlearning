@@ -5,7 +5,7 @@ from pydantic import BaseModel, Field, field_validator
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.api.deletion import check_study_references, commit_deletion
+from app.api.deletion import check_study_references, commit_deletion, refuse_while_working
 from app.api.deps import get_current_user, require_author
 from app.auth.rate_limit import limiter, user_or_address
 from app.db import get_db
@@ -122,6 +122,7 @@ def delete_course(
     """
     course = _get_owned_course(course_id, db, current_user)
     check_study_references(db, db.scalars(select(Module.id).where(Module.course_id == course_id)))
+    refuse_while_working(db, select(Document.id).where(Document.course_id == course_id))
     # A document whose pipeline never finished still has its upload; see delete_document.
     storage_keys = [upload_key(doc_id, filename) for doc_id, filename in
                     db.execute(select(Document.id, Document.filename).where(Document.course_id == course_id))]

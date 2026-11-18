@@ -5,7 +5,8 @@ import { useCallback, useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Link } from "react-router-dom";
-import { createCourse, deleteCourse, listCourses, type Course } from "../api";
+import { toast } from "sonner";
+import { apiErrorMessage, createCourse, deleteCourse, listCourses, type Course } from "../api";
 import { AppShell } from "../components/AppShell";
 import { createCourseSchema, type CreateCourseFormValues } from "../lib/formSchemas";
 
@@ -76,6 +77,9 @@ export function CoursesPage() {
     try {
       await deleteCourse(course.id);
       await refresh();
+    } catch (err) {
+      // A refusal (a job still running, a module in a study) said nothing before: the row just stayed.
+      toast.error(apiErrorMessage(err, "Xóa môn học thất bại"));
     } finally {
       setDeletingId(null);
     }
