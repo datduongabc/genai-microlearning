@@ -254,6 +254,9 @@ class Module(Base):
     # Successful calls in order, with requested aliases and actual response models.
     # NULL for old modules: their served models cannot be reconstructed from aliases.
     generation_models: Mapped[list | None] = mapped_column(JSONB, nullable=True)
+    # When the module last went to Moodle: publishing again adds a second Book and two more quizzes,
+    # so the page asks first, even after a reload or from another tab.
+    moodle_published_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = created_at_column()
 
     document: Mapped["Document"] = relationship(back_populates="modules", overlaps="course,modules")

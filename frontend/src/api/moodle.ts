@@ -78,9 +78,9 @@ export interface PublishToMoodleResult {
   quiz_cmid?: number
 }
 
-export async function publishToMoodle(moduleId: string, sectionNum: number) {
+export async function publishToMoodle(moduleId: string, sectionNum: number, republish = false) {
   const { data } = await noticingRelink(
-    api.post<PublishToMoodleResult>(`/modules/${moduleId}/publish-to-moodle`, { section_num: sectionNum }),
+    api.post<PublishToMoodleResult>(`/modules/${moduleId}/publish-to-moodle`, { section_num: sectionNum, republish }),
   )
   return data
 }

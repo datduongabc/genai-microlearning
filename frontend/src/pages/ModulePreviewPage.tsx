@@ -7,6 +7,7 @@ import { Link, useParams } from 'react-router-dom'
 import { AppShell } from '../components/AppShell'
 import { MoodleAccountSection, type MoodleAccountState } from '../components/MoodleAccountSection'
 import { modelMarkdownProps } from '../lib/markdownMath'
+import { confirmAction } from '../lib/confirm'
 import {
   chatEditSchema,
   examplesContentSchema,
@@ -211,6 +212,7 @@ export function ModulePreviewPage() {
               moduleId={module.id}
               courseId={module.course_id}
               moodleCourseId={module.moodle_course_id}
+              publishedAt={module.moodle_published_at ?? null}
               onRefresh={refresh}
             /><ScormDownload moduleId={module.id} moduleTitle={module.title} /></div>}
           </div>
@@ -278,11 +280,13 @@ function PublishToMoodleSection({
   moduleId,
   courseId,
   moodleCourseId,
+  publishedAt,
   onRefresh,
 }: {
   moduleId: string
   courseId: string
   moodleCourseId: number | null
+  publishedAt: string | null
   onRefresh: () => Promise<void>
 }) {
   const [result, setResult] = useState<PublishToMoodleResult | null>(null)
@@ -329,6 +333,17 @@ function PublishToMoodleSection({
     return () => { cancelled = true }
   }, [courseId, moodleCourseId, courseScope, onRefresh, accountFailed])
 
+  // Asked before the form submits, so the button does not read "Đang xuất bản…" while the question is open.
+  async function confirmThenPublish(event: React.FormEvent) {
+    event.preventDefault()
+    if (publishedAt && !(await confirmAction({
+      title: 'Xuất bản lại lên Moodle?',
+      description: 'Khóa học Moodle sẽ có thêm một sách nội dung và các bài kiểm tra mới, bản cũ vẫn giữ nguyên.',
+      action: 'Xuất bản lại',
+    }))) return
+    await handleSubmit(handlePublish)()
+  }
+
   async function handlePublish({ sectionNum, addNewSection }: PublishToMoodleFormValues) {
     setError(null)
     setResult(null)
@@ -336,7 +351,7 @@ function PublishToMoodleSection({
       // "Thêm section mới" gửi 1 số section chưa tồn tại (tổng số section
       // hiện có) -- plugin tự tạo mới đúng section đó khi push.
       const target = addNewSection ? sections.length : sectionNum
-      setResult(await publishToMoodle(moduleId, target))
+      setResult(await publishToMoodle(moduleId, target, publishedAt !== null))
     } catch (err) {
       setAuthorizedCourse(null)
       setError(apiErrorMessage(err, 'Xuất bản lên Moodle thất bại'))
@@ -363,7 +378,7 @@ function PublishToMoodleSection({
     <section className="module-publish" aria-labelledby="publish-title">
       <h2 id="publish-title" className="module-part-title">Xuất bản lên Moodle</h2>
       <MoodleAccountSection onStatus={setAccount} />
-      {canPublish && <form onSubmit={handleSubmit(handlePublish)} noValidate>
+      {canPublish && <form onSubmit={confirmThenPublish} noValidate>
       {!addNewSection && sections.length > 0 && (
         <div className="mt-4 mb-3 flex items-center gap-2 text-sm muted">
           <label htmlFor="publish-section">Chủ đề trên Moodle:</label>
@@ -395,9 +410,13 @@ function PublishToMoodleSection({
         disabled={publishing || result !== null}
         className="ui-button primary"
       >
-        {publishing ? 'Đang xuất bản…' : result !== null ? 'Đã xuất bản lên Moodle' : 'Xuất bản lên Moodle'}
+        {publishing ? 'Đang xuất bản…' : result !== null ? 'Đã xuất bản lên Moodle' : publishedAt ? 'Xuất bản lại' : 'Xuất bản lên Moodle'}
       </button>
       </form>}
+
+      {publishedAt && !result && (
+        <p className="mt-3 text-sm muted">Đã xuất bản lên Moodle lúc {new Date(publishedAt).toLocaleString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}.</p>
+      )}
 
       {result && (
         <p role="status" className="mt-3 text-sm success-text">

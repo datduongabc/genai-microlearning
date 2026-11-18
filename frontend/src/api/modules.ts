@@ -54,6 +54,8 @@ export interface ModuleDetail {
   generation_models?: { requested_alias: string; served_model: string }[] | null
   course_id: string
   moodle_course_id: number | null
+  // Set once the module has gone to Moodle: publishing again adds a second copy there.
+  moodle_published_at?: string | null
   components: ModuleComponentInfo[]
   chat_edit_count?: number
   claim_citations?: {

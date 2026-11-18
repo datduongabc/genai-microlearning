@@ -199,6 +199,25 @@ describe('ModulePreviewPage - publish to Moodle', () => {
     expect(api.publishToMoodle).toHaveBeenCalledTimes(1)
   })
 
+  it('says when a module already went to Moodle and publishes again only after the lecturer confirms', async () => {
+    vi.mocked(api.getModule).mockResolvedValue({ ...baseModule, moodle_course_id: 6, moodle_published_at: '2026-11-18T03:00:00Z' })
+    vi.mocked(api.getMoodleSections).mockResolvedValue([{ sectionnum: 0, name: 'General' }])
+    vi.mocked(api.publishToMoodle).mockResolvedValue({ moodle_course_id: 6, book_cmid: 42 })
+    const confirm = vi.spyOn(window, 'confirm').mockReturnValueOnce(false).mockReturnValueOnce(true)
+
+    renderPage()
+
+    const button = await screen.findByRole('button', { name: /^xuất bản lại$/i })
+    expect(screen.getByText(/đã xuất bản lên moodle lúc/i)).toBeInTheDocument()
+
+    await userEvent.click(button)
+    expect(confirm).toHaveBeenCalledTimes(1)
+    expect(api.publishToMoodle).not.toHaveBeenCalled()
+
+    await userEvent.click(button)
+    await waitFor(() => expect(api.publishToMoodle).toHaveBeenCalledWith('module-1', 0, true))
+  })
+
   it('shows an error and hides publishing until access is checked again after failure', async () => {
     vi.mocked(api.getModule).mockResolvedValue({ ...baseModule, moodle_course_id: 6 })
     vi.mocked(api.getMoodleSections).mockResolvedValue([])
@@ -757,7 +776,7 @@ describe('ModulePreviewPage - forms', () => {
       renderPage()
       await userEvent.selectOptions(await screen.findByRole('combobox'), '2')
       await userEvent.click(screen.getByRole('button', { name: /^xuất bản lên moodle$/i }))
-      await waitFor(() => expect(api.publishToMoodle).toHaveBeenCalledWith('module-1', 2))
+      await waitFor(() => expect(api.publishToMoodle).toHaveBeenCalledWith('module-1', 2, false))
     })
 
     it('pushes to a new section, numbered after the existing ones, and hides the drop-down', async () => {
@@ -769,7 +788,7 @@ describe('ModulePreviewPage - forms', () => {
       await userEvent.click(screen.getByRole('checkbox', { name: /tạo chủ đề mới/i }))
       expect(screen.queryByRole('combobox')).not.toBeInTheDocument()
       await userEvent.click(screen.getByRole('button', { name: /^xuất bản lên moodle$/i }))
-      await waitFor(() => expect(api.publishToMoodle).toHaveBeenCalledWith('module-1', 3))
+      await waitFor(() => expect(api.publishToMoodle).toHaveBeenCalledWith('module-1', 3, false))
     })
   })
 })

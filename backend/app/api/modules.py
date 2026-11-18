@@ -314,6 +314,7 @@ def get_module(
         "generation_models": module.generation_models,
         "course_id": module.course_id,
         "moodle_course_id": module.course.moodle_course_id,
+        "moodle_published_at": module.moodle_published_at,
         "is_control": control,
         "claim_citations": citations,
         "chat_edit_count": module_edit_count(db, module.id),
@@ -400,8 +401,8 @@ def delete_module(
     """Xóa một module đã sinh cùng bản đối chứng không RAG đi cặp với nó (nếu có).
 
     Components, câu hỏi, đánh giá, lịch sử chat-edit và job đã sinh module đều theo ON DELETE
-    CASCADE. Bảng không lưu module đã đẩy lên Moodle chưa (publish-to-moodle chỉ trả id), nên không
-    có tham chiếu cục bộ nào để dọn; Book/Quiz đã tạo trên Moodle giữ nguyên, giống như xóa khóa học.
+    CASCADE. Bảng chỉ lưu thời điểm đẩy lên Moodle, không lưu id hoạt động, nên không có tham chiếu
+    nào để dọn; Book/Quiz đã tạo trên Moodle giữ nguyên, giống như xóa khóa học.
     """
     module = _owned_module(db, module_id, current_user)
     # Cùng khóa với /modules/generate: một lượt sinh bản đối chứng không được chen vào giữa lúc kiểm và lúc xóa.

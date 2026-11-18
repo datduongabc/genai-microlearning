@@ -98,9 +98,9 @@ class Published:
         finally:
             db.close()
 
-    def publish(self, module_id, section_num=0):
+    def publish(self, module_id, section_num=0, **extra):
         return client.post(
-            f"/modules/{module_id}/publish-to-moodle", json={"section_num": section_num}, headers=self.headers
+            f"/modules/{module_id}/publish-to-moodle", json={"section_num": section_num, **extra}, headers=self.headers
         )
 
     def cleanup(self):
@@ -395,6 +395,38 @@ def test_a_failure_after_the_book_says_what_was_already_created(published, moodl
     assert response.status_code == 502
     assert "Book (cmid 101)" in response.json()["detail"]
     assert response.json()["detail"].startswith(UNREACHABLE)
+
+
+def test_a_published_module_is_published_again_only_when_the_lecturer_confirms(published, moodle):
+    module_id = full_module(published)
+    assert client.get(f"/modules/{module_id}", headers=published.headers).json()["moodle_published_at"] is None
+    assert published.publish(module_id).status_code == 200
+    assert client.get(f"/modules/{module_id}", headers=published.headers).json()["moodle_published_at"] is not None
+    sent = len(moodle)
+
+    again = published.publish(module_id)
+    assert again.status_code == 409
+    assert len(moodle) == sent
+
+    assert published.publish(module_id, republish=True).status_code == 200
+    assert len(moodle) == 2 * sent
+
+
+def test_a_partial_publish_counts_as_published_so_a_retry_asks_first(published, moodle, monkeypatch):
+    monkeypatch.setattr(moodle_client, "create_quiz", lambda *a, **k: (_ for _ in ()).throw(httpx.ReadTimeout("slow")))
+    module_id = full_module(published)
+    assert published.publish(module_id).status_code == 502
+    assert published.publish(module_id).status_code == 409
+
+
+def test_a_publish_that_created_nothing_can_simply_be_tried_again(published, monkeypatch):
+    def failing_book(*args, **kwargs):
+        raise httpx.ConnectError("down")
+
+    monkeypatch.setattr(moodle_client, "create_book", failing_book)
+    module_id = full_module(published)
+    assert published.publish(module_id).status_code == 502
+    assert published.publish(module_id).status_code == 502
 
 
 def test_a_failure_before_anything_was_created_names_nothing(published, monkeypatch):
