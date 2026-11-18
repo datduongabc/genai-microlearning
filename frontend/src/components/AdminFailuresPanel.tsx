@@ -1,3 +1,4 @@
+import { ChevronDown, RefreshCw } from "lucide-react";
 import { Fragment, useEffect, useState } from "react";
 import { apiErrorMessage, listFailedJobs, retryFailedJobs, type AdminCounts, type FailedJobInfo } from "../api";
 
@@ -90,7 +91,7 @@ export function AdminFailuresPanel({ counts, onChange }: { counts: AdminCounts |
             aria-pressed={filter === type} onClick={() => setFilter(type)}>{type === "all" ? "Tất cả" : JOB_TYPE_LABEL[type]}
             {type !== "all" && counts && ` (${counts.failed_jobs[type] ?? 0})`}</button>)}
         </div>
-        <div className="flex gap-3"><button onClick={reload} className="ui-button" aria-label="Làm mới">↻</button>
+        <div className="flex gap-3"><button onClick={reload} className="ui-button" aria-label="Làm mới"><RefreshCw aria-hidden="true" className="size-4" /></button>
           <button onClick={() => handleRetry([...selected])} disabled={retrying || selected.size === 0} className="ui-button primary">
             {selected.size === 0 ? "Thử lại đã chọn" : `Thử lại ${selected.size} tác vụ đã chọn`}
           </button>
@@ -109,8 +110,8 @@ export function AdminFailuresPanel({ counts, onChange }: { counts: AdminCounts |
       ) : (
         <div className="jobs-table ui-card">
           <table><thead><tr>
-            <th><input type="checkbox" aria-label="Chọn tất cả" checked={allPicked}
-              onChange={() => setSelected(allPicked ? new Set() : new Set(jobs.map((j) => j.id)))} /></th>
+            <th><label className="select-all"><input type="checkbox" aria-label="Chọn tất cả" checked={allPicked}
+              onChange={() => setSelected(allPicked ? new Set() : new Set(jobs.map((j) => j.id)))} /><span aria-hidden="true">Chọn tất cả</span></label></th>
             <th>Tài liệu</th><th>Loại tác vụ</th><th>Người dùng</th><th>Thời gian</th><th>Lỗi</th><th><span className="sr-only">Thao tác</span></th>
           </tr></thead><tbody>
             {jobs.map((job) => <Fragment key={job.id}>
@@ -122,9 +123,9 @@ export function AdminFailuresPanel({ counts, onChange }: { counts: AdminCounts |
                 <td className="small muted">{new Date(job.created_at).toLocaleString("vi-VN")}</td>
                 <td><p className="small muted truncate font-mono">{job.last_error || "—"}</p></td>
                 <td><div className="flex gap-2">
-                  <button className="ui-button" aria-label={`Thử lại ${job.document_filename}`} disabled={retrying} onClick={() => handleRetry([job.id])}>↻</button>
+                  <button className="ui-button" aria-label={`Thử lại ${job.document_filename}`} disabled={retrying} onClick={() => handleRetry([job.id])}>Thử lại</button>
                   <button className="expand-job" aria-label={`Chi tiết ${job.document_filename}`} aria-expanded={expanded.has(job.id)}
-                    aria-controls={expanded.has(job.id) ? `job-${job.id}` : undefined} onClick={() => toggleExpanded(job.id)}>{expanded.has(job.id) ? "⌃" : "⌄"}</button>
+                    aria-controls={expanded.has(job.id) ? `job-${job.id}` : undefined} onClick={() => toggleExpanded(job.id)}><ChevronDown aria-hidden="true" className="size-4" /></button>
                 </div></td>
               </tr>
               {expanded.has(job.id) && <tr id={`job-${job.id}`}><td colSpan={7} className="job-detail">

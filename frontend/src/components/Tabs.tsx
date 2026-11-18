@@ -13,7 +13,10 @@ export function Tabs({ tabs, selected, onSelect, label, children }: {
   return (
     <TabsPrimitive.Root value={selected} onValueChange={onSelect}>
       <TabsPrimitive.List aria-label={label} className="ui-tabs">
-        {tabs.map((tab) => <TabsPrimitive.Trigger key={tab.id} value={tab.id}>{tab.label}</TabsPrimitive.Trigger>)}
+        {tabs.map((tab) => <TabsPrimitive.Trigger key={tab.id} value={tab.id}
+          // Radix focuses the tab by script on a mouse press, which Chrome shows as keyboard focus.
+          onMouseDown={(event) => { event.currentTarget.dataset.pointer = ""; }}
+          onBlur={(event) => { delete event.currentTarget.dataset.pointer; }}>{tab.label}</TabsPrimitive.Trigger>)}
       </TabsPrimitive.List>
       <TabsPrimitive.Content value={selected}>{children}</TabsPrimitive.Content>
     </TabsPrimitive.Root>

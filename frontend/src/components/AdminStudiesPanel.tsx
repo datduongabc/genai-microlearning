@@ -58,7 +58,7 @@ export function AdminStudiesPanel() {
     <div className="study-main">
     <div className="ui-card study-detail">
       {selected ? <><h2>{selected.name}</h2><p className="small muted">Rubric {selected.rubric_version}</p></>
-        : <p>Chọn nghiên cứu</p>}
+        : <p className="muted">Chọn một nghiên cứu để mời người chấm và xem kết quả.</p>}
       {error && <p role="alert">{error}</p>}
       {studyId && loadedId !== studyId && !error && <p>Đang tải người chấm…</p>}
       {studyId && loadedId === studyId && <form noValidate onSubmit={async (event) => {
