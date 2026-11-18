@@ -34,16 +34,24 @@ __pycache__/
 .DS_Store
 Thumbs.db
 
-/docs/documents/
-
 # Hai ban bao cao: chi dua report.pdf len git, ma nguon LaTeX chi giu o may.
 /midterm-report/*
 !/midterm-report/report.pdf
 /final-report/*
 !/final-report/report.pdf
 !/final-report/tech-selection.pdf
-Applying AI Tools to Design Microlearning Materials.md
-Bloom Taxonomy.md
-The MIND Model A Microlearning AI Integrated Instructional Design for Enhanced Learning Outcomes.md
-# Page transcriptions of course material, cached by benchmark_chunking.py: not for the repository.
-docs/measurements/chunking/vision_cache.jsonl
+
+# docs/: chi giu so lieu do cho bao cao, hinh kien truc, va cac tai lieu ma README
+# hay ma nguon tro toi. Spec, plan, anh soat UI va tai lieu tham khao chi o may.
+/docs/*
+!/docs/measurements/
+!/docs/architecture/
+!/docs/integration/
+!/docs/rubric.md
+!/docs/studies.md
+!/docs/gateway-routing.md
+/docs/measurements/chunking/vision_cache.jsonl
+
+# Ghi chu va cong cu cua tac tu AI
+.superpowers/
+.claude/

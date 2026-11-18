@@ -77,6 +77,9 @@ def test_a_member_lists_only_published_items(world):
     assert response.status_code == 200
     body = response.json()
     assert [s["id"] for s in body["flashcard_sets"]] == [str(world["published"])]
+    # When it was handed out tells apart two items of one focus.
+    assert body["flashcard_sets"][0].pop("published_at") is not None
+    assert body["videos"][0].pop("published_at") is not None
     assert body["flashcard_sets"][0] | {} == {
         "id": str(world["published"]), "focus": "Heap", "card_count": 1,
         "document": {"id": str(world["doc"]), "filename": "bai-giang.pdf"},

@@ -12,7 +12,7 @@ def usable_alias(alias: str) -> str:
     if not catalog.is_available(alias):
         raise HTTPException(
             status_code=422,
-            detail=f"Gateway không phục vụ model sinh văn bản nào tên '{alias}'.",
+            detail=f"Không có mô hình nào tên '{alias}'.",
         )
     # Có trong danh sách chưa chắc đã dùng được: khóa của nhà cung cấp có thể trống, hết số
     # dư, hoặc hết hạn mức ngày. Thử ngay bây giờ để báo trong một giây thay vì mười phút.
@@ -22,7 +22,7 @@ def usable_alias(alias: str) -> str:
     except catalog.ModelUnusable as error:
         raise HTTPException(
             status_code=422,
-            detail=f"Model '{error.alias}' chưa dùng được: {error.reason}. Hãy chọn model khác.",
+            detail=f"Mô hình '{error.alias}' chưa dùng được: {error.reason}. Hãy chọn mô hình khác.",
         ) from error
     return alias
 
@@ -42,5 +42,5 @@ def generation_alias(requested: str | None, user: User) -> str:
     try:
         fact_check.judge_alias(alias)
     except ValueError as error:
-        raise HTTPException(status_code=422, detail=f"Model '{alias}' không có model kiểm chứng khác họ.") from error
+        raise HTTPException(status_code=422, detail=f"Mô hình '{alias}' chưa có mô hình kiểm chứng của hãng khác.") from error
     return alias

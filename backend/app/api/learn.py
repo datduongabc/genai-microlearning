@@ -39,10 +39,12 @@ def list_items(course_id: uuid.UUID, db: Session = Depends(get_db), current_user
     ).all()
     return {
         "flashcard_sets": [
-            {"id": s.id, "focus": s.focus, "card_count": len(s.cards), "document": _document(d)} for s, d in sets
+            {"id": s.id, "focus": s.focus, "card_count": len(s.cards), "published_at": s.published_at,
+             "document": _document(d)} for s, d in sets
         ],
         "videos": [
-            {"id": v.id, "focus": v.focus, "duration_seconds": v.duration_seconds, "document": _document(d)}
+            {"id": v.id, "focus": v.focus, "duration_seconds": v.duration_seconds,
+             "published_at": v.published_at, "document": _document(d)}
             for v, d in videos
         ],
     }

@@ -1,9 +1,10 @@
-import { useState, type RefObject } from "react";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import type { MediaChoice } from "../api";
 import { generateModuleSchema, type GenerateModuleFormValues } from "../lib/formSchemas";
 import { useMediaModels } from "../lib/useMediaModels";
+import { Dialog, DialogContent, DialogTitle } from "./ui/dialog";
 
 export type GenerateKind = "module" | "flashcards" | "video";
 
@@ -12,21 +13,21 @@ export type GenerateKind = "module" | "flashcards" | "video";
 // A video also picks its voice and image model, which are paid per video and per picture.
 const KIND_TEXT: Record<GenerateKind, { title: string; field: string; placeholder: string; tooLong: string }> = {
   module: {
-    title: "Sinh mô-đun",
-    field: "Hướng dẫn thêm cho AI (tuỳ chọn)",
-    placeholder: "Giải thích kỹ DLDFS và IDS",
+    title: "Tạo mô-đun",
+    field: "Yêu cầu thêm (không bắt buộc)",
+    placeholder: "Ví dụ: thêm ví dụ có lời giải từng bước",
     tooLong: "",
   },
   flashcards: {
-    title: "Sinh flashcard",
-    field: "Trọng tâm (tuỳ chọn)",
-    placeholder: "Mảng và danh sách liên kết",
+    title: "Tạo flashcard",
+    field: "Trọng tâm (không bắt buộc)",
+    placeholder: "Ví dụ: các định nghĩa trong chương 2",
     tooLong: "Trọng tâm tối đa 1000 ký tự",
   },
   video: {
-    title: "Sinh video",
-    field: "Trọng tâm (tuỳ chọn)",
-    placeholder: "Chỉ phần BFS và DFS",
+    title: "Tạo video",
+    field: "Trọng tâm (không bắt buộc)",
+    placeholder: "Ví dụ: chỉ mục 3.2",
     tooLong: "Trọng tâm tối đa 1000 ký tự",
   },
 };
@@ -49,7 +50,7 @@ function MediaSelect({ label, value, onChange, choices }: {
       {label}
       <select aria-label={label} value={value ?? ""} onChange={(e) => onChange(e.target.value)} disabled={!choices}
         className="ui-select w-full disabled:opacity-60">
-        {!choices && <option value="">Đang tải...</option>}
+        {!choices && <option value="">Đang tải…</option>}
         {choices?.map((choice) => (
           <option key={choice.alias} value={choice.alias}>
             {choice.label} ({choice.price})
@@ -60,8 +61,11 @@ function MediaSelect({ label, value, onChange, choices }: {
   );
 }
 
-export function GenerateDialog({ dialogRef, onGenerate, kind = "module" }: {
-  dialogRef: RefObject<HTMLDialogElement | null>;
+export function GenerateDialog({ open, onOpenChange, returnFocusTo, onGenerate, kind = "module" }: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  // What gets focus back on close; the menu item that opened the dialog no longer exists then.
+  returnFocusTo?: HTMLElement | null;
   // The second argument is the module guidance or, for the other kinds, the focus. The third
   // is passed for a video only.
   onGenerate: (language: "vi" | "en", instructions: string, media?: VideoMediaChoice) => void;
@@ -85,15 +89,17 @@ export function GenerateDialog({ dialogRef, onGenerate, kind = "module" }: {
   });
 
   function onValid(values: GenerateModuleFormValues) {
-    dialogRef.current?.close();
+    onOpenChange(false);
     if (kind === "video") onGenerate(values.language, values.instructions, { voiceAlias, imageAlias });
     else onGenerate(values.language, values.instructions);
   }
 
   return (
-    <dialog ref={dialogRef} aria-label={text.title} className="ui-dialog">
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="ui-dialog" aria-describedby={undefined}
+        onCloseAutoFocus={(event) => { if (returnFocusTo) { event.preventDefault(); returnFocusTo.focus(); } }}>
       <form noValidate onSubmit={(event) => void handleSubmit(onValid)(event)}>
-        <h2 className="ui-dialog-title">{text.title}</h2>
+        <DialogTitle className="ui-dialog-title">{text.title}</DialogTitle>
         <label className="flex items-center gap-3 text-sm">
           Ngôn ngữ đầu ra
           <select {...register("language")} className="ui-select">
@@ -105,27 +111,28 @@ export function GenerateDialog({ dialogRef, onGenerate, kind = "module" }: {
           {text.field}
           <textarea {...register("instructions")} maxLength={1000} rows={4} placeholder={text.placeholder} className="ui-input mt-2 w-full" />
         </label>
-        {errors.instructions && <p className="mt-1 text-[13px] danger-text">{text.tooLong || errors.instructions.message}</p>}
+        {errors.instructions && <p className="mt-1 text-sm danger-text">{text.tooLong || errors.instructions.message}</p>}
         {kind === "video" && (
           <>
             {models === "failed" ? (
               <p className="course-hint">
-                Không tải được danh sách giọng và model ảnh: video sẽ dùng giọng và model ảnh mặc định.
+                Không tải được danh sách giọng đọc và mô hình vẽ hình. Video sẽ dùng lựa chọn mặc định.
               </p>
             ) : (
               <>
                 <MediaSelect label="Giọng đọc" value={voiceAlias} onChange={setVoicePick} choices={choices?.voices ?? null} />
-                <MediaSelect label="Model vẽ hình" value={imageAlias} onChange={setImagePick} choices={choices?.images ?? null} />
+                <MediaSelect label="Mô hình vẽ hình" value={imageAlias} onChange={setImagePick} choices={choices?.images ?? null} />
               </>
             )}
-            <p className="course-hint">Giá tham khảo; tiền hình chỉ tính khi bấm Vẽ hình, tiền giọng khi bấm Dựng video.</p>
+            <p className="course-hint">Giá chỉ để tham khảo. Chi phí hình tính khi vẽ hình, chi phí giọng tính khi dựng video.</p>
           </>
         )}
         <div className="mt-6 flex justify-end gap-3">
-          <button type="button" onClick={() => dialogRef.current?.close()} className="ui-button">Huỷ</button>
+          <button type="button" onClick={() => onOpenChange(false)} className="ui-button">Hủy</button>
           <button type="submit" className="ui-button primary">{text.title}</button>
         </div>
       </form>
-    </dialog>
+      </DialogContent>
+    </Dialog>
   );
 }

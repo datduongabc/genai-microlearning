@@ -144,7 +144,7 @@ describe('ModulePreviewPage - SCORM package', () => {
   it('is not offered for a control module', async () => {
     vi.mocked(api.getModule).mockResolvedValue({ ...baseModule, is_control: true })
     renderPage()
-    await screen.findByText('Đối chứng (không RAG) - chỉ dùng cho nghiên cứu')
+    await screen.findByText('Bản đối chứng cho nghiên cứu, không dùng tài liệu')
     expect(screen.queryByRole('button', { name: 'Tải gói SCORM (.zip)' })).not.toBeInTheDocument()
   })
 })
@@ -154,7 +154,7 @@ describe('ModulePreviewPage - publish to Moodle', () => {
     vi.mocked(api.getModule).mockResolvedValue({ ...baseModule, is_control: true, moodle_course_id: 6 })
     vi.mocked(api.getMoodleSections).mockResolvedValue([])
     renderPage()
-    expect(await screen.findByText('Đối chứng (không RAG) - chỉ dùng cho nghiên cứu')).toBeInTheDocument()
+    expect(await screen.findByText('Bản đối chứng cho nghiên cứu, không dùng tài liệu')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /^xuất bản lên moodle$/i })).not.toBeInTheDocument()
     expect(api.publishToMoodle).not.toHaveBeenCalled()
   })
@@ -379,8 +379,8 @@ describe('ModulePreviewPage - reading the module', () => {
     renderPage()
 
     const quizCard = (await screen.findByText('CÂU-HỎI')).closest('section') as HTMLElement
-    expect(within(quizCard).getByText('Chưa tự kiểm')).toBeInTheDocument()
-    expect(within(quizCard).queryByText('Đạt CRAG')).not.toBeInTheDocument()
+    expect(within(quizCard).getByText('Chưa kiểm')).toBeInTheDocument()
+    expect(within(quizCard).queryByText('Đã kiểm với nguồn')).not.toBeInTheDocument()
   })
 
   it('treats a module saved before the self-check flag existed as self-checked', async () => {
@@ -401,8 +401,8 @@ describe('ModulePreviewPage - reading the module', () => {
     renderPage()
 
     const quizCard = (await screen.findByText('CÂU-HỎI')).closest('section') as HTMLElement
-    expect(within(quizCard).getByText('Đạt CRAG')).toBeInTheDocument()
-    expect(within(quizCard).queryByText('Chưa tự kiểm')).not.toBeInTheDocument()
+    expect(within(quizCard).getByText('Đã kiểm với nguồn')).toBeInTheDocument()
+    expect(within(quizCard).queryByText('Chưa kiểm')).not.toBeInTheDocument()
   })
 
   it('lists the sub-objectives under the learning objective', async () => {
@@ -516,7 +516,7 @@ it('asks for a reload instead of a retry when the refresh after an applied chat 
 it('hides the chat edit panel for research control modules', async () => {
   vi.mocked(api.getModule).mockResolvedValue({ ...baseModule, is_control: true })
   renderPage()
-  expect(await screen.findByText('Đối chứng (không RAG) - chỉ dùng cho nghiên cứu')).toBeInTheDocument()
+  expect(await screen.findByText('Bản đối chứng cho nghiên cứu, không dùng tài liệu')).toBeInTheDocument()
   expect(screen.queryByRole('textbox', { name: 'Yêu cầu chỉnh sửa' })).not.toBeInTheDocument()
 })
 
@@ -797,7 +797,7 @@ it('does not ask Moodle for sections where this environment has no Moodle', asyn
   vi.mocked(api.getModule).mockResolvedValue({ ...baseModule, moodle_course_id: 72 })
   vi.mocked(api.getMoodleAccount).mockResolvedValue({ email: 'teacher@example.com', status: 'unavailable' })
   renderPage()
-  expect(await screen.findByText(/Mở từ Moodle \(LTI\) vẫn dùng bình thường/)).toBeInTheDocument()
+  expect(await screen.findByText(/Mở công cụ từ Moodle vẫn dùng bình thường/)).toBeInTheDocument()
   expect(api.getMoodleSections).not.toHaveBeenCalled()
 })
 
@@ -815,7 +815,7 @@ it('shows the served model when generation used a fallback', async () => {
     generation_models: [{ requested_alias: 'gemini-flash', served_model: 'google/gemini-3.8-flash' }],
   })
   renderPage()
-  expect(await screen.findByText(/Model sinh: gemini-flash → google\/gemini-3.8-flash/)).toBeInTheDocument()
+  expect(await screen.findByText(/Mô hình AI: gemini-flash → google\/gemini-3.8-flash/)).toBeInTheDocument()
 })
 
 it('renders numbered inline citations in reading order and opens the exact chunk', async () => {

@@ -19,7 +19,7 @@ MAX_ERROR_CHARS = 200
 # In place of that message when the system failed the job: an exception's text tells the lecturer
 # nothing they can act on. It stays in last_error for the admin.
 SYSTEM_FAILURE_MESSAGE = ("Hệ thống tạm thời không xử lý được (dịch vụ mô hình hoặc kết nối gặp sự cố). "
-                          "Hãy bấm Thử lại sau ít phút; nếu vẫn lỗi, báo quản trị viên.")
+                          "Hãy bấm Thử lại sau ít phút. Nếu vẫn lỗi, hãy báo quản trị viên.")
 
 
 # A failed picture or render is tried again from the video editor ("Vẽ lại", "Dựng lại"), never by

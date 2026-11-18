@@ -165,7 +165,7 @@ def test_exhausted_segment_is_visible_and_no_partial_transcript_is_returned(tmp_
     with patch.object(readers, "_duration_seconds", return_value=700), patch.object(
         readers.subprocess, "run", side_effect=_fake_ffmpeg
     ), patch.object(readers, "transcribe_audio", side_effect=transcribe), pytest.raises(
-        ValueError, match="09:58.*hạn mức audio Groq"
+        ValueError, match="09:58.*hạn mức chuyển âm thanh"
     ):
         readers.read_audio_video(str(path))
 
@@ -236,7 +236,7 @@ def test_permanently_failed_segment_stops_after_three_attempts():
     failed = threading.Event()
     with patch.object(readers, "transcribe_audio", side_effect=_rate_limit('1')) as transcribe, patch.object(
         failed, "wait", return_value=False
-    ), pytest.raises(ValueError, match="09:58.*hạn mức audio Groq"):
+    ), pytest.raises(ValueError, match="09:58.*hạn mức chuyển âm thanh"):
         readers._transcribe_piece('part.mp3', 598, readers.time.monotonic() + 600, failed)
     assert transcribe.call_count == 3
 
@@ -322,7 +322,7 @@ def test_failed_window_preparation_is_terminal_before_its_upload(tmp_path):
     import subprocess
     with patch.object(readers.subprocess, 'run', side_effect=subprocess.CalledProcessError(1, 'ffmpeg')), patch.object(
         readers, 'transcribe_audio'
-    ) as transcribe, pytest.raises(ValueError, match='09:58.*ffmpeg'):
+    ) as transcribe, pytest.raises(ValueError, match='09:58.*tệp âm thanh'):
         readers._transcribe_window('input.mp4', str(tmp_path), 1, 598, 602, readers.time.monotonic() + 600,
                                    threading.Event())
     transcribe.assert_not_called()

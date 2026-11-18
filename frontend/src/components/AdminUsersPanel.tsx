@@ -1,3 +1,7 @@
+import { Ellipsis, KeyRound, Unlink, UserCheck, UserX } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "./ui/dropdown-menu";
+import { toast } from "sonner";
+import { confirmAction } from "../lib/confirm";
 import { useCallback, useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -24,11 +28,9 @@ export function AdminUsersPanel({ counts, onChange }: { counts: AdminCounts | nu
   const [filter, setFilter] = useState("active");
   const [users, setUsers] = useState<AdminUser[] | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [resetting, setResetting] = useState<string | null>(null);
-  const [menu, setMenu] = useState<string | null>(null);
 
   // Bumped to load the list again (after a change), so the effect below is the only loader.
   const [reloads, setReloads] = useState(0);
@@ -37,15 +39,6 @@ export function AdminUsersPanel({ counts, onChange }: { counts: AdminCounts | nu
     onChange();
   }, [onChange]);
 
-  // One row menu at a time; a press anywhere outside the open one closes it.
-  useEffect(() => {
-    if (!menu) return;
-    const close = (event: PointerEvent) => {
-      if (!(event.target instanceof Element && event.target.closest(".user-actions"))) setMenu(null);
-    };
-    document.addEventListener("pointerdown", close);
-    return () => document.removeEventListener("pointerdown", close);
-  }, [menu]);
 
   // Sets state only from promise callbacks, and drops an answer that arrives after a newer request.
   useEffect(() => {
@@ -66,13 +59,13 @@ export function AdminUsersPanel({ counts, onChange }: { counts: AdminCounts | nu
   }, [reloads, filter]);
 
   async function handleToggleActive(user: AdminUser) {
-    if (!window.confirm(`${user.is_active ? "Vô hiệu hóa" : "Kích hoạt lại"} tài khoản ${user.email}? Dữ liệu và liên kết Moodle được giữ nguyên.`)) return;
+    const verb = user.is_active ? "Vô hiệu hóa" : "Kích hoạt lại";
+    if (!await confirmAction({ title: `${verb} tài khoản ${user.email}?`, description: "Dữ liệu và liên kết Moodle được giữ nguyên.", action: verb, destructive: user.is_active })) return;
     setBusyId(user.id);
     setError(null);
-    setNotice(null);
     try {
       await setUserActive(user.id, !user.is_active);
-      setNotice(user.is_active ? `Đã vô hiệu hóa tài khoản ${user.email}.` : `Đã kích hoạt lại tài khoản ${user.email}.`);
+      toast.success(user.is_active ? `Đã vô hiệu hóa tài khoản ${user.email}.` : `Đã kích hoạt lại tài khoản ${user.email}.`);
       reload();
     } catch (err) {
       setError(apiErrorMessage(err, "Đổi trạng thái tài khoản thất bại"));
@@ -82,13 +75,12 @@ export function AdminUsersPanel({ counts, onChange }: { counts: AdminCounts | nu
   }
 
   async function handleUnlinkMoodle(user: AdminUser) {
-    if (!window.confirm(`Hủy liên kết tài khoản Moodle của ${user.email}? Các khóa học và nội dung trên Moodle được giữ nguyên. Người dùng cần liên kết lại tài khoản để tiếp tục đẩy nội dung lên Moodle.`)) return;
+    if (!await confirmAction({ title: `Hủy liên kết tài khoản Moodle của ${user.email}?`, description: "Các khóa học và nội dung trên Moodle được giữ nguyên. Người dùng cần liên kết lại để tiếp tục đẩy nội dung lên Moodle.", action: "Hủy liên kết" })) return;
     setBusyId(user.id);
     setError(null);
-    setNotice(null);
     try {
       await unlinkUserMoodleAccount(user.id);
-      setNotice(`Đã hủy liên kết Moodle của ${user.email}.`);
+      toast.success(`Đã hủy liên kết Moodle của ${user.email}.`);
       reload();
     } catch (err) {
       setError(apiErrorMessage(err, "Không hủy được liên kết Moodle."));
@@ -110,17 +102,15 @@ export function AdminUsersPanel({ counts, onChange }: { counts: AdminCounts | nu
         onCreated={(created) => {
           setCreating(false);
           setError(null);
-          setNotice(`Đã tạo tài khoản cho ${created.email}.`);
+          toast.success(`Đã tạo tài khoản cho ${created.email}.`);
           reload();
         }}
       />}
-
-      {notice && <p className="text-sm text-green-800">{notice}</p>}
       {error && <p className="text-sm text-red-700">{error}</p>}
       {loadError && <p className="text-sm text-red-700">{loadError}</p>}
 
       {users === null ? (
-        !loadError && <p className="text-sm text-gray-500">Đang tải...</p>
+        !loadError && <p className="text-sm text-gray-500">Đang tải…</p>
       ) : (
         <ul className="account-table ui-card">
           <li className="account-row table-heading"><span>Người dùng</span><span>Moodle</span><span /></li>
@@ -136,25 +126,24 @@ export function AdminUsersPanel({ counts, onChange }: { counts: AdminCounts | nu
                 <span className={`small ${u.moodle_status === "linked" ? "success-text" : "muted"}`}>
                   {u.moodle_status === null ? "—" : u.moodle_status === "linked" ? "↗ Đã liên kết" : "Chưa liên kết"}
                 </span>
-                <div className="user-actions" onKeyDown={(e) => {
-                  if (e.key !== "Escape" || menu !== u.id) return;
-                  setMenu(null);
-                  e.currentTarget.querySelector("button")?.focus();
-                }}>
-                  <button aria-label={`Thao tác ${u.email}`} aria-expanded={menu === u.id}
-                    onClick={() => setMenu(menu === u.id ? null : u.id)}>⋯</button>
-                  {menu === u.id && <div className="user-actions-menu" onClick={(e) => {
-                    setMenu(null);
-                    e.currentTarget.parentElement?.querySelector("button")?.focus();
-                  }}>
-                    <button onClick={() => setResetting(resetting === u.id ? null : u.id)}>Đặt lại mật khẩu</button>
-                    {u.moodle_status === "linked" && <button disabled={busyId === u.id} onClick={() => void handleUnlinkMoodle(u)}>Hủy liên kết Moodle</button>}
-                    <button disabled={busyId === u.id || u.is_admin} onClick={() => void handleToggleActive(u)}
-                      title={u.is_admin ? "Không thể vô hiệu hóa tài khoản admin" : undefined} className="danger-text">
-                      {u.is_active ? "Vô hiệu hóa" : "Kích hoạt lại"}
-                    </button>
-                  </div>}
-                </div>
+                {/* Not modal: the rest of the list stays usable, as it was, and a press outside closes it. */}
+                <DropdownMenu modal={false}>
+                  <DropdownMenuTrigger className="icon-button justify-self-end" aria-label={`Thao tác ${u.email}`}>
+                    <Ellipsis aria-hidden="true" />
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="doc-menu">
+                    <DropdownMenuItem onSelect={() => setResetting(resetting === u.id ? null : u.id)}>
+                      <KeyRound aria-hidden="true" />Đặt lại mật khẩu
+                    </DropdownMenuItem>
+                    {u.moodle_status === "linked" && <DropdownMenuItem disabled={busyId === u.id} onSelect={() => void handleUnlinkMoodle(u)}>
+                      <Unlink aria-hidden="true" />Hủy liên kết Moodle
+                    </DropdownMenuItem>}
+                    {/* An admin account cannot be deactivated, so the item is left out rather than shown dead. */}
+                    {!u.is_admin && <DropdownMenuItem variant={u.is_active ? "destructive" : "default"} disabled={busyId === u.id} onSelect={() => void handleToggleActive(u)}>
+                      {u.is_active ? <UserX aria-hidden="true" /> : <UserCheck aria-hidden="true" />}{u.is_active ? "Vô hiệu hóa" : "Kích hoạt lại"}
+                    </DropdownMenuItem>}
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
               {resetting === u.id && (
                 <ResetPasswordForm
@@ -162,7 +151,7 @@ export function AdminUsersPanel({ counts, onChange }: { counts: AdminCounts | nu
                   onDone={(message) => {
                     setResetting(null);
                     setError(null);
-                    setNotice(message);
+                    toast.success(message);
                   }}
                 />
               )}
@@ -203,17 +192,17 @@ function CreateUserForm({ onCreated }: { onCreated: (user: AdminUser) => void })
     >
       <h2 className="text-h2 font-semibold">Tạo tài khoản người dùng</h2>
       <div className="grid gap-3 sm:grid-cols-3">
-        <label className="flex flex-col gap-1 text-xs text-gray-500">
+        <label className="flex flex-col gap-1 text-sm text-gray-500">
           Họ và tên
           <input type="text" autoComplete="off" className="auth-input" {...register("name")} />
           {errors.name && <span className="text-red-600">{errors.name.message}</span>}
         </label>
-        <label className="flex flex-col gap-1 text-xs text-gray-500">
+        <label className="flex flex-col gap-1 text-sm text-gray-500">
           Email
           <input type="email" autoComplete="off" className="auth-input" {...register("email")} />
           {errors.email && <span className="text-red-600">{errors.email.message}</span>}
         </label>
-        <label className="flex flex-col gap-1 text-xs text-gray-500">
+        <label className="flex flex-col gap-1 text-sm text-gray-500">
           Mật khẩu ban đầu
           <input type="password" autoComplete="new-password" className="auth-input" {...register("password")} />
           {errors.password && <span className="text-red-600">{errors.password.message}</span>}
@@ -226,7 +215,7 @@ function CreateUserForm({ onCreated }: { onCreated: (user: AdminUser) => void })
           disabled={isSubmitting}
           className="rounded-[3px] bg-accent px-4 py-2 text-sm font-semibold text-white hover:bg-accent-dark disabled:opacity-60"
         >
-          {isSubmitting ? "Đang tạo..." : "Tạo tài khoản"}
+          {isSubmitting ? "Đang tạo…" : "Tạo tài khoản"}
         </button>
       </div>
     </form>
@@ -267,10 +256,10 @@ function ResetPasswordForm({ user, onDone }: { user: AdminUser; onDone: (message
           disabled={isSubmitting}
           className="rounded-[3px] bg-ink px-3 py-1.5 text-sm font-semibold text-white hover:bg-ink-raised disabled:opacity-60"
         >
-          {isSubmitting ? "Đang lưu..." : "Lưu mật khẩu mới"}
+          {isSubmitting ? "Đang lưu…" : "Lưu mật khẩu mới"}
         </button>
       </div>
-      {errors.password && <span className="text-xs text-red-600">{errors.password.message}</span>}
+      {errors.password && <span className="text-sm text-red-600">{errors.password.message}</span>}
       {error && <span className="text-sm text-red-700">{error}</span>}
     </form>
   );

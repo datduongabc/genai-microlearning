@@ -1,3 +1,4 @@
+import { confirmAction } from "../lib/confirm";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { Link, NavLink } from "react-router-dom";
 import { homeFor, useAuth } from "../auth/useAuth";
@@ -6,17 +7,20 @@ import { Brand } from "./AuthLayout";
 import { MoodleAccountSection, type MoodleAccountState } from "./MoodleAccountSection";
 import { initials } from "../lib/initials";
 import { confirmLeavingUnsavedWork } from "../lib/useLeaveGuard";
+import { useMediaQuery } from "../lib/useMediaQuery";
+import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "./ui/sheet";
+import { BookOpen, ChevronDown, ClipboardCheck, Link2, LogOut, Menu, PanelLeftClose, PanelLeftOpen, ShieldCheck, Unlink } from "lucide-react";
 
-function NavIcon({ kind }: { kind: "book" | "rating" | "admin" }) {
-  return <svg className="shell-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-    {kind === "book" ? <><path d="M4 4h6l2 2 2-2h6v16h-6l-2 2-2-2H4z" /><path d="M12 6v16" /></> : kind === "rating" ? <><path d="M9 4H5v17h14V4h-4M9 3h6v4H9z" /><path d="m8 14 3 3 5-6" /></> : <><path d="m12 3 8 4v5c0 5-8 9-8 9s-8-4-8-9V7z" /><path d="m8 12 3 3 5-6" /></>}
-  </svg>;
+const NAV_ICON = { book: BookOpen, rating: ClipboardCheck, admin: ShieldCheck };
+function NavIcon({ kind }: { kind: keyof typeof NAV_ICON }) {
+  const Icon = NAV_ICON[kind];
+  return <Icon className="shell-icon" strokeWidth={1.75} aria-hidden="true" />;
 }
 
-function AccountIcon({ kind }: { kind: "link" | "unlink" | "logout" }) {
-  return <svg className="shell-icon account-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-    {kind === "logout" ? <><path d="M9 5H4v14h5M9 12h11m-4-4 4 4-4 4" /></> : <><path d="m10 13 4-4M8 16l-1 1a4 4 0 0 1-6-6l4-4a4 4 0 0 1 6 0m2 1 1-1a4 4 0 0 1 6 6l-4 4a4 4 0 0 1-6 0" />{kind === "unlink" && <path d="m3 3 18 18" />}</>}
-  </svg>;
+const ACCOUNT_ICON = { link: Link2, unlink: Unlink, logout: LogOut };
+function AccountIcon({ kind }: { kind: keyof typeof ACCOUNT_ICON }) {
+  const Icon = ACCOUNT_ICON[kind];
+  return <Icon className="shell-icon account-icon" strokeWidth={1.75} aria-hidden="true" />;
 }
 
 // Remembered in this browser only: a layout preference, not worth a request. Storage that is
@@ -31,6 +35,8 @@ export function AppShell({ title, fullTitle, children }: { title: string; fullTi
   const { user, logout } = useAuth();
   const [open, setOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(readCollapsed);
+  const mobile = useMediaQuery("(max-width: 700px)");
+  const [drawer, setDrawer] = useState(false);
   function toggleCollapsed() {
     setCollapsed((was) => {
       try { window.localStorage.setItem(COLLAPSED_KEY, was ? "0" : "1"); } catch { /* not remembered */ }
@@ -62,7 +68,7 @@ export function AppShell({ title, fullTitle, children }: { title: string; fullTi
 
   function close() { setOpen(false); trigger.current?.focus(); }
   async function unlink() {
-    if (!window.confirm("Hủy liên kết Moodle? Bạn sẽ không xuất bản lên Moodle được cho đến khi liên kết lại.")) return;
+    if (!await confirmAction({ title: "Hủy liên kết Moodle?", description: "Bạn sẽ không xuất bản lên Moodle được cho đến khi liên kết lại.", action: "Hủy liên kết" })) return;
     setBusy(true); setError(null);
     try {
       await unlinkMoodleAccount();
@@ -73,16 +79,13 @@ export function AppShell({ title, fullTitle, children }: { title: string; fullTi
     finally { setBusy(false); }
   }
 
-  return <div className="min-h-screen bg-paper" data-sidebar={collapsed ? "collapsed" : "expanded"}>
-    <a className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded focus:bg-white focus:px-3 focus:py-2" href="#main-content">Đến nội dung chính</a>
-    <aside className="sidebar" aria-label="Thanh bên">
+  // One copy of the navigation: a fixed sidebar on wide screens, a drawer behind a menu button on phones.
+  const sidebarBody = <>
       <div className="sidebar-head">
         <Link to={homeFor(user?.is_admin)} aria-label="GENAILMS, trang chủ"><Brand /></Link>
         <button type="button" className="sidebar-toggle" onClick={toggleCollapsed} aria-expanded={!collapsed}
           aria-label={collapsed ? "Mở rộng thanh bên" : "Thu gọn thanh bên"} data-tip={collapsed ? "Mở rộng thanh bên" : undefined}>
-          <svg className="shell-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-            {collapsed ? <path d="m6 7 5 5-5 5m7-10 5 5-5 5" /> : <path d="m18 7-5 5 5 5m-7-10-5 5 5 5" />}
-          </svg>
+          {collapsed ? <PanelLeftOpen className="shell-icon" strokeWidth={1.75} aria-hidden="true" /> : <PanelLeftClose className="shell-icon" strokeWidth={1.75} aria-hidden="true" />}
         </button>
       </div>
       <nav className="shell-nav" aria-label="Điều hướng chính">
@@ -115,10 +118,24 @@ export function AppShell({ title, fullTitle, children }: { title: string; fullTi
         <button className="account-trigger" data-tip={user?.name} ref={trigger} aria-label={`Tài khoản ${user?.name}, ${user?.is_admin ? "Quản trị viên" : "Giảng viên"}`} aria-expanded={open} aria-controls="account-menu" onClick={() => { setError(null); setAccount(null); setOpen(!open); }}>
           <span className="avatar" aria-hidden="true">{user && initials(user.name)}</span>
           <span className="shell-label min-w-0 flex-1"><span className="block truncate font-semibold">{user?.name}</span><span className="brand-sub">{user?.is_admin ? "Quản trị viên" : "Giảng viên"}</span></span>
-          <svg className="shell-icon account-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
+          <ChevronDown className="shell-icon account-chevron" aria-hidden="true" />
         </button>
       </div>
-    </aside>
+  </>;
+
+  return <div className="min-h-screen bg-paper" data-sidebar={collapsed ? "collapsed" : "expanded"}>
+    <a className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded focus:bg-white focus:px-3 focus:py-2" href="#main-content">Đến nội dung chính</a>
+    {mobile ? <header className="mobile-bar">
+      <Link to={homeFor(user?.is_admin)} aria-label="GENAILMS, trang chủ"><Brand /></Link>
+      <Sheet open={drawer} onOpenChange={setDrawer}>
+        <SheetTrigger className="mobile-menu-button" aria-label="Mở menu"><Menu className="shell-icon" aria-hidden="true" /></SheetTrigger>
+        <SheetContent side="left" className="sidebar-sheet" aria-describedby={undefined}
+          onOpenAutoFocus={(event) => { event.preventDefault(); (event.currentTarget as HTMLElement).querySelector<HTMLElement>(".shell-nav a[aria-current], .shell-nav a")?.focus(); }} onClick={(event) => { if ((event.target as HTMLElement).closest(".shell-nav a")) setDrawer(false); }}>
+          <SheetTitle className="sr-only">Menu</SheetTitle>
+          {sidebarBody}
+        </SheetContent>
+      </Sheet>
+    </header> : <aside className="sidebar" aria-label="Thanh bên">{sidebarBody}</aside>}
     <main id="main-content" className="shell-main" tabIndex={-1}><div className="shell-content"><h1 className="page-title" title={fullTitle}>{title}</h1>{children}</div></main>
   </div>;
 }

@@ -107,7 +107,7 @@ export function CourseChat({ courseId }: { courseId: string }) {
       {turns.length > 0 && <button type="button" onClick={startOver} disabled={sending}
         className="link-action small-action">Cuộc trò chuyện mới</button>}
     </div>
-    {loading && <p className="chat-note">Đang tải cuộc trò chuyện...</p>}
+    {loading && <p className="chat-note">Đang tải cuộc trò chuyện…</p>}
     {loadError && <p className="chat-note">{loadError}</p>}
     {!loading && !loadError && turns.length === 0 && <p className="chat-note">
       Câu trả lời lấy từ tài liệu của môn học, kèm slide hoặc trang nguồn.
@@ -121,7 +121,7 @@ export function CourseChat({ courseId }: { courseId: string }) {
           {turn.answer && <div className="chat-answer">
             <Markdown {...modelMarkdownProps}>{turn.answer}</Markdown>
           </div>}
-          {writing && !turn.answer && <p className="chat-note">Đang tìm trong tài liệu...</p>}
+          {writing && !turn.answer && <p className="chat-note">Đang tìm trong tài liệu…</p>}
           {turn.citations.length > 0 && <p className="chat-sources">
             Nguồn: {[...new Set(turn.citations.map((c) => sourceLabel(c.source_ref)))].join('; ')}
           </p>}
@@ -133,11 +133,12 @@ export function CourseChat({ courseId }: { courseId: string }) {
     <form onSubmit={handleSubmit(send)} noValidate className="chat-form">
       <label htmlFor="course-chat-message" className="chat-label">Câu hỏi của bạn</label>
       <textarea id="course-chat-message" maxLength={4000} rows={3} disabled={sending || loading}
+        placeholder="Nhập câu hỏi về nội dung môn học"
         {...register('message')} className="ui-input w-full" />
-      {errors.message && <p className="danger-text text-[13px]">{errors.message.message}</p>}
+      {errors.message && <p className="danger-text text-sm">{errors.message.message}</p>}
       <button type="submit" disabled={sending || loading || blank}
         className="ui-button primary w-fit">
-        {sending ? 'Đang trả lời...' : 'Gửi câu hỏi'}
+        {sending ? 'Đang trả lời…' : 'Gửi câu hỏi'}
       </button>
     </form>
   </section>

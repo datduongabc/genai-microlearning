@@ -13,7 +13,7 @@ export function ModuleListItem({ module: m, deleting, onDelete }: ModuleListItem
       <Link to={`/modules/${m.id}`} className="module-link">
         {m.title}
         {m.is_control && (
-          <span className="control-badge">Đối chứng (không RAG) - chỉ dùng cho nghiên cứu</span>
+          <span className="control-badge">Bản đối chứng cho nghiên cứu, không dùng tài liệu</span>
         )}
       </Link>
       <button
@@ -22,7 +22,7 @@ export function ModuleListItem({ module: m, deleting, onDelete }: ModuleListItem
         aria-label={`Xóa mô-đun ${m.title}`}
         className="link-action danger small-action"
       >
-        {deleting ? "Đang xóa..." : "Xóa mô-đun"}
+        {deleting ? "Đang xóa…" : "Xóa mô-đun"}
       </button>
     </li>
   );

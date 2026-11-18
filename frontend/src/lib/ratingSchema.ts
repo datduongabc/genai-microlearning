@@ -27,7 +27,7 @@ export const rubric = [
     question: "Có khẳng định nào không có căn cứ trong nguồn?",
     label: "Thông tin bịa",
     guide:
-      "Kiểm từng câu ở mọi phần (trừ mục tiêu) với nguồn; ghi từng khẳng định không có căn cứ. 5: không có (danh sách rỗng); 4: một chi tiết phụ; 3: 2–3 claim hoặc một ý chính; 2: nhiều claim; 1: phần lớn không có căn cứ.",
+      "Kiểm từng câu ở mọi phần (trừ mục tiêu) với nguồn; ghi từng khẳng định không có căn cứ. 5: không có (danh sách rỗng); 4: một chi tiết phụ; 3: hai đến ba khẳng định hoặc một ý chính; 2: nhiều khẳng định; 1: phần lớn không có căn cứ.",
   },
   {
     key: "slide_quality",
@@ -74,7 +74,7 @@ export const ratingSchema = z.object({
   query_alignment: dimension,
   hallucination_findings: z.array(
     z.object({
-      claim: z.string().trim().min(1, "Vui lòng nhập claim"),
+      claim: z.string().trim().min(1, "Vui lòng nhập khẳng định"),
       field: z.string(),
       reason: z.string().trim().min(1, "Vui lòng nhập lý do"),
     }),

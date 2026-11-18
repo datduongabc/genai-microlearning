@@ -35,13 +35,13 @@ export function StudiesPage() {
     };
   }, []);
   return (
-    <AppShell title="Nghiên cứu được mời">
+    <AppShell title="Chấm nghiên cứu">
       {error && <p role="alert">Không tải được danh sách nghiên cứu.</p>}
       {!studies && !error && <p>Đang tải…</p>}
       {studies?.length === 0 && <p>Bạn chưa được mời chấm nghiên cứu nào.</p>}
       <ul className="space-y-4">
         {studies?.map((study) => (
-          <li key={study.id} className="rounded border bg-white p-4">
+          <li key={study.id} className="ui-card p-4">
             <Link to={`/studies/${study.id}`} className="font-semibold text-accent">
               {study.name}
             </Link>
@@ -201,7 +201,7 @@ export function BlindRatingPage() {
   }, [studyId]);
   const item = data?.items.find((i) => i.id === itemId);
   return (
-    <AppShell title={item ? `Chấm mù · ${item.anon_code}` : "Chấm mù"}>
+    <AppShell title={item ? `Chấm mù: ${item.anon_code}` : "Chấm mù"}>
       {error ? (
         <p role="alert" className="mt-4">
           Không tải được nghiên cứu. Lời mời có thể đã bị thu hồi.

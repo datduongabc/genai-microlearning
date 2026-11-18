@@ -45,7 +45,7 @@ export function LoginPage() {
 
         {justRegistered && !error && (
           <div role="status" className="text-sm text-green-800">
-            ✓ Đã tạo tài khoản. Mời đăng nhập.
+            Đã tạo tài khoản. Hãy đăng nhập.
           </div>
         )}
 
@@ -87,7 +87,6 @@ export function LoginPage() {
             id="login-password"
             type="password"
             autoComplete="current-password"
-            placeholder="Tối thiểu 8 ký tự"
             className="auth-input"
             aria-invalid={!!errors.password}
             aria-describedby={errors.password ? "password-error" : undefined}
@@ -103,7 +102,7 @@ export function LoginPage() {
           disabled={isSubmitting}
           className="auth-submit"
         >
-          {isSubmitting ? "Đang đăng nhập..." : "Đăng nhập"}
+          {isSubmitting ? "Đang đăng nhập…" : "Đăng nhập"}
         </button>
 
         {selfRegistration === true && (

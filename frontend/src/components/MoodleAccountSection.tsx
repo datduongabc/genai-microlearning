@@ -10,7 +10,7 @@ const emailSchema = z.object({ email: z.string().trim().email("Email không hợ
 const LABEL: Record<MoodleAccountState, string> = {
   linked: "Đã liên kết", not_linked: "Chưa liên kết", unknown: "Không kiểm tra được Moodle",
   pending: "Chờ xác nhận trong Moodle", rejected: "Yêu cầu đã bị từ chối", expired: "Yêu cầu đã hết hạn",
-  unavailable: "Chưa nối với Moodle",
+  unavailable: "Chưa kết nối Moodle",
 };
 
 export function MoodleAccountSection({ onStatus }: { onStatus?: (status: MoodleAccountState) => void }) {
@@ -71,7 +71,7 @@ export function MoodleAccountSection({ onStatus }: { onStatus?: (status: MoodleA
       {answer?.email && status !== "unavailable" && <p className="mt-1 text-sm muted">{answer.email}</p>}
       {status === "unavailable" && (
         <p className="mt-1 text-sm muted">
-          Chưa liên kết tài khoản hay xuất bản sang Moodle được. Mở từ Moodle (LTI) vẫn dùng bình thường.
+          Hệ thống chưa kết nối Moodle nên chưa liên kết tài khoản hay xuất bản được. Mở công cụ từ Moodle vẫn dùng bình thường.
         </p>
       )}
       {status === "pending" && <p className="mt-2 text-sm muted">Nếu có tài khoản Moodle phù hợp, hãy đăng nhập Moodle để xác nhận liên kết.</p>}
@@ -89,7 +89,7 @@ export function MoodleAccountSection({ onStatus }: { onStatus?: (status: MoodleA
           </label>
           {errors.email && <p className="text-sm danger-text">{errors.email.message}</p>}
           <button disabled={isSubmitting} className="ui-button primary self-start">
-            {isSubmitting ? "Đang gửi..." : "Yêu cầu liên kết"}
+            {isSubmitting ? "Đang gửi…" : "Yêu cầu liên kết"}
           </button>
         </form>
       )}

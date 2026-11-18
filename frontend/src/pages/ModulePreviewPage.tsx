@@ -151,7 +151,7 @@ export function ModulePreviewPage() {
   if (loading) {
     return (
       <AppShell title="Mô-đun">
-        <p className="text-sm text-gray-500">Đang tải...</p>
+        <p className="text-sm text-gray-500">Đang tải…</p>
       </AppShell>
     )
   }
@@ -190,7 +190,7 @@ export function ModulePreviewPage() {
           <div className="module-main">
             <ModuleHeader module={module} onSaved={refresh} />
             {module.is_control && (
-              <p className="mt-2 text-sm text-amber-700">Đối chứng (không RAG) - chỉ dùng cho nghiên cứu</p>
+              <p className="mt-2 text-sm text-amber-700">Bản đối chứng cho nghiên cứu, không dùng tài liệu</p>
             )}
             <div className="module-sheet">
               {module.components.map((c) => (
@@ -264,10 +264,10 @@ function ModuleChatPanel({ module, onSaved }: { module: ModuleDetail; onSaved: (
       <textarea id="module-chat-message" maxLength={4000} rows={3} disabled={sending}
         placeholder="Ví dụ: rút gọn slide 3, làm câu quiz 2 khó hơn"
         {...register('message')} className="ui-input w-full" />
-      {errors.message && <p className="text-[13px] danger-text">{errors.message.message}</p>}
+      {errors.message && <p className="text-sm danger-text">{errors.message.message}</p>}
       <button type="submit" disabled={sending || blank}
         className="ui-button primary w-fit">
-        {sending ? 'Đang chỉnh sửa...' : 'Gửi yêu cầu'}
+        {sending ? 'Đang chỉnh sửa…' : 'Gửi yêu cầu'}
       </button>
     </form>
     {error && <p role="alert" className="mt-2 text-sm danger-text">{error}</p>}
@@ -395,13 +395,13 @@ function PublishToMoodleSection({
         disabled={publishing || result !== null}
         className="ui-button primary"
       >
-        {publishing ? 'Đang xuất bản...' : result !== null ? 'Đã xuất bản lên Moodle' : 'Xuất bản lên Moodle'}
+        {publishing ? 'Đang xuất bản…' : result !== null ? 'Đã xuất bản lên Moodle' : 'Xuất bản lên Moodle'}
       </button>
       </form>}
 
       {result && (
         <p role="status" className="mt-3 text-sm success-text">
-          Đã tạo trên Moodle course id {result.moodle_course_id}: sách nội dung
+          Đã tạo trên khóa học Moodle #{result.moodle_course_id}: sách nội dung
           {result.practice_cmid ? ', bài luyện tập' : ''}
           {result.quiz_cmid ? ', quiz' : ''}.
         </p>
@@ -444,9 +444,9 @@ function ModuleHeader({ module, onSaved }: { module: ModuleDetail; onSaved: () =
           <button
             type="submit"
             disabled={saving}
-            className="rounded-[3px] bg-accent px-4 py-1.5 text-xs font-semibold text-white hover:bg-accent-dark disabled:opacity-60"
+            className="ui-button primary"
           >
-            {saving ? 'Đang lưu...' : 'Lưu'}
+            {saving ? 'Đang lưu…' : 'Lưu'}
           </button>
           <button
             type="button"
@@ -455,11 +455,11 @@ function ModuleHeader({ module, onSaved }: { module: ModuleDetail; onSaved: () =
               setError('')
               setEditing(false)
             }}
-            className="text-xs font-semibold text-gray-500 hover:text-gray-700"
+            className="ui-button"
           >
             Hủy
           </button>
-          {errors.title && <p className="basis-full text-xs text-red-600">{errors.title.message}</p>}
+          {errors.title && <p className="basis-full text-sm text-red-600">{errors.title.message}</p>}
           {error && <p role="alert" className="basis-full text-sm danger-text">{error}</p>}
         </form>
       ) : (
@@ -475,8 +475,8 @@ function ModuleHeader({ module, onSaved }: { module: ModuleDetail; onSaved: () =
       )}
 
       {!!module.generation_models?.length && (
-        <p className="mt-2 text-xs text-gray-600">
-          Model sinh: {[...new Set(module.generation_models.map((call) => `${call.requested_alias} → ${call.served_model}`))].join(', ')}
+        <p className="mt-2 text-sm text-gray-600">
+          Mô hình AI: {[...new Set(module.generation_models.map((call) => `${call.requested_alias} → ${call.served_model}`))].join(', ')}
         </p>
       )}
       {module.learning_objective && (
@@ -534,13 +534,13 @@ function ComponentCard({
                   <p>{citation.claim}</p>
                   {citation.resolution === 'resolved' ? (
                     <details className="mt-1">
-                      <summary className="cursor-pointer text-xs text-accent hover:underline">
+                      <summary className="cursor-pointer text-sm text-accent hover:underline">
                         {citation.locator}
                       </summary>
                       <p className="mt-2 whitespace-pre-wrap rounded bg-gray-50 p-3">{citation.chunk_content}</p>
                     </details>
                   ) : (
-                    <p className="mt-1 text-xs text-gray-500">
+                    <p className="mt-1 text-sm text-gray-500">
                       {citation.locator}: <span>{citation.resolution === 'ambiguous' ? 'trùng nhiều đoạn nguồn, không xác định được' : 'không tìm thấy đoạn nguồn'}</span>
                     </p>
                   )}
@@ -605,7 +605,7 @@ function ScormDownload({ moduleId, moduleTitle }: { moduleId: string; moduleTitl
         Một tệp zip theo chuẩn SCORM 1.2 cho Moodle hoặc LMS khác: nội dung, luyện tập và bài kiểm tra; LMS ghi lại điểm.
       </p>
       <button type="button" className="ui-button" disabled={downloading} onClick={() => void download()}>
-        {downloading ? 'Đang tạo gói...' : 'Tải gói SCORM (.zip)'}
+        {downloading ? 'Đang tạo gói…' : 'Tải gói SCORM (.zip)'}
       </button>
       {error && <p role="alert" className="mt-3 text-sm danger-text">{error}</p>}
     </section>
@@ -658,22 +658,22 @@ function SaveCancelRow({
   }
   if (!editing) {
     return (
-      <button onClick={() => { setError(''); onEdit() }} className="text-xs font-semibold text-accent hover:underline">
+      <button onClick={() => { setError(''); onEdit() }} className="ui-button self-start">
         Sửa
       </button>
     )
   }
   return (
     <>
-      <div className="flex gap-3">
+      <div className="flex gap-3 self-start">
         <button
           onClick={() => void save()}
           disabled={saving}
-          className="rounded-[3px] bg-accent px-4 py-1.5 text-xs font-semibold text-white hover:bg-accent-dark disabled:opacity-60"
+          className="ui-button primary"
         >
-          {saving ? 'Đang lưu...' : 'Lưu'}
+          {saving ? 'Đang lưu…' : 'Lưu'}
         </button>
-        <button onClick={() => { setError(''); onCancel() }} className="text-xs font-semibold text-gray-500 hover:text-gray-700">
+        <button onClick={() => { setError(''); onCancel() }} className="ui-button">
           Hủy
         </button>
       </div>
@@ -693,7 +693,7 @@ const MARKDOWN: Components = {
   ul: ({ children }) => <ul className="mb-2 list-disc pl-5">{children}</ul>,
   ol: ({ children }) => <ol className="mb-2 list-decimal pl-5">{children}</ol>,
   li: ({ children }) => <li className="mb-0.5">{children}</li>,
-  code: ({ children }) => <code className="rounded bg-gray-100 px-1 font-mono text-[13px]">{children}</code>,
+  code: ({ children }) => <code className="rounded bg-gray-100 px-1 font-mono text-sm">{children}</code>,
 }
 
 function MarkdownFieldEditor({
@@ -1054,7 +1054,7 @@ function QuizDisplay({
                       : 'bg-gray-100 text-gray-700'
                 }`}
               >
-                {!passed ? 'Không đạt CRAG' : selfChecked ? 'Đạt CRAG' : 'Chưa tự kiểm'}
+                {!passed ? 'Chưa khớp nguồn' : selfChecked ? 'Đã kiểm với nguồn' : 'Chưa kiểm'}
               </span>
             </div>
             <QuestionEditor moduleId={moduleId} question={question}
@@ -1064,7 +1064,7 @@ function QuizDisplay({
       })}
       {questions.length === 0 && (
         <p className="text-sm text-gray-500">
-          Không sinh được câu hỏi hợp lệ
+          Chưa tạo được câu hỏi hợp lệ
           {failed.length > 0 ? ` (${failed.map((c) => c.fail_reason).join('; ')})` : ''}.
         </p>
       )}
@@ -1108,15 +1108,15 @@ function QuestionEditor({ moduleId, question, explanation, onSaved }: {
   return <div className="flex flex-col gap-3">
     {editing ? <form onSubmit={handleSubmit(save)} noValidate className="flex flex-col gap-3">
       <label>Câu hỏi<textarea aria-label="Câu hỏi" {...register('stem')} className="w-full rounded border border-gray-300 p-2" /></label>
-      {errors.stem && <p className="text-xs text-red-600">{errors.stem.message}</p>}
+      {errors.stem && <p className="text-sm text-red-600">{errors.stem.message}</p>}
       {question.choices.options.map((_, i) => <div key={i} className="flex flex-wrap items-center gap-2">
         <input type="radio" value={String(i)} aria-label={`Đáp án ${String.fromCharCode(65 + i)}`} {...register('answer_key')} />
         <input aria-label={`Phương án ${String.fromCharCode(65 + i)}`} {...register(`choices.${i}`)} className="min-w-0 flex-1 rounded border border-gray-300 p-2" />
-        {errors.choices?.[i] && <p className="basis-full text-xs text-red-600">{errors.choices[i].message}</p>}
+        {errors.choices?.[i] && <p className="basis-full text-sm text-red-600">{errors.choices[i].message}</p>}
       </div>)}
       <label>Giải thích<textarea aria-label="Giải thích" {...register('explanation')} className="w-full rounded border border-gray-300 p-2" /></label>
       <div className="flex gap-3">
-        <button type="submit" disabled={saving} className="text-sm font-semibold text-accent">{saving ? 'Đang lưu...' : 'Lưu'}</button>
+        <button type="submit" disabled={saving} className="text-sm font-semibold text-accent">{saving ? 'Đang lưu…' : 'Lưu'}</button>
         <button type="button" disabled={saving} onClick={() => setEditing(false)} className="text-sm text-gray-500">Hủy</button>
       </div>
     </form> : <>

@@ -614,7 +614,7 @@ def generate_video_script(db: Session, video_id: uuid.UUID, before_save: Callabl
             raise ValueError(f"Video {video_id} not found")
         doc = db.get(Document, video.document_id)
         if doc is None or not doc.raw_text:
-            raise ValueError("Document chưa được parse (raw_text rỗng)")
+            raise ValueError("Tài liệu chưa xử lý xong.")
         language: OutputLanguage = video.output_language  # type: ignore[assignment]
 
         video.model_alias = catalog.served_or_default(video.model_alias)
@@ -631,7 +631,7 @@ def generate_video_script(db: Session, video_id: uuid.UUID, before_save: Callabl
             )
             scenes, dropped, uncited = _kept_scenes(draft.scenes, chunks)
             if not scenes:
-                raise ValueError("Model không viết được cảnh nào có trích nguồn từ tài liệu; hãy thử lại "
+                raise ValueError("AI không viết được cảnh nào có trích nguồn từ tài liệu. Hãy thử lại "
                                  "hoặc đổi trọng tâm")
             _settle_kinds(scenes)
             draft_chars = _total_chars(scenes)
@@ -656,7 +656,7 @@ def generate_video_script(db: Session, video_id: uuid.UUID, before_save: Callabl
             invented = _invented_in_picture(s)
             if invented:
                 s.flags.append(f"Mô tả hình có {', '.join(invented)}, không có trong đoạn nguồn của cảnh: "
-                               "hãy sửa mô tả trước khi vẽ")
+                               "hãy sửa mô tả trước khi vẽ.")
         verdicts = fact_check.check_items_against_sources(
             [(_items(s, language), [c.content for c in s.chunks()]) for s in scenes], video.model_alias, language)
         for s, item_flags in zip(scenes, verdicts, strict=True):
@@ -664,10 +664,10 @@ def generate_video_script(db: Session, video_id: uuid.UUID, before_save: Callabl
         if len(scenes) < MIN_SCENES:
             # Why it is short tells the lecturer what to do: sources missing suggests another focus.
             why = (f"{dropped} cảnh không trích được nguồn đã bị bỏ" if dropped
-                   else "model chỉ viết từng ấy cảnh")
+                   else "AI chỉ viết được từng ấy cảnh")
             scenes[0].flags.append(
-                f"Lời thoại chỉ có {len(scenes)} cảnh (nên có {MIN_SCENES} đến {MAX_SCENES}) vì {why}: "
-                "hãy thêm cảnh hoặc sinh lại")
+                f"Lời thoại chỉ có {len(scenes)} cảnh, nên có {MIN_SCENES} đến {MAX_SCENES} cảnh. Lý do: {why}. "
+                "Hãy thêm cảnh hoặc tạo lại video.")
         stored = [_stored(s, language) for s in scenes]
 
         if before_save is not None:

@@ -136,7 +136,7 @@ export function RegisterPage() {
           disabled={isSubmitting}
           className="auth-submit"
         >
-          {isSubmitting ? "Đang tạo tài khoản..." : "Tạo tài khoản"}
+          {isSubmitting ? "Đang tạo tài khoản…" : "Tạo tài khoản"}
         </button>
 
         <div className="auth-footer">

@@ -260,7 +260,7 @@ def test_a_provider_refusal_names_the_model(monkeypatch, store):
         draw_illustrations(FakeDb(video), video.id)
     assert len(calls) == 1  # a refusal repeats, so it is not tried again
     assert IMAGE_MODELS[ALIAS].label in video.error and "Biểu đồ Gantt" in video.error
-    assert "không có nhà cung cấp nào" in video.error and "không thu thập dữ liệu" in video.error
+    assert "không có nhà cung cấp nào" in video.error and "không lưu dữ liệu" in video.error
 
 
 def test_another_refusal_quotes_the_provider(monkeypatch, store):

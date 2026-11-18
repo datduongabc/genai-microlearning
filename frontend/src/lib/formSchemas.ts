@@ -60,7 +60,7 @@ export type UploadDocumentFormValues = z.infer<typeof uploadDocumentSchema>;
 
 // Linking a course to one of the teacher's Moodle courses picked from the drop-down.
 export const linkMoodleCourseSchema = z.object({
-  moodleCourseId: z.string().min(1, "Vui lòng chọn một course Moodle"),
+  moodleCourseId: z.string().min(1, "Vui lòng chọn một khóa học Moodle"),
 });
 
 export type LinkMoodleCourseFormValues = z.infer<typeof linkMoodleCourseSchema>;

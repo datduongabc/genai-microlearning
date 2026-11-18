@@ -1,3 +1,4 @@
+import { confirmAction } from "../lib/confirm";
 import { useCallback, useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -60,13 +61,13 @@ export function CoursesPage() {
   async function handleDelete(course: Course) {
     // Xóa vĩnh viễn cả tài liệu/mô-đun/quiz trong course (cascade ở DB) --
     // không đụng tới Moodle dù course đã liên kết, nên phải cảnh báo rõ.
-    const confirmed = window.confirm(
-      `Xóa vĩnh viễn môn học "${course.name}"? Toàn bộ tài liệu, mô-đun và quiz đã sinh trong môn học này sẽ bị xóa theo, không thể khôi phục.${
-        course.moodle_course_id !== null
-          ? " (Course trên Moodle sẽ KHÔNG bị xóa, chỉ mất liên kết.)"
-          : ""
+    const confirmed = await confirmAction({
+      title: `Xóa môn học "${course.name}"?`,
+      description: `Toàn bộ tài liệu, mô-đun, quiz, flashcard và video trong môn học bị xóa theo. Không thể khôi phục.${
+        course.moodle_course_id !== null ? " Khóa học trên Moodle vẫn giữ nguyên." : ""
       }`,
-    );
+      action: "Xóa môn học", destructive: true,
+    });
     if (!confirmed) return;
 
     setDeletingId(course.id);
@@ -88,13 +89,13 @@ export function CoursesPage() {
           className="ui-input min-w-0 flex-1"
         />
         <button disabled={creating} className="ui-button primary">
-          {creating ? "Đang tạo..." : "Tạo môn học"}
+          {creating ? "Đang tạo…" : "Tạo môn học"}
         </button>
-        {errors.name && <p className="basis-full text-[13px] danger-text">{errors.name.message}</p>}
+        {errors.name && <p className="basis-full text-sm danger-text">{errors.name.message}</p>}
       </form>
 
       {loading ? (
-        <p className="course-empty">Đang tải môn học...</p>
+        <p className="course-empty">Đang tải môn học…</p>
       ) : loadFailed ? (
         <div className="course-empty">
           <p role="alert" className="danger-text">Không tải được danh sách môn học.</p>
@@ -106,12 +107,13 @@ export function CoursesPage() {
         <ul className="course-list">
           {courses.map((c) => (
             <li key={c.id} className="course-row">
+              <span className="course-tile" aria-hidden="true">{c.name.trim().charAt(0).toUpperCase()}</span>
               <div className="min-w-0">
                 <Link to={`/courses/${c.id}`} className="course-name">
                   {c.name}
                 </Link>
                 <div className="course-meta">
-                  {c.moodle_course_id !== null ? `Đã liên kết Moodle course id ${c.moodle_course_id}` : "Chưa liên kết Moodle"}
+                  {c.moodle_course_id !== null ? `Đã liên kết khóa học Moodle #${c.moodle_course_id}` : "Chưa liên kết Moodle"}
                 </div>
               </div>
               <button
@@ -119,7 +121,7 @@ export function CoursesPage() {
                 disabled={deletingId === c.id}
                 className="link-action danger"
               >
-                {deletingId === c.id ? "Đang xóa..." : "Xóa"}
+                {deletingId === c.id ? "Đang xóa…" : "Xóa"}
               </button>
             </li>
           ))}

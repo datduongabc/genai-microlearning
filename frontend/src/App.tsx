@@ -1,3 +1,5 @@
+import { ConfirmHost } from "./components/ConfirmHost";
+import { Toaster } from "./components/ui/sonner";
 import { lazy, Suspense } from "react";
 import { createBrowserRouter, createRoutesFromElements, Navigate, Route, RouterProvider, useRouteError } from "react-router-dom";
 import { AuthProvider } from "./auth/AuthContext";
@@ -91,6 +93,8 @@ function App() {
     <AuthProvider>
       <ErrorBoundary>
         <RouterProvider router={router} />
+        <ConfirmHost />
+        <Toaster position="bottom-right" />
       </ErrorBoundary>
     </AuthProvider>
   );

@@ -184,14 +184,14 @@ def _draw(alias: str, index: int, scene: Scene) -> _Drawn | SceneFailure:
             image = generate_image(alias, image_prompt_for(scene), aspect_ratio=ASPECT_RATIO)
             data = _as_jpeg(trim_whitespace(image.data))
         except MediaError as busy:
-            reason = f"model {label} không trả về hình"
+            reason = f"mô hình {label} không trả về hình"
             if attempt < IMAGE_ATTEMPTS:
                 wait_before_retry(busy, attempt)
             continue
         except (UnidentifiedImageError, Image.DecompressionBombError, OSError, SyntaxError):
             # What came back is not a picture Pillow can read; like an empty reply, often a one-off.
             logger.warning(f"[video_images] scene {index}: {label} returned an unreadable image", exc_info=True)
-            reason = f"model {label} trả về hình không đọc được"
+            reason = f"mô hình {label} trả về hình không đọc được"
             continue
         except ValueError as refusal:
             # A refusal (no provider that keeps data_collection deny, a prompt it rejects) repeats
@@ -199,7 +199,7 @@ def _draw(alias: str, index: int, scene: Scene) -> _Drawn | SceneFailure:
             return SceneFailure(index, refusal_reason(label, refusal, "ảnh"))
         except Exception:
             logger.exception(f"[video_images] scene {index}: drawing failed unexpectedly")
-            return SceneFailure(index, f"lỗi hệ thống khi vẽ bằng model {label}")
+            return SceneFailure(index, f"lỗi hệ thống khi vẽ bằng mô hình {label}")
         return _Drawn(index, scene.image_prompt or "", data, image.served_model, image.cost)
     return SceneFailure(index, reason)
 

@@ -410,8 +410,8 @@ def test_a_voice_refusal_names_the_data_policy(monkeypatch, store, slides):
     with pytest.raises(ValueError):
         render_video(FakeDb(video), video.id)
     assert len(calls) == 1
-    assert "không có nhà cung cấp nào" in video.error and "data_collection: deny" in video.error
-    assert "model giọng khác" in video.error
+    assert "không có nhà cung cấp nào" in video.error and "không lưu dữ liệu" in video.error
+    assert "mô hình giọng khác" in video.error
 
 
 def test_a_video_deleted_while_rendering_leaves_no_files(monkeypatch, store, slides, tmp_path):

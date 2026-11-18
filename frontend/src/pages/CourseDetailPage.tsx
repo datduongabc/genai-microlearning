@@ -1,3 +1,7 @@
+import { toast } from "sonner";
+import { confirmAction } from "../lib/confirm";
+import { BookOpenText, ChevronDown, Clapperboard, Ellipsis, Layers, Plus, Trash2 } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../components/ui/dropdown-menu";
 import axios from "axios";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { useForm, useWatch } from "react-hook-form";
@@ -34,7 +38,8 @@ import { AppShell } from "../components/AppShell";
 import { CourseChat } from "../components/CourseChat";
 import { ModelPicker } from "../components/ModelPicker";
 import { MoodleAccountSection, type MoodleAccountState } from "../components/MoodleAccountSection";
-import { GenerateDialog, type VideoMediaChoice } from "../components/GenerateDialog";
+import { GenerateDialog, type GenerateKind, type VideoMediaChoice } from "../components/GenerateDialog";
+import { focusReturnTarget } from "../lib/focusReturn";
 import { formatMinutes } from "../lib/duration";
 import {
   linkMoodleCourseSchema,
@@ -47,7 +52,7 @@ import { ModuleListItem } from "../components/ModuleListItem";
 const STATUS_LABEL: Record<string, string> = {
   uploaded: "Đã tải lên",
   processing: "Đang xử lý",
-  chunked: "Đã chia đoạn",
+  chunked: "Đang xử lý",
   embedded: "Sẵn sàng",
   failed: "Lỗi",
 };
@@ -87,9 +92,9 @@ function matchesFilter(doc: DocumentInfo, filter: StatusFilter): boolean {
 
 function failureTitle(failure: DocumentFailure): string {
   if (failure.job_type === "document_pipeline") return "Xử lý tài liệu thất bại";
-  if (failure.job_type === "flashcard_generation") return "Sinh bộ thẻ thất bại";
-  if (failure.job_type === "video_script") return "Sinh lời thoại video thất bại";
-  return "Sinh mô-đun thất bại";
+  if (failure.job_type === "flashcard_generation") return "Tạo flashcard thất bại";
+  if (failure.job_type === "video_script") return "Viết lời thoại video thất bại";
+  return "Tạo mô-đun thất bại";
 }
 
 const WARNING_LABEL: Record<string, string> = {
@@ -113,26 +118,26 @@ function extractionWarningLines(warnings: DocumentInfo["extraction_warnings"]) {
 }
 
 function flashcardStatusText(set: FlashcardSetSummary): string {
-  if (set.status === "generating") return "Đang sinh...";
-  if (set.status === "failed") return "Sinh thất bại";
-  return `${set.published_at ? "Đã giao" : "Bản nháp"} - ${set.card_count} thẻ`;
+  if (set.status === "generating") return "Đang tạo…";
+  if (set.status === "failed") return "Tạo thất bại";
+  return `${set.published_at ? "Đã giao" : "Bản nháp"}, ${set.card_count} thẻ`;
 }
 
 // The statuses a video has while one of its jobs runs in the worker.
 const VIDEO_JOB_TEXT: Partial<Record<VideoSummary["status"], string>> = {
-  generating: "Đang sinh lời thoại...",
-  drawing: "Đang vẽ hình...",
-  rendering: "Đang dựng video...",
+  generating: "Đang viết lời thoại…",
+  drawing: "Đang vẽ hình…",
+  rendering: "Đang dựng video…",
 };
 
 function videoStatusText(video: VideoSummary): string {
   const running = VIDEO_JOB_TEXT[video.status];
   if (running) return running;
   // A failed picture or render leaves the scenes to edit; only a failed script leaves nothing.
-  if (video.status === "failed" && video.scene_count === 0) return "Sinh thất bại";
+  if (video.status === "failed" && video.scene_count === 0) return "Tạo thất bại";
   if (video.status === "failed") return "Có lỗi, mở để xem";
   const length = video.duration_seconds === null ? "" : `, ${formatMinutes(video.duration_seconds)} phút`;
-  return `${video.published_at ? "Đã giao" : "Bản nháp"} - ${video.scene_count} cảnh${length}`;
+  return `${video.published_at ? "Đã giao" : "Bản nháp"}, ${video.scene_count} cảnh${length}`;
 }
 
 // What a list row's pill means: neutral for a draft, green once published, "processing" only
@@ -145,12 +150,13 @@ function mediaPillStatus(running: boolean, failed: boolean, published: boolean):
 
 type MediaKind = "Flashcard" | "Video";
 
+
 // When an item was made, as "tạo 00:20 16/11" in the lecturer's time: enough to tell two items of one
 // focus apart, which live run 2's page could only do by their card or scene counts.
 function createdText(iso: string): string {
   const at = new Date(iso);
   const two = (n: number) => String(n).padStart(2, "0");
-  return `tạo ${two(at.getHours())}:${two(at.getMinutes())} ${two(at.getDate())}/${two(at.getMonth() + 1)}`;
+  return `Tạo lúc ${two(at.getHours())}:${two(at.getMinutes())}, ${two(at.getDate())}/${two(at.getMonth() + 1)}`;
 }
 
 // The creation time of each item whose title another item of its document's list also has, by id.
@@ -166,13 +172,15 @@ function MediaListItem({ kind, to, focus, status, statusText, created }: {
   kind: MediaKind; to: string; focus: string | null; status?: string; statusText: string; created?: string;
 }) {
   return (
-    <li className="module-item">
+    <li className="module-item media-item">
       <span className="media-kind">{kind}</span>
       <Link to={to} className="module-link flashcard-link" title={focus ?? undefined}>
         {focus ?? "Toàn bộ tài liệu"}
       </Link>
-      {created && <time className="media-created" dateTime={created}>{createdText(created)}</time>}
-      <span className="status-pill" data-status={status}>{statusText}</span>
+      <span className="media-meta">
+        <span className="status-pill" data-status={status}>{statusText}</span>
+        {created && <time className="media-created" dateTime={created}>{createdText(created)}</time>}
+      </span>
     </li>
   );
 }
@@ -188,10 +196,10 @@ interface PendingMedia {
 
 function PendingMediaItem({ item }: { item: PendingMedia }) {
   return (
-    <li className="module-item" aria-busy="true">
+    <li className="module-item media-item" aria-busy="true">
       <span className="media-kind">{item.kind}</span>
       <span className="module-link">{item.focus ?? "Toàn bộ tài liệu"}</span>
-      <span className="status-pill" data-status="processing">Đang gửi yêu cầu...</span>
+      <span className="media-meta"><span className="status-pill" data-status="processing">Đang gửi yêu cầu…</span></span>
     </li>
   );
 }
@@ -227,13 +235,15 @@ export function CourseDetailPage() {
   // Model cho các lượt sinh bấm từ trang này, dùng chung cho tài liệu;
   // chuỗi rỗng nghĩa là chưa chọn gì. ModelPicker điền sẵn mặc định đã lưu của giảng viên.
   const [modelAlias, setModelAlias] = useState("");
-  const generateDialog = useRef<HTMLDialogElement>(null);
-  const generateDocument = useRef<DocumentInfo | null>(null);
-  const flashcardDialog = useRef<HTMLDialogElement>(null);
-  const flashcardDocument = useRef<DocumentInfo | null>(null);
+  // The document a generate dialog is for and the button to give focus back to. Kept after the
+  // dialog closes: the dialog hands focus back only once it has finished closing.
+  const [asking, setAsking] = useState<{ kind: GenerateKind; document: DocumentInfo; returnTo: HTMLElement | null; open: boolean } | null>(null);
+  const ask = (kind: GenerateKind, document: DocumentInfo) => setAsking({ kind, document, returnTo: focusReturnTarget(), open: true });
+  const dialogProps = (kind: GenerateKind) => ({
+    kind, open: asking?.kind === kind && asking.open, returnFocusTo: asking?.returnTo,
+    onOpenChange: (open: boolean) => { if (!open) setAsking((was) => was && { ...was, open: false }); },
+  });
   const [flashcardSets, setFlashcardSets] = useState<FlashcardSetSummary[]>([]);
-  const videoDialog = useRef<HTMLDialogElement>(null);
-  const videoDocument = useRef<DocumentInfo | null>(null);
   const [videos, setVideos] = useState<VideoSummary[]>([]);
   const [modulesByDoc, setModulesByDoc] = useState<
     Record<string, ModuleSummary[]>
@@ -246,7 +256,6 @@ export function CourseDetailPage() {
   const [error, setError] = useState<string | null>(null);
   // What went right but is worth saying (a delete that succeeded although the list could not
   // be reloaded afterwards); shown apart from `error` so it does not read as a failure.
-  const [notice, setNotice] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [retryingJobIds, setRetryingJobIds] = useState<Set<string>>(new Set());
   // Only bridges the moment between clicking and the server reporting the
@@ -398,7 +407,7 @@ export function CourseDetailPage() {
       if (axios.isAxiosError(err) && err.response?.status === 409) {
         setError("Tài liệu này đang sinh một mô-đun khác. Chờ lượt đó xong rồi thử lại.");
       } else {
-        setError(apiErrorMessage(err, "Sinh mô-đun thất bại"));
+        setError(apiErrorMessage(err, "Tạo mô-đun thất bại"));
       }
     } finally {
       setStartingIds((ids) => {
@@ -433,7 +442,6 @@ export function CourseDetailPage() {
   async function startGeneration(
     generate: () => Promise<unknown>, reload: () => Promise<void>, failed: string, started: string,
   ) {
-    setNotice(null);
     try {
       await generate();
     } catch (err) {
@@ -445,7 +453,7 @@ export function CourseDetailPage() {
       await reload();
     } catch (err) {
       // Said only then: otherwise the new row in the list says it.
-      setNotice(`${started}.`);
+      toast.success(`${started}.`);
       setError(`${apiErrorMessage(err, "Không tải lại được danh sách")}. ${started}, hãy tải lại trang để theo dõi.`);
     }
   }
@@ -454,7 +462,7 @@ export function CourseDetailPage() {
     await sendMediaRequest(doc, "Flashcard", focus, () => startGeneration(
       () => generateFlashcards(doc.id, { focus, outputLanguage, modelAlias }),
       async () => setFlashcardSets(await listFlashcardSets(courseId ?? "")),
-      "Sinh flashcard thất bại", "Đã bắt đầu sinh bộ flashcard",
+      "Tạo flashcard thất bại", "Đã bắt đầu tạo flashcard",
     ));
   }
 
@@ -462,19 +470,20 @@ export function CourseDetailPage() {
     await sendMediaRequest(doc, "Video", focus, () => startGeneration(
       () => generateVideo(doc.id, { focus, outputLanguage, modelAlias, ...media }),
       async () => setVideos(await listVideos(courseId ?? "")),
-      "Sinh video thất bại", "Đã bắt đầu sinh video",
+      "Tạo video thất bại", "Đã bắt đầu tạo video",
     ));
   }
 
   async function handleDeleteDocument(doc: DocumentInfo) {
-    const confirmed = window.confirm(
-      `Xóa vĩnh viễn tài liệu "${doc.filename}"? Các mô-đun/quiz đã sinh từ tài liệu này sẽ bị xóa theo, không thể khôi phục.`,
-    );
+    const confirmed = await confirmAction({
+      title: `Xóa tài liệu "${doc.filename}"?`,
+      description: "Các mô-đun, quiz, flashcard và video sinh từ tài liệu này bị xóa theo. Không thể khôi phục.",
+      action: "Xóa tài liệu", destructive: true,
+    });
     if (!confirmed) return;
 
     setDeletingDocId(doc.id);
     setError(null);
-    setNotice(null);
     try {
       await deleteDocument(doc.id);
     } catch (err) {
@@ -482,7 +491,7 @@ export function CourseDetailPage() {
       setDeletingDocId(null);
       return;
     }
-    setNotice(`Đã xóa tài liệu "${doc.filename}".`);
+    toast.success(`Đã xóa tài liệu "${doc.filename}".`);
     try {
       await refresh();
     } catch (err) {
@@ -497,7 +506,6 @@ export function CourseDetailPage() {
   async function handleRetry(failure: DocumentFailure) {
     setRetryingJobIds((ids) => new Set(ids).add(failure.job_id));
     setError(null);
-    setNotice(null);
     try {
       await retryJob(failure.job_id);
     } catch (err) {
@@ -510,7 +518,7 @@ export function CourseDetailPage() {
       return;
     }
     // The job is queued again whatever happens next: retrying it once more would be refused.
-    setNotice("Đã gửi yêu cầu thử lại.");
+    toast.success("Đã gửi yêu cầu thử lại.");
     try {
       await refresh();
     } catch (err) {
@@ -527,16 +535,15 @@ export function CourseDetailPage() {
   }
 
   async function handleDeleteModule(m: ModuleSummary) {
-    const confirmed = window.confirm(
-      `Xóa vĩnh viễn mô-đun "${m.title}"? ${
-        m.is_control ? "" : "Bản đối chứng (không RAG) đi cặp với nó, nếu có, sẽ bị xóa theo. "
-      }Nội dung đã đẩy lên Moodle KHÔNG bị xóa. Không thể khôi phục.`,
-    );
+    const confirmed = await confirmAction({
+      title: `Xóa mô-đun "${m.title}"?`,
+      description: `${m.is_control ? "" : "Bản đối chứng đi kèm, nếu có, cũng bị xóa. "}Nội dung đã đẩy lên Moodle vẫn giữ nguyên. Không thể khôi phục.`,
+      action: "Xóa mô-đun", destructive: true,
+    });
     if (!confirmed) return;
 
     setDeletingModuleId(m.id);
     setError(null);
-    setNotice(null);
     try {
       await deleteModule(m.id);
     } catch (err) {
@@ -546,7 +553,7 @@ export function CourseDetailPage() {
     }
     // The module is gone whatever happens next: a list that cannot be reloaded is a different
     // problem, and saying the delete failed would send the lecturer to delete it again.
-    setNotice(`Đã xóa mô-đun "${m.title}".`);
+    toast.success(`Đã xóa mô-đun "${m.title}".`);
     try {
       await refresh();
     } catch (err) {
@@ -560,14 +567,14 @@ export function CourseDetailPage() {
 
   return (
     <AppShell title={course?.name ?? "Tài liệu môn học"}>
-      <GenerateDialog dialogRef={generateDialog} onGenerate={(language, instructions) => {
-        if (generateDocument.current) void handleGenerate(generateDocument.current, language, instructions);
+      <GenerateDialog {...dialogProps("module")} onGenerate={(language, instructions) => {
+        if (asking) void handleGenerate(asking.document, language, instructions);
       }} />
-      <GenerateDialog dialogRef={flashcardDialog} kind="flashcards" onGenerate={(language, focus) => {
-        if (flashcardDocument.current) void handleGenerateFlashcards(flashcardDocument.current, language, focus);
+      <GenerateDialog {...dialogProps("flashcards")} onGenerate={(language, focus) => {
+        if (asking) void handleGenerateFlashcards(asking.document, language, focus);
       }} />
-      <GenerateDialog dialogRef={videoDialog} kind="video" onGenerate={(language, focus, media) => {
-        if (videoDocument.current && media) void handleGenerateVideo(videoDocument.current, language, focus, media);
+      <GenerateDialog {...dialogProps("video")} onGenerate={(language, focus, media) => {
+        if (asking && media) void handleGenerateVideo(asking.document, language, focus, media);
       }} />
       {course && <MoodleLinkSection course={course} onLinked={refresh} />}
       <div className="course-layout">
@@ -582,7 +589,7 @@ export function CourseDetailPage() {
           {uploadProgress !== null
             ? `Đang tải lên ${Math.round(uploadProgress * 100)}%`
             : uploadBusy
-              ? "Đang xử lý tài liệu..."
+              ? "Đang xử lý tài liệu…"
               : "Tải tài liệu lên"}
           <input
             type="file"
@@ -598,19 +605,18 @@ export function CourseDetailPage() {
             accept=".pdf,.pptx,.docx,.html,.htm,.mp3,.wav,.m4a,.flac,.ogg,.aac,.mp4,.mkv,.webm,.mov,.avi"
           />
         </label>
-        {/* Thiết lập cho các nút "Sinh mô-đun" bên dưới, không liên quan tới việc tải tài liệu,
+        {/* Thiết lập cho các nút "Tạo mô-đun" bên dưới, không liên quan tới việc tải tài liệu,
             nhưng đặt cạnh nút tải để hai thiết lập của cột nằm trên một hàng. */}
         <ModelPicker value={modelAlias} onChange={setModelAlias} />
       </div>
       <p className="course-hint">
-        PDF, PPTX (đến 150 trang), DOCX, HTML: tối đa 25 MB. Audio tối đa 200 MB, video tối đa 1 GB, dài tối đa 90 phút.
+        PDF, PPTX, DOCX, HTML đến 25 MB, riêng PDF và PPTX đến 150 trang. Âm thanh đến 200 MB. Video đến 1 GB và 90 phút.
       </p>
       {uploadBusy && (
         <p className="course-hint">
-          Đang đọc và lập chỉ mục tài liệu. Audio, video dài có thể mất vài phút.
+          Âm thanh và video dài có thể mất vài phút.
         </p>
       )}
-      {notice && <p role="status" className="mt-3 text-sm success-text">{notice}</p>}
       {error && <p className="mt-3 text-sm danger-text">{error}</p>}
 
       {!loading && documents.length > 0 && (
@@ -632,7 +638,7 @@ export function CourseDetailPage() {
       )}
 
       {loading ? (
-        <p className="course-empty">Đang tải tài liệu...</p>
+        <p className="course-empty">Đang tải tài liệu…</p>
       ) : loadFailed ? (
         <div className="course-empty">
           <p role="alert" className="danger-text">Không tải được tài liệu của môn học.</p>
@@ -651,41 +657,33 @@ export function CourseDetailPage() {
                 </div>
                 <div className="doc-actions">
                   {d.status === "embedded" && (
-                    <button
-                      onClick={() => { generateDocument.current = d; generateDialog.current?.showModal(); }}
-                      disabled={isGenerating(d)}
-                      className="link-action"
-                    >
-                      {isGenerating(d)
-                        ? "Đang sinh mô-đun..."
-                        : "+ Sinh mô-đun"}
-                    </button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger className="ui-button doc-create" aria-label={`Tạo nội dung từ ${d.filename}`}>
+                        <Plus aria-hidden="true" />Tạo nội dung<ChevronDown aria-hidden="true" />
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="doc-menu">
+                        <DropdownMenuItem disabled={isGenerating(d)} onSelect={() => ask("module", d)}>
+                          <BookOpenText aria-hidden="true" />{isGenerating(d) ? "Đang tạo mô-đun…" : "Mô-đun bài học"}
+                        </DropdownMenuItem>
+                        <DropdownMenuItem disabled={isSending(d, "Flashcard")} onSelect={() => ask("flashcards", d)}>
+                          <Layers aria-hidden="true" />Flashcard
+                        </DropdownMenuItem>
+                        <DropdownMenuItem disabled={isSending(d, "Video")} onSelect={() => ask("video", d)}>
+                          <Clapperboard aria-hidden="true" />Video bài giảng
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   )}
-                  {d.status === "embedded" && (
-                    <button
-                      onClick={() => { flashcardDocument.current = d; flashcardDialog.current?.showModal(); }}
-                      disabled={isSending(d, "Flashcard")}
-                      className="link-action"
-                    >
-                      + Sinh flashcard
-                    </button>
-                  )}
-                  {d.status === "embedded" && (
-                    <button
-                      onClick={() => { videoDocument.current = d; videoDialog.current?.showModal(); }}
-                      disabled={isSending(d, "Video")}
-                      className="link-action"
-                    >
-                      + Sinh video
-                    </button>
-                  )}
-                  <button
-                    onClick={() => handleDeleteDocument(d)}
-                    disabled={deletingDocId === d.id}
-                    className="link-action danger"
-                  >
-                    {deletingDocId === d.id ? "Đang xóa..." : "Xóa"}
-                  </button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger className="icon-button" aria-label={`Thao tác khác với ${d.filename}`}>
+                      <Ellipsis aria-hidden="true" />
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="doc-menu">
+                      <DropdownMenuItem variant="destructive" disabled={deletingDocId === d.id} onSelect={() => handleDeleteDocument(d)}>
+                        <Trash2 aria-hidden="true" />{deletingDocId === d.id ? "Đang xóa…" : "Xóa tài liệu"}
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
               </div>
               {extractionWarningLines(d.extraction_warnings).map((warning) => (
@@ -699,7 +697,7 @@ export function CourseDetailPage() {
                     <li key={f.job_id} className="doc-failure">
                       <div className="min-w-0">
                         <div className="font-semibold">{failureTitle(f)}</div>
-                        {f.error && <div className="mt-0.5 break-words text-[13px] leading-[19px]">{f.error}</div>}
+                        {f.error && <div className="mt-0.5 break-words text-sm leading-[19px]">{f.error}</div>}
                       </div>
                       <button
                         onClick={() => handleRetry(f)}
@@ -707,14 +705,14 @@ export function CourseDetailPage() {
                         aria-label={`Thử lại: ${failureTitle(f)} (${d.filename})`}
                         className="link-action shrink-0"
                       >
-                        {retryingJobIds.has(f.job_id) ? "Đang thử lại..." : "Thử lại"}
+                        {retryingJobIds.has(f.job_id) ? "Đang thử lại…" : "Thử lại"}
                       </button>
                     </li>
                   ))}
                 </ul>
               )}
               {(modulesByDoc[d.id] ?? []).length > 0 && (
-                <ul className="doc-modules" aria-label={`Mô-đun sinh từ ${d.filename}`}>
+                <ul className="doc-modules" aria-label={`Mô-đun tạo từ ${d.filename}`}>
                   {(modulesByDoc[d.id] ?? []).map((m) => (
                     <ModuleListItem
                       key={m.id}
@@ -726,7 +724,7 @@ export function CourseDetailPage() {
                 </ul>
               )}
               {(setsByDoc(d.id).length > 0 || isSending(d, "Flashcard")) && (
-                <ul className="doc-modules" aria-label={`Flashcard sinh từ ${d.filename}`}>
+                <ul className="doc-modules" aria-label={`Flashcard tạo từ ${d.filename}`}>
                   {/* The newest come first, which is where the set being asked for will be. */}
                   {pendingFor(d, "Flashcard").map((item) => <PendingMediaItem key={item.key} item={item} />)}
                   {setsByDoc(d.id).map((set) => (
@@ -743,7 +741,7 @@ export function CourseDetailPage() {
                 </ul>
               )}
               {(videosByDoc(d.id).length > 0 || isSending(d, "Video")) && (
-                <ul className="doc-modules" aria-label={`Video sinh từ ${d.filename}`}>
+                <ul className="doc-modules" aria-label={`Video tạo từ ${d.filename}`}>
                   {pendingFor(d, "Video").map((item) => <PendingMediaItem key={item.key} item={item} />)}
                   {videosByDoc(d.id).map((video) => (
                     <MediaListItem
@@ -777,7 +775,7 @@ export function CourseDetailPage() {
           : !loading && (
             <section className="chat-panel" aria-label="Hỏi đáp về tài liệu">
               <h2 className="course-section-title">Hỏi đáp về tài liệu</h2>
-              <p className="course-empty">Dùng được khi có một tài liệu xử lý xong.</p>
+              <p className="course-empty">Hỏi đáp mở khi có ít nhất một tài liệu đã xử lý xong.</p>
             </section>
           )}
       </div>
@@ -813,7 +811,7 @@ function MoodleLinkSection({ course, onLinked }: { course: Course; onLinked: () 
         }
       },
       (err) => {
-        if (!cancelled) setError(apiErrorMessage(err, "Không tải được danh sách course Moodle"));
+        if (!cancelled) setError(apiErrorMessage(err, "Không tải được danh sách khóa học Moodle"));
       },
     );
     return () => {
@@ -825,9 +823,11 @@ function MoodleLinkSection({ course, onLinked }: { course: Course; onLinked: () 
     // Chỉ xóa liên kết trong app -- KHÔNG đụng gì tới course/page/quiz thật
     // trên Moodle, nhưng vẫn cần xác nhận vì đây là hành động khó hoàn tác
     // trong luồng làm việc của giáo viên (phải tìm/liên kết lại từ đầu).
-    const confirmed = window.confirm(
-      `Hủy liên kết với Moodle course id ${course.moodle_course_id}? Course/nội dung trên Moodle sẽ KHÔNG bị xóa, chỉ mất liên kết trong app này.`,
-    );
+    const confirmed = await confirmAction({
+      title: `Hủy liên kết với khóa học Moodle #${course.moodle_course_id}?`,
+      description: "Khóa học và nội dung trên Moodle vẫn giữ nguyên.",
+      action: "Hủy liên kết",
+    });
     if (!confirmed) return;
 
     setBusy(true);
@@ -849,7 +849,7 @@ function MoodleLinkSection({ course, onLinked }: { course: Course; onLinked: () 
       await linkMoodleCourse(course.id, Number(moodleCourseId));
       onLinked();
     } catch (err) {
-      setError(apiErrorMessage(err, "Liên kết course thất bại"));
+      setError(apiErrorMessage(err, "Liên kết khóa học thất bại"));
     } finally {
       setBusy(false);
     }
@@ -870,10 +870,10 @@ function MoodleLinkSection({ course, onLinked }: { course: Course; onLinked: () 
       <>
         <p>
           <span className="moodle-key">Khóa học Moodle:</span>{" "}
-          Đã liên kết với Moodle course id <strong>{course.moodle_course_id}</strong>.
+          Đã liên kết với khóa học Moodle <strong>#{course.moodle_course_id}</strong>.
         </p>
         <button onClick={handleUnlink} disabled={busy} className="link-action danger">
-          {busy ? "Đang hủy..." : "Hủy liên kết"}
+          {busy ? "Đang hủy…" : "Hủy liên kết"}
         </button>
       </>,
     );
@@ -897,11 +897,11 @@ function MoodleLinkSection({ course, onLinked }: { course: Course; onLinked: () 
         <>
           <span>Chọn khóa học:</span>
           <select
-            aria-label="Course Moodle có sẵn"
+            aria-label="Khóa học Moodle"
             {...register("moodleCourseId")}
             className="ui-select min-w-0 flex-1 basis-56"
           >
-            <option value="">Chọn khóa học bạn có quyền quản lý hoạt động…</option>
+            <option value="">Chọn khóa học Moodle</option>
             {courses.map((c) => (
               <option key={c.id} value={c.id}>
                 {c.fullname} ({c.shortname})

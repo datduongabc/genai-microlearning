@@ -71,14 +71,14 @@ export function ModelPicker({ value, onChange }: Props) {
     <div className="flex flex-col gap-1">
       <div className="flex flex-wrap items-center gap-3">
         <label className="model-picker">
-          Model sinh
+          Mô hình AI
           <select
             value={loadFailed ? THEO_CAU_HINH : value}
             onChange={(e) => onChange(e.target.value)}
             disabled={loadFailed}
             className="ui-select disabled:opacity-60"
           >
-            <option value={THEO_CAU_HINH}>Theo cấu hình hệ thống</option>
+            <option value={THEO_CAU_HINH}>Mặc định của hệ thống</option>
             {models.map((m) => (
               <option key={m.alias} value={m.alias}>
                 {m.label} ({m.provider})
@@ -93,17 +93,17 @@ export function ModelPicker({ value, onChange }: Props) {
             disabled={saving}
             className="link-action"
           >
-            {saving ? 'Đang lưu...' : 'Đặt làm mặc định'}
+            {saving ? 'Đang lưu…' : 'Đặt làm mặc định'}
           </button>
         )}
       </div>
       {dangChon?.note && <p className="course-hint">{dangChon.note}</p>}
       {loadFailed && (
         <p className="course-hint">
-          Không tải được danh sách model, sẽ sinh bằng model theo cấu hình hệ thống.
+          Không tải được danh sách mô hình. Hệ thống sẽ dùng mô hình mặc định.
         </p>
       )}
-      {saveError && <p className="text-[13px] danger-text">{saveError}</p>}
+      {saveError && <p className="text-sm danger-text">{saveError}</p>}
     </div>
   )
 }

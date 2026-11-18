@@ -1,6 +1,8 @@
-import { useId, type ReactNode } from "react";
+import type { ReactNode } from "react";
+import { Tabs as TabsPrimitive } from "radix-ui";
 
-// Both admin navigation and packet navigation use the same keyboard behavior.
+// Admin navigation and packet navigation share it. Radix gives the tab pattern (arrow keys,
+// Home/End, roles and ids); the look is the app's underline tabs.
 export function Tabs({ tabs, selected, onSelect, label, children }: {
   tabs: { id: string; label: string }[];
   selected: string;
@@ -8,25 +10,15 @@ export function Tabs({ tabs, selected, onSelect, label, children }: {
   label: string;
   children: ReactNode;
 }) {
-  const id = useId();
-  return <>
-    <div role="tablist" aria-label={label} className="ui-tabs">
-      {tabs.map((tab, index) => <button key={tab.id} id={`${id}-${tab.id}`} role="tab"
-        aria-selected={selected === tab.id} aria-controls={`${id}-panel`}
-        tabIndex={selected === tab.id ? 0 : -1}
-        onClick={() => onSelect(tab.id)}
-        onKeyDown={(event) => {
-          const next = event.key === "ArrowRight" ? (index + 1) % tabs.length
-            : event.key === "ArrowLeft" ? (index + tabs.length - 1) % tabs.length
-            : event.key === "Home" ? 0 : event.key === "End" ? tabs.length - 1 : -1;
-          if (next < 0) return;
-          event.preventDefault();
-          onSelect(tabs[next].id);
-          const buttons = event.currentTarget.parentElement?.querySelectorAll<HTMLButtonElement>('[role="tab"]');
-          buttons?.[next].focus();
-          buttons?.[next].scrollIntoView?.({ block: "nearest", inline: "nearest" });
-        }}>{tab.label}</button>)}
-    </div>
-    <div role="tabpanel" tabIndex={0} id={`${id}-panel`} aria-labelledby={`${id}-${selected}`}>{children}</div>
-  </>;
+  return (
+    <TabsPrimitive.Root value={selected} onValueChange={onSelect}>
+      <TabsPrimitive.List aria-label={label} className="ui-tabs">
+        {tabs.map((tab) => <TabsPrimitive.Trigger key={tab.id} value={tab.id}
+          // Radix focuses the tab by script on a mouse press, which Chrome shows as keyboard focus.
+          onMouseDown={(event) => { event.currentTarget.dataset.pointer = ""; }}
+          onBlur={(event) => { delete event.currentTarget.dataset.pointer; }}>{tab.label}</TabsPrimitive.Trigger>)}
+      </TabsPrimitive.List>
+      <TabsPrimitive.Content value={selected}>{children}</TabsPrimitive.Content>
+    </TabsPrimitive.Root>
+  );
 }

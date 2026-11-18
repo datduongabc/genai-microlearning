@@ -27,8 +27,8 @@ describe('MoodleAccountSection', () => {
     const onStatus = vi.fn()
     render(<MoodleAccountSection onStatus={onStatus} />)
 
-    expect(await screen.findByText('Chưa nối với Moodle')).toBeInTheDocument()
-    expect(screen.getByText(/mở từ moodle \(lti\) vẫn dùng bình thường/i)).toBeInTheDocument()
+    expect(await screen.findByText('Chưa kết nối Moodle')).toBeInTheDocument()
+    expect(screen.getByText(/mở công cụ từ moodle vẫn dùng bình thường/i)).toBeInTheDocument()
     expect(document.querySelector('input')).toBeNull()
     expect(screen.queryByText(/thử lại sau/i)).not.toBeInTheDocument()
     await waitFor(() => expect(onStatus).toHaveBeenLastCalledWith('unavailable'))

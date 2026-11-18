@@ -1,3 +1,5 @@
+import { toast } from 'sonner'
+import { confirmAction } from '../lib/confirm'
 import axios from 'axios'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
@@ -31,9 +33,9 @@ const PREVIEWS_AT_ONCE = 2
 type JobType = VideoJob['job_type']
 
 const JOB_TEXT: Record<JobType, string> = {
-  video_script: 'Đang sinh lời thoại...',
-  video_images: 'Đang vẽ hình...',
-  video_render: 'Đang dựng video...',
+  video_script: 'Đang viết lời thoại…',
+  video_images: 'Đang vẽ hình…',
+  video_render: 'Đang dựng video…',
 }
 // A job between being picked up and the next poll shows only in the status.
 const STATUS_JOB: Partial<Record<VideoDetail['status'], JobType>> = {
@@ -46,8 +48,8 @@ const DONE_TEXT: Partial<Record<JobType, string>> = {
   video_render: 'Đã dựng xong video.',
 }
 const QUEUED_TEXT: Partial<Record<JobType, string>> = {
-  video_images: 'Đã gửi yêu cầu vẽ hình; trang sẽ tự cập nhật khi xong.',
-  video_render: 'Đã gửi yêu cầu dựng video; trang sẽ tự cập nhật khi xong.',
+  video_images: 'Đã gửi yêu cầu vẽ hình. Trang tự cập nhật khi xong.',
+  video_render: 'Đã gửi yêu cầu dựng video. Trang tự cập nhật khi xong.',
 }
 
 // The catalogue words a price as "khoảng $0,037 một ảnh" for the model picker; beside "Mỗi hình" the
@@ -76,13 +78,9 @@ export function VideoEditorPage() {
   const [busy, setBusy] = useState<'save' | 'draw' | 'render' | 'publish' | 'delete' | 'reload' | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [stale, setStale] = useState(false)
-  // A notice is shown beside the control that caused it: a finished job in its own section, the
-  // rest (saved, edited) above the save button.
-  const [shownNotice, setShownNotice] = useState<{ text: string; area: 'save' | JobType } | null>(null)
-  const setNotice = useCallback((text: string | null, area: 'save' | JobType = 'save') => {
-    setShownNotice(text === null ? null : { text, area })
-  }, [])
-  const noticeIn = (area: 'save' | JobType) => (shownNotice?.area === area ? shownNotice.text : null)
+  // Saved, queued and finished jobs are announced as toasts: a job can end while the lecturer is
+  // further down the page, and a line beside its button would go unseen.
+  const setNotice = useCallback((text: string | null) => { if (text) toast.success(text) }, [])
   // Goes up when a drawing job ends, so an illustration's slide is asked for again even when a
   // redraw changed nothing but the picture.
   const [picturesDrawn, setPicturesDrawn] = useState(0)
@@ -131,7 +129,7 @@ export function VideoEditorPage() {
     } else if (ended) {
       if (ended === 'video_images') setPicturesDrawn((n) => n + 1)
       const done = DONE_TEXT[ended]
-      if (done && !video.error) setNotice(done, ended)
+      if (done && !video.error) setNotice(done)
       awaitJob(null)
     }
     const untouched = editsKey(now.scenes) === now.base.edits
@@ -209,7 +207,7 @@ export function VideoEditorPage() {
   }
 
   if (loading) {
-    return <AppShell title="Video"><p className="course-empty">Đang tải...</p></AppShell>
+    return <AppShell title="Video"><p className="course-empty">Đang tải…</p></AppShell>
   }
   if (missing) {
     return (
@@ -253,7 +251,7 @@ export function VideoEditorPage() {
   )
 
   async function remove() {
-    if (!window.confirm('Xóa vĩnh viễn video này, cả slide, hình và giọng đã tạo? Không thể khôi phục.')) return
+    if (!await confirmAction({ title: 'Xóa video này?', description: 'Slide, hình và giọng đã tạo bị xóa theo. Không thể khôi phục.', action: 'Xóa video', destructive: true })) return
     setBusy('delete')
     setError(null)
     try {
@@ -269,7 +267,7 @@ export function VideoEditorPage() {
 
   const deleteButton = (
     <button type="button" onClick={remove} disabled={busy !== null || jobRunning} className="link-action danger">
-      {busy === 'delete' ? 'Đang xóa...' : 'Xóa video'}
+      {busy === 'delete' ? 'Đang xóa…' : 'Xóa video'}
     </button>
   )
 
@@ -277,7 +275,7 @@ export function VideoEditorPage() {
     return (
       <AppShell {...titleProps}>
         {backLink}
-        <p role="status" className="course-empty">Đang sinh lời thoại...</p>
+        <p role="status" className="course-empty">Đang viết lời thoại…</p>
       </AppShell>
     )
   }
@@ -286,7 +284,7 @@ export function VideoEditorPage() {
   if (saved.status === 'failed' && saved.scenes.length === 0) {
     return (
       <AppShell {...titleProps}>
-        <p className="text-sm danger-text">{saved.error ?? 'Sinh lời thoại thất bại.'} Xóa video này rồi sinh lại từ trang môn học.</p>
+        <p className="text-sm danger-text">{saved.error ?? 'Viết lời thoại thất bại.'} Xóa video này rồi tạo lại từ trang môn học.</p>
         {error && <p role="alert" className="mt-3 text-sm danger-text">{error}</p>}
         <div className="mt-4 flex gap-4">
           {backLink}
@@ -297,12 +295,10 @@ export function VideoEditorPage() {
   }
 
   function editScene(key: number, change: (scene: SceneDraft) => SceneDraft) {
-    setNotice(null)
     setScenes((list) => list.map((s) => (s.key === key ? change(s) : s)))
   }
 
   function moveScene(index: number, by: number) {
-    setNotice(null)
     setScenes((list) => {
       const next = [...list]
       const [moved] = next.splice(index, 1)
@@ -314,7 +310,6 @@ export function VideoEditorPage() {
   async function act(kind: 'publish' | 'reload', action: () => Promise<VideoDetail>, fallback: string) {
     setBusy(kind)
     setError(null)
-    setNotice(null)
     try {
       const video = await action()
       if (kind === 'reload') {
@@ -334,7 +329,6 @@ export function VideoEditorPage() {
   async function startJob(kind: 'draw' | 'render', job: JobType, ask: () => Promise<unknown>, fallback: string) {
     setBusy(kind)
     setError(null)
-    setNotice(null)
     try {
       await ask()
     } catch (err) {
@@ -348,7 +342,7 @@ export function VideoEditorPage() {
     try {
       follow(await getVideo(videoId))
     } catch {
-      setNotice(QUEUED_TEXT[job] ?? null, job)
+      setNotice(QUEUED_TEXT[job] ?? null)
     } finally {
       setBusy(null)
     }
@@ -357,7 +351,6 @@ export function VideoEditorPage() {
   async function save() {
     setBusy('save')
     setError(null)
-    setNotice(null)
     try {
       adopt(await saveVideoScenes(videoId, base.version, toEdits(scenes)))
       setStale(false)
@@ -380,13 +373,13 @@ export function VideoEditorPage() {
     void startJob('draw', 'video_images', () => drawIllustrations(videoId, sceneIndexes), 'Vẽ hình thất bại')
   }
 
-  function startRender() {
+  async function startRender() {
     if (saved && saved.render_warnings.length > 0
-      && !window.confirm(`${saved.render_warnings.join('\n')}\n\nVẫn dựng video?`)) return
+      && !await confirmAction({ title: 'Vẫn dựng video?', description: saved.render_warnings.join('\n'), action: 'Dựng video' })) return
     void startJob('render', 'video_render', () => renderVideo(videoId), 'Dựng video thất bại')
   }
 
-  const needsSave = dirty ? 'Lưu thay đổi trước: hình và video được làm từ bản đã lưu.' : null
+  const needsSave = dirty ? 'Hãy lưu thay đổi trước. Hình và video được tạo từ bản đã lưu.' : null
 
   return (
     <AppShell {...titleProps}>
@@ -397,7 +390,7 @@ export function VideoEditorPage() {
             {published ? 'Đã giao cho sinh viên' : 'Bản nháp'}
           </span>
           {runningJob && <span role="status" className="status-pill" data-status="processing">{JOB_TEXT[runningJob]}</span>}
-          <span className="flashcard-count">{scenes.length}/{MAX_SCENES} cảnh</span>
+          <span className="flashcard-count">{scenes.length} cảnh (tối đa {MAX_SCENES})</span>
           <span className={`flashcard-count${overLong ? ' danger-text' : ''}`}>
             Độ dài ước tính: {formatMinutes(seconds)} phút (tối đa {formatMinutes(saved.max_seconds)} phút)
           </span>
@@ -427,7 +420,7 @@ export function VideoEditorPage() {
               nextKey={nextKey}
               onChange={(change) => editScene(s.key, change)}
               onMove={(by) => moveScene(index, by)}
-              onRemove={() => { setNotice(null); setScenes((list) => list.filter((x) => x.key !== s.key)) }}
+              onRemove={() => { setScenes((list) => list.filter((x) => x.key !== s.key)) }}
               onDraw={(sceneIndex) => draw([sceneIndex])}
             />
           ))}
@@ -435,7 +428,7 @@ export function VideoEditorPage() {
 
         <button
           type="button"
-          onClick={() => { setNotice(null); setScenes((list) => [...list, newScene(nextKey)]) }}
+          onClick={() => { setScenes((list) => [...list, newScene(nextKey)]) }}
           disabled={scenes.length >= MAX_SCENES}
           className="ui-button"
         >
@@ -447,15 +440,14 @@ export function VideoEditorPage() {
           {overLong && (
             <p className="text-sm danger-text">Quá {formatMinutes(saved.max_seconds)} phút: hãy rút ngắn lời thoại trước khi dựng.</p>
           )}
-          {noticeIn('save') && <p role="status" className="text-sm success-text">{noticeIn('save')}</p>}
           {error && <p role="alert" className="text-sm danger-text">{error}</p>}
           <div className="flashcard-actions">
             <button type="button" onClick={save} disabled={!dirty || missingTitle || busy !== null} className="ui-button primary">
-              {busy === 'save' ? 'Đang lưu...' : 'Lưu thay đổi'}
+              {busy === 'save' ? 'Đang lưu…' : 'Lưu thay đổi'}
             </button>
             {stale && (
               <button type="button" onClick={reload} disabled={busy !== null} className="ui-button">
-                {busy === 'reload' ? 'Đang tải...' : 'Tải lại bản nháp'}
+                {busy === 'reload' ? 'Đang tải…' : 'Tải lại bản nháp'}
               </button>
             )}
           </div>
@@ -469,9 +461,8 @@ export function VideoEditorPage() {
           </p>
           {toDraw === 0 && <p className="course-hint">Mọi hình đã khớp với mô tả.</p>}
           <button type="button" onClick={() => draw()} disabled={!canStartJob || toDraw === 0} className="ui-button">
-            {busy === 'draw' ? 'Đang gửi...' : 'Vẽ hình'}
+            {busy === 'draw' ? 'Đang gửi…' : 'Vẽ hình'}
           </button>
-          {noticeIn('video_images') && <p role="status" className="text-sm success-text">{noticeIn('video_images')}</p>}
         </section>
 
         <section className="video-step" aria-labelledby="video-render-title">
@@ -486,13 +477,12 @@ export function VideoEditorPage() {
           {needsSave && <p className="course-hint">{needsSave}</p>}
           <button
             type="button"
-            onClick={startRender}
+            onClick={() => void startRender()}
             disabled={!canStartJob || saved.render_problems.length > 0}
             className="ui-button primary"
           >
-            {busy === 'render' ? 'Đang gửi...' : rendered === null ? 'Dựng video' : 'Dựng lại video'}
+            {busy === 'render' ? 'Đang gửi…' : rendered === null ? 'Dựng video' : 'Dựng lại video'}
           </button>
-          {noticeIn('video_render') && <p role="status" className="text-sm success-text">{noticeIn('video_render')}</p>}
         </section>
 
         <section className="video-step" aria-labelledby="video-result-title">
@@ -525,7 +515,7 @@ export function VideoEditorPage() {
               disabled={busy !== null || (!published && rendered === null)}
               className="ui-button"
             >
-              {busy === 'publish' ? 'Đang xử lý...' : published ? 'Ngừng giao' : 'Giao cho sinh viên'}
+              {busy === 'publish' ? 'Đang xử lý…' : published ? 'Ngừng giao' : 'Giao cho sinh viên'}
             </button>
             {deleteButton}
           </div>

@@ -1,3 +1,4 @@
+import { Toaster } from 'sonner'
 import { act, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { AxiosError, type AxiosResponse, type InternalAxiosRequestConfig } from 'axios'
@@ -55,7 +56,7 @@ function renderPage() {
       </Route>
     </>,
   ), { initialEntries: ['/courses', '/videos/video-1'], initialIndex: 1 })
-  return { router, ...render(<AuthProvider><RouterProvider router={router} /></AuthProvider>) }
+  return { router, ...render(<AuthProvider><RouterProvider router={router} /><Toaster /></AuthProvider>) }
 }
 
 const axiosFailure = (status: number, detail: string) => {
@@ -131,14 +132,14 @@ describe('VideoEditorPage', () => {
       cost: { script: { usd: 0.01, llm_calls: 10, priced_calls: 10 }, images: { usd: 0.07 }, voice: { usd: 0.005 } },
     }))
     const first = renderPage()
-    expect(await screen.findByText('Đã tốn khoảng $0,085')).toBeInTheDocument()
+    expect(await screen.findByText('Chi phí khoảng $0,085')).toBeInTheDocument()
     first.unmount()
 
     vi.mocked(api.getVideo).mockResolvedValue(video([scene(1)], {
       cost: { script: { usd: 0.01, llm_calls: 10, priced_calls: 8 }, images: { usd: 0.07 } },
     }))
     renderPage()
-    expect(await screen.findByText(/Đã tốn ít nhất \$0,08 \(chưa rõ giá của 2 lần gọi model viết lời thoại\)/)).toBeInTheDocument()
+    expect(await screen.findByText(/Chi phí ít nhất \$0,08 \(chưa rõ giá của 2 lần gọi AI viết lời thoại\)/)).toBeInTheDocument()
   })
 
   it('shows the estimated length and blocks render over 8 minutes', async () => {
@@ -252,7 +253,7 @@ describe('VideoEditorPage', () => {
     }))
     await userEvent.click(screen.getByRole('button', { name: 'Vẽ lại hình cảnh 2' }))
     expect(api.drawIllustrations).toHaveBeenCalledWith('video-1', [1])
-    expect(await screen.findByText('Đang vẽ hình...')).toBeInTheDocument()
+    expect(await screen.findByText('Đang vẽ hình…')).toBeInTheDocument()
   })
 
   it('says the price of a picture once, without the unit twice', async () => {
@@ -263,15 +264,14 @@ describe('VideoEditorPage', () => {
     expect(await screen.findByText(/Mỗi hình khoảng \$0,037 \(Gemini Nano Banana 2.1\)\./)).toBeInTheDocument()
   })
 
-  it('shows a finished picture job in the drawing section, not in the save area', async () => {
+  it('announces a finished picture job', async () => {
     vi.mocked(api.getVideo).mockResolvedValue(video([scene(1, { kind: 'illustration', image_prompt: 'Hàng đợi', has_image: true })]))
     vi.mocked(api.drawIllustrations).mockResolvedValue({ job_id: 'job-2', scene_indexes: [0] })
 
     renderPage()
     await userEvent.click(await screen.findByRole('button', { name: 'Vẽ lại hình cảnh 1' }))
 
-    const notice = await screen.findByText('Đã vẽ xong hình.')
-    expect(notice.closest('section')).toBe(screen.getByRole('region', { name: 'Vẽ hình' }))
+    expect(await screen.findByText('Đã vẽ xong hình.')).toBeInTheDocument()
   })
 
   it('draws every picture that is missing or outdated with one button', async () => {
@@ -356,12 +356,12 @@ describe('VideoEditorPage', () => {
 
     renderPage()
 
-    expect(await screen.findByText('Đang dựng video...')).toHaveAttribute('data-status', 'processing')
+    expect(await screen.findByText('Đang dựng video…')).toHaveAttribute('data-status', 'processing')
     expect(screen.getByRole('button', { name: 'Dựng video' })).toBeDisabled()
     await passTime(3600)
 
     expect(await screen.findByText('Dựng video thất bại: giọng đọc không trả về âm thanh.')).toBeInTheDocument()
-    expect(screen.queryByText('Đang dựng video...')).not.toBeInTheDocument()
+    expect(screen.queryByText('Đang dựng video…')).not.toBeInTheDocument()
     const calls = vi.mocked(api.getVideo).mock.calls.length
     await passTime(10_000, 1000)
     expect(vi.mocked(api.getVideo).mock.calls.length).toBe(calls)
@@ -527,7 +527,7 @@ describe('VideoEditorPage', () => {
       .mockResolvedValue(video([scene(1)]))
 
     renderPage()
-    expect(await screen.findByText('Đang sinh lời thoại...')).toBeInTheDocument()
+    expect(await screen.findByText('Đang viết lời thoại…')).toBeInTheDocument()
     await passTime(3600)
     expect(await screen.findByLabelText('Tiêu đề cảnh 1')).toBeInTheDocument()
   })
@@ -555,7 +555,7 @@ describe('VideoEditorPage', () => {
 
     expect(screen.getByLabelText('Tiêu đề cảnh 1')).toHaveValue('Đã lưu')
     // Nothing of the late answer is taken, not even its job or status: it is older than the save.
-    expect(screen.getByText('Đang vẽ hình...')).toBeInTheDocument()
+    expect(screen.getByText('Đang vẽ hình…')).toBeInTheDocument()
     expect(screen.queryByText('Đã vẽ xong hình.')).not.toBeInTheDocument()
     vi.mocked(api.saveVideoScenes).mockClear()
     await userEvent.type(screen.getByLabelText('Tiêu đề cảnh 1'), '!')
@@ -585,7 +585,7 @@ describe('VideoEditorPage', () => {
 
     renderPage()
     const prompt = await screen.findByLabelText('Mô tả hình cảnh 1')
-    expect(screen.getByText(/Xóa hết mô tả rồi lưu thì hình bị bỏ/)).toBeInTheDocument()
+    expect(screen.getByText(/Để trống mô tả thì slide chỉ có chữ/)).toBeInTheDocument()
     await waitFor(() => expect(api.getScenePreview).toHaveBeenCalledTimes(1))
     await userEvent.clear(prompt)
     await userEvent.click(screen.getByRole('button', { name: 'Lưu thay đổi' }))
@@ -651,7 +651,7 @@ describe('VideoEditorPage', () => {
     renderPage()
 
     expect(await screen.findByLabelText('Bảng cảnh 1')).toHaveValue('A | B')
-    expect(screen.getByText(/không chứa được dấu \|/)).toBeInTheDocument()
+    expect(screen.getByText(/Các ô cách nhau bằng dấu \|/)).toBeInTheDocument()
   })
 
   it('says the job is queued and follows it when the detail cannot be read after asking', async () => {
@@ -669,8 +669,7 @@ describe('VideoEditorPage', () => {
     expect(await screen.findByText(/Đã gửi yêu cầu dựng video/)).toBeInTheDocument()
     expect(screen.queryByRole('alert')).not.toBeInTheDocument()
     await passTime(3600)
-    const done = await screen.findByText('Đã dựng xong video.')
-    expect(done.closest('section')).toBe(screen.getByRole('region', { name: 'Dựng video' }))
+    expect(await screen.findByText('Đã dựng xong video.')).toBeInTheDocument()
     expect(screen.getByLabelText('Video đã dựng')).toBeInTheDocument()
   })
 

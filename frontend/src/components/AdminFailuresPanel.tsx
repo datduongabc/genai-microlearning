@@ -1,9 +1,10 @@
+import { ChevronDown, RefreshCw } from "lucide-react";
 import { Fragment, useEffect, useState } from "react";
 import { apiErrorMessage, listFailedJobs, retryFailedJobs, type AdminCounts, type FailedJobInfo } from "../api";
 
 const JOB_TYPE_LABEL: Record<FailedJobInfo["job_type"], string> = {
   document_pipeline: "Xử lý tài liệu",
-  module_generation: "Sinh mô-đun",
+  module_generation: "Tạo mô-đun",
 };
 
 // The failed jobs of every lecturer: job data, the document's file name and the course name,
@@ -69,9 +70,9 @@ export function AdminFailuresPanel({ counts, onChange }: { counts: AdminCounts |
       const videoOnly = Object.keys(result.reasons).length;
       const stale = result.skipped.length - videoOnly;
       const skipped =
-        (stale > 0 ? ` ${stale} tác vụ bị bỏ qua vì không còn ở trạng thái lỗi.` : "") +
-        (videoOnly > 0 ? ` ${videoOnly} tác vụ video chỉ chạy lại được từ trình sửa video của giảng viên.` : "");
-      setNotice(`Đã đưa ${result.retried.length} tác vụ vào hàng đợi chạy lại.${skipped}`);
+        (stale > 0 ? ` ${stale} tác vụ được bỏ qua vì không còn lỗi.` : "") +
+        (videoOnly > 0 ? ` ${videoOnly} tác vụ video cần chạy lại từ trang sửa video.` : "");
+      setNotice(`Đã chạy lại ${result.retried.length} tác vụ.${skipped}`);
       reload();
     } catch (err) {
       setError(apiErrorMessage(err, "Thử lại thất bại"));
@@ -90,7 +91,7 @@ export function AdminFailuresPanel({ counts, onChange }: { counts: AdminCounts |
             aria-pressed={filter === type} onClick={() => setFilter(type)}>{type === "all" ? "Tất cả" : JOB_TYPE_LABEL[type]}
             {type !== "all" && counts && ` (${counts.failed_jobs[type] ?? 0})`}</button>)}
         </div>
-        <div className="flex gap-3"><button onClick={reload} className="ui-button" aria-label="Làm mới">↻</button>
+        <div className="flex gap-3"><button onClick={reload} className="ui-button" aria-label="Làm mới"><RefreshCw aria-hidden="true" className="size-4" /></button>
           <button onClick={() => handleRetry([...selected])} disabled={retrying || selected.size === 0} className="ui-button primary">
             {selected.size === 0 ? "Thử lại đã chọn" : `Thử lại ${selected.size} tác vụ đã chọn`}
           </button>
@@ -101,7 +102,7 @@ export function AdminFailuresPanel({ counts, onChange }: { counts: AdminCounts |
       {error && <p className="mb-3 text-sm text-red-700">{error}</p>}
 
       {jobs === null ? (
-        !error && <p className="text-sm text-gray-500">Đang tải...</p>
+        !error && <p className="text-sm text-gray-500">Đang tải…</p>
       ) : jobs.length === 0 ? (
         <p className="rounded-[3px] border border-gray-200 p-4 text-sm text-gray-500">
           Không có tác vụ nào thất bại.
@@ -109,8 +110,8 @@ export function AdminFailuresPanel({ counts, onChange }: { counts: AdminCounts |
       ) : (
         <div className="jobs-table ui-card">
           <table><thead><tr>
-            <th><input type="checkbox" aria-label="Chọn tất cả" checked={allPicked}
-              onChange={() => setSelected(allPicked ? new Set() : new Set(jobs.map((j) => j.id)))} /></th>
+            <th><label className="select-all"><input type="checkbox" aria-label="Chọn tất cả" checked={allPicked}
+              onChange={() => setSelected(allPicked ? new Set() : new Set(jobs.map((j) => j.id)))} /><span aria-hidden="true">Chọn tất cả</span></label></th>
             <th>Tài liệu</th><th>Loại tác vụ</th><th>Người dùng</th><th>Thời gian</th><th>Lỗi</th><th><span className="sr-only">Thao tác</span></th>
           </tr></thead><tbody>
             {jobs.map((job) => <Fragment key={job.id}>
@@ -120,16 +121,16 @@ export function AdminFailuresPanel({ counts, onChange }: { counts: AdminCounts |
                 <td className="small">{JOB_TYPE_LABEL[job.job_type]}</td>
                 <td className="small">{job.owner_name}</td>
                 <td className="small muted">{new Date(job.created_at).toLocaleString("vi-VN")}</td>
-                <td><p className="small muted truncate font-mono">{job.last_error || "—"}</p></td>
+                <td><p className={`small truncate ${job.last_error ? "danger-text" : "muted"}`}>{job.last_error || "—"}</p></td>
                 <td><div className="flex gap-2">
-                  <button className="ui-button" aria-label={`Thử lại ${job.document_filename}`} disabled={retrying} onClick={() => handleRetry([job.id])}>↻</button>
+                  <button className="ui-button" aria-label={`Thử lại ${job.document_filename}`} disabled={retrying} onClick={() => handleRetry([job.id])}>Thử lại</button>
                   <button className="expand-job" aria-label={`Chi tiết ${job.document_filename}`} aria-expanded={expanded.has(job.id)}
-                    aria-controls={expanded.has(job.id) ? `job-${job.id}` : undefined} onClick={() => toggleExpanded(job.id)}>{expanded.has(job.id) ? "⌃" : "⌄"}</button>
+                    aria-controls={expanded.has(job.id) ? `job-${job.id}` : undefined} onClick={() => toggleExpanded(job.id)}><ChevronDown aria-hidden="true" className="size-4" /></button>
                 </div></td>
               </tr>
               {expanded.has(job.id) && <tr id={`job-${job.id}`}><td colSpan={7} className="job-detail">
                 {job.last_error && <pre>{job.last_error}</pre>}
-                <p className="small muted">Bước: {job.step} · {job.attempts}/{job.max_attempts} lần thử · {job.owner_email}</p>
+                <p className="small muted">Bước {job.step}, thử {job.attempts}/{job.max_attempts} lần, {job.owner_email}</p>
               </td></tr>}
             </Fragment>)}
           </tbody></table>

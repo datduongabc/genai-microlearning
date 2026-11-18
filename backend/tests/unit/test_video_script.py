@@ -333,7 +333,7 @@ def test_a_script_the_model_wrote_too_short_is_saved_with_a_flag(monkeypatch):
     video_script.generate_video_script(db, video.id)
     assert video.status == MediaStatus.draft and len(video.scenes) == 5
     flag = video.scenes[0]["flags"][-1]
-    assert "5 cảnh" in flag and "model chỉ viết" in flag and "bị bỏ" not in flag
+    assert "5 cảnh" in flag and "AI chỉ viết" in flag and "bị bỏ" not in flag
 
 
 def test_a_script_left_short_by_dropped_scenes_says_so(monkeypatch):
@@ -617,7 +617,7 @@ def test_an_image_prompt_naming_processes_or_figures_its_sources_lack_is_flagged
     db, video, _ = _setup(monkeypatch, chunks, scenes)
     video_script.generate_video_script(db, video.id)
     flags = video.scenes[3]["flags"]
-    assert flags == ["Mô tả hình có P4, P5, 12, không có trong đoạn nguồn của cảnh: hãy sửa mô tả trước khi vẽ"]
+    assert flags == ["Mô tả hình có P4, P5, 12, không có trong đoạn nguồn của cảnh: hãy sửa mô tả trước khi vẽ."]
 
 
 def test_an_image_prompt_true_to_its_sources_is_not_flagged(monkeypatch):

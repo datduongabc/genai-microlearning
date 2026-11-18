@@ -67,7 +67,7 @@ function ItemEditor({ item, name, documentId, sources, flags, onText, onCitation
           rows={2}
           className="ui-input w-full"
         />
-        <button type="button" onClick={onRemove} aria-label={`Xóa ${name}`} className="link-action danger small-action">
+        <button type="button" onClick={onRemove} aria-label={`Xóa ${name}`} className="link-action quiet-danger small-action">
           Xóa
         </button>
       </div>
@@ -169,7 +169,7 @@ export function VideoSceneEditor({ scene: s, number, count, documentId, slide, c
           version={slideVersion(origin, s.fromIndex, slide.picturesDrawn)}
           number={number}
           limiter={slide.limiter}
-          note={slide.changed ? 'Slide của bản đã lưu; lưu để xem bản đang sửa.' : undefined}
+          note={slide.changed ? 'Đây là slide của bản đã lưu. Lưu để xem bản đang sửa.' : undefined}
         />
       ) : (
         <SlidePlaceholder text="Lưu để xem slide của cảnh mới." />
@@ -240,7 +240,7 @@ export function VideoSceneEditor({ scene: s, number, count, documentId, slide, c
           Bảng
           <textarea aria-label={`Bảng cảnh ${number}`} aria-describedby={fieldNotes} value={s.table} rows={4}
             onChange={(e) => set({ table: e.target.value })} className="ui-input w-full font-mono" />
-          <span className="course-hint">Mỗi dòng một hàng, các ô cách nhau bằng dấu |, nên ô không chứa được dấu |.</span>
+          <span className="course-hint">Mỗi dòng là một hàng. Các ô cách nhau bằng dấu |.</span>
         </label>
       )}
       {wholeLabel && ofField.map((flag, i) => (
@@ -253,7 +253,7 @@ export function VideoSceneEditor({ scene: s, number, count, documentId, slide, c
           <textarea aria-label={`Mô tả hình cảnh ${number}`} value={s.imagePrompt} maxLength={2000} rows={3}
             onChange={(e) => set({ imagePrompt: e.target.value })} className="ui-input w-full" />
           <span className="course-hint">
-            Ghi đủ số liệu và nhãn có trong hình. Xóa hết mô tả rồi lưu thì hình bị bỏ và slide chỉ còn chữ.
+            Ghi rõ số liệu và nhãn cần có trong hình. Để trống mô tả thì slide chỉ có chữ.
           </span>
         </label>
       )}

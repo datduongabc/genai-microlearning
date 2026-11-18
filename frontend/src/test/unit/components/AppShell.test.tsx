@@ -149,7 +149,7 @@ describe('AppShell', () => {
     expect(screen.queryByRole('button', { name: 'Hủy liên kết Moodle' })).not.toBeInTheDocument()
     expect(screen.queryByRole('region', { name: 'Tài khoản Moodle' })).not.toBeInTheDocument()
     await userEvent.click(unlink)
-    expect(confirm).toHaveBeenCalledWith('Hủy liên kết Moodle? Bạn sẽ không xuất bản lên Moodle được cho đến khi liên kết lại.')
+    expect(confirm).toHaveBeenCalledWith('Hủy liên kết Moodle?\n\nBạn sẽ không xuất bản lên Moodle được cho đến khi liên kết lại.')
     await waitFor(() => expect(api.unlinkMoodleAccount).toHaveBeenCalledOnce())
   })
   it('keeps keyboard focus in the menu when a pending account becomes linked', async () => {

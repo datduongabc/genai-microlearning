@@ -120,7 +120,7 @@ describe('CourseChat', () => {
     await ask('Hỏi')
 
     await screen.findByText('Đang viết')
-    expect(screen.getByRole('button', { name: 'Đang trả lời...' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Đang trả lời…' })).toBeDisabled()
     expect(screen.getByLabelText('Câu hỏi của bạn')).toBeDisabled()
     finish(new TextEncoder().encode(event('done', saved('Xong.'))))
     close()
@@ -192,7 +192,7 @@ describe('CourseChat', () => {
     latestMock.mockImplementation(() => new Promise<Response>((resolve) => { finish = resolve }))
     render(<CourseChat courseId="course-1" />)
 
-    expect(screen.getByText('Đang tải cuộc trò chuyện...')).toBeInTheDocument()
+    expect(screen.getByText('Đang tải cuộc trò chuyện…')).toBeInTheDocument()
     expect(screen.getByLabelText('Câu hỏi của bạn')).toBeDisabled()
     finish(Response.json({ session_id: null, messages: [] }))
     await waitFor(() => expect(screen.getByLabelText('Câu hỏi của bạn')).toBeEnabled())

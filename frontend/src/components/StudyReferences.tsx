@@ -1,3 +1,4 @@
+import { confirmAction } from "../lib/confirm";
 import { useEffect, useRef, useState } from "react";
 import {
   deleteStudyFile,
@@ -52,7 +53,7 @@ export function StudyReferences({ studyId }: { studyId: string }) {
   }
 
   async function remove(file: StudyFile) {
-    if (!window.confirm(`Xóa ${file.filename}? Các gói đang dùng file này sẽ không còn tài liệu gốc.`)) return;
+    if (!await confirmAction({ title: `Xóa ${file.filename}?`, description: "Các gói đang dùng tệp này sẽ không còn tài liệu gốc.", action: "Xóa tệp", destructive: true })) return;
     setError("");
     try {
       await deleteStudyFile(studyId, file.id);
@@ -83,12 +84,12 @@ export function StudyReferences({ studyId }: { studyId: string }) {
   }
   return <section className="ui-card study-results" aria-labelledby="study-references-title">
     <h2 id="study-references-title">Tài liệu gốc</h2>
-    <p className="small muted">Người chấm tải file của gói đang chấm để đối chiếu. Hai gói cùng cặp luôn dùng chung một file.</p>
+    <p className="small muted">Người chấm tải tệp này về để đối chiếu khi chấm. Hai gói cùng cặp dùng chung một tệp.</p>
     {error && <p role="alert" className="ui-alert">{error}</p>}
 
-    <h3 className="results-subtitle">File</h3>
-    {files.length === 0 ? <p className="small muted">Chưa có file nào.</p> : (
-      <ul className="reference-files" aria-label="File tài liệu gốc">
+    <h3 className="results-subtitle">Tệp đã tải lên</h3>
+    {files.length === 0 ? <p className="small muted">Chưa có tệp nào.</p> : (
+      <ul className="reference-files" aria-label="Tệp tài liệu gốc">
         {files.map((file) => <li key={file.id}>
           <div className="min-w-0">
             <div className="font-semibold [overflow-wrap:anywhere]">{file.filename}</div>
@@ -105,11 +106,11 @@ export function StudyReferences({ studyId }: { studyId: string }) {
     )}
     <div className="reference-upload">
       <label className="ui-button" aria-disabled={progress !== null || undefined}>
-        {progress === null ? "Tải file lên" : `Đang tải lên ${Math.round(progress * 100)}%`}
+        {progress === null ? "Tải tệp lên" : `Đang tải lên ${Math.round(progress * 100)}%`}
         <input ref={input} type="file" className="sr-only" disabled={progress !== null}
           onChange={(e) => { const file = e.target.files?.[0]; if (file) void upload(file); }} />
       </label>
-      <span className="small muted">PDF, PPTX, DOCX, HTML: tối đa 25 MB. Audio tối đa 200 MB, video tối đa 1 GB.</span>
+      <span className="small muted">PDF, PPTX, DOCX, HTML đến 25 MB. Âm thanh đến 200 MB. Video đến 1 GB.</span>
     </div>
 
     <h3 className="results-subtitle">Theo từng gói</h3>

@@ -9,6 +9,7 @@ export interface LearnFlashcardSetItem {
   id: string
   focus: string | null
   card_count: number
+  published_at: string
   document: LearnDocument
 }
 
@@ -16,6 +17,7 @@ export interface LearnVideoItem {
   id: string
   focus: string | null
   duration_seconds: number | null
+  published_at: string
   document: LearnDocument
 }
 

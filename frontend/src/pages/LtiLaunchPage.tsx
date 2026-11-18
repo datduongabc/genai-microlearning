@@ -6,7 +6,7 @@ import { Brand } from "../components/AuthLayout";
 
 // Where an LTI launch from the LMS lands (backend/app/api/lti.py). The fragment carries a code
 // that works once, for a minute, so it is read once and wiped from the address bar at once.
-const MISSING_CODE = "Thiếu mã mở công cụ. Hãy mở lại hoạt động từ LMS.";
+const MISSING_CODE = "Liên kết mở công cụ không hợp lệ. Hãy mở lại hoạt động từ Moodle.";
 
 export function LtiLaunchPage() {
   const { loginWithLaunchCode } = useAuth();
@@ -29,7 +29,7 @@ export function LtiLaunchPage() {
         navigate(owner ? `/courses/${courseId}` : `/learn/${courseId}`, { replace: true }))
       .catch((err: unknown) => {
         const detail = isAxiosError(err) ? err.response?.data?.detail : null;
-        setError(typeof detail === "string" ? detail : "Không mở được công cụ. Hãy mở lại hoạt động từ LMS.");
+        setError(typeof detail === "string" ? detail : "Không mở được công cụ. Hãy mở lại hoạt động từ Moodle.");
       });
   }, [loginWithLaunchCode, navigate]);
 

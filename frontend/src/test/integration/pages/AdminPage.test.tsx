@@ -65,6 +65,15 @@ function menuButton(row: HTMLElement) {
   return within(row).getByRole('button', { name: /^Thao tác / })
 }
 
+// The row menu opens from the keyboard (see CourseDetailPage.test) and renders at the end of the
+// page, so its items are found on the screen, not inside the row. One menu is open at a time.
+async function openRowMenu(row: HTMLElement) {
+  if (screen.queryByRole('menu')) await userEvent.keyboard('{Escape}')
+  menuButton(row).focus()
+  await userEvent.keyboard('{Enter}')
+  await screen.findByRole('menu')
+}
+
 describe('AdminPage - accounts', () => {
   it('lists every account with its state and Moodle link status', async () => {
     renderPage()
@@ -80,27 +89,27 @@ describe('AdminPage - accounts', () => {
   it('offers account creation and password reset without automatic Moodle linking', async () => {
     renderPage()
     const row = (await screen.findByText('lan@example.com')).closest('li')!
-    await userEvent.click(within(row).getByRole('button', { name: /^Thao tác / }))
+    await openRowMenu(row)
     expect(screen.getByRole('button', { name: /Tạo tài khoản/ })).toBeInTheDocument()
-    expect(within(row).getByRole('button', { name: 'Đặt lại mật khẩu' })).toBeInTheDocument()
+    expect(screen.getByRole('menuitem', { name: 'Đặt lại mật khẩu' })).toBeInTheDocument()
   })
 
   it('closes the row action menu after an action is chosen', async () => {
     renderPage()
     const row = (await screen.findByText('lan@example.com')).closest('li')!
-    await userEvent.click(menuButton(row))
+    await openRowMenu(row)
     expect(menuButton(row)).toHaveAttribute('aria-expanded', 'true')
-    await userEvent.click(within(row).getByRole('button', { name: 'Đặt lại mật khẩu' }))
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Đặt lại mật khẩu' }))
     expect(menuButton(row)).toHaveAttribute('aria-expanded', 'false')
-    expect(within(row).queryByRole('button', { name: 'Đặt lại mật khẩu' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('menuitem', { name: 'Đặt lại mật khẩu' })).not.toBeInTheDocument()
     expect(within(row).getByLabelText('Mật khẩu mới của lan@example.com')).toBeInTheDocument()
   })
 
   it('returns focus to the row menu button after an item is chosen with the keyboard', async () => {
     renderPage()
     const row = (await screen.findByText('lan@example.com')).closest('li')!
-    await userEvent.click(menuButton(row))
-    within(row).getByRole('button', { name: 'Đặt lại mật khẩu' }).focus()
+    await openRowMenu(row)
+    screen.getByRole('menuitem', { name: 'Đặt lại mật khẩu' }).focus()
     await userEvent.keyboard('{Enter}')
     expect(within(row).getByLabelText('Mật khẩu mới của lan@example.com')).toBeInTheDocument()
     expect(menuButton(row)).toHaveFocus()
@@ -110,18 +119,18 @@ describe('AdminPage - accounts', () => {
     renderPage()
     const row = (await screen.findByText('lan@example.com')).closest('li')!
     const other = screen.getByText('minh@example.com').closest('li')!
-    await userEvent.click(menuButton(row))
-    await userEvent.click(menuButton(other))
+    await openRowMenu(row)
+    await openRowMenu(other)
     expect(menuButton(row)).toHaveAttribute('aria-expanded', 'false')
     expect(menuButton(other)).toHaveAttribute('aria-expanded', 'true')
 
     await userEvent.click(screen.getByText('Người dùng'))
-    expect(within(other).queryByRole('button', { name: 'Kích hoạt lại' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('menuitem', { name: 'Kích hoạt lại' })).not.toBeInTheDocument()
 
-    await userEvent.click(menuButton(row))
-    within(row).getByRole('button', { name: 'Đặt lại mật khẩu' }).focus()
+    await openRowMenu(row)
+    screen.getByRole('menuitem', { name: 'Đặt lại mật khẩu' }).focus()
     await userEvent.keyboard('{Escape}')
-    expect(within(row).queryByRole('button', { name: 'Đặt lại mật khẩu' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('menuitem', { name: 'Đặt lại mật khẩu' })).not.toBeInTheDocument()
     expect(menuButton(row)).toHaveFocus()
   })
 
@@ -147,8 +156,8 @@ describe('AdminPage - accounts', () => {
 
     vi.mocked(api.getAdminCounts).mockResolvedValue({ users: 45, inactive_users: 4, failed_jobs: {} })
     const row = screen.getByText('lan@example.com').closest('li')!
-    await userEvent.click(menuButton(row))
-    await userEvent.click(within(row).getByRole('button', { name: 'Vô hiệu hóa' }))
+    await openRowMenu(row)
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Vô hiệu hóa' }))
     expect(await screen.findByRole('button', { name: 'Đã vô hiệu hóa (4)' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Đang hoạt động (41)' })).toBeInTheDocument()
   })
@@ -159,28 +168,28 @@ describe('AdminPage - accounts', () => {
     const active = (await screen.findByText('lan@example.com')).closest('li')!
     const locked = screen.getByText('minh@example.com').closest('li')!
 
-    await userEvent.click(menuButton(active))
-    await userEvent.click(within(active).getByRole('button', { name: 'Vô hiệu hóa' }))
+    await openRowMenu(active)
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Vô hiệu hóa' }))
     await waitFor(() => expect(api.setUserActive).toHaveBeenCalledWith('u-1', false))
-    await userEvent.click(menuButton(locked))
-    await userEvent.click(within(locked).getByRole('button', { name: 'Kích hoạt lại' }))
+    await openRowMenu(locked)
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Kích hoạt lại' }))
     await waitFor(() => expect(api.setUserActive).toHaveBeenCalledWith('u-2', true))
   })
 
   it('does not offer admin deactivation', async () => {
     renderPage()
     const own = (await screen.findByText('admin@example.com')).closest('li')!
-    await userEvent.click(within(own).getByRole('button', { name: /^Thao tác / }))
+    await openRowMenu(own)
 
-    expect(within(own).getByRole('button', { name: 'Vô hiệu hóa' })).toBeDisabled()
+    expect(screen.queryByRole('menuitem', { name: 'Vô hiệu hóa' })).not.toBeInTheDocument()
   })
 
   it('cancels activation changes when confirmation is refused', async () => {
     vi.spyOn(window, 'confirm').mockReturnValue(false)
     renderPage()
     const row = (await screen.findByText('lan@example.com')).closest('li')!
-    await userEvent.click(within(row).getByRole('button', { name: /^Thao tác / }))
-    await userEvent.click(within(row).getByRole('button', { name: 'Vô hiệu hóa' }))
+    await openRowMenu(row)
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Vô hiệu hóa' }))
     expect(api.setUserActive).not.toHaveBeenCalled()
     expect(within(row).queryByRole('button', { name: 'Xóa' })).not.toBeInTheDocument()
   })
@@ -201,8 +210,8 @@ describe('AdminPage - accounts', () => {
     await waitFor(() => expect(api.listUsers).toHaveBeenLastCalledWith(false))
     await waitFor(() => expect(screen.queryByText('lan@example.com')).not.toBeInTheDocument())
     const row = (await screen.findByText('minh@example.com')).closest('li')!
-    await userEvent.click(within(row).getByRole('button', { name: /^Thao tác / }))
-    expect(within(row).getByRole('button', { name: 'Kích hoạt lại' })).toBeEnabled()
+    await openRowMenu(row)
+    expect(screen.getByRole('menuitem', { name: 'Kích hoạt lại' })).not.toHaveAttribute('aria-disabled')
   })
 
   it('says so when the list cannot be loaded', async () => {
@@ -223,7 +232,7 @@ describe('AdminPage - failed jobs', () => {
     await openFailures()
 
     expect(await screen.findByRole('button', { name: 'Xử lý tài liệu (2)' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Sinh mô-đun (1)' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Tạo mô-đun (1)' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Tất cả' })).toBeInTheDocument()
   })
 
@@ -248,12 +257,12 @@ describe('AdminPage - failed jobs', () => {
     const detail = document.getElementById(expand.getAttribute('aria-controls')!)!
     expect(within(detail).getByText(/minh@example.com/)).toBeInTheDocument()
     expect(within(detail).getByText('error of j2').tagName).toBe('PRE')
-    expect(within(detail).getByText(/Bước: generate/)).toBeInTheDocument()
+    expect(within(detail).getByText(/Bước generate/)).toBeInTheDocument()
   })
 
   it('asks the server for one job type when the filter changes', async () => {
     await openFailures()
-    await userEvent.click(await screen.findByRole('button', { name: /^Sinh mô-đun/ }))
+    await userEvent.click(await screen.findByRole('button', { name: /^Tạo mô-đun/ }))
 
     await waitFor(() => expect(api.listFailedJobs).toHaveBeenLastCalledWith('module_generation'))
   })
@@ -266,7 +275,7 @@ describe('AdminPage - failed jobs', () => {
     await userEvent.click(await screen.findByRole('button', { name: 'Thử lại j1.pdf' }))
 
     await waitFor(() => expect(api.retryFailedJobs).toHaveBeenCalledWith(['j1']))
-    expect(await screen.findByText(/đã đưa 1 tác vụ vào hàng đợi/i)).toBeInTheDocument()
+    expect(await screen.findByText(/đã chạy lại 1 tác vụ/i)).toBeInTheDocument()
   })
 
   it('retries the picked jobs together, or all of them with select-all', async () => {
@@ -281,7 +290,7 @@ describe('AdminPage - failed jobs', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Thử lại 2 tác vụ đã chọn' }))
 
     await waitFor(() => expect(api.retryFailedJobs).toHaveBeenCalledWith(['j1', 'j3']))
-    expect(await screen.findByText(/1 tác vụ bị bỏ qua/i)).toBeInTheDocument()
+    expect(await screen.findByText(/1 tác vụ được bỏ qua/i)).toBeInTheDocument()
 
     await userEvent.click(screen.getByRole('checkbox', { name: 'Chọn tất cả' }))
     await userEvent.click(screen.getByRole('button', { name: 'Thử lại 3 tác vụ đã chọn' }))
@@ -298,7 +307,7 @@ describe('AdminPage - failed jobs', () => {
     await userEvent.click(await screen.findByRole('checkbox', { name: 'Chọn tất cả' }))
     await userEvent.click(screen.getByRole('button', { name: 'Thử lại 2 tác vụ đã chọn' }))
 
-    expect(await screen.findByText(/1 tác vụ video chỉ chạy lại được từ trình sửa video của giảng viên/i)).toBeInTheDocument()
+    expect(await screen.findByText(/1 tác vụ video cần chạy lại từ trang sửa video/i)).toBeInTheDocument()
     expect(screen.queryByText(/không còn ở trạng thái lỗi/i)).not.toBeInTheDocument()
   })
 
@@ -317,28 +326,28 @@ it('confirms admin Moodle unlink for the selected user and refreshes their statu
   renderPage()
   const row = (await screen.findByText('lan@example.com')).closest('li')!
   const other = screen.getByText('minh@example.com').closest('li')!
-  await userEvent.click(within(other).getByRole('button', { name: /^Thao tác / }))
-  expect(within(other).queryByRole('button', { name: 'Hủy liên kết Moodle' })).not.toBeInTheDocument()
-  await userEvent.click(within(row).getByRole('button', { name: /^Thao tác / }))
+  await openRowMenu(other)
+  expect(screen.queryByRole('menuitem', { name: 'Hủy liên kết Moodle' })).not.toBeInTheDocument()
+  await openRowMenu(row)
   vi.spyOn(window, 'confirm').mockReturnValue(false)
-  await userEvent.click(within(row).getByRole('button', { name: 'Hủy liên kết Moodle' }))
+  await userEvent.click(screen.getByRole('menuitem', { name: 'Hủy liên kết Moodle' }))
   expect(api.unlinkUserMoodleAccount).not.toHaveBeenCalled()
   vi.spyOn(window, 'confirm').mockReturnValue(true)
   vi.mocked(api.listUsers).mockResolvedValue([admin, { ...lan, moodle_status: 'not_linked' }, minh])
-  await userEvent.click(within(row).getByRole('button', { name: /^Thao tác / }))
-  await userEvent.click(within(row).getByRole('button', { name: 'Hủy liên kết Moodle' }))
+  await openRowMenu(row)
+  await userEvent.click(screen.getByRole('menuitem', { name: 'Hủy liên kết Moodle' }))
   expect(window.confirm).toHaveBeenCalledWith(expect.stringContaining(lan.email))
   expect(api.unlinkUserMoodleAccount).toHaveBeenCalledWith(lan.id)
   expect(await within(row).findByText('Chưa liên kết')).toBeInTheDocument()
-  expect(within(row).queryByRole('button', { name: 'Hủy liên kết Moodle' })).not.toBeInTheDocument()
+  expect(screen.queryByRole('menuitem', { name: 'Hủy liên kết Moodle' })).not.toBeInTheDocument()
 })
 
 it('shows an admin unlink failure without changing the user link state', async () => {
   vi.mocked(api.unlinkUserMoodleAccount).mockRejectedValueOnce(new Error('offline'))
   renderPage()
   const row = (await screen.findByText('lan@example.com')).closest('li')!
-  await userEvent.click(within(row).getByRole('button', { name: /^Thao tác / }))
-  await userEvent.click(within(row).getByRole('button', { name: 'Hủy liên kết Moodle' }))
+  await openRowMenu(row)
+  await userEvent.click(screen.getByRole('menuitem', { name: 'Hủy liên kết Moodle' }))
   expect(await screen.findByText('Không hủy được liên kết Moodle.')).toBeInTheDocument()
   expect(within(row).getByText('↗ Đã liên kết')).toBeInTheDocument()
 })
