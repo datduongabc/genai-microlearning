@@ -65,7 +65,7 @@ describe('LtiLaunchPage', () => {
   it('asks to launch again when there is no code', async () => {
     renderAt('')
 
-    expect(await screen.findByRole('alert')).toHaveTextContent('Hãy mở lại hoạt động từ LMS')
+    expect(await screen.findByRole('alert')).toHaveTextContent('Hãy mở lại hoạt động từ Moodle')
     expect(loginWithLaunchCode).not.toHaveBeenCalled()
   })
 

@@ -541,7 +541,7 @@ def run_module_generation_step(job: Job) -> None:
         if doc is None:
             raise ValueError(f"Document {current_job.document_id} not found")
         if not doc.raw_text:
-            raise ValueError("Document chưa được parse (raw_text rỗng)")
+            raise ValueError("Tài liệu chưa xử lý xong.")
 
         # Model giảng viên đã chọn nằm trong payload, vì request đã trả về từ lâu trước
         # khi worker bắt đầu. Bọc cả lượt sinh một lần ở đây thay vì truyền alias xuống

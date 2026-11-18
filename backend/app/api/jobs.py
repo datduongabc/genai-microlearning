@@ -25,6 +25,6 @@ def retry_job(job_id: uuid.UUID, db: Session = Depends(get_db), current_user: Us
     if job.job_type in EDITOR_RETRIED_JOBS:
         raise HTTPException(status_code=409, detail=EDITOR_RETRY_MESSAGE)
     if not retry_failed_job(db, job_id):
-        raise HTTPException(status_code=409, detail="Công việc này không còn ở trạng thái lỗi để thử lại.")
+        raise HTTPException(status_code=409, detail="Tác vụ này không còn lỗi nên không cần thử lại.")
     db.commit()
     return {"id": job_id, "status": JobStatus.queued}

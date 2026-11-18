@@ -65,7 +65,7 @@ class AccessTokenResponse(BaseModel):
 
 DUMMY_HASH = hash_password("Timing sentinel local login")
 WRONG_CREDENTIALS = "Email hoặc mật khẩu không đúng."
-ACCOUNT_DISABLED = "Tài khoản đã bị vô hiệu hóa. Vui lòng liên hệ admin."
+ACCOUNT_DISABLED = "Tài khoản đã bị vô hiệu hóa. Vui lòng liên hệ quản trị viên."
 
 
 REGISTRATION_CLOSED = "Đăng ký tài khoản đã đóng. Hãy nhờ quản trị viên tạo tài khoản, hoặc mở công cụ từ Moodle."

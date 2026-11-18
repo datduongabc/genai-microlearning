@@ -40,7 +40,7 @@ function Khung({ onChange = vi.fn() }: { onChange?: (alias: string) => void }) {
 }
 
 function oChon() {
-  return screen.getByRole('combobox', { name: /model sinh/i }) as HTMLSelectElement
+  return screen.getByRole('combobox', { name: /mô hình ai/i }) as HTMLSelectElement
 }
 
 beforeEach(() => {
@@ -128,7 +128,7 @@ describe('ModelPicker', () => {
     const onChange = vi.fn()
     render(<Khung onChange={onChange} />)
 
-    expect(await screen.findByText(/không tải được danh sách model/i)).toBeInTheDocument()
+    expect(await screen.findByText(/không tải được danh sách mô hình/i)).toBeInTheDocument()
     expect(oChon()).toBeDisabled()
     expect(oChon().value).toBe('')
   })
@@ -137,7 +137,7 @@ describe('ModelPicker', () => {
     vi.mocked(api.listModels).mockResolvedValue(undefined as unknown as ModelList)
     render(<Khung />)
 
-    expect(await screen.findByText(/không tải được danh sách model/i)).toBeInTheDocument()
+    expect(await screen.findByText(/không tải được danh sách mô hình/i)).toBeInTheDocument()
   })
 
   it('lưu mặc định thất bại thì báo lỗi và giữ nguyên nút để thử lại', async () => {

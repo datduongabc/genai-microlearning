@@ -39,7 +39,7 @@ export function LearnItems({ courseId }: { courseId: string }) {
 
   // The chat below does not depend on this list, so a failure here is a line, not a blocked page.
   if (failed) return <p role="alert" className="ui-alert learn-items">Không tải được danh sách bộ thẻ và video.</p>;
-  if (!items) return <p role="status" className="muted learn-items">Đang tải...</p>;
+  if (!items) return <p role="status" className="muted learn-items">Đang tải…</p>;
 
   const groups = new Map<string, { filename: string; sets: Items["flashcard_sets"]; videos: Items["videos"] }>();
   const group = (document: { id: string; filename: string }) => {

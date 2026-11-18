@@ -33,9 +33,9 @@ const PREVIEWS_AT_ONCE = 2
 type JobType = VideoJob['job_type']
 
 const JOB_TEXT: Record<JobType, string> = {
-  video_script: 'Đang sinh lời thoại...',
-  video_images: 'Đang vẽ hình...',
-  video_render: 'Đang dựng video...',
+  video_script: 'Đang viết lời thoại…',
+  video_images: 'Đang vẽ hình…',
+  video_render: 'Đang dựng video…',
 }
 // A job between being picked up and the next poll shows only in the status.
 const STATUS_JOB: Partial<Record<VideoDetail['status'], JobType>> = {
@@ -48,8 +48,8 @@ const DONE_TEXT: Partial<Record<JobType, string>> = {
   video_render: 'Đã dựng xong video.',
 }
 const QUEUED_TEXT: Partial<Record<JobType, string>> = {
-  video_images: 'Đã gửi yêu cầu vẽ hình; trang sẽ tự cập nhật khi xong.',
-  video_render: 'Đã gửi yêu cầu dựng video; trang sẽ tự cập nhật khi xong.',
+  video_images: 'Đã gửi yêu cầu vẽ hình. Trang tự cập nhật khi xong.',
+  video_render: 'Đã gửi yêu cầu dựng video. Trang tự cập nhật khi xong.',
 }
 
 // The catalogue words a price as "khoảng $0,037 một ảnh" for the model picker; beside "Mỗi hình" the
@@ -207,7 +207,7 @@ export function VideoEditorPage() {
   }
 
   if (loading) {
-    return <AppShell title="Video"><p className="course-empty">Đang tải...</p></AppShell>
+    return <AppShell title="Video"><p className="course-empty">Đang tải…</p></AppShell>
   }
   if (missing) {
     return (
@@ -267,7 +267,7 @@ export function VideoEditorPage() {
 
   const deleteButton = (
     <button type="button" onClick={remove} disabled={busy !== null || jobRunning} className="link-action danger">
-      {busy === 'delete' ? 'Đang xóa...' : 'Xóa video'}
+      {busy === 'delete' ? 'Đang xóa…' : 'Xóa video'}
     </button>
   )
 
@@ -275,7 +275,7 @@ export function VideoEditorPage() {
     return (
       <AppShell {...titleProps}>
         {backLink}
-        <p role="status" className="course-empty">Đang sinh lời thoại...</p>
+        <p role="status" className="course-empty">Đang viết lời thoại…</p>
       </AppShell>
     )
   }
@@ -284,7 +284,7 @@ export function VideoEditorPage() {
   if (saved.status === 'failed' && saved.scenes.length === 0) {
     return (
       <AppShell {...titleProps}>
-        <p className="text-sm danger-text">{saved.error ?? 'Sinh lời thoại thất bại.'} Xóa video này rồi sinh lại từ trang môn học.</p>
+        <p className="text-sm danger-text">{saved.error ?? 'Viết lời thoại thất bại.'} Xóa video này rồi tạo lại từ trang môn học.</p>
         {error && <p role="alert" className="mt-3 text-sm danger-text">{error}</p>}
         <div className="mt-4 flex gap-4">
           {backLink}
@@ -379,7 +379,7 @@ export function VideoEditorPage() {
     void startJob('render', 'video_render', () => renderVideo(videoId), 'Dựng video thất bại')
   }
 
-  const needsSave = dirty ? 'Lưu thay đổi trước: hình và video được làm từ bản đã lưu.' : null
+  const needsSave = dirty ? 'Hãy lưu thay đổi trước. Hình và video được tạo từ bản đã lưu.' : null
 
   return (
     <AppShell {...titleProps}>
@@ -443,11 +443,11 @@ export function VideoEditorPage() {
           {error && <p role="alert" className="text-sm danger-text">{error}</p>}
           <div className="flashcard-actions">
             <button type="button" onClick={save} disabled={!dirty || missingTitle || busy !== null} className="ui-button primary">
-              {busy === 'save' ? 'Đang lưu...' : 'Lưu thay đổi'}
+              {busy === 'save' ? 'Đang lưu…' : 'Lưu thay đổi'}
             </button>
             {stale && (
               <button type="button" onClick={reload} disabled={busy !== null} className="ui-button">
-                {busy === 'reload' ? 'Đang tải...' : 'Tải lại bản nháp'}
+                {busy === 'reload' ? 'Đang tải…' : 'Tải lại bản nháp'}
               </button>
             )}
           </div>
@@ -461,7 +461,7 @@ export function VideoEditorPage() {
           </p>
           {toDraw === 0 && <p className="course-hint">Mọi hình đã khớp với mô tả.</p>}
           <button type="button" onClick={() => draw()} disabled={!canStartJob || toDraw === 0} className="ui-button">
-            {busy === 'draw' ? 'Đang gửi...' : 'Vẽ hình'}
+            {busy === 'draw' ? 'Đang gửi…' : 'Vẽ hình'}
           </button>
         </section>
 
@@ -481,7 +481,7 @@ export function VideoEditorPage() {
             disabled={!canStartJob || saved.render_problems.length > 0}
             className="ui-button primary"
           >
-            {busy === 'render' ? 'Đang gửi...' : rendered === null ? 'Dựng video' : 'Dựng lại video'}
+            {busy === 'render' ? 'Đang gửi…' : rendered === null ? 'Dựng video' : 'Dựng lại video'}
           </button>
         </section>
 
@@ -515,7 +515,7 @@ export function VideoEditorPage() {
               disabled={busy !== null || (!published && rendered === null)}
               className="ui-button"
             >
-              {busy === 'publish' ? 'Đang xử lý...' : published ? 'Ngừng giao' : 'Giao cho sinh viên'}
+              {busy === 'publish' ? 'Đang xử lý…' : published ? 'Ngừng giao' : 'Giao cho sinh viên'}
             </button>
             {deleteButton}
           </div>

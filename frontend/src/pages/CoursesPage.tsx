@@ -64,7 +64,7 @@ export function CoursesPage() {
     const confirmed = await confirmAction({
       title: `Xóa môn học "${course.name}"?`,
       description: `Toàn bộ tài liệu, mô-đun, quiz, flashcard và video trong môn học bị xóa theo. Không thể khôi phục.${
-        course.moodle_course_id !== null ? " Course trên Moodle vẫn giữ nguyên, chỉ mất liên kết." : ""
+        course.moodle_course_id !== null ? " Khóa học trên Moodle vẫn giữ nguyên." : ""
       }`,
       action: "Xóa môn học", destructive: true,
     });
@@ -89,13 +89,13 @@ export function CoursesPage() {
           className="ui-input min-w-0 flex-1"
         />
         <button disabled={creating} className="ui-button primary">
-          {creating ? "Đang tạo..." : "Tạo môn học"}
+          {creating ? "Đang tạo…" : "Tạo môn học"}
         </button>
         {errors.name && <p className="basis-full text-sm danger-text">{errors.name.message}</p>}
       </form>
 
       {loading ? (
-        <p className="course-empty">Đang tải môn học...</p>
+        <p className="course-empty">Đang tải môn học…</p>
       ) : loadFailed ? (
         <div className="course-empty">
           <p role="alert" className="danger-text">Không tải được danh sách môn học.</p>
@@ -113,7 +113,7 @@ export function CoursesPage() {
                   {c.name}
                 </Link>
                 <div className="course-meta">
-                  {c.moodle_course_id !== null ? `Đã liên kết Moodle course id ${c.moodle_course_id}` : "Chưa liên kết Moodle"}
+                  {c.moodle_course_id !== null ? `Đã liên kết khóa học Moodle #${c.moodle_course_id}` : "Chưa liên kết Moodle"}
                 </div>
               </div>
               <button
@@ -121,7 +121,7 @@ export function CoursesPage() {
                 disabled={deletingId === c.id}
                 className="link-action danger"
               >
-                {deletingId === c.id ? "Đang xóa..." : "Xóa"}
+                {deletingId === c.id ? "Đang xóa…" : "Xóa"}
               </button>
             </li>
           ))}

@@ -39,14 +39,14 @@ describe('GenerateDialog', () => {
   it('starts with Vietnamese and no guidance, and hands over the trimmed choices', async () => {
     const { onOpenChange, onGenerate } = renderDialog()
 
-    await userEvent.click(screen.getByRole('button', { name: 'Sinh mô-đun' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Tạo mô-đun' }))
 
     await waitFor(() => expect(onGenerate).toHaveBeenCalledWith('vi', ''))
     expect(onOpenChange).toHaveBeenCalledWith(false)
 
     await userEvent.selectOptions(screen.getByLabelText(/Ngôn ngữ đầu ra/), 'en')
-    await userEvent.type(screen.getByLabelText(/Hướng dẫn thêm/), '  Explain IDS ')
-    await userEvent.click(screen.getByRole('button', { name: 'Sinh mô-đun' }))
+    await userEvent.type(screen.getByLabelText(/Yêu cầu thêm/), '  Explain IDS ')
+    await userEvent.click(screen.getByRole('button', { name: 'Tạo mô-đun' }))
 
     await waitFor(() => expect(onGenerate).toHaveBeenLastCalledWith('en', 'Explain IDS'))
   })
@@ -54,8 +54,8 @@ describe('GenerateDialog', () => {
   it('refuses guidance over 1000 characters and says so', async () => {
     const { onOpenChange, onGenerate } = renderDialog()
 
-    fireEvent.change(screen.getByLabelText(/Hướng dẫn thêm/), { target: { value: 'a'.repeat(1001) } })
-    await userEvent.click(screen.getByRole('button', { name: 'Sinh mô-đun' }))
+    fireEvent.change(screen.getByLabelText(/Yêu cầu thêm/), { target: { value: 'a'.repeat(1001) } })
+    await userEvent.click(screen.getByRole('button', { name: 'Tạo mô-đun' }))
 
     expect(await screen.findByText('Hướng dẫn tối đa 1000 ký tự')).toBeInTheDocument()
     expect(onGenerate).not.toHaveBeenCalled()
@@ -65,12 +65,12 @@ describe('GenerateDialog', () => {
   it('asks a flashcard set for a focus, and hands over the trimmed choices', async () => {
     const { onOpenChange, onGenerate } = renderDialog('flashcards')
 
-    expect(screen.getByRole('heading', { name: 'Sinh flashcard' })).toBeInTheDocument()
-    expect(screen.queryByLabelText(/Hướng dẫn thêm/)).not.toBeInTheDocument()
-    await userEvent.type(screen.getByLabelText(/Trọng tâm/), '  Mảng và danh sách liên kết ')
-    await userEvent.click(screen.getByRole('button', { name: 'Sinh flashcard' }))
+    expect(screen.getByRole('heading', { name: 'Tạo flashcard' })).toBeInTheDocument()
+    expect(screen.queryByLabelText(/Yêu cầu thêm/)).not.toBeInTheDocument()
+    await userEvent.type(screen.getByLabelText(/Trọng tâm/), '  Ví dụ: các định nghĩa trong chương 2 ')
+    await userEvent.click(screen.getByRole('button', { name: 'Tạo flashcard' }))
 
-    await waitFor(() => expect(onGenerate).toHaveBeenCalledWith('vi', 'Mảng và danh sách liên kết'))
+    await waitFor(() => expect(onGenerate).toHaveBeenCalledWith('vi', 'Ví dụ: các định nghĩa trong chương 2'))
     expect(onOpenChange).toHaveBeenCalledWith(false)
   })
 
@@ -78,7 +78,7 @@ describe('GenerateDialog', () => {
     const { onGenerate } = renderDialog('flashcards')
 
     fireEvent.change(screen.getByLabelText(/Trọng tâm/), { target: { value: 'a'.repeat(1001) } })
-    await userEvent.click(screen.getByRole('button', { name: 'Sinh flashcard' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Tạo flashcard' }))
 
     expect(await screen.findByText('Trọng tâm tối đa 1000 ký tự')).toBeInTheDocument()
     expect(onGenerate).not.toHaveBeenCalled()
@@ -87,7 +87,7 @@ describe('GenerateDialog', () => {
   it('names a video the same way', () => {
     renderDialog('video')
 
-    expect(screen.getByRole('heading', { name: 'Sinh video' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Tạo video' })).toBeInTheDocument()
     expect(screen.getByLabelText(/Trọng tâm/)).toBeInTheDocument()
   })
 
@@ -95,7 +95,7 @@ describe('GenerateDialog', () => {
     const { onGenerate } = renderDialog('video')
 
     const voice = screen.getByLabelText('Giọng đọc')
-    const image = screen.getByLabelText('Model vẽ hình')
+    const image = screen.getByLabelText('Mô hình vẽ hình')
     // The choices are the server's.
     await waitFor(() => expect(voice).toHaveValue('voice-heygen'))
     expect(image).toHaveValue('image-nano-banana')
@@ -106,7 +106,7 @@ describe('GenerateDialog', () => {
     await userEvent.selectOptions(voice, 'voice-gemini-lite')
     await userEvent.selectOptions(image, 'image-qwen')
     await userEvent.type(screen.getByLabelText(/Trọng tâm/), 'BFS')
-    await userEvent.click(screen.getByRole('button', { name: 'Sinh video' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Tạo video' }))
 
     await waitFor(() => expect(onGenerate).toHaveBeenCalledWith('vi', 'BFS', { voiceAlias: 'voice-gemini-lite', imageAlias: 'image-qwen' }))
   })
@@ -114,7 +114,7 @@ describe('GenerateDialog', () => {
   it('offers no voice or image model to a module or a flashcard set, and asks the server for none', () => {
     renderDialog('module')
     expect(screen.queryByLabelText('Giọng đọc')).not.toBeInTheDocument()
-    expect(screen.queryByLabelText('Model vẽ hình')).not.toBeInTheDocument()
+    expect(screen.queryByLabelText('Mô hình vẽ hình')).not.toBeInTheDocument()
     expect(videos.getMediaModels).not.toHaveBeenCalled()
   })
 
@@ -122,8 +122,8 @@ describe('GenerateDialog', () => {
     vi.mocked(videos.getMediaModels).mockRejectedValue(new Error('offline'))
     const { onGenerate } = renderDialog('video')
 
-    expect(await screen.findByText(/Không tải được danh sách giọng và model ảnh/)).toBeInTheDocument()
-    await userEvent.click(screen.getByRole('button', { name: 'Sinh video' }))
+    expect(await screen.findByText(/Không tải được danh sách giọng đọc và mô hình vẽ hình/)).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Tạo video' }))
 
     await waitFor(() => expect(onGenerate).toHaveBeenCalledWith('vi', '', { voiceAlias: undefined, imageAlias: undefined }))
   })

@@ -42,7 +42,7 @@ function LearnFlashcardsStudy({ courseId, setId }: { courseId?: string; setId?: 
       {failed ? (
         <p role="alert" className="ui-alert">Không tải được bộ thẻ. Bộ thẻ có thể đã được ẩn.</p>
       ) : !set || !card ? (
-        <p role="status" className="muted">{set ? "Bộ thẻ này chưa có thẻ nào." : "Đang tải..."}</p>
+        <p role="status" className="muted">{set ? "Bộ thẻ này chưa có thẻ nào." : "Đang tải…"}</p>
       ) : (
         <>
           <h1 className="page-title">{set.focus ?? "Bộ thẻ"}</h1>

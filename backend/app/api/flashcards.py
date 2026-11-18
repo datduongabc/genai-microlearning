@@ -76,7 +76,7 @@ def generate_flashcards(
     if doc is None or doc.course.owner_id != current_user.id:
         raise HTTPException(status_code=404, detail="Document not found")
     if not doc.raw_text:
-        raise HTTPException(status_code=422, detail="Document chưa được parse (raw_text rỗng)")
+        raise HTTPException(status_code=422, detail="Tài liệu chưa xử lý xong.")
 
     # Only an identical request is a double submit: a lecturer may want several sets of one document
     # (arrays, then linked lists), each with its own focus.
@@ -86,7 +86,7 @@ def generate_flashcards(
         FlashcardSet.focus.is_not_distinct_from(focus),
     ).first()
     if duplicate is not None:
-        raise HTTPException(status_code=409, detail="Bộ thẻ này đang được sinh, vui lòng chờ.")
+        raise HTTPException(status_code=409, detail="Bộ flashcard này đang được tạo, vui lòng chờ.")
 
     reserve_generations(db, current_user, full_access=full_access, noun="bộ flashcard")
     card_set = FlashcardSet(
@@ -127,9 +127,9 @@ def edit_cards(
 ):
     card_set = _owned_set(db, set_id, current_user, lock=True)
     if card_set.status != MediaStatus.draft:
-        raise HTTPException(status_code=409, detail="Chỉ sửa được thẻ của bộ thẻ đã sinh xong.")
+        raise HTTPException(status_code=409, detail="Chỉ sửa được bộ flashcard đã tạo xong.")
     if card_set.published_at is not None and not body.cards:
-        raise HTTPException(status_code=422, detail="Bộ thẻ đang công khai không thể để trống, hãy ẩn nó trước.")
+        raise HTTPException(status_code=422, detail="Bộ flashcard đang giao cho sinh viên không được để trống. Hãy ngừng giao trước.")
 
     require_own_chunks(db, card_set.document_id, {c for card in body.cards for c in card.citations})
 
@@ -157,7 +157,7 @@ def publish_flashcard_set(
 ):
     card_set = _owned_set(db, set_id, current_user, lock=True)
     if card_set.status != MediaStatus.draft or not card_set.cards:
-        raise HTTPException(status_code=409, detail="Chỉ công khai được bộ thẻ đã sinh xong và có ít nhất một thẻ.")
+        raise HTTPException(status_code=409, detail="Chỉ giao được bộ flashcard đã tạo xong và có ít nhất một thẻ.")
     if card_set.published_at is None:
         card_set.published_at = func.now()
     db.commit()
@@ -182,7 +182,7 @@ def delete_flashcard_set(
     card_set = _owned_set(db, set_id, current_user, lock=True)
     # The worker still holds this set; deleting it now would fail its job on a missing row.
     if card_set.status == MediaStatus.generating:
-        raise HTTPException(status_code=409, detail="Bộ thẻ đang được sinh, vui lòng chờ xong rồi xóa.")
+        raise HTTPException(status_code=409, detail="Bộ flashcard đang được tạo. Hãy chờ xong rồi xóa.")
     # A flashcard set owns no files, so unlike a module or a video there is nothing to remove from storage.
     # Its jobs have no row to cascade from; a failed one kept would list the document as failed,
     # with a retry that can only fail on the missing set.

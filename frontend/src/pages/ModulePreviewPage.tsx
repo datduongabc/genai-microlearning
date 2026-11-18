@@ -151,7 +151,7 @@ export function ModulePreviewPage() {
   if (loading) {
     return (
       <AppShell title="Mô-đun">
-        <p className="text-sm text-gray-500">Đang tải...</p>
+        <p className="text-sm text-gray-500">Đang tải…</p>
       </AppShell>
     )
   }
@@ -190,7 +190,7 @@ export function ModulePreviewPage() {
           <div className="module-main">
             <ModuleHeader module={module} onSaved={refresh} />
             {module.is_control && (
-              <p className="mt-2 text-sm text-amber-700">Đối chứng (không RAG) - chỉ dùng cho nghiên cứu</p>
+              <p className="mt-2 text-sm text-amber-700">Bản đối chứng cho nghiên cứu, không dùng tài liệu</p>
             )}
             <div className="module-sheet">
               {module.components.map((c) => (
@@ -267,7 +267,7 @@ function ModuleChatPanel({ module, onSaved }: { module: ModuleDetail; onSaved: (
       {errors.message && <p className="text-sm danger-text">{errors.message.message}</p>}
       <button type="submit" disabled={sending || blank}
         className="ui-button primary w-fit">
-        {sending ? 'Đang chỉnh sửa...' : 'Gửi yêu cầu'}
+        {sending ? 'Đang chỉnh sửa…' : 'Gửi yêu cầu'}
       </button>
     </form>
     {error && <p role="alert" className="mt-2 text-sm danger-text">{error}</p>}
@@ -395,13 +395,13 @@ function PublishToMoodleSection({
         disabled={publishing || result !== null}
         className="ui-button primary"
       >
-        {publishing ? 'Đang xuất bản...' : result !== null ? 'Đã xuất bản lên Moodle' : 'Xuất bản lên Moodle'}
+        {publishing ? 'Đang xuất bản…' : result !== null ? 'Đã xuất bản lên Moodle' : 'Xuất bản lên Moodle'}
       </button>
       </form>}
 
       {result && (
         <p role="status" className="mt-3 text-sm success-text">
-          Đã tạo trên Moodle course id {result.moodle_course_id}: sách nội dung
+          Đã tạo trên khóa học Moodle #{result.moodle_course_id}: sách nội dung
           {result.practice_cmid ? ', bài luyện tập' : ''}
           {result.quiz_cmid ? ', quiz' : ''}.
         </p>
@@ -446,7 +446,7 @@ function ModuleHeader({ module, onSaved }: { module: ModuleDetail; onSaved: () =
             disabled={saving}
             className="ui-button primary"
           >
-            {saving ? 'Đang lưu...' : 'Lưu'}
+            {saving ? 'Đang lưu…' : 'Lưu'}
           </button>
           <button
             type="button"
@@ -476,7 +476,7 @@ function ModuleHeader({ module, onSaved }: { module: ModuleDetail; onSaved: () =
 
       {!!module.generation_models?.length && (
         <p className="mt-2 text-sm text-gray-600">
-          Model sinh: {[...new Set(module.generation_models.map((call) => `${call.requested_alias} → ${call.served_model}`))].join(', ')}
+          Mô hình AI: {[...new Set(module.generation_models.map((call) => `${call.requested_alias} → ${call.served_model}`))].join(', ')}
         </p>
       )}
       {module.learning_objective && (
@@ -605,7 +605,7 @@ function ScormDownload({ moduleId, moduleTitle }: { moduleId: string; moduleTitl
         Một tệp zip theo chuẩn SCORM 1.2 cho Moodle hoặc LMS khác: nội dung, luyện tập và bài kiểm tra; LMS ghi lại điểm.
       </p>
       <button type="button" className="ui-button" disabled={downloading} onClick={() => void download()}>
-        {downloading ? 'Đang tạo gói...' : 'Tải gói SCORM (.zip)'}
+        {downloading ? 'Đang tạo gói…' : 'Tải gói SCORM (.zip)'}
       </button>
       {error && <p role="alert" className="mt-3 text-sm danger-text">{error}</p>}
     </section>
@@ -671,7 +671,7 @@ function SaveCancelRow({
           disabled={saving}
           className="ui-button primary"
         >
-          {saving ? 'Đang lưu...' : 'Lưu'}
+          {saving ? 'Đang lưu…' : 'Lưu'}
         </button>
         <button onClick={() => { setError(''); onCancel() }} className="ui-button">
           Hủy
@@ -1054,7 +1054,7 @@ function QuizDisplay({
                       : 'bg-gray-100 text-gray-700'
                 }`}
               >
-                {!passed ? 'Không đạt CRAG' : selfChecked ? 'Đạt CRAG' : 'Chưa tự kiểm'}
+                {!passed ? 'Chưa khớp nguồn' : selfChecked ? 'Đã kiểm với nguồn' : 'Chưa kiểm'}
               </span>
             </div>
             <QuestionEditor moduleId={moduleId} question={question}
@@ -1064,7 +1064,7 @@ function QuizDisplay({
       })}
       {questions.length === 0 && (
         <p className="text-sm text-gray-500">
-          Không sinh được câu hỏi hợp lệ
+          Chưa tạo được câu hỏi hợp lệ
           {failed.length > 0 ? ` (${failed.map((c) => c.fail_reason).join('; ')})` : ''}.
         </p>
       )}
@@ -1116,7 +1116,7 @@ function QuestionEditor({ moduleId, question, explanation, onSaved }: {
       </div>)}
       <label>Giải thích<textarea aria-label="Giải thích" {...register('explanation')} className="w-full rounded border border-gray-300 p-2" /></label>
       <div className="flex gap-3">
-        <button type="submit" disabled={saving} className="text-sm font-semibold text-accent">{saving ? 'Đang lưu...' : 'Lưu'}</button>
+        <button type="submit" disabled={saving} className="text-sm font-semibold text-accent">{saving ? 'Đang lưu…' : 'Lưu'}</button>
         <button type="button" disabled={saving} onClick={() => setEditing(false)} className="text-sm text-gray-500">Hủy</button>
       </div>
     </form> : <>

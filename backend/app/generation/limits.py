@@ -43,8 +43,8 @@ def reserve_generations(db: Session, user: User, *, full_access: bool, count: in
     limit = settings.non_teacher_daily_generation_limit
     if used + count > limit:
         raise HTTPException(status_code=429, detail=(
-            f"Bạn được sinh tối đa {limit} {noun} mỗi ngày (UTC). "
-            "Liên kết môn học Moodle mà bạn có quyền quản lý hoạt động để dùng đầy đủ."
+            f"Mỗi ngày bạn được tạo tối đa {limit} {noun}. "
+            "Liên kết môn học với một khóa học Moodle bạn quản lý để bỏ giới hạn này."
         ))
     user.generation_day = today
     user.generation_count = used + count
@@ -68,7 +68,7 @@ def reserve_video_redraws(db: Session, user: User, images: int) -> None:
 
     For every account, Moodle-linked or not: each picture is paid, and nobody else is accountable for them."""
     _count_today(db, user, "video_redraw", images, settings.video_redraws_per_day,
-                 "Mỗi ngày (UTC) bạn được vẽ tối đa {limit} hình; hôm nay còn {left} hình. Hãy quay lại vào ngày mai.")
+                 "Mỗi ngày bạn được vẽ tối đa {limit} hình, hôm nay còn {left} hình. Hãy quay lại vào ngày mai.")
 
 
 def reserve_video_render(db: Session, user: User) -> None:

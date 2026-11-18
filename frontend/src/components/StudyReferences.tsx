@@ -110,7 +110,7 @@ export function StudyReferences({ studyId }: { studyId: string }) {
         <input ref={input} type="file" className="sr-only" disabled={progress !== null}
           onChange={(e) => { const file = e.target.files?.[0]; if (file) void upload(file); }} />
       </label>
-      <span className="small muted">PDF, PPTX, DOCX, HTML: tối đa 25 MB. Audio tối đa 200 MB, video tối đa 1 GB.</span>
+      <span className="small muted">PDF, PPTX, DOCX, HTML đến 25 MB. Âm thanh đến 200 MB. Video đến 1 GB.</span>
     </div>
 
     <h3 className="results-subtitle">Theo từng gói</h3>

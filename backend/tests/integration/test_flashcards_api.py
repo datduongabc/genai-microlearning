@@ -103,7 +103,7 @@ def test_the_daily_generation_limit_names_flashcard_sets_not_modules(world, monk
     over = client.post("/flashcard-sets", params=params, json={"output_language": "vi", "focus": "b"}, headers=h)
 
     assert over.status_code == 429
-    assert "1 bộ flashcard mỗi ngày" in over.json()["detail"] and "mô-đun" not in over.json()["detail"]
+    assert "tối đa 1 bộ flashcard" in over.json()["detail"] and "mô-đun" not in over.json()["detail"]
 
 
 def test_an_identical_request_while_one_is_running_is_refused_without_a_charge(world):

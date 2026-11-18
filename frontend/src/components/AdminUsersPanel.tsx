@@ -110,7 +110,7 @@ export function AdminUsersPanel({ counts, onChange }: { counts: AdminCounts | nu
       {loadError && <p className="text-sm text-red-700">{loadError}</p>}
 
       {users === null ? (
-        !loadError && <p className="text-sm text-gray-500">Đang tải...</p>
+        !loadError && <p className="text-sm text-gray-500">Đang tải…</p>
       ) : (
         <ul className="account-table ui-card">
           <li className="account-row table-heading"><span>Người dùng</span><span>Moodle</span><span /></li>
@@ -215,7 +215,7 @@ function CreateUserForm({ onCreated }: { onCreated: (user: AdminUser) => void })
           disabled={isSubmitting}
           className="rounded-[3px] bg-accent px-4 py-2 text-sm font-semibold text-white hover:bg-accent-dark disabled:opacity-60"
         >
-          {isSubmitting ? "Đang tạo..." : "Tạo tài khoản"}
+          {isSubmitting ? "Đang tạo…" : "Tạo tài khoản"}
         </button>
       </div>
     </form>
@@ -256,7 +256,7 @@ function ResetPasswordForm({ user, onDone }: { user: AdminUser; onDone: (message
           disabled={isSubmitting}
           className="rounded-[3px] bg-ink px-3 py-1.5 text-sm font-semibold text-white hover:bg-ink-raised disabled:opacity-60"
         >
-          {isSubmitting ? "Đang lưu..." : "Lưu mật khẩu mới"}
+          {isSubmitting ? "Đang lưu…" : "Lưu mật khẩu mới"}
         </button>
       </div>
       {errors.password && <span className="text-sm text-red-600">{errors.password.message}</span>}

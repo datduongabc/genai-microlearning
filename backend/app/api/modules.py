@@ -151,7 +151,7 @@ def _generate_without_retrieval(
         .first()
     )
     if running is not None:
-        raise HTTPException(status_code=409, detail="Tài liệu này đang có 1 lượt sinh mô-đun khác đang chạy, vui lòng chờ.")
+        raise HTTPException(status_code=409, detail="Tài liệu này đang tạo một mô-đun khác. Hãy chờ lượt đó xong.")
 
     reserve_generations(db, current_user, full_access=full_access)
     job = enqueue_job(
@@ -179,7 +179,7 @@ def generate_module(
     # both would pass and start the same work twice.
     doc = _owned_document(db, document_id, current_user, lock=True)
     if not doc.raw_text:
-        raise HTTPException(status_code=422, detail="Document chưa được parse (raw_text rỗng)")
+        raise HTTPException(status_code=422, detail="Tài liệu chưa xử lý xong.")
 
     if body is not None and without_retrieval:
         return _generate_without_retrieval(db, doc, body, current_user, full_access)
@@ -205,7 +205,7 @@ def generate_module(
     if existing is not None:
         raise HTTPException(
             status_code=409,
-            detail="Tài liệu này đang có 1 lượt sinh mô-đun khác đang chạy, vui lòng chờ.",
+            detail="Tài liệu này đang tạo một mô-đun khác. Hãy chờ lượt đó xong.",
         )
 
     # generate_module() thật đo được mất 10+ phút (17 lệnh gọi LLM tuần tự) --
@@ -370,7 +370,7 @@ def export_scorm(
     if failing:
         raise HTTPException(
             status_code=422,
-            detail="Còn câu hỏi chưa đạt gate chất lượng; sửa hoặc sinh lại trước khi xuất gói SCORM: " + "; ".join(failing),
+            detail="Còn câu hỏi chưa khớp nguồn. Hãy sửa trước khi xuất gói SCORM: " + "; ".join(failing),
         )
     if not build_book_chapters(module):
         raise HTTPException(status_code=422, detail="Mô-đun chưa có nội dung nào để xuất.")
@@ -412,7 +412,7 @@ def delete_module(
     ).all()
     if any(j.status in (JobStatus.queued, JobStatus.running) for j in paired_jobs):
         raise HTTPException(
-            status_code=409, detail="Bản đối chứng của mô-đun này đang được sinh, vui lòng chờ xong rồi xóa."
+            status_code=409, detail="Bản đối chứng của mô-đun này đang được tạo. Hãy chờ xong rồi xóa."
         )
     control_ids = set(db.scalars(select(Module.id).where(Module.paired_module_id == module.id)))
     control_ids.update(db.scalars(select(Module.id).where(
@@ -601,7 +601,7 @@ def chat_edit_module(
                                      "ai_original": component.content.get("ai_original", component.content)}
     except (ValidationError, ValueError) as exc:
         db.rollback()
-        raise HTTPException(status_code=422, detail="Phản hồi AI không hợp lệ; chưa thay đổi mô-đun.") from exc
+        raise HTTPException(status_code=422, detail="AI trả lời không hợp lệ nên mô-đun chưa thay đổi. Hãy thử lại.") from exc
     db.add_all([
         ChatMessage(session_id=session.id, role=ChatRole.user, content=message, citations=[],
                     created_at=datetime.now(UTC).replace(tzinfo=None)),

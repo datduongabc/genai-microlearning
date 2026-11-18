@@ -63,7 +63,7 @@ export interface VideoDetail extends VideoSummary {
   scenes: VideoScene[]
   estimated_seconds: number
   max_seconds: number
-  // What stops a render, worded by the server (over 8 minutes, a missing picture...).
+  // What stops a render, worded by the server (over 8 minutes, a missing picture…).
   render_problems: string[]
   // What a render goes ahead with but the lecturer should know (a picture drawn from an older description).
   render_warnings: string[]

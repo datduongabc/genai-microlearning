@@ -169,7 +169,7 @@ def test_the_daily_generation_limit_names_videos_not_modules(world, monkeypatch)
     over = client.post("/videos", params=params, json={"output_language": "vi", "focus": "b"}, headers=h)
 
     assert over.status_code == 429
-    assert "1 video mỗi ngày" in over.json()["detail"] and "mô-đun" not in over.json()["detail"]
+    assert "tối đa 1 video" in over.json()["detail"] and "mô-đun" not in over.json()["detail"]
 
 
 def test_the_default_voice_and_image_model_are_used_when_none_is_asked(world):

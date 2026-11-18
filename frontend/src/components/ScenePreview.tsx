@@ -92,7 +92,7 @@ export function ScenePreview({ videoId, index, version, number, limiter, note }:
             </button>
           </div>
         ) : (
-          <span className="video-slide-empty">Đang dựng slide...</span>
+          <span className="video-slide-empty">Đang dựng slide…</span>
         )}
       </div>
       {note && <figcaption className="course-hint">{note}</figcaption>}

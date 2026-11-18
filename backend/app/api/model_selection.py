@@ -62,7 +62,7 @@ def set_default_model(
     if body.alias is not None and not catalog.is_available(body.alias):
         raise HTTPException(
             status_code=422,
-            detail=f"Gateway không phục vụ model sinh văn bản nào tên '{body.alias}'.",
+            detail=f"Không có mô hình nào tên '{body.alias}'.",
         )
     if body.alias is not None:
         # Mặc định được dùng cho mọi lượt sinh về sau, nên lưu một model chưa dùng được là để
@@ -73,7 +73,7 @@ def set_default_model(
         except catalog.ModelUnusable as error:
             raise HTTPException(
                 status_code=422,
-                detail=f"Model '{error.alias}' chưa dùng được: {error.reason}. Hãy chọn model khác.",
+                detail=f"Mô hình '{error.alias}' chưa dùng được: {error.reason}. Hãy chọn mô hình khác.",
             ) from error
 
     user = db.get(User, current_user.id)

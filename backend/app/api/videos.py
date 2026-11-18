@@ -329,7 +329,7 @@ def edit_scenes(
     saves, that the scene still says what it drew or voiced, and a render renders the draft it read."""
     video = _owned_video(db, video_id, current_user, lock=True)
     if video.status == MediaStatus.generating:
-        raise HTTPException(status_code=409, detail="Lời thoại đang được sinh, vui lòng chờ xong rồi sửa.")
+        raise HTTPException(status_code=409, detail="Lời thoại đang được viết. Hãy chờ xong rồi sửa.")
     if body.draft_version != video.draft_version:
         raise HTTPException(status_code=409, detail="Bản nháp đã được lưu ở nơi khác. Hãy tải lại trang rồi sửa tiếp.")
 
@@ -374,7 +374,7 @@ def generate_video(
     if body.voice_alias not in VOICES:
         raise HTTPException(status_code=422, detail=f"Không có giọng đọc nào tên '{body.voice_alias}'.")
     if body.image_alias not in IMAGE_MODELS:
-        raise HTTPException(status_code=422, detail=f"Không có model vẽ hình nào tên '{body.image_alias}'.")
+        raise HTTPException(status_code=422, detail=f"Không có mô hình vẽ hình nào tên '{body.image_alias}'.")
     focus = body.focus or None
     # FOR UPDATE: the duplicate check below reads the videos table, so two identical requests for one
     # document must not run it at the same moment or both would pass.
@@ -382,7 +382,7 @@ def generate_video(
     if doc is None or doc.course.owner_id != current_user.id:
         raise HTTPException(status_code=404, detail="Document not found")
     if not doc.raw_text:
-        raise HTTPException(status_code=422, detail="Document chưa được parse (raw_text rỗng)")
+        raise HTTPException(status_code=422, detail="Tài liệu chưa xử lý xong.")
 
     # Only an identical request is a double submit: a lecturer may want several videos of one document.
     duplicate = db.query(Video.id).filter(
@@ -390,7 +390,7 @@ def generate_video(
         Video.output_language == body.output_language, Video.focus.is_not_distinct_from(focus),
     ).first()
     if duplicate is not None:
-        raise HTTPException(status_code=409, detail="Video này đang được sinh lời thoại, vui lòng chờ.")
+        raise HTTPException(status_code=409, detail="Video này đang được viết lời thoại, vui lòng chờ.")
 
     reserve_generations(db, current_user, full_access=full_access, noun="video")
     video = Video(

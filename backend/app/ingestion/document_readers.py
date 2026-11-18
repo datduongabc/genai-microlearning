@@ -578,8 +578,8 @@ def preflight_limits(path: str) -> None:
     elif pages > MAX_DOCUMENT_PAGES:
         unit = "slide" if ext == ".pptx" else "trang"
         raise InputLimitError(
-            f"Tài liệu có {pages} {unit}, vượt giới hạn {MAX_DOCUMENT_PAGES} {unit}; "
-            "hãy tách thành nhiều tệp nhỏ hơn."
+            f"Tài liệu có {pages} {unit}, vượt giới hạn {MAX_DOCUMENT_PAGES} {unit}. "
+            "Hãy tách thành nhiều tệp nhỏ hơn."
         )
 
 
@@ -612,12 +612,12 @@ def _transcribe_piece(path: str, offset: float, deadline: float,
                 raise
             if not transient or attempt == 2 or time.monotonic() + delay >= deadline:
                 minutes, seconds = divmod(int(offset), 60)
-                reason = "Đã hết hạn mức audio Groq" if rate_limited else type(exc).__name__
+                reason = "Đã hết hạn mức chuyển âm thanh thành chữ" if rate_limited else type(exc).__name__
                 # ValueError is terminal and is shown in the document's job monitor.
                 # Never return a successful but incomplete document.
                 raise ValueError(
-                    f"Phien am doan {minutes:02d}:{seconds:02d} that bai: {reason}; "
-                    "tai lieu chua duoc nhap, vui long thu lai sau."
+                    f"Không chuyển được đoạn {minutes:02d}:{seconds:02d} thành chữ ({reason}). "
+                    "Tài liệu chưa được nhập, hãy thử lại sau."
                 ) from exc
             failed.wait(delay)
     raise AssertionError("unreachable")
@@ -673,7 +673,7 @@ def _transcribe_window(path: str, tmp: str, index: int, start: float,
             piece = _transcode_to_mp3(path, tmp, start=start, duration=length, index=index)
         except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as exc:
             minutes, seconds = divmod(int(start), 60)
-            raise ValueError(f"Khong the xu ly doan {minutes:02d}:{seconds:02d}: ffmpeg that bai") from exc
+            raise ValueError(f"Không xử lý được đoạn {minutes:02d}:{seconds:02d} của tệp âm thanh") from exc
         if os.path.getsize(piece) > _AUDIO_UPLOAD_BYTES:
             raise ValueError("Audio vuot gioi han 24 MB sau khi chia")
         return _transcribe_piece(piece, start, deadline, failed)

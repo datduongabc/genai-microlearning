@@ -13,21 +13,21 @@ export type GenerateKind = "module" | "flashcards" | "video";
 // A video also picks its voice and image model, which are paid per video and per picture.
 const KIND_TEXT: Record<GenerateKind, { title: string; field: string; placeholder: string; tooLong: string }> = {
   module: {
-    title: "Sinh mô-đun",
-    field: "Hướng dẫn thêm cho AI (tuỳ chọn)",
-    placeholder: "Giải thích kỹ DLDFS và IDS",
+    title: "Tạo mô-đun",
+    field: "Yêu cầu thêm (không bắt buộc)",
+    placeholder: "Ví dụ: thêm ví dụ có lời giải từng bước",
     tooLong: "",
   },
   flashcards: {
-    title: "Sinh flashcard",
-    field: "Trọng tâm (tuỳ chọn)",
-    placeholder: "Mảng và danh sách liên kết",
+    title: "Tạo flashcard",
+    field: "Trọng tâm (không bắt buộc)",
+    placeholder: "Ví dụ: các định nghĩa trong chương 2",
     tooLong: "Trọng tâm tối đa 1000 ký tự",
   },
   video: {
-    title: "Sinh video",
-    field: "Trọng tâm (tuỳ chọn)",
-    placeholder: "Chỉ phần BFS và DFS",
+    title: "Tạo video",
+    field: "Trọng tâm (không bắt buộc)",
+    placeholder: "Ví dụ: chỉ mục 3.2",
     tooLong: "Trọng tâm tối đa 1000 ký tự",
   },
 };
@@ -50,7 +50,7 @@ function MediaSelect({ label, value, onChange, choices }: {
       {label}
       <select aria-label={label} value={value ?? ""} onChange={(e) => onChange(e.target.value)} disabled={!choices}
         className="ui-select w-full disabled:opacity-60">
-        {!choices && <option value="">Đang tải...</option>}
+        {!choices && <option value="">Đang tải…</option>}
         {choices?.map((choice) => (
           <option key={choice.alias} value={choice.alias}>
             {choice.label} ({choice.price})
@@ -116,15 +116,15 @@ export function GenerateDialog({ open, onOpenChange, returnFocusTo, onGenerate, 
           <>
             {models === "failed" ? (
               <p className="course-hint">
-                Không tải được danh sách giọng và model ảnh: video sẽ dùng giọng và model ảnh mặc định.
+                Không tải được danh sách giọng đọc và mô hình vẽ hình. Video sẽ dùng lựa chọn mặc định.
               </p>
             ) : (
               <>
                 <MediaSelect label="Giọng đọc" value={voiceAlias} onChange={setVoicePick} choices={choices?.voices ?? null} />
-                <MediaSelect label="Model vẽ hình" value={imageAlias} onChange={setImagePick} choices={choices?.images ?? null} />
+                <MediaSelect label="Mô hình vẽ hình" value={imageAlias} onChange={setImagePick} choices={choices?.images ?? null} />
               </>
             )}
-            <p className="course-hint">Giá tham khảo; tiền hình chỉ tính khi bấm Vẽ hình, tiền giọng khi bấm Dựng video.</p>
+            <p className="course-hint">Giá chỉ để tham khảo. Chi phí hình tính khi vẽ hình, chi phí giọng tính khi dựng video.</p>
           </>
         )}
         <div className="mt-6 flex justify-end gap-3">

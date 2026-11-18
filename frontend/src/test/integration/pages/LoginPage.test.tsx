@@ -29,7 +29,7 @@ function refusal(status: number, data: unknown) {
 
 async function fillAndSubmit(password = 'password123') {
   await userEvent.type(screen.getByPlaceholderText('ten@truong.edu.vn'), 'teacher@example.com')
-  await userEvent.type(screen.getByPlaceholderText('Tối thiểu 8 ký tự'), password)
+  await userEvent.type(screen.getByLabelText('Mật khẩu'), password)
   await userEvent.click(screen.getByRole('button', { name: /đăng nhập/i }))
 }
 
@@ -48,11 +48,11 @@ describe('LoginPage', () => {
         <LoginPage />
       </MemoryRouter>,
     )
-    expect(screen.getByText('✓ Đã tạo tài khoản. Mời đăng nhập.')).toBeInTheDocument()
+    expect(screen.getByText('Đã tạo tài khoản. Hãy đăng nhập.')).toBeInTheDocument()
     unmount()
 
     renderLoginPage()
-    expect(screen.queryByText('✓ Đã tạo tài khoản. Mời đăng nhập.')).not.toBeInTheDocument()
+    expect(screen.queryByText('Đã tạo tài khoản. Hãy đăng nhập.')).not.toBeInTheDocument()
   })
 
   it('shows validation errors instead of calling login when the form is invalid', async () => {
@@ -69,7 +69,7 @@ describe('LoginPage', () => {
     renderLoginPage()
 
     await userEvent.type(screen.getByPlaceholderText('ten@truong.edu.vn'), 'teacher@example.com')
-    await userEvent.type(screen.getByPlaceholderText('Tối thiểu 8 ký tự'), 'password123')
+    await userEvent.type(screen.getByLabelText('Mật khẩu'), 'password123')
     await userEvent.click(screen.getByRole('button', { name: /đăng nhập/i }))
 
     await waitFor(() => {
@@ -82,7 +82,7 @@ describe('LoginPage', () => {
     renderLoginPage()
 
     await userEvent.type(screen.getByPlaceholderText('ten@truong.edu.vn'), 'teacher@example.com')
-    await userEvent.type(screen.getByPlaceholderText('Tối thiểu 8 ký tự'), 'password123')
+    await userEvent.type(screen.getByLabelText('Mật khẩu'), 'password123')
     await userEvent.click(screen.getByRole('button', { name: /đăng nhập/i }))
 
     expect(await screen.findByText(/đăng nhập thất bại/i)).toBeInTheDocument()
@@ -119,7 +119,7 @@ describe('LoginPage', () => {
     renderLoginPage()
 
     expect(screen.getByPlaceholderText('ten@truong.edu.vn')).toHaveAttribute('autocomplete', 'username')
-    expect(screen.getByPlaceholderText('Tối thiểu 8 ký tự')).toHaveAttribute('autocomplete', 'current-password')
+    expect(screen.getByLabelText('Mật khẩu')).toHaveAttribute('autocomplete', 'current-password')
   })
 })
 

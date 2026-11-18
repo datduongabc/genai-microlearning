@@ -96,7 +96,7 @@ def test_a_disabled_lecturer_is_locked_out_at_once_including_the_token_they_hold
     # Correct local credentials do not get a locked account in.
     login = _login(lecturer["user"]["email"])
     assert login.status_code == 403
-    assert "admin" in login.json()["detail"]
+    assert "quản trị viên" in login.json()["detail"]
     # Only said after the password is checked: a stranger learns nothing about the account.
     assert client.post("/auth/login", json={"email": email, "password": "not the password 1"}).status_code == 401
 

@@ -83,7 +83,7 @@ describe('uploadDocumentSchema', () => {
 describe('linkMoodleCourseSchema', () => {
   it('asks for a course to be chosen', () => {
     const result = linkMoodleCourseSchema.safeParse({ moodleCourseId: '' })
-    expect(result.error?.issues[0].message).toBe('Vui lòng chọn một course Moodle')
+    expect(result.error?.issues[0].message).toBe('Vui lòng chọn một khóa học Moodle')
     expect(linkMoodleCourseSchema.safeParse({ moodleCourseId: '6' }).success).toBe(true)
   })
 })

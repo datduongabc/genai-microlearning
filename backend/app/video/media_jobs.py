@@ -34,9 +34,9 @@ def refusal_reason(label: str, refusal: ValueError, kind: str) -> str:
     if _DATA_POLICY.search(str(refusal)):
         # OpenRouter's "No endpoints found matching your data policy": every provider of the model
         # may keep or train on what it is sent, which course material must never allow.
-        return (f"không có nhà cung cấp nào của model {label} đáp ứng quy định không thu thập dữ liệu "
-                f"(data_collection: deny); hãy chọn model {kind} khác")
-    return f"model {label} từ chối: {refusal}"
+        return (f"mô hình {label} không có nhà cung cấp nào cam kết không lưu dữ liệu, "
+                f"hãy chọn mô hình {kind} khác")
+    return f"mô hình {label} từ chối: {refusal}"
 
 
 def scene_failure_message(failures: Sequence[SceneFailure], scenes: Sequence[Scene], lead: str, tail: str) -> str:

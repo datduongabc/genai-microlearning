@@ -232,7 +232,7 @@ describe('AdminPage - failed jobs', () => {
     await openFailures()
 
     expect(await screen.findByRole('button', { name: 'Xử lý tài liệu (2)' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Sinh mô-đun (1)' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Tạo mô-đun (1)' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Tất cả' })).toBeInTheDocument()
   })
 
@@ -257,12 +257,12 @@ describe('AdminPage - failed jobs', () => {
     const detail = document.getElementById(expand.getAttribute('aria-controls')!)!
     expect(within(detail).getByText(/minh@example.com/)).toBeInTheDocument()
     expect(within(detail).getByText('error of j2').tagName).toBe('PRE')
-    expect(within(detail).getByText(/Bước: generate/)).toBeInTheDocument()
+    expect(within(detail).getByText(/Bước generate/)).toBeInTheDocument()
   })
 
   it('asks the server for one job type when the filter changes', async () => {
     await openFailures()
-    await userEvent.click(await screen.findByRole('button', { name: /^Sinh mô-đun/ }))
+    await userEvent.click(await screen.findByRole('button', { name: /^Tạo mô-đun/ }))
 
     await waitFor(() => expect(api.listFailedJobs).toHaveBeenLastCalledWith('module_generation'))
   })
@@ -275,7 +275,7 @@ describe('AdminPage - failed jobs', () => {
     await userEvent.click(await screen.findByRole('button', { name: 'Thử lại j1.pdf' }))
 
     await waitFor(() => expect(api.retryFailedJobs).toHaveBeenCalledWith(['j1']))
-    expect(await screen.findByText(/đã đưa 1 tác vụ vào hàng đợi/i)).toBeInTheDocument()
+    expect(await screen.findByText(/đã chạy lại 1 tác vụ/i)).toBeInTheDocument()
   })
 
   it('retries the picked jobs together, or all of them with select-all', async () => {
@@ -290,7 +290,7 @@ describe('AdminPage - failed jobs', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Thử lại 2 tác vụ đã chọn' }))
 
     await waitFor(() => expect(api.retryFailedJobs).toHaveBeenCalledWith(['j1', 'j3']))
-    expect(await screen.findByText(/1 tác vụ bị bỏ qua/i)).toBeInTheDocument()
+    expect(await screen.findByText(/1 tác vụ được bỏ qua/i)).toBeInTheDocument()
 
     await userEvent.click(screen.getByRole('checkbox', { name: 'Chọn tất cả' }))
     await userEvent.click(screen.getByRole('button', { name: 'Thử lại 3 tác vụ đã chọn' }))
@@ -307,7 +307,7 @@ describe('AdminPage - failed jobs', () => {
     await userEvent.click(await screen.findByRole('checkbox', { name: 'Chọn tất cả' }))
     await userEvent.click(screen.getByRole('button', { name: 'Thử lại 2 tác vụ đã chọn' }))
 
-    expect(await screen.findByText(/1 tác vụ video chỉ chạy lại được từ trình sửa video của giảng viên/i)).toBeInTheDocument()
+    expect(await screen.findByText(/1 tác vụ video cần chạy lại từ trang sửa video/i)).toBeInTheDocument()
     expect(screen.queryByText(/không còn ở trạng thái lỗi/i)).not.toBeInTheDocument()
   })
 

@@ -113,7 +113,7 @@ export function FlashcardEditorPage() {
   }
 
   if (loading) {
-    return <AppShell title="Flashcard"><p className="course-empty">Đang tải...</p></AppShell>
+    return <AppShell title="Flashcard"><p className="course-empty">Đang tải…</p></AppShell>
   }
   if (missing) {
     return (
@@ -166,7 +166,7 @@ export function FlashcardEditorPage() {
     try {
       setSaved(await publishFlashcardSet(setId, !published))
     } catch (err) {
-      setError(apiErrorMessage(err, published ? 'Ngừng giao thất bại' : 'Giao bộ thẻ thất bại'))
+      setError(apiErrorMessage(err, published ? 'Ngừng giao thất bại' : 'Giao bộ flashcard thất bại'))
     } finally {
       setBusy(null)
     }
@@ -182,14 +182,14 @@ export function FlashcardEditorPage() {
       allowLeave()
       navigate(`/courses/${courseId}`)
     } catch (err) {
-      setError(apiErrorMessage(err, 'Xóa bộ thẻ thất bại'))
+      setError(apiErrorMessage(err, 'Xóa bộ flashcard thất bại'))
       setBusy(null)
     }
   }
 
   const deleteButton = (
     <button type="button" onClick={remove} disabled={busy !== null || generating} className="link-action danger">
-      {busy === 'delete' ? 'Đang xóa...' : 'Xóa bộ thẻ'}
+      {busy === 'delete' ? 'Đang xóa…' : 'Xóa bộ flashcard'}
     </button>
   )
 
@@ -197,7 +197,7 @@ export function FlashcardEditorPage() {
     return (
       <AppShell {...titleProps}>
         <button type="button" onClick={() => back(saved.course_id)} className="link-action">Quay lại</button>
-        <p role="status" className="course-empty">Đang sinh bộ thẻ...</p>
+        <p role="status" className="course-empty">Đang tạo flashcard…</p>
       </AppShell>
     )
   }
@@ -206,7 +206,7 @@ export function FlashcardEditorPage() {
     return (
       <AppShell {...titleProps}>
         <p role="alert" className="text-sm danger-text">
-          Sinh bộ thẻ thất bại. Xóa bộ này rồi sinh lại từ trang môn học.
+          Tạo flashcard thất bại. Xóa bộ này rồi tạo lại từ trang môn học.
         </p>
         {error && <p role="alert" className="mt-3 text-sm danger-text">{error}</p>}
         <div className="mt-4 flex gap-4">
@@ -223,7 +223,7 @@ export function FlashcardEditorPage() {
         <div className="flashcard-bar">
           <button type="button" onClick={() => back(saved.course_id)} className="link-action">Quay lại</button>
           <span className="status-pill" data-status={published ? 'embedded' : undefined}>
-            {published ? 'Đã giao cho người học' : 'Bản nháp'}
+            {published ? 'Đã giao cho sinh viên' : 'Bản nháp'}
           </span>
           <span className="flashcard-count">{cards.length} thẻ (tối đa {MAX_FLASHCARDS})</span>
           {spent && <span className="flashcard-count">{spent}</span>}
@@ -300,13 +300,13 @@ export function FlashcardEditorPage() {
 
         {!complete && <p className="mt-3 text-sm danger-text">Mỗi thẻ cần cả mặt trước và mặt sau.</p>}
         {dirty && complete && (
-          <p className="course-hint">{published ? 'Lưu để cập nhật cho người học.' : 'Lưu thay đổi trước khi giao.'}</p>
+          <p className="course-hint">{published ? 'Lưu để cập nhật cho sinh viên.' : 'Lưu thay đổi trước khi giao.'}</p>
         )}
         {error && <p role="alert" className="mt-3 text-sm danger-text">{error}</p>}
 
         <div className="flashcard-actions">
           <button type="button" onClick={save} disabled={!dirty || !complete || busy !== null} className="ui-button primary">
-            {busy === 'save' ? 'Đang lưu...' : 'Lưu thay đổi'}
+            {busy === 'save' ? 'Đang lưu…' : 'Lưu thay đổi'}
           </button>
           <button
             type="button"
@@ -315,7 +315,7 @@ export function FlashcardEditorPage() {
             disabled={busy !== null || (!published && (dirty || cards.length === 0))}
             className="ui-button"
           >
-            {busy === 'publish' ? 'Đang xử lý...' : published ? 'Ngừng giao' : 'Giao cho người học'}
+            {busy === 'publish' ? 'Đang xử lý…' : published ? 'Ngừng giao' : 'Giao cho sinh viên'}
           </button>
           {deleteButton}
         </div>

@@ -87,12 +87,12 @@ describe('FlashcardEditorPage', () => {
   it('shows what the set cost, and says when part of it has no price', async () => {
     vi.mocked(api.getFlashcardSet).mockResolvedValue(draft([card(1)], { cost: { usd: 0.0031, calls: 2, priced_calls: 2 } }))
     const first = renderPage()
-    expect(await screen.findByText('Đã tốn khoảng $0,003')).toBeInTheDocument()
+    expect(await screen.findByText('Chi phí khoảng $0,003')).toBeInTheDocument()
     first.unmount()
 
     vi.mocked(api.getFlashcardSet).mockResolvedValue(draft([card(1)], { cost: { usd: 0.003, calls: 3, priced_calls: 2 } }))
     renderPage()
-    expect(await screen.findByText('Đã tốn ít nhất $0,003 (chưa rõ giá của 1 lần gọi model)')).toBeInTheDocument()
+    expect(await screen.findByText('Chi phí ít nhất $0,003 (chưa rõ giá của 1 lần gọi model)')).toBeInTheDocument()
   })
 
   it('warns about an uncited card even before the server has flagged it', async () => {
@@ -179,15 +179,15 @@ describe('FlashcardEditorPage', () => {
     vi.mocked(api.publishFlashcardSet).mockResolvedValue(draft([card(1)], { published_at: '2026-01-02T00:00:00Z' }))
 
     renderPage()
-    const publish = await screen.findByRole('button', { name: 'Giao cho người học' })
+    const publish = await screen.findByRole('button', { name: 'Giao cho sinh viên' })
     expect(publish).toBeEnabled()
 
     await userEvent.type(screen.getByLabelText('Mặt trước thẻ 1'), '!')
-    expect(screen.getByRole('button', { name: 'Giao cho người học' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Giao cho sinh viên' })).toBeDisabled()
     expect(screen.getByText('Lưu thay đổi trước khi giao.')).toBeInTheDocument()
 
     await userEvent.click(screen.getByRole('button', { name: 'Lưu thay đổi' }))
-    await userEvent.click(await screen.findByRole('button', { name: 'Giao cho người học' }))
+    await userEvent.click(await screen.findByRole('button', { name: 'Giao cho sinh viên' }))
 
     expect(api.publishFlashcardSet).toHaveBeenCalledWith('set-1', true)
     expect(await screen.findByRole('button', { name: 'Ngừng giao' })).toBeInTheDocument()
@@ -198,7 +198,7 @@ describe('FlashcardEditorPage', () => {
 
     renderPage()
 
-    expect(await screen.findByRole('button', { name: 'Giao cho người học' })).toBeDisabled()
+    expect(await screen.findByRole('button', { name: 'Giao cho sinh viên' })).toBeDisabled()
   })
 
   it('stops publishing a published set', async () => {
@@ -209,7 +209,7 @@ describe('FlashcardEditorPage', () => {
     await userEvent.click(await screen.findByRole('button', { name: 'Ngừng giao' }))
 
     expect(api.publishFlashcardSet).toHaveBeenCalledWith('set-1', false)
-    expect(await screen.findByRole('button', { name: 'Giao cho người học' })).toBeInTheDocument()
+    expect(await screen.findByRole('button', { name: 'Giao cho sinh viên' })).toBeInTheDocument()
   })
 
   it('says what the server said when saving fails and keeps the edits', async () => {
@@ -231,7 +231,7 @@ describe('FlashcardEditorPage', () => {
       .mockResolvedValue(draft([card(1)]))
 
     renderPage()
-    expect(await screen.findByText('Đang sinh bộ thẻ...')).toBeInTheDocument()
+    expect(await screen.findByText('Đang tạo flashcard…')).toBeInTheDocument()
     await act(async () => {
       await vi.advanceTimersByTimeAsync(10_000)
     })
@@ -244,7 +244,7 @@ describe('FlashcardEditorPage', () => {
 
     renderPage()
 
-    expect(await screen.findByText(/Sinh bộ thẻ thất bại/)).toBeInTheDocument()
+    expect(await screen.findByText(/Tạo flashcard thất bại/)).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Thêm thẻ' })).not.toBeInTheDocument()
   })
 
@@ -272,7 +272,7 @@ describe('FlashcardEditorPage', () => {
     vi.spyOn(window, 'confirm').mockReturnValueOnce(false).mockReturnValueOnce(true)
 
     renderPage()
-    const del = await screen.findByRole('button', { name: 'Xóa bộ thẻ' })
+    const del = await screen.findByRole('button', { name: 'Xóa bộ flashcard' })
     await userEvent.click(del)
     expect(api.deleteFlashcardSet).not.toHaveBeenCalled()
     await userEvent.click(del)
@@ -420,7 +420,7 @@ describe('FlashcardEditorPage', () => {
 
     renderPage()
     await userEvent.type(await screen.findByLabelText('Mặt trước thẻ 1'), '!')
-    await userEvent.click(screen.getByRole('button', { name: 'Xóa bộ thẻ' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Xóa bộ flashcard' }))
 
     expect(await screen.findByText('Trang môn học')).toBeInTheDocument()
     expect(confirm).toHaveBeenCalledTimes(1) // the delete's own question only
@@ -458,11 +458,11 @@ describe('FlashcardEditorPage', () => {
     renderPage()
     await userEvent.type(await screen.findByLabelText('Mặt trước thẻ 1'), '!')
 
-    expect(screen.getByText('Lưu để cập nhật cho người học.')).toBeInTheDocument()
+    expect(screen.getByText('Lưu để cập nhật cho sinh viên.')).toBeInTheDocument()
   })
 
   it('shortens a long focus in the title and keeps the whole text on hover', async () => {
-    const focus = 'Mảng và danh sách liên kết '.repeat(6).trim()
+    const focus = 'Ví dụ: các định nghĩa trong chương 2 '.repeat(6).trim()
     vi.mocked(api.getFlashcardSet).mockResolvedValue(draft([card(1)], { focus }))
 
     renderPage()
@@ -481,6 +481,6 @@ describe('FlashcardEditorPage', () => {
 
     vi.mocked(api.getFlashcardSet).mockResolvedValue(draft([card(1)], { published_at: '2026-01-02T00:00:00Z' }))
     renderPage()
-    expect(await screen.findByText('Đã giao cho người học')).toHaveAttribute('data-status', 'embedded')
+    expect(await screen.findByText('Đã giao cho sinh viên')).toHaveAttribute('data-status', 'embedded')
   })
 })

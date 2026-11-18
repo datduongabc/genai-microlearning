@@ -71,7 +71,7 @@ class LaunchRefused(Exception):
     """A launch that must not sign anyone in. `message` is shown to the person; `reason` is
     for the log, which says what failed without echoing the token."""
 
-    def __init__(self, reason: str, message: str = "Không mở được công cụ từ LMS. Hãy thử mở lại hoạt động."):
+    def __init__(self, reason: str, message: str = "Không mở được công cụ từ Moodle. Hãy thử mở lại hoạt động."):
         super().__init__(reason)
         self.reason = reason
         self.message = message
@@ -161,7 +161,7 @@ def _spend_state(db: Session, state: str, now: datetime) -> LtiLoginState:
     if spent is None:
         raise LaunchRefused("unknown or used state")
     if spent.expires_at <= now:
-        raise LaunchRefused("expired state", "Phiên mở công cụ đã hết hạn. Hãy mở lại hoạt động từ LMS.")
+        raise LaunchRefused("expired state", "Phiên mở công cụ đã hết hạn. Hãy mở lại hoạt động từ Moodle.")
     return spent
 
 
@@ -264,7 +264,7 @@ def _user_for(db: Session, platform: LtiPlatform, claims: LaunchClaims, *, instr
             user = _new_user(db, claims, moodle_user_id, can_author=instructor)
         db.add(LtiIdentity(platform_id=platform.id, sub=claims.sub, user_id=user.id))
     if user is None or not user.is_active:
-        raise LaunchRefused("account disabled", "Tài khoản đã bị vô hiệu hóa. Vui lòng liên hệ admin.")
+        raise LaunchRefused("account disabled", "Tài khoản đã bị vô hiệu hóa. Vui lòng liên hệ quản trị viên.")
     if instructor and not user.can_author:
         # The LMS says this person teaches a course: a student account that now teaches may author.
         user.can_author = True
@@ -355,7 +355,7 @@ def _joined_course(db: Session, platform: LtiPlatform, claims: LaunchClaims, use
         # Visible now, through the membership just added.
         course = db.get(Course, context.course_id)
     if course is None:
-        raise LaunchRefused("joined course not visible", "Hãy mở lại hoạt động từ LMS.")
+        raise LaunchRefused("joined course not visible", "Hãy mở lại hoạt động từ Moodle.")
     return course
 
 
@@ -376,7 +376,7 @@ def launch(db: Session, *, id_token: str, state: str, now: datetime | None = Non
         db.flush()
     except IntegrityError as error:
         # Two launches of the same new person or course at once: one wins, the other retries.
-        raise LaunchRefused(f"concurrent first launch: {error.orig}", "Hãy mở lại hoạt động từ LMS.") from error
+        raise LaunchRefused(f"concurrent first launch: {error.orig}", "Hãy mở lại hoạt động từ Moodle.") from error
 
     code = secrets.token_urlsafe(32)
     db.add(LtiLaunchCode(code_hash=_hash(code), user_id=user.id, course_id=course.id, expires_at=now + LAUNCH_CODE_TTL))
@@ -394,8 +394,8 @@ def exchange(db: Session, code: str, now: datetime | None = None) -> tuple[User,
         delete(LtiLaunchCode).where(LtiLaunchCode.code_hash == _hash(code)).returning(LtiLaunchCode)
     ).scalar_one_or_none()
     if spent is None or spent.expires_at <= now:
-        raise LaunchRefused("unknown, used or expired launch code", "Phiên mở công cụ đã hết hạn. Hãy mở lại hoạt động từ LMS.")
+        raise LaunchRefused("unknown, used or expired launch code", "Phiên mở công cụ đã hết hạn. Hãy mở lại hoạt động từ Moodle.")
     user = db.get(User, spent.user_id)
     if user is None or not user.is_active:
-        raise LaunchRefused("account disabled", "Tài khoản đã bị vô hiệu hóa. Vui lòng liên hệ admin.")
+        raise LaunchRefused("account disabled", "Tài khoản đã bị vô hiệu hóa. Vui lòng liên hệ quản trị viên.")
     return user, spent.course_id

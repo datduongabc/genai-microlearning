@@ -76,7 +76,7 @@ def generate_flashcards(
             raise ValueError(f"Flashcard set {flashcard_set_id} not found")
         doc = db.get(Document, card_set.document_id)
         if doc is None or not doc.raw_text:
-            raise ValueError("Document chưa được parse (raw_text rỗng)")
+            raise ValueError("Tài liệu chưa xử lý xong.")
         language: OutputLanguage = card_set.output_language  # type: ignore[assignment]
 
         card_set.model_alias = catalog.served_or_default(card_set.model_alias)

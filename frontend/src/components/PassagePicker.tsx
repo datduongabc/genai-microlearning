@@ -92,7 +92,7 @@ export function PassagePicker({ documentId, name, citations, known, listChosen =
           />
           <button type="submit" disabled={searching} className="ui-button">Tìm</button>
         </form>
-        {searching && <p className="course-hint">Đang tìm...</p>}
+        {searching && <p className="course-hint">Đang tìm…</p>}
         {error && <p className="text-sm danger-text">{error}</p>}
         {results && !searching && found.length === 0 && !error && (
           <p className="course-hint">{results.items.length > 0 ? 'Các đoạn khớp đã có trong danh sách.' : 'Không có đoạn nào khớp.'}</p>

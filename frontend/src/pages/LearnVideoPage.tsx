@@ -33,7 +33,7 @@ function LearnVideoWatch({ courseId, videoId }: { courseId?: string; videoId?: s
       {failed ? (
         <p role="alert" className="ui-alert">Không tải được video. Video có thể đã được ẩn.</p>
       ) : !video ? (
-        <p role="status" className="muted">Đang tải...</p>
+        <p role="status" className="muted">Đang tải…</p>
       ) : (
         <Watch video={video} />
       )}

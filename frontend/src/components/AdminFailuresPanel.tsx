@@ -3,7 +3,7 @@ import { apiErrorMessage, listFailedJobs, retryFailedJobs, type AdminCounts, typ
 
 const JOB_TYPE_LABEL: Record<FailedJobInfo["job_type"], string> = {
   document_pipeline: "Xử lý tài liệu",
-  module_generation: "Sinh mô-đun",
+  module_generation: "Tạo mô-đun",
 };
 
 // The failed jobs of every lecturer: job data, the document's file name and the course name,
@@ -69,9 +69,9 @@ export function AdminFailuresPanel({ counts, onChange }: { counts: AdminCounts |
       const videoOnly = Object.keys(result.reasons).length;
       const stale = result.skipped.length - videoOnly;
       const skipped =
-        (stale > 0 ? ` ${stale} tác vụ bị bỏ qua vì không còn ở trạng thái lỗi.` : "") +
-        (videoOnly > 0 ? ` ${videoOnly} tác vụ video chỉ chạy lại được từ trình sửa video của giảng viên.` : "");
-      setNotice(`Đã đưa ${result.retried.length} tác vụ vào hàng đợi chạy lại.${skipped}`);
+        (stale > 0 ? ` ${stale} tác vụ được bỏ qua vì không còn lỗi.` : "") +
+        (videoOnly > 0 ? ` ${videoOnly} tác vụ video cần chạy lại từ trang sửa video.` : "");
+      setNotice(`Đã chạy lại ${result.retried.length} tác vụ.${skipped}`);
       reload();
     } catch (err) {
       setError(apiErrorMessage(err, "Thử lại thất bại"));
@@ -101,7 +101,7 @@ export function AdminFailuresPanel({ counts, onChange }: { counts: AdminCounts |
       {error && <p className="mb-3 text-sm text-red-700">{error}</p>}
 
       {jobs === null ? (
-        !error && <p className="text-sm text-gray-500">Đang tải...</p>
+        !error && <p className="text-sm text-gray-500">Đang tải…</p>
       ) : jobs.length === 0 ? (
         <p className="rounded-[3px] border border-gray-200 p-4 text-sm text-gray-500">
           Không có tác vụ nào thất bại.
@@ -129,7 +129,7 @@ export function AdminFailuresPanel({ counts, onChange }: { counts: AdminCounts |
               </tr>
               {expanded.has(job.id) && <tr id={`job-${job.id}`}><td colSpan={7} className="job-detail">
                 {job.last_error && <pre>{job.last_error}</pre>}
-                <p className="small muted">Bước: {job.step} · {job.attempts}/{job.max_attempts} lần thử · {job.owner_email}</p>
+                <p className="small muted">Bước {job.step}, thử {job.attempts}/{job.max_attempts} lần, {job.owner_email}</p>
               </td></tr>}
             </Fragment>)}
           </tbody></table>

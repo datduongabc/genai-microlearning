@@ -77,7 +77,7 @@ export function AdminStudiesPanel() {
           {emails.map((email) => <span className="rater-chip" key={email}>{email}
             <button type="button" aria-label={`Bỏ ${email}`} disabled={busy} onClick={() => { setEmails(emails.filter((e) => e !== email)); setError(""); }}>×</button>
           </span>)}
-          <input id="rater-email" type="email" autoComplete="off" placeholder="Nhập email rồi Enter" value={input} disabled={busy}
+          <input id="rater-email" type="email" autoComplete="off" placeholder="Nhập email rồi nhấn Enter" value={input} disabled={busy}
             onChange={(e) => { setInput(e.target.value); }}
             onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addEmails(input); } }}
             onPaste={(e) => {

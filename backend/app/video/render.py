@@ -145,7 +145,7 @@ def _speak(alias: str, index: int, spoken: str) -> _Voice | SceneFailure:
             wav = as_wav(speech.pcm, speech.sample_rate)
             seconds = wav_seconds(wav)
         except MediaError as busy:
-            reason = f"model {label} không trả về âm thanh"
+            reason = f"mô hình {label} không trả về âm thanh"
             if attempt < VOICE_ATTEMPTS:
                 wait_before_retry(busy, attempt)
             continue
@@ -155,9 +155,9 @@ def _speak(alias: str, index: int, spoken: str) -> _Voice | SceneFailure:
             return SceneFailure(index, refusal_reason(label, refusal, "giọng"))
         except Exception:
             logger.exception(f"[video_render] scene {index}: speech failed unexpectedly")
-            return SceneFailure(index, f"lỗi hệ thống khi tạo giọng bằng model {label}")
+            return SceneFailure(index, f"lỗi hệ thống khi tạo giọng bằng mô hình {label}")
         if seconds <= 0:
-            reason = f"model {label} trả về âm thanh rỗng"
+            reason = f"mô hình {label} trả về âm thanh rỗng"
             continue
         return _Voice(index, spoken, wav, seconds, speech.served_model, speech.cost)
     return SceneFailure(index, reason)
@@ -382,7 +382,7 @@ def render_video(
             lengths = [segment_seconds(voices[i].seconds) for i in sorted(voices)]
             if failures:
                 error = scene_failure_message(failures, scenes, "Không tạo được giọng cho ",
-                                              "Hãy dựng lại; các cảnh đã có giọng không phải tạo lại.")
+                                              "Hãy dựng lại. Các cảnh đã có giọng sẽ không phải tạo lại.")
             elif sum(lengths) > MAX_SECONDS:
                 error = (f"Video dài {_minutes(sum(lengths))} phút khi đọc thành tiếng, quá giới hạn "
                          f"{MAX_SECONDS // 60} phút. Lời thoại vẫn được giữ nguyên: hãy rút ngắn rồi dựng lại.")

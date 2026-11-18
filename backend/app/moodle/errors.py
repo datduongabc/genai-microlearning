@@ -12,8 +12,8 @@ from app.moodle import client
 logger = logging.getLogger(__name__)
 MOODLE_FAILURES = (client.MoodleError, client.MoodleNotConfigured, httpx.HTTPError)
 MOODLE_NOT_CONFIGURED = (
-    "Hệ thống này chưa được nối với Moodle qua web service, nên chưa liên kết tài khoản hay xuất bản "
-    "sang Moodle được. Mở công cụ từ Moodle (LTI) vẫn dùng được."
+    "Hệ thống chưa kết nối Moodle nên chưa liên kết tài khoản hay xuất bản được. "
+    "Mở công cụ từ Moodle vẫn dùng bình thường."
 )
 # Moodle's errorcode when it refuses the token or the call (webservice_access_exception: the
 # token is unknown, the user may not use web services, the function is not allowed...) -- a
