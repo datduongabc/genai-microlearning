@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { videoFileBlob } from '../api'
 
-export interface RenderedTarget {
+interface RenderedTarget {
   url: string
   via_api: boolean
 }

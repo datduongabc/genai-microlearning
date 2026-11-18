@@ -93,7 +93,6 @@ export interface SceneEdit {
 // app/generation/video_script.py and app/video/render.py.
 export const MAX_SCENES = 10
 export const MAX_BULLETS = 4
-export const MAX_ILLUSTRATIONS = 5
 export const CHARS_PER_SECOND = 15
 
 export interface MediaChoice {
@@ -115,7 +114,7 @@ export async function getMediaModels() {
   return data
 }
 
-export interface VideoGenerateOptions {
+interface VideoGenerateOptions {
   focus?: string
   outputLanguage: 'vi' | 'en'
   modelAlias?: string | null

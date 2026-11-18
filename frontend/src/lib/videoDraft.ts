@@ -8,7 +8,7 @@ export const NO_SOURCE = 'Chưa có nguồn'
 
 // How the server labels the item a flag is about (app/api/videos.py _items).
 export const WHOLE_ITEM_LABEL: Partial<Record<SceneKind, string>> = { formula: 'Công thức', code: 'Code', table: 'Bảng' }
-export const ITEM_FLAG = /^(Ý \d+|Câu \d+|Công thức|Code|Bảng): (.*)$/s
+const ITEM_FLAG = /^(Ý \d+|Câu \d+|Công thức|Code|Bảng): (.*)$/s
 
 // A bullet or a sentence as it is edited. `label` is the one it had in the loaded draft ("Ý 2"),
 // which is how its stored flags name it, so they stay with it when items are moved or removed.
@@ -66,7 +66,7 @@ export function parseTable(text: string): string[][] | null {
   return rows.length > 0 ? rows : null
 }
 
-export const filled = (items: ItemDraft[]) => items.filter((item) => item.text.trim() !== '')
+const filled = (items: ItemDraft[]) => items.filter((item) => item.text.trim() !== '')
 
 export function toEdits(scenes: SceneDraft[]): SceneEdit[] {
   return scenes.map((s) => {

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef } from 'react'
 import { useBlocker, type BlockerFunction } from 'react-router-dom'
 
-export const LEAVE_PROMPT = 'Các thay đổi chưa lưu sẽ mất. Rời trang?'
+const LEAVE_PROMPT = 'Các thay đổi chưa lưu sẽ mất. Rời trang?'
 
 // The pages holding unsaved work right now. Logging out is not a navigation the blocker can
 // stop: it clears the session, and the redirect to the login page comes after, when the page

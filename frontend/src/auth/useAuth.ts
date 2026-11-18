@@ -10,7 +10,7 @@ export interface AuthState {
   user: UserInfo | null;
 }
 
-export interface AuthContextValue extends AuthState {
+interface AuthContextValue extends AuthState {
   login: (email: string, password: string) => Promise<UserInfo>;
   /** Signs in with the code of an LTI launch and returns the course it opened, and whether it is the user's own
    * (a member's launch opens the course chat only). */
