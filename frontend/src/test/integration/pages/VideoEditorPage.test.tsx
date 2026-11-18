@@ -261,7 +261,7 @@ describe('VideoEditorPage', () => {
 
     renderPage()
 
-    expect(await screen.findByText(/Mỗi hình khoảng \$0,037 \(Gemini Nano Banana 2.1\)\./)).toBeInTheDocument()
+    expect(await screen.findByRole('button', { name: 'Vẽ hình' })).toHaveAttribute('title', expect.stringMatching(/Mỗi hình khoảng \$0,037 \(Gemini Nano Banana 2.1\)\.$/))
   })
 
   it('announces a finished picture job', async () => {
@@ -286,7 +286,7 @@ describe('VideoEditorPage', () => {
 
     expect(api.drawIllustrations).toHaveBeenCalledWith('video-1', undefined)
     expect(await screen.findByText(/hôm nay còn 0 hình/)).toBeInTheDocument()
-    expect(screen.getByText(/Mỗi hình khoảng \$0,037 \(/)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Vẽ hình' })).toHaveAttribute('title', expect.stringMatching(/Mỗi hình khoảng \$0,037 \(/))
   })
 
   it('asks before rendering over the warnings, and renders when confirmed', async () => {
