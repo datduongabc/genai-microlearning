@@ -1,4 +1,5 @@
 import uuid
+from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
@@ -29,6 +30,8 @@ class PublishRequest(BaseModel):
     # the list a teacher picks from. Defaults to 0 for backwards
     # compatibility with older frontend builds that don't send it yet.
     section_num: int = Field(default=0, ge=0, le=1000)
+    # The lecturer confirmed that a module already on Moodle goes there a second time.
+    republish: bool = False
 
 
 _PARTS = (("book_cmid", "Book"), ("practice_cmid", "Practice"), ("quiz_cmid", "Quiz"))
@@ -74,6 +77,9 @@ def publish_to_moodle(
     chapters = build_book_chapters(module)
     if not chapters:
         raise HTTPException(status_code=422, detail="Mô-đun chưa có nội dung nào để đẩy lên Moodle.")
+    # shortcut: two publishes started in the same second both pass this check; claim the row first if that is ever seen.
+    if module.moodle_published_at is not None and not payload.republish:
+        raise HTTPException(status_code=409, detail="Mô-đun này đã được xuất bản lên Moodle. Xuất bản lại sẽ tạo thêm một bản nữa.")
 
     result = {"moodle_course_id": course.moodle_course_id}
     try:
@@ -105,8 +111,13 @@ def publish_to_moodle(
         # on the module if duplicates after a partial failure keep happening.
         created = [f"{name} (cmid {result[key]})" for key, name in _PARTS if key in result]
         if created:
+            # Something is on Moodle now, so a retry must ask like any second publish.
+            module.moodle_published_at = datetime.now(UTC)
+            db.commit()
             failure.detail += (f" Đã tạo trên Moodle trước khi lỗi: {', '.join(created)}. "
                                "Hãy xóa các hoạt động này trên Moodle trước khi xuất bản lại để không bị trùng.")
         raise failure from e
 
+    module.moodle_published_at = datetime.now(UTC)
+    db.commit()
     return result
