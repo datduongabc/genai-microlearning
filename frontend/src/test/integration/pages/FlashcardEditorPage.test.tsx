@@ -28,7 +28,7 @@ const card = (n: number, extra: Partial<FlashcardCard> = {}): FlashcardCard => (
 const draft = (cards: FlashcardCard[], extra: Partial<FlashcardSetDetail> = {}): FlashcardSetDetail => ({
   id: 'set-1', course_id: 'course-1', document_id: 'doc-1', focus: 'Mảng', output_language: 'vi', model_alias: 'gemini-flash',
   status: 'draft', card_count: cards.length, published_at: null, created_at: '2026-01-01T00:00:00Z',
-  cost: null,
+  cost: null, draft_version: 3,
   cards, ...extra,
 })
 
@@ -106,7 +106,7 @@ describe('FlashcardEditorPage', () => {
   it('saves edited cards and stops at 15', async () => {
     const fourteen = Array.from({ length: 14 }, (_, i) => card(i + 1))
     vi.mocked(api.getFlashcardSet).mockResolvedValue(draft(fourteen))
-    vi.mocked(api.saveFlashcards).mockImplementation(async (_id, cards) =>
+    vi.mocked(api.saveFlashcards).mockImplementation(async (_id, _version, cards) =>
       draft(cards.map((c, i) => card(i + 1, { ...c, author: 'lecturer' }))),
     )
 
@@ -127,8 +127,10 @@ describe('FlashcardEditorPage', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Lưu thay đổi' }))
 
     await waitFor(() => expect(api.saveFlashcards).toHaveBeenCalledTimes(1))
-    const [id, sent] = vi.mocked(api.saveFlashcards).mock.calls[0]
+    const [id, version, sent] = vi.mocked(api.saveFlashcards).mock.calls[0]
     expect(id).toBe('set-1')
+    // The version the editor read, so a save made on an older copy is refused.
+    expect(version).toBe(3)
     expect(sent).toHaveLength(15)
     expect(sent[0]).toEqual({ front: 'Sửa rồi', back: 'Mặt sau 1', citations: ['chunk-1'] })
     expect(sent[14]).toEqual({ front: 'Câu hỏi mới', back: 'Trả lời mới', citations: [] })
@@ -168,7 +170,7 @@ describe('FlashcardEditorPage', () => {
     await userEvent.click((await screen.findAllByRole('button', { name: /Xóa thẻ/ }))[0])
     await userEvent.click(screen.getByRole('button', { name: 'Lưu thay đổi' }))
 
-    expect(vi.mocked(api.saveFlashcards).mock.calls[0][1]).toEqual([
+    expect(vi.mocked(api.saveFlashcards).mock.calls[0][2]).toEqual([
       { front: 'Mặt trước 2', back: 'Mặt sau 2', citations: ['chunk-1'] },
     ])
   })
@@ -300,7 +302,7 @@ describe('FlashcardEditorPage', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Lưu thay đổi' }))
 
     await waitFor(() => expect(api.saveFlashcards).toHaveBeenCalled())
-    expect(vi.mocked(api.saveFlashcards).mock.calls[0][1][0].citations).toEqual(['chunk-9'])
+    expect(vi.mocked(api.saveFlashcards).mock.calls[0][2][0].citations).toEqual(['chunk-9'])
   })
 
   it('shows where each card comes from as a numbered marker that opens its passage', async () => {

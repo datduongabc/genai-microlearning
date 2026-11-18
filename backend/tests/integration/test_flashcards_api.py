@@ -146,7 +146,7 @@ def test_an_unusable_request_is_rejected_with_422(world, monkeypatch, body):
 def test_a_16th_card_is_rejected_with_422(world):
     set_id = make_set(world)
 
-    response = client.put(f"/flashcard-sets/{set_id}/cards", json={"cards": [card()] * 16},
+    response = client.put(f"/flashcard-sets/{set_id}/cards", json={"draft_version": 1, "cards": [card()] * 16},
                           headers=headers(world["owner"]))
 
     assert response.status_code == 422
@@ -163,7 +163,7 @@ def test_an_edited_card_is_marked_as_the_lecturers(world):
 
     response = client.put(
         f"/flashcard-sets/{set_id}/cards", headers=headers(world["owner"]),
-        json={"cards": [
+        json={"draft_version": 1, "cards": [
             card("Q1", "A1", [chunk]),                     # untouched: keeps what it had
             card("Q2", "A2 fixed", [chunk]),               # edited: the lecturer's, flag cleared
             card("Q3", "A3", []),                          # source removed: no source flag
@@ -179,7 +179,7 @@ def test_an_unchanged_flagged_card_keeps_its_flag(world):
     stored = [{"front": "Q", "back": "A", "citations": [], "author": "model", "flag": "Unsupported"}]
     set_id = make_set(world, cards=stored)
 
-    cards = client.put(f"/flashcard-sets/{set_id}/cards", json={"cards": [card("Q", "A")]},
+    cards = client.put(f"/flashcard-sets/{set_id}/cards", json={"draft_version": 1, "cards": [card("Q", "A")]},
                        headers=headers(world["owner"])).json()["cards"]
 
     assert (cards[0]["author"], cards[0]["flag"]) == ("model", "Unsupported")
@@ -189,7 +189,7 @@ def test_a_citation_from_another_document_is_rejected(world):
     set_id = make_set(world)
 
     for citation in (str(world["foreign_chunk"]), str(uuid.uuid4()), "not-a-uuid"):
-        response = client.put(f"/flashcard-sets/{set_id}/cards", json={"cards": [card(citations=[citation])]},
+        response = client.put(f"/flashcard-sets/{set_id}/cards", json={"draft_version": 1, "cards": [card(citations=[citation])]},
                               headers=headers(world["owner"]))
         assert response.status_code == 422
 
@@ -197,9 +197,25 @@ def test_a_citation_from_another_document_is_rejected(world):
 def test_cards_cannot_be_edited_while_the_set_is_generating(world):
     set_id = make_set(world, status=MediaStatus.generating)
 
-    response = client.put(f"/flashcard-sets/{set_id}/cards", json={"cards": [card()]}, headers=headers(world["owner"]))
+    response = client.put(f"/flashcard-sets/{set_id}/cards", json={"draft_version": 1, "cards": [card()]}, headers=headers(world["owner"]))
 
     assert response.status_code == 409
+
+
+def test_a_save_made_on_an_older_version_is_refused_and_keeps_the_newer_cards(world):
+    """Two tabs open on one set: the second to save holds the version both read."""
+    set_id = make_set(world, cards=[card("Q1", "A1"), card("Q2", "A2")])
+    h = headers(world["owner"])
+    first = client.put(f"/flashcard-sets/{set_id}/cards", headers=h,
+                       json={"draft_version": 1, "cards": [card("Q1", "A1 fixed"), card("Q2", "A2")]})
+    assert first.status_code == 200 and first.json()["draft_version"] == 2
+
+    second = client.put(f"/flashcard-sets/{set_id}/cards", headers=h,
+                        json={"draft_version": 1, "cards": [card("Q1", "A1"), card("Q2", "A2 fixed")]})
+
+    assert second.status_code == 409
+    assert "lưu ở nơi khác" in second.json()["detail"]
+    assert [c["back"] for c in client.get(f"/flashcard-sets/{set_id}", headers=h).json()["cards"]] == ["A1 fixed", "A2"]
 
 
 def test_publish_requires_a_draft_with_cards(world):
@@ -214,7 +230,7 @@ def test_publish_requires_a_draft_with_cards(world):
     assert published.status_code == 200 and published.json()["published_at"] is not None
 
     # Editing a published set keeps it published; unpublishing hides it again.
-    edited = client.put(f"/flashcard-sets/{ready}/cards", json={"cards": [card("Q", "changed")]}, headers=h)
+    edited = client.put(f"/flashcard-sets/{ready}/cards", json={"draft_version": 1, "cards": [card("Q", "changed")]}, headers=h)
     assert edited.json()["published_at"] is not None
     assert client.post(f"/flashcard-sets/{ready}/unpublish", headers=h).json()["published_at"] is None
 
@@ -294,7 +310,7 @@ def test_another_lecturer_gets_404_everywhere(world):
         ("POST", "/flashcard-sets", {"params": {"document_id": str(world["doc"])}, "json": {"output_language": "vi"}}),
         ("GET", f"/courses/{world['course']}/flashcard-sets", {}),
         ("GET", f"/flashcard-sets/{set_id}", {}),
-        ("PUT", f"/flashcard-sets/{set_id}/cards", {"json": {"cards": []}}),
+        ("PUT", f"/flashcard-sets/{set_id}/cards", {"json": {"draft_version": 1, "cards": []}}),
         ("POST", f"/flashcard-sets/{set_id}/publish", {}),
         ("POST", f"/flashcard-sets/{set_id}/unpublish", {}),
         ("DELETE", f"/flashcard-sets/{set_id}", {}),
@@ -312,7 +328,7 @@ def test_a_learner_cannot_call_author_routes(world):
         ("POST", "/flashcard-sets", {"params": {"document_id": str(world["doc"])}, "json": {"output_language": "vi"}}),
         ("GET", f"/courses/{world['course']}/flashcard-sets", {}),
         ("GET", f"/flashcard-sets/{set_id}", {}),
-        ("PUT", f"/flashcard-sets/{set_id}/cards", {"json": {"cards": []}}),
+        ("PUT", f"/flashcard-sets/{set_id}/cards", {"json": {"draft_version": 1, "cards": []}}),
         ("POST", f"/flashcard-sets/{set_id}/publish", {}),
         ("POST", f"/flashcard-sets/{set_id}/unpublish", {}),
         ("DELETE", f"/flashcard-sets/{set_id}", {}),
