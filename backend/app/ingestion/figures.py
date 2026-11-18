@@ -58,6 +58,10 @@ def is_page_scan(area_ratio: float, page_text: str) -> bool:
 
 def _prepare(blob: bytes) -> Image.Image:
     image = Image.open(io.BytesIO(blob))
+    # Open reads only the header. A one-colour PNG of 13000 x 13000 is 20 KB in the file and took
+    # 1.5 GB to decode, so two on one slide killed a 3 GB worker with every job on it.
+    if image.width * image.height > MAX_RENDER_PIXELS:
+        raise ValueError(f"image of {image.width}x{image.height} is over {MAX_RENDER_PIXELS} pixels")
     image.load()
     # Sơ đồ PNG nền trong suốt có chữ đen: bỏ kênh alpha thẳng thì nền thành đen và mất hết chữ.
     if image.mode in ("RGBA", "LA", "P"):
