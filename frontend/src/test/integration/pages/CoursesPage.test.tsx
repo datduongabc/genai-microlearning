@@ -26,6 +26,13 @@ function renderPage() {
   )
 }
 
+// From the keyboard, as in CourseDetailPage.test: in jsdom a Radix trigger can stop opening on a mouse press.
+async function chooseDelete() {
+  ;(await screen.findByRole('button', { name: 'Thao tác khác với AI 101' })).focus()
+  await userEvent.keyboard('{Enter}')
+  await userEvent.click(await screen.findByRole('menuitem', { name: 'Xóa môn học' }))
+}
+
 beforeEach(() => {
   vi.clearAllMocks()
 })
@@ -41,7 +48,7 @@ describe('CoursesPage - delete', () => {
 
     renderPage()
 
-    await userEvent.click(await screen.findByRole('button', { name: /xóa/i }))
+    await chooseDelete()
 
     expect(window.confirm).toHaveBeenCalled()
     expect(api.deleteCourse).not.toHaveBeenCalled()
@@ -57,7 +64,7 @@ describe('CoursesPage - delete', () => {
 
     renderPage()
 
-    await userEvent.click(await screen.findByRole('button', { name: /xóa/i }))
+    await chooseDelete()
 
     await waitFor(() => {
       expect(api.deleteCourse).toHaveBeenCalledWith('course-1')
@@ -65,6 +72,18 @@ describe('CoursesPage - delete', () => {
     await waitFor(() => {
       expect(screen.queryByText('AI 101')).not.toBeInTheDocument()
     })
+  })
+})
+
+describe('CoursesPage - rows', () => {
+  it('names the Moodle course only for a linked course, and keeps delete out of the row', async () => {
+    vi.mocked(api.listCourses).mockResolvedValue([course, { ...course, id: 'course-2', name: 'OS', moodle_course_id: 5 }])
+
+    renderPage()
+
+    expect(await screen.findByText('Đã liên kết khóa học Moodle #5')).toBeInTheDocument()
+    expect(screen.queryByText(/chưa liên kết/i)).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /^xóa/i })).not.toBeInTheDocument()
   })
 })
 

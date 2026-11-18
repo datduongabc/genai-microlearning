@@ -429,9 +429,9 @@ body { background: var(--bg-canvas); font-size:16px; line-height:24px; }
 .course-row { position:relative; display:flex; align-items:center; gap:16px; padding:16px 24px; border-top:1px solid var(--border-default); transition:background-color .12s ease-out; }
 .course-row:hover { background:var(--bg-subtle); }
 .course-row > .min-w-0 { flex:1; }
-/* The whole row opens the course; the delete action stays above the stretched link. */
+/* The whole row opens the course; the menu button stays above the stretched link. */
 .course-name::after { content:""; position:absolute; inset:0; }
-.course-row .link-action { position:relative; }
+.course-row .icon-button { position:relative; flex:none; }
 .course-tile { flex:none; width:40px; height:40px; border-radius:10px; display:grid; place-items:center; background:var(--bg-accent-soft); color:var(--accent-default); font-weight:600; font-size:16px; }
 .course-row:first-child { border-top:0; }
 .course-name { font:600 16px/24px var(--font-sans); color:var(--text-primary); overflow-wrap:anywhere; }
@@ -643,6 +643,16 @@ a.learn-link { color:var(--text-primary); font-weight:600; }
 }
 .learn-date { min-width:3.2em; text-align:right; }
 a.learn-link:hover { background:var(--bg-subtle); color:var(--accent-default); }
+/* Earlier deliveries of one focus, folded under the newest and indented past its icon. */
+.learn-older { margin:0 0 6px 44px; }
+.learn-older > summary { list-style:none; display:inline-flex; align-items:center; min-height:32px; font-size:14px; color:var(--text-secondary); cursor:pointer; border-radius:var(--radius-sm); }
+.learn-older > summary:hover { color:var(--accent-default); }
+.learn-older > summary::-webkit-details-marker { display:none; }
+.learn-older > summary::before { content:""; width:6px; height:6px; margin:0 10px 0 2px; border-right:1.5px solid currentColor; border-bottom:1.5px solid currentColor; transform:rotate(-45deg); transition:transform .15s; }
+.learn-older[open] > summary::before { transform:rotate(45deg); }
+.learn-older[open] > summary { margin-bottom:2px; }
+.learn-older .learn-link { margin-left:-10px; }
+.learn-older .learn-icon { opacity:.7; }
 .learn-back { margin-bottom:12px; }
 .learn-card { display:flex; flex-direction:column; justify-content:center; gap:12px; width:100%; max-width:100%; min-height:240px; padding:24px 20px; text-align:left; background:var(--bg-surface); border:1px solid var(--border-strong); border-radius:var(--radius-lg); box-shadow:0 1px 0 var(--border-default); overflow-wrap:anywhere; white-space:pre-wrap; cursor:pointer; }
 .learn-card:hover { border-color:var(--accent-default); }
