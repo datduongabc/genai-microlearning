@@ -617,7 +617,9 @@ describe('VideoEditorPage', () => {
     await userEvent.click(found)
 
     expect(within(sentences[1]).queryByText('Chưa có nguồn')).not.toBeInTheDocument()
-    expect(within(sentences[1]).getByText(`Nguồn: ${otherSource.locator}`)).toBeInTheDocument()
+    // The passage found by the search is the scene's second source, so it is marker [2].
+    expect(within(sentences[1]).getByRole('button', { name: `Nguồn 2: ${otherSource.locator}` })).toHaveTextContent('[2]')
+    expect(within(sentences[1]).getByText('Đổi nguồn')).toBeInTheDocument()
     await userEvent.click(screen.getByRole('button', { name: 'Lưu thay đổi' }))
     await waitFor(() => expect(api.saveVideoScenes).toHaveBeenCalled())
     expect(vi.mocked(api.saveVideoScenes).mock.calls[0][2][0].narration_citations).toEqual([['c1'], ['c2']])

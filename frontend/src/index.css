@@ -270,6 +270,12 @@ body { background: var(--bg-canvas); font-size:16px; line-height:24px; }
 .citation-marker { margin:0 1px; padding:0 2px; vertical-align:super; font:600 12px/1 var(--font-sans); color:var(--accent-default); border-radius:2px; }
 .citation-marker:hover { text-decoration:underline; }
 .citation-marker[aria-pressed=true] { background:var(--highlight); color:var(--text-primary); text-decoration:none; }
+.citation-markers { display:flex; flex-direction:column; gap:6px; }
+/* On their own line under a field, the markers sit on the baseline instead of raised after a word. */
+.citation-markers .citation-marker { vertical-align:baseline; font-size:13px; padding:2px 4px; }
+.citation-markers .citation-marker[aria-expanded=true] { background:var(--highlight); color:var(--text-primary); text-decoration:none; }
+.citation-passage { padding:10px 12px; background:var(--bg-surface); border:1px solid var(--border-default); border-radius:var(--radius-sm); }
+.citation-passage .module-source-place { font-size:13px; line-height:18px; }
 
 .module-source { position:sticky; top:32px; max-height:calc(100vh - 64px); overflow-y:auto; padding:20px; background:var(--bg-surface); border:1px solid var(--border-default); border-radius:var(--radius-sm); }
 .module-source-head { display:flex; align-items:start; justify-content:space-between; gap:12px; margin-bottom:16px; }
