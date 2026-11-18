@@ -227,7 +227,7 @@ export function FlashcardEditorPage() {
           <span className="status-pill" data-status={published ? 'embedded' : undefined}>
             {published ? 'Đã giao cho người học' : 'Bản nháp'}
           </span>
-          <span className="flashcard-count">{cards.length}/{MAX_FLASHCARDS} thẻ</span>
+          <span className="flashcard-count">{cards.length} thẻ (tối đa {MAX_FLASHCARDS})</span>
           {spent && <span className="flashcard-count">{spent}</span>}
         </div>
 

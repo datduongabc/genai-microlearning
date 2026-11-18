@@ -1,3 +1,5 @@
+import { BookOpenText, ChevronDown, Clapperboard, Ellipsis, Layers, Plus, Trash2 } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../components/ui/dropdown-menu";
 import axios from "axios";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { useForm, useWatch } from "react-hook-form";
@@ -144,13 +146,14 @@ function mediaPillStatus(running: boolean, failed: boolean, published: boolean):
 }
 
 type MediaKind = "Flashcard" | "Video";
+const KIND_LABEL: Record<MediaKind, string> = { Flashcard: "Bộ thẻ", Video: "Video" };
 
 // When an item was made, as "tạo 00:20 16/11" in the lecturer's time: enough to tell two items of one
 // focus apart, which live run 2's page could only do by their card or scene counts.
 function createdText(iso: string): string {
   const at = new Date(iso);
   const two = (n: number) => String(n).padStart(2, "0");
-  return `tạo ${two(at.getHours())}:${two(at.getMinutes())} ${two(at.getDate())}/${two(at.getMonth() + 1)}`;
+  return `Tạo lúc ${two(at.getHours())}:${two(at.getMinutes())}, ${two(at.getDate())}/${two(at.getMonth() + 1)}`;
 }
 
 // The creation time of each item whose title another item of its document's list also has, by id.
@@ -166,13 +169,15 @@ function MediaListItem({ kind, to, focus, status, statusText, created }: {
   kind: MediaKind; to: string; focus: string | null; status?: string; statusText: string; created?: string;
 }) {
   return (
-    <li className="module-item">
-      <span className="media-kind">{kind}</span>
+    <li className="module-item media-item">
+      <span className="media-kind">{KIND_LABEL[kind]}</span>
       <Link to={to} className="module-link flashcard-link" title={focus ?? undefined}>
         {focus ?? "Toàn bộ tài liệu"}
       </Link>
-      {created && <time className="media-created" dateTime={created}>{createdText(created)}</time>}
-      <span className="status-pill" data-status={status}>{statusText}</span>
+      <span className="media-meta">
+        <span className="status-pill" data-status={status}>{statusText}</span>
+        {created && <time className="media-created" dateTime={created}>{createdText(created)}</time>}
+      </span>
     </li>
   );
 }
@@ -188,10 +193,10 @@ interface PendingMedia {
 
 function PendingMediaItem({ item }: { item: PendingMedia }) {
   return (
-    <li className="module-item" aria-busy="true">
-      <span className="media-kind">{item.kind}</span>
+    <li className="module-item media-item" aria-busy="true">
+      <span className="media-kind">{KIND_LABEL[item.kind]}</span>
       <span className="module-link">{item.focus ?? "Toàn bộ tài liệu"}</span>
-      <span className="status-pill" data-status="processing">Đang gửi yêu cầu...</span>
+      <span className="media-meta"><span className="status-pill" data-status="processing">Đang gửi yêu cầu...</span></span>
     </li>
   );
 }
@@ -651,41 +656,33 @@ export function CourseDetailPage() {
                 </div>
                 <div className="doc-actions">
                   {d.status === "embedded" && (
-                    <button
-                      onClick={() => { generateDocument.current = d; generateDialog.current?.showModal(); }}
-                      disabled={isGenerating(d)}
-                      className="link-action"
-                    >
-                      {isGenerating(d)
-                        ? "Đang sinh mô-đun..."
-                        : "+ Sinh mô-đun"}
-                    </button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger className="ui-button doc-create" aria-label={`Tạo nội dung từ ${d.filename}`}>
+                        <Plus aria-hidden="true" />Tạo nội dung<ChevronDown aria-hidden="true" />
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="doc-menu">
+                        <DropdownMenuItem disabled={isGenerating(d)} onSelect={() => { generateDocument.current = d; generateDialog.current?.showModal(); }}>
+                          <BookOpenText aria-hidden="true" />{isGenerating(d) ? "Đang sinh mô-đun..." : "Mô-đun bài học"}
+                        </DropdownMenuItem>
+                        <DropdownMenuItem disabled={isSending(d, "Flashcard")} onSelect={() => { flashcardDocument.current = d; flashcardDialog.current?.showModal(); }}>
+                          <Layers aria-hidden="true" />Bộ thẻ ghi nhớ
+                        </DropdownMenuItem>
+                        <DropdownMenuItem disabled={isSending(d, "Video")} onSelect={() => { videoDocument.current = d; videoDialog.current?.showModal(); }}>
+                          <Clapperboard aria-hidden="true" />Video bài giảng
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   )}
-                  {d.status === "embedded" && (
-                    <button
-                      onClick={() => { flashcardDocument.current = d; flashcardDialog.current?.showModal(); }}
-                      disabled={isSending(d, "Flashcard")}
-                      className="link-action"
-                    >
-                      + Sinh flashcard
-                    </button>
-                  )}
-                  {d.status === "embedded" && (
-                    <button
-                      onClick={() => { videoDocument.current = d; videoDialog.current?.showModal(); }}
-                      disabled={isSending(d, "Video")}
-                      className="link-action"
-                    >
-                      + Sinh video
-                    </button>
-                  )}
-                  <button
-                    onClick={() => handleDeleteDocument(d)}
-                    disabled={deletingDocId === d.id}
-                    className="link-action danger"
-                  >
-                    {deletingDocId === d.id ? "Đang xóa..." : "Xóa"}
-                  </button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger className="icon-button" aria-label={`Thao tác khác với ${d.filename}`}>
+                      <Ellipsis aria-hidden="true" />
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="doc-menu">
+                      <DropdownMenuItem variant="destructive" disabled={deletingDocId === d.id} onSelect={() => handleDeleteDocument(d)}>
+                        <Trash2 aria-hidden="true" />{deletingDocId === d.id ? "Đang xóa..." : "Xóa tài liệu"}
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
               </div>
               {extractionWarningLines(d.extraction_warnings).map((warning) => (

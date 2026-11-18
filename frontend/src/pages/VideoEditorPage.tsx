@@ -397,7 +397,7 @@ export function VideoEditorPage() {
             {published ? 'Đã giao cho sinh viên' : 'Bản nháp'}
           </span>
           {runningJob && <span role="status" className="status-pill" data-status="processing">{JOB_TEXT[runningJob]}</span>}
-          <span className="flashcard-count">{scenes.length}/{MAX_SCENES} cảnh</span>
+          <span className="flashcard-count">{scenes.length} cảnh (tối đa {MAX_SCENES})</span>
           <span className={`flashcard-count${overLong ? ' danger-text' : ''}`}>
             Độ dài ước tính: {formatMinutes(seconds)} phút (tối đa {formatMinutes(saved.max_seconds)} phút)
           </span>

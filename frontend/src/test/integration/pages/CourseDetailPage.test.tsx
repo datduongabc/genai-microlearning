@@ -10,6 +10,28 @@ import type { Course, DocumentInfo, ModuleSummary } from '../../../api'
 
 // Every function of the module is replaced except the one that words an error: that is
 // real logic the pages rely on, not a call to the server.
+// Creating content goes through the document's "Tạo nội dung" menu.
+// Opened from the keyboard: in jsdom a Radix trigger stopped opening on a mouse press after the
+// first test of a group, while Enter works every time and is a path a lecturer uses too.
+async function openMenu(trigger: RegExp) {
+  ;(await screen.findByRole('button', { name: trigger })).focus()
+  await userEvent.keyboard('{Enter}')
+}
+async function openCreate() {
+  await openMenu(/tạo nội dung từ/i)
+}
+async function chooseCreate(item: RegExp) {
+  await openCreate()
+  await userEvent.click(screen.getByRole('menuitem', { name: item }))
+}
+// The item as the menu showed it; the menu is closed again so the rest of the test can click the page.
+async function createItem(item: RegExp) {
+  await openCreate()
+  const found = await screen.findByRole('menuitem', { name: item })
+  await userEvent.keyboard('{Escape}')
+  return found
+}
+
 vi.mock('../../../api', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../../api')>()
   return Object.fromEntries(
@@ -285,7 +307,8 @@ describe('CourseDetailPage - delete document', () => {
 
     renderPage()
 
-    await userEvent.click(await screen.findByRole('button', { name: /^xóa$/i }))
+    await openMenu(/thao tác khác với/i)
+    await userEvent.click(screen.getByRole('menuitem', { name: /xóa tài liệu/i }))
 
     expect(window.confirm).toHaveBeenCalled()
     expect(api.deleteDocument).not.toHaveBeenCalled()
@@ -302,7 +325,8 @@ describe('CourseDetailPage - delete document', () => {
 
     renderPage()
 
-    await userEvent.click(await screen.findByRole('button', { name: /^xóa$/i }))
+    await openMenu(/thao tác khác với/i)
+    await userEvent.click(screen.getByRole('menuitem', { name: /xóa tài liệu/i }))
 
     await waitFor(() => {
       expect(api.deleteDocument).toHaveBeenCalledWith('doc-1')
@@ -321,7 +345,8 @@ describe('CourseDetailPage - delete document', () => {
     vi.spyOn(window, 'confirm').mockReturnValue(true)
 
     renderPage()
-    await userEvent.click(await screen.findByRole('button', { name: /^xóa$/i }))
+    await openMenu(/thao tác khác với/i)
+    await userEvent.click(screen.getByRole('menuitem', { name: /xóa tài liệu/i }))
 
     expect(await screen.findByText(/đã xóa tài liệu "syllabus.pdf"/i)).toBeInTheDocument()
     expect(await screen.findByText(/không tải lại được danh sách/i)).toBeInTheDocument()
@@ -336,7 +361,8 @@ describe('CourseDetailPage - delete document', () => {
     vi.spyOn(window, 'confirm').mockReturnValue(true)
 
     renderPage()
-    await userEvent.click(await screen.findByRole('button', { name: /^xóa$/i }))
+    await openMenu(/thao tác khác với/i)
+    await userEvent.click(screen.getByRole('menuitem', { name: /xóa tài liệu/i }))
 
     expect(await screen.findByText(/xóa tài liệu thất bại/i)).toBeInTheDocument()
     expect(screen.getByText('syllabus.pdf')).toBeInTheDocument()
@@ -515,13 +541,13 @@ describe('CourseDetailPage - module generation availability', () => {
 
     renderPage()
 
-    expect(await screen.findByRole('button', { name: /\+ sinh mô-đun/i })).toBeEnabled()
+    expect(await createItem(/mô-đun bài học/i)).not.toHaveAttribute('aria-disabled')
   })
 
   it('cancels the dialog without starting generation', async () => {
     vi.mocked(api.listDocuments).mockResolvedValue([sampleDocument])
     renderPage()
-    await userEvent.click(await screen.findByRole('button', { name: /\+ sinh mô-đun/i }))
+    await chooseCreate(/mô-đun bài học/i)
     expect(screen.getByRole('dialog')).toBeInTheDocument()
     await userEvent.click(screen.getByRole('button', { name: 'Huỷ' }))
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
@@ -533,7 +559,7 @@ describe('CourseDetailPage - module generation availability', () => {
 
     renderPage()
 
-    expect(await screen.findByRole('button', { name: /đang sinh mô-đun/i })).toBeDisabled()
+    expect(await createItem(/đang sinh mô-đun/i)).toHaveAttribute('aria-disabled', 'true')
   })
 
   it('becomes available again and shows the new module once polling sees the generation finish', async () => {
@@ -544,13 +570,13 @@ describe('CourseDetailPage - module generation availability', () => {
     vi.mocked(api.listModules).mockResolvedValueOnce([]).mockResolvedValue([newModule])
 
     renderPage()
-    expect(await screen.findByRole('button', { name: /đang sinh mô-đun/i })).toBeDisabled()
+    expect(await createItem(/đang sinh mô-đun/i)).toHaveAttribute('aria-disabled', 'true')
 
     await act(async () => {
       await vi.advanceTimersByTimeAsync(10_000)
     })
 
-    expect(await screen.findByRole('button', { name: /\+ sinh mô-đun/i })).toBeEnabled()
+    expect(await createItem(/mô-đun bài học/i)).not.toHaveAttribute('aria-disabled')
     expect(await screen.findByText(/Intro to search/)).toBeInTheDocument()
   })
 
@@ -567,7 +593,7 @@ describe('CourseDetailPage - module generation availability', () => {
     await waitFor(() =>
       expect((screen.getByRole('combobox', { name: /model sinh/i }) as HTMLSelectElement).value).toBe('deepseek-flash'),
     )
-    await userEvent.click(await screen.findByRole('button', { name: /\+ sinh mô-đun/i }))
+    await chooseCreate(/mô-đun bài học/i)
     expect(api.generateModule).not.toHaveBeenCalled()
     expect(screen.getByRole('dialog')).toBeInTheDocument()
     await userEvent.selectOptions(screen.getByRole('combobox', { name: /ngôn ngữ đầu ra/i }), 'en')
@@ -591,7 +617,7 @@ describe('CourseDetailPage - module generation availability', () => {
     )
 
     renderPage()
-    await userEvent.click(await screen.findByRole('button', { name: /\+ sinh mô-đun/i }))
+    await chooseCreate(/mô-đun bài học/i)
     await userEvent.click(screen.getByRole('button', { name: 'Sinh mô-đun' }))
 
     expect(await screen.findByText(/chưa có API key hợp lệ/)).toBeInTheDocument()
@@ -603,11 +629,11 @@ describe('CourseDetailPage - module generation availability', () => {
     vi.mocked(api.pollJobStatus).mockReturnValue(new Promise(() => {}))
 
     renderPage()
-    await userEvent.click(await screen.findByRole('button', { name: /\+ sinh mô-đun/i }))
+    await chooseCreate(/mô-đun bài học/i)
     await userEvent.click(screen.getByRole('button', { name: 'Sinh mô-đun' }))
 
     expect(api.generateModule).toHaveBeenCalledWith('doc-1', '', 'vi', '')
-    expect(await screen.findByRole('button', { name: /đang sinh mô-đun/i })).toBeDisabled()
+    expect(await createItem(/đang sinh mô-đun/i)).toHaveAttribute('aria-disabled', 'true')
   })
 })
 
@@ -645,7 +671,7 @@ describe('CourseDetailPage - flashcard sets', () => {
     expect(within(items[0]).getByRole('link', { name: /Mảng/ })).toHaveAttribute('href', '/flashcard-sets/set-1')
     expect(items[0]).toHaveTextContent('Bản nháp - 8 thẻ')
     // A set and a video with the same focus must not look alike.
-    expect(within(items[0]).getByText('Flashcard')).toBeInTheDocument()
+    expect(within(items[0]).getByText('Bộ thẻ')).toBeInTheDocument()
     expect(items[1]).toHaveTextContent('Toàn bộ tài liệu')
     expect(items[1]).toHaveTextContent('Đang sinh...')
     expect(items[2]).toHaveTextContent('Sinh thất bại')
@@ -665,7 +691,7 @@ describe('CourseDetailPage - flashcard sets', () => {
       .mockResolvedValue([{ ...flashcardSet, status: 'generating', card_count: 0 }])
 
     renderPage()
-    await userEvent.click(await screen.findByRole('button', { name: '+ Sinh flashcard' }))
+    await chooseCreate(/bộ thẻ ghi nhớ/i)
     // Each kind has its own dialog in the page, so the field is looked up in the open one.
     await userEvent.type(within(screen.getByRole('dialog', { name: 'Sinh flashcard' })).getByLabelText(/Trọng tâm/), 'Mảng')
     await userEvent.click(screen.getByRole('button', { name: 'Sinh flashcard' }))
@@ -682,14 +708,14 @@ describe('CourseDetailPage - flashcard sets', () => {
       .mockResolvedValue([{ ...flashcardSet, status: 'generating', card_count: 0 }])
 
     renderPage()
-    await userEvent.click(await screen.findByRole('button', { name: '+ Sinh flashcard' }))
+    await chooseCreate(/bộ thẻ ghi nhớ/i)
     await userEvent.click(screen.getByRole('button', { name: 'Sinh flashcard' }))
 
     const list = await screen.findByRole('list', { name: 'Flashcard sinh từ syllabus.pdf' })
     const pending = within(list).getByRole('listitem')
     expect(pending).toHaveTextContent('Toàn bộ tài liệu')
     expect(within(pending).getByText('Đang gửi yêu cầu...')).toHaveAttribute('data-status', 'processing')
-    expect(screen.getByRole('button', { name: '+ Sinh flashcard' })).toBeDisabled()
+    expect(await createItem(/bộ thẻ ghi nhớ/i)).toHaveAttribute('aria-disabled', 'true')
 
     answer({ id: 'set-1', job_id: 'job-1' })
     expect(await screen.findByText('Đang sinh...')).toBeInTheDocument()
@@ -700,7 +726,7 @@ describe('CourseDetailPage - flashcard sets', () => {
     vi.mocked(api.generateFlashcards).mockRejectedValue(axiosFailure(409, 'Bộ thẻ này đang được sinh, vui lòng chờ.'))
 
     renderPage()
-    await userEvent.click(await screen.findByRole('button', { name: '+ Sinh flashcard' }))
+    await chooseCreate(/bộ thẻ ghi nhớ/i)
     await userEvent.click(screen.getByRole('button', { name: 'Sinh flashcard' }))
 
     expect(await screen.findByText('Bộ thẻ này đang được sinh, vui lòng chờ.')).toBeInTheDocument()
@@ -771,7 +797,7 @@ describe('CourseDetailPage - videos', () => {
       .mockResolvedValue([{ ...videoSummary, status: 'generating', scene_count: 0 }])
 
     renderPage()
-    await userEvent.click(await screen.findByRole('button', { name: '+ Sinh video' }))
+    await chooseCreate(/video bài giảng/i)
     await userEvent.type(within(screen.getByRole('dialog', { name: 'Sinh video' })).getByLabelText(/Trọng tâm/), 'FCFS')
     await userEvent.selectOptions(await screen.findByRole('combobox', { name: 'Model vẽ hình' }), 'image-qwen')
     await userEvent.click(screen.getByRole('button', { name: 'Sinh video' }))
@@ -791,7 +817,7 @@ describe('CourseDetailPage - videos', () => {
       .mockResolvedValue([{ ...videoSummary, status: 'generating', scene_count: 0 }])
 
     renderPage()
-    await userEvent.click(await screen.findByRole('button', { name: '+ Sinh video' }))
+    await chooseCreate(/video bài giảng/i)
     await userEvent.type(within(screen.getByRole('dialog', { name: 'Sinh video' })).getByLabelText(/Trọng tâm/), 'FCFS')
     await userEvent.click(screen.getByRole('button', { name: 'Sinh video' }))
 
@@ -800,13 +826,13 @@ describe('CourseDetailPage - videos', () => {
     expect(pending).toHaveTextContent('FCFS')
     expect(pending).toHaveAttribute('aria-busy', 'true')
     expect(within(pending).getByText('Đang gửi yêu cầu...')).toHaveAttribute('data-status', 'processing')
-    expect(screen.getByRole('button', { name: '+ Sinh video' })).toBeDisabled()
+    expect(await createItem(/video bài giảng/i)).toHaveAttribute('aria-disabled', 'true')
     expect(api.generateVideo).toHaveBeenCalledTimes(1)
 
     answer({ id: 'video-1', job_id: 'job-1' })
     expect(await screen.findByText('Đang sinh lời thoại...')).toBeInTheDocument()
     expect(screen.queryByText('Đang gửi yêu cầu...')).not.toBeInTheDocument()
-    expect(screen.getByRole('button', { name: '+ Sinh video' })).toBeEnabled()
+    expect(await createItem(/video bài giảng/i)).not.toHaveAttribute('aria-disabled')
   })
 
   it('says the video started, not that it failed, when only the list cannot be reloaded after it', async () => {
@@ -814,7 +840,7 @@ describe('CourseDetailPage - videos', () => {
     vi.mocked(api.listVideos).mockResolvedValueOnce([]).mockRejectedValue(new Error('network down'))
 
     renderPage()
-    await userEvent.click(await screen.findByRole('button', { name: '+ Sinh video' }))
+    await chooseCreate(/video bài giảng/i)
     await userEvent.click(screen.getByRole('button', { name: 'Sinh video' }))
 
     expect(await screen.findByText('Đã bắt đầu sinh video.')).toBeInTheDocument()
@@ -828,7 +854,7 @@ describe('CourseDetailPage - videos', () => {
     vi.mocked(api.listFlashcardSets).mockResolvedValueOnce([]).mockRejectedValue(new Error('network down'))
 
     renderPage()
-    await userEvent.click(await screen.findByRole('button', { name: '+ Sinh flashcard' }))
+    await chooseCreate(/bộ thẻ ghi nhớ/i)
     await userEvent.click(screen.getByRole('button', { name: 'Sinh flashcard' }))
 
     expect(await screen.findByText('Đã bắt đầu sinh bộ flashcard.')).toBeInTheDocument()
@@ -841,12 +867,12 @@ describe('CourseDetailPage - videos', () => {
     vi.mocked(api.listVideos).mockResolvedValue([])
 
     renderPage()
-    await userEvent.click(await screen.findByRole('button', { name: '+ Sinh video' }))
+    await chooseCreate(/video bài giảng/i)
     await userEvent.click(screen.getByRole('button', { name: 'Sinh video' }))
 
     expect(await screen.findByText('Video này đang được sinh lời thoại, vui lòng chờ.')).toBeInTheDocument()
     expect(screen.queryByText('Đang gửi yêu cầu...')).not.toBeInTheDocument()
-    expect(screen.getByRole('button', { name: '+ Sinh video' })).toBeEnabled()
+    expect(await createItem(/video bài giảng/i)).not.toHaveAttribute('aria-disabled')
   })
 
   it('dates the rows that share a title, and only those', async () => {
@@ -863,7 +889,7 @@ describe('CourseDetailPage - videos', () => {
     const times = items.map((item) => item.querySelector('time'))
     expect(times[0]).toHaveAttribute('dateTime', '2026-11-13T09:05:00Z')
     expect(times[1]).toHaveAttribute('dateTime', '2026-11-16T00:20:15Z')
-    expect(times[0]?.textContent).toMatch(/^tạo \d{2}:\d{2} \d{2}\/\d{2}$/)
+    expect(times[0]?.textContent).toMatch(/^Tạo lúc \d{2}:\d{2}, \d{2}\/\d{2}$/)
     expect(times[0]?.textContent).not.toBe(times[1]?.textContent)
     expect(times[2]).toBeNull()
   })
@@ -872,7 +898,7 @@ describe('CourseDetailPage - videos', () => {
     vi.mocked(api.generateVideo).mockRejectedValue(axiosFailure(429, 'Bạn đã dùng hết lượt sinh hôm nay.'))
 
     renderPage()
-    await userEvent.click(await screen.findByRole('button', { name: '+ Sinh video' }))
+    await chooseCreate(/video bài giảng/i)
     await userEvent.click(screen.getByRole('button', { name: 'Sinh video' }))
 
     expect(await screen.findByText('Bạn đã dùng hết lượt sinh hôm nay.')).toBeInTheDocument()
@@ -1147,7 +1173,7 @@ describe('CourseDetailPage - failed work and retry', () => {
     })
 
     renderPage()
-    await userEvent.click(await screen.findByRole('button', { name: /\+ sinh mô-đun/i }))
+    await chooseCreate(/mô-đun bài học/i)
     await userEvent.click(screen.getByRole('button', { name: 'Sinh mô-đun' }))
 
     expect(await screen.findByText('Sinh mô-đun thất bại')).toBeInTheDocument()

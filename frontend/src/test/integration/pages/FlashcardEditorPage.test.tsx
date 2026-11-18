@@ -116,7 +116,7 @@ describe('FlashcardEditorPage', () => {
 
     await userEvent.click(add)
     expect(screen.getByRole('button', { name: 'Thêm thẻ' })).toBeDisabled()
-    expect(screen.getByText('15/15 thẻ')).toBeInTheDocument()
+    expect(screen.getByText('15 thẻ (tối đa 15)')).toBeInTheDocument()
 
     const fronts = screen.getAllByLabelText(/^Mặt trước thẻ/)
     await userEvent.type(fronts[14], 'Câu hỏi mới')
