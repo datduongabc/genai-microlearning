@@ -1,3 +1,4 @@
+import { confirmAction } from "../lib/confirm";
 import { useEffect, useRef, useState } from "react";
 import {
   deleteStudyFile,
@@ -52,7 +53,7 @@ export function StudyReferences({ studyId }: { studyId: string }) {
   }
 
   async function remove(file: StudyFile) {
-    if (!window.confirm(`Xóa ${file.filename}? Các gói đang dùng file này sẽ không còn tài liệu gốc.`)) return;
+    if (!await confirmAction({ title: `Xóa ${file.filename}?`, description: "Các gói đang dùng file này sẽ không còn tài liệu gốc.", action: "Xóa file", destructive: true })) return;
     setError("");
     try {
       await deleteStudyFile(studyId, file.id);

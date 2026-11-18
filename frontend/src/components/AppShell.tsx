@@ -1,3 +1,4 @@
+import { confirmAction } from "../lib/confirm";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { Link, NavLink } from "react-router-dom";
 import { homeFor, useAuth } from "../auth/useAuth";
@@ -67,7 +68,7 @@ export function AppShell({ title, fullTitle, children }: { title: string; fullTi
 
   function close() { setOpen(false); trigger.current?.focus(); }
   async function unlink() {
-    if (!window.confirm("Hủy liên kết Moodle? Bạn sẽ không xuất bản lên Moodle được cho đến khi liên kết lại.")) return;
+    if (!await confirmAction({ title: "Hủy liên kết Moodle?", description: "Bạn sẽ không xuất bản lên Moodle được cho đến khi liên kết lại.", action: "Hủy liên kết" })) return;
     setBusy(true); setError(null);
     try {
       await unlinkMoodleAccount();

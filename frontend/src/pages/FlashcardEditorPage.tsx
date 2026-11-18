@@ -1,3 +1,5 @@
+import { toast } from 'sonner'
+import { confirmAction } from '../lib/confirm'
 import axios from 'axios'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
@@ -53,7 +55,6 @@ export function FlashcardEditorPage() {
   const [attempt, setAttempt] = useState(0)
   const [busy, setBusy] = useState<'save' | 'publish' | 'delete' | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [notice, setNotice] = useState<string | null>(null)
   const keyCounter = useRef(0)
   const nextKey = useCallback(() => keyCounter.current++, [])
 
@@ -141,19 +142,17 @@ export function FlashcardEditorPage() {
   const full = cards.length >= MAX_FLASHCARDS
 
   function edit(key: number, change: Partial<FlashcardCardEdit>) {
-    setNotice(null)
     setCards((list) => list.map((c) => (c.key === key ? { ...c, ...change } : c)))
   }
 
   async function save() {
     setBusy('save')
     setError(null)
-    setNotice(null)
     try {
       const set = await saveFlashcards(setId, cards.map(({ front, back, citations }) => ({ front, back, citations })))
       setSaved(set)
       setCards(toDrafts(set, nextKey))
-      setNotice('Đã lưu.')
+      toast.success('Đã lưu.')
     } catch (err) {
       setError(apiErrorMessage(err, 'Lưu thẻ thất bại'))
     } finally {
@@ -164,7 +163,6 @@ export function FlashcardEditorPage() {
   async function togglePublished() {
     setBusy('publish')
     setError(null)
-    setNotice(null)
     try {
       setSaved(await publishFlashcardSet(setId, !published))
     } catch (err) {
@@ -175,7 +173,7 @@ export function FlashcardEditorPage() {
   }
 
   async function remove() {
-    if (!window.confirm('Xóa vĩnh viễn bộ flashcard này? Không thể khôi phục.')) return
+    if (!await confirmAction({ title: 'Xóa bộ flashcard này?', description: 'Không thể khôi phục.', action: 'Xóa bộ flashcard', destructive: true })) return
     setBusy('delete')
     setError(null)
     try {
@@ -242,7 +240,7 @@ export function FlashcardEditorPage() {
                   <span className="part-label">Thẻ {index + 1}</span>
                   <button
                     type="button"
-                    onClick={() => { setNotice(null); setCards((list) => list.filter((x) => x.key !== c.key)) }}
+                    onClick={() => { setCards((list) => list.filter((x) => x.key !== c.key)) }}
                     aria-label={`Xóa thẻ ${index + 1}`}
                     className="link-action danger small-action"
                   >
@@ -280,7 +278,6 @@ export function FlashcardEditorPage() {
                   known={c.sources}
                   listChosen={false}
                   onChange={(citations, picked) => {
-                    setNotice(null)
                     setCards((list) => list.map((x) => (x.key === c.key
                       ? { ...x, citations, sources: picked ? [...x.sources, picked] : x.sources }
                       : x)))
@@ -293,7 +290,7 @@ export function FlashcardEditorPage() {
 
         <button
           type="button"
-          onClick={() => { setNotice(null); setCards((list) => [...list, { key: nextKey(), front: '', back: '', citations: [], flag: null, sources: [] }]) }}
+          onClick={() => { setCards((list) => [...list, { key: nextKey(), front: '', back: '', citations: [], flag: null, sources: [] }]) }}
           disabled={full}
           className="ui-button"
         >
@@ -305,7 +302,6 @@ export function FlashcardEditorPage() {
         {dirty && complete && (
           <p className="course-hint">{published ? 'Lưu để cập nhật cho người học.' : 'Lưu thay đổi trước khi giao.'}</p>
         )}
-        {notice && <p role="status" className="mt-3 text-sm success-text">{notice}</p>}
         {error && <p role="alert" className="mt-3 text-sm danger-text">{error}</p>}
 
         <div className="flashcard-actions">

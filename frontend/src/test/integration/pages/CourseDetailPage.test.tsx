@@ -1,3 +1,4 @@
+import { Toaster } from 'sonner'
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { AxiosError, type AxiosResponse, type InternalAxiosRequestConfig } from 'axios'
@@ -70,6 +71,7 @@ function renderPage() {
           <Route path="/courses/:courseId" element={<CourseDetailPage />} />
         </Routes>
       </MemoryRouter>
+      <Toaster />
     </AuthProvider>,
   )
 }

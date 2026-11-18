@@ -1,3 +1,5 @@
+import { toast } from "sonner";
+import { confirmAction } from "../lib/confirm";
 import { BookOpenText, ChevronDown, Clapperboard, Ellipsis, Layers, Plus, Trash2 } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../components/ui/dropdown-menu";
 import axios from "axios";
@@ -259,7 +261,6 @@ export function CourseDetailPage() {
   const [error, setError] = useState<string | null>(null);
   // What went right but is worth saying (a delete that succeeded although the list could not
   // be reloaded afterwards); shown apart from `error` so it does not read as a failure.
-  const [notice, setNotice] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [retryingJobIds, setRetryingJobIds] = useState<Set<string>>(new Set());
   // Only bridges the moment between clicking and the server reporting the
@@ -446,7 +447,6 @@ export function CourseDetailPage() {
   async function startGeneration(
     generate: () => Promise<unknown>, reload: () => Promise<void>, failed: string, started: string,
   ) {
-    setNotice(null);
     try {
       await generate();
     } catch (err) {
@@ -458,7 +458,7 @@ export function CourseDetailPage() {
       await reload();
     } catch (err) {
       // Said only then: otherwise the new row in the list says it.
-      setNotice(`${started}.`);
+      toast.success(`${started}.`);
       setError(`${apiErrorMessage(err, "Không tải lại được danh sách")}. ${started}, hãy tải lại trang để theo dõi.`);
     }
   }
@@ -480,14 +480,15 @@ export function CourseDetailPage() {
   }
 
   async function handleDeleteDocument(doc: DocumentInfo) {
-    const confirmed = window.confirm(
-      `Xóa vĩnh viễn tài liệu "${doc.filename}"? Các mô-đun/quiz đã sinh từ tài liệu này sẽ bị xóa theo, không thể khôi phục.`,
-    );
+    const confirmed = await confirmAction({
+      title: `Xóa tài liệu "${doc.filename}"?`,
+      description: "Các mô-đun, quiz, flashcard và video sinh từ tài liệu này bị xóa theo. Không thể khôi phục.",
+      action: "Xóa tài liệu", destructive: true,
+    });
     if (!confirmed) return;
 
     setDeletingDocId(doc.id);
     setError(null);
-    setNotice(null);
     try {
       await deleteDocument(doc.id);
     } catch (err) {
@@ -495,7 +496,7 @@ export function CourseDetailPage() {
       setDeletingDocId(null);
       return;
     }
-    setNotice(`Đã xóa tài liệu "${doc.filename}".`);
+    toast.success(`Đã xóa tài liệu "${doc.filename}".`);
     try {
       await refresh();
     } catch (err) {
@@ -510,7 +511,6 @@ export function CourseDetailPage() {
   async function handleRetry(failure: DocumentFailure) {
     setRetryingJobIds((ids) => new Set(ids).add(failure.job_id));
     setError(null);
-    setNotice(null);
     try {
       await retryJob(failure.job_id);
     } catch (err) {
@@ -523,7 +523,7 @@ export function CourseDetailPage() {
       return;
     }
     // The job is queued again whatever happens next: retrying it once more would be refused.
-    setNotice("Đã gửi yêu cầu thử lại.");
+    toast.success("Đã gửi yêu cầu thử lại.");
     try {
       await refresh();
     } catch (err) {
@@ -540,16 +540,15 @@ export function CourseDetailPage() {
   }
 
   async function handleDeleteModule(m: ModuleSummary) {
-    const confirmed = window.confirm(
-      `Xóa vĩnh viễn mô-đun "${m.title}"? ${
-        m.is_control ? "" : "Bản đối chứng (không RAG) đi cặp với nó, nếu có, sẽ bị xóa theo. "
-      }Nội dung đã đẩy lên Moodle KHÔNG bị xóa. Không thể khôi phục.`,
-    );
+    const confirmed = await confirmAction({
+      title: `Xóa mô-đun "${m.title}"?`,
+      description: `${m.is_control ? "" : "Bản đối chứng (không RAG) đi cặp với nó, nếu có, bị xóa theo. "}Nội dung đã đẩy lên Moodle vẫn giữ nguyên. Không thể khôi phục.`,
+      action: "Xóa mô-đun", destructive: true,
+    });
     if (!confirmed) return;
 
     setDeletingModuleId(m.id);
     setError(null);
-    setNotice(null);
     try {
       await deleteModule(m.id);
     } catch (err) {
@@ -559,7 +558,7 @@ export function CourseDetailPage() {
     }
     // The module is gone whatever happens next: a list that cannot be reloaded is a different
     // problem, and saying the delete failed would send the lecturer to delete it again.
-    setNotice(`Đã xóa mô-đun "${m.title}".`);
+    toast.success(`Đã xóa mô-đun "${m.title}".`);
     try {
       await refresh();
     } catch (err) {
@@ -623,7 +622,6 @@ export function CourseDetailPage() {
           Đang đọc và lập chỉ mục tài liệu. Audio, video dài có thể mất vài phút.
         </p>
       )}
-      {notice && <p role="status" className="mt-3 text-sm success-text">{notice}</p>}
       {error && <p className="mt-3 text-sm danger-text">{error}</p>}
 
       {!loading && documents.length > 0 && (
@@ -830,9 +828,11 @@ function MoodleLinkSection({ course, onLinked }: { course: Course; onLinked: () 
     // Chỉ xóa liên kết trong app -- KHÔNG đụng gì tới course/page/quiz thật
     // trên Moodle, nhưng vẫn cần xác nhận vì đây là hành động khó hoàn tác
     // trong luồng làm việc của giáo viên (phải tìm/liên kết lại từ đầu).
-    const confirmed = window.confirm(
-      `Hủy liên kết với Moodle course id ${course.moodle_course_id}? Course/nội dung trên Moodle sẽ KHÔNG bị xóa, chỉ mất liên kết trong app này.`,
-    );
+    const confirmed = await confirmAction({
+      title: `Hủy liên kết với Moodle course id ${course.moodle_course_id}?`,
+      description: "Course và nội dung trên Moodle vẫn giữ nguyên, chỉ mất liên kết trong app này.",
+      action: "Hủy liên kết",
+    });
     if (!confirmed) return;
 
     setBusy(true);

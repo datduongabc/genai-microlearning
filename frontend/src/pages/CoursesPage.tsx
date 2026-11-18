@@ -1,3 +1,4 @@
+import { confirmAction } from "../lib/confirm";
 import { useCallback, useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -60,13 +61,13 @@ export function CoursesPage() {
   async function handleDelete(course: Course) {
     // Xóa vĩnh viễn cả tài liệu/mô-đun/quiz trong course (cascade ở DB) --
     // không đụng tới Moodle dù course đã liên kết, nên phải cảnh báo rõ.
-    const confirmed = window.confirm(
-      `Xóa vĩnh viễn môn học "${course.name}"? Toàn bộ tài liệu, mô-đun và quiz đã sinh trong môn học này sẽ bị xóa theo, không thể khôi phục.${
-        course.moodle_course_id !== null
-          ? " (Course trên Moodle sẽ KHÔNG bị xóa, chỉ mất liên kết.)"
-          : ""
+    const confirmed = await confirmAction({
+      title: `Xóa môn học "${course.name}"?`,
+      description: `Toàn bộ tài liệu, mô-đun, quiz, flashcard và video trong môn học bị xóa theo. Không thể khôi phục.${
+        course.moodle_course_id !== null ? " Course trên Moodle vẫn giữ nguyên, chỉ mất liên kết." : ""
       }`,
-    );
+      action: "Xóa môn học", destructive: true,
+    });
     if (!confirmed) return;
 
     setDeletingId(course.id);

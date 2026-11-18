@@ -1,4 +1,6 @@
 import '@testing-library/jest-dom/vitest'
+import { afterEach } from 'vitest'
+import { toast } from 'sonner'
 
 // React 19 + Vitest doesn't set this automatically -- without it, state
 // updates inside act() still print "not configured to support act(...)"
@@ -21,3 +23,7 @@ Element.prototype.hasPointerCapture ??= () => false
 Element.prototype.releasePointerCapture ??= () => {}
 Element.prototype.scrollIntoView ??= () => {}
 window.ResizeObserver ??= class { observe() {} unobserve() {} disconnect() {} } as unknown as typeof ResizeObserver
+
+// Sonner keeps its toasts in a module-level store; without this a toast from one test is still
+// listed when the next test mounts its Toaster.
+afterEach(() => { toast.dismiss() })

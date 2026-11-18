@@ -1,3 +1,4 @@
+import { Toaster } from 'sonner'
 import { act, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { AxiosError, type AxiosResponse, type InternalAxiosRequestConfig } from 'axios'
@@ -55,7 +56,7 @@ function renderPage() {
       </Route>
     </>,
   ), { initialEntries: ['/courses', '/videos/video-1'], initialIndex: 1 })
-  return { router, ...render(<AuthProvider><RouterProvider router={router} /></AuthProvider>) }
+  return { router, ...render(<AuthProvider><RouterProvider router={router} /><Toaster /></AuthProvider>) }
 }
 
 const axiosFailure = (status: number, detail: string) => {
@@ -263,15 +264,14 @@ describe('VideoEditorPage', () => {
     expect(await screen.findByText(/Mỗi hình khoảng \$0,037 \(Gemini Nano Banana 2.1\)\./)).toBeInTheDocument()
   })
 
-  it('shows a finished picture job in the drawing section, not in the save area', async () => {
+  it('announces a finished picture job', async () => {
     vi.mocked(api.getVideo).mockResolvedValue(video([scene(1, { kind: 'illustration', image_prompt: 'Hàng đợi', has_image: true })]))
     vi.mocked(api.drawIllustrations).mockResolvedValue({ job_id: 'job-2', scene_indexes: [0] })
 
     renderPage()
     await userEvent.click(await screen.findByRole('button', { name: 'Vẽ lại hình cảnh 1' }))
 
-    const notice = await screen.findByText('Đã vẽ xong hình.')
-    expect(notice.closest('section')).toBe(screen.getByRole('region', { name: 'Vẽ hình' }))
+    expect(await screen.findByText('Đã vẽ xong hình.')).toBeInTheDocument()
   })
 
   it('draws every picture that is missing or outdated with one button', async () => {
@@ -669,8 +669,7 @@ describe('VideoEditorPage', () => {
     expect(await screen.findByText(/Đã gửi yêu cầu dựng video/)).toBeInTheDocument()
     expect(screen.queryByRole('alert')).not.toBeInTheDocument()
     await passTime(3600)
-    const done = await screen.findByText('Đã dựng xong video.')
-    expect(done.closest('section')).toBe(screen.getByRole('region', { name: 'Dựng video' }))
+    expect(await screen.findByText('Đã dựng xong video.')).toBeInTheDocument()
     expect(screen.getByLabelText('Video đã dựng')).toBeInTheDocument()
   })
 

@@ -20,6 +20,7 @@
   --color-muted: #f1f1f5; --color-muted-foreground: #6b6a80;
   --color-secondary: #f1f1f5; --color-border: #e5e4ec; --color-ring: #4433a8;
   --color-destructive: #a33a2f;
+  --color-primary: #4433a8; --color-primary-foreground: #ffffff; --color-secondary-foreground: #1c1b22; --color-input: #7d7b92;
   /* Tailwind's own greys and status colours, moved onto this palette so a utility class left in a
      component cannot bring back a colour from outside it. */
   --color-gray-50: #f1f1f5; --color-gray-100: #f1f1f5; --color-gray-200: #e5e4ec; --color-gray-300: #cfcedb;
@@ -639,3 +640,12 @@ a.learn-link:hover { background:var(--bg-subtle); color:var(--accent-default); }
 .learn-scene-title { font-weight:600; }
 .learn-scene-source { grid-column:2; font-size:14px; line-height:21px; color:var(--text-secondary); }
 .learn-nav { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-top:16px; }
+
+/* --- Confirmation dialog and toasts (shadcn AlertDialog, Sonner), set to the app's type and controls. */
+.confirm-dialog { padding:24px; gap:20px; border-radius:var(--radius-lg); box-shadow:var(--shadow-overlay); }
+.confirm-dialog [data-slot=alert-dialog-title] { font:600 18px/26px var(--font-sans); letter-spacing:-.01em; }
+.confirm-dialog [data-slot=alert-dialog-description] { font-size:15px; line-height:22px; color:var(--text-secondary); }
+.confirm-dialog [data-slot=alert-dialog-action], .confirm-dialog [data-slot=alert-dialog-cancel] { min-height:40px; padding:8px 16px; border-radius:var(--radius-sm); font-size:15px; font-weight:600; }
+.confirm-dialog [data-slot=alert-dialog-cancel] { border:1px solid var(--border-input); }
+[data-sonner-toast] { font:500 15px/22px var(--font-sans) !important; padding:14px 16px !important; }
+[data-sonner-toast][data-type=success] [data-icon] { color:var(--status-success); }

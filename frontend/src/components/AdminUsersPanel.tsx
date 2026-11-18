@@ -1,3 +1,5 @@
+import { toast } from "sonner";
+import { confirmAction } from "../lib/confirm";
 import { useCallback, useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -24,7 +26,6 @@ export function AdminUsersPanel({ counts, onChange }: { counts: AdminCounts | nu
   const [filter, setFilter] = useState("active");
   const [users, setUsers] = useState<AdminUser[] | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [resetting, setResetting] = useState<string | null>(null);
@@ -66,13 +67,13 @@ export function AdminUsersPanel({ counts, onChange }: { counts: AdminCounts | nu
   }, [reloads, filter]);
 
   async function handleToggleActive(user: AdminUser) {
-    if (!window.confirm(`${user.is_active ? "Vô hiệu hóa" : "Kích hoạt lại"} tài khoản ${user.email}? Dữ liệu và liên kết Moodle được giữ nguyên.`)) return;
+    const verb = user.is_active ? "Vô hiệu hóa" : "Kích hoạt lại";
+    if (!await confirmAction({ title: `${verb} tài khoản ${user.email}?`, description: "Dữ liệu và liên kết Moodle được giữ nguyên.", action: verb, destructive: user.is_active })) return;
     setBusyId(user.id);
     setError(null);
-    setNotice(null);
     try {
       await setUserActive(user.id, !user.is_active);
-      setNotice(user.is_active ? `Đã vô hiệu hóa tài khoản ${user.email}.` : `Đã kích hoạt lại tài khoản ${user.email}.`);
+      toast.success(user.is_active ? `Đã vô hiệu hóa tài khoản ${user.email}.` : `Đã kích hoạt lại tài khoản ${user.email}.`);
       reload();
     } catch (err) {
       setError(apiErrorMessage(err, "Đổi trạng thái tài khoản thất bại"));
@@ -82,13 +83,12 @@ export function AdminUsersPanel({ counts, onChange }: { counts: AdminCounts | nu
   }
 
   async function handleUnlinkMoodle(user: AdminUser) {
-    if (!window.confirm(`Hủy liên kết tài khoản Moodle của ${user.email}? Các khóa học và nội dung trên Moodle được giữ nguyên. Người dùng cần liên kết lại tài khoản để tiếp tục đẩy nội dung lên Moodle.`)) return;
+    if (!await confirmAction({ title: `Hủy liên kết tài khoản Moodle của ${user.email}?`, description: "Các khóa học và nội dung trên Moodle được giữ nguyên. Người dùng cần liên kết lại để tiếp tục đẩy nội dung lên Moodle.", action: "Hủy liên kết" })) return;
     setBusyId(user.id);
     setError(null);
-    setNotice(null);
     try {
       await unlinkUserMoodleAccount(user.id);
-      setNotice(`Đã hủy liên kết Moodle của ${user.email}.`);
+      toast.success(`Đã hủy liên kết Moodle của ${user.email}.`);
       reload();
     } catch (err) {
       setError(apiErrorMessage(err, "Không hủy được liên kết Moodle."));
@@ -110,12 +110,10 @@ export function AdminUsersPanel({ counts, onChange }: { counts: AdminCounts | nu
         onCreated={(created) => {
           setCreating(false);
           setError(null);
-          setNotice(`Đã tạo tài khoản cho ${created.email}.`);
+          toast.success(`Đã tạo tài khoản cho ${created.email}.`);
           reload();
         }}
       />}
-
-      {notice && <p className="text-sm text-green-800">{notice}</p>}
       {error && <p className="text-sm text-red-700">{error}</p>}
       {loadError && <p className="text-sm text-red-700">{loadError}</p>}
 
@@ -162,7 +160,7 @@ export function AdminUsersPanel({ counts, onChange }: { counts: AdminCounts | nu
                   onDone={(message) => {
                     setResetting(null);
                     setError(null);
-                    setNotice(message);
+                    toast.success(message);
                   }}
                 />
               )}
