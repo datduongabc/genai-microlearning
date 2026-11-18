@@ -292,8 +292,7 @@ body { background: var(--bg-canvas); font-size:16px; line-height:24px; }
 .link-action.quiet-danger:hover, .link-action.quiet-danger:focus-visible { color:var(--status-danger); }
 /* Text actions are 18-20px tall: enough for a mouse, too small for a finger. */
 @media (pointer:coarse) { .link-action { display:inline-flex; align-items:center; min-height:32px; } }
-.ui-dialog { margin:auto; width:100%; max-width:32rem; padding:24px; border-radius:var(--radius-lg); border:1px solid var(--border-default); background:var(--bg-surface); color:var(--text-primary); box-shadow:var(--shadow-overlay); font-size:15px; }
-.ui-dialog::backdrop { background:rgba(27,39,51,.45); }
+.ui-dialog { width:100%; max-width:min(32rem, calc(100% - 32px)); padding:24px; border-radius:var(--radius-lg); border:1px solid var(--border-default); background:var(--bg-surface); color:var(--text-primary); box-shadow:var(--shadow-overlay); font-size:15px; }
 .ui-dialog-title { font:600 21px/28px var(--font-sans); margin-bottom:16px; }
 
 /* --- Course page: the documents being worked on, and the chat about them beside. */
@@ -649,3 +648,12 @@ a.learn-link:hover { background:var(--bg-subtle); color:var(--accent-default); }
 .confirm-dialog [data-slot=alert-dialog-cancel] { border:1px solid var(--border-input); }
 [data-sonner-toast] { font:500 15px/22px var(--font-sans) !important; padding:14px 16px !important; }
 [data-sonner-toast][data-type=success] [data-icon] { color:var(--status-success); }
+
+/* Phones: the Moodle state moves under the e-mail, so the name and address keep the row's width. */
+@media(max-width:520px) {
+  .account-row { grid-template-columns:minmax(0,1fr) 44px; row-gap:4px; }
+  .account-row > :nth-child(2) { grid-column:1; grid-row:2; padding-left:44px; }
+  .account-row > :nth-child(3) { grid-column:2; grid-row:1 / span 2; }
+  .account-row.table-heading > :nth-child(2) { display:none; }
+  .account-row .break-all { word-break:normal; overflow-wrap:anywhere; }
+}

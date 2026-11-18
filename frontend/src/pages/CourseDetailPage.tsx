@@ -38,7 +38,8 @@ import { AppShell } from "../components/AppShell";
 import { CourseChat } from "../components/CourseChat";
 import { ModelPicker } from "../components/ModelPicker";
 import { MoodleAccountSection, type MoodleAccountState } from "../components/MoodleAccountSection";
-import { GenerateDialog, type VideoMediaChoice } from "../components/GenerateDialog";
+import { GenerateDialog, type GenerateKind, type VideoMediaChoice } from "../components/GenerateDialog";
+import { focusReturnTarget } from "../lib/focusReturn";
 import { formatMinutes } from "../lib/duration";
 import {
   linkMoodleCourseSchema,
@@ -149,14 +150,6 @@ function mediaPillStatus(running: boolean, failed: boolean, published: boolean):
 
 type MediaKind = "Flashcard" | "Video";
 
-// A dialog opened from a menu item hands focus back to the menu's button when it closes: the item
-// it was opened from no longer exists by then, and the browser would drop focus on the page body.
-function openFromMenu(dialog: HTMLDialogElement | null, event: Event) {
-  const menu = (event.target as HTMLElement).closest("[role=menu]");
-  const trigger = menu && document.getElementById(menu.getAttribute("aria-labelledby") ?? "");
-  dialog?.addEventListener("close", () => trigger?.focus(), { once: true });
-  dialog?.showModal();
-}
 
 // When an item was made, as "tạo 00:20 16/11" in the lecturer's time: enough to tell two items of one
 // focus apart, which live run 2's page could only do by their card or scene counts.
@@ -242,13 +235,15 @@ export function CourseDetailPage() {
   // Model cho các lượt sinh bấm từ trang này, dùng chung cho tài liệu;
   // chuỗi rỗng nghĩa là chưa chọn gì. ModelPicker điền sẵn mặc định đã lưu của giảng viên.
   const [modelAlias, setModelAlias] = useState("");
-  const generateDialog = useRef<HTMLDialogElement>(null);
-  const generateDocument = useRef<DocumentInfo | null>(null);
-  const flashcardDialog = useRef<HTMLDialogElement>(null);
-  const flashcardDocument = useRef<DocumentInfo | null>(null);
+  // The document a generate dialog is for and the button to give focus back to. Kept after the
+  // dialog closes: the dialog hands focus back only once it has finished closing.
+  const [asking, setAsking] = useState<{ kind: GenerateKind; document: DocumentInfo; returnTo: HTMLElement | null; open: boolean } | null>(null);
+  const ask = (kind: GenerateKind, document: DocumentInfo) => setAsking({ kind, document, returnTo: focusReturnTarget(), open: true });
+  const dialogProps = (kind: GenerateKind) => ({
+    kind, open: asking?.kind === kind && asking.open, returnFocusTo: asking?.returnTo,
+    onOpenChange: (open: boolean) => { if (!open) setAsking((was) => was && { ...was, open: false }); },
+  });
   const [flashcardSets, setFlashcardSets] = useState<FlashcardSetSummary[]>([]);
-  const videoDialog = useRef<HTMLDialogElement>(null);
-  const videoDocument = useRef<DocumentInfo | null>(null);
   const [videos, setVideos] = useState<VideoSummary[]>([]);
   const [modulesByDoc, setModulesByDoc] = useState<
     Record<string, ModuleSummary[]>
@@ -572,14 +567,14 @@ export function CourseDetailPage() {
 
   return (
     <AppShell title={course?.name ?? "Tài liệu môn học"}>
-      <GenerateDialog dialogRef={generateDialog} onGenerate={(language, instructions) => {
-        if (generateDocument.current) void handleGenerate(generateDocument.current, language, instructions);
+      <GenerateDialog {...dialogProps("module")} onGenerate={(language, instructions) => {
+        if (asking) void handleGenerate(asking.document, language, instructions);
       }} />
-      <GenerateDialog dialogRef={flashcardDialog} kind="flashcards" onGenerate={(language, focus) => {
-        if (flashcardDocument.current) void handleGenerateFlashcards(flashcardDocument.current, language, focus);
+      <GenerateDialog {...dialogProps("flashcards")} onGenerate={(language, focus) => {
+        if (asking) void handleGenerateFlashcards(asking.document, language, focus);
       }} />
-      <GenerateDialog dialogRef={videoDialog} kind="video" onGenerate={(language, focus, media) => {
-        if (videoDocument.current && media) void handleGenerateVideo(videoDocument.current, language, focus, media);
+      <GenerateDialog {...dialogProps("video")} onGenerate={(language, focus, media) => {
+        if (asking && media) void handleGenerateVideo(asking.document, language, focus, media);
       }} />
       {course && <MoodleLinkSection course={course} onLinked={refresh} />}
       <div className="course-layout">
@@ -667,13 +662,13 @@ export function CourseDetailPage() {
                         <Plus aria-hidden="true" />Tạo nội dung<ChevronDown aria-hidden="true" />
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="doc-menu">
-                        <DropdownMenuItem disabled={isGenerating(d)} onSelect={(event) => { generateDocument.current = d; openFromMenu(generateDialog.current, event); }}>
+                        <DropdownMenuItem disabled={isGenerating(d)} onSelect={() => ask("module", d)}>
                           <BookOpenText aria-hidden="true" />{isGenerating(d) ? "Đang sinh mô-đun..." : "Mô-đun bài học"}
                         </DropdownMenuItem>
-                        <DropdownMenuItem disabled={isSending(d, "Flashcard")} onSelect={(event) => { flashcardDocument.current = d; openFromMenu(flashcardDialog.current, event); }}>
+                        <DropdownMenuItem disabled={isSending(d, "Flashcard")} onSelect={() => ask("flashcards", d)}>
                           <Layers aria-hidden="true" />Flashcard
                         </DropdownMenuItem>
-                        <DropdownMenuItem disabled={isSending(d, "Video")} onSelect={(event) => { videoDocument.current = d; openFromMenu(videoDialog.current, event); }}>
+                        <DropdownMenuItem disabled={isSending(d, "Video")} onSelect={() => ask("video", d)}>
                           <Clapperboard aria-hidden="true" />Video bài giảng
                         </DropdownMenuItem>
                       </DropdownMenuContent>

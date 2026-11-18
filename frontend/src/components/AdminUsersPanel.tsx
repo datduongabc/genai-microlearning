@@ -1,3 +1,5 @@
+import { Ellipsis, KeyRound, Unlink, UserCheck, UserX } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "./ui/dropdown-menu";
 import { toast } from "sonner";
 import { confirmAction } from "../lib/confirm";
 import { useCallback, useEffect, useState } from "react";
@@ -29,7 +31,6 @@ export function AdminUsersPanel({ counts, onChange }: { counts: AdminCounts | nu
   const [error, setError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [resetting, setResetting] = useState<string | null>(null);
-  const [menu, setMenu] = useState<string | null>(null);
 
   // Bumped to load the list again (after a change), so the effect below is the only loader.
   const [reloads, setReloads] = useState(0);
@@ -38,15 +39,6 @@ export function AdminUsersPanel({ counts, onChange }: { counts: AdminCounts | nu
     onChange();
   }, [onChange]);
 
-  // One row menu at a time; a press anywhere outside the open one closes it.
-  useEffect(() => {
-    if (!menu) return;
-    const close = (event: PointerEvent) => {
-      if (!(event.target instanceof Element && event.target.closest(".user-actions"))) setMenu(null);
-    };
-    document.addEventListener("pointerdown", close);
-    return () => document.removeEventListener("pointerdown", close);
-  }, [menu]);
 
   // Sets state only from promise callbacks, and drops an answer that arrives after a newer request.
   useEffect(() => {
@@ -134,25 +126,24 @@ export function AdminUsersPanel({ counts, onChange }: { counts: AdminCounts | nu
                 <span className={`small ${u.moodle_status === "linked" ? "success-text" : "muted"}`}>
                   {u.moodle_status === null ? "—" : u.moodle_status === "linked" ? "↗ Đã liên kết" : "Chưa liên kết"}
                 </span>
-                <div className="user-actions" onKeyDown={(e) => {
-                  if (e.key !== "Escape" || menu !== u.id) return;
-                  setMenu(null);
-                  e.currentTarget.querySelector("button")?.focus();
-                }}>
-                  <button aria-label={`Thao tác ${u.email}`} aria-expanded={menu === u.id}
-                    onClick={() => setMenu(menu === u.id ? null : u.id)}>⋯</button>
-                  {menu === u.id && <div className="user-actions-menu" onClick={(e) => {
-                    setMenu(null);
-                    e.currentTarget.parentElement?.querySelector("button")?.focus();
-                  }}>
-                    <button onClick={() => setResetting(resetting === u.id ? null : u.id)}>Đặt lại mật khẩu</button>
-                    {u.moodle_status === "linked" && <button disabled={busyId === u.id} onClick={() => void handleUnlinkMoodle(u)}>Hủy liên kết Moodle</button>}
-                    <button disabled={busyId === u.id || u.is_admin} onClick={() => void handleToggleActive(u)}
-                      title={u.is_admin ? "Không thể vô hiệu hóa tài khoản admin" : undefined} className="danger-text">
-                      {u.is_active ? "Vô hiệu hóa" : "Kích hoạt lại"}
-                    </button>
-                  </div>}
-                </div>
+                {/* Not modal: the rest of the list stays usable, as it was, and a press outside closes it. */}
+                <DropdownMenu modal={false}>
+                  <DropdownMenuTrigger className="icon-button justify-self-end" aria-label={`Thao tác ${u.email}`}>
+                    <Ellipsis aria-hidden="true" />
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="doc-menu">
+                    <DropdownMenuItem onSelect={() => setResetting(resetting === u.id ? null : u.id)}>
+                      <KeyRound aria-hidden="true" />Đặt lại mật khẩu
+                    </DropdownMenuItem>
+                    {u.moodle_status === "linked" && <DropdownMenuItem disabled={busyId === u.id} onSelect={() => void handleUnlinkMoodle(u)}>
+                      <Unlink aria-hidden="true" />Hủy liên kết Moodle
+                    </DropdownMenuItem>}
+                    {/* An admin account cannot be deactivated, so the item is left out rather than shown dead. */}
+                    {!u.is_admin && <DropdownMenuItem variant={u.is_active ? "destructive" : "default"} disabled={busyId === u.id} onSelect={() => void handleToggleActive(u)}>
+                      {u.is_active ? <UserX aria-hidden="true" /> : <UserCheck aria-hidden="true" />}{u.is_active ? "Vô hiệu hóa" : "Kích hoạt lại"}
+                    </DropdownMenuItem>}
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
               {resetting === u.id && (
                 <ResetPasswordForm

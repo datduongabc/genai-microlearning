@@ -93,6 +93,8 @@ beforeEach(() => {
   vi.mocked(api.listModels).mockResolvedValue({ models: [], default: null })
   // The course chat loads its last conversation on open.
   vi.mocked(api.getLatestCourseChat).mockResolvedValue({ session_id: null, messages: [] })
+  // The Moodle account line asks too; without an answer it threw after the test ended.
+  vi.mocked(api.getMoodleAccount).mockResolvedValue({ email: '', status: 'not_linked' })
 })
 
 const axiosFailure = (status: number, detail: string) => {
@@ -546,12 +548,21 @@ describe('CourseDetailPage - module generation availability', () => {
     expect(await createItem(/mô-đun bài học/i)).not.toHaveAttribute('aria-disabled')
   })
 
+  it('gives focus back to the create button when the dialog is closed', async () => {
+    vi.mocked(api.listDocuments).mockResolvedValue([sampleDocument])
+    renderPage()
+    await chooseCreate(/video bài giảng/i)
+    expect(await screen.findByRole('dialog', { name: 'Sinh video' })).toBeInTheDocument()
+    await userEvent.keyboard('{Escape}')
+    await waitFor(() => expect(screen.getByRole('button', { name: /tạo nội dung từ/i })).toHaveFocus())
+  })
+
   it('cancels the dialog without starting generation', async () => {
     vi.mocked(api.listDocuments).mockResolvedValue([sampleDocument])
     renderPage()
     await chooseCreate(/mô-đun bài học/i)
     expect(screen.getByRole('dialog')).toBeInTheDocument()
-    await userEvent.click(screen.getByRole('button', { name: 'Huỷ' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Hủy' }))
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
     expect(api.generateModule).not.toHaveBeenCalled()
   })

@@ -1,9 +1,10 @@
-import { useState, type RefObject } from "react";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import type { MediaChoice } from "../api";
 import { generateModuleSchema, type GenerateModuleFormValues } from "../lib/formSchemas";
 import { useMediaModels } from "../lib/useMediaModels";
+import { Dialog, DialogContent, DialogTitle } from "./ui/dialog";
 
 export type GenerateKind = "module" | "flashcards" | "video";
 
@@ -60,8 +61,11 @@ function MediaSelect({ label, value, onChange, choices }: {
   );
 }
 
-export function GenerateDialog({ dialogRef, onGenerate, kind = "module" }: {
-  dialogRef: RefObject<HTMLDialogElement | null>;
+export function GenerateDialog({ open, onOpenChange, returnFocusTo, onGenerate, kind = "module" }: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  // What gets focus back on close; the menu item that opened the dialog no longer exists then.
+  returnFocusTo?: HTMLElement | null;
   // The second argument is the module guidance or, for the other kinds, the focus. The third
   // is passed for a video only.
   onGenerate: (language: "vi" | "en", instructions: string, media?: VideoMediaChoice) => void;
@@ -85,15 +89,17 @@ export function GenerateDialog({ dialogRef, onGenerate, kind = "module" }: {
   });
 
   function onValid(values: GenerateModuleFormValues) {
-    dialogRef.current?.close();
+    onOpenChange(false);
     if (kind === "video") onGenerate(values.language, values.instructions, { voiceAlias, imageAlias });
     else onGenerate(values.language, values.instructions);
   }
 
   return (
-    <dialog ref={dialogRef} aria-label={text.title} className="ui-dialog">
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="ui-dialog" aria-describedby={undefined}
+        onCloseAutoFocus={(event) => { if (returnFocusTo) { event.preventDefault(); returnFocusTo.focus(); } }}>
       <form noValidate onSubmit={(event) => void handleSubmit(onValid)(event)}>
-        <h2 className="ui-dialog-title">{text.title}</h2>
+        <DialogTitle className="ui-dialog-title">{text.title}</DialogTitle>
         <label className="flex items-center gap-3 text-sm">
           Ngôn ngữ đầu ra
           <select {...register("language")} className="ui-select">
@@ -122,10 +128,11 @@ export function GenerateDialog({ dialogRef, onGenerate, kind = "module" }: {
           </>
         )}
         <div className="mt-6 flex justify-end gap-3">
-          <button type="button" onClick={() => dialogRef.current?.close()} className="ui-button">Huỷ</button>
+          <button type="button" onClick={() => onOpenChange(false)} className="ui-button">Hủy</button>
           <button type="submit" className="ui-button primary">{text.title}</button>
         </div>
       </form>
-    </dialog>
+      </DialogContent>
+    </Dialog>
   );
 }
