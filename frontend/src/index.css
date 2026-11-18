@@ -180,7 +180,7 @@ body { background: var(--bg-canvas); font-size:16px; line-height:24px; }
 }
 .jobs-table td:nth-child(2) { padding-right:16px; }
 .jobs-table .job-detail { padding:0 24px 16px 48px; }
-.job-detail pre { white-space:pre-wrap; overflow-wrap:anywhere; background:var(--bg-subtle); border-radius:var(--radius-sm); padding:8px 12px; font:14px/20px var(--mono); margin-bottom:8px; }
+.job-detail pre { white-space:pre-wrap; overflow-wrap:anywhere; background:var(--bg-danger-soft); color:var(--status-danger); border-radius:var(--radius-sm); padding:8px 12px; font:14px/20px var(--mono); margin-bottom:8px; }
 .studies-layout { display:grid; grid-template-columns:360px minmax(0,1fr); gap:24px; align-items:start; }
 .study-list { display:flex; flex-direction:column; gap:8px; }
 .study-list button { padding:24px; display:flex; align-items:center; justify-content:space-between; gap:16px; text-align:left; font-weight:600; }

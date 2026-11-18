@@ -121,7 +121,7 @@ export function AdminFailuresPanel({ counts, onChange }: { counts: AdminCounts |
                 <td className="small">{JOB_TYPE_LABEL[job.job_type]}</td>
                 <td className="small">{job.owner_name}</td>
                 <td className="small muted">{new Date(job.created_at).toLocaleString("vi-VN")}</td>
-                <td><p className="small muted truncate font-mono">{job.last_error || "—"}</p></td>
+                <td><p className={`small truncate ${job.last_error ? "danger-text" : "muted"}`}>{job.last_error || "—"}</p></td>
                 <td><div className="flex gap-2">
                   <button className="ui-button" aria-label={`Thử lại ${job.document_filename}`} disabled={retrying} onClick={() => handleRetry([job.id])}>Thử lại</button>
                   <button className="expand-job" aria-label={`Chi tiết ${job.document_filename}`} aria-expanded={expanded.has(job.id)}
