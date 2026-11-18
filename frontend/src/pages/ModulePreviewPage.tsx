@@ -106,6 +106,25 @@ export function ModulePreviewPage() {
     openedFrom.current = from
     setOpened(source)
   }, [])
+  // Each editor swaps its "Sửa" button for fields and back, and the browser drops the keyboard focus
+  // on the page body when the focused button goes. Focus is put back in the same editor instead.
+  useEffect(() => {
+    // Taken while the element is still in the page: a removed node no longer has its ancestors.
+    let last: { element: HTMLElement; scope: Element | null } | null = null
+    const remember = (e: FocusEvent) => {
+      const element = e.target as HTMLElement
+      last = { element, scope: element.closest('[data-edit-scope]') }
+    }
+    const observer = new MutationObserver(() => {
+      if (!last?.scope?.isConnected || last.element.isConnected || document.activeElement !== document.body) return
+      const { scope } = last
+      last = null
+      ;(scope.querySelector<HTMLElement>('textarea, input, select') ?? scope.querySelector<HTMLElement>('[data-edit-trigger]'))?.focus()
+    })
+    document.addEventListener('focusin', remember)
+    observer.observe(document.body, { childList: true, subtree: true })
+    return () => { document.removeEventListener('focusin', remember); observer.disconnect() }
+  }, [])
   const closeSource = useCallback(() => {
     setOpened(null)
     // Back to the marker the lecturer opened it from, so reading goes on where it stopped.
@@ -452,7 +471,7 @@ function ModuleHeader({ module, onSaved }: { module: ModuleDetail; onSaved: () =
   }
 
   return (
-    <div id="part-objective" className="module-header">
+    <div id="part-objective" className="module-header" data-edit-scope>
       {editing ? (
         <form onSubmit={handleSubmit(handleSave)} noValidate className="flex flex-wrap items-center gap-3">
           <input
@@ -487,6 +506,7 @@ function ModuleHeader({ module, onSaved }: { module: ModuleDetail; onSaved: () =
             reset({ title: module.title })
             setEditing(true)
           }}
+          data-edit-trigger
           className="text-left hover:text-accent"
         >
           <h2 className="module-title">{module.title}</h2>
@@ -541,7 +561,7 @@ function ComponentCard({
   onSaved: () => Promise<void>
 }) {
   return (
-    <section id={`part-${component.type}`} className="module-part">
+    <section id={`part-${component.type}`} className="module-part" data-edit-scope>
       <h2 className="module-part-title">{COMPONENT_LABEL[component.type] ?? component.type}</h2>
       {component.type === 'content' && (
         <>
@@ -677,7 +697,7 @@ function SaveCancelRow({
   }
   if (!editing) {
     return (
-      <button onClick={() => { setError(''); onEdit() }} className="ui-button self-start">
+      <button onClick={() => { setError(''); onEdit() }} data-edit-trigger className="ui-button self-start">
         Sửa
       </button>
     )
@@ -1124,7 +1144,7 @@ function QuestionEditor({ moduleId, question, explanation, onSaved }: {
       setError(apiErrorMessage(err, 'Lưu câu hỏi thất bại'))
     }
   }
-  return <div className="flex flex-col gap-3">
+  return <div className="flex flex-col gap-3" data-edit-scope>
     {editing ? <form onSubmit={handleSubmit(save)} noValidate className="flex flex-col gap-3">
       <label>Câu hỏi<textarea aria-label="Câu hỏi" {...register('stem')} className="w-full rounded border border-gray-300 p-2" /></label>
       {errors.stem && <p className="text-sm text-red-600">{errors.stem.message}</p>}
