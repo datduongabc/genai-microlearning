@@ -11,6 +11,7 @@ import httpx
 import pytest
 from bs4 import BeautifulSoup
 from fastapi.testclient import TestClient
+from sqlalchemy import text as sql
 
 from app.auth.security import create_access_token
 from app.db import SessionLocal
@@ -412,11 +413,31 @@ def test_a_published_module_is_published_again_only_when_the_lecturer_confirms(p
     assert len(moodle) == 2 * sent
 
 
-def test_a_partial_publish_counts_as_published_so_a_retry_asks_first(published, moodle, monkeypatch):
+def test_a_retry_after_a_partial_publish_creates_only_the_missing_activities(published, moodle, monkeypatch):
+    working_quiz = moodle_client.create_quiz
     monkeypatch.setattr(moodle_client, "create_quiz", lambda *a, **k: (_ for _ in ()).throw(httpx.ReadTimeout("slow")))
     module_id = full_module(published)
     assert published.publish(module_id).status_code == 502
-    assert published.publish(module_id).status_code == 409
+    books = [call for call in moodle if call[0] == "book"]
+
+    monkeypatch.setattr(moodle_client, "create_quiz", working_quiz)
+    retry = published.publish(module_id)
+
+    assert retry.status_code == 200
+    assert retry.json()["book_cmid"] == 101 and {"practice_cmid", "quiz_cmid"} <= set(retry.json())
+    assert [call for call in moodle if call[0] == "book"] == books  # no second Book
+    assert published.publish(module_id).status_code == 409  # now it is published
+
+
+def test_a_second_publish_while_one_is_running_is_refused(published, moodle):
+    module_id = full_module(published)
+    with SessionLocal() as other:
+        other.execute(sql("SELECT pg_advisory_xact_lock(hashtextextended(:key, 0))"),
+                      {"key": f"moodle-publish:{module_id}"})
+        response = published.publish(module_id)
+    assert response.status_code == 409
+    assert "đang được xuất bản" in response.json()["detail"]
+    assert moodle == []
 
 
 def test_a_publish_that_created_nothing_can_simply_be_tried_again(published, monkeypatch):

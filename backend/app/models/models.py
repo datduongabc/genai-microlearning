@@ -257,6 +257,9 @@ class Module(Base):
     # When the module last went to Moodle: publishing again adds a second Book and two more quizzes,
     # so the page asks first, even after a reload or from another tab.
     moodle_published_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    # The activities a publish created before it failed ({"book_cmid": 101}): the next publish
+    # creates only the missing ones instead of a second Book. NULL once a publish completes.
+    moodle_partial_cmids: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     created_at: Mapped[datetime] = created_at_column()
 
     document: Mapped["Document"] = relationship(back_populates="modules", overlaps="course,modules")
