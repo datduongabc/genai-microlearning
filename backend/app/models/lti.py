@@ -72,6 +72,8 @@ class LtiContext(Base):
     # one, and when the member list was last read from it.
     memberships_url: Mapped[str | None] = mapped_column(default=None)
     roster_synced_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), default=None)
+    # When it was last tried, read or not: a list that cannot be read waits its turn behind the others.
+    roster_checked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), default=None)
     created_at: Mapped[datetime] = created_at_column()
 
 
