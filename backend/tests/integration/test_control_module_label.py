@@ -72,7 +72,7 @@ def test_control_publish_is_rejected_before_any_moodle_call(modules, monkeypatch
     response = client.post(f"/modules/{control}/publish-to-moodle",
                            headers={"Authorization": f"Bearer {create_access_token(str(user))}"})
     assert response.status_code == 422
-    assert response.json()["detail"] == "Mô-đun đối chứng (không RAG) chỉ dùng cho nghiên cứu, không được đẩy lên Moodle."
+    assert response.json()["detail"] == "Bản đối chứng chỉ dùng cho nghiên cứu nên không đẩy lên Moodle được."
     call.assert_not_called()
 
 

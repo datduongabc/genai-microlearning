@@ -102,7 +102,7 @@ const WARNING_LABEL: Record<string, string> = {
   formula_unverified: "Công thức có thể đọc chưa đúng ở",
 };
 
-const DEFAULT_WARNING_ADVICE = "Nội dung có thể thiếu; hãy kiểm tra hoặc tải lại bản PDF có lớp chữ.";
+const DEFAULT_WARNING_ADVICE = "Nội dung có thể thiếu. Hãy kiểm tra lại, hoặc tải lên bản PDF có lớp chữ.";
 const WARNING_ADVICE: Record<string, string> = {
   formula_unverified: "Hãy soát lại công thức của các trang này trước khi dùng nội dung sinh ra.",
 };

@@ -365,7 +365,7 @@ def export_scorm(
     """The module as a SCORM 1.2 package for any LMS, under the same rules as publishing to Moodle."""
     module = _owned_module(db, module_id, current_user)
     if is_control(db, module.id):
-        raise HTTPException(status_code=422, detail="Mô-đun đối chứng (không RAG) chỉ dùng cho nghiên cứu, không xuất ra ngoài được.")
+        raise HTTPException(status_code=422, detail="Bản đối chứng chỉ dùng cho nghiên cứu nên không xuất ra ngoài được.")
     failing = failing_questions(module)
     if failing:
         raise HTTPException(
@@ -545,7 +545,7 @@ def chat_edit_module(
     if is_control(db, module.id):
         raise HTTPException(
             status_code=422,
-            detail="Mô-đun đối chứng (không RAG) chỉ dùng cho nghiên cứu, không được chỉnh sửa bằng chat.",
+            detail="Bản đối chứng chỉ dùng cho nghiên cứu nên không chỉnh sửa bằng AI được.",
         )
     message = payload.message.strip()
     if not message:
