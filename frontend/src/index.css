@@ -19,15 +19,16 @@
   --color-popover: #ffffff; --color-popover-foreground: #1c1b22;
   --color-muted: #f1f1f5; --color-muted-foreground: #6b6a80;
   --color-secondary: #f1f1f5; --color-border: #e5e4ec; --color-ring: #4433a8;
-  --color-destructive: #a33a2f;
+  --color-destructive: #b4233c;
   --color-primary: #4433a8; --color-primary-foreground: #ffffff; --color-secondary-foreground: #1c1b22; --color-input: #7d7b92;
   /* Tailwind's own greys and status colours, moved onto this palette so a utility class left in a
      component cannot bring back a colour from outside it. */
   --color-gray-50: #f1f1f5; --color-gray-100: #f1f1f5; --color-gray-200: #e5e4ec; --color-gray-300: #cfcedb;
   --color-gray-400: #7d7b92; --color-gray-500: #6b6a80; --color-gray-600: #55546a; --color-gray-700: #3a3948;
-  --color-red-50: #fbe7e4; --color-red-200: #efc3bc; --color-red-600: #a33a2f; --color-red-700: #a33a2f; --color-red-800: #8a2f26;
-  --color-green-700: #2e6b3f; --color-green-800: #2e6b3f;
-  --color-amber-600: #8a5a00; --color-amber-800: #8a5a00;
+  --color-red-50: #fcebee; --color-red-100: #fcebee; --color-red-200: #f5c6cf; --color-red-600: #b4233c; --color-red-700: #b4233c; --color-red-800: #8e1b30;
+  --color-green-100: #e4f4eb; --color-green-700: #1b7a4b; --color-green-800: #1b7a4b;
+  --color-amber-600: #8f5600; --color-amber-700: #8f5600; --color-amber-800: #8f5600;
+  /* Status hues lean cool to sit with the purple ink: crimson, sea green, amber. */
 }
 
 body {
@@ -43,15 +44,15 @@ body { font-variant-numeric: tabular-nums; }
 :root {
   --bg-canvas: #F6F6F8; --bg-surface: #FFFFFF; --bg-subtle: #F1F1F5;
   --bg-navy: #2E2378; --bg-navy-raised: #4433A8;
-  --bg-accent-soft: #EEEBFA; --bg-success-soft: #E4F0E6; --bg-warning-soft: #FBF0D9;
-  --bg-danger-soft: #FBE7E4; --bg-info-soft: #EEEBFA; --bg-overlay: #1C1B22;
+  --bg-accent-soft: #EEEBFA; --bg-success-soft: #E4F4EB; --bg-warning-soft: #FDF3DE;
+  --bg-danger-soft: #FCEBEE; --bg-info-soft: #EEEBFA; --bg-overlay: #1C1B22;
   --bg-highlight: #FBF0C4; --highlight: #F2D15C;
   --border-default: #E5E4EC; --border-strong: #CFCEDB; --border-focus: #4433A8;
   --border-input: #7D7B92; /* control edges >= 3:1 against paper (WCAG 1.4.11) */
   --text-primary: #1C1B22; --text-secondary: #55546A; --text-muted: #6B6A80;
   --text-on-dark: #F3F5F2; --text-on-dark-muted: #A7B1BA;
   --accent-default: #4433A8; --accent-hover: #2E2378; --accent-decor: #4433A8;
-  --status-success: #2E6B3F; --status-warning: #8A5A00; --status-danger: #A33A2F; --status-info: #4433A8;
+  --status-success: #1B7A4B; --status-warning: #8F5600; --status-danger: #B4233C; --status-info: #4433A8;
   /* Shape rule: controls 8, containers 12, pills round. Only overlays cast a shadow. */
   --radius-sm: 8px; --radius-md: 8px; --radius-lg: 12px;
   --shadow-card: none;
