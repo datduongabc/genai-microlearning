@@ -203,17 +203,17 @@ function CreateUserForm({ onCreated }: { onCreated: (user: AdminUser) => void })
     >
       <h2 className="text-h2 font-semibold">Tạo tài khoản người dùng</h2>
       <div className="grid gap-3 sm:grid-cols-3">
-        <label className="flex flex-col gap-1 text-xs text-gray-500">
+        <label className="flex flex-col gap-1 text-sm text-gray-500">
           Họ và tên
           <input type="text" autoComplete="off" className="auth-input" {...register("name")} />
           {errors.name && <span className="text-red-600">{errors.name.message}</span>}
         </label>
-        <label className="flex flex-col gap-1 text-xs text-gray-500">
+        <label className="flex flex-col gap-1 text-sm text-gray-500">
           Email
           <input type="email" autoComplete="off" className="auth-input" {...register("email")} />
           {errors.email && <span className="text-red-600">{errors.email.message}</span>}
         </label>
-        <label className="flex flex-col gap-1 text-xs text-gray-500">
+        <label className="flex flex-col gap-1 text-sm text-gray-500">
           Mật khẩu ban đầu
           <input type="password" autoComplete="new-password" className="auth-input" {...register("password")} />
           {errors.password && <span className="text-red-600">{errors.password.message}</span>}
@@ -270,7 +270,7 @@ function ResetPasswordForm({ user, onDone }: { user: AdminUser; onDone: (message
           {isSubmitting ? "Đang lưu..." : "Lưu mật khẩu mới"}
         </button>
       </div>
-      {errors.password && <span className="text-xs text-red-600">{errors.password.message}</span>}
+      {errors.password && <span className="text-sm text-red-600">{errors.password.message}</span>}
       {error && <span className="text-sm text-red-700">{error}</span>}
     </form>
   );

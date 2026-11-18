@@ -671,7 +671,7 @@ describe('CourseDetailPage - flashcard sets', () => {
     expect(within(items[0]).getByRole('link', { name: /Mảng/ })).toHaveAttribute('href', '/flashcard-sets/set-1')
     expect(items[0]).toHaveTextContent('Bản nháp - 8 thẻ')
     // A set and a video with the same focus must not look alike.
-    expect(within(items[0]).getByText('Bộ thẻ')).toBeInTheDocument()
+    expect(within(items[0]).getByText('Flashcard')).toBeInTheDocument()
     expect(items[1]).toHaveTextContent('Toàn bộ tài liệu')
     expect(items[1]).toHaveTextContent('Đang sinh...')
     expect(items[2]).toHaveTextContent('Sinh thất bại')
@@ -691,7 +691,7 @@ describe('CourseDetailPage - flashcard sets', () => {
       .mockResolvedValue([{ ...flashcardSet, status: 'generating', card_count: 0 }])
 
     renderPage()
-    await chooseCreate(/bộ thẻ ghi nhớ/i)
+    await chooseCreate(/^flashcard$/i)
     // Each kind has its own dialog in the page, so the field is looked up in the open one.
     await userEvent.type(within(screen.getByRole('dialog', { name: 'Sinh flashcard' })).getByLabelText(/Trọng tâm/), 'Mảng')
     await userEvent.click(screen.getByRole('button', { name: 'Sinh flashcard' }))
@@ -708,14 +708,14 @@ describe('CourseDetailPage - flashcard sets', () => {
       .mockResolvedValue([{ ...flashcardSet, status: 'generating', card_count: 0 }])
 
     renderPage()
-    await chooseCreate(/bộ thẻ ghi nhớ/i)
+    await chooseCreate(/^flashcard$/i)
     await userEvent.click(screen.getByRole('button', { name: 'Sinh flashcard' }))
 
     const list = await screen.findByRole('list', { name: 'Flashcard sinh từ syllabus.pdf' })
     const pending = within(list).getByRole('listitem')
     expect(pending).toHaveTextContent('Toàn bộ tài liệu')
     expect(within(pending).getByText('Đang gửi yêu cầu...')).toHaveAttribute('data-status', 'processing')
-    expect(await createItem(/bộ thẻ ghi nhớ/i)).toHaveAttribute('aria-disabled', 'true')
+    expect(await createItem(/^flashcard$/i)).toHaveAttribute('aria-disabled', 'true')
 
     answer({ id: 'set-1', job_id: 'job-1' })
     expect(await screen.findByText('Đang sinh...')).toBeInTheDocument()
@@ -726,7 +726,7 @@ describe('CourseDetailPage - flashcard sets', () => {
     vi.mocked(api.generateFlashcards).mockRejectedValue(axiosFailure(409, 'Bộ thẻ này đang được sinh, vui lòng chờ.'))
 
     renderPage()
-    await chooseCreate(/bộ thẻ ghi nhớ/i)
+    await chooseCreate(/^flashcard$/i)
     await userEvent.click(screen.getByRole('button', { name: 'Sinh flashcard' }))
 
     expect(await screen.findByText('Bộ thẻ này đang được sinh, vui lòng chờ.')).toBeInTheDocument()
@@ -854,7 +854,7 @@ describe('CourseDetailPage - videos', () => {
     vi.mocked(api.listFlashcardSets).mockResolvedValueOnce([]).mockRejectedValue(new Error('network down'))
 
     renderPage()
-    await chooseCreate(/bộ thẻ ghi nhớ/i)
+    await chooseCreate(/^flashcard$/i)
     await userEvent.click(screen.getByRole('button', { name: 'Sinh flashcard' }))
 
     expect(await screen.findByText('Đã bắt đầu sinh bộ flashcard.')).toBeInTheDocument()

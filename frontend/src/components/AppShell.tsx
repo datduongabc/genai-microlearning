@@ -128,7 +128,8 @@ export function AppShell({ title, fullTitle, children }: { title: string; fullTi
       <Link to={homeFor(user?.is_admin)} aria-label="GENAILMS, trang chủ"><Brand /></Link>
       <Sheet open={drawer} onOpenChange={setDrawer}>
         <SheetTrigger className="mobile-menu-button" aria-label="Mở menu"><Menu className="shell-icon" aria-hidden="true" /></SheetTrigger>
-        <SheetContent side="left" className="sidebar sidebar-sheet" aria-describedby={undefined} onClick={(event) => { if ((event.target as HTMLElement).closest(".shell-nav a")) setDrawer(false); }}>
+        <SheetContent side="left" className="sidebar-sheet" aria-describedby={undefined}
+          onOpenAutoFocus={(event) => { event.preventDefault(); (event.currentTarget as HTMLElement).querySelector<HTMLElement>(".shell-nav a[aria-current], .shell-nav a")?.focus(); }} onClick={(event) => { if ((event.target as HTMLElement).closest(".shell-nav a")) setDrawer(false); }}>
           <SheetTitle className="sr-only">Menu</SheetTitle>
           {sidebarBody}
         </SheetContent>

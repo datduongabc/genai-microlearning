@@ -105,7 +105,7 @@ export function GenerateDialog({ dialogRef, onGenerate, kind = "module" }: {
           {text.field}
           <textarea {...register("instructions")} maxLength={1000} rows={4} placeholder={text.placeholder} className="ui-input mt-2 w-full" />
         </label>
-        {errors.instructions && <p className="mt-1 text-[13px] danger-text">{text.tooLong || errors.instructions.message}</p>}
+        {errors.instructions && <p className="mt-1 text-sm danger-text">{text.tooLong || errors.instructions.message}</p>}
         {kind === "video" && (
           <>
             {models === "failed" ? (

@@ -90,7 +90,7 @@ export function CoursesPage() {
         <button disabled={creating} className="ui-button primary">
           {creating ? "Đang tạo..." : "Tạo môn học"}
         </button>
-        {errors.name && <p className="basis-full text-[13px] danger-text">{errors.name.message}</p>}
+        {errors.name && <p className="basis-full text-sm danger-text">{errors.name.message}</p>}
       </form>
 
       {loading ? (

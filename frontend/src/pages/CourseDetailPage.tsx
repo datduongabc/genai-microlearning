@@ -146,7 +146,15 @@ function mediaPillStatus(running: boolean, failed: boolean, published: boolean):
 }
 
 type MediaKind = "Flashcard" | "Video";
-const KIND_LABEL: Record<MediaKind, string> = { Flashcard: "Bộ thẻ", Video: "Video" };
+
+// A dialog opened from a menu item hands focus back to the menu's button when it closes: the item
+// it was opened from no longer exists by then, and the browser would drop focus on the page body.
+function openFromMenu(dialog: HTMLDialogElement | null, event: Event) {
+  const menu = (event.target as HTMLElement).closest("[role=menu]");
+  const trigger = menu && document.getElementById(menu.getAttribute("aria-labelledby") ?? "");
+  dialog?.addEventListener("close", () => trigger?.focus(), { once: true });
+  dialog?.showModal();
+}
 
 // When an item was made, as "tạo 00:20 16/11" in the lecturer's time: enough to tell two items of one
 // focus apart, which live run 2's page could only do by their card or scene counts.
@@ -170,7 +178,7 @@ function MediaListItem({ kind, to, focus, status, statusText, created }: {
 }) {
   return (
     <li className="module-item media-item">
-      <span className="media-kind">{KIND_LABEL[kind]}</span>
+      <span className="media-kind">{kind}</span>
       <Link to={to} className="module-link flashcard-link" title={focus ?? undefined}>
         {focus ?? "Toàn bộ tài liệu"}
       </Link>
@@ -194,7 +202,7 @@ interface PendingMedia {
 function PendingMediaItem({ item }: { item: PendingMedia }) {
   return (
     <li className="module-item media-item" aria-busy="true">
-      <span className="media-kind">{KIND_LABEL[item.kind]}</span>
+      <span className="media-kind">{item.kind}</span>
       <span className="module-link">{item.focus ?? "Toàn bộ tài liệu"}</span>
       <span className="media-meta"><span className="status-pill" data-status="processing">Đang gửi yêu cầu...</span></span>
     </li>
@@ -661,13 +669,13 @@ export function CourseDetailPage() {
                         <Plus aria-hidden="true" />Tạo nội dung<ChevronDown aria-hidden="true" />
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="doc-menu">
-                        <DropdownMenuItem disabled={isGenerating(d)} onSelect={() => { generateDocument.current = d; generateDialog.current?.showModal(); }}>
+                        <DropdownMenuItem disabled={isGenerating(d)} onSelect={(event) => { generateDocument.current = d; openFromMenu(generateDialog.current, event); }}>
                           <BookOpenText aria-hidden="true" />{isGenerating(d) ? "Đang sinh mô-đun..." : "Mô-đun bài học"}
                         </DropdownMenuItem>
-                        <DropdownMenuItem disabled={isSending(d, "Flashcard")} onSelect={() => { flashcardDocument.current = d; flashcardDialog.current?.showModal(); }}>
-                          <Layers aria-hidden="true" />Bộ thẻ ghi nhớ
+                        <DropdownMenuItem disabled={isSending(d, "Flashcard")} onSelect={(event) => { flashcardDocument.current = d; openFromMenu(flashcardDialog.current, event); }}>
+                          <Layers aria-hidden="true" />Flashcard
                         </DropdownMenuItem>
-                        <DropdownMenuItem disabled={isSending(d, "Video")} onSelect={() => { videoDocument.current = d; videoDialog.current?.showModal(); }}>
+                        <DropdownMenuItem disabled={isSending(d, "Video")} onSelect={(event) => { videoDocument.current = d; openFromMenu(videoDialog.current, event); }}>
                           <Clapperboard aria-hidden="true" />Video bài giảng
                         </DropdownMenuItem>
                       </DropdownMenuContent>
@@ -696,7 +704,7 @@ export function CourseDetailPage() {
                     <li key={f.job_id} className="doc-failure">
                       <div className="min-w-0">
                         <div className="font-semibold">{failureTitle(f)}</div>
-                        {f.error && <div className="mt-0.5 break-words text-[13px] leading-[19px]">{f.error}</div>}
+                        {f.error && <div className="mt-0.5 break-words text-sm leading-[19px]">{f.error}</div>}
                       </div>
                       <button
                         onClick={() => handleRetry(f)}

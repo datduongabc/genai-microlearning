@@ -103,7 +103,7 @@ export function ModelPicker({ value, onChange }: Props) {
           Không tải được danh sách model, sẽ sinh bằng model theo cấu hình hệ thống.
         </p>
       )}
-      {saveError && <p className="text-[13px] danger-text">{saveError}</p>}
+      {saveError && <p className="text-sm danger-text">{saveError}</p>}
     </div>
   )
 }
