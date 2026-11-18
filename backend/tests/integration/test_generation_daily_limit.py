@@ -97,15 +97,16 @@ def test_moodle_outage_uses_non_teacher_allowance(world, monkeypatch):
 
 
 def test_next_utc_day_resets_the_counter_and_configured_limit_applies(world, monkeypatch):
-    from datetime import UTC, datetime, timedelta
+    from datetime import timedelta
 
     from app.config import settings
+    from app.generation.limits import today
     monkeypatch.setattr(settings, 'non_teacher_daily_generation_limit', 1)
     assert generate(world, 0).status_code == 200
     assert generate(world, 1).status_code == 429
     with SessionLocal() as db:
         user = db.get(User, world[0])
-        user.generation_day = datetime.now(UTC).date() - timedelta(days=1)
+        user.generation_day = today() - timedelta(days=1)
         db.commit()
     assert generate(world, 1).status_code == 200
     assert generate(world, 2).status_code == 429

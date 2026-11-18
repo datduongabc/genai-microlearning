@@ -1,6 +1,6 @@
 """Reserve module generations, and the pictures and renders of videos, in the same transaction that
 enqueues their jobs."""
-from datetime import UTC, datetime
+from datetime import date, datetime, timedelta, timezone
 
 from fastapi import HTTPException
 from sqlalchemy import select
@@ -10,6 +10,14 @@ from app.config import settings
 from app.models import Course, User
 from app.moodle import client
 from app.moodle.errors import MOODLE_FAILURES
+
+# The users' day: a limit that ran out in the evening comes back at their midnight, not at 07:00.
+# A fixed offset is exact, as Vietnam keeps no daylight saving time.
+LOCAL_TIME = timezone(timedelta(hours=7))
+
+
+def today() -> date:
+    return datetime.now(LOCAL_TIME).date()
 
 
 def has_full_access(db: Session, user: User) -> bool:
@@ -38,15 +46,15 @@ def reserve_generations(db: Session, user: User, *, full_access: bool, count: in
         raise HTTPException(status_code=401, detail="Tài khoản đã bị vô hiệu hóa.")
     if full_access:
         return
-    today = datetime.now(UTC).date()
-    used = user.generation_count if user.generation_day == today else 0
+    day = today()
+    used = user.generation_count if user.generation_day == day else 0
     limit = settings.non_teacher_daily_generation_limit
     if used + count > limit:
         raise HTTPException(status_code=429, detail=(
             f"Mỗi ngày bạn được tạo tối đa {limit} {noun}. "
             "Liên kết môn học với một khóa học Moodle bạn quản lý để bỏ giới hạn này."
         ))
-    user.generation_day = today
+    user.generation_day = day
     user.generation_count = used + count
 
 
@@ -55,11 +63,11 @@ def _count_today(db: Session, user: User, kind: str, count: int, limit: int, ref
     db.refresh(user, with_for_update=True)
     if not user.is_active:
         raise HTTPException(status_code=401, detail="Tài khoản đã bị vô hiệu hóa.")
-    today = datetime.now(UTC).date()
-    used = getattr(user, f"{kind}_count") if getattr(user, f"{kind}_day") == today else 0
+    day = today()
+    used = getattr(user, f"{kind}_count") if getattr(user, f"{kind}_day") == day else 0
     if used + count > limit:
         raise HTTPException(status_code=429, detail=refusal.format(limit=limit, left=max(limit - used, 0)))
-    setattr(user, f"{kind}_day", today)
+    setattr(user, f"{kind}_day", day)
     setattr(user, f"{kind}_count", used + count)
 
 
@@ -73,4 +81,4 @@ def reserve_video_redraws(db: Session, user: User, images: int) -> None:
 
 def reserve_video_render(db: Session, user: User) -> None:
     _count_today(db, user, "video_render", 1, settings.video_renders_per_day,
-                 "Mỗi ngày (UTC) bạn được dựng video tối đa {limit} lần. Hãy quay lại vào ngày mai.")
+                 "Mỗi ngày bạn được dựng video tối đa {limit} lần. Hãy quay lại vào ngày mai.")

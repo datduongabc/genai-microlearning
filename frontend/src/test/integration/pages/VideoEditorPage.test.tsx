@@ -279,7 +279,7 @@ describe('VideoEditorPage', () => {
       scene(1, { kind: 'illustration', image_prompt: 'Một hàng đợi', needs_image: true }),
     ], { render_problems: ['Cảnh 1: chưa vẽ hình minh họa'] }))
     vi.mocked(api.drawIllustrations).mockRejectedValue(
-      axiosFailure(429, 'Mỗi ngày (UTC) bạn được vẽ tối đa 20 hình; hôm nay còn 0 hình. Hãy quay lại vào ngày mai.'))
+      axiosFailure(429, 'Mỗi ngày bạn được vẽ tối đa 20 hình, hôm nay còn 0 hình. Hãy quay lại vào ngày mai.'))
 
     renderPage()
     await userEvent.click(await screen.findByRole('button', { name: 'Vẽ hình' }))
