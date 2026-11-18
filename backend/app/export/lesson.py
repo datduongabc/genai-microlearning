@@ -120,5 +120,5 @@ def failing_questions(module: Module) -> list[str]:
         positions = {q.position for q in component.questions}
         for position, q in enumerate(component.content.get("questions", [])):
             if position in positions and q.get("passed") is False:
-                failing.append(f"{component.type.value} {position + 1}: {q.get('fail_reason') or 'không đạt gate chất lượng'}")
+                failing.append(f"{component.type.value} {position + 1}: {q.get('fail_reason') or 'chưa khớp nguồn'}")
     return failing

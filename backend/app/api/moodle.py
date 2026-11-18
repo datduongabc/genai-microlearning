@@ -50,14 +50,14 @@ def publish_to_moodle(
     if is_control(db, module.id):
         raise HTTPException(
             status_code=422,
-            detail="Mô-đun đối chứng (không RAG) chỉ dùng cho nghiên cứu, không được đẩy lên Moodle.",
+            detail="Bản đối chứng chỉ dùng cho nghiên cứu nên không đẩy lên Moodle được.",
         )
 
     failing = failing_questions(module)
     if failing:
         raise HTTPException(
             status_code=422,
-            detail="Còn câu hỏi chưa đạt gate chất lượng; sửa hoặc sinh lại trước khi đẩy lên Moodle: "
+            detail="Còn câu hỏi chưa khớp nguồn. Hãy sửa trước khi đẩy lên Moodle: "
             + "; ".join(failing),
         )
 
@@ -105,8 +105,8 @@ def publish_to_moodle(
         # on the module if duplicates after a partial failure keep happening.
         created = [f"{name} (cmid {result[key]})" for key, name in _PARTS if key in result]
         if created:
-            failure.detail += (f" Đã tạo trên Moodle trước khi lỗi: {', '.join(created)}; "
-                               "xóa các hoạt động này trên Moodle trước khi xuất bản lại để không bị trùng.")
+            failure.detail += (f" Đã tạo trên Moodle trước khi lỗi: {', '.join(created)}. "
+                               "Hãy xóa các hoạt động này trên Moodle trước khi xuất bản lại để không bị trùng.")
         raise failure from e
 
     return result

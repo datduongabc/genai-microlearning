@@ -127,7 +127,7 @@ describe('ModulePreviewPage - SCORM package', () => {
 
   it("shows the server's reason when the package is refused", async () => {
     vi.mocked(api.getModule).mockResolvedValue(baseModule)
-    const body = new Blob([JSON.stringify({ detail: 'Còn câu hỏi chưa đạt gate chất lượng: quiz 1' })], { type: 'application/json' })
+    const body = new Blob([JSON.stringify({ detail: 'Còn câu hỏi chưa khớp nguồn. Hãy sửa trước khi xuất gói SCORM: quiz 1' })], { type: 'application/json' })
     const refused = new AxiosError('422', 'ERR_BAD_REQUEST', undefined, undefined, {
       status: 422, data: body, statusText: '', headers: {}, config: {} as InternalAxiosRequestConfig,
     } as AxiosResponse)
@@ -135,7 +135,7 @@ describe('ModulePreviewPage - SCORM package', () => {
     try {
       renderPage()
       await userEvent.click(await screen.findByRole('button', { name: 'Tải gói SCORM (.zip)' }))
-      expect(await screen.findByRole('alert')).toHaveTextContent('Còn câu hỏi chưa đạt gate chất lượng: quiz 1')
+      expect(await screen.findByRole('alert')).toHaveTextContent('Còn câu hỏi chưa khớp nguồn. Hãy sửa trước khi xuất gói SCORM: quiz 1')
     } finally {
       request.mockRestore()
     }
