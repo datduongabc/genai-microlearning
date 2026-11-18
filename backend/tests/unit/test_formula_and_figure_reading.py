@@ -397,3 +397,22 @@ def test_a_screenshot_read_with_low_confidence_overall_gives_no_text(monkeypatch
     })
 
     assert _ocr_figure(_png()) == ""
+
+
+# Production does not turn warnings into errors: PIL only warns below twice its own limit and decodes.
+@pytest.mark.filterwarnings("ignore::PIL.Image.DecompressionBombWarning")
+def test_a_huge_picture_in_a_small_file_is_skipped_before_it_is_decoded(monkeypatch):
+    import resource
+
+    buffer = io.BytesIO()
+    Image.new("P", (13000, 13000), 0).save(buffer, "PNG", optimize=True)
+    assert len(buffer.getvalue()) < 100_000
+    called = []
+    monkeypatch.setattr(figures.pytesseract, "image_to_data", lambda *a, **k: called.append(1))
+    monkeypatch.setattr(figures, "ocr_figure", _ocr_figure)
+    before = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+
+    assert figures.ocr_figures([buffer.getvalue()]) == [""]
+    assert called == []
+    # Decoding it took 1.5 GB; skipped, the process grows by far less.
+    assert resource.getrusage(resource.RUSAGE_SELF).ru_maxrss - before < 200 * 1024
