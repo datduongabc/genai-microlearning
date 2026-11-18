@@ -18,7 +18,7 @@ const video = {
   model_alias: 'gemini-flash', voice_alias: 'voice-heygen', image_alias: 'image-nano-banana', status: 'draft',
   scene_count: 1, draft_version: 1, rendered_version: null, duration_seconds: null, error: null,
   published_at: null, created_at: '2026-11-12T00:00:00Z', estimated_seconds: 60, max_seconds: 480,
-  render_problems: [], render_warnings: [], job: null, cost: null,
+  render_problems: [], render_warnings: [], job: null, cost: null, captions: [],
   scenes: [{
     kind: 'summary', title: 'Cảnh 1', bullets: ['Ý một'], bullet_citations: [[]], formula: null, code: null,
     table: null, image_prompt: null, narration: 'Câu một.', narration_citations: [[]], citations: [],

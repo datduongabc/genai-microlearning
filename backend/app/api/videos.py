@@ -41,7 +41,7 @@ from app.llm.media import DEFAULT_IMAGE_MODEL, DEFAULT_VOICE, IMAGE_MODELS, VOIC
 from app.models import Course, Document, Job, JobStatus, JobType, MediaStatus, User, Video
 from app.storage import delete_media_files, media_keys_for_video, media_store
 from app.video.illustrations import scenes_to_draw
-from app.video.render import lost_pictures
+from app.video.render import lost_pictures, rendered_captions
 from app.video.slides import render_slide
 from app.video.sources import scene_source_labels
 
@@ -176,6 +176,7 @@ def _detail(db: Session, video: Video) -> dict:
         "render_warnings": _render_warnings(scenes),
         "job": None if job is None else {"id": job.id, "job_type": job.job_type, "status": job.status},
         "cost": video.cost,
+        "captions": rendered_captions(video),
     }
 
 

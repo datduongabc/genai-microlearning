@@ -144,7 +144,9 @@ def _render(world, **changes):
         video.video_key = "videos/x/v1.mp4"
         video.rendered_version = 1
         video.rendered_scenes = [
-            {"title": "Mở đầu", "start_seconds": 0.0, "citations": [str(chunk.id), str(chunk.id)]},
+            {"title": "Mở đầu", "start_seconds": 0.0, "citations": [str(chunk.id), str(chunk.id)],
+             "captions": [[0.0, 2.5, "Xin chào."]]},
+            # A scene rendered before captions were kept has none.
             {"title": "Heap", "start_seconds": 30.5, "citations": []},
         ]
         # The draft is newer than the render, with other titles: learners follow the render.
@@ -171,6 +173,8 @@ def test_a_member_gets_a_short_lived_link_to_the_rendered_video(world, monkeypat
             {"title": "Mở đầu", "start_seconds": 0.0, "sources": ["trang 2"]},
             {"title": "Heap", "start_seconds": 30.5, "sources": []},
         ],
+        "language": "vi",
+        "captions": [[0.0, 2.5, "Xin chào."]],
     }
 
 

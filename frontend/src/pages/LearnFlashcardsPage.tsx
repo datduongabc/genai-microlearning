@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { getLearnFlashcardSet, type LearnFlashcardSet } from "../api";
 import { LearnerShell } from "../components/LearnerShell";
+import { useDocumentTitle } from "../lib/documentTitle";
 
 // Keyed by the set, so that moving to another one starts again on its first card instead of
 // carrying over the old index, the flipped side or a failed load.
@@ -12,6 +13,7 @@ export function LearnFlashcardsPage() {
 
 function LearnFlashcardsStudy({ courseId, setId }: { courseId?: string; setId?: string }) {
   const [set, setSet] = useState<LearnFlashcardSet | null>(null);
+  useDocumentTitle(set ? set.focus ?? "Bộ thẻ" : null);
   const [failed, setFailed] = useState(false);
   const [index, setIndex] = useState(0);
   const [flipped, setFlipped] = useState(false);

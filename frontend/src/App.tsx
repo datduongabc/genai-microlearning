@@ -14,6 +14,7 @@ import { LtiLaunchPage } from "./pages/LtiLaunchPage";
 import { LearnerChatPage } from "./pages/LearnerChatPage";
 import { LearnFlashcardsPage } from "./pages/LearnFlashcardsPage";
 import { LearnVideoPage } from "./pages/LearnVideoPage";
+import { PageChange } from "./lib/pageChange";
 
 const StudiesPage = lazy(() => import("./pages/StudiesPage").then(m => ({ default: m.StudiesPage })));
 const BlindRatingPage = lazy(() => import("./pages/StudiesPage").then(m => ({ default: m.BlindRatingPage })));
@@ -39,7 +40,7 @@ function RethrowRouteError(): never {
 
 // A data router, so that an editor can ask before its unsaved edits are left (useBlocker).
 const router = createBrowserRouter(createRoutesFromElements(
-  <Route errorElement={<RethrowRouteError />}>
+  <Route element={<PageChange />} errorElement={<RethrowRouteError />}>
     <Route path="/login" element={<LoginPage />} />
     <Route path="/register" element={<RegisterPage />} />
     <Route path="/lti/launch" element={<LtiLaunchPage />} />

@@ -1,3 +1,4 @@
+import { useDocumentTitle } from "../lib/documentTitle";
 import { confirmAction } from "../lib/confirm";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { Link, NavLink } from "react-router-dom";
@@ -32,6 +33,7 @@ function readCollapsed() {
 
 // `fullTitle` is for a title that was cut short: the whole text stays available on hover.
 export function AppShell({ title, fullTitle, children }: { title: string; fullTitle?: string; children: ReactNode }) {
+  useDocumentTitle(fullTitle ?? title);
   const { user, logout } = useAuth();
   const [open, setOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(readCollapsed);

@@ -103,7 +103,9 @@ describe('FlashcardEditorPage', () => {
     expect(await screen.findByText('Chưa có nguồn')).toBeInTheDocument()
   })
 
-  it('saves edited cards and stops at 15', async () => {
+  // Fifteen cards are rendered again at every step: 1.3 s alone, and past the default 5 s when the
+  // whole suite shares the machine.
+  it('saves edited cards and stops at 15', { timeout: 15_000 }, async () => {
     const fourteen = Array.from({ length: 14 }, (_, i) => card(i + 1))
     vi.mocked(api.getFlashcardSet).mockResolvedValue(draft(fourteen))
     vi.mocked(api.saveFlashcards).mockImplementation(async (_id, _version, cards) =>
@@ -119,11 +121,15 @@ describe('FlashcardEditorPage', () => {
     expect(screen.getByRole('button', { name: 'Thêm thẻ' })).toBeDisabled()
     expect(screen.getByText('15 thẻ (tối đa 15)')).toBeInTheDocument()
 
+    // Pasted, not typed: each key re-renders fifteen cards, which took the test past its 5 s limit
+    // when the whole suite ran at once.
     const fronts = screen.getAllByLabelText(/^Mặt trước thẻ/)
-    await userEvent.type(fronts[14], 'Câu hỏi mới')
-    await userEvent.type(screen.getAllByLabelText(/^Mặt sau thẻ/)[14], 'Trả lời mới')
+    await userEvent.click(fronts[14])
+    await userEvent.paste('Câu hỏi mới')
+    await userEvent.click(screen.getAllByLabelText(/^Mặt sau thẻ/)[14])
+    await userEvent.paste('Trả lời mới')
     await userEvent.clear(fronts[0])
-    await userEvent.type(fronts[0], 'Sửa rồi')
+    await userEvent.paste('Sửa rồi')
     await userEvent.click(screen.getByRole('button', { name: 'Lưu thay đổi' }))
 
     await waitFor(() => expect(api.saveFlashcards).toHaveBeenCalledTimes(1))

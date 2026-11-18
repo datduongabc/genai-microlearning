@@ -501,7 +501,7 @@ export function VideoEditorPage() {
                   {published ? ', và sinh viên vẫn xem bản này' : ''}. Dựng lại để cập nhật.
                 </p>
               )}
-              <RenderedVideo videoId={videoId} renderedVersion={rendered} />
+              <RenderedVideo videoId={videoId} renderedVersion={rendered} captions={saved.captions} language={saved.output_language} />
               {saved.duration_seconds !== null && (
                 <p className="course-hint">Dài {formatMinutes(saved.duration_seconds)} phút.</p>
               )}
