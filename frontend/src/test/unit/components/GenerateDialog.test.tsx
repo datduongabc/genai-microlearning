@@ -44,8 +44,8 @@ describe('GenerateDialog', () => {
     await waitFor(() => expect(onGenerate).toHaveBeenCalledWith('vi', ''))
     expect(onOpenChange).toHaveBeenCalledWith(false)
 
-    await userEvent.selectOptions(screen.getByLabelText(/^Ngôn ngữ$/), 'en')
-    await userEvent.type(screen.getByLabelText(/Yêu cầu thêm/), '  Explain IDS ')
+    await userEvent.selectOptions(screen.getByLabelText(/^Ngôn ngữ đầu ra$/), 'en')
+    await userEvent.type(screen.getByLabelText(/Chủ đề mà bạn muốn tập trung vào/), '  Explain IDS ')
     await userEvent.click(screen.getByRole('button', { name: 'Tạo mô-đun' }))
 
     await waitFor(() => expect(onGenerate).toHaveBeenLastCalledWith('en', 'Explain IDS'))
@@ -54,7 +54,7 @@ describe('GenerateDialog', () => {
   it('refuses guidance over 1000 characters and says so', async () => {
     const { onOpenChange, onGenerate } = renderDialog()
 
-    fireEvent.change(screen.getByLabelText(/Yêu cầu thêm/), { target: { value: 'a'.repeat(1001) } })
+    fireEvent.change(screen.getByLabelText(/Chủ đề mà bạn muốn tập trung vào/), { target: { value: 'a'.repeat(1001) } })
     await userEvent.click(screen.getByRole('button', { name: 'Tạo mô-đun' }))
 
     expect(await screen.findByText('Yêu cầu thêm tối đa 1000 ký tự')).toBeInTheDocument()
@@ -66,7 +66,7 @@ describe('GenerateDialog', () => {
     const { onOpenChange, onGenerate } = renderDialog('flashcards')
 
     expect(screen.getByRole('heading', { name: 'Tạo flashcard' })).toBeInTheDocument()
-    expect(screen.queryByLabelText(/Yêu cầu thêm/)).not.toBeInTheDocument()
+    expect(screen.queryByLabelText(/Chủ đề mà bạn muốn tập trung vào/)).not.toBeInTheDocument()
     await userEvent.type(screen.getByLabelText('Flashcard nên tập trung vào nội dung gì? (không bắt buộc)'), '  Ví dụ: các định nghĩa trong chương 2 ')
     await userEvent.click(screen.getByRole('button', { name: 'Tạo flashcard' }))
 

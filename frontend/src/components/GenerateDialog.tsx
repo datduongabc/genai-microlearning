@@ -14,8 +14,8 @@ export type GenerateKind = "module" | "flashcards" | "video";
 const KIND_TEXT: Record<GenerateKind, { title: string; field: string; placeholder: string; tooLong: string }> = {
   module: {
     title: "Tạo mô-đun",
-    field: "Yêu cầu thêm (không bắt buộc)",
-    placeholder: "Ví dụ: thêm ví dụ có lời giải từng bước",
+    field: "Chủ đề mà bạn muốn tập trung vào?",
+    placeholder: "",
     tooLong: "",
   },
   flashcards: {
@@ -101,7 +101,7 @@ export function GenerateDialog({ open, onOpenChange, returnFocusTo, onGenerate, 
       <form noValidate onSubmit={(event) => void handleSubmit(onValid)(event)}>
         <DialogTitle className="ui-dialog-title">{text.title}</DialogTitle>
         <label className="flex flex-col gap-2 text-sm">
-          Ngôn ngữ
+          Ngôn ngữ đầu ra
           <select {...register("language")} className="ui-select w-full">
             <option value="vi">Tiếng Việt</option>
             <option value="en">English</option>

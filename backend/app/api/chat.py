@@ -46,6 +46,7 @@ class ChatRequest(BaseModel):
 class CitationResponse(BaseModel):
     chunk_id: str
     source_ref: str = ""
+    content: str = ""
 
 
 class ChatMessageResponse(BaseModel):

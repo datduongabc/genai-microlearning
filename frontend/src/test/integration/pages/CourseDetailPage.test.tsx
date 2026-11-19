@@ -552,8 +552,8 @@ describe('CourseDetailPage - module generation availability', () => {
     await chooseCreate(/^mô-đun$/i)
     expect(api.generateModule).not.toHaveBeenCalled()
     expect(screen.getByRole('dialog')).toBeInTheDocument()
-    await userEvent.selectOptions(screen.getByRole('combobox', { name: /^ngôn ngữ$/i }), 'en')
-    await userEvent.type(screen.getByLabelText(/Yêu cầu thêm/), 'Ví dụ: thêm ví dụ có lời giải từng bước')
+    await userEvent.selectOptions(screen.getByRole('combobox', { name: /^ngôn ngữ đầu ra$/i }), 'en')
+    await userEvent.type(screen.getByLabelText(/Chủ đề mà bạn muốn tập trung vào/), 'Ví dụ: thêm ví dụ có lời giải từng bước')
     await userEvent.click(screen.getByRole('button', { name: 'Tạo mô-đun' }))
 
     expect(api.generateModule).toHaveBeenCalledWith('doc-1', 'deepseek-flash', 'en', 'Ví dụ: thêm ví dụ có lời giải từng bước')

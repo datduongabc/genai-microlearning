@@ -252,3 +252,37 @@ def test_a_refusal_is_counted_as_one_and_not_as_uncited(caplog):
     caplog.set_level("INFO", logger=service.__name__)
     asyncio.run(anext(service.stream_answer("Heap là gì?", [], [])))
     assert _chat_quality(caplog) == {"answers": 1, "refused": 1, "uncited": 0, "invented_sources": 0}
+
+
+def test_with_the_prompt_s_chunks_the_markers_become_the_numbers_the_reader_sees():
+    # Numbered by first citation, so S3 cited first is [S1]; S9 names no passage and is dropped.
+    from types import SimpleNamespace
+
+    chunks = [SimpleNamespace(id=i, source_ref=f"trang {i}", content=f"đoạn {i}") for i in (1, 2, 3)]
+    markers = MarkerFilter(chunks)
+    text = "".join(markers.feed(p) for p in ["Heap là cây [S", "3]. Nó gần đầy đủ [S1, S3][S9]."]) + markers.finish()
+
+    assert text == "Heap là cây [S1]. Nó gần đầy đủ [S2][S1]."
+    assert [c.content for c in markers.cited.values()] == ["đoạn 3", "đoạn 1"]
+    assert markers.source_ids == ["S3", "S1", "S3", "S9"]
+
+
+def test_the_streamed_answer_keeps_its_numbers_and_each_citation_its_passage(monkeypatch):
+    from types import SimpleNamespace
+
+    from app.chat import service
+
+    async def reply(prompt, system_instruction=None):
+        for piece in ["Heap là cây [S2]", " gần đầy đủ [S9]."]:
+            yield piece
+
+    monkeypatch.setattr(service, "stream_text", reply)
+    chunks = [SimpleNamespace(id=i, source_ref="trang 1", content=f"đoạn {i}", document_id=None, chunk_index=i)
+              for i in (1, 2)]
+
+    async def run():
+        return [part async for part in service.stream_answer("Heap là gì?", chunks, [])]
+
+    done = asyncio.run(run())[-1]
+    assert done.answer == "Heap là cây [S1] gần đầy đủ."
+    assert [(c.chunk_id, c.content) for c in done.citations] == [("2", "đoạn 2")]

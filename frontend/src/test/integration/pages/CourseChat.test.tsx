@@ -89,7 +89,8 @@ describe('CourseChat', () => {
 
     await ask('Tiến trình là gì?')
     expect(await screen.findByText('Tiến trình là chương trình đang chạy.')).toBeInTheDocument()
-    expect(screen.getByText('Nguồn: Chương 3, trang 4')).toBeInTheDocument()
+    // Saved before the numbers were kept in the text: the sources are a row of numbers under it.
+    expect(screen.getByRole('button', { name: 'Nguồn 1: Chương 3, trang 4' })).toBeInTheDocument()
     const [url, init] = fetchMock.mock.calls[0]
     expect(url).toBe('/api/courses/course-1/chat/stream')
     expect(init.headers.Authorization).toBe('Bearer old')
@@ -97,6 +98,22 @@ describe('CourseChat', () => {
     await ask('Còn gì nữa?')
     await screen.findByText('Có.')
     expect(JSON.parse(fetchMock.mock.calls[1][1].body).session_id).toBe('s1')
+  })
+
+  it('shows each source as its number where it is cited, and opens the passage from it', async () => {
+    fetchMock.mockResolvedValueOnce(stream(event('done', {
+      id: 'm1', role: 'assistant', content: 'Tiến trình là chương trình đang chạy [S1].',
+      citations: [{ chunk_id: 'c1', source_ref: '{"page": 4}', content: 'Một tiến trình là một chương trình đang thực thi.' }],
+    })))
+    render(<CourseChat courseId="course-1" />)
+
+    await ask('Tiến trình là gì?')
+    const marker = await screen.findByRole('button', { name: 'Nguồn 1' })
+    expect(marker).toHaveTextContent('[1]')
+    expect(screen.queryByText(/\[S1\]/)).not.toBeInTheDocument()
+    await userEvent.click(marker)
+    expect(screen.getByText('trang 4')).toBeInTheDocument()
+    expect(screen.getByText('Một tiến trình là một chương trình đang thực thi.')).toBeInTheDocument()
   })
 
   it('shows the error the server sends once the answer has begun', async () => {

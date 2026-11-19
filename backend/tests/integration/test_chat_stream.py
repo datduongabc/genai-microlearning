@@ -78,14 +78,15 @@ def test_the_answer_arrives_in_pieces_and_is_saved_with_its_citations(world, mon
     assert response.headers["content-type"].startswith("text/event-stream")
     events = _events(response)
     assert [name for name, _ in events] == ["session", "delta", "delta", "delta", "done"]
-    assert "[S1]" not in "".join(data["text"] for name, data in events if name == "delta")
+    # The marker arrives whole, as the number the reader sees, though the model wrote it in two pieces.
+    assert "".join(data["text"] for name, data in events if name == "delta") == "Heap là cây nhị phân [S1]."
     done = events[-1][1]
-    assert done["content"] == "Heap là cây nhị phân."
+    assert done["content"] == "Heap là cây nhị phân [S1]."
     assert len(done["citations"]) == 1
     assert done["citations"][0]["chunk_id"] in chunk_ids
     session_id = events[0][1]["session_id"]
     history = client.get(f"/courses/{course_id}/chat/{session_id}/history", headers=headers).json()
-    assert [m["content"] for m in history] == ["Heap là gì?", "Heap là cây nhị phân."]
+    assert [m["content"] for m in history] == ["Heap là gì?", "Heap là cây nhị phân [S1]."]
 
 
 def test_an_invented_source_is_dropped(world, monkeypatch, passthrough_rerank):

@@ -133,8 +133,9 @@ def test_chat_keeps_eighth_source_and_persists_its_citation(monkeypatch, questio
         response = client.post(f"/courses/{course_id}/chat/stream", json={"message": question}, headers=headers)
         assert response.status_code == 200
         result = dict(events(response))
-        assert result["done"]["content"].startswith("The root moves down")
-        assert result["done"]["citations"] == [{"chunk_id": evidence_id, "source_ref": '{"page": 12}'}]
+        # The eighth passage is the first cited, so the reader sees it as source 1.
+        assert result["done"]["content"] == "The root moves down [S1]."
+        assert result["done"]["citations"] == [{"chunk_id": evidence_id, "source_ref": '{"page": 12}', "content": evidence}]
         history = client.get(f"/courses/{course_id}/chat/{result['session']['session_id']}/history",
                              headers=headers).json()
         assert history[0]["content"] == question
