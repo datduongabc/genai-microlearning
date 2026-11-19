@@ -57,6 +57,11 @@ run "demo_with_the_self_hosted_reranker" {
     error_message = "The AI quality dashboard has its three rates."
   }
   assert {
+    # CloudWatch rejects the body unless every metric line is itself a list: ["namespace", "name", {...}].
+    condition     = alltrue([for w in jsondecode(aws_cloudwatch_dashboard.quality.dashboard_body).widgets : alltrue([for m in w.properties.metrics : can(m[0])]) && length(w.properties.metrics) % 3 == 0])
+    error_message = "A dashboard metric line is not a list."
+  }
+  assert {
     condition     = local.connections_peak == 4 * 22 + 8 * 32 + 5
     error_message = "Connection budget changed: ${local.connections_peak}."
   }

@@ -103,11 +103,10 @@ resource "aws_cloudwatch_dashboard" "quality" {
         view   = "timeSeries"
         period = 3600
         stat   = "Sum"
+        # Each entry must stay a list of its own; flatten() would melt them into one list of strings.
         metrics = concat(
-          flatten([for p in w.parts : [
-            ["Microlearning/Quality", p[1], { id = "${p[0]}_n", visible = false }],
-            ["Microlearning/Quality", p[2], { id = "${p[0]}_d", visible = false }],
-          ]]),
+          [for p in w.parts : ["Microlearning/Quality", p[1], { id = "${p[0]}_n", visible = false }]],
+          [for p in w.parts : ["Microlearning/Quality", p[2], { id = "${p[0]}_d", visible = false }]],
           [for p in w.parts : [{ expression = "100 * ${p[0]}_n / ${p[0]}_d", label = p[0], id = p[0] }]],
         )
       }
