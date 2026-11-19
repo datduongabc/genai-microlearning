@@ -1,7 +1,7 @@
 """Local account administration, activation and failed-job management."""
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import BaseModel, Field
 from sqlalchemy import func, select, text
 from sqlalchemy.orm import Session
@@ -146,15 +146,16 @@ def reset_password(request: Request, user_id: uuid.UUID, payload: SetPasswordReq
 
 
 @router.get("/jobs/failed")
-def list_failed_jobs(job_type: JobType | None = None, db: Session = Depends(get_db)):
+def list_failed_jobs(job_type: list[JobType] | None = Query(None), db: Session = Depends(get_db)):
     """The failed jobs of every lecturer. Reads the view admin_failed_jobs and nothing else:
     job data plus the document file name and course name, with no document, module or chat
     content, and without the failures a lecturer already generated again."""
     query = "SELECT * FROM admin_failed_jobs"
     params: dict = {"limit": MAX_FAILED_JOBS}
-    if job_type is not None:
-        query += " WHERE job_type = :job_type"
-        params["job_type"] = job_type.value
+    # Several types at once: a video's script, pictures and render are one filter on the page.
+    if job_type:
+        query += " WHERE job_type::text = ANY(:job_types)"
+        params["job_types"] = [t.value for t in job_type]
     rows = db.execute(text(query + " ORDER BY created_at DESC LIMIT :limit"), params).mappings().all()
     return [dict(row) for row in rows]
 

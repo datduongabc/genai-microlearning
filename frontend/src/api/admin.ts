@@ -52,10 +52,10 @@ export async function setUserActive(userId: string, active: boolean) {
   return data
 }
 
-export async function listFailedJobs(jobType?: FailedJobInfo['job_type']) {
-  const { data } = await api.get<FailedJobInfo[]>('/admin/jobs/failed', {
-    params: jobType ? { job_type: jobType } : undefined,
-  })
+export async function listFailedJobs(jobTypes?: readonly FailedJobInfo['job_type'][]) {
+  // Repeated as job_type=a&job_type=b, which the server reads as a list (axios would send job_type[]).
+  const params = new URLSearchParams((jobTypes ?? []).map((t) => ['job_type', t]))
+  const { data } = await api.get<FailedJobInfo[]>('/admin/jobs/failed', { params })
   return data
 }
 
