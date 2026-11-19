@@ -105,3 +105,18 @@ def test_a_caller_with_someone_waiting_can_limit_the_tries(jev):
 
 def test_jev_is_the_default():
     assert type(settings).model_fields["reranker_provider"].default == "jev"
+
+
+@pytest.mark.parametrize("retry_after", ["120", "Wed, 21 Oct 2026 07:28:00 GMT", "nan", "-3"])
+def test_a_long_or_odd_retry_after_waits_a_few_seconds_at_most(jev, monkeypatch, retry_after):
+    # A wait of minutes would hold one of the shared rerank threads, while keeping the search
+    # order (the fallback) costs only a little ranking quality.
+    waits = []
+    monkeypatch.setattr(reranker.time, "sleep", waits.append)
+    answers = iter([httpx.Response(429, headers={"retry-after": retry_after}), _noul(0.7)])
+    jev(lambda _: next(answers))
+
+    ranked = reranker.rerank_scored("q", _chunks("a"))
+
+    assert ranked[0][1] == 0.7
+    assert len(waits) == 1 and 0 <= waits[0] <= reranker.MAX_RETRY_AFTER_SECONDS

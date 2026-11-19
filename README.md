@@ -23,7 +23,7 @@ Báo cáo cuối kỳ: [`final-report/report.pdf`](final-report/report.pdf). Đ�
 | Truy xuất | Dense (Qwen3-Embedding chạy tại chỗ) cộng BM25, gộp bằng Reciprocal Rank Fusion, rerank bằng Jev (mặc định) hoặc Jina tự host. Số đoạn chọn theo adaptive-k. |
 | Sinh mô-đun | Planner chọn khái niệm, sinh LO và sub-objective, kiểm tra độ liên quan rồi viết lại truy vấn khi thiếu nguồn, viết Content kèm `[S#]`, sau đó Slides và Example. Câu hỏi do model tự kiểm, có bẫy cú pháp và luật cân bằng độ dài; khi trượt thì giữ bản ít lỗi nhất. |
 | Biên tập | Mở đoạn nguồn của từng trích dẫn, sửa từng thành phần hoặc từng câu hỏi, sửa qua chat, xuất slide ra PPTX. |
-| Moodle | Liên kết tài khoản, xác nhận ngay trong Moodle. Kiểm quyền giảng viên theo khóa học. Tạo Book, Practice (phản hồi ngay) và Quiz (phản hồi sau khi nộp). |
+| Moodle | Liên kết tài khoản, xác nhận ngay trong Moodle. Kiểm quyền giảng viên theo khóa học. Tạo Book, Practice (phản hồi ngay) và Quiz (phản hồi sau khi nộp), kèm điều kiện hoàn thành để khóa học tính được và cấp chứng chỉ. |
 | LTI 1.3 | Giảng viên và sinh viên vào thẳng từ hoạt động External tool. Danh sách lớp được đồng bộ qua NRPS, sinh viên rời lớp bị gỡ quyền sau khoảng một giờ. |
 | Hỏi đáp | Chat theo khóa học, câu trả lời stream (SSE), có trích dẫn và lưu lịch sử. Sinh viên được 30 tin mỗi ngày. |
 | Nghiên cứu | Cặp module RAG và không RAG, gói chấm mù với thứ tự xáo riêng cho từng người chấm, chấm bằng model judge, phân tích độ đồng thuận. |
@@ -160,10 +160,12 @@ npm run build
 | --- | ---: |
 | Backend unit / integration / e2e | 779 / 1.360 / 2 |
 | Frontend unit / integration | 104 / 340 |
-| Plugin Moodle (PHPUnit) | 18 |
+| Plugin Moodle (PHPUnit) | 21 |
 | Terraform (`terraform test`, provider giả lập) | 8 |
 
-CI (`.github/workflows/ci.yml`) có bốn job: `backend`, `frontend`, `infra` và `moodle-plugin`.
+CI (`.github/workflows/ci.yml`) có năm job: `backend`, `frontend`, `images`, `infra` và `moodle-plugin`.
+Job `images` build image backend và gateway từ đúng Dockerfile mà `deploy.sh` dùng, rồi quét bằng Trivy: lỗ hổng CRITICAL hoặc HIGH đã có bản vá làm pull request trượt.
+Triển khai lên AWS vẫn chạy bằng `infra/scripts/deploy.sh` có người duyệt bản plan, vì một role CI đủ quyền apply toàn bộ hạ tầng rủi ro hơn lợi ích cho bản demo.
 
 Load test và kiểm thử lỗi nằm trong `devops/loadtest`. Kịch bản trình duyệt thật và LTI thật nằm trong `devops/browser-e2e` và `devops/lti-e2e`.
 

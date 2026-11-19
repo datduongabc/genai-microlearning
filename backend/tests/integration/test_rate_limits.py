@@ -90,6 +90,8 @@ CASES = [
     ("upload", 20, lambda h: client.post(
         "/documents/uploads", params={"course_id": str(uuid.uuid4())}, json={"filename": "a.html", "size": 1}, headers=h
     )),
+    # A retry is not charged against the daily quota, so this limit is what bounds its model calls.
+    ("retry-job", 5, lambda h: client.post(f"/jobs/{uuid.uuid4()}/retry", headers=h)),
     ("create-course", 30, lambda h: client.post("/courses", json={"name": "c"}, headers=h)),
 ]
 

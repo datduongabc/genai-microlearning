@@ -104,6 +104,16 @@ class create_quiz extends external_api {
         // tu truong bieu mau ten quizpassword roi moi gan sang cot password
         // (mod/quiz/lib.php). Dat thang $data->password se bi ghi de bang null.
         $data->quizpassword = '';
+        // So a course that tracks completion can count this activity, and a badge or certificate
+        // can follow it (Enroll, Learn, Test, Certificate), without the lecturer editing each one.
+        // The Quiz is done when passed at half marks; the Practice when it has a grade at all.
+        // Moodle ignores these when the course does not track completion.
+        $data->completion = COMPLETION_TRACKING_AUTOMATIC;
+        $data->completionview = 0;
+        $data->completionexpected = 0;
+        $data->completionusegrade = 1;
+        $data->completionpassgrade = $params['behaviour'] === 'deferredfeedback' ? 1 : 0;
+        $data->gradepass = $params['behaviour'] === 'deferredfeedback' ? $data->grade / 2 : 0;
 
         $moduleinfo = add_moduleinfo($data, $course);
         $quiz = $DB->get_record('quiz', ['id' => $moduleinfo->instance], '*', MUST_EXIST);

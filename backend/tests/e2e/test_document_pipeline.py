@@ -8,6 +8,7 @@ Dọn Job/Document/Course/User tạo ra ở cuối mỗi test -- claim_next_job(
 đủ để làm sai 1 test claim khác chạy sau (đã thấy thật)."""
 
 import uuid
+from datetime import UTC, datetime, timedelta
 
 import pytest
 
@@ -84,6 +85,9 @@ def test_document_pipeline_extract_chunk_embed_end_to_end(seed_document_with_fil
             db, job_type=JobType.document_pipeline, step="extract",
             document_id=doc.id, payload={"storage_path": storage_path},
         )
+        # As if the extract had taken an hour (a long video): the next step is due from when it is
+        # queued, or the oldest-ready-job metric counts that hour as waiting for a worker.
+        job.run_after = datetime.now(UTC) - timedelta(hours=1)
         db.commit()
         job_id = job.id
         doc_id = doc.id
@@ -104,6 +108,7 @@ def test_document_pipeline_extract_chunk_embed_end_to_end(seed_document_with_fil
         doc = db.get(Document, doc_id)
         assert job.step == "chunk"
         assert job.status == JobStatus.queued
+        assert job.run_after > datetime.now(UTC) - timedelta(minutes=1)
         assert "units" in job.payload
         assert doc.raw_text and "khai niem A" in doc.raw_text
     finally:
@@ -122,6 +127,7 @@ def test_document_pipeline_extract_chunk_embed_end_to_end(seed_document_with_fil
         job = db.get(Job, job_id)
         assert job.step == "embed"
         assert job.status == JobStatus.queued
+        assert job.run_after > datetime.now(UTC) - timedelta(minutes=1)
         assert "chunks" in job.payload
         assert "units" not in job.payload
         # Tên tài liệu đi vào dòng ngữ cảnh của mọi chunk, để truy hồi trên cả môn học biết

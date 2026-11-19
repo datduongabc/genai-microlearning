@@ -1,9 +1,10 @@
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user
+from app.auth.rate_limit import limiter, user_or_address
 from app.db import get_db
 from app.jobs.failures import EDITOR_RETRIED_JOBS
 from app.jobs.queue import EDITOR_RETRY_MESSAGE, retry_failed_job
@@ -13,7 +14,9 @@ router = APIRouter(prefix="/jobs", tags=["jobs"], dependencies=[Depends(get_curr
 
 
 @router.post("/{job_id}/retry")
-def retry_job(job_id: uuid.UUID, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+# A retry is not charged against the daily quota, so this is what bounds its model calls.
+@limiter.limit("5/minute", key_func=user_or_address)
+def retry_job(request: Request, job_id: uuid.UUID, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     """The lecturer's "Thử lại" on their own failed document or failed module generation: the
     same job runs again from where it stopped, with nothing re-uploaded and no extra module.
     What is not theirs answers 404 like what does not exist, by the ownership check here and by

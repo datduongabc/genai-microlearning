@@ -7,6 +7,8 @@ thay vì người dùng phải tải lại file."""
 import json
 from dataclasses import asdict
 
+from sqlalchemy import func
+
 from app.db import WorkerSessionLocal
 from app.ingestion.chunker import Chunk as ChunkerChunk
 from app.ingestion.chunker import chunk_units, document_title
@@ -66,6 +68,9 @@ def _run_extract(job) -> None:
         next_payload = {**current_job.payload, "units": [asdict(u) for u in units]}
         current_job.step = "chunk"
         current_job.status = JobStatus.queued
+        # Due from now: the time the last step took is not time spent waiting for a worker, which
+        # is what the job-waiting alarm measures. Jobs are claimed by created_at, so order holds.
+        current_job.run_after = func.now()
         current_job.payload = next_payload
         current_job.attempts = 0
         db.commit()
@@ -89,6 +94,7 @@ def _run_chunk(job) -> None:
         del next_payload["units"]
         current_job.step = "embed"
         current_job.status = JobStatus.queued
+        current_job.run_after = func.now()
         current_job.payload = next_payload
         current_job.attempts = 0
         db.commit()

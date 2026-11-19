@@ -32,6 +32,9 @@ _slots = threading.BoundedSemaphore(settings.reranker_max_concurrent)
 JEV_URL = "https://api.typesafe.ai/v1/systemone"
 JEV_QUESTION = "Does the passage contain the information needed to answer the query?"
 _JEV_RETRY_STATUSES = {429, 500, 502, 503, 504, 529}
+# A longer wait would hold one of the shared rerank threads; past the retries the search order
+# stands in for the scores, which costs a little ranking quality and no generation.
+MAX_RETRY_AFTER_SECONDS = 5.0
 # Shared by every rerank in this process, so the limit holds however many run at once.
 _jev_pool = concurrent.futures.ThreadPoolExecutor(settings.jev_max_concurrent, thread_name_prefix="jev")
 _jev_client = httpx.Client(timeout=TIMEOUT_SECONDS)
@@ -74,6 +77,17 @@ def _jina_scores(query: str, chunks: list[Chunk], attempts: int) -> list[float]:
 _JEV_NEEDS_ATTENTION = {401, 402, 403}
 
 
+def _jev_delay(retry_after: str | None, attempt: int) -> float:
+    try:
+        # Seconds only: an HTTP date, NaN or a negative number falls through to the backoff.
+        delay = float(retry_after)
+        if not 0 <= delay < float("inf"):
+            raise ValueError(retry_after)
+    except (TypeError, ValueError):
+        delay = BASE_BACKOFF_SECONDS * 2 ** (attempt - 1) * (0.5 + random.random())
+    return min(delay, MAX_RETRY_AFTER_SECONDS)
+
+
 def _ask_jev(query: str, text: str, attempts: int = MAX_ATTEMPTS) -> tuple[float, int]:
     """The probability that this passage answers the query, and the retries it took."""
     for attempt in range(1, attempts + 1):
@@ -86,8 +100,7 @@ def _ask_jev(query: str, text: str, attempts: int = MAX_ATTEMPTS) -> tuple[float
         if response.status_code not in _JEV_RETRY_STATUSES or attempt == attempts:
             response.raise_for_status()
             return response.json()["answers"]["relevant"]["noul"], attempt - 1
-        retry_after = response.headers.get("retry-after")
-        time.sleep(float(retry_after) if retry_after else BASE_BACKOFF_SECONDS * 2 ** (attempt - 1) * (0.5 + random.random()))
+        time.sleep(_jev_delay(response.headers.get("retry-after"), attempt))
     raise AssertionError("unreachable")
 
 

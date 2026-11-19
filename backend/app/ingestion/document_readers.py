@@ -1,3 +1,4 @@
+import contextvars
 import hashlib
 import io
 import logging
@@ -117,7 +118,10 @@ def _repair_formulas(repairs: list[tuple[dict, bytes | None]]) -> None:
     results: list[str | None] = []
     if chosen:
         with ThreadPoolExecutor(max_workers=_FORMULA_WORKERS) as pool:
-            futures = [pool.submit(repair_page, png, page["text"]) for page, png in chosen]
+            # Each call in a copy of the job's context: a 429 then waits as it does for the job, and
+            # the call joins the job's record of served models and timings.
+            futures = [pool.submit(contextvars.copy_context().run, repair_page, png, page["text"])
+                       for page, png in chosen]
         for (page, _), future in zip(chosen, futures, strict=True):
             try:
                 results.append(future.result())

@@ -37,6 +37,38 @@ final class create_quiz_test extends \advanced_testcase {
         }
     }
 
+    public function test_a_course_that_tracks_completion_counts_the_quiz_when_passed_and_the_practice_when_graded(): void {
+        global $CFG, $DB, $USER;
+        require_once($CFG->libdir . '/gradelib.php');
+        $this->resetAfterTest();
+        $this->setAdminUser();
+        $course = $this->getDataGenerator()->create_course(['enablecompletion' => 1]);
+        $questions = [['stem' => 'Q?', 'choices' => ['A', 'B'], 'correct_index' => 0, 'explanation' => '']];
+
+        foreach (['deferredfeedback' => [1, 5.0], 'immediatefeedback' => [0, 0.0]] as $behaviour => [$pass, $gradepass]) {
+            $cmid = create_quiz::execute($course->id, $behaviour, $questions, $USER->id, 0, $behaviour);
+            $cm = $DB->get_record('course_modules', ['id' => $cmid], '*', MUST_EXIST);
+            $this->assertEquals(COMPLETION_TRACKING_AUTOMATIC, $cm->completion);
+            $this->assertEquals(0, $cm->completiongradeitemnumber);
+            $this->assertEquals($pass, $cm->completionpassgrade);
+            $item = \grade_item::fetch(['itemtype' => 'mod', 'itemmodule' => 'quiz', 'iteminstance' => $cm->instance,
+                'courseid' => $course->id]);
+            $this->assertEquals($gradepass, (float) $item->gradepass);
+        }
+    }
+
+    public function test_a_course_without_completion_tracking_gets_none(): void {
+        global $DB, $USER;
+        $this->resetAfterTest();
+        $this->setAdminUser();
+        $course = $this->getDataGenerator()->create_course(['enablecompletion' => 0]);
+        $questions = [['stem' => 'Q?', 'choices' => ['A', 'B'], 'correct_index' => 0, 'explanation' => '']];
+
+        $cmid = create_quiz::execute($course->id, 'Quiz', $questions, $USER->id);
+
+        $this->assertEquals(COMPLETION_TRACKING_NONE, $DB->get_field('course_modules', 'completion', ['id' => $cmid]));
+    }
+
     public function test_external_parameter_default_is_deferred_feedback(): void {
         $params = create_quiz::validate_parameters(create_quiz::execute_parameters(), [
             'courseid' => 1,

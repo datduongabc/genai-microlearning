@@ -106,8 +106,9 @@ variable "db_multi_az" {
 }
 
 variable "db_backup_retention_days" {
-  type    = number
-  default = 1
+  description = "Point-in-time restore window. Backup storage up to the database size is free, and one day leaves no restore point once a bad change is found the next morning."
+  type        = number
+  default     = 7
 }
 
 variable "db_deletion_protection" {
