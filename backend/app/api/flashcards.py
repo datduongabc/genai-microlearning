@@ -3,7 +3,7 @@ import uuid
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Request
-from pydantic import BaseModel, Field, StringConstraints, field_validator
+from pydantic import BaseModel, Field, StringConstraints, ValidationError, field_validator
 from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session
 
@@ -12,7 +12,7 @@ from app.api.media_common import NO_SOURCE_FLAG, GenerateRequest, chunk_passages
 from app.api.model_alias import generation_alias
 from app.auth.rate_limit import limiter, user_or_address
 from app.db import get_db
-from app.generation.flashcards import MAX_CARDS
+from app.generation.flashcards import MAX_CARDS, revise_flashcards
 from app.generation.limits import has_full_access, reserve_generations
 from app.jobs.queue import enqueue_job
 from app.models import Course, Document, FlashcardSet, Job, JobType, MediaStatus, User
@@ -155,6 +155,42 @@ def edit_cards(
     card_set.draft_version += 1
     db.commit()
     return _detail(db, card_set)
+
+
+class ReviseRequest(BaseModel):
+    draft_version: int
+    message: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=2000)]
+
+
+@router.post("/flashcard-sets/{set_id}/revise")
+@limiter.limit("20/minute", key_func=user_or_address)
+def revise_cards(
+    request: Request, set_id: uuid.UUID, body: ReviseRequest, db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """The set rewritten as the lecturer asks in words, saved as a new draft version like a manual edit."""
+    card_set = _owned_set(db, set_id, current_user)
+    if card_set.status != MediaStatus.draft:
+        raise HTTPException(status_code=409, detail="Chỉ sửa được bộ flashcard đã tạo xong.")
+    if body.draft_version != card_set.draft_version:
+        raise HTTPException(status_code=409, detail="Bộ thẻ đã được lưu ở nơi khác. Hãy tải lại trang rồi sửa tiếp.")
+    try:
+        reply, cards = revise_flashcards(db, card_set, body.message)
+    except (ValidationError, ValueError) as exc:
+        db.rollback()
+        raise HTTPException(status_code=422, detail="Kết quả chỉnh sửa không hợp lệ nên bộ thẻ chưa thay đổi. Hãy thử lại.") from exc
+    # Locked only now: the model call takes seconds and must not hold the row.
+    card_set = _owned_set(db, set_id, current_user, lock=True)
+    if body.draft_version != card_set.draft_version:
+        raise HTTPException(status_code=409, detail="Bộ thẻ đã được lưu ở nơi khác. Hãy tải lại trang rồi sửa tiếp.")
+    if not cards:
+        raise HTTPException(status_code=422, detail=reply or "Yêu cầu này sẽ xóa hết thẻ nên bộ thẻ chưa thay đổi.")
+    changed = cards != card_set.cards
+    if changed:
+        card_set.cards = cards
+        card_set.draft_version += 1
+    db.commit()
+    return _detail(db, card_set) | {"reply": reply, "changed": changed}
 
 
 @router.post("/flashcard-sets/{set_id}/publish")

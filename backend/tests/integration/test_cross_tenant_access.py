@@ -196,6 +196,7 @@ ATTACKS = [
     ("GET", "/courses/{course}/flashcard-sets", None, {}),
     ("GET", "/flashcard-sets/{flashcard_set}", None, {}),
     ("PUT", "/flashcard-sets/{flashcard_set}/cards", None, {"json": {"draft_version": 1, "cards": []}}),
+    ("POST", "/flashcard-sets/{flashcard_set}/revise", None, {"json": {"draft_version": 1, "message": "x"}}),
     ("POST", "/flashcard-sets/{flashcard_set}/publish", None, {}),
     ("POST", "/flashcard-sets/{flashcard_set}/unpublish", None, {}),
     ("DELETE", "/flashcard-sets/{flashcard_set}", None, {}),

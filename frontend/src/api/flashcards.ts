@@ -74,6 +74,13 @@ export async function saveFlashcards(id: string, draftVersion: number, cards: Fl
   return data
 }
 
+// The set rewritten as the lecturer asks in words, with what was done; `changed` is false when nothing was.
+export async function reviseFlashcardSet(id: string, draftVersion: number, message: string) {
+  const { data } = await api.post<FlashcardSetDetail & { reply: string; changed: boolean }>(
+    `/flashcard-sets/${id}/revise`, { draft_version: draftVersion, message })
+  return data
+}
+
 export async function publishFlashcardSet(id: string, published: boolean) {
   const { data } = await api.post<FlashcardSetDetail>(`/flashcard-sets/${id}/${published ? 'publish' : 'unpublish'}`)
   return data

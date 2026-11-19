@@ -9,6 +9,7 @@ import {
   getFlashcardSet,
   MAX_FLASHCARDS,
   publishFlashcardSet,
+  reviseFlashcardSet,
   saveFlashcards,
   type FlashcardCardEdit,
   type FlashcardSource,
@@ -51,7 +52,8 @@ export function FlashcardEditorPage() {
   const [loadFailed, setLoadFailed] = useState(false)
   const [missing, setMissing] = useState(false)
   const [attempt, setAttempt] = useState(0)
-  const [busy, setBusy] = useState<'save' | 'publish' | 'delete' | null>(null)
+  const [busy, setBusy] = useState<'save' | 'publish' | 'delete' | 'revise' | null>(null)
+  const [request, setRequest] = useState('')
   const keyCounter = useRef(0)
   const nextKey = useCallback(() => keyCounter.current++, [])
 
@@ -151,6 +153,22 @@ export function FlashcardEditorPage() {
       notifyDone('Đã lưu.')
     } catch (err) {
       notifyFailed(apiErrorMessage(err, 'Lưu thẻ thất bại'))
+    } finally {
+      setBusy(null)
+    }
+  }
+
+  async function revise() {
+    setBusy('revise')
+    try {
+      const { reply, changed, ...set } = await reviseFlashcardSet(setId, draftVersion, request.trim())
+      setSaved(set)
+      setCards(toDrafts(set, nextKey))
+      setRequest('')
+      if (changed) notifyDone(reply || 'Đã sửa bộ thẻ.')
+      else notifyFailed(reply || 'Bộ thẻ không thay đổi.')
+    } catch (err) {
+      notifyFailed(apiErrorMessage(err, 'Sửa bộ thẻ thất bại. Vui lòng thử lại.'))
     } finally {
       setBusy(null)
     }
@@ -299,6 +317,20 @@ export function FlashcardEditorPage() {
           </button>
           {deleteButton}
         </div>
+
+        <section className="module-ai-edit" aria-labelledby="flashcard-revise-title">
+          <h2 id="flashcard-revise-title" className="module-part-title">Sửa theo yêu cầu</h2>
+          <label htmlFor="flashcard-revise" className="chat-label mt-3 block">Yêu cầu chỉnh sửa</label>
+          <textarea id="flashcard-revise" value={request} onChange={(e) => setRequest(e.target.value)} maxLength={2000} rows={3}
+            disabled={busy !== null} placeholder="Ví dụ: rút gọn mặt sau thẻ 2, thêm một thẻ về ví dụ tính thời gian chờ"
+            className="ui-input mt-2 w-full" />
+          {/* The request rewrites the saved set, so unsaved edits would be lost under it. */}
+          {dirty && <p className="course-hint">Lưu thay đổi trước khi gửi yêu cầu.</p>}
+          <button type="button" onClick={revise} disabled={busy !== null || dirty || request.trim() === ''}
+            className="ui-button primary mt-2 w-fit">
+            {busy === 'revise' ? 'Đang sửa…' : 'Gửi yêu cầu'}
+          </button>
+        </section>
       </div>
     </AppShell>
   )

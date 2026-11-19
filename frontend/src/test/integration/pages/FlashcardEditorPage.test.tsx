@@ -147,6 +147,36 @@ describe('FlashcardEditorPage', () => {
     scrollHeight.mockRestore()
   })
 
+  it('rewrites the saved set as the lecturer asks, and shows the new cards with what was done', async () => {
+    vi.mocked(api.getFlashcardSet).mockResolvedValue(draft([card(1), card(2)]))
+    vi.mocked(api.reviseFlashcardSet).mockResolvedValue({
+      ...draft([card(1), card(2, { back: 'Ngắn hơn' })], { draft_version: 4 }), reply: 'Đã rút gọn thẻ 2.', changed: true,
+    })
+
+    renderPage()
+    const request = await screen.findByLabelText('Yêu cầu chỉnh sửa')
+    const send = screen.getByRole('button', { name: 'Gửi yêu cầu' })
+    expect(send).toBeDisabled()
+    await userEvent.type(request, 'Rút gọn thẻ 2')
+    await userEvent.click(send)
+
+    expect(await screen.findByText('Đã rút gọn thẻ 2.')).toBeInTheDocument()
+    expect(api.reviseFlashcardSet).toHaveBeenCalledWith('set-1', 3, 'Rút gọn thẻ 2')
+    expect(screen.getByLabelText('Mặt sau thẻ 2')).toHaveValue('Ngắn hơn')
+    expect(request).toHaveValue('')
+  })
+
+  it('asks for unsaved edits to be saved before a request, which would rewrite the saved set', async () => {
+    vi.mocked(api.getFlashcardSet).mockResolvedValue(draft([card(1)]))
+
+    renderPage()
+    await userEvent.type(await screen.findByLabelText('Yêu cầu chỉnh sửa'), 'Thêm một thẻ')
+    await userEvent.type(screen.getByLabelText('Mặt trước thẻ 1'), ' sửa')
+
+    expect(screen.getByText('Lưu thay đổi trước khi gửi yêu cầu.')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Gửi yêu cầu' })).toBeDisabled()
+  })
+
   it('does not save a card with an empty side', async () => {
     vi.mocked(api.getFlashcardSet).mockResolvedValue(draft([card(1)]))
 
