@@ -1,4 +1,3 @@
-import { Toaster } from 'sonner'
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { AxiosError, type AxiosResponse, type InternalAxiosRequestConfig } from 'axios'
@@ -71,7 +70,7 @@ function renderPage() {
           <Route path="/courses/:courseId" element={<CourseDetailPage />} />
         </Routes>
       </MemoryRouter>
-      <Toaster />
+      
     </AuthProvider>,
   )
 }
@@ -144,7 +143,9 @@ describe('CourseDetailPage - Moodle linking', () => {
     await waitFor(() => {
       expect(api.linkMoodleCourse).toHaveBeenCalledWith('course-1', 6)
     })
-    expect(await screen.findByText(/đã liên kết với khóa học moodle/i)).toBeInTheDocument()
+    // Once as the toast, once on the panel, which now shows the linked course.
+    expect(await screen.findByText('Đã liên kết với khóa học Moodle #6.')).toBeInTheDocument()
+    expect(await screen.findByText('#6', { selector: 'strong' })).toBeInTheDocument()
   })
 
   it('asks for a course to be chosen instead of linking nothing', async () => {

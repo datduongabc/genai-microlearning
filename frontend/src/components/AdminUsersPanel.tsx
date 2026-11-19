@@ -1,7 +1,7 @@
 import { Ellipsis, KeyRound, Unlink, UserCheck, UserX } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "./ui/dropdown-menu";
-import { toast } from "sonner";
 import { confirmAction } from "../lib/confirm";
+import { notifyDone, notifyFailed } from "../lib/notify";
 import { useCallback, useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -28,7 +28,6 @@ export function AdminUsersPanel({ counts, onChange }: { counts: AdminCounts | nu
   const [filter, setFilter] = useState("active");
   const [users, setUsers] = useState<AdminUser[] | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [resetting, setResetting] = useState<string | null>(null);
 
@@ -62,13 +61,12 @@ export function AdminUsersPanel({ counts, onChange }: { counts: AdminCounts | nu
     const verb = user.is_active ? "Vô hiệu hóa" : "Kích hoạt lại";
     if (!await confirmAction({ title: `${verb} tài khoản ${user.email}?`, description: "Dữ liệu và liên kết Moodle được giữ nguyên.", action: verb, destructive: user.is_active })) return;
     setBusyId(user.id);
-    setError(null);
     try {
       await setUserActive(user.id, !user.is_active);
-      toast.success(user.is_active ? `Đã vô hiệu hóa tài khoản ${user.email}.` : `Đã kích hoạt lại tài khoản ${user.email}.`);
+      notifyDone(user.is_active ? `Đã vô hiệu hóa tài khoản ${user.email}.` : `Đã kích hoạt lại tài khoản ${user.email}.`);
       reload();
     } catch (err) {
-      setError(apiErrorMessage(err, "Đổi trạng thái tài khoản thất bại"));
+      notifyFailed(apiErrorMessage(err, "Đổi trạng thái tài khoản thất bại"));
     } finally {
       setBusyId(null);
     }
@@ -77,13 +75,12 @@ export function AdminUsersPanel({ counts, onChange }: { counts: AdminCounts | nu
   async function handleUnlinkMoodle(user: AdminUser) {
     if (!await confirmAction({ title: `Hủy liên kết tài khoản Moodle của ${user.email}?`, description: "Các khóa học và nội dung trên Moodle được giữ nguyên. Người dùng cần liên kết lại để tiếp tục đẩy nội dung lên Moodle.", action: "Hủy liên kết" })) return;
     setBusyId(user.id);
-    setError(null);
     try {
       await unlinkUserMoodleAccount(user.id);
-      toast.success(`Đã hủy liên kết Moodle của ${user.email}.`);
+      notifyDone(`Đã hủy liên kết Moodle của ${user.email}.`);
       reload();
     } catch (err) {
-      setError(apiErrorMessage(err, "Không hủy được liên kết Moodle."));
+      notifyFailed(apiErrorMessage(err, "Không hủy được liên kết Moodle."));
     } finally {
       setBusyId(null);
     }
@@ -101,13 +98,11 @@ export function AdminUsersPanel({ counts, onChange }: { counts: AdminCounts | nu
       {creating && <CreateUserForm
         onCreated={(created) => {
           setCreating(false);
-          setError(null);
-          toast.success(`Đã tạo tài khoản cho ${created.email}.`);
+          notifyDone(`Đã tạo tài khoản cho ${created.email}.`);
           reload();
         }}
       />}
-      {error && <p className="text-sm text-red-700">{error}</p>}
-      {loadError && <p className="text-sm text-red-700">{loadError}</p>}
+      {loadError && <p className="text-sm danger-text">{loadError}</p>}
 
       {users === null ? (
         !loadError && <p className="text-sm text-gray-500">Đang tải…</p>
@@ -150,8 +145,7 @@ export function AdminUsersPanel({ counts, onChange }: { counts: AdminCounts | nu
                   user={u}
                   onDone={(message) => {
                     setResetting(null);
-                    setError(null);
-                    toast.success(message);
+                    notifyDone(message);
                   }}
                 />
               )}
@@ -165,7 +159,6 @@ export function AdminUsersPanel({ counts, onChange }: { counts: AdminCounts | nu
 }
 
 function CreateUserForm({ onCreated }: { onCreated: (user: AdminUser) => void }) {
-  const [error, setError] = useState<string | null>(null);
   const {
     register,
     handleSubmit,
@@ -174,13 +167,12 @@ function CreateUserForm({ onCreated }: { onCreated: (user: AdminUser) => void })
   } = useForm<CreateUserFormValues>({ resolver: zodResolver(createUserSchema) });
 
   async function onSubmit(values: CreateUserFormValues) {
-    setError(null);
     try {
       const created = await createUser(values.name, values.email, values.password);
       reset();
       onCreated(created);
     } catch (err) {
-      setError(apiErrorMessage(err, "Tạo tài khoản thất bại"));
+      notifyFailed(apiErrorMessage(err, "Tạo tài khoản thất bại"));
     }
   }
 
@@ -195,25 +187,24 @@ function CreateUserForm({ onCreated }: { onCreated: (user: AdminUser) => void })
         <label className="flex flex-col gap-1 text-sm text-gray-500">
           Họ và tên
           <input type="text" autoComplete="off" className="auth-input" {...register("name")} />
-          {errors.name && <span className="text-red-600">{errors.name.message}</span>}
+          {errors.name && <span className="danger-text">{errors.name.message}</span>}
         </label>
         <label className="flex flex-col gap-1 text-sm text-gray-500">
           Email
           <input type="email" autoComplete="off" className="auth-input" {...register("email")} />
-          {errors.email && <span className="text-red-600">{errors.email.message}</span>}
+          {errors.email && <span className="danger-text">{errors.email.message}</span>}
         </label>
         <label className="flex flex-col gap-1 text-sm text-gray-500">
           Mật khẩu ban đầu
           <input type="password" autoComplete="new-password" className="auth-input" {...register("password")} />
-          {errors.password && <span className="text-red-600">{errors.password.message}</span>}
+          {errors.password && <span className="danger-text">{errors.password.message}</span>}
         </label>
       </div>
-      {error && <p className="text-sm text-red-700">{error}</p>}
       <div>
         <button
           type="submit"
           disabled={isSubmitting}
-          className="rounded-[3px] bg-accent px-4 py-2 text-sm font-semibold text-white hover:bg-accent-dark disabled:opacity-60"
+          className="ui-button primary"
         >
           {isSubmitting ? "Đang tạo…" : "Tạo tài khoản"}
         </button>
@@ -223,7 +214,6 @@ function CreateUserForm({ onCreated }: { onCreated: (user: AdminUser) => void })
 }
 
 function ResetPasswordForm({ user, onDone }: { user: AdminUser; onDone: (message: string) => void }) {
-  const [error, setError] = useState<string | null>(null);
   const {
     register,
     handleSubmit,
@@ -231,12 +221,11 @@ function ResetPasswordForm({ user, onDone }: { user: AdminUser; onDone: (message
   } = useForm<{ password: string }>({ resolver: zodResolver(resetPasswordSchema) });
 
   async function onSubmit(values: { password: string }) {
-    setError(null);
     try {
       await resetUserPassword(user.id, values.password);
       onDone(`Đã đặt lại mật khẩu cho ${user.email}. Các phiên đăng nhập cũ của họ đã bị đóng.`);
     } catch (err) {
-      setError(apiErrorMessage(err, "Đặt lại mật khẩu thất bại"));
+      notifyFailed(apiErrorMessage(err, "Đặt lại mật khẩu thất bại"));
     }
   }
 
@@ -254,13 +243,12 @@ function ResetPasswordForm({ user, onDone }: { user: AdminUser; onDone: (message
         <button
           type="submit"
           disabled={isSubmitting}
-          className="rounded-[3px] bg-ink px-3 py-1.5 text-sm font-semibold text-white hover:bg-ink-raised disabled:opacity-60"
+          className="ui-button primary"
         >
           {isSubmitting ? "Đang lưu…" : "Lưu mật khẩu mới"}
         </button>
       </div>
-      {errors.password && <span className="text-sm text-red-600">{errors.password.message}</span>}
-      {error && <span className="text-sm text-red-700">{error}</span>}
+      {errors.password && <span className="text-sm danger-text">{errors.password.message}</span>}
     </form>
   );
 }

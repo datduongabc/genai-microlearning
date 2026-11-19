@@ -1,7 +1,8 @@
 import '@testing-library/jest-dom/vitest'
-import { configure } from '@testing-library/react'
-import { afterEach } from 'vitest'
-import { toast } from 'sonner'
+import { configure, render } from '@testing-library/react'
+import { createElement } from 'react'
+import { afterEach, beforeEach } from 'vitest'
+import { Toaster, toast } from 'sonner'
 
 // React 19 + Vitest doesn't set this automatically -- without it, state
 // updates inside act() still print "not configured to support act(...)"
@@ -25,8 +26,10 @@ Element.prototype.releasePointerCapture ??= () => {}
 Element.prototype.scrollIntoView ??= () => {}
 window.ResizeObserver ??= class { observe() {} unobserve() {} disconnect() {} } as unknown as typeof ResizeObserver
 
-// Sonner keeps its toasts in a module-level store; without this a toast from one test is still
-// listed when the next test mounts its Toaster.
+// Every result of an action is a toast (lib/notify.ts), so every test has the app's one Toaster,
+// as App.tsx mounts it. Sonner keeps its toasts in a module-level store; without the dismiss a
+// toast from one test is still listed in the next.
+beforeEach(() => { render(createElement(Toaster)) })
 afterEach(() => { toast.dismiss() })
 
 // findBy and waitFor give up after 1 s by default. With the whole suite sharing the machine, a

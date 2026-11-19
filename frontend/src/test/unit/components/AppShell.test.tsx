@@ -124,7 +124,7 @@ describe('AppShell', () => {
     renderShell()
     await userEvent.click(screen.getByRole('button', { name: /Giảng viên/ }))
     await userEvent.click(await screen.findByRole('button', { name: 'Hủy liên kết Moodle…' }))
-    expect(await screen.findByRole('alert')).toHaveTextContent('Không hủy được liên kết Moodle.')
+    expect(await screen.findByText('Không hủy được liên kết Moodle.')).toBeInTheDocument()
     expect(screen.getByText('moodle@school.edu')).toBeInTheDocument()
   })
   it('keeps native keyboard editing in the Moodle email field', async () => {

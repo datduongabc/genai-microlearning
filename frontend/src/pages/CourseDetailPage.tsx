@@ -1,5 +1,5 @@
-import { toast } from "sonner";
 import { confirmAction } from "../lib/confirm";
+import { notifyDone, notifyFailed } from "../lib/notify";
 import { BookOpenText, ChevronDown, Clapperboard, Ellipsis, Layers, Plus, Trash2 } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../components/ui/dropdown-menu";
 import axios from "axios";
@@ -253,7 +253,6 @@ export function CourseDetailPage() {
   const [attempt, setAttempt] = useState(0);
   const [deletingDocId, setDeletingDocId] = useState<string | null>(null);
   const [deletingModuleId, setDeletingModuleId] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
   // What went right but is worth saying (a delete that succeeded although the list could not
   // be reloaded afterwards); shown apart from `error` so it does not read as a failure.
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
@@ -377,7 +376,6 @@ export function CourseDetailPage() {
 
   async function handleUpload({ file }: UploadDocumentFormValues) {
     if (!courseId) return;
-    setError(null);
     try {
       // Ends once the file is stored and the job queued; the processing itself (extract/chunk/
       // embed, and for audio/video the Whisper transcription first) runs in the background.
@@ -386,7 +384,7 @@ export function CourseDetailPage() {
       await uploadDocument(courseId, file, setUploadProgress);
       await refresh();
     } catch (err) {
-      setError(apiErrorMessage(err, "Tải tài liệu thất bại"));
+      notifyFailed(apiErrorMessage(err, "Tải tài liệu thất bại"));
     } finally {
       setUploadProgress(null);
     }
@@ -396,7 +394,6 @@ export function CourseDetailPage() {
     if (isGenerating(doc)) return;
     const documentId = doc.id;
     setStartingIds((ids) => new Set(ids).add(documentId));
-    setError(null);
     try {
       const { job_id } = await generateModule(documentId, modelAlias, outputLanguage, customInstructions);
       // A failed job needs no banner here: the refresh brings it back on the document, with its
@@ -405,9 +402,9 @@ export function CourseDetailPage() {
       await refresh();
     } catch (err) {
       if (axios.isAxiosError(err) && err.response?.status === 409) {
-        setError("Tài liệu này đang sinh một mô-đun khác. Chờ lượt đó xong rồi thử lại.");
+        notifyFailed("Tài liệu này đang sinh một mô-đun khác. Chờ lượt đó xong rồi thử lại.");
       } else {
-        setError(apiErrorMessage(err, "Tạo mô-đun thất bại"));
+        notifyFailed(apiErrorMessage(err, "Tạo mô-đun thất bại"));
       }
     } finally {
       setStartingIds((ids) => {
@@ -428,7 +425,6 @@ export function CourseDetailPage() {
     pendingKeys.current.add(guard);
     const item = { key: nextPending.current++, documentId: doc.id, kind, focus: focus.trim() || null };
     setPendingMedia((items) => [...items, item]);
-    setError(null);
     try {
       await send();
     } finally {
@@ -446,15 +442,15 @@ export function CourseDetailPage() {
       await generate();
     } catch (err) {
       // A 409 (the same item is being generated) and a 429 (quota) carry their own Vietnamese wording.
-      setError(apiErrorMessage(err, failed));
+      notifyFailed(apiErrorMessage(err, failed));
       return;
     }
     try {
       await reload();
     } catch (err) {
       // Said only then: otherwise the new row in the list says it.
-      toast.success(`${started}.`);
-      setError(`${apiErrorMessage(err, "Không tải lại được danh sách")}. ${started}, hãy tải lại trang để theo dõi.`);
+      notifyDone(`${started}.`);
+      notifyFailed(`${apiErrorMessage(err, "Không tải lại được danh sách")}. ${started}, hãy tải lại trang để theo dõi.`);
     }
   }
 
@@ -483,19 +479,18 @@ export function CourseDetailPage() {
     if (!confirmed) return;
 
     setDeletingDocId(doc.id);
-    setError(null);
     try {
       await deleteDocument(doc.id);
     } catch (err) {
-      setError(apiErrorMessage(err, "Xóa tài liệu thất bại"));
+      notifyFailed(apiErrorMessage(err, "Xóa tài liệu thất bại"));
       setDeletingDocId(null);
       return;
     }
-    toast.success(`Đã xóa tài liệu "${doc.filename}".`);
+    notifyDone(`Đã xóa tài liệu "${doc.filename}".`);
     try {
       await refresh();
     } catch (err) {
-      setError(
+      notifyFailed(
         `${apiErrorMessage(err, "Không tải lại được danh sách")}. Tài liệu đã được xóa, hãy tải lại trang để thấy danh sách mới.`,
       );
     } finally {
@@ -505,11 +500,10 @@ export function CourseDetailPage() {
 
   async function handleRetry(failure: DocumentFailure) {
     setRetryingJobIds((ids) => new Set(ids).add(failure.job_id));
-    setError(null);
     try {
       await retryJob(failure.job_id);
     } catch (err) {
-      setError(apiErrorMessage(err, "Thử lại thất bại"));
+      notifyFailed(apiErrorMessage(err, "Thử lại thất bại"));
       setRetryingJobIds((ids) => {
         const next = new Set(ids);
         next.delete(failure.job_id);
@@ -518,11 +512,11 @@ export function CourseDetailPage() {
       return;
     }
     // The job is queued again whatever happens next: retrying it once more would be refused.
-    toast.success("Đã gửi yêu cầu thử lại.");
+    notifyDone("Đã gửi yêu cầu thử lại.");
     try {
       await refresh();
     } catch (err) {
-      setError(
+      notifyFailed(
         `${apiErrorMessage(err, "Không tải lại được danh sách")}. Đã gửi yêu cầu thử lại, hãy tải lại trang để thấy trạng thái mới.`,
       );
     } finally {
@@ -543,21 +537,20 @@ export function CourseDetailPage() {
     if (!confirmed) return;
 
     setDeletingModuleId(m.id);
-    setError(null);
     try {
       await deleteModule(m.id);
     } catch (err) {
-      setError(apiErrorMessage(err, "Xóa mô-đun thất bại"));
+      notifyFailed(apiErrorMessage(err, "Xóa mô-đun thất bại"));
       setDeletingModuleId(null);
       return;
     }
     // The module is gone whatever happens next: a list that cannot be reloaded is a different
     // problem, and saying the delete failed would send the lecturer to delete it again.
-    toast.success(`Đã xóa mô-đun "${m.title}".`);
+    notifyDone(`Đã xóa mô-đun "${m.title}".`);
     try {
       await refresh();
     } catch (err) {
-      setError(
+      notifyFailed(
         `${apiErrorMessage(err, "Không tải lại được danh sách")}. Mô-đun đã được xóa, hãy tải lại trang để thấy danh sách mới.`,
       );
     } finally {
@@ -599,7 +592,7 @@ export function CourseDetailPage() {
               e.target.value = "";
               if (!file) return;
               upload.setValue("file", file);
-              void upload.handleSubmit(handleUpload, (errors) => setError(errors.file?.message ?? null))();
+              void upload.handleSubmit(handleUpload, (errors) => { if (errors.file?.message) notifyFailed(errors.file.message); })();
             }}
             disabled={loading || uploadBusy}
             accept=".pdf,.pptx,.docx,.html,.htm,.mp3,.wav,.m4a,.flac,.ogg,.aac,.mp4,.mkv,.webm,.mov,.avi"
@@ -617,7 +610,6 @@ export function CourseDetailPage() {
           Âm thanh và video dài có thể mất vài phút.
         </p>
       )}
-      {error && <p className="mt-3 text-sm danger-text">{error}</p>}
 
       {!loading && documents.length > 0 && (
         <div className="course-filter">
@@ -831,12 +823,12 @@ function MoodleLinkSection({ course, onLinked }: { course: Course; onLinked: () 
     if (!confirmed) return;
 
     setBusy(true);
-    setError(null);
     try {
       await unlinkMoodleCourse(course.id);
       onLinked();
+      notifyDone("Đã hủy liên kết khóa học Moodle.");
     } catch {
-      setError("Hủy liên kết thất bại");
+      notifyFailed("Hủy liên kết thất bại");
     } finally {
       setBusy(false);
     }
@@ -844,12 +836,12 @@ function MoodleLinkSection({ course, onLinked }: { course: Course; onLinked: () 
 
   async function handleLink({ moodleCourseId }: LinkMoodleCourseFormValues) {
     setBusy(true);
-    setError(null);
     try {
       await linkMoodleCourse(course.id, Number(moodleCourseId));
       onLinked();
+      notifyDone(`Đã liên kết với khóa học Moodle #${moodleCourseId}.`);
     } catch (err) {
-      setError(apiErrorMessage(err, "Liên kết khóa học thất bại"));
+      notifyFailed(apiErrorMessage(err, "Liên kết khóa học thất bại"));
     } finally {
       setBusy(false);
     }

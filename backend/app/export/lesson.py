@@ -112,7 +112,8 @@ def build_questions(component: ModuleComponent, explanations: dict[int, str] | N
 
 
 def failing_questions(module: Module) -> list[str]:
-    """Quiz/practice questions that failed the quality gate and have not been edited since."""
+    """Quiz/practice questions that failed the quality gate and have not been edited since, as
+    "quiz 1". Each one's reason is shown under it on the module page, so a refusal names them only."""
     failing = []
     for component in module.components:
         if component.type not in (ComponentType.quiz, ComponentType.practice):
@@ -120,5 +121,5 @@ def failing_questions(module: Module) -> list[str]:
         positions = {q.position for q in component.questions}
         for position, q in enumerate(component.content.get("questions", [])):
             if position in positions and q.get("passed") is False:
-                failing.append(f"{component.type.value} {position + 1}: {q.get('fail_reason') or 'chưa khớp nguồn'}")
+                failing.append(f"{component.type.value} {position + 1}")
     return failing

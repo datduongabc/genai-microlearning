@@ -680,6 +680,14 @@ a.learn-link:hover { background:var(--bg-subtle); color:var(--accent-default); }
 .confirm-dialog [data-slot=alert-dialog-cancel] { border:1px solid var(--border-input); }
 [data-sonner-toast] { font:500 15px/22px var(--font-sans) !important; padding:14px 16px !important; }
 [data-sonner-toast][data-type=success] [data-icon] { color:var(--status-success); }
+[data-sonner-toast][data-type=error] [data-icon] { color:var(--status-danger); }
+/* The close button sits in the top right corner, clear of the icon, with room kept for it. */
+[data-sonner-toast] { padding-right:44px !important; align-items:flex-start !important; --toast-close-button-start:unset; --toast-close-button-end:10px; --toast-close-button-transform:none; }
+[data-sonner-toast][data-styled=true] [data-close-button] { left:auto !important; right:10px !important; transform:none !important; top:12px; width:26px; height:26px; border:0; background:transparent; color:var(--text-secondary); border-radius:var(--radius-sm); }
+[data-sonner-toast][data-styled=true] [data-close-button]:hover { color:var(--text-primary); background:var(--bg-subtle); }
+[data-sonner-toast] [data-icon] { margin-top:3px; }
+/* A long refusal scrolls inside the toast instead of running off the top of the screen. */
+[data-sonner-toast] [data-content] { max-height:40vh; overflow-y:auto; overscroll-behavior:contain; }
 
 /* Phones: the Moodle state moves under the e-mail, so the name and address keep the row's width. */
 @media(max-width:520px) {

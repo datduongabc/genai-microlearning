@@ -480,8 +480,9 @@ def test_a_module_with_a_question_that_failed_the_gate_is_refused_naming_it(publ
     response = published.publish(_failing_module(published))
 
     assert response.status_code == 422
-    assert "quiz 2: C and D both describe abstraction" in response.json()["detail"]
-    assert "quiz 1" not in response.json()["detail"]
+    assert response.json()["detail"] == (
+        "Còn 1 câu hỏi chưa khớp nguồn (quiz 2). Lý do ghi dưới từng câu; hãy sửa trước khi đẩy lên Moodle."
+    )
     assert moodle == []
 
 

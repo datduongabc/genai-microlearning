@@ -5,10 +5,12 @@ import { useCallback, useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Link } from "react-router-dom";
-import { toast } from "sonner";
 import { apiErrorMessage, createCourse, deleteCourse, listCourses, type Course } from "../api";
 import { AppShell } from "../components/AppShell";
 import { createCourseSchema, type CreateCourseFormValues } from "../lib/formSchemas";
+import { notifyDone, notifyFailed } from "../lib/notify";
+
+const RELOAD_FAILED = "Không tải lại được danh sách môn học, hãy tải lại trang.";
 
 export function CoursesPage() {
   const [courses, setCourses] = useState<Course[]>([]);
@@ -56,9 +58,15 @@ export function CoursesPage() {
   }
 
   async function handleCreate(values: CreateCourseFormValues) {
-    await createCourse(values.name);
+    try {
+      await createCourse(values.name);
+    } catch (err) {
+      notifyFailed(apiErrorMessage(err, "Tạo môn học thất bại"));
+      return;
+    }
     reset();
-    await refresh();
+    notifyDone(`Đã tạo môn học "${values.name}".`);
+    await refresh().catch(() => notifyFailed(RELOAD_FAILED));
   }
 
   async function handleDelete(course: Course) {
@@ -76,13 +84,16 @@ export function CoursesPage() {
     setDeletingId(course.id);
     try {
       await deleteCourse(course.id);
-      await refresh();
     } catch (err) {
       // A refusal (a job still running, a module in a study) said nothing before: the row just stayed.
-      toast.error(apiErrorMessage(err, "Xóa môn học thất bại"));
-    } finally {
+      notifyFailed(apiErrorMessage(err, "Xóa môn học thất bại"));
       setDeletingId(null);
+      return;
     }
+    // Deleted whatever happens next: a list that cannot be read again must not say the delete failed.
+    notifyDone(`Đã xóa môn học "${course.name}".`);
+    await refresh().catch(() => notifyFailed(RELOAD_FAILED));
+    setDeletingId(null);
   }
 
   return (

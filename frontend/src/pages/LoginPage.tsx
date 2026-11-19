@@ -46,7 +46,7 @@ export function LoginPage() {
         <h1>Đăng nhập</h1>
 
         {justRegistered && !error && (
-          <div role="status" className="text-sm text-green-800">
+          <div role="status" className="text-sm success-text">
             Đã tạo tài khoản. Hãy đăng nhập.
           </div>
         )}
@@ -73,7 +73,7 @@ export function LoginPage() {
             {...register("email")}
           />
           {errors.email && (
-            <span id="email-error" className="text-sm text-red-700">{errors.email.message}</span>
+            <span id="email-error" className="text-sm danger-text">{errors.email.message}</span>
           )}
         </label>
 
@@ -95,7 +95,7 @@ export function LoginPage() {
             {...register("password")}
           />
           {errors.password && (
-            <span id="password-error" className="text-sm text-red-700">{errors.password.message}</span>
+            <span id="password-error" className="text-sm danger-text">{errors.password.message}</span>
           )}
         </div>
 

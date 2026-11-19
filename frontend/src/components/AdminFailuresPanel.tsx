@@ -1,5 +1,6 @@
 import { ChevronDown, RefreshCw } from "lucide-react";
 import { Fragment, useEffect, useState } from "react";
+import { notifyDone, notifyFailed } from "../lib/notify";
 import { apiErrorMessage, listFailedJobs, retryFailedJobs, type AdminCounts, type FailedJobInfo } from "../api";
 
 const JOB_TYPE_LABEL: Record<FailedJobInfo["job_type"], string> = {
@@ -16,7 +17,6 @@ export function AdminFailuresPanel({ counts, onChange }: { counts: AdminCounts |
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [retrying, setRetrying] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
 
   // Bumped to load the list again (refresh button, after a retry), so the effect below is the only loader.
   const [reloads, setReloads] = useState(0);
@@ -63,8 +63,6 @@ export function AdminFailuresPanel({ counts, onChange }: { counts: AdminCounts |
 
   async function handleRetry(ids: string[]) {
     setRetrying(true);
-    setError(null);
-    setNotice(null);
     try {
       const result = await retryFailedJobs(ids);
       const videoOnly = Object.keys(result.reasons).length;
@@ -72,10 +70,10 @@ export function AdminFailuresPanel({ counts, onChange }: { counts: AdminCounts |
       const skipped =
         (stale > 0 ? ` ${stale} tác vụ được bỏ qua vì không còn lỗi.` : "") +
         (videoOnly > 0 ? ` ${videoOnly} tác vụ video cần chạy lại từ trang sửa video.` : "");
-      setNotice(`Đã chạy lại ${result.retried.length} tác vụ.${skipped}`);
+      notifyDone(`Đã chạy lại ${result.retried.length} tác vụ.${skipped}`);
       reload();
     } catch (err) {
-      setError(apiErrorMessage(err, "Thử lại thất bại"));
+      notifyFailed(apiErrorMessage(err, "Thử lại thất bại"));
     } finally {
       setRetrying(false);
     }
@@ -98,8 +96,7 @@ export function AdminFailuresPanel({ counts, onChange }: { counts: AdminCounts |
         </div>
       </div>
 
-      {notice && <p className="mb-3 text-sm text-green-800">{notice}</p>}
-      {error && <p className="mb-3 text-sm text-red-700">{error}</p>}
+      {error && <p className="mb-3 text-sm danger-text">{error}</p>}
 
       {jobs === null ? (
         !error && <p className="text-sm text-gray-500">Đang tải…</p>

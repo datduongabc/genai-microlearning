@@ -3,6 +3,7 @@ import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import Markdown, { type Components } from 'react-markdown'
 import { modelMarkdownProps } from '../lib/markdownMath'
+import { notifyDone, notifyFailed } from '../lib/notify'
 import { COMPONENT_LABEL, SAVE_FAILED, SourceContext, type Citation } from '../lib/moduleParts'
 import {
   examplesContentSchema,
@@ -110,15 +111,13 @@ async function saveFile(path: string, filename: string) {
 // For an LMS the system is not connected to, or a Moodle course nobody linked: one zip the
 // lecturer uploads there as a SCORM activity, which records the quiz score.
 export function ScormDownload({ moduleId, moduleTitle }: { moduleId: string; moduleTitle: string }) {
-  const [error, setError] = useState<string | null>(null)
   const [downloading, setDownloading] = useState(false)
   async function download() {
-    setError(null)
     setDownloading(true)
     try {
       await saveFile(`/modules/${moduleId}/scorm.zip`, `${moduleTitle} - SCORM.zip`)
     } catch (err) {
-      setError(await blobErrorMessage(err, 'Tải gói SCORM thất bại'))
+      notifyFailed(await blobErrorMessage(err, 'Tải gói SCORM thất bại'))
     } finally {
       setDownloading(false)
     }
@@ -132,7 +131,6 @@ export function ScormDownload({ moduleId, moduleTitle }: { moduleId: string; mod
       <button type="button" className="ui-button" disabled={downloading} onClick={() => void download()}>
         {downloading ? 'Đang tạo gói…' : 'Tải gói SCORM (.zip)'}
       </button>
-      {error && <p role="alert" className="mt-3 text-sm danger-text">{error}</p>}
     </section>
   )
 }
@@ -140,18 +138,15 @@ export function ScormDownload({ moduleId, moduleTitle }: { moduleId: string; mod
 // At the end of the slides it exports: the file carries their text only, so it is a handout for
 // whoever wants one, not the main action of the page.
 function SlidesDownload({ moduleId, moduleTitle }: { moduleId: string; moduleTitle: string }) {
-  const [error, setError] = useState<string | null>(null)
   async function download() {
-    setError(null)
     try {
       await saveFile(`/modules/${moduleId}/slides.pptx`, `${moduleTitle}.pptx`)
     } catch (err) {
-      setError(await blobErrorMessage(err, 'Tải slide thất bại'))
+      notifyFailed(await blobErrorMessage(err, 'Tải slide thất bại'))
     }
   }
   return <div className="slides-download">
     <button type="button" className="link-action" onClick={() => void download()}>Tải slide (PPTX)</button>
-    {error && <p role="alert" className="mt-2 text-sm danger-text">{error}</p>}
   </div>
 }
 
@@ -170,19 +165,18 @@ function SaveCancelRow({
   onCancel: () => void
 }) {
   // Here, so that every editor reports a failed save: otherwise the button goes back to "Lưu"
-  // with nothing said, and the lecturer moves on and loses the edit.
-  const [error, setError] = useState('')
+  // with nothing said, and the lecturer moves on and loses the edit. A save that went through is
+  // reported by the editor's own handler, since a form that fails its check resolves here too.
   async function save() {
-    setError('')
     try {
       await onSave()
     } catch (err) {
-      setError(apiErrorMessage(err, SAVE_FAILED))
+      notifyFailed(apiErrorMessage(err, SAVE_FAILED))
     }
   }
   if (!editing) {
     return (
-      <button onClick={() => { setError(''); onEdit() }} data-edit-trigger className="ui-button self-start">
+      <button onClick={onEdit} data-edit-trigger className="ui-button self-start">
         Sửa
       </button>
     )
@@ -197,11 +191,10 @@ function SaveCancelRow({
         >
           {saving ? 'Đang lưu…' : 'Lưu'}
         </button>
-        <button onClick={() => { setError(''); onCancel() }} className="ui-button">
+        <button onClick={onCancel} className="ui-button">
           Hủy
         </button>
       </div>
-      {error && <p role="alert" className="text-sm danger-text">{error}</p>}
     </>
   )
 }
@@ -272,6 +265,7 @@ function MarkdownFieldEditor({
     await updateComponentContent(moduleId, component.id, { ...component.content, markdown })
     await onSaved()
     setEditing(false)
+    notifyDone('Đã lưu.')
   }
 
   return (
@@ -342,6 +336,7 @@ function SlidesEditor({
     await updateComponentContent(moduleId, component.id, { ...component.content, slides })
     await onSaved()
     setEditing(false)
+    notifyDone('Đã lưu.')
   }
 
   return (
@@ -417,6 +412,7 @@ function ExamplesEditor({
     await updateComponentContent(moduleId, component.id, { examples })
     await onSaved()
     setEditing(false)
+    notifyDone('Đã lưu.')
   }
 
   return (
@@ -490,6 +486,7 @@ function ExplanationEditor({
     await updateComponentContent(moduleId, component.id, { items })
     await onSaved()
     setEditing(false)
+    notifyDone('Đã lưu.')
   }
 
   return (
@@ -613,7 +610,6 @@ function QuestionEditor({ moduleId, question, explanation, onSaved }: {
     explanation,
   })
   const [editing, setEditing] = useState(false)
-  const [error, setError] = useState<string | null>(null)
   const {
     register,
     handleSubmit,
@@ -624,28 +620,28 @@ function QuestionEditor({ moduleId, question, explanation, onSaved }: {
     defaultValues: formValues(),
   })
   async function save(values: QuestionEditFormValues) {
-    setError(null)
     try {
       await updateQuestion(moduleId, question.id, values)
       await onSaved()
       setEditing(false)
+      notifyDone('Đã lưu câu hỏi.')
     } catch (err) {
-      setError(apiErrorMessage(err, 'Lưu câu hỏi thất bại'))
+      notifyFailed(apiErrorMessage(err, 'Lưu câu hỏi thất bại'))
     }
   }
   return <div className="flex flex-col gap-3" data-edit-scope>
     {editing ? <form onSubmit={handleSubmit(save)} noValidate className="flex flex-col gap-3">
-      <label>Câu hỏi<textarea aria-label="Câu hỏi" {...register('stem')} className="w-full rounded border border-gray-300 p-2" /></label>
-      {errors.stem && <p className="text-sm text-red-600">{errors.stem.message}</p>}
+      <label>Câu hỏi<textarea aria-label="Câu hỏi" {...register('stem')} className="ui-input w-full" /></label>
+      {errors.stem && <p className="text-sm danger-text">{errors.stem.message}</p>}
       {question.choices.options.map((_, i) => <div key={i} className="flex flex-wrap items-center gap-2">
         <input type="radio" value={String(i)} aria-label={`Đáp án ${String.fromCharCode(65 + i)}`} {...register('answer_key')} />
-        <input aria-label={`Phương án ${String.fromCharCode(65 + i)}`} {...register(`choices.${i}`)} className="min-w-0 flex-1 rounded border border-gray-300 p-2" />
-        {errors.choices?.[i] && <p className="basis-full text-sm text-red-600">{errors.choices[i].message}</p>}
+        <input aria-label={`Phương án ${String.fromCharCode(65 + i)}`} {...register(`choices.${i}`)} className="ui-input min-w-0 flex-1" />
+        {errors.choices?.[i] && <p className="basis-full text-sm danger-text">{errors.choices[i].message}</p>}
       </div>)}
-      <label>Giải thích<textarea aria-label="Giải thích" {...register('explanation')} className="w-full rounded border border-gray-300 p-2" /></label>
+      <label>Giải thích<textarea aria-label="Giải thích" {...register('explanation')} className="ui-input w-full" /></label>
       <div className="flex gap-3">
-        <button type="submit" disabled={saving} className="text-sm font-semibold text-accent">{saving ? 'Đang lưu…' : 'Lưu'}</button>
-        <button type="button" disabled={saving} onClick={() => setEditing(false)} className="text-sm text-gray-500">Hủy</button>
+        <button type="submit" disabled={saving} className="ui-button primary">{saving ? 'Đang lưu…' : 'Lưu'}</button>
+        <button type="button" disabled={saving} onClick={() => setEditing(false)} className="ui-button">Hủy</button>
       </div>
     </form> : <>
       <p className="question-stem">{question.stem}</p>
@@ -653,10 +649,8 @@ function QuestionEditor({ moduleId, question, explanation, onSaved }: {
       {explanation && <p className="text-sm text-gray-500"><span className="font-semibold">Giải thích: </span>{explanation}</p>}
       <SaveCancelRow editing={false} saving={saving} onSave={handleSubmit(save)} onCancel={() => setEditing(false)} onEdit={() => {
         reset(formValues())
-        setError(null)
         setEditing(true)
       }} />
     </>}
-    {error && <p role="alert" className="text-sm text-red-700">{error}</p>}
   </div>
 }

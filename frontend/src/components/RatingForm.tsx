@@ -3,6 +3,7 @@ import { Controller, useFieldArray, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ratingSchema, emptyRating, rubric, type Rating } from "../lib/ratingSchema";
 import { apiErrorMessage } from "../api/client";
+import { notifyDone, notifyFailed } from "../lib/notify";
 
 const UNSAVED_PROMPT = "Đánh giá chưa lưu sẽ bị mất. Bạn vẫn muốn rời khỏi gói này?";
 const BLOOM_LABELS: Record<string, string> = {
@@ -21,8 +22,6 @@ export function RatingForm({
   rating: Rating | null;
   onSave: (values: Rating) => Promise<void>;
 }) {
-  const [error, setError] = useState("");
-  const [saved, setSaved] = useState(false);
   const [opened, setOpened] = useState<ReadonlySet<string>>(() => new Set([rubric[0].key]));
   const {
     register,
@@ -59,16 +58,13 @@ export function RatingForm({
   return (
     <form
       noValidate
-      onChange={() => setSaved(false)}
       onSubmit={handleSubmit(async (values) => {
-        setError("");
-        setSaved(false);
         try {
           await onSave(values);
           reset(values);
-          setSaved(true);
+          notifyDone("Đã lưu đánh giá.");
         } catch (e) {
-          setError(apiErrorMessage(e, "Không lưu được đánh giá."));
+          notifyFailed(apiErrorMessage(e, "Không lưu được đánh giá."));
         }
       }, (invalid) => setOpened((prev) => new Set([...prev, ...rubric.filter((c) => invalid[c.key]).map((c) => c.key)])))}
       className="rating-form ui-card"
@@ -190,11 +186,6 @@ export function RatingForm({
         />
       </label>
       </details>
-      {error && (
-        <p role="alert" className="danger-text">
-          {error}
-        </p>
-      )}
       <footer className="rating-footer"><span>Còn {rubric.filter((c) => !values[c.key]?.score || !values[c.key]?.justification?.trim()).length} tiêu chí</span>
       <button
         disabled={isSubmitting}
@@ -203,7 +194,6 @@ export function RatingForm({
         Lưu đánh giá
       </button>
       </footer>
-      {saved && <p role="status">Đã lưu đánh giá.</p>}
     </form>
   );
 }

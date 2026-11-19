@@ -3,7 +3,6 @@ import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { CoursesPage } from '../../../pages/CoursesPage'
-import { Toaster } from '../../../components/ui/sonner'
 import { AuthProvider } from '../../../auth/AuthContext'
 import * as api from '../../../api'
 import type { Course } from '../../../api'
@@ -82,7 +81,7 @@ describe('CoursesPage - delete', () => {
     vi.mocked(api.apiErrorMessage).mockReturnValue(refusal)
     vi.spyOn(window, 'confirm').mockReturnValue(true)
 
-    render(<><Toaster /><AuthProvider><MemoryRouter><CoursesPage /></MemoryRouter></AuthProvider></>)
+    render(<><AuthProvider><MemoryRouter><CoursesPage /></MemoryRouter></AuthProvider></>)
     await chooseDelete()
 
     expect(await screen.findByText(refusal)).toBeInTheDocument()

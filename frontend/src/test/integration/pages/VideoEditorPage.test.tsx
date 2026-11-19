@@ -1,4 +1,3 @@
-import { Toaster } from 'sonner'
 import { act, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { AxiosError, type AxiosResponse, type InternalAxiosRequestConfig } from 'axios'
@@ -56,7 +55,7 @@ function renderPage() {
       </Route>
     </>,
   ), { initialEntries: ['/courses', '/videos/video-1'], initialIndex: 1 })
-  return { router, ...render(<AuthProvider><RouterProvider router={router} /><Toaster /></AuthProvider>) }
+  return { router, ...render(<AuthProvider><RouterProvider router={router} /></AuthProvider>) }
 }
 
 const axiosFailure = (status: number, detail: string) => {
@@ -274,6 +273,18 @@ describe('VideoEditorPage', () => {
     expect(await screen.findByText('Đã vẽ xong hình.')).toBeInTheDocument()
   })
 
+  it('says once, as a toast, that a picture job failed while the page was closed', async () => {
+    const failed = 'Không vẽ được hình cho cảnh 2: HTTP 402. Hãy vẽ lại các cảnh này.'
+    vi.mocked(api.getVideo).mockResolvedValue(video([scene(1), scene(2)], { error: failed }))
+
+    renderPage()
+
+    const told = await screen.findByText(failed)
+    expect(told.closest('[data-sonner-toaster]')).not.toBeNull()
+    expect(screen.getAllByText(failed)).toHaveLength(1)
+    expect(screen.getByRole('main')).not.toHaveTextContent('HTTP 402')
+  })
+
   it('draws every picture that is missing or outdated with one button', async () => {
     vi.mocked(api.getVideo).mockResolvedValue(video([
       scene(1, { kind: 'illustration', image_prompt: 'Một hàng đợi', needs_image: true }),
@@ -360,7 +371,10 @@ describe('VideoEditorPage', () => {
     expect(screen.getByRole('button', { name: 'Dựng video' })).toBeDisabled()
     await passTime(3600)
 
-    expect(await screen.findByText('Dựng video thất bại: giọng đọc không trả về âm thanh.')).toBeInTheDocument()
+    // A job's result is a toast, like every other result, not a line on the page.
+    const told = await screen.findByText('Dựng video thất bại: giọng đọc không trả về âm thanh.')
+    expect(told.closest('[data-sonner-toaster]')).not.toBeNull()
+    expect(screen.getByRole('main')).not.toHaveTextContent('giọng đọc không trả về âm thanh')
     expect(screen.queryByText('Đang dựng video…')).not.toBeInTheDocument()
     const calls = vi.mocked(api.getVideo).mock.calls.length
     await passTime(10_000, 1000)

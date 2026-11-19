@@ -1,4 +1,5 @@
 import { confirmAction } from "../lib/confirm";
+import { notifyDone, notifyFailed } from "../lib/notify";
 import { useEffect, useRef, useState } from "react";
 import {
   deleteStudyFile,
@@ -44,37 +45,37 @@ export function StudyReferences({ studyId }: { studyId: string }) {
   }, [studyId]);
 
   async function upload(file: File) {
-    setError(""); setProgress(0);
+    setProgress(0);
     try {
       const added = await uploadStudyFile(studyId, file, setProgress);
       setFiles((current) => [...(current ?? []), added]);
-    } catch (e) { setError(apiErrorMessage(e, `Không tải lên được ${file.name}.`)); }
+      notifyDone(`Đã tải lên ${file.name}.`);
+    } catch (e) { notifyFailed(apiErrorMessage(e, `Không tải lên được ${file.name}.`)); }
     finally { setProgress(null); if (input.current) input.current.value = ""; }
   }
 
   async function remove(file: StudyFile) {
     if (!await confirmAction({ title: `Xóa ${file.filename}?`, description: "Các gói đang dùng tệp này sẽ không còn tài liệu gốc.", action: "Xóa tệp", destructive: true })) return;
-    setError("");
     try {
       await deleteStudyFile(studyId, file.id);
       setFiles((current) => current?.filter((f) => f.id !== file.id) ?? null);
       setItems((current) => current?.map((i) => i.reference_file_id === file.id ? { ...i, reference_file_id: null } : i) ?? null);
-    } catch (e) { setError(apiErrorMessage(e, `Không xóa được ${file.filename}.`)); }
+      notifyDone(`Đã xóa ${file.filename}.`);
+    } catch (e) { notifyFailed(apiErrorMessage(e, `Không xóa được ${file.filename}.`)); }
   }
 
   async function pick(item: StudyItemSummary, fileId: string) {
-    setError(""); setSaving(item.id);
+    setSaving(item.id);
     try {
       const refs = new Map((await setItemReference(studyId, item.id, fileId || null)).map((r) => [r.id, r.reference_file_id]));
       setItems((current) => current?.map((i) => ({ ...i, reference_file_id: refs.get(i.id) ?? null })) ?? null);
-    } catch (e) { setError(apiErrorMessage(e, "Không lưu được tài liệu của gói.")); }
+    } catch (e) { notifyFailed(apiErrorMessage(e, "Không lưu được tài liệu của gói.")); }
     finally { setSaving(null); }
   }
 
   async function download(file: StudyFile) {
-    setError("");
     try { await downloadStudyReference(studyId, file.id); }
-    catch (e) { setError(apiErrorMessage(e, `Không tải được ${file.filename}.`)); }
+    catch (e) { notifyFailed(apiErrorMessage(e, `Không tải được ${file.filename}.`)); }
   }
 
   if (!files || !items) {
@@ -85,7 +86,6 @@ export function StudyReferences({ studyId }: { studyId: string }) {
   return <section className="ui-card study-results" aria-labelledby="study-references-title">
     <h2 id="study-references-title">Tài liệu gốc</h2>
     <p className="small muted">Người chấm tải tệp này về để đối chiếu khi chấm. Hai gói cùng cặp dùng chung một tệp.</p>
-    {error && <p role="alert" className="ui-alert">{error}</p>}
 
     <h3 className="results-subtitle">Tệp đã tải lên</h3>
     {files.length === 0 ? <p className="small muted">Chưa có tệp nào.</p> : (

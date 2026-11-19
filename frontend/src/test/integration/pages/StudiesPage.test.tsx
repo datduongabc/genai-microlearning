@@ -1,4 +1,3 @@
-import { Toaster } from "sonner";
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
@@ -165,7 +164,7 @@ it("keeps edits and progress unchanged after a failed save", async () => {
   await userEvent.click(screen.getByText("Ghi chú chung (tùy chọn)"));
   await userEvent.type(screen.getByLabelText("Ghi chú tổng quan"), " mới");
   await userEvent.click(screen.getByRole("button", { name: "Lưu đánh giá" }));
-  expect(await screen.findByRole("alert")).toHaveTextContent("Không lưu được đánh giá.");
+  expect(await screen.findByText("Không lưu được đánh giá.")).toBeInTheDocument();
   expect(screen.getByLabelText("Ghi chú tổng quan")).toHaveValue("Cũ mới");
 });
 it("asks before a link or logout discards unsaved input, and not once it is saved", async () => {
@@ -235,7 +234,7 @@ it("reports missing or revoked invitations", async () => {
 });
 it("admin edits invited emails and can remove all raters", async () => {
   vi.mocked(api.setRaters).mockImplementation(async (_s, emails) => ({ emails }));
-  render(<><AdminStudiesPanel /><Toaster /></>);
+  render(<AdminStudiesPanel />);
   await userEvent.click(await screen.findByRole("button", { name: /Nghiên cứu/ }));
   const input = await screen.findByLabelText("Người chấm");
   await screen.findByRole("button", { name: "Bỏ lan@example.com" });
@@ -257,7 +256,7 @@ it("admin edits invited emails and can remove all raters", async () => {
 
 it("saves a typed email that was not yet added with Enter", async () => {
   vi.mocked(api.setRaters).mockImplementation(async (_s, emails) => ({ emails }));
-  render(<><AdminStudiesPanel /><Toaster /></>);
+  render(<AdminStudiesPanel />);
   await userEvent.click(await screen.findByRole("button", { name: /Nghiên cứu/ }));
   await userEvent.type(await screen.findByLabelText("Người chấm"), "Minh@Example.com");
   await userEvent.click(screen.getByRole("button", { name: "Lưu người chấm" }));
@@ -266,7 +265,7 @@ it("saves a typed email that was not yet added with Enter", async () => {
 });
 
 it("adds a pasted list of emails as chips without duplicates", async () => {
-  render(<><AdminStudiesPanel /><Toaster /></>);
+  render(<AdminStudiesPanel />);
   await userEvent.click(await screen.findByRole("button", { name: /Nghiên cứu/ }));
   const input = await screen.findByLabelText("Người chấm");
   await screen.findByRole("button", { name: "Bỏ lan@example.com" });
@@ -279,7 +278,7 @@ it("adds a pasted list of emails as chips without duplicates", async () => {
 });
 
 it("keeps a pasted list with a bad email in the field and clears the error when a chip is removed", async () => {
-  render(<><AdminStudiesPanel /><Toaster /></>);
+  render(<AdminStudiesPanel />);
   await userEvent.click(await screen.findByRole("button", { name: /Nghiên cứu/ }));
   const input = await screen.findByLabelText("Người chấm");
   await screen.findByRole("button", { name: "Bỏ lan@example.com" });
@@ -294,7 +293,7 @@ it("keeps a pasted list with a bad email in the field and clears the error when 
 
 it("loads the raters again when the same study is picked after a failed load", async () => {
   vi.mocked(api.getRaters).mockRejectedValueOnce(new Error("offline"));
-  render(<><AdminStudiesPanel /><Toaster /></>);
+  render(<AdminStudiesPanel />);
   const pick = await screen.findByRole("button", { name: /Nghiên cứu/ });
   await userEvent.click(pick);
   expect(await screen.findByRole("alert")).toHaveTextContent("Không tải được người chấm.");
@@ -402,7 +401,7 @@ it("shows the admin each rater's progress, and per packet the scores, findings a
   URL.createObjectURL = vi.fn(() => "blob:x");
   URL.revokeObjectURL = vi.fn();
   const user = userEvent.setup();
-  render(<><AdminStudiesPanel /><Toaster /></>);
+  render(<AdminStudiesPanel />);
   await user.click(await screen.findByRole("button", { name: /Nghiên cứu/ }));
   const results = await screen.findByRole("region", { name: "Kết quả chấm" });
   const progress = within(within(results).getByRole("list", { name: "Tiến độ người chấm" }));
@@ -427,7 +426,7 @@ const summary = (id: string, code: string, group: "rag_llm" | "llm_no_rag" | "hu
 const lecture = { id: "f1", filename: "Bài giảng 3.pdf", size: 1258291, created_at: "" };
 
 async function openStudy() {
-  render(<><AdminStudiesPanel /><Toaster /></>);
+  render(<AdminStudiesPanel />);
   await userEvent.click(await screen.findByRole("button", { name: /Nghiên cứu/ }));
   return screen.findByRole("region", { name: "Tài liệu gốc" });
 }

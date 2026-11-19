@@ -127,7 +127,7 @@ describe('ModulePreviewPage - SCORM package', () => {
 
   it("shows the server's reason when the package is refused", async () => {
     vi.mocked(api.getModule).mockResolvedValue(baseModule)
-    const body = new Blob([JSON.stringify({ detail: 'Còn câu hỏi chưa khớp nguồn. Hãy sửa trước khi xuất gói SCORM: quiz 1' })], { type: 'application/json' })
+    const body = new Blob([JSON.stringify({ detail: 'Còn 1 câu hỏi chưa khớp nguồn (quiz 1). Lý do ghi dưới từng câu; hãy sửa trước khi xuất gói SCORM.' })], { type: 'application/json' })
     const refused = new AxiosError('422', 'ERR_BAD_REQUEST', undefined, undefined, {
       status: 422, data: body, statusText: '', headers: {}, config: {} as InternalAxiosRequestConfig,
     } as AxiosResponse)
@@ -135,7 +135,7 @@ describe('ModulePreviewPage - SCORM package', () => {
     try {
       renderPage()
       await userEvent.click(await screen.findByRole('button', { name: 'Tải gói SCORM (.zip)' }))
-      expect(await screen.findByRole('alert')).toHaveTextContent('Còn câu hỏi chưa khớp nguồn. Hãy sửa trước khi xuất gói SCORM: quiz 1')
+      expect(await screen.findByText('Còn 1 câu hỏi chưa khớp nguồn (quiz 1). Lý do ghi dưới từng câu; hãy sửa trước khi xuất gói SCORM.')).toBeInTheDocument()
     } finally {
       request.mockRestore()
     }
@@ -690,7 +690,7 @@ describe('ModulePreviewPage - forms', () => {
     const title = screen.getByRole('textbox', { name: 'Tiêu đề slide 1' })
     await userEvent.type(title, ' mới')
     await userEvent.click(screen.getByRole('button', { name: 'Lưu' }))
-    expect(await screen.findByRole('alert')).toHaveTextContent(/không thể lưu/i)
+    expect(await screen.findByText(/không thể lưu/i)).toBeInTheDocument()
     expect(title).toHaveValue('Một mới')
     await userEvent.click(screen.getByRole('button', { name: 'Hủy' }))
     expect(screen.queryByRole('alert')).not.toBeInTheDocument()
@@ -704,7 +704,7 @@ describe('ModulePreviewPage - forms', () => {
     const field = screen.getByRole('textbox', { name: 'Tên mô-đun' })
     await userEvent.type(field, ' 2')
     await userEvent.click(screen.getByRole('button', { name: 'Lưu' }))
-    expect(await screen.findByRole('alert')).toHaveTextContent(/không thể lưu/i)
+    expect(await screen.findByText(/không thể lưu/i)).toBeInTheDocument()
     expect(field).toHaveValue('Test Module 2')
   })
 
@@ -871,7 +871,7 @@ it('keeps the Content editor open and reports a rejected source marker', async (
   const field = within(section).getByRole('textbox', { name: 'Nội dung' })
   fireEvent.change(field, { target: { value: 'Revised. [S99]' } })
   await userEvent.click(within(section).getByRole('button', { name: 'Lưu' }))
-  expect(await within(section).findByRole('alert')).toHaveTextContent(/không thể lưu/i)
+  expect(await screen.findByText(/không thể lưu/i)).toBeInTheDocument()
   expect(field).toHaveValue('Revised. [S99]')
 })
 
