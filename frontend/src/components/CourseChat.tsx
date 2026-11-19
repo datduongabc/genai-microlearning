@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import type { Components } from 'react-markdown'
 import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import Markdown from 'react-markdown'
@@ -6,6 +7,7 @@ import { getLatestCourseChat, startNewCourseChat, streamCourseChat, type ChatCit
 import { courseChatSchema, type CourseChatFormValues } from '../lib/formSchemas'
 import { sourceLabel } from '../lib/sourceLabel'
 import { modelMarkdownProps } from '../lib/markdownMath'
+import { CitationMarkers } from './CitationMarkers'
 
 interface Turn {
   question: string
@@ -25,6 +27,34 @@ function turnsFrom(messages: ChatReply[]): Turn[] {
     } else turns.push({ question: '', answer: message.content, citations: message.citations })
   }
   return turns
+}
+
+// An answer with its sources as numbered markers where they are cited, as in the module preview: [Sn] in the text
+// is citation n. An answer saved before the numbers were kept in the text shows them in a row under it.
+function AnswerText({ turn }: { turn: Turn }) {
+  const [open, setOpen] = useState<number | null>(null)
+  const inline = /\[S[0-9]+\]/.test(turn.answer)
+  const text = turn.answer.replace(/\[S([0-9]+)\]/g, (_, n: string) => turn.citations[Number(n) - 1] ? `[${n}](#source-${n})` : '')
+  const components: Components = {
+    a: ({ href, children }) => {
+      const number = Number((href ?? '').replace(/^#source-/, ''))
+      return href?.startsWith('#source-') && turn.citations[number - 1] ? (
+        <button type="button" className="citation-marker" aria-label={`Nguồn ${number}`} aria-pressed={open === number}
+          onClick={() => setOpen(open === number ? null : number)}>[{number}]</button>
+      ) : <a href={href}>{children}</a>
+    },
+  }
+  const shown = open ? turn.citations[open - 1] : undefined
+  return <>
+    <div className="chat-answer"><Markdown {...modelMarkdownProps} components={components}>{text}</Markdown></div>
+    {shown && <div className="citation-passage">
+      <p className="module-source-place">{sourceLabel(shown.source_ref)}</p>
+      {shown.content && <p className="module-source-passage">{shown.content}</p>}
+    </div>}
+    {!inline && turn.citations.length > 0 && <CitationMarkers label="Nguồn"
+      sources={turn.citations.map((c) => ({ chunk_id: c.chunk_id, locator: sourceLabel(c.source_ref), content: c.content ?? '' }))}
+      citations={turn.citations.map((c) => c.chunk_id)} />}
+  </>
 }
 
 // Questions about the course's documents, with the answer appearing as it is written. Opens on
@@ -117,13 +147,8 @@ export function CourseChat({ courseId }: { courseId: string }) {
         const writing = sending && index === turns.length - 1
         return <div key={index} className="chat-turn" aria-busy={writing}>
           {turn.question && <p className="chat-question">{turn.question}</p>}
-          {turn.answer && <div className="chat-answer">
-            <Markdown {...modelMarkdownProps}>{turn.answer}</Markdown>
-          </div>}
+          {turn.answer && <AnswerText turn={turn} />}
           {writing && !turn.answer && <p className="chat-note">Đang tìm trong tài liệu…</p>}
-          {turn.citations.length > 0 && <p className="chat-sources">
-            Nguồn: {[...new Set(turn.citations.map((c) => sourceLabel(c.source_ref)))].join('; ')}
-          </p>}
           {turn.error && <p role="alert" className="danger-text">{turn.error}</p>}
         </div>
       })}

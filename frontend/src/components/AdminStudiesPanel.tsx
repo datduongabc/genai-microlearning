@@ -29,7 +29,12 @@ export function AdminStudiesPanel() {
   const [picks, setPicks] = useState(0);
   useEffect(() => {
     let active = true;
-    listStudies().then((data) => { if (active) setStudies(data); })
+    listStudies().then((data) => {
+      if (!active) return;
+      setStudies(data);
+      // With one study there is nothing to choose: it opens, and the list is not shown.
+      if (data.length === 1) setStudyId((current) => current || data[0].id);
+    })
       .catch(() => { if (active) setError("Không tải được nghiên cứu."); });
     return () => { active = false; };
   }, []);
@@ -56,8 +61,9 @@ export function AdminStudiesPanel() {
     setEmails(next); setInput(""); setError("");
   }
   const selected = studies?.find((s) => s.id === studyId);
-  return <section className="studies-layout">
-    <nav aria-label="Nghiên cứu" className="study-list">
+  const single = studies?.length === 1;
+  return <section className={single ? "studies-layout single" : "studies-layout"}>
+    {!single && <nav aria-label="Nghiên cứu" className="study-list">
       {studies?.map((study) => <button key={study.id} disabled={busy}
         aria-pressed={studyId === study.id} className="ui-card"
         onClick={() => { if (loadedId === study.id) return; setStudyId(study.id); setParams((p) => { p.set("study", study.id); return p; }, { replace: true }); setPicks((n) => n + 1); setLoadedId(""); setInput(""); setError(""); }}>
@@ -65,7 +71,7 @@ export function AdminStudiesPanel() {
       </button>)}
       {!studies && !error && <p>Đang tải…</p>}
       {studies?.length === 0 && <p>Chưa có nghiên cứu.</p>}
-    </nav>
+    </nav>}
     <div className="study-main">
     <div className="ui-card study-detail">
       {selected ? <><h2>{selected.name}</h2><p className="small muted">Rubric {selected.rubric_version}</p></>

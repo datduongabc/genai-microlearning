@@ -94,7 +94,9 @@ export function RatingForm({
           <fieldset><legend className="sr-only">{criterion.label}</legend>
           {/* bloom_fidelity is judged against the declared level, so it is shown here only, not in the packet. */}
           {criterion.key === "bloom_fidelity" && <p className="small muted">Mức Bloom đặt ra: {BLOOM_LABELS[bloomLevel] ?? bloomLevel}</p>}
-          <details className="rubric-guide"><summary>{criterion.question}</summary><p>{criterion.guide}</p></details>
+          <details className="rubric-guide"><summary>{criterion.question}</summary>
+            <ol>{criterion.levels.map((text, i) => <li key={i}><strong>{i + 1}</strong>{text}</li>)}</ol>
+          </details>
           <Controller control={control} name={`${criterion.key}.score`} render={({ field }) => (
             <div className="scores" role="radiogroup" aria-label={`Điểm ${criterion.label}`}>
               {[1, 2, 3, 4, 5].map((n) => <label key={n}>

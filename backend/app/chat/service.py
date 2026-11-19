@@ -132,6 +132,8 @@ SPACE_BEFORE_PUNCTUATION = re.compile(r"[ \t\u00a0\u202f]+([.,;:!?])")
 class ChatCitation(BaseModel):
     chunk_id: str
     source_ref: str = ""
+    # The passage itself, so the reader opens it from its number without another request.
+    content: str = ""
 
 
 class ChatDraft(BaseModel):
@@ -207,14 +209,19 @@ _SOURCE_NUMBER = re.compile(r"S[0-9]+", re.IGNORECASE)
 
 
 class MarkerFilter:
-    """Takes the [S2] markers out of a reply arriving in pieces. A marker may be split across two pieces, so text
-    from an open "[" is held until it either closes or can no longer be a marker."""
+    """Rewrites the [S2] markers of a reply arriving in pieces. Given the prompt's chunks, each marker becomes [S1],
+    [S2]... in the order the passages are first cited, the numbers the reader sees, and one naming no passage is
+    dropped; without chunks every marker is taken out. A marker may be split across two pieces, so text from an
+    open "[" is held until it either closes or can no longer be a marker."""
 
     MAX_MARKER = 16
 
-    def __init__(self) -> None:
+    def __init__(self, chunks: list[Chunk] | None = None) -> None:
         self._held = ""
+        self._chunks = chunks
         self.source_ids: list[str] = []
+        # Chunk id -> the cited chunk, in the order of the numbers.
+        self.cited: dict[str, Chunk] = {}
 
     def feed(self, text: str) -> str:
         text = self._held + text
@@ -229,9 +236,22 @@ class MarkerFilter:
         return self._strip(text)
 
     def _strip(self, text: str) -> str:
-        for marker in CHAT_MARKER.findall(text):
-            self.source_ids.extend(_SOURCE_NUMBER.findall(marker))
-        return CHAT_MARKER.sub("", text)
+        return CHAT_MARKER.sub(self._number, text)
+
+    def _number(self, match: re.Match) -> str:
+        written = _SOURCE_NUMBER.findall(match.group())
+        self.source_ids.extend(written)
+        if self._chunks is None:
+            return ""
+        numbers = []
+        for source in written:
+            chunk = resolve_source_id(self._chunks, source)
+            if chunk is not None:
+                self.cited.setdefault(str(chunk.id), chunk)
+                number = list(self.cited).index(str(chunk.id)) + 1
+                if number not in numbers:
+                    numbers.append(number)
+        return "".join(f"[S{n}]" for n in numbers)
 
 
 async def stream_answer(
@@ -244,7 +264,7 @@ async def stream_answer(
         yield reply
         yield ChatAnswer(answer=reply, citations=[])
         return
-    markers = MarkerFilter()
+    markers = MarkerFilter(context_chunks)
     pieces = []
     async for text in stream_text(_answer_prompt(query, context_chunks, history, standalone),
                                   system_instruction=CHAT_STREAM_INSTRUCTION):
@@ -254,15 +274,13 @@ async def stream_answer(
     if rest := markers.finish():
         pieces.append(rest)
         yield rest
-    cited = {}
-    for source in markers.source_ids:
-        chunk = resolve_source_id(context_chunks, source)
-        if chunk is not None:
-            cited[str(chunk.id)] = ChatCitation(chunk_id=str(chunk.id), source_ref=chunk.source_ref or "")
+    # Numbered as the markers in the text: citation n is [Sn].
+    cited = [ChatCitation(chunk_id=id_, source_ref=chunk.source_ref or "", content=chunk.content or "")
+             for id_, chunk in markers.cited.items()]
+    # A marker dropped before the full stop leaves a space there.
     answer = SPACE_BEFORE_PUNCTUATION.sub(r"\1", "".join(pieces)).strip()
     report_answer(answer, _invented(context_chunks, markers.source_ids), len(cited))
-    # A marker written before the full stop leaves a space there.
-    yield ChatAnswer(answer=answer, citations=list(cited.values()))
+    yield ChatAnswer(answer=answer, citations=cited)
 
 
 async def condense_query_streamed(message: str, history: list[dict]) -> str:

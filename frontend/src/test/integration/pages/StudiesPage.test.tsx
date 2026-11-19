@@ -54,7 +54,8 @@ beforeEach(() => {
   });
   vi.mocked(api.myStudies).mockResolvedValue([{ ...study, rated: 0, total: 1 }]);
   vi.mocked(api.myStudyItems).mockResolvedValue(data);
-  vi.mocked(api.listStudies).mockResolvedValue([study]);
+  // Two studies, so the list is shown; with one it opens by itself.
+  vi.mocked(api.listStudies).mockResolvedValue([study, { ...study, id: "s2", name: "Khác" }]);
   vi.mocked(api.getRaters).mockResolvedValue({ emails: ["lan@example.com"], assignments: {} });
   vi.mocked(api.listPairCandidates).mockResolvedValue([]);
   vi.mocked(api.getStudyResults).mockResolvedValue(noResults);
@@ -86,7 +87,7 @@ it("renders the whole anonymous packet and saves/edits all rubric criteria", asy
   const user = userEvent.setup();
   vi.mocked(api.saveRating).mockImplementation(async (_s, _i, body) => body);
   blind();
-  expect(await screen.findByText("Nguồn đối chiếu")).toBeInTheDocument();
+  expect(await screen.findByText("Mục tiêu con")).toBeInTheDocument();
   for (const [tab, text] of [["Mục tiêu", "Mục tiêu con"], ["Nội dung", "Nội dung bài"], ["Slide", "Ý chính"], ["Ví dụ", "Bối cảnh"], ["Luyện tập", "Câu hỏi"], ["Quiz", "Câu hỏi"]]) {
     await user.click(screen.getByRole("tab", { name: tab }));
     expect(screen.getByText(text)).toBeInTheDocument();
@@ -160,7 +161,7 @@ it("keeps edits and progress unchanged after a failed save", async () => {
   });
   vi.mocked(api.saveRating).mockRejectedValue(new Error("offline"));
   blind();
-  await screen.findByText("Nguồn đối chiếu");
+  await screen.findByText("Mục tiêu con");
   await userEvent.click(screen.getByText("Ghi chú chung (tùy chọn)"));
   await userEvent.type(screen.getByLabelText("Ghi chú tổng quan"), " mới");
   await userEvent.click(screen.getByRole("button", { name: "Lưu đánh giá" }));
@@ -199,7 +200,7 @@ it("asks before a link or logout discards unsaved input, and not once it is save
       </Routes>
     </MemoryRouter>,
   );
-  await screen.findByText("Nguồn đối chiếu");
+  await screen.findByText("Mục tiêu con");
   await user.click(screen.getByText("Ghi chú chung (tùy chọn)"));
   await user.type(screen.getByLabelText("Ghi chú tổng quan"), " mới");
   await user.click(within(screen.getByRole("navigation", { name: "Đường dẫn" })).getByRole("link", { name: "Nghiên cứu" }));
@@ -341,15 +342,16 @@ it("keeps the correct answer out of the Quiz tab and shows it under Giải thíc
   expect(screen.getAllByText(/Đáp án đúng/)).toHaveLength(2);
 });
 
-it("opens sources first and switches packet tabs with arrow keys", async () => {
+it("opens on the objectives, offers no source passages, and switches packet tabs with arrow keys", async () => {
   blind();
-  expect(await screen.findByText("Nguồn đối chiếu")).toBeVisible();
-  expect(screen.queryByText("Nội dung bài")).not.toBeInTheDocument();
-  screen.getByRole("tab", { name: /Đoạn nguồn/ }).focus();
-  await userEvent.keyboard("{ArrowRight}{ArrowRight}");
+  expect(await screen.findByText("Mục tiêu con")).toBeVisible();
+  // Raters check against the reference file; a tab of passages meant nothing to them.
+  expect(screen.queryByRole("tab", { name: /Đoạn nguồn/ })).not.toBeInTheDocument();
+  expect(screen.queryByText("Nguồn đối chiếu")).not.toBeInTheDocument();
+  screen.getByRole("tab", { name: "Mục tiêu" }).focus();
+  await userEvent.keyboard("{ArrowRight}");
   expect(screen.getByRole("tab", { name: "Nội dung" })).toHaveFocus();
   expect(screen.getByText("Nội dung bài")).toBeVisible();
-  expect(screen.queryByText("Nguồn đối chiếu")).not.toBeInTheDocument();
 });
 
 it("shows only the packet picked when moving between packets and back", async () => {
@@ -357,26 +359,26 @@ it("shows only the packet picked when moving between packets and back", async ()
     ...item,
     id: "i2",
     anon_code: "M02",
-    packet: { ...item.packet, anon_id: "M02", source_chunks: ["Nguồn của gói hai"] },
+    packet: { ...item.packet, anon_id: "M02", sub_objectives: ["Mục tiêu của gói hai"] },
   };
   vi.mocked(api.myStudyItems).mockResolvedValue({ ...data, items: [item, second], total: 2 });
   const user = userEvent.setup();
   blind();
-  await screen.findByText("Nguồn đối chiếu");
+  await screen.findByText("Mục tiêu con");
   const packets = within(screen.getByRole("navigation", { name: "Gói chấm" }));
   await user.click(packets.getByRole("link", { name: /M02/ }));
-  await screen.findByText("Nguồn của gói hai");
+  await screen.findByText("Mục tiêu của gói hai");
   await user.click(packets.getByRole("link", { name: /M01/ }));
-  await screen.findByText("Nguồn đối chiếu");
+  await screen.findByText("Mục tiêu con");
   // The packet left behind must be gone, not kept beside the one now rated.
-  expect(screen.queryByText("Nguồn của gói hai")).not.toBeInTheDocument();
+  expect(screen.queryByText("Mục tiêu của gói hai")).not.toBeInTheDocument();
   expect(screen.getAllByRole("article")).toHaveLength(1);
 });
 
 it("offers every part of the module that can hold an unsupported claim, but not the objective", async () => {
   const user = userEvent.setup();
   blind();
-  await screen.findByText("Nguồn đối chiếu");
+  await screen.findByText("Mục tiêu con");
   await user.click(screen.getByRole("button", { name: /Thêm/ }));
   const location = screen.getByRole("combobox", { name: /Vị trí 1/ });
   expect(within(location).getAllByRole("option").map((o) => o.textContent)).toEqual(
@@ -549,4 +551,11 @@ it("opens the study named in the address, so a reload stays on it", async () => 
   render(<MemoryRouter initialEntries={["/admin?tab=studies&study=s1"]}><AdminStudiesPanel /></MemoryRouter>);
   expect(await screen.findByRole("button", { name: "Bỏ lan@example.com" })).toBeInTheDocument();
   expect(api.getRaters).toHaveBeenCalledWith("s1");
+});
+
+it("opens the only study by itself, with no list to choose from", async () => {
+  vi.mocked(api.listStudies).mockResolvedValue([study]);
+  render(<MemoryRouter><AdminStudiesPanel /></MemoryRouter>);
+  expect(await screen.findByRole("button", { name: "Bỏ lan@example.com" })).toBeInTheDocument();
+  expect(screen.queryByRole("navigation", { name: "Nghiên cứu" })).not.toBeInTheDocument();
 });

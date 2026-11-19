@@ -3,6 +3,8 @@ import { fetchWithAuth } from './client'
 export interface ChatCitation {
   chunk_id: string
   source_ref: string
+  // The passage; absent on answers saved before it was kept.
+  content?: string
 }
 
 export interface ChatReply {

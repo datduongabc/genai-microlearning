@@ -78,9 +78,9 @@ function Question({ question, explanation = false }: { question: PacketQuestion;
 }
 function Packet({ item }: { item: BlindItem }) {
   const p = item.packet;
-  const [tab, setTab] = useState("sources");
+  // No tab of source passages: raters check against the reference file, the document itself.
+  const [tab, setTab] = useState("objectives");
   const tabs = [
-    { id: "sources", label: `Đoạn nguồn (${p.source_chunks.length})` },
     { id: "objectives", label: "Mục tiêu" }, { id: "content", label: "Nội dung" },
     { id: "slides", label: "Slide" }, { id: "examples", label: "Ví dụ" },
     { id: "practice", label: "Luyện tập" }, { id: "quiz", label: "Quiz" },
@@ -89,14 +89,6 @@ function Packet({ item }: { item: BlindItem }) {
   return (
     <article className="packet ui-card">
       <Tabs tabs={tabs} selected={tab} onSelect={setTab} label="Thành phần gói chấm">
-      {tab === "sources" && <section>
-        <h2 className="sr-only">Tài liệu nguồn</h2>
-        {p.source_chunks.map((source, i) => (
-          <p className="source-passage whitespace-pre-wrap" key={i}>
-            {source}
-          </p>
-        ))}
-      </section>}
       {tab === "objectives" && <section>
         <h2 className="font-semibold">Mục tiêu học tập</h2>
         <p>{p.learning_objective}</p>
