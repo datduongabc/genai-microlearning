@@ -1,5 +1,5 @@
 import { useId } from 'react'
-import { MAX_BULLETS, type DocumentPassage, type SceneKind, type VideoScene } from '../api'
+import { MAX_BULLETS, type SceneKind, type VideoScene } from '../api'
 import type { Limiter } from '../lib/limiter'
 import {
   flagMessage,
@@ -14,7 +14,6 @@ import {
   type SceneDraft,
 } from '../lib/videoDraft'
 import { AutoGrowTextarea } from './AutoGrowTextarea'
-import { CitationMarkers } from './CitationMarkers'
 import { ScenePreview, SlidePlaceholder } from './ScenePreview'
 import { SourcePassages } from './SourcePassages'
 
@@ -38,12 +37,11 @@ function FlagNote({ id, flag, dismissLabel, onDismiss }: { id?: string; flag: st
   )
 }
 
-function ItemEditor({ item, name, sources, flags, uncited, onText, onDismiss, onRemove, maxLength }: {
+function ItemEditor({ item, name, flags, uncited, onText, onDismiss, onRemove, maxLength }: {
   item: ItemDraft
   uncited: boolean
   // "ý 2 cảnh 1": the accessible names of the item's controls.
   name: string
-  sources: DocumentPassage[]
   flags: string[]
   onText: (text: string) => void
   onDismiss: (flag: string) => void
@@ -76,7 +74,6 @@ function ItemEditor({ item, name, sources, flags, uncited, onText, onDismiss, on
         <FlagNote key={`${i}-${flag}`} id={`${id}-flag-${i}`} flag={flag} dismissLabel={`Bỏ đánh dấu ${name}`}
           onDismiss={() => onDismiss(flag)} />
       ))}
-      <CitationMarkers sources={sources} citations={item.citations} label={`Nguồn của ${name}`} />
     </li>
   )
 }
@@ -93,8 +90,10 @@ interface SceneSlide {
   changed: boolean
 }
 
-// One scene as the lecturer edits it: its slide, then what the slide prints and the voice says.
-export function VideoSceneEditor({ scene: s, number, count, slide, canDraw, nextKey, onChange, onMove, onRemove, onDraw }: {
+// One scene: read as the learner will see it (its slide and what the voice says) until the lecturer
+// opens it with "Sửa", as one part of a module is opened; then every field, with "Lưu" and "Hủy".
+export function VideoSceneEditor({ scene: s, number, count, slide, canDraw, nextKey, onChange, onMove, onRemove, onDraw,
+  open, locked, saving, onOpen, onSave, onCancel }: {
   scene: SceneDraft
   number: number
   count: number
@@ -105,6 +104,13 @@ export function VideoSceneEditor({ scene: s, number, count, slide, canDraw, next
   onMove: (by: number) => void
   onRemove: () => void
   onDraw: (index: number) => void
+  open: boolean
+  // Another scene is open, or something is being saved: nothing here can start.
+  locked: boolean
+  saving: boolean
+  onOpen: () => void
+  onSave: () => void
+  onCancel: () => void
 }) {
   const { origin } = slide
   const id = useId()
@@ -121,7 +127,6 @@ export function VideoSceneEditor({ scene: s, number, count, slide, canDraw, next
     onChange((scene) => ({ ...scene, [field]: change(scene[field]) }))
   const itemProps = (field: 'bullets' | 'sentences', item: ItemDraft) => ({
     item,
-    sources: s.sources,
     flags: flagsFor(s.flags, item.label),
     uncited: isUncited(s, item),
     onText: (text: string) => editItems(field, (items) => items.map((x) => (x.key === item.key ? { ...x, text } : x))),
@@ -131,29 +136,8 @@ export function VideoSceneEditor({ scene: s, number, count, slide, canDraw, next
   const addItem = (field: 'bullets' | 'sentences') =>
     editItems(field, (items) => [...items, { key: nextKey(), text: '', citations: [], label: null }])
 
-  return (
-    <li aria-label={`Cảnh ${number}`} className="flashcard-item video-scene">
-      <div className="flashcard-head">
-        <div className="video-scene-title">
-          <span className="part-label">Cảnh {number}</span>
-          {needsReview(s) && <span className="video-flag-badge">Cần xem lại</span>}
-        </div>
-        <div className="video-scene-actions">
-          <button type="button" onClick={() => onMove(-1)} disabled={number === 1}
-            aria-label={`Đưa cảnh ${number} lên`} className="link-action small-action">Lên</button>
-          <button type="button" onClick={() => onMove(1)} disabled={number === count}
-            aria-label={`Đưa cảnh ${number} xuống`} className="link-action small-action">Xuống</button>
-          <button type="button" onClick={onRemove} disabled={count === 1} aria-label={`Xóa cảnh ${number}`}
-            className="link-action danger small-action">
-            Xóa cảnh
-          </button>
-        </div>
-      </div>
-      {ofScene.map((flag, i) => (
-        <FlagNote key={`${i}-${flag}`} id={sceneNotes[i]} flag={flag} dismissLabel={`Bỏ đánh dấu cảnh ${number}`}
-          onDismiss={() => dismiss(flag)} />
-      ))}
-
+  const preview = (
+    <>
       {origin && s.fromIndex !== null ? (
         <ScenePreview
           key={s.fromIndex}
@@ -183,6 +167,70 @@ export function VideoSceneEditor({ scene: s, number, count, slide, canDraw, next
           </button>
         </div>
       )}
+    </>
+  )
+  const head = (
+    <div className="flashcard-head">
+      <div className="video-scene-title">
+        <span className="part-label">Cảnh {number}</span>
+        <span className="video-scene-kind">{KIND_LABEL[s.kind]}</span>
+        {needsReview(s) && <span className="video-flag-badge">Cần xem lại</span>}
+      </div>
+      {!open && (
+        <div className="video-scene-actions">
+          <button type="button" onClick={onOpen} disabled={locked} aria-label={`Sửa cảnh ${number}`}
+            className="link-action small-action">Sửa</button>
+          <button type="button" onClick={() => onMove(-1)} disabled={locked || number === 1}
+            aria-label={`Đưa cảnh ${number} lên`} className="link-action small-action">Lên</button>
+          <button type="button" onClick={() => onMove(1)} disabled={locked || number === count}
+            aria-label={`Đưa cảnh ${number} xuống`} className="link-action small-action">Xuống</button>
+          <button type="button" onClick={onRemove} disabled={locked || count === 1} aria-label={`Xóa cảnh ${number}`}
+            className="link-action danger small-action">
+            Xóa
+          </button>
+        </div>
+      )}
+    </div>
+  )
+
+  if (!open) {
+    // What to look at again, each with the bullet or sentence it is about ("Câu 2: ..."), without the controls that change it.
+    const notes = [...s.flags, ...[...s.bullets, ...s.sentences].filter((item) => isUncited(s, item))
+      .map((item) => `${item.label}: ${NO_SOURCE.toLowerCase()}`)]
+    return (
+      <li aria-label={`Cảnh ${number}`} className="flashcard-item video-scene">
+        {head}
+        <div className="video-scene-body">
+          <div className="video-scene-slide">{preview}</div>
+          <div className="video-scene-text">
+        {notes.length > 0 && (
+          <ul className="check-reasons" aria-label={`Lý do cảnh ${number} cần xem lại`}>
+            {notes.map((note, i) => <li key={`${i}-${note}`}>{note}</li>)}
+          </ul>
+        )}
+        {s.sentences.some((item) => item.text.trim() !== '') && (
+          <div className="video-scene-voice">
+            <p className="video-scene-label">Lời thoại</p>
+            <p>{s.sentences.map((item) => item.text.trim()).filter(Boolean).join(' ')}</p>
+          </div>
+        )}
+          </div>
+        </div>
+      </li>
+    )
+  }
+
+  return (
+    <li aria-label={`Cảnh ${number}`} className="flashcard-item video-scene" data-open="true">
+      {head}
+      {/* In the place it has when closed, so opening the scene does not fetch its slide again. */}
+      <div className="video-scene-body">
+        <div className="video-scene-slide">{preview}</div>
+      </div>
+      {ofScene.map((flag, i) => (
+        <FlagNote key={`${i}-${flag}`} id={sceneNotes[i]} flag={flag} dismissLabel={`Bỏ đánh dấu cảnh ${number}`}
+          onDismiss={() => dismiss(flag)} />
+      ))}
 
       <div className="video-scene-fields">
         <label className="flashcard-field">
@@ -267,6 +315,13 @@ export function VideoSceneEditor({ scene: s, number, count, slide, canDraw, next
         <summary>Đoạn nguồn của cảnh ({s.sources.length})</summary>
         <SourcePassages sources={s.sources} label={`Nguồn của cảnh ${number}`} />
       </details>
+      {s.title.trim() === '' && <p className="text-sm danger-text">Cảnh cần một tiêu đề.</p>}
+      <div className="flashcard-actions">
+        <button type="button" onClick={onSave} disabled={locked || s.title.trim() === ''} className="ui-button primary">
+          {saving ? 'Đang lưu…' : 'Lưu'}
+        </button>
+        <button type="button" onClick={onCancel} disabled={locked} className="ui-button">Hủy</button>
+      </div>
     </li>
   )
 }
