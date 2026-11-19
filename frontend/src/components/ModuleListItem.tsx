@@ -9,7 +9,8 @@ interface ModuleListItemProps {
 
 export function ModuleListItem({ module: m, deleting, onDelete }: ModuleListItemProps) {
   return (
-    <li className="module-item">
+    <li className="module-item media-item">
+      <span className="media-kind">Mô-đun</span>
       <Link to={`/modules/${m.id}`} className="module-link">
         {m.title}
         {m.is_control && (
@@ -20,9 +21,9 @@ export function ModuleListItem({ module: m, deleting, onDelete }: ModuleListItem
         onClick={() => onDelete(m)}
         disabled={deleting}
         aria-label={`Xóa mô-đun ${m.title}`}
-        className="link-action danger small-action"
+        className="link-action danger small-action media-delete"
       >
-        {deleting ? "Đang xóa…" : "Xóa mô-đun"}
+        {deleting ? "Đang xóa…" : "Xóa"}
       </button>
     </li>
   );

@@ -218,9 +218,9 @@ describe('ModulePreviewPage - publish to Moodle', () => {
     await waitFor(() => expect(api.publishToMoodle).toHaveBeenCalledWith('module-1', 0, true))
   })
 
-  it('shows an error and hides publishing until access is checked again after failure', async () => {
+  it('shows an error and hides publishing when access cannot be confirmed again after failure', async () => {
     vi.mocked(api.getModule).mockResolvedValue({ ...baseModule, moodle_course_id: 6 })
-    vi.mocked(api.getMoodleSections).mockResolvedValue([])
+    vi.mocked(api.getMoodleSections).mockResolvedValueOnce([]).mockRejectedValue(new Error('no access'))
     vi.mocked(api.publishToMoodle).mockRejectedValue(new Error('boom'))
 
     renderPage()
@@ -230,6 +230,24 @@ describe('ModulePreviewPage - publish to Moodle', () => {
 
     expect(await screen.findByText(/xuất bản lên moodle thất bại/i)).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /^xuất bản lên moodle$/i })).not.toBeInTheDocument()
+  })
+})
+
+describe('ModulePreviewPage - publish refused by the module', () => {
+  it('brings the form back once access is confirmed again, after a refusal for questions to review', async () => {
+    vi.mocked(api.getModule).mockResolvedValue({ ...baseModule, moodle_course_id: 6 })
+    vi.mocked(api.getMoodleSections).mockResolvedValue([])
+    const refusal = 'Còn 1 câu hỏi cần xem lại (quiz 1). Lý do ghi dưới từng câu; hãy sửa trước khi đẩy lên Moodle.'
+    const config = { headers: {} } as InternalAxiosRequestConfig
+    const response = { status: 422, statusText: '', data: { detail: refusal }, headers: {}, config }
+    vi.mocked(api.publishToMoodle).mockRejectedValue(new AxiosError('422', 'ERR_BAD_REQUEST', config, null, response as AxiosResponse))
+
+    renderPage()
+    await userEvent.click(await screen.findByRole('button', { name: /^xuất bản lên moodle$/i }))
+
+    expect(await screen.findByText(refusal)).toBeInTheDocument()
+    expect(await screen.findByRole('button', { name: /^xuất bản lên moodle$/i })).toBeEnabled()
+    expect(api.getMoodleSections).toHaveBeenCalledTimes(2)
   })
 })
 

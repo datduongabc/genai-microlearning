@@ -272,6 +272,9 @@ function PublishToMoodleSection({
   const [error, setError] = useState<string | null>(null)
   const [sections, setSections] = useState<MoodleSection[]>([])
   const [authorizedCourse, setAuthorizedCourse] = useState<string | null>(null)
+  // Goes up after a failed publish, so Moodle access is checked again: the form comes back when
+  // the refusal was the module's (a question to review) and stays away when access was lost.
+  const [accessCheck, setAccessCheck] = useState(0)
   const courseScope = `${courseId}:${moodleCourseId}`
   const canPublish = authorizedCourse === courseScope
   const {
@@ -310,7 +313,7 @@ function PublishToMoodleSection({
       },
     )
     return () => { cancelled = true }
-  }, [courseId, moodleCourseId, courseScope, onRefresh, accountFailed])
+  }, [courseId, moodleCourseId, courseScope, onRefresh, accountFailed, accessCheck])
 
   // Asked before the form submits, so the button does not read "Đang xuất bản…" while the question is open.
   async function confirmThenPublish(event: React.FormEvent) {
@@ -334,6 +337,7 @@ function PublishToMoodleSection({
       notifyDone(`Đã tạo trên khóa học Moodle #${published.moodle_course_id}: sách nội dung${published.practice_cmid ? ', bài luyện tập' : ''}${published.quiz_cmid ? ', quiz' : ''}.`)
     } catch (err) {
       setAuthorizedCourse(null)
+      setAccessCheck((n) => n + 1)
       notifyFailed(apiErrorMessage(err, 'Xuất bản lên Moodle thất bại'))
       await onRefresh().catch(() => {})
     }
