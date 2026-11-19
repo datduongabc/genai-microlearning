@@ -69,12 +69,6 @@ export function MoodleAccountSection({ onStatus }: { onStatus?: (status: MoodleA
         <span className={status === "linked" ? "success-text" : "muted"}>{LABEL[status]}</span>
       </p>
       {answer?.email && status !== "unavailable" && <p className="mt-1 text-sm muted">{answer.email}</p>}
-      {status === "unavailable" && (
-        <p className="mt-1 text-sm muted">
-          Hệ thống chưa kết nối Moodle nên chưa liên kết tài khoản hay xuất bản được. Mở công cụ từ Moodle vẫn dùng bình thường.
-        </p>
-      )}
-      {status === "pending" && <p className="mt-2 text-sm muted">Nếu có tài khoản Moodle phù hợp, hãy đăng nhập Moodle để xác nhận liên kết.</p>}
       {status === "pending" && answer?.confirmation_url && (
         <a href={answer.confirmation_url} target="_blank" rel="noopener noreferrer" className="mt-2 inline-block text-sm text-accent underline">
           Mở Moodle để xác nhận
@@ -82,7 +76,6 @@ export function MoodleAccountSection({ onStatus }: { onStatus?: (status: MoodleA
       )}
       {status !== "linked" && status !== "unknown" && status !== "unavailable" && (
         <form onSubmit={(event) => { void handleSubmit(submit)(event); }} noValidate className="mt-3 flex flex-col gap-2">
-          <p className="text-sm muted">Nhập email Moodle của bạn, rồi đăng nhập Moodle để xác nhận liên kết.</p>
           {/* gap instead of a margin on the input, so a narrow place (the account menu) wraps it flush left. */}
           <label className="text-sm flex flex-wrap items-center gap-x-2 gap-y-1">Email Moodle
             <input type="email" autoComplete="email" {...register("email")} className="ui-input" />

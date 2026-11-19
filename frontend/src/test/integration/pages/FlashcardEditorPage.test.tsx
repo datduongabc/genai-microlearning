@@ -113,7 +113,6 @@ describe('FlashcardEditorPage', () => {
     expect(sent[0]).toEqual({ front: 'Mặt trước 1', back: 'Mặt sau 1', citations: ['chunk-1'] })
     expect(sent[14]).toEqual({ front: 'Câu hỏi mới', back: 'Trả lời mới', citations: [] })
     expect(await screen.findByText('Đã thêm thẻ.')).toBeInTheDocument()
-    expect(screen.getByText(/^15 thẻ/)).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Thêm thẻ' })).toBeDisabled()
   })
 
@@ -174,7 +173,7 @@ describe('FlashcardEditorPage', () => {
     })
 
     renderPage()
-    const request = await screen.findByLabelText(/Viết điều bạn muốn đổi/)
+    const request = await screen.findByLabelText('Yêu cầu chỉnh sửa')
     const send = screen.getByRole('button', { name: 'Gửi yêu cầu' })
     expect(send).toBeDisabled()
     await userEvent.type(request, 'Rút gọn thẻ 2')
@@ -190,10 +189,9 @@ describe('FlashcardEditorPage', () => {
     vi.mocked(api.getFlashcardSet).mockResolvedValue(draft([card(1)]))
 
     renderPage()
-    await userEvent.type(await screen.findByLabelText(/Viết điều bạn muốn đổi/), 'Thêm một thẻ')
+    await userEvent.type(await screen.findByLabelText('Yêu cầu chỉnh sửa'), 'Thêm một thẻ')
     await openCard(1)
 
-    expect(screen.getByText('Lưu hoặc hủy thẻ đang sửa trước khi gửi yêu cầu.')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Gửi yêu cầu' })).toBeDisabled()
   })
 
@@ -236,7 +234,6 @@ describe('FlashcardEditorPage', () => {
 
     expect(api.publishFlashcardSet).toHaveBeenCalledWith('set-1', true)
     expect(await screen.findByRole('button', { name: 'Ngừng giao' })).toBeInTheDocument()
-    expect(screen.getByText(/Đã giao, sinh viên đang học bộ này/)).toBeInTheDocument()
   })
 
   it('cannot publish an empty set', async () => {
@@ -362,12 +359,13 @@ describe('FlashcardEditorPage', () => {
     renderPage()
     await openCard(1)
     await userEvent.type(screen.getByLabelText('Mặt trước thẻ 1'), '!')
-    await userEvent.click(screen.getByRole('link', { name: 'Về trang môn học' }))
-    expect(screen.queryByText('Trang môn học')).not.toBeInTheDocument()
-    await userEvent.click(screen.getByRole('link', { name: 'Về trang môn học' }))
+    const sidebar = within(screen.getByRole('navigation', { name: 'Điều hướng chính' }))
+    await userEvent.click(sidebar.getByRole('link', { name: 'Môn học' }))
+    expect(screen.queryByText('Danh sách môn học')).not.toBeInTheDocument()
+    await userEvent.click(sidebar.getByRole('link', { name: 'Môn học' }))
 
     expect(confirm).toHaveBeenCalledTimes(2)
-    expect(await screen.findByText('Trang môn học')).toBeInTheDocument()
+    expect(await screen.findByText('Danh sách môn học')).toBeInTheDocument()
   })
 
   it('asks before the sidebar leaves unsaved edits, and stays when the lecturer says no', async () => {
@@ -443,10 +441,11 @@ describe('FlashcardEditorPage', () => {
     const confirm = vi.spyOn(window, 'confirm')
 
     renderPage()
-    await userEvent.click(await screen.findByRole('link', { name: 'Về trang môn học' }))
+    await screen.findByText('Mặt trước 1')
+    await userEvent.click(within(screen.getByRole('navigation', { name: 'Điều hướng chính' })).getByRole('link', { name: 'Môn học' }))
 
     expect(confirm).not.toHaveBeenCalled()
-    expect(await screen.findByText('Trang môn học')).toBeInTheDocument()
+    expect(await screen.findByText('Danh sách môn học')).toBeInTheDocument()
   })
 
   it('warns the browser about unsaved edits only while there are some', async () => {
@@ -475,17 +474,6 @@ describe('FlashcardEditorPage', () => {
     expect(heading.textContent!.length).toBeLessThanOrEqual(60)
     expect(heading.textContent).toMatch(/…$/)
     expect(heading).toHaveAttribute('title', `Flashcard: ${focus}`)
-  })
-
-  it('says whether the learners see the set', async () => {
-    vi.mocked(api.getFlashcardSet).mockResolvedValue(draft([card(1)]))
-    const first = renderPage()
-    expect(await screen.findByText('1 thẻ · Bản nháp, sinh viên chưa thấy')).toBeInTheDocument()
-    first.unmount()
-
-    vi.mocked(api.getFlashcardSet).mockResolvedValue(draft([card(1)], { published_at: '2026-01-02T00:00:00Z' }))
-    renderPage()
-    expect(await screen.findByText('1 thẻ · Đã giao, sinh viên đang học bộ này')).toBeInTheDocument()
   })
 
 })

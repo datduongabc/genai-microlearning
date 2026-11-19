@@ -109,9 +109,6 @@ export function CourseChat({ courseId }: { courseId: string }) {
     </div>
     {loading && <p className="chat-note">Đang tải cuộc trò chuyện…</p>}
     {loadError && <p className="chat-note">{loadError}</p>}
-    {!loading && !loadError && turns.length === 0 && <p className="chat-note">
-      Câu trả lời lấy từ tài liệu của môn học, kèm slide hoặc trang nguồn.
-    </p>}
     <div role="log" aria-label="Hội thoại" className="chat-log" ref={log}
       onScroll={(e) => { const el = e.currentTarget; following.current = el.scrollHeight - el.scrollTop - el.clientHeight < 48 }}>
       {turns.map((turn, index) => {

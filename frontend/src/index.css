@@ -388,7 +388,7 @@ h1[tabindex="-1"]:focus-visible { outline:none; }
 .moodle-account { display:flex; flex-direction:column; gap:6px; font-size:14px; line-height:21px; }
 .moodle-account .ui-input { padding:6px 10px; font-size:14px; }
 .moodle-panel .moodle-account p { margin-top:0; }
-.moodle-course { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:8px 16px; padding-top:10px; border-top:1px solid var(--border-default); color:var(--text-secondary); }
+.moodle-course { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:8px 16px; color:var(--text-secondary); }
 .moodle-link-form { display:flex; flex-wrap:wrap; align-items:center; gap:8px 12px; width:100%; }
 .moodle-error { margin:0; }
 .account-menu .moodle-account { padding:8px 12px; }

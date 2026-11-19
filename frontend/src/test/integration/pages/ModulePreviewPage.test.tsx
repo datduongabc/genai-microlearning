@@ -865,7 +865,7 @@ it('does not ask Moodle for sections where this environment has no Moodle', asyn
   vi.mocked(api.getModule).mockResolvedValue({ ...baseModule, moodle_course_id: 72 })
   vi.mocked(api.getMoodleAccount).mockResolvedValue({ email: 'teacher@example.com', status: 'unavailable' })
   renderPage()
-  expect(await screen.findByText(/Mở công cụ từ Moodle vẫn dùng bình thường/)).toBeInTheDocument()
+  expect(await screen.findByText('Chưa kết nối Moodle')).toBeInTheDocument()
   expect(api.getMoodleSections).not.toHaveBeenCalled()
 })
 
@@ -877,13 +877,14 @@ it('asks for sections once the linked account has answered', async () => {
   expect(api.getMoodleSections).toHaveBeenCalledOnce()
 })
 
-it('shows the served model when generation used a fallback', async () => {
+it('names no model on the page, even when generation used a fallback', async () => {
   vi.mocked(api.getModule).mockResolvedValue({
     ...baseModule,
     generation_models: [{ requested_alias: 'gemini-flash', served_model: 'google/gemini-3.8-flash' }],
   })
   renderPage()
-  expect(await screen.findByText(/Mô hình AI: gemini-flash → google\/gemini-3.8-flash/)).toBeInTheDocument()
+  await screen.findByRole('heading', { name: baseModule.title })
+  expect(screen.queryByText(/gemini-3.8-flash/)).not.toBeInTheDocument()
 })
 
 it('renders numbered inline citations in reading order and opens the exact chunk', async () => {

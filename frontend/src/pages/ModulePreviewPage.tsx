@@ -467,11 +467,6 @@ function ModuleHeader({ module, onSaved }: { module: ModuleDetail; onSaved: () =
         </button>
       )}
 
-      {!!module.generation_models?.length && (
-        <p className="mt-2 text-sm text-gray-600">
-          Mô hình AI: {[...new Set(module.generation_models.map((call) => `${call.requested_alias} → ${call.served_model}`))].join(', ')}
-        </p>
-      )}
       {module.learning_objective && (
         <p className="module-objective">
           <span className="font-semibold">Mục tiêu học tập: </span>
