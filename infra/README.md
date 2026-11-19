@@ -147,6 +147,13 @@ Giới hạn:
 
 - **Địa chỉ đổi mỗi lần chạy,** và issuer LTI đổi theo: tài khoản và khóa học tạo qua lần chạy trước không được nhận lại. Giữ script chạy suốt buổi demo; máy ngủ hoặc mất mạng là mất Moodle đó.
 - **Chỉ có LTI** (launch và danh sách lớp). Xuất Book và Quiz sang Moodle cần thêm `moodle_base_url`, `moodle_wwwroot` bằng địa chỉ tunnel và `moodle-token` trong SSM, tức một lần `infra/scripts/tf.sh apply` nữa cho mỗi địa chỉ.
+  Script in token ở dòng `Token:`. Nạp nó rồi apply:
+  ```bash
+  aws ssm put-parameter --overwrite --type SecureString --name /microlearning-demo/moodle-token --value <Token>
+  infra/scripts/tf.sh apply -var moodle_base_url=<Moodle> -var moodle_wwwroot=<Moodle>
+  ```
+  Một `deploy.sh` sau đó apply lại không có hai biến này, nên đặt chúng qua môi trường cho lần deploy đó: `TF_VAR_moodle_base_url=<Moodle> TF_VAR_moodle_wwwroot=<Moodle> infra/scripts/deploy.sh`.
+- Thử luồng launch không cần trình duyệt: `MOODLE=<Moodle> TOOL=<url> E2E_USER_PASSWORD=<mật khẩu> python devops/lti-e2e/browser.py <moodle.json> e2eteacher` (`TOKEN_FILE=...` giữ token của người đó để gọi tiếp API).
 - Lưu lượng đi qua Cloudflare, nên chỉ dùng với dữ liệu thử.
 
 Cần một địa chỉ ổn định thì thay bằng một EC2 nhỏ chạy Moodle (khoảng $0,02 đến $0,03 một giờ), chưa có trong Terraform này.
