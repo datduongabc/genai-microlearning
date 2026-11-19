@@ -4,7 +4,7 @@ import http from "k6/http";
 import { check } from "k6";
 import { SharedArray } from "k6/data";
 
-const users = new SharedArray("users", () => JSON.parse(open("/results/users.json")));
+const users = new SharedArray("users", () => JSON.parse(open(__ENV.USERS || "/results/users.json")));
 export const options = {
   vus: Number(__ENV.VUS || 100),
   duration: __ENV.DURATION || "60s",
@@ -14,7 +14,7 @@ export const options = {
 export default function () {
   const user = users[(__VU - 1) % users.length];
   const params = { headers: { Authorization: `Bearer ${user.token}` } };
-  const base = "http://proxy/api";
+  const base = __ENV.BASE || "http://proxy/api";
   const responses = http.batch([
     ["GET", `${base}/courses`, null, params],
     ["GET", `${base}/documents?course_id=${user.course_id}`, null, params],

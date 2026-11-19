@@ -1,0 +1,28 @@
+[
+  {
+    "label": "aws-chat-20",
+    "concurrency": 20,
+    "rate": null,
+    "messages": 40,
+    "status_codes": {
+      "200": 40
+    },
+    "failed": 0,
+    "wall_seconds": 8.6,
+    "messages_per_minute": 278.5,
+    "first_word_seconds": {
+      "n": 40,
+      "mean": 2.359,
+      "p50": 2.212,
+      "p95": 3.606,
+      "max": 5.82
+    },
+    "latency_seconds": {
+      "n": 40,
+      "mean": 2.589,
+      "p50": 2.544,
+      "p95": 4.086,
+      "max": 5.954
+    }
+  }
+]

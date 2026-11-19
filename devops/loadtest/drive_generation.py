@@ -6,6 +6,8 @@
     python drive_generation.py check --out real-claude-fast.json --token-cap 30000000
     python drive_generation.py ack --concurrency 40 --label ack-40
 
+`seed-http` does the same on a deployment, whose database is out of reach: as the administrator of
+ADMIN_EMAIL and ADMIN_PASSWORD it makes the accounts, and each uploads the lecture's first three pages.
 `seed` reads and embeds one real lecture once and copies its chunks to every course. `generate` waits
 for the jobs, then adds a row with throughput, tokens and per-stage timings to the results file. `chat` sends
 real chat messages and records throughput and latency. `ack` times how long the API takes to answer an
@@ -15,6 +17,7 @@ import argparse
 import asyncio
 import concurrent.futures
 import json
+import os
 import re
 import statistics
 import sys
@@ -34,10 +37,11 @@ from app.ingestion.document_readers import read_document
 from app.ingestion.embeddings import embed_texts
 from app.models import Chunk, Course, Document, DocumentStatus, Job, JobStatus, Module, User
 
-RESULTS = Path("/results")
+# The defaults are the load stack; a deployment is driven from a laptop by setting the three.
+RESULTS = Path(os.environ.get("RESULTS", "/results"))
 USERS_FILE = RESULTS / "users.json"
-LECTURE = "/documents/operating-system/Chapter 3_Processes.pdf"
-BASE = "http://proxy/api"
+LECTURE = os.environ.get("LECTURE", "/documents/operating-system/Chapter 3_Processes.pdf")
+BASE = os.environ.get("BASE", "http://proxy/api")
 QUESTIONS = ["Tiến trình là gì?", "Các trạng thái của tiến trình gồm những gì?", "Process Control Block lưu thông tin gì?",
              "Context switch diễn ra thế nào?", "Tiến trình cha và con giao tiếp ra sao?", "Sự khác nhau giữa shared memory và message passing?"]
 
@@ -68,6 +72,70 @@ def seed(count: int) -> None:
         db.commit()
     USERS_FILE.write_text(json.dumps(seeded))
     print(f"seeded {count} users, {len(chunks)} chunks each")
+
+
+def send_file(client: httpx.Client, target: dict, data: bytes) -> None:
+    """Where the API said to send it: a presigned S3 form POST (no token, which S3 rejects), or a PUT to the API."""
+    if target["method"] == "POST":
+        httpx.post(target["url"], data=target["fields"], files={"file": data}, timeout=300).raise_for_status()
+    else:
+        client.put(target["url"], content=data).raise_for_status()
+
+
+def seed_http(count: int) -> None:
+    import fitz  # the backend's PDF library; only this step cuts a PDF
+
+    source = fitz.open(LECTURE)
+    excerpt = fitz.open()
+    excerpt.insert_pdf(source, from_page=0, to_page=2)
+    pdf = excerpt.tobytes()
+    admin = httpx.Client(base_url=BASE, timeout=60)
+    login = admin.post("/auth/login", json={"email": os.environ["ADMIN_EMAIL"], "password": os.environ["ADMIN_PASSWORD"]})
+    login.raise_for_status()
+    admin.headers["Authorization"] = "Bearer " + login.json()["access_token"]
+
+    def retried(client: httpx.Client, method: str, url: str, **kwargs) -> httpx.Response:
+        # Account creation and sign-in allow 10 a minute, so 40 accounts wait their turn.
+        while (response := client.request(method, url, **kwargs)).status_code == 429:
+            time.sleep(7)
+        response.raise_for_status()
+        return response
+
+    seeded = []
+    for _ in range(count):
+        email, password = f"load-{uuid.uuid4().hex[:10]}@example.com", "Load-pass-" + uuid.uuid4().hex[:12]
+        retried(admin, "POST", "/admin/users", json={"email": email, "name": "Load", "password": password})
+        user = httpx.Client(base_url=BASE, timeout=60)
+        token = retried(user, "POST", "/auth/login", json={"email": email, "password": password}).json()["access_token"]
+        user.headers["Authorization"] = "Bearer " + token
+        course_id = retried(user, "POST", "/courses", json={"name": "Load test"}).json()["id"]
+        asked = retried(user, "POST", "/documents/uploads", params={"course_id": course_id},
+                        json={"filename": "lecture.pdf", "size": len(pdf)}).json()
+        send_file(user, asked["upload"], pdf)
+        retried(user, "POST", f"/documents/{asked['document_id']}/complete")
+        seeded.append({"email": email, "password": password, "course_id": course_id, "document_id": asked["document_id"], "token": token})
+        print(f"account {len(seeded)}/{count}", flush=True)
+    for row in seeded:
+        while (status := httpx.get(f"{BASE}/documents/{row['document_id']}/status",
+                                   headers={"Authorization": f"Bearer {row['token']}"}).json()["status"]) not in ("embedded", "failed"):
+            time.sleep(3)
+        if status == "failed":
+            raise SystemExit(f"the upload of {row['email']} failed")
+    USERS_FILE.write_text(json.dumps(seeded))
+    print(f"seeded {count} users over HTTP")
+
+
+def login_http() -> None:
+    """New access tokens for the seed-http accounts: they last minutes, and a session outlives them."""
+    users = json.loads(USERS_FILE.read_text())
+    with httpx.Client(base_url=BASE, timeout=60) as client:
+        for user in users:
+            while (response := client.post("/auth/login", json={"email": user["email"], "password": user["password"]})).status_code == 429:
+                time.sleep(7)
+            response.raise_for_status()
+            user["token"] = response.json()["access_token"]
+    USERS_FILE.write_text(json.dumps(users))
+    print(f"signed in {len(users)} users again")
 
 
 def _stats(values: list[float]) -> dict:
@@ -267,7 +335,10 @@ def ack(concurrency: int, label: str, out: str) -> None:
                           json={"filename": "lecture.pdf", "size": len(pdf)})
             if asked.status_code < 300:
                 document_id = asked.json()["document_id"]
-                client.put(f"{BASE}/documents/{document_id}/content", content=pdf)
+                target = asked.json()["upload"]
+                if target["method"] == "PUT":
+                    target = {**target, "url": f"{BASE}{target['url']}"}
+                send_file(client, target, pdf)
                 timed(client, "upload_complete", "POST", f"/documents/{document_id}/complete")
             document = {"document_id": user["document_id"]}
             timed(client, "generate_module", "POST", "/modules/generate", params=document)
@@ -305,7 +376,7 @@ def check(out: str, token_cap: int) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("step", choices=["seed", "generate", "chat", "chat-stream", "ack", "check"])
+    parser.add_argument("step", choices=["seed", "seed-http", "login-http", "generate", "chat", "chat-stream", "ack", "check"])
     parser.add_argument("--users", type=int, default=40)
     parser.add_argument("--modules", type=int, default=8)
     parser.add_argument("--label", default="run")
@@ -318,6 +389,10 @@ def main() -> None:
     args = parser.parse_args()
     if args.step == "seed":
         seed(args.users)
+    elif args.step == "seed-http":
+        seed_http(args.users)
+    elif args.step == "login-http":
+        login_http()
     elif args.step == "generate":
         generate(args.modules, args.label, args.out, args.max_seconds)
     elif args.step == "chat":
