@@ -1,6 +1,6 @@
 """Admin study setup and invitation-only blind human ratings."""
 import uuid
-from typing import Annotated
+from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import Response
@@ -28,14 +28,30 @@ class CreateStudy(BaseModel):
     rubric_version: Nonempty
 
 
+class ImportedPacket(BaseModel):
+    """One exported packet file (scripts/export_study_pair.py), loaded as it was rated and measured."""
+    pair_id: uuid.UUID
+    group: Literal["rag_llm", "llm_no_rag"]
+    generator_model: str | None = None
+    generation_models: list | None = None
+    packet: ModuleContentInput
+
+
 class LoadItems(BaseModel):
     module_ids: list[uuid.UUID] = Field(default_factory=list, max_length=100)
     human_packets: list[ModuleContentInput] = Field(default_factory=list, max_length=100)
+    imported_packets: list[ImportedPacket] = Field(default_factory=list, max_length=200)
 
     @model_validator(mode="after")
     def nonempty(self):
-        if not self.module_ids and not self.human_packets:
-            raise ValueError("Provide module_ids or human_packets")
+        if not self.module_ids and not self.human_packets and not self.imported_packets:
+            raise ValueError("Provide module_ids, human_packets or imported_packets")
+        groups: dict[uuid.UUID, list[str]] = {}
+        for item in self.imported_packets:
+            groups.setdefault(item.pair_id, []).append(item.group)
+        # A pair is one RAG packet and one no-RAG packet: anything else could not be compared.
+        if any(sorted(g) != ["llm_no_rag", "rag_llm"] for g in groups.values()):
+            raise ValueError("Each imported pair needs exactly one rag_llm and one llm_no_rag packet")
         return self
 
 
@@ -239,7 +255,12 @@ def load_items(study_id: uuid.UUID, body: LoadItems, db: Session = Depends(get_d
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
+    if {p.pair_id for p in body.imported_packets} & {item.pair_id for item in items}:
+        raise HTTPException(status_code=409, detail="Pair already loaded")
     additions.extend(StudyItem(group="human", packet=packet.model_dump()) for packet in body.human_packets)
+    additions.extend(StudyItem(group=p.group, pair_id=p.pair_id, packet=p.packet.model_dump(),
+                               generator_model=p.generator_model, generation_models=p.generation_models)
+                     for p in body.imported_packets)
     for item in additions:
         item.study_id = study_id
     assign_codes(items + additions)
