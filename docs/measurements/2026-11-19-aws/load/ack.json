@@ -1,0 +1,92 @@
+[
+  {
+    "label": "aws-ack-10",
+    "at": "2026-11-19T02:36:49.007292+00:00",
+    "users": 40,
+    "concurrency": 10,
+    "wall_seconds": 4.7,
+    "failures": {},
+    "requests": {
+      "upload_request": {
+        "n": 40,
+        "mean": 0.095,
+        "p50": 0.08,
+        "p95": 0.16,
+        "max": 0.174
+      },
+      "upload_complete": {
+        "n": 40,
+        "mean": 0.094,
+        "p50": 0.081,
+        "p95": 0.171,
+        "max": 0.214
+      },
+      "generate_module": {
+        "n": 40,
+        "mean": 0.068,
+        "p50": 0.063,
+        "p95": 0.102,
+        "max": 0.169
+      },
+      "generate_flashcards": {
+        "n": 40,
+        "mean": 0.065,
+        "p50": 0.064,
+        "p95": 0.086,
+        "max": 0.093
+      },
+      "generate_video": {
+        "n": 40,
+        "mean": 0.065,
+        "p50": 0.063,
+        "p95": 0.089,
+        "max": 0.105
+      }
+    }
+  },
+  {
+    "label": "aws-ack-40",
+    "at": "2026-11-19T02:47:09.282575+00:00",
+    "users": 40,
+    "concurrency": 40,
+    "wall_seconds": 4.8,
+    "failures": {},
+    "requests": {
+      "upload_request": {
+        "n": 40,
+        "mean": 0.296,
+        "p50": 0.284,
+        "p95": 0.441,
+        "max": 0.446
+      },
+      "upload_complete": {
+        "n": 40,
+        "mean": 0.185,
+        "p50": 0.183,
+        "p95": 0.357,
+        "max": 0.417
+      },
+      "generate_module": {
+        "n": 40,
+        "mean": 0.132,
+        "p50": 0.134,
+        "p95": 0.232,
+        "max": 0.343
+      },
+      "generate_flashcards": {
+        "n": 40,
+        "mean": 0.129,
+        "p50": 0.124,
+        "p95": 0.256,
+        "max": 0.294
+      },
+      "generate_video": {
+        "n": 40,
+        "mean": 0.127,
+        "p50": 0.097,
+        "p95": 0.318,
+        "max": 0.348
+      }
+    }
+  }
+]
