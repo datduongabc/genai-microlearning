@@ -254,11 +254,12 @@ describe('AdminPage - failed jobs', () => {
   it('groups the three steps of a video under one filter and counts flashcards too', async () => {
     vi.mocked(api.getAdminCounts).mockResolvedValue({ users: 3, inactive_users: 0,
       failed_jobs: { flashcard_generation: 1, video_script: 1, video_render: 2 } })
-    vi.mocked(api.listFailedJobs).mockResolvedValue([
+    const all = [
       failedJob('j1', { job_type: 'video_script', document_filename: 'a.pdf' }),
       failedJob('j2', { job_type: 'flashcard_generation', document_filename: 'b.pdf' }),
       failedJob('j3', { job_type: 'video_render', document_filename: 'c.pdf' }),
-    ])
+    ]
+    vi.mocked(api.listFailedJobs).mockImplementation(async (types) => all.filter((j) => !types || types.includes(j.job_type)))
     await openFailures()
 
     expect(await screen.findByRole('button', { name: 'Tạo flashcard 1' })).toBeInTheDocument()
@@ -267,7 +268,7 @@ describe('AdminPage - failed jobs', () => {
     expect(await screen.findByText('c.pdf')).toBeInTheDocument()
     expect(screen.getByText('a.pdf')).toBeInTheDocument()
     expect(screen.queryByText('b.pdf')).not.toBeInTheDocument()
-    expect(api.listFailedJobs).toHaveBeenLastCalledWith(undefined)
+    expect(api.listFailedJobs).toHaveBeenLastCalledWith(['video_script', 'video_images', 'video_render'])
   })
 
   it('shows a friendly message when nothing failed', async () => {
@@ -298,7 +299,7 @@ describe('AdminPage - failed jobs', () => {
     await openFailures()
     await userEvent.click(await screen.findByRole('button', { name: /^Tạo mô-đun/ }))
 
-    await waitFor(() => expect(api.listFailedJobs).toHaveBeenLastCalledWith('module_generation'))
+    await waitFor(() => expect(api.listFailedJobs).toHaveBeenLastCalledWith(['module_generation']))
   })
 
   it('retries one job from its own button', async () => {

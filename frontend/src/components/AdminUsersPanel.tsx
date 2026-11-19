@@ -87,6 +87,8 @@ export function AdminUsersPanel({ counts, onChange }: { counts: AdminCounts | nu
     }
   }
 
+  const shown = users?.filter((u) => role === "all" || u.is_admin === (role === "admin")) ?? [];
+
   return (
     <div className="admin-users">
       <div className="admin-toolbar">
@@ -119,7 +121,7 @@ export function AdminUsersPanel({ counts, onChange }: { counts: AdminCounts | nu
       ) : (
         <ul className="account-table ui-card">
           <li className="account-row table-heading"><span>Người dùng</span><span>Vai trò</span><span>Moodle</span><span /></li>
-          {users.filter((u) => role === "all" || u.is_admin === (role === "admin")).map((u) => (
+          {shown.map((u) => (
             <li key={u.id}>
               <div className="account-row">
                 <div className="flex min-w-0 items-center gap-3">
@@ -160,7 +162,7 @@ export function AdminUsersPanel({ counts, onChange }: { counts: AdminCounts | nu
               )}
             </li>
           ))}
-          {users.length === 0 && <li className="account-empty">Chưa có tài khoản nào.</li>}
+          {shown.length === 0 && <li className="account-empty">Chưa có tài khoản nào.</li>}
         </ul>
       )}
     </div>

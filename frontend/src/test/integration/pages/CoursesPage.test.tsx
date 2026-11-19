@@ -189,3 +189,31 @@ describe('CoursesPage - rename', () => {
     expect(api.renameCourse).not.toHaveBeenCalled()
   })
 })
+
+describe('CoursesPage - unlink Moodle', () => {
+  it('unlinks a linked course from its menu after asking', async () => {
+    vi.mocked(api.listCourses)
+      .mockResolvedValueOnce([{ ...course, moodle_course_id: 6 }])
+      .mockResolvedValue([course])
+    vi.mocked(api.unlinkMoodleCourse).mockResolvedValue(undefined)
+    vi.spyOn(window, 'confirm').mockReturnValue(true)
+    renderPage()
+
+    ;(await screen.findByRole('button', { name: 'Thao tác khác với AI 101' })).focus()
+    await userEvent.keyboard('{Enter}')
+    await userEvent.click(await screen.findByRole('menuitem', { name: 'Hủy liên kết Moodle' }))
+
+    await waitFor(() => expect(api.unlinkMoodleCourse).toHaveBeenCalledWith('course-1'))
+    await waitFor(() => expect(screen.queryByText(/Đã liên kết khóa học Moodle/)).not.toBeInTheDocument())
+  })
+
+  it('offers no unlink for a course that is not linked', async () => {
+    vi.mocked(api.listCourses).mockResolvedValue([course])
+    renderPage()
+
+    ;(await screen.findByRole('button', { name: 'Thao tác khác với AI 101' })).focus()
+    await userEvent.keyboard('{Enter}')
+    await screen.findByRole('menuitem', { name: 'Đổi tên' })
+    expect(screen.queryByRole('menuitem', { name: 'Hủy liên kết Moodle' })).not.toBeInTheDocument()
+  })
+})

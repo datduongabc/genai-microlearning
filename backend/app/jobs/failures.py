@@ -2,8 +2,9 @@
 
 A failed generation creates no module, and a failed document stays listed as "Lỗi", so the job
 row is the only record of what went wrong. A failure is open until a newer job of the same kind
-exists for the same document (the lecturer generated again, or a retry is running):
-the same rule the database applies for the admin's view and for Retry (open_failed_jobs, migration 0007).
+exists for the same document and the same set or video (the lecturer generated again, or a retry
+is running): the same rule the database applies for the admin's view and for Retry
+(open_failed_jobs, migration 0042).
 """
 
 import uuid
@@ -39,6 +40,9 @@ def _open_failure_filter():
         ~exists().where(
             newer.document_id == Job.document_id,
             newer.job_type == Job.job_type,
+            # Per set and per video: one document has many, and set B made again does not fix set A.
+            newer.payload["flashcard_set_id"].astext.is_not_distinct_from(Job.payload["flashcard_set_id"].astext),
+            newer.payload["video_id"].astext.is_not_distinct_from(Job.payload["video_id"].astext),
             newer.created_at > Job.created_at,
         ),
     )

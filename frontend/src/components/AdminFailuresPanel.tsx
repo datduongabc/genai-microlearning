@@ -41,12 +41,10 @@ export function AdminFailuresPanel({ counts, onChange }: { counts: AdminCounts |
   // Sets state only from promise callbacks, and drops an answer that arrives after a newer request.
   useEffect(() => {
     let cancelled = false;
-    const types: readonly FailedJobInfo["job_type"][] | null = filter === "all" ? null : FILTERS[filter].types;
-    // One type asks the server for it; a video's three are filtered here from the whole list.
-    listFailedJobs(types?.length === 1 ? types[0] : undefined).then(
-      (all) => {
+    // The server filters, so the list agrees with the count however many failures there are.
+    listFailedJobs(filter === "all" ? undefined : FILTERS[filter].types).then(
+      (list) => {
         if (cancelled) return;
-        const list = types ? all.filter((j) => types.includes(j.job_type)) : all;
         setJobs(list);
         // What is no longer failed (retried here or by its lecturer) cannot stay picked.
         setSelected((current) => new Set(list.filter((j) => current.has(j.id)).map((j) => j.id)));

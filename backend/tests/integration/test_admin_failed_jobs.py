@@ -37,7 +37,7 @@ def _lecturer() -> uuid.UUID:
 
 
 def _failed(owner_id, job_type=JobType.document_pipeline, *, error="boom", status=JobStatus.failed,
-            created_at=None, document=None):
+            created_at=None, document=None, payload=None):
     """A document of `owner_id` with one job. Returns (job id, document id)."""
     with SessionLocal() as db:
         suffix = uuid.uuid4().hex[:8]
@@ -58,7 +58,7 @@ def _failed(owner_id, job_type=JobType.document_pipeline, *, error="boom", statu
             job_type=job_type, document_id=document_id,
             step="extract" if job_type == JobType.document_pipeline else "generate",
             status=status, attempts=5, max_attempts=5, last_error=error,
-            payload={"units": ["SECRET PAYLOAD"]},
+            payload=payload or {"units": ["SECRET PAYLOAD"]},
         )
         if created_at is not None:
             job.created_at = created_at
@@ -116,6 +116,33 @@ def test_filters_by_job_type(admin):
     jobs = _failed_ids(admin, job_type="module_generation")
 
     assert str(gen_job) in jobs and str(doc_job) not in jobs
+
+
+def test_filters_by_several_types_at_once(admin):
+    owner = _lecturer()
+    script, _ = _failed(owner, JobType.video_script)
+    render, _ = _failed(owner, JobType.video_render)
+    cards, _ = _failed(owner, JobType.flashcard_generation)
+
+    jobs = _failed_ids(admin, job_type=["video_script", "video_images", "video_render"])
+
+    assert {str(script), str(render)} <= set(jobs) and str(cards) not in jobs
+
+
+def test_a_set_made_again_closes_its_own_failure_only(admin):
+    owner = _lecturer()
+    set_a, set_b = str(uuid.uuid4()), str(uuid.uuid4())
+    old = datetime.now(UTC) - timedelta(minutes=5)
+    failed_a, document = _failed(owner, JobType.flashcard_generation, payload={"flashcard_set_id": set_a}, created_at=old)
+    failed_b, _ = _failed(owner, JobType.flashcard_generation, payload={"flashcard_set_id": set_b},
+                          created_at=old, document=document)
+    # Set B is made again and succeeds; set A was never made again.
+    _failed(owner, JobType.flashcard_generation, payload={"flashcard_set_id": set_b},
+            status=JobStatus.done, document=document)
+
+    jobs = _failed_ids(admin, job_type="flashcard_generation")
+
+    assert str(failed_a) in jobs and str(failed_b) not in jobs
 
 
 def test_counts_every_open_failure_per_type_beyond_the_list_cap(admin, monkeypatch):

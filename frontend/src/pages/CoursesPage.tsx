@@ -1,11 +1,11 @@
-import { Ellipsis, Pencil, Trash2 } from "lucide-react";
+import { Ellipsis, Pencil, Trash2, Unlink } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../components/ui/dropdown-menu";
 import { confirmAction } from "../lib/confirm";
 import { useCallback, useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Link } from "react-router-dom";
-import { apiErrorMessage, createCourse, deleteCourse, listCourses, renameCourse, type Course } from "../api";
+import { apiErrorMessage, createCourse, deleteCourse, listCourses, renameCourse, unlinkMoodleCourse, type Course } from "../api";
 import { AppShell } from "../components/AppShell";
 import { createCourseSchema, type CreateCourseFormValues } from "../lib/formSchemas";
 import { notifyDone, notifyFailed } from "../lib/notify";
@@ -97,6 +97,24 @@ export function CoursesPage() {
     setDeletingId(null);
   }
 
+  async function handleUnlink(course: Course) {
+    // Only the link in this app goes; nothing on Moodle is touched.
+    const confirmed = await confirmAction({
+      title: `Hủy liên kết với khóa học Moodle #${course.moodle_course_id}?`,
+      description: "Khóa học và nội dung trên Moodle vẫn giữ nguyên.",
+      action: "Hủy liên kết",
+    });
+    if (!confirmed) return;
+    try {
+      await unlinkMoodleCourse(course.id);
+    } catch (err) {
+      notifyFailed(apiErrorMessage(err, "Hủy liên kết thất bại"));
+      return;
+    }
+    notifyDone("Đã hủy liên kết khóa học Moodle.");
+    await refresh().catch(() => notifyFailed(RELOAD_FAILED));
+  }
+
   return (
     <AppShell title="Môn học">
       <form onSubmit={handleSubmit(handleCreate)} noValidate className="course-create">
@@ -152,6 +170,11 @@ export function CoursesPage() {
                   <DropdownMenuItem onSelect={() => setRenamingId(c.id)}>
                     <Pencil aria-hidden="true" />Đổi tên
                   </DropdownMenuItem>
+                  {c.moodle_course_id !== null && (
+                    <DropdownMenuItem onSelect={() => void handleUnlink(c)}>
+                      <Unlink aria-hidden="true" />Hủy liên kết Moodle
+                    </DropdownMenuItem>
+                  )}
                   <DropdownMenuItem variant="destructive" disabled={deletingId === c.id} onSelect={() => void handleDelete(c)}>
                     <Trash2 aria-hidden="true" />{deletingId === c.id ? "Đang xóa…" : "Xóa môn học"}
                   </DropdownMenuItem>

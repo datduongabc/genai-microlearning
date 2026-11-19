@@ -279,14 +279,15 @@ def _failures(world):
 def test_deleting_a_failed_set_deletes_its_job_so_the_document_is_no_longer_failed(world):
     set_id, other_id = make_set(world, status=MediaStatus.failed), make_set(world, status=MediaStatus.failed)
     other_job, job_id = _failed_job(world, other_id), _failed_job(world, set_id)
-    assert [f["job_id"] for f in _failures(world)] == [str(job_id)]
+    # Each set's failure is its own: a newer job for one set does not hide the other's.
+    assert [f["job_id"] for f in _failures(world)] == [str(job_id), str(other_job)]
 
     assert client.delete(f"/flashcard-sets/{set_id}", headers=headers(world["owner"])).status_code == 200
 
     with SessionLocal() as db:
         assert db.get(Job, job_id) is None
         assert db.get(Job, other_job) is not None
-    # The other set's failure was hidden by the newer job; with that one gone it shows again.
+    # Deleting one set takes its failure only; the other set's stays.
     assert [(f["job_id"], f["job_type"]) for f in _failures(world)] == [(str(other_job), "flashcard_generation")]
 
 
