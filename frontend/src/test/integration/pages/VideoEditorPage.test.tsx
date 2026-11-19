@@ -524,7 +524,7 @@ describe('VideoEditorPage', () => {
       .mockResolvedValue(video([scene(1)]))
 
     renderPage()
-    expect(await screen.findByText('Đang viết lời thoại…')).toBeInTheDocument()
+    expect(await screen.findByText('Đang tạo…')).toBeInTheDocument()
     await passTime(3600)
     expect(await screen.findByRole('button', { name: 'Sửa cảnh 1' })).toBeInTheDocument()
   })
