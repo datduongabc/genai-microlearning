@@ -20,11 +20,6 @@ vi.mock('../../../api', async (importOriginal) => {
 })
 
 const source = { chunk_id: 'c1', locator: 'Chapter 5.pdf · trang 9', content: 'FCFS phục vụ tiến trình theo thứ tự đến.' }
-const otherSource = {
-  chunk_id: 'c2', locator: 'Chapter 5.pdf · trang 10',
-  content: 'Chapter 5 › RR\nOperating System Concepts\nRound Robin chia lượt theo lượng tử.',
-  snippet: 'Round Robin chia lượt theo lượng tử.',
-}
 
 const scene = (n: number, extra: Partial<VideoScene> = {}): VideoScene => ({
   kind: 'summary', title: `Cảnh ${n}`, bullets: [`Ý một của cảnh ${n}`, `Ý hai của cảnh ${n}`],
@@ -39,7 +34,7 @@ const video = (scenes: VideoScene[], extra: Partial<VideoDetail> = {}): VideoDet
   model_alias: 'gemini-flash', voice_alias: 'voice-heygen', image_alias: 'image-nano-banana', status: 'draft',
   scene_count: scenes.length, draft_version: 1, rendered_version: null, duration_seconds: null, error: null,
   published_at: null, created_at: '2026-11-12T00:00:00Z', scenes, estimated_seconds: 60, max_seconds: 480,
-  render_problems: [], render_warnings: [], job: null, cost: null, captions: [], ...extra,
+  render_problems: [], render_warnings: [], job: null, captions: [], ...extra,
 })
 
 // A data router, as in main.tsx: the leave guard needs one for useBlocker. The other pages are
@@ -126,20 +121,6 @@ describe('VideoEditorPage', () => {
     expect(screen.getByRole('link', { name: 'Quay lại' })).toHaveAttribute('href', '/courses/course-1')
   })
 
-  it('counts the script in what the video cost, and says when part of it is unknown', async () => {
-    vi.mocked(api.getVideo).mockResolvedValue(video([scene(1)], {
-      cost: { script: { usd: 0.01, llm_calls: 10, priced_calls: 10 }, images: { usd: 0.07 }, voice: { usd: 0.005 } },
-    }))
-    const first = renderPage()
-    expect(await screen.findByText('Chi phí khoảng $0,085')).toBeInTheDocument()
-    first.unmount()
-
-    vi.mocked(api.getVideo).mockResolvedValue(video([scene(1)], {
-      cost: { script: { usd: 0.01, llm_calls: 10, priced_calls: 8 }, images: { usd: 0.07 } },
-    }))
-    renderPage()
-    expect(await screen.findByText(/Chi phí ít nhất \$0,08 \(chưa rõ giá của 2 lần gọi AI viết lời thoại\)/)).toBeInTheDocument()
-  })
 
   it('shows the estimated length and blocks render over 8 minutes', async () => {
     // 10170 characters at 15 a second is 678 seconds, 11,3 minutes.
@@ -149,7 +130,7 @@ describe('VideoEditorPage', () => {
 
     renderPage()
 
-    expect(await screen.findByText(/Độ dài ước tính: 11,3 phút/)).toBeInTheDocument()
+    expect(await screen.findByText(/Khoảng 11,3 phút, dài hơn 8 phút cho phép/)).toBeInTheDocument()
     expect(screen.getByText(problem)).toBeInTheDocument()
     const renderButton = screen.getByRole('button', { name: 'Dựng video' })
     expect(renderButton).toBeDisabled()
@@ -163,10 +144,10 @@ describe('VideoEditorPage', () => {
 
     renderPage()
 
-    expect(await screen.findByText(/Độ dài ước tính: 1 phút/)).toBeInTheDocument()
+    expect(await screen.findByText(/Khoảng 1 phút/)).toBeInTheDocument()
     await userEvent.click(screen.getByLabelText('Câu 1 cảnh 1'))
     await userEvent.paste('a'.repeat(900))
-    expect(screen.getByText(/Độ dài ước tính: 2 phút/)).toBeInTheDocument()
+    expect(screen.getByText(/Khoảng 2 phút/)).toBeInTheDocument()
   })
 
   it('marks flagged scenes and uncited lecturer sentences', async () => {
@@ -201,22 +182,6 @@ describe('VideoEditorPage', () => {
     await waitFor(() => expect(api.saveVideoScenes).toHaveBeenCalledTimes(1))
     const [, , sent] = vi.mocked(api.saveVideoScenes).mock.calls[0]
     expect(sent[0].flags).toEqual(['Lời thoại chỉ có 1 cảnh'])
-  })
-
-  it('clears a missing source when the lecturer attaches a passage', async () => {
-    vi.mocked(api.getVideo).mockResolvedValue(video([scene(1, {
-      narration_citations: [['c1'], []], sources: [source, otherSource], flags: ['Chưa có nguồn: Câu 2'],
-    })]))
-    vi.mocked(api.saveVideoScenes).mockResolvedValue(video([scene(1)], { draft_version: 2 }))
-
-    renderPage()
-    const sentences = within(await screen.findByRole('list', { name: 'Lời thoại cảnh 1' })).getAllByRole('listitem')
-    await userEvent.click(within(sentences[1]).getByRole('checkbox', { name: new RegExp(otherSource.locator) }))
-
-    expect(within(sentences[1]).queryByText('Chưa có nguồn')).not.toBeInTheDocument()
-    await userEvent.click(screen.getByRole('button', { name: 'Lưu thay đổi' }))
-    await waitFor(() => expect(api.saveVideoScenes).toHaveBeenCalled())
-    expect(vi.mocked(api.saveVideoScenes).mock.calls[0][2][0].narration_citations).toEqual([['c1'], ['c2']])
   })
 
   it('redraws one scene after its prompt is edited', async () => {
@@ -611,45 +576,6 @@ describe('VideoEditorPage', () => {
     expect(screen.queryByRole('button', { name: /hình cảnh 1/ })).not.toBeInTheDocument()
   })
 
-  it('cites any passage of the document, found by a search, with a snippet', async () => {
-    vi.mocked(api.getVideo).mockResolvedValue(video([scene(1, {
-      narration_citations: [['c1'], []], sources: [source],
-    })]))
-    vi.mocked(api.listDocumentChunks).mockResolvedValue({ items: [otherSource], total: 1 })
-    vi.mocked(api.saveVideoScenes).mockResolvedValue(video([scene(1)], { draft_version: 2 }))
-
-    renderPage()
-    const sentences = within(await screen.findByRole('list', { name: 'Lời thoại cảnh 1' })).getAllByRole('listitem')
-    await userEvent.type(within(sentences[1]).getByRole('searchbox', { name: 'Tìm đoạn nguồn cho câu 2 cảnh 1' }), 'quantum')
-    await userEvent.click(within(sentences[1]).getByRole('button', { name: 'Tìm' }))
-
-    expect(api.listDocumentChunks).toHaveBeenCalledWith('doc-1', { q: 'quantum', offset: 0 })
-    const found = await within(sentences[1]).findByRole('checkbox', { name: /Round Robin chia lượt/ })
-    expect(found).not.toBeChecked()
-    // The server's snippet is shown, not the passage's header.
-    expect(within(sentences[1]).queryByText(/Operating System Concepts/)).not.toBeInTheDocument()
-    await userEvent.click(found)
-
-    expect(within(sentences[1]).queryByText('Chưa có nguồn')).not.toBeInTheDocument()
-    // The passage found by the search is the scene's second source, so it is marker [2].
-    expect(within(sentences[1]).getByRole('button', { name: `Nguồn 2: ${otherSource.locator}` })).toHaveTextContent('[2]')
-    expect(within(sentences[1]).getByText('Đổi nguồn')).toBeInTheDocument()
-    await userEvent.click(screen.getByRole('button', { name: 'Lưu thay đổi' }))
-    await waitFor(() => expect(api.saveVideoScenes).toHaveBeenCalled())
-    expect(vi.mocked(api.saveVideoScenes).mock.calls[0][2][0].narration_citations).toEqual([['c1'], ['c2']])
-  })
-
-  it('offers the picker on a scene that has no source yet', async () => {
-    vi.mocked(api.getVideo).mockResolvedValue(video([scene(1)]))
-
-    renderPage()
-    await userEvent.click(await screen.findByRole('button', { name: 'Thêm cảnh' }))
-    const sentence = within(screen.getByRole('list', { name: 'Lời thoại cảnh 2' })).getAllByRole('listitem')[0]
-
-    expect(within(sentence).getByText('Gắn nguồn')).toBeInTheDocument()
-    expect(within(sentence).getByRole('searchbox', { name: 'Tìm đoạn nguồn cho câu 1 cảnh 2' })).toBeInTheDocument()
-  })
-
   it('reads each flag as the description of its field', async () => {
     vi.mocked(api.getVideo).mockResolvedValue(video([scene(1, {
       narration_citations: [['c1'], []], flags: ['Câu 2: Sai số liệu'],
@@ -730,15 +656,4 @@ describe('VideoEditorPage', () => {
     expect(screen.getByLabelText('Tiêu đề cảnh 1')).toHaveAccessibleDescription('Lời thoại chỉ có 1 cảnh')
   })
 
-  it('says when every passage found is already in the list', async () => {
-    vi.mocked(api.getVideo).mockResolvedValue(video([scene(1, { sources: [source] })]))
-    vi.mocked(api.listDocumentChunks).mockResolvedValue({ items: [source], total: 1 })
-
-    renderPage()
-    const sentence = within(await screen.findByRole('list', { name: 'Lời thoại cảnh 1' })).getAllByRole('listitem')[0]
-    await userEvent.click(within(sentence).getByRole('button', { name: 'Tìm' }))
-
-    expect(await within(sentence).findByText('Các đoạn khớp đã có trong danh sách.')).toBeInTheDocument()
-    expect(within(sentence).queryByText('Không có đoạn nào khớp.')).not.toBeInTheDocument()
-  })
 })

@@ -1,4 +1,3 @@
-import type { CallsCost } from '../lib/spent'
 import { api } from './client'
 
 // A passage a card cites, as the server resolved it from the card's chunk id.
@@ -32,8 +31,6 @@ export interface FlashcardSetSummary {
   card_count: number
   published_at: string | null
   created_at: string
-  // What the text-model calls of this set cost; empty for a set made before costs were kept.
-  cost: CallsCost | null
   // Sent back with a save: the server refuses one made on an older version (another tab saved).
   draft_version: number
 }
@@ -74,6 +71,13 @@ export async function getFlashcardSet(id: string) {
 
 export async function saveFlashcards(id: string, draftVersion: number, cards: FlashcardCardEdit[]) {
   const { data } = await api.put<FlashcardSetDetail>(`/flashcard-sets/${id}/cards`, { draft_version: draftVersion, cards })
+  return data
+}
+
+// The set rewritten as the lecturer asks in words, with what was done; `changed` is false when nothing was.
+export async function reviseFlashcardSet(id: string, draftVersion: number, message: string) {
+  const { data } = await api.post<FlashcardSetDetail & { reply: string; changed: boolean }>(
+    `/flashcard-sets/${id}/revise`, { draft_version: draftVersion, message })
   return data
 }
 

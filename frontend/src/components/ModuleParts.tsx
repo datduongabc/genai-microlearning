@@ -524,7 +524,7 @@ function ExplanationEditor({
             </div>
           ) : (
             <details className="reasoning">
-              <summary>Lập luận của AI</summary>
+              <summary>Cách ra đề</summary>
               <p className="reasoning-text">{item.reasoning}</p>
             </details>
           )}
@@ -566,7 +566,7 @@ function QuizDisplay({
   return (
     <div className="flex flex-col gap-6">
       {!selfChecked && questions.length > 0 && (
-        <p className="text-sm muted">AI chưa tự kiểm các câu hỏi này với nguồn.</p>
+        <p className="text-sm muted">Các câu hỏi này chưa được kiểm với tài liệu nguồn.</p>
       )}
       {questions.map((question) => {
         const check = checks[question.position]

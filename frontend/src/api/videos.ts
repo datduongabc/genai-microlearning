@@ -1,7 +1,6 @@
 import type { CaptionCue } from '../lib/captions'
 import { api } from './client'
 import type { FlashcardSource } from './flashcards'
-import type { VideoCost } from '../lib/spent'
 import type { DownloadTarget } from './upload'
 
 // A passage a scene cites, resolved by the server from its chunk id (the same shape a card has).
@@ -70,7 +69,6 @@ export interface VideoDetail extends VideoSummary {
   render_warnings: string[]
   // The newest queued or running job of this video; poll while it is set.
   job: VideoJob | null
-  cost: VideoCost | null
   // Of the rendered file, not the draft; empty before the first render.
   captions: CaptionCue[]
 }

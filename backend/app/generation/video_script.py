@@ -633,7 +633,7 @@ def generate_video_script(db: Session, video_id: uuid.UUID, before_save: Callabl
             )
             scenes, dropped, uncited = _kept_scenes(draft.scenes, chunks)
             if not scenes:
-                raise ValueError("AI không viết được cảnh nào có trích nguồn từ tài liệu. Hãy thử lại "
+                raise ValueError("Không viết được cảnh nào có trích nguồn từ tài liệu. Hãy thử lại "
                                  "hoặc đổi trọng tâm")
             _settle_kinds(scenes)
             draft_chars = _total_chars(scenes)
@@ -666,7 +666,7 @@ def generate_video_script(db: Session, video_id: uuid.UUID, before_save: Callabl
         if len(scenes) < MIN_SCENES:
             # Why it is short tells the lecturer what to do: sources missing suggests another focus.
             why = (f"{dropped} cảnh không trích được nguồn đã bị bỏ" if dropped
-                   else "AI chỉ viết được từng ấy cảnh")
+                   else "chỉ viết được từng ấy cảnh")
             scenes[0].flags.append(
                 f"Lời thoại chỉ có {len(scenes)} cảnh, nên có {MIN_SCENES} đến {MAX_SCENES} cảnh. Lý do: {why}. "
                 "Hãy thêm cảnh hoặc tạo lại video.")

@@ -173,7 +173,7 @@ def check_items_against_sources(
             if numbers != list(range(1, len(items) + 1)):
                 # A repeated, missing or shifted number means no verdict can be matched to its item
                 # for sure, and a "supported" given to the wrong item would hide a real error.
-                flags.append([f"{label}: {_JUDGE_FAILED}: AI kiểm tra trả lời sai thứ tự" for label, _ in items])
+                flags.append([f"{label}: {_JUDGE_FAILED}: bước kiểm tra trả lời sai thứ tự" for label, _ in items])
                 continue
             by_number = {v.number: v for v in verdicts}
             flags.append([

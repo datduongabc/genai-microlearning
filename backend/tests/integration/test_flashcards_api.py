@@ -311,6 +311,7 @@ def test_another_lecturer_gets_404_everywhere(world):
         ("GET", f"/courses/{world['course']}/flashcard-sets", {}),
         ("GET", f"/flashcard-sets/{set_id}", {}),
         ("PUT", f"/flashcard-sets/{set_id}/cards", {"json": {"draft_version": 1, "cards": []}}),
+        ("POST", f"/flashcard-sets/{set_id}/revise", {"json": {"draft_version": 1, "message": "x"}}),
         ("POST", f"/flashcard-sets/{set_id}/publish", {}),
         ("POST", f"/flashcard-sets/{set_id}/unpublish", {}),
         ("DELETE", f"/flashcard-sets/{set_id}", {}),
@@ -329,6 +330,7 @@ def test_a_learner_cannot_call_author_routes(world):
         ("GET", f"/courses/{world['course']}/flashcard-sets", {}),
         ("GET", f"/flashcard-sets/{set_id}", {}),
         ("PUT", f"/flashcard-sets/{set_id}/cards", {"json": {"draft_version": 1, "cards": []}}),
+        ("POST", f"/flashcard-sets/{set_id}/revise", {"json": {"draft_version": 1, "message": "x"}}),
         ("POST", f"/flashcard-sets/{set_id}/publish", {}),
         ("POST", f"/flashcard-sets/{set_id}/unpublish", {}),
         ("DELETE", f"/flashcard-sets/{set_id}", {}),
@@ -356,3 +358,63 @@ def test_a_card_comes_back_with_the_passages_it_cites_and_the_set_with_its_cours
     assert body["cards"][1]["sources"] == []
     summary = client.get(f"/courses/{world['course']}/flashcard-sets", headers=headers(world["owner"])).json()[0]
     assert summary["course_id"] == str(world["course"])
+
+
+def _revise_model(monkeypatch, cards, reply="Đã sửa."):
+    """The model returns `cards` as (front, back, sources); the judge flags only a back saying WRONG."""
+    from app.generation import fact_check
+    from app.generation import flashcards as generation
+    seen = {}
+
+    def complete(prompt, schema, **kwargs):
+        seen["prompt"] = prompt
+        return schema(reply=reply, cards=[{"front": f, "back": b, "sources": s} for f, b, s in cards])
+    monkeypatch.setattr(generation, "complete_structured", complete)
+    monkeypatch.setattr(generation, "retrieve", lambda *a, **k: [])
+    monkeypatch.setattr(fact_check, "judge_alias", lambda alias: "claude-fast")
+    monkeypatch.setattr(fact_check, "check_against_sources",
+                        lambda items, alias, language: ["Sai nguồn" if "WRONG" in text else None for text, _ in items])
+    return seen
+
+
+def test_a_set_is_revised_in_words_keeping_the_cards_the_request_left_alone(world, monkeypatch):
+    chunk = str(world["chunk"])
+    kept = {"front": "Q1", "back": "A1", "citations": [chunk], "author": "lecturer", "flag": None}
+    set_id = make_set(world, cards=[kept, card("Q2", "A2", [chunk], author="model", flag=None)])
+    seen = _revise_model(monkeypatch, [("Q1", "A1", ["S1"]), ("Q2 ngắn", "A2", ["S1"]), ("Q3", "WRONG", ["S1"]),
+                                       ("Q4", "No source", [])])
+
+    response = client.post(f"/flashcard-sets/{set_id}/revise", headers=headers(world["owner"]),
+                           json={"draft_version": 1, "message": "Rút gọn thẻ 2, thêm một thẻ"})
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["reply"] == "Đã sửa." and body["changed"] is True and body["draft_version"] == 2
+    # The untouched card is the same card; a rewritten one is the model's and checked; one without a source is dropped.
+    assert [(c["front"], c["author"], c["flag"]) for c in body["cards"]] == [
+        ("Q1", "lecturer", None), ("Q2 ngắn", "model", None), ("Q3", "model", "Sai nguồn")]
+    assert "A heap is a tree." in seen["prompt"] and "SOURCES: ['S1']" in seen["prompt"]
+
+
+def test_a_revision_that_changes_nothing_keeps_the_version_and_says_why(world, monkeypatch):
+    chunk = str(world["chunk"])
+    set_id = make_set(world, cards=[card("Q1", "A1", [chunk], author="model", flag=None)])
+    _revise_model(monkeypatch, [("Q1", "A1", ["S1"])], reply="Tài liệu không có nội dung này.")
+
+    body = client.post(f"/flashcard-sets/{set_id}/revise", headers=headers(world["owner"]),
+                       json={"draft_version": 1, "message": "Thêm thẻ về đồ thị"}).json()
+
+    assert body["changed"] is False and body["draft_version"] == 1 and body["reply"] == "Tài liệu không có nội dung này."
+
+
+def test_a_revision_on_an_older_version_or_one_emptying_the_set_is_refused(world, monkeypatch):
+    chunk = str(world["chunk"])
+    set_id = make_set(world, cards=[card("Q1", "A1", [chunk], author="model", flag=None)])
+    _revise_model(monkeypatch, [])
+    h = headers(world["owner"])
+
+    assert client.post(f"/flashcard-sets/{set_id}/revise", headers=h,
+                       json={"draft_version": 0, "message": "x"}).status_code == 409
+    emptied = client.post(f"/flashcard-sets/{set_id}/revise", headers=h, json={"draft_version": 1, "message": "Xóa hết"})
+    assert emptied.status_code == 422
+    assert client.get(f"/flashcard-sets/{set_id}", headers=h).json()["cards"][0]["front"] == "Q1"

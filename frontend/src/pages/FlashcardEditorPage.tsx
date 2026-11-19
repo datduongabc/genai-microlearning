@@ -9,6 +9,7 @@ import {
   getFlashcardSet,
   MAX_FLASHCARDS,
   publishFlashcardSet,
+  reviseFlashcardSet,
   saveFlashcards,
   type FlashcardCardEdit,
   type FlashcardSource,
@@ -16,10 +17,8 @@ import {
 } from '../api'
 import { AppShell } from '../components/AppShell'
 import { AutoGrowTextarea } from '../components/AutoGrowTextarea'
-import { PassagePicker } from '../components/PassagePicker'
 import { CitationMarkers } from '../components/CitationMarkers'
 import { editorTitle } from '../lib/editorTitle'
-import { flashcardSpent } from '../lib/spent'
 import { useLeaveGuard } from '../lib/useLeaveGuard'
 
 const POLL_INTERVAL_MS = 3000
@@ -53,7 +52,8 @@ export function FlashcardEditorPage() {
   const [loadFailed, setLoadFailed] = useState(false)
   const [missing, setMissing] = useState(false)
   const [attempt, setAttempt] = useState(0)
-  const [busy, setBusy] = useState<'save' | 'publish' | 'delete' | null>(null)
+  const [busy, setBusy] = useState<'save' | 'publish' | 'delete' | 'revise' | null>(null)
+  const [request, setRequest] = useState('')
   const keyCounter = useRef(0)
   const nextKey = useCallback(() => keyCounter.current++, [])
 
@@ -136,7 +136,6 @@ export function FlashcardEditorPage() {
   const courseId = saved.course_id
   const titleProps = editorTitle('Flashcard', saved.focus)
   const published = saved.published_at !== null
-  const spent = flashcardSpent(saved.cost)
   const dirty = !sameCards(cards, saved.cards)
   const complete = cards.every((c) => c.front.trim() !== '' && c.back.trim() !== '')
   const full = cards.length >= MAX_FLASHCARDS
@@ -154,6 +153,22 @@ export function FlashcardEditorPage() {
       notifyDone('Đã lưu.')
     } catch (err) {
       notifyFailed(apiErrorMessage(err, 'Lưu thẻ thất bại'))
+    } finally {
+      setBusy(null)
+    }
+  }
+
+  async function revise() {
+    setBusy('revise')
+    try {
+      const { reply, changed, ...set } = await reviseFlashcardSet(setId, draftVersion, request.trim())
+      setSaved(set)
+      setCards(toDrafts(set, nextKey))
+      setRequest('')
+      if (changed) notifyDone(reply || 'Đã sửa bộ thẻ.')
+      else notifyFailed(reply || 'Bộ thẻ không thay đổi.')
+    } catch (err) {
+      notifyFailed(apiErrorMessage(err, 'Sửa bộ thẻ thất bại. Vui lòng thử lại.'))
     } finally {
       setBusy(null)
     }
@@ -223,13 +238,11 @@ export function FlashcardEditorPage() {
           <span className="status-pill" data-status={published ? 'embedded' : undefined}>
             {published ? 'Đã giao cho sinh viên' : 'Bản nháp'}
           </span>
-          <span className="flashcard-count">{cards.length} thẻ (tối đa {MAX_FLASHCARDS})</span>
-          {spent && <span className="flashcard-count">{spent}</span>}
+          <span className="flashcard-count">{cards.length} thẻ</span>
         </div>
 
         <ol className="flashcard-list" aria-label="Các thẻ">
           {cards.map((c, index) => {
-            // The server's "no source" flag is out of date once the lecturer has picked a passage.
             const flag = c.flag === NO_SOURCE && c.citations.length > 0 ? null : c.flag
             const warning = flag ?? (c.citations.length === 0 ? NO_SOURCE : null)
             return (
@@ -269,17 +282,6 @@ export function FlashcardEditorPage() {
                   />
                 </label>
                 <CitationMarkers sources={c.sources} citations={c.citations} label={`Nguồn của thẻ ${index + 1}`} />
-                <PassagePicker
-                  documentId={saved.document_id}
-                  name={`thẻ ${index + 1}`}
-                  citations={c.citations}
-                  known={c.sources}
-                  onChange={(citations, picked) => {
-                    setCards((list) => list.map((x) => (x.key === c.key
-                      ? { ...x, citations, sources: picked ? [...x.sources, picked] : x.sources }
-                      : x)))
-                  }}
-                />
               </li>
             )
           })}
@@ -315,6 +317,20 @@ export function FlashcardEditorPage() {
           </button>
           {deleteButton}
         </div>
+
+        <section className="module-ai-edit" aria-labelledby="flashcard-revise-title">
+          <h2 id="flashcard-revise-title" className="module-part-title">Sửa theo yêu cầu</h2>
+          <label htmlFor="flashcard-revise" className="chat-label mt-3 block">Yêu cầu chỉnh sửa</label>
+          <textarea id="flashcard-revise" value={request} onChange={(e) => setRequest(e.target.value)} maxLength={2000} rows={3}
+            disabled={busy !== null} placeholder="Ví dụ: rút gọn mặt sau thẻ 2, thêm một thẻ về ví dụ tính thời gian chờ"
+            className="ui-input mt-2 w-full" />
+          {/* The request rewrites the saved set, so unsaved edits would be lost under it. */}
+          {dirty && <p className="course-hint">Lưu thay đổi trước khi gửi yêu cầu.</p>}
+          <button type="button" onClick={revise} disabled={busy !== null || dirty || request.trim() === ''}
+            className="ui-button primary mt-2 w-fit">
+            {busy === 'revise' ? 'Đang sửa…' : 'Gửi yêu cầu'}
+          </button>
+        </section>
       </div>
     </AppShell>
   )

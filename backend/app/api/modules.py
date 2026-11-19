@@ -547,7 +547,7 @@ def chat_edit_module(
     if is_control(db, module.id):
         raise HTTPException(
             status_code=422,
-            detail="Bản đối chứng chỉ dùng cho nghiên cứu nên không chỉnh sửa bằng AI được.",
+            detail="Bản đối chứng chỉ dùng cho nghiên cứu nên không sửa theo yêu cầu được.",
         )
     message = payload.message.strip()
     if not message:
@@ -603,7 +603,7 @@ def chat_edit_module(
                                      "ai_original": component.content.get("ai_original", component.content)}
     except (ValidationError, ValueError) as exc:
         db.rollback()
-        raise HTTPException(status_code=422, detail="AI trả lời không hợp lệ nên mô-đun chưa thay đổi. Hãy thử lại.") from exc
+        raise HTTPException(status_code=422, detail="Kết quả chỉnh sửa không hợp lệ nên mô-đun chưa thay đổi. Hãy thử lại.") from exc
     db.add_all([
         ChatMessage(session_id=session.id, role=ChatRole.user, content=message, citations=[],
                     created_at=datetime.now(UTC).replace(tzinfo=None)),

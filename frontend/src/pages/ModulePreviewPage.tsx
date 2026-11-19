@@ -166,7 +166,7 @@ export function ModulePreviewPage() {
               {module.components.map((c) => (
                 <li key={c.id}><a href={`#part-${c.type}`}>{COMPONENT_LABEL[c.type] ?? c.type}</a></li>
               ))}
-              {!module.is_control && <li><a href="#part-ai-edit">Chỉnh sửa bằng AI</a></li>}
+              {!module.is_control && <li><a href="#part-ai-edit">Sửa theo yêu cầu</a></li>}
               {!module.is_control && <li><a href="#part-publish">Xuất bản</a></li>}
             </ol>
           </nav>
@@ -234,7 +234,7 @@ function ModuleChatPanel({ module, onSaved }: { module: ModuleDetail; onSaved: (
   }
 
   return <section id="part-ai-edit" className="module-ai-edit">
-    <h2 className="module-part-title">Chỉnh sửa bằng AI</h2>
+    <h2 className="module-part-title">Sửa theo yêu cầu</h2>
     <div aria-live="polite" className="mt-3 space-y-3 text-sm">
       {turns.map((turn, i) => <div key={i}>
         <p className="text-gray-500">{turn.message}</p>

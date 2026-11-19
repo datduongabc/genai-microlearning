@@ -100,7 +100,7 @@ function failureTitle(failure: DocumentFailure): string {
 }
 
 const WARNING_LABEL: Record<string, string> = {
-  ocr_failed: "OCR không đọc được",
+  ocr_failed: "Không nhận dạng được chữ ở",
   formula_unverified: "Công thức có thể đọc chưa đúng ở",
 };
 

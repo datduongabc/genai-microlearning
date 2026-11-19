@@ -14,7 +14,6 @@ import {
 } from '../lib/videoDraft'
 import { AutoGrowTextarea } from './AutoGrowTextarea'
 import { CitationMarkers } from './CitationMarkers'
-import { PassagePicker } from './PassagePicker'
 import { ScenePreview, SlidePlaceholder } from './ScenePreview'
 import { SourcePassages } from './SourcePassages'
 
@@ -38,15 +37,13 @@ function FlagNote({ id, flag, dismissLabel, onDismiss }: { id?: string; flag: st
   )
 }
 
-function ItemEditor({ item, name, documentId, sources, flags, onText, onCitations, onDismiss, onRemove, maxLength }: {
+function ItemEditor({ item, name, sources, flags, onText, onDismiss, onRemove, maxLength }: {
   item: ItemDraft
   // "ý 2 cảnh 1": the accessible names of the item's controls.
   name: string
-  documentId: string
   sources: DocumentPassage[]
   flags: string[]
   onText: (text: string) => void
-  onCitations: (citations: string[], picked?: DocumentPassage) => void
   onDismiss: (flag: string) => void
   onRemove: () => void
   maxLength: number
@@ -79,7 +76,6 @@ function ItemEditor({ item, name, documentId, sources, flags, onText, onCitation
           onDismiss={() => onDismiss(flag)} />
       ))}
       <CitationMarkers sources={sources} citations={item.citations} label={`Nguồn của ${name}`} />
-      <PassagePicker documentId={documentId} name={name} citations={item.citations} known={sources} onChange={onCitations} />
     </li>
   )
 }
@@ -97,11 +93,10 @@ interface SceneSlide {
 }
 
 // One scene as the lecturer edits it: its slide, then what the slide prints and the voice says.
-export function VideoSceneEditor({ scene: s, number, count, documentId, slide, canDraw, nextKey, onChange, onMove, onRemove, onDraw }: {
+export function VideoSceneEditor({ scene: s, number, count, slide, canDraw, nextKey, onChange, onMove, onRemove, onDraw }: {
   scene: SceneDraft
   number: number
   count: number
-  documentId: string
   slide: SceneSlide
   canDraw: boolean
   nextKey: () => number
@@ -125,16 +120,9 @@ export function VideoSceneEditor({ scene: s, number, count, documentId, slide, c
     onChange((scene) => ({ ...scene, [field]: change(scene[field]) }))
   const itemProps = (field: 'bullets' | 'sentences', item: ItemDraft) => ({
     item,
-    documentId,
     sources: s.sources,
     flags: flagsFor(s.flags, item.label),
     onText: (text: string) => editItems(field, (items) => items.map((x) => (x.key === item.key ? { ...x, text } : x))),
-    onCitations: (citations: string[], picked?: DocumentPassage) => onChange((scene) => ({
-      ...scene,
-      [field]: scene[field].map((x) => (x.key === item.key ? { ...x, citations } : x)),
-      // A passage found by a search joins the scene's, so its label shows wherever it is ticked.
-      sources: picked && !scene.sources.some((p) => p.chunk_id === picked.chunk_id) ? [...scene.sources, picked] : scene.sources,
-    })),
     onDismiss: dismiss,
     onRemove: () => editItems(field, (items) => items.filter((x) => x.key !== item.key)),
   })
@@ -234,7 +222,7 @@ export function VideoSceneEditor({ scene: s, number, count, documentId, slide, c
       {s.kind === 'code' && (
         <label className="flashcard-field">
           Code
-          <AutoGrowTextarea aria-label={`Code cảnh ${number}`} aria-describedby={fieldNotes} value={s.code} maxLength={4000} rows={6} spellCheck={false}
+          <AutoGrowTextarea aria-label={`Mã nguồn cảnh ${number}`} aria-describedby={fieldNotes} value={s.code} maxLength={4000} rows={6} spellCheck={false}
             onChange={(e) => set({ code: e.target.value })} className="ui-input w-full font-mono" />
         </label>
       )}

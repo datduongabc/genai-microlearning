@@ -59,11 +59,3 @@ export interface DocumentPassage {
   // one, without the PDF's running header. Absent on a passage the page built itself.
   snippet?: string
 }
-
-// A page of the document's passages in reading order; `q` keeps those whose text contains it.
-export async function listDocumentChunks(documentId: string, { q, offset = 0, limit = 20 }: { q?: string; offset?: number; limit?: number } = {}) {
-  const { data } = await api.get<{ items: DocumentPassage[]; total: number }>(`/documents/${documentId}/chunks`, {
-    params: { offset, limit, ...(q?.trim() ? { q: q.trim() } : {}) },
-  })
-  return data
-}

@@ -27,7 +27,8 @@ from app.generation.media_common import (
 )
 from app.llm import catalog
 from app.llm.gateway import capture_models, complete_structured, using_model
-from app.models import Document, FlashcardSet, Job, MediaStatus
+from app.models import Chunk, Document, FlashcardSet, Job, MediaStatus
+from app.retrieval.search import ChunkScope, retrieve
 
 MAX_CARDS = 15
 
@@ -123,6 +124,67 @@ def generate_flashcards(
         card_set.served_models = list(served)
         card_set.status = MediaStatus.draft
         db.commit()
+
+
+class RevisedFlashcards(BaseModel):
+    reply: str = Field(description="One or two sentences to the lecturer: what was changed, or why nothing was")
+    cards: list[CardDraft]
+
+
+_REVISE_INSTRUCTION = IGNORE_EMBEDDED_INSTRUCTIONS + f"""You revise a set of flashcards at the request of the lecturer who owns it.
+You get the CURRENT CARDS, each with the IDs of the chunks it is taken from, the source chunks, and the REQUEST.
+Return the whole set as it should be after the request: change, add, remove or reorder only what the request asks,
+and copy every other card exactly as it is, with the same sources. At most {MAX_CARDS} cards.
+A card you write or change follows the same rules as the others: the front asks a short question or names a term,
+the back answers it in one to three sentences using ONLY what the source chunks say, and `sources` lists the IDs
+of the chunks the back is taken from. Do not write a card you cannot ground in a chunk.
+If the request cannot be done from the chunks, or is not about these cards, return the cards unchanged and say why
+in `reply`. Write `reply` in the language of the cards."""
+
+
+def revise_flashcards(db: Session, card_set: FlashcardSet, request: str) -> tuple[str, list[dict]]:
+    """The set's cards after the lecturer's request, and what the model says it did. Cards it copies
+    unchanged keep their author and check; a card it writes is fact-checked like a generated one."""
+    doc = db.get(Document, card_set.document_id)
+    if doc is None:
+        raise ValueError("Tài liệu không còn.")
+    language: OutputLanguage = card_set.output_language  # type: ignore[assignment]
+    alias = catalog.served_or_default(card_set.model_alias)
+    fact_check.judge_alias(alias)
+    # The passages the cards already cite, then those the request is about: a new card may need either.
+    cited_ids = list(dict.fromkeys(c for card in card_set.cards for c in card["citations"]))
+    by_id = {str(c.id): c for c in db.query(Chunk).filter(
+        Chunk.document_id == doc.id, Chunk.id.in_([uuid.UUID(c) for c in cited_ids])).all()} if cited_ids else {}
+    chunks = [by_id[c] for c in cited_ids if c in by_id]
+    known = set(by_id)
+    chunks += [c for c in retrieve(db, doc.course_id, request, top_k=8, scope=ChunkScope(doc.id)) if str(c.id) not in known]
+    code = {str(c.id): f"S{i + 1}" for i, c in enumerate(chunks)}
+    current = "\n".join(
+        f"{i + 1}. FRONT: {card['front']}\n   BACK: {card['back']}\n   SOURCES: {[code[c] for c in card['citations'] if c in code]}"
+        for i, card in enumerate(card_set.cards))
+    with using_model(alias):
+        revised = complete_structured(
+            f"CURRENT CARDS:\n{current}\n\n{format_source_chunks(chunks)}\n\nREQUEST: {request}", RevisedFlashcards,
+            system_instruction=_REVISE_INSTRUCTION + f"\n{term_rules(language)}" + output_language_instruction(language),
+            temperature=0.2,
+        )
+
+    before = {(card["front"], card["back"], tuple(card["citations"])): card for card in card_set.cards}
+    kept, fresh = [], []
+    for item in revised.cards[:MAX_CARDS]:
+        used = list({c.id: c for c in (resolve_source_id(chunks, s) for s in item.sources) if c is not None}.values())
+        front, back = without_doubled_words(item.front.strip()), without_doubled_words(item.back.strip())
+        if not used or not front or not back:
+            continue
+        citations = [str(c.id) for c in used]
+        same = before.get((front, back, tuple(citations)))
+        kept.append(same)
+        if same is None:
+            fresh.append((len(kept) - 1, front, back, citations, [c.content for c in used]))
+    flags = fact_check.check_against_sources([(f"{f}\n{b}", texts) for _, f, b, _, texts in fresh], alias, language)
+    for (index, front, back, citations, _), flag in zip(fresh, flags, strict=True):
+        kept[index] = {"front": front, "back": back, "citations": citations, "author": "model", "flag": flag}
+    return revised.reply.strip(), kept
 
 
 def run_flashcard_step(job: Job) -> None:
