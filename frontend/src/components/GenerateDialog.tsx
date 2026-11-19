@@ -11,23 +11,20 @@ export type GenerateKind = "module" | "flashcards" | "video";
 // What differs between the things a document can be made into. The text field is the same
 // 1000-character box everywhere: guidance for a module, the focus for flashcards and video.
 // A video also picks its voice and image model, which are paid per video and per picture.
-const KIND_TEXT: Record<GenerateKind, { title: string; field: string; placeholder: string; tooLong: string }> = {
+const KIND_TEXT: Record<GenerateKind, { title: string; field: string; tooLong: string }> = {
   module: {
     title: "Tạo mô-đun",
     field: "Chủ đề mà bạn muốn tập trung vào?",
-    placeholder: "",
     tooLong: "",
   },
   flashcards: {
     title: "Tạo flashcard",
     field: "Flashcard nên tập trung vào nội dung gì?",
-    placeholder: "Ví dụ: các định nghĩa trong chương 2",
     tooLong: "Tối đa 1000 ký tự",
   },
   video: {
     title: "Tạo video",
     field: "Video nên tập trung vào nội dung gì?",
-    placeholder: "Ví dụ: chỉ mục 3.2",
     tooLong: "Tối đa 1000 ký tự",
   },
 };
@@ -109,7 +106,7 @@ export function GenerateDialog({ open, onOpenChange, returnFocusTo, onGenerate, 
         </label>
         <label className="mt-4 flex flex-col gap-2 text-sm">
           {text.field}
-          <textarea {...register("instructions")} maxLength={1000} rows={4} placeholder={text.placeholder} className="ui-input w-full" />
+          <textarea {...register("instructions")} maxLength={1000} rows={4} className="ui-input w-full" />
         </label>
         {errors.instructions && <p className="mt-1 text-sm danger-text">{text.tooLong || errors.instructions.message}</p>}
         {kind === "video" && (

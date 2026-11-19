@@ -175,7 +175,7 @@ def save_rating(study_id: uuid.UUID, item_id: uuid.UUID, body: ModuleEvaluation,
 class Raters(BaseModel):
     emails: list[EmailStr] = Field(max_length=100)
     # Email -> the pair keys (a pair's id, or a human packet's id) that rater rates.
-    # A rater left out rates every pair.
+    # A rater left out rates nothing yet (alembic 0045).
     assignments: dict[EmailStr, list[str]] = Field(default_factory=dict)
 
 

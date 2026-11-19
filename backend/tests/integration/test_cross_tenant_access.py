@@ -111,6 +111,8 @@ def world():
         study_item = StudyItem(study_id=study.id, group="human", anon_code="M01", packet={**human_packet(), "anon_id": "M01"},
                                reference_file_id=study_file.id)
         db.add(study_item)
+        db.flush()
+        study.rater_pairs = {owner.email.lower(): [str(study_item.id)]}
         db.commit()
         ids = {
             "owner": owner.id, "stranger": stranger.id, "course": course.id, "stranger_course": stranger_course.id,

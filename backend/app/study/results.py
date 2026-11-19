@@ -122,9 +122,9 @@ def study_results(db: Session, study: Study) -> dict:
     invited = {email.lower() for email in study.rater_emails or []}
     given = study.rater_pairs or {}
     def assigned(email: str) -> int:
-        # How many packets this rater is to rate: those of the pairs given, or all of them.
-        keys = given.get(email)
-        return len(items) if keys is None else sum(str(item.pair_id or item.id) in keys for item in items)
+        # How many packets this rater is to rate: those of the pairs given them, none until then.
+        keys = given.get(email, [])
+        return sum(str(item.pair_id or item.id) in keys for item in items)
     raters = [
         {"email": email, "number": numbers.get(email), "rated": len(humans.get(email, [])),
          "invited": email in invited, "assigned": assigned(email)}
