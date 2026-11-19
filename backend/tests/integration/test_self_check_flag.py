@@ -126,3 +126,16 @@ def test_without_self_check_a_quiz_question_still_fails_the_free_syntax_check(do
     assert state["passed"] is False and "tuyệt đối" in state["fail_reason"]
     assert llm.count("QuizQuestion") == 2 + quiz_graph.SYNTAX_RETRY
     assert "GroundednessAnswerabilityCheck" not in llm
+
+
+@pytest.mark.parametrize("self_check", [True, False])
+def test_the_question_checks_are_counted_for_the_quality_metrics_only_when_they_ran(document, llm, self_check, caplog):
+    caplog.set_level("INFO", logger=pipeline.__name__)
+    _generate(document, self_check=self_check)
+    records = [r for r in caplog.records if r.getMessage() == "ai_quality module_questions"]
+    if not self_check:
+        assert records == []
+        return
+    [record] = records
+    # The fake checks pass every question: four asked, none failed.
+    assert (record.questions, record.failed_check) == (4, 0)

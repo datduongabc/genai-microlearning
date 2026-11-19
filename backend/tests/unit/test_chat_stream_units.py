@@ -217,3 +217,38 @@ def test_chat_answers_treat_instructions_inside_course_passages_as_data(instruct
     # (docs/measurements/2026-11-07-prompt-injection.md).
     assert instruction.startswith(IGNORE_EMBEDDED_INSTRUCTIONS)
     assert "[S2]" in CHAT_STREAM_INSTRUCTION  # the stream variant still swaps its citation rule
+
+
+def _chat_quality(caplog) -> dict:
+    [record] = [r for r in caplog.records if r.getMessage() == "ai_quality chat"]
+    return {k: getattr(record, k) for k in ("answers", "refused", "uncited", "invented_sources")}
+
+
+def test_each_streamed_answer_is_counted_for_the_quality_metrics(monkeypatch, caplog):
+    """S9 names no passage in a prompt of two: the model made it up, and it is counted once even
+    when written in two spellings."""
+    from types import SimpleNamespace
+
+    from app.chat import service
+
+    async def reply(prompt, system_instruction=None):
+        for piece in ["Heap là cây [S1]", " gần đầy đủ [S9] [s9]."]:
+            yield piece
+
+    monkeypatch.setattr(service, "stream_text", reply)
+    caplog.set_level("INFO", logger=service.__name__)
+    chunks = [SimpleNamespace(id=i, source_ref="trang 1", content="x", document_id=None, chunk_index=i) for i in (1, 2)]
+
+    async def run():
+        return [part async for part in service.stream_answer("Heap là gì?", chunks, [])]
+
+    asyncio.run(run())
+    assert _chat_quality(caplog) == {"answers": 1, "refused": 0, "uncited": 0, "invented_sources": 1}
+
+
+def test_a_refusal_is_counted_as_one_and_not_as_uncited(caplog):
+    from app.chat import service
+
+    caplog.set_level("INFO", logger=service.__name__)
+    asyncio.run(anext(service.stream_answer("Heap là gì?", [], [])))
+    assert _chat_quality(caplog) == {"answers": 1, "refused": 1, "uncited": 0, "invented_sources": 0}

@@ -67,6 +67,24 @@ def _support(claim: str, passages: list[str], language: OutputLanguage) -> Suppo
     )
 
 
+# The flags that are not a verdict: nothing to check against, or a judge that could not answer.
+_NO_PASSAGE = "Chưa có đoạn nguồn để kiểm"
+_JUDGE_FAILED = "Chưa kiểm được"
+
+
+def _report(kind: str, flags: list[str | None]) -> None:
+    """One line per check, which CloudWatch counts (infra/terraform/monitoring.tf). `judge_failed`
+    rising means the judge is down or out of credit, and drafts reach lecturers unchecked; an item
+    with no passage is the draft's own state, so it is counted apart and raises no alarm."""
+    reasons = [f.split(": ", 1)[1] if kind == "items" and ": " in f else f for f in flags if f is not None]
+    no_passage = sum(1 for r in reasons if r.startswith(_NO_PASSAGE))
+    judge_failed = sum(1 for r in reasons if r.startswith(_JUDGE_FAILED))
+    logger.info("ai_quality fact_check", extra={
+        "kind": kind, "checked": len(flags) - no_passage - judge_failed,
+        "unsupported": len(reasons) - no_passage - judge_failed, "no_passage": no_passage, "judge_failed": judge_failed,
+    })
+
+
 def check_against_sources(
     statements: list[tuple[str, list[str]]], generator_alias: str, language: OutputLanguage,
 ) -> list[str | None]:
@@ -76,16 +94,17 @@ def check_against_sources(
     with using_model(judge):
         for statement, passages in statements:
             if not passages:
-                flags.append("Chưa có đoạn nguồn để kiểm")
+                flags.append(_NO_PASSAGE)
                 continue
             try:
                 verdict = _support(statement, passages, language)
             except Exception as err:
                 # The check flags, it never blocks: an outage must not cost the lecturer the cards.
                 logger.warning("fact check could not run: %s", err)
-                flags.append(f"Chưa kiểm được: {str(err)[:120]}")
+                flags.append(f"{_JUDGE_FAILED}: {str(err)[:120]}")
                 continue
             flags.append(None if verdict.supported else (verdict.reason or "Không được đoạn nguồn xác nhận"))
+    _report("statements", flags)
     return flags
 
 
@@ -141,23 +160,24 @@ def check_items_against_sources(
     with using_model(judge):
         for items, passages in groups:
             if not passages:
-                flags.append([f"{label}: Chưa có đoạn nguồn để kiểm" for label, _ in items])
+                flags.append([f"{label}: {_NO_PASSAGE}" for label, _ in items])
                 continue
             try:
                 verdicts = _judge_items([text for _, text in items], passages, language)
             except Exception as err:
                 # The check flags, it never blocks: an outage must not cost the lecturer the script.
                 logger.warning("fact check could not run: %s", err)
-                flags.append([f"{label}: Chưa kiểm được: {str(err)[:120]}" for label, _ in items])
+                flags.append([f"{label}: {_JUDGE_FAILED}: {str(err)[:120]}" for label, _ in items])
                 continue
             numbers = sorted(v.number for v in verdicts)
             if numbers != list(range(1, len(items) + 1)):
                 # A repeated, missing or shifted number means no verdict can be matched to its item
                 # for sure, and a "supported" given to the wrong item would hide a real error.
-                flags.append([f"{label}: Chưa kiểm được: AI kiểm tra trả lời sai thứ tự" for label, _ in items])
+                flags.append([f"{label}: {_JUDGE_FAILED}: AI kiểm tra trả lời sai thứ tự" for label, _ in items])
                 continue
             by_number = {v.number: v for v in verdicts}
             flags.append([
                 None if by_number[n].supported else f"{label}: {by_number[n].reason or 'Không được đoạn nguồn xác nhận'}"
                 for n, (label, _) in enumerate(items, 1)])
+    _report("items", [flag for group in flags for flag in group])
     return flags

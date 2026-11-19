@@ -3,6 +3,7 @@
 mô-đun bằng chat (propose_module_edit), bám đoạn nguồn của mô-đun."""
 
 import json
+import logging
 import re
 import uuid
 from collections.abc import AsyncIterator
@@ -26,6 +27,8 @@ from app.generation.inline_citations import MARKER
 from app.generation.slides import SlidesOutput
 from app.llm.gateway import REQUEST_TIMEOUT_SECONDS, complete_structured, stream_text
 from app.models import ChatMessage, ChatSession, Chunk, Module
+
+logger = logging.getLogger(__name__)
 
 HISTORY_TURNS = 4
 
@@ -159,10 +162,28 @@ def _answer_prompt(query: str, context_chunks: list[Chunk], history: list[dict],
             f"{_language_line(question_language(query))}")
 
 
+def _invented(chunks: list[Chunk], written: list[str]) -> int:
+    """Source numbers the model wrote that name none of the passages in its prompt."""
+    return len({s.strip().upper() for s in written if resolve_source_id(chunks, s) is None})
+
+
+def report_answer(answer: str, invented: int, cited: int) -> None:
+    """One line per chat answer, which CloudWatch counts into the quality metrics
+    (infra/terraform/monitoring.tf): a refusal, an answer that cites nothing, and source numbers
+    the model wrote that are not among the passages it was given, which it made up."""
+    refused = NOT_COVERED in answer or NOT_COVERED_EN in answer
+    logger.info("ai_quality chat", extra={
+        "answers": 1, "refused": int(refused), "uncited": int(not refused and cited == 0),
+        "invented_sources": invented,
+    })
+
+
 def answer_question(query: str, context_chunks: list[Chunk], history: list[dict],
                     standalone: str | None = None) -> ChatAnswer:
     if not context_chunks:
-        return ChatAnswer(answer=not_covered(question_language(query)), citations=[])
+        answer = ChatAnswer(answer=not_covered(question_language(query)), citations=[])
+        report_answer(answer.answer, 0, 0)
+        return answer
 
     prompt = _answer_prompt(query, context_chunks, history, standalone)
 
@@ -175,6 +196,7 @@ def answer_question(query: str, context_chunks: list[Chunk], history: list[dict]
         chunk = resolve_source_id(context_chunks, source)
         if chunk is not None:
             cited[str(chunk.id)] = ChatCitation(chunk_id=str(chunk.id), source_ref=chunk.source_ref or "")
+    report_answer(draft.answer, _invented(context_chunks, draft.source_ids), len(cited))
     return ChatAnswer(answer=draft.answer, citations=list(cited.values()))
 
 
@@ -218,6 +240,7 @@ async def stream_answer(
     """Yields the answer as text pieces, then one ChatAnswer holding all of it and its citations."""
     if not context_chunks:
         reply = not_covered(question_language(query))
+        report_answer(reply, 0, 0)
         yield reply
         yield ChatAnswer(answer=reply, citations=[])
         return
@@ -236,8 +259,10 @@ async def stream_answer(
         chunk = resolve_source_id(context_chunks, source)
         if chunk is not None:
             cited[str(chunk.id)] = ChatCitation(chunk_id=str(chunk.id), source_ref=chunk.source_ref or "")
+    answer = SPACE_BEFORE_PUNCTUATION.sub(r"\1", "".join(pieces)).strip()
+    report_answer(answer, _invented(context_chunks, markers.source_ids), len(cited))
     # A marker written before the full stop leaves a space there.
-    yield ChatAnswer(answer=SPACE_BEFORE_PUNCTUATION.sub(r"\1", "".join(pieces)).strip(), citations=list(cited.values()))
+    yield ChatAnswer(answer=answer, citations=list(cited.values()))
 
 
 async def condense_query_streamed(message: str, history: list[dict]) -> str:

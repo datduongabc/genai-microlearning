@@ -44,6 +44,77 @@ resource "aws_cloudwatch_log_metric_filter" "jev_needs_attention" {
   }
 }
 
+# --- AI quality (app/chat/service.py report_answer, app/generation/fact_check.py _report, and the
+# question checks in app/generation/module_generation_pipeline.py). Each answer or check logs one
+# "ai_quality ..." line; these turn its fields into sums, and the dashboard divides them. Chat runs
+# in the api, generation in the worker, so both log groups count.
+
+locals {
+  quality_metrics = {
+    ChatAnswers          = { message = "ai_quality chat", field = "answers" }
+    ChatRefused          = { message = "ai_quality chat", field = "refused" }
+    ChatUncited          = { message = "ai_quality chat", field = "uncited" }
+    ChatInventedSources  = { message = "ai_quality chat", field = "invented_sources" }
+    QuestionsChecked     = { message = "ai_quality module_questions", field = "questions" }
+    QuestionsFailedCheck = { message = "ai_quality module_questions", field = "failed_check" }
+    FactsChecked         = { message = "ai_quality fact_check", field = "checked" }
+    FactsUnsupported     = { message = "ai_quality fact_check", field = "unsupported" }
+    FactCheckFailed      = { message = "ai_quality fact_check", field = "judge_failed" }
+  }
+  quality_filters = {
+    for pair in setproduct(keys(local.quality_metrics), keys(local.rerank_log_groups)) :
+    "${pair[0]}-${pair[1]}" => { metric = pair[0], group = local.rerank_log_groups[pair[1]] }
+  }
+}
+
+resource "aws_cloudwatch_log_metric_filter" "quality" {
+  for_each       = local.quality_filters
+  name           = "quality-${each.value.metric}"
+  log_group_name = each.value.group
+  pattern        = "{ $.message = \"${local.quality_metrics[each.value.metric].message}\" }"
+  metric_transformation {
+    name      = each.value.metric
+    namespace = "Microlearning/Quality"
+    value     = "$.${local.quality_metrics[each.value.metric].field}"
+  }
+}
+
+# Rates rather than counts: a busy hour has more refusals without anything being worse. No alarm on
+# them, since there is no baseline yet to say what is worse; the judge failing is the one that is
+# plainly wrong whenever it happens, and it is an alarm below.
+resource "aws_cloudwatch_dashboard" "quality" {
+  dashboard_name = "${local.name}-ai-quality"
+  dashboard_body = jsonencode({
+    widgets = [for i, w in [
+      { title = "Chat answers that refuse, cite nothing, or cite a made-up source (%)", parts = [
+        ["refused", "ChatRefused", "ChatAnswers"], ["uncited", "ChatUncited", "ChatAnswers"],
+      ["invented", "ChatInventedSources", "ChatAnswers"]] },
+      { title = "Questions that failed their own check (%)", parts = [["failed", "QuestionsFailedCheck", "QuestionsChecked"]] },
+      { title = "Flashcard and video statements the sources do not support (%)", parts = [["unsupported", "FactsUnsupported", "FactsChecked"]] },
+      ] : {
+      type   = "metric"
+      x      = (i % 2) * 12
+      y      = floor(i / 2) * 6
+      width  = 12
+      height = 6
+      properties = {
+        title  = w.title
+        region = var.region
+        view   = "timeSeries"
+        period = 3600
+        stat   = "Sum"
+        metrics = concat(
+          flatten([for p in w.parts : [
+            ["Microlearning/Quality", p[1], { id = "${p[0]}_n", visible = false }],
+            ["Microlearning/Quality", p[2], { id = "${p[0]}_d", visible = false }],
+          ]]),
+          [for p in w.parts : [{ expression = "100 * ${p[0]}_n / ${p[0]}_d", label = p[0], id = p[0] }]],
+        )
+      }
+    }]
+  })
+}
+
 locals {
   alarms = merge(
     var.reranker_provider == "jev" ? {
@@ -59,6 +130,11 @@ locals {
       }
     } : {},
     {
+      fact-check-failing = {
+        description = "The fact-check judge failed more than 5 times in 15 minutes: flashcards and videos reach lecturers unchecked."
+        namespace   = "Microlearning/Quality", metric = "FactCheckFailed", statistic = "Sum"
+        period      = 900, periods = 1, threshold = 5, operator = "GreaterThanThreshold", dimensions = {}
+      }
       job-waiting = {
         description = "A due job has waited over 15 minutes for a worker (scalable-design.md, section 10)."
         namespace   = "Microlearning/Jobs", metric = "OldestReadyJobAgeSeconds", statistic = "Maximum"

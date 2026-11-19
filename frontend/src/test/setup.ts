@@ -1,4 +1,5 @@
 import '@testing-library/jest-dom/vitest'
+import { configure } from '@testing-library/react'
 import { afterEach } from 'vitest'
 import { toast } from 'sonner'
 
@@ -27,3 +28,8 @@ window.ResizeObserver ??= class { observe() {} unobserve() {} disconnect() {} } 
 // Sonner keeps its toasts in a module-level store; without this a toast from one test is still
 // listed when the next test mounts its Toaster.
 afterEach(() => { toast.dismiss() })
+
+// findBy and waitFor give up after 1 s by default. With the whole suite sharing the machine, a
+// render that takes 0.2 s alone can take longer than that, and a correct test failed now and then
+// (AppShell's linked-account test, about 1 run in 8). They still return as soon as the page is right.
+configure({ asyncUtilTimeout: 3000 })
