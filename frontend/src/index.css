@@ -557,7 +557,7 @@ h1[tabindex="-1"]:focus-visible { outline:none; }
 .assign-table { overflow-x:auto; border:1px solid var(--border-default); border-radius:var(--radius-sm); }
 .assign-table table { width:100%; border-collapse:collapse; }
 .assign-table th, .assign-table td { padding:10px 12px; border-top:1px solid var(--border-default); text-align:center; font-size:14px; line-height:20px; }
-.assign-table thead th { border-top:0; background:var(--bg-subtle); font-weight:600; color:var(--text-secondary); white-space:nowrap; max-width:140px; overflow:hidden; text-overflow:ellipsis; }
+.assign-table thead th { border-top:0; background:var(--bg-subtle); font-weight:600; color:var(--text-secondary); white-space:nowrap; max-width:200px; overflow:hidden; text-overflow:ellipsis; }
 .assign-table th[scope=row], .assign-table thead th:first-child { text-align:left; font-weight:400; min-width:220px; }
 .assign-table input { width:16px; height:16px; accent-color:var(--accent-default); }
 
