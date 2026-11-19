@@ -56,6 +56,8 @@ DB_PW="$(secret 16)"
 # Moodle's password policy wants upper and lower case, a digit and a symbol.
 ADMIN_PW="Aa1!$(secret 10)"
 USER_PW="Aa1!$(secret 6)"
+# The web service token the backend publishes with (moodle-token in SSM).
+WS_TOKEN="$(secret 16)"
 
 echo "== Tunnel"
 docker network create "$NET" >/dev/null
@@ -109,7 +111,7 @@ docker run -d --name "$MOODLE" --network "$NET" \
   -e MOODLE_WWWROOT="$MOODLE_URL" -e MOODLE_DB_HOST="$DB" -e MOODLE_DB_PORT=5432 -e MOODLE_DB_NAME=moodle \
   -e MOODLE_DB_USER=postgres -e MOODLE_DB_PASSWORD="$DB_PW" -e MOODLE_SITE_NAME="Microlearning demo" \
   -e MOODLE_ADMIN_USER=admin -e MOODLE_ADMIN_PASSWORD="$ADMIN_PW" -e MOODLE_ADMIN_EMAIL=admin@example.com \
-  -e MOODLE_TOKEN="$(secret 16)" do-an-moodle >/dev/null
+  -e MOODLE_TOKEN="$WS_TOKEN" do-an-moodle >/dev/null
 READY=0
 for _ in $(seq 1 90); do
   if [[ "$(docker inspect -f '{{.State.Status}}' "$MOODLE")" != running ]]; then
@@ -167,6 +169,7 @@ Course:   $MOODLE_URL/course/view.php?id=$(j course_id)   (activity "Microlearni
 Admin:    admin / $ADMIN_PW
 Teacher:  e2eteacher / $USER_PW
 Student:  e2estudent / $USER_PW
+Token:    $WS_TOKEN   (web service, for publishing: see infra/README.md)
 
 Open the course as the teacher first, then as the student. Ctrl-C stops Moodle and the tunnel.
 EOF
