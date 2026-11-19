@@ -8,6 +8,7 @@ import {
   needsReview,
   sceneFlags,
   slideVersion,
+  uncited as isUncited,
   WHOLE_ITEM_LABEL,
   type ItemDraft,
   type SceneDraft,
@@ -37,8 +38,9 @@ function FlagNote({ id, flag, dismissLabel, onDismiss }: { id?: string; flag: st
   )
 }
 
-function ItemEditor({ item, name, sources, flags, onText, onDismiss, onRemove, maxLength }: {
+function ItemEditor({ item, name, sources, flags, uncited, onText, onDismiss, onRemove, maxLength }: {
   item: ItemDraft
+  uncited: boolean
   // "ý 2 cảnh 1": the accessible names of the item's controls.
   name: string
   sources: DocumentPassage[]
@@ -50,7 +52,6 @@ function ItemEditor({ item, name, sources, flags, onText, onDismiss, onRemove, m
 }) {
   const id = useId()
   const label = name.charAt(0).toUpperCase() + name.slice(1)
-  const uncited = item.text.trim() !== '' && item.citations.length === 0
   // What is wrong with the item is read with its field, not only seen next to it.
   const notes = describedBy([...(uncited ? [`${id}-no-source`] : []), ...flags.map((_, i) => `${id}-flag-${i}`)])
   return (
@@ -122,6 +123,7 @@ export function VideoSceneEditor({ scene: s, number, count, slide, canDraw, next
     item,
     sources: s.sources,
     flags: flagsFor(s.flags, item.label),
+    uncited: isUncited(s, item),
     onText: (text: string) => editItems(field, (items) => items.map((x) => (x.key === item.key ? { ...x, text } : x))),
     onDismiss: dismiss,
     onRemove: () => editItems(field, (items) => items.filter((x) => x.key !== item.key)),

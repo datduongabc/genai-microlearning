@@ -8,12 +8,12 @@ from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user, require_author, require_course_owner
-from app.api.media_common import NO_SOURCE_FLAG, GenerateRequest, chunk_passages, owned_media, require_own_chunks
+from app.api.media_common import GenerateRequest, chunk_passages, owned_media, require_own_chunks
 from app.api.model_alias import generation_alias
 from app.auth.rate_limit import limiter, user_or_address
 from app.db import get_db
 from app.generation.flashcards import MAX_CARDS, revise_flashcards
-from app.generation.limits import has_full_access, reserve_generations
+from app.generation.limits import has_full_access, reserve_edit, reserve_generations
 from app.jobs.queue import enqueue_job
 from app.models import Course, Document, FlashcardSet, Job, JobType, MediaStatus, User
 
@@ -148,8 +148,8 @@ def edit_cards(
             edited.append(before)
             continue
         edited.append({
-            "front": card.front, "back": card.back, "citations": citations, "author": "lecturer",
-            "flag": None if citations else NO_SOURCE_FLAG,
+            # No "Chưa có nguồn" on the lecturer's own card: they cannot cite a passage, and answer for it.
+            "front": card.front, "back": card.back, "citations": citations, "author": "lecturer", "flag": None,
         })
     card_set.cards = edited
     card_set.draft_version += 1
@@ -174,6 +174,7 @@ def revise_cards(
         raise HTTPException(status_code=409, detail="Chỉ sửa được bộ flashcard đã tạo xong.")
     if body.draft_version != card_set.draft_version:
         raise HTTPException(status_code=409, detail="Bộ thẻ đã được lưu ở nơi khác. Hãy tải lại trang rồi sửa tiếp.")
+    reserve_edit(db, current_user)
     try:
         reply, cards = revise_flashcards(db, card_set, body.message)
     except (ValidationError, ValueError) as exc:
