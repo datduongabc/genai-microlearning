@@ -74,8 +74,9 @@ h2{font-size:1.25rem;margin:2.5rem 0 .75rem;padding-top:1rem;border-top:1px soli
 h3{font-size:1.05rem;margin:1.5rem 0 .5rem}
 section.chapter.sub h2{font-size:1.05rem;border-top:0;margin-top:1.25rem;padding-top:0}
 pre,code{background:#eceee8;border-radius:4px}pre{padding:.75rem;overflow-x:auto}
-fieldset{border:1px solid #d9dad3;border-radius:6px;background:#fff;margin:0 0 1rem;padding:1rem}
-legend{font-weight:600;padding:0 .25rem}
+fieldset{border:1px solid #d9dad3;border-radius:6px;background:#fff;margin:0 0 1rem;padding:1rem;min-width:0}
+legend{float:left;width:100%;padding:0;margin:0 0 .5rem;font-weight:600}
+legend+*{clear:both}
 label.choice{display:flex;gap:.5rem;align-items:flex-start;margin:.35rem 0;cursor:pointer}
 label.choice input{margin-top:.35rem}
 .feedback{margin-top:.75rem;padding:.6rem .75rem;border-radius:4px;background:#eef3fb}
