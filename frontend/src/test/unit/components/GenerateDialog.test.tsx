@@ -67,7 +67,7 @@ describe('GenerateDialog', () => {
 
     expect(screen.getByRole('heading', { name: 'Tạo flashcard' })).toBeInTheDocument()
     expect(screen.queryByLabelText(/Chủ đề mà bạn muốn tập trung vào/)).not.toBeInTheDocument()
-    await userEvent.type(screen.getByLabelText('Flashcard nên tập trung vào nội dung gì? (không bắt buộc)'), '  Ví dụ: các định nghĩa trong chương 2 ')
+    await userEvent.type(screen.getByLabelText('Flashcard nên tập trung vào nội dung gì?'), '  Ví dụ: các định nghĩa trong chương 2 ')
     await userEvent.click(screen.getByRole('button', { name: 'Tạo flashcard' }))
 
     await waitFor(() => expect(onGenerate).toHaveBeenCalledWith('vi', 'Ví dụ: các định nghĩa trong chương 2'))
@@ -88,7 +88,7 @@ describe('GenerateDialog', () => {
     renderDialog('video')
 
     expect(screen.getByRole('heading', { name: 'Tạo video' })).toBeInTheDocument()
-    expect(screen.getByLabelText('Video nên tập trung vào nội dung gì? (không bắt buộc)')).toBeInTheDocument()
+    expect(screen.getByLabelText('Video nên tập trung vào nội dung gì?')).toBeInTheDocument()
   })
 
   it('asks a video for its voice and image model, HeyGen and Nano Banana first, with no price', async () => {

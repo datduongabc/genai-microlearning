@@ -1,4 +1,4 @@
-import { Trash2 } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Controller, useFieldArray, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -11,6 +11,9 @@ const BLOOM_LABELS: Record<string, string> = {
   remember: "Nhớ", understand: "Hiểu", apply: "Áp dụng",
   analyze: "Phân tích", evaluate: "Đánh giá", create: "Sáng tạo",
 };
+
+// One scale for every criterion; each criterion only asks its question.
+const SCALE = ["Không đạt", "Phần lớn chưa đạt", "Đạt một phần", "Đạt, có lỗi nhỏ", "Đạt hoàn toàn"];
 
 export function RatingForm({
   code,
@@ -71,7 +74,7 @@ export function RatingForm({
       className="rating-form ui-card"
     >
       <header className="rubric-header"><h2>Tiêu chí chấm</h2>
-        <details className="scale-help"><summary>Thang điểm</summary><p>1: không đạt. 2: phần lớn chưa đạt. 3: đạt một phần. 4: đạt, có lỗi nhỏ. 5: đạt hoàn toàn. Đọc nguồn trước, chấm từng gói độc lập, mỗi điểm kèm nhận xét.</p></details>
+        <details className="scale-help"><summary>Thang điểm</summary><ol>{SCALE.map((text, i) => <li key={i}><strong>{i + 1}</strong>{text}</li>)}</ol></details>
       </header>
       {rubric.map((criterion, i) => (
         <details key={criterion.key} className="criterion" open={opened.has(criterion.key)}
@@ -94,9 +97,7 @@ export function RatingForm({
           <fieldset><legend className="sr-only">{criterion.label}</legend>
           {/* bloom_fidelity is judged against the declared level, so it is shown here only, not in the packet. */}
           {criterion.key === "bloom_fidelity" && <p className="small muted">Mức Bloom đặt ra: {BLOOM_LABELS[bloomLevel] ?? bloomLevel}</p>}
-          <details className="rubric-guide"><summary>{criterion.question}</summary>
-            <ol>{criterion.levels.map((text, i) => <li key={i}><strong>{i + 1}</strong>{text}</li>)}</ol>
-          </details>
+          <p className="rubric-question">{criterion.question}</p>
           <Controller control={control} name={`${criterion.key}.score`} render={({ field }) => (
             <div className="scores" role="radiogroup" aria-label={`Điểm ${criterion.label}`}>
               {[1, 2, 3, 4, 5].map((n) => <label key={n}>
@@ -128,9 +129,9 @@ export function RatingForm({
         </details>
       ))}
       <section className="criterion space-y-3">
-        <div className="claims-header"><h3 className="font-semibold">Khẳng định không có căn cứ ({fields.length})</h3>
+        <div className="claims-header"><h3 className="font-semibold">Khẳng định không có căn cứ <span className="count">{fields.length}</span></h3>
           <button type="button" onClick={() => append({ claim: "", field: "content", reason: "" })}
-            className="link-button" aria-label="Thêm khẳng định không có căn cứ">+ Thêm</button>
+            className="link-button inline-flex items-center gap-1" aria-label="Thêm khẳng định không có căn cứ"><Plus aria-hidden="true" className="size-4" />Thêm</button>
         </div>
         {fields.map((field, i) => (
           <fieldset key={field.id} className="finding">
@@ -179,7 +180,7 @@ export function RatingForm({
           </fieldset>
         ))}
       </section>
-      <details className="criterion rating-notes"><summary><span className="criterion-name">Ghi chú chung (tùy chọn)</span></summary>
+      <details className="criterion rating-notes"><summary><span className="criterion-name">Ghi chú chung</span></summary>
       <label className="mt-3 block">
         <span className="sr-only">Ghi chú tổng quan</span>
         <textarea

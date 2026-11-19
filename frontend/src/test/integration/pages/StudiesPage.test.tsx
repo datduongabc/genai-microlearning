@@ -100,11 +100,11 @@ it("renders the whole anonymous packet and saves/edits all rubric criteria", asy
     await user.click(within(group).getByRole("radio", { name: "4" }));
   for (const field of screen.getAllByRole("textbox", { name: /Nhận xét/ }))
     await user.type(field, "Có căn cứ");
-  await user.click(screen.getByText("Ghi chú chung (tùy chọn)"));
+  await user.click(screen.getByText("Ghi chú chung"));
   await user.type(screen.getByLabelText("Ghi chú tổng quan"), "Tổng quan");
-  expect(screen.getByRole("heading", { name: "Khẳng định không có căn cứ (0)" })).toBeInTheDocument();
+  expect(screen.getByRole("heading", { name: "Khẳng định không có căn cứ 0" })).toBeInTheDocument();
   await user.click(screen.getByRole("button", { name: "Thêm khẳng định không có căn cứ" }));
-  expect(screen.getByRole("heading", { name: "Khẳng định không có căn cứ (1)" })).toBeInTheDocument();
+  expect(screen.getByRole("heading", { name: "Khẳng định không có căn cứ 1" })).toBeInTheDocument();
   await user.type(screen.getByLabelText("Khẳng định 1"), "Khẳng định");
   await user.type(screen.getByLabelText("Lý do 1"), "Không có nguồn");
   await user.click(screen.getByRole("button", { name: "Lưu đánh giá" }));
@@ -162,7 +162,7 @@ it("keeps edits and progress unchanged after a failed save", async () => {
   vi.mocked(api.saveRating).mockRejectedValue(new Error("offline"));
   blind();
   await screen.findByText("Mục tiêu con");
-  await userEvent.click(screen.getByText("Ghi chú chung (tùy chọn)"));
+  await userEvent.click(screen.getByText("Ghi chú chung"));
   await userEvent.type(screen.getByLabelText("Ghi chú tổng quan"), " mới");
   await userEvent.click(screen.getByRole("button", { name: "Lưu đánh giá" }));
   expect(await screen.findByText("Không lưu được đánh giá.")).toBeInTheDocument();
@@ -201,7 +201,7 @@ it("asks before a link or logout discards unsaved input, and not once it is save
     </MemoryRouter>,
   );
   await screen.findByText("Mục tiêu con");
-  await user.click(screen.getByText("Ghi chú chung (tùy chọn)"));
+  await user.click(screen.getByText("Ghi chú chung"));
   await user.type(screen.getByLabelText("Ghi chú tổng quan"), " mới");
   await user.click(within(screen.getByRole("navigation", { name: "Đường dẫn" })).getByRole("link", { name: "Nghiên cứu" }));
   expect(confirm).toHaveBeenCalledTimes(1);
@@ -336,10 +336,10 @@ it("keeps the correct answer out of the Quiz tab and shows it under Giải thíc
   blind();
   await user.click(await screen.findByRole("tab", { name: "Quiz" }));
   expect(within(screen.getByRole("tabpanel")).getByText("Câu hỏi")).toBeInTheDocument();
-  expect(screen.queryByText(/Đáp án đúng/)).not.toBeInTheDocument();
+  expect(screen.queryByLabelText("Đáp án đúng")).not.toBeInTheDocument();
   expect(screen.queryByText("Lời giải")).not.toBeInTheDocument();
   await user.click(screen.getByRole("tab", { name: "Giải thích đáp án" }));
-  expect(screen.getAllByText(/Đáp án đúng/)).toHaveLength(2);
+  expect(screen.getAllByLabelText("Đáp án đúng")).toHaveLength(2);
 });
 
 it("opens on the objectives, offers no source passages, and switches packet tabs with arrow keys", async () => {

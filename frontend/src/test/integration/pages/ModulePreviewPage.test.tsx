@@ -92,7 +92,7 @@ it('downloads slides through the authenticated API client', async () => {
   })
   try {
     renderPage()
-    await userEvent.click(await screen.findByRole('button', { name: 'Tải slide (PPTX)' }))
+    await userEvent.click(await screen.findByRole('button', { name: 'Tải slide PPTX' }))
     await waitFor(() => expect(click).toHaveBeenCalledOnce())
     expect(request).toHaveBeenCalledWith('/modules/module-1/slides.pptx', { responseType: 'blob' })
     expect(createURL).toHaveBeenCalledWith(blob)

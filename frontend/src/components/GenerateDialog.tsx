@@ -20,13 +20,13 @@ const KIND_TEXT: Record<GenerateKind, { title: string; field: string; placeholde
   },
   flashcards: {
     title: "Tạo flashcard",
-    field: "Flashcard nên tập trung vào nội dung gì? (không bắt buộc)",
+    field: "Flashcard nên tập trung vào nội dung gì?",
     placeholder: "Ví dụ: các định nghĩa trong chương 2",
     tooLong: "Tối đa 1000 ký tự",
   },
   video: {
     title: "Tạo video",
-    field: "Video nên tập trung vào nội dung gì? (không bắt buộc)",
+    field: "Video nên tập trung vào nội dung gì?",
     placeholder: "Ví dụ: chỉ mục 3.2",
     tooLong: "Tối đa 1000 ký tự",
   },
