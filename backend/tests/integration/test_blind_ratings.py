@@ -33,7 +33,10 @@ def blind(world):
         emails = [db.get(User, world['teacher']).email, second.email]
     sid = create_study(world)
     items = load(world, sid, module_ids=[str(world['rag'])], human_packets=[human_packet()] * 6).json()
-    result = client.put(f'/studies/{sid}/raters', headers=world['headers'], json={'emails': emails})
+    # Invited and given every pair: a rater given none sees nothing (alembic 0045).
+    keys = sorted({i['pair_id'] or i['id'] for i in items})
+    result = client.put(f'/studies/{sid}/raters', headers=world['headers'],
+                        json={'emails': emails, 'assignments': {email: keys for email in emails}})
     assert result.status_code == 200, result.text
     yield {**world, 'sid': sid, 'items': items, 'second': ids[0], 'outsider': ids[1], 'emails': emails,
            'second_headers': {'Authorization': 'Bearer ' + create_access_token(ids[0])},
@@ -177,14 +180,14 @@ def test_a_rater_given_some_pairs_sees_and_rates_only_those(blind):
     assert given.status_code == 200, given.text
     assert client.get(path, headers=blind['headers']).json()['assignments'] == {teacher: [pair]}
     mine = client.get(f'/studies/mine/{sid}/items', headers=blind['teacher_headers']).json()
-    # Both packets of the pair, nothing else; the second rater, given nothing, still sees all 8.
+    # Both packets of the pair, nothing else; the second rater, now given nothing, sees nothing.
     assert mine['total'] == 2 and len(mine['items']) == 2
-    assert client.get(f'/studies/mine/{sid}/items', headers=blind['second_headers']).json()['total'] == 8
+    assert client.get(f'/studies/mine/{sid}/items', headers=blind['second_headers']).json()['total'] == 0
     refused = client.put(f"/studies/mine/{sid}/items/{other['id']}/rating", headers=blind['teacher_headers'],
                          json=evaluation(other['anon_code']))
     assert refused.status_code == 404
     totals = {r['email']: r['assigned'] for r in client.get(f'/studies/{sid}/results', headers=blind['headers']).json()['raters']}
-    assert totals == {teacher: 2, blind['emails'][1]: 8}
+    assert totals == {teacher: 2, blind['emails'][1]: 0}
 
 
 def test_pairs_go_only_to_invited_raters_and_to_pairs_of_the_study(blind):

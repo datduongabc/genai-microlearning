@@ -526,7 +526,7 @@ it("adds a pair whose no-RAG twin is made, and asks before making one", async ()
   await waitFor(() => expect(api.addPair).toHaveBeenLastCalledWith("s1", "m2"));
 });
 
-it("gives a rater only the pairs ticked, and refuses a rater left with none", async () => {
+it("starts with nothing ticked and gives a rater only the pairs ticked", async () => {
   vi.mocked(api.getRaters).mockResolvedValue({ emails: ["lan@example.com"], assignments: {} });
   vi.mocked(api.getStudyItems).mockResolvedValue([
     summary("a", "M01", "rag_llm", "p1"), summary("b", "M04", "llm_no_rag", "p1"),
@@ -537,14 +537,15 @@ it("gives a rater only the pairs ticked, and refuses a rater left with none", as
   const card = await screen.findByRole("region", { name: "Phân công" });
 
   const first = await within(card).findByRole("checkbox", { name: "lan@example.com chấm M01, M04" });
-  expect(first).toBeChecked();
-  await userEvent.click(within(card).getByRole("checkbox", { name: "lan@example.com chấm M02, M03" }));
+  // A rater invited and given nothing rates nothing yet.
+  expect(within(card).getAllByRole("checkbox").every((box) => !(box as HTMLInputElement).checked)).toBe(true);
+  await userEvent.click(first);
   await userEvent.click(within(card).getByRole("button", { name: "Lưu phân công" }));
   await waitFor(() => expect(api.setRaters).toHaveBeenCalledWith("s1", ["lan@example.com"], { "lan@example.com": ["p1"] }));
 
   await userEvent.click(first);
   await userEvent.click(within(card).getByRole("button", { name: "Lưu phân công" }));
-  expect(api.setRaters).toHaveBeenCalledTimes(1);
+  await waitFor(() => expect(api.setRaters).toHaveBeenLastCalledWith("s1", ["lan@example.com"], { "lan@example.com": [] }));
 });
 
 it("opens the study named in the address, so a reload stays on it", async () => {
