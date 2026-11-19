@@ -127,7 +127,7 @@ describe('ModulePreviewPage - SCORM package', () => {
 
   it("shows the server's reason when the package is refused", async () => {
     vi.mocked(api.getModule).mockResolvedValue(baseModule)
-    const body = new Blob([JSON.stringify({ detail: 'Còn 1 câu hỏi chưa khớp nguồn (quiz 1). Lý do ghi dưới từng câu; hãy sửa trước khi xuất gói SCORM.' })], { type: 'application/json' })
+    const body = new Blob([JSON.stringify({ detail: 'Còn 1 câu hỏi cần xem lại (quiz 1). Lý do ghi dưới từng câu; hãy sửa trước khi xuất gói SCORM.' })], { type: 'application/json' })
     const refused = new AxiosError('422', 'ERR_BAD_REQUEST', undefined, undefined, {
       status: 422, data: body, statusText: '', headers: {}, config: {} as InternalAxiosRequestConfig,
     } as AxiosResponse)
@@ -135,7 +135,7 @@ describe('ModulePreviewPage - SCORM package', () => {
     try {
       renderPage()
       await userEvent.click(await screen.findByRole('button', { name: 'Tải gói SCORM (.zip)' }))
-      expect(await screen.findByText('Còn 1 câu hỏi chưa khớp nguồn (quiz 1). Lý do ghi dưới từng câu; hãy sửa trước khi xuất gói SCORM.')).toBeInTheDocument()
+      expect(await screen.findByText('Còn 1 câu hỏi cần xem lại (quiz 1). Lý do ghi dưới từng câu; hãy sửa trước khi xuất gói SCORM.')).toBeInTheDocument()
     } finally {
       request.mockRestore()
     }
@@ -398,8 +398,8 @@ describe('ModulePreviewPage - reading the module', () => {
     renderPage()
 
     const quizCard = (await screen.findByText('CÂU-HỎI')).closest('section') as HTMLElement
-    expect(within(quizCard).getByText('Chưa kiểm')).toBeInTheDocument()
-    expect(within(quizCard).queryByText('Đã kiểm với nguồn')).not.toBeInTheDocument()
+    expect(within(quizCard).getByText('AI chưa tự kiểm các câu hỏi này với nguồn.')).toBeInTheDocument()
+    expect(within(quizCard).queryByText('Cần xem lại')).not.toBeInTheDocument()
   })
 
   it('treats a module saved before the self-check flag existed as self-checked', async () => {
@@ -419,9 +419,40 @@ describe('ModulePreviewPage - reading the module', () => {
 
     renderPage()
 
+    // A question that passed carries no mark at all.
     const quizCard = (await screen.findByText('CÂU-HỎI')).closest('section') as HTMLElement
-    expect(within(quizCard).getByText('Đã kiểm với nguồn')).toBeInTheDocument()
-    expect(within(quizCard).queryByText('Chưa kiểm')).not.toBeInTheDocument()
+    expect(within(quizCard).queryByText('Cần xem lại')).not.toBeInTheDocument()
+    expect(within(quizCard).queryByText('AI chưa tự kiểm các câu hỏi này với nguồn.')).not.toBeInTheDocument()
+  })
+
+  it('marks only the flagged question, with each reason under it in Vietnamese', async () => {
+    vi.mocked(api.getModule).mockResolvedValue({
+      ...baseModule,
+      components: [
+        {
+          id: 'quiz-1',
+          type: 'quiz',
+          content: { questions: [
+            { passed: true },
+            { passed: false, fail_reason: "Bloom's level fail: chỉ là nhận diện; Wording fail: Phương án 0 dài hơn; dễ đoán" },
+          ] },
+          questions: [
+            { id: 'q1', position: 0, stem: 'CÂU-MỘT', choices: { options: ['A', 'B', 'C', 'D'] }, answer_key: '0', explanation: 'e' },
+            { id: 'q2', position: 1, stem: 'CÂU-HAI', choices: { options: ['A', 'B', 'C', 'D'] }, answer_key: '0', explanation: 'e' },
+          ],
+        },
+      ],
+    })
+
+    renderPage()
+
+    const quizCard = (await screen.findByText('CÂU-HAI')).closest('section') as HTMLElement
+    expect(within(quizCard).getAllByText('Cần xem lại')).toHaveLength(1)
+    const reasons = within(quizCard).getByRole('list', { name: 'Lý do câu 2 cần xem lại' })
+    expect(within(reasons).getAllByRole('listitem').map((li) => li.textContent)).toEqual([
+      'Chưa đúng mức Bloom: chỉ là nhận diện',
+      'Cách diễn đạt: Phương án 0 dài hơn; dễ đoán',
+    ])
   })
 
   it('lists the sub-objectives under the learning objective', async () => {
