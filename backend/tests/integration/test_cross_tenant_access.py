@@ -226,6 +226,8 @@ ATTACKS = [
     ("GET", "/studies/{study}", None, {}),
     ("POST", "/studies/{study}/items", None, {"json": {"module_ids": ["{module}"]}}),
     ("GET", "/studies/{study}/raters", None, {}),
+    ("GET", "/studies/{study}/candidates", None, {}),
+    ("POST", "/studies/{study}/pairs", None, {"json": {"module_id": "{module}"}}),
     ("PUT", "/studies/{study}/raters", None, {"json": {"emails": []}}),
     # A study the owner was invited to rate, reached by a lecturer who was not.
     ("GET", "/studies/mine/{study}/items", None, {}),

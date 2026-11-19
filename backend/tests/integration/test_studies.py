@@ -482,3 +482,49 @@ def test_refuses_an_imported_pair_that_is_not_one_rag_and_one_no_rag(world):
     twice = load(world, sid, imported_packets=[_imported(pair, "rag_llm"), _imported(pair, "rag_llm")])
 
     assert alone.status_code == 422 and twice.status_code == 422
+
+
+def test_candidates_list_the_admins_rag_modules_and_where_they_stand(world):
+    sid = create_study(world)
+    rows = client.get(f"/studies/{sid}/candidates", headers=world["headers"]).json()
+    # The control is not offered; the RAG module's control is already made.
+    assert [(r["id"], r["state"]) for r in rows] == [(str(world["rag"]), "ready")]
+
+    added = client.post(f"/studies/{sid}/pairs", headers=world["headers"], json={"module_id": str(world["rag"])})
+
+    assert added.status_code == 201, added.text
+    assert sorted(i["group"] for i in added.json()) == ["llm_no_rag", "rag_llm"]
+    assert client.get(f"/studies/{sid}/candidates", headers=world["headers"]).json()[0]["state"] == "in_study"
+    assert client.post(f"/studies/{sid}/pairs", headers=world["headers"],
+                       json={"module_id": str(world["rag"])}).status_code == 409
+
+
+def test_adding_a_module_without_its_control_asks_for_one_and_says_it_is_generating(world, monkeypatch):
+    with SessionLocal() as db:
+        db.query(Job).filter(Job.module_id == world["control"]).delete()
+        db.commit()
+    with SessionLocal() as db:
+        doc = db.get(Module, world["rag"]).document_id
+        db.get(Document, doc).raw_text = "X is a concept"
+        db.commit()
+    monkeypatch.setattr("app.api.modules._usable_alias", lambda alias: alias)
+    sid = create_study(world)
+
+    first = client.post(f"/studies/{sid}/pairs", headers=world["headers"], json={"module_id": str(world["rag"])})
+    again = client.post(f"/studies/{sid}/pairs", headers=world["headers"], json={"module_id": str(world["rag"])})
+
+    assert first.status_code == 202 and first.json() == {"state": "generating"}
+    assert again.status_code == 202
+    with SessionLocal() as db:
+        jobs = db.query(Job).filter(Job.payload["paired_module_id"].astext == str(world["rag"]),
+                                    Job.status == JobStatus.queued).all()
+        assert len(jobs) == 1  # asking twice queues one generation
+        db.query(Job).filter(Job.id == jobs[0].id).delete()
+        db.commit()
+
+
+def test_a_lecturer_cannot_add_pairs(world):
+    sid = create_study(world)
+    assert client.post(f"/studies/{sid}/pairs", headers=world["teacher_headers"],
+                       json={"module_id": str(world["rag"])}).status_code == 404
+    assert client.get(f"/studies/{sid}/candidates", headers=world["teacher_headers"]).status_code == 404

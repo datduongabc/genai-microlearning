@@ -48,11 +48,29 @@ export interface BlindStudy {
 export async function listStudies() {
   return (await api.get<Study[]>("/studies")).data;
 }
+// Email -> the pairs that rater rates (a pair's id, or a human packet's id); a rater left out rates them all.
+export type Assignments = Record<string, string[]>;
+export interface Raters { emails: string[]; assignments: Assignments }
 export async function getRaters(id: string) {
-  return (await api.get<{ emails: string[] }>(`/studies/${id}/raters`)).data;
+  return (await api.get<Raters>(`/studies/${id}/raters`)).data;
 }
-export async function setRaters(id: string, emails: string[]) {
-  return (await api.put<{ emails: string[] }>(`/studies/${id}/raters`, { emails })).data;
+// Without `assignments` the server keeps the pairs already given to the raters that remain.
+export async function setRaters(id: string, emails: string[], assignments?: Assignments) {
+  return (await api.put<Raters>(`/studies/${id}/raters`, assignments ? { emails, assignments } : { emails })).data;
+}
+export interface PairCandidate {
+  id: string;
+  title: string;
+  course_name: string;
+  state: "in_study" | "ready" | "generating" | "failed" | "none";
+}
+export async function listPairCandidates(id: string) {
+  return (await api.get<PairCandidate[]>(`/studies/${id}/candidates`)).data;
+}
+// 201 with the study's items once added; 202 while the module's no-RAG control is being made.
+export async function addPair(id: string, moduleId: string) {
+  const response = await api.post(`/studies/${id}/pairs`, { module_id: moduleId });
+  return response.status === 201 ? "added" as const : "generating" as const;
 }
 export async function myStudies() {
   return (await api.get<MyStudy[]>("/studies/mine")).data;
@@ -74,7 +92,7 @@ export interface ResultRating {
 export interface StudyResults {
   criteria: string[];
   total: number;
-  raters: { email: string; number: number | null; rated: number; invited: boolean }[];
+  raters: { email: string; number: number | null; rated: number; invited: boolean; assigned: number }[];
   has_judge: boolean;
   unpaired: string[];
   items: { id: string; anon_code: string; group: "rag_llm" | "llm_no_rag" | "human"; pair_code: string; topic: string; ratings: ResultRating[] }[];

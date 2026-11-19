@@ -13,18 +13,9 @@ import {
 } from "../api/studies";
 import { apiErrorMessage } from "../api/client";
 import { formatSize } from "../lib/fileSize";
+import { rowsOf } from "../lib/studyRows";
 
 const GROUP_LABEL: Record<string, string> = { rag_llm: "RAG", llm_no_rag: "Không RAG", human: "Người viết" };
-
-// One row per RAG/no-RAG pair, which always shares its file, and one per human-written packet.
-function rowsOf(items: StudyItemSummary[]) {
-  const rows = new Map<string, StudyItemSummary[]>();
-  for (const item of items) {
-    const key = item.pair_id ?? item.id;
-    rows.set(key, [...(rows.get(key) ?? []), item]);
-  }
-  return [...rows.values()];
-}
 
 // The files the raters judge the packets against: the admin uploads them to the study once and
 // picks one per packet. The pipeline keeps no course file once it is read, so they come from here.
@@ -112,7 +103,7 @@ export function StudyReferences({ studyId }: { studyId: string }) {
       </label>
     </div>
 
-    <h3 className="results-subtitle">Theo từng gói</h3>
+    <h3 className="results-subtitle">Tài liệu gốc của từng cặp</h3>
     {items.length === 0 ? <p className="small muted">Nghiên cứu chưa có gói nào.</p> : (
       <ul className="reference-items" aria-label="Tài liệu gốc theo gói">
         {rowsOf(items).map((row) => {
@@ -128,7 +119,7 @@ export function StudyReferences({ studyId }: { studyId: string }) {
             </div>
             <select className="ui-select" aria-label={`Tài liệu gốc của ${codes}`} value={first.reference_file_id ?? ""}
               disabled={saving !== null} onChange={(e) => void pick(first, e.target.value)}>
-              <option value="">Chưa chọn</option>
+              <option value="">Chưa gắn tài liệu</option>
               {files.map((file) => <option key={file.id} value={file.id}>{file.filename}</option>)}
             </select>
           </li>;

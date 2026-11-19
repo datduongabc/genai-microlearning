@@ -55,7 +55,8 @@ beforeEach(() => {
   vi.mocked(api.myStudies).mockResolvedValue([{ ...study, rated: 0, total: 1 }]);
   vi.mocked(api.myStudyItems).mockResolvedValue(data);
   vi.mocked(api.listStudies).mockResolvedValue([study]);
-  vi.mocked(api.getRaters).mockResolvedValue({ emails: ["lan@example.com"] });
+  vi.mocked(api.getRaters).mockResolvedValue({ emails: ["lan@example.com"], assignments: {} });
+  vi.mocked(api.listPairCandidates).mockResolvedValue([]);
   vi.mocked(api.getStudyResults).mockResolvedValue(noResults);
   vi.mocked(api.listStudyFiles).mockResolvedValue([]);
   vi.mocked(api.getStudyItems).mockResolvedValue([]);
@@ -75,11 +76,10 @@ it("lists invitations with personal progress", async () => {
       <StudiesPage />
     </MemoryRouter>,
   );
-  expect(await screen.findByRole("link", { name: /Nghiên cứu/ })).toHaveAttribute(
-    "href",
-    "/studies/s1",
-  );
-  expect(screen.getByText("Đã chấm 0/1")).toBeInTheDocument();
+  // The sidebar's own "Nghiên cứu" link goes to /studies; the study's link is the other one.
+  expect(await screen.findByText("Đã chấm 0/1")).toBeInTheDocument();
+  const links = screen.getAllByRole("link", { name: /Nghiên cứu/ });
+  expect(links.map((link) => link.getAttribute("href"))).toContain("/studies/s1");
 });
 // It types into all nine rubric comments, about 1.6 s alone: under the full parallel run it passed 5 s.
 it("renders the whole anonymous packet and saves/edits all rubric criteria", async () => {
@@ -202,7 +202,7 @@ it("asks before a link or logout discards unsaved input, and not once it is save
   await screen.findByText("Nguồn đối chiếu");
   await user.click(screen.getByText("Ghi chú chung (tùy chọn)"));
   await user.type(screen.getByLabelText("Ghi chú tổng quan"), " mới");
-  await user.click(within(screen.getByRole("navigation", { name: "Đường dẫn" })).getByRole("link", { name: "Chấm nghiên cứu" }));
+  await user.click(within(screen.getByRole("navigation", { name: "Đường dẫn" })).getByRole("link", { name: "Nghiên cứu" }));
   expect(confirm).toHaveBeenCalledTimes(1);
   await user.click(screen.getByRole("button", { name: /Giảng viên/ }));
   await user.click(screen.getByRole("button", { name: "Đăng xuất" }));
@@ -222,7 +222,7 @@ it("asks before a link or logout discards unsaved input, and not once it is save
   await user.click(screen.getByRole("button", { name: "Đăng xuất" }));
   expect(confirm).toHaveBeenCalledTimes(2);
   expect(logout).toHaveBeenCalledTimes(1);
-  await user.click(within(screen.getByRole("navigation", { name: "Đường dẫn" })).getByRole("link", { name: "Chấm nghiên cứu" }));
+  await user.click(within(screen.getByRole("navigation", { name: "Đường dẫn" })).getByRole("link", { name: "Nghiên cứu" }));
   expect(confirm).toHaveBeenCalledTimes(2);
   expect(await screen.findByText("Danh sách")).toBeInTheDocument();
 });
@@ -233,7 +233,7 @@ it("reports missing or revoked invitations", async () => {
   expect(screen.queryByRole("button", { name: "Lưu đánh giá" })).not.toBeInTheDocument();
 });
 it("admin edits invited emails and can remove all raters", async () => {
-  vi.mocked(api.setRaters).mockImplementation(async (_s, emails) => ({ emails }));
+  vi.mocked(api.setRaters).mockImplementation(async (_s, emails) => ({ emails, assignments: {} }));
   render(<AdminStudiesPanel />);
   await userEvent.click(await screen.findByRole("button", { name: /Nghiên cứu/ }));
   const input = await screen.findByLabelText("Người chấm");
@@ -255,7 +255,7 @@ it("admin edits invited emails and can remove all raters", async () => {
 });
 
 it("saves a typed email that was not yet added with Enter", async () => {
-  vi.mocked(api.setRaters).mockImplementation(async (_s, emails) => ({ emails }));
+  vi.mocked(api.setRaters).mockImplementation(async (_s, emails) => ({ emails, assignments: {} }));
   render(<AdminStudiesPanel />);
   await userEvent.click(await screen.findByRole("button", { name: /Nghiên cứu/ }));
   await userEvent.type(await screen.findByLabelText("Người chấm"), "Minh@Example.com");
@@ -316,7 +316,7 @@ it("shows the declared Bloom level only beside the bloom_fidelity criterion", as
 it("shows the study and the anonymous code in the breadcrumb", async () => {
   blind();
   const trail = await screen.findByRole("navigation", { name: "Đường dẫn" });
-  expect(trail).toHaveTextContent("Chấm nghiên cứu / Nghiên cứu / M01");
+  expect(trail).toHaveTextContent("Nghiên cứu / Nghiên cứu / M01");
 });
 
 it("counts the criteria still missing a score or a comment beside the save button", async () => {
@@ -388,7 +388,7 @@ it("shows the admin each rater's progress, and per packet the scores, findings a
   const scores = Object.fromEntries(["accuracy", "completeness"].map((c) => [c, { score: 4, justification: `Lý do ${c}` }]));
   vi.mocked(api.getStudyResults).mockResolvedValue({
     criteria: ["accuracy", "completeness"], total: 2, has_judge: false, unpaired: [],
-    raters: [{ email: "lan@example.com", number: 1, rated: 1, invited: true }, { email: "minh@example.com", number: null, rated: 0, invited: true }],
+    raters: [{ email: "lan@example.com", number: 1, rated: 1, invited: true, assigned: 2 }, { email: "minh@example.com", number: null, rated: 0, invited: true, assigned: 2 }],
     items: [
       { id: "i1", anon_code: "M01", group: "rag_llm", pair_code: "M01", topic: "Chủ đề", ratings: [{
         rater: "Người chấm 1", kind: "human", scores, notes: "Ổn",
@@ -501,4 +501,46 @@ it("offers the rater the packet's own file, and nothing when there is none", asy
   await userEvent.click(screen.getByRole("link", { name: "M02" }));
   await waitFor(() => expect(screen.queryByText("Bài giảng 3.pdf")).not.toBeInTheDocument());
   expect(screen.queryByRole("button", { name: "Tải xuống" })).not.toBeInTheDocument();
+});
+
+it("adds a pair whose no-RAG twin is made, and asks before making one", async () => {
+  vi.mocked(api.listPairCandidates).mockResolvedValue([
+    { id: "m1", title: "Tiến trình", course_name: "Hệ điều hành", state: "ready" },
+    { id: "m2", title: "Luồng", course_name: "Hệ điều hành", state: "none" },
+  ]);
+  vi.mocked(api.addPair).mockResolvedValueOnce("added").mockResolvedValueOnce("generating");
+  const confirm = vi.spyOn(window, "confirm").mockReturnValue(true);
+  await openStudy();
+  const card = await screen.findByRole("region", { name: "Thêm cặp từ mô-đun" });
+  const rows = await within(card).findAllByRole("listitem");
+
+  await userEvent.click(within(rows[0]).getByRole("button", { name: "Thêm cặp" }));
+  await waitFor(() => expect(api.addPair).toHaveBeenCalledWith("s1", "m1"));
+  // A twin already made costs nothing, so nothing is asked.
+  expect(confirm).not.toHaveBeenCalled();
+
+  await userEvent.click(within(rows[1]).getByRole("button", { name: "Thêm cặp" }));
+  expect(confirm).toHaveBeenCalledTimes(1);
+  await waitFor(() => expect(api.addPair).toHaveBeenLastCalledWith("s1", "m2"));
+});
+
+it("gives a rater only the pairs ticked, and refuses a rater left with none", async () => {
+  vi.mocked(api.getRaters).mockResolvedValue({ emails: ["lan@example.com"], assignments: {} });
+  vi.mocked(api.getStudyItems).mockResolvedValue([
+    summary("a", "M01", "rag_llm", "p1"), summary("b", "M04", "llm_no_rag", "p1"),
+    summary("c", "M02", "rag_llm", "p2"), summary("d", "M03", "llm_no_rag", "p2"),
+  ]);
+  vi.mocked(api.setRaters).mockImplementation(async (_s, emails, assignments) => ({ emails, assignments: assignments ?? {} }));
+  await openStudy();
+  const card = await screen.findByRole("region", { name: "Phân công" });
+
+  const first = await within(card).findByRole("checkbox", { name: "lan@example.com chấm M01, M04" });
+  expect(first).toBeChecked();
+  await userEvent.click(within(card).getByRole("checkbox", { name: "lan@example.com chấm M02, M03" }));
+  await userEvent.click(within(card).getByRole("button", { name: "Lưu phân công" }));
+  await waitFor(() => expect(api.setRaters).toHaveBeenCalledWith("s1", ["lan@example.com"], { "lan@example.com": ["p1"] }));
+
+  await userEvent.click(first);
+  await userEvent.click(within(card).getByRole("button", { name: "Lưu phân công" }));
+  expect(api.setRaters).toHaveBeenCalledTimes(1);
 });

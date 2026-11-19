@@ -79,7 +79,7 @@ describe('AdminPage - accounts', () => {
     renderPage()
 
     const row = (await screen.findByText('lan@example.com')).closest('li')!
-    expect(within(row).getByText('↗ Đã liên kết')).toBeInTheDocument()
+    expect(within(row).getByText('Đã liên kết')).toBeInTheDocument()
     const locked = screen.getByText('minh@example.com').closest('li')!
     expect(within(locked).getByText('Chưa liên kết')).toBeInTheDocument()
     // The admin themselves have no Moodle status.
@@ -384,7 +384,7 @@ it('shows an admin unlink failure without changing the user link state', async (
   await openRowMenu(row)
   await userEvent.click(screen.getByRole('menuitem', { name: 'Hủy liên kết Moodle' }))
   expect(await screen.findByText('Không hủy được liên kết Moodle.')).toBeInTheDocument()
-  expect(within(row).getByText('↗ Đã liên kết')).toBeInTheDocument()
+  expect(within(row).getByText('Đã liên kết')).toBeInTheDocument()
 })
 
 it('moves admin tabs with the keyboard and returns Home to accounts', async () => {

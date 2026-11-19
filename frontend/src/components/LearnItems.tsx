@@ -1,3 +1,4 @@
+import { Copy, Play } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { formatClock } from "../lib/duration";
@@ -14,8 +15,6 @@ function Delivered({ iso }: { iso: string }) {
   return <time dateTime={iso} className="learn-date">Giao {dayMonth(iso)}</time>;
 }
 
-const CARDS_ICON = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="7" width="14" height="14" rx="2" /><path d="M7 3h12a2 2 0 0 1 2 2v12" /></svg>;
-const PLAY_ICON = <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13a1 1 0 0 0 1.5.86l10.5-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5z" /></svg>;
 
 function duration(seconds: number | null) {
   return seconds == null ? null : formatClock(seconds);
@@ -46,7 +45,7 @@ function Earlier({ count, children }: { count: number; children: ReactNode }) {
 function SetLink({ courseId, set }: { courseId: string; set: Items["flashcard_sets"][number] }) {
   return <Link to={`/learn/${courseId}/flashcards/${set.id}`} className="learn-link"
     aria-label={`Bộ thẻ ${set.focus ?? ""}`.trim() + `, ${set.card_count} thẻ, giao ${dayMonth(set.published_at)}`}>
-    <span className="learn-icon" aria-hidden="true">{CARDS_ICON}</span>
+    <span className="learn-icon" aria-hidden="true"><Copy /></span>
     <span className="learn-title">{set.focus ?? "Bộ thẻ"}</span>
     <span className="learn-meta"><span>{set.card_count} thẻ</span><Delivered iso={set.published_at} /></span>
   </Link>;
@@ -54,7 +53,7 @@ function SetLink({ courseId, set }: { courseId: string; set: Items["flashcard_se
 function VideoLink({ courseId, video }: { courseId: string; video: Items["videos"][number] }) {
   return <Link to={`/learn/${courseId}/videos/${video.id}`} className="learn-link"
     aria-label={[`Video ${video.focus ?? "bài giảng"}`, duration(video.duration_seconds), `giao ${dayMonth(video.published_at)}`].filter(Boolean).join(", ")}>
-    <span className="learn-icon" aria-hidden="true">{PLAY_ICON}</span>
+    <span className="learn-icon" aria-hidden="true"><Play fill="currentColor" /></span>
     <span className="learn-title">{video.focus ?? "Bài giảng"}</span>
     <span className="learn-meta"><span>{duration(video.duration_seconds)}</span><Delivered iso={video.published_at} /></span>
   </Link>;

@@ -1,3 +1,4 @@
+import { Check } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import Markdown from "react-markdown";
@@ -36,7 +37,7 @@ export function StudiesPage() {
     };
   }, []);
   return (
-    <AppShell title="Chấm nghiên cứu">
+    <AppShell title="Nghiên cứu">
       {error && <p role="alert">Không tải được danh sách nghiên cứu.</p>}
       {!studies && !error && <p>Đang tải…</p>}
       {studies?.length === 0 && <p>Bạn chưa được mời chấm nghiên cứu nào.</p>}
@@ -210,7 +211,7 @@ export function BlindRatingPage() {
       ) : (
         <>
           <div className="rating-context">
-            <div><nav aria-label="Đường dẫn" className="small muted mb-2"><Link to="/studies">Chấm nghiên cứu</Link> / {data.study.name}{item && ` / ${item.anon_code}`}</nav>
+            <div><nav aria-label="Đường dẫn" className="small muted mb-2"><Link to="/studies">Nghiên cứu</Link> / {data.study.name}{item && ` / ${item.anon_code}`}</nav>
               {item && <p>{item.packet.topic}</p>}
               {item && <PacketReference key={item.id} studyId={studyId!} item={item} />}
             </div>
@@ -227,7 +228,7 @@ export function BlindRatingPage() {
                 className="rating-item"
               >
                 {i.anon_code}
-                {i.rating && <><span aria-hidden="true" className="success-text mr-2">✓</span><span className="sr-only"> · Đã chấm</span></>}
+                {i.rating && <><Check aria-hidden="true" className="success-text mr-2 inline size-4" /><span className="sr-only"> · Đã chấm</span></>}
               </Link>
             ))}
           </nav>

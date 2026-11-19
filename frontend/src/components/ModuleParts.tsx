@@ -1,3 +1,4 @@
+import { Check } from "lucide-react";
 import { useContext, useState } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -643,7 +644,7 @@ function QuestionEditor({ moduleId, question, explanation, onSaved }: {
       </div>
     </form> : <>
       <p className="question-stem">{question.stem}</p>
-      <ul className="choice-list">{question.choices.options.map((choice, i) => <li key={i} className={String(i) === question.answer_key ? 'choice-key' : undefined}>{String.fromCharCode(65 + i)}. {choice}{String(i) === question.answer_key ? ' ✓' : ''}</li>)}</ul>
+      <ul className="choice-list">{question.choices.options.map((choice, i) => <li key={i} className={String(i) === question.answer_key ? 'choice-key' : undefined}>{String.fromCharCode(65 + i)}. {choice}{String(i) === question.answer_key && <> <Check aria-label="Đáp án đúng" className="inline size-4 align-[-2px]" /></>}</li>)}</ul>
       {explanation && <p className="text-sm text-gray-500"><span className="font-semibold">Giải thích: </span>{explanation}</p>}
       <SaveCancelRow editing={false} saving={saving} onSave={handleSubmit(save)} onCancel={() => setEditing(false)} onEdit={() => {
         reset(formValues())

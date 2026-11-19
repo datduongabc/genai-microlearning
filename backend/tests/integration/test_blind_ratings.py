@@ -52,7 +52,7 @@ def test_invitation_validates_active_accounts_and_normalizes_emails(world):
     assert client.put(path, headers=world['headers'], json={'emails': ['missing@example.com']}).status_code == 422
     response = client.put(path, headers=world['headers'], json={'emails': [email.upper(), email]})
     assert response.status_code == 200, response.text
-    assert response.json() == {'emails': [email]}
+    assert response.json() == {'emails': [email], 'assignments': {}}
     assert client.get(path, headers=world['headers']).json() == response.json()
     assert client.get(path, headers=world['teacher_headers']).status_code == 404
     with SessionLocal() as db:
@@ -163,3 +163,46 @@ def test_closed_study_and_revocation_protect_saved_ratings(blind):
         assert db.scalars(select(Rating)).all() == []
         assert db.execute(text('SELECT * FROM blind_studies')).all() == []
         assert db.execute(text('SELECT * FROM blind_study_items WHERE study_id=:sid'), {'sid': sid}).all() == []
+
+
+def test_a_rater_given_some_pairs_sees_and_rates_only_those(blind):
+    sid, items = blind['sid'], blind['items']
+    teacher = blind['emails'][0]
+    pair = next(i for i in items if i['pair_id'] is not None)['pair_id']
+    other = next(i for i in items if i['pair_id'] is None)
+    path = f'/studies/{sid}/raters'
+
+    given = client.put(path, headers=blind['headers'], json={'emails': blind['emails'], 'assignments': {teacher: [pair]}})
+
+    assert given.status_code == 200, given.text
+    assert client.get(path, headers=blind['headers']).json()['assignments'] == {teacher: [pair]}
+    mine = client.get(f'/studies/mine/{sid}/items', headers=blind['teacher_headers']).json()
+    # Both packets of the pair, nothing else; the second rater, given nothing, still sees all 8.
+    assert mine['total'] == 2 and len(mine['items']) == 2
+    assert client.get(f'/studies/mine/{sid}/items', headers=blind['second_headers']).json()['total'] == 8
+    refused = client.put(f"/studies/mine/{sid}/items/{other['id']}/rating", headers=blind['teacher_headers'],
+                         json=evaluation(other['anon_code']))
+    assert refused.status_code == 404
+    totals = {r['email']: r['assigned'] for r in client.get(f'/studies/{sid}/results', headers=blind['headers']).json()['raters']}
+    assert totals == {teacher: 2, blind['emails'][1]: 8}
+
+
+def test_pairs_go_only_to_invited_raters_and_to_pairs_of_the_study(blind):
+    path = f"/studies/{blind['sid']}/raters"
+    teacher = blind['emails'][0]
+    stranger = client.put(path, headers=blind['headers'], json={'emails': [teacher], 'assignments': {'x@example.com': ['a']}})
+    unknown = client.put(path, headers=blind['headers'], json={'emails': [teacher], 'assignments': {teacher: [str(uuid.uuid4())]}})
+    assert stranger.status_code == 422 and unknown.status_code == 422
+
+
+def test_saving_the_invitations_alone_keeps_the_pairs_given(blind):
+    path = f"/studies/{blind['sid']}/raters"
+    teacher = blind['emails'][0]
+    pair = next(i for i in blind['items'] if i['pair_id'] is not None)['pair_id']
+    client.put(path, headers=blind['headers'], json={'emails': blind['emails'], 'assignments': {teacher: [pair]}})
+
+    kept = client.put(path, headers=blind['headers'], json={'emails': blind['emails']})
+    dropped = client.put(path, headers=blind['headers'], json={'emails': blind['emails'][1:]})
+
+    assert kept.json()['assignments'] == {teacher: [pair]}
+    assert dropped.json()['assignments'] == {}

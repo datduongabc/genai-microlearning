@@ -55,7 +55,7 @@ describe('AppShell', () => {
     renderShell()
     expect(screen.getByRole('link', { name: /genailms/i })).toHaveAttribute('href', '/courses')
     expect(screen.getByRole('link', { name: 'Môn học' })).toHaveAttribute('aria-current', 'page')
-    expect(screen.getByRole('link', { name: 'Chấm nghiên cứu' })).toHaveAttribute('href', '/studies')
+    expect(screen.getByRole('link', { name: 'Nghiên cứu' })).toHaveAttribute('href', '/studies')
     expect(screen.queryByRole('link', { name: 'Quản trị' })).not.toBeInTheDocument()
     expect(screen.queryByText(/Moodle/)).not.toBeInTheDocument()
     expect(screen.getByRole('main')).toHaveTextContent('content')

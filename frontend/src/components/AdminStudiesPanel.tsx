@@ -1,8 +1,11 @@
-import { useEffect, useState } from "react";
-import { getRaters, listStudies, setRaters, type Study } from "../api/studies";
+import { ChevronRight, X } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import { getRaters, listStudies, setRaters, type Assignments, type Study } from "../api/studies";
 import { apiErrorMessage } from "../api/client";
 import { raterEmailsSchema } from "../lib/ratingSchema";
 import { notifyDone, notifyFailed } from "../lib/notify";
+import { StudyAssignments } from "./StudyAssignments";
+import { StudyPairs } from "./StudyPairs";
 import { StudyReferences } from "./StudyReferences";
 import { StudyResults } from "./StudyResults";
 
@@ -11,6 +14,12 @@ export function AdminStudiesPanel() {
   const [studyId, setStudyId] = useState("");
   const [loadedId, setLoadedId] = useState("");
   const [emails, setEmails] = useState<string[]>([]);
+  // The invitations as saved: what the assignment table offers, never an unsaved edit.
+  const [savedEmails, setSavedEmails] = useState<string[]>([]);
+  const [assignments, setAssignments] = useState<Assignments>({});
+  // Bumped when a pair joins, so the cards that list the study's packets load them again.
+  const [version, setVersion] = useState(0);
+  const pairAdded = useCallback(() => setVersion((n) => n + 1), []);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -26,7 +35,7 @@ export function AdminStudiesPanel() {
     let active = true;
     if (!studyId) return;
     getRaters(studyId).then((data) => {
-      if (active) { setEmails(data.emails); setLoadedId(studyId); }
+      if (active) { setEmails(data.emails); setSavedEmails(data.emails); setAssignments(data.assignments); setLoadedId(studyId); }
     }).catch(() => { if (active) setError("Không tải được người chấm."); });
     return () => { active = false; };
   }, [studyId, picks]);
@@ -50,7 +59,7 @@ export function AdminStudiesPanel() {
       {studies?.map((study) => <button key={study.id} disabled={busy}
         aria-pressed={studyId === study.id} className="ui-card"
         onClick={() => { if (loadedId === study.id) return; setStudyId(study.id); setPicks((n) => n + 1); setLoadedId(""); setInput(""); setError(""); }}>
-        {study.name}<span aria-hidden="true">›</span>
+        {study.name}<ChevronRight aria-hidden="true" className="size-4" />
       </button>)}
       {!studies && !error && <p>Đang tải…</p>}
       {studies?.length === 0 && <p>Chưa có nghiên cứu.</p>}
@@ -68,14 +77,14 @@ export function AdminStudiesPanel() {
         setBusy(true); setError("");
         try {
           const data = await setRaters(studyId, next);
-          setEmails(data.emails); setInput(""); notifyDone("Đã lưu người chấm.");
+          setEmails(data.emails); setSavedEmails(data.emails); setAssignments(data.assignments); setInput(""); notifyDone("Đã lưu người chấm.");
         } catch (e) { notifyFailed(apiErrorMessage(e, "Không lưu được người chấm.")); }
         finally { setBusy(false); }
       }}>
         <label htmlFor="rater-email" className="text-label font-medium">Người chấm</label>
         <div className="rater-chips">
           {emails.map((email) => <span className="rater-chip" key={email}>{email}
-            <button type="button" aria-label={`Bỏ ${email}`} disabled={busy} onClick={() => { setEmails(emails.filter((e) => e !== email)); setError(""); }}>×</button>
+            <button type="button" aria-label={`Bỏ ${email}`} disabled={busy} onClick={() => { setEmails(emails.filter((e) => e !== email)); setError(""); }}><X aria-hidden="true" className="mx-auto size-3.5" /></button>
           </span>)}
           <input id="rater-email" type="email" autoComplete="off" placeholder="Nhập email rồi nhấn Enter" value={input} disabled={busy}
             onChange={(e) => { setInput(e.target.value); }}
@@ -91,8 +100,11 @@ export function AdminStudiesPanel() {
         <button disabled={busy} className="ui-button primary mt-4">{busy ? "Đang lưu…" : "Lưu người chấm"}</button>
       </form>}
     </div>
-    {studyId && <StudyReferences key={`refs-${studyId}-${picks}`} studyId={studyId} />}
-    {studyId && <StudyResults key={`results-${studyId}-${picks}`} studyId={studyId} />}
+    {studyId && <StudyPairs key={`pairs-${studyId}-${picks}`} studyId={studyId} onAdded={pairAdded} />}
+    {studyId && loadedId === studyId && <StudyAssignments key={`assign-${studyId}-${picks}-${version}-${savedEmails.join()}`}
+      studyId={studyId} emails={savedEmails} assignments={assignments} onSaved={setAssignments} />}
+    {studyId && <StudyReferences key={`refs-${studyId}-${picks}-${version}`} studyId={studyId} />}
+    {studyId && <StudyResults key={`results-${studyId}-${picks}-${version}`} studyId={studyId} />}
     </div>
   </section>;
 }
