@@ -1,3 +1,4 @@
+import { Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Controller, useFieldArray, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -134,7 +135,7 @@ export function RatingForm({
             <div className="finding-head">
               <legend>Phát hiện {i + 1}</legend>
               <button type="button" onClick={() => remove(i)} className="finding-remove" aria-label={`Xóa phát hiện ${i + 1}`}>
-                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M4 7h16M10 11v6m4-6v6M6 7l1 13h10l1-13M9 7V4h6v3" /></svg>
+                <Trash2 aria-hidden="true" className="size-4" />
                 Xóa
               </button>
             </div>

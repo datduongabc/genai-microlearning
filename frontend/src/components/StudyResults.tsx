@@ -53,8 +53,8 @@ export function StudyResults({ studyId }: { studyId: string }) {
             <div className="small muted">{r.number ? `Người chấm ${r.number}` : "Chưa chấm gói nào"}{!r.invited && ", đã thôi mời"}</div>
           </div>
           <div className="results-progress">
-            <span className="small">{r.rated}/{results.total}</span>
-            <progress aria-label={`Tiến độ ${r.email}`} value={r.rated} max={results.total || 1} />
+            <span className="small">{r.rated}/{r.assigned}</span>
+            <progress aria-label={`Tiến độ ${r.email}`} value={r.rated} max={r.assigned || 1} />
           </div>
           {r.number && <button type="button" className="link-action"
             onClick={() => void download(`raters/${r.number}.csv`, `rater-${r.number}.csv`)}>Tải CSV</button>}

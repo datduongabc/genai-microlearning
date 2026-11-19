@@ -1,4 +1,4 @@
-import { Ellipsis, KeyRound, Unlink, UserCheck, UserX } from "lucide-react";
+import { Ellipsis, KeyRound, Link2, Unlink, UserCheck, UserX } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "./ui/dropdown-menu";
 import { confirmAction } from "../lib/confirm";
 import { notifyDone, notifyFailed } from "../lib/notify";
@@ -130,7 +130,7 @@ export function AdminUsersPanel({ counts, onChange }: { counts: AdminCounts | nu
                 </div>
                 <span className="small">{u.is_admin ? "Quản trị viên" : "Giảng viên"}</span>
                 <span className={`small ${u.moodle_status === "linked" ? "success-text" : "muted"}`}>
-                  {u.moodle_status === null ? "—" : u.moodle_status === "linked" ? "↗ Đã liên kết" : "Chưa liên kết"}
+                  {u.moodle_status === null ? "—" : u.moodle_status === "linked" ? <><Link2 aria-hidden="true" className="inline size-4 align-[-3px]" /> Đã liên kết</> : "Chưa liên kết"}
                 </span>
                 {/* Not modal: the rest of the list stays usable, as it was, and a press outside closes it. */}
                 <DropdownMenu modal={false}>

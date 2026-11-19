@@ -2,7 +2,7 @@
 import uuid
 from typing import Annotated, Literal
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import Response
 from pydantic import BaseModel, EmailStr, Field, StringConstraints, model_validator
 from sqlalchemy import func, select, text
@@ -11,10 +11,22 @@ from sqlalchemy.exc import IntegrityError, ProgrammingError
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user, require_admin
+from app.api.modules import GenerateRequest
+from app.api.modules import _generate_without_retrieval as generate_control
+from app.auth.rate_limit import limiter, user_or_address
 from app.db import get_db
 from app.generation.evaluation import ModuleContentInput, ModuleEvaluation
+from app.generation.limits import has_full_access
+from app.generation.module_generation_pipeline import (
+    IncompleteModuleError,
+    control_payload,
+    generation_payload_of,
+    is_control,
+    learning_objective_of,
+    matching_control,
+)
 from app.jobs.queue import enqueue_job
-from app.models import Job, JobStatus, JobType, Rating, Study, StudyItem, User
+from app.models import Course, Document, Job, JobStatus, JobType, Module, Rating, Study, StudyItem, User
 from app.study.items import assign_codes, existing_pair, shuffle_for_rater
 from app.study.judge import validate_judge
 from app.study.results import human_ratings, judge_jsonl, rater_csv, study_results
@@ -162,6 +174,14 @@ def save_rating(study_id: uuid.UUID, item_id: uuid.UUID, body: ModuleEvaluation,
 
 class Raters(BaseModel):
     emails: list[EmailStr] = Field(max_length=100)
+    # Email -> the pair keys (a pair's id, or a human packet's id) that rater rates.
+    # A rater left out rates every pair.
+    assignments: dict[EmailStr, list[str]] = Field(default_factory=dict)
+
+
+def pair_key(item: StudyItem) -> str:
+    """The unit a rater is given: both packets of a pair, or a human packet alone (alembic 0044)."""
+    return str(item.pair_id or item.id)
 
 
 @router.get("/{study_id}/raters", dependencies=[Depends(require_admin)])
@@ -169,7 +189,7 @@ def list_raters(study_id: uuid.UUID, db: Session = Depends(get_db)):
     study = db.get(Study, study_id)
     if study is None:
         raise HTTPException(status_code=404, detail="Study not found")
-    return {"emails": study.rater_emails}
+    return {"emails": study.rater_emails, "assignments": study.rater_pairs or {}}
 
 
 @router.put("/{study_id}/raters", dependencies=[Depends(require_admin)])
@@ -182,9 +202,19 @@ def set_raters(study_id: uuid.UUID, body: Raters, db: Session = Depends(get_db))
         func.lower(User.email).in_(emails), User.is_active.is_(True))))
     if found != set(emails):
         raise HTTPException(status_code=422, detail="Every rater must have an active account")
+    # Saving the invitations alone keeps each remaining rater's pairs.
+    given = body.assignments if "assignments" in body.model_fields_set else study.rater_pairs or {}
+    assignments = {str(email).lower(): sorted(set(keys)) for email, keys in given.items()
+                   if keys and ("assignments" in body.model_fields_set or email in emails)}
+    if not set(assignments) <= set(emails):
+        raise HTTPException(status_code=422, detail="Only an invited rater can be given pairs")
+    keys = {pair_key(item) for item in db.scalars(select(StudyItem).where(StudyItem.study_id == study_id))}
+    if any(not set(given) <= keys for given in assignments.values()):
+        raise HTTPException(status_code=422, detail="A given pair is not in this study")
     study.rater_emails = emails
+    study.rater_pairs = assignments
     db.commit()
-    return {"emails": emails}
+    return {"emails": emails, "assignments": assignments}
 
 
 def _study_or_404(db: Session, study_id: uuid.UUID) -> Study:
@@ -271,6 +301,77 @@ def load_items(study_id: uuid.UUID, body: LoadItems, db: Session = Depends(get_d
         db.rollback()
         raise HTTPException(status_code=409, detail="Study items conflict with existing data") from exc
     return [_item_out(item) for item in _items(db, study_id)]
+
+
+class AddPair(BaseModel):
+    module_id: uuid.UUID
+
+
+def _pair_state(db: Session, module: Module) -> str:
+    """Where a RAG module stands as a pair: its no-RAG control made ("ready"), being made
+    ("generating"), failed the last time ("failed"), or never asked for ("none")."""
+    payload = generation_payload_of(db, module.id)
+    expected = control_payload(module.id, payload.get("model_alias"), payload.get("self_check", True),
+                               payload.get("output_language", "vi"), payload.get("custom_instructions", ""))
+    if matching_control(db, module.id, expected) is not None:
+        return "ready"
+    last = db.scalar(select(Job.status).where(
+        Job.job_type == JobType.module_generation, Job.payload["paired_module_id"].astext == str(module.id),
+    ).order_by(Job.created_at.desc()).limit(1))
+    if last in (JobStatus.queued, JobStatus.running):
+        return "generating"
+    return "failed" if last == JobStatus.failed else "none"
+
+
+def _admin_module(db: Session, module_id: uuid.UUID, admin: User) -> Module:
+    module = db.scalar(select(Module).join(Course).where(Module.id == module_id, Course.owner_id == admin.id))
+    if module is None:
+        raise HTTPException(status_code=404, detail="Module not found")
+    return module
+
+
+@router.get("/{study_id}/candidates")
+def pair_candidates(study_id: uuid.UUID, db: Session = Depends(get_db), current_user: User = Depends(require_admin)):
+    """The admin's own complete RAG modules, each with where it stands as a pair of this study."""
+    _study_or_404(db, study_id)
+    loaded = set(db.scalars(select(StudyItem.module_id).where(
+        StudyItem.study_id == study_id, StudyItem.module_id.is_not(None))))
+    modules = db.scalars(select(Module).join(Course).where(
+        Course.owner_id == current_user.id, Module.paired_module_id.is_(None)).order_by(Course.name, Module.title))
+    out = []
+    for module in modules:
+        try:
+            learning_objective_of(module)
+        except IncompleteModuleError:
+            continue
+        if is_control(db, module.id):
+            continue
+        out.append({"id": module.id, "title": module.title, "course_name": module.course.name,
+                    "state": "in_study" if module.id in loaded else _pair_state(db, module)})
+    return out
+
+
+@router.post("/{study_id}/pairs")
+@limiter.limit("10/minute", key_func=user_or_address)
+def add_pair(request: Request, study_id: uuid.UUID, body: AddPair, response: Response,
+             db: Session = Depends(get_db), current_user: User = Depends(require_admin)):
+    """Adds a RAG module and its no-RAG control as a pair. The control is made first when it does
+    not exist yet (a paid generation, as the lecturer's own "generate without RAG"); the answer is
+    then 202 and the pair is added by asking again once it is made."""
+    _study_or_404(db, study_id)
+    module = _admin_module(db, body.module_id, current_user)
+    state = _pair_state(db, module)
+    if state == "ready":
+        response.status_code = 201
+        return load_items(study_id, LoadItems(module_ids=[module.id]), db, current_user)
+    response.status_code = 202
+    if state == "generating":
+        return {"state": "generating"}
+    full_access = has_full_access(db, current_user)
+    document = db.get(Document, module.document_id, with_for_update=True)
+    generate_control(db, document, GenerateRequest(use_retrieval=False, paired_module_id=module.id),
+                     current_user, full_access)
+    return {"state": "generating"}
 
 
 @router.post("/{study_id}/judge", status_code=202, dependencies=[Depends(require_admin)])

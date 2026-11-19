@@ -18,6 +18,8 @@ class Study(Base):
     name: Mapped[str]
     rubric_version: Mapped[str]
     rater_emails: Mapped[list[str]] = mapped_column(JSONB, default=list, server_default="[]")
+    # Email -> the pair keys that rater rates (alembic 0044); a rater without an entry rates them all.
+    rater_pairs: Mapped[dict[str, list[str]]] = mapped_column(JSONB, default=dict, server_default="{}")
     status: Mapped[str] = mapped_column(default="draft", server_default="draft")
     created_at: Mapped[datetime] = created_at_column()
 

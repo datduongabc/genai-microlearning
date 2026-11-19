@@ -94,7 +94,7 @@ export function AppShell({ title, fullTitle, children }: { title: string; fullTi
       </div>
       <nav className="shell-nav" aria-label="Điều hướng chính">
         <NavLink to="/courses" data-tip="Môn học"><NavIcon kind="book" /><span className="shell-label">Môn học</span></NavLink>
-        <NavLink to="/studies" data-tip="Chấm nghiên cứu"><NavIcon kind="rating" /><span className="shell-label">Chấm nghiên cứu</span></NavLink>
+        <NavLink to="/studies" data-tip="Nghiên cứu"><NavIcon kind="rating" /><span className="shell-label">Nghiên cứu</span></NavLink>
         {user?.is_admin && <NavLink to="/admin" data-tip="Quản trị"><NavIcon kind="admin" /><span className="shell-label">Quản trị</span></NavLink>}
       </nav>
       <div className="account" ref={container} onKeyDown={event => {
