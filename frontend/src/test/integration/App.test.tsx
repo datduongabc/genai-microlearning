@@ -52,7 +52,7 @@ describe('App', () => {
 
     render(<App />)
 
-    expect(await screen.findByLabelText('Câu 1 cảnh 1')).toBeInTheDocument()
+    expect(await screen.findByRole('button', { name: 'Sửa cảnh 1' })).toBeInTheDocument()
   })
 
   // A data router catches render errors in its own default screen; this fails if the route errors

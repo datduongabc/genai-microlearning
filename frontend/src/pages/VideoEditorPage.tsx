@@ -78,6 +78,8 @@ export function VideoEditorPage() {
   const [attempt, setAttempt] = useState(0)
   const [busy, setBusy] = useState<'save' | 'draw' | 'render' | 'publish' | 'delete' | 'reload' | null>(null)
   const [stale, setStale] = useState(false)
+  // The one scene open for editing, by its draft key; the others are read as the learner sees them.
+  const [openKey, setOpenKey] = useState<number | null>(null)
   // Goes up when a drawing job ends, so an illustration's slide is asked for again even when a
   // redraw changed nothing but the picture.
   const [picturesDrawn, setPicturesDrawn] = useState(0)
@@ -235,7 +237,6 @@ export function VideoEditorPage() {
   const jobRunning = runningJob !== null
   const seconds = estimatedSeconds(scenes)
   const overLong = seconds > saved.max_seconds
-  const missingTitle = scenes.some((s) => s.title.trim() === '')
   const choices = models && models !== 'failed' ? models : null
   const imageModel = choices?.images.find((c) => c.alias === saved.image_alias)
   const voice = choices?.voices.find((c) => c.alias === saved.voice_alias)
@@ -246,7 +247,7 @@ export function VideoEditorPage() {
 
   const backLink = (
     <Link to={`/courses/${courseId}`} className="link-action">
-      Quay lại
+      Về trang môn học
     </Link>
   )
 
@@ -298,12 +299,27 @@ export function VideoEditorPage() {
   }
 
   function moveScene(index: number, by: number) {
-    setScenes((list) => {
-      const next = [...list]
-      const [moved] = next.splice(index, 1)
-      next.splice(index + by, 0, moved)
-      return next
-    })
+    const next = [...scenes]
+    const [moved] = next.splice(index, 1)
+    next.splice(index + by, 0, moved)
+    void save(next, 'Đã đổi thứ tự cảnh.')
+  }
+
+  async function removeScene(index: number) {
+    if (!await confirmAction({ title: `Xóa cảnh ${index + 1}?`, description: 'Không thể khôi phục.', action: 'Xóa cảnh', destructive: true })) return
+    void save(scenes.filter((_, i) => i !== index), 'Đã xóa cảnh.')
+  }
+
+  function addScene() {
+    const scene = newScene(nextKey)
+    setScenes((list) => [...list, scene])
+    setOpenKey(scene.key)
+  }
+
+  // "Hủy": the scenes as saved, which drops the open scene's edits or the scene being added.
+  function cancel() {
+    if (saved) adopt(saved)
+    setOpenKey(null)
   }
 
   async function act(kind: 'publish' | 'reload', action: () => Promise<VideoDetail>, fallback: string) {
@@ -313,6 +329,7 @@ export function VideoEditorPage() {
       if (kind === 'reload') {
         adopt(video)
         setStale(false)
+        setOpenKey(null)
       } else {
         follow(video)
         notifyDone(video.published_at ? 'Đã giao video cho sinh viên.' : 'Đã ngừng giao video.')
@@ -346,12 +363,14 @@ export function VideoEditorPage() {
     }
   }
 
-  async function save() {
+  // Every change is saved at once, as in the module editor: there is no unsaved draft to forget.
+  async function save(list: SceneDraft[] = scenes, done = 'Đã lưu.') {
     setBusy('save')
     try {
-      adopt(await saveVideoScenes(videoId, base.version, toEdits(scenes)))
+      adopt(await saveVideoScenes(videoId, base.version, toEdits(list)))
       setStale(false)
-      notifyDone('Đã lưu.')
+      setOpenKey(null)
+      notifyDone(done)
     } catch (err) {
       // A 409 here is a newer draft saved elsewhere: saving again would be refused the same way.
       setStale(axios.isAxiosError(err) && err.response?.status === 409)
@@ -376,25 +395,26 @@ export function VideoEditorPage() {
     void startJob('render', 'video_render', () => renderVideo(videoId), 'Dựng video thất bại')
   }
 
-  const needsSave = dirty ? 'Hãy lưu thay đổi trước. Hình và video được tạo từ bản đã lưu.' : null
+  const needsSave = openKey !== null ? 'Lưu hoặc hủy cảnh đang sửa trước. Hình và video được tạo từ bản đã lưu.' : null
 
   return (
     <AppShell {...titleProps}>
       <div className="video-editor">
-        <div className="flashcard-bar">
+        <div className="editor-meta">
+          <p>
+            {scenes.length} cảnh · <span className={overLong ? 'danger-text' : undefined}>
+              Khoảng {formatMinutes(seconds)} phút{overLong ? `, dài hơn ${formatMinutes(saved.max_seconds)} phút cho phép` : ''}
+            </span> · {published ? 'Đã giao, sinh viên đang xem video này' : 'Bản nháp, sinh viên chưa thấy'}
+          </p>
           {backLink}
-          <span className="status-pill" data-status={published ? 'embedded' : undefined}>
-            {published ? 'Đã giao cho sinh viên' : 'Bản nháp'}
-          </span>
-          {runningJob && <span role="status" className="status-pill" data-status="processing">{JOB_TEXT[runningJob]}</span>}
-          <span className="flashcard-count">{scenes.length} cảnh</span>
-          <span className={`flashcard-count${overLong ? ' danger-text' : ''}`}>
-            Khoảng {formatMinutes(seconds)} phút{overLong ? `, dài hơn ${formatMinutes(saved.max_seconds)} phút cho phép` : ''}
-          </span>
         </div>
-        <p className="course-hint">
-          Sửa lời thoại và chữ trên slide, lưu, rồi vẽ hình, dựng video và giao cho sinh viên.
-        </p>
+        {runningJob && <p role="status" className="status-pill" data-status="processing">{JOB_TEXT[runningJob]}</p>}
+        <ol className="editor-steps" aria-label="Các bước">
+          <li>Xem từng cảnh. Bấm Sửa nếu muốn đổi chữ trên slide hoặc lời thoại.</li>
+          <li>Bấm Vẽ hình để vẽ hình cho các cảnh minh họa.</li>
+          <li>Bấm Dựng video, rồi xem lại video ở cuối trang.</li>
+          <li>Bấm Giao cho sinh viên.</li>
+        </ol>
 
         <ol className="video-scenes" aria-label="Các cảnh">
           {scenes.map((s, index) => (
@@ -410,41 +430,39 @@ export function VideoEditorPage() {
                 origin: s.fromIndex === null ? undefined : saved.scenes[s.fromIndex],
                 changed: s.fromIndex !== null && JSON.stringify(toEdits([s])[0]) !== savedEdits[s.fromIndex],
               }}
-              canDraw={canStartJob}
+              canDraw={canStartJob && openKey === null}
               nextKey={nextKey}
               onChange={(change) => editScene(s.key, change)}
               onMove={(by) => moveScene(index, by)}
-              onRemove={() => { setScenes((list) => list.filter((x) => x.key !== s.key)) }}
+              onRemove={() => void removeScene(index)}
               onDraw={(sceneIndex) => draw([sceneIndex])}
+              open={openKey === s.key}
+              locked={busy !== null || (openKey !== null && openKey !== s.key)}
+              saving={busy === 'save'}
+              onOpen={() => setOpenKey(s.key)}
+              onSave={() => void save()}
+              onCancel={cancel}
             />
           ))}
         </ol>
 
-        <button
-          type="button"
-          onClick={() => { setScenes((list) => [...list, newScene(nextKey)]) }}
-          disabled={scenes.length >= MAX_SCENES}
-          className="ui-button"
-        >
+        <button type="button" onClick={addScene} disabled={scenes.length >= MAX_SCENES || openKey !== null || busy !== null}
+          className="ui-button">
           Thêm cảnh
         </button>
 
-        <div className="video-save">
-          {missingTitle && <p className="text-sm danger-text">Mỗi cảnh cần một tiêu đề.</p>}
-          {overLong && (
-            <p className="text-sm danger-text">Quá {formatMinutes(saved.max_seconds)} phút: hãy rút ngắn lời thoại trước khi dựng.</p>
-          )}
-          <div className="flashcard-actions">
-            <button type="button" onClick={save} disabled={!dirty || missingTitle || busy !== null} className="ui-button primary">
-              {busy === 'save' ? 'Đang lưu…' : 'Lưu thay đổi'}
-            </button>
+        {(overLong || stale) && (
+          <div className="video-save">
+            {overLong && (
+              <p className="text-sm danger-text">Quá {formatMinutes(saved.max_seconds)} phút: hãy rút ngắn lời thoại trước khi dựng.</p>
+            )}
             {stale && (
-              <button type="button" onClick={reload} disabled={busy !== null} className="ui-button">
+              <button type="button" onClick={reload} disabled={busy !== null} className="ui-button w-fit">
                 {busy === 'reload' ? 'Đang tải…' : 'Tải lại bản nháp'}
               </button>
             )}
           </div>
-        </div>
+        )}
 
         <section className="video-step" aria-label="Video">
           {saved.render_problems.length > 0 && (

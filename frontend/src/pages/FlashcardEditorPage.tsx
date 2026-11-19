@@ -1,7 +1,7 @@
 import { confirmAction } from '../lib/confirm'
 import { notifyDone, notifyFailed } from '../lib/notify'
 import axios from 'axios'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import {
   apiErrorMessage,
@@ -11,8 +11,6 @@ import {
   publishFlashcardSet,
   reviseFlashcardSet,
   saveFlashcards,
-  type FlashcardCardEdit,
-  type FlashcardSource,
   type FlashcardSetDetail,
 } from '../api'
 import { AppShell } from '../components/AppShell'
@@ -24,38 +22,24 @@ import { useLeaveGuard } from '../lib/useLeaveGuard'
 const POLL_INTERVAL_MS = 3000
 const NO_SOURCE = 'Chưa có nguồn'
 
-// A card as the lecturer is editing it. `key` keeps a textarea with its card when another card
-// is removed; `flag` is the server's, which only changes when the set is saved.
-interface Draft extends FlashcardCardEdit {
-  key: number
-  flag: string | null
-  // Kept with the card so its passages stay visible while it is edited; an edit never changes them.
-  sources: FlashcardSource[]
-}
-
-function toDrafts(set: FlashcardSetDetail, nextKey: () => number): Draft[] {
-  return set.cards.map((c) => ({ key: nextKey(), front: c.front, back: c.back, citations: c.citations, flag: c.flag, sources: c.sources }))
-}
-
-function sameCards(a: Draft[], b: FlashcardSetDetail['cards']): boolean {
-  return a.length === b.length && a.every((d, i) =>
-    d.front === b[i].front && d.back === b[i].back
-      && d.citations.length === b[i].citations.length && d.citations.every((c, j) => c === b[i].citations[j]))
+// The one card open for editing: `index` is its place in the saved set, or null for a card being added.
+interface Editing {
+  index: number | null
+  front: string
+  back: string
 }
 
 export function FlashcardEditorPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const [saved, setSaved] = useState<FlashcardSetDetail | null>(null)
-  const [cards, setCards] = useState<Draft[]>([])
+  const [editing, setEditing] = useState<Editing | null>(null)
   const [loading, setLoading] = useState(true)
   const [loadFailed, setLoadFailed] = useState(false)
   const [missing, setMissing] = useState(false)
   const [attempt, setAttempt] = useState(0)
   const [busy, setBusy] = useState<'save' | 'publish' | 'delete' | 'revise' | null>(null)
   const [request, setRequest] = useState('')
-  const keyCounter = useRef(0)
-  const nextKey = useCallback(() => keyCounter.current++, [])
 
   // The first load, and the retry after a failed one. A result that arrives after the page has
   // gone is dropped, and state is set only from promise callbacks.
@@ -66,7 +50,6 @@ export function FlashcardEditorPage() {
       (set) => {
         if (cancelled) return
         setSaved(set)
-        setCards(toDrafts(set, nextKey))
         setLoading(false)
       },
       (err) => {
@@ -80,7 +63,7 @@ export function FlashcardEditorPage() {
     return () => {
       cancelled = true
     }
-  }, [id, attempt, nextKey])
+  }, [id, attempt])
 
   // A set being generated is a job in the worker, so the server's status is the truth.
   const generating = saved?.status === 'generating'
@@ -88,17 +71,16 @@ export function FlashcardEditorPage() {
     if (!generating || !id) return
     const timer = setInterval(async () => {
       try {
-        const set = await getFlashcardSet(id)
-        setSaved(set)
-        setCards(toDrafts(set, nextKey))
+        setSaved(await getFlashcardSet(id))
       } catch {
         // transient failure: the next tick retries
       }
     }, POLL_INTERVAL_MS)
     return () => clearInterval(timer)
-  }, [generating, id, nextKey])
+  }, [generating, id])
 
-  const unsaved = saved !== null && saved.status === 'draft' && !sameCards(cards, saved.cards)
+  const original = editing?.index != null ? saved?.cards[editing.index] : undefined
+  const unsaved = editing !== null && (editing.front !== (original?.front ?? '') || editing.back !== (original?.back ?? ''))
   const allowLeave = useLeaveGuard(unsaved)
 
   function retryLoad() {
@@ -136,21 +118,17 @@ export function FlashcardEditorPage() {
   const courseId = saved.course_id
   const titleProps = editorTitle('Flashcard', saved.focus)
   const published = saved.published_at !== null
-  const dirty = !sameCards(cards, saved.cards)
-  const complete = cards.every((c) => c.front.trim() !== '' && c.back.trim() !== '')
+  const cards = saved.cards
   const full = cards.length >= MAX_FLASHCARDS
+  const kept = (list: FlashcardSetDetail['cards']) => list.map(({ front, back, citations }) => ({ front, back, citations }))
 
-  function edit(key: number, change: Partial<FlashcardCardEdit>) {
-    setCards((list) => list.map((c) => (c.key === key ? { ...c, ...change } : c)))
-  }
-
-  async function save() {
+  // Every change is saved at once, as in the module editor: there is no unsaved set to lose or to forget to save.
+  async function store(list: ReturnType<typeof kept>, done: string) {
     setBusy('save')
     try {
-      const set = await saveFlashcards(setId, draftVersion, cards.map(({ front, back, citations }) => ({ front, back, citations })))
-      setSaved(set)
-      setCards(toDrafts(set, nextKey))
-      notifyDone('Đã lưu.')
+      setSaved(await saveFlashcards(setId, draftVersion, list))
+      setEditing(null)
+      notifyDone(done)
     } catch (err) {
       notifyFailed(apiErrorMessage(err, 'Lưu thẻ thất bại'))
     } finally {
@@ -158,12 +136,25 @@ export function FlashcardEditorPage() {
     }
   }
 
+  function saveEditing(open: Editing) {
+    const card = { front: open.front.trim(), back: open.back.trim() }
+    const list = kept(cards)
+    if (open.index === null) list.push({ ...card, citations: [] })
+    // Editing the words keeps the card's sources.
+    else list[open.index] = { ...list[open.index], ...card }
+    void store(list, open.index === null ? 'Đã thêm thẻ.' : 'Đã lưu thẻ.')
+  }
+
+  async function removeCard(index: number) {
+    if (!await confirmAction({ title: `Xóa thẻ ${index + 1}?`, description: 'Không thể khôi phục.', action: 'Xóa thẻ', destructive: true })) return
+    void store(kept(cards).filter((_, i) => i !== index), 'Đã xóa thẻ.')
+  }
+
   async function revise() {
     setBusy('revise')
     try {
       const { reply, changed, ...set } = await reviseFlashcardSet(setId, draftVersion, request.trim())
       setSaved(set)
-      setCards(toDrafts(set, nextKey))
       setRequest('')
       if (changed) notifyDone(reply || 'Đã sửa bộ thẻ.')
       else notifyFailed(reply || 'Bộ thẻ không thay đổi.')
@@ -210,7 +201,7 @@ export function FlashcardEditorPage() {
   if (generating) {
     return (
       <AppShell {...titleProps}>
-        <button type="button" onClick={() => back(saved.course_id)} className="link-action">Quay lại</button>
+        <button type="button" onClick={() => back(saved.course_id)} className="link-action">Về trang môn học</button>
         <p role="status" className="course-empty">Đang tạo flashcard…</p>
       </AppShell>
     )
@@ -223,114 +214,123 @@ export function FlashcardEditorPage() {
           Tạo flashcard thất bại. Xóa bộ này rồi tạo lại từ trang môn học.
         </p>
         <div className="mt-4 flex gap-4">
-          <button type="button" onClick={() => back(saved.course_id)} className="link-action">Quay lại</button>
+          <button type="button" onClick={() => back(saved.course_id)} className="link-action">Về trang môn học</button>
           {deleteButton}
         </div>
       </AppShell>
     )
   }
 
+  const editor = (open: Editing, number: number) => (
+    <div className="flashcard-form">
+      <label className="flashcard-field">
+        Mặt trước (câu hỏi)
+        <AutoGrowTextarea aria-label={`Mặt trước thẻ ${number}`} value={open.front} autoFocus
+          onChange={(e) => setEditing({ ...open, front: e.target.value })} maxLength={1000} rows={2} className="ui-input w-full" />
+      </label>
+      <label className="flashcard-field">
+        Mặt sau (đáp án)
+        <AutoGrowTextarea aria-label={`Mặt sau thẻ ${number}`} value={open.back}
+          onChange={(e) => setEditing({ ...open, back: e.target.value })} maxLength={4000} rows={3} className="ui-input w-full" />
+      </label>
+      <div className="flashcard-actions">
+        <button type="button" onClick={() => saveEditing(open)} className="ui-button primary"
+          disabled={busy !== null || open.front.trim() === '' || open.back.trim() === ''}>
+          {busy === 'save' ? 'Đang lưu…' : 'Lưu'}
+        </button>
+        <button type="button" onClick={() => setEditing(null)} disabled={busy !== null} className="ui-button">Hủy</button>
+      </div>
+    </div>
+  )
+
   return (
     <AppShell {...titleProps}>
       <div className="flashcard-editor">
-        <div className="flashcard-bar">
-          <button type="button" onClick={() => back(saved.course_id)} className="link-action">Quay lại</button>
-          <span className="status-pill" data-status={published ? 'embedded' : undefined}>
-            {published ? 'Đã giao cho sinh viên' : 'Bản nháp'}
-          </span>
-          <span className="flashcard-count">{cards.length} thẻ</span>
+        <div className="editor-meta">
+          <p>
+            {cards.length} thẻ · {published ? 'Đã giao, sinh viên đang học bộ này' : 'Bản nháp, sinh viên chưa thấy'}
+          </p>
+          <Link to={`/courses/${courseId}`} className="link-action">Về trang môn học</Link>
         </div>
+        <p className="editor-help">
+          Sinh viên đọc mặt trước, tự nhớ câu trả lời rồi lật thẻ xem mặt sau. Bấm Sửa ở một thẻ để đổi nội dung.
+        </p>
 
         <ol className="flashcard-list" aria-label="Các thẻ">
           {cards.map((c, index) => {
             // A model card always cites, so "Chưa có nguồn" (older saves) was only ever on the lecturer's own card.
             const warning = c.flag === NO_SOURCE ? null : c.flag
+            const open = editing?.index === index ? editing : null
             return (
-              <li key={c.key} className="flashcard-item">
+              <li key={index} className="flashcard-item">
                 <div className="flashcard-head">
                   <span className="part-label">Thẻ {index + 1}</span>
-                  <button
-                    type="button"
-                    onClick={() => { setCards((list) => list.filter((x) => x.key !== c.key)) }}
-                    aria-label={`Xóa thẻ ${index + 1}`}
-                    className="link-action danger small-action"
-                  >
-                    Xóa thẻ
-                  </button>
+                  {!open && (
+                    <div className="flashcard-item-actions">
+                      <button type="button" onClick={() => setEditing({ index, front: c.front, back: c.back })}
+                        disabled={busy !== null || editing !== null} aria-label={`Sửa thẻ ${index + 1}`} className="link-action small-action">
+                        Sửa
+                      </button>
+                      <button type="button" onClick={() => removeCard(index)} disabled={busy !== null || editing !== null}
+                        aria-label={`Xóa thẻ ${index + 1}`} className="link-action danger small-action">
+                        Xóa
+                      </button>
+                    </div>
+                  )}
                 </div>
                 {warning && <p className="doc-warning">{warning}</p>}
-                <label className="flashcard-field">
-                  Mặt trước
-                  <AutoGrowTextarea
-                    aria-label={`Mặt trước thẻ ${index + 1}`}
-                    value={c.front}
-                    onChange={(e) => edit(c.key, { front: e.target.value })}
-                    maxLength={1000}
-                    rows={2}
-                    className="ui-input w-full"
-                  />
-                </label>
-                <label className="flashcard-field">
-                  Mặt sau
-                  <AutoGrowTextarea
-                    aria-label={`Mặt sau thẻ ${index + 1}`}
-                    value={c.back}
-                    onChange={(e) => edit(c.key, { back: e.target.value })}
-                    maxLength={4000}
-                    rows={3}
-                    className="ui-input w-full"
-                  />
-                </label>
-                <CitationMarkers sources={c.sources} citations={c.citations} label={`Nguồn của thẻ ${index + 1}`} />
+                {open ? editor(open, index + 1) : (
+                  <dl className="flashcard-sides">
+                    <dt>Mặt trước</dt>
+                    <dd className="flashcard-front">{c.front}</dd>
+                    <dt>Mặt sau</dt>
+                    <dd>{c.back}</dd>
+                  </dl>
+                )}
+                {!open && <CitationMarkers sources={c.sources} citations={c.citations} label={`Nguồn của thẻ ${index + 1}`} />}
               </li>
             )
           })}
+          {editing?.index === null && (
+            <li className="flashcard-item">
+              <span className="part-label">Thẻ mới</span>
+              {editor(editing, cards.length + 1)}
+            </li>
+          )}
         </ol>
 
-        <button
-          type="button"
-          onClick={() => { setCards((list) => [...list, { key: nextKey(), front: '', back: '', citations: [], flag: null, sources: [] }]) }}
-          disabled={full}
-          className="ui-button"
-        >
+        <section className="module-ai-edit flashcard-revise" aria-labelledby="flashcard-revise-title">
+          <h2 id="flashcard-revise-title" className="module-part-title">Sửa theo yêu cầu</h2>
+          <label htmlFor="flashcard-revise" className="chat-label block">Viết điều bạn muốn đổi, hệ thống sẽ sửa cả bộ thẻ</label>
+          <textarea id="flashcard-revise" value={request} onChange={(e) => setRequest(e.target.value)} maxLength={2000} rows={3}
+            disabled={busy !== null} placeholder="Ví dụ: rút gọn mặt sau thẻ 2, thêm một thẻ về ví dụ tính thời gian chờ"
+            className="ui-input mt-2 w-full" />
+          {/* The request rewrites the saved set, so the card open for editing would be lost under it. */}
+          {editing && <p className="course-hint">Lưu hoặc hủy thẻ đang sửa trước khi gửi yêu cầu.</p>}
+          <button type="button" onClick={revise} disabled={busy !== null || editing !== null || request.trim() === ''}
+            className="ui-button primary mt-2 w-fit">
+            {busy === 'revise' ? 'Đang sửa…' : 'Gửi yêu cầu'}
+          </button>
+        </section>
+
+        <button type="button" onClick={() => setEditing({ index: null, front: '', back: '' })}
+          disabled={full || busy !== null || editing !== null} className="ui-button">
           Thêm thẻ
         </button>
         {full && <p className="course-hint">Một bộ có tối đa {MAX_FLASHCARDS} thẻ.</p>}
 
-        {!complete && <p className="mt-3 text-sm danger-text">Mỗi thẻ cần cả mặt trước và mặt sau.</p>}
-        {dirty && complete && (
-          <p className="course-hint">{published ? 'Lưu để cập nhật cho sinh viên.' : 'Lưu thay đổi trước khi giao.'}</p>
-        )}
-
-        <div className="flashcard-actions">
-          <button type="button" onClick={save} disabled={!dirty || !complete || busy !== null} className="ui-button primary">
-            {busy === 'save' ? 'Đang lưu…' : 'Lưu thay đổi'}
-          </button>
+        <div className="flashcard-actions flashcard-final">
           <button
             type="button"
             onClick={togglePublished}
-            // An unsaved edit would not reach the learners, and an empty set has nothing to learn.
-            disabled={busy !== null || (!published && (dirty || cards.length === 0))}
-            className="ui-button"
+            // A card open for editing would not reach the learners, and an empty set has nothing to learn.
+            disabled={busy !== null || (!published && (editing !== null || cards.length === 0))}
+            className="ui-button primary"
           >
             {busy === 'publish' ? 'Đang xử lý…' : published ? 'Ngừng giao' : 'Giao cho sinh viên'}
           </button>
           {deleteButton}
         </div>
-
-        <section className="module-ai-edit" aria-labelledby="flashcard-revise-title">
-          <h2 id="flashcard-revise-title" className="module-part-title">Sửa theo yêu cầu</h2>
-          <label htmlFor="flashcard-revise" className="chat-label mt-3 block">Yêu cầu chỉnh sửa</label>
-          <textarea id="flashcard-revise" value={request} onChange={(e) => setRequest(e.target.value)} maxLength={2000} rows={3}
-            disabled={busy !== null} placeholder="Ví dụ: rút gọn mặt sau thẻ 2, thêm một thẻ về ví dụ tính thời gian chờ"
-            className="ui-input mt-2 w-full" />
-          {/* The request rewrites the saved set, so unsaved edits would be lost under it. */}
-          {dirty && <p className="course-hint">Lưu thay đổi trước khi gửi yêu cầu.</p>}
-          <button type="button" onClick={revise} disabled={busy !== null || dirty || request.trim() === ''}
-            className="ui-button primary mt-2 w-fit">
-            {busy === 'revise' ? 'Đang sửa…' : 'Gửi yêu cầu'}
-          </button>
-        </section>
       </div>
     </AppShell>
   )
