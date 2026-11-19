@@ -1,8 +1,7 @@
 """Readable names for where a passage comes from, built from a chunk's saved locator.
 
 The labels are for display only: the saved locator stays exact for source resolution. Shared by
-the module and flashcard APIs, which name one passage, and the video slides, whose foot names
-every passage a scene cites (app/video/sources.py).
+the module, flashcard and video APIs, which name one passage.
 """
 
 import json

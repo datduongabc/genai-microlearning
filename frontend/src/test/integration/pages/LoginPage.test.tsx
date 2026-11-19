@@ -28,7 +28,7 @@ function refusal(status: number, data: unknown) {
 }
 
 async function fillAndSubmit(password = 'password123') {
-  await userEvent.type(screen.getByPlaceholderText('ten@truong.edu.vn'), 'teacher@example.com')
+  await userEvent.type(screen.getByLabelText('Email'), 'teacher@example.com')
   await userEvent.type(screen.getByLabelText('Mật khẩu'), password)
   await userEvent.click(screen.getByRole('button', { name: /đăng nhập/i }))
 }
@@ -68,7 +68,7 @@ describe('LoginPage', () => {
     mockLogin.mockResolvedValue({ id: '1', email: 'teacher@example.com', name: 'User', is_admin: false })
     renderLoginPage()
 
-    await userEvent.type(screen.getByPlaceholderText('ten@truong.edu.vn'), 'teacher@example.com')
+    await userEvent.type(screen.getByLabelText('Email'), 'teacher@example.com')
     await userEvent.type(screen.getByLabelText('Mật khẩu'), 'password123')
     await userEvent.click(screen.getByRole('button', { name: /đăng nhập/i }))
 
@@ -81,7 +81,7 @@ describe('LoginPage', () => {
     mockLogin.mockRejectedValue(new Error('network down'))
     renderLoginPage()
 
-    await userEvent.type(screen.getByPlaceholderText('ten@truong.edu.vn'), 'teacher@example.com')
+    await userEvent.type(screen.getByLabelText('Email'), 'teacher@example.com')
     await userEvent.type(screen.getByLabelText('Mật khẩu'), 'password123')
     await userEvent.click(screen.getByRole('button', { name: /đăng nhập/i }))
 
@@ -118,7 +118,7 @@ describe('LoginPage', () => {
   it('tells the password manager which field is the username and which the current password', () => {
     renderLoginPage()
 
-    expect(screen.getByPlaceholderText('ten@truong.edu.vn')).toHaveAttribute('autocomplete', 'username')
+    expect(screen.getByLabelText('Email')).toHaveAttribute('autocomplete', 'username')
     expect(screen.getByLabelText('Mật khẩu')).toHaveAttribute('autocomplete', 'current-password')
   })
 })

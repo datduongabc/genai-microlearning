@@ -558,7 +558,7 @@ it('refreshes the preview after an applied chat edit and shows the reply', async
   await userEvent.type(await screen.findByRole('textbox', { name: 'Yêu cầu chỉnh sửa' }), 'Rút gọn slide 1')
   await userEvent.click(screen.getByRole('button', { name: 'Gửi yêu cầu' }))
   expect(await screen.findByText('Đã sửa slide 1.')).toBeInTheDocument()
-  expect(await screen.findByText('Updated module')).toBeInTheDocument()
+  expect(await screen.findByText('Mô-đun: Updated module')).toBeInTheDocument()
 })
 
 it('shows a clarification reply without refreshing the preview', async () => {
@@ -659,7 +659,7 @@ describe('ModulePreviewPage - forms', () => {
     vi.mocked(api.getModule).mockResolvedValue(baseModule)
     vi.mocked(api.updateModuleTitle).mockResolvedValue({ id: 'module-1', title: 'Tên mới' })
     renderPage()
-    await userEvent.click(await screen.findByRole('heading', { name: 'Test Module' }))
+    await userEvent.click(await screen.findByRole('button', { name: 'Đổi tên' }))
     const field = screen.getByRole('textbox', { name: 'Tên mô-đun' })
     expect(field).toHaveValue('Test Module')
     await userEvent.clear(field)
@@ -667,20 +667,20 @@ describe('ModulePreviewPage - forms', () => {
     vi.mocked(api.getModule).mockResolvedValue({ ...baseModule, title: 'Tên mới' })
     await userEvent.click(screen.getByRole('button', { name: 'Lưu' }))
     await waitFor(() => expect(api.updateModuleTitle).toHaveBeenCalledWith('module-1', 'Tên mới'))
-    expect(await screen.findByRole('heading', { name: 'Tên mới' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Mô-đun: Tên mới' })).toBeInTheDocument()
   })
 
   it('refuses a module title over 200 characters and puts the old one back on cancel', async () => {
     vi.mocked(api.getModule).mockResolvedValue(baseModule)
     renderPage()
-    await userEvent.click(await screen.findByRole('heading', { name: 'Test Module' }))
+    await userEvent.click(await screen.findByRole('button', { name: 'Đổi tên' }))
     const field = screen.getByRole('textbox', { name: 'Tên mô-đun' })
     fireEvent.change(field, { target: { value: 'a'.repeat(201) } })
     await userEvent.click(screen.getByRole('button', { name: 'Lưu' }))
     expect(await screen.findByText('Tên mô-đun tối đa 200 ký tự')).toBeInTheDocument()
     expect(api.updateModuleTitle).not.toHaveBeenCalled()
     await userEvent.click(screen.getByRole('button', { name: 'Hủy' }))
-    await userEvent.click(screen.getByRole('heading', { name: 'Test Module' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Đổi tên' }))
     expect(screen.getByRole('textbox', { name: 'Tên mô-đun' })).toHaveValue('Test Module')
   })
 
@@ -749,7 +749,7 @@ describe('ModulePreviewPage - forms', () => {
     vi.mocked(api.getModule).mockResolvedValue(baseModule)
     vi.mocked(api.updateModuleTitle).mockRejectedValue(new Error('Network Error'))
     renderPage()
-    await userEvent.click(await screen.findByRole('heading', { name: 'Test Module' }))
+    await userEvent.click(await screen.findByRole('button', { name: 'Đổi tên' }))
     const field = screen.getByRole('textbox', { name: 'Tên mô-đun' })
     await userEvent.type(field, ' 2')
     await userEvent.click(screen.getByRole('button', { name: 'Lưu' }))
@@ -883,7 +883,7 @@ it('names no model on the page, even when generation used a fallback', async () 
     generation_models: [{ requested_alias: 'gemini-flash', served_model: 'google/gemini-3.8-flash' }],
   })
   renderPage()
-  await screen.findByRole('heading', { name: baseModule.title })
+  await screen.findByRole('heading', { name: `Mô-đun: ${baseModule.title}` })
   expect(screen.queryByText(/gemini-3.8-flash/)).not.toBeInTheDocument()
 })
 
@@ -947,7 +947,7 @@ describe('ModulePreviewPage - load failure', () => {
 
     await userEvent.click(screen.getByRole('button', { name: 'Thử lại' }))
 
-    expect(await screen.findByText('Test Module')).toBeInTheDocument()
+    expect(await screen.findByText('Mô-đun: Test Module')).toBeInTheDocument()
   })
 })
 

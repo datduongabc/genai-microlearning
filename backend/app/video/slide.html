@@ -13,7 +13,7 @@ html, body { margin: 0; }
 body { width: 1280px; height: 720px; overflow: hidden; position: relative; background: var(--paper);
        color: var(--ink); font-family: 'Be Vietnam Pro', sans-serif; }
 .bar { position: absolute; left: 0; top: 0; bottom: 0; width: 12px; background: var(--accent); }
-.s { position: absolute; inset: 0; display: flex; gap: 40px; padding: 56px 64px 72px; box-sizing: border-box; }
+.s { position: absolute; inset: 0; display: flex; gap: 40px; padding: 56px 64px; box-sizing: border-box; }
 .t { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
 h1 { font-size: calc(44px * var(--scale)); line-height: 1.2; margin: 0 0 calc(28px * var(--scale)); font-weight: 700; }
 .title h1 { font-size: calc(56px * var(--scale)); }
@@ -35,8 +35,6 @@ th { background: #e6eef9; }
 .img { flex: 0 0 560px; display: flex; align-items: center; justify-content: center; }
 .img img { max-width: 560px; max-height: 520px; padding: 24px; box-sizing: border-box; border-radius: 14px;
            background: #fff; box-shadow: 0 2px 14px rgba(19, 41, 75, .08); }
-.src { position: absolute; left: 64px; right: 64px; bottom: 26px; font-size: 16px; color: var(--muted);
-       white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 </style>
 </head>
 <body class="$layout">
@@ -44,7 +42,6 @@ th { background: #e6eef9; }
 <div class="t">$content</div>
 $image
 </div>
-$source
 <script>
 // Called directly rather than through auto-render: auto-render left formulas unrendered in the trial.
 for (const el of document.querySelectorAll('[data-tex]')) {

@@ -51,7 +51,6 @@ from app.video.media_jobs import (
     store_file,
 )
 from app.video.slides import SlideRenderer
-from app.video.sources import scene_source_labels
 
 logger = logging.getLogger(__name__)
 
@@ -189,7 +188,7 @@ def _minutes(seconds: float) -> str:
     return f"{seconds / 60:.1f}".replace(".", ",")
 
 
-def _render_slides(scenes: Sequence[Scene], images: dict[int, bytes], labels: Sequence[str], lang: str,
+def _render_slides(scenes: Sequence[Scene], images: dict[int, bytes], lang: str,
                    work: Path) -> list[Path]:
     """Every slide in one Chromium, which costs a second to start and a tenth of one a slide.
 
@@ -200,7 +199,7 @@ def _render_slides(scenes: Sequence[Scene], images: dict[int, bytes], labels: Se
         with SlideRenderer() as renderer:
             for i, scene in enumerate(scenes):
                 path = work / f"slide-{i}.png"
-                path.write_bytes(renderer.render(scene, images.get(i), labels[i], SIZE, lang))
+                path.write_bytes(renderer.render(scene, images.get(i), SIZE, lang))
                 paths.append(path)
         return paths
 
@@ -357,7 +356,6 @@ def render_video(
             _fail_now(db, video_id, error, before_save)
             raise ValueError(error)
         alias, lang, version = video.voice_alias, video.output_language, video.draft_version
-        labels = scene_source_labels(db, video, scenes)
         # No transaction stays open while the voices are made and the video is encoded.
         db.commit()
 
@@ -395,7 +393,7 @@ def render_video(
 
             images = {i: _read_image(s.image_key) for i, s in enumerate(scenes)
                       if s.kind == "illustration" and s.image_key}
-            slides = _render_slides(scenes, images, labels, lang, work)
+            slides = _render_slides(scenes, images, lang, work)
             wavs = []
             for i in range(len(scenes)):
                 path = work / f"voice-{i}.wav"

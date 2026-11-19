@@ -43,7 +43,6 @@ from app.storage import delete_media_files, media_keys_for_video, media_store
 from app.video.illustrations import scenes_to_draw
 from app.video.render import lost_pictures, rendered_captions
 from app.video.slides import render_slide
-from app.video.sources import scene_source_labels
 
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["videos"], dependencies=[Depends(get_current_user)])
@@ -589,7 +588,6 @@ def scene_preview(video_id: uuid.UUID, index: int, db: Session = Depends(get_db)
     if not 0 <= index < len(video.scenes):
         raise HTTPException(status_code=404, detail="Scene not found")
     scene = Scene.model_validate(video.scenes[index])
-    label = scene_source_labels(db, video, [scene])[0]
     lang = video.output_language
     # No transaction stays open while the picture is read and the browser renders.
     db.commit()
@@ -599,7 +597,7 @@ def scene_preview(video_id: uuid.UUID, index: int, db: Session = Depends(get_db)
                             headers={"Retry-After": "2"})
     try:
         # A sync route already runs in the threadpool; render_slide adds a thread for Playwright.
-        png = render_slide(scene, image, label, lang=lang)
+        png = render_slide(scene, image, lang=lang)
     finally:
         PREVIEW_SLOTS.release()
     return Response(content=png, media_type="image/png", headers={"Cache-Control": "private, no-store"})

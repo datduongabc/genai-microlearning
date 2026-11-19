@@ -84,7 +84,6 @@ export function RegisterPage() {
           <input
             type="email"
             autoComplete="username"
-            placeholder="ten@truong.edu.vn"
             className="auth-input"
             aria-invalid={!!errors.email}
             aria-describedby={errors.email ? "email-error" : undefined}

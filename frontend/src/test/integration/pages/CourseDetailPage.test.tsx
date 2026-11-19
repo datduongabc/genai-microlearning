@@ -49,8 +49,6 @@ const unlinkedCourse: Course = {
   moodle_course_id: null,
 }
 
-const linkedCourse: Course = { ...unlinkedCourse, moodle_course_id: 6 }
-
 const sampleDocument: DocumentInfo = {
   id: 'doc-1',
   filename: 'syllabus.pdf',
@@ -142,9 +140,9 @@ describe('CourseDetailPage - Moodle linking', () => {
     await waitFor(() => {
       expect(api.linkMoodleCourse).toHaveBeenCalledWith('course-1', 6)
     })
-    // Once as the toast, once on the panel, which now shows the linked course.
     expect(await screen.findByText('Đã liên kết với khóa học Moodle #6.')).toBeInTheDocument()
-    expect(await screen.findByText('#6')).toBeInTheDocument()
+    // Linked, the course has no choice left to make, so the line goes.
+    await waitFor(() => expect(screen.queryByRole('combobox', { name: /khóa học moodle/i })).not.toBeInTheDocument())
   })
 
   it('asks for a course to be chosen instead of linking nothing', async () => {
@@ -186,20 +184,24 @@ describe('CourseDetailPage - Moodle linking', () => {
 
     renderPage()
 
-    expect(await screen.findByText('Chưa liên kết')).toBeInTheDocument()
+    await screen.findByRole('heading', { name: 'Tài liệu' })
     // The account is linked from the account menu, not a second time on the page.
+    expect(screen.queryByText('Khóa học Moodle:')).not.toBeInTheDocument()
     expect(screen.queryByRole('region', { name: 'Tài khoản Moodle' })).not.toBeInTheDocument()
     expect(screen.queryByLabelText('Email Moodle')).not.toBeInTheDocument()
     expect(screen.queryByRole('combobox', { name: /khóa học moodle/i })).not.toBeInTheDocument()
     expect(api.listMoodleCourses).not.toHaveBeenCalled()
   })
 
-  it('shows the linked course id and no drop-down once linked', async () => {
+  it('shows no Moodle line once the course is linked', async () => {
     vi.mocked(api.listCourses).mockResolvedValue([{ ...unlinkedCourse, moodle_course_id: 6 }])
 
     renderPage()
 
-    expect(await screen.findByText('#6')).toBeInTheDocument()
+    await screen.findByRole('heading', { name: 'Tài liệu' })
+    await waitFor(() => expect(api.getMoodleAccount).toHaveBeenCalled())
+    expect(screen.queryByText('Khóa học Moodle:')).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /hủy liên kết/i })).not.toBeInTheDocument()
     expect(screen.queryByRole('combobox', { name: /khóa học moodle/i })).not.toBeInTheDocument()
   })
 
@@ -214,59 +216,16 @@ describe('CourseDetailPage - Moodle linking', () => {
       window.dispatchEvent(new Event(api.MOODLE_ACCOUNT_CHANGED_EVENT))
     })
 
-    expect(await screen.findByText('Chưa liên kết')).toBeInTheDocument()
-    expect(screen.queryByRole('combobox', { name: /khóa học moodle/i })).not.toBeInTheDocument()
+    await waitFor(() => expect(screen.queryByRole('combobox', { name: /khóa học moodle/i })).not.toBeInTheDocument())
   })
 
 })
 
-describe('CourseDetailPage - unlink Moodle', () => {
+describe('CourseDetailPage - no Moodle', () => {
   afterEach(() => {
     vi.restoreAllMocks()
   })
 
-  it('asks for confirmation and does not unlink when the user cancels', async () => {
-    vi.mocked(api.listCourses).mockResolvedValue([linkedCourse])
-    vi.spyOn(window, 'confirm').mockReturnValue(false)
-
-    renderPage()
-
-    await userEvent.click(await screen.findByRole('button', { name: /hủy liên kết/i }))
-
-    expect(window.confirm).toHaveBeenCalled()
-    expect(api.unlinkMoodleCourse).not.toHaveBeenCalled()
-    expect(screen.getByText(`#${linkedCourse.moodle_course_id}`)).toBeInTheDocument()
-  })
-
-  it('unlinks and reflects the unlinked state when confirmed', async () => {
-    vi.mocked(api.listCourses)
-      .mockResolvedValueOnce([linkedCourse])
-      .mockResolvedValueOnce([unlinkedCourse])
-    vi.mocked(api.unlinkMoodleCourse).mockResolvedValue(undefined)
-    vi.spyOn(window, 'confirm').mockReturnValue(true)
-
-    renderPage()
-
-    await userEvent.click(await screen.findByRole('button', { name: /hủy liên kết/i }))
-
-    await waitFor(() => {
-      expect(api.unlinkMoodleCourse).toHaveBeenCalledWith('course-1')
-    })
-    expect(await screen.findByText('Chưa liên kết')).toBeInTheDocument()
-  })
-
-  it('keeps the course line in place while the account answers', async () => {
-    let answer!: (value: { email: string; status: 'linked' }) => void
-    vi.mocked(api.getMoodleAccount).mockReturnValue(new Promise((resolve) => { answer = resolve }))
-    vi.mocked(api.listCourses).mockResolvedValue([unlinkedCourse])
-    renderPage()
-    const line = await screen.findByText('Khóa học Moodle:')
-
-    await act(async () => answer({ email: 'lan@x.edu', status: 'linked' }))
-
-    expect(await screen.findByRole('combobox', { name: /khóa học moodle/i })).toBeInTheDocument()
-    expect(line).toBeInTheDocument()
-  })
 
   it('shows no Moodle course line where the environment has no Moodle', async () => {
     vi.mocked(api.listCourses).mockResolvedValue([unlinkedCourse])
