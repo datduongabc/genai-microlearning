@@ -53,7 +53,7 @@ function MediaSelect({ label, value, onChange, choices }: {
         {!choices && <option value="">Đang tải…</option>}
         {choices?.map((choice) => (
           <option key={choice.alias} value={choice.alias}>
-            {choice.label} ({choice.price})
+            {choice.label}
           </option>
         ))}
       </select>
@@ -100,31 +100,28 @@ export function GenerateDialog({ open, onOpenChange, returnFocusTo, onGenerate, 
         onCloseAutoFocus={(event) => { if (returnFocusTo) { event.preventDefault(); returnFocusTo.focus(); } }}>
       <form noValidate onSubmit={(event) => void handleSubmit(onValid)(event)}>
         <DialogTitle className="ui-dialog-title">{text.title}</DialogTitle>
-        <label className="flex items-center gap-3 text-sm">
-          Ngôn ngữ đầu ra
-          <select {...register("language")} className="ui-select">
+        <label className="flex flex-col gap-2 text-sm">
+          Ngôn ngữ
+          <select {...register("language")} className="ui-select w-full">
             <option value="vi">Tiếng Việt</option>
             <option value="en">English</option>
           </select>
         </label>
-        <label className="mt-4 block text-sm">
+        <label className="mt-4 flex flex-col gap-2 text-sm">
           {text.field}
-          <textarea {...register("instructions")} maxLength={1000} rows={4} placeholder={text.placeholder} className="ui-input mt-2 w-full" />
+          <textarea {...register("instructions")} maxLength={1000} rows={4} placeholder={text.placeholder} className="ui-input w-full" />
         </label>
         {errors.instructions && <p className="mt-1 text-sm danger-text">{text.tooLong || errors.instructions.message}</p>}
         {kind === "video" && (
           <>
             {models === "failed" ? (
-              <p className="course-hint">
-                Không tải được danh sách giọng đọc và mô hình vẽ hình. Video sẽ dùng lựa chọn mặc định.
-              </p>
+              <p className="course-hint">Không tải được danh sách giọng đọc và mô hình vẽ hình.</p>
             ) : (
               <>
                 <MediaSelect label="Giọng đọc" value={voiceAlias} onChange={setVoicePick} choices={choices?.voices ?? null} />
                 <MediaSelect label="Mô hình vẽ hình" value={imageAlias} onChange={setImagePick} choices={choices?.images ?? null} />
               </>
             )}
-            <p className="course-hint">Giá chỉ để tham khảo. Chi phí hình tính khi vẽ hình, chi phí giọng tính khi dựng video.</p>
           </>
         )}
         <div className="mt-6 flex justify-end gap-3">

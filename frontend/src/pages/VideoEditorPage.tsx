@@ -21,7 +21,6 @@ import { formatMinutes } from '../lib/duration'
 import { notifyDone, notifyFailed } from '../lib/notify'
 import { editorTitle } from '../lib/editorTitle'
 import { createLimiter } from '../lib/limiter'
-import { useMediaModels } from '../lib/useMediaModels'
 import { confirmLeave, useLeaveGuard } from '../lib/useLeaveGuard'
 import { editsKey, estimatedSeconds, newScene, toDrafts, toEdits, type SceneDraft } from '../lib/videoDraft'
 
@@ -51,12 +50,6 @@ const DONE_TEXT: Partial<Record<JobType, string>> = {
 const QUEUED_TEXT: Partial<Record<JobType, string>> = {
   video_images: 'Đã gửi yêu cầu vẽ hình. Trang tự cập nhật khi xong.',
   video_render: 'Đã gửi yêu cầu dựng video. Trang tự cập nhật khi xong.',
-}
-
-// The catalogue words a price as "khoảng $0,037 một ảnh" for the model picker; beside "Mỗi hình" the
-// unit would be said twice.
-function perImage(price: string): string {
-  return price.replace(/ một ảnh$/, '')
 }
 
 interface Base {
@@ -89,7 +82,6 @@ export function VideoEditorPage() {
   const keyCounter = useRef(0)
   const nextKey = useCallback(() => keyCounter.current++, [])
   const limiter = useMemo(() => createLimiter(PREVIEWS_AT_ONCE), [])
-  const models = useMediaModels()
 
   // What a poll compares with; a ref, because the poll's callback outlives the render it was made in.
   const latest = useRef({ saved, scenes, base, awaitingJob })
@@ -237,9 +229,6 @@ export function VideoEditorPage() {
   const jobRunning = runningJob !== null
   const seconds = estimatedSeconds(scenes)
   const overLong = seconds > saved.max_seconds
-  const choices = models && models !== 'failed' ? models : null
-  const imageModel = choices?.images.find((c) => c.alias === saved.image_alias)
-  const voice = choices?.voices.find((c) => c.alias === saved.voice_alias)
   const toDraw = saved.scenes.filter((s) => s.needs_image || s.image_outdated).length
   // The saved scenes as edits, to tell which scene's slide no longer shows what is being edited.
   const savedEdits = toEdits(toDrafts(saved, () => 0)).map((e) => JSON.stringify(e))
@@ -395,26 +384,11 @@ export function VideoEditorPage() {
     void startJob('render', 'video_render', () => renderVideo(videoId), 'Dựng video thất bại')
   }
 
-  const needsSave = openKey !== null ? 'Lưu hoặc hủy cảnh đang sửa trước. Hình và video được tạo từ bản đã lưu.' : null
 
   return (
     <AppShell {...titleProps}>
       <div className="video-editor">
-        <div className="editor-meta">
-          <p>
-            {scenes.length} cảnh · <span className={overLong ? 'danger-text' : undefined}>
-              Khoảng {formatMinutes(seconds)} phút{overLong ? `, dài hơn ${formatMinutes(saved.max_seconds)} phút cho phép` : ''}
-            </span> · {published ? 'Đã giao, sinh viên đang xem video này' : 'Bản nháp, sinh viên chưa thấy'}
-          </p>
-          {backLink}
-        </div>
         {runningJob && <p role="status" className="status-pill" data-status="processing">{JOB_TEXT[runningJob]}</p>}
-        <ol className="editor-steps" aria-label="Các bước">
-          <li>Xem từng cảnh. Bấm Sửa nếu muốn đổi chữ trên slide hoặc lời thoại.</li>
-          <li>Bấm Vẽ hình để vẽ hình cho các cảnh minh họa.</li>
-          <li>Bấm Dựng video, rồi xem lại video ở cuối trang.</li>
-          <li>Bấm Giao cho sinh viên.</li>
-        </ol>
 
         <ol className="video-scenes" aria-label="Các cảnh">
           {scenes.map((s, index) => (
@@ -471,15 +445,11 @@ export function VideoEditorPage() {
             </ul>
           )}
           {saved.render_warnings.map((warning, i) => <p key={`${i}-${warning}`} className="doc-warning">{warning}</p>)}
-          {needsSave && <p className="course-hint">{needsSave}</p>}
           <div className="flashcard-actions">
-            {/* The prices stay in reach as a tooltip: both steps are billed. */}
             <button
               type="button"
               onClick={() => draw()}
               disabled={!canStartJob || toDraw === 0}
-              title={`${toDraw === 0 ? 'Mọi hình đã khớp với mô tả.' : 'Vẽ hình cho cảnh minh họa có mô tả, tối đa 5 cảnh.'}${
-                imageModel ? ` Mỗi hình ${perImage(imageModel.price)} (${imageModel.label}).` : ''}`}
               className="ui-button"
             >
               {busy === 'draw' ? 'Đang gửi…' : 'Vẽ hình'}
@@ -488,7 +458,6 @@ export function VideoEditorPage() {
               type="button"
               onClick={() => void startRender()}
               disabled={!canStartJob || saved.render_problems.length > 0}
-              title={voice ? `Giọng ${voice.label}, ${voice.price}. Cảnh không đổi dùng lại giọng đã tạo.` : undefined}
               className="ui-button primary"
             >
               {busy === 'render' ? 'Đang gửi…' : rendered === null ? 'Dựng video' : 'Dựng lại video'}
@@ -497,7 +466,6 @@ export function VideoEditorPage() {
               type="button"
               onClick={() => void act('publish', () => publishVideo(videoId, !published), published ? 'Ngừng giao thất bại' : 'Giao video thất bại')}
               disabled={busy !== null || (!published && rendered === null)}
-              title={!published && rendered === null ? 'Dựng video trước khi giao.' : undefined}
               className="ui-button"
             >
               {busy === 'publish' ? 'Đang xử lý…' : published ? 'Ngừng giao' : 'Giao cho sinh viên'}

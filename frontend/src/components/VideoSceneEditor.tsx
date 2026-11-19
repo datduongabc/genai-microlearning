@@ -146,16 +146,13 @@ export function VideoSceneEditor({ scene: s, number, count, slide, canDraw, next
           version={slideVersion(origin, s.fromIndex, slide.picturesDrawn)}
           number={number}
           limiter={slide.limiter}
-          note={slide.changed ? 'Đây là slide của bản đã lưu. Lưu để xem bản đang sửa.' : undefined}
         />
       ) : (
         <SlidePlaceholder text="Lưu để xem slide của cảnh mới." />
       )}
       {drawable && (
         <div className="video-picture-row">
-          <span className="course-hint">
-            {origin.image_outdated ? 'Hình được vẽ theo mô tả cũ.' : origin.has_image ? 'Đã có hình minh họa.' : 'Chưa vẽ hình minh họa.'}
-          </span>
+          {origin.image_outdated && <span className="course-hint">Hình được vẽ theo mô tả cũ.</span>}
           <button
             type="button"
             onClick={() => onDraw(s.fromIndex as number)}
@@ -279,9 +276,8 @@ export function VideoSceneEditor({ scene: s, number, count, slide, canDraw, next
       {s.kind === 'table' && (
         <label className="flashcard-field">
           Bảng
-          <AutoGrowTextarea aria-label={`Bảng cảnh ${number}`} aria-describedby={fieldNotes} value={s.table} rows={4}
+          <AutoGrowTextarea aria-label={`Bảng cảnh ${number}`} aria-describedby={fieldNotes} value={s.table} rows={4} placeholder="Cột 1 | Cột 2"
             onChange={(e) => set({ table: e.target.value })} className="ui-input w-full font-mono" />
-          <span className="course-hint">Mỗi dòng là một hàng. Các ô cách nhau bằng dấu |.</span>
         </label>
       )}
       {wholeLabel && ofField.map((flag, i) => (
@@ -293,14 +289,11 @@ export function VideoSceneEditor({ scene: s, number, count, slide, canDraw, next
           Mô tả hình minh họa
           <AutoGrowTextarea aria-label={`Mô tả hình cảnh ${number}`} value={s.imagePrompt} maxLength={2000} rows={3}
             onChange={(e) => set({ imagePrompt: e.target.value })} className="ui-input w-full" />
-          <span className="course-hint">
-            Ghi rõ số liệu và nhãn cần có trong hình. Để trống mô tả thì slide chỉ có chữ.
-          </span>
         </label>
       )}
 
       <div className="flashcard-field">
-        Lời thoại (mỗi ô một câu)
+        Lời thoại
         <ul className="video-items" aria-label={`Lời thoại cảnh ${number}`}>
           {s.sentences.map((item, i) => (
             <ItemEditor key={item.key} name={`câu ${i + 1} cảnh ${number}`} maxLength={6000} {...itemProps('sentences', item)} />

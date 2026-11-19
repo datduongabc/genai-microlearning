@@ -44,7 +44,7 @@ describe('GenerateDialog', () => {
     await waitFor(() => expect(onGenerate).toHaveBeenCalledWith('vi', ''))
     expect(onOpenChange).toHaveBeenCalledWith(false)
 
-    await userEvent.selectOptions(screen.getByLabelText(/Ngôn ngữ đầu ra/), 'en')
+    await userEvent.selectOptions(screen.getByLabelText(/^Ngôn ngữ$/), 'en')
     await userEvent.type(screen.getByLabelText(/Yêu cầu thêm/), '  Explain IDS ')
     await userEvent.click(screen.getByRole('button', { name: 'Tạo mô-đun' }))
 
@@ -91,7 +91,7 @@ describe('GenerateDialog', () => {
     expect(screen.getByLabelText('Video nên tập trung vào nội dung gì? (không bắt buộc)')).toBeInTheDocument()
   })
 
-  it('asks a video for its voice and image model, HeyGen and Nano Banana first, each with its price', async () => {
+  it('asks a video for its voice and image model, HeyGen and Nano Banana first, with no price', async () => {
     const { onGenerate } = renderDialog('video')
 
     const voice = screen.getByLabelText('Giọng đọc')
@@ -99,9 +99,9 @@ describe('GenerateDialog', () => {
     // The choices are the server's.
     await waitFor(() => expect(voice).toHaveValue('voice-heygen'))
     expect(image).toHaveValue('image-nano-banana')
-    expect(screen.getByRole('option', { name: /HeyGen Voice 1 Turbo.*khoảng \$0,03 một video 8 phút/ })).toBeInTheDocument()
-    expect(screen.getByRole('option', { name: /Gemini 3.8 Flash TTS.*khoảng \$0,11/ })).toBeInTheDocument()
-    expect(screen.getByRole('option', { name: /Qwen Image 2.1 Turbo.*khoảng \$0,018 một ảnh/ })).toBeInTheDocument()
+    expect(screen.getByRole('option', { name: 'HeyGen Voice 1 Turbo' })).toBeInTheDocument()
+    expect(screen.getByRole('option', { name: 'Qwen Image 2.1 Turbo' })).toBeInTheDocument()
+    expect(screen.queryByText(/\$/)).not.toBeInTheDocument()
 
     await userEvent.selectOptions(voice, 'voice-gemini-lite')
     await userEvent.selectOptions(image, 'image-qwen')

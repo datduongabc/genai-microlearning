@@ -65,13 +65,11 @@ export function ModelPicker({ value, onChange }: Props) {
     }
   }
 
-  const dangChon = models.find((m) => m.alias === value)
-
   return (
     <div className="flex flex-col gap-1">
       <div className="flex flex-wrap items-center gap-3">
         <label className="model-picker">
-          Mô hình AI
+          Mô hình
           <select
             value={loadFailed ? THEO_CAU_HINH : value}
             onChange={(e) => onChange(e.target.value)}
@@ -97,12 +95,7 @@ export function ModelPicker({ value, onChange }: Props) {
           </button>
         )}
       </div>
-      {dangChon?.note && <p className="course-hint">{dangChon.note}</p>}
-      {loadFailed && (
-        <p className="course-hint">
-          Không tải được danh sách mô hình. Hệ thống sẽ dùng mô hình mặc định.
-        </p>
-      )}
+      {loadFailed && <p className="course-hint">Không tải được danh sách mô hình.</p>}
       {saveError && <p className="text-sm danger-text">{saveError}</p>}
     </div>
   )

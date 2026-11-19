@@ -246,16 +246,6 @@ export function FlashcardEditorPage() {
   return (
     <AppShell {...titleProps}>
       <div className="flashcard-editor">
-        <div className="editor-meta">
-          <p>
-            {cards.length} thẻ · {published ? 'Đã giao, sinh viên đang học bộ này' : 'Bản nháp, sinh viên chưa thấy'}
-          </p>
-          <Link to={`/courses/${courseId}`} className="link-action">Về trang môn học</Link>
-        </div>
-        <p className="editor-help">
-          Sinh viên đọc mặt trước, tự nhớ câu trả lời rồi lật thẻ xem mặt sau. Bấm Sửa ở một thẻ để đổi nội dung.
-        </p>
-
         <ol className="flashcard-list" aria-label="Các thẻ">
           {cards.map((c, index) => {
             // A model card always cites, so "Chưa có nguồn" (older saves) was only ever on the lecturer's own card.
@@ -301,12 +291,11 @@ export function FlashcardEditorPage() {
 
         <section className="module-ai-edit flashcard-revise" aria-labelledby="flashcard-revise-title">
           <h2 id="flashcard-revise-title" className="module-part-title">Sửa theo yêu cầu</h2>
-          <label htmlFor="flashcard-revise" className="chat-label block">Viết điều bạn muốn đổi, hệ thống sẽ sửa cả bộ thẻ</label>
+          <label htmlFor="flashcard-revise" className="chat-label block">Yêu cầu chỉnh sửa</label>
           <textarea id="flashcard-revise" value={request} onChange={(e) => setRequest(e.target.value)} maxLength={2000} rows={3}
             disabled={busy !== null} placeholder="Ví dụ: rút gọn mặt sau thẻ 2, thêm một thẻ về ví dụ tính thời gian chờ"
             className="ui-input mt-2 w-full" />
-          {/* The request rewrites the saved set, so the card open for editing would be lost under it. */}
-          {editing && <p className="course-hint">Lưu hoặc hủy thẻ đang sửa trước khi gửi yêu cầu.</p>}
+          {/* The request rewrites the saved set, so it waits for the card open for editing. */}
           <button type="button" onClick={revise} disabled={busy !== null || editing !== null || request.trim() === ''}
             className="ui-button primary mt-2 w-fit">
             {busy === 'revise' ? 'Đang sửa…' : 'Gửi yêu cầu'}
@@ -317,7 +306,6 @@ export function FlashcardEditorPage() {
           disabled={full || busy !== null || editing !== null} className="ui-button">
           Thêm thẻ
         </button>
-        {full && <p className="course-hint">Một bộ có tối đa {MAX_FLASHCARDS} thẻ.</p>}
 
         <div className="flashcard-actions flashcard-final">
           <button

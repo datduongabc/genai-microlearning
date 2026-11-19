@@ -126,9 +126,6 @@ export function ScormDownload({ moduleId, moduleTitle }: { moduleId: string; mod
   return (
     <section className="module-publish" aria-labelledby="scorm-title">
       <h2 id="scorm-title" className="module-part-title">Tải gói SCORM</h2>
-      <p className="text-sm muted mb-3">
-        Tệp zip chuẩn SCORM 1.2 gồm nội dung, bài luyện tập và bài kiểm tra. Moodle hoặc LMS khác nhập được tệp này và ghi lại điểm.
-      </p>
       <button type="button" className="ui-button" disabled={downloading} onClick={() => void download()}>
         {downloading ? 'Đang tạo gói…' : 'Tải gói SCORM (.zip)'}
       </button>

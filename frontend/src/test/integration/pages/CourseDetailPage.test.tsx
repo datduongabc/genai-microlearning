@@ -118,7 +118,6 @@ describe('CourseDetailPage - Moodle linking', () => {
 
     renderPage()
 
-    expect(await screen.findByText(/chưa liên kết với moodle/i)).toBeInTheDocument()
     const select = await screen.findByRole('combobox', { name: /khóa học moodle/i })
     await waitFor(() => expect(within(select).getAllByRole('option')).toHaveLength(3))
     expect(within(select).getByRole('option', { name: 'Databases (DB)' })).toBeInTheDocument()
@@ -145,7 +144,7 @@ describe('CourseDetailPage - Moodle linking', () => {
     })
     // Once as the toast, once on the panel, which now shows the linked course.
     expect(await screen.findByText('Đã liên kết với khóa học Moodle #6.')).toBeInTheDocument()
-    expect(await screen.findByText('#6', { selector: 'strong' })).toBeInTheDocument()
+    expect(await screen.findByText('#6')).toBeInTheDocument()
   })
 
   it('asks for a course to be chosen instead of linking nothing', async () => {
@@ -181,17 +180,16 @@ describe('CourseDetailPage - Moodle linking', () => {
     expect(await screen.findByText('Moodle không phản hồi')).toBeInTheDocument()
   })
 
-  it('offers no Moodle course until the account is linked', async () => {
+  it('offers no Moodle course until the account is linked, and leaves the account to the account menu', async () => {
     vi.mocked(api.listCourses).mockResolvedValue([unlinkedCourse])
     vi.mocked(api.getMoodleAccount).mockResolvedValue({ email: 'lan@x.edu', status: 'not_linked' })
 
     renderPage()
 
-    const account = await screen.findByRole('region', { name: 'Tài khoản Moodle' })
-    expect(await within(account).findByText('Chưa liên kết')).toBeInTheDocument()
-    expect(within(account).queryByLabelText('Mật khẩu Moodle')).not.toBeInTheDocument()
-    expect(await within(account).findByLabelText('Email Moodle')).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: /tạo course moodle/i })).not.toBeInTheDocument()
+    expect(await screen.findByText('Chưa liên kết')).toBeInTheDocument()
+    // The account is linked from the account menu, not a second time on the page.
+    expect(screen.queryByRole('region', { name: 'Tài khoản Moodle' })).not.toBeInTheDocument()
+    expect(screen.queryByLabelText('Email Moodle')).not.toBeInTheDocument()
     expect(screen.queryByRole('combobox', { name: /khóa học moodle/i })).not.toBeInTheDocument()
     expect(api.listMoodleCourses).not.toHaveBeenCalled()
   })
@@ -201,37 +199,24 @@ describe('CourseDetailPage - Moodle linking', () => {
 
     renderPage()
 
-    expect(await screen.findByText(/đã liên kết với khóa học moodle/i)).toBeInTheDocument()
+    expect(await screen.findByText('#6')).toBeInTheDocument()
     expect(screen.queryByRole('combobox', { name: /khóa học moodle/i })).not.toBeInTheDocument()
   })
 
-  it('always shows the Moodle account in the linked-course view too, with nothing to fill in', async () => {
-    vi.mocked(api.listCourses).mockResolvedValue([linkedCourse])
+  it('stops offering courses when the server says the account link must be made again', async () => {
+    vi.mocked(api.listCourses).mockResolvedValue([unlinkedCourse])
 
     renderPage()
-
-    const account = await screen.findByRole('region', { name: 'Tài khoản Moodle' })
-    expect(await within(account).findByText('Đã liên kết')).toBeInTheDocument()
-    expect(within(account).queryByRole('button', { name: 'Hủy liên kết Moodle' })).not.toBeInTheDocument()
-    expect(within(account).queryByLabelText('Mật khẩu Moodle')).not.toBeInTheDocument()
-  })
-
-  it('flips the account to not linked when the server says the link must be made again', async () => {
-    vi.mocked(api.listCourses).mockResolvedValue([linkedCourse])
-
-    renderPage()
-    const account = await screen.findByRole('region', { name: 'Tài khoản Moodle' })
-    expect(await within(account).findByText('Đã liên kết')).toBeInTheDocument()
+    expect(await screen.findByRole('combobox', { name: /khóa học moodle/i })).toBeInTheDocument()
 
     vi.mocked(api.getMoodleAccount).mockResolvedValue({ email: 'lan@x.edu', status: 'not_linked' })
     act(() => {
       window.dispatchEvent(new Event(api.MOODLE_ACCOUNT_CHANGED_EVENT))
     })
 
-    expect(await within(account).findByText('Chưa liên kết')).toBeInTheDocument()
-    expect(within(account).getByText(/nhập email moodle của bạn/i)).toBeInTheDocument()
+    expect(await screen.findByText('Chưa liên kết')).toBeInTheDocument()
+    expect(screen.queryByRole('combobox', { name: /khóa học moodle/i })).not.toBeInTheDocument()
   })
-
 
 })
 
@@ -250,7 +235,7 @@ describe('CourseDetailPage - unlink Moodle', () => {
 
     expect(window.confirm).toHaveBeenCalled()
     expect(api.unlinkMoodleCourse).not.toHaveBeenCalled()
-    expect(screen.getByText(/đã liên kết với khóa học moodle/i)).toBeInTheDocument()
+    expect(screen.getByText(`#${linkedCourse.moodle_course_id}`)).toBeInTheDocument()
   })
 
   it('unlinks and reflects the unlinked state when confirmed', async () => {
@@ -267,16 +252,15 @@ describe('CourseDetailPage - unlink Moodle', () => {
     await waitFor(() => {
       expect(api.unlinkMoodleCourse).toHaveBeenCalledWith('course-1')
     })
-    expect(await screen.findByText(/chưa liên kết với moodle/i)).toBeInTheDocument()
+    expect(await screen.findByText('Chưa liên kết')).toBeInTheDocument()
   })
 
-  it('keeps the not-linked line in place while the account answers, with no "link first" flash', async () => {
+  it('keeps the course line in place while the account answers', async () => {
     let answer!: (value: { email: string; status: 'linked' }) => void
     vi.mocked(api.getMoodleAccount).mockReturnValue(new Promise((resolve) => { answer = resolve }))
     vi.mocked(api.listCourses).mockResolvedValue([unlinkedCourse])
     renderPage()
-    const line = await screen.findByText('Môn học này chưa liên kết với Moodle.')
-    expect(screen.queryByText(/liên kết tài khoản moodle trước/i)).not.toBeInTheDocument()
+    const line = await screen.findByText('Khóa học Moodle:')
 
     await act(async () => answer({ email: 'lan@x.edu', status: 'linked' }))
 
@@ -284,20 +268,16 @@ describe('CourseDetailPage - unlink Moodle', () => {
     expect(line).toBeInTheDocument()
   })
 
-  it('asks for the account link first only where Moodle exists', async () => {
+  it('shows no Moodle course line where the environment has no Moodle', async () => {
     vi.mocked(api.listCourses).mockResolvedValue([unlinkedCourse])
-    vi.mocked(api.getMoodleAccount).mockResolvedValue({ email: 'lan@x.edu', status: 'not_linked' })
-    const { unmount } = renderPage()
-    expect(await screen.findByText('Liên kết tài khoản Moodle trước để chọn khóa học.')).toBeInTheDocument()
-    unmount()
-
     vi.mocked(api.getMoodleAccount).mockResolvedValue({ email: 'lan@x.edu', status: 'unavailable' })
     renderPage()
-    expect(await screen.findByText(/mở công cụ từ moodle vẫn dùng bình thường/i)).toBeInTheDocument()
-    expect(screen.getByText('Môn học này chưa liên kết với Moodle.')).toBeInTheDocument()
-    expect(screen.queryByText(/liên kết tài khoản moodle trước/i)).not.toBeInTheDocument()
+
+    await screen.findByRole('heading', { name: 'Tài liệu' })
+    await waitFor(() => expect(screen.queryByText('Khóa học Moodle:')).not.toBeInTheDocument())
     expect(screen.queryByRole('combobox', { name: /khóa học moodle/i })).not.toBeInTheDocument()
   })
+
 })
 
 describe('CourseDetailPage - delete document', () => {
@@ -546,13 +526,13 @@ describe('CourseDetailPage - module generation availability', () => {
 
     renderPage()
 
-    expect(await createItem(/mô-đun bài học/i)).not.toHaveAttribute('aria-disabled')
+    expect(await createItem(/^mô-đun$/i)).not.toHaveAttribute('aria-disabled')
   })
 
   it('gives focus back to the create button when the dialog is closed', async () => {
     vi.mocked(api.listDocuments).mockResolvedValue([sampleDocument])
     renderPage()
-    await chooseCreate(/video bài giảng/i)
+    await chooseCreate(/^video$/i)
     expect(await screen.findByRole('dialog', { name: 'Tạo video' })).toBeInTheDocument()
     await userEvent.keyboard('{Escape}')
     await waitFor(() => expect(screen.getByRole('button', { name: /tạo nội dung từ/i })).toHaveFocus())
@@ -561,7 +541,7 @@ describe('CourseDetailPage - module generation availability', () => {
   it('cancels the dialog without starting generation', async () => {
     vi.mocked(api.listDocuments).mockResolvedValue([sampleDocument])
     renderPage()
-    await chooseCreate(/mô-đun bài học/i)
+    await chooseCreate(/^mô-đun$/i)
     expect(screen.getByRole('dialog')).toBeInTheDocument()
     await userEvent.click(screen.getByRole('button', { name: 'Hủy' }))
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
@@ -573,7 +553,9 @@ describe('CourseDetailPage - module generation availability', () => {
 
     renderPage()
 
-    expect(await createItem(/đang tạo mô-đun/i)).toHaveAttribute('aria-disabled', 'true')
+    expect(await createItem(/^mô-đun$/i)).toHaveAttribute('aria-disabled', 'true')
+    // The module being made has its row, as a set or a video being made has.
+    expect(screen.getByText('Mô-đun mới')).toBeInTheDocument()
   })
 
   it('becomes available again and shows the new module once polling sees the generation finish', async () => {
@@ -584,14 +566,15 @@ describe('CourseDetailPage - module generation availability', () => {
     vi.mocked(api.listModules).mockResolvedValueOnce([]).mockResolvedValue([newModule])
 
     renderPage()
-    expect(await createItem(/đang tạo mô-đun/i)).toHaveAttribute('aria-disabled', 'true')
+    expect(await createItem(/^mô-đun$/i)).toHaveAttribute('aria-disabled', 'true')
 
     await act(async () => {
       await vi.advanceTimersByTimeAsync(10_000)
     })
 
-    expect(await createItem(/mô-đun bài học/i)).not.toHaveAttribute('aria-disabled')
+    expect(await createItem(/^mô-đun$/i)).not.toHaveAttribute('aria-disabled')
     expect(await screen.findByText(/Intro to search/)).toBeInTheDocument()
+    expect(screen.queryByText('Mô-đun mới')).not.toBeInTheDocument()
   })
 
   it('generates with the teacher saved default model preselected', async () => {
@@ -605,12 +588,12 @@ describe('CourseDetailPage - module generation availability', () => {
 
     renderPage()
     await waitFor(() =>
-      expect((screen.getByRole('combobox', { name: /mô hình ai/i }) as HTMLSelectElement).value).toBe('deepseek-flash'),
+      expect((screen.getByRole('combobox', { name: /^mô hình$/i }) as HTMLSelectElement).value).toBe('deepseek-flash'),
     )
-    await chooseCreate(/mô-đun bài học/i)
+    await chooseCreate(/^mô-đun$/i)
     expect(api.generateModule).not.toHaveBeenCalled()
     expect(screen.getByRole('dialog')).toBeInTheDocument()
-    await userEvent.selectOptions(screen.getByRole('combobox', { name: /ngôn ngữ đầu ra/i }), 'en')
+    await userEvent.selectOptions(screen.getByRole('combobox', { name: /^ngôn ngữ$/i }), 'en')
     await userEvent.type(screen.getByLabelText(/Yêu cầu thêm/), 'Ví dụ: thêm ví dụ có lời giải từng bước')
     await userEvent.click(screen.getByRole('button', { name: 'Tạo mô-đun' }))
 
@@ -631,7 +614,7 @@ describe('CourseDetailPage - module generation availability', () => {
     )
 
     renderPage()
-    await chooseCreate(/mô-đun bài học/i)
+    await chooseCreate(/^mô-đun$/i)
     await userEvent.click(screen.getByRole('button', { name: 'Tạo mô-đun' }))
 
     expect(await screen.findByText(/chưa có API key hợp lệ/)).toBeInTheDocument()
@@ -643,11 +626,12 @@ describe('CourseDetailPage - module generation availability', () => {
     vi.mocked(api.pollJobStatus).mockReturnValue(new Promise(() => {}))
 
     renderPage()
-    await chooseCreate(/mô-đun bài học/i)
+    await chooseCreate(/^mô-đun$/i)
     await userEvent.click(screen.getByRole('button', { name: 'Tạo mô-đun' }))
 
     expect(api.generateModule).toHaveBeenCalledWith('doc-1', '', 'vi', '')
-    expect(await createItem(/đang tạo mô-đun/i)).toHaveAttribute('aria-disabled', 'true')
+    expect(await createItem(/^mô-đun$/i)).toHaveAttribute('aria-disabled', 'true')
+    expect(screen.getByText('Mô-đun mới')).toBeInTheDocument()
   })
 })
 
@@ -679,22 +663,17 @@ describe('CourseDetailPage - flashcard sets', () => {
 
     renderPage()
 
-    const list = await screen.findByRole('list', { name: 'Flashcard tạo từ syllabus.pdf' })
+    const list = await screen.findByRole('list', { name: 'Nội dung tạo từ syllabus.pdf' })
     const items = within(list).getAllByRole('listitem')
     expect(items).toHaveLength(4)
     expect(within(items[0]).getByRole('link', { name: /Mảng/ })).toHaveAttribute('href', '/flashcard-sets/set-1')
-    expect(items[0]).toHaveTextContent('Bản nháp, 8 thẻ')
-    // A set and a video with the same focus must not look alike.
-    expect(within(items[0]).getByText('Flashcard')).toBeInTheDocument()
+    // A ready set is its kind and its name, as a module is; only a job running or failed says more.
+    expect(items[0]).toHaveTextContent(/^FlashcardMảngXóa$/)
     expect(items[1]).toHaveTextContent('Toàn bộ tài liệu')
-    expect(items[1]).toHaveTextContent('Đang tạo…')
-    expect(items[2]).toHaveTextContent('Tạo thất bại')
-    expect(items[3]).toHaveTextContent('Đã giao, 8 thẻ')
-    // A draft is neutral, a published set is done, and "processing" means generating only.
-    expect(within(items[0]).getByText('Bản nháp, 8 thẻ')).not.toHaveAttribute('data-status')
     expect(within(items[1]).getByText('Đang tạo…')).toHaveAttribute('data-status', 'processing')
-    expect(within(items[3]).getByText('Đã giao, 8 thẻ')).toHaveAttribute('data-status', 'embedded')
-    const other = screen.getByRole('list', { name: 'Flashcard tạo từ other.pdf' })
+    expect(within(items[2]).getByText('Tạo thất bại')).toHaveAttribute('data-status', 'failed')
+    expect(items[3]).toHaveTextContent(/^FlashcardĐồ thịXóa$/)
+    const other = screen.getByRole('list', { name: 'Nội dung tạo từ other.pdf' })
     expect(within(other).getAllByRole('listitem')).toHaveLength(1)
   })
 
@@ -725,7 +704,7 @@ describe('CourseDetailPage - flashcard sets', () => {
     await chooseCreate(/^flashcard$/i)
     await userEvent.click(screen.getByRole('button', { name: 'Tạo flashcard' }))
 
-    const list = await screen.findByRole('list', { name: 'Flashcard tạo từ syllabus.pdf' })
+    const list = await screen.findByRole('list', { name: 'Nội dung tạo từ syllabus.pdf' })
     const pending = within(list).getByRole('listitem')
     expect(pending).toHaveTextContent('Toàn bộ tài liệu')
     expect(within(pending).getByText('Đang gửi yêu cầu…')).toHaveAttribute('data-status', 'processing')
@@ -758,7 +737,8 @@ describe('CourseDetailPage - flashcard sets', () => {
       await vi.advanceTimersByTimeAsync(10_000)
     })
 
-    expect(await screen.findByText('Bản nháp, 8 thẻ')).toBeInTheDocument()
+    await waitFor(() => expect(screen.queryByText('Đang tạo…')).not.toBeInTheDocument())
+    expect(screen.getByRole('link', { name: 'Mảng' })).toBeInTheDocument()
   })
 })
 
@@ -790,17 +770,18 @@ describe('CourseDetailPage - videos', () => {
 
     renderPage()
 
-    const list = await screen.findByRole('list', { name: 'Video tạo từ syllabus.pdf' })
+    const list = await screen.findByRole('list', { name: 'Nội dung tạo từ syllabus.pdf' })
     const items = within(list).getAllByRole('listitem')
     expect(items).toHaveLength(5)
     expect(within(items[0]).getByRole('link', { name: /FCFS/ })).toHaveAttribute('href', '/videos/video-1')
     expect(within(items[0]).getByText('Video')).toBeInTheDocument()
-    expect(within(items[0]).getByText('Bản nháp, 9 cảnh')).not.toHaveAttribute('data-status')
+    // A ready video says no status, as a module does; it is dated only because another row shares its title.
+    expect(within(items[0]).queryByRole('status')).not.toBeInTheDocument()
+    expect(items[0]).not.toHaveTextContent(/Bản nháp|cảnh/)
     expect(items[1]).toHaveTextContent('Toàn bộ tài liệu')
     expect(within(items[1]).getByText('Đang viết lời thoại…')).toHaveAttribute('data-status', 'processing')
     expect(within(items[2]).getByText('Đang dựng video…')).toHaveAttribute('data-status', 'processing')
-    // Floored, as the player floors its clock: 291 s is 4,85 minutes, not 4,9.
-    expect(within(items[3]).getByText('Đã giao, 9 cảnh, 4,8 phút')).toHaveAttribute('data-status', 'embedded')
+    expect(items[3]).not.toHaveTextContent(/Đã giao|phút/)
     expect(within(items[4]).getByText('Tạo thất bại')).toHaveAttribute('data-status', 'failed')
   })
 
@@ -811,7 +792,7 @@ describe('CourseDetailPage - videos', () => {
       .mockResolvedValue([{ ...videoSummary, status: 'generating', scene_count: 0 }])
 
     renderPage()
-    await chooseCreate(/video bài giảng/i)
+    await chooseCreate(/^video$/i)
     await userEvent.type(within(screen.getByRole('dialog', { name: 'Tạo video' })).getByLabelText(/nên tập trung vào nội dung gì/), 'FCFS')
     await userEvent.selectOptions(await screen.findByRole('combobox', { name: 'Mô hình vẽ hình' }), 'image-qwen')
     await userEvent.click(screen.getByRole('button', { name: 'Tạo video' }))
@@ -831,22 +812,22 @@ describe('CourseDetailPage - videos', () => {
       .mockResolvedValue([{ ...videoSummary, status: 'generating', scene_count: 0 }])
 
     renderPage()
-    await chooseCreate(/video bài giảng/i)
+    await chooseCreate(/^video$/i)
     await userEvent.type(within(screen.getByRole('dialog', { name: 'Tạo video' })).getByLabelText(/nên tập trung vào nội dung gì/), 'FCFS')
     await userEvent.click(screen.getByRole('button', { name: 'Tạo video' }))
 
-    const list = await screen.findByRole('list', { name: 'Video tạo từ syllabus.pdf' })
+    const list = await screen.findByRole('list', { name: 'Nội dung tạo từ syllabus.pdf' })
     const pending = within(list).getByRole('listitem')
     expect(pending).toHaveTextContent('FCFS')
     expect(pending).toHaveAttribute('aria-busy', 'true')
     expect(within(pending).getByText('Đang gửi yêu cầu…')).toHaveAttribute('data-status', 'processing')
-    expect(await createItem(/video bài giảng/i)).toHaveAttribute('aria-disabled', 'true')
+    expect(await createItem(/^video$/i)).toHaveAttribute('aria-disabled', 'true')
     expect(api.generateVideo).toHaveBeenCalledTimes(1)
 
     answer({ id: 'video-1', job_id: 'job-1' })
     expect(await screen.findByText('Đang viết lời thoại…')).toBeInTheDocument()
     expect(screen.queryByText('Đang gửi yêu cầu…')).not.toBeInTheDocument()
-    expect(await createItem(/video bài giảng/i)).not.toHaveAttribute('aria-disabled')
+    expect(await createItem(/^video$/i)).not.toHaveAttribute('aria-disabled')
   })
 
   it('says the video started, not that it failed, when only the list cannot be reloaded after it', async () => {
@@ -854,7 +835,7 @@ describe('CourseDetailPage - videos', () => {
     vi.mocked(api.listVideos).mockResolvedValueOnce([]).mockRejectedValue(new Error('network down'))
 
     renderPage()
-    await chooseCreate(/video bài giảng/i)
+    await chooseCreate(/^video$/i)
     await userEvent.click(screen.getByRole('button', { name: 'Tạo video' }))
 
     expect(await screen.findByText('Đã bắt đầu tạo video.')).toBeInTheDocument()
@@ -881,12 +862,12 @@ describe('CourseDetailPage - videos', () => {
     vi.mocked(api.listVideos).mockResolvedValue([])
 
     renderPage()
-    await chooseCreate(/video bài giảng/i)
+    await chooseCreate(/^video$/i)
     await userEvent.click(screen.getByRole('button', { name: 'Tạo video' }))
 
     expect(await screen.findByText('Video này đang được sinh lời thoại, vui lòng chờ.')).toBeInTheDocument()
     expect(screen.queryByText('Đang gửi yêu cầu…')).not.toBeInTheDocument()
-    expect(await createItem(/video bài giảng/i)).not.toHaveAttribute('aria-disabled')
+    expect(await createItem(/^video$/i)).not.toHaveAttribute('aria-disabled')
   })
 
   it('dates the rows that share a title, and only those', async () => {
@@ -898,7 +879,7 @@ describe('CourseDetailPage - videos', () => {
 
     renderPage()
 
-    const list = await screen.findByRole('list', { name: 'Video tạo từ syllabus.pdf' })
+    const list = await screen.findByRole('list', { name: 'Nội dung tạo từ syllabus.pdf' })
     const items = within(list).getAllByRole('listitem')
     const times = items.map((item) => item.querySelector('time'))
     expect(times[0]).toHaveAttribute('dateTime', '2026-11-13T09:05:00Z')
@@ -912,7 +893,7 @@ describe('CourseDetailPage - videos', () => {
     vi.mocked(api.generateVideo).mockRejectedValue(axiosFailure(429, 'Bạn đã dùng hết lượt sinh hôm nay.'))
 
     renderPage()
-    await chooseCreate(/video bài giảng/i)
+    await chooseCreate(/^video$/i)
     await userEvent.click(screen.getByRole('button', { name: 'Tạo video' }))
 
     expect(await screen.findByText('Bạn đã dùng hết lượt sinh hôm nay.')).toBeInTheDocument()
@@ -930,7 +911,7 @@ describe('CourseDetailPage - videos', () => {
       await vi.advanceTimersByTimeAsync(10_000)
     })
 
-    expect(await screen.findByText('Bản nháp, 9 cảnh')).toBeInTheDocument()
+    await waitFor(() => expect(screen.queryByText('Đang vẽ hình…')).not.toBeInTheDocument())
   })
 })
 
@@ -1077,7 +1058,7 @@ describe('CourseDetailPage - filter the documents by status', () => {
   })
 
   async function pick(label: string) {
-    await userEvent.selectOptions(await screen.findByLabelText('Trạng thái:'), label)
+    await userEvent.selectOptions(await screen.findByLabelText('Trạng thái'), label)
   }
 
   it('shows every document by default', async () => {
@@ -1238,7 +1219,7 @@ describe('CourseDetailPage - failed work and retry', () => {
     })
 
     renderPage()
-    await chooseCreate(/mô-đun bài học/i)
+    await chooseCreate(/^mô-đun$/i)
     await userEvent.click(screen.getByRole('button', { name: 'Tạo mô-đun' }))
 
     expect(await screen.findByText('Tạo mô-đun thất bại')).toBeInTheDocument()

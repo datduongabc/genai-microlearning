@@ -17,6 +17,8 @@ import {
   generateModule,
   generateVideo,
   getModuleJobStatus,
+  getMoodleAccount,
+  MOODLE_ACCOUNT_CHANGED_EVENT,
   linkMoodleCourse,
   listCourses,
   listDocuments,
@@ -39,10 +41,9 @@ import {
 import { AppShell } from "../components/AppShell";
 import { CourseChat } from "../components/CourseChat";
 import { ModelPicker } from "../components/ModelPicker";
-import { MoodleAccountSection, type MoodleAccountState } from "../components/MoodleAccountSection";
+import type { MoodleAccountState } from "../components/MoodleAccountSection";
 import { GenerateDialog, type GenerateKind, type VideoMediaChoice } from "../components/GenerateDialog";
 import { focusReturnTarget } from "../lib/focusReturn";
-import { formatMinutes } from "../lib/duration";
 import {
   linkMoodleCourseSchema,
   uploadDocumentSchema,
@@ -119,10 +120,11 @@ function extractionWarningLines(warnings: DocumentInfo["extraction_warnings"]) {
   }));
 }
 
-function flashcardStatusText(set: FlashcardSetSummary): string {
+// A row says only what is not settled: a job running or failed. A ready item, of any kind, is just its name.
+function flashcardStatusText(set: FlashcardSetSummary): string | null {
   if (set.status === "generating") return "Đang tạo…";
   if (set.status === "failed") return "Tạo thất bại";
-  return `${set.published_at ? "Đã giao" : "Bản nháp"}, ${set.card_count} thẻ`;
+  return null;
 }
 
 // The statuses a video has while one of its jobs runs in the worker.
@@ -132,22 +134,20 @@ const VIDEO_JOB_TEXT: Partial<Record<VideoSummary["status"], string>> = {
   rendering: "Đang dựng video…",
 };
 
-function videoStatusText(video: VideoSummary): string {
+function videoStatusText(video: VideoSummary): string | null {
   const running = VIDEO_JOB_TEXT[video.status];
   if (running) return running;
   // A failed picture or render leaves the scenes to edit; only a failed script leaves nothing.
   if (video.status === "failed" && video.scene_count === 0) return "Tạo thất bại";
-  if (video.status === "failed") return "Có lỗi, mở để xem";
-  const length = video.duration_seconds === null ? "" : `, ${formatMinutes(video.duration_seconds)} phút`;
-  return `${video.published_at ? "Đã giao" : "Bản nháp"}, ${video.scene_count} cảnh${length}`;
+  if (video.status === "failed") return "Có lỗi";
+  return null;
 }
 
-// What a list row's pill means: neutral for a draft, green once published, "processing" only
-// while a job runs, red when it failed.
-function mediaPillStatus(running: boolean, failed: boolean, published: boolean): string | undefined {
+// What a list row's pill means: "processing" while a job runs, red when it failed.
+function mediaPillStatus(running: boolean, failed: boolean): string | undefined {
   if (failed) return "failed";
   if (running) return "processing";
-  return published ? "embedded" : undefined;
+  return undefined;
 }
 
 type MediaKind = "Flashcard" | "Video";
@@ -171,24 +171,26 @@ function sharedTitleDates(items: { id: string; document_id: string; focus: strin
 
 // The kind is written out because a set and a video made from the same focus carry the same title.
 function MediaListItem({ kind, to, focus, status, statusText, created, deleting, onDelete }: {
-  kind: MediaKind; to: string; focus: string | null; status?: string; statusText: string; created?: string;
+  kind: MediaKind; to: string; focus: string | null; status?: string; statusText: string | null; created?: string;
   deleting: boolean; onDelete: () => void;
 }) {
   const name = focus ?? "Toàn bộ tài liệu";
   return (
     <li className="module-item media-item">
       <span className="media-kind">{kind}</span>
-      <Link to={to} className="module-link flashcard-link" title={focus ?? undefined}>
+      <Link to={to} className="module-link flashcard-link">
         {name}
       </Link>
       <button onClick={onDelete} disabled={deleting} aria-label={`Xóa ${kind.toLowerCase()} ${name}`}
         className="link-action danger small-action media-delete">
         {deleting ? "Đang xóa…" : "Xóa"}
       </button>
-      <span className="media-meta">
-        <span className="status-pill" data-status={status}>{statusText}</span>
-        {created && <time className="media-created" dateTime={created}>{createdText(created)}</time>}
-      </span>
+      {(statusText || created) && (
+        <span className="media-meta">
+          {statusText && <span className="status-pill" data-status={status}>{statusText}</span>}
+          {created && <time className="media-created" dateTime={created}>{createdText(created)}</time>}
+        </span>
+      )}
     </li>
   );
 }
@@ -208,6 +210,17 @@ function PendingMediaItem({ item }: { item: PendingMedia }) {
       <span className="media-kind">{item.kind}</span>
       <span className="module-link">{item.focus ?? "Toàn bộ tài liệu"}</span>
       <span className="media-meta"><span className="status-pill" data-status="processing">Đang gửi yêu cầu…</span></span>
+    </li>
+  );
+}
+
+// A module being generated has no title yet, but it takes a row like a set or a video does.
+function PendingModuleItem() {
+  return (
+    <li className="module-item media-item" aria-busy="true">
+      <span className="media-kind">Mô-đun</span>
+      <span className="module-link">Mô-đun mới</span>
+      <span className="media-meta"><span className="status-pill" data-status="processing">Đang tạo…</span></span>
     </li>
   );
 }
@@ -644,18 +657,10 @@ export function CourseDetailPage() {
             nhưng đặt cạnh nút tải để hai thiết lập của cột nằm trên một hàng. */}
         <ModelPicker value={modelAlias} onChange={setModelAlias} />
       </div>
-      <p className="course-hint">
-        PDF, PPTX, DOCX, HTML đến 25 MB, riêng PDF và PPTX đến 150 trang. Âm thanh đến 200 MB. Video đến 1 GB và 90 phút.
-      </p>
-      {uploadBusy && (
-        <p className="course-hint">
-          Âm thanh và video dài có thể mất vài phút.
-        </p>
-      )}
 
       {!loading && documents.length > 0 && (
         <div className="course-filter">
-          <label htmlFor="document-status-filter">Trạng thái:</label>
+          <label htmlFor="document-status-filter">Trạng thái</label>
           <select
             id="document-status-filter"
             value={statusFilter}
@@ -685,9 +690,12 @@ export function CourseDetailPage() {
               <div className="doc-head">
                 <div className="doc-title">
                   <div className="doc-name">{d.filename}</div>
-                  <div className="status-pill" data-status={d.status}>
-                    {STATUS_LABEL[d.status] ?? d.status}
-                  </div>
+                  {/* A ready document needs no word, as a ready module, set or video needs none. */}
+                  {d.status !== "embedded" && (
+                    <div className="status-pill" data-status={d.status}>
+                      {STATUS_LABEL[d.status] ?? d.status}
+                    </div>
+                  )}
                 </div>
                 <div className="doc-actions">
                   {d.status === "embedded" && (
@@ -697,13 +705,13 @@ export function CourseDetailPage() {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="doc-menu">
                         <DropdownMenuItem disabled={isGenerating(d)} onSelect={() => ask("module", d)}>
-                          <BookOpenText aria-hidden="true" />{isGenerating(d) ? "Đang tạo mô-đun…" : "Mô-đun bài học"}
+                          <BookOpenText aria-hidden="true" />Mô-đun
                         </DropdownMenuItem>
                         <DropdownMenuItem disabled={isSending(d, "Flashcard")} onSelect={() => ask("flashcards", d)}>
                           <Layers aria-hidden="true" />Flashcard
                         </DropdownMenuItem>
                         <DropdownMenuItem disabled={isSending(d, "Video")} onSelect={() => ask("video", d)}>
-                          <Clapperboard aria-hidden="true" />Video bài giảng
+                          <Clapperboard aria-hidden="true" />Video
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -745,8 +753,10 @@ export function CourseDetailPage() {
                   ))}
                 </ul>
               )}
-              {(modulesByDoc[d.id] ?? []).length > 0 && (
-                <ul className="doc-modules" aria-label={`Mô-đun tạo từ ${d.filename}`}>
+              {((modulesByDoc[d.id] ?? []).length > 0 || isGenerating(d) || setsByDoc(d.id).length > 0
+                || isSending(d, "Flashcard") || videosByDoc(d.id).length > 0 || isSending(d, "Video")) && (
+                <ul className="doc-modules" aria-label={`Nội dung tạo từ ${d.filename}`}>
+                  {isGenerating(d) && <PendingModuleItem />}
                   {(modulesByDoc[d.id] ?? []).map((m) => (
                     <ModuleListItem
                       key={m.id}
@@ -755,11 +765,7 @@ export function CourseDetailPage() {
                       onDelete={handleDeleteModule}
                     />
                   ))}
-                </ul>
-              )}
-              {(setsByDoc(d.id).length > 0 || isSending(d, "Flashcard")) && (
-                <ul className="doc-modules" aria-label={`Flashcard tạo từ ${d.filename}`}>
-                  {/* The newest come first, which is where the set being asked for will be. */}
+                  {/* The newest come first, which is where the item being asked for will be. */}
                   {pendingFor(d, "Flashcard").map((item) => <PendingMediaItem key={item.key} item={item} />)}
                   {setsByDoc(d.id).map((set) => (
                     <MediaListItem
@@ -767,17 +773,13 @@ export function CourseDetailPage() {
                       kind="Flashcard"
                       to={`/flashcard-sets/${set.id}`}
                       focus={set.focus}
-                      status={mediaPillStatus(set.status === "generating", set.status === "failed", set.published_at !== null)}
+                      status={mediaPillStatus(set.status === "generating", set.status === "failed")}
                       statusText={flashcardStatusText(set)}
                       created={setDates.get(set.id)}
                       deleting={deletingMediaId === set.id}
                       onDelete={() => void handleDeleteMedia("Flashcard", set.id, set.focus, set.status === "generating")}
                     />
                   ))}
-                </ul>
-              )}
-              {(videosByDoc(d.id).length > 0 || isSending(d, "Video")) && (
-                <ul className="doc-modules" aria-label={`Video tạo từ ${d.filename}`}>
                   {pendingFor(d, "Video").map((item) => <PendingMediaItem key={item.key} item={item} />)}
                   {videosByDoc(d.id).map((video) => (
                     <MediaListItem
@@ -785,9 +787,7 @@ export function CourseDetailPage() {
                       kind="Video"
                       to={`/videos/${video.id}`}
                       focus={video.focus}
-                      status={mediaPillStatus(
-                        VIDEO_JOB_TEXT[video.status] !== undefined, video.status === "failed", video.published_at !== null,
-                      )}
+                      status={mediaPillStatus(VIDEO_JOB_TEXT[video.status] !== undefined, video.status === "failed")}
                       statusText={videoStatusText(video)}
                       created={videoDates.get(video.id)}
                       deleting={deletingMediaId === video.id}
@@ -823,9 +823,22 @@ export function CourseDetailPage() {
 }
 
 function MoodleLinkSection({ course, onLinked }: { course: Course; onLinked: () => void }) {
-  // What the "Tài khoản Moodle" section above got from the server; "unknown" until it answers,
-  // and the server refuses a course link without the account anyway.
+  // The account is linked from the account menu; here it only decides whether courses can be picked.
+  // "unknown" until the server answers, and the server refuses a course link without the account anyway.
   const [account, setAccount] = useState<MoodleAccountState>("unknown");
+  useEffect(() => {
+    let cancelled = false;
+    const read = () => getMoodleAccount().then(
+      (answer) => { if (!cancelled) setAccount(answer.status); },
+      () => { if (!cancelled) setAccount("unknown"); },
+    );
+    void read();
+    window.addEventListener(MOODLE_ACCOUNT_CHANGED_EVENT, read);
+    return () => {
+      cancelled = true;
+      window.removeEventListener(MOODLE_ACCOUNT_CHANGED_EVENT, read);
+    };
+  }, []);
   const [courses, setCourses] = useState<MoodleCourse[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -893,11 +906,11 @@ function MoodleLinkSection({ course, onLinked }: { course: Course; onLinked: () 
     }
   }
 
-  const accountSection = <MoodleAccountSection onStatus={setAccount} />;
+  // Without Moodle on the server there is nothing to link a course to.
+  if (account === "unavailable") return null;
 
   const panel = (row: ReactNode) => (
     <div className="moodle-panel">
-      {accountSection}
       <div className="moodle-course">{row}</div>
       {error && <p className="moodle-error danger-text">{error}</p>}
     </div>
@@ -908,7 +921,7 @@ function MoodleLinkSection({ course, onLinked }: { course: Course; onLinked: () 
       <>
         <p>
           <span className="moodle-key">Khóa học Moodle:</span>{" "}
-          Đã liên kết với khóa học Moodle <strong>#{course.moodle_course_id}</strong>.
+          <span className="success-text">#{course.moodle_course_id}</span>
         </p>
         <button onClick={handleUnlink} disabled={busy} className="link-action danger">
           {busy ? "Đang hủy…" : "Hủy liên kết"}
@@ -926,14 +939,10 @@ function MoodleLinkSection({ course, onLinked }: { course: Course; onLinked: () 
       noValidate
       className="moodle-link-form"
     >
-      <span className="moodle-key">Môn học này chưa liên kết với Moodle.</span>
-      {/* Where Moodle is unavailable the account section above already says so. */}
-      {account !== "unknown" && account !== "unavailable" && account !== "linked" && (
-        <span>Liên kết tài khoản Moodle trước để chọn khóa học.</span>
-      )}
+      <span className="moodle-key">Khóa học Moodle:</span>{" "}
+      {account !== "linked" && <span className="muted">Chưa liên kết</span>}
       {account === "linked" && (
         <>
-          <span>Chọn khóa học:</span>
           <select
             aria-label="Khóa học Moodle"
             {...register("moodleCourseId")}

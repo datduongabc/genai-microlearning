@@ -40,7 +40,7 @@ function Khung({ onChange = vi.fn() }: { onChange?: (alias: string) => void }) {
 }
 
 function oChon() {
-  return screen.getByRole('combobox', { name: /mô hình ai/i }) as HTMLSelectElement
+  return screen.getByRole('combobox', { name: /^mô hình$/i }) as HTMLSelectElement
 }
 
 beforeEach(() => {
@@ -72,16 +72,6 @@ describe('ModelPicker', () => {
 
     await waitFor(() => expect(oChon().value).toBe('deepseek-flash'))
     expect(onChange).toHaveBeenCalledWith('deepseek-flash')
-  })
-
-  it('hiện ghi chú của model đang chọn để giảng viên biết nên chọn cái nào', async () => {
-    vi.mocked(api.listModels).mockResolvedValue(danhSach)
-    render(<Khung />)
-    await screen.findByRole('option', { name: 'Gemini 3.8 Flash (google)' })
-
-    await userEvent.selectOptions(oChon(), 'gemini-flash')
-
-    expect(screen.getByText('nhanh, đọc được ảnh')).toBeInTheDocument()
   })
 
   it('chỉ hiện nút đặt mặc định khi lựa chọn khác với mặc định đã lưu', async () => {

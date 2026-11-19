@@ -126,7 +126,6 @@ describe('VideoEditorPage', () => {
     const publish = screen.getByRole('button', { name: 'Giao cho sinh viên' })
     expect(draw.compareDocumentPosition(renderButton) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
     expect(renderButton.compareDocumentPosition(publish) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
-    expect(screen.getByRole('link', { name: 'Về trang môn học' })).toHaveAttribute('href', '/courses/course-1')
   })
 
   it('cancels an opened scene without saving', async () => {
@@ -149,25 +148,13 @@ describe('VideoEditorPage', () => {
 
     renderPage()
 
-    expect(await screen.findByText(/Khoảng 11,3 phút, dài hơn 8 phút cho phép/)).toBeInTheDocument()
-    expect(screen.getByText(problem)).toBeInTheDocument()
+    expect(await screen.findByText(problem)).toBeInTheDocument()
+    expect(screen.getByText(/^Quá 8 phút/)).toBeInTheDocument()
     const renderButton = screen.getByRole('button', { name: 'Dựng video' })
     expect(renderButton).toBeDisabled()
     // The reason is read before the button.
     expect(screen.getByText(problem).compareDocumentPosition(renderButton) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
     expect(screen.queryByRole('alert')).not.toBeInTheDocument()
-  })
-
-  it('updates the estimated length as the narration is edited', async () => {
-    vi.mocked(api.getVideo).mockResolvedValue(video([scene(1, { narration: 'a'.repeat(900), narration_citations: [['c1']] })]))
-
-    renderPage()
-
-    expect(await screen.findByText(/Khoảng 1 phút/)).toBeInTheDocument()
-    await openScene(1)
-    await userEvent.click(screen.getByLabelText('Câu 1 cảnh 1'))
-    await userEvent.paste('a'.repeat(900))
-    expect(screen.getByText(/Khoảng 2 phút/)).toBeInTheDocument()
   })
 
   it('marks flagged scenes and uncited sentences of the model', async () => {
@@ -246,14 +233,6 @@ describe('VideoEditorPage', () => {
     expect(await screen.findByText('Đang vẽ hình…')).toBeInTheDocument()
   })
 
-  it('says the price of a picture once, without the unit twice', async () => {
-    vi.mocked(api.getVideo).mockResolvedValue(video([scene(1)]))
-
-    renderPage()
-
-    expect(await screen.findByRole('button', { name: 'Vẽ hình' })).toHaveAttribute('title', expect.stringMatching(/Mỗi hình khoảng \$0,037 \(Gemini Nano Banana 2.1\)\.$/))
-  })
-
   it('announces a finished picture job', async () => {
     vi.mocked(api.getVideo).mockResolvedValue(video([scene(1, { kind: 'illustration', image_prompt: 'Hàng đợi', has_image: true })]))
     vi.mocked(api.drawIllustrations).mockResolvedValue({ job_id: 'job-2', scene_indexes: [0] })
@@ -288,7 +267,6 @@ describe('VideoEditorPage', () => {
 
     expect(api.drawIllustrations).toHaveBeenCalledWith('video-1', undefined)
     expect(await screen.findByText(/hôm nay còn 0 hình/)).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Vẽ hình' })).toHaveAttribute('title', expect.stringMatching(/Mỗi hình khoảng \$0,037 \(/))
   })
 
   it('asks before rendering over the warnings, and renders when confirmed', async () => {
@@ -320,7 +298,6 @@ describe('VideoEditorPage', () => {
     const player = await screen.findByLabelText('Video đã dựng')
     await waitFor(() => expect(player).toHaveAttribute('src', 'https://s3.example/v.mp4?sig=1'))
     expect(screen.getByText(/Bản nháp đã sửa sau lần dựng gần nhất/)).toBeInTheDocument()
-    expect(screen.getByText(/Đã giao, sinh viên đang xem video này/)).toBeInTheDocument()
     await openScene(1)
     await userEvent.type(screen.getByLabelText('Tiêu đề cảnh 1'), ' mới')
     expect(screen.getByLabelText('Video đã dựng')).toBeInTheDocument()
@@ -348,7 +325,6 @@ describe('VideoEditorPage', () => {
     renderPage()
     expect(await screen.findByRole('button', { name: 'Giao cho sinh viên' })).toBeDisabled()
     expect(screen.queryByLabelText('Video đã dựng')).not.toBeInTheDocument()
-    expect(screen.getByText(/Bản nháp, sinh viên chưa thấy/)).toBeInTheDocument()
   })
 
   it('polls a running job and shows its error', async () => {
@@ -452,12 +428,13 @@ describe('VideoEditorPage', () => {
     renderPage()
     await openScene(1)
     await userEvent.type(screen.getByLabelText('Câu 1 cảnh 1'), '!')
-    await userEvent.click(screen.getByRole('link', { name: 'Về trang môn học' }))
+    const sidebar = within(screen.getByRole('navigation', { name: 'Điều hướng chính' }))
+    await userEvent.click(sidebar.getByRole('link', { name: 'Môn học' }))
     expect(confirm).toHaveBeenCalledTimes(1)
-    expect(screen.queryByText('Trang môn học')).not.toBeInTheDocument()
+    expect(screen.queryByText('Danh sách môn học')).not.toBeInTheDocument()
 
-    await userEvent.click(screen.getByRole('link', { name: 'Về trang môn học' }))
-    expect(await screen.findByText('Trang môn học')).toBeInTheDocument()
+    await userEvent.click(sidebar.getByRole('link', { name: 'Môn học' }))
+    expect(await screen.findByText('Danh sách môn học')).toBeInTheDocument()
   })
 
   it('asks before the sidebar leaves unsaved edits, and stays when the lecturer says no', async () => {
@@ -608,7 +585,6 @@ describe('VideoEditorPage', () => {
     renderPage()
     await openScene(1)
     const prompt = screen.getByLabelText('Mô tả hình cảnh 1')
-    expect(screen.getByText(/Để trống mô tả thì slide chỉ có chữ/)).toBeInTheDocument()
     await waitFor(() => expect(api.getScenePreview).toHaveBeenCalledTimes(1))
     await userEvent.clear(prompt)
     await userEvent.click(screen.getByRole('button', { name: 'Lưu' }))
@@ -653,7 +629,7 @@ describe('VideoEditorPage', () => {
     await openScene(1)
 
     expect(screen.getByLabelText('Bảng cảnh 1')).toHaveValue('A | B')
-    expect(screen.getByText(/Các ô cách nhau bằng dấu \|/)).toBeInTheDocument()
+    expect(screen.getByPlaceholderText('Cột 1 | Cột 2')).toBeInTheDocument()
   })
 
   it('says the job is queued and follows it when the detail cannot be read after asking', async () => {
