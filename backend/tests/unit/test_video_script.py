@@ -333,7 +333,7 @@ def test_a_script_the_model_wrote_too_short_is_saved_with_a_flag(monkeypatch):
     video_script.generate_video_script(db, video.id)
     assert video.status == MediaStatus.draft and len(video.scenes) == 5
     flag = video.scenes[0]["flags"][-1]
-    assert "5 cảnh" in flag and "AI chỉ viết" in flag and "bị bỏ" not in flag
+    assert "5 cảnh" in flag and "chỉ viết được từng ấy cảnh" in flag and "bị bỏ" not in flag
 
 
 def test_a_script_left_short_by_dropped_scenes_says_so(monkeypatch):

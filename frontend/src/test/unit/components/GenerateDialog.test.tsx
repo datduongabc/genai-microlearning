@@ -57,7 +57,7 @@ describe('GenerateDialog', () => {
     fireEvent.change(screen.getByLabelText(/Yêu cầu thêm/), { target: { value: 'a'.repeat(1001) } })
     await userEvent.click(screen.getByRole('button', { name: 'Tạo mô-đun' }))
 
-    expect(await screen.findByText('Hướng dẫn tối đa 1000 ký tự')).toBeInTheDocument()
+    expect(await screen.findByText('Yêu cầu thêm tối đa 1000 ký tự')).toBeInTheDocument()
     expect(onGenerate).not.toHaveBeenCalled()
     expect(onOpenChange).not.toHaveBeenCalled()
   })
@@ -67,20 +67,20 @@ describe('GenerateDialog', () => {
 
     expect(screen.getByRole('heading', { name: 'Tạo flashcard' })).toBeInTheDocument()
     expect(screen.queryByLabelText(/Yêu cầu thêm/)).not.toBeInTheDocument()
-    await userEvent.type(screen.getByLabelText(/Trọng tâm/), '  Ví dụ: các định nghĩa trong chương 2 ')
+    await userEvent.type(screen.getByLabelText('Flashcard nên tập trung vào nội dung gì? (không bắt buộc)'), '  Ví dụ: các định nghĩa trong chương 2 ')
     await userEvent.click(screen.getByRole('button', { name: 'Tạo flashcard' }))
 
     await waitFor(() => expect(onGenerate).toHaveBeenCalledWith('vi', 'Ví dụ: các định nghĩa trong chương 2'))
     expect(onOpenChange).toHaveBeenCalledWith(false)
   })
 
-  it('refuses a focus over 1000 characters and names the focus in the message', async () => {
+  it('refuses a focus over 1000 characters and says so', async () => {
     const { onGenerate } = renderDialog('flashcards')
 
-    fireEvent.change(screen.getByLabelText(/Trọng tâm/), { target: { value: 'a'.repeat(1001) } })
+    fireEvent.change(screen.getByLabelText(/nên tập trung vào nội dung gì/), { target: { value: 'a'.repeat(1001) } })
     await userEvent.click(screen.getByRole('button', { name: 'Tạo flashcard' }))
 
-    expect(await screen.findByText('Trọng tâm tối đa 1000 ký tự')).toBeInTheDocument()
+    expect(await screen.findByText('Tối đa 1000 ký tự')).toBeInTheDocument()
     expect(onGenerate).not.toHaveBeenCalled()
   })
 
@@ -88,7 +88,7 @@ describe('GenerateDialog', () => {
     renderDialog('video')
 
     expect(screen.getByRole('heading', { name: 'Tạo video' })).toBeInTheDocument()
-    expect(screen.getByLabelText(/Trọng tâm/)).toBeInTheDocument()
+    expect(screen.getByLabelText('Video nên tập trung vào nội dung gì? (không bắt buộc)')).toBeInTheDocument()
   })
 
   it('asks a video for its voice and image model, HeyGen and Nano Banana first, each with its price', async () => {
@@ -105,7 +105,7 @@ describe('GenerateDialog', () => {
 
     await userEvent.selectOptions(voice, 'voice-gemini-lite')
     await userEvent.selectOptions(image, 'image-qwen')
-    await userEvent.type(screen.getByLabelText(/Trọng tâm/), 'BFS')
+    await userEvent.type(screen.getByLabelText(/nên tập trung vào nội dung gì/), 'BFS')
     await userEvent.click(screen.getByRole('button', { name: 'Tạo video' }))
 
     await waitFor(() => expect(onGenerate).toHaveBeenCalledWith('vi', 'BFS', { voiceAlias: 'voice-gemini-lite', imageAlias: 'image-qwen' }))

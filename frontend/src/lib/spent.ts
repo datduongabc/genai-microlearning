@@ -29,15 +29,15 @@ function unpriced(part: CallsCost | undefined): number {
 
 function sentence(total: number, missing: number, what: string): string | null {
   if (missing === 0) return total > 0 ? `Chi phí khoảng ${formatUsd(total)}` : null
-  const gap = `chưa rõ giá của ${missing} lần gọi ${what}`
-  return total > 0 ? `Chi phí ít nhất ${formatUsd(total)} (${gap})` : `Chưa rõ giá của ${missing} lần gọi ${what}`
+  const gap = `chưa rõ giá của ${missing} lần ${what}`
+  return total > 0 ? `Chi phí ít nhất ${formatUsd(total)} (${gap})` : `Chưa rõ giá của ${missing} lần ${what}`
 }
 
 export function videoSpent(cost: VideoCost | null | undefined): string | null {
   const total = (cost?.script?.usd ?? 0) + (cost?.images?.usd ?? 0) + (cost?.voice?.usd ?? 0)
-  return sentence(total, unpriced(cost?.script), 'AI viết lời thoại')
+  return sentence(total, unpriced(cost?.script), 'viết lời thoại')
 }
 
 export function flashcardSpent(cost: CallsCost | null | undefined): string | null {
-  return sentence(cost?.usd ?? 0, unpriced(cost ?? undefined), 'model')
+  return sentence(cost?.usd ?? 0, unpriced(cost ?? undefined), 'tạo thẻ')
 }

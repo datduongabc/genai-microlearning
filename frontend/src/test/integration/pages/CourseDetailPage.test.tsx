@@ -707,7 +707,7 @@ describe('CourseDetailPage - flashcard sets', () => {
     renderPage()
     await chooseCreate(/^flashcard$/i)
     // Each kind has its own dialog in the page, so the field is looked up in the open one.
-    await userEvent.type(within(screen.getByRole('dialog', { name: 'Tạo flashcard' })).getByLabelText(/Trọng tâm/), 'Mảng')
+    await userEvent.type(within(screen.getByRole('dialog', { name: 'Tạo flashcard' })).getByLabelText(/nên tập trung vào nội dung gì/), 'Mảng')
     await userEvent.click(screen.getByRole('button', { name: 'Tạo flashcard' }))
 
     expect(api.generateFlashcards).toHaveBeenCalledWith('doc-1', { focus: 'Mảng', outputLanguage: 'vi', modelAlias: '' })
@@ -812,7 +812,7 @@ describe('CourseDetailPage - videos', () => {
 
     renderPage()
     await chooseCreate(/video bài giảng/i)
-    await userEvent.type(within(screen.getByRole('dialog', { name: 'Tạo video' })).getByLabelText(/Trọng tâm/), 'FCFS')
+    await userEvent.type(within(screen.getByRole('dialog', { name: 'Tạo video' })).getByLabelText(/nên tập trung vào nội dung gì/), 'FCFS')
     await userEvent.selectOptions(await screen.findByRole('combobox', { name: 'Mô hình vẽ hình' }), 'image-qwen')
     await userEvent.click(screen.getByRole('button', { name: 'Tạo video' }))
 
@@ -832,7 +832,7 @@ describe('CourseDetailPage - videos', () => {
 
     renderPage()
     await chooseCreate(/video bài giảng/i)
-    await userEvent.type(within(screen.getByRole('dialog', { name: 'Tạo video' })).getByLabelText(/Trọng tâm/), 'FCFS')
+    await userEvent.type(within(screen.getByRole('dialog', { name: 'Tạo video' })).getByLabelText(/nên tập trung vào nội dung gì/), 'FCFS')
     await userEvent.click(screen.getByRole('button', { name: 'Tạo video' }))
 
     const list = await screen.findByRole('list', { name: 'Video tạo từ syllabus.pdf' })
@@ -1256,11 +1256,11 @@ describe('CourseDetailPage - OCR warnings', () => {
     vi.mocked(api.listCourses).mockResolvedValue([unlinkedCourse])
     vi.mocked(api.listDocuments).mockResolvedValue([{ ...sampleDocument, extraction_warnings: [ocrWarning(2)] }])
     const first = renderPage()
-    expect(await screen.findByText(/OCR không đọc được trang 2\./)).toBeInTheDocument()
+    expect(await screen.findByText(/Không nhận dạng được chữ ở trang 2\./)).toBeInTheDocument()
     expect(screen.getByText('syllabus.pdf')).toBeInTheDocument()
     first.unmount()
     renderPage()
-    expect(await screen.findByText(/OCR không đọc được trang 2\./)).toBeInTheDocument()
+    expect(await screen.findByText(/Không nhận dạng được chữ ở trang 2\./)).toBeInTheDocument()
   })
 
   it('lists every failed page of a document on one warning line', async () => {
@@ -1269,8 +1269,8 @@ describe('CourseDetailPage - OCR warnings', () => {
       ...sampleDocument, extraction_warnings: [ocrWarning(9), ocrWarning(2), ocrWarning(5)],
     }])
     renderPage()
-    expect(await screen.findByText(/OCR không đọc được các trang 2, 5, 9\./)).toBeInTheDocument()
-    expect(screen.getAllByText(/OCR không đọc được/)).toHaveLength(1)
+    expect(await screen.findByText(/Không nhận dạng được chữ ở các trang 2, 5, 9\./)).toBeInTheDocument()
+    expect(screen.getAllByText(/Không nhận dạng được chữ ở/)).toHaveLength(1)
   })
 
   it('asks to check the formulas of pages whose formulas could not be re-read', async () => {
@@ -1281,7 +1281,7 @@ describe('CourseDetailPage - OCR warnings', () => {
     renderPage()
     expect(await screen.findByText(/Công thức có thể đọc chưa đúng ở trang 7\. Hãy soát lại công thức/))
       .toBeInTheDocument()
-    expect(screen.getByText(/OCR không đọc được trang 2\. Nội dung có thể thiếu/)).toBeInTheDocument()
+    expect(screen.getByText(/Không nhận dạng được chữ ở trang 2\. Nội dung có thể thiếu/)).toBeInTheDocument()
   })
 })
 

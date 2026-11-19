@@ -234,7 +234,7 @@ export function VideoSceneEditor({ scene: s, number, count, documentId, slide, c
       {s.kind === 'code' && (
         <label className="flashcard-field">
           Code
-          <AutoGrowTextarea aria-label={`Code cảnh ${number}`} aria-describedby={fieldNotes} value={s.code} maxLength={4000} rows={6} spellCheck={false}
+          <AutoGrowTextarea aria-label={`Mã nguồn cảnh ${number}`} aria-describedby={fieldNotes} value={s.code} maxLength={4000} rows={6} spellCheck={false}
             onChange={(e) => set({ code: e.target.value })} className="ui-input w-full font-mono" />
         </label>
       )}

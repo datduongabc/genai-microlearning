@@ -91,7 +91,7 @@ describe('FlashcardEditorPage', () => {
 
     vi.mocked(api.getFlashcardSet).mockResolvedValue(draft([card(1)], { cost: { usd: 0.003, calls: 3, priced_calls: 2 } }))
     renderPage()
-    expect(await screen.findByText('Chi phí ít nhất $0,003 (chưa rõ giá của 1 lần gọi model)')).toBeInTheDocument()
+    expect(await screen.findByText('Chi phí ít nhất $0,003 (chưa rõ giá của 1 lần tạo thẻ)')).toBeInTheDocument()
   })
 
   it('warns about an uncited card even before the server has flagged it', async () => {

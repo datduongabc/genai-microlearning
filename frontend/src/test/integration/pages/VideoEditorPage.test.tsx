@@ -138,7 +138,7 @@ describe('VideoEditorPage', () => {
       cost: { script: { usd: 0.01, llm_calls: 10, priced_calls: 8 }, images: { usd: 0.07 } },
     }))
     renderPage()
-    expect(await screen.findByText(/Chi phí ít nhất \$0,08 \(chưa rõ giá của 2 lần gọi AI viết lời thoại\)/)).toBeInTheDocument()
+    expect(await screen.findByText(/Chi phí ít nhất \$0,08 \(chưa rõ giá của 2 lần viết lời thoại\)/)).toBeInTheDocument()
   })
 
   it('shows the estimated length and blocks render over 8 minutes', async () => {

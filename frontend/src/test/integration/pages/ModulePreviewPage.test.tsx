@@ -416,7 +416,7 @@ describe('ModulePreviewPage - reading the module', () => {
     renderPage()
 
     const quizCard = (await screen.findByText('CÂU-HỎI')).closest('section') as HTMLElement
-    expect(within(quizCard).getByText('AI chưa tự kiểm các câu hỏi này với nguồn.')).toBeInTheDocument()
+    expect(within(quizCard).getByText('Các câu hỏi này chưa được kiểm với tài liệu nguồn.')).toBeInTheDocument()
     expect(within(quizCard).queryByText('Cần xem lại')).not.toBeInTheDocument()
   })
 
@@ -440,7 +440,7 @@ describe('ModulePreviewPage - reading the module', () => {
     // A question that passed carries no mark at all.
     const quizCard = (await screen.findByText('CÂU-HỎI')).closest('section') as HTMLElement
     expect(within(quizCard).queryByText('Cần xem lại')).not.toBeInTheDocument()
-    expect(within(quizCard).queryByText('AI chưa tự kiểm các câu hỏi này với nguồn.')).not.toBeInTheDocument()
+    expect(within(quizCard).queryByText('Các câu hỏi này chưa được kiểm với tài liệu nguồn.')).not.toBeInTheDocument()
   })
 
   it('marks only the flagged question, with each reason under it in Vietnamese', async () => {
@@ -516,7 +516,7 @@ it('shows the explanation students get and folds the AI reasoning until asked fo
   renderPage()
   expect(await screen.findByText('LỜI-GIẢI')).toBeVisible()
   expect(screen.getByText('LẬP-LUẬN')).not.toBeVisible()
-  await user.click(screen.getByText('Lập luận của AI'))
+  await user.click(screen.getByText('Cách ra đề'))
   expect(screen.getByText('LẬP-LUẬN')).toBeVisible()
 })
 

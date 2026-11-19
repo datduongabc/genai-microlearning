@@ -31,7 +31,7 @@ export const generateModuleSchema = z.object({
   instructions: z
     .string()
     .trim()
-    .max(MAX_CUSTOM_INSTRUCTIONS_LENGTH, `Hướng dẫn tối đa ${MAX_CUSTOM_INSTRUCTIONS_LENGTH} ký tự`),
+    .max(MAX_CUSTOM_INSTRUCTIONS_LENGTH, `Yêu cầu thêm tối đa ${MAX_CUSTOM_INSTRUCTIONS_LENGTH} ký tự`),
 });
 
 export type GenerateModuleFormValues = z.infer<typeof generateModuleSchema>;
