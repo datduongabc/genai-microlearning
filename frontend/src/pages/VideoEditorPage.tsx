@@ -33,7 +33,7 @@ const PREVIEWS_AT_ONCE = 2
 type JobType = VideoJob['job_type']
 
 const JOB_TEXT: Record<JobType, string> = {
-  video_script: 'Đang viết lời thoại…',
+  video_script: 'Đang tạo…',
   video_images: 'Đang vẽ hình…',
   video_render: 'Đang dựng video…',
 }
@@ -265,7 +265,7 @@ export function VideoEditorPage() {
     return (
       <AppShell {...titleProps}>
         {backLink}
-        <p role="status" className="course-empty">Đang viết lời thoại…</p>
+        <p role="status" className="course-empty">Đang tạo…</p>
       </AppShell>
     )
   }

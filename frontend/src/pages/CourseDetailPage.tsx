@@ -128,7 +128,7 @@ function flashcardStatusText(set: FlashcardSetSummary): string | null {
 
 // The statuses a video has while one of its jobs runs in the worker.
 const VIDEO_JOB_TEXT: Partial<Record<VideoSummary["status"], string>> = {
-  generating: "Đang viết lời thoại…",
+  generating: "Đang tạo…",
   drawing: "Đang vẽ hình…",
   rendering: "Đang dựng video…",
 };

@@ -738,7 +738,7 @@ describe('CourseDetailPage - videos', () => {
     expect(within(items[0]).queryByRole('status')).not.toBeInTheDocument()
     expect(items[0]).not.toHaveTextContent(/Bản nháp|cảnh/)
     expect(items[1]).toHaveTextContent('Toàn bộ tài liệu')
-    expect(within(items[1]).getByText('Đang viết lời thoại…')).toHaveAttribute('data-status', 'processing')
+    expect(within(items[1]).getByText('Đang tạo…')).toHaveAttribute('data-status', 'processing')
     expect(within(items[2]).getByText('Đang dựng video…')).toHaveAttribute('data-status', 'processing')
     expect(items[3]).not.toHaveTextContent(/Đã giao|phút/)
     expect(within(items[4]).getByText('Tạo thất bại')).toHaveAttribute('data-status', 'failed')
@@ -759,7 +759,7 @@ describe('CourseDetailPage - videos', () => {
     await waitFor(() => expect(api.generateVideo).toHaveBeenCalledWith('doc-1', {
       focus: 'FCFS', outputLanguage: 'vi', modelAlias: '', voiceAlias: 'voice-heygen', imageAlias: 'image-qwen',
     }))
-    expect(await screen.findByText('Đang viết lời thoại…')).toBeInTheDocument()
+    expect(await screen.findByText('Đang tạo…')).toBeInTheDocument()
   })
 
   it('shows a pending row at once and takes no second submit while the request is out', async () => {
@@ -784,7 +784,7 @@ describe('CourseDetailPage - videos', () => {
     expect(api.generateVideo).toHaveBeenCalledTimes(1)
 
     answer({ id: 'video-1', job_id: 'job-1' })
-    expect(await screen.findByText('Đang viết lời thoại…')).toBeInTheDocument()
+    expect(await screen.findByText('Đang tạo…')).toBeInTheDocument()
     expect(screen.queryByText('Đang gửi yêu cầu…')).not.toBeInTheDocument()
     expect(await createItem(/^video$/i)).not.toHaveAttribute('aria-disabled')
   })
