@@ -1006,6 +1006,57 @@ describe('CourseDetailPage - delete module', () => {
   })
 })
 
+describe('CourseDetailPage - delete a flashcard set or a video from its row', () => {
+  beforeEach(() => {
+    vi.mocked(api.listCourses).mockResolvedValue([unlinkedCourse])
+    vi.mocked(api.listDocuments).mockResolvedValue([sampleDocument])
+  })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  it('deletes a flashcard set after confirmation and drops it from the list', async () => {
+    vi.mocked(api.listFlashcardSets).mockResolvedValueOnce([flashcardSet]).mockResolvedValueOnce([])
+    vi.mocked(api.deleteFlashcardSet).mockResolvedValue(undefined)
+    vi.spyOn(window, 'confirm').mockReturnValue(true)
+
+    renderPage()
+    await userEvent.click(await screen.findByRole('button', { name: 'Xóa flashcard Mảng' }))
+
+    await waitFor(() => expect(api.deleteFlashcardSet).toHaveBeenCalledWith('set-1'))
+    expect(await screen.findByText('Đã xóa bộ flashcard "Mảng".')).toBeInTheDocument()
+    await waitFor(() => expect(screen.queryByRole('button', { name: 'Xóa flashcard Mảng' })).not.toBeInTheDocument())
+  })
+
+  it('keeps a video when the user cancels, and says the server error when deleting fails', async () => {
+    vi.mocked(api.listVideos).mockResolvedValue([videoSummary])
+    vi.mocked(api.deleteVideo).mockRejectedValue(new Error('boom'))
+    const confirm = vi.spyOn(window, 'confirm').mockReturnValueOnce(false).mockReturnValue(true)
+
+    renderPage()
+    const button = await screen.findByRole('button', { name: /^Xóa video FCFS/ })
+    await userEvent.click(button)
+    expect(api.deleteVideo).not.toHaveBeenCalled()
+
+    await userEvent.click(button)
+    expect(await screen.findByText(/xóa video thất bại/i)).toBeInTheDocument()
+    expect(confirm).toHaveBeenCalledTimes(2)
+    expect(screen.getByRole('button', { name: /^Xóa video FCFS/ })).toBeEnabled()
+  })
+
+  it('does not delete a video while it is being made', async () => {
+    vi.mocked(api.listVideos).mockResolvedValue([{ ...videoSummary, status: 'generating' }])
+    vi.spyOn(window, 'confirm').mockReturnValue(true)
+
+    renderPage()
+    await userEvent.click(await screen.findByRole('button', { name: /^Xóa video FCFS/ }))
+
+    expect(await screen.findByText(/đang được tạo\. Chờ xong rồi xóa\./)).toBeInTheDocument()
+    expect(api.deleteVideo).not.toHaveBeenCalled()
+  })
+})
+
 describe('CourseDetailPage - filter the documents by status', () => {
   const doc = (id: string, filename: string, status: string, failures: DocumentInfo['failures'] = []): DocumentInfo => ({
     ...sampleDocument, id, filename, status, failures,

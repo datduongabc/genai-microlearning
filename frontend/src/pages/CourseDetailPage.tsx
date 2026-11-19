@@ -10,7 +10,9 @@ import { Link, useParams } from "react-router-dom";
 import {
   apiErrorMessage,
   deleteDocument,
+  deleteFlashcardSet,
   deleteModule,
+  deleteVideo,
   generateFlashcards,
   generateModule,
   generateVideo,
@@ -168,15 +170,21 @@ function sharedTitleDates(items: { id: string; document_id: string; focus: strin
 }
 
 // The kind is written out because a set and a video made from the same focus carry the same title.
-function MediaListItem({ kind, to, focus, status, statusText, created }: {
+function MediaListItem({ kind, to, focus, status, statusText, created, deleting, onDelete }: {
   kind: MediaKind; to: string; focus: string | null; status?: string; statusText: string; created?: string;
+  deleting: boolean; onDelete: () => void;
 }) {
+  const name = focus ?? "Toàn bộ tài liệu";
   return (
     <li className="module-item media-item">
       <span className="media-kind">{kind}</span>
       <Link to={to} className="module-link flashcard-link" title={focus ?? undefined}>
-        {focus ?? "Toàn bộ tài liệu"}
+        {name}
       </Link>
+      <button onClick={onDelete} disabled={deleting} aria-label={`Xóa ${kind.toLowerCase()} ${name}`}
+        className="link-action danger small-action media-delete">
+        {deleting ? "Đang xóa…" : "Xóa"}
+      </button>
       <span className="media-meta">
         <span className="status-pill" data-status={status}>{statusText}</span>
         {created && <time className="media-created" dateTime={created}>{createdText(created)}</time>}
@@ -245,6 +253,7 @@ export function CourseDetailPage() {
   });
   const [flashcardSets, setFlashcardSets] = useState<FlashcardSetSummary[]>([]);
   const [videos, setVideos] = useState<VideoSummary[]>([]);
+  const [deletingMediaId, setDeletingMediaId] = useState<string | null>(null);
   const [modulesByDoc, setModulesByDoc] = useState<
     Record<string, ModuleSummary[]>
   >({});
@@ -528,6 +537,39 @@ export function CourseDetailPage() {
     }
   }
 
+  // A flashcard set or a video, from its row: the same question and answers as in its own editor.
+  async function handleDeleteMedia(kind: MediaKind, id: string, focus: string | null, running: boolean) {
+    const name = focus ?? "Toàn bộ tài liệu";
+    if (running) {
+      notifyFailed(`${kind} "${name}" đang được tạo. Chờ xong rồi xóa.`);
+      return;
+    }
+    const video = kind === "Video";
+    const confirmed = await confirmAction({
+      title: video ? `Xóa video "${name}"?` : `Xóa bộ flashcard "${name}"?`,
+      description: video ? "Slide, hình và giọng đã tạo bị xóa theo. Không thể khôi phục." : "Không thể khôi phục.",
+      action: video ? "Xóa video" : "Xóa bộ flashcard", destructive: true,
+    });
+    if (!confirmed) return;
+    setDeletingMediaId(id);
+    try {
+      await (video ? deleteVideo(id) : deleteFlashcardSet(id));
+    } catch (err) {
+      notifyFailed(apiErrorMessage(err, video ? "Xóa video thất bại" : "Xóa bộ flashcard thất bại"));
+      setDeletingMediaId(null);
+      return;
+    }
+    notifyDone(video ? `Đã xóa video "${name}".` : `Đã xóa bộ flashcard "${name}".`);
+    try {
+      if (video) setVideos(await listVideos(courseId ?? ""));
+      else setFlashcardSets(await listFlashcardSets(courseId ?? ""));
+    } catch (err) {
+      notifyFailed(`${apiErrorMessage(err, "Không tải lại được danh sách")}. Đã xóa, hãy tải lại trang để thấy danh sách mới.`);
+    } finally {
+      setDeletingMediaId(null);
+    }
+  }
+
   async function handleDeleteModule(m: ModuleSummary) {
     const confirmed = await confirmAction({
       title: `Xóa mô-đun "${m.title}"?`,
@@ -728,6 +770,8 @@ export function CourseDetailPage() {
                       status={mediaPillStatus(set.status === "generating", set.status === "failed", set.published_at !== null)}
                       statusText={flashcardStatusText(set)}
                       created={setDates.get(set.id)}
+                      deleting={deletingMediaId === set.id}
+                      onDelete={() => void handleDeleteMedia("Flashcard", set.id, set.focus, set.status === "generating")}
                     />
                   ))}
                 </ul>
@@ -746,6 +790,8 @@ export function CourseDetailPage() {
                       )}
                       statusText={videoStatusText(video)}
                       created={videoDates.get(video.id)}
+                      deleting={deletingMediaId === video.id}
+                      onDelete={() => void handleDeleteMedia("Video", video.id, video.focus, VIDEO_JOB_TEXT[video.status] !== undefined)}
                     />
                   ))}
                 </ul>

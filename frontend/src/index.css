@@ -370,11 +370,13 @@ h1[tabindex="-1"]:focus-visible { outline:none; }
 /* The modules made from a document hang under it, as its children. */
 .doc-modules { margin:14px 0 0 2px; padding-left:16px; border-left:2px solid var(--border-default); display:flex; flex-direction:column; gap:8px; }
 .module-item { display:flex; flex-wrap:wrap; align-items:baseline; gap:4px 14px; }
-.media-kind { flex:none; min-width:4.5rem; font-size:14px; line-height:24px; font-weight:600;  color:var(--text-muted); }
+.media-kind { flex:none; font-size:14px; line-height:24px; font-weight:600;  color:var(--text-muted); }
 .module-item > .module-link { min-width:0; overflow-wrap:anywhere; }
 /* Kind on the left, then the title with its status and creation time on one quiet line below it. */
-.media-item { display:grid; grid-template-columns:4rem minmax(0,1fr); column-gap:12px; padding:6px 0; }
-.media-meta { grid-column:2; display:flex; flex-wrap:wrap; gap:2px 16px; }
+.media-item { display:grid; grid-template-columns:5rem minmax(0,1fr) auto; column-gap:12px; padding:6px 0; }
+/* Every kind deletes from the same place: the end of its title line. */
+.media-delete { grid-column:3; grid-row:1; align-self:baseline; }
+.media-meta { grid-column:2 / -1; display:flex; flex-wrap:wrap; gap:2px 16px; }
 .media-meta .status-pill { margin-top:0; }
 .media-created { flex:none; font-size:14px; line-height:20px; font-variant-numeric:tabular-nums; color:var(--text-muted); }
 .module-link { font:500 16px/24px var(--font-sans); color:var(--text-primary); }
