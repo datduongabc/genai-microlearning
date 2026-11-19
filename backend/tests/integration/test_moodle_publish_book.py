@@ -481,7 +481,7 @@ def test_a_module_with_a_question_that_failed_the_gate_is_refused_naming_it(publ
 
     assert response.status_code == 422
     assert response.json()["detail"] == (
-        "Còn 1 câu hỏi chưa khớp nguồn (quiz 2). Lý do ghi dưới từng câu; hãy sửa trước khi đẩy lên Moodle."
+        "Còn 1 câu hỏi cần xem lại (quiz 2). Lý do ghi dưới từng câu; hãy sửa trước khi đẩy lên Moodle."
     )
     assert moodle == []
 

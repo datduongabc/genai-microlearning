@@ -3,6 +3,7 @@ import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import Markdown, { type Components } from 'react-markdown'
 import { modelMarkdownProps } from '../lib/markdownMath'
+import { checkReasons } from '../lib/checkReasons'
 import { notifyDone, notifyFailed } from '../lib/notify'
 import { COMPONENT_LABEL, SAVE_FAILED, SourceContext, type Citation } from '../lib/moduleParts'
 import {
@@ -564,24 +565,24 @@ function QuizDisplay({
 
   return (
     <div className="flex flex-col gap-6">
+      {!selfChecked && questions.length > 0 && (
+        <p className="text-sm muted">AI chưa tự kiểm các câu hỏi này với nguồn.</p>
+      )}
       {questions.map((question) => {
-        const passed = checks[question.position]?.passed
+        const check = checks[question.position]
+        // Only a question the check flagged is marked; one that passed needs nothing said.
+        const flagged = check?.passed === false
         return (
           <div key={question.id} className="flex flex-col gap-2">
             <div className="flex flex-wrap items-center gap-2">
               <h3 className="part-subtitle">Câu {question.position + 1}</h3>
-              <span
-                className={`check-badge ${
-                  !passed
-                    ? 'bg-red-100 text-red-800'
-                    : selfChecked
-                      ? 'bg-green-100 text-green-800'
-                      : 'bg-gray-100 text-gray-700'
-                }`}
-              >
-                {!passed ? 'Chưa khớp nguồn' : selfChecked ? 'Đã kiểm với nguồn' : 'Chưa kiểm'}
-              </span>
+              {flagged && <span className="check-badge bg-red-100 text-red-800">Cần xem lại</span>}
             </div>
+            {flagged && check.fail_reason && (
+              <ul className="check-reasons" aria-label={`Lý do câu ${question.position + 1} cần xem lại`}>
+                {checkReasons(check.fail_reason).map((reason, i) => <li key={i}>{reason}</li>)}
+              </ul>
+            )}
             <QuestionEditor moduleId={moduleId} question={question}
               explanation={explanations[question.position] || question.explanation || ''} onSaved={onSaved} />
           </div>

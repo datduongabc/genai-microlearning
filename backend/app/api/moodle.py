@@ -61,7 +61,7 @@ def publish_to_moodle(
     if failing:
         raise HTTPException(
             status_code=422,
-            detail=f"Còn {len(failing)} câu hỏi chưa khớp nguồn ({', '.join(failing)}). "
+            detail=f"Còn {len(failing)} câu hỏi cần xem lại ({', '.join(failing)}). "
             "Lý do ghi dưới từng câu; hãy sửa trước khi đẩy lên Moodle.",
         )
 
