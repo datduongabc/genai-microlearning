@@ -144,6 +144,8 @@ Launch chỉ thêm sinh viên vào khóa học, không nói khi nào họ rời 
 ## Giới hạn
 
 - **Sinh viên không thấy module đã xuất bản trong công cụ.** Họ đọc Book và Quiz trên Moodle như trước.
+  Khi khóa học bật theo dõi hoàn thành, Book tính là xong khi đã mở, Practice khi có điểm, Quiz khi đạt từ 5/10.
+  Nhờ vậy luồng ghi danh, học, kiểm tra, cấp chứng chỉ (badge hoặc certificate của Moodle) chạy được mà giảng viên không phải sửa từng hoạt động.
   Video và flashcard thì chỉ xem được trong công cụ, không đi vào Book, Quiz hay gói SCORM.
 - **Phần video và flashcard chưa được kiểm bằng một launch LTI thật.** Nó được kiểm bằng tài khoản thành viên có `course_members.source = 'lti'` (xem [số đo](../measurements/2026-11-12-video-trial.md)); quyền đọc cùng tầng RLS với chat, nhưng chưa đi qua Moodle.
 - **Rời lớp không có hiệu lực ngay.** Sinh viên mất khóa học trong vòng khoảng `LTI_ROSTER_SYNC_MINUTES` cộng 5 phút sau khi bị rút khỏi khóa LMS, chứ không phải tức thì. Nếu LMS không bật Names and Role Provisioning hoặc công cụ không có khóa thì thời hạn vẫn là 14 ngày như trước.

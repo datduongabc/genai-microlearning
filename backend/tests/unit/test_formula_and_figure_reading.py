@@ -112,6 +112,21 @@ def test_a_failed_model_call_keeps_the_rebuilt_page_with_a_warning(tmp_path, mon
     assert units[0].warnings == [{"code": "formula_unverified", "page": 1}]
 
 
+def test_the_re_read_runs_in_the_job_s_context(tmp_path, monkeypatch):
+    # The job's context says a 429 waits and collects the models that served it; a thread
+    # started without it fails the page on the first 429 and leaves its call out of the record.
+    from app.llm import gateway
+
+    seen = []
+    monkeypatch.setattr(formula_repair, "complete_with_image",
+                        lambda *a, **k: seen.append(gateway._waits_on_rate_limit.get()) or "x")
+
+    with gateway.waiting_on_rate_limits():
+        read_pdf(_pdf(tmp_path, lambda doc: _broken_formula_page(doc, "Gioi han cua day so")))
+
+    assert seen == [True]
+
+
 def test_without_a_vision_model_or_past_the_page_limit_no_call_is_made(tmp_path, monkeypatch):
     monkeypatch.setattr(settings, "formula_vision_max_pages", 1)
     calls = []

@@ -71,6 +71,10 @@ class create_book extends external_api {
         $data->numbering = 1;
         $data->navstyle = 1;
         $data->customtitles = 0;
+        // Done when opened, so course completion can count the lesson (see create_quiz).
+        $data->completion = COMPLETION_TRACKING_AUTOMATIC;
+        $data->completionview = COMPLETION_VIEW_REQUIRED;
+        $data->completionexpected = 0;
 
         $moduleinfo = add_moduleinfo($data, $course);
 
