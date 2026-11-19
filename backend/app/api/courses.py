@@ -56,6 +56,19 @@ def create_course(
     return {"id": course.id, "name": course.name, "created_at": course.created_at, "moodle_course_id": None}
 
 
+@router.patch("/{course_id}")
+@limiter.limit("30/minute", key_func=user_or_address)
+def rename_course(
+    request: Request, course_id: uuid.UUID, payload: CourseCreate, db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    course = _get_owned_course(course_id, db, current_user)
+    course.name = payload.name
+    db.commit()
+    return {"id": course.id, "name": course.name, "created_at": course.created_at,
+            "moodle_course_id": course.moodle_course_id}
+
+
 @router.get("")
 def list_courses(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     courses = (

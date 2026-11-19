@@ -1,11 +1,11 @@
-import { Ellipsis, Trash2 } from "lucide-react";
+import { Ellipsis, Pencil, Trash2 } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../components/ui/dropdown-menu";
 import { confirmAction } from "../lib/confirm";
 import { useCallback, useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Link } from "react-router-dom";
-import { apiErrorMessage, createCourse, deleteCourse, listCourses, type Course } from "../api";
+import { apiErrorMessage, createCourse, deleteCourse, listCourses, renameCourse, type Course } from "../api";
 import { AppShell } from "../components/AppShell";
 import { createCourseSchema, type CreateCourseFormValues } from "../lib/formSchemas";
 import { notifyDone, notifyFailed } from "../lib/notify";
@@ -20,6 +20,7 @@ export function CoursesPage() {
   const [loadFailed, setLoadFailed] = useState(false);
   const [attempt, setAttempt] = useState(0);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [renamingId, setRenamingId] = useState<string | null>(null);
 
   const {
     register,
@@ -126,9 +127,19 @@ export function CoursesPage() {
             <li key={c.id} className="course-row">
               <span className="course-tile" aria-hidden="true">{c.name.trim().charAt(0).toUpperCase()}</span>
               <div className="min-w-0">
-                <Link to={`/courses/${c.id}`} className="course-name">
-                  {c.name}
-                </Link>
+                {renamingId === c.id ? (
+                  <RenameCourseForm
+                    course={c}
+                    onDone={async (renamed) => {
+                      setRenamingId(null);
+                      if (renamed) await refresh().catch(() => notifyFailed(RELOAD_FAILED));
+                    }}
+                  />
+                ) : (
+                  <Link to={`/courses/${c.id}`} className="course-name">
+                    {c.name}
+                  </Link>
+                )}
                 {/* Most courses are not linked, so only a link is worth a line. */}
                 {c.moodle_course_id !== null && <div className="course-meta">Đã liên kết khóa học Moodle #{c.moodle_course_id}</div>}
               </div>
@@ -138,6 +149,9 @@ export function CoursesPage() {
                   <Ellipsis aria-hidden="true" />
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="doc-menu">
+                  <DropdownMenuItem onSelect={() => setRenamingId(c.id)}>
+                    <Pencil aria-hidden="true" />Đổi tên
+                  </DropdownMenuItem>
                   <DropdownMenuItem variant="destructive" disabled={deletingId === c.id} onSelect={() => void handleDelete(c)}>
                     <Trash2 aria-hidden="true" />{deletingId === c.id ? "Đang xóa…" : "Xóa môn học"}
                   </DropdownMenuItem>
@@ -148,5 +162,35 @@ export function CoursesPage() {
         </ul>
       )}
     </AppShell>
+  );
+}
+
+function RenameCourseForm({ course, onDone }: { course: Course; onDone: (renamed: boolean) => void }) {
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<CreateCourseFormValues>({ resolver: zodResolver(createCourseSchema), defaultValues: { name: course.name } });
+
+  async function save({ name }: CreateCourseFormValues) {
+    if (name === course.name) return onDone(false);
+    try {
+      await renameCourse(course.id, name);
+    } catch (err) {
+      notifyFailed(apiErrorMessage(err, "Đổi tên môn học thất bại"));
+      return;
+    }
+    notifyDone(`Đã đổi tên thành "${name}".`);
+    onDone(true);
+  }
+
+  return (
+    <form onSubmit={handleSubmit(save)} noValidate className="course-create course-rename"
+      onKeyDown={(e) => { if (e.key === "Escape") onDone(false); }}>
+      <input {...register("name")} aria-label="Tên môn học" autoFocus className="ui-input min-w-0 flex-1" />
+      <button disabled={isSubmitting} className="ui-button primary">{isSubmitting ? "Đang lưu…" : "Lưu"}</button>
+      <button type="button" onClick={() => onDone(false)} className="ui-button">Hủy</button>
+      {errors.name && <p className="basis-full text-sm danger-text">{errors.name.message}</p>}
+    </form>
   );
 }

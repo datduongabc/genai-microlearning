@@ -253,6 +253,8 @@ ATTACKS = [
     ("POST", "/courses/{course}/chat/stream", None, {"json": {"message": "hello"}}),
     ("GET", "/courses/{course}/chat/{session}/history", None, {}),
     ("GET", "/courses/{course}/chat/latest", None, {}),
+    ("POST", "/courses/{course}/chat/sessions", None, {}),
+    ("PATCH", "/courses/{course}", None, {"json": {"name": "Đổi"}}),
     # A chat session of another course smuggled into one's own course.
     ("POST", "/courses/{stranger_course}/chat/stream", None, {"json": {"message": "hello", "session_id": "{session}"}}),
     ("GET", "/courses/{stranger_course}/chat/{session}/history", None, {}),

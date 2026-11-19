@@ -26,6 +26,7 @@ import { initials } from "../lib/initials";
 export function AdminUsersPanel({ counts, onChange }: { counts: AdminCounts | null; onChange: () => void }) {
   const [creating, setCreating] = useState(false);
   const [filter, setFilter] = useState("active");
+  const [role, setRole] = useState<"all" | "admin" | "lecturer">("all");
   const [users, setUsers] = useState<AdminUser[] | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -90,9 +91,18 @@ export function AdminUsersPanel({ counts, onChange }: { counts: AdminCounts | nu
     <div className="admin-users">
       <div className="admin-toolbar">
         <div role="group" aria-label="Trạng thái tài khoản" className="segmented">
-          <button aria-pressed={filter === "active"} onClick={() => setFilter("active")}>Đang hoạt động{counts && ` (${counts.users - counts.inactive_users})`}</button>
-          <button aria-pressed={filter === "inactive"} onClick={() => setFilter("inactive")}>Đã vô hiệu hóa{counts && ` (${counts.inactive_users})`}</button>
+          <button aria-pressed={filter === "active"} onClick={() => setFilter("active")}>Đang hoạt động{counts && <>{" "}<span className="count">{counts.users - counts.inactive_users}</span></>}</button>
+          <button aria-pressed={filter === "inactive"} onClick={() => setFilter("inactive")}>Đã vô hiệu hóa{counts && <>{" "}<span className="count">{counts.inactive_users}</span></>}</button>
         </div>
+        <label className="filter-field">
+          Vai trò
+          <select value={role} onChange={(e) => setRole(e.target.value as typeof role)} className="ui-select">
+            <option value="all">Tất cả</option>
+            <option value="lecturer">Giảng viên</option>
+            <option value="admin">Quản trị viên</option>
+          </select>
+        </label>
+        <span className="flex-1" />
         <button className="ui-button primary" aria-expanded={creating} onClick={() => setCreating(!creating)}>{creating ? "Đóng" : "+ Tạo tài khoản"}</button>
       </div>
       {creating && <CreateUserForm
@@ -108,16 +118,15 @@ export function AdminUsersPanel({ counts, onChange }: { counts: AdminCounts | nu
         !loadError && <p className="text-sm text-gray-500">Đang tải…</p>
       ) : (
         <ul className="account-table ui-card">
-          <li className="account-row table-heading"><span>Người dùng</span><span>Moodle</span><span /></li>
-          {users.map((u) => (
+          <li className="account-row table-heading"><span>Người dùng</span><span>Vai trò</span><span>Moodle</span><span /></li>
+          {users.filter((u) => role === "all" || u.is_admin === (role === "admin")).map((u) => (
             <li key={u.id}>
               <div className="account-row">
                 <div className="flex min-w-0 items-center gap-3">
                   <span className={`avatar${u.is_admin ? " admin" : ""}`} aria-hidden="true">{initials(u.name)}</span>
-                  <div className="min-w-0"><div className="flex flex-wrap items-center gap-2 font-semibold">{u.name}
-                    {u.is_admin && <span className="admin-badge">Quản trị viên</span>}
-                  </div><div className="small muted break-all">{u.email}</div></div>
+                  <div className="min-w-0"><div className="font-semibold">{u.name}</div><div className="small muted break-all">{u.email}</div></div>
                 </div>
+                <span className="small">{u.is_admin ? "Quản trị viên" : "Giảng viên"}</span>
                 <span className={`small ${u.moodle_status === "linked" ? "success-text" : "muted"}`}>
                   {u.moodle_status === null ? "—" : u.moodle_status === "linked" ? "↗ Đã liên kết" : "Chưa liên kết"}
                 </span>

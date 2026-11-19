@@ -31,14 +31,18 @@ async function ask(question: string) {
 describe('CourseChat', () => {
   const fetchMock = vi.fn()
   const latestMock = vi.fn()
+  const newChatMock = vi.fn()
 
   beforeEach(() => {
     fetchMock.mockReset()
     latestMock.mockReset()
+    newChatMock.mockReset()
+    newChatMock.mockImplementation(async () => Response.json({ session_id: 's-new' }, { status: 201 }))
     latestMock.mockImplementation(async () => Response.json({ session_id: null, messages: [] }))
     // Loading the last conversation goes to its own mock, so fetchMock sees only the questions.
     vi.stubGlobal('fetch', (url: string, init: RequestInit) =>
-      url.endsWith('/chat/latest') ? latestMock(url, init) : fetchMock(url, init))
+      url.endsWith('/chat/latest') ? latestMock(url, init)
+        : url.endsWith('/chat/sessions') ? newChatMock(url, init) : fetchMock(url, init))
     localStorage.setItem('auth', JSON.stringify({ token: 'old', refreshToken: 'r' }))
   })
 
@@ -209,7 +213,21 @@ describe('CourseChat', () => {
     expect(JSON.parse(fetchMock.mock.calls[0][1].body).session_id).toBeUndefined()
   })
 
-  it('starts a new conversation without the old session', async () => {
+  it('opens the new conversation on the server, so a reload brings it back', async () => {
+    latestMock.mockImplementation(async () => Response.json({ session_id: 's9', messages: [saved('Heap là cây nhị phân.')] }))
+    fetchMock.mockResolvedValueOnce(stream(event('done', saved('Stack là LIFO.'))))
+    render(<CourseChat courseId="course-1" />)
+
+    await screen.findByText('Heap là cây nhị phân.')
+    await userEvent.click(screen.getByRole('button', { name: 'Cuộc trò chuyện mới' }))
+    await waitFor(() => expect(newChatMock).toHaveBeenCalledWith(expect.stringContaining('/courses/course-1/chat/sessions'), expect.objectContaining({ method: 'POST' })))
+    await ask('Stack là gì?')
+    await screen.findByText('Stack là LIFO.')
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body).session_id).toBe('s-new')
+  })
+
+  it('starts a new conversation without the old session even when the server cannot open one', async () => {
+    newChatMock.mockImplementation(async () => new Response(null, { status: 500 }))
     latestMock.mockImplementation(async () => Response.json({ session_id: 's9', messages: [
       { id: 'u1', role: 'user', content: 'Heap là gì?', citations: [] }, saved('Heap là cây nhị phân.'),
     ] }))

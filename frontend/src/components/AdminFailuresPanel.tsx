@@ -6,14 +6,27 @@ import { apiErrorMessage, listFailedJobs, retryFailedJobs, type AdminCounts, typ
 const JOB_TYPE_LABEL: Record<FailedJobInfo["job_type"], string> = {
   document_pipeline: "Xử lý tài liệu",
   module_generation: "Tạo mô-đun",
+  flashcard_generation: "Tạo flashcard",
+  video_script: "Viết lời thoại",
+  video_images: "Vẽ hình",
+  video_render: "Dựng video",
 };
+
+// The filters a lecturer would name: a video's three steps are one kind of work.
+const FILTERS = {
+  document: { label: "Xử lý tài liệu", types: ["document_pipeline"] },
+  module: { label: "Tạo mô-đun", types: ["module_generation"] },
+  flashcard: { label: "Tạo flashcard", types: ["flashcard_generation"] },
+  video: { label: "Tạo video", types: ["video_script", "video_images", "video_render"] },
+} as const satisfies Record<string, { label: string; types: readonly FailedJobInfo["job_type"][] }>;
+type Filter = keyof typeof FILTERS | "all";
 
 // The failed jobs of every lecturer: job data, the document's file name and the course name,
 // never what is inside them. Retry one, or pick several and retry them together.
 export function AdminFailuresPanel({ counts, onChange }: { counts: AdminCounts | null; onChange: () => void }) {
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [jobs, setJobs] = useState<FailedJobInfo[] | null>(null);
-  const [filter, setFilter] = useState<FailedJobInfo["job_type"] | "all">("all");
+  const [filter, setFilter] = useState<Filter>("all");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [retrying, setRetrying] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -28,9 +41,12 @@ export function AdminFailuresPanel({ counts, onChange }: { counts: AdminCounts |
   // Sets state only from promise callbacks, and drops an answer that arrives after a newer request.
   useEffect(() => {
     let cancelled = false;
-    listFailedJobs(filter === "all" ? undefined : filter).then(
-      (list) => {
+    const types: readonly FailedJobInfo["job_type"][] | null = filter === "all" ? null : FILTERS[filter].types;
+    // One type asks the server for it; a video's three are filtered here from the whole list.
+    listFailedJobs(types?.length === 1 ? types[0] : undefined).then(
+      (all) => {
         if (cancelled) return;
+        const list = types ? all.filter((j) => types.includes(j.job_type)) : all;
         setJobs(list);
         // What is no longer failed (retried here or by its lecturer) cannot stay picked.
         setSelected((current) => new Set(list.filter((j) => current.has(j.id)).map((j) => j.id)));
@@ -85,9 +101,10 @@ export function AdminFailuresPanel({ counts, onChange }: { counts: AdminCounts |
     <div>
       <div className="admin-toolbar">
         <div className="segmented" role="group" aria-label="Loại tác vụ">
-          {(["all", "document_pipeline", "module_generation"] as const).map((type) => <button key={type}
-            aria-pressed={filter === type} onClick={() => setFilter(type)}>{type === "all" ? "Tất cả" : JOB_TYPE_LABEL[type]}
-            {type !== "all" && counts && ` (${counts.failed_jobs[type] ?? 0})`}</button>)}
+          <button aria-pressed={filter === "all"} onClick={() => setFilter("all")}>Tất cả</button>
+          {(Object.keys(FILTERS) as (keyof typeof FILTERS)[]).map((key) => <button key={key}
+            aria-pressed={filter === key} onClick={() => setFilter(key)}>{FILTERS[key].label}
+            {counts && <>{" "}<span className="count">{FILTERS[key].types.reduce((sum, t) => sum + (counts.failed_jobs[t] ?? 0), 0)}</span></>}</button>)}
         </div>
         <div className="flex gap-3"><button onClick={reload} className="ui-button" aria-label="Làm mới"><RefreshCw aria-hidden="true" className="size-4" /></button>
           <button onClick={() => handleRetry([...selected])} disabled={retrying || selected.size === 0} className="ui-button primary">

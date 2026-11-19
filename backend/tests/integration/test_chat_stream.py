@@ -304,3 +304,17 @@ def test_the_plain_endpoint_is_gone(world):
     client, headers, course_id, _ = world
 
     assert client.post(f"/courses/{course_id}/chat", json={"message": "Heap?"}, headers=headers).status_code in (404, 405)
+
+
+def test_a_new_chat_is_what_latest_brings_back_until_another_is_used(world):
+    client, headers, course_id, _ = world
+    _seed_session(course_id, "Heap?", "Cây.", minutes_ago=1)
+
+    first = client.post(f"/courses/{course_id}/chat/sessions", headers=headers)
+    again = client.post(f"/courses/{course_id}/chat/sessions", headers=headers)
+
+    assert first.status_code == 201
+    # A second click opens no second empty conversation.
+    assert again.json()["session_id"] == first.json()["session_id"]
+    assert client.get(f"/courses/{course_id}/chat/latest", headers=headers).json() == {
+        "session_id": first.json()["session_id"], "messages": []}

@@ -82,6 +82,13 @@ interface LatestCourseChat {
 }
 
 // The course chat used most recently, so a reload carries on with it.
+// An empty conversation on the server, so a reload brings it back instead of the one it replaced.
+export async function startNewCourseChat(courseId: string): Promise<string> {
+  const response = await fetchWithAuth(`/courses/${courseId}/chat/sessions`, { method: 'POST' })
+  if (!response.ok) throw new Error('Không mở được cuộc trò chuyện mới.')
+  return (await response.json()).session_id
+}
+
 export async function getLatestCourseChat(courseId: string, signal?: AbortSignal): Promise<LatestCourseChat> {
   const response = await fetchWithAuth(`/courses/${courseId}/chat/latest`, { signal })
   if (!response.ok) throw new Error('Không tải được cuộc trò chuyện trước.')
