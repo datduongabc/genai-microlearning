@@ -23,11 +23,12 @@ function renderAt(page: React.ReactElement) {
 }
 
 describe('sign-in pages when registration is closed', () => {
-  it('the login page drops the sign-up link and says how to get an account', async () => {
+  it('the login page drops the sign-up link', async () => {
     vi.spyOn(api, 'getAuthOptions').mockResolvedValue({ self_registration: false })
     renderAt(<LoginPage />)
 
-    expect(await screen.findByText(/Nhờ quản trị viên tạo tài khoản/)).toBeInTheDocument()
+    await waitFor(() => expect(api.getAuthOptions).toHaveBeenCalled())
+    expect(screen.queryByText(/Chưa có tài khoản/)).not.toBeInTheDocument()
     expect(screen.queryByRole('link', { name: 'Đăng ký' })).not.toBeInTheDocument()
   })
 

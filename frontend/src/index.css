@@ -281,7 +281,8 @@ h1[tabindex="-1"]:focus-visible { outline:none; }
 .module-source-claim { font:400 15px/24px var(--font-sans); }
 .module-source-claim mark { background:var(--bg-highlight); box-shadow:inset 0 -0.45em 0 var(--highlight); color:inherit; padding:0 2px; }
 .module-source-passage { white-space:pre-wrap; font:400 14px/22px var(--font-sans); color:var(--text-primary); padding-left:12px; border-left:2px solid var(--highlight); }
-.module-source-empty { font-size:14px; line-height:21px; color:var(--text-secondary); }
+/* Closed, the column stays so the lesson does not move when a source opens. */
+.module-source[data-open=false] { visibility:hidden; }
 
 /* The parts rail only where the text still gets its 68 characters beside the source column. */
 @media(max-width:1560px) { .module-layout { grid-template-columns:minmax(0,1fr) 320px; } .module-parts { display:none; } }

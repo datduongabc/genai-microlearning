@@ -21,7 +21,7 @@ function refusal(status: number, data: unknown) {
 async function fill({ name = 'Nguyen Van A', password = 'a-long-passphrase', confirm = undefined as string | undefined } = {}) {
   confirm ??= password
   await userEvent.type(screen.getByPlaceholderText('Nguyễn Văn A'), name)
-  await userEvent.type(screen.getByPlaceholderText('ten@truong.edu.vn'), 'teacher@example.com')
+  await userEvent.type(screen.getByLabelText('Email'), 'teacher@example.com')
   const passwordField = screen.getByLabelText('Mật khẩu')
   const confirmField = screen.getByLabelText('Nhập lại mật khẩu')
   await userEvent.type(passwordField, password)

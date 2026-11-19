@@ -116,8 +116,8 @@ class FakeSlides:
     def __exit__(self, *exc):
         return None
 
-    def render(self, scene, image, source_label, size=(1280, 720), lang="vi"):
-        FakeSlides.calls.append((scene.title, image, source_label, size, lang))
+    def render(self, scene, image, size=(1280, 720), lang="vi"):
+        FakeSlides.calls.append((scene.title, image, size, lang))
         index = int(re.search(r"\d+", scene.title)[0])
         out = io.BytesIO()
         Image.new("RGB", size, COLOURS[index % len(COLOURS)]).save(out, "PNG")
@@ -129,8 +129,6 @@ def slides(monkeypatch):
     FakeSlides.opened = 0
     FakeSlides.calls = []
     monkeypatch.setattr(render, "SlideRenderer", FakeSlides)
-    monkeypatch.setattr(render, "scene_source_labels", lambda db, video, scenes: [
-        f"Nguồn: x.pdf, trang {i + 1}" for i in range(len(scenes))])
     return FakeSlides
 
 
@@ -197,8 +195,7 @@ def test_a_video_has_one_segment_per_scene_and_the_measured_duration(monkeypatch
         start += length + PAD
     # One browser for every slide, each with its source line.
     assert slides.opened == 1
-    assert [c[2] for c in slides.calls] == ["Nguồn: x.pdf, trang 1", "Nguồn: x.pdf, trang 2", "Nguồn: x.pdf, trang 3"]
-    assert all(c[3] == (1280, 720) and c[4] == "vi" for c in slides.calls)
+    assert all(c[2] == (1280, 720) and c[3] == "vi" for c in slides.calls)
 
 
 def test_each_voice_is_stored_as_a_wav_under_a_name_of_its_own(monkeypatch, store, slides, tmp_path):
@@ -516,8 +513,6 @@ def test_illustration_pictures_reach_their_slide(monkeypatch, store, slides, tmp
 
 def test_a_nine_scene_video_renders_with_real_slides(monkeypatch, store, tmp_path):
     """The worker's path: one Chromium for the nine slides, then ffmpeg. Also the timing the report quotes."""
-    monkeypatch.setattr(render, "scene_source_labels", lambda db, video, scenes: [
-        "Nguồn: Chapter 5_CPU Scheduling.pdf, trang 9–10"] * len(scenes))
     _fake_voices(monkeypatch, seconds=2.0, rate=lambda text: 24_000 if "số 3" in text else 44_100)
     video = _video(9)
     started = time.monotonic()

@@ -66,7 +66,6 @@ export function LoginPage() {
             autoComplete="username"
             autoCapitalize="none"
             spellCheck={false}
-            placeholder="ten@truong.edu.vn"
             className="auth-input"
             aria-invalid={!!errors.email}
             aria-describedby={errors.email ? "email-error" : undefined}
@@ -109,9 +108,6 @@ export function LoginPage() {
 
         {selfRegistration === true && (
           <p className="auth-footer">Chưa có tài khoản? <Link to="/register" className="text-accent hover:underline">Đăng ký</Link></p>
-        )}
-        {selfRegistration === false && (
-          <p className="auth-footer">Chưa có tài khoản? Nhờ quản trị viên tạo tài khoản, hoặc mở công cụ từ Moodle.</p>
         )}
       </form>
     </AuthLayout>

@@ -28,7 +28,6 @@ import {
   pollJobStatus,
   retryJob,
   listMoodleCourses,
-  unlinkMoodleCourse,
   uploadDocument,
   type Course,
   type DocumentFailure,
@@ -870,29 +869,6 @@ function MoodleLinkSection({ course, onLinked }: { course: Course; onLinked: () 
     };
   }, [linked, account]);
 
-  async function handleUnlink() {
-    // Chỉ xóa liên kết trong app -- KHÔNG đụng gì tới course/page/quiz thật
-    // trên Moodle, nhưng vẫn cần xác nhận vì đây là hành động khó hoàn tác
-    // trong luồng làm việc của giáo viên (phải tìm/liên kết lại từ đầu).
-    const confirmed = await confirmAction({
-      title: `Hủy liên kết với khóa học Moodle #${course.moodle_course_id}?`,
-      description: "Khóa học và nội dung trên Moodle vẫn giữ nguyên.",
-      action: "Hủy liên kết",
-    });
-    if (!confirmed) return;
-
-    setBusy(true);
-    try {
-      await unlinkMoodleCourse(course.id);
-      onLinked();
-      notifyDone("Đã hủy liên kết khóa học Moodle.");
-    } catch {
-      notifyFailed("Hủy liên kết thất bại");
-    } finally {
-      setBusy(false);
-    }
-  }
-
   async function handleLink({ moodleCourseId }: LinkMoodleCourseFormValues) {
     setBusy(true);
     try {
@@ -906,8 +882,9 @@ function MoodleLinkSection({ course, onLinked }: { course: Course; onLinked: () 
     }
   }
 
-  // Without Moodle on the server there is nothing to link a course to.
-  if (account === "unavailable") return null;
+  // Only a choice to make earns a line: a linked course, or an account still to link, shows nothing,
+  // since the account menu holds the Moodle account.
+  if (linked || account !== "linked") return null;
 
   const panel = (row: ReactNode) => (
     <div className="moodle-panel">
@@ -916,23 +893,6 @@ function MoodleLinkSection({ course, onLinked }: { course: Course; onLinked: () 
     </div>
   );
 
-  if (course.moodle_course_id !== null) {
-    return panel(
-      <>
-        <p>
-          <span className="moodle-key">Khóa học Moodle:</span>{" "}
-          <span className="success-text">#{course.moodle_course_id}</span>
-        </p>
-        <button onClick={handleUnlink} disabled={busy} className="link-action danger">
-          {busy ? "Đang hủy…" : "Hủy liên kết"}
-        </button>
-      </>,
-    );
-  }
-
-  // One form whose first line never changes, whatever the account answers: the line used to be
-  // a different element before and after the answer, so it flashed "link your account first"
-  // to a lecturer whose account was linked.
   return panel(
     <form
       onSubmit={handleSubmit(handleLink, (errors) => setError(errors.moodleCourseId?.message ?? null))}
@@ -940,8 +900,6 @@ function MoodleLinkSection({ course, onLinked }: { course: Course; onLinked: () 
       className="moodle-link-form"
     >
       <span className="moodle-key">Khóa học Moodle:</span>{" "}
-      {account !== "linked" && <span className="muted">Chưa liên kết</span>}
-      {account === "linked" && (
         <>
           <select
             aria-label="Khóa học Moodle"
@@ -959,7 +917,6 @@ function MoodleLinkSection({ course, onLinked }: { course: Course; onLinked: () 
             Liên kết
           </button>
         </>
-      )}
     </form>,
   );
 }

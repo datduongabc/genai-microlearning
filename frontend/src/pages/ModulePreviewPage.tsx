@@ -52,9 +52,7 @@ function SourcePanel({ opened, onClose }: { opened: OpenedSource | null; onClose
               ? 'Câu này khớp nhiều đoạn nguồn. Đối chiếu tay trước khi xuất bản.'
               : 'Không tìm thấy đoạn nguồn. Sửa hoặc bỏ trích dẫn trước khi xuất bản.'}</p>}
         </>
-      ) : (
-        <p className="module-source-empty">Bấm số trích dẫn như [1] trong bài để xem đoạn nguồn ở đây.</p>
-      )}
+      ) : null}
     </aside>
   )
 }
@@ -157,7 +155,7 @@ export function ModulePreviewPage() {
   }
 
   return (
-    <AppShell title="Xem trước mô-đun">
+    <AppShell title={`Mô-đun: ${module.title}`}>
       <SourceContext.Provider value={{ opened, open: openSource }}>
         <div className="module-layout">
           <nav aria-label="Các phần của mô-đun" className="module-parts">
@@ -461,9 +459,9 @@ function ModuleHeader({ module, onSaved }: { module: ModuleDetail; onSaved: () =
             setEditing(true)
           }}
           data-edit-trigger
-          className="text-left hover:text-accent"
+          className="link-action"
         >
-          <h2 className="module-title">{module.title}</h2>
+          Đổi tên
         </button>
       )}
 

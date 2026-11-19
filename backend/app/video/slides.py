@@ -1,6 +1,6 @@
 """The slide of a scene: text the system prints, the model's picture beside it, captured as a PNG.
 
-The title, bullets, formula, code, table and source line are printed from the script, so the text
+The title, bullets, formula, code and table are printed from the script, so the text
 on a slide is always spelled right and matches its source; the image model only draws the picture
 (app/video/illustrations.py). The page is HTML set in Be Vietnam Pro, with formulas typeset by
 KaTeX, and a headless Chromium takes the screenshot.
@@ -79,7 +79,7 @@ def _content(scene: Scene) -> str:
     return "\n".join(parts)
 
 
-def _composed(scene: Scene, source_label: str) -> tuple[Scene, str]:
+def _composed(scene: Scene) -> Scene:
     """Every printed field in NFC: text pasted from a PDF can arrive decomposed (o, circumflex and
     tilde apart), which a font may stack badly and which no longer matches the source it cites."""
     def nfc(text: str | None) -> str | None:
@@ -88,21 +88,19 @@ def _composed(scene: Scene, source_label: str) -> tuple[Scene, str]:
     return scene.model_copy(update={
         "title": nfc(scene.title), "bullets": [nfc(b) for b in scene.bullets], "formula": nfc(scene.formula),
         "code": nfc(scene.code), "table": [[nfc(c) for c in row] for row in scene.table] if scene.table else scene.table,
-    }), nfc(source_label)
+    })
 
 
-def slide_html(scene: Scene, image: bytes | None, source_label: str, lang: str = "vi") -> str:
-    """The page of one slide. `source_label` is printed as given at the foot, for example
-    "Nguồn: Chapter 5.pdf, trang 9-10"; an empty one prints nothing. With no picture, the text
-    takes the whole slide."""
-    scene, source_label = _composed(scene, source_label)
+def slide_html(scene: Scene, image: bytes | None, lang: str = "vi") -> str:
+    """The page of one slide: its content only, no source line, which the learner does not read on a
+    slide. With no picture, the text takes the whole slide."""
+    scene = _composed(scene)
     return _TEMPLATE.substitute(
         lang=html.escape(lang, quote=True),
         layout="with-image" if image is not None else "text-only",
         kind=scene.kind,
         content=_content(scene),
         image=f'<div class="img"><img src="{_IMAGE_PATH.lstrip("/")}" alt=""></div>' if image is not None else "",
-        source=f'<div class="src">{html.escape(source_label, quote=False)}</div>' if source_label.strip() else "",
     )
 
 
@@ -170,13 +168,13 @@ class SlideRenderer:
         finally:
             self._playwright.stop()
 
-    def capture(self, scene: Scene, image: bytes | None, source_label: str, size: tuple[int, int] = SIZE,
+    def capture(self, scene: Scene, image: bytes | None, size: tuple[int, int] = SIZE,
                 lang: str = "vi") -> SlideCapture:
-        return self.capture_html(slide_html(scene, image, source_label, lang), image, size)
+        return self.capture_html(slide_html(scene, image, lang), image, size)
 
-    def render(self, scene: Scene, image: bytes | None, source_label: str, size: tuple[int, int] = SIZE,
+    def render(self, scene: Scene, image: bytes | None, size: tuple[int, int] = SIZE,
                lang: str = "vi") -> bytes:
-        return self.capture(scene, image, source_label, size, lang).png
+        return self.capture(scene, image, size, lang).png
 
     def capture_html(self, page_html: str, image: bytes | None = None, size: tuple[int, int] = SIZE) -> SlideCapture:
         width, height = size
@@ -226,7 +224,7 @@ class SlideRenderer:
         )
 
 
-def render_slide(scene: Scene, image: bytes | None, source_label: str, size: tuple[int, int] = SIZE,
+def render_slide(scene: Scene, image: bytes | None, size: tuple[int, int] = SIZE,
                  lang: str = "vi") -> bytes:
     """The PNG of one slide. To render several, open one SlideRenderer and call its render.
 
@@ -234,7 +232,7 @@ def render_slide(scene: Scene, image: bytes | None, source_label: str, size: tup
     runs an event loop, which is the case inside an async route or next to another renderer."""
     def render() -> bytes:
         with SlideRenderer() as renderer:
-            return renderer.render(scene, image, source_label, size, lang)
+            return renderer.render(scene, image, size, lang)
 
     with ThreadPoolExecutor(max_workers=1) as pool:
         return pool.submit(render).result()

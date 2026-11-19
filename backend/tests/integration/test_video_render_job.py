@@ -2,7 +2,6 @@ import json
 import shutil
 import uuid
 from itertools import pairwise
-from typing import ClassVar
 
 import pytest
 
@@ -52,7 +51,6 @@ def world(tmp_path, monkeypatch):
 
 
 class _Slides:
-    labels: ClassVar[list[str]] = []
 
     def __enter__(self):
         return self
@@ -60,11 +58,10 @@ class _Slides:
     def __exit__(self, *exc):
         return None
 
-    def render(self, scene, image, source_label, size=(1280, 720), lang="vi"):
+    def render(self, scene, image, size=(1280, 720), lang="vi"):
         from io import BytesIO
 
         from PIL import Image
-        _Slides.labels.append(source_label)
         out = BytesIO()
         Image.new("RGB", size, "white").save(out, "PNG")
         return out.getvalue()
@@ -80,7 +77,6 @@ def test_the_job_renders_the_video_and_finishes(world, monkeypatch):
     monkeypatch.setattr(render, "SlideRenderer", _Slides)
     monkeypatch.setattr(render, "synthesize_speech", lambda alias, text, **kw: Speech(
         b"\x00\x00" * 24_000, 24_000, "heygen/heygen-voice-1-turbo", 0.001))
-    _Slides.labels = []
     with SessionLocal() as db:
         execute_job_step(db.get(Job, job_id))
     with SessionLocal() as db:
@@ -100,7 +96,6 @@ def test_the_job_renders_the_video_and_finishes(world, monkeypatch):
             cues = scene["captions"]
             assert cues and cues[0][0] == pytest.approx(start, abs=0.05) and cues[-1][1] == pytest.approx(start + 1, abs=0.05)
             assert all(a[1] == b[0] for a, b in pairwise(cues))
-    assert _Slides.labels == ["Nguồn: x.pdf, trang 7"] * 2
 
 
 def test_a_render_that_runs_out_of_attempts_marks_the_video_failed(world):
