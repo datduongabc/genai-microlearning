@@ -1,4 +1,5 @@
 import { useDocumentTitle } from "../lib/documentTitle";
+import { notifyDone, notifyFailed } from "../lib/notify";
 import { confirmAction } from "../lib/confirm";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { Link, NavLink } from "react-router-dom";
@@ -71,13 +72,14 @@ export function AppShell({ title, fullTitle, children }: { title: string; fullTi
   function close() { setOpen(false); trigger.current?.focus(); }
   async function unlink() {
     if (!await confirmAction({ title: "Hủy liên kết Moodle?", description: "Bạn sẽ không xuất bản lên Moodle được cho đến khi liên kết lại.", action: "Hủy liên kết" })) return;
-    setBusy(true); setError(null);
+    setBusy(true);
     try {
       await unlinkMoodleAccount();
       setAccount({ status: "not_linked", email: "" });
       panel.current?.querySelector<HTMLButtonElement>("[data-leaves-page]")?.focus();
       window.dispatchEvent(new Event(MOODLE_ACCOUNT_CHANGED_EVENT));
-    } catch (err) { setError(apiErrorMessage(err, "Không hủy được liên kết Moodle.")); }
+      notifyDone("Đã hủy liên kết Moodle.");
+    } catch (err) { notifyFailed(apiErrorMessage(err, "Không hủy được liên kết Moodle.")); }
     finally { setBusy(false); }
   }
 
@@ -113,7 +115,7 @@ export function AppShell({ title, fullTitle, children }: { title: string; fullTi
             <div className="account-info"><AccountIcon kind="link" />Moodle đã liên kết<div className="text-gray-600">{account.email}</div></div>
             <button className="menu-item danger" disabled={busy} onClick={() => void unlink()}><AccountIcon kind="unlink" />{busy ? "Đang hủy liên kết…" : "Hủy liên kết Moodle…"}</button>
           </> : account && <MoodleAccountSection onStatus={linked} />)}
-          {error && <p role="alert" className="account-info text-red-700">{error}</p>}
+          {error && <p role="alert" className="account-info danger-text">{error}</p>}
           {(!user?.is_admin && account || error) && <hr />}
           <button className="menu-item" onClick={() => { if (confirmLeavingUnsavedWork()) logout(); }} data-leaves-page><AccountIcon kind="logout" />Đăng xuất</button>
         </div>}

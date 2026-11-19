@@ -73,7 +73,7 @@ export function RegisterPage() {
             {...register("name")}
           />
           {errors.name && (
-            <span id="name-error" className="text-sm text-red-700">{errors.name.message}</span>
+            <span id="name-error" className="text-sm danger-text">{errors.name.message}</span>
           )}
         </label>
 
@@ -91,7 +91,7 @@ export function RegisterPage() {
             {...register("email")}
           />
           {errors.email && (
-            <span id="email-error" className="text-sm text-red-700">{errors.email.message}</span>
+            <span id="email-error" className="text-sm danger-text">{errors.email.message}</span>
           )}
         </label>
 
@@ -109,7 +109,7 @@ export function RegisterPage() {
             {...register("password")}
           />
           {errors.password && (
-            <span id="password-error" className="text-sm text-red-700">{errors.password.message}</span>
+            <span id="password-error" className="text-sm danger-text">{errors.password.message}</span>
           )}
         </label>
 
@@ -127,7 +127,7 @@ export function RegisterPage() {
             {...register("confirmPassword")}
           />
           {errors.confirmPassword && (
-            <span id="confirmPassword-error" className="text-sm text-red-700">
+            <span id="confirmPassword-error" className="text-sm danger-text">
               {errors.confirmPassword.message}
             </span>
           )}

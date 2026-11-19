@@ -136,7 +136,10 @@ def test_a_question_that_failed_the_quality_gate_blocks_the_export(owner):
     )
     response = export(owner, module_id)
     assert response.status_code == 422
-    assert "hai đáp án đúng" in response.json()["detail"]
+    # Named, not explained: the reason is under the question on the page, and a toast holds a line or two.
+    assert response.json()["detail"] == (
+        "Còn 1 câu hỏi chưa khớp nguồn (quiz 1). Lý do ghi dưới từng câu; hãy sửa trước khi xuất gói SCORM."
+    )
 
 
 def test_a_control_module_is_not_exported(owner):

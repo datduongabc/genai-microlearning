@@ -6,6 +6,7 @@ import { Link, useParams } from 'react-router-dom'
 import { AppShell } from '../components/AppShell'
 import { MoodleAccountSection, type MoodleAccountState } from '../components/MoodleAccountSection'
 import { confirmAction } from '../lib/confirm'
+import { notifyDone, notifyFailed } from '../lib/notify'
 import {
   chatEditSchema,
   moduleTitleSchema,
@@ -207,7 +208,6 @@ export function ModulePreviewPage() {
 function ModuleChatPanel({ module, onSaved }: { module: ModuleDetail; onSaved: () => Promise<void> }) {
   const [sessionId, setSessionId] = useState<string>()
   const [turns, setTurns] = useState<{ message: string; reply: string }[]>([])
-  const [error, setError] = useState<string | null>(null)
   const {
     register,
     handleSubmit,
@@ -218,7 +218,6 @@ function ModuleChatPanel({ module, onSaved }: { module: ModuleDetail; onSaved: (
   const blank = !useWatch({ control, name: 'message' }).trim()
 
   async function send({ message }: ChatEditFormValues) {
-    setError(null)
     let applied = false
     try {
       const result = await chatEditModule(module.id, message, sessionId)
@@ -228,7 +227,7 @@ function ModuleChatPanel({ module, onSaved }: { module: ModuleDetail; onSaved: (
       applied = result.applied
       if (applied) await onSaved()
     } catch (err) {
-      setError(applied
+      notifyFailed(applied
         ? 'Đã áp dụng chỉnh sửa nhưng không tải lại được mô-đun. Vui lòng tải lại trang.'
         : apiErrorMessage(err, 'Chỉnh sửa thất bại. Vui lòng thử lại.'))
     }
@@ -253,7 +252,6 @@ function ModuleChatPanel({ module, onSaved }: { module: ModuleDetail; onSaved: (
         {sending ? 'Đang chỉnh sửa…' : 'Gửi yêu cầu'}
       </button>
     </form>
-    {error && <p role="alert" className="mt-2 text-sm danger-text">{error}</p>}
   </section>
 }
 
@@ -326,16 +324,17 @@ function PublishToMoodleSection({
   }
 
   async function handlePublish({ sectionNum, addNewSection }: PublishToMoodleFormValues) {
-    setError(null)
     setResult(null)
     try {
       // "Thêm section mới" gửi 1 số section chưa tồn tại (tổng số section
       // hiện có) -- plugin tự tạo mới đúng section đó khi push.
       const target = addNewSection ? sections.length : sectionNum
-      setResult(await publishToMoodle(moduleId, target, publishedAt !== null))
+      const published = await publishToMoodle(moduleId, target, publishedAt !== null)
+      setResult(published)
+      notifyDone(`Đã tạo trên khóa học Moodle #${published.moodle_course_id}: sách nội dung${published.practice_cmid ? ', bài luyện tập' : ''}${published.quiz_cmid ? ', quiz' : ''}.`)
     } catch (err) {
       setAuthorizedCourse(null)
-      setError(apiErrorMessage(err, 'Xuất bản lên Moodle thất bại'))
+      notifyFailed(apiErrorMessage(err, 'Xuất bản lên Moodle thất bại'))
       await onRefresh().catch(() => {})
     }
   }
@@ -399,13 +398,6 @@ function PublishToMoodleSection({
         <p className="mt-3 text-sm muted">Đã xuất bản lên Moodle lúc {new Date(publishedAt).toLocaleString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}.</p>
       )}
 
-      {result && (
-        <p role="status" className="mt-3 text-sm success-text">
-          Đã tạo trên khóa học Moodle #{result.moodle_course_id}: sách nội dung
-          {result.practice_cmid ? ', bài luyện tập' : ''}
-          {result.quiz_cmid ? ', quiz' : ''}.
-        </p>
-      )}
       {error && !(accountFailed && !canPublish) && <p className="mt-3 text-sm danger-text">{error}</p>}
     </section>
   )
@@ -419,16 +411,14 @@ function ModuleHeader({ module, onSaved }: { module: ModuleDetail; onSaved: () =
     reset,
     formState: { errors, isSubmitting: saving },
   } = useForm<ModuleTitleFormValues>({ resolver: zodResolver(moduleTitleSchema), defaultValues: { title: module.title } })
-  const [error, setError] = useState('')
-
   async function handleSave({ title }: ModuleTitleFormValues) {
-    setError('')
     try {
       await updateModuleTitle(module.id, title)
       await onSaved()
       setEditing(false)
+      notifyDone('Đã lưu.')
     } catch (err) {
-      setError(apiErrorMessage(err, SAVE_FAILED))
+      notifyFailed(apiErrorMessage(err, SAVE_FAILED))
     }
   }
 
@@ -452,15 +442,13 @@ function ModuleHeader({ module, onSaved }: { module: ModuleDetail; onSaved: () =
             type="button"
             onClick={() => {
               reset({ title: module.title })
-              setError('')
               setEditing(false)
             }}
             className="ui-button"
           >
             Hủy
           </button>
-          {errors.title && <p className="basis-full text-sm text-red-600">{errors.title.message}</p>}
-          {error && <p role="alert" className="basis-full text-sm danger-text">{error}</p>}
+          {errors.title && <p className="basis-full text-sm danger-text">{errors.title.message}</p>}
         </form>
       ) : (
         <button

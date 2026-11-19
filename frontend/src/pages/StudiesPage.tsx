@@ -5,6 +5,7 @@ import { AppShell } from "../components/AppShell";
 import { Tabs } from "../components/Tabs";
 import { RatingForm } from "../components/RatingForm";
 import { modelMarkdownProps } from "../lib/markdownMath";
+import { notifyFailed } from "../lib/notify";
 import { apiErrorMessage } from "../api/client";
 import { formatSize } from "../lib/fileSize";
 import {
@@ -162,19 +163,17 @@ function Packet({ item }: { item: BlindItem }) {
 // The file the admin picked for this packet, for the rater to open in an app of their own.
 function PacketReference({ studyId, item }: { studyId: string; item: BlindItem }) {
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState("");
   if (!item.reference) return null;
   const { filename, size } = item.reference;
   return (
     <div className="packet-reference">
       <span>Tài liệu gốc: <strong className="[overflow-wrap:anywhere]">{filename}</strong> <span className="muted">({formatSize(size)})</span></span>
       <button type="button" className="link-action" disabled={busy} onClick={async () => {
-        setBusy(true); setError("");
+        setBusy(true);
         try { await downloadPacketReference(studyId, item.id); }
-        catch (e) { setError(apiErrorMessage(e, "Không tải được tài liệu gốc.")); }
+        catch (e) { notifyFailed(apiErrorMessage(e, "Không tải được tài liệu gốc.")); }
         finally { setBusy(false); }
       }}>{busy ? "Đang tải…" : "Tải xuống"}</button>
-      {error && <span role="alert" className="danger-text">{error}</span>}
     </div>
   );
 }

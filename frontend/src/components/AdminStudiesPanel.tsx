@@ -1,8 +1,8 @@
-import { toast } from "sonner";
 import { useEffect, useState } from "react";
 import { getRaters, listStudies, setRaters, type Study } from "../api/studies";
 import { apiErrorMessage } from "../api/client";
 import { raterEmailsSchema } from "../lib/ratingSchema";
+import { notifyDone, notifyFailed } from "../lib/notify";
 import { StudyReferences } from "./StudyReferences";
 import { StudyResults } from "./StudyResults";
 
@@ -68,8 +68,8 @@ export function AdminStudiesPanel() {
         setBusy(true); setError("");
         try {
           const data = await setRaters(studyId, next);
-          setEmails(data.emails); setInput(""); toast.success("Đã lưu người chấm.");
-        } catch (e) { setError(apiErrorMessage(e, "Không lưu được người chấm.")); }
+          setEmails(data.emails); setInput(""); notifyDone("Đã lưu người chấm.");
+        } catch (e) { notifyFailed(apiErrorMessage(e, "Không lưu được người chấm.")); }
         finally { setBusy(false); }
       }}>
         <label htmlFor="rater-email" className="text-label font-medium">Người chấm</label>

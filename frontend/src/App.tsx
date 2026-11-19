@@ -95,7 +95,7 @@ function App() {
       <ErrorBoundary>
         <RouterProvider router={router} />
         <ConfirmHost />
-        <Toaster position="bottom-right" />
+        <Toaster position="bottom-right" closeButton />
       </ErrorBoundary>
     </AuthProvider>
   );

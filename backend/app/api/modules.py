@@ -371,7 +371,8 @@ def export_scorm(
     if failing:
         raise HTTPException(
             status_code=422,
-            detail="Còn câu hỏi chưa khớp nguồn. Hãy sửa trước khi xuất gói SCORM: " + "; ".join(failing),
+            detail=f"Còn {len(failing)} câu hỏi chưa khớp nguồn ({', '.join(failing)}). "
+            "Lý do ghi dưới từng câu; hãy sửa trước khi xuất gói SCORM.",
         )
     if not build_book_chapters(module):
         raise HTTPException(status_code=422, detail="Mô-đun chưa có nội dung nào để xuất.")

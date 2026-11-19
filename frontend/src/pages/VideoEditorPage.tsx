@@ -1,4 +1,3 @@
-import { toast } from 'sonner'
 import { confirmAction } from '../lib/confirm'
 import axios from 'axios'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
@@ -19,6 +18,7 @@ import { AppShell } from '../components/AppShell'
 import { RenderedVideo } from '../components/RenderedVideo'
 import { VideoSceneEditor } from '../components/VideoSceneEditor'
 import { formatMinutes } from '../lib/duration'
+import { notifyDone, notifyFailed } from '../lib/notify'
 import { editorTitle } from '../lib/editorTitle'
 import { createLimiter } from '../lib/limiter'
 import { videoSpent } from '../lib/spent'
@@ -26,6 +26,8 @@ import { useMediaModels } from '../lib/useMediaModels'
 import { confirmLeave, useLeaveGuard } from '../lib/useLeaveGuard'
 import { editsKey, estimatedSeconds, newScene, toDrafts, toEdits, type SceneDraft } from '../lib/videoDraft'
 
+// One toast for a job's failure, so a poll and the first load do not show it twice.
+const VIDEO_ERROR_TOAST = 'video-error'
 const POLL_INTERVAL_MS = 3000
 // At most two slides are asked for at once: the server renders two at a time per process.
 const PREVIEWS_AT_ONCE = 2
@@ -76,11 +78,7 @@ export function VideoEditorPage() {
   const [missing, setMissing] = useState(false)
   const [attempt, setAttempt] = useState(0)
   const [busy, setBusy] = useState<'save' | 'draw' | 'render' | 'publish' | 'delete' | 'reload' | null>(null)
-  const [error, setError] = useState<string | null>(null)
   const [stale, setStale] = useState(false)
-  // Saved, queued and finished jobs are announced as toasts: a job can end while the lecturer is
-  // further down the page, and a line beside its button would go unseen.
-  const setNotice = useCallback((text: string | null) => { if (text) toast.success(text) }, [])
   // Goes up when a drawing job ends, so an illustration's slide is asked for again even when a
   // redraw changed nothing but the picture.
   const [picturesDrawn, setPicturesDrawn] = useState(0)
@@ -129,7 +127,9 @@ export function VideoEditorPage() {
     } else if (ended) {
       if (ended === 'video_images') setPicturesDrawn((n) => n + 1)
       const done = DONE_TEXT[ended]
-      if (done && !video.error) setNotice(done)
+      // A job can end while the lecturer is further down the page, so its result is a toast.
+      if (video.error) notifyFailed(video.error, VIDEO_ERROR_TOAST)
+      else if (done) notifyDone(done)
       awaitJob(null)
     }
     const untouched = editsKey(now.scenes) === now.base.edits
@@ -140,7 +140,7 @@ export function VideoEditorPage() {
     latest.current = { ...latest.current, saved: video }
     setSaved(video)
     if (untouched) setBase((b) => ({ ...b, version: video.draft_version }))
-  }, [adopt, awaitJob, nextKey, setNotice])
+  }, [adopt, awaitJob, nextKey])
 
   // The first load, and the retry after a failed one. A result that arrives after the page has
   // gone is dropped, and state is set only from promise callbacks.
@@ -151,6 +151,8 @@ export function VideoEditorPage() {
       (video) => {
         if (cancelled) return
         adopt(video)
+        // What went wrong in a job that ended while the page was closed, e.g. a picture not drawn.
+        if (video.error && video.scenes.length > 0) notifyFailed(video.error, VIDEO_ERROR_TOAST)
         setLoading(false)
       },
       (err) => {
@@ -253,14 +255,14 @@ export function VideoEditorPage() {
   async function remove() {
     if (!await confirmAction({ title: 'Xóa video này?', description: 'Slide, hình và giọng đã tạo bị xóa theo. Không thể khôi phục.', action: 'Xóa video', destructive: true })) return
     setBusy('delete')
-    setError(null)
     try {
       await deleteVideo(videoId)
       // What was being edited is gone, so its unsaved edits are not worth a question.
       allowLeave()
+      notifyDone('Đã xóa video.')
       navigate(`/courses/${courseId}`)
     } catch (err) {
-      setError(apiErrorMessage(err, 'Xóa video thất bại'))
+      notifyFailed(apiErrorMessage(err, 'Xóa video thất bại'))
       setBusy(null)
     }
   }
@@ -285,7 +287,6 @@ export function VideoEditorPage() {
     return (
       <AppShell {...titleProps}>
         <p className="text-sm danger-text">{saved.error ?? 'Viết lời thoại thất bại.'} Xóa video này rồi tạo lại từ trang môn học.</p>
-        {error && <p role="alert" className="mt-3 text-sm danger-text">{error}</p>}
         <div className="mt-4 flex gap-4">
           {backLink}
           {deleteButton}
@@ -309,7 +310,6 @@ export function VideoEditorPage() {
 
   async function act(kind: 'publish' | 'reload', action: () => Promise<VideoDetail>, fallback: string) {
     setBusy(kind)
-    setError(null)
     try {
       const video = await action()
       if (kind === 'reload') {
@@ -317,9 +317,10 @@ export function VideoEditorPage() {
         setStale(false)
       } else {
         follow(video)
+        notifyDone(video.published_at ? 'Đã giao video cho sinh viên.' : 'Đã ngừng giao video.')
       }
     } catch (err) {
-      setError(apiErrorMessage(err, fallback))
+      notifyFailed(apiErrorMessage(err, fallback))
     } finally {
       setBusy(null)
     }
@@ -328,12 +329,11 @@ export function VideoEditorPage() {
   // Asks for a picture or a render, then reads the detail to follow the job.
   async function startJob(kind: 'draw' | 'render', job: JobType, ask: () => Promise<unknown>, fallback: string) {
     setBusy(kind)
-    setError(null)
     try {
       await ask()
     } catch (err) {
       // A quota (429) or a job in the way (409) comes with the server's own Vietnamese wording.
-      setError(apiErrorMessage(err, fallback))
+      notifyFailed(apiErrorMessage(err, fallback))
       setBusy(null)
       return
     }
@@ -342,7 +342,7 @@ export function VideoEditorPage() {
     try {
       follow(await getVideo(videoId))
     } catch {
-      setNotice(QUEUED_TEXT[job] ?? null)
+      if (QUEUED_TEXT[job]) notifyDone(QUEUED_TEXT[job])
     } finally {
       setBusy(null)
     }
@@ -350,15 +350,14 @@ export function VideoEditorPage() {
 
   async function save() {
     setBusy('save')
-    setError(null)
     try {
       adopt(await saveVideoScenes(videoId, base.version, toEdits(scenes)))
       setStale(false)
-      setNotice('Đã lưu.')
+      notifyDone('Đã lưu.')
     } catch (err) {
       // A 409 here is a newer draft saved elsewhere: saving again would be refused the same way.
       setStale(axios.isAxiosError(err) && err.response?.status === 409)
-      setError(apiErrorMessage(err, 'Lưu thay đổi thất bại'))
+      notifyFailed(apiErrorMessage(err, 'Lưu thay đổi thất bại'))
     } finally {
       setBusy(null)
     }
@@ -399,7 +398,6 @@ export function VideoEditorPage() {
         <p className="course-hint">
           Sửa lời thoại và chữ trên slide, lưu, rồi vẽ hình, dựng video và giao cho sinh viên.
         </p>
-        {saved.error && <p className="text-sm danger-text">{saved.error}</p>}
 
         <ol className="video-scenes" aria-label="Các cảnh">
           {scenes.map((s, index) => (
@@ -440,7 +438,6 @@ export function VideoEditorPage() {
           {overLong && (
             <p className="text-sm danger-text">Quá {formatMinutes(saved.max_seconds)} phút: hãy rút ngắn lời thoại trước khi dựng.</p>
           )}
-          {error && <p role="alert" className="text-sm danger-text">{error}</p>}
           <div className="flashcard-actions">
             <button type="button" onClick={save} disabled={!dirty || missingTitle || busy !== null} className="ui-button primary">
               {busy === 'save' ? 'Đang lưu…' : 'Lưu thay đổi'}

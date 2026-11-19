@@ -61,8 +61,8 @@ def publish_to_moodle(
     if failing:
         raise HTTPException(
             status_code=422,
-            detail="Còn câu hỏi chưa khớp nguồn. Hãy sửa trước khi đẩy lên Moodle: "
-            + "; ".join(failing),
+            detail=f"Còn {len(failing)} câu hỏi chưa khớp nguồn ({', '.join(failing)}). "
+            "Lý do ghi dưới từng câu; hãy sửa trước khi đẩy lên Moodle.",
         )
 
     course = db.get(Course, module.course_id)

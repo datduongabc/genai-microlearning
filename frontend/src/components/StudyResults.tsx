@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { downloadStudyFile, getStudyResults, type StudyResults as Results } from "../api/studies";
 import { apiErrorMessage } from "../api/client";
 import { rubric } from "../lib/ratingSchema";
+import { notifyFailed } from "../lib/notify";
 
 const GROUP_LABEL: Record<string, string> = { rag_llm: "RAG", llm_no_rag: "Không RAG", human: "Người viết" };
 const FIELD_LABEL: Record<string, string> = {
@@ -25,7 +26,6 @@ async function save(studyId: string, file: string, name: string) {
 export function StudyResults({ studyId }: { studyId: string }) {
   const [results, setResults] = useState<Results | null>(null);
   const [error, setError] = useState("");
-  const [downloadError, setDownloadError] = useState("");
   useEffect(() => {
     let active = true;
     getStudyResults(studyId).then((data) => { if (active) setResults(data); })
@@ -34,9 +34,8 @@ export function StudyResults({ studyId }: { studyId: string }) {
   }, [studyId]);
 
   async function download(file: string, name: string) {
-    setDownloadError("");
     try { await save(studyId, file, name); }
-    catch (e) { setDownloadError(apiErrorMessage(e, "Không tải được tệp.")); }
+    catch (e) { notifyFailed(apiErrorMessage(e, "Không tải được tệp.")); }
   }
 
   if (error) return <section className="ui-card study-results"><p role="alert">{error}</p></section>;
@@ -64,7 +63,6 @@ export function StudyResults({ studyId }: { studyId: string }) {
     )}
     {results.has_judge && <button type="button" className="ui-button mt-3"
       onClick={() => void download("judge.jsonl", "judge.jsonl")}>Tải kết quả mô hình chấm</button>}
-    {downloadError && <p role="alert" className="mt-2 small">{downloadError}</p>}
     {results.unpaired.length > 0 && <p className="mt-3 small muted">
       Không ghép được cặp cho {results.unpaired.join(", ")}: các gói này không vào phép so sánh RAG và không RAG.
     </p>}

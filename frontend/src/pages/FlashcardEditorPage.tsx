@@ -1,5 +1,5 @@
-import { toast } from 'sonner'
 import { confirmAction } from '../lib/confirm'
+import { notifyDone, notifyFailed } from '../lib/notify'
 import axios from 'axios'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
@@ -54,7 +54,6 @@ export function FlashcardEditorPage() {
   const [missing, setMissing] = useState(false)
   const [attempt, setAttempt] = useState(0)
   const [busy, setBusy] = useState<'save' | 'publish' | 'delete' | null>(null)
-  const [error, setError] = useState<string | null>(null)
   const keyCounter = useRef(0)
   const nextKey = useCallback(() => keyCounter.current++, [])
 
@@ -148,14 +147,13 @@ export function FlashcardEditorPage() {
 
   async function save() {
     setBusy('save')
-    setError(null)
     try {
       const set = await saveFlashcards(setId, draftVersion, cards.map(({ front, back, citations }) => ({ front, back, citations })))
       setSaved(set)
       setCards(toDrafts(set, nextKey))
-      toast.success('Đã lưu.')
+      notifyDone('Đã lưu.')
     } catch (err) {
-      setError(apiErrorMessage(err, 'Lưu thẻ thất bại'))
+      notifyFailed(apiErrorMessage(err, 'Lưu thẻ thất bại'))
     } finally {
       setBusy(null)
     }
@@ -163,11 +161,11 @@ export function FlashcardEditorPage() {
 
   async function togglePublished() {
     setBusy('publish')
-    setError(null)
     try {
       setSaved(await publishFlashcardSet(setId, !published))
+      notifyDone(published ? 'Đã ngừng giao bộ flashcard.' : 'Đã giao bộ flashcard cho sinh viên.')
     } catch (err) {
-      setError(apiErrorMessage(err, published ? 'Ngừng giao thất bại' : 'Giao bộ flashcard thất bại'))
+      notifyFailed(apiErrorMessage(err, published ? 'Ngừng giao thất bại' : 'Giao bộ flashcard thất bại'))
     } finally {
       setBusy(null)
     }
@@ -176,14 +174,14 @@ export function FlashcardEditorPage() {
   async function remove() {
     if (!await confirmAction({ title: 'Xóa bộ flashcard này?', description: 'Không thể khôi phục.', action: 'Xóa bộ flashcard', destructive: true })) return
     setBusy('delete')
-    setError(null)
     try {
       await deleteFlashcardSet(setId)
       // What was being edited is gone, so its unsaved edits are not worth a question.
       allowLeave()
+      notifyDone('Đã xóa bộ flashcard.')
       navigate(`/courses/${courseId}`)
     } catch (err) {
-      setError(apiErrorMessage(err, 'Xóa bộ flashcard thất bại'))
+      notifyFailed(apiErrorMessage(err, 'Xóa bộ flashcard thất bại'))
       setBusy(null)
     }
   }
@@ -209,7 +207,6 @@ export function FlashcardEditorPage() {
         <p role="alert" className="text-sm danger-text">
           Tạo flashcard thất bại. Xóa bộ này rồi tạo lại từ trang môn học.
         </p>
-        {error && <p role="alert" className="mt-3 text-sm danger-text">{error}</p>}
         <div className="mt-4 flex gap-4">
           <button type="button" onClick={() => back(saved.course_id)} className="link-action">Quay lại</button>
           {deleteButton}
@@ -302,7 +299,6 @@ export function FlashcardEditorPage() {
         {dirty && complete && (
           <p className="course-hint">{published ? 'Lưu để cập nhật cho sinh viên.' : 'Lưu thay đổi trước khi giao.'}</p>
         )}
-        {error && <p role="alert" className="mt-3 text-sm danger-text">{error}</p>}
 
         <div className="flashcard-actions">
           <button type="button" onClick={save} disabled={!dirty || !complete || busy !== null} className="ui-button primary">

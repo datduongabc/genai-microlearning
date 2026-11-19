@@ -1,4 +1,3 @@
-import { Toaster } from 'sonner'
 import { act, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { AxiosError, type AxiosResponse, type InternalAxiosRequestConfig } from 'axios'
@@ -45,7 +44,7 @@ function renderPage() {
       </Route>
     </>,
   ), { initialEntries: ['/courses', '/flashcard-sets/set-1'], initialIndex: 1 })
-  return { router, ...render(<AuthProvider><RouterProvider router={router} /><Toaster /></AuthProvider>) }
+  return { router, ...render(<AuthProvider><RouterProvider router={router} /></AuthProvider>) }
 }
 
 const axiosFailure = (status: number, detail: string) => {
