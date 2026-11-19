@@ -26,7 +26,8 @@ class StudyItem(Base):
     __tablename__ = "study_items"
     __table_args__ = (
         CheckConstraint("\"group\" IN ('human', 'llm_no_rag', 'rag_llm')", name="ck_study_items_group"),
-        CheckConstraint("(\"group\" = 'rag_llm') = (module_id IS NOT NULL)", name="ck_study_items_module"),
+        # A RAG packet loaded from its exported file has no module (alembic 0043).
+        CheckConstraint("module_id IS NULL OR \"group\" = 'rag_llm'", name="ck_study_items_module"),
         UniqueConstraint("study_id", "anon_code", name="uq_study_items_code",
                          deferrable=True, initially="DEFERRED"),
         UniqueConstraint("study_id", "module_id", name="uq_study_items_module"),

@@ -450,3 +450,35 @@ def test_edited_ai_pair_import_and_cli_export_use_original(world, tmp_path):
     for group, key in [("rag_llm", "rag"), ("llm_no_rag", "control")]:
         exported = json.loads((tmp_path / f"{world['rag']}-{group}.json").read_text())
         assert exported["packet"]["content_markdown"] == originals[key]
+
+
+def _imported(pair_id, group, objective="Explain X"):
+    return {"pair_id": str(pair_id), "group": group, "generator_model": "gemini-fast",
+            "packet": {**human_packet(), "learning_objective": objective}}
+
+
+def test_loads_exported_pairs_without_their_modules_and_pairs_them(world):
+    sid = create_study(world)
+    pair = uuid.uuid4()
+
+    response = load(world, sid, imported_packets=[_imported(pair, "rag_llm"), _imported(pair, "llm_no_rag")])
+
+    assert response.status_code == 201, response.text
+    items = response.json()
+    assert sorted(i["module_id"] is None for i in items) == [True, True]
+    assert {i["pair_id"] for i in items} == {str(pair)}
+    # Reblinded on load: the exported anon_id is replaced by the study's own code.
+    assert sorted(i["packet"]["anon_id"] for i in items) == sorted(i["anon_code"] for i in items)
+    # Loading the same pair again is refused, so a rerun of the import adds nothing.
+    again = load(world, sid, imported_packets=[_imported(pair, "rag_llm"), _imported(pair, "llm_no_rag")])
+    assert again.status_code == 409
+
+
+def test_refuses_an_imported_pair_that_is_not_one_rag_and_one_no_rag(world):
+    sid = create_study(world)
+    pair = uuid.uuid4()
+
+    alone = load(world, sid, imported_packets=[_imported(pair, "rag_llm")])
+    twice = load(world, sid, imported_packets=[_imported(pair, "rag_llm"), _imported(pair, "rag_llm")])
+
+    assert alone.status_code == 422 and twice.status_code == 422
