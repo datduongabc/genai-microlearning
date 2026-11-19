@@ -234,7 +234,7 @@ it("reports missing or revoked invitations", async () => {
 });
 it("admin edits invited emails and can remove all raters", async () => {
   vi.mocked(api.setRaters).mockImplementation(async (_s, emails) => ({ emails, assignments: {} }));
-  render(<AdminStudiesPanel />);
+  render(<MemoryRouter><AdminStudiesPanel /></MemoryRouter>);
   await userEvent.click(await screen.findByRole("button", { name: /Nghiên cứu/ }));
   const input = await screen.findByLabelText("Người chấm");
   await screen.findByRole("button", { name: "Bỏ lan@example.com" });
@@ -256,7 +256,7 @@ it("admin edits invited emails and can remove all raters", async () => {
 
 it("saves a typed email that was not yet added with Enter", async () => {
   vi.mocked(api.setRaters).mockImplementation(async (_s, emails) => ({ emails, assignments: {} }));
-  render(<AdminStudiesPanel />);
+  render(<MemoryRouter><AdminStudiesPanel /></MemoryRouter>);
   await userEvent.click(await screen.findByRole("button", { name: /Nghiên cứu/ }));
   await userEvent.type(await screen.findByLabelText("Người chấm"), "Minh@Example.com");
   await userEvent.click(screen.getByRole("button", { name: "Lưu người chấm" }));
@@ -265,7 +265,7 @@ it("saves a typed email that was not yet added with Enter", async () => {
 });
 
 it("adds a pasted list of emails as chips without duplicates", async () => {
-  render(<AdminStudiesPanel />);
+  render(<MemoryRouter><AdminStudiesPanel /></MemoryRouter>);
   await userEvent.click(await screen.findByRole("button", { name: /Nghiên cứu/ }));
   const input = await screen.findByLabelText("Người chấm");
   await screen.findByRole("button", { name: "Bỏ lan@example.com" });
@@ -278,7 +278,7 @@ it("adds a pasted list of emails as chips without duplicates", async () => {
 });
 
 it("keeps a pasted list with a bad email in the field and clears the error when a chip is removed", async () => {
-  render(<AdminStudiesPanel />);
+  render(<MemoryRouter><AdminStudiesPanel /></MemoryRouter>);
   await userEvent.click(await screen.findByRole("button", { name: /Nghiên cứu/ }));
   const input = await screen.findByLabelText("Người chấm");
   await screen.findByRole("button", { name: "Bỏ lan@example.com" });
@@ -293,7 +293,7 @@ it("keeps a pasted list with a bad email in the field and clears the error when 
 
 it("loads the raters again when the same study is picked after a failed load", async () => {
   vi.mocked(api.getRaters).mockRejectedValueOnce(new Error("offline"));
-  render(<AdminStudiesPanel />);
+  render(<MemoryRouter><AdminStudiesPanel /></MemoryRouter>);
   const pick = await screen.findByRole("button", { name: /Nghiên cứu/ });
   await userEvent.click(pick);
   expect(await screen.findByRole("alert")).toHaveTextContent("Không tải được người chấm.");
@@ -401,7 +401,7 @@ it("shows the admin each rater's progress, and per packet the scores, findings a
   URL.createObjectURL = vi.fn(() => "blob:x");
   URL.revokeObjectURL = vi.fn();
   const user = userEvent.setup();
-  render(<AdminStudiesPanel />);
+  render(<MemoryRouter><AdminStudiesPanel /></MemoryRouter>);
   await user.click(await screen.findByRole("button", { name: /Nghiên cứu/ }));
   const results = await screen.findByRole("region", { name: "Kết quả chấm" });
   const progress = within(within(results).getByRole("list", { name: "Tiến độ người chấm" }));
@@ -426,7 +426,7 @@ const summary = (id: string, code: string, group: "rag_llm" | "llm_no_rag" | "hu
 const lecture = { id: "f1", filename: "Bài giảng 3.pdf", size: 1258291, created_at: "" };
 
 async function openStudy() {
-  render(<AdminStudiesPanel />);
+  render(<MemoryRouter><AdminStudiesPanel /></MemoryRouter>);
   await userEvent.click(await screen.findByRole("button", { name: /Nghiên cứu/ }));
   return screen.findByRole("region", { name: "Tài liệu gốc" });
 }
@@ -543,4 +543,10 @@ it("gives a rater only the pairs ticked, and refuses a rater left with none", as
   await userEvent.click(first);
   await userEvent.click(within(card).getByRole("button", { name: "Lưu phân công" }));
   expect(api.setRaters).toHaveBeenCalledTimes(1);
+});
+
+it("opens the study named in the address, so a reload stays on it", async () => {
+  render(<MemoryRouter initialEntries={["/admin?tab=studies&study=s1"]}><AdminStudiesPanel /></MemoryRouter>);
+  expect(await screen.findByRole("button", { name: "Bỏ lan@example.com" })).toBeInTheDocument();
+  expect(api.getRaters).toHaveBeenCalledWith("s1");
 });

@@ -38,9 +38,9 @@ function failedJob(id: string, overrides: Partial<FailedJobInfo> = {}): FailedJo
   }
 }
 
-function renderPage() {
+function renderPage(url = '/admin') {
   return render(
-    <MemoryRouter>
+    <MemoryRouter initialEntries={[url]}>
       <AdminPage />
     </MemoryRouter>,
   )
@@ -397,4 +397,11 @@ it('moves admin tabs with the keyboard and returns Home to accounts', async () =
   await userEvent.keyboard('{Home}')
   expect(accounts).toHaveFocus()
   expect(await screen.findByText('lan@example.com')).toBeVisible()
+})
+
+describe('AdminPage - address', () => {
+  it('opens the tab named in the address, so a reload stays on it', async () => {
+    renderPage('/admin?tab=failures')
+    expect(await screen.findByRole('tab', { name: /Tác vụ lỗi/, selected: true })).toBeInTheDocument()
+  })
 })

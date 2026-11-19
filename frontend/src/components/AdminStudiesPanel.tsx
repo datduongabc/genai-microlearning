@@ -1,5 +1,6 @@
 import { ChevronRight, X } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { getRaters, listStudies, setRaters, type Assignments, type Study } from "../api/studies";
 import { apiErrorMessage } from "../api/client";
 import { raterEmailsSchema } from "../lib/ratingSchema";
@@ -11,7 +12,8 @@ import { StudyResults } from "./StudyResults";
 
 export function AdminStudiesPanel() {
   const [studies, setStudies] = useState<Study[] | null>(null);
-  const [studyId, setStudyId] = useState("");
+  const [params, setParams] = useSearchParams();
+  const [studyId, setStudyId] = useState(() => params.get("study") ?? "");
   const [loadedId, setLoadedId] = useState("");
   const [emails, setEmails] = useState<string[]>([]);
   // The invitations as saved: what the assignment table offers, never an unsaved edit.
@@ -58,7 +60,7 @@ export function AdminStudiesPanel() {
     <nav aria-label="Nghiên cứu" className="study-list">
       {studies?.map((study) => <button key={study.id} disabled={busy}
         aria-pressed={studyId === study.id} className="ui-card"
-        onClick={() => { if (loadedId === study.id) return; setStudyId(study.id); setPicks((n) => n + 1); setLoadedId(""); setInput(""); setError(""); }}>
+        onClick={() => { if (loadedId === study.id) return; setStudyId(study.id); setParams((p) => { p.set("study", study.id); return p; }, { replace: true }); setPicks((n) => n + 1); setLoadedId(""); setInput(""); setError(""); }}>
         {study.name}<ChevronRight aria-hidden="true" className="size-4" />
       </button>)}
       {!studies && !error && <p>Đang tải…</p>}
