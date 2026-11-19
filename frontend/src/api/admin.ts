@@ -17,7 +17,7 @@ export interface AdminUser {
 
 export interface FailedJobInfo {
   id: string
-  job_type: 'document_pipeline' | 'module_generation'
+  job_type: 'document_pipeline' | 'module_generation' | 'flashcard_generation' | 'video_script' | 'video_images' | 'video_render'
   step: string
   attempts: number
   max_attempts: number

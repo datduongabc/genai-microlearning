@@ -150,3 +150,42 @@ describe('CoursesPage - load failure', () => {
     expect(screen.queryByRole('alert')).not.toBeInTheDocument()
   })
 })
+
+describe('CoursesPage - rename', () => {
+  async function chooseRename() {
+    ;(await screen.findByRole('button', { name: 'Thao tác khác với AI 101' })).focus()
+    await userEvent.keyboard('{Enter}')
+    await userEvent.click(await screen.findByRole('menuitem', { name: 'Đổi tên' }))
+  }
+
+  it('renames from the menu and shows the new name', async () => {
+    vi.mocked(api.listCourses)
+      .mockResolvedValueOnce([course])
+      .mockResolvedValue([{ ...course, name: 'Hệ điều hành' }])
+    vi.mocked(api.renameCourse).mockResolvedValue({ ...course, name: 'Hệ điều hành' })
+    renderPage()
+    await chooseRename()
+
+    const field = screen.getByRole('textbox', { name: 'Tên môn học' })
+    await userEvent.clear(field)
+    await userEvent.type(field, 'Hệ điều hành')
+    await userEvent.click(screen.getByRole('button', { name: 'Lưu' }))
+
+    await waitFor(() => expect(api.renameCourse).toHaveBeenCalledWith('course-1', 'Hệ điều hành'))
+    expect(await screen.findByRole('link', { name: 'Hệ điều hành' })).toBeInTheDocument()
+  })
+
+  it('keeps the name and sends nothing when cancelled or empty', async () => {
+    vi.mocked(api.listCourses).mockResolvedValue([course])
+    renderPage()
+    await chooseRename()
+
+    await userEvent.clear(screen.getByRole('textbox', { name: 'Tên môn học' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Lưu' }))
+    expect(await screen.findByText('Vui lòng nhập tên môn học')).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Hủy' }))
+
+    expect(screen.getByRole('link', { name: 'AI 101' })).toBeInTheDocument()
+    expect(api.renameCourse).not.toHaveBeenCalled()
+  })
+})

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import Markdown from 'react-markdown'
-import { getLatestCourseChat, streamCourseChat, type ChatCitation, type ChatReply } from '../api'
+import { getLatestCourseChat, startNewCourseChat, streamCourseChat, type ChatCitation, type ChatReply } from '../api'
 import { courseChatSchema, type CourseChatFormValues } from '../lib/formSchemas'
 import { sourceLabel } from '../lib/sourceLabel'
 import { modelMarkdownProps } from '../lib/markdownMath'
@@ -99,6 +99,8 @@ export function CourseChat({ courseId }: { courseId: string }) {
     sessionId.current = undefined
     setTurns([])
     setLoadError('')
+    // Failing, the next question still opens a new conversation; only a reload would show the old one.
+    startNewCourseChat(courseId).then((id) => { if (sessionId.current === undefined) sessionId.current = id }, () => {})
   }
 
   return <section className="chat-panel" aria-labelledby="course-chat-title">

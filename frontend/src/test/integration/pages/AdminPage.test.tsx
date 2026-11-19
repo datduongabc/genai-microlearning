@@ -151,15 +151,15 @@ describe('AdminPage - accounts', () => {
     vi.mocked(api.setUserActive).mockResolvedValue(lan)
     renderPage()
     expect(await screen.findByRole('tab', { name: 'Tài khoản' })).toBeInTheDocument()
-    expect(await screen.findByRole('button', { name: 'Đang hoạt động (42)' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Đã vô hiệu hóa (3)' })).toBeInTheDocument()
+    expect(await screen.findByRole('button', { name: 'Đang hoạt động 42' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Đã vô hiệu hóa 3' })).toBeInTheDocument()
 
     vi.mocked(api.getAdminCounts).mockResolvedValue({ users: 45, inactive_users: 4, failed_jobs: {} })
     const row = screen.getByText('lan@example.com').closest('li')!
     await openRowMenu(row)
     await userEvent.click(screen.getByRole('menuitem', { name: 'Vô hiệu hóa' }))
-    expect(await screen.findByRole('button', { name: 'Đã vô hiệu hóa (4)' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Đang hoạt động (41)' })).toBeInTheDocument()
+    expect(await screen.findByRole('button', { name: 'Đã vô hiệu hóa 4' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Đang hoạt động 41' })).toBeInTheDocument()
   })
 
   it('deactivates and reactivates an account after confirmation', async () => {
@@ -222,6 +222,21 @@ describe('AdminPage - accounts', () => {
   })
 })
 
+describe('AdminPage - account roles', () => {
+  it('shows each role in its own column and filters by it', async () => {
+    renderPage()
+    const role = async (email: string) =>
+      (await screen.findByText(email)).closest('.account-row')!.children[1].textContent
+    expect(await role('admin@example.com')).toBe('Quản trị viên')
+    expect(await role('lan@example.com')).toBe('Giảng viên')
+
+    await userEvent.selectOptions(screen.getByRole('combobox', { name: 'Vai trò' }), 'admin')
+
+    expect(screen.getByText('admin@example.com')).toBeInTheDocument()
+    expect(screen.queryByText('lan@example.com')).not.toBeInTheDocument()
+  })
+})
+
 describe('AdminPage - failed jobs', () => {
   async function openFailures() {
     renderPage()
@@ -231,9 +246,28 @@ describe('AdminPage - failed jobs', () => {
   it('labels each job type filter with its full count of failed jobs', async () => {
     await openFailures()
 
-    expect(await screen.findByRole('button', { name: 'Xử lý tài liệu (2)' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Tạo mô-đun (1)' })).toBeInTheDocument()
+    expect(await screen.findByRole('button', { name: 'Xử lý tài liệu 2' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Tạo mô-đun 1' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Tất cả' })).toBeInTheDocument()
+  })
+
+  it('groups the three steps of a video under one filter and counts flashcards too', async () => {
+    vi.mocked(api.getAdminCounts).mockResolvedValue({ users: 3, inactive_users: 0,
+      failed_jobs: { flashcard_generation: 1, video_script: 1, video_render: 2 } })
+    vi.mocked(api.listFailedJobs).mockResolvedValue([
+      failedJob('j1', { job_type: 'video_script', document_filename: 'a.pdf' }),
+      failedJob('j2', { job_type: 'flashcard_generation', document_filename: 'b.pdf' }),
+      failedJob('j3', { job_type: 'video_render', document_filename: 'c.pdf' }),
+    ])
+    await openFailures()
+
+    expect(await screen.findByRole('button', { name: 'Tạo flashcard 1' })).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Tạo video 3' }))
+
+    expect(await screen.findByText('c.pdf')).toBeInTheDocument()
+    expect(screen.getByText('a.pdf')).toBeInTheDocument()
+    expect(screen.queryByText('b.pdf')).not.toBeInTheDocument()
+    expect(api.listFailedJobs).toHaveBeenLastCalledWith(undefined)
   })
 
   it('shows a friendly message when nothing failed', async () => {

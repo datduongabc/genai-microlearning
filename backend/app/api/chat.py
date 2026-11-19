@@ -9,7 +9,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.api.deps import count_learner_chat, get_current_user, require_course_reader
@@ -184,6 +184,36 @@ class LatestChatResponse(BaseModel):
     messages: list[ChatMessageResponse]
 
 
+def _latest_session(db: Session, course_id: uuid.UUID, user_id: uuid.UUID) -> ChatSession | None:
+    # By its newest message, or when it was opened if it has none yet: "Cuộc trò chuyện mới" opens
+    # an empty one, and a reload must bring that back rather than the conversation it replaced.
+    used = func.coalesce(func.max(ChatMessage.created_at), ChatSession.created_at)
+    return db.scalar(
+        select(ChatSession).outerjoin(ChatMessage)
+        .where(ChatSession.course_id == course_id, ChatSession.user_id == user_id,
+               ChatSession.module_id.is_(None))
+        .group_by(ChatSession.id).order_by(used.desc()).limit(1)
+    )
+
+
+@router.post("/sessions", status_code=201)
+@limiter.limit("30/minute", key_func=user_or_address)
+def start_new_chat(
+    request: Request, course_id: uuid.UUID, db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """A new, empty course chat, which /latest returns until another is used. Clicking twice opens
+    one, not two: an empty latest session is given back as it is."""
+    require_course_reader(db, db.get(Course, course_id), current_user)
+    latest = _latest_session(db, course_id, current_user.id)
+    if latest is not None and not latest.messages:
+        return {"session_id": latest.id}
+    session = ChatSession(course_id=course_id, user_id=current_user.id, module_id=None, title=None)
+    db.add(session)
+    db.commit()
+    return {"session_id": session.id}
+
+
 @router.get("/latest", response_model=LatestChatResponse)
 def get_latest_chat(
     course_id: uuid.UUID, db: Session = Depends(get_db), current_user: User = Depends(get_current_user),
@@ -191,12 +221,7 @@ def get_latest_chat(
     """The course chat this person used last, so that reloading the page or opening it on another
     machine continues it. Last used, not last created: by its newest message."""
     require_course_reader(db, db.get(Course, course_id), current_user)
-    session = db.scalar(
-        select(ChatSession).join(ChatMessage)
-        .where(ChatSession.course_id == course_id, ChatSession.user_id == current_user.id,
-               ChatSession.module_id.is_(None))
-        .order_by(ChatMessage.created_at.desc()).limit(1)
-    )
+    session = _latest_session(db, course_id, current_user.id)
     if session is None:
         return LatestChatResponse(session_id=None, messages=[])
     return LatestChatResponse(session_id=session.id, messages=[

@@ -17,6 +17,11 @@ export async function createCourse(name: string) {
   return data
 }
 
+export async function renameCourse(courseId: string, name: string) {
+  const { data } = await api.patch<Course>(`/courses/${courseId}`, { name })
+  return data
+}
+
 export async function deleteCourse(courseId: string) {
   await api.delete(`/courses/${courseId}`)
 }
