@@ -1,4 +1,4 @@
-import { Ellipsis, KeyRound, Link2, Unlink, UserCheck, UserX } from "lucide-react";
+import { Ellipsis, KeyRound, Link2, Plus, Unlink, UserCheck, UserX } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "./ui/dropdown-menu";
 import { confirmAction } from "../lib/confirm";
 import { notifyDone, notifyFailed } from "../lib/notify";
@@ -105,7 +105,7 @@ export function AdminUsersPanel({ counts, onChange }: { counts: AdminCounts | nu
           </select>
         </label>
         <span className="flex-1" />
-        <button className="ui-button primary" aria-expanded={creating} onClick={() => setCreating(!creating)}>{creating ? "Đóng" : "+ Tạo tài khoản"}</button>
+        <button className="ui-button primary" aria-expanded={creating} onClick={() => setCreating(!creating)}>{creating ? "Đóng" : <><Plus aria-hidden="true" className="size-4" />Tạo tài khoản</>}</button>
       </div>
       {creating && <CreateUserForm
         onCreated={(created) => {

@@ -65,7 +65,7 @@ function Question({ question, explanation = false }: { question: PacketQuestion;
         {question.choices.map((choice, i) => (
           <li key={i}>
             {choice}
-            {explanation && i === question.correct_index && <strong> (Đáp án đúng)</strong>}
+            {explanation && i === question.correct_index && <> <Check aria-label="Đáp án đúng" className="inline size-4 align-[-2px]" /></>}
           </li>
         ))}
       </ol>
@@ -160,7 +160,7 @@ function PacketReference({ studyId, item }: { studyId: string; item: BlindItem }
   const { filename, size } = item.reference;
   return (
     <div className="packet-reference">
-      <span>Tài liệu gốc: <strong className="[overflow-wrap:anywhere]">{filename}</strong> <span className="muted">({formatSize(size)})</span></span>
+      <span>Tài liệu gốc: <strong className="[overflow-wrap:anywhere]">{filename}</strong> <span className="muted">· {formatSize(size)}</span></span>
       <button type="button" className="link-action" disabled={busy} onClick={async () => {
         setBusy(true);
         try { await downloadPacketReference(studyId, item.id); }

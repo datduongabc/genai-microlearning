@@ -145,7 +145,7 @@ function SlidesDownload({ moduleId, moduleTitle }: { moduleId: string; moduleTit
     }
   }
   return <div className="slides-download">
-    <button type="button" className="link-action" onClick={() => void download()}>Tải slide (PPTX)</button>
+    <button type="button" className="link-action" onClick={() => void download()}>Tải slide PPTX</button>
   </div>
 }
 
@@ -589,7 +589,7 @@ function QuizDisplay({
       {questions.length === 0 && (
         <p className="text-sm text-gray-500">
           Chưa tạo được câu hỏi hợp lệ
-          {failed.length > 0 ? ` (${failed.map((c) => c.fail_reason).join('; ')})` : ''}.
+          {failed.length > 0 ? `: ${failed.map((c) => c.fail_reason).join('; ')}` : ''}.
         </p>
       )}
     </div>
