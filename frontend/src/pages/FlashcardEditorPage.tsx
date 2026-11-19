@@ -16,10 +16,8 @@ import {
 } from '../api'
 import { AppShell } from '../components/AppShell'
 import { AutoGrowTextarea } from '../components/AutoGrowTextarea'
-import { PassagePicker } from '../components/PassagePicker'
 import { CitationMarkers } from '../components/CitationMarkers'
 import { editorTitle } from '../lib/editorTitle'
-import { flashcardSpent } from '../lib/spent'
 import { useLeaveGuard } from '../lib/useLeaveGuard'
 
 const POLL_INTERVAL_MS = 3000
@@ -136,7 +134,6 @@ export function FlashcardEditorPage() {
   const courseId = saved.course_id
   const titleProps = editorTitle('Flashcard', saved.focus)
   const published = saved.published_at !== null
-  const spent = flashcardSpent(saved.cost)
   const dirty = !sameCards(cards, saved.cards)
   const complete = cards.every((c) => c.front.trim() !== '' && c.back.trim() !== '')
   const full = cards.length >= MAX_FLASHCARDS
@@ -223,13 +220,11 @@ export function FlashcardEditorPage() {
           <span className="status-pill" data-status={published ? 'embedded' : undefined}>
             {published ? 'Đã giao cho sinh viên' : 'Bản nháp'}
           </span>
-          <span className="flashcard-count">{cards.length} thẻ (tối đa {MAX_FLASHCARDS})</span>
-          {spent && <span className="flashcard-count">{spent}</span>}
+          <span className="flashcard-count">{cards.length} thẻ</span>
         </div>
 
         <ol className="flashcard-list" aria-label="Các thẻ">
           {cards.map((c, index) => {
-            // The server's "no source" flag is out of date once the lecturer has picked a passage.
             const flag = c.flag === NO_SOURCE && c.citations.length > 0 ? null : c.flag
             const warning = flag ?? (c.citations.length === 0 ? NO_SOURCE : null)
             return (
@@ -269,17 +264,6 @@ export function FlashcardEditorPage() {
                   />
                 </label>
                 <CitationMarkers sources={c.sources} citations={c.citations} label={`Nguồn của thẻ ${index + 1}`} />
-                <PassagePicker
-                  documentId={saved.document_id}
-                  name={`thẻ ${index + 1}`}
-                  citations={c.citations}
-                  known={c.sources}
-                  onChange={(citations, picked) => {
-                    setCards((list) => list.map((x) => (x.key === c.key
-                      ? { ...x, citations, sources: picked ? [...x.sources, picked] : x.sources }
-                      : x)))
-                  }}
-                />
               </li>
             )
           })}

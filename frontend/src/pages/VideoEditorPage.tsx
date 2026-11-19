@@ -21,7 +21,6 @@ import { formatMinutes } from '../lib/duration'
 import { notifyDone, notifyFailed } from '../lib/notify'
 import { editorTitle } from '../lib/editorTitle'
 import { createLimiter } from '../lib/limiter'
-import { videoSpent } from '../lib/spent'
 import { useMediaModels } from '../lib/useMediaModels'
 import { confirmLeave, useLeaveGuard } from '../lib/useLeaveGuard'
 import { editsKey, estimatedSeconds, newScene, toDrafts, toEdits, type SceneDraft } from '../lib/videoDraft'
@@ -243,7 +242,6 @@ export function VideoEditorPage() {
   const toDraw = saved.scenes.filter((s) => s.needs_image || s.image_outdated).length
   // The saved scenes as edits, to tell which scene's slide no longer shows what is being edited.
   const savedEdits = toEdits(toDrafts(saved, () => 0)).map((e) => JSON.stringify(e))
-  const spent = videoSpent(saved.cost)
   const canStartJob = !dirty && !jobRunning && busy === null
 
   const backLink = (
@@ -389,11 +387,10 @@ export function VideoEditorPage() {
             {published ? 'Đã giao cho sinh viên' : 'Bản nháp'}
           </span>
           {runningJob && <span role="status" className="status-pill" data-status="processing">{JOB_TEXT[runningJob]}</span>}
-          <span className="flashcard-count">{scenes.length} cảnh (tối đa {MAX_SCENES})</span>
+          <span className="flashcard-count">{scenes.length} cảnh</span>
           <span className={`flashcard-count${overLong ? ' danger-text' : ''}`}>
-            Độ dài ước tính: {formatMinutes(seconds)} phút (tối đa {formatMinutes(saved.max_seconds)} phút)
+            Khoảng {formatMinutes(seconds)} phút{overLong ? `, dài hơn ${formatMinutes(saved.max_seconds)} phút cho phép` : ''}
           </span>
-          {spent && <span className="flashcard-count">{spent}</span>}
         </div>
         <p className="course-hint">
           Sửa lời thoại và chữ trên slide, lưu, rồi vẽ hình, dựng video và giao cho sinh viên.
@@ -406,7 +403,6 @@ export function VideoEditorPage() {
               scene={s}
               number={index + 1}
               count={scenes.length}
-              documentId={saved.document_id}
               slide={{
                 videoId,
                 limiter,

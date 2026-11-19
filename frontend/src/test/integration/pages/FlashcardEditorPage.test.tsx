@@ -27,7 +27,7 @@ const card = (n: number, extra: Partial<FlashcardCard> = {}): FlashcardCard => (
 const draft = (cards: FlashcardCard[], extra: Partial<FlashcardSetDetail> = {}): FlashcardSetDetail => ({
   id: 'set-1', course_id: 'course-1', document_id: 'doc-1', focus: 'Mảng', output_language: 'vi', model_alias: 'gemini-flash',
   status: 'draft', card_count: cards.length, published_at: null, created_at: '2026-01-01T00:00:00Z',
-  cost: null, draft_version: 3,
+  draft_version: 3,
   cards, ...extra,
 })
 
@@ -83,16 +83,6 @@ describe('FlashcardEditorPage', () => {
     expect(screen.queryByRole('alert')).not.toBeInTheDocument()
   })
 
-  it('shows what the set cost, and says when part of it has no price', async () => {
-    vi.mocked(api.getFlashcardSet).mockResolvedValue(draft([card(1)], { cost: { usd: 0.0031, calls: 2, priced_calls: 2 } }))
-    const first = renderPage()
-    expect(await screen.findByText('Chi phí khoảng $0,003')).toBeInTheDocument()
-    first.unmount()
-
-    vi.mocked(api.getFlashcardSet).mockResolvedValue(draft([card(1)], { cost: { usd: 0.003, calls: 3, priced_calls: 2 } }))
-    renderPage()
-    expect(await screen.findByText('Chi phí ít nhất $0,003 (chưa rõ giá của 1 lần tạo thẻ)')).toBeInTheDocument()
-  })
 
   it('warns about an uncited card even before the server has flagged it', async () => {
     vi.mocked(api.getFlashcardSet).mockResolvedValue(draft([card(1, { citations: [] })]))
@@ -118,7 +108,7 @@ describe('FlashcardEditorPage', () => {
 
     await userEvent.click(add)
     expect(screen.getByRole('button', { name: 'Thêm thẻ' })).toBeDisabled()
-    expect(screen.getByText('15 thẻ (tối đa 15)')).toBeInTheDocument()
+    expect(screen.getByText('15 thẻ')).toBeInTheDocument()
 
     // Pasted, not typed: each key re-renders fifteen cards, which took the test past its 5 s limit
     // when the whole suite ran at once.
@@ -288,28 +278,6 @@ describe('FlashcardEditorPage', () => {
     expect(await screen.findByText('Trang môn học')).toBeInTheDocument()
   })
 
-  it('cites a passage found in the document for a card without a source', async () => {
-    vi.mocked(api.getFlashcardSet).mockResolvedValue(draft([card(1, { citations: [], sources: [] })]))
-    vi.mocked(api.listDocumentChunks).mockResolvedValue({
-      items: [{ chunk_id: 'chunk-9', locator: 'bai-giang.pdf, trang 9', content: 'Danh sách liên kết nối các nút bằng con trỏ.' }],
-      total: 1,
-    })
-    vi.mocked(api.saveFlashcards).mockResolvedValue(draft([card(1)]))
-
-    renderPage()
-    const item = (await screen.findAllByRole('listitem'))[0]
-    expect(within(item).getByText('Chưa có nguồn')).toBeInTheDocument()
-    await userEvent.click(within(item).getByRole('button', { name: 'Tìm' }))
-
-    expect(api.listDocumentChunks).toHaveBeenCalledWith('doc-1', { q: '', offset: 0 })
-    await userEvent.click(await within(item).findByRole('checkbox', { name: /con trỏ/ }))
-    expect(within(item).queryByText('Chưa có nguồn')).not.toBeInTheDocument()
-    await userEvent.click(screen.getByRole('button', { name: 'Lưu thay đổi' }))
-
-    await waitFor(() => expect(api.saveFlashcards).toHaveBeenCalled())
-    expect(vi.mocked(api.saveFlashcards).mock.calls[0][2][0].citations).toEqual(['chunk-9'])
-  })
-
   it('shows where each card comes from as a numbered marker that opens its passage', async () => {
     vi.mocked(api.getFlashcardSet).mockResolvedValue(draft([card(1), card(2, { citations: [], sources: [] })]))
 
@@ -326,27 +294,6 @@ describe('FlashcardEditorPage', () => {
     await userEvent.click(marker)
     expect(within(sources).queryByText('Một mảng là dãy ô liên tiếp.')).not.toBeInTheDocument()
     expect(screen.queryByRole('group', { name: 'Nguồn của thẻ 2' })).not.toBeInTheDocument()
-  })
-
-  it('names a card source once, not again in the picker summary', async () => {
-    vi.mocked(api.getFlashcardSet).mockResolvedValue(draft([card(1)]))
-
-    renderPage()
-
-    expect(await screen.findByRole('group', { name: 'Nguồn của thẻ 1' })).toBeInTheDocument()
-    expect(screen.queryByText(/^Nguồn: /)).not.toBeInTheDocument()
-    expect(screen.getByText('Đổi nguồn')).toBeInTheDocument()
-  })
-
-  it('marks as the card sources only the passages still ticked', async () => {
-    vi.mocked(api.getFlashcardSet).mockResolvedValue(draft([card(1)]))
-
-    renderPage()
-    expect(await screen.findByRole('group', { name: 'Nguồn của thẻ 1' })).toBeInTheDocument()
-    await userEvent.click(screen.getByRole('checkbox', { name: /bai-giang.pdf, trang 3/ }))
-
-    expect(screen.queryByRole('group', { name: 'Nguồn của thẻ 1' })).not.toBeInTheDocument()
-    expect(screen.getByText('Gắn nguồn')).toBeInTheDocument()
   })
 
   it('goes back to its course, and says so while still generating', async () => {
