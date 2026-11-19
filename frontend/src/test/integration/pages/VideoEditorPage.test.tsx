@@ -150,9 +150,8 @@ describe('VideoEditorPage', () => {
     expect(screen.getByText(/Khoảng 2 phút/)).toBeInTheDocument()
   })
 
-  it('marks flagged scenes and uncited lecturer sentences', async () => {
+  it('marks flagged scenes and uncited sentences of the model', async () => {
     const flagged = scene(1, {
-      author: 'lecturer',
       narration_citations: [['c1'], []],
       flags: ['Ý 1: Ý này ngược nghĩa với nguồn', 'Lời thoại chỉ có 1 cảnh', 'Chưa có nguồn: Câu 2'],
     })
@@ -171,7 +170,7 @@ describe('VideoEditorPage', () => {
     const sentences = within(within(scenes[0]).getByRole('list', { name: 'Lời thoại cảnh 1' })).getAllByRole('listitem')
     expect(within(sentences[0]).queryByText('Chưa có nguồn')).not.toBeInTheDocument()
     expect(within(sentences[1]).getByText('Chưa có nguồn')).toBeInTheDocument()
-    // A missing source is cleared by attaching one, never dismissed.
+    // A missing source is never dismissed.
     expect(within(sentences[1]).queryByRole('button', { name: /Bỏ đánh dấu/ })).not.toBeInTheDocument()
     expect(screen.queryByRole('alert')).not.toBeInTheDocument()
 
@@ -574,6 +573,19 @@ describe('VideoEditorPage', () => {
     // The slide is asked for again, now printed without the picture, and there is nothing to draw.
     await waitFor(() => expect(api.getScenePreview).toHaveBeenCalledTimes(2))
     expect(screen.queryByRole('button', { name: /hình cảnh 1/ })).not.toBeInTheDocument()
+  })
+
+  it('marks no sentence the lecturer wrote without a source', async () => {
+    vi.mocked(api.getVideo).mockResolvedValue(video([scene(1, { author: 'lecturer', narration_citations: [['c1'], []] })]))
+
+    renderPage()
+    const [first] = await sceneItems()
+
+    expect(within(first).queryByText('Chưa có nguồn')).not.toBeInTheDocument()
+    expect(within(first).queryByText('Cần xem lại')).not.toBeInTheDocument()
+    await userEvent.click(within(first).getByRole('button', { name: /Thêm câu/ }))
+    await userEvent.type(within(first).getAllByRole('textbox').at(-1)!, 'Câu giảng viên thêm.')
+    expect(within(first).queryByText('Chưa có nguồn')).not.toBeInTheDocument()
   })
 
   it('reads each flag as the description of its field', async () => {

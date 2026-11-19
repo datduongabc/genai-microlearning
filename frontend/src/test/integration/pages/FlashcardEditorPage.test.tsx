@@ -66,31 +66,23 @@ afterEach(() => {
 })
 
 describe('FlashcardEditorPage', () => {
-  it('shows a warning on a flagged card and on a card without a source', async () => {
+  it('shows a warning on a flagged card, none on the lecturer\'s card without a source', async () => {
     vi.mocked(api.getFlashcardSet).mockResolvedValue(draft([
       card(1, { sources: [] }),
-      card(2, { flag: 'Chưa có nguồn', citations: [], sources: [] }),
+      // An older save stored "Chưa có nguồn" on the lecturer's card; they have no way to cite, so it is not shown.
+      card(2, { flag: 'Chưa có nguồn', citations: [], sources: [], author: 'lecturer' }),
       card(3, { flag: 'Có thể không khớp tài liệu', sources: [] }),
     ]))
 
     renderPage()
 
     const cards = await screen.findAllByRole('listitem')
-    expect(within(cards[0]).queryByText('Chưa có nguồn')).not.toBeInTheDocument()
-    expect(within(cards[1]).getByText('Chưa có nguồn')).toBeInTheDocument()
+    expect(screen.queryByText('Chưa có nguồn')).not.toBeInTheDocument()
     expect(within(cards[2]).getByText('Có thể không khớp tài liệu')).toBeInTheDocument()
     // Static text: a screen reader reads it with the card instead of being interrupted by it.
     expect(screen.queryByRole('alert')).not.toBeInTheDocument()
   })
 
-
-  it('warns about an uncited card even before the server has flagged it', async () => {
-    vi.mocked(api.getFlashcardSet).mockResolvedValue(draft([card(1, { citations: [] })]))
-
-    renderPage()
-
-    expect(await screen.findByText('Chưa có nguồn')).toBeInTheDocument()
-  })
 
   // Fifteen cards are rendered again at every step: 1.3 s alone, and past the default 5 s when the
   // whole suite shares the machine.

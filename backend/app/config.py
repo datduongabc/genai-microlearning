@@ -81,6 +81,8 @@ class Settings(BaseSettings):
     # (about $0.04 a picture, $0.03 to $0.11 of voice a render), and neither takes a generation.
     video_redraws_per_day: int = Field(default=20, ge=1)
     video_renders_per_day: int = Field(default=10, ge=1)
+    # "Sửa theo yêu cầu" a day, of a module or a flashcard set, for every account: each is a paid model call.
+    edits_per_day: int = Field(default=100, ge=1)
     # Pin the selected alias for evaluation; the gateway may still retry that model.
     llm_experiment_mode: bool = False
     # Times one call in a background job waits and asks again after a 429, so a brief limit does not

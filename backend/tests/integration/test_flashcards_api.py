@@ -6,6 +6,7 @@ from datetime import UTC, datetime
 import pytest
 from fastapi.testclient import TestClient
 
+from app.api import flashcards as flashcards_api
 from app.auth.rate_limit import limiter
 from app.auth.security import create_access_token
 from app.config import settings
@@ -166,13 +167,13 @@ def test_an_edited_card_is_marked_as_the_lecturers(world):
         json={"draft_version": 1, "cards": [
             card("Q1", "A1", [chunk]),                     # untouched: keeps what it had
             card("Q2", "A2 fixed", [chunk]),               # edited: the lecturer's, flag cleared
-            card("Q3", "A3", []),                          # source removed: no source flag
+            card("Q3", "A3", []),                          # source removed: the lecturer's, no warning
             card("New", "Card", [chunk]),
         ]})
 
     assert response.status_code == 200
     assert [(c["author"], c["flag"]) for c in response.json()["cards"]] == [
-        ("model", None), ("lecturer", None), ("lecturer", "Chưa có nguồn"), ("lecturer", None)]
+        ("model", None), ("lecturer", None), ("lecturer", None), ("lecturer", None)]
 
 
 def test_an_unchanged_flagged_card_keeps_its_flag(world):
@@ -418,3 +419,39 @@ def test_a_revision_on_an_older_version_or_one_emptying_the_set_is_refused(world
     emptied = client.post(f"/flashcard-sets/{set_id}/revise", headers=h, json={"draft_version": 1, "message": "Xóa hết"})
     assert emptied.status_code == 422
     assert client.get(f"/flashcard-sets/{set_id}", headers=h).json()["cards"][0]["front"] == "Q1"
+
+
+def test_a_save_while_the_model_revises_is_not_written_over(world, monkeypatch):
+    chunk = str(world["chunk"])
+    set_id = make_set(world, cards=[card("Q1", "A1", [chunk], author="model", flag=None)])
+    _revise_model(monkeypatch, [("Q1 sửa", "A1", ["S1"])])
+    from app.generation import flashcards as generation
+    revise = generation.revise_flashcards
+
+    def save_meanwhile(db, card_set, request):
+        # Another tab saves while the model is still writing.
+        with SessionLocal() as other:
+            saved = other.get(FlashcardSet, set_id)
+            saved.cards = [{"front": "Saved", "back": "In the other tab", "citations": [chunk], "author": "lecturer", "flag": None}]
+            saved.draft_version = 2
+            other.commit()
+        return revise(db, card_set, request)
+    monkeypatch.setattr(flashcards_api, "revise_flashcards", save_meanwhile)
+
+    response = client.post(f"/flashcard-sets/{set_id}/revise", headers=headers(world["owner"]),
+                           json={"draft_version": 1, "message": "Sửa thẻ 1"})
+
+    assert response.status_code == 409
+    assert client.get(f"/flashcard-sets/{set_id}", headers=headers(world["owner"])).json()["cards"][0]["front"] == "Saved"
+
+
+def test_changes_asked_in_words_are_counted_a_day(world, monkeypatch):
+    chunk = str(world["chunk"])
+    set_id = make_set(world, cards=[card("Q1", "A1", [chunk], author="model", flag=None)])
+    _revise_model(monkeypatch, [("Q1", "A1", ["S1"])])
+    monkeypatch.setattr(settings, "edits_per_day", 1)
+    h = headers(world["owner"])
+
+    assert client.post(f"/flashcard-sets/{set_id}/revise", headers=h, json={"draft_version": 1, "message": "x"}).status_code == 200
+    refused = client.post(f"/flashcard-sets/{set_id}/revise", headers=h, json={"draft_version": 1, "message": "x"})
+    assert refused.status_code == 429 and "tối đa 1 lần" in refused.json()["detail"]

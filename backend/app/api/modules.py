@@ -25,7 +25,7 @@ from app.generation.common import OutputLanguage
 from app.generation.content import ContentOutput, resolve_citations
 from app.generation.example import ExampleOutput
 from app.generation.inline_citations import MARKER, citation_content
-from app.generation.limits import has_full_access, reserve_generations
+from app.generation.limits import has_full_access, reserve_edit, reserve_generations
 from app.generation.module_generation_pipeline import (
     IncompleteModuleError,
     control_payload,
@@ -552,6 +552,7 @@ def chat_edit_module(
     message = payload.message.strip()
     if not message:
         raise HTTPException(status_code=400, detail="message is required")
+    reserve_edit(db, current_user)
     session = _get_or_create_session(db, module.course_id, payload.session_id, message, current_user.id, module.id)
     history_rows = db.query(ChatMessage).filter(ChatMessage.session_id == session.id).order_by(
         ChatMessage.created_at.desc(), ChatMessage.id.desc(),
@@ -577,7 +578,9 @@ def chat_edit_module(
             component = next((c for c in module.components if c.type.value == edit.target), None)
             if component is None or edit.revised is None:
                 raise ValueError("Missing component or revision")
-            # Use the same lock and original-preserving mutations as the manual editors.
+            # Use the same lock and original-preserving mutations as the manual editors. Everything read
+            # before the model call is read again: a save while it ran must not be written over.
+            db.expire_all()
             component = db.get(ModuleComponent, component.id, with_for_update=True)
             schemas = {"content": ContentOutput, "slides": SlidesOutput, "example": ExampleOutput,
                        "quiz": QuizQuestionEdit, "practice": QuizQuestionEdit}

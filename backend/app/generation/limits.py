@@ -79,6 +79,13 @@ def reserve_video_redraws(db: Session, user: User, images: int) -> None:
                  "Mỗi ngày bạn được vẽ tối đa {limit} hình, hôm nay còn {left} hình. Hãy quay lại vào ngày mai.")
 
 
+def reserve_edit(db: Session, user: User) -> None:
+    """Committed at once, so the account row is not held while the model writes the change."""
+    _count_today(db, user, "edit", 1, settings.edits_per_day,
+                 "Mỗi ngày bạn được sửa theo yêu cầu tối đa {limit} lần. Hãy quay lại vào ngày mai.")
+    db.commit()
+
+
 def reserve_video_render(db: Session, user: User) -> None:
     _count_today(db, user, "video_render", 1, settings.video_renders_per_day,
                  "Mỗi ngày bạn được dựng video tối đa {limit} lần. Hãy quay lại vào ngày mai.")

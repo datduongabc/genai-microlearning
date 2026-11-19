@@ -111,6 +111,9 @@ class User(Base):
     video_redraw_count: Mapped[int] = mapped_column(default=0, server_default="0")
     video_render_day: Mapped[date | None] = mapped_column(Date, nullable=True)
     video_render_count: Mapped[int] = mapped_column(default=0, server_default="0")
+    # Changes asked for in words today, of a module or a flashcard set (settings.edits_per_day).
+    edit_day: Mapped[date | None] = mapped_column(Date, nullable=True)
+    edit_count: Mapped[int] = mapped_column(default=0, server_default="0")
     created_at: Mapped[datetime] = created_at_column()
 
 

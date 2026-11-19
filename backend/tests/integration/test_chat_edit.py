@@ -504,3 +504,23 @@ def test_a_chat_edit_gives_up_before_cloudfront_does(lesson, monkeypatch):
     monkeypatch.setattr(litellm, "completion", fake)
     assert send(lesson).status_code == 200
     assert timeouts and all(t < 60 for t in timeouts)
+
+
+def test_a_save_while_the_model_edits_a_question_is_not_written_over(lesson, monkeypatch):
+    ids, _ = lesson
+
+    def fake(prompt, response_model, **kw):
+        # The lecturer saves the quiz while the model is still writing.
+        with SessionLocal() as other:
+            quiz = other.get(ModuleComponent, ids["quiz"])
+            quiz.content = {**quiz.content, "saved_meanwhile": True}
+            other.commit()
+        return response_model(target="quiz", question_number=1, reply="Đã sửa câu 1.", revised={
+            "common_misconceptions": ["m1", "m2", "m3"], "stem": "Which stack item leaves first?",
+            "reasoning": "LIFO", "choices": ["First", "Last", "Middle", "Random"],
+            "correct_index": 1, "explanation": "A stack is LIFO."})
+    monkeypatch.setattr(service, "complete_structured", fake)
+
+    assert send(lesson, "make quiz question 1 harder").status_code == 200
+    with SessionLocal() as db:
+        assert db.get(ModuleComponent, ids["quiz"]).content.get("saved_meanwhile") is True

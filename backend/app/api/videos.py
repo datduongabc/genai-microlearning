@@ -147,7 +147,7 @@ def _cited(scene: Scene) -> list[str]:
 
 def _scene_out(scene: Scene, passages: dict[str, dict]) -> dict:
     out = scene.model_dump(exclude=set(MEDIA_FIELDS))
-    out["flags"] = _with_source_flags(out["flags"], out)
+    out["flags"] = _with_source_flags(out["flags"], out, out["author"])
     drawable = scene.kind == "illustration" and bool(scene.image_prompt and scene.image_prompt.strip())
     return out | {
         "has_image": scene.image_key is not None,
@@ -213,12 +213,14 @@ def _is_source_flag(flag: str) -> bool:
     return flag.startswith(f"{NO_SOURCE_FLAG}: ")
 
 
-def _with_source_flags(flags: list[str], scene: dict) -> list[str]:
+def _with_source_flags(flags: list[str], scene: dict, author: str) -> list[str]:
     """The flags with "Chưa có nguồn" made again from the citations, one per bullet or sentence that
     has none. Not stored state but what the scene is, on every save and every read: no save can lose
-    it, the editor cannot dismiss it, and a scene shows it before it was ever saved. The lecturer may
-    write without a source (they answer for it), but the editor shows where."""
+    it, the editor cannot dismiss it, and a scene shows it before it was ever saved. Only on a scene
+    the model wrote: the lecturer has no way to cite a passage, and answers for what they write."""
     kept = [f for f in flags if not _is_source_flag(f)]
+    if author != "model":
+        return kept
     return kept + [f"{NO_SOURCE_FLAG}: {label}" for label, item in _items(scene).items() if len(item) == 2 and not item[1]]
 
 
@@ -295,7 +297,8 @@ def _edited_scene(edit: SceneEdit, before: dict | None, number: int) -> dict:
             # A flag about an item that is still there follows it to its new number.
             flags.append(moved[label] + flag[len(label):])
         # A flag about an item that was changed or removed was about the old item, so it goes.
-    flags = _with_source_flags(flags, now)
+    author = "lecturer" if changed else before["author"]
+    flags = _with_source_flags(flags, now, author)
 
     media = {f: before[f] for f in MEDIA_FIELDS} if before is not None else {}
     if now["image_prompt"] is None:
@@ -303,7 +306,7 @@ def _edited_scene(edit: SceneEdit, before: dict | None, number: int) -> dict:
         # save deletes its file with those of removed scenes.
         media |= {"image_key": None, "image_prompt_used": None}
     return Scene(
-        **now, citations=_sources(edit), author="lecturer" if changed else before["author"], flags=flags, **media,
+        **now, citations=_sources(edit), author=author, flags=flags, **media,
     ).model_dump()
 
 

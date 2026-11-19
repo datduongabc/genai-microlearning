@@ -273,7 +273,7 @@ def test_editing_a_published_video_keeps_the_rendered_one_for_learners(world):
     assert response.json()["draft_version"] == 2 and response.json()["rendered_version"] == 1
 
 
-def test_an_edit_keeps_the_flags_of_unchanged_items_and_flags_uncited_new_ones(world):
+def test_an_edit_keeps_the_flags_of_unchanged_items_and_none_on_the_lecturers_uncited_ones(world):
     c = world["chunk"]
     short = "Lời thoại chỉ có 2 cảnh (nên có 8 đến 10) vì model chỉ viết từng ấy cảnh: hãy thêm cảnh hoặc sinh lại"
     flagged = scene(world, flags=["Ý 1: ngược nghĩa", "Ý 2: không có trong nguồn", "Câu 2: sai số", short])
@@ -291,9 +291,10 @@ def test_an_edit_keeps_the_flags_of_unchanged_items_and_flags_uncited_new_ones(w
 
     first, second, third = body["scenes"]
     assert first["author"] == "lecturer"
-    assert first["flags"] == ["Ý 2: không có trong nguồn", short, "Chưa có nguồn: Câu 2"]
+    # The lecturer cannot cite a passage, so a scene they changed has no "Chưa có nguồn".
+    assert first["flags"] == ["Ý 2: không có trong nguồn", short]
     assert (second["author"], second["flags"]) == ("model", ["Câu 1: nghi sai"])
-    assert (third["author"], third["flags"]) == ("lecturer", ["Chưa có nguồn: Ý 1"])
+    assert (third["author"], third["flags"]) == ("lecturer", [])
     assert third["citations"] == [c]
     assert first["narration_citations"] == [[c], []]
 
@@ -314,7 +315,7 @@ def test_citing_a_passage_clears_the_no_source_flag_and_a_flag_can_be_dismissed(
 def test_an_uncited_sentence_keeps_its_no_source_flag_whatever_the_editor_sends(world):
     c = world["chunk"]
     # Stored without its flag (an older save) and sent back unchanged with every flag dismissed.
-    stored = scene(world, author="lecturer", narration_citations=[[c], []], flags=["Câu 1: nghi sai"])
+    stored = scene(world, author="model", narration_citations=[[c], []], flags=["Câu 1: nghi sai"])
     video_id = make_video(world, [stored])
 
     body = client.put(f"/videos/{video_id}/scenes", headers=headers(world["owner"]), json={
@@ -323,13 +324,14 @@ def test_an_uncited_sentence_keeps_its_no_source_flag_whatever_the_editor_sends(
     assert body["scenes"][0]["flags"] == ["Chưa có nguồn: Câu 2"]
 
 
-def test_an_uncited_sentence_shows_its_flag_before_the_first_save(world):
-    stored = scene(world, author="lecturer", narration_citations=[[world["chunk"]], []], flags=[])
-    video_id = make_video(world, [stored])
+def test_an_uncited_sentence_of_the_model_shows_its_flag_before_the_first_save(world):
+    by_model = scene(world, author="model", narration_citations=[[world["chunk"]], []], flags=[])
+    by_lecturer = scene(world, author="lecturer", narration_citations=[[world["chunk"]], []], flags=[])
+    video_id = make_video(world, [by_model, by_lecturer])
 
-    shown = client.get(f"/videos/{video_id}", headers=headers(world["owner"])).json()["scenes"][0]
+    shown = client.get(f"/videos/{video_id}", headers=headers(world["owner"])).json()["scenes"]
 
-    assert shown["flags"] == ["Chưa có nguồn: Câu 2"]
+    assert [s["flags"] for s in shown] == [["Chưa có nguồn: Câu 2"], []]
     assert stored_video(video_id).scenes[0]["flags"] == []
 
 

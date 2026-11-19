@@ -243,8 +243,8 @@ export function FlashcardEditorPage() {
 
         <ol className="flashcard-list" aria-label="Các thẻ">
           {cards.map((c, index) => {
-            const flag = c.flag === NO_SOURCE && c.citations.length > 0 ? null : c.flag
-            const warning = flag ?? (c.citations.length === 0 ? NO_SOURCE : null)
+            // A model card always cites, so "Chưa có nguồn" (older saves) was only ever on the lecturer's own card.
+            const warning = c.flag === NO_SOURCE ? null : c.flag
             return (
               <li key={c.key} className="flashcard-item">
                 <div className="flashcard-head">

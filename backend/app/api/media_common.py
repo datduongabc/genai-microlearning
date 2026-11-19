@@ -32,7 +32,9 @@ def owned_media[Media: (FlashcardSet, Video)](
     db: Session, model: type[Media], item_id: uuid.UUID, user: User, *, not_found: str, lock: bool = False,
 ) -> Media:
     require_author(user)
-    item = db.get(model, item_id, with_for_update=lock)
+    # populate_existing: an item read before, as a change the model took seconds over reads it, is read
+    # again under the lock; without it the lock leaves the old values and a save meanwhile is lost.
+    item = db.get(model, item_id, with_for_update=lock, populate_existing=lock)
     if item is None:
         raise HTTPException(status_code=404, detail=not_found)
     # Both a missing item and someone else's answer 404, so an id does not confirm itself.

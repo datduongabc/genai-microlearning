@@ -32,6 +32,9 @@ export interface SceneDraft {
   // One row a line, cells split by "|".
   table: string
   imagePrompt: string
+  // The saved scene is the model's: only there is a bullet or sentence without a source flagged, as on
+  // the server, since the lecturer has no way to cite a passage.
+  byModel: boolean
   // The stored flags the lecturer keeps, "Chưa có nguồn" aside: that one is worked out from the
   // citations, here as on the server, and cannot be dismissed.
   flags: string[]
@@ -56,6 +59,7 @@ export function toDrafts(video: VideoDetail, nextKey: () => number): SceneDraft[
     code: s.code ?? '',
     table: (s.table ?? []).map((row) => row.join(' | ')).join('\n'),
     imagePrompt: s.image_prompt ?? '',
+    byModel: s.author === 'model',
     flags: s.flags.filter((f) => !f.startsWith(`${NO_SOURCE}: `)),
     sources: s.sources,
   }))
@@ -118,7 +122,7 @@ export const flagMessage = (flag: string) => flag.match(ITEM_FLAG)?.[2] ?? flag
 // A scene the lecturer adds: nothing drawn or voiced, no flags, one sentence to start writing in.
 export function newScene(nextKey: () => number): SceneDraft {
   return {
-    key: nextKey(), fromIndex: null, kind: 'summary', title: '', bullets: [],
+    key: nextKey(), fromIndex: null, byModel: false, kind: 'summary', title: '', bullets: [],
     sentences: [{ key: nextKey(), text: '', citations: [], label: null }],
     formula: '', code: '', table: '', imagePrompt: '', flags: [], sources: [],
   }
@@ -133,5 +137,9 @@ export function shownFlags(scene: SceneDraft): string[] {
 
 // "Cần xem lại": a flag to read, or a bullet or sentence written without a source.
 export function needsReview(scene: SceneDraft): boolean {
-  return shownFlags(scene).length > 0 || [...filled(scene.bullets), ...filled(scene.sentences)].some((i) => i.citations.length === 0)
+  return shownFlags(scene).length > 0 || [...scene.bullets, ...scene.sentences].some((i) => uncited(scene, i))
 }
+
+// A loaded bullet or sentence of the model's scene, written without a source. One the lecturer adds has no label.
+export const uncited = (scene: SceneDraft, item: ItemDraft) =>
+  scene.byModel && item.label !== null && item.text.trim() !== '' && item.citations.length === 0
