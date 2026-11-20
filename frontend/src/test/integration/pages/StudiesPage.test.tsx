@@ -535,25 +535,50 @@ it("adds a pair whose no-RAG twin is made, and asks before making one", async ()
   await waitFor(() => expect(api.addPair).toHaveBeenLastCalledWith("s1", "m2"));
 });
 
-it("starts with nothing ticked and gives a rater only the pairs ticked", async () => {
-  vi.mocked(api.getRaters).mockResolvedValue({ emails: ["lan@example.com"], assignments: {} });
+it("starts with nobody given anything and saves only the row picked", async () => {
+  vi.mocked(api.getRaters).mockResolvedValue({ emails: ["lan@example.com", "minh@example.com"], assignments: { "minh@example.com": ["p2"] } });
   vi.mocked(api.getStudyItems).mockResolvedValue([
     summary("a", "M01", "rag_llm", "p1"), summary("b", "M04", "llm_no_rag", "p1"),
     summary("c", "M02", "rag_llm", "p2"), summary("d", "M03", "llm_no_rag", "p2"),
   ]);
   vi.mocked(api.setRaters).mockImplementation(async (_s, emails, assignments) => ({ emails, assignments: assignments ?? {} }));
   const card = await openStudy();
+  const rows = within(card).getAllByRole("row").slice(1);
+  expect(within(rows[0]).getByText("Chưa giao")).toBeInTheDocument();
+  expect(within(rows[1]).getByText("1 người")).toBeInTheDocument();
 
-  const first = await within(card).findByRole("checkbox", { name: "lan@example.com chấm M01, M04" });
+  await userEvent.click(within(rows[0]).getByRole("button", { name: "Chọn người chấm M01, M04" }));
+  const dialog = await screen.findByRole("dialog");
   // A rater invited and given nothing rates nothing yet.
-  expect(within(card).getAllByRole("checkbox").every((box) => !(box as HTMLInputElement).checked)).toBe(true);
-  await userEvent.click(first);
-  await userEvent.click(within(card).getByRole("button", { name: "Lưu phân công" }));
-  await waitFor(() => expect(api.setRaters).toHaveBeenCalledWith("s1", ["lan@example.com"], { "lan@example.com": ["p1"] }));
+  expect(within(dialog).getAllByRole("checkbox").every((box) => !(box as HTMLInputElement).checked)).toBe(true);
+  await userEvent.click(within(dialog).getByRole("button", { name: "Chọn tất cả" }));
+  await userEvent.click(within(dialog).getByRole("button", { name: "Lưu" }));
 
-  await userEvent.click(first);
-  await userEvent.click(within(card).getByRole("button", { name: "Lưu phân công" }));
-  await waitFor(() => expect(api.setRaters).toHaveBeenLastCalledWith("s1", ["lan@example.com"], { "lan@example.com": [] }));
+  // The other row keeps what it had.
+  await waitFor(() => expect(api.setRaters).toHaveBeenCalledWith("s1", ["lan@example.com", "minh@example.com"],
+    { "lan@example.com": ["p1"], "minh@example.com": ["p2", "p1"] }));
+  await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+  expect(within(rows[0]).getByText("2 người")).toBeInTheDocument();
+});
+
+it("asks before taking a pair out of the study, then lists what is left", async () => {
+  vi.mocked(api.getStudyItems).mockResolvedValueOnce([summary("a", "M01", "rag_llm", "p1"), summary("b", "M04", "llm_no_rag", "p1")])
+    .mockResolvedValue([]);
+  vi.mocked(api.removeStudyItem).mockResolvedValue([]);
+  const confirm = vi.spyOn(window, "confirm").mockReturnValueOnce(false).mockReturnValueOnce(true);
+  try {
+    const card = await openStudy();
+    const remove = within(card).getByRole("button", { name: "Xóa M01, M04" });
+    await userEvent.click(remove);
+    expect(api.removeStudyItem).not.toHaveBeenCalled();
+
+    await userEvent.click(remove);
+
+    expect(api.removeStudyItem).toHaveBeenCalledWith("s1", "a");
+    expect(await within(card).findByText("Chưa có nội dung nào.")).toBeInTheDocument();
+  } finally {
+    confirm.mockRestore();
+  }
 });
 
 it("lists each thing to rate by its real name, a pair as one row", async () => {
@@ -585,10 +610,11 @@ it("opens the only study by itself, with no list to choose from", async () => {
 });
 
 it("adds a flashcard set to the study with nothing generated", async () => {
-  vi.mocked(api.listMediaCandidates).mockResolvedValue([
-    { id: "f1", kind: "flashcards", title: "Bài 1.pdf · Định nghĩa", course_name: "Hệ điều hành", state: "ready" },
-    { id: "v1", kind: "video", title: "Bài 1.pdf · Toàn bộ tài liệu", course_name: "Hệ điều hành", state: "in_study" },
-  ]);
+  const video = { id: "v1", kind: "video" as const, title: "Bài 1.pdf · Toàn bộ tài liệu", course_name: "Hệ điều hành", state: "in_study" as const };
+  const cards = { id: "f1", kind: "flashcards" as const, title: "Bài 1.pdf · Định nghĩa", course_name: "Hệ điều hành" };
+  // The list is read again once something is added.
+  vi.mocked(api.listMediaCandidates).mockResolvedValueOnce([{ ...cards, state: "ready" }, video])
+    .mockResolvedValue([{ ...cards, state: "in_study" }, video]);
   vi.mocked(api.addMedia).mockResolvedValue([]);
   const confirm = vi.spyOn(window, "confirm");
   await openStudy();

@@ -502,6 +502,11 @@ def test_candidates_list_the_admins_rag_modules_and_where_they_stand(world):
     assert {i["source"]["title"] for i in client.get(f"/studies/{sid}", headers=world["headers"]).json()["items"]} == {title}
     assert client.post(f"/studies/{sid}/pairs", headers=world["headers"],
                        json={"module_id": str(world["rag"])}).status_code == 409
+    # Removing one packet of a pair removes both, and the module can be added again.
+    first = added.json()[0]["id"]
+    assert client.delete(f"/studies/{sid}/items/{first}", headers=world["headers"]).json() == []
+    assert client.post(f"/studies/{sid}/pairs", headers=world["headers"],
+                       json={"module_id": str(world["rag"])}).status_code == 201
 
 
 def test_adding_a_module_without_its_control_asks_for_one_and_says_it_is_generating(world, monkeypatch):
@@ -533,3 +538,18 @@ def test_a_lecturer_cannot_add_pairs(world):
     assert client.post(f"/studies/{sid}/pairs", headers=world["teacher_headers"],
                        json={"module_id": str(world["rag"])}).status_code == 404
     assert client.get(f"/studies/{sid}/candidates", headers=world["teacher_headers"]).status_code == 404
+
+
+def test_a_closed_study_is_listed_to_nobody_and_keeps_its_items(world):
+    sid = create_study(world)
+    load(world, sid, module_ids=[str(world["rag"])]).raise_for_status()
+    with SessionLocal() as db:
+        from app.models import User
+        study = db.get(Study, sid)
+        email = db.get(User, world["teacher"]).email.lower()
+        study.rater_emails, study.status = [email], "closed"
+        db.commit()
+    assert all(s["id"] != sid for s in client.get("/studies", headers=world["headers"]).json())
+    assert all(s["id"] != sid for s in client.get("/studies/mine", headers=world["teacher_headers"]).json())
+    # Still there for the export.
+    assert len(client.get(f"/studies/{sid}", headers=world["headers"]).json()["items"]) == 2

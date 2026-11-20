@@ -109,7 +109,9 @@ def create_study(body: CreateStudy, db: Session = Depends(get_db)):
 
 @router.get("", dependencies=[Depends(require_admin)])
 def list_studies(db: Session = Depends(get_db)):
-    return [_study_out(study) for study in db.scalars(select(Study).order_by(Study.created_at.desc(), Study.id))]
+    # A closed study is finished: its ratings stay for the export, but it is no longer worked on.
+    return [_study_out(study) for study in db.scalars(select(Study).where(Study.status != "closed")
+                                                       .order_by(Study.created_at.desc(), Study.id))]
 
 
 def _my_study(db: Session, study_id: uuid.UUID):
@@ -164,6 +166,7 @@ def my_studies(db: Session = Depends(get_db), user: User = Depends(get_current_u
         SELECT s.*, count(i.id) AS total, count(r.id) AS rated
         FROM blind_studies s LEFT JOIN blind_study_items i ON i.study_id = s.id
         LEFT JOIN ratings r ON r.study_item_id = i.id AND r.user_id = :uid
+        WHERE s.status <> 'closed'
         GROUP BY s.id, s.name, s.rubric_version, s.status, s.created_at
         ORDER BY s.created_at DESC, s.id
     """), {"uid": user.id}).mappings()]
@@ -285,6 +288,24 @@ def judge_file(study_id: uuid.UUID, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="The judge has not rated this study")
     return Response(lines, media_type="application/x-ndjson; charset=utf-8",
                     headers={"Content-Disposition": 'attachment; filename="judge.jsonl"'})
+
+
+@router.delete("/{study_id}/items/{item_id}", dependencies=[Depends(require_admin)])
+def remove_item(study_id: uuid.UUID, item_id: uuid.UUID, db: Session = Depends(get_db)):
+    """Takes a thing to rate out of the study: both packets of a pair, with the ratings given to
+    them, and no rater is given it any more. The source module, flashcard set or video stays."""
+    study = _study_or_404(db, study_id)
+    item = db.get(StudyItem, item_id)
+    if item is None or item.study_id != study_id:
+        raise HTTPException(status_code=404, detail="Item not found")
+    key = pair_key(item)
+    for member in _items(db, study_id):
+        if pair_key(member) == key:
+            db.delete(member)
+    study.rater_pairs = {email: [k for k in keys if k != key] for email, keys in (study.rater_pairs or {}).items()
+                         if [k for k in keys if k != key]}
+    db.commit()
+    return [_item_out(i) for i in _items(db, study_id)]
 
 
 @router.get("/{study_id}", dependencies=[Depends(require_admin)])
