@@ -95,3 +95,24 @@ def test_a_video_not_rendered_has_no_video_to_play(world):  # noqa: F811
     items = client.post(f"/studies/{sid}/media", headers=world["headers"], json={"kind": "video", "id": video_id}).json()
     assert items[0]["packet"]["has_video"] is False
     assert uuid.UUID(items[0]["id"])
+
+
+def test_the_admin_removes_a_packet_with_its_ratings_and_the_source_stays(world):  # noqa: F811
+    cards_id, _ = _media(world)
+    sid = create_study(world)
+    item = client.post(f"/studies/{sid}/media", headers=world["headers"], json={"kind": "flashcards", "id": cards_id}).json()[0]
+    with SessionLocal() as db:
+        from app.models import User
+        email = db.get(User, world["teacher"]).email
+    client.put(f"/studies/{sid}/raters", headers=world["headers"],
+               json={"emails": [email], "assignments": {email: [item["id"]]}}).raise_for_status()
+    client.put(f"/studies/mine/{sid}/items/{item['id']}/rating", headers=world["teacher_headers"],
+               json=_rating("F01", ["accuracy", "focus", "clarity", "no_duplicates"])).raise_for_status()
+
+    assert client.delete(f"/studies/{sid}/items/{item['id']}", headers=world["teacher_headers"]).status_code == 404
+    assert client.delete(f"/studies/{sid}/items/{item['id']}", headers=world["headers"]).json() == []
+    # Nobody is given it any more, and it can be added again from the same set, which still exists.
+    assert client.get(f"/studies/{sid}/raters", headers=world["headers"]).json()["assignments"] == {}
+    assert client.get(f"/studies/mine/{sid}/items", headers=world["teacher_headers"]).json()["items"] == []
+    assert client.post(f"/studies/{sid}/media", headers=world["headers"],
+                       json={"kind": "flashcards", "id": cards_id}).status_code == 201

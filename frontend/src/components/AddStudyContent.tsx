@@ -16,7 +16,7 @@ const TABS: { id: Kind; label: string }[] = [
 // The button and dialog that put the admin's own modules, flashcard sets and videos into the study.
 // The module state lives here, not in the dialog, so a pair whose control is still being made is
 // still added once it is done after the dialog is closed.
-export function AddStudyContent({ studyId, onAdded }: { studyId: string; onAdded: () => void }) {
+export function AddStudyContent({ studyId, version, onAdded }: { studyId: string; version: number; onAdded: () => void }) {
   const [open, setOpen] = useState(false);
   const [tab, setTab] = useState<Kind>("module");
   const [modules, setModules] = useState<PairCandidate[] | null>(null);
@@ -49,7 +49,7 @@ export function AddStudyContent({ studyId, onAdded }: { studyId: string; onAdded
       .then(([m, f]) => { if (active) { setModules(m); setMedia(f); } })
       .catch((e) => { if (active) setError(apiErrorMessage(e, "Không tải được nội dung có thể thêm.")); });
     return () => { active = false; };
-  }, [studyId]);
+  }, [studyId, version]);
 
   const generating = modules?.filter((r) => r.state === "generating") ?? [];
   useEffect(() => {

@@ -157,6 +157,10 @@ export interface StudyItemSummary {
 export async function getStudyItems(id: string) {
   return (await api.get<{ items: StudyItemSummary[] }>(`/studies/${id}`)).data.items;
 }
+// Takes both packets of a pair out together, with their ratings; returns the items left.
+export async function removeStudyItem(id: string, itemId: string) {
+  return (await api.delete<StudyItemSummary[]>(`/studies/${id}/items/${itemId}`)).data;
+}
 export async function listStudyFiles(id: string) {
   return (await api.get<StudyFile[]>(`/studies/${id}/files`)).data;
 }

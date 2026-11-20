@@ -235,6 +235,7 @@ ATTACKS = [
     ("GET", "/studies/mine/{study}/items/{study_item}/video", None, {}),
     ("GET", "/studies/mine/{study}/items/{study_item}/video/content", None, {}),
     ("PUT", "/studies/{study}/raters", None, {"json": {"emails": []}}),
+    ("DELETE", "/studies/{study}/items/{study_item}", None, {}),
     # A study the owner was invited to rate, reached by a lecturer who was not.
     ("GET", "/studies/mine/{study}/items", None, {}),
     ("PUT", "/studies/mine/{study}/items/{study_item}/rating", None, {"json": RATING}),
