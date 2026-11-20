@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { GenerateDialog } from '../../../components/GenerateDialog'
@@ -109,10 +109,12 @@ describe('GenerateDialog', () => {
 
     const voice = screen.getByLabelText('Giọng đọc')
     const image = screen.getByLabelText('Vẽ hình')
-    // The choices are the server's.
-    await waitFor(() => expect(voice).toHaveValue('voice-heygen'))
-    expect(image).toHaveValue('image-nano-banana')
-    expect(screen.getByRole('option', { name: 'HeyGen Voice 1 Turbo' })).toBeInTheDocument()
+    // The system's default first, as for the text model, then the server's choices.
+    await waitFor(() => expect(screen.getByRole('option', { name: 'HeyGen Voice 1 Turbo' })).toBeInTheDocument())
+    expect(voice).toHaveValue('')
+    expect(image).toHaveValue('')
+    expect(within(voice).getAllByRole('option')[0]).toHaveTextContent('Mặc định của hệ thống')
+    expect(within(image).getAllByRole('option')[0]).toHaveTextContent('Mặc định của hệ thống')
     expect(screen.getByRole('option', { name: 'Qwen Image 2.1 Turbo' })).toBeInTheDocument()
     expect(screen.queryByText(/\$/)).not.toBeInTheDocument()
 
@@ -140,4 +142,12 @@ describe('GenerateDialog', () => {
 
     await waitFor(() => expect(onGenerate).toHaveBeenCalledWith('vi', '', { modelAlias: '', voiceAlias: undefined, imageAlias: undefined }))
   })
+})
+
+it('sends no voice or picture model when the system default is kept, so the server picks', async () => {
+  const onGenerate = vi.fn()
+  render(<GenerateDialog open onOpenChange={vi.fn()} onGenerate={onGenerate} kind="video" />)
+  await waitFor(() => expect(screen.getByRole('option', { name: 'HeyGen Voice 1 Turbo' })).toBeInTheDocument())
+  await userEvent.click(screen.getByRole('button', { name: 'Tạo video' }))
+  await waitFor(() => expect(onGenerate).toHaveBeenCalledWith('vi', '', { modelAlias: '', voiceAlias: undefined, imageAlias: undefined }))
 })

@@ -760,7 +760,7 @@ describe('CourseDetailPage - videos', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Tạo video' }))
 
     await waitFor(() => expect(api.generateVideo).toHaveBeenCalledWith('doc-1', {
-      focus: 'FCFS', outputLanguage: 'vi', modelAlias: '', voiceAlias: 'voice-heygen', imageAlias: 'image-qwen',
+      focus: 'FCFS', outputLanguage: 'vi', modelAlias: '', voiceAlias: undefined, imageAlias: 'image-qwen',
     }))
     expect(await screen.findByText('Đang tạo…')).toBeInTheDocument()
   })
