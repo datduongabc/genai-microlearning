@@ -243,46 +243,6 @@ it("reports missing or revoked invitations", async () => {
   expect(await screen.findByRole("alert")).toHaveTextContent("Không tải được nghiên cứu");
   expect(screen.queryByRole("button", { name: "Lưu đánh giá" })).not.toBeInTheDocument();
 });
-it("invites raters picked from the accounts by name or email and can remove all of them", async () => {
-  vi.mocked(api.setRaters).mockImplementation(async (_s, emails) => ({ emails, assignments: {} }));
-  render(<MemoryRouter><AdminStudiesPanel /></MemoryRouter>);
-  await userEvent.click(await screen.findByRole("button", { name: /Nghiên cứu/ }));
-  const input = await screen.findByRole("combobox", { name: "Người chấm" });
-  await screen.findByRole("button", { name: "Bỏ lan@example.com" });
-  await waitFor(() => expect(input).toBeEnabled());
-
-  // No account, nothing to pick: an email that does not exist cannot be invited.
-  await userEvent.type(input, "nobody@example.com");
-  expect(screen.getByText("Không có tài khoản nào khớp.")).toBeInTheDocument();
-  await userEvent.clear(input);
-  await userEvent.type(input, "Minh");
-  // Already invited accounts are not offered again.
-  expect(screen.getAllByRole("option")).toHaveLength(1);
-  await userEvent.keyboard("{Enter}");
-  await screen.findByRole("button", { name: "Bỏ minh@example.com" });
-  expect(input).toHaveValue("");
-
-  await userEvent.click(screen.getByRole("button", { name: "Lưu người chấm" }));
-  await waitFor(() => expect(api.setRaters).toHaveBeenCalledWith("s1", ["lan@example.com", "minh@example.com"]));
-  await userEvent.click(screen.getByRole("button", { name: "Bỏ lan@example.com" }));
-  await userEvent.click(screen.getByRole("button", { name: "Bỏ minh@example.com" }));
-  await userEvent.click(screen.getByRole("button", { name: "Lưu người chấm" }));
-  await waitFor(() => expect(api.setRaters).toHaveBeenLastCalledWith("s1", []));
-});
-
-it("adds the pasted emails that have an account and names the ones that do not", async () => {
-  render(<MemoryRouter><AdminStudiesPanel /></MemoryRouter>);
-  await userEvent.click(await screen.findByRole("button", { name: /Nghiên cứu/ }));
-  const input = await screen.findByRole("combobox", { name: "Người chấm" });
-  await waitFor(() => expect(input).toBeEnabled());
-  input.focus();
-  await userEvent.paste("Lan@example.com\nminh@example.com, ghost@example.com;minh@example.com");
-  expect(screen.getAllByRole("button", { name: /^Bỏ / }).map((b) => b.getAttribute("aria-label"))).toEqual([
-    "Bỏ lan@example.com", "Bỏ minh@example.com",
-  ]);
-  expect(screen.getByRole("alert")).toHaveTextContent("Chưa có tài khoản: ghost@example.com");
-});
-
 it("loads the raters again when the same study is picked after a failed load", async () => {
   vi.mocked(api.getRaters).mockRejectedValueOnce(new Error("offline"));
   render(<MemoryRouter><AdminStudiesPanel /></MemoryRouter>);
@@ -290,7 +250,7 @@ it("loads the raters again when the same study is picked after a failed load", a
   await userEvent.click(pick);
   expect(await screen.findByRole("alert")).toHaveTextContent("Không tải được người chấm.");
   await userEvent.click(pick);
-  expect(await screen.findByRole("button", { name: "Bỏ lan@example.com" })).toBeInTheDocument();
+  expect(await screen.findByRole("region", { name: "Nội dung chấm" })).toBeInTheDocument();
   expect(api.getRaters).toHaveBeenCalledTimes(2);
 });
 
@@ -523,8 +483,8 @@ it("adds a pair whose no-RAG twin is made, and asks before making one", async ()
   await waitFor(() => expect(api.addPair).toHaveBeenLastCalledWith("s1", "m2"));
 });
 
-it("starts with nobody given anything and saves only the row picked", async () => {
-  vi.mocked(api.getRaters).mockResolvedValue({ emails: ["lan@example.com", "minh@example.com"], assignments: { "minh@example.com": ["p2"] } });
+it("gives each row to the accounts picked for it, so different rows go to different people", async () => {
+  vi.mocked(api.getRaters).mockResolvedValue({ emails: ["minh@example.com"], assignments: { "minh@example.com": ["p2"] } });
   vi.mocked(api.getStudyItems).mockResolvedValue([
     summary("a", "M01", "rag_llm", "p1"), summary("b", "M04", "llm_no_rag", "p1"),
     summary("c", "M02", "rag_llm", "p2"), summary("d", "M03", "llm_no_rag", "p2"),
@@ -533,20 +493,22 @@ it("starts with nobody given anything and saves only the row picked", async () =
   const card = await openStudy();
   const rows = within(card).getAllByRole("row").slice(1);
   expect(within(rows[0]).getByText("Chưa giao")).toBeInTheDocument();
-  expect(within(rows[1]).getByText("1 người")).toBeInTheDocument();
+  // By name, not a count.
+  expect(within(rows[1]).getByText("Minh Trần")).toBeInTheDocument();
 
   await userEvent.click(within(rows[0]).getByRole("button", { name: "Chọn người chấm M01, M04" }));
   const dialog = await screen.findByRole("dialog");
-  // A rater invited and given nothing rates nothing yet.
   expect(within(dialog).getAllByRole("checkbox").every((box) => !(box as HTMLInputElement).checked)).toBe(true);
-  await userEvent.click(within(dialog).getByRole("button", { name: "Chọn tất cả" }));
+  await userEvent.type(within(dialog).getByRole("searchbox", { name: "Tìm người chấm" }), "lan");
+  await userEvent.click(within(dialog).getByRole("checkbox", { name: /Lan/ }));
   await userEvent.click(within(dialog).getByRole("button", { name: "Lưu" }));
 
-  // The other row keeps what it had.
-  await waitFor(() => expect(api.setRaters).toHaveBeenCalledWith("s1", ["lan@example.com", "minh@example.com"],
-    { "lan@example.com": ["p1"], "minh@example.com": ["p2", "p1"] }));
+  // Lan gets this row only; Minh keeps the other one.
+  await waitFor(() => expect(api.setRaters).toHaveBeenCalledWith("s1", ["minh@example.com", "lan@example.com"],
+    { "minh@example.com": ["p2"], "lan@example.com": ["p1"] }));
   await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
-  expect(within(rows[0]).getByText("2 người")).toBeInTheDocument();
+  expect(within(rows[0]).getByText("Lan")).toBeInTheDocument();
+  expect(within(rows[1]).queryByText("Lan")).not.toBeInTheDocument();
 });
 
 it("asks before taking a pair out of the study, then lists what is left", async () => {
@@ -586,7 +548,7 @@ it("lists each thing to rate by its real name, a pair as one row", async () => {
 
 it("opens the study named in the address, so a reload stays on it", async () => {
   render(<MemoryRouter initialEntries={["/admin?tab=studies&study=s1"]}><AdminStudiesPanel /></MemoryRouter>);
-  expect(await screen.findByRole("button", { name: "Bỏ lan@example.com" })).toBeInTheDocument();
+  expect(await screen.findByRole("region", { name: "Nội dung chấm" })).toBeInTheDocument();
   expect(api.getRaters).toHaveBeenCalledWith("s1");
 });
 
@@ -601,13 +563,13 @@ it("does not open a closed study the address still names, and opens the only one
 it("opens the only study by itself, with no list to choose from", async () => {
   vi.mocked(api.listStudies).mockResolvedValue([study]);
   render(<MemoryRouter><AdminStudiesPanel /></MemoryRouter>);
-  expect(await screen.findByRole("button", { name: "Bỏ lan@example.com" })).toBeInTheDocument();
+  expect(await screen.findByRole("region", { name: "Nội dung chấm" })).toBeInTheDocument();
   expect(screen.queryByRole("navigation", { name: "Nghiên cứu" })).not.toBeInTheDocument();
 });
 
 it("adds a flashcard set to the study with nothing generated", async () => {
-  const video = { id: "v1", kind: "video" as const, title: "Bài 1.pdf · Toàn bộ tài liệu", course_name: "Hệ điều hành", state: "in_study" as const };
-  const cards = { id: "f1", kind: "flashcards" as const, title: "Bài 1.pdf · Định nghĩa", course_name: "Hệ điều hành" };
+  const video = { id: "v1", kind: "video" as const, title: "Bài 1.pdf", topic: "Toàn bộ tài liệu", course_name: "Hệ điều hành", state: "in_study" as const };
+  const cards = { id: "f1", kind: "flashcards" as const, title: "Bài 1.pdf", topic: "Định nghĩa", course_name: "Hệ điều hành" };
   // The list is read again once something is added.
   vi.mocked(api.listMediaCandidates).mockResolvedValueOnce([{ ...cards, state: "ready" }, video])
     .mockResolvedValue([{ ...cards, state: "in_study" }, video]);

@@ -85,9 +85,12 @@ export function AddStudyContent({ studyId, version, onAdded }: { studyId: string
   }
 
   // Two sets made from one file with no focus share a title: the day they were made tells them apart.
-  const detail = (r: PairCandidate | MediaCandidate) =>
-    [r.created_at && new Date(r.created_at).toLocaleDateString("vi-VN"), r.course_name].filter(Boolean).join(" · ");
-  const rows: { id: string; title: string; detail: string; state: string; add: () => void }[] = tab === "module"
+  const detail = (r: PairCandidate | MediaCandidate) => [
+    "topic" in r ? r.topic : null,
+    r.created_at ? `Tạo ngày ${new Date(r.created_at).toLocaleDateString("vi-VN")}` : null,
+    r.course_name,
+  ].filter(Boolean) as string[];
+  const rows: { id: string; title: string; detail: string[]; state: string; add: () => void }[] = tab === "module"
     ? (modules ?? []).map((r) => ({ id: r.id, title: r.title, detail: detail(r), state: r.state, add: () => void askModule(r) }))
     : (media ?? []).filter((r) => r.kind === tab)
       .map((r) => ({ id: r.id, title: r.title, detail: detail(r), state: r.state, add: () => void addOne(r) }));
@@ -103,16 +106,13 @@ export function AddStudyContent({ studyId, version, onAdded }: { studyId: string
       <DialogContent className="ui-dialog add-content-dialog" aria-describedby={undefined}>
         <DialogTitle className="ui-dialog-title">Thêm nội dung</DialogTitle>
         <Tabs tabs={TABS} selected={tab} onSelect={(id) => setTab(id as Kind)} label="Loại nội dung">
-          {tab === "module" && <p className="small muted add-content-note">
-            Mỗi mô-đun được chấm cùng một bản đối chứng: cùng mục tiêu học tập nhưng sinh không dùng tài liệu.
-          </p>}
           {error ? <p role="alert">{error}</p> : !loaded ? <p className="muted">Đang tải…</p> : rows.length === 0
             ? <p className="small muted add-content-note">Chưa có {label.toLowerCase()} nào.</p>
             : <ul className="reference-files add-content-list" aria-label={`${label} có thể thêm`}>
               {rows.map((row) => <li key={row.id}>
                 <div className="min-w-0">
                   <div className="font-semibold [overflow-wrap:anywhere]">{row.title}</div>
-                  <div className="small muted [overflow-wrap:anywhere]">{row.detail}</div>
+                  {row.detail.map((line) => <div key={line} className="small muted [overflow-wrap:anywhere]">{line}</div>)}
                 </div>
                 {row.state === "in_study" ? <span className="small muted">Đã thêm</span>
                   : row.state === "generating" ? <span className="status-pill" data-status="processing">Đang tạo…</span>

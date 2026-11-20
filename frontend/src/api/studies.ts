@@ -87,6 +87,7 @@ export interface MediaCandidate {
   id: string;
   kind: "flashcards" | "video";
   title: string;
+  topic?: string;
   course_name: string;
   created_at?: string;
   state: "in_study" | "ready";

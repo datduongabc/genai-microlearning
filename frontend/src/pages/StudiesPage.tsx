@@ -214,7 +214,7 @@ function PacketReference({ studyId, item }: { studyId: string; item: BlindItem }
   const { filename, size } = item.reference;
   return (
     <div className="packet-reference">
-      <span>Tài liệu gốc: <strong className="[overflow-wrap:anywhere]">{filename}</strong> <span className="muted">· {formatSize(size)}</span></span>
+      <span>Tài liệu gốc: <strong className="[overflow-wrap:anywhere]">{filename}</strong> <span className="muted">{formatSize(size)}</span></span>
       <button type="button" className="link-action" disabled={busy} onClick={async () => {
         setBusy(true);
         try { await downloadPacketReference(studyId, item.id); }
@@ -274,7 +274,7 @@ export function BlindRatingPage() {
                 className="rating-item"
               >
                 {i.anon_code}
-                {i.rating && <><Check aria-hidden="true" className="success-text mr-2 inline size-4" /><span className="sr-only"> · Đã chấm</span></>}
+                {i.rating && <><Check aria-hidden="true" className="success-text mr-2 inline size-4" /><span className="sr-only">, đã chấm</span></>}
               </Link>
             ))}
           </nav>
