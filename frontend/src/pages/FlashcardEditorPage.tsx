@@ -1,4 +1,5 @@
 import { confirmAction } from '../lib/confirm'
+import { useCourseCrumbs } from '../lib/useCourseCrumbs'
 import { notifyDone, notifyFailed } from '../lib/notify'
 import axios from 'axios'
 import { useEffect, useState } from 'react'
@@ -93,12 +94,14 @@ export function FlashcardEditorPage() {
     navigate(`/courses/${courseId}`)
   }
 
+  const crumbs = useCourseCrumbs(saved?.course_id)
+
   if (loading) {
-    return <AppShell title="Flashcard"><p className="course-empty">Đang tải…</p></AppShell>
+    return <AppShell title="Flashcard" crumbs={crumbs}><p className="course-empty">Đang tải…</p></AppShell>
   }
   if (missing) {
     return (
-      <AppShell title="Flashcard">
+      <AppShell title="Flashcard" crumbs={crumbs}>
         <p className="text-sm danger-text">Không tìm thấy bộ flashcard.</p>
         <Link to="/courses" className="link-action">Về danh sách môn học</Link>
       </AppShell>
@@ -106,7 +109,7 @@ export function FlashcardEditorPage() {
   }
   if (loadFailed || !saved || !id) {
     return (
-      <AppShell title="Flashcard">
+      <AppShell title="Flashcard" crumbs={crumbs}>
         <p role="alert" className="text-sm danger-text">Không tải được bộ flashcard.</p>
         <button type="button" onClick={retryLoad} className="ui-button mt-3">Thử lại</button>
       </AppShell>
@@ -200,7 +203,7 @@ export function FlashcardEditorPage() {
 
   if (generating) {
     return (
-      <AppShell {...titleProps}>
+      <AppShell {...titleProps} crumbs={crumbs}>
         <button type="button" onClick={() => back(saved.course_id)} className="link-action">Về trang môn học</button>
         <p role="status" className="course-empty">Đang tạo flashcard…</p>
       </AppShell>
@@ -209,7 +212,7 @@ export function FlashcardEditorPage() {
 
   if (saved.status === 'failed') {
     return (
-      <AppShell {...titleProps}>
+      <AppShell {...titleProps} crumbs={crumbs}>
         <p role="alert" className="text-sm danger-text">
           Tạo flashcard thất bại. Xóa bộ này rồi tạo lại từ trang môn học.
         </p>
@@ -244,7 +247,7 @@ export function FlashcardEditorPage() {
   )
 
   return (
-    <AppShell {...titleProps}>
+    <AppShell {...titleProps} crumbs={crumbs}>
       <div className="flashcard-editor">
         <ol className="flashcard-list" aria-label="Các thẻ">
           {cards.map((c, index) => {
