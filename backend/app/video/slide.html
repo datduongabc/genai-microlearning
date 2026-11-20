@@ -19,6 +19,9 @@ h1 { font-size: calc(44px * var(--scale)); line-height: 1.2; margin: 0 0 calc(28
 .title h1 { font-size: calc(56px * var(--scale)); }
 ul { margin: 0; padding-left: 28px; font-size: calc(28px * var(--scale)); line-height: 1.5; }
 li { margin: calc(6px * var(--scale)) 0; }
+.focus li { opacity: .38; }
+.focus li.on { opacity: 1; }
+.focus li.on::marker { color: var(--accent); }
 sub { font-size: 0.7em; line-height: 0; }
 .f { margin-top: calc(26px * var(--scale)); font-size: calc(34px * var(--scale)); overflow: hidden; }
 .f .katex-display { margin: 0.4em 0; }

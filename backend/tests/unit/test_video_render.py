@@ -116,11 +116,12 @@ class FakeSlides:
     def __exit__(self, *exc):
         return None
 
-    def render(self, scene, image, size=(1280, 720), lang="vi"):
+    def render(self, scene, image, size=(1280, 720), lang="vi", focus=None):
         FakeSlides.calls.append((scene.title, image, size, lang))
         index = int(re.search(r"\d+", scene.title)[0])
+        # A lit bullet shows as a later colour, so a frame tells which state is on screen.
         out = io.BytesIO()
-        Image.new("RGB", size, COLOURS[index % len(COLOURS)]).save(out, "PNG")
+        Image.new("RGB", size, COLOURS[(index + (0 if focus is None else 5 + focus)) % len(COLOURS)]).save(out, "PNG")
         return out.getvalue()
 
 
@@ -531,3 +532,41 @@ def test_captions_share_the_voice_by_sentence_length():
     assert cues[0][0] == 10.0 and cues[-1][1] == 13.0
     # The longer sentence is on screen longer, in proportion to its length.
     assert (cues[1][1] - cues[1][0]) / (cues[0][1] - cues[0][0]) == pytest.approx(len("Một hai ba bốn.") / len("Một hai."), rel=0.01)
+
+
+LIT = Scene(kind="summary", title="FCFS", bullets=["Đến trước phục vụ trước", "Thời gian chờ trung bình dài"],
+            bullet_citations=[["c1"], ["c1"]], citations=["c1"], narration=(
+                "Hôm nay ta học một giải thuật lập lịch.\n"
+                "Tiến trình nào đến trước thì được phục vụ trước.\n"
+                "Nhưng thời gian chờ trung bình có thể rất dài.\n"
+                "Đó là cái giá của sự đơn giản."
+            ), narration_citations=[["c1"], ["c1"], ["c1"], ["c1"]])
+
+
+def test_each_sentence_lights_the_bullet_it_talks_about_and_none_until_one_is_clear():
+    # The opening shares only a source with both bullets: no light rather than a guess.
+    assert render.bullet_focus(LIT, LIT.narration) == [None, 0, 1, 1]
+    # A slide with one bullet, or none, has nothing to point at.
+    assert render.bullet_focus(LIT.model_copy(update={"bullets": ["x"]}), LIT.narration) == [None] * 4
+
+
+def test_the_lit_parts_of_a_scene_are_cut_on_frames_and_add_up_to_it():
+    cues = render.caption_cues(LIT.narration, 0.0, 4.0)
+    parts = render.focus_segments([None, 0, 1, 1], cues, 4.6)
+    assert [lit for lit, _ in parts] == [None, 0, 1]
+    assert sum(seconds for _, seconds in parts) == pytest.approx(4.6)
+    assert all(round(seconds * render.FPS, 6).is_integer() for _, seconds in parts[:-1])
+
+
+def test_the_video_lights_each_bullet_while_it_is_said(monkeypatch, store, slides):
+    _fake_voices(monkeypatch, seconds=4.0)
+    video = _video(1, scenes=[{**LIT.model_dump(), "title": "Cảnh 0"}])
+    render_video(FakeDb(video), video.id)
+
+    path = _video_path(store, video.video_key)
+    cues = render.caption_cues(normalize_narration(LIT.narration), 0.0, 4.0)
+    for (start, end, _), colour in zip(cues, [COLOURS[0], COLOURS[5], COLOURS[6], COLOURS[6]], strict=True):
+        assert _near(_frame_at(path, (start + end) / 2), colour), f"at {start:.2f}"
+    # Each state drawn once, the scene's sound unchanged.
+    assert len(slides.calls) == 3
+    assert _probe(path)["duration"] == pytest.approx(video.duration_seconds, abs=0.05)

@@ -58,7 +58,7 @@ class _Slides:
     def __exit__(self, *exc):
         return None
 
-    def render(self, scene, image, size=(1280, 720), lang="vi"):
+    def render(self, scene, image, size=(1280, 720), lang="vi", focus=None):
         from io import BytesIO
 
         from PIL import Image

@@ -22,6 +22,7 @@ are deleted with the run, and the retry pays for them again.
 import io
 import logging
 import math
+import re
 import subprocess
 import tempfile
 import uuid
@@ -29,6 +30,7 @@ import wave
 from collections.abc import Callable, Sequence
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
+from itertools import pairwise
 from pathlib import Path
 
 from sqlalchemy.orm import Session
@@ -188,45 +190,109 @@ def _minutes(seconds: float) -> str:
     return f"{seconds / 60:.1f}".replace(".", ",")
 
 
-def _render_slides(scenes: Sequence[Scene], images: dict[int, bytes], lang: str,
-                   work: Path) -> list[Path]:
-    """Every slide in one Chromium, which costs a second to start and a tenth of one a slide.
+MIN_SHARED_PAIRS = 2
+
+
+def _words(text: str) -> set[tuple[str, str]]:
+    """The pairs of neighbouring words: in Vietnamese a word is often two syllables, and single
+    syllables such as "là" or "của" are in every sentence, so pairs are what two texts share."""
+    words = re.findall(r"\w+", text.lower())
+    return set(pairwise(words))
+
+
+def bullet_focus(scene: Scene, spoken: str) -> list[int | None]:
+    """For each sentence the voice says, the bullet it is about, which the slide lights while it is
+    said. A sentence is matched by the word pairs it shares with a bullet, and a tie by the sources
+    they share. When that does not single out one bullet, the light stays where it was: no light is
+    better than a wrong one. A slide with fewer than two bullets has nothing to point at.
+    Sources alone never move it: the bullets of one slide mostly cite the same passages."""
+    raw = scene.narration.split("\n")
+    said = spoken.split("\n")
+    if len(scene.bullets) < 2 or len(raw) != len(said):
+        return [None] * sum(1 for line in said if line.strip())
+    bullets = [(_words(b), set(scene.bullet_citations[j]) if j < len(scene.bullet_citations) else set())
+               for j, b in enumerate(scene.bullets)]
+    current: int | None = None
+    out = []
+    for i, (line, voiced) in enumerate(zip(raw, said, strict=True)):
+        if not voiced.strip():
+            continue
+        cites = set(scene.narration_citations[i]) if i < len(scene.narration_citations) else set()
+        keys = [(len(_words(line) & words), len(cites & sources)) for words, sources in bullets]
+        best = max(keys)
+        tied = [j for j, key in enumerate(keys) if key == best]
+        # One shared pair ("thứ tự") is chance: in the four-model run's scripts it moved the light to
+        # a bullet the sentence was not about.
+        if best[0] >= MIN_SHARED_PAIRS:
+            if len(tied) == 1:
+                current = tied[0]
+            elif current is not None and current not in tied:
+                # Narration walks the bullets in order: of the equal ones, the next after the lit one.
+                current = next((j for j in tied if j > current), current)
+        out.append(current)
+    return out
+
+
+def focus_segments(focus: Sequence[int | None], cues: Sequence[list], length: float) -> list[tuple[int | None, float]]:
+    """A scene's on-screen time cut where the lit bullet changes, as (bullet, seconds). The cuts are
+    on whole frames and the last part ends with the scene, so the parts add up to its length."""
+    starts: list[tuple[int | None, float]] = []
+    for lit, (start, _, _) in zip(focus, cues, strict=True):
+        if not starts or starts[-1][0] != lit:
+            starts.append((lit, start))
+    if not starts:
+        return [(None, length)]
+    cuts = [0.0] + [round(start * FPS) / FPS for _, start in starts[1:]] + [length]
+    return [(lit, cuts[k + 1] - cuts[k]) for k, (lit, _) in enumerate(starts) if cuts[k + 1] > cuts[k]]
+
+
+def _render_slides(scenes: Sequence[Scene], images: dict[int, bytes], lang: str, work: Path,
+                   segments: Sequence[Sequence[tuple[int | None, float]]]) -> list[tuple[Path, float]]:
+    """Every slide in one Chromium, which costs a second to start and a tenth of one a slide, once
+    for each bullet lit in it: the video's parts in order, as (slide, seconds).
 
     In a thread of its own: Playwright's sync API refuses to start in a thread that already runs an
     event loop (app/video/slides.py, render_slide)."""
-    def run() -> list[Path]:
-        paths = []
+    def run() -> list[tuple[Path, float]]:
+        parts = []
         with SlideRenderer() as renderer:
             for i, scene in enumerate(scenes):
-                path = work / f"slide-{i}.png"
-                path.write_bytes(renderer.render(scene, images.get(i), SIZE, lang))
-                paths.append(path)
-        return paths
+                drawn: dict[int | None, Path] = {}
+                for lit, seconds in segments[i]:
+                    if lit not in drawn:
+                        drawn[lit] = work / f"slide-{i}-{'all' if lit is None else lit}.png"
+                        drawn[lit].write_bytes(renderer.render(scene, images.get(i), SIZE, lang, focus=lit))
+                    parts.append((drawn[lit], seconds))
+        return parts
 
     with ThreadPoolExecutor(max_workers=1) as pool:
         return pool.submit(run).result()
 
 
-def _assemble(slides: Sequence[Path], voices: Sequence[Path], seconds: Sequence[float], out: Path) -> None:
-    """One encode of every scene, joined by ffmpeg's concat filter. Each scene is its slide held for
-    its length and its voice resampled to AUDIO_RATE and padded to that length, so voices of
-    different sample rates mix. One encode rather than a file per scene joined afterwards: AAC
-    starts each file with a frame of priming, which leaves a click and a gap at every join."""
+def _assemble(slides: Sequence[tuple[Path, float]], voices: Sequence[Path], seconds: Sequence[float], out: Path) -> None:
+    """One encode of every scene, joined by ffmpeg's concat filter. The pictures are the slides, each
+    held for its part of a scene; the sound is each scene's voice resampled to AUDIO_RATE and padded
+    to the scene's length, so voices of different sample rates mix. The parts of a scene add up to
+    its length, so the two tracks stay together. One encode rather than a file per scene joined
+    afterwards: AAC starts each file with a frame of priming, which leaves a click and a gap at
+    every join."""
     count = len(slides)
     command = [FFMPEG, "-hide_banner", "-nostdin", "-loglevel", "error", "-y"]
-    for slide in slides:
+    for slide, _ in slides:
         command += ["-framerate", str(FPS), "-i", str(slide)]
     for voice in voices:
         command += ["-i", str(voice)]
     graph = []
-    for i, length in enumerate(seconds):
+    for i, (_, length) in enumerate(slides):
         # The slide is decoded once and its frame repeated (tpad). A looped image input decodes the
         # PNG again for every frame, which made a 5-minute video take twice as long on one vCPU.
         graph.append(f"[{i}:v]scale={SIZE[0]}:{SIZE[1]},setsar=1,format=yuv420p,"
                      f"tpad=stop_mode=clone:stop_duration={length:.6f},trim=end={length:.6f}[v{i}]")
+    for i, length in enumerate(seconds):
         graph.append(f"[{count + i}:a]aresample={AUDIO_RATE},aformat=sample_fmts=fltp:channel_layouts=mono,"
                      f"apad=whole_dur={length:.6f},atrim=end={length:.6f}[a{i}]")
-    graph.append("".join(f"[v{i}][a{i}]" for i in range(count)) + f"concat=n={count}:v=1:a=1[v][a]")
+    graph.append("".join(f"[v{i}]" for i in range(count)) + f"concat=n={count}:v=1:a=0[v]")
+    graph.append("".join(f"[a{i}]" for i in range(len(seconds))) + f"concat=n={len(seconds)}:v=0:a=1[a]")
     command += [
         "-filter_complex", ";".join(graph), "-map", "[v]", "-map", "[a]",
         "-threads", str(FFMPEG_THREADS),
@@ -393,7 +459,9 @@ def render_video(
 
             images = {i: _read_image(s.image_key) for i, s in enumerate(scenes)
                       if s.kind == "illustration" and s.image_key}
-            slides = _render_slides(scenes, images, lang, work)
+            segments = [focus_segments(bullet_focus(scene, spoken[i]), caption_cues(spoken[i], 0.0, voices[i].seconds),
+                                       lengths[i]) for i, scene in enumerate(scenes)]
+            slides = _render_slides(scenes, images, lang, work, segments)
             wavs = []
             for i in range(len(scenes)):
                 path = work / f"voice-{i}.wav"

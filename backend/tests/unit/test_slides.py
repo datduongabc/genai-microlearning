@@ -142,3 +142,12 @@ def test_decomposed_text_is_printed_composed():
 def test_a_slide_prints_its_content_and_no_source_line():
     page = slide_html(_scene(title="FCFS", bullets=["Đến trước", "Phục vụ trước"]), None)
     assert "FCFS" in page and "Nguồn" not in page and 'class="src"' not in page
+
+
+def test_a_lit_bullet_changes_only_colours_so_the_slide_keeps_its_layout(renderer):
+    scene = _scene(title="FCFS", bullets=["Đến trước phục vụ trước", "Thời gian chờ trung bình dài", "Không ưu tiên"])
+    plain, lit = renderer.capture(scene, None), renderer.capture(scene, None, focus=1)
+    assert '<ul class="focus">' in lit.dom and lit.dom.count('class="on"') == 1
+    assert "Thời gian chờ trung bình dài</li>" in lit.dom.split('class="on">')[1]
+    assert (lit.scale, lit.text_width, lit.overflows) == (plain.scale, plain.text_width, plain.overflows)
+    assert lit.png != plain.png

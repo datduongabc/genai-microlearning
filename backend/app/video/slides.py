@@ -64,10 +64,15 @@ def _inline(raw: str) -> str:
     return "".join(parts)
 
 
-def _content(scene: Scene) -> str:
+def _content(scene: Scene, focus: int | None = None) -> str:
     parts = [f"<h1>{_inline(scene.title)}</h1>"]
     if scene.bullets:
-        parts.append("<ul>" + "".join(f"<li>{_inline(b)}</li>" for b in scene.bullets) + "</ul>")
+        # The bullet the voice is on is lit and the others dimmed; only colour changes, so the slide's
+        # layout and its fitted scale are the same in every state.
+        lit = ' class="focus"' if focus is not None else ""
+        parts.append(f"<ul{lit}>" + "".join(
+            f'<li class="on">{_inline(b)}</li>' if i == focus else f"<li>{_inline(b)}</li>"
+            for i, b in enumerate(scene.bullets)) + "</ul>")
     if scene.formula and scene.formula.strip():
         parts.append(f'<div class="f" data-tex="{html.escape(scene.formula.strip(), quote=True)}"></div>')
     if scene.code and scene.code.strip():
@@ -91,7 +96,7 @@ def _composed(scene: Scene) -> Scene:
     })
 
 
-def slide_html(scene: Scene, image: bytes | None, lang: str = "vi") -> str:
+def slide_html(scene: Scene, image: bytes | None, lang: str = "vi", focus: int | None = None) -> str:
     """The page of one slide: its content only, no source line, which the learner does not read on a
     slide. With no picture, the text takes the whole slide."""
     scene = _composed(scene)
@@ -99,7 +104,7 @@ def slide_html(scene: Scene, image: bytes | None, lang: str = "vi") -> str:
         lang=html.escape(lang, quote=True),
         layout="with-image" if image is not None else "text-only",
         kind=scene.kind,
-        content=_content(scene),
+        content=_content(scene, focus),
         image=f'<div class="img"><img src="{_IMAGE_PATH.lstrip("/")}" alt=""></div>' if image is not None else "",
     )
 
@@ -169,12 +174,12 @@ class SlideRenderer:
             self._playwright.stop()
 
     def capture(self, scene: Scene, image: bytes | None, size: tuple[int, int] = SIZE,
-                lang: str = "vi") -> SlideCapture:
-        return self.capture_html(slide_html(scene, image, lang), image, size)
+                lang: str = "vi", focus: int | None = None) -> SlideCapture:
+        return self.capture_html(slide_html(scene, image, lang, focus), image, size)
 
     def render(self, scene: Scene, image: bytes | None, size: tuple[int, int] = SIZE,
-               lang: str = "vi") -> bytes:
-        return self.capture(scene, image, size, lang).png
+               lang: str = "vi", focus: int | None = None) -> bytes:
+        return self.capture(scene, image, size, lang, focus).png
 
     def capture_html(self, page_html: str, image: bytes | None = None, size: tuple[int, int] = SIZE) -> SlideCapture:
         width, height = size
