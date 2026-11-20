@@ -72,6 +72,7 @@ export interface PairCandidate {
   id: string;
   title: string;
   course_name: string;
+  created_at?: string;
   state: "in_study" | "ready" | "generating" | "failed" | "none";
 }
 export async function listPairCandidates(id: string) {
@@ -87,6 +88,7 @@ export interface MediaCandidate {
   kind: "flashcards" | "video";
   title: string;
   course_name: string;
+  created_at?: string;
   state: "in_study" | "ready";
 }
 export async function listMediaCandidates(id: string) {
@@ -149,6 +151,8 @@ export interface StudyItemSummary {
   pair_id: string | null;
   reference_file_id: string | null;
   packet: { topic: string };
+  // What it was made from, by its real name; null for a human-written packet.
+  source?: { title: string; course_name: string; created_at: string } | null;
 }
 export async function getStudyItems(id: string) {
   return (await api.get<{ items: StudyItemSummary[] }>(`/studies/${id}`)).data.items;

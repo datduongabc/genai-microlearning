@@ -106,7 +106,8 @@ def media_candidates(db: Session, owner_id: uuid.UUID, in_study: set[uuid.UUID])
                           .where(Course.owner_id == owner_id, model.status.not_in(UNRATABLE))
                           .order_by(model.created_at.desc())).all()
         out += [{"id": source.id, "kind": kind, "title": f"{filename} · {_topic(source.focus)}",
-                 "course_name": course, "state": "in_study" if source.id in in_study else "ready"}
+                 "course_name": course, "created_at": source.created_at,
+                 "state": "in_study" if source.id in in_study else "ready"}
                 for source, filename, course in rows]
     return out
 

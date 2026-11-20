@@ -5,9 +5,7 @@ import { getRaters, listStudies, setRaters, type Assignments, type Study } from 
 import { apiErrorMessage } from "../api/client";
 import { raterEmailsSchema } from "../lib/ratingSchema";
 import { notifyDone, notifyFailed } from "../lib/notify";
-import { StudyAssignments } from "./StudyAssignments";
-import { StudyPairs } from "./StudyPairs";
-import { StudyReferences } from "./StudyReferences";
+import { StudyContent } from "./StudyContent";
 import { StudyResults } from "./StudyResults";
 
 export function AdminStudiesPanel() {
@@ -19,7 +17,7 @@ export function AdminStudiesPanel() {
   // The invitations as saved: what the assignment table offers, never an unsaved edit.
   const [savedEmails, setSavedEmails] = useState<string[]>([]);
   const [assignments, setAssignments] = useState<Assignments>({});
-  // Bumped when a pair joins, so the cards that list the study's packets load them again.
+  // Bumped when content joins, so the cards that list the study's packets load them again.
   const [version, setVersion] = useState(0);
   const pairAdded = useCallback(() => setVersion((n) => n + 1), []);
   const [input, setInput] = useState("");
@@ -74,7 +72,7 @@ export function AdminStudiesPanel() {
     </nav>}
     <div className="study-main">
     <div className="ui-card study-detail">
-      {selected ? <><h2>{selected.name}</h2><p className="small muted">Rubric {selected.rubric_version}</p></>
+      {selected ? <h2>{selected.name}</h2>
         : <p className="muted">Chọn một nghiên cứu để mời người chấm và xem kết quả.</p>}
       {error && <p role="alert">{error}</p>}
       {studyId && loadedId !== studyId && !error && <p>Đang tải người chấm…</p>}
@@ -108,10 +106,9 @@ export function AdminStudiesPanel() {
         <button disabled={busy} className="ui-button primary mt-4">{busy ? "Đang lưu…" : "Lưu người chấm"}</button>
       </form>}
     </div>
-    {studyId && <StudyPairs key={`pairs-${studyId}-${picks}`} studyId={studyId} onAdded={pairAdded} />}
-    {studyId && loadedId === studyId && <StudyAssignments key={`assign-${studyId}-${picks}-${version}-${savedEmails.join()}`}
-      studyId={studyId} emails={savedEmails} assignments={assignments} onSaved={setAssignments} />}
-    {studyId && <StudyReferences key={`refs-${studyId}-${picks}-${version}`} studyId={studyId} />}
+    {studyId && loadedId === studyId && <StudyContent key={`content-${studyId}-${picks}-${savedEmails.join()}`}
+      studyId={studyId} emails={savedEmails} assignments={assignments} version={version}
+      onAdded={pairAdded} onSaved={setAssignments} />}
     {studyId && <StudyResults key={`results-${studyId}-${picks}-${version}`} studyId={studyId} />}
     </div>
   </section>;

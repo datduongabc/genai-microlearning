@@ -562,6 +562,16 @@ h1[tabindex="-1"]:focus-visible { outline:none; }
 .assign-table thead th { border-top:0; background:var(--bg-subtle); font-weight:600; color:var(--text-secondary); white-space:nowrap; max-width:200px; overflow:hidden; text-overflow:ellipsis; }
 .assign-table th[scope=row], .assign-table thead th:first-child { text-align:left; font-weight:400; min-width:220px; }
 .assign-table input { width:16px; height:16px; accent-color:var(--accent-default); }
+.content-cell { display:flex; flex-direction:column; gap:2px; }
+.assign-table .ui-select { min-width:160px; max-width:220px; }
+.content-kind { align-self:flex-start; font-size:12px; line-height:16px; font-weight:600; color:var(--text-secondary); background:var(--bg-subtle); border-radius:999px; padding:2px 8px; }
+.study-section-head { display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:12px; margin-bottom:8px; }
+.study-section-head h2 { font:600 21px/28px var(--font-sans); }
+.study-section-head .ui-button { display:inline-flex; align-items:center; gap:6px; }
+.add-content-dialog { max-width:min(40rem, calc(100% - 32px)); }
+.add-content-note { margin:16px 0 0; }
+.add-content-list { margin-top:16px; max-height:min(60vh, 480px); overflow-y:auto; }
+.add-content-list li { grid-template-columns:minmax(0,1fr) auto; }
 
 /* --- A study's reference files, beside its results. */
 .reference-files, .reference-items { display:flex; flex-direction:column; border:1px solid var(--border-default); border-radius:var(--radius-sm); }

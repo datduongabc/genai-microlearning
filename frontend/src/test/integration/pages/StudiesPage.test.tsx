@@ -424,7 +424,7 @@ it("shows the admin each rater's progress, and per packet the scores, findings a
   expect(api.downloadStudyFile).toHaveBeenCalledWith("s1", "raters/1.csv");
 });
 
-const summary = (id: string, code: string, group: "rag_llm" | "llm_no_rag" | "human", pair: string | null) => ({
+const summary = (id: string, code: string, group: api.StudyGroup, pair: string | null) => ({
   id, anon_code: code, group, module_id: group === "rag_llm" ? pair : null, pair_id: pair,
   reference_file_id: null, packet: { topic: `Chủ đề ${code}` },
 });
@@ -433,7 +433,13 @@ const lecture = { id: "f1", filename: "Bài giảng 3.pdf", size: 1258291, creat
 async function openStudy() {
   render(<MemoryRouter><AdminStudiesPanel /></MemoryRouter>);
   await userEvent.click(await screen.findByRole("button", { name: /Nghiên cứu/ }));
-  return screen.findByRole("region", { name: "Tài liệu gốc" });
+  return screen.findByRole("region", { name: "Nội dung chấm" });
+}
+async function openAddDialog(tab?: string) {
+  await userEvent.click(await screen.findByRole("button", { name: "Thêm nội dung" }));
+  const dialog = await screen.findByRole("dialog", { name: "Thêm nội dung" });
+  if (tab) await userEvent.click(within(dialog).getByRole("tab", { name: tab }));
+  return dialog;
 }
 
 it("gives a pair one file picker, so both packets always share the file", async () => {
@@ -460,7 +466,7 @@ it("uploads a file to the study and offers it to every packet", async () => {
   vi.mocked(api.getStudyItems).mockResolvedValue([summary("c", "M02", "human", null)]);
   vi.mocked(api.uploadStudyFile).mockResolvedValue(lecture);
   const region = await openStudy();
-  expect(within(region).getByText("Chưa có tệp nào.")).toBeInTheDocument();
+  expect(within(region).queryByRole("list", { name: "Tệp tài liệu gốc" })).not.toBeInTheDocument();
   const file = new File(["%PDF"], "Bài giảng 3.pdf", { type: "application/pdf" });
 
   await userEvent.upload(within(region).getByLabelText("Tải tệp lên"), file);
@@ -485,7 +491,7 @@ it("asks before deleting a file and clears it from the packets that used it", as
 
     expect(api.deleteStudyFile).toHaveBeenCalledWith("s1", "f1");
     await waitFor(() => expect(within(region).getByRole("combobox", { name: "Tài liệu gốc của M02" })).toHaveValue(""));
-    expect(within(region).getByText("Chưa có tệp nào.")).toBeInTheDocument();
+    expect(within(region).queryByRole("list", { name: "Tệp tài liệu gốc" })).not.toBeInTheDocument();
   } finally {
     confirm.mockRestore();
   }
@@ -516,15 +522,15 @@ it("adds a pair whose no-RAG twin is made, and asks before making one", async ()
   vi.mocked(api.addPair).mockResolvedValueOnce("added").mockResolvedValueOnce("generating");
   const confirm = vi.spyOn(window, "confirm").mockReturnValue(true);
   await openStudy();
-  const card = await screen.findByRole("region", { name: "Thêm nội dung" });
-  const rows = await within(card).findAllByRole("listitem");
+  const dialog = await openAddDialog();
+  const rows = await within(within(dialog).getByRole("list", { name: "Mô-đun có thể thêm" })).findAllByRole("listitem");
 
-  await userEvent.click(within(rows[0]).getByRole("button", { name: "Thêm cặp" }));
+  await userEvent.click(within(rows[0]).getByRole("button", { name: "Thêm" }));
   await waitFor(() => expect(api.addPair).toHaveBeenCalledWith("s1", "m1"));
   // A twin already made costs nothing, so nothing is asked.
   expect(confirm).not.toHaveBeenCalled();
 
-  await userEvent.click(within(rows[1]).getByRole("button", { name: "Thêm cặp" }));
+  await userEvent.click(within(rows[1]).getByRole("button", { name: "Thêm" }));
   expect(confirm).toHaveBeenCalledTimes(1);
   await waitFor(() => expect(api.addPair).toHaveBeenLastCalledWith("s1", "m2"));
 });
@@ -536,8 +542,7 @@ it("starts with nothing ticked and gives a rater only the pairs ticked", async (
     summary("c", "M02", "rag_llm", "p2"), summary("d", "M03", "llm_no_rag", "p2"),
   ]);
   vi.mocked(api.setRaters).mockImplementation(async (_s, emails, assignments) => ({ emails, assignments: assignments ?? {} }));
-  await openStudy();
-  const card = await screen.findByRole("region", { name: "Phân công" });
+  const card = await openStudy();
 
   const first = await within(card).findByRole("checkbox", { name: "lan@example.com chấm M01, M04" });
   // A rater invited and given nothing rates nothing yet.
@@ -549,6 +554,21 @@ it("starts with nothing ticked and gives a rater only the pairs ticked", async (
   await userEvent.click(first);
   await userEvent.click(within(card).getByRole("button", { name: "Lưu phân công" }));
   await waitFor(() => expect(api.setRaters).toHaveBeenLastCalledWith("s1", ["lan@example.com"], { "lan@example.com": [] }));
+});
+
+it("lists each thing to rate by its real name, a pair as one row", async () => {
+  vi.mocked(api.getStudyItems).mockResolvedValue([
+    { ...summary("a", "M01", "rag_llm", "p1"), source: { title: "Tiến trình", course_name: "HĐH", created_at: "2026-11-19T10:00:00Z" } },
+    { ...summary("b", "M02", "llm_no_rag", "p1"), source: { title: "Tiến trình", course_name: "HĐH", created_at: "2026-11-19T10:00:00Z" } },
+    { ...summary("c", "F01", "flashcards", null), source: { title: "Bài 1.pdf", course_name: "HĐH", created_at: "2026-11-20T10:00:00Z" } },
+  ]);
+  const region = await openStudy();
+  const rows = within(region).getAllByRole("row").slice(1);
+  expect(rows).toHaveLength(2);
+  expect(within(rows[0]).getByText("Tiến trình")).toBeInTheDocument();
+  expect(within(rows[0]).getByText(/Có và không dùng tài liệu/)).toBeInTheDocument();
+  expect(within(rows[1]).getByText("Flashcard")).toBeInTheDocument();
+  expect(within(rows[1]).getByText("Bài 1.pdf")).toBeInTheDocument();
 });
 
 it("opens the study named in the address, so a reload stays on it", async () => {
@@ -572,8 +592,10 @@ it("adds a flashcard set to the study with nothing generated", async () => {
   vi.mocked(api.addMedia).mockResolvedValue([]);
   const confirm = vi.spyOn(window, "confirm");
   await openStudy();
-  const flashcards = await screen.findByRole("list", { name: "Flashcard có thể thêm" });
-  expect(within(screen.getByRole("list", { name: "Video có thể thêm" })).getByText("Đã thêm")).toBeInTheDocument();
+  const dialog = await openAddDialog("Video");
+  expect(within(within(dialog).getByRole("list", { name: "Video có thể thêm" })).getByText("Đã thêm")).toBeInTheDocument();
+  await userEvent.click(within(dialog).getByRole("tab", { name: "Flashcard" }));
+  const flashcards = within(dialog).getByRole("list", { name: "Flashcard có thể thêm" });
 
   await userEvent.click(within(flashcards).getByRole("button", { name: "Thêm" }));
   await waitFor(() => expect(api.addMedia).toHaveBeenCalledWith("s1", "flashcards", "f1"));
