@@ -311,15 +311,22 @@ def _course_for(db: Session, platform: LtiPlatform, claims: LaunchClaims, user: 
         LtiContext.platform_id == platform.id, LtiContext.deployment_id == claims.deployment_id,
         LtiContext.context_id == claims.context_id))
     if context is not None:
-        # Under row level security: another lecturer's course is not visible, so None, unless this person
-        # joined it as a student, which does not make it theirs to author.
-        course = db.get(Course, context.course_id)
-        if course is None or course.owner_id != user.id:
-            raise LaunchRefused(
-                "context owned by another user",
-                "Khóa học này đã được một giảng viên khác mở trong công cụ. "
-                "Hiện mỗi khóa học thuộc về một giảng viên.")
         _note_memberships_url(context, claims)
+        course = db.get(Course, context.course_id)
+        if course is not None and course.owner_id == user.id:
+            return course
+        # Another instructor of the same LMS course opened the tool first: this one teaches it too, and
+        # joins as a teacher, or becomes one if they had joined as a student (alembic 0049).
+        member = db.scalar(select(CourseMember).where(
+            CourseMember.course_id == context.course_id, CourseMember.user_id == user.id))
+        if member is None:
+            db.add(CourseMember(course_id=context.course_id, user_id=user.id, role="teacher"))
+        else:
+            member.role = "teacher"
+        db.flush()
+        course = db.get(Course, context.course_id)
+        if course is None:
+            raise LaunchRefused("taught course not visible", "Hãy mở lại hoạt động từ Moodle.")
         return course
 
     moodle_course_id = _moodle_id(claims.context_id) if platform.links_moodle else None

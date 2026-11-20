@@ -2,14 +2,14 @@ import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field, field_validator
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
 from app.api.deletion import check_study_references, commit_deletion, refuse_while_working
-from app.api.deps import get_current_user, require_author
+from app.api.deps import get_current_user, is_course_author, require_author, require_authored_course
 from app.auth.rate_limit import limiter, user_or_address
 from app.db import get_db
-from app.models import Course, Document, Module, User
+from app.models import Course, CourseMember, Document, Module, User
 from app.moodle import client as moodle_client
 from app.moodle.accounts import require_course_author, teacher_courses
 from app.moodle.errors import MOODLE_FAILURES, moodle_failure
@@ -36,7 +36,11 @@ class LinkMoodleCourse(BaseModel):
 
 
 def _get_owned_course(course_id: uuid.UUID, db: Session, current_user: User) -> Course:
+    """The course itself (its name, its Moodle link, deleting it) is the owner's alone."""
     course = db.get(Course, course_id)
+    if course is not None and course.owner_id != current_user.id and is_course_author(db, course, current_user):
+        raise HTTPException(status_code=403, detail=(
+            "Chỉ giảng viên đã tạo môn học mới đổi tên, xóa hoặc liên kết Moodle cho môn học này được."))
     if course is None or course.owner_id != current_user.id:
         raise HTTPException(status_code=404, detail="Course not found")
     return course
@@ -71,9 +75,11 @@ def rename_course(
 
 @router.get("")
 def list_courses(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    # The courses one owns, and those of the same LMS course one teaches in as well (alembic 0049).
+    teaching = select(CourseMember.course_id).where(CourseMember.user_id == current_user.id, CourseMember.role == "teacher")
     courses = (
         db.query(Course)
-        .filter(Course.owner_id == current_user.id)
+        .filter(or_(Course.owner_id == current_user.id, Course.id.in_(teaching)))
         .order_by(Course.created_at.desc())
         .all()
     )
@@ -153,7 +159,8 @@ def delete_course(
 def get_moodle_sections(
     course_id: uuid.UUID, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)
 ):
-    course = _get_owned_course(course_id, db, current_user)
+    # Every author publishes, so every author picks a section.
+    course = require_authored_course(db, db.get(Course, course_id), current_user)
     if course.moodle_course_id is None:
         raise HTTPException(status_code=400, detail="Course is not linked to a Moodle course yet")
     try:

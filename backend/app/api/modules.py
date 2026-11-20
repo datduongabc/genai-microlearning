@@ -13,7 +13,7 @@ from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.api.chat import ChatRequest, _get_or_create_session
 from app.api.deletion import check_study_references, commit_deletion
-from app.api.deps import get_current_user
+from app.api.deps import get_current_user, is_course_author
 from app.api.model_alias import usable_alias as _usable_alias
 from app.auth.rate_limit import limiter, user_or_address
 from app.chat.service import HISTORY_TURNS, QuizQuestionEdit, module_edit_count, propose_module_edit
@@ -102,14 +102,14 @@ def _owned_document(
     db: Session, document_id: uuid.UUID, current_user: User, *, lock: bool = False
 ) -> Document:
     doc = db.get(Document, document_id, with_for_update=lock)
-    if doc is None or doc.course.owner_id != current_user.id:
+    if doc is None or not is_course_author(db, doc.course, current_user):
         raise HTTPException(status_code=404, detail="Document not found")
     return doc
 
 
 def _owned_module(db: Session, module_id: uuid.UUID, current_user: User) -> Module:
     module = db.get(Module, module_id)
-    if module is None or module.course.owner_id != current_user.id:
+    if module is None or not is_course_author(db, module.course, current_user):
         raise HTTPException(status_code=404, detail="Module not found")
     return module
 
@@ -228,7 +228,7 @@ def get_module_job_status(
     if job is None or job.document_id is None:
         raise HTTPException(status_code=404, detail="Job not found")
     doc = db.get(Document, job.document_id)
-    if doc is None or doc.course.owner_id != current_user.id:
+    if doc is None or not is_course_author(db, doc.course, current_user):
         raise HTTPException(status_code=404, detail="Job not found")
     return {
         "id": job.id, "step": job.step, "status": job.status,
@@ -291,7 +291,7 @@ def get_module(
         .filter(Module.id == module_id)
         .first()
     )
-    if module is None or module.course.owner_id != current_user.id:
+    if module is None or not is_course_author(db, module.course, current_user):
         raise HTTPException(status_code=404, detail="Module not found")
     # Components created in generate_module() all commit in one transaction, so
     # Postgres' now() (transaction time, not statement time) ties their

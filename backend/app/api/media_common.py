@@ -12,7 +12,7 @@ from pydantic import BaseModel, StringConstraints
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app.api.deps import require_author
+from app.api.deps import is_course_author, require_author
 from app.citations import citation_label
 from app.generation.common import OutputLanguage
 from app.ingestion.chunker import context_line, document_title, locator_heading
@@ -39,7 +39,7 @@ def owned_media[Media: (FlashcardSet, Video)](
         raise HTTPException(status_code=404, detail=not_found)
     # Both a missing item and someone else's answer 404, so an id does not confirm itself.
     course = db.get(Course, item.course_id)
-    if course is None or course.owner_id != user.id:
+    if course is None or not is_course_author(db, course, user):
         raise HTTPException(status_code=404, detail=not_found)
     return item
 

@@ -6,7 +6,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_current_user
+from app.api.deps import get_current_user, is_course_author
 from app.auth.rate_limit import limiter, user_or_address
 from app.db import get_db
 from app.export.lesson import (
@@ -48,7 +48,7 @@ def publish_to_moodle(
     current_user: User = Depends(get_current_user),
 ):
     module = db.get(Module, module_id)
-    if module is None or module.course.owner_id != current_user.id:
+    if module is None or not is_course_author(db, module.course, current_user):
         raise HTTPException(status_code=404, detail="Module not found")
 
     if is_control(db, module.id):

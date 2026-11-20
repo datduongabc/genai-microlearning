@@ -17,7 +17,7 @@ from pydantic import BaseModel, Field, StringConstraints, field_validator
 from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_current_user, require_author, require_course_owner
+from app.api.deps import get_current_user, is_course_author, require_author, require_authored_course
 from app.api.media_common import NO_SOURCE_FLAG, GenerateRequest, chunk_passages, owned_media, require_own_chunks
 from app.api.model_alias import generation_alias
 from app.api.stored_files import download_link, send_stored
@@ -382,7 +382,7 @@ def generate_video(
     # FOR UPDATE: the duplicate check below reads the videos table, so two identical requests for one
     # document must not run it at the same moment or both would pass.
     doc = db.get(Document, document_id, with_for_update=True)
-    if doc is None or doc.course.owner_id != current_user.id:
+    if doc is None or not is_course_author(db, doc.course, current_user):
         raise HTTPException(status_code=404, detail="Document not found")
     if not doc.raw_text:
         raise HTTPException(status_code=422, detail="Tài liệu chưa xử lý xong.")
@@ -482,7 +482,7 @@ def list_media_models(current_user: User = Depends(get_current_user)):
 @router.get("/courses/{course_id}/videos")
 def list_videos(course_id: uuid.UUID, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     require_author(current_user)
-    require_course_owner(db.get(Course, course_id), current_user)
+    require_authored_course(db, db.get(Course, course_id), current_user)
     videos = db.scalars(select(Video).where(Video.course_id == course_id).order_by(Video.created_at.desc())).all()
     return [_summary(v) for v in videos]
 

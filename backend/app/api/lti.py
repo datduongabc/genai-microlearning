@@ -18,6 +18,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from app.api.auth import Token, UserResponse
+from app.api.deps import is_course_author
 from app.auth import audit, sessions
 from app.auth.audit import log_auth_event
 from app.auth.rate_limit import limiter
@@ -124,7 +125,8 @@ def lti_session(request: Request, payload: ExchangeRequest, db: Session = Depend
     log_auth_event(audit.LOGIN_SUCCESS, request, user_id=user.id, email=user.email, detail={"via": "lti"})
     return LtiToken(
         access_token=create_access_token(subject=user.id), refresh_token=refresh_token, course_id=str(course_id),
-        course_role="owner" if course is not None and course.owner_id == user.id else "member",
+        # "owner" opens the authoring page: the owner and a teacher of the course both write under it.
+        course_role="owner" if course is not None and is_course_author(db, course, user) else "member",
         user=UserResponse.of(user),
     )
 

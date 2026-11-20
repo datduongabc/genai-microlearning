@@ -191,3 +191,46 @@ def test_who_sees_a_membership(world):
     assert _count(world["owner"], sql, world) == 1
     assert _count(world["stranger"], sql, world) == 0
     assert _count(None, sql, world) == 0
+
+
+def test_a_teacher_member_authors_the_course_and_a_learner_does_not(world):
+    """Another instructor of the course (alembic 0049) sees and writes what the owner does under it: modules,
+    their parts and jobs. Not the course row itself, and not the other people's chats."""
+    with SessionLocal() as db:
+        teacher = User(email=f"member-teacher-{uuid.uuid4().hex[:8]}@example.com", name="TA", hashed_password="x")
+        db.add(teacher)
+        db.flush()
+        db.add(CourseMember(course_id=world["course"], user_id=teacher.id, role="teacher"))
+        db.commit()
+        teacher_id = teacher.id
+    try:
+        for what, sql in {"modules": "select count(*) from modules where course_id = :course",
+                          "module_components": "select count(*) from module_components where module_id = :module",
+                          "jobs": "select count(*) from jobs where document_id = :document"}.items():
+            assert _count(teacher_id, sql, world) == 1, what
+        assert _count(teacher_id, "select count(*) from chat_sessions where course_id = :course", world) == 0
+
+        db = RequestSessionLocal()
+        db.info["rls_user_id"] = teacher_id
+        try:
+            db.add(Document(course_id=world["course"], filename="ta.pdf", status=DocumentStatus.uploaded))
+            db.commit()
+            assert db.execute(text("update courses set name = 'Taken' where id = :course"), world).rowcount == 0
+            db.rollback()
+        finally:
+            db.close()
+        # The learner member may still not write a document.
+        db = RequestSessionLocal()
+        db.info["rls_user_id"] = world["member"]
+        try:
+            with pytest.raises(ProgrammingError):
+                db.add(Document(course_id=world["course"], filename="x.pdf", status=DocumentStatus.uploaded))
+                db.commit()
+        finally:
+            db.rollback()
+            db.close()
+    finally:
+        with SessionLocal() as db:
+            db.query(Document).filter(Document.course_id == world["course"], Document.filename == "ta.pdf").delete()
+            db.query(User).filter(User.id == teacher_id).delete()
+            db.commit()

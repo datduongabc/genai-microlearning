@@ -20,19 +20,21 @@ BACKEND = Path(__file__).resolve().parents[2]
 
 # Chuoi lan cua RLS: moi bang loc theo cha truc tiep, cha cung dang bi loc nen
 # bo loc lan len tan courses. Gia tri la cac manh bat buoc phai co trong dieu kien.
+# Since teachers (0049) the courses one may author come from app_authored_course_ids(): the owner's and
+# those taught as a teacher member.
 CHUOI_LAN = {
     "courses": ["owner_id", "app.current_user_id"],
     # Since course membership (0027) "the course is visible" is not "the course is mine": what may be
     # changed must still be the owner's, and a chat is its person's.
     "chat_sessions": ["course_id", "FROM courses", "user_id"],
-    "chunks": ["course_id", "FROM courses", "owner_id"],
-    "documents": ["course_id", "FROM courses", "owner_id"],
-    "modules": ["course_id", "FROM courses", "owner_id"],
+    "chunks": ["course_id", "app_authored_course_ids"],
+    "documents": ["course_id", "app_authored_course_ids"],
+    "modules": ["course_id", "app_authored_course_ids"],
     "evaluations": ["module_id", "FROM modules"],
     "module_components": ["module_id", "FROM modules"],
     "questions": ["component_id", "FROM module_components"],
     "chat_messages": ["session_id", "FROM chat_sessions"],
-    "jobs": ["document_id", "module_id", "owner_id"],
+    "jobs": ["document_id", "module_id", "app_authored_course_ids"],
 }
 CAC_BANG_CO_RLS = set(CHUOI_LAN)
 
@@ -208,3 +210,11 @@ def test_the_migrated_schema_is_what_the_models_declare(db_trang):
     with db_trang.connect() as conn:
         diff = compare_metadata(MigrationContext.configure(conn, opts={"compare_type": True}), Base.metadata)
     assert diff == []
+
+
+def test_the_authored_courses_are_the_owners_and_the_teachers(db_trang):
+    """What the tenant policies above now name: owned courses and those taught as a teacher member, not a
+    learner's (who reads through the member policies, and writes nothing)."""
+    with db_trang.connect() as conn:
+        body = conn.execute(text("select prosrc from pg_proc where proname = 'app_authored_course_ids'")).scalar_one()
+    assert "owner_id" in body and "role = 'teacher'" in body
