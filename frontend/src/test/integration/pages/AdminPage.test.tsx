@@ -176,6 +176,18 @@ describe('AdminPage - accounts', () => {
     await waitFor(() => expect(api.setUserActive).toHaveBeenCalledWith('u-2', true))
   })
 
+  it('erases a lecturer\'s personal data after confirmation, but never an admin\'s', async () => {
+    vi.mocked(api.eraseUser).mockResolvedValue(undefined)
+    renderPage()
+    const row = (await screen.findByText('lan@example.com')).closest('li')!
+    await openRowMenu(row)
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Xóa dữ liệu cá nhân' }))
+    await waitFor(() => expect(api.eraseUser).toHaveBeenCalledWith('u-1'))
+
+    await openRowMenu(screen.getByText('admin@example.com').closest('li')!)
+    expect(screen.queryByRole('menuitem', { name: 'Xóa dữ liệu cá nhân' })).not.toBeInTheDocument()
+  })
+
   it('does not offer admin deactivation', async () => {
     renderPage()
     const own = (await screen.findByText('admin@example.com')).closest('li')!

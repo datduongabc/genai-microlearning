@@ -79,3 +79,8 @@ export async function resetUserPassword(userId: string, password: string) {
 export async function unlinkUserMoodleAccount(userId: string) {
   await api.post(`/admin/users/${userId}/moodle-unlink`)
 }
+
+// The person's data goes for good (app/api/admin.py, erase_user); the account stays, locked and nameless.
+export async function eraseUser(userId: string) {
+  await api.post(`/admin/users/${userId}/erase`)
+}

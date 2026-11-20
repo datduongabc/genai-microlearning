@@ -1,4 +1,4 @@
-import { Ellipsis, KeyRound, Link2, Plus, Unlink, UserCheck, UserX } from "lucide-react";
+import { Ellipsis, KeyRound, Link2, Plus, Unlink, UserCheck, UserX, Trash2 } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "./ui/dropdown-menu";
 import { confirmAction } from "../lib/confirm";
 import { notifyDone, notifyFailed } from "../lib/notify";
@@ -12,6 +12,7 @@ import {
   resetUserPassword,
   setUserActive,
   unlinkUserMoodleAccount,
+  eraseUser,
   type AdminCounts,
   type AdminUser,
 } from "../api";
@@ -23,6 +24,9 @@ import {
 import { initials } from "../lib/initials";
 
 // Account activation preserves existing learning data and Moodle links.
+// An erased account keeps its row under a placeholder address (alembic 0048): there is nothing left to erase.
+const isErased = (user: AdminUser) => user.email.endsWith("@invalid");
+
 export function AdminUsersPanel({ counts, onChange }: { counts: AdminCounts | null; onChange: () => void }) {
   const [creating, setCreating] = useState(false);
   const [filter, setFilter] = useState("active");
@@ -82,6 +86,25 @@ export function AdminUsersPanel({ counts, onChange }: { counts: AdminCounts | nu
       reload();
     } catch (err) {
       notifyFailed(apiErrorMessage(err, "Không hủy được liên kết Moodle."));
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  async function handleErase(user: AdminUser) {
+    if (!await confirmAction({
+      title: `Xóa dữ liệu cá nhân của ${user.email}?`,
+      description: "Email, tên, mật khẩu, liên kết Moodle, các cuộc trò chuyện và phiên đăng nhập bị xóa vĩnh viễn. Lượt chấm nghiên cứu được giữ, không kèm tên.",
+      action: "Xóa dữ liệu",
+      destructive: true,
+    })) return;
+    setBusyId(user.id);
+    try {
+      await eraseUser(user.id);
+      notifyDone(`Đã xóa dữ liệu cá nhân của ${user.email}.`);
+      reload();
+    } catch (err) {
+      notifyFailed(apiErrorMessage(err, "Không xóa được dữ liệu cá nhân."));
     } finally {
       setBusyId(null);
     }
@@ -147,6 +170,9 @@ export function AdminUsersPanel({ counts, onChange }: { counts: AdminCounts | nu
                     {/* An admin account cannot be deactivated, so the item is left out rather than shown dead. */}
                     {!u.is_admin && <DropdownMenuItem variant={u.is_active ? "destructive" : "default"} disabled={busyId === u.id} onSelect={() => void handleToggleActive(u)}>
                       {u.is_active ? <UserX aria-hidden="true" /> : <UserCheck aria-hidden="true" />}{u.is_active ? "Vô hiệu hóa" : "Kích hoạt lại"}
+                    </DropdownMenuItem>}
+                    {!u.is_admin && !isErased(u) && <DropdownMenuItem variant="destructive" disabled={busyId === u.id} onSelect={() => void handleErase(u)}>
+                      <Trash2 aria-hidden="true" />Xóa dữ liệu cá nhân
                     </DropdownMenuItem>}
                   </DropdownMenuContent>
                 </DropdownMenu>
