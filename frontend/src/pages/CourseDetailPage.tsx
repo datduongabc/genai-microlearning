@@ -16,7 +16,6 @@ import {
   generateFlashcards,
   generateModule,
   generateVideo,
-  getModuleJobStatus,
   getMoodleAccount,
   MOODLE_ACCOUNT_CHANGED_EVENT,
   linkMoodleCourse,
@@ -25,7 +24,6 @@ import {
   listFlashcardSets,
   listModules,
   listVideos,
-  pollJobStatus,
   retryJob,
   listMoodleCourses,
   uploadDocument,
@@ -414,10 +412,9 @@ export function CourseDetailPage() {
     const documentId = doc.id;
     setStartingIds((ids) => new Set(ids).add(documentId));
     try {
-      const { job_id } = await generateModule(documentId, modelAlias, outputLanguage, customInstructions);
-      // A failed job needs no banner here: the refresh brings it back on the document, with its
-      // error and a retry button, and it is still there after a reload.
-      await pollJobStatus(() => getModuleJobStatus(job_id));
+      await generateModule(documentId, modelAlias, outputLanguage, customInstructions);
+      // From here the document says it is generating, and the list is read again until it no longer
+      // does (above); a failed job comes back on the document with its error and a retry button.
       await refresh();
     } catch (err) {
       if (axios.isAxiosError(err) && err.response?.status === 409) {

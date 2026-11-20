@@ -31,9 +31,12 @@ from app.generation.video_script import Scene
 SIZE = (1280, 720)
 ASSETS = Path(__file__).parent / "assets"
 _TEMPLATE = Template((Path(__file__).parent / "slide.html").read_text(encoding="utf-8"))
-# What a slide's look comes from besides the scene: a new template or renderer is a new look, so a
-# deploy that changes either makes every stored slide tag stale.
-_LOOK = hashlib.sha256((Path(__file__).parent / "slide.html").read_bytes() + Path(__file__).read_bytes()).hexdigest()
+# What a slide's look comes from besides the scene: the template, the renderer and the fonts and
+# KaTeX it loads. A deploy that changes any of them makes every slide tag a browser holds stale.
+_LOOK = hashlib.sha256(b"".join(
+    [(Path(__file__).parent / "slide.html").read_bytes(), Path(__file__).read_bytes()]
+    + [path.relative_to(ASSETS).as_posix().encode() + path.read_bytes()
+       for path in sorted(ASSETS.rglob("*")) if path.is_file()])).hexdigest()
 # .invalid never resolves (RFC 2606), so nothing outside the renderer could answer for it.
 _ORIGIN = "http://slide.invalid"
 _PAGE_PATH = "/slide.html"

@@ -3,7 +3,7 @@ import enum
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Enum, ForeignKey, ForeignKeyConstraint, Text, func
+from sqlalchemy import DateTime, Enum, ForeignKey, ForeignKeyConstraint, Text, func
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column
 
@@ -41,9 +41,9 @@ class _Media:
     status: Mapped[MediaStatus] = mapped_column(
         Enum(MediaStatus, name="mediastatus"), default=MediaStatus.generating, server_default="generating")
     # NULL keeps the item a draft the course's members cannot see.
-    published_at: Mapped[datetime | None]
+    published_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     created_at: Mapped[datetime] = created_at_column()
-    updated_at: Mapped[datetime] = mapped_column(server_default=func.now(), onupdate=func.now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
 
 class FlashcardSet(_Media, Base):

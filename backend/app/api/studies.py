@@ -8,7 +8,7 @@ from pydantic import BaseModel, EmailStr, Field, StringConstraints, model_valida
 from sqlalchemy import func, select, text
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.exc import IntegrityError, ProgrammingError
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, contains_eager
 
 from app.api.deps import get_current_user, require_admin
 from app.api.modules import GenerateRequest
@@ -24,7 +24,7 @@ from app.generation.module_generation_pipeline import (
     generation_payload_of,
     is_control,
     learning_objective_of,
-    matching_control,
+    normalize_generation_payload,
 )
 from app.jobs.queue import enqueue_job
 from app.models import (
@@ -328,11 +328,13 @@ def remove_item(study_id: uuid.UUID, item_id: uuid.UUID, db: Session = Depends(g
     for member in _items(db, study_id):
         if pair_key(member) == key:
             db.delete(member)
-    study.rater_pairs = {email: [k for k in keys if k != key] for email, keys in (study.rater_pairs or {}).items()
+    before = study.rater_pairs or {}
+    study.rater_pairs = {email: [k for k in keys if k != key] for email, keys in before.items()
                          if [k for k in keys if k != key]}
-    # A rater is someone given something: left with nothing, they are no longer one, and the study
-    # leaves their list.
-    study.rater_emails = [email for email in study.rater_emails or [] if email.lower() in study.rater_pairs]
+    # A rater whose last packet this was is no longer one and leaves the list. One added and not yet
+    # given anything stays: the admin is about to give them something.
+    emptied = {email for email, keys in before.items() if keys == [key]}
+    study.rater_emails = [email for email in study.rater_emails or [] if email.lower() not in emptied]
     db.commit()
     return [_item_out(i) for i in _items(db, study_id)]
 
@@ -418,20 +420,40 @@ class AddPair(BaseModel):
     module_id: uuid.UUID
 
 
-def _pair_state(db: Session, module: Module) -> str:
-    """Where a RAG module stands as a pair: its no-RAG control made ("ready"), being made
-    ("generating"), failed the last time ("failed"), or never asked for ("none")."""
-    payload = generation_payload_of(db, module.id)
-    expected = control_payload(module.id, payload.get("model_alias"), payload.get("self_check", True),
-                               payload.get("output_language", "vi"), payload.get("custom_instructions", ""))
-    if matching_control(db, module.id, expected) is not None:
-        return "ready"
-    last = db.scalar(select(Job.status).where(
-        Job.job_type == JobType.module_generation, Job.payload["paired_module_id"].astext == str(module.id),
-    ).order_by(Job.created_at.desc()).limit(1))
-    if last in (JobStatus.queued, JobStatus.running):
-        return "generating"
-    return "failed" if last == JobStatus.failed else "none"
+def _pair_states(db: Session, modules: list[Module]) -> dict[uuid.UUID, str]:
+    """Where each RAG module stands as a pair: its no-RAG control made with the same conditions
+    ("ready"), being made ("generating"), failed the last time ("failed"), or never asked for
+    ("none"). Three queries for any number of modules, as the admin's list can hold hundreds; the
+    match is matching_control's, where `defaults || payload` is normalize_generation_payload."""
+    ids = [m.id for m in modules]
+    keys = [str(i) for i in ids]
+    made: dict[str, list[dict]] = {}
+    for paired, payload in db.execute(select(Module.paired_module_id, Module.generation_payload).where(
+            Module.paired_module_id.in_(ids), Module.generation_payload.is_not(None))):
+        made.setdefault(str(paired), []).append(normalize_generation_payload(payload))
+    # Controls made before the conditions were kept on the module: their done job holds them.
+    for payload, in db.execute(select(Job.payload).join(Module, Job.module_id == Module.id).where(
+            Module.generation_payload.is_(None), Job.job_type == JobType.module_generation,
+            Job.status == JobStatus.done, Job.payload["paired_module_id"].astext.in_(keys))):
+        made.setdefault(payload["paired_module_id"], []).append(normalize_generation_payload(payload))
+    paired_key = Job.payload["paired_module_id"].astext
+    last = dict(db.execute(select(paired_key, Job.status).where(
+        Job.job_type == JobType.module_generation, paired_key.in_(keys),
+    ).distinct(paired_key).order_by(paired_key, Job.created_at.desc())).all())
+    states = {}
+    for module in modules:
+        payload = generation_payload_of(db, module.id)
+        expected = normalize_generation_payload(control_payload(
+            module.id, payload.get("model_alias"), payload.get("self_check", True),
+            payload.get("output_language", "vi"), payload.get("custom_instructions", "")))
+        status = last.get(str(module.id))
+        if expected in made.get(str(module.id), []):
+            states[module.id] = "ready"
+        elif status in (JobStatus.queued, JobStatus.running):
+            states[module.id] = "generating"
+        else:
+            states[module.id] = "failed" if status == JobStatus.failed else "none"
+    return states
 
 
 def _admin_module(db: Session, module_id: uuid.UUID, admin: User) -> Module:
@@ -447,20 +469,20 @@ def pair_candidates(study_id: uuid.UUID, db: Session = Depends(get_db), current_
     _study_or_404(db, study_id)
     loaded = set(db.scalars(select(StudyItem.module_id).where(
         StudyItem.study_id == study_id, StudyItem.module_id.is_not(None))))
-    modules = db.scalars(select(Module).join(Course).where(
-        Course.owner_id == current_user.id, Module.paired_module_id.is_(None)).order_by(Course.name, Module.title))
-    out = []
+    modules = db.scalars(select(Module).join(Course).options(contains_eager(Module.course)).where(
+        Course.owner_id == current_user.id, Module.paired_module_id.is_(None)).order_by(Course.name, Module.title)).all()
+    complete = []
     for module in modules:
         try:
             learning_objective_of(module)
         except IncompleteModuleError:
             continue
-        if is_control(db, module.id):
-            continue
-        out.append({"id": module.id, "title": module.title, "course_name": module.course.name,
-                    "created_at": module.created_at,
-                    "state": "in_study" if module.id in loaded else _pair_state(db, module)})
-    return out
+        if not is_control(db, module.id):
+            complete.append(module)
+    states = _pair_states(db, [m for m in complete if m.id not in loaded])
+    return [{"id": module.id, "title": module.title, "course_name": module.course.name,
+             "created_at": module.created_at, "state": "in_study" if module.id in loaded else states[module.id]}
+            for module in complete]
 
 
 @router.post("/{study_id}/pairs")
@@ -472,7 +494,7 @@ def add_pair(request: Request, study_id: uuid.UUID, body: AddPair, response: Res
     then 202 and the pair is added by asking again once it is made."""
     _study_or_404(db, study_id)
     module = _admin_module(db, body.module_id, current_user)
-    state = _pair_state(db, module)
+    state = _pair_states(db, [module])[module.id]
     if state == "ready":
         response.status_code = 201
         return load_items(study_id, LoadItems(module_ids=[module.id]), db, current_user)
