@@ -114,9 +114,9 @@ export function AdminFailuresPanel({ counts, onChange }: { counts: AdminCounts |
       {error && <p className="mb-3 text-sm danger-text">{error}</p>}
 
       {jobs === null ? (
-        !error && <p className="text-sm text-gray-500">Đang tải…</p>
+        !error && <p className="text-sm muted">Đang tải…</p>
       ) : jobs.length === 0 ? (
-        <p className="rounded-[3px] border border-gray-200 p-4 text-sm text-gray-500">
+        <p className="rounded-[3px] border border-gray-200 p-4 text-sm muted">
           Không có tác vụ nào thất bại.
         </p>
       ) : (

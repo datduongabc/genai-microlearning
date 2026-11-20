@@ -68,7 +68,7 @@ export function ComponentCard({
                       <p className="mt-2 whitespace-pre-wrap rounded bg-gray-50 p-3">{citation.chunk_content}</p>
                     </details>
                   ) : (
-                    <p className="mt-1 text-sm text-gray-500">
+                    <p className="mt-1 text-sm muted">
                       {citation.locator}: <span>{citation.resolution === 'ambiguous' ? 'trùng nhiều đoạn nguồn, không xác định được' : 'không tìm thấy đoạn nguồn'}</span>
                     </p>
                   )}
@@ -199,10 +199,9 @@ function SaveCancelRow({
 // card. react-markdown builds React elements and never inserts raw HTML, so generated text
 // cannot put markup of its own on the page.
 const MARKDOWN: Components = {
-  // One level under the part's own h2, so a screen reader's list of headings has no gap; the look
-  // stays as it was.
-  h1: ({ children }) => <h3 className="mb-2 mt-4 text-base font-semibold tracking-normal first:mt-0">{children}</h3>,
-  h2: ({ children }) => <h3 className="mb-2 mt-4 text-base font-semibold tracking-normal first:mt-0">{children}</h3>,
+  // One level under the part's own h2, so a screen reader's list of headings has no gap.
+  h1: ({ children }) => <h3 className="lesson-heading">{children}</h3>,
+  h2: ({ children }) => <h3 className="lesson-heading">{children}</h3>,
   h3: ({ children }) => <h4 className="mb-1 mt-3 font-semibold first:mt-0">{children}</h4>,
   h4: ({ children }) => <h5 className="mb-1 mt-3 font-semibold first:mt-0">{children}</h5>,
   h5: ({ children }) => <h6 className="mb-1 mt-3 font-semibold first:mt-0">{children}</h6>,
@@ -356,7 +355,7 @@ function SlidesEditor({
           ) : (
             <>
               <div className="font-semibold">{slide.title}</div>
-              <ul className="mt-1 list-disc pl-5 text-sm text-gray-700">
+              <ul className="mt-1 list-disc pl-5 text-sm secondary">
                 {slide.bullets.filter(Boolean).map((b, j) => (
                   <li key={j}>{b}</li>
                 ))}
@@ -566,7 +565,7 @@ function QuizDisplay({
         )
       })}
       {questions.length === 0 && (
-        <p className="text-sm text-gray-500">
+        <p className="text-sm muted">
           Chưa tạo được câu hỏi hợp lệ
           {failed.length > 0 ? `: ${failed.map((c) => c.fail_reason).join('; ')}` : ''}.
         </p>
@@ -624,7 +623,7 @@ function QuestionEditor({ moduleId, question, explanation, onSaved }: {
     </form> : <>
       <p className="question-stem">{question.stem}</p>
       <ul className="choice-list">{question.choices.options.map((choice, i) => <li key={i} className={String(i) === question.answer_key ? 'choice-key' : undefined}>{String.fromCharCode(65 + i)}. {choice}{String(i) === question.answer_key && <> <Check aria-label="Đáp án đúng" className="inline size-4 align-[-2px]" /></>}</li>)}</ul>
-      {explanation && <p className="text-sm text-gray-500"><span className="font-semibold">Giải thích: </span>{explanation}</p>}
+      {explanation && <p className="text-sm muted"><span className="font-semibold">Giải thích: </span>{explanation}</p>}
       <SaveCancelRow editing={false} saving={saving} onSave={handleSubmit(save)} onCancel={() => setEditing(false)} onEdit={() => {
         reset(formValues())
         setEditing(true)

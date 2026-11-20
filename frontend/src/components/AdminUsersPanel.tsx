@@ -117,7 +117,7 @@ export function AdminUsersPanel({ counts, onChange }: { counts: AdminCounts | nu
       {loadError && <p className="text-sm danger-text">{loadError}</p>}
 
       {users === null ? (
-        !loadError && <p className="text-sm text-gray-500">Đang tải…</p>
+        !loadError && <p className="text-sm muted">Đang tải…</p>
       ) : (
         <ul className="account-table ui-card">
           <li className="account-row table-heading"><span>Người dùng</span><span>Vai trò</span><span>Moodle</span><span /></li>
@@ -195,17 +195,17 @@ function CreateUserForm({ onCreated }: { onCreated: (user: AdminUser) => void })
     >
       <h2 className="text-h2 font-semibold">Tạo tài khoản người dùng</h2>
       <div className="grid gap-3 sm:grid-cols-3">
-        <label className="flex flex-col gap-1 text-sm text-gray-500">
+        <label className="flex flex-col gap-1 text-sm muted">
           Họ và tên
           <input type="text" autoComplete="off" className="auth-input" {...register("name")} />
           {errors.name && <span className="danger-text">{errors.name.message}</span>}
         </label>
-        <label className="flex flex-col gap-1 text-sm text-gray-500">
+        <label className="flex flex-col gap-1 text-sm muted">
           Email
           <input type="email" autoComplete="off" className="auth-input" {...register("email")} />
           {errors.email && <span className="danger-text">{errors.email.message}</span>}
         </label>
-        <label className="flex flex-col gap-1 text-sm text-gray-500">
+        <label className="flex flex-col gap-1 text-sm muted">
           Mật khẩu ban đầu
           <input type="password" autoComplete="new-password" className="auth-input" {...register("password")} />
           {errors.password && <span className="danger-text">{errors.password.message}</span>}
