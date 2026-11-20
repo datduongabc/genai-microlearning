@@ -41,7 +41,7 @@ export interface GenerateChoice {
 
 function MediaSelect({ label, value, onChange, choices }: {
   label: string;
-  value: string | undefined;
+  value: string;
   onChange: (alias: string) => void;
   // null while the server's list is on its way.
   choices: MediaChoice[] | null;
@@ -49,9 +49,10 @@ function MediaSelect({ label, value, onChange, choices }: {
   return (
     <label className="mt-4 flex flex-col gap-2 text-sm">
       {label}
-      <select aria-label={label} value={value ?? ""} onChange={(e) => onChange(e.target.value)} disabled={!choices}
+      <select aria-label={label} value={value} onChange={(e) => onChange(e.target.value)} disabled={!choices}
         className="ui-select w-full disabled:opacity-60">
-        {!choices && <option value="">Đang tải…</option>}
+        {/* As for the text model: "" leaves the choice to the server. */}
+        <option value="">{choices ? "Mặc định của hệ thống" : "Đang tải…"}</option>
         {choices?.map((choice) => (
           <option key={choice.alias} value={choice.alias}>
             {choice.label}
@@ -74,12 +75,12 @@ export function GenerateDialog({ open, onOpenChange, returnFocusTo, onGenerate, 
   const text = KIND_TEXT[kind];
   const models = useMediaModels(kind === "video");
   const choices = models && models !== "failed" ? models : null;
-  // null until the lecturer picks one: the server's default is shown and sent.
-  const [voicePick, setVoicePick] = useState<string | null>(null);
-  const [imagePick, setImagePick] = useState<string | null>(null);
+  // "" until the lecturer picks one: the system's default, which the server applies.
+  const [voicePick, setVoicePick] = useState("");
+  const [imagePick, setImagePick] = useState("");
   const [modelAlias, setModelAlias] = useState("");
-  const voiceAlias = voicePick ?? choices?.default_voice;
-  const imageAlias = imagePick ?? choices?.default_image;
+  const voiceAlias = voicePick || undefined;
+  const imageAlias = imagePick || undefined;
   const {
     register,
     handleSubmit,
@@ -120,8 +121,8 @@ export function GenerateDialog({ open, onOpenChange, returnFocusTo, onGenerate, 
               <p className="course-hint">Không tải được danh sách giọng đọc và mô hình vẽ hình.</p>
             ) : (
               <>
-                <MediaSelect label="Giọng đọc" value={voiceAlias} onChange={setVoicePick} choices={choices?.voices ?? null} />
-                <MediaSelect label="Vẽ hình" value={imageAlias} onChange={setImagePick} choices={choices?.images ?? null} />
+                <MediaSelect label="Giọng đọc" value={voicePick} onChange={setVoicePick} choices={choices?.voices ?? null} />
+                <MediaSelect label="Vẽ hình" value={imagePick} onChange={setImagePick} choices={choices?.images ?? null} />
               </>
             )}
           </>
