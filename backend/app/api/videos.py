@@ -42,7 +42,7 @@ from app.models import Course, Document, Job, JobStatus, JobType, MediaStatus, U
 from app.storage import delete_media_files, media_keys_for_video, media_store
 from app.video.illustrations import scenes_to_draw
 from app.video.render import lost_pictures, rendered_captions
-from app.video.slides import render_slide
+from app.video.slides import render_slide, slide_tag
 
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["videos"], dependencies=[Depends(get_current_user)])
@@ -580,10 +580,11 @@ def _stored_image(scene: Scene) -> bytes | None:
 
 
 @router.get("/videos/{video_id}/scenes/{index}/preview.png")
-def scene_preview(video_id: uuid.UUID, index: int, db: Session = Depends(get_db),
+def scene_preview(video_id: uuid.UUID, index: int, request: Request, db: Session = Depends(get_db),
                   current_user: User = Depends(get_current_user)):
     """The slide of the draft's scene `index` (0-based) as the render would print it, with the
-    picture it has now. Not cached: the draft changes under the same URL."""
+    picture it has now. The browser keeps it and asks again each time (no-cache) with its tag: an
+    unchanged slide is answered 304 without a render, so a reload shows the slides at once."""
     video = _owned_video(db, video_id, current_user)
     if not 0 <= index < len(video.scenes):
         raise HTTPException(status_code=404, detail="Scene not found")
@@ -591,6 +592,11 @@ def scene_preview(video_id: uuid.UUID, index: int, db: Session = Depends(get_db)
     lang = video.output_language
     # No transaction stays open while the picture is read and the browser renders.
     db.commit()
+    tag = slide_tag(scene, scene.image_key if scene.kind == "illustration" else None, lang)
+    # Private: the slide is the lecturer's; no-cache: an edit keeps the URL, so each view asks.
+    cache = {"Cache-Control": "private, no-cache", "ETag": tag}
+    if tag in (request.headers.get("if-none-match") or ""):
+        return Response(status_code=304, headers=cache)
     image = _stored_image(scene)
     if not PREVIEW_SLOTS.acquire(timeout=PREVIEW_WAIT_SECONDS):
         raise HTTPException(status_code=503, detail="Máy chủ đang bận dựng slide khác, vui lòng thử lại sau giây lát.",
@@ -600,4 +606,4 @@ def scene_preview(video_id: uuid.UUID, index: int, db: Session = Depends(get_db)
         png = render_slide(scene, image, lang=lang)
     finally:
         PREVIEW_SLOTS.release()
-    return Response(content=png, media_type="image/png", headers={"Cache-Control": "private, no-store"})
+    return Response(content=png, media_type="image/png", headers=cache)

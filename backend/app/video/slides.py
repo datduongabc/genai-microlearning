@@ -11,7 +11,9 @@ other request is aborted, so a slide renders the same with no network, and text 
 cannot make the worker fetch anything.
 """
 
+import hashlib
 import html
+import json
 import mimetypes
 import re
 import unicodedata
@@ -29,6 +31,9 @@ from app.generation.video_script import Scene
 SIZE = (1280, 720)
 ASSETS = Path(__file__).parent / "assets"
 _TEMPLATE = Template((Path(__file__).parent / "slide.html").read_text(encoding="utf-8"))
+# What a slide's look comes from besides the scene: a new template or renderer is a new look, so a
+# deploy that changes either makes every stored slide tag stale.
+_LOOK = hashlib.sha256((Path(__file__).parent / "slide.html").read_bytes() + Path(__file__).read_bytes()).hexdigest()
 # .invalid never resolves (RFC 2606), so nothing outside the renderer could answer for it.
 _ORIGIN = "http://slide.invalid"
 _PAGE_PATH = "/slide.html"
@@ -107,6 +112,14 @@ def slide_html(scene: Scene, image: bytes | None, lang: str = "vi", focus: int |
         content=_content(scene, focus),
         image=f'<div class="img"><img src="{_IMAGE_PATH.lstrip("/")}" alt=""></div>' if image is not None else "",
     )
+
+
+def slide_tag(scene: Scene, image_key: str | None, lang: str) -> str:
+    """An ETag for the slide `slide_html` prints: the fields it prints, the picture's stored key (a
+    redrawn picture has a new one) and the look. The same tag is the same PNG, so a browser that
+    has it is told so without a render."""
+    printed = [scene.kind, scene.title, scene.bullets, scene.formula, scene.code, scene.table, image_key, lang, _LOOK]
+    return '"' + hashlib.sha256(json.dumps(printed, ensure_ascii=False).encode()).hexdigest()[:32] + '"'
 
 
 @dataclass(frozen=True)
