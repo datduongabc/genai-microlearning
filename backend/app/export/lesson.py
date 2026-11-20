@@ -3,8 +3,8 @@ Book and Quiz (app/api/moodle.py) and the SCORM package (app/export/scorm.py).""
 
 import html
 
-import bleach
 import markdown
+import nh3
 
 from app.models import ComponentType, Module, ModuleComponent
 
@@ -12,16 +12,17 @@ from app.models import ComponentType, Module, ModuleComponent
 # injection payload trying to get a <script>/onerror= into generated text) --
 # strip anything outside this allowlist before it's stored as raw HTML in
 # Moodle (a Book chapter is FORMAT_HTML and quiz text is PARAM_RAW, both rendered unescaped).
-_ALLOWED_TAGS = ["h1", "h2", "h3", "p", "ul", "ol", "li", "strong", "em", "b", "i", "br", "code", "pre", "blockquote"]
+_ALLOWED_TAGS = {"h1", "h2", "h3", "p", "ul", "ol", "li", "strong", "em", "b", "i", "br", "code", "pre", "blockquote"}
 
 
 def clean_html(html_text: str) -> str:
-    return bleach.clean(html_text, tags=_ALLOWED_TAGS, attributes={}, strip=True)
+    # Tags outside the list go, their text stays; <script> and <style> go with their content.
+    return nh3.clean(html_text, tags=_ALLOWED_TAGS, attributes={}, link_rel=None)
 
 
 def plain(text: str) -> str:
     """Text for a name or a chapter title, which Moodle shows as plain text: no tag survives."""
-    return " ".join(bleach.clean(text or "", tags=[], strip=True).split())
+    return " ".join(nh3.clean(text or "", tags=set(), link_rel=None).split())
 
 
 def find_component(module: Module, component_type: ComponentType) -> ModuleComponent | None:

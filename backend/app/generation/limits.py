@@ -44,13 +44,12 @@ def reserve_generations(db: Session, user: User, *, full_access: bool, count: in
     db.refresh(user, with_for_update=True)
     if not user.is_active:
         raise HTTPException(status_code=401, detail="Tài khoản đã bị vô hiệu hóa.")
-    if full_access:
-        return
     day = today()
     used = user.generation_count if user.generation_day == day else 0
-    limit = settings.non_teacher_daily_generation_limit
+    limit = settings.full_access_daily_generation_limit if full_access else settings.non_teacher_daily_generation_limit
     if used + count > limit:
         raise HTTPException(status_code=429, detail=(
+            f"Hôm nay bạn đã dùng hết {limit} lượt tạo nội dung. Hãy quay lại vào ngày mai." if full_access else
             f"Mỗi ngày bạn được tạo tối đa {limit} {noun}. "
             "Liên kết môn học với một khóa học Moodle bạn quản lý để bỏ giới hạn này."
         ))

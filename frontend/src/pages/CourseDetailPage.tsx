@@ -1,4 +1,5 @@
 import { confirmAction } from "../lib/confirm";
+import { usePolling } from "../lib/usePolling";
 import { notifyDone, notifyFailed } from "../lib/notify";
 import { BookOpenText, ChevronDown, Clapperboard, Ellipsis, Layers, Plus, Trash2 } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../components/ui/dropdown-menu";
@@ -342,17 +343,7 @@ export function CourseDetailPage() {
   const isGenerating = (doc: DocumentInfo) => doc.generating || startingIds.has(doc.id);
   const setDates = sharedTitleDates(flashcardSets);
   const videoDates = sharedTitleDates(videos);
-  useEffect(() => {
-    if (!shouldPoll || !courseId) return;
-    const timer = setInterval(async () => {
-      try {
-        setDocuments(await listDocuments(courseId));
-      } catch {
-        // transient failure: the next tick retries
-      }
-    }, DOCUMENT_POLL_INTERVAL_MS);
-    return () => clearInterval(timer);
-  }, [shouldPoll, courseId]);
+  usePolling(shouldPoll && !!courseId, () => listDocuments(courseId!), setDocuments, DOCUMENT_POLL_INTERVAL_MS);
 
   // The module a finished generation produced only shows up in the per-document
   // module lists, which the polling above does not reload.
@@ -365,31 +356,12 @@ export function CourseDetailPage() {
   // A set being generated is a job in the worker: the server's status is the truth, so the list
   // is read again until none is generating, as it is for documents above.
   const flashcardsGenerating = flashcardSets.some((set) => set.status === "generating");
-  useEffect(() => {
-    if (!flashcardsGenerating || !courseId) return;
-    const timer = setInterval(async () => {
-      try {
-        setFlashcardSets(await listFlashcardSets(courseId));
-      } catch {
-        // transient failure: the next tick retries
-      }
-    }, DOCUMENT_POLL_INTERVAL_MS);
-    return () => clearInterval(timer);
-  }, [flashcardsGenerating, courseId]);
+  usePolling(flashcardsGenerating && !!courseId, () => listFlashcardSets(courseId!), setFlashcardSets,
+    DOCUMENT_POLL_INTERVAL_MS);
 
   // The same for videos, while any of them has a job in the worker.
   const videosRunning = videos.some((video) => VIDEO_JOB_TEXT[video.status] !== undefined);
-  useEffect(() => {
-    if (!videosRunning || !courseId) return;
-    const timer = setInterval(async () => {
-      try {
-        setVideos(await listVideos(courseId));
-      } catch {
-        // transient failure: the next tick retries
-      }
-    }, DOCUMENT_POLL_INTERVAL_MS);
-    return () => clearInterval(timer);
-  }, [videosRunning, courseId]);
+  usePolling(videosRunning && !!courseId, () => listVideos(courseId!), setVideos, DOCUMENT_POLL_INTERVAL_MS);
 
   async function handleUpload({ file }: UploadDocumentFormValues) {
     if (!courseId) return;

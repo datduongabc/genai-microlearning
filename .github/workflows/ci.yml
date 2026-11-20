@@ -124,6 +124,7 @@ jobs:
       # staging variables would override the demo sizes plan.tftest.hcl pins.
       - run: terraform test -filter=tests/plan.tftest.hcl
       - run: terraform test -filter=tests/staging.tftest.hcl -var-file=../environments/staging.tfvars
+      - run: terraform test -filter=tests/production.tftest.hcl -var-file=../environments/production.tfvars
       - run: bash -n ../scripts/deploy.sh
       - run: bash -n ../scripts/tf.sh
       - run: bash ../scripts/tf.test.sh

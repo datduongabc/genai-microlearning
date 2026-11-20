@@ -49,13 +49,3 @@ export async function uploadDocument(courseId: string, file: File, onProgress?: 
   const { data } = await api.post(`/documents/${started.document_id}/complete`)
   return data as { id: string; status: string; job_id: string }
 }
-
-// A passage of a document, as an editor offers it for citing.
-export interface DocumentPassage {
-  chunk_id: string
-  locator: string
-  content: string
-  // What the source picker shows: the passage's own words, around the search match when there is
-  // one, without the PDF's running header. Absent on a passage the page built itself.
-  snippet?: string
-}

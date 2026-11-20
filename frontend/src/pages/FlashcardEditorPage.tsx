@@ -1,4 +1,5 @@
 import { confirmAction } from '../lib/confirm'
+import { usePolling } from '../lib/usePolling'
 import { useCourseCrumbs } from '../lib/useCourseCrumbs'
 import { notifyDone, notifyFailed } from '../lib/notify'
 import axios from 'axios'
@@ -68,17 +69,7 @@ export function FlashcardEditorPage() {
 
   // A set being generated is a job in the worker, so the server's status is the truth.
   const generating = saved?.status === 'generating'
-  useEffect(() => {
-    if (!generating || !id) return
-    const timer = setInterval(async () => {
-      try {
-        setSaved(await getFlashcardSet(id))
-      } catch {
-        // transient failure: the next tick retries
-      }
-    }, POLL_INTERVAL_MS)
-    return () => clearInterval(timer)
-  }, [generating, id])
+  usePolling(generating && !!id, () => getFlashcardSet(id!), setSaved, POLL_INTERVAL_MS)
 
   const original = editing?.index != null ? saved?.cards[editing.index] : undefined
   const unsaved = editing !== null && (editing.front !== (original?.front ?? '') || editing.back !== (original?.back ?? ''))

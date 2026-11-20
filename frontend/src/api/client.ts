@@ -7,17 +7,23 @@ interface StoredAuth {
   refreshToken: string | null
 }
 
+// The login this browser keeps, as AuthContext wrote it, or null when there is none or it cannot be read.
+export function storedAuth(): Record<string, unknown> | null {
+  try {
+    const raw = localStorage.getItem('auth')
+    return raw ? (JSON.parse(raw) as Record<string, unknown>) : null
+  } catch {
+    return null
+  }
+}
+
 function readStoredAuth(): StoredAuth {
-  const raw = localStorage.getItem('auth')
-  if (!raw) return { token: null, refreshToken: null }
-  const parsed = JSON.parse(raw) as { token: string | null; refreshToken?: string | null }
-  return { token: parsed.token ?? null, refreshToken: parsed.refreshToken ?? null }
+  const stored = storedAuth() as Partial<StoredAuth> | null
+  return { token: stored?.token ?? null, refreshToken: stored?.refreshToken ?? null }
 }
 
 function writeStoredAuth(patch: Partial<StoredAuth>) {
-  const raw = localStorage.getItem('auth')
-  const current = raw ? JSON.parse(raw) : {}
-  localStorage.setItem('auth', JSON.stringify({ ...current, ...patch }))
+  localStorage.setItem('auth', JSON.stringify({ ...storedAuth(), ...patch }))
 }
 
 api.interceptors.request.use((config) => {

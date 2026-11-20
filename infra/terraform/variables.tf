@@ -46,8 +46,10 @@ variable "embedder" {
 }
 
 variable "gateway" {
-  type    = object({ cpu = number, memory = number, count = number })
-  default = { cpu = 512, memory = 1024, count = 1 }
+  # Every model call goes through it, so one task is the one fault that stops all AI: two at least,
+  # each in its own zone, and more by CPU when generation and chat are busy.
+  type    = object({ cpu = number, memory = number, min = number, max = number })
+  default = { cpu = 512, memory = 1024, min = 2, max = 4 }
 }
 
 variable "api_requests_per_target" {
@@ -70,9 +72,9 @@ variable "reranker_provider" {
 }
 
 variable "reranker" {
-  description = "The self-hosted reranker, used only when reranker_provider is jina."
-  type        = object({ cpu = number, memory = number, count = number })
-  default     = { cpu = 4096, memory = 8192, count = 1 }
+  description = "The self-hosted reranker, used only when reranker_provider is jina. Scaled by CPU: on CPU it was the measured bottleneck of chat (about 400% CPU at 22.5 messages/minute)."
+  type        = object({ cpu = number, memory = number, min = number, max = number })
+  default     = { cpu = 4096, memory = 8192, min = 1, max = 3 }
 }
 
 variable "self_registration" {
