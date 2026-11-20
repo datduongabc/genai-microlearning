@@ -138,7 +138,7 @@ export function ModulePreviewPage() {
   if (loading) {
     return (
       <AppShell title="Mô-đun" crumbs={crumbs}>
-        <p className="text-sm text-gray-500">Đang tải…</p>
+        <p className="text-sm muted">Đang tải…</p>
       </AppShell>
     )
   }
@@ -252,7 +252,7 @@ function ModuleChatPanel({ module, onSaved }: { module: ModuleDetail; onSaved: (
     <h2 id="module-chat-title" className="module-part-title">Yêu cầu chỉnh sửa</h2>
     <div aria-live="polite" className="mt-3 space-y-3 text-sm">
       {turns.map((turn, i) => <div key={i}>
-        <p className="text-gray-500">{turn.message}</p>
+        <p className="muted">{turn.message}</p>
         <p className="mt-1 whitespace-pre-wrap">{turn.reply}</p>
       </div>)}
     </div>
@@ -489,7 +489,7 @@ function ModuleHeader({ module, onSaved, editing, onEditingChange: setEditing }:
         </p>
       )}
       {module.sub_objectives && module.sub_objectives.length > 0 && (
-        <ul className="mt-2 list-disc pl-5 text-sm text-gray-600">
+        <ul className="mt-2 list-disc pl-5 text-sm secondary">
           {module.sub_objectives.map((s) => (
             <li key={s}>{s}</li>
           ))}

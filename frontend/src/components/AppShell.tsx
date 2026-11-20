@@ -114,10 +114,10 @@ export function AppShell({ title, fullTitle, actions, crumbs, children }: {
         }
       }}>
         {open && <div className="account-menu" id="account-menu" ref={panel} role="region" aria-label="Tài khoản">
-          <div className="account-info"><strong>{user?.name}</strong><div className="text-gray-600">{user?.email}</div></div>
+          <div className="account-info"><strong>{user?.name}</strong><div className="secondary">{user?.email}</div></div>
           <hr />
           {!user?.is_admin && (account?.status === "linked" ? <>
-            <div className="account-info"><AccountIcon kind="link" />Moodle đã liên kết<div className="text-gray-600">{account.email}</div></div>
+            <div className="account-info"><AccountIcon kind="link" />Moodle đã liên kết<div className="secondary">{account.email}</div></div>
             <button className="menu-item danger" disabled={busy} onClick={() => void unlink()}><AccountIcon kind="unlink" />{busy ? "Đang hủy liên kết…" : "Hủy liên kết Moodle…"}</button>
           </> : account && <MoodleAccountSection onStatus={linked} />)}
           {error && <p role="alert" className="account-info danger-text">{error}</p>}
