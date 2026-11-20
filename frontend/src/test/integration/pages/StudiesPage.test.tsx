@@ -5,10 +5,12 @@ import { beforeEach, expect, it, vi } from "vitest";
 import { StudiesPage, BlindRatingPage } from "../../../pages/StudiesPage";
 import { AdminStudiesPanel } from "../../../components/AdminStudiesPanel";
 import * as api from "../../../api/studies";
+import * as admin from "../../../api/admin";
 import type { Rating } from "../../../lib/ratingSchema";
 import * as auth from "../../../auth/useAuth";
 
 vi.mock("../../../api/studies");
+vi.mock("../../../api/admin");
 const study = {
   id: "s1",
   name: "Nghiên cứu",
@@ -64,6 +66,11 @@ beforeEach(() => {
   vi.mocked(api.getStudyResults).mockResolvedValue(noResults);
   vi.mocked(api.listStudyFiles).mockResolvedValue([]);
   vi.mocked(api.getStudyItems).mockResolvedValue([]);
+  const account = { is_admin: false, is_active: true, created_at: "", moodle_status: null };
+  vi.mocked(admin.listUsers).mockResolvedValue([
+    { ...account, id: "u1", email: "lan@example.com", name: "Lan" },
+    { ...account, id: "u2", email: "minh@example.com", name: "Minh Trần" },
+  ] as admin.AdminUser[]);
 });
 function blind() {
   return render(
@@ -236,20 +243,25 @@ it("reports missing or revoked invitations", async () => {
   expect(await screen.findByRole("alert")).toHaveTextContent("Không tải được nghiên cứu");
   expect(screen.queryByRole("button", { name: "Lưu đánh giá" })).not.toBeInTheDocument();
 });
-it("admin edits invited emails and can remove all raters", async () => {
+it("invites raters picked from the accounts by name or email and can remove all of them", async () => {
   vi.mocked(api.setRaters).mockImplementation(async (_s, emails) => ({ emails, assignments: {} }));
   render(<MemoryRouter><AdminStudiesPanel /></MemoryRouter>);
   await userEvent.click(await screen.findByRole("button", { name: /Nghiên cứu/ }));
-  const input = await screen.findByLabelText("Người chấm");
+  const input = await screen.findByRole("combobox", { name: "Người chấm" });
   await screen.findByRole("button", { name: "Bỏ lan@example.com" });
-  await userEvent.type(input, "bad{Enter}");
-  expect(await screen.findByRole("alert")).toHaveTextContent("Email không hợp lệ");
-  expect(api.setRaters).not.toHaveBeenCalled();
+  await waitFor(() => expect(input).toBeEnabled());
+
+  // No account, nothing to pick: an email that does not exist cannot be invited.
+  await userEvent.type(input, "nobody@example.com");
+  expect(screen.getByText("Không có tài khoản nào khớp.")).toBeInTheDocument();
   await userEvent.clear(input);
-  await userEvent.type(input, "minh@example.com{Enter}");
+  await userEvent.type(input, "Minh");
+  // Already invited accounts are not offered again.
+  expect(screen.getAllByRole("option")).toHaveLength(1);
+  await userEvent.keyboard("{Enter}");
   await screen.findByRole("button", { name: "Bỏ minh@example.com" });
-  await userEvent.click(screen.getByRole("button", { name: /Nghiên cứu/ }));
-  expect(screen.getByLabelText("Người chấm")).toBeVisible();
+  expect(input).toHaveValue("");
+
   await userEvent.click(screen.getByRole("button", { name: "Lưu người chấm" }));
   await waitFor(() => expect(api.setRaters).toHaveBeenCalledWith("s1", ["lan@example.com", "minh@example.com"]));
   await userEvent.click(screen.getByRole("button", { name: "Bỏ lan@example.com" }));
@@ -258,41 +270,17 @@ it("admin edits invited emails and can remove all raters", async () => {
   await waitFor(() => expect(api.setRaters).toHaveBeenLastCalledWith("s1", []));
 });
 
-it("saves a typed email that was not yet added with Enter", async () => {
-  vi.mocked(api.setRaters).mockImplementation(async (_s, emails) => ({ emails, assignments: {} }));
+it("adds the pasted emails that have an account and names the ones that do not", async () => {
   render(<MemoryRouter><AdminStudiesPanel /></MemoryRouter>);
   await userEvent.click(await screen.findByRole("button", { name: /Nghiên cứu/ }));
-  await userEvent.type(await screen.findByLabelText("Người chấm"), "Minh@Example.com");
-  await userEvent.click(screen.getByRole("button", { name: "Lưu người chấm" }));
-  await waitFor(() => expect(api.setRaters).toHaveBeenCalledWith("s1", ["lan@example.com", "minh@example.com"]));
-  expect(await screen.findByText("Đã lưu người chấm.")).toBeInTheDocument();
-});
-
-it("adds a pasted list of emails as chips without duplicates", async () => {
-  render(<MemoryRouter><AdminStudiesPanel /></MemoryRouter>);
-  await userEvent.click(await screen.findByRole("button", { name: /Nghiên cứu/ }));
-  const input = await screen.findByLabelText("Người chấm");
-  await screen.findByRole("button", { name: "Bỏ lan@example.com" });
+  const input = await screen.findByRole("combobox", { name: "Người chấm" });
+  await waitFor(() => expect(input).toBeEnabled());
   input.focus();
-  await userEvent.paste("Lan@example.com\nminh@example.com, an@example.com;minh@example.com");
+  await userEvent.paste("Lan@example.com\nminh@example.com, ghost@example.com;minh@example.com");
   expect(screen.getAllByRole("button", { name: /^Bỏ / }).map((b) => b.getAttribute("aria-label"))).toEqual([
-    "Bỏ lan@example.com", "Bỏ minh@example.com", "Bỏ an@example.com",
+    "Bỏ lan@example.com", "Bỏ minh@example.com",
   ]);
-  expect(input).toHaveValue("");
-});
-
-it("keeps a pasted list with a bad email in the field and clears the error when a chip is removed", async () => {
-  render(<MemoryRouter><AdminStudiesPanel /></MemoryRouter>);
-  await userEvent.click(await screen.findByRole("button", { name: /Nghiên cứu/ }));
-  const input = await screen.findByLabelText("Người chấm");
-  await screen.findByRole("button", { name: "Bỏ lan@example.com" });
-  input.focus();
-  await userEvent.paste("minh@example.com\nbad");
-  expect(await screen.findByRole("alert")).toHaveTextContent("Email không hợp lệ");
-  expect(screen.queryByRole("button", { name: "Bỏ minh@example.com" })).not.toBeInTheDocument();
-  expect(input).toHaveValue("minh@example.com bad");
-  await userEvent.click(screen.getByRole("button", { name: "Bỏ lan@example.com" }));
-  expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  expect(screen.getByRole("alert")).toHaveTextContent("Chưa có tài khoản: ghost@example.com");
 });
 
 it("loads the raters again when the same study is picked after a failed load", async () => {
@@ -600,6 +588,14 @@ it("opens the study named in the address, so a reload stays on it", async () => 
   render(<MemoryRouter initialEntries={["/admin?tab=studies&study=s1"]}><AdminStudiesPanel /></MemoryRouter>);
   expect(await screen.findByRole("button", { name: "Bỏ lan@example.com" })).toBeInTheDocument();
   expect(api.getRaters).toHaveBeenCalledWith("s1");
+});
+
+it("does not open a closed study the address still names, and opens the only one listed", async () => {
+  vi.mocked(api.listStudies).mockResolvedValue([study]);
+  render(<MemoryRouter initialEntries={["/admin?tab=studies&study=closed"]}><AdminStudiesPanel /></MemoryRouter>);
+  expect(await screen.findByRole("heading", { name: "Nghiên cứu" })).toBeInTheDocument();
+  await waitFor(() => expect(api.getRaters).toHaveBeenCalledWith("s1"));
+  expect(api.getRaters).not.toHaveBeenCalledWith("closed");
 });
 
 it("opens the only study by itself, with no list to choose from", async () => {
