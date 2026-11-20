@@ -14,6 +14,7 @@ from sqlalchemy.orm import Session
 
 from app.generation.evaluation import DimensionScore, ModuleEvaluation
 from app.models import Rating, Study, StudyItem, User
+from app.study.media import CRITERIA as MEDIA_CRITERIA
 
 # The scored criteria, in rubric order; overall_notes and the findings list are not scores.
 CRITERIA = [name for name, field in ModuleEvaluation.model_fields.items() if field.annotation is DimensionScore]
@@ -77,7 +78,10 @@ def rater_csv(ratings: list[tuple[StudyItem, Rating]]) -> str:
     out = io.StringIO()
     writer = csv.writer(out, lineterminator="\n")
     writer.writerow(["anon_id", *CRITERIA, "hallucination_notes"])
+    # Module packets only: analyze_study.py compares RAG to no-RAG on the module rubric.
     for item, rating in ratings:
+        if rating.scores is not None:
+            continue
         writer.writerow([item.anon_code, *(getattr(rating, c)["score"] for c in CRITERIA),
                          finding_notes(rating.hallucination_findings)])
     return out.getvalue()
@@ -99,7 +103,7 @@ def judge_jsonl(db: Session, study_id: uuid.UUID) -> str:
 def _rating_view(rater: str, kind: str, rating: Rating) -> dict:
     return {
         "rater": rater, "kind": kind,
-        "scores": {c: getattr(rating, c) for c in CRITERIA},
+        "scores": rating.scores if rating.scores is not None else {c: getattr(rating, c) for c in CRITERIA},
         "findings": rating.hallucination_findings or [],
         "notes": rating.overall_notes,
     }
@@ -139,6 +143,7 @@ def study_results(db: Session, study: Study) -> dict:
         "items": [{
             "id": item.id, "anon_code": item.anon_code, "group": item.group,
             "pair_code": pairs[item.anon_code], "topic": item.packet.get("topic", ""),
+            "criteria": list(MEDIA_CRITERIA.get(item.group, CRITERIA)),
             "ratings": by_item[item.id],
         } for item in items],
     }

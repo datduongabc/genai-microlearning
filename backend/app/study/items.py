@@ -14,10 +14,13 @@ from app.generation.study_packets import module_packet, reference_chunks
 from app.llm import gateway
 from app.models import Course, Module, StudyItem
 
+MODULE_GROUPS = ("human", "llm_no_rag", "rag_llm")
+
 
 def assign_codes(items: list[StudyItem]) -> None:
-    """Reblind the whole draft, so incrementally loaded groups cannot be inferred from codes."""
-    shuffled = list(items)
+    """Reblind the module packets of the draft, so incrementally loaded groups cannot be inferred
+    from codes. Flashcard and video packets keep theirs (app/study/media.py next_code)."""
+    shuffled = [item for item in items if item.group in MODULE_GROUPS]
     random.SystemRandom().shuffle(shuffled)
     for number, item in enumerate(shuffled, 1):
         item.anon_code = f"M{number:02d}"

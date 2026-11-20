@@ -14,8 +14,8 @@ import {
 import { apiErrorMessage } from "../api/client";
 import { formatSize } from "../lib/fileSize";
 import { rowsOf } from "../lib/studyRows";
+import { GROUP_LABEL } from "../lib/ratingSchema";
 
-const GROUP_LABEL: Record<string, string> = { rag_llm: "RAG", llm_no_rag: "Không RAG", human: "Người viết" };
 
 // The files the raters judge the packets against: the admin uploads them to the study once and
 // picks one per packet. The pipeline keeps no course file once it is read, so they come from here.

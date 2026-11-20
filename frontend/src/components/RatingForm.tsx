@@ -2,7 +2,10 @@ import { Plus, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Controller, useFieldArray, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ratingSchema, emptyRating, rubric, type Rating } from "../lib/ratingSchema";
+import {
+  fromRatingForm, ratingFormSchema, rubricOf, toRatingForm,
+  type MediaRating, type PacketKind, type Rating, type RatingForm as RatingValues,
+} from "../lib/ratingSchema";
 import { apiErrorMessage } from "../api/client";
 import { notifyDone, notifyFailed } from "../lib/notify";
 
@@ -12,20 +15,31 @@ const BLOOM_LABELS: Record<string, string> = {
   analyze: "Phân tích", evaluate: "Đánh giá", create: "Sáng tạo",
 };
 
+// Where an unsupported claim can sit, by the kind of packet.
+const FINDING_PLACES: Record<PacketKind, [string, string][]> = {
+  module: [["content", "Nội dung"], ["slides", "Slide"], ["example", "Ví dụ"], ["quiz", "Quiz"],
+    ["practice", "Bài luyện tập"], ["explanation", "Lời giải thích"]],
+  flashcards: [["card", "Thẻ"]],
+  video: [["narration", "Lời đọc"], ["slides", "Hình và ý chính"]],
+};
+
 // One scale for every criterion; each criterion only asks its question.
 const SCALE = ["Không đạt", "Phần lớn chưa đạt", "Đạt một phần", "Đạt, có lỗi nhỏ", "Đạt hoàn toàn"];
 
 export function RatingForm({
+  kind = "module",
   code,
-  bloomLevel,
+  bloomLevel = "",
   rating,
   onSave,
 }: {
+  kind?: PacketKind;
   code: string;
-  bloomLevel: string;
-  rating: Rating | null;
-  onSave: (values: Rating) => Promise<void>;
+  bloomLevel?: string;
+  rating: Rating | MediaRating | null;
+  onSave: (values: Rating | MediaRating) => Promise<void>;
 }) {
+  const rubric = rubricOf(kind);
   const [opened, setOpened] = useState<ReadonlySet<string>>(() => new Set([rubric[0].key]));
   const {
     register,
@@ -33,9 +47,9 @@ export function RatingForm({
     handleSubmit,
     reset,
     formState: { errors, isSubmitting, isDirty },
-  } = useForm<Rating>({
-    resolver: zodResolver(ratingSchema),
-    defaultValues: rating ?? emptyRating(code),
+  } = useForm<RatingValues>({
+    resolver: zodResolver(ratingFormSchema(kind)),
+    defaultValues: toRatingForm(kind, code, rating),
   });
   const values = useWatch({ control });
   const { fields, append, remove } = useFieldArray({ control, name: "hallucination_findings" });
@@ -64,13 +78,13 @@ export function RatingForm({
       noValidate
       onSubmit={handleSubmit(async (values) => {
         try {
-          await onSave(values);
+          await onSave(fromRatingForm(kind, values));
           reset(values);
           notifyDone("Đã lưu đánh giá.");
         } catch (e) {
           notifyFailed(apiErrorMessage(e, "Không lưu được đánh giá."));
         }
-      }, (invalid) => setOpened((prev) => new Set([...prev, ...rubric.filter((c) => invalid[c.key]).map((c) => c.key)])))}
+      }, (invalid) => setOpened((prev) => new Set([...prev, ...rubric.filter((c) => invalid.scores?.[c.key]).map((c) => c.key)])))}
       className="rating-form ui-card"
     >
       <header className="rubric-header"><h2>Tiêu chí chấm</h2>
@@ -90,15 +104,15 @@ export function RatingForm({
           {/* The score given so far sits at the end of the row, so the closed list reads as progress. */}
           <summary>
             <span className="criterion-name">{i + 1}. {criterion.label}</span>
-            {values[criterion.key]?.score
-              ? <span className="criterion-score">{values[criterion.key]?.score}/5</span>
+            {values.scores?.[criterion.key]?.score
+              ? <span className="criterion-score">{values.scores?.[criterion.key]?.score}/5</span>
               : <span className="criterion-score empty">Chưa chấm</span>}
           </summary>
           <fieldset><legend className="sr-only">{criterion.label}</legend>
           {/* bloom_fidelity is judged against the declared level, so it is shown here only, not in the packet. */}
           {criterion.key === "bloom_fidelity" && <p className="small muted">Mức Bloom đặt ra: {BLOOM_LABELS[bloomLevel] ?? bloomLevel}</p>}
           <p className="rubric-question">{criterion.question}</p>
-          <Controller control={control} name={`${criterion.key}.score`} render={({ field }) => (
+          <Controller control={control} name={`scores.${criterion.key}.score`} render={({ field }) => (
             <div className="scores" role="radiogroup" aria-label={`Điểm ${criterion.label}`}>
               {[1, 2, 3, 4, 5].map((n) => <label key={n}>
                 <input type="radio" name={field.name} value={n} checked={field.value === n}
@@ -107,7 +121,7 @@ export function RatingForm({
               </label>)}
             </div>
           )} />
-          {errors[criterion.key]?.score && (
+          {errors.scores?.[criterion.key]?.score && (
             <p role="alert" className="danger-text">
               Vui lòng chọn điểm nguyên từ 1 đến 5.
             </p>
@@ -115,14 +129,14 @@ export function RatingForm({
           <label className="mt-3 block text-sm">
             Nhận xét{" "}<span className="sr-only">{criterion.label}</span>
             <textarea
-              {...register(`${criterion.key}.justification`)}
+              {...register(`scores.${criterion.key}.justification`)}
               className="ui-input mt-1 w-full"
               rows={2}
             />
           </label>
-          {errors[criterion.key]?.justification && (
+          {errors.scores?.[criterion.key]?.justification && (
             <p role="alert" className="danger-text">
-              {errors[criterion.key]?.justification?.message}
+              {errors.scores?.[criterion.key]?.justification?.message}
             </p>
           )}
           </fieldset>
@@ -130,7 +144,7 @@ export function RatingForm({
       ))}
       <section className="criterion space-y-3">
         <div className="claims-header"><h3 className="font-semibold">Khẳng định không có căn cứ <span className="count">{fields.length}</span></h3>
-          <button type="button" onClick={() => append({ claim: "", field: "content", reason: "" })}
+          <button type="button" onClick={() => append({ claim: "", field: FINDING_PLACES[kind][0][0], reason: "" })}
             className="link-button inline-flex items-center gap-1" aria-label="Thêm khẳng định không có căn cứ"><Plus aria-hidden="true" className="size-4" />Thêm</button>
         </div>
         {fields.map((field, i) => (
@@ -156,12 +170,7 @@ export function RatingForm({
                 {...register(`hallucination_findings.${i}.field`)}
                 className="ui-select w-full"
               >
-                <option value="content">Nội dung</option>
-                <option value="slides">Slide</option>
-                <option value="example">Ví dụ</option>
-                <option value="quiz">Quiz</option>
-                <option value="practice">Bài luyện tập</option>
-                <option value="explanation">Lời giải thích</option>
+                {FINDING_PLACES[kind].map(([value, label]) => <option key={value} value={value}>{label}</option>)}
               </select>
             </label>
             <label className="finding-field">
@@ -190,7 +199,7 @@ export function RatingForm({
         />
       </label>
       </details>
-      <footer className="rating-footer"><span>Còn {rubric.filter((c) => !values[c.key]?.score || !values[c.key]?.justification?.trim()).length} tiêu chí</span>
+      <footer className="rating-footer"><span>Còn {rubric.filter((c) => !values.scores?.[c.key]?.score || !values.scores?.[c.key]?.justification?.trim()).length} tiêu chí</span>
       <button
         disabled={isSubmitting}
         className="ui-button primary"

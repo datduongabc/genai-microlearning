@@ -1,14 +1,15 @@
 import { useEffect, useState } from "react";
 import { downloadStudyFile, getStudyResults, type StudyResults as Results } from "../api/studies";
 import { apiErrorMessage } from "../api/client";
-import { rubric } from "../lib/ratingSchema";
+import { GROUP_LABEL, mediaRubric, rubric } from "../lib/ratingSchema";
 import { notifyFailed } from "../lib/notify";
 
-const GROUP_LABEL: Record<string, string> = { rag_llm: "RAG", llm_no_rag: "Không RAG", human: "Người viết" };
 const FIELD_LABEL: Record<string, string> = {
   content: "Nội dung", slides: "Slide", example: "Ví dụ", quiz: "Quiz", practice: "Bài luyện tập", explanation: "Lời giải thích",
+  card: "Thẻ", narration: "Lời đọc",
 };
-const CRITERION_LABEL: Record<string, string> = Object.fromEntries(rubric.map((c) => [c.key, c.label]));
+const CRITERION_LABEL: Record<string, string> = Object.fromEntries(
+  [...rubric, ...mediaRubric.flashcards, ...mediaRubric.video].map((c) => [c.key, c.label]));
 
 async function save(studyId: string, file: string, name: string) {
   const url = URL.createObjectURL(await downloadStudyFile(studyId, file));
@@ -79,7 +80,7 @@ export function StudyResults({ studyId }: { studyId: string }) {
         <div className="result-table">
           <table>
             <thead><tr><th>Tiêu chí</th>{item.ratings.map((r) => <th key={r.rater}>{r.rater}</th>)}</tr></thead>
-            <tbody>{results.criteria.map((c) => <tr key={c}>
+            <tbody>{item.criteria.map((c) => <tr key={c}>
               <td>{CRITERION_LABEL[c] ?? c}</td>
               {item.ratings.map((r) => <td key={r.rater} title={r.scores[c]?.justification}>{r.scores[c]?.score ?? ""}</td>)}
             </tr>)}</tbody>
@@ -96,7 +97,7 @@ export function StudyResults({ studyId }: { studyId: string }) {
           </ul> : <p className="small muted">Không ghi thông tin bịa nào.</p>}
           {r.notes && <p className="small mt-2">Ghi chú: {r.notes}</p>}
           <details className="result-comments"><summary>Nhận xét theo tiêu chí</summary>
-            <dl>{results.criteria.filter((c) => r.scores[c]?.justification).map((c) => <div key={c}>
+            <dl>{item.criteria.filter((c) => r.scores[c]?.justification).map((c) => <div key={c}>
               <dt>{CRITERION_LABEL[c] ?? c}</dt><dd>{r.scores[c].justification}</dd>
             </div>)}</dl>
           </details>

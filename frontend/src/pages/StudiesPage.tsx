@@ -9,8 +9,10 @@ import { modelMarkdownProps } from "../lib/markdownMath";
 import { notifyFailed } from "../lib/notify";
 import { apiErrorMessage } from "../api/client";
 import { formatSize } from "../lib/fileSize";
+import { useRenderedSource } from "../lib/useRenderedSource";
 import {
   downloadPacketReference,
+  getPacketVideo,
   myStudies,
   myStudyItems,
   saveRating,
@@ -18,6 +20,9 @@ import {
   type BlindStudy,
   type BlindItem,
   type PacketQuestion,
+  type FlashcardPacket,
+  type ModulePacket,
+  type VideoPacket,
 } from "../api/studies";
 
 export function StudiesPage() {
@@ -76,8 +81,57 @@ function Question({ question, explanation = false }: { question: PacketQuestion;
     </div>
   );
 }
-function Packet({ item }: { item: BlindItem }) {
-  const p = item.packet;
+function Packet({ studyId, item }: { studyId: string; item: BlindItem }) {
+  if (item.kind === "flashcards") return <FlashcardsPacketView packet={item.packet} />;
+  if (item.kind === "video") return <VideoPacketView studyId={studyId} itemId={item.id} packet={item.packet} />;
+  return <ModulePacketView packet={item.packet} />;
+}
+
+function FlashcardsPacketView({ packet }: { packet: FlashcardPacket }) {
+  return (
+    <article className="packet ui-card">
+      <section>
+        <h2>Flashcard <span className="count">{packet.cards.length}</span></h2>
+        <ol className="packet-cards">
+          {packet.cards.map((card, i) => <li key={i}>
+            <p className="font-semibold">{card.front}</p>
+            <p>{card.back}</p>
+          </li>)}
+        </ol>
+      </section>
+    </article>
+  );
+}
+
+function VideoPacketView({ studyId, itemId, packet }: { studyId: string; itemId: string; packet: VideoPacket }) {
+  const [tab, setTab] = useState(packet.has_video ? "video" : "scenes");
+  const tabs = [...(packet.has_video ? [{ id: "video", label: "Video" }] : []), { id: "scenes", label: "Các cảnh" }];
+  return (
+    <article className="packet ui-card">
+      <Tabs tabs={tabs} selected={tab} onSelect={setTab} label="Thành phần gói chấm">
+      {tab === "video" && <section><h2 className="sr-only">Video</h2><PacketVideo studyId={studyId} itemId={itemId} /></section>}
+      {tab === "scenes" && <section>
+        <h2 className="sr-only">Các cảnh</h2>
+        {packet.scenes.map((scene, i) => <div key={i} className="mt-3">
+          <h3>{i + 1}. {scene.title}</h3>
+          {scene.bullets.length > 0 && <ul className="ml-5 list-disc">{scene.bullets.map((b, j) => <li key={j}>{b}</li>)}</ul>}
+          <p className="small muted mt-1 whitespace-pre-line">{scene.narration}</p>
+        </div>)}
+      </section>}
+      </Tabs>
+    </article>
+  );
+}
+
+function PacketVideo({ studyId, itemId }: { studyId: string; itemId: string }) {
+  // An S3 link lasts minutes, so a player that fails to load asks for a new one, twice at most.
+  const { src, failed, onError, loaded } = useRenderedSource(() => getPacketVideo(studyId, itemId), { maxRenewals: 2 });
+  if (failed) return <p className="text-sm danger-text">Không tải được video. Hãy tải lại trang.</p>;
+  return <video aria-label="Video" src={src ?? undefined} controls preload="metadata" onError={onError}
+    onLoadedMetadata={loaded} className="video-player" />;
+}
+
+function ModulePacketView({ packet: p }: { packet: ModulePacket }) {
   // No tab of source passages: raters check against the reference file, the document itself.
   const [tab, setTab] = useState("objectives");
   const tabs = [
@@ -229,21 +283,22 @@ export function BlindRatingPage() {
               <div className="rating-columns">
               {/* Siblings need keys of their own: sharing item.id left the packet just left in place
                   beside the next one, so the page kept every packet visited. */}
-              <Packet key={`packet-${item.id}`} item={item} />
+              <Packet key={`packet-${item.id}`} studyId={studyId!} item={item} />
               {data.study.status === "closed" ? (
                 <p>Nghiên cứu đã đóng.</p>
               ) : (
                 <RatingForm
                   key={`rating-${item.id}`}
+                  kind={item.kind}
                   code={item.anon_code}
-                  bloomLevel={item.packet.bloom_level}
+                  bloomLevel={item.kind === "module" ? item.packet.bloom_level : undefined}
                   rating={item.rating}
                   onSave={async (values) => {
                     const rating = await saveRating(studyId!, item.id, values);
                     setData((current) => {
                       if (!current) return current;
                       const items = current.items.map((i) =>
-                        i.id === item.id ? { ...i, rating } : i,
+                        i.id === item.id ? { ...i, rating } as BlindItem : i,
                       );
                       return { ...current, items, rated: items.filter((i) => i.rating).length };
                     });
