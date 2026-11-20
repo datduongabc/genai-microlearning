@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { listUsers, type AdminUser } from "../api/admin";
 import {
   deleteStudyFile, downloadStudyReference, getStudyItems, listStudyFiles, removeStudyItem, setItemReference, setRaters,
   uploadStudyFile,
@@ -17,16 +18,17 @@ const KIND: Record<StudyItemSummary["group"], string> = {
 };
 
 // One row per thing to rate (a pair of modules counts as one), by its real name: the file the
-// raters check it against, and who rates it. Raters are picked per row in a dialog rather than
-// as a column each, so the table stays readable with the 100 raters a study allows.
-// A rater sees only the rows they are given.
-export function StudyContent({ studyId, emails, assignments, version, onAdded, onSaved }: {
-  studyId: string; emails: string[]; assignments: Assignments; version: number;
+// raters check it against, and who rates it. Raters are picked per row from the active accounts,
+// so each row can go to different people; a rater sees only the rows they are given, and the
+// study's invitations are exactly the accounts given at least one row.
+export function StudyContent({ studyId, assignments, version, onAdded, onSaved }: {
+  studyId: string; assignments: Assignments; version: number;
   onAdded: () => void; onSaved: (saved: Assignments) => void;
 }) {
   const [items, setItems] = useState<StudyItemSummary[] | null>(null);
   const [files, setFiles] = useState<StudyFile[] | null>(null);
   const [error, setError] = useState("");
+  const [users, setUsers] = useState<AdminUser[] | null>(null);
   // The row whose raters are being picked.
   const [picking, setPicking] = useState<{ key: string; title: string } | null>(null);
   const [saving, setSaving] = useState<string | null>(null);
@@ -40,15 +42,22 @@ export function StudyContent({ studyId, emails, assignments, version, onAdded, o
       .catch((e) => { if (active) setError(apiErrorMessage(e, "Không tải được nội dung chấm.")); });
     return () => { active = false; };
   }, [studyId, version]);
+  useEffect(() => {
+    let active = true;
+    listUsers(true).then((data) => { if (active) setUsers(data); }, () => { if (active) setUsers([]); });
+    return () => { active = false; };
+  }, []);
 
-  const ratersOf = (key: string) => emails.filter((email) => assignments[email]?.includes(key));
+  const nameOf = new Map((users ?? []).map((u) => [u.email.toLowerCase(), u.name]));
+  const ratersOf = (key: string) => Object.keys(assignments).filter((email) => assignments[email].includes(key)).sort();
   // Only this row changes; every other row keeps the raters it was saved with.
   async function saveRaters(key: string, chosen: Set<string>) {
-    const next = Object.fromEntries(emails.map((email) => {
-      const others = (assignments[email] ?? []).filter((k) => k !== key);
-      return [email, chosen.has(email) ? [...others, key] : others];
-    }));
-    const saved = await setRaters(studyId, emails, next);
+    const next: Assignments = {};
+    for (const email of new Set([...Object.keys(assignments), ...chosen])) {
+      const keys = [...(assignments[email] ?? []).filter((k) => k !== key), ...(chosen.has(email) ? [key] : [])];
+      if (keys.length) next[email] = keys;
+    }
+    const saved = await setRaters(studyId, Object.keys(next), next);
     onSaved(saved.assignments);
     notifyDone("Đã lưu người chấm.");
   }
@@ -120,11 +129,13 @@ export function StudyContent({ studyId, emails, assignments, version, onAdded, o
               const made = first.source ? new Date(first.source.created_at).toLocaleDateString("vi-VN") : null;
               const detail = paired ? "Có và không dùng tài liệu"
                 : first.source && first.group !== "rag_llm" ? first.packet.topic : null;
+              const raters = ratersOf(key);
               return <tr key={key}>
                 <th scope="row"><div className="content-cell">
-                  <span className="content-kind">{KIND[first.group]}</span>
+                  <span className="media-kind">{KIND[first.group]}</span>
                   <div className="font-semibold [overflow-wrap:anywhere]">{first.source?.title ?? first.packet.topic}</div>
-                  <div className="small muted">{[detail, made, codes].filter(Boolean).join(" · ")}</div>
+                  {detail && <div className="small muted">{detail}</div>}
+                  <div className="small muted">{made && <>Tạo ngày {made}, </>}mã {codes}</div>
                 </div></th>
                 <td>
                   <select className="ui-select" aria-label={`Tài liệu gốc của ${codes}`} value={first.reference_file_id ?? ""}
@@ -134,12 +145,15 @@ export function StudyContent({ studyId, emails, assignments, version, onAdded, o
                   </select>
                 </td>
                 <td><div className="raters-cell">
-                  <span className={ratersOf(key).length ? "" : "muted"}>
-                    {ratersOf(key).length ? `${ratersOf(key).length} người` : "Chưa giao"}
-                  </span>
-                  <button type="button" className="ui-button" disabled={emails.length === 0}
-                    aria-label={`Chọn người chấm ${codes}`}
-                    onClick={() => setPicking({ key, title: first.source?.title ?? first.packet.topic })}>Chọn</button>
+                  {raters.length === 0 ? <span className="small muted">Chưa giao</span>
+                    : <ul className="rater-names" aria-label={`Người chấm ${codes}`}>
+                      {raters.slice(0, 3).map((email) => <li key={email} title={email}>{nameOf.get(email) ?? email}</li>)}
+                      {raters.length > 3 && <li className="muted">và {raters.length - 3} người khác</li>}
+                    </ul>}
+                  <button type="button" className="link-action" disabled={!users} aria-label={`Chọn người chấm ${codes}`}
+                    onClick={() => setPicking({ key, title: first.source?.title ?? first.packet.topic })}>
+                    {raters.length ? "Sửa" : "Giao"}
+                  </button>
                 </div></td>
                 <td><button type="button" className="link-action danger" aria-label={`Xóa ${codes}`}
                   onClick={() => void removeRow(first, first.source?.title ?? first.packet.topic)}>Xóa</button></td>
@@ -147,9 +161,8 @@ export function StudyContent({ studyId, emails, assignments, version, onAdded, o
             })}</tbody>
           </table>
         </div>
-        {emails.length === 0 && <p className="small muted">Mời người chấm ở trên để giao nội dung.</p>}
       </>}
-    {picking && <PickRaters title={picking.title} emails={emails} initial={ratersOf(picking.key)}
+    {picking && users && <PickRaters title={picking.title} users={users} initial={ratersOf(picking.key)}
       onClose={() => setPicking(null)} onSave={(chosen) => saveRaters(picking.key, chosen)} />}
 
     {files && <>
@@ -179,23 +192,16 @@ export function StudyContent({ studyId, emails, assignments, version, onAdded, o
   </section>;
 }
 
-function PickRaters({ title, emails, initial, onClose, onSave }: {
-  title: string; emails: string[]; initial: string[]; onClose: () => void; onSave: (chosen: Set<string>) => Promise<void>;
+function PickRaters({ title, users, initial, onClose, onSave }: {
+  title: string; users: AdminUser[]; initial: string[]; onClose: () => void; onSave: (chosen: Set<string>) => Promise<void>;
 }) {
   const [chosen, setChosen] = useState(() => new Set(initial));
   const [query, setQuery] = useState("");
   const [busy, setBusy] = useState(false);
-  const shown = emails.filter((email) => email.includes(query.trim().toLowerCase()));
-  const allShown = shown.length > 0 && shown.every((email) => chosen.has(email));
+  const q = query.trim().toLowerCase();
+  const shown = users.filter((u) => !q || u.email.toLowerCase().includes(q) || u.name.toLowerCase().includes(q));
   function toggle(email: string) {
     setChosen((current) => { const next = new Set(current); if (!next.delete(email)) next.add(email); return next; });
-  }
-  function toggleShown() {
-    setChosen((current) => {
-      const next = new Set(current);
-      for (const email of shown) { if (allShown) next.delete(email); else next.add(email); }
-      return next;
-    });
   }
   async function save() {
     setBusy(true);
@@ -206,20 +212,19 @@ function PickRaters({ title, emails, initial, onClose, onSave }: {
   return <Dialog open onOpenChange={(open) => { if (!open && !busy) onClose(); }}>
     <DialogContent className="ui-dialog pick-raters" aria-describedby={undefined}>
       <DialogTitle className="ui-dialog-title [overflow-wrap:anywhere]">Người chấm "{title}"</DialogTitle>
-      {emails.length > 8 && <input type="search" className="ui-input" placeholder="Tìm email" aria-label="Tìm người chấm"
-        value={query} onChange={(e) => setQuery(e.target.value)} />}
-      <div className="pick-raters-bar">
-        <span className="small muted">Đã chọn {chosen.size}/{emails.length}</span>
-        {shown.length > 0 && <button type="button" className="link-action" onClick={toggleShown}>
-          {allShown ? "Bỏ chọn tất cả" : "Chọn tất cả"}
-        </button>}
-      </div>
-      <ul className="pick-raters-list" aria-label="Người chấm">
-        {shown.map((email) => <li key={email}><label>
-          <input type="checkbox" checked={chosen.has(email)} disabled={busy} onChange={() => toggle(email)} />
-          <span className="[overflow-wrap:anywhere]">{email}</span>
-        </label></li>)}
-        {shown.length === 0 && <li className="small muted">Không có email nào khớp.</li>}
+      <input type="search" className="ui-input" placeholder="Tìm theo tên hoặc email" aria-label="Tìm người chấm"
+        value={query} onChange={(e) => setQuery(e.target.value)} />
+      <p className="small muted">Đã chọn {chosen.size}</p>
+      <ul className="pick-raters-list" aria-label="Tài khoản">
+        {shown.map((user) => {
+          const email = user.email.toLowerCase();
+          return <li key={user.id}><label>
+            <input type="checkbox" checked={chosen.has(email)} disabled={busy} onChange={() => toggle(email)} />
+            <span className="min-w-0"><span className="block font-medium">{user.name}</span>
+              <span className="block small muted [overflow-wrap:anywhere]">{user.email}</span></span>
+          </label></li>;
+        })}
+        {shown.length === 0 && <li className="small muted">Không có tài khoản nào khớp.</li>}
       </ul>
       <div className="pick-raters-actions">
         <button type="button" className="ui-button" disabled={busy} onClick={onClose}>Hủy</button>
