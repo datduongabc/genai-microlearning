@@ -522,27 +522,23 @@ h1[tabindex="-1"]:focus-visible { outline:none; }
 .results-progress progress { flex:1; }
 .result-item { border:1px solid var(--border-default); border-radius:var(--radius-sm); }
 .result-item + .result-item { margin-top:8px; }
-.result-item > summary { display:flex; align-items:center; gap:12px; padding:12px 16px; cursor:pointer; list-style:none; }
-.result-item > summary::-webkit-details-marker { display:none; }
-.result-item[open] > summary { border-bottom:1px solid var(--border-default); background:var(--bg-subtle); }
+.result-head { display:flex; align-items:center; gap:12px; padding:8px 8px 8px 16px; }
+.result-item[data-open=true] > .result-head { border-bottom:1px solid var(--border-default); background:var(--bg-subtle); }
+.result-chevron { transition:transform .15s; }
+[aria-expanded=true] > .result-chevron { transform:rotate(180deg); }
 .result-group { padding:1px 8px; border-radius:999px; font-size:13px; line-height:18px; font-weight:600; background:var(--bg-subtle); color:var(--text-secondary); }
 .result-group[data-group=rag_llm] { background:var(--bg-accent-soft); color:var(--accent-default); }
 .result-group[data-group=llm_no_rag] { background:var(--bg-warning-soft); color:var(--status-warning); }
-.result-table { overflow-x:auto; padding:12px 16px 0; }
-.result-table table { border-collapse:collapse; min-width:100%; font-size:14px; }
-.result-table th, .result-table td { padding:6px 10px; border-bottom:1px solid var(--border-default); text-align:left; }
-.result-table th { font-size:14px; font-weight:600; color:var(--text-secondary); background:var(--bg-subtle); }
-.result-table td + td, .result-table th + th { text-align:center; font-variant-numeric:tabular-nums; }
-.result-rater { padding:12px 16px; border-top:1px solid var(--border-default); }
-.result-rater:first-of-type { border-top:0; }
-.result-rater h4 { font-size:14px; font-weight:600; margin-bottom:6px; }
+.result-table { overflow-x:auto; padding:12px 16px 16px; }
+.result-table table { border-collapse:collapse; width:100%; font-size:14px; line-height:21px; }
+.result-table th, .result-table td { padding:8px 10px; border-bottom:1px solid var(--border-default); text-align:left; vertical-align:top; }
+.result-table thead th { vertical-align:bottom; font-weight:600; color:var(--text-secondary); background:var(--bg-subtle); }
+.result-table tbody th { font-weight:500; white-space:nowrap; }
+.result-table .result-score { width:64px; padding-left:10px; text-align:center; font-variant-numeric:tabular-nums; }
+.result-table .result-rater-head { border-left:1px solid var(--border-default); }
 .result-findings { display:flex; flex-direction:column; gap:8px; }
 .result-findings li { display:flex; flex-direction:column; gap:2px; padding-left:12px; border-left:2px solid var(--highlight); font-size:14px; line-height:21px; }
 .result-field { font-size:13px; font-weight:600; color:var(--text-secondary); }
-.result-comments { margin-top:8px; font-size:14px; }
-.result-comments summary { cursor:pointer; color:var(--accent-default); font-weight:600; width:fit-content; }
-.result-comments dl { margin-top:8px; display:flex; flex-direction:column; gap:6px; }
-.result-comments dt { font-size:14px; font-weight:600; color:var(--text-secondary); }
 @media(max-width:850px) { .results-raters li { grid-template-columns:minmax(0,1fr); gap:6px; } }
 
 /* --- A flashcard packet: each card's front over its back. */
