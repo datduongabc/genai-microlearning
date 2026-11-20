@@ -71,14 +71,6 @@ export interface ModuleDetail {
   }[] | null
 }
 
-interface JobStatusInfo {
-  id: string
-  step: string
-  status: 'queued' | 'running' | 'done' | 'failed'
-  attempts: number
-  last_error: string | null
-}
-
 export async function listModules(documentId: string) {
   const { data } = await api.get<ModuleSummary[]>('/modules', { params: { document_id: documentId } })
   return data
@@ -96,26 +88,6 @@ export async function generateModule(documentId: string, modelAlias?: string | n
     params: { document_id: documentId },
   })
   return data as { job_id: string; status: string }
-}
-
-export async function getModuleJobStatus(jobId: string) {
-  const { data } = await api.get(`/modules/jobs/${jobId}`)
-  return data as JobStatusInfo & { module_id: string | null }
-}
-
-// Poll đơn giản (không backoff, đủ cho 1 người dùng/phiên) -- dừng khi job
-// vào 1 trong 2 trạng thái cuối (done/failed) hoặc hết timeoutMs.
-export async function pollJobStatus<T extends JobStatusInfo>(
-  getStatus: () => Promise<T>,
-  { intervalMs = 3000, timeoutMs = 20 * 60 * 1000 } = {},
-): Promise<T> {
-  const deadline = Date.now() + timeoutMs
-  for (;;) {
-    const status = await getStatus()
-    if (status.status === 'done' || status.status === 'failed') return status
-    if (Date.now() >= deadline) return status
-    await new Promise((resolve) => setTimeout(resolve, intervalMs))
-  }
 }
 
 export async function getModule(moduleId: string) {

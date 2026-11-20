@@ -543,7 +543,6 @@ describe('CourseDetailPage - module generation availability', () => {
       default: 'deepseek-flash',
     })
     vi.mocked(api.generateModule).mockResolvedValue({ job_id: 'job-1', status: 'queued' })
-    vi.mocked(api.pollJobStatus).mockReturnValue(new Promise(() => {}))
 
     renderPage()
     // The model is chosen in the dialog, not on the page.
@@ -583,9 +582,9 @@ describe('CourseDetailPage - module generation availability', () => {
   })
 
   it('starts a generation and shows it as busy while the job runs', async () => {
-    vi.mocked(api.listDocuments).mockResolvedValue([sampleDocument])
+    // Once queued, the server says the document is generating; that is what keeps it busy.
+    vi.mocked(api.listDocuments).mockResolvedValueOnce([sampleDocument]).mockResolvedValue([generatingDocument])
     vi.mocked(api.generateModule).mockResolvedValue({ job_id: 'job-1', status: 'queued' })
-    vi.mocked(api.pollJobStatus).mockReturnValue(new Promise(() => {}))
 
     renderPage()
     await chooseCreate(/^mô-đun$/i)
@@ -1181,9 +1180,6 @@ describe('CourseDetailPage - failed work and retry', () => {
       .mockResolvedValueOnce([sampleDocument])
       .mockResolvedValue([{ ...sampleDocument, failures: [generationFailure] }])
     vi.mocked(api.generateModule).mockResolvedValue({ job_id: 'job-1', status: 'queued' })
-    vi.mocked(api.pollJobStatus).mockResolvedValue({
-      id: 'job-1', step: 'generate', status: 'failed', attempts: 5, last_error: 'Hết hạn mức',
-    })
 
     renderPage()
     await chooseCreate(/^mô-đun$/i)

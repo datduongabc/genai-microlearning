@@ -553,3 +553,26 @@ def test_a_closed_study_is_listed_to_nobody_and_keeps_its_items(world):
     assert all(s["id"] != sid for s in client.get("/studies/mine", headers=world["teacher_headers"]).json())
     # Still there for the export.
     assert len(client.get(f"/studies/{sid}", headers=world["headers"]).json()["items"]) == 2
+
+
+def test_candidates_say_which_control_is_being_made_failed_or_never_asked_for(world):
+    with SessionLocal() as db:
+        doc = db.scalar(select(Document).where(Document.course_id == world["course"]))
+        made = {}
+        for label, last in (("Being made", JobStatus.queued), ("Failed", JobStatus.failed), ("Never", None)):
+            module = Module(document_id=doc.id, course_id=world["course"], title=label, bloom_level="understand",
+                            learning_objective="Explain X", sub_objectives=["Define X", "Describe X"],
+                            generation_payload={"model_alias": "test-model"})
+            db.add(module)
+            db.flush()
+            if last is not None:
+                db.add(Job(job_type=JobType.module_generation, document_id=doc.id, step="plan", status=last,
+                           payload=control_payload(module.id, "test-model", True)))
+            made[str(module.id)] = label
+        db.commit()
+    sid = create_study(world)
+
+    rows = client.get(f"/studies/{sid}/candidates", headers=world["headers"]).json()
+
+    assert {made.get(r["id"], "RAG"): r["state"] for r in rows} == {
+        "RAG": "ready", "Being made": "generating", "Failed": "failed", "Never": "none"}

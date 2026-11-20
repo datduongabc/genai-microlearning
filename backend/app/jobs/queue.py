@@ -337,8 +337,8 @@ def handle_job_error(job_id: uuid.UUID, err: Exception, *, worker_id: str | None
         job.system_failure = not terminal
         job.locked_at = None
         job.locked_by = None
-        db.commit()
-
+        # One commit with the job: a process stopped between two would leave the set or video
+        # "generating" for good, which nothing clears and which cannot be deleted.
         mark_target_failed(db, job)
         db.commit()
     finally:

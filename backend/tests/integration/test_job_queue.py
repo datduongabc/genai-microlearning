@@ -262,6 +262,34 @@ def test_handle_job_error_terminal_fails_immediately_even_with_attempts_left(see
         db.close()
 
 
+def test_a_failure_is_written_with_its_target_or_not_at_all(seed_document, monkeypatch):
+    """The job and what it was making fail in one commit: if marking the document fails, the job is
+    not left failed beside a document that still says processing, which nothing would ever clear."""
+    from app.jobs import queue
+
+    db = SessionLocal()
+    try:
+        doc = seed_document(db)
+        job = enqueue_job(db, job_type=JobType.document_pipeline, step="extract", document_id=doc.id, max_attempts=1)
+        db.commit()
+        job_id, doc_id = job.id, doc.id
+    finally:
+        db.close()
+
+    def cut(db, job):
+        raise ConnectionError("the database went away")
+    monkeypatch.setattr(queue, "mark_target_failed", cut)
+    with pytest.raises(ConnectionError):
+        handle_job_error(job_id, ValueError("unsupported format"))
+
+    db = SessionLocal()
+    try:
+        assert db.get(Job, job_id).status == JobStatus.queued
+        assert db.get(Document, doc_id).status != DocumentStatus.failed
+    finally:
+        db.close()
+
+
 def test_handle_job_error_fails_after_max_attempts_even_if_transient(seed_document):
     db = SessionLocal()
     try:

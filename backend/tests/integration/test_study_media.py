@@ -177,3 +177,21 @@ def test_flashcard_and_video_ratings_download_as_one_file_with_rater_names(world
     results = client.get(f"/studies/{sid}/results", headers=world["headers"]).json()
     assert results["has_media_ratings"] is True
     assert results["items"][0]["ratings"][0]["rater"] == name
+
+
+def test_removing_a_packet_keeps_a_rater_who_was_not_given_anything_yet(world):  # noqa: F811
+    cards_id, _ = _media(world)
+    sid = create_study(world)
+    item = client.post(f"/studies/{sid}/media", headers=world["headers"], json={"kind": "flashcards", "id": cards_id}).json()[0]
+    with SessionLocal() as db:
+        from app.models import User
+        email = db.get(User, world["teacher"]).email.lower()
+        newcomer = db.get(User, world["admin"]).email.lower()
+    client.put(f"/studies/{sid}/raters", headers=world["headers"],
+               json={"emails": [email, newcomer], "assignments": {email: [item["id"]]}}).raise_for_status()
+
+    client.delete(f"/studies/{sid}/items/{item['id']}", headers=world["headers"]).raise_for_status()
+
+    # The one whose packet it was goes; the one just added, about to be given something, stays.
+    assert client.get(f"/studies/{sid}/raters", headers=world["headers"]).json() == {
+        "emails": [newcomer], "assignments": {}}
