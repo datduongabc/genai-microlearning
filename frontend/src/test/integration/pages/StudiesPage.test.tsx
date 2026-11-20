@@ -369,11 +369,16 @@ it("shows the admin each rater's progress, and per packet the scores, findings a
   expect(within(results).getByLabelText("Tiến độ lan@example.com")).toHaveAttribute("value", "1");
   // Only packets someone rated are listed; the group is the admin's to see.
   expect(within(results).queryByText("M02")).not.toBeInTheDocument();
-  await user.click(within(results).getByText("M01"));
+  // Opened by its arrow, not the whole row: one table with each criterion's score and comment.
+  expect(within(results).queryByRole("table")).not.toBeInTheDocument();
+  await user.click(within(results).getByRole("button", { name: "Xem M01" }));
   expect(within(results).getByText("RAG")).toBeVisible();
-  expect(within(results).getByRole("cell", { name: "Độ chính xác" })).toBeVisible();
-  expect(within(results).getByText("Câu bịa")).toBeVisible();
-  expect(within(results).getByText("Ví dụ")).toBeVisible();
+  const table = within(within(results).getByRole("table"));
+  expect(table.getByRole("rowheader", { name: "Độ chính xác" })).toBeVisible();
+  expect(table.getByText("Lý do accuracy")).toBeVisible();
+  expect(table.getByText("Câu bịa")).toBeVisible();
+  expect(table.getByText("Ví dụ")).toBeVisible();
+  expect(table.getByRole("row", { name: /Ghi chú Ổn/ })).toBeVisible();
   await user.click(within(results).getByRole("button", { name: "Tải CSV mô-đun" }));
   expect(api.downloadStudyFile).toHaveBeenCalledWith("s1", "raters/1.csv");
   await user.click(within(results).getByRole("button", { name: "Tải CSV flashcard và video" }));

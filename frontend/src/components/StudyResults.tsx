@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { ChevronDown } from "lucide-react";
 import { downloadStudyFile, getStudyResults, type StudyResults as Results } from "../api/studies";
 import { apiErrorMessage } from "../api/client";
 import { GROUP_LABEL, mediaRubric, rubric } from "../lib/ratingSchema";
@@ -62,49 +63,72 @@ export function StudyResults({ studyId }: { studyId: string }) {
         </li>)}
       </ul>
     )}
-    {results.has_media_ratings && <button type="button" className="ui-button mt-3"
-      onClick={() => void download("media.csv", "flashcard-video.csv")}>Tải CSV flashcard và video</button>}
-    {results.has_judge && <button type="button" className="ui-button mt-3"
-      onClick={() => void download("judge.jsonl", "judge.jsonl")}>Tải kết quả mô hình chấm</button>}
+    {(results.has_media_ratings || results.has_judge) && <div className="mt-3 flex flex-wrap gap-2">
+      {results.has_media_ratings && <button type="button" className="ui-button"
+        onClick={() => void download("media.csv", "flashcard-video.csv")}>Tải CSV flashcard và video</button>}
+      {results.has_judge && <button type="button" className="ui-button"
+        onClick={() => void download("judge.jsonl", "judge.jsonl")}>Tải kết quả mô hình chấm</button>}
+    </div>}
     {results.unpaired.length > 0 && <p className="mt-3 small muted">
       Không ghép được cặp cho {results.unpaired.join(", ")}: các gói này không vào phép so sánh RAG và không RAG.
     </p>}
 
     <h3 className="results-subtitle">Theo từng gói</h3>
-    {rated.length === 0 ? <p className="small muted">Chưa có gói nào được chấm.</p> : rated.map((item) => (
-      <details key={item.id} className="result-item">
-        <summary>
-          <span className="font-semibold">{item.anon_code}</span>
-          <span className="result-group" data-group={item.group}>{GROUP_LABEL[item.group] ?? item.group}</span>
-          <span className="min-w-0 flex-1 truncate">{item.topic}</span>
-          <span className="small muted">{item.ratings.length} lượt chấm</span>
-        </summary>
-        <div className="result-table">
-          <table>
-            <thead><tr><th>Tiêu chí</th>{item.ratings.map((r) => <th key={r.rater}>{r.rater}</th>)}</tr></thead>
-            <tbody>{item.criteria.map((c) => <tr key={c}>
-              <td>{CRITERION_LABEL[c] ?? c}</td>
-              {item.ratings.map((r) => <td key={r.rater} title={r.scores[c]?.justification}>{r.scores[c]?.score ?? ""}</td>)}
-            </tr>)}</tbody>
-          </table>
-        </div>
-        {item.ratings.map((r) => <div key={r.rater} className="result-rater">
-          <h4>{r.rater}</h4>
-          {r.findings.length > 0 ? <ul className="result-findings">
-            {r.findings.map((f, i) => <li key={i}>
-              <span className="result-field">{FIELD_LABEL[f.field] ?? f.field}</span>
-              <span>{f.claim}</span>
-              {f.reason && <span className="muted">Lý do: {f.reason}</span>}
-            </li>)}
-          </ul> : <p className="small muted">Không ghi thông tin bịa nào.</p>}
-          {r.notes && <p className="small mt-2">Ghi chú: {r.notes}</p>}
-          <details className="result-comments"><summary>Nhận xét theo tiêu chí</summary>
-            <dl>{item.criteria.filter((c) => r.scores[c]?.justification).map((c) => <div key={c}>
-              <dt>{CRITERION_LABEL[c] ?? c}</dt><dd>{r.scores[c].justification}</dd>
-            </div>)}</dl>
-          </details>
-        </div>)}
-      </details>
-    ))}
+    {rated.length === 0 ? <p className="small muted">Chưa có gói nào được chấm.</p>
+      : rated.map((item) => <ResultItem key={item.id} item={item} />)}
   </section>;
+}
+
+// One packet as a card: its code and name, opened by the arrow. Inside, a row per criterion with
+// each rater's score and comment side by side, then what they flagged as made up and their notes.
+function ResultItem({ item }: { item: Results["items"][number] }) {
+  const [open, setOpen] = useState(false);
+  const body = `result-${item.id}`;
+  // A flashcard set or video says what it is by its code (F, V); a module's group is what the code hides.
+  const media = item.group === "flashcards" || item.group === "video";
+  return <div className="result-item" data-open={open}>
+    <div className="result-head">
+      <span className="font-semibold">{item.anon_code}</span>
+      {!media && <span className="result-group" data-group={item.group}>{GROUP_LABEL[item.group] ?? item.group}</span>}
+      <span className="min-w-0 flex-1 truncate">{item.topic}</span>
+      <span className="small muted">{item.ratings.length} lượt chấm</span>
+      <button type="button" className="icon-button" aria-expanded={open} aria-controls={body}
+        aria-label={`${open ? "Thu gọn" : "Xem"} ${item.anon_code}`} onClick={() => setOpen(!open)}>
+        <ChevronDown aria-hidden="true" className="result-chevron" />
+      </button>
+    </div>
+    {open && <div id={body} className="result-table">
+      <table>
+        <thead>
+          <tr><th rowSpan={2}>Tiêu chí</th>{item.ratings.map((r, i) => <th key={i} colSpan={2} className="result-rater-head">{r.rater}</th>)}</tr>
+          <tr>{item.ratings.map((_, i) => [<th key={`s${i}`} className="result-score result-rater-head">Điểm</th>, <th key={`n${i}`}>Nhận xét</th>])}</tr>
+        </thead>
+        <tbody>
+          {item.criteria.map((c) => <tr key={c}>
+            <th scope="row">{CRITERION_LABEL[c] ?? c}</th>
+            {item.ratings.map((r, i) => [
+              <td key={`s${i}`} className="result-score result-rater-head">{r.scores[c]?.score ?? ""}</td>,
+              <td key={`n${i}`}>{r.scores[c]?.justification ?? ""}</td>,
+            ])}
+          </tr>)}
+          <tr>
+            <th scope="row">Thông tin bịa</th>
+            {item.ratings.map((r, i) => <td key={i} colSpan={2} className="result-rater-head">
+              {r.findings.length === 0 ? <span className="muted">Không có</span> : <ul className="result-findings">
+                {r.findings.map((f, j) => <li key={j}>
+                  <span className="result-field">{FIELD_LABEL[f.field] ?? f.field}</span>
+                  <span>{f.claim}</span>
+                  {f.reason && <span className="muted">Lý do: {f.reason}</span>}
+                </li>)}
+              </ul>}
+            </td>)}
+          </tr>
+          <tr>
+            <th scope="row">Ghi chú</th>
+            {item.ratings.map((r, i) => <td key={i} colSpan={2} className="result-rater-head">{r.notes || <span className="muted">Không có</span>}</td>)}
+          </tr>
+        </tbody>
+      </table>
+    </div>}
+  </div>;
 }
