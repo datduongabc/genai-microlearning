@@ -1,6 +1,6 @@
 import { api } from "./client";
 import { followDownload, sendFile, type DownloadTarget, type UploadTarget } from "./upload";
-import type { Rating } from "../lib/ratingSchema";
+import type { MediaRating, Rating } from "../lib/ratingSchema";
 
 export interface Study {
   id: string;
@@ -19,13 +19,24 @@ export interface PacketQuestion {
   correct_index: number;
   explanation: string;
 }
-export interface BlindItem {
+export interface FlashcardPacket { kind: "flashcards"; anon_id: string; topic: string; cards: { front: string; back: string }[] }
+export interface VideoPacket {
+  kind: "video"; anon_id: string; topic: string; has_video: boolean;
+  scenes: { title: string; bullets: string[]; narration: string }[];
+}
+// A module packet, or a flashcard set or video rated on its own criteria.
+export type BlindItem = BlindItemBase & (
+  | { kind: "module"; packet: ModulePacket; rating: Rating | null }
+  | { kind: "flashcards"; packet: FlashcardPacket; rating: MediaRating | null }
+  | { kind: "video"; packet: VideoPacket; rating: MediaRating | null }
+);
+interface BlindItemBase {
   id: string;
   anon_code: string;
-  rating: Rating | null;
   // The file the admin picked for this packet, to judge it against; null when there is none.
   reference: { filename: string; size: number } | null;
-  packet: {
+}
+export interface ModulePacket {
     anon_id: string;
     topic: string;
     bloom_level: string;
@@ -37,7 +48,6 @@ export interface BlindItem {
     quiz: PacketQuestion[];
     practice: PacketQuestion;
     source_chunks: string[];
-  };
 }
 export interface BlindStudy {
   study: Study;
@@ -48,7 +58,7 @@ export interface BlindStudy {
 export async function listStudies() {
   return (await api.get<Study[]>("/studies")).data;
 }
-// Email -> the pairs that rater rates (a pair's id, or a human packet's id); a rater left out rates them all.
+// Email -> the pairs that rater rates (a pair's id, or a packet's own id); a rater left out rates none.
 export type Assignments = Record<string, string[]>;
 export interface Raters { emails: string[]; assignments: Assignments }
 export async function getRaters(id: string) {
@@ -72,14 +82,31 @@ export async function addPair(id: string, moduleId: string) {
   const response = await api.post(`/studies/${id}/pairs`, { module_id: moduleId });
   return response.status === 201 ? "added" as const : "generating" as const;
 }
+export interface MediaCandidate {
+  id: string;
+  kind: "flashcards" | "video";
+  title: string;
+  course_name: string;
+  state: "in_study" | "ready";
+}
+export async function listMediaCandidates(id: string) {
+  return (await api.get<MediaCandidate[]>(`/studies/${id}/media-candidates`)).data;
+}
+export async function addMedia(id: string, kind: MediaCandidate["kind"], sourceId: string) {
+  return (await api.post(`/studies/${id}/media`, { kind, id: sourceId })).data;
+}
+// Where a rater's player gets a video packet's MP4.
+export async function getPacketVideo(studyId: string, itemId: string) {
+  return (await api.get<DownloadTarget>(`/studies/mine/${studyId}/items/${itemId}/video`)).data;
+}
 export async function myStudies() {
   return (await api.get<MyStudy[]>("/studies/mine")).data;
 }
 export async function myStudyItems(id: string) {
   return (await api.get<BlindStudy>(`/studies/mine/${id}/items`)).data;
 }
-export async function saveRating(studyId: string, itemId: string, rating: Rating) {
-  return (await api.put<Rating>(`/studies/mine/${studyId}/items/${itemId}/rating`, rating)).data;
+export async function saveRating<T extends Rating | MediaRating>(studyId: string, itemId: string, rating: T) {
+  return (await api.put<T>(`/studies/mine/${studyId}/items/${itemId}/rating`, rating)).data;
 }
 
 export interface ResultRating {
@@ -89,13 +116,14 @@ export interface ResultRating {
   findings: { claim: string; field: string; reason: string }[];
   notes: string;
 }
+export type StudyGroup = "rag_llm" | "llm_no_rag" | "human" | "flashcards" | "video";
 export interface StudyResults {
   criteria: string[];
   total: number;
   raters: { email: string; number: number | null; rated: number; invited: boolean; assigned: number }[];
   has_judge: boolean;
   unpaired: string[];
-  items: { id: string; anon_code: string; group: "rag_llm" | "llm_no_rag" | "human"; pair_code: string; topic: string; ratings: ResultRating[] }[];
+  items: { id: string; anon_code: string; group: StudyGroup; pair_code: string; topic: string; criteria: string[]; ratings: ResultRating[] }[];
 }
 export async function getStudyResults(id: string) {
   return (await api.get<StudyResults>(`/studies/${id}/results`)).data;
@@ -115,7 +143,7 @@ export interface StudyFile {
 export interface StudyItemSummary {
   id: string;
   anon_code: string;
-  group: "rag_llm" | "llm_no_rag" | "human";
+  group: StudyGroup;
   module_id: string | null;
   // The RAG module both members of a pair share; null for a human-written packet.
   pair_id: string | null;

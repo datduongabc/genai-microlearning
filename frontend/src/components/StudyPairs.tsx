@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { addPair, listPairCandidates, type PairCandidate } from "../api/studies";
+import { addMedia, addPair, listMediaCandidates, listPairCandidates, type MediaCandidate, type PairCandidate } from "../api/studies";
 import { apiErrorMessage } from "../api/client";
 import { confirmAction } from "../lib/confirm";
 import { notifyDone, notifyFailed } from "../lib/notify";
@@ -62,7 +62,8 @@ export function StudyPairs({ studyId, onAdded }: { studyId: string; onAdded: () 
   }
 
   return <section className="ui-card study-results" aria-labelledby="study-pairs-title">
-    <h2 id="study-pairs-title">Thêm cặp từ mô-đun</h2>
+    <h2 id="study-pairs-title">Thêm nội dung</h2>
+    <h3 className="results-subtitle">Mô-đun</h3>
     {error && <p role="alert">{error}</p>}
     {!rows && !error && <p className="muted">Đang tải…</p>}
     {rows?.length === 0 && <p className="small muted">Chưa có mô-đun nào.</p>}
@@ -82,5 +83,53 @@ export function StudyPairs({ studyId, onAdded }: { studyId: string; onAdded: () 
           </button>}
       </li>)}
     </ul>}
+    <MediaRows studyId={studyId} onAdded={onAdded} />
   </section>;
+}
+
+// The admin's flashcard sets and videos: each joins as a packet of its own, with nothing generated.
+function MediaRows({ studyId, onAdded }: { studyId: string; onAdded: () => void }) {
+  const [rows, setRows] = useState<MediaCandidate[] | null>(null);
+  const [error, setError] = useState("");
+  const [busy, setBusy] = useState<string | null>(null);
+  useEffect(() => {
+    let active = true;
+    listMediaCandidates(studyId).then((data) => { if (active) setRows(data); })
+      .catch((e) => { if (active) setError(apiErrorMessage(e, "Không tải được flashcard và video.")); });
+    return () => { active = false; };
+  }, [studyId]);
+
+  async function add(row: MediaCandidate) {
+    setBusy(row.id);
+    try {
+      await addMedia(studyId, row.kind, row.id);
+      setRows((current) => current?.map((r) => r.id === row.id ? { ...r, state: "in_study" } : r) ?? null);
+      notifyDone(`Đã thêm "${row.title}".`);
+      onAdded();
+    } catch (e) { notifyFailed(apiErrorMessage(e, `Không thêm được "${row.title}".`)); }
+    finally { setBusy(null); }
+  }
+
+  if (error) return <p role="alert">{error}</p>;
+  return <>{(["flashcards", "video"] as const).map((kind) => {
+    const list = rows?.filter((r) => r.kind === kind);
+    return <div key={kind}>
+      <h3 className="results-subtitle">{kind === "flashcards" ? "Flashcard" : "Video"}</h3>
+      {!list ? <p className="muted">Đang tải…</p> : list.length === 0
+        ? <p className="small muted">{kind === "flashcards" ? "Chưa có bộ flashcard nào." : "Chưa có video nào."}</p>
+        : <ul className="reference-files" aria-label={kind === "flashcards" ? "Flashcard có thể thêm" : "Video có thể thêm"}>
+          {list.map((row) => <li key={row.id}>
+            <div className="min-w-0">
+              <div className="font-semibold [overflow-wrap:anywhere]">{row.title}</div>
+              <div className="small muted [overflow-wrap:anywhere]">{row.course_name}</div>
+            </div>
+            <span />
+            {row.state === "in_study" ? <span className="small muted">Đã thêm</span>
+              : <button type="button" className="ui-button" disabled={busy !== null} onClick={() => void add(row)}>
+                {busy === row.id ? "Đang thêm…" : "Thêm"}
+              </button>}
+          </li>)}
+        </ul>}
+    </div>;
+  })}</>;
 }

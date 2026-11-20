@@ -18,7 +18,7 @@ class Study(Base):
     name: Mapped[str]
     rubric_version: Mapped[str]
     rater_emails: Mapped[list[str]] = mapped_column(JSONB, default=list, server_default="[]")
-    # Email -> the pair keys that rater rates (alembic 0044); a rater without an entry rates them all.
+    # Email -> the pair keys that rater rates (alembic 0044); a rater without an entry rates none (0045).
     rater_pairs: Mapped[dict[str, list[str]]] = mapped_column(JSONB, default=dict, server_default="{}")
     status: Mapped[str] = mapped_column(default="draft", server_default="draft")
     created_at: Mapped[datetime] = created_at_column()
@@ -27,12 +27,14 @@ class Study(Base):
 class StudyItem(Base):
     __tablename__ = "study_items"
     __table_args__ = (
-        CheckConstraint("\"group\" IN ('human', 'llm_no_rag', 'rag_llm')", name="ck_study_items_group"),
+        CheckConstraint("\"group\" IN ('human', 'llm_no_rag', 'rag_llm', 'flashcards', 'video')",
+                        name="ck_study_items_group"),
         # A RAG packet loaded from its exported file has no module (alembic 0043).
         CheckConstraint("module_id IS NULL OR \"group\" = 'rag_llm'", name="ck_study_items_module"),
         UniqueConstraint("study_id", "anon_code", name="uq_study_items_code",
                          deferrable=True, initially="DEFERRED"),
         UniqueConstraint("study_id", "module_id", name="uq_study_items_module"),
+        UniqueConstraint("study_id", "source_id", name="uq_study_items_source"),
     )
 
     id: Mapped[uuid.UUID] = uuid_pk()
@@ -50,6 +52,9 @@ class StudyItem(Base):
     # What the raters open beside the packet; the admin sets it, the same for both members of a pair.
     reference_file_id: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey("study_files.id", ondelete="SET NULL"), index=True)
+    # The flashcard set or video a media packet was taken from, and a rendered video's MP4 (alembic 0046).
+    source_id: Mapped[uuid.UUID | None]
+    media_key: Mapped[str | None] = mapped_column(Text)
     created_at: Mapped[datetime] = created_at_column()
 
 
@@ -67,6 +72,9 @@ class StudyFile(Base):
     created_at: Mapped[datetime] = created_at_column()
 
 
+_RUBRIC = "accuracy, completeness, consistency, hallucination_score, slide_quality, quiz_quality, bloom_fidelity, query_alignment"
+
+
 class Rating(Base):
     __tablename__ = "ratings"
     __table_args__ = (
@@ -77,6 +85,9 @@ class Rating(Base):
                         name="ck_ratings_judge_family"),
         Index("uq_ratings_llm_judge", "study_item_id", "judge_family", unique=True,
               postgresql_where=text("rater_kind = 'llm_judge'")),
+        # A module rating fills the eight rubric columns, a flashcard or video one `scores` (alembic 0046).
+        CheckConstraint(f"(num_nonnulls({_RUBRIC}) = 8 AND scores IS NULL) OR "
+                        f"(num_nonnulls({_RUBRIC}) = 0 AND scores IS NOT NULL)", name="ck_ratings_shape"),
     )
 
     id: Mapped[uuid.UUID] = uuid_pk()
@@ -88,14 +99,16 @@ class Rating(Base):
     judge_alias: Mapped[str | None]
     judge_model: Mapped[str | None]
     # ModuleEvaluation's rubric: eight scored dimensions, then overall notes (criterion 9).
-    accuracy: Mapped[dict] = mapped_column(JSONB)
-    completeness: Mapped[dict] = mapped_column(JSONB)
-    consistency: Mapped[dict] = mapped_column(JSONB)
-    hallucination_score: Mapped[dict] = mapped_column(JSONB)
-    slide_quality: Mapped[dict] = mapped_column(JSONB)
-    quiz_quality: Mapped[dict] = mapped_column(JSONB)
-    bloom_fidelity: Mapped[dict] = mapped_column(JSONB)
-    query_alignment: Mapped[dict] = mapped_column(JSONB)
+    # Empty on a flashcard or video rating, whose criteria are in `scores` (alembic 0046).
+    accuracy: Mapped[dict | None] = mapped_column(JSONB)
+    completeness: Mapped[dict | None] = mapped_column(JSONB)
+    consistency: Mapped[dict | None] = mapped_column(JSONB)
+    hallucination_score: Mapped[dict | None] = mapped_column(JSONB)
+    slide_quality: Mapped[dict | None] = mapped_column(JSONB)
+    quiz_quality: Mapped[dict | None] = mapped_column(JSONB)
+    bloom_fidelity: Mapped[dict | None] = mapped_column(JSONB)
+    query_alignment: Mapped[dict | None] = mapped_column(JSONB)
+    scores: Mapped[dict | None] = mapped_column(JSONB)
     overall_notes: Mapped[str] = mapped_column(Text)
     hallucination_findings: Mapped[list] = mapped_column(JSONB, default=list, server_default="[]")
     created_at: Mapped[datetime] = created_at_column()

@@ -5,6 +5,7 @@ import { beforeEach, expect, it, vi } from "vitest";
 import { StudiesPage, BlindRatingPage } from "../../../pages/StudiesPage";
 import { AdminStudiesPanel } from "../../../components/AdminStudiesPanel";
 import * as api from "../../../api/studies";
+import type { Rating } from "../../../lib/ratingSchema";
 import * as auth from "../../../auth/useAuth";
 
 vi.mock("../../../api/studies");
@@ -24,6 +25,7 @@ const question = {
 const item = {
   id: "i1",
   anon_code: "M01",
+  kind: "module" as const,
   rating: null,
   reference: null,
   packet: {
@@ -58,6 +60,7 @@ beforeEach(() => {
   vi.mocked(api.listStudies).mockResolvedValue([study, { ...study, id: "s2", name: "Khác" }]);
   vi.mocked(api.getRaters).mockResolvedValue({ emails: ["lan@example.com"], assignments: {} });
   vi.mocked(api.listPairCandidates).mockResolvedValue([]);
+  vi.mocked(api.listMediaCandidates).mockResolvedValue([]);
   vi.mocked(api.getStudyResults).mockResolvedValue(noResults);
   vi.mocked(api.listStudyFiles).mockResolvedValue([]);
   vi.mocked(api.getStudyItems).mockResolvedValue([]);
@@ -109,7 +112,7 @@ it("renders the whole anonymous packet and saves/edits all rubric criteria", asy
   await user.type(screen.getByLabelText("Lý do 1"), "Không có nguồn");
   await user.click(screen.getByRole("button", { name: "Lưu đánh giá" }));
   expect(await screen.findByText("Đã lưu đánh giá.")).toBeInTheDocument();
-  const body = vi.mocked(api.saveRating).mock.calls[0][2];
+  const body = vi.mocked(api.saveRating).mock.calls[0][2] as Rating;
   expect(body.accuracy).toEqual({ score: 4, justification: "Có căn cứ" });
   expect(body.hallucination_findings).toEqual([
     { claim: "Khẳng định", field: "content", reason: "Không có nguồn" },
@@ -392,11 +395,11 @@ it("shows the admin each rater's progress, and per packet the scores, findings a
     criteria: ["accuracy", "completeness"], total: 2, has_judge: false, unpaired: [],
     raters: [{ email: "lan@example.com", number: 1, rated: 1, invited: true, assigned: 2 }, { email: "minh@example.com", number: null, rated: 0, invited: true, assigned: 2 }],
     items: [
-      { id: "i1", anon_code: "M01", group: "rag_llm", pair_code: "M01", topic: "Chủ đề", ratings: [{
+      { id: "i1", anon_code: "M01", group: "rag_llm", pair_code: "M01", topic: "Chủ đề", criteria: ["accuracy", "completeness"], ratings: [{
         rater: "Người chấm 1", kind: "human", scores, notes: "Ổn",
         findings: [{ claim: "Câu bịa", field: "example", reason: "Nguồn không có" }],
       }] },
-      { id: "i2", anon_code: "M02", group: "llm_no_rag", pair_code: "M01", topic: "Chủ đề", ratings: [] },
+      { id: "i2", anon_code: "M02", group: "llm_no_rag", pair_code: "M01", topic: "Chủ đề", criteria: ["accuracy", "completeness"], ratings: [] },
     ],
   });
   vi.mocked(api.downloadStudyFile).mockResolvedValue(new Blob(["anon_id"]));
@@ -513,7 +516,7 @@ it("adds a pair whose no-RAG twin is made, and asks before making one", async ()
   vi.mocked(api.addPair).mockResolvedValueOnce("added").mockResolvedValueOnce("generating");
   const confirm = vi.spyOn(window, "confirm").mockReturnValue(true);
   await openStudy();
-  const card = await screen.findByRole("region", { name: "Thêm cặp từ mô-đun" });
+  const card = await screen.findByRole("region", { name: "Thêm nội dung" });
   const rows = await within(card).findAllByRole("listitem");
 
   await userEvent.click(within(rows[0]).getByRole("button", { name: "Thêm cặp" }));
@@ -559,4 +562,50 @@ it("opens the only study by itself, with no list to choose from", async () => {
   render(<MemoryRouter><AdminStudiesPanel /></MemoryRouter>);
   expect(await screen.findByRole("button", { name: "Bỏ lan@example.com" })).toBeInTheDocument();
   expect(screen.queryByRole("navigation", { name: "Nghiên cứu" })).not.toBeInTheDocument();
+});
+
+it("adds a flashcard set to the study with nothing generated", async () => {
+  vi.mocked(api.listMediaCandidates).mockResolvedValue([
+    { id: "f1", kind: "flashcards", title: "Bài 1.pdf · Định nghĩa", course_name: "Hệ điều hành", state: "ready" },
+    { id: "v1", kind: "video", title: "Bài 1.pdf · Toàn bộ tài liệu", course_name: "Hệ điều hành", state: "in_study" },
+  ]);
+  vi.mocked(api.addMedia).mockResolvedValue([]);
+  const confirm = vi.spyOn(window, "confirm");
+  await openStudy();
+  const flashcards = await screen.findByRole("list", { name: "Flashcard có thể thêm" });
+  expect(within(screen.getByRole("list", { name: "Video có thể thêm" })).getByText("Đã thêm")).toBeInTheDocument();
+
+  await userEvent.click(within(flashcards).getByRole("button", { name: "Thêm" }));
+  await waitFor(() => expect(api.addMedia).toHaveBeenCalledWith("s1", "flashcards", "f1"));
+  expect(confirm).not.toHaveBeenCalled();
+  expect(await within(flashcards).findByText("Đã thêm")).toBeInTheDocument();
+});
+
+it("rates a flashcard set on its own four criteria and sends them as scores", async () => {
+  const cards = {
+    id: "i9", anon_code: "F01", kind: "flashcards" as const, rating: null, reference: null,
+    packet: { kind: "flashcards" as const, anon_id: "F01", topic: "Định nghĩa", cards: [{ front: "Tiến trình là gì?", back: "Chương trình đang chạy." }] },
+  };
+  vi.mocked(api.myStudyItems).mockResolvedValue({ ...data, items: [cards] });
+  vi.mocked(api.saveRating).mockImplementation(async (_s, _i, body) => body);
+  render(
+    <MemoryRouter initialEntries={["/studies/s1/items/i9"]}>
+      <Routes><Route path="/studies/:studyId/items/:itemId" element={<BlindRatingPage />} /></Routes>
+    </MemoryRouter>,
+  );
+  const user = userEvent.setup();
+  expect(await screen.findByText("Tiến trình là gì?")).toBeInTheDocument();
+  expect(screen.queryByText("Độ khớp mức Bloom")).not.toBeInTheDocument();
+  for (const label of ["Độ chính xác", "Trọng tâm", "Rõ ràng", "Không trùng lặp"]) {
+    const summary = screen.getByText(new RegExp(`\\d\\. ${label}$`));
+    if (!summary.closest("details")?.open) await user.click(summary);
+    const group = screen.getByRole("radiogroup", { name: `Điểm ${label}` });
+    await user.click(within(group).getByText("4"));
+    await user.type(screen.getByLabelText(new RegExp(`Nhận xét\\s+${label}`)), "Ổn");
+  }
+  await user.click(screen.getByRole("button", { name: "Lưu đánh giá" }));
+  await waitFor(() => expect(api.saveRating).toHaveBeenCalled());
+  const body = vi.mocked(api.saveRating).mock.calls[0][2] as { scores: Record<string, { score: number }> };
+  expect(Object.keys(body.scores)).toEqual(["accuracy", "focus", "clarity", "no_duplicates"]);
+  expect(body.scores.clarity.score).toBe(4);
 });

@@ -73,7 +73,7 @@ def test_blind_items_stable_distinct_orders_and_own_ratings(blind):
     assert [i['id'] for i in first['items']] != [i['id'] for i in second['items']]
     assert first['rated'] == 0 and first['total'] == 8
     for item in first['items']:
-        assert set(item) == {'id', 'anon_code', 'packet', 'rating', 'reference'}
+        assert set(item) == {'id', 'anon_code', 'kind', 'packet', 'rating', 'reference'}
         assert set(item['packet']) == set(human_packet())
     item = first['items'][0]
     rating_path = f"{path}/{item['id']}/rating"
@@ -132,7 +132,7 @@ def test_database_blind_projection_and_rating_rls(blind):
             rows = db.execute(text('SELECT * FROM blind_study_items WHERE study_id=:sid'), {'sid': sid}).mappings().all()
             assert len(rows) == count
             if rows:
-                assert set(rows[0]) == {'id', 'study_id', 'anon_code', 'packet', 'reference_file_id'}
+                assert set(rows[0]) == {'id', 'study_id', 'anon_code', 'packet', 'reference_file_id', 'media_key'}
             ratings = db.scalars(select(Rating)).all()
             assert len(ratings) == (1 if who == 'teacher' else 0)
             if who != 'teacher':

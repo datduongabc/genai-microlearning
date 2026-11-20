@@ -551,6 +551,10 @@ h1[tabindex="-1"]:focus-visible { outline:none; }
 .result-comments dt { font-size:14px; font-weight:600; color:var(--text-secondary); }
 @media(max-width:850px) { .results-raters li { grid-template-columns:minmax(0,1fr); gap:6px; } }
 
+/* --- A flashcard packet: each card's front over its back. */
+.packet-cards { display:flex; flex-direction:column; gap:12px; }
+.packet-cards li { padding:12px 16px; border:1px solid var(--border-default); border-radius:var(--radius-sm); display:flex; flex-direction:column; gap:4px; }
+
 /* --- Who rates which pair: one column per rater. */
 .assign-table { overflow-x:auto; border:1px solid var(--border-default); border-radius:var(--radius-sm); }
 .assign-table table { width:100%; border-collapse:collapse; }

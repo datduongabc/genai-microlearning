@@ -2,7 +2,7 @@
 import uuid
 from typing import Annotated, Literal
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Body, Depends, HTTPException, Request
 from fastapi.responses import Response
 from pydantic import BaseModel, EmailStr, Field, StringConstraints, model_validator
 from sqlalchemy import func, select, text
@@ -13,6 +13,7 @@ from sqlalchemy.orm import Session
 from app.api.deps import get_current_user, require_admin
 from app.api.modules import GenerateRequest
 from app.api.modules import _generate_without_retrieval as generate_control
+from app.api.stored_files import download_link, send_stored
 from app.auth.rate_limit import limiter, user_or_address
 from app.db import get_db
 from app.generation.evaluation import ModuleContentInput, ModuleEvaluation
@@ -27,8 +28,10 @@ from app.generation.module_generation_pipeline import (
 )
 from app.jobs.queue import enqueue_job
 from app.models import Course, Document, Job, JobStatus, JobType, Module, Rating, Study, StudyItem, User
-from app.study.items import assign_codes, existing_pair, shuffle_for_rater
+from app.storage import media_store
+from app.study.items import MODULE_GROUPS, assign_codes, existing_pair, shuffle_for_rater
 from app.study.judge import validate_judge
+from app.study.media import MediaEvaluation, MediaKind, media_candidates, media_item, next_code, packet_model
 from app.study.results import human_ratings, judge_jsonl, rater_csv, study_results
 
 router = APIRouter(prefix="/studies", tags=["studies"])
@@ -113,15 +116,30 @@ def _my_items(db: Session, study_id: uuid.UUID, user_id: uuid.UUID):
     ratings = {rating.study_item_id: rating for rating in db.scalars(
         select(Rating).where(Rating.user_id == user_id,
                              Rating.study_item_id.in_([item["id"] for item in items])))}
-    return [{"id": item["id"], "anon_code": item["anon_code"],
-             "packet": ModuleContentInput.model_validate(item["packet"]).model_dump(),
+    return [{"id": item["id"], "anon_code": item["anon_code"], "kind": _kind(item["packet"]),
+             "packet": _packet_out(item["packet"]),
              "reference": {"filename": item["reference_filename"], "size": item["reference_size"]}
              if item["reference_filename"] is not None else None,
-             "rating": _rating_out(ratings[item["id"]], item["anon_code"]) if item["id"] in ratings else None}
+             "rating": _rating_out(ratings[item["id"]], item["anon_code"], _kind(item["packet"]))
+             if item["id"] in ratings else None}
             for item in items]
 
 
-def _rating_out(rating: Rating, anon_code: str):
+def _kind(packet: dict) -> str:
+    """"module", "flashcards" or "video": a module packet carries no kind, as it always was."""
+    return packet.get("kind", "module")
+
+
+def _packet_out(packet: dict) -> dict:
+    kind = _kind(packet)
+    return (ModuleContentInput if kind == "module" else packet_model(kind)).model_validate(packet).model_dump()
+
+
+def _rating_out(rating: Rating, anon_code: str, kind: str = "module"):
+    if kind != "module":
+        return MediaEvaluation(anon_id=anon_code, kind=kind, scores=rating.scores,
+                               hallucination_findings=rating.hallucination_findings,
+                               overall_notes=rating.overall_notes).model_dump()
     return ModuleEvaluation(anon_id=anon_code, **{
         key: getattr(rating, key) for key in ModuleEvaluation.model_fields if key != "anon_id"
     }).model_dump()
@@ -147,17 +165,24 @@ def my_items(study_id: uuid.UUID, db: Session = Depends(get_db), user: User = De
 
 
 @router.put("/mine/{study_id}/items/{item_id}/rating")
-def save_rating(study_id: uuid.UUID, item_id: uuid.UUID, body: ModuleEvaluation,
+def save_rating(study_id: uuid.UUID, item_id: uuid.UUID, raw: dict = Body(...),
                 db: Session = Depends(get_db), user: User = Depends(get_current_user)):
-    item = db.execute(text("SELECT anon_code FROM blind_study_items WHERE study_id=:sid AND id=:iid"),
+    item = db.execute(text("SELECT anon_code, packet FROM blind_study_items WHERE study_id=:sid AND id=:iid"),
                       {"sid": study_id, "iid": item_id}).mappings().first()
     if item is None:
         raise HTTPException(status_code=404, detail="Study item not found")
+    # The item says which rubric applies, so a module rating cannot be saved on a video or back.
+    kind = _kind(item["packet"])
+    try:
+        body = (ModuleEvaluation.model_validate(raw) if kind == "module"
+                else MediaEvaluation.model_validate({**raw, "kind": kind}))
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
     if body.anon_id != item["anon_code"]:
         raise HTTPException(status_code=422, detail="Anonymous code does not match item")
     # Upsert serializes competing saves; the ratings trigger takes loading's study lock and
     # refuses a closed study or a rater whose invitation was withdrawn meanwhile.
-    values = body.model_dump(exclude={"anon_id"})
+    values = body.model_dump(exclude={"anon_id", "kind"})
     statement = insert(Rating).values(study_item_id=item_id, user_id=user.id, rater_kind="human", **values)
     try:
         db.execute(statement.on_conflict_do_update(constraint="uq_ratings_user", set_=values))
@@ -265,8 +290,9 @@ def load_items(study_id: uuid.UUID, body: LoadItems, db: Session = Depends(get_d
     if study is None:
         raise HTTPException(status_code=404, detail="Study not found")
     # Only human ratings freeze the item set: the judge can be rerun over items loaded later.
+    # Ratings of flashcards or videos do not: module codes are reblinded, theirs are not.
     rated = db.scalar(select(Rating.id).join(StudyItem).where(
-        StudyItem.study_id == study_id, Rating.rater_kind == "human").limit(1))
+        StudyItem.study_id == study_id, Rating.rater_kind == "human", StudyItem.group.in_(MODULE_GROUPS)).limit(1))
     judging = db.scalar(select(Job.id).where(Job.study_id == study_id,
                         Job.status.in_([JobStatus.queued, JobStatus.running])).limit(1))
     if study.status != "draft" or rated is not None or judging is not None:
@@ -374,6 +400,70 @@ def add_pair(request: Request, study_id: uuid.UUID, body: AddPair, response: Res
     return {"state": "generating"}
 
 
+class AddMedia(BaseModel):
+    kind: MediaKind
+    id: uuid.UUID
+
+
+@router.get("/{study_id}/media-candidates")
+def media_options(study_id: uuid.UUID, db: Session = Depends(get_db), current_user: User = Depends(require_admin)):
+    """The admin's own flashcard sets and videos that have something to rate."""
+    _study_or_404(db, study_id)
+    in_study = {item.source_id for item in _items(db, study_id) if item.source_id is not None}
+    return media_candidates(db, current_user.id, in_study)
+
+
+@router.post("/{study_id}/media", status_code=201)
+def add_media(study_id: uuid.UUID, body: AddMedia, db: Session = Depends(get_db),
+              current_user: User = Depends(require_admin)):
+    """Adds one flashcard set or video as a packet of its own. Nothing is generated, and it can be
+    added after rating has begun: no other packet changes code."""
+    study = db.scalar(select(Study).where(Study.id == study_id).with_for_update())
+    if study is None:
+        raise HTTPException(status_code=404, detail="Study not found")
+    if study.status != "draft":
+        raise HTTPException(status_code=409, detail="Only a draft study can load items")
+    items = _items(db, study_id)
+    if any(item.source_id == body.id for item in items):
+        raise HTTPException(status_code=409, detail="Already in this study")
+    try:
+        item = media_item(db, body.kind, body.id, current_user.id)
+    except LookupError as exc:
+        raise HTTPException(status_code=404, detail="Not found") from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    item.study_id = study_id
+    item.anon_code = next_code(items, body.kind)
+    item.packet = {**item.packet, "anon_id": item.anon_code}
+    db.add(item)
+    db.commit()
+    return [_item_out(i) for i in _items(db, study_id)]
+
+
+def _my_video(db: Session, study_id: uuid.UUID, item_id: uuid.UUID) -> tuple[str, str]:
+    row = db.execute(text("SELECT anon_code, media_key FROM blind_study_items WHERE study_id=:sid AND id=:iid"),
+                     {"sid": study_id, "iid": item_id}).mappings().first()
+    if row is None or row["media_key"] is None:
+        raise HTTPException(status_code=404, detail="Video not found")
+    return row["media_key"], f"{row['anon_code']}.mp4"
+
+
+@router.get("/mine/{study_id}/items/{item_id}/video")
+def my_video(study_id: uuid.UUID, item_id: uuid.UUID, db: Session = Depends(get_db),
+             user: User = Depends(get_current_user)):
+    """Where a rater's browser plays a video packet: a short S3 link, or the API path below without S3.
+    Named by its code, not its title, like the rest of the packet."""
+    key, filename = _my_video(db, study_id, item_id)
+    return download_link(media_store(), key, filename, f"/studies/mine/{study_id}/items/{item_id}/video/content")
+
+
+@router.get("/mine/{study_id}/items/{item_id}/video/content")
+def my_video_content(study_id: uuid.UUID, item_id: uuid.UUID, db: Session = Depends(get_db),
+                     user: User = Depends(get_current_user)):
+    key, filename = _my_video(db, study_id, item_id)
+    return send_stored(media_store(), key, filename)
+
+
 @router.post("/{study_id}/judge", status_code=202, dependencies=[Depends(require_admin)])
 def judge_study(study_id: uuid.UUID, db: Session = Depends(get_db)):
     study = db.scalar(select(Study).where(Study.id == study_id).with_for_update())
@@ -383,7 +473,8 @@ def judge_study(study_id: uuid.UUID, db: Session = Depends(get_db)):
                      Job.status.in_([JobStatus.queued, JobStatus.running])).limit(1))
     if busy is not None:
         raise HTTPException(status_code=409, detail="A judge job is already running for this study")
-    items = _items(db, study_id)
+    # The judge rates modules on their rubric; flashcards and videos are rated by people only.
+    items = [item for item in _items(db, study_id) if item.group in MODULE_GROUPS]
     if not items:
         raise HTTPException(status_code=409, detail="Study has no items")
     try:
