@@ -33,7 +33,10 @@ function readCollapsed() {
 }
 
 // `fullTitle` is for a title that was cut short: the whole text stays available on hover.
-export function AppShell({ title, fullTitle, children }: { title: string; fullTitle?: string; children: ReactNode }) {
+// `actions` sits beside the page title, e.g. a "⋯" menu with what can be done to the whole page.
+export function AppShell({ title, fullTitle, actions, children }: {
+  title: string; fullTitle?: string; actions?: ReactNode; children: ReactNode;
+}) {
   useDocumentTitle(fullTitle ?? title);
   const { user, logout } = useAuth();
   const [open, setOpen] = useState(false);
@@ -140,6 +143,8 @@ export function AppShell({ title, fullTitle, children }: { title: string; fullTi
         </SheetContent>
       </Sheet>
     </header> : <aside className="sidebar" aria-label="Thanh bên">{sidebarBody}</aside>}
-    <main id="main-content" className="shell-main" tabIndex={-1}><div className="shell-content"><h1 className="page-title" title={fullTitle}>{title}</h1>{children}</div></main>
+    <main id="main-content" className="shell-main" tabIndex={-1}><div className="shell-content">{actions
+      ? <div className="page-head"><h1 className="page-title" title={fullTitle}>{title}</h1>{actions}</div>
+      : <h1 className="page-title" title={fullTitle}>{title}</h1>}{children}</div></main>
   </div>;
 }

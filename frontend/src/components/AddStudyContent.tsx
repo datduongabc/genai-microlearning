@@ -84,12 +84,7 @@ export function AddStudyContent({ studyId, version, onAdded }: { studyId: string
     finally { setBusy(null); }
   }
 
-  // Two sets made from one file with no focus share a title: the day they were made tells them apart.
-  const detail = (r: PairCandidate | MediaCandidate) => [
-    "topic" in r ? r.topic : null,
-    r.created_at ? `Tạo ngày ${new Date(r.created_at).toLocaleDateString("vi-VN")}` : null,
-    r.course_name,
-  ].filter(Boolean) as string[];
+  const detail = (r: PairCandidate | MediaCandidate) => ["topic" in r ? r.topic : null, r.course_name].filter(Boolean) as string[];
   const rows: { id: string; title: string; detail: string[]; state: string; add: () => void }[] = tab === "module"
     ? (modules ?? []).map((r) => ({ id: r.id, title: r.title, detail: detail(r), state: r.state, add: () => void askModule(r) }))
     : (media ?? []).filter((r) => r.kind === tab)

@@ -3,7 +3,9 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Link, useParams } from 'react-router-dom'
+import { Ellipsis, Pencil } from 'lucide-react'
 import { AppShell } from '../components/AppShell'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../components/ui/dropdown-menu'
 import { MoodleAccountSection, type MoodleAccountState } from '../components/MoodleAccountSection'
 import { confirmAction } from '../lib/confirm'
 import { notifyDone, notifyFailed } from '../lib/notify'
@@ -94,6 +96,7 @@ export function ModulePreviewPage() {
 
   const [loadFailed, setLoadFailed] = useState(false)
   const [attempt, setAttempt] = useState(0)
+  const [renaming, setRenaming] = useState(false)
   const refresh = useCallback(async () => {
     if (!moduleId) return
     setModule(await getModule(moduleId))
@@ -155,7 +158,17 @@ export function ModulePreviewPage() {
   }
 
   return (
-    <AppShell title={`Mô-đun: ${module.title}`}>
+    <AppShell title={`Mô-đun: ${module.title}`} actions={
+      // As on the course list: renaming sits behind the page's "⋯" menu, not as a link under the title.
+      <DropdownMenu>
+        <DropdownMenuTrigger className="icon-button" aria-label={`Thao tác khác với ${module.title}`}>
+          <Ellipsis aria-hidden="true" />
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="doc-menu">
+          <DropdownMenuItem onSelect={() => setRenaming(true)}><Pencil aria-hidden="true" />Đổi tên</DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    }>
       <SourceContext.Provider value={{ opened, open: openSource }}>
         <div className="module-layout">
           <nav aria-label="Các phần của mô-đun" className="module-parts">
@@ -169,7 +182,7 @@ export function ModulePreviewPage() {
             </ol>
           </nav>
           <div className="module-main">
-            <ModuleHeader module={module} onSaved={refresh} />
+            <ModuleHeader module={module} onSaved={refresh} editing={renaming} onEditingChange={setRenaming} />
             {module.is_control && (
               <p className="mt-2 text-sm text-amber-700">Bản đối chứng cho nghiên cứu, không dùng tài liệu</p>
             )}
@@ -405,14 +418,17 @@ function PublishToMoodleSection({
   )
 }
 
-function ModuleHeader({ module, onSaved }: { module: ModuleDetail; onSaved: () => Promise<void> }) {
-  const [editing, setEditing] = useState(false)
+function ModuleHeader({ module, onSaved, editing, onEditingChange: setEditing }: {
+  module: ModuleDetail; onSaved: () => Promise<void>; editing: boolean; onEditingChange: (editing: boolean) => void
+}) {
   const {
     register,
     handleSubmit,
     reset,
     formState: { errors, isSubmitting: saving },
   } = useForm<ModuleTitleFormValues>({ resolver: zodResolver(moduleTitleSchema), defaultValues: { title: module.title } })
+  // Opened from the page menu: start from the current title, which a save may have changed.
+  useEffect(() => { if (editing) reset({ title: module.title }) }, [editing, module.title, reset])
   async function handleSave({ title }: ModuleTitleFormValues) {
     try {
       await updateModuleTitle(module.id, title)
@@ -430,6 +446,7 @@ function ModuleHeader({ module, onSaved }: { module: ModuleDetail; onSaved: () =
         <form onSubmit={handleSubmit(handleSave)} noValidate className="flex flex-wrap items-center gap-3">
           <input
             {...register('title')}
+            autoFocus
             aria-label="Tên mô-đun"
             className="module-title flex-1 border-0 border-b-[1.5px] border-accent bg-transparent outline-none"
           />
@@ -452,18 +469,7 @@ function ModuleHeader({ module, onSaved }: { module: ModuleDetail; onSaved: () =
           </button>
           {errors.title && <p className="basis-full text-sm danger-text">{errors.title.message}</p>}
         </form>
-      ) : (
-        <button
-          onClick={() => {
-            reset({ title: module.title })
-            setEditing(true)
-          }}
-          data-edit-trigger
-          className="link-action"
-        >
-          Đổi tên
-        </button>
-      )}
+      ) : null}
 
       {module.learning_objective && (
         <p className="module-objective">

@@ -508,24 +508,6 @@ function ExplanationEditor({
               <p className="lesson-para">{item.explanation_text}</p>
             )}
           </div>
-          {/* The reasoning is the AI's own working, for the lecturer only; the explanation above is
-              what students get as quiz feedback in Moodle, so it is shown and the reasoning folded. */}
-          {editing ? (
-            <div>
-              <div className="part-label">Lập luận</div>
-              <textarea
-                aria-label={`Lập luận ${explanationLabel(item)}`}
-                {...register(`items.${index}.reasoning`)}
-                rows={4}
-                className="ui-input w-full"
-              />
-            </div>
-          ) : (
-            <details className="reasoning">
-              <summary>Cách ra đề</summary>
-              <p className="reasoning-text">{item.reasoning}</p>
-            </details>
-          )}
         </div>
       ))}
       <SaveCancelRow

@@ -126,7 +126,6 @@ export function StudyContent({ studyId, assignments, version, onAdded, onSaved }
               const key = first.pair_id ?? first.id;
               const codes = row.map((item) => item.anon_code).join(", ");
               const paired = row.length > 1;
-              const made = first.source ? new Date(first.source.created_at).toLocaleDateString("vi-VN") : null;
               const detail = paired ? "Có và không dùng tài liệu"
                 : first.source && first.group !== "rag_llm" ? first.packet.topic : null;
               const raters = ratersOf(key);
@@ -135,7 +134,7 @@ export function StudyContent({ studyId, assignments, version, onAdded, onSaved }
                   <span className="media-kind">{KIND[first.group]}</span>
                   <div className="font-semibold [overflow-wrap:anywhere]">{first.source?.title ?? first.packet.topic}</div>
                   {detail && <div className="small muted">{detail}</div>}
-                  <div className="small muted">{made && <>Tạo ngày {made}, </>}mã {codes}</div>
+                  <div className="small muted">Mã {codes}</div>
                 </div></th>
                 <td>
                   <select className="ui-select" aria-label={`Tài liệu gốc của ${codes}`} value={first.reference_file_id ?? ""}
