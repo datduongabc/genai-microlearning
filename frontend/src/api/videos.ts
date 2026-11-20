@@ -192,8 +192,9 @@ export async function videoFileBlob(path: string) {
   return data
 }
 
-// The slide as the render prints it. It needs the bearer token, so it comes down as a blob; `version`
-// only changes the URL, so nothing between the browser and the API can hand back an older slide.
+// The slide as the render prints it. It needs the bearer token, so it comes down as a blob. The
+// browser keeps it and sends its ETag back, so an unchanged slide is a 304 rather than a new render
+// (app/api/videos.py); `version` changes the URL when the slide changes, to fetch it at once.
 export async function getScenePreview(id: string, index: number, version: string) {
   const { data } = await api.get<Blob>(`/videos/${id}/scenes/${index}/preview.png`, {
     responseType: 'blob',

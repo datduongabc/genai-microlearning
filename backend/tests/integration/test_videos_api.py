@@ -869,12 +869,38 @@ def test_scene_preview_is_a_1280_by_720_png_for_the_owner_only(world):
         response = client.get(f"/videos/{video_id}/scenes/{index}/preview.png", headers=headers(world["owner"]))
         assert response.status_code == 200
         assert response.headers["content-type"] == "image/png"
-        assert response.headers["cache-control"] == "private, no-store"
+        assert response.headers["cache-control"] == "private, no-cache"
         assert Image.open(io.BytesIO(response.content)).size == (1280, 720)
 
     assert client.get(f"/videos/{video_id}/scenes/2/preview.png", headers=headers(world["owner"])).status_code == 404
     assert client.get(f"/videos/{video_id}/scenes/0/preview.png", headers=headers(world["other"])).status_code == 404
     assert client.get(f"/videos/{video_id}/scenes/0/preview.png", headers=headers(world["learner"])).status_code == 403
+
+
+def test_an_unchanged_slide_is_answered_304_without_a_render_and_a_change_renders_it_again(world, monkeypatch):
+    key = "videos/p/img-1.jpg"
+    store_file(key, png())
+    video_id = make_video(world, [scene(world, kind="illustration", image_prompt="a queue", image_key=key,
+                                        image_prompt_used="a queue")])
+    url, h = f"/videos/{video_id}/scenes/0/preview.png", headers(world["owner"])
+    tag = client.get(url, headers=h).headers["etag"]
+
+    # A reload: the browser sends its tag, and nothing is rendered, even with every renderer busy.
+    busy = threading.BoundedSemaphore(1)
+    busy.acquire()
+    monkeypatch.setattr(videos_api, "PREVIEW_SLOTS", busy)
+    again = client.get(url, headers={**h, "If-None-Match": tag})
+    assert again.status_code == 304 and again.headers["etag"] == tag and again.content == b""
+    monkeypatch.setattr(videos_api, "PREVIEW_SLOTS", threading.BoundedSemaphore(2))
+
+    # A redrawn picture has a new key, so the same text is a new slide.
+    with SessionLocal() as db:
+        video = db.get(Video, video_id)
+        video.scenes = [{**video.scenes[0], "image_key": "videos/p/img-2.jpg"}]
+        db.commit()
+    store_file("videos/p/img-2.jpg", png())
+    redrawn = client.get(url, headers={**h, "If-None-Match": tag})
+    assert redrawn.status_code == 200 and redrawn.headers["etag"] != tag
 
 
 def test_a_busy_preview_answers_within_two_seconds():
