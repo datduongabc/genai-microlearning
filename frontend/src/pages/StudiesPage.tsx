@@ -48,13 +48,14 @@ export function StudiesPage() {
       {studies?.length === 0 && <p>Bạn chưa được mời chấm nghiên cứu nào.</p>}
       <ul className="space-y-4">
         {studies?.map((study) => (
-          <li key={study.id} className="ui-card p-4">
+          <li key={study.id} className="ui-card p-4 study-invite">
             <Link to={`/studies/${study.id}`} className="font-semibold text-accent">
               {study.name}
             </Link>
-            <p>
-              Đã chấm {study.rated}/{study.total}
-            </p>
+            {/* The same progress as on the rating page, on the right where the eye ends the row. */}
+            <div className="rating-progress"><span className="small muted">Đã chấm {study.rated}/{study.total}</span>
+              <progress aria-label={`Tiến độ chấm ${study.name}`} value={study.rated} max={study.total || 1} />
+            </div>
           </li>
         ))}
       </ul>
@@ -247,7 +248,7 @@ export function BlindRatingPage() {
   }, [studyId]);
   const item = data?.items.find((i) => i.id === itemId);
   return (
-    <AppShell title={item ? `Chấm mù: ${item.anon_code}` : "Chấm mù"}>
+    <AppShell title="Nghiên cứu">
       {error ? (
         <p role="alert" className="mt-4">
           Không tải được nghiên cứu. Lời mời có thể đã bị thu hồi.

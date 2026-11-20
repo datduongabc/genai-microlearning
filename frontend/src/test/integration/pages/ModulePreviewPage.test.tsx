@@ -508,16 +508,13 @@ it.each(['quiz', 'practice'] as const)('edits and saves a %s question', async (t
   expect(await screen.findByText('Edited stem')).toBeInTheDocument()
 })
 
-it('shows the explanation students get and folds the AI reasoning until asked for', async () => {
+it('shows the explanation students get and not the AI reasoning behind it', async () => {
   vi.mocked(api.getModule).mockResolvedValue({ ...baseModule, components: [
     { id: 'exp-1', type: 'explanation', content: { items: [{ component: 'quiz', position: 0, reasoning: 'LẬP-LUẬN', explanation_text: 'LỜI-GIẢI' }] }, questions: [] },
   ] })
-  const user = userEvent.setup()
   renderPage()
   expect(await screen.findByText('LỜI-GIẢI')).toBeVisible()
-  expect(screen.getByText('LẬP-LUẬN')).not.toBeVisible()
-  await user.click(screen.getByText('Cách ra đề'))
-  expect(screen.getByText('LẬP-LUẬN')).toBeVisible()
+  expect(screen.queryByText('LẬP-LUẬN')).not.toBeInTheDocument()
 })
 
 it('falls back to the question explanation when its Explanation item is empty', async () => {
@@ -655,11 +652,18 @@ describe('ModulePreviewPage - forms', () => {
     expect(api.chatEditModule).not.toHaveBeenCalled()
   })
 
+  // From the keyboard, as in CoursesPage.test: in jsdom a Radix trigger can stop opening on a mouse press.
+  async function chooseRename() {
+    ;(await screen.findByRole('button', { name: /^Thao tác khác với/ })).focus()
+    await userEvent.keyboard('{Enter}')
+    await userEvent.click(await screen.findByRole('menuitem', { name: 'Đổi tên' }))
+  }
+
   it('renames the module and goes back to the heading', async () => {
     vi.mocked(api.getModule).mockResolvedValue(baseModule)
     vi.mocked(api.updateModuleTitle).mockResolvedValue({ id: 'module-1', title: 'Tên mới' })
     renderPage()
-    await userEvent.click(await screen.findByRole('button', { name: 'Đổi tên' }))
+    await chooseRename()
     const field = screen.getByRole('textbox', { name: 'Tên mô-đun' })
     expect(field).toHaveValue('Test Module')
     await userEvent.clear(field)
@@ -673,14 +677,14 @@ describe('ModulePreviewPage - forms', () => {
   it('refuses a module title over 200 characters and puts the old one back on cancel', async () => {
     vi.mocked(api.getModule).mockResolvedValue(baseModule)
     renderPage()
-    await userEvent.click(await screen.findByRole('button', { name: 'Đổi tên' }))
+    await chooseRename()
     const field = screen.getByRole('textbox', { name: 'Tên mô-đun' })
     fireEvent.change(field, { target: { value: 'a'.repeat(201) } })
     await userEvent.click(screen.getByRole('button', { name: 'Lưu' }))
     expect(await screen.findByText('Tên mô-đun tối đa 200 ký tự')).toBeInTheDocument()
     expect(api.updateModuleTitle).not.toHaveBeenCalled()
     await userEvent.click(screen.getByRole('button', { name: 'Hủy' }))
-    await userEvent.click(screen.getByRole('button', { name: 'Đổi tên' }))
+    await chooseRename()
     expect(screen.getByRole('textbox', { name: 'Tên mô-đun' })).toHaveValue('Test Module')
   })
 
@@ -749,7 +753,7 @@ describe('ModulePreviewPage - forms', () => {
     vi.mocked(api.getModule).mockResolvedValue(baseModule)
     vi.mocked(api.updateModuleTitle).mockRejectedValue(new Error('Network Error'))
     renderPage()
-    await userEvent.click(await screen.findByRole('button', { name: 'Đổi tên' }))
+    await chooseRename()
     const field = screen.getByRole('textbox', { name: 'Tên mô-đun' })
     await userEvent.type(field, ' 2')
     await userEvent.click(screen.getByRole('button', { name: 'Lưu' }))

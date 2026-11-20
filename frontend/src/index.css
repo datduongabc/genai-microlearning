@@ -67,6 +67,9 @@ h1[tabindex="-1"]:focus-visible { outline:none; }
 .shell-main { margin-left:288px; padding:32px 48px 48px; min-width:0; }
 .shell-content { max-width:1120px; margin:auto; }
 .page-title { font:600 28px/36px var(--font-sans); margin-bottom:24px; letter-spacing:-.02em; }
+.study-invite { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:12px; }
+.page-head { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; }
+.page-head .page-title { min-width:0; overflow-wrap:anywhere; }
 .sidebar { overflow-y:auto; position:fixed; inset:0 auto 0 0; width:288px; background:var(--bg-surface); border-right:1px solid var(--border-default); padding:24px 16px 16px; display:flex; flex-direction:column; color:var(--text-primary); }
 .brand { display:flex; align-items:center; gap:12px; }
 .sidebar > * { flex-shrink:0; }
@@ -457,10 +460,6 @@ h1[tabindex="-1"]:focus-visible { outline:none; }
 .module-publish .module-part-title { margin-bottom:12px; }
 @media(max-width:960px) { .module-publish { padding:20px; } }
 .account-empty { padding:16px 24px; font-size:14px; line-height:20px; color:var(--text-secondary); }
-.reasoning { max-width:68ch; font-size:14px; line-height:22px; }
-.reasoning summary { cursor:pointer; width:fit-content; font-weight:600; color:var(--accent-default); }
-.reasoning summary:hover { text-decoration:underline; text-underline-offset:2px; }
-.reasoning-text { margin-top:8px; padding-left:12px; border-left:2px solid var(--border-default); white-space:pre-wrap; font-size:15px; line-height:24px; color:var(--text-secondary); }
 
 /* --- Collapsible sidebar: on wide screens only; on a phone it is the block above the page. */
 .sidebar-head { display:flex; align-items:flex-start; justify-content:space-between; gap:8px; }
