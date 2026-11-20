@@ -3,7 +3,7 @@ import uuid
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_current_user
+from app.api.deps import get_current_user, is_course_author
 from app.auth.rate_limit import limiter, user_or_address
 from app.db import get_db
 from app.jobs.failures import EDITOR_RETRIED_JOBS
@@ -23,7 +23,7 @@ def retry_job(request: Request, job_id: uuid.UUID, db: Session = Depends(get_db)
     RLS (via get_db()): each layer has to hold on its own."""
     job = db.get(Job, job_id)
     doc = db.get(Document, job.document_id) if job is not None and job.document_id is not None else None
-    if doc is None or doc.course.owner_id != current_user.id:
+    if doc is None or not is_course_author(db, doc.course, current_user):
         raise HTTPException(status_code=404, detail="Job not found")
     if job.job_type in EDITOR_RETRIED_JOBS:
         raise HTTPException(status_code=409, detail=EDITOR_RETRY_MESSAGE)

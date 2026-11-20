@@ -9,7 +9,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 
 from app.api.deletion import check_study_references, commit_deletion, refuse_while_working
-from app.api.deps import get_current_user, require_author, require_course_owner
+from app.api.deps import get_current_user, is_course_author, require_author, require_authored_course
 from app.api.media_common import document_passages
 from app.auth.rate_limit import limiter, user_or_address
 from app.db import get_db
@@ -91,7 +91,7 @@ def _refuse_while_processing(db: Session, course_id: uuid.UUID, *, other_than: u
 
 def _owned_document(db: Session, document_id: uuid.UUID, user: User, *, lock_course: bool = False) -> Document:
     doc = db.get(Document, document_id)
-    if doc is None or doc.course.owner_id != user.id:
+    if doc is None or not is_course_author(db, doc.course, user):
         raise HTTPException(status_code=404, detail="Document not found")
     if lock_course:
         # An explicit SELECT: the course is already loaded, and a get() could answer from the session.
@@ -116,7 +116,7 @@ def request_upload(
     The checks that need no file run here, so a wrong format or a size over the limit costs no
     transfer. The page count and the duration need the file: the worker checks them before
     reading (app/ingestion/document_pipeline.py)."""
-    require_course_owner(db.get(Course, course_id), current_user)
+    require_authored_course(db, db.get(Course, course_id), current_user)
     _refuse_while_processing(db, course_id)
     suffix = _checked_suffix(body.filename)
     size_limit, size_error = _size_limit(suffix)
@@ -227,7 +227,7 @@ def get_document_job_status(
     if job is None or job.document_id is None:
         raise HTTPException(status_code=404, detail="Job not found")
     doc = db.get(Document, job.document_id)
-    if doc is None or doc.course.owner_id != current_user.id:
+    if doc is None or not is_course_author(db, doc.course, current_user):
         raise HTTPException(status_code=404, detail="Job not found")
     return {
         "id": job.id, "step": job.step, "status": job.status,
@@ -240,7 +240,7 @@ def get_document_job_status(
 def list_documents(
     course_id: uuid.UUID, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)
 ):
-    require_course_owner(db.get(Course, course_id), current_user)
+    require_authored_course(db, db.get(Course, course_id), current_user)
 
     docs = (
         db.query(Document)
@@ -291,7 +291,7 @@ def delete_document(
     the pipeline never got far enough to clean it up itself (document_pipeline
     only deletes it after a successful embed step)."""
     doc = db.get(Document, document_id)
-    if doc is None or doc.course.owner_id != current_user.id:
+    if doc is None or not is_course_author(db, doc.course, current_user):
         raise HTTPException(status_code=404, detail="Document not found")
 
     check_study_references(db, db.scalars(select(Module.id).where(Module.document_id == document_id)))
@@ -327,6 +327,6 @@ def get_document_status(
     document_id: uuid.UUID, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)
 ):
     doc = db.get(Document, document_id)
-    if doc is None or doc.course.owner_id != current_user.id:
+    if doc is None or not is_course_author(db, doc.course, current_user):
         raise HTTPException(status_code=404, detail="Document not found")
     return {"id": doc.id, "status": doc.status}

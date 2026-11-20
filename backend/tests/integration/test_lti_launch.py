@@ -249,15 +249,16 @@ def test_an_author_who_takes_a_course_as_learner_is_a_member_of_it(lms):
     assert studying["course_id"] != own["course_id"]
 
 
-def test_a_member_launching_as_instructor_does_not_get_the_course(lms):
-    """A student who later teaches the same LMS course must not author the lecturer's course here."""
-    trade(launch(lms))
-    trade(launch(lms, **STUDENT))
+def test_a_member_the_lms_makes_an_instructor_teaches_the_course_without_owning_it(lms):
+    """The LMS signs the role, so a student it now lists as an instructor of the same course (a teaching
+    assistant) teaches it here too; the course stays the lecturer's."""
+    first = trade(launch(lms)).json()
+    assert trade(launch(lms, **STUDENT)).json()["course_role"] == "member"
 
-    response = launch(lms, **{**STUDENT, lti.CLAIM + "roles": [INSTRUCTOR]})
+    taught = trade(launch(lms, **{**STUDENT, lti.CLAIM + "roles": [INSTRUCTOR]})).json()
 
-    assert response.status_code == 400
-    assert "giảng viên khác" in response.text
+    assert taught["course_id"] == first["course_id"] and taught["course_role"] == "owner"
+    assert client.delete(f"/courses/{taught['course_id']}", headers=_bearer(taught)).status_code == 403
 
 
 @pytest.mark.parametrize("change", [
@@ -339,13 +340,21 @@ def test_the_lms_email_never_joins_an_existing_account(lms):
             db.commit()
 
 
-def test_a_course_another_lecturer_opened_is_not_handed_over(lms):
-    trade(launch(lms))
+def test_a_second_instructor_teaches_the_course_without_owning_it(lms):
+    first = trade(launch(lms)).json()
 
-    response = launch(lms, sub="lms-user-8", name="Second lecturer", email="second@lms.example.edu")
+    second = trade(launch(lms, sub="lms-user-8", name="Second lecturer", email="second@lms.example.edu")).json()
 
-    assert response.status_code == 400
-    assert "giảng viên khác" in response.text
+    # The same course, opened on the authoring page: they write under it as the first lecturer does.
+    assert second["course_id"] == first["course_id"] and second["course_role"] == "owner"
+    headers = {"Authorization": f"Bearer {second['access_token']}"}
+    course_id = second["course_id"]
+    assert [c["id"] for c in client.get("/courses", headers=headers).json()] == [course_id]
+    assert client.get("/documents", params={"course_id": course_id}, headers=headers).status_code == 200
+    # The course itself stays the first lecturer's.
+    renamed = client.patch(f"/courses/{course_id}", json={"name": "Taken over"}, headers=headers)
+    assert renamed.status_code == 403 and "Chỉ giảng viên đã tạo" in renamed.json()["detail"]
+    assert client.delete(f"/courses/{course_id}", headers=headers).status_code == 403
 
 
 def test_the_project_moodle_confirms_the_moodle_account_and_course(lms):

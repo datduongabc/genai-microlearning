@@ -52,11 +52,18 @@ def get_current_user(
     return user
 
 
-def require_course_owner(course: Course | None, user: User) -> Course:
+def is_course_author(db: Session, course: Course, user: User) -> bool:
+    """The owner, or another instructor of the course who joined it as a teacher (alembic 0049): who
+    writes documents, modules, flashcards and videos under it. Row level security says the same."""
+    return course.owner_id == user.id or db.scalar(select(CourseMember.role).where(
+        CourseMember.course_id == course.id, CourseMember.user_id == user.id)) == "teacher"
+
+
+def require_authored_course(db: Session, course: Course | None, user: User) -> Course:
     """Raise 404 (not 403) for both "course doesn't exist" and "not yours" --
     same not-found-either-way shape as chat.py's session check, so an
     unauthorized course_id can't be distinguished from a nonexistent one."""
-    if course is None or course.owner_id != user.id:
+    if course is None or not is_course_author(db, course, user):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Course not found")
     return course
 

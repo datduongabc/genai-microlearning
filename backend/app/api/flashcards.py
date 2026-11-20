@@ -7,7 +7,7 @@ from pydantic import BaseModel, Field, StringConstraints, ValidationError, field
 from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_current_user, require_author, require_course_owner
+from app.api.deps import get_current_user, is_course_author, require_author, require_authored_course
 from app.api.media_common import GenerateRequest, chunk_passages, owned_media, require_own_chunks
 from app.api.model_alias import generation_alias
 from app.auth.rate_limit import limiter, user_or_address
@@ -76,7 +76,7 @@ def generate_flashcards(
     # FOR UPDATE: the duplicate check below reads the sets table, so two identical requests for one
     # document must not run it at the same moment or both would pass.
     doc = db.get(Document, document_id, with_for_update=True)
-    if doc is None or doc.course.owner_id != current_user.id:
+    if doc is None or not is_course_author(db, doc.course, current_user):
         raise HTTPException(status_code=404, detail="Document not found")
     if not doc.raw_text:
         raise HTTPException(status_code=422, detail="Tài liệu chưa xử lý xong.")
@@ -111,7 +111,7 @@ def list_flashcard_sets(
     course_id: uuid.UUID, db: Session = Depends(get_db), current_user: User = Depends(get_current_user),
 ):
     require_author(current_user)
-    require_course_owner(db.get(Course, course_id), current_user)
+    require_authored_course(db, db.get(Course, course_id), current_user)
     sets = db.scalars(
         select(FlashcardSet).where(FlashcardSet.course_id == course_id).order_by(FlashcardSet.created_at.desc())
     ).all()

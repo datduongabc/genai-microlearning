@@ -9,7 +9,7 @@ worker may delete expired rows and read what it needs to keep course members in 
 import uuid
 from datetime import datetime
 
-from sqlalchemy import DateTime, ForeignKey, UniqueConstraint
+from sqlalchemy import CheckConstraint, DateTime, ForeignKey, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db import Base
@@ -100,11 +100,14 @@ class LtiLaunchCode(Base):
 
 
 class CourseMember(Base):
-    """Someone who may chat with a course's material without owning it: a student, added by their own
-    LTI launch. Unlike the tables above it is under row level security (migration 0027)."""
+    """Someone in a course who does not own it, added by their own LTI launch: a learner, who may chat with
+    its material (migration 0027), or a teacher, another instructor of the course, who authors under it as
+    the owner does (0049). Unlike the tables above it is under row level security."""
     __tablename__ = "course_members"
+    __table_args__ = (CheckConstraint("role IN ('learner', 'teacher')", name="ck_course_members_role"),)
 
     course_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("courses.id", ondelete="CASCADE"), primary_key=True)
     user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), primary_key=True, index=True)
     source: Mapped[str] = mapped_column(default="lti", server_default="lti")
+    role: Mapped[str] = mapped_column(default="learner", server_default="learner")
     created_at: Mapped[datetime] = created_at_column()
