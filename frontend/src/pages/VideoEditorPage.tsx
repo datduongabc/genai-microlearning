@@ -256,7 +256,7 @@ export function VideoEditorPage() {
   }
 
   const deleteButton = (
-    <button type="button" onClick={remove} disabled={busy !== null || jobRunning} className="link-action danger">
+    <button type="button" onClick={remove} disabled={busy !== null || jobRunning} className="ui-button danger ml-auto">
       {busy === 'delete' ? 'Đang xóa…' : 'Xóa video'}
     </button>
   )

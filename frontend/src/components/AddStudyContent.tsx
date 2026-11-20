@@ -67,7 +67,7 @@ export function AddStudyContent({ studyId, version, onAdded }: { studyId: string
     // Making the control is a paid generation, like generating a module.
     if (row.state !== "ready" && !await confirmAction({
       title: `Tạo bản đối chứng cho "${row.title}"?`,
-      description: "Hệ thống sinh một bản cùng mục tiêu học tập nhưng không dùng tài liệu, rồi thêm cả hai để so sánh.",
+      description: "Hệ thống sẽ tạo thêm bản NO RAG với cùng mục tiêu học tập để so sánh.",
       action: "Tạo và thêm",
     })) return;
     await addModule(row);

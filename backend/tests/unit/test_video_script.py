@@ -40,8 +40,8 @@ def _chunks(n=3):
     return [SimpleNamespace(id=uuid.uuid4(), chunk_index=i, content=f"passage {i}", source_ref=None) for i in range(n)]
 
 
-# 520 characters: inside the 420 to 550 a scene is asked for, and 8 of them reach the 4,000 characters
-# of a 4-minute video, so a script of these is not topped up.
+# 520 characters: inside the 420 to 550 a scene is asked for, and 6 to 7 of them make the 3,100 to 4,100
+# characters of a 4-minute video, so a script of these is neither topped up nor shortened.
 LONG = "x" * 519 + "."
 
 
@@ -137,7 +137,7 @@ def test_a_script_under_the_four_minute_floor_is_topped_up_though_every_scene_is
 
 def test_a_scene_under_its_minimum_is_topped_up_though_the_total_is_long_enough(monkeypatch):
     # Run 2: 3,960 characters in all, but two scenes under 420; a slightly shorter draft lands under 4 minutes.
-    scenes = _script(9)
+    scenes = _script(7)
     scenes[4] = _scene(title="short", narration=("y" * 403 + ".",))
     db, video, calls = _setup(monkeypatch, _chunks(), scenes)
     video_script.generate_video_script(db, video.id)
@@ -473,9 +473,10 @@ def test_the_prompt_asks_each_scene_for_its_length_in_sentences_and_characters(m
     system = calls[0][2]["system_instruction"]
     low, high = video_script.NARRATION_SENTENCES
     assert f"{low} to {high} sentences" in system
-    assert f"at least {video_script.NARRATION_MIN_CHARS} characters" in system
-    # The whole and what too short means, in minutes the model can picture.
-    assert f"{video_script.TARGET_CHARS}" in system and "2 minutes" in system
+    assert f"{video_script.NARRATION_MIN_CHARS} to {video_script.NARRATION_MAX_CHARS} characters" in system
+    assert f"at most {video_script.SENTENCE_MAX_WORDS} words" in system
+    # The whole, and what too short and too long mean, in minutes the model can picture.
+    assert f"{video_script.TARGET_CHARS}" in system and "2 minutes" in system and "9 minutes" in system
 
 
 def test_the_prompt_asks_for_illustrations_wherever_a_picture_helps(monkeypatch):
@@ -533,6 +534,8 @@ def test_the_length_at_each_step_is_recorded(monkeypatch):
         "draft_chars": MIN_SCENES * 301, "after_top_up_chars": (MIN_SCENES - 1) * 301 + 501,
         "uncited_sentences_dropped": 1, "top_up_uncited_sentences_dropped": 1,
         "scenes_topped_up": MIN_SCENES, "scenes_lengthened": 1, "chunks": 3, "top_up_failed": False,
+        "scenes_to_shorten": 0, "scenes_shortened": 0, "shorten_uncited_sentences_dropped": 0, "shorten_failed": False,
+        "final_chars": (MIN_SCENES - 1) * 301 + 501,
     }
 
 
@@ -658,3 +661,28 @@ def test_the_script_and_its_top_up_share_the_flashcards_term_glossary(monkeypatc
     assert '"trưng dụng" (never "trưng thu")' in glossary
     assert glossary in calls[0][2]["system_instruction"]
     assert glossary in calls[1][2]["system_instruction"]
+
+
+def test_a_script_far_too_long_is_shortened_and_a_reply_kept_only_when_shorter(monkeypatch):
+    # The first 4-minute run: five sentences of about 380 characters a scene, 14.5 minutes in all.
+    long_sentence = "y" * 379 + "."
+    scenes = [_scene(title=f"s{i}", narration=(long_sentence,) * 5) for i in range(MIN_SCENES)]
+    shorter = {"index": 1, "narration": [{"text": "z" * 99 + ".", "sources": ["S1"]}] * 5}
+    longer = {"index": 2, "narration": [{"text": "w" * 499 + ".", "sources": ["S1"]}] * 5}
+    db, video, calls = _setup(monkeypatch, _chunks(), scenes, top_up=[shorter, longer])
+    video_script.generate_video_script(db, video.id)
+
+    assert [c[1] for c in calls] == [video_script.ScriptDraft, video_script.TopUpDraft]
+    assert "too long" in calls[1][2]["system_instruction"]
+    assert "at most 550 characters" in calls[1][0] and f"SCENE {MIN_SCENES}:" in calls[1][0]
+    assert len(video.scenes[0]["narration"]) < 600
+    assert video.scenes[1]["narration"].count("y") == 379 * 5
+    length = video.cost["script"]["length"]
+    assert (length["scenes_to_shorten"], length["scenes_shortened"], length["shorten_failed"]) == (MIN_SCENES, 1, False)
+    assert length["final_chars"] < length["draft_chars"]
+
+
+def test_a_script_within_its_length_is_not_shortened(monkeypatch):
+    db, video, calls = _setup(monkeypatch, _chunks(), _script())
+    video_script.generate_video_script(db, video.id)
+    assert [c[1] for c in calls] == [video_script.ScriptDraft]

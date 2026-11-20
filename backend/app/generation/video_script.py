@@ -83,6 +83,13 @@ TARGET_CHARS = TARGET_SECONDS * CHARS_PER_SECOND
 # The least the model is asked for, and below it the script is topped up: 3,100 characters read at
 # the 15.9 a second of live run 2 is 3:15, and the top of the range, 4,100, is 4:18.
 MIN_CHARS = TARGET_CHARS - 500
+# The most, and above it the script is shortened: 4,100 characters is 4:18 at 15.9 a second. The first
+# 4-minute run (GPT-6 Luna) wrote five sentences of about 380 characters a scene, 13,060 in all: 14.5
+# minutes, which the 8-minute cap then refused to render.
+MAX_CHARS = TARGET_CHARS + 500
+# A scene over this is shortened: a little room over what it is asked for, so one rich scene stays.
+NARRATION_TRIM_CHARS = NARRATION_MAX_CHARS + 150
+SENTENCE_MAX_WORDS = 25
 MIN_BULLETS, MAX_BULLETS = 2, 4
 
 SceneKind = Literal["title", "illustration", "formula", "code", "table", "summary"]
@@ -157,9 +164,10 @@ _LOW, _HIGH = NARRATION_SENTENCES
 
 _NARRATION_RULES = f"""Narration:
 - Natural speech, as the lecturer would say it in class.
-- Every scene's narration has {_LOW} to {_HIGH} sentences and at least {NARRATION_MIN_CHARS} characters
-  ({NARRATION_MIN_CHARS} to {NARRATION_MAX_CHARS}, about {NARRATION_TARGET_CHARS}), whatever its kind, the title and the summary
-  scenes included. A scene of 2 or 3 sentences is far too short.
+- Every scene's narration has {_LOW} to {_HIGH} sentences and {NARRATION_MIN_CHARS} to {NARRATION_MAX_CHARS} characters (about
+  {NARRATION_TARGET_CHARS}), whatever its kind, the title and the summary scenes included. A scene of 2 or 3 sentences is
+  far too short; a scene of 1,000 characters is far too long.
+- Each sentence is short, as said aloud: at most {SENTENCE_MAX_WORDS} words, one idea. Split a long sentence in two.
 - Say more than the slide: explain what each bullet means and why it matters; walk through a worked example
   step by step with its figures (each process, its burst time, when it starts and ends, how long it waits);
   link the scene to the one before. Explaining, restating and walking through what a chunk states is not
@@ -194,8 +202,9 @@ def _slide_language_rule(language: OutputLanguage) -> str:
 def _script_instruction(language: OutputLanguage) -> str:
     return IGNORE_EMBEDDED_INSTRUCTIONS + f"""You write the script of a narrated lecture video that a student watches
 at home before class. It must last about {TARGET_SECONDS // 60} minutes (3 to 5). The voice reads about {CHARS_PER_SECOND} characters a
-second, so the narration of all scenes together is about {TARGET_CHARS} characters ({MIN_CHARS} to {TARGET_CHARS + 500}).
-Too short is the usual failure: 2000 characters would be a video of only 2 minutes. The video is a list of scenes; each
+second, so the narration of all scenes together is about {TARGET_CHARS} characters ({MIN_CHARS} to {MAX_CHARS}).
+Both ways fail: 2,000 characters is a video of only 2 minutes, and 8,000 is 9 minutes, longer than a video may be. The
+video is a list of scenes; each
 scene is one slide shown while a voice reads its narration.
 
 It is about the FOCUS given. When TOPICS lists several, cover every topic in TOPICS, each in scenes of its own and about
@@ -246,6 +255,16 @@ says, and add to it: explain what its slide shows and why it matters, walk throu
 step. Use ONLY what the source chunks say. Every sentence lists in `sources` the IDs of the chunks it is taken from,
 such as the chunks the scene already cites: a sentence without a source is removed, and a new narration that ends up no
 longer than the old one is thrown away. Return each scene with the number it was given, as `index`.
+
+{_NARRATION_RULES}"""
+
+_TRIM_INSTRUCTION = IGNORE_EMBEDDED_INSTRUCTIONS + f"""The narration of some scenes of a narrated lecture video came out
+too long: the video must last about {TARGET_SECONDS // 60} minutes. For each scene given, write its narration again so
+that it has {_LOW} to {_HIGH} short sentences and {NARRATION_MIN_CHARS} to {NARRATION_MAX_CHARS} characters, about {NARRATION_TARGET_CHARS}.
+Keep what matters most for its slide: what each bullet means, and the figures of its example. Drop repetition and
+asides. Use ONLY what the source chunks say. Every sentence lists in `sources` the IDs of the chunks it is taken from,
+such as the chunks the scene already cites: a sentence without a source is removed, and a new narration that ends up no
+shorter than the old one is thrown away. Return each scene with the number it was given, as `index`.
 
 {_NARRATION_RULES}"""
 
@@ -399,15 +418,39 @@ def _scenes_to_top_up(scenes: list[_Draft]) -> list[int]:
     return sorted(short or by_length[:math.ceil(len(scenes) / 3)])
 
 
+def _needs_trim(scenes: list[_Draft]) -> bool:
+    return _total_chars(scenes) > MAX_CHARS or any(s.narration_chars() > NARRATION_TRIM_CHARS for s in scenes)
+
+
+def _scenes_to_trim(scenes: list[_Draft]) -> list[int]:
+    """The scenes longer than a scene may be, or, when none is and the whole is still too long, the
+    longest third."""
+    by_length = sorted(range(len(scenes)), key=lambda i: -scenes[i].narration_chars())
+    long = [i for i in by_length if scenes[i].narration_chars() > NARRATION_MAX_CHARS]
+    return sorted(long or by_length[:math.ceil(len(scenes) / 3)])
+
+
 @dataclass
 class _TopUpResult:
     chosen: int = 0
-    lengthened: int = 0
+    changed: int = 0
     uncited_sentences: int = 0
 
 
 def _top_up(scenes: list[_Draft], query: str, chunks: list[Chunk], language: OutputLanguage) -> _TopUpResult:
-    chosen = _scenes_to_top_up(scenes)
+    return _rewrite(scenes, _scenes_to_top_up(scenes), query, chunks, language, _TOP_UP_INSTRUCTION,
+                    f"wanted: at least {NARRATION_MIN_CHARS} characters, {_LOW} to {_HIGH} sentences", longer=True)
+
+
+def _trim(scenes: list[_Draft], query: str, chunks: list[Chunk], language: OutputLanguage) -> _TopUpResult:
+    return _rewrite(scenes, _scenes_to_trim(scenes), query, chunks, language, _TRIM_INSTRUCTION,
+                    f"wanted: at most {NARRATION_MAX_CHARS} characters, {_LOW} to {_HIGH} short sentences", longer=False)
+
+
+def _rewrite(scenes: list[_Draft], chosen: list[int], query: str, chunks: list[Chunk], language: OutputLanguage,
+             instruction: str, wanted: str, *, longer: bool) -> _TopUpResult:
+    """Has the model write the chosen scenes' narration again, longer or shorter. A reply is kept
+    only when its cited sentences move the length the way asked."""
     ids = {c.id: source_id(n) for n, c in enumerate(chunks)}
     listed = []
     for i in chosen:
@@ -417,11 +460,10 @@ def _top_up(scenes: list[_Draft], query: str, chunks: list[Chunk], language: Out
         # The IDs it already cites, so the longer narration has a source at hand for every sentence.
         cites = ", ".join(ids[c.id] for c in s.chunks() if c.id in ids)
         listed.append(f"SCENE {i + 1}: {s.title}\nThis scene cites {cites}.\nSlide:\n{bullets}\n"
-                      f"Narration now ({s.narration_chars()} characters, {len(s.narration)} sentences; wanted: at least "
-                      f"{NARRATION_MIN_CHARS} characters, {_LOW} to {_HIGH} sentences): {narration}")
+                      f"Narration now ({s.narration_chars()} characters, {len(s.narration)} sentences; {wanted}): {narration}")
     reply = complete_structured(
         f"FOCUS: {query}\n\n" + "\n\n".join(listed) + f"\n\n{format_source_chunks(chunks)}", TopUpDraft,
-        system_instruction=_TOP_UP_INSTRUCTION + f"\n{term_rules(language)}" + output_language_instruction(language),
+        system_instruction=instruction + f"\n{term_rules(language)}" + output_language_instruction(language),
         temperature=0.3,
     )
     result = _TopUpResult(chosen=len(chosen))
@@ -432,10 +474,12 @@ def _top_up(scenes: list[_Draft], query: str, chunks: list[Chunk], language: Out
         narration, uncited = _cited(item.narration, chunks)
         result.uncited_sentences += uncited
         # Same rule as the first draft: what cites nothing is removed, so a reply that came back
-        # uncited, or shorter, leaves the scene as it was.
-        if len(" ".join(text for text, _ in narration)) > scenes[i].narration_chars():
+        # uncited, or not moved the way asked, leaves the scene as it was. A shortened scene must
+        # keep a narration at all.
+        new = len(" ".join(text for text, _ in narration))
+        if (new > scenes[i].narration_chars()) if longer else (0 < new < scenes[i].narration_chars()):
             scenes[i].narration = narration
-            result.lengthened += 1
+            result.changed += 1
     return result
 
 
@@ -650,10 +694,23 @@ def generate_video_script(db: Session, video_id: uuid.UUID, before_save: Callabl
                     logger.warning(f"[video_script] video {video_id}: the top-up failed, the draft is kept as it is",
                                    exc_info=True)
                     top_up_failed = True
+            trimmed = _TopUpResult()
+            trim_failed = False
+            if _needs_trim(scenes):
+                # Optional too: a long script is kept, and the render's 8-minute check stops a video
+                # that is still too long.
+                try:
+                    trimmed = _trim(scenes, query, chunks, language)
+                except Exception:
+                    logger.warning(f"[video_script] video {video_id}: shortening failed, the draft is kept as it is",
+                                   exc_info=True)
+                    trim_failed = True
         length = {"draft_chars": draft_chars, "after_top_up_chars": _total_chars(scenes),
                   "uncited_sentences_dropped": uncited, "top_up_uncited_sentences_dropped": topped.uncited_sentences,
-                  "scenes_topped_up": topped.chosen, "scenes_lengthened": topped.lengthened, "chunks": len(chunks),
-                  "top_up_failed": top_up_failed}
+                  "scenes_topped_up": topped.chosen, "scenes_lengthened": topped.changed, "chunks": len(chunks),
+                  "top_up_failed": top_up_failed, "scenes_to_shorten": trimmed.chosen,
+                  "scenes_shortened": trimmed.changed, "shorten_uncited_sentences_dropped": trimmed.uncited_sentences,
+                  "shorten_failed": trim_failed, "final_chars": _total_chars(scenes)}
 
         for s in scenes:
             invented = _invented_in_picture(s)

@@ -330,6 +330,9 @@ def remove_item(study_id: uuid.UUID, item_id: uuid.UUID, db: Session = Depends(g
             db.delete(member)
     study.rater_pairs = {email: [k for k in keys if k != key] for email, keys in (study.rater_pairs or {}).items()
                          if [k for k in keys if k != key]}
+    # A rater is someone given something: left with nothing, they are no longer one, and the study
+    # leaves their list.
+    study.rater_emails = [email for email in study.rater_emails or [] if email.lower() in study.rater_pairs]
     db.commit()
     return [_item_out(i) for i in _items(db, study_id)]
 

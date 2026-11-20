@@ -509,7 +509,13 @@ it("gives each row to the accounts picked for it, so different rows go to differ
   // By name, not a count.
   expect(within(rows[1]).getByText("Minh Trần")).toBeInTheDocument();
 
-  await userEvent.click(within(rows[0]).getByRole("button", { name: "Chọn người chấm M01, M04" }));
+  // A row with raters changes them from its menu; one without has "Giao" in view.
+  expect(within(rows[1]).queryByRole("button", { name: /Giao người chấm/ })).not.toBeInTheDocument();
+  within(rows[1]).getByRole("button", { name: "Thao tác khác với M02, M03" }).focus();
+  await userEvent.keyboard("{Enter}");
+  expect(await screen.findByRole("menuitem", { name: "Sửa người chấm" })).toBeInTheDocument();
+  await userEvent.keyboard("{Escape}");
+  await userEvent.click(within(rows[0]).getByRole("button", { name: "Giao người chấm M01, M04" }));
   const dialog = await screen.findByRole("dialog");
   expect(within(dialog).getAllByRole("checkbox").every((box) => !(box as HTMLInputElement).checked)).toBe(true);
   await userEvent.type(within(dialog).getByRole("searchbox", { name: "Tìm người chấm" }), "lan");
@@ -536,7 +542,7 @@ it("asks before taking a pair out of the study, then lists what is left", async 
       await userEvent.keyboard("{Enter}");
       // A module keeps its name: only a flashcard set or video can be renamed.
       expect(screen.queryByRole("menuitem", { name: "Đổi tên" })).not.toBeInTheDocument();
-      await userEvent.click(await screen.findByRole("menuitem", { name: "Xóa khỏi nghiên cứu" }));
+      await userEvent.click(await screen.findByRole("menuitem", { name: "Xóa nghiên cứu" }));
     }
     await remove();
     expect(api.removeStudyItem).not.toHaveBeenCalled();
