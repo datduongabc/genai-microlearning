@@ -61,16 +61,18 @@ from app.models import Chunk, Document, Job, MediaStatus, Video
 
 logger = logging.getLogger(__name__)
 
-TARGET_SECONDS = 300
+# About 4 minutes: microlearning keeps a video short, and 5 minutes read as long to the lecturers.
+TARGET_SECONDS = 240
 MAX_SECONDS = 480
 # Measured on the three voices, in Vietnamese and in English.
 CHARS_PER_SECOND = 15
 MAX_ILLUSTRATIONS = 5
-MIN_SCENES = 8
-MAX_SCENES = 10
-# Asked for: the trial asked for 9 or 10 and reached about 4 minutes; asking for 8 to 10 got the
-# minimum, 8, in the live run. MIN_SCENES stays what a script is flagged under.
-ASKED_SCENES = (9, MAX_SCENES)
+MIN_SCENES = 6
+MAX_SCENES = 9
+# Asked for: about 480 characters a scene, so 7 or 8 scenes make the 3,600 of 4 minutes. Models write
+# the low end of a range (asked for 8 to 10, the live run got 8), so the range is narrow.
+# MIN_SCENES stays what a script is flagged under.
+ASKED_SCENES = (7, 8)
 NARRATION_MIN_CHARS = 420
 NARRATION_MAX_CHARS = 550
 NARRATION_TARGET_CHARS = 480
@@ -78,9 +80,8 @@ NARRATION_TARGET_CHARS = 480
 # were asked for 420 to 550 characters and came out at 2 or 3 sentences, 211 to 331 characters.
 NARRATION_SENTENCES = (5, 7)
 TARGET_CHARS = TARGET_SECONDS * CHARS_PER_SECOND
-# The least the model is asked for, and below it the script is topped up. The 4-minute minimum at 15
-# characters a second would be 3,600, but the voice read 15.9 a second in live run 2, which made
-# 3,960 characters 4:10, ten seconds above the minimum; 4,000 is still 4:11 at that rate.
+# The least the model is asked for, and below it the script is topped up: 3,100 characters read at
+# the 15.9 a second of live run 2 is 3:15, and the top of the range, 4,100, is 4:18.
 MIN_CHARS = TARGET_CHARS - 500
 MIN_BULLETS, MAX_BULLETS = 2, 4
 
@@ -192,7 +193,7 @@ def _slide_language_rule(language: OutputLanguage) -> str:
 
 def _script_instruction(language: OutputLanguage) -> str:
     return IGNORE_EMBEDDED_INSTRUCTIONS + f"""You write the script of a narrated lecture video that a student watches
-at home before class. It must last about {TARGET_SECONDS // 60} minutes (4 to 6). The voice reads about {CHARS_PER_SECOND} characters a
+at home before class. It must last about {TARGET_SECONDS // 60} minutes (3 to 5). The voice reads about {CHARS_PER_SECOND} characters a
 second, so the narration of all scenes together is about {TARGET_CHARS} characters ({MIN_CHARS} to {TARGET_CHARS + 500}).
 Too short is the usual failure: 2000 characters would be a video of only 2 minutes. The video is a list of scenes; each
 scene is one slide shown while a voice reads its narration.
@@ -239,7 +240,7 @@ written in {_LANGUAGE_NAMES[language]}: {_FORMULA_EXAMPLE[language]}
 
 
 _TOP_UP_INSTRUCTION = IGNORE_EMBEDDED_INSTRUCTIONS + f"""The narration of some scenes of a narrated lecture video came out
-too short: the video must last about {TARGET_SECONDS // 60} minutes and at least 4. For each scene given, write its narration
+too short: the video must last about {TARGET_SECONDS // 60} minutes and at least 3. For each scene given, write its narration
 again so that it has {_LOW} to {_HIGH} sentences and at least {NARRATION_MIN_CHARS} characters, about {NARRATION_TARGET_CHARS} characters. Keep what it
 says, and add to it: explain what its slide shows and why it matters, walk through its example and its figures step by
 step. Use ONLY what the source chunks say. Every sentence lists in `sources` the IDs of the chunks it is taken from,

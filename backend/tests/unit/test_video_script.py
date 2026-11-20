@@ -124,15 +124,15 @@ def test_a_long_enough_script_is_not_topped_up(monkeypatch):
 
 
 def test_a_script_under_the_four_minute_floor_is_topped_up_though_every_scene_is_long_enough(monkeypatch):
-    # 8 x 450 = 3,600 characters: every scene reaches 420, yet at the voice's measured 15.9 characters a
-    # second this is 3:46, under the 4 minutes asked. The old 0.8 x target rule let it through.
-    scenes = [_scene(title=f"s{i}", narration=("y" * (449 + i) + ".",)) for i in range(MIN_SCENES)]
+    # 6 x 512 = 3,070 characters: every scene reaches 420, yet at the voice's measured 15.9 characters a
+    # second this is 3:13, under the floor of the 4 minutes asked.
+    scenes = [_scene(title=f"s{i}", narration=("y" * (509 + i) + ".",)) for i in range(MIN_SCENES)]
     db, video, calls = _setup(monkeypatch, _chunks(), scenes)
     video_script.generate_video_script(db, video.id)
     assert [c[1] for c in calls] == [video_script.ScriptDraft, video_script.TopUpDraft]
     asked = calls[1][0]
     # No scene is short, so the shortest third is lengthened.
-    assert "SCENE 1:" in asked and "SCENE 3:" in asked and "SCENE 4:" not in asked
+    assert "SCENE 1:" in asked and "SCENE 2:" in asked and "SCENE 3:" not in asked
 
 
 def test_a_scene_under_its_minimum_is_topped_up_though_the_total_is_long_enough(monkeypatch):
@@ -337,12 +337,12 @@ def test_a_script_the_model_wrote_too_short_is_saved_with_a_flag(monkeypatch):
 
 
 def test_a_script_left_short_by_dropped_scenes_says_so(monkeypatch):
-    scenes = _script(7)
+    scenes = _script(MIN_SCENES)
     scenes[3]["narration"][0]["sources"] = []
     db, video, _ = _setup(monkeypatch, _chunks(), scenes)
     video_script.generate_video_script(db, video.id)
     flag = video.scenes[0]["flags"][-1]
-    assert "6 cảnh" in flag and "1 cảnh" in flag and "bị bỏ" in flag
+    assert f"{MIN_SCENES - 1} cảnh" in flag and "1 cảnh" in flag and "bị bỏ" in flag
 
 
 def test_a_script_with_no_cited_scene_fails(monkeypatch):
@@ -530,9 +530,9 @@ def test_the_length_at_each_step_is_recorded(monkeypatch):
     video_script.generate_video_script(db, video.id)
     length = video.cost["script"]["length"]
     assert length == {
-        "draft_chars": 8 * 301, "after_top_up_chars": 7 * 301 + 501,
+        "draft_chars": MIN_SCENES * 301, "after_top_up_chars": (MIN_SCENES - 1) * 301 + 501,
         "uncited_sentences_dropped": 1, "top_up_uncited_sentences_dropped": 1,
-        "scenes_topped_up": 8, "scenes_lengthened": 1, "chunks": 3, "top_up_failed": False,
+        "scenes_topped_up": MIN_SCENES, "scenes_lengthened": 1, "chunks": 3, "top_up_failed": False,
     }
 
 
