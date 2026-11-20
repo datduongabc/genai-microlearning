@@ -168,9 +168,11 @@ function sharedTitleDates(items: { id: string; document_id: string; focus: strin
 }
 
 // The kind is written out because a set and a video made from the same focus carry the same title.
-function MediaListItem({ kind, to, focus, status, statusText, created, deleting, onDelete }: {
+function MediaListItem({ kind, to, focus, status, statusText, created, busy, deleting, onDelete }: {
   kind: MediaKind; to: string; focus: string | null; status?: string; statusText: string | null; created?: string;
-  deleting: boolean; onDelete: () => void;
+  // A job is writing it: as for a module being made, it can be deleted once that is done (the
+  // server refuses before then).
+  busy: boolean; deleting: boolean; onDelete: () => void;
 }) {
   const name = focus ?? "Toàn bộ tài liệu";
   return (
@@ -179,10 +181,10 @@ function MediaListItem({ kind, to, focus, status, statusText, created, deleting,
       <Link to={to} className="module-link flashcard-link">
         {name}
       </Link>
-      <button onClick={onDelete} disabled={deleting} aria-label={`Xóa ${kind.toLowerCase()} ${name}`}
+      {!busy && <button onClick={onDelete} disabled={deleting} aria-label={`Xóa ${kind.toLowerCase()} ${name}`}
         className="link-action danger small-action media-delete">
         {deleting ? "Đang xóa…" : "Xóa"}
-      </button>
+      </button>}
       {(statusText || created) && (
         <span className="media-meta">
           {statusText && <span className="status-pill" data-status={status}>{statusText}</span>}
@@ -546,12 +548,8 @@ export function CourseDetailPage() {
   }
 
   // A flashcard set or a video, from its row: the same question and answers as in its own editor.
-  async function handleDeleteMedia(kind: MediaKind, id: string, focus: string | null, running: boolean) {
+  async function handleDeleteMedia(kind: MediaKind, id: string, focus: string | null) {
     const name = focus ?? "Toàn bộ tài liệu";
-    if (running) {
-      notifyFailed(`${kind} "${name}" đang được tạo. Chờ xong rồi xóa.`);
-      return;
-    }
     const video = kind === "Video";
     const confirmed = await confirmAction({
       title: video ? `Xóa video "${name}"?` : `Xóa bộ flashcard "${name}"?`,
@@ -766,10 +764,11 @@ export function CourseDetailPage() {
                       to={`/flashcard-sets/${set.id}`}
                       focus={set.focus}
                       status={mediaPillStatus(set.status === "generating", set.status === "failed")}
+                      busy={set.status === "generating"}
                       statusText={flashcardStatusText(set)}
                       created={setDates.get(set.id)}
                       deleting={deletingMediaId === set.id}
-                      onDelete={() => void handleDeleteMedia("Flashcard", set.id, set.focus, set.status === "generating")}
+                      onDelete={() => void handleDeleteMedia("Flashcard", set.id, set.focus)}
                     />
                   ))}
                   {pendingFor(d, "Video").map((item) => <PendingMediaItem key={item.key} item={item} />)}
@@ -780,10 +779,11 @@ export function CourseDetailPage() {
                       to={`/videos/${video.id}`}
                       focus={video.focus}
                       status={mediaPillStatus(VIDEO_JOB_TEXT[video.status] !== undefined, video.status === "failed")}
+                      busy={VIDEO_JOB_TEXT[video.status] !== undefined}
                       statusText={videoStatusText(video)}
                       created={videoDates.get(video.id)}
                       deleting={deletingMediaId === video.id}
-                      onDelete={() => void handleDeleteMedia("Video", video.id, video.focus, VIDEO_JOB_TEXT[video.status] !== undefined)}
+                      onDelete={() => void handleDeleteMedia("Video", video.id, video.focus)}
                     />
                   ))}
                 </ul>

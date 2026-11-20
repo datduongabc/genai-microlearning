@@ -988,15 +988,20 @@ describe('CourseDetailPage - delete a flashcard set or a video from its row', ()
     expect(screen.getByRole('button', { name: /^Xóa video FCFS/ })).toBeEnabled()
   })
 
-  it('does not delete a video while it is being made', async () => {
-    vi.mocked(api.listVideos).mockResolvedValue([{ ...videoSummary, status: 'generating' }])
-    vi.spyOn(window, 'confirm').mockReturnValue(true)
+  it('offers no delete while a flashcard set or a video is being made, drawn or rendered, as for a module', async () => {
+    vi.mocked(api.listFlashcardSets).mockResolvedValue([{ ...flashcardSet, status: 'generating' }])
+    vi.mocked(api.listVideos).mockResolvedValue([
+      { ...videoSummary, id: 'v-gen', focus: 'Đang viết', status: 'generating' },
+      { ...videoSummary, id: 'v-draw', focus: 'Đang vẽ', status: 'drawing' },
+      { ...videoSummary, id: 'v-render', focus: 'Đang dựng', status: 'rendering' },
+      { ...videoSummary, id: 'v-done', focus: 'Xong', status: 'ready' },
+    ])
 
     renderPage()
-    await userEvent.click(await screen.findByRole('button', { name: /^Xóa video FCFS/ }))
-
-    expect(await screen.findByText(/đang được tạo\. Chờ xong rồi xóa\./)).toBeInTheDocument()
-    expect(api.deleteVideo).not.toHaveBeenCalled()
+    expect(await screen.findByRole('button', { name: 'Xóa video Xong' })).toBeInTheDocument()
+    for (const name of ['Xóa flashcard Mảng', 'Xóa video Đang viết', 'Xóa video Đang vẽ', 'Xóa video Đang dựng']) {
+      expect(screen.queryByRole('button', { name })).not.toBeInTheDocument()
+    }
   })
 })
 
