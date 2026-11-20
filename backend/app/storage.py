@@ -220,6 +220,23 @@ def delete_media_files(keys: list[str]) -> None:
         store.delete(key)
 
 
+def copy_file(source: UploadStore, source_key: str, target: UploadStore, target_key: str) -> None:
+    """Copies a stored file. Between two prefixes of one bucket S3 copies it itself, so the bytes
+    never pass through this process; otherwise through a local copy."""
+    if isinstance(source, S3UploadStore) and isinstance(target, S3UploadStore) and source.bucket == target.bucket:
+        target.client.copy_object(Bucket=target.bucket, Key=target._object_key(target_key),
+                                  CopySource={"Bucket": source.bucket, "Key": source._object_key(source_key)})
+        return
+    with source.local_copy(source_key) as path:
+        # In the staging directory, which for the local store is on its disk, so save() can rename.
+        copied = Path(tempfile.mkdtemp(prefix="copy-", dir=staging_dir())) / Path(path).name
+        shutil.copyfile(path, copied)
+        try:
+            target.save(copied, target_key)
+        finally:
+            shutil.rmtree(copied.parent, ignore_errors=True)
+
+
 def study_file_key(file_id, filename: str) -> str:
     return f"{file_id}{Path(filename).suffix.lower()}"
 

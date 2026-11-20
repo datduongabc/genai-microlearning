@@ -45,7 +45,7 @@ const item = {
   },
 };
 const data = { study, items: [item], rated: 0, total: 1 };
-const noResults = { criteria: [], total: 0, raters: [], has_judge: false, unpaired: [], items: [] };
+const noResults = { criteria: [], total: 0, raters: [], has_judge: false, has_media_ratings: false, unpaired: [], items: [] };
 beforeEach(() => {
   vi.clearAllMocks();
   vi.spyOn(auth, "useAuth").mockReturnValue({
@@ -340,11 +340,14 @@ it("offers every part of the module that can hold an unsupported claim, but not 
 it("shows the admin each rater's progress, and per packet the scores, findings and group", async () => {
   const scores = Object.fromEntries(["accuracy", "completeness"].map((c) => [c, { score: 4, justification: `Lý do ${c}` }]));
   vi.mocked(api.getStudyResults).mockResolvedValue({
-    criteria: ["accuracy", "completeness"], total: 2, has_judge: false, unpaired: [],
-    raters: [{ email: "lan@example.com", number: 1, rated: 1, invited: true, assigned: 2 }, { email: "minh@example.com", number: null, rated: 0, invited: true, assigned: 2 }],
+    criteria: ["accuracy", "completeness"], total: 2, has_judge: false, has_media_ratings: true, unpaired: [],
+    raters: [
+      { email: "lan@example.com", name: "Lan", number: 1, rated: 1, module_rated: 1, invited: true, assigned: 2 },
+      { email: "minh@example.com", name: "Minh Trần", number: null, rated: 0, module_rated: 0, invited: true, assigned: 2 },
+    ],
     items: [
       { id: "i1", anon_code: "M01", group: "rag_llm", pair_code: "M01", topic: "Chủ đề", criteria: ["accuracy", "completeness"], ratings: [{
-        rater: "Người chấm 1", kind: "human", scores, notes: "Ổn",
+        rater: "Lan", kind: "human", scores, notes: "Ổn",
         findings: [{ claim: "Câu bịa", field: "example", reason: "Nguồn không có" }],
       }] },
       { id: "i2", anon_code: "M02", group: "llm_no_rag", pair_code: "M01", topic: "Chủ đề", criteria: ["accuracy", "completeness"], ratings: [] },
@@ -358,8 +361,11 @@ it("shows the admin each rater's progress, and per packet the scores, findings a
   await user.click(await screen.findByRole("button", { name: /Nghiên cứu/ }));
   const results = await screen.findByRole("region", { name: "Kết quả chấm" });
   const progress = within(within(results).getByRole("list", { name: "Tiến độ người chấm" }));
-  expect(progress.getByText("Người chấm 1")).toBeInTheDocument();
-  expect(progress.getByText("Chưa chấm gói nào")).toBeInTheDocument();
+  // By name: the admin is not blind to who rated.
+  expect(progress.getByText("Lan")).toBeInTheDocument();
+  expect(progress.getByText("minh@example.com, chưa chấm gói nào")).toBeInTheDocument();
+  // Only a rater with module ratings has a module file to download.
+  expect(within(results).getAllByRole("button", { name: "Tải CSV mô-đun" })).toHaveLength(1);
   expect(within(results).getByLabelText("Tiến độ lan@example.com")).toHaveAttribute("value", "1");
   // Only packets someone rated are listed; the group is the admin's to see.
   expect(within(results).queryByText("M02")).not.toBeInTheDocument();
@@ -368,8 +374,10 @@ it("shows the admin each rater's progress, and per packet the scores, findings a
   expect(within(results).getByRole("cell", { name: "Độ chính xác" })).toBeVisible();
   expect(within(results).getByText("Câu bịa")).toBeVisible();
   expect(within(results).getByText("Ví dụ")).toBeVisible();
-  await user.click(within(results).getByRole("button", { name: "Tải CSV" }));
+  await user.click(within(results).getByRole("button", { name: "Tải CSV mô-đun" }));
   expect(api.downloadStudyFile).toHaveBeenCalledWith("s1", "raters/1.csv");
+  await user.click(within(results).getByRole("button", { name: "Tải CSV flashcard và video" }));
+  expect(api.downloadStudyFile).toHaveBeenCalledWith("s1", "media.csv");
 });
 
 const summary = (id: string, code: string, group: api.StudyGroup, pair: string | null) => ({
@@ -518,17 +526,45 @@ it("asks before taking a pair out of the study, then lists what is left", async 
   const confirm = vi.spyOn(window, "confirm").mockReturnValueOnce(false).mockReturnValueOnce(true);
   try {
     const card = await openStudy();
-    const remove = within(card).getByRole("button", { name: "Xóa M01, M04" });
-    await userEvent.click(remove);
+    async function remove() {
+      within(card).getByRole("button", { name: "Thao tác khác với M01, M04" }).focus();
+      await userEvent.keyboard("{Enter}");
+      // A module keeps its name: only a flashcard set or video can be renamed.
+      expect(screen.queryByRole("menuitem", { name: "Đổi tên" })).not.toBeInTheDocument();
+      await userEvent.click(await screen.findByRole("menuitem", { name: "Xóa khỏi nghiên cứu" }));
+    }
+    await remove();
     expect(api.removeStudyItem).not.toHaveBeenCalled();
 
-    await userEvent.click(remove);
+    await remove();
 
     expect(api.removeStudyItem).toHaveBeenCalledWith("s1", "a");
     expect(await within(card).findByText("Chưa có nội dung nào.")).toBeInTheDocument();
   } finally {
     confirm.mockRestore();
   }
+});
+
+it("renames a flashcard set for its raters from the row menu", async () => {
+  vi.mocked(api.getStudyItems).mockResolvedValue([
+    { ...summary("c", "F01", "flashcards", null), packet: { topic: "Toàn bộ tài liệu" },
+      source: { title: "Bài 1.pdf", course_name: "HĐH", created_at: "" } },
+  ]);
+  vi.mocked(api.renameStudyItem).mockResolvedValue([
+    { ...summary("c", "F01", "flashcards", null), packet: { topic: "Định nghĩa token" },
+      source: { title: "Bài 1.pdf", course_name: "HĐH", created_at: "" } },
+  ]);
+  const card = await openStudy();
+  expect(within(card).getByText("Toàn bộ tài liệu")).toBeInTheDocument();
+  expect(within(card).getByText("Bài 1.pdf")).toBeInTheDocument();
+  within(card).getByRole("button", { name: "Thao tác khác với F01" }).focus();
+  await userEvent.keyboard("{Enter}");
+  await userEvent.click(await screen.findByRole("menuitem", { name: "Đổi tên" }));
+  const field = within(card).getByRole("textbox", { name: "Tên hiển thị cho người chấm" });
+  await userEvent.clear(field);
+  await userEvent.type(field, "Định nghĩa token{Enter}");
+  expect(api.renameStudyItem).toHaveBeenCalledWith("s1", "c", "Định nghĩa token");
+  expect(await within(card).findByText("Định nghĩa token")).toBeInTheDocument();
 });
 
 it("lists each thing to rate by its real name, a pair as one row", async () => {

@@ -78,7 +78,7 @@ def _run_until_done(job_id):
             db.close()
 
 
-def test_the_worker_reads_the_upload_from_s3_and_removes_it_when_embedded(s3, world):
+def test_the_worker_reads_the_upload_from_s3_and_keeps_it_when_embedded(s3, world):
     fake, tmp_path = s3
 
     response = _upload(world, s3=fake)
@@ -102,7 +102,8 @@ def test_the_worker_reads_the_upload_from_s3_and_removes_it_when_embedded(s3, wo
         assert db.query(Chunk).filter(Chunk.document_id == doc_id).count() > 0
     finally:
         db.close()
-    assert fake.objects == {}, "an embedded document's file has no further use"
+    # Kept: a study copies it as the file raters check the content against.
+    assert list(fake.objects) == [("uploads-bucket", f"uploads/{doc_id}.html")]
     assert list((tmp_path / "staging").iterdir()) == [], "the worker's copy is removed once read"
 
 

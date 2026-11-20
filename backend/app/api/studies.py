@@ -45,7 +45,8 @@ from app.storage import media_store
 from app.study.items import MODULE_GROUPS, assign_codes, existing_pair, shuffle_for_rater
 from app.study.judge import validate_judge
 from app.study.media import MediaEvaluation, MediaKind, media_candidates, media_item, next_code, packet_model
-from app.study.results import human_ratings, judge_jsonl, rater_csv, study_results
+from app.study.references import attach_source
+from app.study.results import human_ratings, judge_jsonl, media_csv, rater_csv, study_results
 
 router = APIRouter(prefix="/studies", tags=["studies"])
 Nonempty = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=200)]
@@ -280,6 +281,13 @@ def rater_file(study_id: uuid.UUID, number: int, db: Session = Depends(get_db)):
                     headers={"Content-Disposition": f'attachment; filename="rater-{number}.csv"'})
 
 
+@router.get("/{study_id}/results/media.csv", dependencies=[Depends(require_admin)])
+def media_file(study_id: uuid.UUID, db: Session = Depends(get_db)):
+    _study_or_404(db, study_id)
+    return Response(media_csv(db, study_id), media_type="text/csv; charset=utf-8",
+                    headers={"Content-Disposition": 'attachment; filename="flashcard-video.csv"'})
+
+
 @router.get("/{study_id}/results/judge.jsonl", dependencies=[Depends(require_admin)])
 def judge_file(study_id: uuid.UUID, db: Session = Depends(get_db)):
     _study_or_404(db, study_id)
@@ -288,6 +296,24 @@ def judge_file(study_id: uuid.UUID, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="The judge has not rated this study")
     return Response(lines, media_type="application/x-ndjson; charset=utf-8",
                     headers={"Content-Disposition": 'attachment; filename="judge.jsonl"'})
+
+
+class ItemName(BaseModel):
+    topic: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=200)]
+
+
+@router.put("/{study_id}/items/{item_id}/topic", dependencies=[Depends(require_admin)])
+def rename_item(study_id: uuid.UUID, item_id: uuid.UUID, body: ItemName, db: Session = Depends(get_db)):
+    """The name raters see for a flashcard set or video, instead of its focus ("Toàn bộ tài liệu").
+    A module packet keeps its topic: the judge rates query_alignment against it."""
+    item = db.get(StudyItem, item_id)
+    if item is None or item.study_id != study_id:
+        raise HTTPException(status_code=404, detail="Item not found")
+    if item.group in MODULE_GROUPS:
+        raise HTTPException(status_code=409, detail="A module packet keeps the topic it was made for")
+    item.packet = {**item.packet, "topic": body.topic}
+    db.commit()
+    return [_item_out(i) for i in _items(db, study_id)]
 
 
 @router.delete("/{study_id}/items/{item_id}", dependencies=[Depends(require_admin)])
@@ -375,6 +401,8 @@ def load_items(study_id: uuid.UUID, body: LoadItems, db: Session = Depends(get_d
         item.study_id = study_id
     assign_codes(items + additions)
     db.add_all(additions)
+    for module_id in body.module_ids:
+        attach_source(db, study_id, [i for i in additions if i.pair_id == module_id], db.get(Module, module_id).document_id)
     try:
         db.commit()
     except IntegrityError as exc:
@@ -491,6 +519,7 @@ def add_media(study_id: uuid.UUID, body: AddMedia, db: Session = Depends(get_db)
     item.anon_code = next_code(items, body.kind)
     item.packet = {**item.packet, "anon_id": item.anon_code}
     db.add(item)
+    attach_source(db, study_id, [item], db.get(FlashcardSet if body.kind == "flashcards" else Video, body.id).document_id)
     db.commit()
     return [_item_out(i) for i in _items(db, study_id)]
 

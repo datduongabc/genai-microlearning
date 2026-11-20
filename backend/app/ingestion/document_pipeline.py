@@ -130,7 +130,6 @@ def _run_embed(job) -> None:
             ))
 
         course_id = doc.course_id
-        upload = uploaded_file(current_job.payload)
 
         current_job = hold(db, job)
         doc.status = DocumentStatus.embedded
@@ -143,6 +142,5 @@ def _run_embed(job) -> None:
         db.close()
 
     invalidate_sparse_cache(course_id)
-    if upload is not None:
-        store, storage_key = upload
-        store.delete(storage_key)
+    # The original stays until the document is deleted: a study uses it as the file its raters
+    # check the content against (app/study/references.py), so nobody uploads it twice.

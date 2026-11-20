@@ -16,7 +16,6 @@ gateway  = { cpu = 256, memory = 512, count = 1 }
 db_instance_class  = "db.t4g.small"
 db_max_connections = 190
 
-upload_retention_days = 1
-log_retention_days    = 3
+log_retention_days = 3
 # Its own budget, so a staging stack left running warns long before it eats the demo's credit.
 monthly_budget_usd = 30

@@ -87,6 +87,34 @@ def rater_csv(ratings: list[tuple[StudyItem, Rating]]) -> str:
     return out.getvalue()
 
 
+def rater_names(db: Session, emails) -> dict[str, str]:
+    """Each rater by name for the admin, who is not blind to who rated; by email when two share one."""
+    names = dict(db.execute(select(User.email, User.name).where(User.email.in_(list(emails)))).all())
+    taken = [names.get(email) for email in emails]
+    return {email: names.get(email) if names.get(email) and taken.count(names.get(email)) == 1 else email
+            for email in emails}
+
+
+MEDIA_COLUMNS = list(dict.fromkeys(c for criteria in MEDIA_CRITERIA.values() for c in criteria))
+
+
+def media_csv(db: Session, study_id: uuid.UUID) -> str:
+    """Every rating of a flashcard set or video, one row each. Apart from the rater files, which
+    hold the module rubric analyze_study.py reads. With a BOM, so Excel shows the Vietnamese."""
+    humans = human_ratings(db, study_id)
+    names = rater_names(db, humans)
+    out = io.StringIO()
+    out.write("\ufeff")
+    writer = csv.writer(out, lineterminator="\n")
+    writer.writerow(["anon_id", "kind", "topic", "rater", *MEDIA_COLUMNS, "hallucination_notes", "overall_notes"])
+    rows = [(item, email, rating) for email, ratings in humans.items() for item, rating in ratings if rating.scores is not None]
+    for item, email, rating in sorted(rows, key=lambda row: (row[0].anon_code, row[1])):
+        writer.writerow([item.anon_code, item.group, item.packet.get("topic", ""), names[email],
+                         *(rating.scores.get(c, {}).get("score", "") for c in MEDIA_COLUMNS),
+                         finding_notes(rating.hallucination_findings), rating.overall_notes])
+    return out.getvalue()
+
+
 def judge_jsonl(db: Session, study_id: uuid.UUID) -> str:
     """The judge's ratings in run_judge.py's line format, with the same codes as the rater files."""
     rows = judge_ratings(db, study_id)
@@ -116,10 +144,11 @@ def study_results(db: Session, study: Study) -> dict:
     pairs, unpaired = pair_ids(items)
     humans = human_ratings(db, study.id)
     numbers = {email: n for n, email in enumerate(humans, start=1)}
+    names = rater_names(db, sorted({email.lower() for email in study.rater_emails or []} | set(humans)))
     by_item: dict[uuid.UUID, list[dict]] = {item.id: [] for item in items}
     for email, ratings in humans.items():
         for item, rating in ratings:
-            by_item[item.id].append(_rating_view(f"Người chấm {numbers[email]}", "human", rating))
+            by_item[item.id].append(_rating_view(names[email], "human", rating))
     for item, rating in judge_ratings(db, study.id):
         by_item[item.id].append(_rating_view(rating.judge_alias or "Mô hình chấm", "llm_judge", rating))
 
@@ -130,7 +159,9 @@ def study_results(db: Session, study: Study) -> dict:
         keys = given.get(email, [])
         return sum(str(item.pair_id or item.id) in keys for item in items)
     raters = [
-        {"email": email, "number": numbers.get(email), "rated": len(humans.get(email, [])),
+        {"email": email, "name": names[email], "number": numbers.get(email), "rated": len(humans.get(email, [])),
+         # The rater file holds module ratings only; with none it would be empty.
+         "module_rated": sum(rating.scores is None for _, rating in humans.get(email, [])),
          "invited": email in invited, "assigned": assigned(email)}
         for email in sorted(invited | set(humans))
     ]
@@ -139,6 +170,7 @@ def study_results(db: Session, study: Study) -> dict:
         "total": len(items),
         "raters": raters,
         "has_judge": any(r["kind"] == "llm_judge" for rs in by_item.values() for r in rs),
+        "has_media_ratings": any(rating.scores is not None for ratings in humans.values() for _, rating in ratings),
         "unpaired": unpaired,
         "items": [{
             "id": item.id, "anon_code": item.anon_code, "group": item.group,

@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
+import { Ellipsis, Pencil, Trash2 } from "lucide-react";
 import { listUsers, type AdminUser } from "../api/admin";
 import {
-  deleteStudyFile, downloadStudyReference, getStudyItems, listStudyFiles, removeStudyItem, setItemReference, setRaters,
+  deleteStudyFile, downloadStudyReference, getStudyItems, listStudyFiles, removeStudyItem, renameStudyItem, setItemReference, setRaters,
   uploadStudyFile,
   type Assignments, type StudyFile, type StudyItemSummary,
 } from "../api/studies";
@@ -12,6 +13,7 @@ import { notifyDone, notifyFailed } from "../lib/notify";
 import { rowsOf } from "../lib/studyRows";
 import { AddStudyContent } from "./AddStudyContent";
 import { Dialog, DialogContent, DialogTitle } from "./ui/dialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "./ui/dropdown-menu";
 
 const KIND: Record<StudyItemSummary["group"], string> = {
   rag_llm: "Mô-đun", llm_no_rag: "Mô-đun", human: "Mô-đun", flashcards: "Flashcard", video: "Video",
@@ -29,6 +31,8 @@ export function StudyContent({ studyId, assignments, version, onAdded, onSaved }
   const [files, setFiles] = useState<StudyFile[] | null>(null);
   const [error, setError] = useState("");
   const [users, setUsers] = useState<AdminUser[] | null>(null);
+  // The row being renamed.
+  const [renaming, setRenaming] = useState<string | null>(null);
   // The row whose raters are being picked.
   const [picking, setPicking] = useState<{ key: string; title: string } | null>(null);
   const [saving, setSaving] = useState<string | null>(null);
@@ -88,6 +92,13 @@ export function StudyContent({ studyId, assignments, version, onAdded, onSaved }
       notifyDone(`Đã xóa ${file.filename}.`);
     } catch (e) { notifyFailed(apiErrorMessage(e, `Không xóa được ${file.filename}.`)); }
   }
+  async function rename(item: StudyItemSummary, name: string) {
+    try {
+      setItems(await renameStudyItem(studyId, item.id, name));
+      setRenaming(null);
+      notifyDone("Đã đổi tên.");
+    } catch (e) { notifyFailed(apiErrorMessage(e, "Không đổi được tên.")); }
+  }
   async function removeRow(item: StudyItemSummary, title: string) {
     if (!await confirmAction({
       title: `Xóa "${title}" khỏi nghiên cứu?`,
@@ -119,20 +130,25 @@ export function StudyContent({ studyId, assignments, version, onAdded, onSaved }
               <th scope="col">Nội dung</th>
               <th scope="col">Tài liệu gốc</th>
               <th scope="col">Người chấm</th>
-              <th scope="col"><span className="sr-only">Xóa</span></th>
+              <th scope="col"><span className="sr-only">Thao tác</span></th>
             </tr></thead>
             <tbody>{rows.map((row) => {
               const first = row[0];
               const key = first.pair_id ?? first.id;
               const codes = row.map((item) => item.anon_code).join(", ");
               const paired = row.length > 1;
-              const detail = paired ? "Có và không dùng tài liệu"
-                : first.source && first.group !== "rag_llm" ? first.packet.topic : null;
+              // A flashcard set or video goes by the name raters see, which the admin can change; its
+              // file is the line under it. A module goes by its own title.
+              const media = first.group === "flashcards" || first.group === "video";
+              const title = media ? first.packet.topic : first.source?.title ?? first.packet.topic;
+              const detail = paired ? "Có và không dùng tài liệu" : media ? first.source?.title : null;
               const raters = ratersOf(key);
               return <tr key={key}>
                 <th scope="row"><div className="content-cell">
                   <span className="media-kind">{KIND[first.group]}</span>
-                  <div className="font-semibold [overflow-wrap:anywhere]">{first.source?.title ?? first.packet.topic}</div>
+                  {renaming === first.id
+                    ? <RenameRow name={title} onCancel={() => setRenaming(null)} onSave={(name) => rename(first, name)} />
+                    : <div className="font-semibold [overflow-wrap:anywhere]">{title}</div>}
                   {detail && <div className="small muted">{detail}</div>}
                   <div className="small muted">Mã {codes}</div>
                 </div></th>
@@ -154,8 +170,20 @@ export function StudyContent({ studyId, assignments, version, onAdded, onSaved }
                     {raters.length ? "Sửa" : "Giao"}
                   </button>
                 </div></td>
-                <td><button type="button" className="link-action danger" aria-label={`Xóa ${codes}`}
-                  onClick={() => void removeRow(first, first.source?.title ?? first.packet.topic)}>Xóa</button></td>
+                <td>
+                  {/* As on the course list: what can be done to a row sits behind its "⋯" menu. */}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger className="icon-button" aria-label={`Thao tác khác với ${codes}`}>
+                      <Ellipsis aria-hidden="true" />
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="doc-menu">
+                      {media && <DropdownMenuItem onSelect={() => setRenaming(first.id)}><Pencil aria-hidden="true" />Đổi tên</DropdownMenuItem>}
+                      <DropdownMenuItem variant="destructive" onSelect={() => void removeRow(first, title)}>
+                        <Trash2 aria-hidden="true" />Xóa khỏi nghiên cứu
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </td>
               </tr>;
             })}</tbody>
           </table>
@@ -189,6 +217,25 @@ export function StudyContent({ studyId, assignments, version, onAdded, onSaved }
       </div>
     </>}
   </section>;
+}
+
+// The name raters see, edited in place as a course name is on the course list.
+function RenameRow({ name, onCancel, onSave }: { name: string; onCancel: () => void; onSave: (name: string) => Promise<void> }) {
+  const [value, setValue] = useState(name);
+  const [busy, setBusy] = useState(false);
+  const trimmed = value.trim();
+  return <form className="rename-row" noValidate onSubmit={async (e) => {
+    e.preventDefault();
+    if (!trimmed || trimmed.length > 200) return;
+    if (trimmed === name) { onCancel(); return; }
+    setBusy(true);
+    try { await onSave(trimmed); } finally { setBusy(false); }
+  }}>
+    <input className="ui-input" aria-label="Tên hiển thị cho người chấm" value={value} maxLength={200} autoFocus
+      disabled={busy} onChange={(e) => setValue(e.target.value)} onKeyDown={(e) => { if (e.key === "Escape") onCancel(); }} />
+    <button className="ui-button primary" disabled={busy || !trimmed}>{busy ? "Đang lưu…" : "Lưu"}</button>
+    <button type="button" className="ui-button" disabled={busy} onClick={onCancel}>Hủy</button>
+  </form>;
 }
 
 function PickRaters({ title, users, initial, onClose, onSave }: {
