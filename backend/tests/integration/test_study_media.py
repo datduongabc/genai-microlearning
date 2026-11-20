@@ -33,8 +33,17 @@ def _rating(code, criteria):
             "hallucination_findings": [], "overall_notes": ""}
 
 
+def _stored_video(key: str, data: bytes = b"the rendered video") -> None:
+    from app.storage import media_store, staging_dir
+    path = staging_dir() / f"video-{uuid.uuid4().hex}.mp4"
+    path.write_bytes(data)
+    media_store().save(path, key)
+
+
 def test_the_admin_adds_a_flashcard_set_and_a_video_and_an_assigned_rater_rates_each(world):  # noqa: F811
-    cards_id, video_id = _media(world, video_key="videos/x.mp4")
+    key = f"videos/{uuid.uuid4().hex}.mp4"
+    _stored_video(key)
+    cards_id, video_id = _media(world, video_key=key)
     sid = create_study(world)
     path = f"/studies/{sid}/media"
 
@@ -195,3 +204,26 @@ def test_removing_a_packet_keeps_a_rater_who_was_not_given_anything_yet(world): 
     # The one whose packet it was goes; the one just added, about to be given something, stays.
     assert client.get(f"/studies/{sid}/raters", headers=world["headers"]).json() == {
         "emails": [newcomer], "assignments": {}}
+
+
+def test_a_video_packet_keeps_playing_after_the_lecturer_renders_again_and_goes_with_its_packet(world):  # noqa: F811
+    from app.storage import media_store, study_file_store
+    key = f"videos/{uuid.uuid4().hex}.mp4"
+    _stored_video(key, b"what was rated")
+    _, video_id = _media(world, video_key=key)
+    sid = create_study(world)
+    item = client.post(f"/studies/{sid}/media", headers=world["headers"], json={"kind": "video", "id": video_id}).json()[0]
+    with SessionLocal() as db:
+        from app.models import StudyItem, User
+        copy = db.get(StudyItem, uuid.UUID(item["id"])).media_key
+        email = db.get(User, world["teacher"]).email
+    client.put(f"/studies/{sid}/raters", headers=world["headers"],
+               json={"emails": [email], "assignments": {email: [item["id"]]}}).raise_for_status()
+
+    # A new render deletes the file the video pointed at.
+    media_store().delete(key)
+    played = client.get(f"/studies/mine/{sid}/items/{item['id']}/video/content", headers=world["teacher_headers"])
+
+    assert played.status_code == 200 and played.content == b"what was rated"
+    client.delete(f"/studies/{sid}/items/{item['id']}", headers=world["headers"]).raise_for_status()
+    assert study_file_store().size(copy) is None

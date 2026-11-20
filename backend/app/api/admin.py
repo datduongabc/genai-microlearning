@@ -205,3 +205,26 @@ def unlink_user_moodle_account(
     unlink_account(db, user)
     log_admin_event(audit.ADMIN_UNLINK_MOODLE, request, actor_id=admin.id, target_user_id=user.id)
     return _user_out(user, "not_linked")
+
+
+_ERASE_REFUSED = {
+    "not_found": (404, "User not found"),
+    "owns_courses": (409, "Tài khoản này còn môn học. Hãy xóa hoặc chuyển các môn học trước rồi xóa dữ liệu."),
+}
+
+
+@router.post("/users/{user_id}/erase")
+@limiter.limit("10/minute", key_func=user_or_address)
+def erase_user(
+    request: Request, user_id: uuid.UUID, db: Session = Depends(get_db), admin: User = Depends(require_admin)
+):
+    """Erases a person's data at their request: who they were, their chats and their logins. Ratings they
+    gave a study stay, with no name. The work is the database function erase_user (migration 0048)."""
+    outcome = db.scalar(select(func.erase_user(user_id)))
+    if outcome in _ERASE_REFUSED:
+        db.rollback()
+        status, detail = _ERASE_REFUSED[outcome]
+        raise HTTPException(status_code=status, detail=detail)
+    db.commit()
+    log_admin_event(audit.ADMIN_ERASE_USER, request, actor_id=admin.id, target_user_id=user_id)
+    return {"erased": True}

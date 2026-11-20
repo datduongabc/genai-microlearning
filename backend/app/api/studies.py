@@ -1,4 +1,5 @@
 """Admin study setup and invitation-only blind human ratings."""
+import logging
 import uuid
 from typing import Annotated, Literal
 
@@ -41,13 +42,14 @@ from app.models import (
     User,
     Video,
 )
-from app.storage import media_store
+from app.storage import copy_file, media_store, study_file_store
 from app.study.items import MODULE_GROUPS, assign_codes, existing_pair, shuffle_for_rater
 from app.study.judge import validate_judge
 from app.study.media import MediaEvaluation, MediaKind, media_candidates, media_item, next_code, packet_model
 from app.study.references import attach_source
 from app.study.results import human_ratings, judge_jsonl, media_csv, rater_csv, study_results
 
+logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/studies", tags=["studies"])
 Nonempty = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=200)]
 
@@ -325,8 +327,11 @@ def remove_item(study_id: uuid.UUID, item_id: uuid.UUID, db: Session = Depends(g
     if item is None or item.study_id != study_id:
         raise HTTPException(status_code=404, detail="Item not found")
     key = pair_key(item)
+    copies = []
     for member in _items(db, study_id):
         if pair_key(member) == key:
+            if member.media_key and member.media_key.startswith(VIDEO_COPY_PREFIX):
+                copies.append(member.media_key)
             db.delete(member)
     before = study.rater_pairs or {}
     study.rater_pairs = {email: [k for k in keys if k != key] for email, keys in before.items()
@@ -336,6 +341,9 @@ def remove_item(study_id: uuid.UUID, item_id: uuid.UUID, db: Session = Depends(g
     emptied = {email for email, keys in before.items() if keys == [key]}
     study.rater_emails = [email for email in study.rater_emails or [] if email.lower() not in emptied]
     db.commit()
+    # After the commit: a file without its row is harmless, a row without its file cannot play.
+    for copy in copies:
+        study_file_store().delete(copy)
     return [_item_out(i) for i in _items(db, study_id)]
 
 
@@ -543,10 +551,29 @@ def add_media(study_id: uuid.UUID, body: AddMedia, db: Session = Depends(get_db)
     item.study_id = study_id
     item.anon_code = next_code(items, body.kind)
     item.packet = {**item.packet, "anon_id": item.anon_code}
+    if item.media_key is not None:
+        # The study keeps its own copy: the lecturer's next render, or deleting the video, removes
+        # the file the video pointed at, and the packet must still play what was added.
+        copy = f"{VIDEO_COPY_PREFIX}{uuid.uuid4().hex}.mp4"
+        try:
+            copy_file(media_store(), item.media_key, study_file_store(), copy)
+        except Exception as exc:
+            logger.exception("Could not copy video %s into study %s", body.id, study_id)
+            raise HTTPException(status_code=503, detail="Không sao chép được video vào nghiên cứu. Hãy thử lại.") from exc
+        item.media_key = copy
     db.add(item)
     attach_source(db, study_id, [item], db.get(FlashcardSet if body.kind == "flashcards" else Video, body.id).document_id)
     db.commit()
     return [_item_out(i) for i in _items(db, study_id)]
+
+
+# A video packet's own copy, in the study's store. A key without it was added before copies were
+# made and still names the lecturer's file in the media store.
+VIDEO_COPY_PREFIX = "video-copies/"
+
+
+def _video_store(key: str):
+    return study_file_store() if key.startswith(VIDEO_COPY_PREFIX) else media_store()
 
 
 def _my_video(db: Session, study_id: uuid.UUID, item_id: uuid.UUID) -> tuple[str, str]:
@@ -563,14 +590,14 @@ def my_video(study_id: uuid.UUID, item_id: uuid.UUID, db: Session = Depends(get_
     """Where a rater's browser plays a video packet: a short S3 link, or the API path below without S3.
     Named by its code, not its title, like the rest of the packet."""
     key, filename = _my_video(db, study_id, item_id)
-    return download_link(media_store(), key, filename, f"/studies/mine/{study_id}/items/{item_id}/video/content")
+    return download_link(_video_store(key), key, filename, f"/studies/mine/{study_id}/items/{item_id}/video/content")
 
 
 @router.get("/mine/{study_id}/items/{item_id}/video/content")
 def my_video_content(study_id: uuid.UUID, item_id: uuid.UUID, db: Session = Depends(get_db),
                      user: User = Depends(get_current_user)):
     key, filename = _my_video(db, study_id, item_id)
-    return send_stored(media_store(), key, filename)
+    return send_stored(_video_store(key), key, filename)
 
 
 @router.post("/{study_id}/judge", status_code=202, dependencies=[Depends(require_admin)])

@@ -207,3 +207,54 @@ def test_the_list_says_how_many_courses_each_lecturer_has(admin, lecturer):
     assert users[lecturer_id]["course_count"] == 2
     assert users[str(empty.id)]["course_count"] == 0
     assert users[admin["user"]["id"]]["course_count"] is None
+
+
+def test_erasing_an_account_removes_who_they_were_and_what_they_said(admin, lecturer):
+    """At the person's request (Decree 13/2023): name, email, password, chats, memberships and logins go;
+    a study's rater list forgets them; the row stays, so a rating they gave keeps its rater."""
+    from app.models import ChatSession, CourseMember, Study
+    learner = create_and_login(client, _email("learner"))
+    learner_id = uuid.UUID(learner["user"]["id"])
+    with SessionLocal() as db:
+        course = Course(name="Erase course", owner_id=uuid.UUID(lecturer["user"]["id"]))
+        db.add(course)
+        db.flush()
+        db.add_all([CourseMember(course_id=course.id, user_id=learner_id),
+                    ChatSession(course_id=course.id, user_id=learner_id, title="Hỏi")])
+        email = db.get(User, learner_id).email.lower()
+        study = Study(name="Erase study", rubric_version="v1", rater_emails=[email, "other@example.edu"], rater_pairs={email: ["p1"]})
+        db.add(study)
+        db.commit()
+        course_id, study_id = course.id, study.id
+
+    erased = client.post(f"/admin/users/{learner_id}/erase", headers=_bearer(admin))
+
+    assert erased.status_code == 200
+    with SessionLocal() as db:
+        user = db.get(User, learner_id)
+        assert (user.name, user.is_active, user.email) == ("Tài khoản đã xóa", False, f"erased-{learner_id}@invalid")
+        assert db.query(ChatSession).filter_by(user_id=learner_id).count() == 0
+        assert db.query(CourseMember).filter_by(user_id=learner_id).count() == 0
+        assert db.query(RefreshToken).filter_by(user_id=learner_id).count() == 0
+        study = db.get(Study, study_id)
+        assert (study.rater_emails, study.rater_pairs) == (["other@example.edu"], {})
+        db.delete(study)
+        db.query(Course).filter_by(id=course_id).delete()
+        db.commit()
+    assert _login(email).status_code == 401
+
+
+def test_an_account_that_owns_courses_is_not_erased_and_a_lecturer_cannot_erase(admin, lecturer):
+    lecturer_id = lecturer["user"]["id"]
+    with SessionLocal() as db:
+        course = Course(name="Kept", owner_id=uuid.UUID(lecturer_id))
+        db.add(course)
+        db.commit()
+        course_id = course.id
+
+    assert client.post(f"/admin/users/{lecturer_id}/erase", headers=_bearer(admin)).status_code == 409
+    assert client.post(f"/admin/users/{lecturer_id}/erase", headers=_bearer(lecturer)).status_code == 404
+    with SessionLocal() as db:
+        assert db.get(User, uuid.UUID(lecturer_id)).is_active
+        db.query(Course).filter_by(id=course_id).delete()
+        db.commit()

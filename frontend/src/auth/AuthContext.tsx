@@ -1,15 +1,10 @@
 import { useEffect, useState, type ReactNode } from "react";
 import * as authApi from "../api";
+import { storedAuth } from "../api/client";
 import { AuthContext, type AuthState } from "./useAuth";
 
 function readStoredAuth(): AuthState {
-  const raw = localStorage.getItem("auth");
-  if (!raw) return { token: null, refreshToken: null, user: null };
-  try {
-    return JSON.parse(raw) as AuthState;
-  } catch {
-    return { token: null, refreshToken: null, user: null };
-  }
+  return (storedAuth() as AuthState | null) ?? { token: null, refreshToken: null, user: null };
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {

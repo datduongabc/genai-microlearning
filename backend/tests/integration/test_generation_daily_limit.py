@@ -8,6 +8,7 @@ from sqlalchemy.exc import OperationalError
 
 from app.auth.rate_limit import limiter
 from app.auth.security import create_access_token
+from app.config import settings
 from app.db import SessionLocal
 from app.main import app
 from app.models import Course, Document, DocumentStatus, User
@@ -216,3 +217,19 @@ def generate_at(world, path, index):
     user, _, docs = world
     return client.post(path, params={'document_id': str(docs[index])},
                        headers={'Authorization': 'Bearer ' + create_access_token(user)})
+
+
+def test_a_moodle_linked_teacher_still_has_a_daily_ceiling(world, monkeypatch):
+    """No 3-a-day limit, but not unlimited either: a leaked token or a looping script stops here."""
+    uid, cid, _ = world
+    with SessionLocal() as db:
+        db.get(User, uid).moodle_user_id = 10_000 + uuid.uuid4().int % 10**9
+        db.get(Course, cid).moodle_course_id = 102
+        db.commit()
+    monkeypatch.setattr(moodle, 'teacher_courses', lambda user_id: {
+        'exists': True, 'email': 'teacher@example.com', 'courses': [{'id': 102}]})
+    monkeypatch.setattr(settings, 'full_access_daily_generation_limit', 4)
+    for index in range(4):
+        assert generate(world, index).status_code == 200
+    refused = generate(world, 4)
+    assert refused.status_code == 429 and '4' in refused.json()['detail']

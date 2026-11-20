@@ -70,6 +70,9 @@ class Settings(BaseSettings):
     llm_gateway_key: str = Field(default="", repr=False)
     llm_model: str = "openai-fast"
     non_teacher_daily_generation_limit: int = Field(default=3, ge=1)
+    # A Moodle-linked lecturer is not held to the limit above, but still to this one: a leaked token or
+    # a script stuck in a loop must not spend the provider credit all day.
+    full_access_daily_generation_limit: int = Field(default=50, ge=1)
     # Off on a public deployment: the quota above is per account, so open registration would let
     # anyone create accounts to spend the provider credit. Accounts then come from the administrator
     # or from an LMS launch.

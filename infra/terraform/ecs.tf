@@ -230,11 +230,11 @@ locals {
     {
       api      = { count = var.api.min, security_group = aws_security_group.api.id, serves = null }
       worker   = { count = var.worker.min, security_group = aws_security_group.worker.id, serves = null }
-      gateway  = { count = var.gateway.count, security_group = aws_security_group.gateway.id, serves = { name = "gateway", port = 4000 } }
+      gateway  = { count = var.gateway.min, security_group = aws_security_group.gateway.id, serves = { name = "gateway", port = 4000 } }
       embedder = { count = var.embedder.min, security_group = aws_security_group.embedder.id, serves = { name = "embedder", port = 80 } }
     },
     local.use_reranker ? {
-      reranker = { count = var.reranker.count, security_group = aws_security_group.reranker.id, serves = { name = "reranker", port = 80 } }
+      reranker = { count = var.reranker.min, security_group = aws_security_group.reranker.id, serves = { name = "reranker", port = 80 } }
     } : {},
   )
 }
