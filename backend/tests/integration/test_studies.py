@@ -208,7 +208,8 @@ def test_packet_is_a_snapshot_of_the_source_module(world):
                                                          ModuleComponent.type == ComponentType.content))
         content.content = {"markdown": "Changed source"}
         db.commit()
-    assert client.get(f"/studies/{sid}", headers=world["headers"]).json()["items"] == before
+    listed = client.get(f"/studies/{sid}", headers=world["headers"]).json()["items"]
+    assert [{k: v for k, v in item.items() if k != "source"} for item in listed] == before
 
 
 def test_loading_is_atomic_on_duplicate_or_missing_sources(world):
@@ -495,6 +496,10 @@ def test_candidates_list_the_admins_rag_modules_and_where_they_stand(world):
     assert added.status_code == 201, added.text
     assert sorted(i["group"] for i in added.json()) == ["llm_no_rag", "rag_llm"]
     assert client.get(f"/studies/{sid}/candidates", headers=world["headers"]).json()[0]["state"] == "in_study"
+    # Both members of the pair are listed for the admin under the RAG module's title.
+    with SessionLocal() as db:
+        title = db.get(Module, world["rag"]).title
+    assert {i["source"]["title"] for i in client.get(f"/studies/{sid}", headers=world["headers"]).json()["items"]} == {title}
     assert client.post(f"/studies/{sid}/pairs", headers=world["headers"],
                        json={"module_id": str(world["rag"])}).status_code == 409
 

@@ -27,7 +27,20 @@ from app.generation.module_generation_pipeline import (
     matching_control,
 )
 from app.jobs.queue import enqueue_job
-from app.models import Course, Document, Job, JobStatus, JobType, Module, Rating, Study, StudyItem, User
+from app.models import (
+    Course,
+    Document,
+    FlashcardSet,
+    Job,
+    JobStatus,
+    JobType,
+    Module,
+    Rating,
+    Study,
+    StudyItem,
+    User,
+    Video,
+)
 from app.storage import media_store
 from app.study.items import MODULE_GROUPS, assign_codes, existing_pair, shuffle_for_rater
 from app.study.judge import validate_judge
@@ -279,7 +292,27 @@ def get_study(study_id: uuid.UUID, db: Session = Depends(get_db)):
     study = db.get(Study, study_id)
     if study is None:
         raise HTTPException(status_code=404, detail="Study not found")
-    return {**_study_out(study), "items": [_item_out(item) for item in _items(db, study_id)]}
+    items = _items(db, study_id)
+    sources = _sources(db, items)
+    return {**_study_out(study), "items": [{**_item_out(item), "source": sources.get(item.pair_id or item.source_id)}
+                                           for item in items]}
+
+
+def _sources(db: Session, items: list[StudyItem]) -> dict:
+    """What each packet was made from, by its real name, for the admin (who is not blind): the
+    RAG module of a pair, or the flashcard set or video. A human-written packet has none."""
+    out = {}
+    modules = {i.pair_id for i in items if i.pair_id}
+    for module, course in db.execute(select(Module, Course.name).join(Course, Course.id == Module.course_id)
+                                     .where(Module.id.in_(modules))):
+        out[module.id] = {"title": module.title, "course_name": course, "created_at": module.created_at}
+    for group, model in (("flashcards", FlashcardSet), ("video", Video)):
+        ids = {i.source_id for i in items if i.group == group}
+        for source, filename, course in db.execute(
+                select(model, Document.filename, Course.name).join(Document, Document.id == model.document_id)
+                .join(Course, Course.id == model.course_id).where(model.id.in_(ids))):
+            out[source.id] = {"title": filename, "course_name": course, "created_at": source.created_at}
+    return out
 
 
 @router.post("/{study_id}/items", status_code=201)
@@ -373,6 +406,7 @@ def pair_candidates(study_id: uuid.UUID, db: Session = Depends(get_db), current_
         if is_control(db, module.id):
             continue
         out.append({"id": module.id, "title": module.title, "course_name": module.course.name,
+                    "created_at": module.created_at,
                     "state": "in_study" if module.id in loaded else _pair_state(db, module)})
     return out
 

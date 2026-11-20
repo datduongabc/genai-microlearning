@@ -70,6 +70,10 @@ def test_the_admin_adds_a_flashcard_set_and_a_video_and_an_assigned_rater_rates_
     again = client.get(f"/studies/mine/{sid}/items", headers=world["teacher_headers"]).json()
     assert again["rated"] == 2
 
+    # The admin is not blind: the study lists each packet by what it was made from.
+    listed = client.get(f"/studies/{sid}", headers=world["headers"]).json()["items"]
+    assert {i["group"]: i["source"]["title"] for i in listed} == {"flashcards": "secret.txt", "video": "secret.txt"}
+
     results = client.get(f"/studies/{sid}/results", headers=world["headers"]).json()
     shown = {i["group"]: i for i in results["items"]}
     assert shown["flashcards"]["criteria"] == ["accuracy", "focus", "clarity", "no_duplicates"]
