@@ -290,10 +290,9 @@ export function FlashcardEditorPage() {
         </ol>
 
         <section className="module-ai-edit flashcard-revise" aria-labelledby="flashcard-revise-title">
-          <h2 id="flashcard-revise-title" className="module-part-title">Sửa theo yêu cầu</h2>
-          <label htmlFor="flashcard-revise" className="chat-label block">Yêu cầu chỉnh sửa</label>
-          <textarea id="flashcard-revise" value={request} onChange={(e) => setRequest(e.target.value)} maxLength={2000} rows={3}
-            disabled={busy !== null} placeholder="Ví dụ: rút gọn mặt sau thẻ 2, thêm một thẻ về ví dụ tính thời gian chờ"
+          <h2 id="flashcard-revise-title" className="module-part-title">Yêu cầu chỉnh sửa</h2>
+          <textarea id="flashcard-revise" aria-labelledby="flashcard-revise-title" value={request} onChange={(e) => setRequest(e.target.value)} maxLength={2000} rows={3}
+            disabled={busy !== null}
             className="ui-input mt-2 w-full" />
           {/* The request rewrites the saved set, so it waits for the card open for editing. */}
           <button type="button" onClick={revise} disabled={busy !== null || editing !== null || request.trim() === ''}

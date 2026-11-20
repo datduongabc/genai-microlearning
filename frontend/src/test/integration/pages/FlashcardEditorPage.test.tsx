@@ -173,7 +173,7 @@ describe('FlashcardEditorPage', () => {
     })
 
     renderPage()
-    const request = await screen.findByLabelText('Yêu cầu chỉnh sửa')
+    const request = await screen.findByRole('textbox', { name: 'Yêu cầu chỉnh sửa' })
     const send = screen.getByRole('button', { name: 'Gửi yêu cầu' })
     expect(send).toBeDisabled()
     await userEvent.type(request, 'Rút gọn thẻ 2')
@@ -189,7 +189,7 @@ describe('FlashcardEditorPage', () => {
     vi.mocked(api.getFlashcardSet).mockResolvedValue(draft([card(1)]))
 
     renderPage()
-    await userEvent.type(await screen.findByLabelText('Yêu cầu chỉnh sửa'), 'Thêm một thẻ')
+    await userEvent.type(await screen.findByRole('textbox', { name: 'Yêu cầu chỉnh sửa' }), 'Thêm một thẻ')
     await openCard(1)
 
     expect(screen.getByRole('button', { name: 'Gửi yêu cầu' })).toBeDisabled()

@@ -66,7 +66,6 @@ export function RegisterPage() {
           <input
             type="text"
             autoComplete="name"
-            placeholder="Nguyễn Văn A"
             className="auth-input"
             aria-invalid={!!errors.name}
             aria-describedby={errors.name ? "name-error" : undefined}
@@ -101,7 +100,6 @@ export function RegisterPage() {
           <input
             type="password"
             autoComplete="new-password"
-            placeholder="Tối thiểu 8 ký tự"
             className="auth-input"
             aria-invalid={!!errors.password}
             aria-describedby={errors.password ? "password-error" : undefined}
@@ -119,7 +117,6 @@ export function RegisterPage() {
           <input
             type="password"
             autoComplete="new-password"
-            placeholder="Nhập lại mật khẩu"
             className="auth-input"
             aria-invalid={!!errors.confirmPassword}
             aria-describedby={errors.confirmPassword ? "confirmPassword-error" : undefined}

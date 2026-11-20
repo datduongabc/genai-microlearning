@@ -39,9 +39,8 @@ import {
 } from "../api";
 import { AppShell } from "../components/AppShell";
 import { CourseChat } from "../components/CourseChat";
-import { ModelPicker } from "../components/ModelPicker";
 import type { MoodleAccountState } from "../components/MoodleAccountSection";
-import { GenerateDialog, type GenerateKind, type VideoMediaChoice } from "../components/GenerateDialog";
+import { GenerateDialog, type GenerateKind, type GenerateChoice } from "../components/GenerateDialog";
 import { focusReturnTarget } from "../lib/focusReturn";
 import {
   linkMoodleCourseSchema,
@@ -252,9 +251,6 @@ export function CourseDetailPage() {
   const { courseId } = useParams<{ courseId: string }>();
   const [course, setCourse] = useState<Course | null>(null);
   const [documents, setDocuments] = useState<DocumentInfo[]>([]);
-  // Model cho các lượt sinh bấm từ trang này, dùng chung cho tài liệu;
-  // chuỗi rỗng nghĩa là chưa chọn gì. ModelPicker điền sẵn mặc định đã lưu của giảng viên.
-  const [modelAlias, setModelAlias] = useState("");
   // The document a generate dialog is for and the button to give focus back to. Kept after the
   // dialog closes: the dialog hands focus back only once it has finished closing.
   const [asking, setAsking] = useState<{ kind: GenerateKind; document: DocumentInfo; returnTo: HTMLElement | null; open: boolean } | null>(null);
@@ -411,7 +407,7 @@ export function CourseDetailPage() {
     }
   }
 
-  async function handleGenerate(doc: DocumentInfo, outputLanguage: "vi" | "en", customInstructions: string) {
+  async function handleGenerate(doc: DocumentInfo, outputLanguage: "vi" | "en", customInstructions: string, modelAlias: string) {
     if (isGenerating(doc)) return;
     const documentId = doc.id;
     setStartingIds((ids) => new Set(ids).add(documentId));
@@ -475,7 +471,7 @@ export function CourseDetailPage() {
     }
   }
 
-  async function handleGenerateFlashcards(doc: DocumentInfo, outputLanguage: "vi" | "en", focus: string) {
+  async function handleGenerateFlashcards(doc: DocumentInfo, outputLanguage: "vi" | "en", focus: string, modelAlias: string) {
     await sendMediaRequest(doc, "Flashcard", focus, () => startGeneration(
       () => generateFlashcards(doc.id, { focus, outputLanguage, modelAlias }),
       async () => setFlashcardSets(await listFlashcardSets(courseId ?? "")),
@@ -483,9 +479,9 @@ export function CourseDetailPage() {
     ));
   }
 
-  async function handleGenerateVideo(doc: DocumentInfo, outputLanguage: "vi" | "en", focus: string, media: VideoMediaChoice) {
+  async function handleGenerateVideo(doc: DocumentInfo, outputLanguage: "vi" | "en", focus: string, choice: GenerateChoice) {
     await sendMediaRequest(doc, "Video", focus, () => startGeneration(
-      () => generateVideo(doc.id, { focus, outputLanguage, modelAlias, ...media }),
+      () => generateVideo(doc.id, { focus, outputLanguage, ...choice }),
       async () => setVideos(await listVideos(courseId ?? "")),
       "Tạo video thất bại", "Đã bắt đầu tạo video",
     ));
@@ -614,14 +610,14 @@ export function CourseDetailPage() {
 
   return (
     <AppShell title={course?.name ?? "Tài liệu môn học"}>
-      <GenerateDialog {...dialogProps("module")} onGenerate={(language, instructions) => {
-        if (asking) void handleGenerate(asking.document, language, instructions);
+      <GenerateDialog {...dialogProps("module")} onGenerate={(language, instructions, { modelAlias }) => {
+        if (asking) void handleGenerate(asking.document, language, instructions, modelAlias);
       }} />
-      <GenerateDialog {...dialogProps("flashcards")} onGenerate={(language, focus) => {
-        if (asking) void handleGenerateFlashcards(asking.document, language, focus);
+      <GenerateDialog {...dialogProps("flashcards")} onGenerate={(language, focus, { modelAlias }) => {
+        if (asking) void handleGenerateFlashcards(asking.document, language, focus, modelAlias);
       }} />
-      <GenerateDialog {...dialogProps("video")} onGenerate={(language, focus, media) => {
-        if (asking && media) void handleGenerateVideo(asking.document, language, focus, media);
+      <GenerateDialog {...dialogProps("video")} onGenerate={(language, focus, choice) => {
+        if (asking) void handleGenerateVideo(asking.document, language, focus, choice);
       }} />
       {course && <MoodleLinkSection course={course} onLinked={refresh} />}
       <div className="course-layout">
@@ -652,9 +648,6 @@ export function CourseDetailPage() {
             accept=".pdf,.pptx,.docx,.html,.htm,.mp3,.wav,.m4a,.flac,.ogg,.aac,.mp4,.mkv,.webm,.mov,.avi"
           />
         </label>
-        {/* Thiết lập cho các nút "Tạo mô-đun" bên dưới, không liên quan tới việc tải tài liệu,
-            nhưng đặt cạnh nút tải để hai thiết lập của cột nằm trên một hàng. */}
-        <ModelPicker value={modelAlias} onChange={setModelAlias} />
       </div>
 
       {!loading && documents.length > 0 && (
@@ -812,7 +805,7 @@ export function CourseDetailPage() {
           : !loading && (
             <section className="chat-panel" aria-label="Hỏi đáp về tài liệu">
               <h2 className="course-section-title">Hỏi đáp về tài liệu</h2>
-              <p className="course-empty">Hỏi đáp mở khi có ít nhất một tài liệu đã xử lý xong.</p>
+              <p className="course-empty">Cần có ít nhất 1 tài liệu đã xử lý xong để hỏi đáp.</p>
             </section>
           )}
       </div>

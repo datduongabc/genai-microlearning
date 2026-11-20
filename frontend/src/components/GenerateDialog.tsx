@@ -4,6 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import type { MediaChoice } from "../api";
 import { generateModuleSchema, type GenerateModuleFormValues } from "../lib/formSchemas";
 import { useMediaModels } from "../lib/useMediaModels";
+import { ModelPicker } from "./ModelPicker";
 import { Dialog, DialogContent, DialogTitle } from "./ui/dialog";
 
 export type GenerateKind = "module" | "flashcards" | "video";
@@ -29,8 +30,11 @@ const KIND_TEXT: Record<GenerateKind, { title: string; field: string; tooLong: s
   },
 };
 
-// Undefined when the choices could not be loaded: the server then uses its defaults.
-export interface VideoMediaChoice {
+// The models a generation runs on. "" for the text model means the lecturer's saved default, then
+// the system's. Voice and image are for a video only, undefined when their list could not be
+// loaded: the server then uses its defaults.
+export interface GenerateChoice {
+  modelAlias: string;
   voiceAlias?: string;
   imageAlias?: string;
 }
@@ -63,9 +67,8 @@ export function GenerateDialog({ open, onOpenChange, returnFocusTo, onGenerate, 
   onOpenChange: (open: boolean) => void;
   // What gets focus back on close; the menu item that opened the dialog no longer exists then.
   returnFocusTo?: HTMLElement | null;
-  // The second argument is the module guidance or, for the other kinds, the focus. The third
-  // is passed for a video only.
-  onGenerate: (language: "vi" | "en", instructions: string, media?: VideoMediaChoice) => void;
+  // The second argument is the module guidance or, for the other kinds, the focus.
+  onGenerate: (language: "vi" | "en", instructions: string, choice: GenerateChoice) => void;
   kind?: GenerateKind;
 }) {
   const text = KIND_TEXT[kind];
@@ -74,6 +77,7 @@ export function GenerateDialog({ open, onOpenChange, returnFocusTo, onGenerate, 
   // null until the lecturer picks one: the server's default is shown and sent.
   const [voicePick, setVoicePick] = useState<string | null>(null);
   const [imagePick, setImagePick] = useState<string | null>(null);
+  const [modelAlias, setModelAlias] = useState("");
   const voiceAlias = voicePick ?? choices?.default_voice;
   const imageAlias = imagePick ?? choices?.default_image;
   const {
@@ -87,8 +91,8 @@ export function GenerateDialog({ open, onOpenChange, returnFocusTo, onGenerate, 
 
   function onValid(values: GenerateModuleFormValues) {
     onOpenChange(false);
-    if (kind === "video") onGenerate(values.language, values.instructions, { voiceAlias, imageAlias });
-    else onGenerate(values.language, values.instructions);
+    onGenerate(values.language, values.instructions,
+      kind === "video" ? { modelAlias, voiceAlias, imageAlias } : { modelAlias });
   }
 
   return (
@@ -109,6 +113,7 @@ export function GenerateDialog({ open, onOpenChange, returnFocusTo, onGenerate, 
           <textarea {...register("instructions")} maxLength={1000} rows={4} className="ui-input w-full" />
         </label>
         {errors.instructions && <p className="mt-1 text-sm danger-text">{text.tooLong || errors.instructions.message}</p>}
+        <ModelPicker value={modelAlias} onChange={setModelAlias} />
         {kind === "video" && (
           <>
             {models === "failed" ? (
@@ -116,7 +121,7 @@ export function GenerateDialog({ open, onOpenChange, returnFocusTo, onGenerate, 
             ) : (
               <>
                 <MediaSelect label="Giọng đọc" value={voiceAlias} onChange={setVoicePick} choices={choices?.voices ?? null} />
-                <MediaSelect label="Mô hình vẽ hình" value={imageAlias} onChange={setImagePick} choices={choices?.images ?? null} />
+                <MediaSelect label="Vẽ hình" value={imageAlias} onChange={setImagePick} choices={choices?.images ?? null} />
               </>
             )}
           </>

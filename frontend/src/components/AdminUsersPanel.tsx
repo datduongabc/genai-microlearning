@@ -247,7 +247,6 @@ function ResetPasswordForm({ user, onDone }: { user: AdminUser; onDone: (message
           type="password"
           autoComplete="new-password"
           aria-label={`Mật khẩu mới của ${user.email}`}
-          placeholder="Mật khẩu mới"
           className="auth-input min-w-0 flex-1"
           {...register("password")}
         />
