@@ -610,7 +610,7 @@ h1[tabindex="-1"]:focus-visible { outline:none; }
 /* Grown to its text by the component, so a handle to resize it would only fight that. The scroll stays
    for a moment the height is behind the text (a font still loading), so nothing is ever cut off. */
 .auto-grow { resize:none; overflow-y:auto; }
-.flashcard-actions { display:flex; flex-wrap:wrap; align-items:center; gap:12px; }
+.flashcard-actions { display:flex; flex-wrap:wrap; align-items:center; gap:12px; width:100%; }
 .flashcard-sources { display:flex; flex-direction:column; gap:6px; font-size:14px; line-height:20px; }
 .flashcard-sources summary { cursor:pointer; color:var(--accent-default); overflow-wrap:anywhere; }
 .flashcard-sources summary:hover { text-decoration:underline; text-underline-offset:3px; }
