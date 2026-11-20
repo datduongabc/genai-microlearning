@@ -8,6 +8,7 @@ import { apiErrorMessage, getMoodleAccount, unlinkMoodleAccount, MOODLE_ACCOUNT_
 import { Brand } from "./AuthLayout";
 import { MoodleAccountSection, type MoodleAccountState } from "./MoodleAccountSection";
 import { initials } from "../lib/initials";
+import type { Crumb } from "../lib/useCourseCrumbs";
 import { confirmLeavingUnsavedWork } from "../lib/useLeaveGuard";
 import { useMediaQuery } from "../lib/useMediaQuery";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "./ui/sheet";
@@ -34,8 +35,9 @@ function readCollapsed() {
 
 // `fullTitle` is for a title that was cut short: the whole text stays available on hover.
 // `actions` sits beside the page title, e.g. a "⋯" menu with what can be done to the whole page.
-export function AppShell({ title, fullTitle, actions, children }: {
-  title: string; fullTitle?: string; actions?: ReactNode; children: ReactNode;
+// `crumbs` are the pages above this one, each a link back, shown over the title.
+export function AppShell({ title, fullTitle, actions, crumbs, children }: {
+  title: string; fullTitle?: string; actions?: ReactNode; crumbs?: Crumb[]; children: ReactNode;
 }) {
   useDocumentTitle(fullTitle ?? title);
   const { user, logout } = useAuth();
@@ -143,7 +145,9 @@ export function AppShell({ title, fullTitle, actions, children }: {
         </SheetContent>
       </Sheet>
     </header> : <aside className="sidebar" aria-label="Thanh bên">{sidebarBody}</aside>}
-    <main id="main-content" className="shell-main" tabIndex={-1}><div className="shell-content">{actions
+    <main id="main-content" className="shell-main" tabIndex={-1}><div className="shell-content">{crumbs && crumbs.length > 0 && <nav aria-label="Đường dẫn" className="breadcrumb">
+      <ol>{crumbs.map((crumb) => <li key={crumb.to}><Link to={crumb.to}>{crumb.label}</Link></li>)}</ol>
+    </nav>}{actions
       ? <div className="page-head"><h1 className="page-title" title={fullTitle}>{title}</h1>{actions}</div>
       : <h1 className="page-title" title={fullTitle}>{title}</h1>}{children}</div></main>
   </div>;

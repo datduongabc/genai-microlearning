@@ -79,7 +79,8 @@ describe('FlashcardEditorPage', () => {
 
     renderPage()
 
-    const cards = await screen.findAllByRole('listitem')
+    // The cards, not the breadcrumb's links above the title.
+    const cards = within(await screen.findByRole('list', { name: 'Các thẻ' })).getAllByRole('listitem')
     expect(screen.queryByText('Chưa có nguồn')).not.toBeInTheDocument()
     expect(within(cards[2]).getByText('Có thể không khớp tài liệu')).toBeInTheDocument()
     // Static text: a screen reader reads it with the card instead of being interrupted by it.

@@ -1,4 +1,5 @@
 import axios from 'axios'
+import { useCourseCrumbs } from '../lib/useCourseCrumbs'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -132,9 +133,11 @@ export function ModulePreviewPage() {
     setAttempt((n) => n + 1)
   }
 
+  const crumbs = useCourseCrumbs(module?.course_id)
+
   if (loading) {
     return (
-      <AppShell title="Mô-đun">
+      <AppShell title="Mô-đun" crumbs={crumbs}>
         <p className="text-sm text-gray-500">Đang tải…</p>
       </AppShell>
     )
@@ -142,7 +145,7 @@ export function ModulePreviewPage() {
 
   if (loadFailed) {
     return (
-      <AppShell title="Mô-đun">
+      <AppShell title="Mô-đun" crumbs={crumbs}>
         <p role="alert" className="text-sm danger-text">Không tải được mô-đun.</p>
         <button type="button" onClick={retryLoad} className="ui-button mt-3">Thử lại</button>
       </AppShell>
@@ -151,14 +154,14 @@ export function ModulePreviewPage() {
 
   if (!module) {
     return (
-      <AppShell title="Mô-đun">
+      <AppShell title="Mô-đun" crumbs={crumbs}>
         <p className="text-sm danger-text">Không tìm thấy mô-đun.</p>
       </AppShell>
     )
   }
 
   return (
-    <AppShell title={`Mô-đun: ${module.title}`} actions={
+    <AppShell title={`Mô-đun: ${module.title}`} crumbs={crumbs} actions={
       // As on the course list: renaming sits behind the page's "⋯" menu, not as a link under the title.
       <DropdownMenu>
         <DropdownMenuTrigger className="icon-button" aria-label={`Thao tác khác với ${module.title}`}>

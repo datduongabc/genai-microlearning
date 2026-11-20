@@ -1,4 +1,5 @@
 import { confirmAction } from '../lib/confirm'
+import { useCourseCrumbs } from '../lib/useCourseCrumbs'
 import axios from 'axios'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
@@ -201,12 +202,14 @@ export function VideoEditorPage() {
     setAttempt((n) => n + 1)
   }
 
+  const crumbs = useCourseCrumbs(saved?.course_id)
+
   if (loading) {
-    return <AppShell title="Video"><p className="course-empty">Đang tải…</p></AppShell>
+    return <AppShell title="Video" crumbs={crumbs}><p className="course-empty">Đang tải…</p></AppShell>
   }
   if (missing) {
     return (
-      <AppShell title="Video">
+      <AppShell title="Video" crumbs={crumbs}>
         <p className="text-sm danger-text">Không tìm thấy video.</p>
         <Link to="/courses" className="link-action">Về danh sách môn học</Link>
       </AppShell>
@@ -214,7 +217,7 @@ export function VideoEditorPage() {
   }
   if (loadFailed || !saved || !id) {
     return (
-      <AppShell title="Video">
+      <AppShell title="Video" crumbs={crumbs}>
         <p role="alert" className="text-sm danger-text">Không tải được video.</p>
         <button type="button" onClick={retryLoad} className="ui-button mt-3">Thử lại</button>
       </AppShell>
@@ -263,7 +266,7 @@ export function VideoEditorPage() {
 
   if (saved.status === 'generating') {
     return (
-      <AppShell {...titleProps}>
+      <AppShell {...titleProps} crumbs={crumbs}>
         {backLink}
         <p role="status" className="course-empty">Đang tạo…</p>
       </AppShell>
@@ -273,7 +276,7 @@ export function VideoEditorPage() {
   // Only a failed script leaves nothing to edit; a failed picture or render keeps the scenes.
   if (saved.status === 'failed' && saved.scenes.length === 0) {
     return (
-      <AppShell {...titleProps}>
+      <AppShell {...titleProps} crumbs={crumbs}>
         <p className="text-sm danger-text">{saved.error ?? 'Viết lời thoại thất bại.'} Xóa video này rồi tạo lại từ trang môn học.</p>
         <div className="mt-4 flex gap-4">
           {backLink}
@@ -386,7 +389,7 @@ export function VideoEditorPage() {
 
 
   return (
-    <AppShell {...titleProps}>
+    <AppShell {...titleProps} crumbs={crumbs}>
       <div className="video-editor">
         {runningJob && <p role="status" className="status-pill" data-status="processing">{JOB_TEXT[runningJob]}</p>}
 
@@ -481,9 +484,6 @@ export function VideoEditorPage() {
                 </p>
               )}
               <RenderedVideo videoId={videoId} renderedVersion={rendered} captions={saved.captions} language={saved.output_language} />
-              {saved.duration_seconds !== null && (
-                <p className="course-hint">Dài {formatMinutes(saved.duration_seconds)} phút.</p>
-              )}
             </>
           )}
         </section>

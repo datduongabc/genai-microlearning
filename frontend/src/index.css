@@ -67,6 +67,12 @@ h1[tabindex="-1"]:focus-visible { outline:none; }
 .shell-main { margin-left:288px; padding:32px 48px 48px; min-width:0; }
 .shell-content { max-width:1120px; margin:auto; }
 .page-title { font:600 28px/36px var(--font-sans); margin-bottom:24px; letter-spacing:-.02em; }
+.breadcrumb { margin-bottom:8px; font-size:14px; line-height:20px; }
+.breadcrumb ol { display:flex; flex-wrap:wrap; align-items:center; gap:4px 8px; }
+.breadcrumb li { display:flex; align-items:center; gap:8px; min-width:0; }
+.breadcrumb li + li::before { content:"›"; color:var(--text-muted); }
+.breadcrumb a { color:var(--text-secondary); overflow-wrap:anywhere; }
+.breadcrumb a:hover { color:var(--accent-default); text-decoration:underline; }
 .study-invite { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:12px; }
 .page-head { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; }
 .page-head .page-title { min-width:0; overflow-wrap:anywhere; }
@@ -646,9 +652,11 @@ h1[tabindex="-1"]:focus-visible { outline:none; }
 .video-picture-row .course-hint { margin-top:0; }
 .video-scene-fields { display:grid; grid-template-columns:minmax(0, 10rem) minmax(0, 1fr); gap:12px; }
 .video-items { display:flex; flex-direction:column; gap:10px; color:var(--text-primary); }
-.video-item { display:flex; flex-direction:column; gap:6px; }
-.video-item .doc-warning { margin-top:0; }
-.video-item-row { display:flex; align-items:flex-start; gap:8px; }
+/* One grid for the field, its "Xóa" and its notes: a note spans the field's column only, so its edges
+   line up with the boxes above and below it. */
+.video-item { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:6px 8px; align-items:start; }
+.video-item .doc-warning { margin-top:0; grid-column:1; }
+.video-item-row { display:contents; }
 .video-scene-sources summary { cursor:pointer; color:var(--accent-default); overflow-wrap:anywhere; font-size:14px; line-height:20px; }
 /* Picking the sources of one sentence, bullet or card, from the whole document. */
 .passage-picker { font-size:14px; line-height:20px; }
