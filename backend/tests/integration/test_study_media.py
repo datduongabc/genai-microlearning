@@ -113,8 +113,11 @@ def test_the_admin_removes_a_packet_with_its_ratings_and_the_source_stays(world)
     assert client.delete(f"/studies/{sid}/items/{item['id']}", headers=world["teacher_headers"]).status_code == 404
     assert client.delete(f"/studies/{sid}/items/{item['id']}", headers=world["headers"]).json() == []
     # Nobody is given it any more, and it can be added again from the same set, which still exists.
-    assert client.get(f"/studies/{sid}/raters", headers=world["headers"]).json()["assignments"] == {}
-    assert client.get(f"/studies/mine/{sid}/items", headers=world["teacher_headers"]).json()["items"] == []
+    assert client.get(f"/studies/{sid}/raters", headers=world["headers"]).json() == {"emails": [], "assignments": {}}
+    # Nor is anyone shown with a progress of 0/0.
+    assert client.get(f"/studies/{sid}/results", headers=world["headers"]).json()["raters"] == []
+    # Given nothing, they are no longer one of its raters.
+    assert client.get(f"/studies/mine/{sid}/items", headers=world["teacher_headers"]).status_code == 404
     assert client.post(f"/studies/{sid}/media", headers=world["headers"],
                        json={"kind": "flashcards", "id": cards_id}).status_code == 201
 

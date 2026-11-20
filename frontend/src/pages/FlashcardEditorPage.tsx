@@ -193,7 +193,7 @@ export function FlashcardEditorPage() {
   }
 
   const deleteButton = (
-    <button type="button" onClick={remove} disabled={busy !== null || generating} className="link-action danger">
+    <button type="button" onClick={remove} disabled={busy !== null || generating} className="ui-button danger ml-auto">
       {busy === 'delete' ? 'Đang xóa…' : 'Xóa bộ flashcard'}
     </button>
   )

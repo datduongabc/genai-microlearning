@@ -187,7 +187,8 @@ def test_a_rater_given_some_pairs_sees_and_rates_only_those(blind):
                          json=evaluation(other['anon_code']))
     assert refused.status_code == 404
     totals = {r['email']: r['assigned'] for r in client.get(f'/studies/{sid}/results', headers=blind['headers']).json()['raters']}
-    assert totals == {teacher: 2, blind['emails'][1]: 0}
+    # The rater given nothing has no progress to show.
+    assert totals == {teacher: 2}
 
 
 def test_pairs_go_only_to_invited_raters_and_to_pairs_of_the_study(blind):

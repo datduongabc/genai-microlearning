@@ -133,6 +133,8 @@ h1[tabindex="-1"]:focus-visible { outline:none; }
 .ui-button { display:inline-flex; align-items:center; justify-content:center; gap:8px; min-height:40px; padding:8px 12px; border:1px solid var(--border-input); border-radius:var(--radius-sm); background:var(--bg-surface); font-size:15px; line-height:22px; font-weight:600; }
 .ui-button.primary { background:var(--accent-default); border-color:var(--accent-default); color:white; }
 .ui-button.primary:hover { background:var(--accent-hover); }
+.ui-button.danger { color:var(--status-danger); }
+.ui-button.danger:hover:not(:disabled) { background:var(--bg-danger-soft); }
 .ui-button:disabled, .admin-page button:disabled, .rating-form button:disabled { cursor:not-allowed; opacity:.6; }
 .ui-tabs { display:flex; gap:24px; overflow-x:auto; border-bottom:1px solid var(--border-default); margin-bottom:24px; padding:4px; }
 .ui-tabs button { flex:none; padding:8px 0 12px; border-bottom:2px solid transparent; color:var(--text-secondary); font-weight:500; }

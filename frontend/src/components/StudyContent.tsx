@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Ellipsis, Pencil, Trash2 } from "lucide-react";
+import { Ellipsis, Pencil, Trash2, UserPen } from "lucide-react";
 import { listUsers, type AdminUser } from "../api/admin";
 import {
   deleteStudyFile, downloadStudyReference, getStudyItems, listStudyFiles, removeStudyItem, renameStudyItem, setItemReference, setRaters,
@@ -92,6 +92,9 @@ export function StudyContent({ studyId, assignments, version, onAdded, onSaved }
       notifyDone(`Đã xóa ${file.filename}.`);
     } catch (e) { notifyFailed(apiErrorMessage(e, `Không xóa được ${file.filename}.`)); }
   }
+  function pickRaters(key: string, first: StudyItemSummary) {
+    setPicking({ key, title: first.source?.title ?? first.packet.topic });
+  }
   async function rename(item: StudyItemSummary, name: string) {
     try {
       setItems(await renameStudyItem(studyId, item.id, name));
@@ -165,10 +168,10 @@ export function StudyContent({ studyId, assignments, version, onAdded, onSaved }
                       {raters.slice(0, 3).map((email) => <li key={email} title={email}>{nameOf.get(email) ?? email}</li>)}
                       {raters.length > 3 && <li className="muted">và {raters.length - 3} người khác</li>}
                     </ul>}
-                  <button type="button" className="link-action" disabled={!users} aria-label={`Chọn người chấm ${codes}`}
-                    onClick={() => setPicking({ key, title: first.source?.title ?? first.packet.topic })}>
-                    {raters.length ? "Sửa" : "Giao"}
-                  </button>
+                  {/* Giving a row its first rater is the next step, so it stays in view; changing them is
+                      in the row's menu. */}
+                  {raters.length === 0 && <button type="button" className="link-action" disabled={!users}
+                    aria-label={`Giao người chấm ${codes}`} onClick={() => pickRaters(key, first)}>Giao</button>}
                 </div></td>
                 <td>
                   {/* As on the course list: what can be done to a row sits behind its "⋯" menu. */}
@@ -177,9 +180,12 @@ export function StudyContent({ studyId, assignments, version, onAdded, onSaved }
                       <Ellipsis aria-hidden="true" />
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="doc-menu">
+                      {raters.length > 0 && <DropdownMenuItem disabled={!users} onSelect={() => pickRaters(key, first)}>
+                        <UserPen aria-hidden="true" />Sửa người chấm
+                      </DropdownMenuItem>}
                       {media && <DropdownMenuItem onSelect={() => setRenaming(first.id)}><Pencil aria-hidden="true" />Đổi tên</DropdownMenuItem>}
                       <DropdownMenuItem variant="destructive" onSelect={() => void removeRow(first, title)}>
-                        <Trash2 aria-hidden="true" />Xóa khỏi nghiên cứu
+                        <Trash2 aria-hidden="true" />Xóa nghiên cứu
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>

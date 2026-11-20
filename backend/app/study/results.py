@@ -163,7 +163,8 @@ def study_results(db: Session, study: Study) -> dict:
          # The rater file holds module ratings only; with none it would be empty.
          "module_rated": sum(rating.scores is None for _, rating in humans.get(email, [])),
          "invited": email in invited, "assigned": assigned(email)}
-        for email in sorted(invited | set(humans))
+        # Someone given nothing and with no rating has no progress to show.
+        for email in sorted(invited | set(humans)) if assigned(email) or humans.get(email)
     ]
     return {
         "criteria": CRITERIA,
