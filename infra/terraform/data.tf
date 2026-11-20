@@ -133,14 +133,13 @@ resource "aws_s3_bucket_ownership_controls" "uploads" {
 resource "aws_s3_bucket_lifecycle_configuration" "uploads" {
   bucket = aws_s3_bucket.uploads.id
 
+  # Course files are kept until their document is deleted (a study copies them as reference
+  # files); abandoned uploads are removed by the worker's hourly clean-up, not by age.
   rule {
-    id     = "expire-leftovers"
+    id     = "abort-incomplete-uploads"
     status = "Enabled"
     filter {
       prefix = "uploads/"
-    }
-    expiration {
-      days = var.upload_retention_days
     }
     # A 1 GB video goes up in parts; an api task stopped half way leaves them billed.
     abort_incomplete_multipart_upload {

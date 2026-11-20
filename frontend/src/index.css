@@ -516,7 +516,7 @@ h1[tabindex="-1"]:focus-visible { outline:none; }
 .study-results > h2 { font:600 21px/28px var(--font-sans); }
 .results-subtitle { margin-top:16px; font-size:15px; font-weight:600; }
 .results-raters { display:flex; flex-direction:column; border:1px solid var(--border-default); border-radius:var(--radius-sm); }
-.results-raters li { display:grid; grid-template-columns:minmax(0,1fr) 180px 70px; align-items:center; gap:16px; padding:12px 16px; border-top:1px solid var(--border-default); }
+.results-raters li { display:grid; grid-template-columns:minmax(0,1fr) 180px 120px; align-items:center; gap:16px; padding:12px 16px; border-top:1px solid var(--border-default); }
 .results-raters li:first-child { border-top:0; }
 .results-progress { display:flex; align-items:center; gap:8px; }
 .results-progress progress { flex:1; }
@@ -555,7 +555,8 @@ h1[tabindex="-1"]:focus-visible { outline:none; }
 .assign-table th, .assign-table td { padding:10px 12px; border-top:1px solid var(--border-default); text-align:center; font-size:14px; line-height:20px; }
 .assign-table thead th { border-top:0; background:var(--bg-subtle); font-weight:600; color:var(--text-secondary); white-space:nowrap; max-width:200px; overflow:hidden; text-overflow:ellipsis; }
 .assign-table th[scope=row], .assign-table thead th:first-child { text-align:left; font-weight:400; min-width:220px; }
-.assign-table input { width:16px; height:16px; accent-color:var(--accent-default); }
+.rename-row { display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin:2px 0; }
+.rename-row .ui-input { flex:1; min-width:180px; padding:6px 10px; font-size:14px; }
 .content-cell { display:flex; flex-direction:column; gap:2px; }
 .assign-table .ui-select { width:100%; min-width:140px; max-width:200px; }
 .study-section-head { display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:12px; margin-bottom:8px; }

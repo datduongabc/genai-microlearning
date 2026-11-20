@@ -69,6 +69,8 @@ class StudyFile(Base):
     filename: Mapped[str]
     size: Mapped[int] = mapped_column(BigInteger)
     status: Mapped[str] = mapped_column(default="awaiting_upload", server_default="awaiting_upload")
+    # The course document it was copied from, so a study copies each document once (alembic 0047).
+    document_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("documents.id", ondelete="SET NULL"), index=True)
     created_at: Mapped[datetime] = created_at_column()
 
 

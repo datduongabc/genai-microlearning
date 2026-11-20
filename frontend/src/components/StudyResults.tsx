@@ -50,18 +50,20 @@ export function StudyResults({ studyId }: { studyId: string }) {
       <ul className="results-raters" aria-label="Tiến độ người chấm">
         {results.raters.map((r) => <li key={r.email}>
           <div className="min-w-0">
-            <div className="font-semibold [overflow-wrap:anywhere]">{r.email}</div>
-            <div className="small muted">{r.number ? `Người chấm ${r.number}` : "Chưa chấm gói nào"}{!r.invited && ", đã thôi mời"}</div>
+            <div className="font-semibold [overflow-wrap:anywhere]">{r.name}</div>
+            <div className="small muted [overflow-wrap:anywhere]">{r.email}{r.rated === 0 && ", chưa chấm gói nào"}{!r.invited && ", đã thôi giao"}</div>
           </div>
           <div className="results-progress">
             <span className="small">{r.rated}/{r.assigned}</span>
             <progress aria-label={`Tiến độ ${r.email}`} value={r.rated} max={r.assigned || 1} />
           </div>
-          {r.number && <button type="button" className="link-action"
-            onClick={() => void download(`raters/${r.number}.csv`, `rater-${r.number}.csv`)}>Tải CSV</button>}
+          {r.number && r.module_rated > 0 && <button type="button" className="link-action"
+            onClick={() => void download(`raters/${r.number}.csv`, `rater-${r.number}.csv`)}>Tải CSV mô-đun</button>}
         </li>)}
       </ul>
     )}
+    {results.has_media_ratings && <button type="button" className="ui-button mt-3"
+      onClick={() => void download("media.csv", "flashcard-video.csv")}>Tải CSV flashcard và video</button>}
     {results.has_judge && <button type="button" className="ui-button mt-3"
       onClick={() => void download("judge.jsonl", "judge.jsonl")}>Tải kết quả mô hình chấm</button>}
     {results.unpaired.length > 0 && <p className="mt-3 small muted">

@@ -70,8 +70,8 @@ def purge_old_records() -> dict[str, int]:
             for model in (LtiLoginState, LtiLaunchCode)
         )
         # Documents whose file never arrived: the client stopped between asking where to send it
-        # and reporting it sent. The rows go first; a file left without its row is harmless and
-        # S3's lifecycle expires it anyway.
+        # and reporting it sent. The rows go first, then the file, if part of it arrived: course files
+        # are kept for studies, so no lifecycle rule expires them.
         abandoned = (
             db.query(Document)
             .filter(Document.status == DocumentStatus.awaiting_upload,

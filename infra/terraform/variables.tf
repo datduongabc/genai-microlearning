@@ -122,12 +122,6 @@ variable "valkey_node_type" {
   default = "cache.t4g.micro"
 }
 
-variable "upload_retention_days" {
-  description = "Uploads are deleted once embedded; this removes the ones a failed or abandoned job left."
-  type        = number
-  default     = 7
-}
-
 # --- Moodle and operations
 
 variable "moodle_base_url" {

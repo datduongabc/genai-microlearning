@@ -42,7 +42,9 @@ def test_results_show_progress_scores_findings_and_groups(blind):
     assert groups == {"rag_llm", "llm_no_rag", "human"}
     rated = {item["anon_code"]: item for item in results["items"] if item["ratings"]}
     assert set(teacher_codes) <= set(rated)
-    teacher_label = f"Người chấm {numbered.index(blind['emails'][0]) + 1}"
+    # The admin is not blind to who rated: each rating carries the rater's name.
+    teacher_label = {r["email"]: r["name"] for r in results["raters"]}[blind["emails"][0]]
+    assert not teacher_label.startswith("Người chấm")
     rating = next(r for r in rated[teacher_codes[0]]["ratings"] if r["rater"] == teacher_label)
     assert rating["kind"] == "human"
     assert rating["scores"]["accuracy"]["score"] == 2

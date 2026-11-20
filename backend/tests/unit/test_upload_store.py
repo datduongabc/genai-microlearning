@@ -53,6 +53,9 @@ class FakeS3:
     def delete_object(self, Bucket, Key):
         self.objects.pop((Bucket, Key), None)
 
+    def copy_object(self, Bucket, Key, CopySource):
+        self.objects[(Bucket, Key)] = self.objects[(CopySource["Bucket"], CopySource["Key"])]
+
 
 def test_s3_store_moves_the_file_up_and_hands_out_a_temporary_copy(tmp_path):
     s3 = FakeS3()
@@ -247,3 +250,12 @@ def test_study_files_have_their_own_place(monkeypatch, tmp_path):
     store = storage.study_file_store()
     assert (store.bucket, store.prefix) == ("b", "study-files/")
     assert storage.study_file_key("f", "Slides.PPTX") == "f.pptx"
+
+
+def test_a_copy_within_one_bucket_is_made_by_s3_without_downloading(tmp_path):
+    s3 = FakeS3()
+    s3.objects[("bucket", "uploads/doc.pdf")] = b"lecture"
+    s3.download_file = None  # the bytes must not come through this process
+    storage.copy_file(S3UploadStore("bucket", "uploads/", client=s3), "doc.pdf",
+                      S3UploadStore("bucket", "study-files/", client=s3), "file.pdf")
+    assert s3.objects[("bucket", "study-files/file.pdf")] == b"lecture"

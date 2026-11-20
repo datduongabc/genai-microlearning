@@ -123,8 +123,9 @@ export type StudyGroup = "rag_llm" | "llm_no_rag" | "human" | "flashcards" | "vi
 export interface StudyResults {
   criteria: string[];
   total: number;
-  raters: { email: string; number: number | null; rated: number; invited: boolean; assigned: number }[];
+  raters: { email: string; name: string; number: number | null; rated: number; module_rated: number; invited: boolean; assigned: number }[];
   has_judge: boolean;
+  has_media_ratings: boolean;
   unpaired: string[];
   items: { id: string; anon_code: string; group: StudyGroup; pair_code: string; topic: string; criteria: string[]; ratings: ResultRating[] }[];
 }
@@ -157,6 +158,10 @@ export interface StudyItemSummary {
 }
 export async function getStudyItems(id: string) {
   return (await api.get<{ items: StudyItemSummary[] }>(`/studies/${id}`)).data.items;
+}
+// The name raters see for a flashcard set or video; returns the study's items.
+export async function renameStudyItem(id: string, itemId: string, topic: string) {
+  return (await api.put<StudyItemSummary[]>(`/studies/${id}/items/${itemId}/topic`, { topic })).data;
 }
 // Takes both packets of a pair out together, with their ratings; returns the items left.
 export async function removeStudyItem(id: string, itemId: string) {
