@@ -102,8 +102,13 @@ echo "== Student launch: a member of the teacher's course, chat only"
 STUDENT="$(browse e2estudent | tee >(cat >&2) | tail -1)"
 jq -e --argjson t "$TEACHER" '.user.can_author == false and .course_role == "member" and .course_id == $t.course_id and .courses == []
   and .chat_latest == 200 and .documents == 404' <<<"$STUDENT" >/dev/null || { echo "student check failed" >&2; exit 1; }
-jq -e '.user.can_author == true and .course_role == "owner" and .chat_latest == 200 and .documents == 200' <<<"$TEACHER" >/dev/null \
+jq -e '.user.can_author == true and .course_role == "owner" and .chat_latest == 200 and .documents == 200 and .rename == 200' <<<"$TEACHER" >/dev/null \
   || { echo "teacher check failed" >&2; exit 1; }
+echo "== Second teacher of the same Moodle course: teaches the course, does not own it"
+COTEACHER="$(browse e2eteacher2 | tee >(cat >&2) | tail -1)"
+jq -e --argjson t "$TEACHER" '.user.can_author == true and .course_role == "owner" and .course_id == $t.course_id
+  and (.courses | map(.id) == [$t.course_id]) and .documents == 200 and .rename == 403' <<<"$COTEACHER" >/dev/null \
+  || { echo "second teacher check failed" >&2; exit 1; }
 echo "== Stored"
 docker exec lti-e2e-db psql -U postgres -d microlearning -tAc \
   "select 'users ' || count(*) || ', moodle_user_id ' || string_agg(moodle_user_id::text, ',') from users" -c \
@@ -123,14 +128,15 @@ members() { docker exec lti-e2e-db psql -U postgres -d microlearning -tAc "selec
 
 echo "== Roster check while the student is enrolled: nobody removed"
 SYNC="$(sync 1)"; echo "$SYNC"
-jq -e '.courses == 1 and .removed == 0 and .skipped == 0' <<<"$SYNC" >/dev/null && [[ "$(members)" == 1 ]] \
+jq -e '.courses == 1 and .removed == 0 and .skipped == 0' <<<"$SYNC" >/dev/null && [[ "$(members)" == 2 ]] \
   || { echo "an enrolled student was removed, or the list was not read" >&2; exit 1; }
 
 echo "== Student taken out of the Moodle course: out of the course here at the next roster check"
 docker exec -u www-data lti-e2e-moodle php /e2e/unenrol.php e2estudent
 SYNC="$(sync 2)"; echo "$SYNC"
-jq -e '.removed == 1 and .skipped == 0' <<<"$SYNC" >/dev/null && [[ "$(members)" == 0 ]] \
+jq -e '.removed == 1 and .skipped == 0' <<<"$SYNC" >/dev/null && [[ "$(members)" == 1 ]] \
   || { echo "the roster check did not remove the student" >&2; exit 1; }
 echo "== Teacher still owns the course after the check"
 browse e2eteacher | tail -1 | jq -e '.course_role == "owner" and .documents == 200' >/dev/null || { echo "teacher lost the course" >&2; exit 1; }
+browse e2eteacher2 | tail -1 | jq -e '.course_role == "owner" and .rename == 403' >/dev/null || { echo "second teacher lost the course" >&2; exit 1; }
 echo "== All checks passed"

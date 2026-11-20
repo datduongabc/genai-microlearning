@@ -57,6 +57,10 @@ with httpx.Client(follow_redirects=False, timeout=30) as b:
     courses = b.get(f"{TOOL}/api/courses", headers=bearer).json()
     chat = b.get(f"{TOOL}/api/courses/{body['course_id']}/chat/latest", headers=bearer)
     documents = b.get(f"{TOOL}/api/documents", params={"course_id": body["course_id"]}, headers=bearer)
+    # Renaming to the same name changes nothing, and answers who may: the owner 200, a co-teacher 403.
+    name = next((c["name"] for c in courses if c["id"] == body["course_id"]), "x")
+    rename = b.patch(f"{TOOL}/api/courses/{body['course_id']}", json={"name": name}, headers=bearer)
     print(json.dumps({"user": body["user"], "course_id": body["course_id"], "course_role": body["course_role"],
                       "courses": [{"id": c["id"], "name": c["name"]} for c in courses],
-                      "chat_latest": chat.status_code, "documents": documents.status_code}, ensure_ascii=False))
+                      "chat_latest": chat.status_code, "documents": documents.status_code,
+                      "rename": rename.status_code}, ensure_ascii=False))
