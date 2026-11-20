@@ -629,7 +629,6 @@ describe('VideoEditorPage', () => {
     await openScene(1)
 
     expect(screen.getByLabelText('Bảng cảnh 1')).toHaveValue('A | B')
-    expect(screen.getByPlaceholderText('Cột 1 | Cột 2')).toBeInTheDocument()
   })
 
   it('says the job is queued and follows it when the detail cannot be read after asking', async () => {

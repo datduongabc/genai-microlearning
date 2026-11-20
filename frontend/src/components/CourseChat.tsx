@@ -157,7 +157,6 @@ export function CourseChat({ courseId }: { courseId: string }) {
     <form onSubmit={handleSubmit(send)} noValidate className="chat-form">
       <label htmlFor="course-chat-message" className="chat-label">Câu hỏi của bạn</label>
       <textarea id="course-chat-message" maxLength={4000} rows={3} disabled={sending || loading}
-        placeholder="Nhập câu hỏi về nội dung môn học"
         {...register('message')} className="ui-input w-full" />
       {errors.message && <p className="danger-text text-sm">{errors.message.message}</p>}
       <button type="submit" disabled={sending || loading || blank}

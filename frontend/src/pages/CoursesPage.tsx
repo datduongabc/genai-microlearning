@@ -121,7 +121,6 @@ export function CoursesPage() {
         <input
           {...register("name")}
           aria-label="Tên môn học mới"
-          placeholder="Ví dụ: Hệ điều hành"
           className="ui-input min-w-0 flex-1"
         />
         <button disabled={creating} className="ui-button primary">

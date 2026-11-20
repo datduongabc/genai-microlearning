@@ -177,7 +177,7 @@ export function ModulePreviewPage() {
               {module.components.map((c) => (
                 <li key={c.id}><a href={`#part-${c.type}`}>{COMPONENT_LABEL[c.type] ?? c.type}</a></li>
               ))}
-              {!module.is_control && <li><a href="#part-ai-edit">Sửa theo yêu cầu</a></li>}
+              {!module.is_control && <li><a href="#part-ai-edit">Yêu cầu chỉnh sửa</a></li>}
               {!module.is_control && <li><a href="#part-publish">Xuất bản</a></li>}
             </ol>
           </nav>
@@ -207,7 +207,8 @@ export function ModulePreviewPage() {
               moodleCourseId={module.moodle_course_id}
               publishedAt={module.moodle_published_at ?? null}
               onRefresh={refresh}
-            /><ScormDownload moduleId={module.id} moduleTitle={module.title} /></div>}
+              scorm={<ScormDownload moduleId={module.id} moduleTitle={module.title} />}
+            /></div>}
           </div>
           <SourcePanel opened={opened} onClose={closeSource} />
         </div>
@@ -245,7 +246,7 @@ function ModuleChatPanel({ module, onSaved }: { module: ModuleDetail; onSaved: (
   }
 
   return <section id="part-ai-edit" className="module-ai-edit">
-    <h2 className="module-part-title">Sửa theo yêu cầu</h2>
+    <h2 id="module-chat-title" className="module-part-title">Yêu cầu chỉnh sửa</h2>
     <div aria-live="polite" className="mt-3 space-y-3 text-sm">
       {turns.map((turn, i) => <div key={i}>
         <p className="text-gray-500">{turn.message}</p>
@@ -253,9 +254,7 @@ function ModuleChatPanel({ module, onSaved }: { module: ModuleDetail; onSaved: (
       </div>)}
     </div>
     <form onSubmit={handleSubmit(send)} noValidate className="mt-3 flex flex-col gap-2">
-      <label htmlFor="module-chat-message" className="chat-label">Yêu cầu chỉnh sửa</label>
-      <textarea id="module-chat-message" maxLength={4000} rows={3} disabled={sending}
-        placeholder="Ví dụ: rút gọn slide 3, làm câu quiz 2 khó hơn"
+      <textarea id="module-chat-message" aria-labelledby="module-chat-title" maxLength={4000} rows={3} disabled={sending}
         {...register('message')} className="ui-input w-full" />
       {errors.message && <p className="text-sm danger-text">{errors.message.message}</p>}
       <button type="submit" disabled={sending || blank}
@@ -272,12 +271,15 @@ function PublishToMoodleSection({
   moodleCourseId,
   publishedAt,
   onRefresh,
+  scorm,
 }: {
   moduleId: string
   courseId: string
   moodleCourseId: number | null
   publishedAt: string | null
   onRefresh: () => Promise<void>
+  // The other way out, for an LMS the system is not linked to: on the right of the publish action.
+  scorm: React.ReactNode
 }) {
   const [result, setResult] = useState<PublishToMoodleResult | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -357,13 +359,16 @@ function PublishToMoodleSection({
   if (moodleCourseId === null) {
     return (
       <section className="module-publish" aria-labelledby="publish-title">
-        <h2 id="publish-title" className="module-part-title">Xuất bản lên Moodle</h2>
-        <p className="text-sm muted">
-          Môn học này chưa liên kết với Moodle.{' '}
-          <Link to={`/courses/${courseId}`} className="link-action">
-            Liên kết ở trang môn học
-          </Link>
-        </p>
+        <h2 id="publish-title" className="module-part-title">Xuất bản</h2>
+        <div className="publish-actions">
+          <p className="text-sm muted">
+            Môn học này chưa liên kết với Moodle.{' '}
+            <Link to={`/courses/${courseId}`} className="link-action">
+              Liên kết ở trang môn học
+            </Link>
+          </p>
+          {scorm}
+        </div>
         {error && <p role="alert" className="mt-3 text-sm danger-text">{error}</p>}
       </section>
     )
@@ -371,9 +376,9 @@ function PublishToMoodleSection({
 
   return (
     <section className="module-publish" aria-labelledby="publish-title">
-      <h2 id="publish-title" className="module-part-title">Xuất bản lên Moodle</h2>
+      <h2 id="publish-title" className="module-part-title">Xuất bản</h2>
       <MoodleAccountSection onStatus={setAccount} />
-      {canPublish && <form onSubmit={confirmThenPublish} noValidate>
+      {canPublish ? <form onSubmit={confirmThenPublish} noValidate>
       {!addNewSection && sections.length > 0 && (
         <div className="mt-4 mb-3 flex items-center gap-2 text-sm muted">
           <label htmlFor="publish-section">Chủ đề trên Moodle:</label>
@@ -400,14 +405,17 @@ function PublishToMoodleSection({
         Tạo chủ đề mới
       </label>
 
-      <button
-        type="submit"
-        disabled={publishing || result !== null}
-        className="ui-button primary"
-      >
-        {publishing ? 'Đang xuất bản…' : result !== null ? 'Đã xuất bản lên Moodle' : publishedAt ? 'Xuất bản lại' : 'Xuất bản lên Moodle'}
-      </button>
-      </form>}
+      <div className="publish-actions">
+        <button
+          type="submit"
+          disabled={publishing || result !== null}
+          className="ui-button primary"
+        >
+          {publishing ? 'Đang xuất bản…' : result !== null ? 'Đã xuất bản lên Moodle' : publishedAt ? 'Xuất bản lại' : 'Xuất bản lên Moodle'}
+        </button>
+        {scorm}
+      </div>
+      </form> : <div className="publish-actions mt-4"><span />{scorm}</div>}
 
       {publishedAt && !result && (
         <p className="mt-3 text-sm muted">Đã xuất bản lên Moodle lúc {new Date(publishedAt).toLocaleString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}.</p>

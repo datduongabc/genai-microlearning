@@ -65,38 +65,32 @@ export function ModelPicker({ value, onChange }: Props) {
     }
   }
 
+  // Laid out as the other fields of the generate dialogs it sits in.
   return (
-    <div className="flex flex-col gap-1">
-      <div className="flex flex-wrap items-center gap-3">
-        <label className="model-picker">
-          Mô hình
-          <select
-            value={loadFailed ? THEO_CAU_HINH : value}
-            onChange={(e) => onChange(e.target.value)}
-            disabled={loadFailed}
-            className="ui-select disabled:opacity-60"
-          >
-            <option value={THEO_CAU_HINH}>Mặc định của hệ thống</option>
-            {models.map((m) => (
-              <option key={m.alias} value={m.alias}>
-                {m.label} ({m.provider})
-              </option>
-            ))}
-          </select>
-        </label>
-        {!loadFailed && value !== saved && (
-          <button
-            type="button"
-            onClick={handleSaveDefault}
-            disabled={saving}
-            className="link-action"
-          >
-            {saving ? 'Đang lưu…' : 'Đặt làm mặc định'}
-          </button>
-        )}
-      </div>
+    <div className="mt-4 flex flex-col gap-2 text-sm">
+      <label className="flex flex-col gap-2">
+        Mô hình
+        <select
+          value={loadFailed ? THEO_CAU_HINH : value}
+          onChange={(e) => onChange(e.target.value)}
+          disabled={loadFailed}
+          className="ui-select w-full disabled:opacity-60"
+        >
+          <option value={THEO_CAU_HINH}>Mặc định của hệ thống</option>
+          {models.map((m) => (
+            <option key={m.alias} value={m.alias}>
+              {m.label} ({m.provider})
+            </option>
+          ))}
+        </select>
+      </label>
+      {!loadFailed && value !== saved && (
+        <button type="button" onClick={handleSaveDefault} disabled={saving} className="link-action self-start">
+          {saving ? 'Đang lưu…' : 'Đặt làm mặc định'}
+        </button>
+      )}
       {loadFailed && <p className="course-hint">Không tải được danh sách mô hình.</p>}
-      {saveError && <p className="text-sm danger-text">{saveError}</p>}
+      {saveError && <p className="danger-text">{saveError}</p>}
     </div>
   )
 }

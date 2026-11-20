@@ -276,7 +276,7 @@ export function VideoSceneEditor({ scene: s, number, count, slide, canDraw, next
       {s.kind === 'table' && (
         <label className="flashcard-field">
           Bảng
-          <AutoGrowTextarea aria-label={`Bảng cảnh ${number}`} aria-describedby={fieldNotes} value={s.table} rows={4} placeholder="Cột 1 | Cột 2"
+          <AutoGrowTextarea aria-label={`Bảng cảnh ${number}`} aria-describedby={fieldNotes} value={s.table} rows={4}
             onChange={(e) => set({ table: e.target.value })} className="ui-input w-full font-mono" />
         </label>
       )}

@@ -258,7 +258,7 @@ function PickRaters({ title, users, initial, onClose, onSave }: {
   return <Dialog open onOpenChange={(open) => { if (!open && !busy) onClose(); }}>
     <DialogContent className="ui-dialog pick-raters" aria-describedby={undefined}>
       <DialogTitle className="ui-dialog-title [overflow-wrap:anywhere]">Người chấm "{title}"</DialogTitle>
-      <input type="search" className="ui-input" placeholder="Tìm theo tên hoặc email" aria-label="Tìm người chấm"
+      <input type="search" className="ui-input" aria-label="Tìm người chấm"
         value={query} onChange={(e) => setQuery(e.target.value)} />
       <p className="small muted">Đã chọn {chosen.size}</p>
       <ul className="pick-raters-list" aria-label="Tài khoản">

@@ -125,12 +125,9 @@ export function ScormDownload({ moduleId, moduleTitle }: { moduleId: string; mod
     }
   }
   return (
-    <section className="module-publish" aria-labelledby="scorm-title">
-      <h2 id="scorm-title" className="module-part-title">Tải gói SCORM</h2>
-      <button type="button" className="ui-button" disabled={downloading} onClick={() => void download()}>
-        {downloading ? 'Đang tạo gói…' : 'Tải gói SCORM (.zip)'}
-      </button>
-    </section>
+    <button type="button" className="ui-button" disabled={downloading} onClick={() => void download()}>
+      {downloading ? 'Đang tạo gói…' : 'Tải gói SCORM (.zip)'}
+    </button>
   )
 }
 

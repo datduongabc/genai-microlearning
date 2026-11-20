@@ -546,12 +546,15 @@ describe('CourseDetailPage - module generation availability', () => {
     vi.mocked(api.pollJobStatus).mockReturnValue(new Promise(() => {}))
 
     renderPage()
-    await waitFor(() =>
-      expect((screen.getByRole('combobox', { name: /^mô hình$/i }) as HTMLSelectElement).value).toBe('deepseek-flash'),
-    )
+    // The model is chosen in the dialog, not on the page.
+    await screen.findByText('syllabus.pdf')
+    expect(screen.queryByRole('combobox', { name: /^mô hình$/i })).not.toBeInTheDocument()
     await chooseCreate(/^mô-đun$/i)
     expect(api.generateModule).not.toHaveBeenCalled()
     expect(screen.getByRole('dialog')).toBeInTheDocument()
+    await waitFor(() =>
+      expect((screen.getByRole('combobox', { name: /^mô hình$/i }) as HTMLSelectElement).value).toBe('deepseek-flash'),
+    )
     await userEvent.selectOptions(screen.getByRole('combobox', { name: /^ngôn ngữ đầu ra$/i }), 'en')
     await userEvent.type(screen.getByLabelText(/Chủ đề mà bạn muốn tập trung vào/), 'Ví dụ: thêm ví dụ có lời giải từng bước')
     await userEvent.click(screen.getByRole('button', { name: 'Tạo mô-đun' }))
@@ -753,7 +756,7 @@ describe('CourseDetailPage - videos', () => {
     renderPage()
     await chooseCreate(/^video$/i)
     await userEvent.type(within(screen.getByRole('dialog', { name: 'Tạo video' })).getByLabelText(/nên tập trung vào nội dung gì/), 'FCFS')
-    await userEvent.selectOptions(await screen.findByRole('combobox', { name: 'Mô hình vẽ hình' }), 'image-qwen')
+    await userEvent.selectOptions(await screen.findByRole('combobox', { name: 'Vẽ hình' }), 'image-qwen')
     await userEvent.click(screen.getByRole('button', { name: 'Tạo video' }))
 
     await waitFor(() => expect(api.generateVideo).toHaveBeenCalledWith('doc-1', {
