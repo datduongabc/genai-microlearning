@@ -225,6 +225,8 @@ ATTACKS = [
     ("POST", "/admin/users/{user}/enable", None, {}),
     ("POST", "/admin/users/{user}/password", None, {"json": {"password": "A pwned long phrase"}}),
     ("POST", "/admin/users/{user}/erase", None, {}),
+    ("GET", "/admin/users/{user}/courses", None, {}),
+    ("POST", "/admin/courses/{course}/transfer", None, {"json": {"new_owner_id": "{user}"}}),
     ("DELETE", "/admin/users/{user}", None, {}),
     ("GET", "/studies/{study}", None, {}),
     ("POST", "/studies/{study}/items", None, {"json": {"module_ids": ["{module}"]}}),

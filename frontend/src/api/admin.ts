@@ -84,3 +84,22 @@ export async function unlinkUserMoodleAccount(userId: string) {
 export async function eraseUser(userId: string) {
   await api.post(`/admin/users/${userId}/erase`)
 }
+
+export interface OwnedCourse {
+  id: string
+  name: string
+  moodle_course_id: number | null
+  created_at: string
+}
+
+export async function listUserCourses(userId: string) {
+  const { data } = await api.get<OwnedCourse[]>(`/admin/users/${userId}/courses`)
+  return data
+}
+
+// Everything under the course goes with it (alembic 0050); the previous owner may stay as a teacher.
+export async function transferCourse(courseId: string, newOwnerId: string, keepPreviousAsTeacher: boolean) {
+  await api.post(`/admin/courses/${courseId}/transfer`, {
+    new_owner_id: newOwnerId, keep_previous_as_teacher: keepPreviousAsTeacher,
+  })
+}

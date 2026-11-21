@@ -157,6 +157,9 @@ h1[tabindex="-1"]:focus-visible { outline:none; }
 .account-row { display:grid; grid-template-columns:minmax(0,1fr) 140px 180px 60px; align-items:center; gap:16px; padding:16px 24px; border-bottom:1px solid var(--border-default); }
 .table-heading { background:var(--bg-subtle); font-size:14px; line-height:20px; font-weight:600; color:var(--text-secondary); border-radius:8px 8px 0 0; }
 .account-row .avatar { color:var(--text-on-dark); }
+/* A form opened under an account (password, course transfer): inside the row's padding, ruled off below like a row. */
+.account-inline-form { padding:16px 24px; border-bottom:1px solid var(--border-default); background:var(--bg-subtle); }
+.account-inline-form select { min-width:0; max-width:100%; }
 .account-row .avatar.admin { background:var(--bg-navy); }
 .admin-badge { background:var(--bg-navy); color:var(--text-on-dark); border-radius:var(--radius-sm); padding:2px 8px; font-size:14px; line-height:20px; }
 .jobs-table { overflow-x:auto; }
@@ -242,7 +245,7 @@ h1[tabindex="-1"]:focus-visible { outline:none; }
 .rubric-question { font-size:14px; line-height:20px; color:var(--text-secondary); margin-bottom:12px; }
 .scale-help li { display:grid; grid-template-columns:16px minmax(0,1fr); gap:8px; }
 @media(max-width:1100px) { .studies-layout { grid-template-columns:280px minmax(0,1fr); } .rating-columns { grid-template-columns:minmax(0,1fr) 380px; } }
-@media(max-width:850px) { .studies-layout, .rating-columns { grid-template-columns:minmax(0,1fr); } .account-row { grid-template-columns:minmax(0,1fr) 110px 130px 40px; padding:12px; gap:8px; } .rating-context { align-items:start; flex-direction:column; gap:12px; } }
+@media(max-width:850px) { .studies-layout, .rating-columns { grid-template-columns:minmax(0,1fr); } .account-row { grid-template-columns:minmax(0,1fr) 110px 130px 40px; padding:12px; gap:8px; } .account-inline-form { padding:12px; } .rating-context { align-items:start; flex-direction:column; gap:12px; } }
 
 /* --- Module review: the parts of the module down the margin, the module as one printed sheet,
    and the source it cites beside it. */

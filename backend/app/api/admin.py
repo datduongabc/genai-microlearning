@@ -209,7 +209,7 @@ def unlink_user_moodle_account(
 
 _ERASE_REFUSED = {
     "not_found": (404, "User not found"),
-    "owns_courses": (409, "Tài khoản này còn môn học. Hãy xóa hoặc chuyển các môn học trước rồi xóa dữ liệu."),
+    "owns_courses": (409, "Tài khoản này còn môn học. Hãy chuyển môn học cho giảng viên khác, hoặc xóa chúng, rồi xóa dữ liệu."),
 }
 
 
@@ -228,3 +228,42 @@ def erase_user(
     db.commit()
     log_admin_event(audit.ADMIN_ERASE_USER, request, actor_id=admin.id, target_user_id=user_id)
     return {"erased": True}
+
+
+@router.get("/users/{user_id}/courses")
+def list_user_courses(user_id: uuid.UUID, db: Session = Depends(get_db)):
+    """The courses a person owns, for handing them over (admin_user_courses, migration 0050)."""
+    rows = db.execute(text("SELECT id, name, moodle_course_id, created_at FROM admin_user_courses(:u)"),
+                      {"u": user_id}).all()
+    return [{"id": r.id, "name": r.name, "moodle_course_id": r.moodle_course_id, "created_at": r.created_at}
+            for r in rows]
+
+
+class TransferCourseRequest(BaseModel):
+    new_owner_id: uuid.UUID
+    keep_previous_as_teacher: bool = True
+
+
+_TRANSFER_REFUSED = {
+    "course_not_found": (404, "Course not found"),
+    "owner_not_eligible": (422, "Người nhận phải là giảng viên có tài khoản đang hoạt động."),
+    "same_owner": (409, "Môn học đã thuộc về giảng viên này."),
+}
+
+
+@router.post("/courses/{course_id}/transfer")
+@limiter.limit("30/minute", key_func=user_or_address)
+def transfer_course(
+    request: Request, course_id: uuid.UUID, payload: TransferCourseRequest, db: Session = Depends(get_db),
+    admin: User = Depends(require_admin),
+):
+    """Hands a course, with everything under it, to another lecturer (transfer_course, migration 0050)."""
+    outcome = db.scalar(select(func.transfer_course(course_id, payload.new_owner_id, payload.keep_previous_as_teacher)))
+    if outcome in _TRANSFER_REFUSED:
+        db.rollback()
+        status, detail = _TRANSFER_REFUSED[outcome]
+        raise HTTPException(status_code=status, detail=detail)
+    db.commit()
+    log_admin_event(audit.ADMIN_TRANSFER_COURSE, request, actor_id=admin.id, target_user_id=payload.new_owner_id,
+                    detail={"course_id": str(course_id), "kept_previous": payload.keep_previous_as_teacher})
+    return {"transferred": True}

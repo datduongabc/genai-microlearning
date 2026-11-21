@@ -1,4 +1,4 @@
-import { Ellipsis, KeyRound, Link2, Plus, Unlink, UserCheck, UserX, Trash2 } from "lucide-react";
+import { ArrowRightLeft, Ellipsis, KeyRound, Link2, Plus, Unlink, UserCheck, UserX, Trash2 } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "./ui/dropdown-menu";
 import { confirmAction } from "../lib/confirm";
 import { notifyDone, notifyFailed } from "../lib/notify";
@@ -13,6 +13,9 @@ import {
   setUserActive,
   unlinkUserMoodleAccount,
   eraseUser,
+  listUserCourses,
+  transferCourse,
+  type OwnedCourse,
   type AdminCounts,
   type AdminUser,
 } from "../api";
@@ -35,6 +38,7 @@ export function AdminUsersPanel({ counts, onChange }: { counts: AdminCounts | nu
   const [loadError, setLoadError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [resetting, setResetting] = useState<string | null>(null);
+  const [transferring, setTransferring] = useState<string | null>(null);
 
   // Bumped to load the list again (after a change), so the effect below is the only loader.
   const [reloads, setReloads] = useState(0);
@@ -164,6 +168,9 @@ export function AdminUsersPanel({ counts, onChange }: { counts: AdminCounts | nu
                     <DropdownMenuItem onSelect={() => setResetting(resetting === u.id ? null : u.id)}>
                       <KeyRound aria-hidden="true" />Đặt lại mật khẩu
                     </DropdownMenuItem>
+                    {!!u.course_count && <DropdownMenuItem onSelect={() => setTransferring(transferring === u.id ? null : u.id)}>
+                      <ArrowRightLeft aria-hidden="true" />Chuyển môn học
+                    </DropdownMenuItem>}
                     {u.moodle_status === "linked" && <DropdownMenuItem disabled={busyId === u.id} onSelect={() => void handleUnlinkMoodle(u)}>
                       <Unlink aria-hidden="true" />Hủy liên kết Moodle
                     </DropdownMenuItem>}
@@ -177,6 +184,16 @@ export function AdminUsersPanel({ counts, onChange }: { counts: AdminCounts | nu
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>
+              {transferring === u.id && (
+                <TransferCourseForm
+                  user={u}
+                  onDone={(message) => {
+                    setTransferring(null);
+                    notifyDone(message);
+                    reload();
+                  }}
+                />
+              )}
               {resetting === u.id && (
                 <ResetPasswordForm
                   user={u}
@@ -267,7 +284,7 @@ function ResetPasswordForm({ user, onDone }: { user: AdminUser; onDone: (message
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} noValidate className="mt-3 flex flex-col gap-2">
+    <form onSubmit={handleSubmit(onSubmit)} noValidate className="account-inline-form flex flex-col gap-2">
       <div className="flex flex-wrap items-center gap-2">
         <input
           type="password"
@@ -285,6 +302,70 @@ function ResetPasswordForm({ user, onDone }: { user: AdminUser; onDone: (message
         </button>
       </div>
       {errors.password && <span className="text-sm danger-text">{errors.password.message}</span>}
+    </form>
+  );
+}
+
+function TransferCourseForm({ user, onDone }: { user: AdminUser; onDone: (message: string) => void }) {
+  const [courses, setCourses] = useState<OwnedCourse[] | null>(null);
+  const [lecturers, setLecturers] = useState<AdminUser[]>([]);
+  const [courseId, setCourseId] = useState("");
+  const [ownerId, setOwnerId] = useState("");
+  const [keep, setKeep] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    Promise.all([listUserCourses(user.id), listUsers(true)]).then(
+      ([owned, active]) => {
+        if (cancelled) return;
+        setCourses(owned);
+        setCourseId(owned[0]?.id ?? "");
+        setLecturers(active.filter((u) => !u.is_admin && u.id !== user.id));
+      },
+      (err) => notifyFailed(apiErrorMessage(err, "Không tải được danh sách môn học.")),
+    );
+    return () => {
+      cancelled = true;
+    };
+  }, [user.id]);
+
+  async function submit(event: React.FormEvent) {
+    event.preventDefault();
+    const course = courses?.find((c) => c.id === courseId);
+    const owner = lecturers.find((u) => u.id === ownerId);
+    if (!course || !owner) return;
+    setSaving(true);
+    try {
+      await transferCourse(course.id, owner.id, keep);
+      onDone(`Đã chuyển môn ${course.name} cho ${owner.email}.`);
+    } catch (err) {
+      notifyFailed(apiErrorMessage(err, "Không chuyển được môn học."));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  if (courses === null) return <p className="account-inline-form small muted">Đang tải môn học…</p>;
+  return (
+    <form onSubmit={(e) => void submit(e)} className="account-inline-form flex flex-col gap-2">
+      <span className="small font-semibold">Chuyển môn học của {user.name} cho giảng viên khác</span>
+      <div className="flex flex-wrap items-center gap-2">
+        <select aria-label="Môn học cần chuyển" className="ui-select" value={courseId} onChange={(e) => setCourseId(e.target.value)}>
+          {courses.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+        </select>
+        <select aria-label="Giảng viên nhận" className="ui-select flex-1" value={ownerId} onChange={(e) => setOwnerId(e.target.value)}>
+          <option value="">Chọn giảng viên nhận…</option>
+          {lecturers.map((u) => <option key={u.id} value={u.id}>{u.name} ({u.email})</option>)}
+        </select>
+        <button type="submit" className="ui-button primary" disabled={saving || !courseId || !ownerId}>
+          {saving ? "Đang chuyển…" : "Chuyển môn học"}
+        </button>
+      </div>
+      <label className="small flex items-center gap-2">
+        <input type="checkbox" checked={keep} onChange={(e) => setKeep(e.target.checked)} />
+        Giữ {user.name} làm đồng giảng viên của môn
+      </label>
     </form>
   );
 }

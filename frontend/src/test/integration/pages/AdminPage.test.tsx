@@ -188,6 +188,33 @@ describe('AdminPage - accounts', () => {
     expect(screen.queryByRole('menuitem', { name: 'Xóa dữ liệu cá nhân' })).not.toBeInTheDocument()
   })
 
+  it('hands a lecturer\'s course to another lecturer, keeping them as a teacher by default', async () => {
+    const tuan: AdminUser = { ...minh, id: 'u-3', email: 'tuan@example.com', name: 'Tuấn Lê', is_active: true }
+    vi.mocked(api.listUsers).mockResolvedValue([admin, lan, minh, tuan])
+    vi.mocked(api.listUserCourses).mockResolvedValue([
+      { id: 'c-1', name: 'Hệ điều hành', moodle_course_id: 2, created_at: '2026-01-05T00:00:00Z' },
+    ])
+    vi.mocked(api.transferCourse).mockResolvedValue(undefined)
+    renderPage()
+    const row = (await screen.findByText('lan@example.com')).closest('li')!
+    await openRowMenu(row)
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Chuyển môn học' }))
+
+    const receiver = await within(row).findByRole('combobox', { name: 'Giảng viên nhận' })
+    // Not the lecturer themself and not an admin.
+    expect(within(receiver).queryByText(/lan@example.com|admin@example.com/)).not.toBeInTheDocument()
+    await userEvent.selectOptions(receiver, 'u-3')
+    await userEvent.click(within(row).getByRole('button', { name: 'Chuyển môn học' }))
+
+    await waitFor(() => expect(api.transferCourse).toHaveBeenCalledWith('c-1', 'u-3', true))
+  })
+
+  it('offers no course transfer for an account that owns none', async () => {
+    renderPage()
+    await openRowMenu((await screen.findByText('minh@example.com')).closest('li')!)
+    expect(screen.queryByRole('menuitem', { name: 'Chuyển môn học' })).not.toBeInTheDocument()
+  })
+
   it('does not offer admin deactivation', async () => {
     renderPage()
     const own = (await screen.findByText('admin@example.com')).closest('li')!
