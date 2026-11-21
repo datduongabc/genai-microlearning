@@ -22,19 +22,27 @@ from sqlalchemy.orm import Session
 from app import timing
 from app.config import settings
 from app.db import WorkerSessionLocal
+from app.generation.checkpoint import Checkpoint
 from app.generation.common import OutputLanguage
-from app.generation.content import generate_content
-from app.generation.example import generate_example
+from app.generation.content import (
+    ContentVerification,
+    LessonText,
+    LessonVerification,
+    SourcedContent,
+    generate_content,
+)
+from app.generation.example import ExampleOutput, generate_example
 from app.generation.inline_citations import MARKER
 from app.generation.objective import LearningObjective, generate_learning_objective
 from app.generation.planner import Concept, PlannerOutput, run_planner
 from app.generation.quiz_graph import (
     LENGTH_TELL_FEEDBACK,
+    QuizQuestion,
     generate_quiz_question,
     question_to_rebalance,
 )
 from app.generation.relevance import CorrectiveResult, corrective_retrieve
-from app.generation.slides import generate_slides
+from app.generation.slides import SlidesOutput, generate_slides
 from app.jobs.queue import hold
 from app.llm import catalog
 from app.llm.gateway import capture_models, recorded_models, requested_model, using_model
@@ -200,9 +208,23 @@ class _Asked:
     state: dict
 
 
+def _question_key(component_type: ComponentType, target: str) -> str:
+    return f"question:{component_type.value}:{target}"
+
+
+def _state_out(state: dict) -> dict:
+    question = state.get("question")
+    return {**state, "question": question.model_dump() if question is not None else None}
+
+
+def _state_in(saved: dict) -> dict:
+    question = saved.get("question")
+    return {**saved, "question": QuizQuestion.model_validate(question) if question is not None else None}
+
+
 def _generate_questions(
     db: Session, doc: Document, lo, practice_query: str, scope, self_check: bool = True, lesson: str | None = None,
-    output_language: OutputLanguage = "vi", custom_instructions: str = "",
+    output_language: OutputLanguage = "vi", custom_instructions: str = "", checkpoint: Checkpoint | None = None,
 ) -> list[_Asked]:
     """Quiz: một câu cho mỗi sub-objective (tối đa MAX_QUIZ_QUESTIONS), để cả bộ phủ đủ các phần
     của bài thay vì hỏi lại một ý. Practice: một câu luyện tập theo khái niệm chính. `lesson`
@@ -217,10 +239,20 @@ def _generate_questions(
             output_language=output_language, custom_instructions=custom_instructions,
         ))
 
+    # A question an earlier run of the job already wrote is not asked again.
+    saved = {item: checkpoint.get(_question_key(*item)) if checkpoint is not None else None for item in wanted}
     # One context per thread carries the chosen model, the experiment pin and the timing spans.
     with ThreadPoolExecutor(max_workers=settings.question_concurrency) as pool:
-        futures = [pool.submit(contextvars.copy_context().run, ask, *item) for item in wanted]
-    asked = [future.result() for future in futures]
+        futures = {item: pool.submit(contextvars.copy_context().run, ask, *item)
+                   for item in wanted if saved[item] is None}
+    # Written once every call has returned, so that no transaction is open during one, and before a
+    # failed question is raised, so that the questions that were made are not paid for again.
+    if checkpoint is not None:
+        for item, future in futures.items():
+            if future.exception() is None:
+                checkpoint.put(_question_key(*item), _state_out(future.result().state))
+    asked = [futures[item].result() if item in futures else _Asked(item[0], item[1], _state_in(saved[item]))
+             for item in wanted]
 
     made = [a for a in asked if a.state.get("question") is not None]
     index = question_to_rebalance([a.state["question"] for a in made])
@@ -337,8 +369,10 @@ def run_module_generation(
     self_check: bool = True, use_retrieval: bool = True, paired_module: Module | None = None,
     output_language: OutputLanguage = "vi", custom_instructions: str = "",
     before_save: Callable[[Session, Module], None] | None = None,
+    checkpoint: Checkpoint | None = None,
 ) -> Module:
-    """`before_save` runs once the module has its id, in the transaction that writes it: the job queue
+    """`checkpoint` holds the steps an earlier run of the same job finished (app/generation/checkpoint.py).
+    `before_save` runs once the module has its id, in the transaction that writes it: the job queue
     checks there that its worker still holds the job and marks it done (app/jobs/queue.py, hold)."""
     # Keep read values in memory after each commit; expired attributes would silently reopen
     # a transaction when a prompt reads them. Restore the caller's session setting afterwards.
@@ -347,7 +381,7 @@ def run_module_generation(
     try:
         with timing.capture_timings() as spans:
             return _generate_module(db, doc, self_check, use_retrieval, paired_module,
-                                    output_language, custom_instructions, spans, before_save)
+                                    output_language, custom_instructions, spans, before_save, checkpoint)
     finally:
         db.expire_on_commit = expire_on_commit
 
@@ -449,11 +483,56 @@ def _explanation_items(asked: list[_Asked]) -> list[dict]:
     return items
 
 
+def _step(checkpoint: Checkpoint | None, name: str, model, make):
+    """One step that returns a pydantic model: read back if an earlier run did it, else made and written."""
+    saved = checkpoint.get(name) if checkpoint is not None else None
+    if saved is not None:
+        return model.model_validate(saved)
+    with timing.stage(name):
+        made = make()
+    if checkpoint is not None:
+        checkpoint.put(name, made.model_dump())
+    return made
+
+
+def _objective_out(objective: _Objective) -> dict:
+    return {"title": objective.title, "query": objective.query, "lo": objective.lo.model_dump(),
+            "context_chunk_ids": [str(c.id) for c in objective.context_chunks]
+            if objective.context_chunks is not None else None}
+
+
+def _objective_in(db: Session, doc: Document, saved: dict) -> _Objective:
+    ids = saved["context_chunk_ids"]
+    chunks = None
+    if ids is not None:
+        found = {str(c.id): c for c in db.query(Chunk).filter(
+            Chunk.document_id == doc.id, Chunk.id.in_([uuid.UUID(i) for i in ids]))}
+        # A chunk gone since (the document was embedded again) is left out, as a search would.
+        chunks = [found[i] for i in ids if i in found]
+    return _Objective(saved["title"], saved["query"], LearningObjective.model_validate(saved["lo"]), chunks)
+
+
+def _content_out(content_out, content_check, corrected: CorrectiveResult | None) -> dict:
+    return {"content": content_out.model_dump(),
+            "check": content_check.model_dump() if content_check is not None else None,
+            # Only what the module keeps of the relevance check: the passages were used for the content.
+            "corrected": {"confidence": corrected.confidence, "retries": corrected.retries}
+            if corrected is not None else None}
+
+
+def _content_in(saved: dict, use_retrieval: bool):
+    content_model, check_model = (SourcedContent, ContentVerification) if use_retrieval else (LessonText, LessonVerification)
+    check = check_model.model_validate(saved["check"]) if saved["check"] is not None else None
+    corrected = CorrectiveResult([], **saved["corrected"]) if saved["corrected"] is not None else None
+    return content_model.model_validate(saved["content"]), check, corrected
+
+
 def _generate_module(
     db: Session, doc: Document, self_check: bool = True,
     use_retrieval: bool = True, paired_module: Module | None = None,
     output_language: OutputLanguage = "vi", custom_instructions: str = "",
     spans: list[dict] | None = None, before_save: Callable[[Session, Module], None] | None = None,
+    checkpoint: Checkpoint | None = None,
 ) -> Module:
     """Planner -> LO -> Content -> Slides -> Example -> Quiz/Practice ->
     Explanation. Nguyên logic chuyển từ _run_generate_module() cũ
@@ -475,34 +554,44 @@ def _generate_module(
     scope = ChunkScope(doc.id)
     language = {"output_language": output_language, "custom_instructions": custom_instructions}
 
-    if use_retrieval:
+    saved = checkpoint.get("objective") if checkpoint is not None else None
+    if saved is not None:
+        objective = _objective_in(db, doc, saved)
+    elif use_retrieval:
         objective = _objective_from_sources(db, doc, scope, output_language, custom_instructions)
     else:
         objective = _objective_from_pair(doc, paired_module)
+    if checkpoint is not None and saved is None:
+        checkpoint.put("objective", _objective_out(objective))
     lo = objective.lo
     db.commit()
     module = _new_module(doc, objective, paired_module, self_check, use_retrieval, output_language, custom_instructions)
 
-    corrected = content_context = None
-    if use_retrieval:
-        with timing.stage("content_retrieval"):
-            corrected = _retrieve_for_content(db, doc, lo, objective.context_chunks, scope)
-            content_context = expand_with_parent_context(db, corrected.chunks, scope=scope)
-        db.commit()
-    with timing.stage("content"):
-        content_out, content_check = generate_content(lo, content_context, self_check=self_check, **language)
+    saved = checkpoint.get("content") if checkpoint is not None else None
+    if saved is not None:
+        content_out, content_check, corrected = _content_in(saved, use_retrieval)
+    else:
+        corrected = content_context = None
+        if use_retrieval:
+            with timing.stage("content_retrieval"):
+                corrected = _retrieve_for_content(db, doc, lo, objective.context_chunks, scope)
+                content_context = expand_with_parent_context(db, corrected.chunks, scope=scope)
+            db.commit()
+        with timing.stage("content"):
+            content_out, content_check = generate_content(lo, content_context, self_check=self_check, **language)
+        if checkpoint is not None:
+            checkpoint.put("content", _content_out(content_out, content_check, corrected))
     content_component = _content_component(module, content_out, corrected)
 
     lesson_text = MARKER.sub("", content_out.content)
-    with timing.stage("slides"):
-        slides_out = generate_slides(lo, lesson_text, **language)
+    slides_out = _step(checkpoint, "slides", SlidesOutput, lambda: generate_slides(lo, lesson_text, **language))
     slides_component = ModuleComponent(
         module_id=module.id, type=ComponentType.slides,
         content={"slides": [s.model_dump() for s in slides_out.slides]},
     )
 
-    with timing.stage("example"):
-        example_out = generate_example(lo, lesson_text, objective.context_chunks, **language)
+    example_out = _step(checkpoint, "example", ExampleOutput,
+                        lambda: generate_example(lo, lesson_text, objective.context_chunks, **language))
     example_component = ModuleComponent(
         module_id=module.id, type=ComponentType.example,
         content={"examples": [e.model_dump() for e in example_out.examples]},
@@ -511,7 +600,7 @@ def _generate_module(
     with timing.stage("questions"):
         asked = _generate_questions(
             db, doc, lo, objective.query, scope, self_check,
-            lesson=None if use_retrieval else lesson_text, **language,
+            lesson=None if use_retrieval else lesson_text, **language, checkpoint=checkpoint,
         )
     items = _explanation_items(asked)
 
@@ -577,6 +666,7 @@ def run_module_generation_step(job: Job) -> None:
                 output_language=current_job.payload.get("output_language", "vi"),
                 custom_instructions=current_job.payload.get("custom_instructions", ""),
                 before_save=lambda session, module: _finish(hold(session, job), module),
+                checkpoint=Checkpoint(db, current_job.id),
             )
     finally:
         db.close()

@@ -17,6 +17,7 @@ from sqlalchemy import func, select
 
 from app.config import settings
 from app.db import WorkerSessionLocal
+from app.jobs.queue import RENDER_JOB_TYPES
 from app.models import Job, JobStatus
 
 logger = logging.getLogger(__name__)
@@ -29,13 +30,18 @@ def queue_counts(db) -> dict[str, float]:
 
     A job waiting out a retry backoff is queued but not due: it is not work a new worker could
     take, so counting it would scale up for nothing."""
-    ready, oldest = db.execute(
-        select(func.count(), func.extract("epoch", func.now() - func.min(Job.run_after)))
+    rendering = Job.job_type.in_(RENDER_JOB_TYPES)
+    ready, render_ready, oldest = db.execute(
+        select(func.count().filter(~rendering), func.count().filter(rendering),
+               func.extract("epoch", func.now() - func.min(Job.run_after)))
         .where(Job.status == JobStatus.queued, Job.run_after <= func.now())
     ).one()
     running = db.scalar(select(func.count()).where(Job.status == JobStatus.running))
+    # Two services, two signals: the general workers report both, since the render service is at
+    # zero tasks when nothing waits for it and could not report that something does.
     return {
         "JobsReady": float(ready),
+        "RenderJobsReady": float(render_ready),
         "JobsRunning": float(running),
         "OldestReadyJobAgeSeconds": float(oldest or 0.0),
     }

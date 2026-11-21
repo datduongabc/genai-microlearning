@@ -23,7 +23,7 @@ function e2e_user($username, $first) {
         return $u;
     }
     $id = user_create_user((object)[
-        // E2E_USER_PASSWORD: infra/scripts/moodle-tunnel.sh puts this Moodle on a public address.
+        // E2E_USER_PASSWORD: infra/scripts/moodle-demo.sh puts this Moodle on a public address.
         'username' => $username, 'password' => getenv('E2E_USER_PASSWORD') ?: 'E2e-user-pass-1!', 'firstname' => $first, 'lastname' => 'E2E',
         'email' => "$username@example.com", 'auth' => 'manual', 'confirmed' => 1, 'mnethostid' => $CFG->mnet_localhost_id,
     ]);

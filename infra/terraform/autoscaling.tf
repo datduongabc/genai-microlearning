@@ -2,6 +2,7 @@ locals {
   scalable = merge({
     api      = var.api
     worker   = var.worker
+    renderer = var.renderer
     embedder = var.embedder
     gateway  = var.gateway
   }, local.use_reranker ? { reranker = var.reranker } : {})
@@ -143,4 +144,87 @@ resource "aws_cloudwatch_metric_alarm" "worker_idle" {
   # No data means no worker reported, which is not evidence of an empty queue.
   treat_missing_data = "missing"
   alarm_actions      = [aws_appautoscaling_policy.worker_in.arn]
+}
+
+# --- renderer: video renders that are due and that no renderer has taken, as the general workers
+# report them (RenderJobsReady). One task renders one video, so a backlog of n adds n tasks at
+# once, up to max; a minute is enough to see one, since a lecturer waits for this one.
+
+resource "aws_appautoscaling_policy" "renderer_out" {
+  name               = "${local.name}-renderer-out"
+  policy_type        = "StepScaling"
+  service_namespace  = "ecs"
+  resource_id        = aws_appautoscaling_target.service["renderer"].resource_id
+  scalable_dimension = aws_appautoscaling_target.service["renderer"].scalable_dimension
+
+  step_scaling_policy_configuration {
+    adjustment_type         = "ChangeInCapacity"
+    cooldown                = 90
+    metric_aggregation_type = "Maximum"
+
+    # Bounds are relative to the alarm threshold of 1 render ready.
+    step_adjustment {
+      metric_interval_lower_bound = 0
+      metric_interval_upper_bound = 1
+      scaling_adjustment          = 1
+    }
+    step_adjustment {
+      metric_interval_lower_bound = 1
+      metric_interval_upper_bound = 3
+      scaling_adjustment          = 2
+    }
+    step_adjustment {
+      metric_interval_lower_bound = 3
+      scaling_adjustment          = 4
+    }
+  }
+}
+
+resource "aws_appautoscaling_policy" "renderer_in" {
+  name               = "${local.name}-renderer-in"
+  policy_type        = "StepScaling"
+  service_namespace  = "ecs"
+  resource_id        = aws_appautoscaling_target.service["renderer"].resource_id
+  scalable_dimension = aws_appautoscaling_target.service["renderer"].scalable_dimension
+
+  step_scaling_policy_configuration {
+    # All idle ones at once: a renderer with a render running is protected (app/jobs/ecs_protection.py).
+    adjustment_type         = "ExactCapacity"
+    cooldown                = 300
+    metric_aggregation_type = "Maximum"
+
+    step_adjustment {
+      metric_interval_upper_bound = 0
+      scaling_adjustment          = var.renderer.min
+    }
+  }
+}
+
+resource "aws_cloudwatch_metric_alarm" "renderer_backlog" {
+  alarm_name          = "${local.name}-renderer-backlog"
+  alarm_description   = "A video render is due and no renderer has taken it: add renderers."
+  namespace           = "Microlearning/Jobs"
+  metric_name         = "RenderJobsReady"
+  statistic           = "Maximum"
+  period              = 60
+  evaluation_periods  = 1
+  threshold           = 1
+  comparison_operator = "GreaterThanOrEqualToThreshold"
+  treat_missing_data  = "notBreaching"
+  alarm_actions       = [aws_appautoscaling_policy.renderer_out.arn]
+}
+
+resource "aws_cloudwatch_metric_alarm" "renderer_idle" {
+  alarm_name          = "${local.name}-renderer-idle"
+  alarm_description   = "No render has waited in 10 minutes: back to the minimum."
+  namespace           = "Microlearning/Jobs"
+  metric_name         = "RenderJobsReady"
+  statistic           = "Maximum"
+  period              = 60
+  evaluation_periods  = 10
+  threshold           = 1
+  comparison_operator = "LessThanThreshold"
+  # No data means no worker reported, which is not evidence of an empty queue.
+  treat_missing_data = "notBreaching"
+  alarm_actions      = [aws_appautoscaling_policy.renderer_in.arn]
 }

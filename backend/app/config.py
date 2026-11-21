@@ -148,6 +148,10 @@ class Settings(BaseSettings):
     # False when the jobs run in their own process (python -m app.jobs.worker), so that API
     # and workers scale separately. True keeps a single process working on its own.
     run_job_worker: bool = True
+    # Which jobs this process takes (app/jobs/queue.py RENDER_JOB_TYPES). On AWS the "general" workers
+    # leave rendering to "render" tasks of their own, so that an encode does not slow the others' jobs
+    # and two videos render on two tasks; "all" is one process doing everything, as in compose.
+    worker_queue: Literal["all", "general", "render"] = "all"
     # Jobs one process runs at once. Read from WORKER_POOL_SIZE.
     worker_pool_size: int = Field(default=4, ge=1)
     # Rerank calls one process has in flight. The service counts each candidate text against its queue

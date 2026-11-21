@@ -128,7 +128,7 @@ jobs:
       - run: bash -n ../scripts/deploy.sh
       - run: bash -n ../scripts/tf.sh
       - run: bash ../scripts/tf.test.sh
-      - run: bash -n ../scripts/moodle-tunnel.sh
+      - run: bash -n ../scripts/moodle-demo.sh
       - run: bash ../scripts/stack-power.test.sh
 
   moodle-plugin:

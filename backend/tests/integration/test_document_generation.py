@@ -1,20 +1,23 @@
 """Document generation, transaction release and tenant scope with offline providers."""
 
-import types
 import uuid
 
 import pytest
 
 from app.db import SessionLocal
 from app.generation import module_generation_pipeline as pipeline
+from app.generation.content import ContentVerification, SourcedContent
 from app.generation.example import Example, ExampleOutput
+from app.generation.objective import LearningObjective
 from app.generation.planner import Concept, PlannerOutput
 from app.generation.quiz_graph import QuizQuestion
 from app.generation.relevance import CorrectiveResult
+from app.generation.slides import SlidesOutput
 from app.generation.study_packets import resolved_citations
 from app.ingestion.embeddings import embed_texts
 from app.models import (
     Chunk,
+    ComponentType,
     Course,
     Document,
     DocumentStatus,
@@ -94,9 +97,9 @@ def seen(monkeypatch):
                 "fail_reason": None if passed else "C and D both describe abstraction",
                 "correction_retry_count": 0 if passed else 1}
 
-    objective = types.SimpleNamespace(
-        objective_text="objective", bloom_level="understand", sub_objectives=["first", "second"]
-    )
+    # Real outputs, not stand-ins: the job writes each finished step to its checkpoint as JSON.
+    objective = OUTPUTS[LearningObjective].model_copy(
+        update={"objective_text": "objective", "sub_objectives": ["first", "second"]})
     monkeypatch.setattr(
         pipeline, "corrective_retrieve", lambda objective, chunks, re_retrieve: CorrectiveResult(chunks, "high", 0)
     )
@@ -113,14 +116,15 @@ def seen(monkeypatch):
         pipeline,
         "generate_content",
         lambda lo, chunks, self_check=True, output_language="vi", custom_instructions="": (
-            types.SimpleNamespace(content="content", source_locators=[], claim_citations=[]),
-            types.SimpleNamespace(groundedness_pass=True),
+            SourcedContent(content="content", source_map={}, source_locators=[], inline_citations=[]),
+            ContentVerification(groundedness_pass=True, groundedness_reason="", completeness_pass=True,
+                                completeness_reason="", scope_pass=True, scope_reason=""),
         ),
     )
     monkeypatch.setattr(
         pipeline,
         "generate_slides",
-        lambda lo, content, output_language="vi", custom_instructions="": types.SimpleNamespace(slides=[]),
+        lambda lo, content, output_language="vi", custom_instructions="": OUTPUTS[SlidesOutput],
     )
     monkeypatch.setattr(
         pipeline,
@@ -363,3 +367,54 @@ def test_the_module_and_its_job_being_done_are_one_commit(document_world, seen, 
         db.expire_all()
         module = db.query(Module).filter(Module.document_id == document_world["doc"]).one()
         assert (job.status, job.module_id) == (JobStatus.done, module.id)
+
+
+def test_a_job_run_again_after_a_failure_pays_only_for_the_steps_not_yet_done(document_world, seen, monkeypatch):
+    """A worker stopped part way, or a step that failed, used to make the module again from the
+    objective: every model call that had succeeded was paid for a second time."""
+    calls = {"objective": 0, "content": 0, "example": 0, "quiz": []}
+    fail = {"example": True, "question": "second"}
+
+    def counted(name, real):
+        def call(*args, **kwargs):
+            calls[name] += 1
+            if fail.get(name):
+                fail[name] = False
+                raise RuntimeError(f"{name} stopped")
+            return real(*args, **kwargs)
+        return call
+
+    for name, attr in (("objective", "generate_learning_objective"), ("content", "generate_content"),
+                       ("example", "generate_example")):
+        monkeypatch.setattr(pipeline, attr, counted(name, getattr(pipeline, attr)))
+    real_quiz = pipeline.generate_quiz_question
+
+    def quiz(db, course_id, query, *args, **kwargs):
+        calls["quiz"].append(query)
+        if fail["question"] == query:
+            fail["question"] = None
+            raise RuntimeError("question stopped")
+        return real_quiz(db, course_id, query, *args, **kwargs)
+    monkeypatch.setattr(pipeline, "generate_quiz_question", quiz)
+
+    db = SessionLocal()
+    try:
+        job = Job(job_type=JobType.module_generation, step="generate", status=JobStatus.running,
+                  document_id=document_world["doc"])
+        db.add(job)
+        db.commit()
+        for stop in ("example stopped", "question stopped"):
+            with pytest.raises(RuntimeError, match=stop):
+                pipeline.run_module_generation_step(job)
+        pipeline.run_module_generation_step(job)
+
+        db.expire_all()
+        assert db.get(Job, job.id).status == JobStatus.done
+        # Each step was paid for once, except the two that failed; of the questions, only the one that failed was asked again.
+        assert (calls["objective"], calls["content"], calls["example"]) == (1, 1, 2)
+        assert sorted(calls["quiz"]) == sorted(["first", "second", "Sorting: how to sort", "second"])
+        module = db.get(Module, db.get(Job, job.id).module_id)
+        quiz_part = next(c for c in module.components if c.type == ComponentType.quiz)
+        assert len(quiz_part.questions) == 2
+    finally:
+        db.close()
