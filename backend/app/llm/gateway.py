@@ -277,11 +277,17 @@ def complete_structured[T: BaseModel](
             if attempt == MALFORMED_REPLY_RETRIES or not _REPLY_BROKE_SCHEMA.search(str(error)):
                 raise
             continue
+        choice = response.choices[0]
+        if choice.message.content is None:
+            # A thinking model that spends its whole output budget thinking answers with nothing; asking
+            # again under the same cap would pay for the same. Said plainly instead of json.loads(None).
+            raise ValueError(f"The model returned no answer (finish_reason={choice.finish_reason}): "
+                             "its output limit ran out before it wrote one")
         try:
             # strict=False: model hay để lọt tab, xuống dòng trần vào giữa chuỗi JSON khi viết công
             # thức, và trình đọc nghiêm từ chối cả câu trả lời dù nó vẫn đọc được. Schema vẫn được
             # kiểm đầy đủ ngay sau đó.
-            return response_model.model_validate(json.loads(response.choices[0].message.content, strict=False))
+            return response_model.model_validate(json.loads(choice.message.content, strict=False))
         except (json.JSONDecodeError, ValidationError):
             # Both are ValueError, which the job queue treats as permanent: without asking again here,
             # one bad reply late in a module would throw away every paid call made before it.

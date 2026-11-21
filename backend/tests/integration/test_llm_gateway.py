@@ -325,3 +325,25 @@ def test_the_backend_does_not_retry_on_top_of_the_gateway_and_gives_up_after_its
     assert asyncio.run(read()) == ["hi"]
     assert streamed["max_retries"] == 0
     assert streamed["timeout"] == llm.GATEWAY_TIMEOUT_SECONDS
+
+
+def test_a_reply_with_no_answer_says_the_output_limit_ran_out(monkeypatch):
+    """Seen with every study judge at a 2048-token cap: all of it went to thinking, and the content was
+    null. json.loads(None) said only "must be str, bytes or bytearray", and was asked again for nothing."""
+    calls = []
+
+    def proxy(request):
+        calls.append(request)
+        return httpx.Response(200, json={
+            "id": "chatcmpl-test", "object": "chat.completion", "created": 0, "model": "claude-fast",
+            "choices": [{"index": 0, "finish_reason": "length", "message": {"role": "assistant", "content": None}}],
+        })
+
+    with (
+        OpenAI(api_key="test-key", base_url="http://gateway.test/v1",
+               http_client=httpx.Client(transport=httpx.MockTransport(proxy))) as client,
+        llm.using_model("claude-fast"),
+        pytest.raises(ValueError, match="finish_reason=length"),
+    ):
+        llm.complete_structured("hello", _Answer, client=client)
+    assert len(calls) == 1
