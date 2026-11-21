@@ -23,7 +23,12 @@ from app.llm.catalog import GatewayUnavailable, fetch_model_info
 from app.llm.judge import eligible_judges, is_quota_error, model_family
 from app.models import Job, JobStatus, Rating, StudyItem
 
-OUTPUT_TOKENS = 2048
+# The judges think before they answer, and the thinking counts against this cap. At 2048 every judge
+# in the pool used it all on thinking on AWS on 2026-11-21 and returned no answer, so no module could
+# be rated. Measured on a Tree Concept pair: 2,243 to 10,309 tokens, up to 54 s (DeepSeek on the
+# no-RAG module); this leaves over twice the largest.
+OUTPUT_TOKENS = 24_000
+TIMEOUT_SECONDS = 300
 
 
 def item_generators(item: StudyItem) -> list:
@@ -155,7 +160,7 @@ def run_study_judge_step(queued: Job) -> None:
             def rate(item_id, packet, candidate):
                 alias, expected = candidate["alias"], candidate["model"]
                 with gateway.experiment_mode(), gateway.using_model(alias), gateway.capture_models() as calls:
-                    evaluation = judge_module(packet, max_tokens=OUTPUT_TOKENS, max_retries=0, timeout=120)
+                    evaluation = judge_module(packet, max_tokens=OUTPUT_TOKENS, max_retries=0, timeout=TIMEOUT_SECONDS)
                 # A malformed reply is re-asked inside the call, so there can be several calls: all pinned.
                 if not calls or any(c["served_model"].split("/")[-1] != expected.split("/")[-1] for c in calls):
                     raise ValueError("Gateway did not report the pinned judge model; rating was not saved")
