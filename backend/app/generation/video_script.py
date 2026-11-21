@@ -58,6 +58,7 @@ from app.generation.media_common import (
 from app.llm import catalog
 from app.llm.gateway import capture_models, complete_structured, using_model
 from app.models import Chunk, Document, Job, MediaStatus, Video
+from app.retrieval.search import ChunkScope, retrieve
 
 logger = logging.getLogger(__name__)
 
@@ -739,6 +740,124 @@ def generate_video_script(db: Session, video_id: uuid.UUID, before_save: Callabl
         video.cost = {**(video.cost or {}), "script": {**_script_cost(spans, length), "seconds": round(time.perf_counter() - started, 1)}}
         video.served_models = list(served)
         db.commit()
+
+
+# --- Revising the script at the lecturer's request ---
+
+class RevisedScene(SceneDraft):
+    from_scene: int | None = Field(
+        default=None, description="the number of the CURRENT scene this one is, changed or not; empty for a new scene")
+
+
+class RevisedScript(BaseModel):
+    reply: str = Field(description="One or two sentences to the lecturer: what was changed, or why nothing was")
+    scenes: list[RevisedScene]
+
+
+_REVISE_INSTRUCTION = IGNORE_EMBEDDED_INSTRUCTIONS + f"""You revise the script of a narrated lecture video at the request of
+the lecturer who owns it. You get the CURRENT SCENES, numbered, each bullet and narration sentence with the IDs of the
+chunks it is taken from, the source chunks, and the REQUEST.
+Return the whole script as it should be after the request: change, add, remove or reorder only what the request asks,
+and copy every other scene exactly as it is, word for word, with the same sources. Set `from_scene` to the number of
+the current scene each scene comes from, changed or not; leave it empty for a new scene.
+A scene you write or change follows the rules of the others: {MIN_BULLETS} to {MAX_BULLETS} short bullets on the slide and
+the narration as sentences, each bullet and sentence citing the chunks it is taken from and saying ONLY what they say.
+At most {MAX_SCENES} scenes and {MAX_ILLUSTRATIONS} illustration scenes. Keep the video near {TARGET_SECONDS // 60} minutes:
+a scene you add or change has about as much narration as the others.
+If the request cannot be done from the chunks, or is not about this video, return the scenes unchanged and say why in
+`reply`. Write `reply` in the language of the script.
+"""
+
+# What makes a revised scene the same scene as before: then it keeps its author, its flags and its media.
+_SAME = ("kind", "title", "bullets", "formula", "code", "table", "image_prompt", "narration",
+         "bullet_citations", "narration_citations")
+# The fields the media jobs fill and compare (app/api/videos.py, MEDIA_FIELDS): a changed scene keeps
+# them, so its picture or voice is made again only if what they were made from changed.
+_MEDIA = ("image_key", "image_prompt_used", "voice_key", "voice_text_used", "voice_alias_used")
+
+
+def _current_scene(number: int, scene: Scene, code: dict[str, str]) -> str:
+    def sources(ids: list[str]) -> list[str]:
+        return [code[c] for c in ids if c in code]
+    bullet_ids = scene.bullet_citations or [[]] * len(scene.bullets)
+    lines = [f"SCENE {number} ({scene.kind}): {scene.title}"]
+    lines += [f"  BULLET: {b} SOURCES: {sources(ids)}" for b, ids in zip(scene.bullets, bullet_ids, strict=False)]
+    if scene.formula:
+        lines.append(f"  FORMULA: {scene.formula}")
+    if scene.code:
+        lines.append(f"  CODE: {scene.code}")
+    if scene.table:
+        lines.append(f"  TABLE: {scene.table}")
+    if scene.image_prompt:
+        lines.append(f"  IMAGE: {scene.image_prompt}")
+    sentences = [line for line in scene.narration.split("\n") if line.strip()]
+    sentence_ids = scene.narration_citations or [[]] * len(sentences)
+    lines += [f"  SAYS: {t} SOURCES: {sources(ids)}" for t, ids in zip(sentences, sentence_ids, strict=False)]
+    return "\n".join(lines)
+
+
+def revise_video_script(db: Session, video: Video, request: str) -> tuple[str, list[dict]]:
+    """The video's scenes after the lecturer's request, and what the model says it did. A scene it
+    copies unchanged is kept as it was; one it writes or changes is checked and fact-checked as a
+    generated one, and keeps the picture and voice of the scene it came from until they are made again."""
+    doc = db.get(Document, video.document_id)
+    if doc is None:
+        raise ValueError("Tài liệu không còn.")
+    language: OutputLanguage = video.output_language  # type: ignore[assignment]
+    alias = catalog.served_or_default(video.model_alias)
+    fact_check.judge_alias(alias)
+    stored = [Scene.model_validate(s) for s in video.scenes]
+    # The passages the scenes already cite, then those the request is about: a new scene may need either.
+    cited_ids = list(dict.fromkeys(c for scene in stored for c in scene.citations))
+    by_id = {str(c.id): c for c in db.query(Chunk).filter(
+        Chunk.document_id == doc.id, Chunk.id.in_([uuid.UUID(c) for c in cited_ids]))} if cited_ids else {}
+    chunks = [by_id[c] for c in cited_ids if c in by_id]
+    chunks += [c for c in retrieve(db, doc.course_id, request, top_k=8, scope=ChunkScope(doc.id)) if str(c.id) not in by_id]
+    code = {str(c.id): source_id(i) for i, c in enumerate(chunks)}
+    current = "\n\n".join(_current_scene(n, scene, code) for n, scene in enumerate(stored, 1))
+    with using_model(alias):
+        revised = complete_structured(
+            f"CURRENT SCENES:\n{current}\n\n{format_source_chunks(chunks)}\n\nREQUEST: {request}", RevisedScript,
+            system_instruction=_REVISE_INSTRUCTION + _NARRATION_RULES + "\n" + _slide_language_rule(language)
+            + f"\n{term_rules(language)}" + output_language_instruction(language),
+            temperature=0.2,
+        )
+
+    drafts: list[tuple[_Draft, Scene | None]] = []
+    taken: set[int] = set()
+    for d in revised.scenes:
+        bullets, _ = _cited(d.bullets, chunks)
+        narration, _ = _cited(d.narration, chunks)
+        if len(bullets) < MIN_BULLETS or not narration:
+            continue
+        origin = d.from_scene - 1 if d.from_scene and 0 < d.from_scene <= len(stored) else None
+        # One stored scene's files go to one scene only, or drawing one again would delete the other's.
+        before = stored[origin] if origin is not None and origin not in taken else None
+        if before is not None:
+            taken.add(origin)
+        drafts.append((_Draft(kind=d.kind, title=d.title.strip(), bullets=bullets, narration=narration, formula=d.formula,
+                              code=d.code, table=d.table, image_prompt=d.image_prompt), before))
+    drafts = drafts[:MAX_SCENES]
+    _settle_kinds([draft for draft, _ in drafts])
+
+    scenes: list[dict | None] = []
+    fresh: list[tuple[int, _Draft]] = []
+    for draft, before in drafts:
+        now = _stored(draft, language)
+        if before is not None and all(getattr(before, f) == now[f] for f in _SAME):
+            scenes.append(before.model_dump())
+            continue
+        if before is not None:
+            now |= {f: getattr(before, f) for f in _MEDIA}
+        scenes.append(now)
+        fresh.append((len(scenes) - 1, draft))
+    verdicts = fact_check.check_items_against_sources(
+        [(_items(draft, language), [c.content for c in draft.chunks()]) for _, draft in fresh], alias, language)
+    for (index, draft), item_flags in zip(fresh, verdicts, strict=True):
+        invented = _invented_in_picture(draft)
+        flags = [f"Mô tả hình có {', '.join(invented)}, không có trong đoạn nguồn của cảnh: hãy sửa mô tả trước khi vẽ."] if invented else []
+        scenes[index]["flags"] = flags + [flag for flag in item_flags if flag]
+    return revised.reply.strip(), scenes  # type: ignore[return-value]
 
 
 def run_video_script_step(job: Job) -> None:

@@ -13,7 +13,7 @@ from pathlib import Path
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
-from pydantic import BaseModel, Field, StringConstraints, field_validator
+from pydantic import BaseModel, Field, StringConstraints, ValidationError, field_validator
 from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session
 
@@ -23,7 +23,13 @@ from app.api.model_alias import generation_alias
 from app.api.stored_files import download_link, send_stored
 from app.auth.rate_limit import limiter, user_or_address
 from app.db import get_db
-from app.generation.limits import has_full_access, reserve_generations, reserve_video_redraws, reserve_video_render
+from app.generation.limits import (
+    has_full_access,
+    reserve_edit,
+    reserve_generations,
+    reserve_video_redraws,
+    reserve_video_render,
+)
 from app.generation.video_script import (
     MAX_BULLETS,
     MAX_ILLUSTRATIONS,
@@ -34,6 +40,7 @@ from app.generation.video_script import (
     estimated_seconds,
     labels_as_shown,
     prepare_for_render,
+    revise_video_script,
     text_words_in_formula,
 )
 from app.jobs.queue import enqueue_job
@@ -349,16 +356,64 @@ def edit_scenes(
     # The files no scene names any more (a removed scene's, a picture whose description was emptied)
     # are no one's. A job that may still read them (it read the scenes before this edit) keeps
     # them; they are then left behind, which costs only storage.
+    _save_scenes(db, video, stored, scenes)
+    return _detail(db, video)
+
+
+def _save_scenes(db: Session, video: Video, stored: list, scenes: list[dict]) -> None:
+    """Saves a new draft and deletes the files no scene names any more."""
     kept = {s[f] for s in scenes for f in ("image_key", "voice_key") if s.get(f)}
     dropped = [] if _job_in_flight(db, video, (JobType.video_images, JobType.video_render)) else list(dict.fromkeys(
         s[f] for s in stored for f in ("image_key", "voice_key") if s.get(f) and s[f] not in kept))
-
     video.scenes = scenes
     video.draft_version += 1
     db.commit()
     delete_media_files(dropped)
     db.refresh(video)
-    return _detail(db, video)
+
+
+class ReviseRequest(BaseModel):
+    draft_version: int
+    message: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=2000)]
+
+
+_STALE = "Bản nháp đã được lưu ở nơi khác. Hãy tải lại trang rồi sửa tiếp."
+
+
+@router.post("/videos/{video_id}/revise")
+@limiter.limit("20/minute", key_func=user_or_address)
+def revise_script(
+    request: Request, video_id: uuid.UUID, body: ReviseRequest, db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """The script rewritten as the lecturer asks in words, saved as a new draft version like a manual
+    edit: what was unchanged keeps its picture and voice, and the editor shows what to draw or render again."""
+    video = _owned_video(db, video_id, current_user)
+    if video.status == MediaStatus.generating or not video.scenes:
+        raise HTTPException(status_code=409, detail="Lời thoại đang được viết. Hãy chờ xong rồi sửa.")
+    if body.draft_version != video.draft_version:
+        raise HTTPException(status_code=409, detail=_STALE)
+    reserve_edit(db, current_user)
+    try:
+        reply, scenes = revise_video_script(db, video, body.message)
+    except (ValidationError, ValueError) as exc:
+        db.rollback()
+        raise HTTPException(status_code=422, detail="Kết quả chỉnh sửa không hợp lệ nên video chưa thay đổi. Hãy thử lại.") from exc
+    # Locked only now: the model call takes seconds and must not hold the row.
+    video = _owned_video(db, video_id, current_user, lock=True)
+    if body.draft_version != video.draft_version:
+        raise HTTPException(status_code=409, detail=_STALE)
+    if not scenes:
+        raise HTTPException(status_code=422, detail=reply or "Yêu cầu này sẽ xóa hết các cảnh nên video chưa thay đổi.")
+    if estimated_seconds(scenes) > MAX_SECONDS:
+        raise HTTPException(status_code=422, detail=(
+            f"Sau khi sửa, video sẽ dài hơn {MAX_SECONDS // 60} phút nên chưa thay đổi. Hãy yêu cầu ngắn hơn."))
+    changed = scenes != list(video.scenes)
+    if changed:
+        _save_scenes(db, video, list(video.scenes), scenes)
+    else:
+        db.commit()
+    return _detail(db, video) | {"reply": reply, "changed": changed}
 
 
 # --- Generating, drawing, rendering ---

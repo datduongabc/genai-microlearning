@@ -208,6 +208,7 @@ ATTACKS = [
     ("PUT", "/videos/{video}/scenes", None, {"json": VIDEO_EDIT}),
     ("POST", "/videos/{video}/illustrations", None, {"json": {}}),
     ("POST", "/videos/{video}/render", None, {}),
+    ("POST", "/videos/{video}/revise", None, {"json": {"draft_version": 1, "message": "x"}}),
     ("POST", "/videos/{video}/publish", None, {}),
     ("POST", "/videos/{video}/unpublish", None, {}),
     ("GET", "/videos/{video}/file", None, {}),
