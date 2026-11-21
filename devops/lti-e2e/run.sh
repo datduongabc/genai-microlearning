@@ -109,6 +109,18 @@ COTEACHER="$(browse e2eteacher2 | tee >(cat >&2) | tail -1)"
 jq -e --argjson t "$TEACHER" '.user.can_author == true and .course_role == "owner" and .course_id == $t.course_id
   and (.courses | map(.id) == [$t.course_id]) and .documents == 200 and .rename == 403' <<<"$COTEACHER" >/dev/null \
   || { echo "second teacher check failed" >&2; exit 1; }
+echo "== Admin hands the course to the second teacher, keeping the first as a teacher"
+ADMIN_PASSWORD=E2e-admin-tool-pass-1 PYTHONPATH=. uv run python scripts/create_admin.py e2eadmin@example.com >/dev/null
+ADMIN_TOKEN="$(curl -fs -X POST localhost:58000/api/auth/login -H 'content-type: application/json' \
+  -d '{"email":"e2eadmin@example.com","password":"E2e-admin-tool-pass-1"}' | jq -r .access_token)"
+COURSE_ID="$(jq -r .course_id <<<"$TEACHER")"
+curl -fs -X POST "localhost:58000/api/admin/courses/$COURSE_ID/transfer" -H "Authorization: Bearer $ADMIN_TOKEN" \
+  -H 'content-type: application/json' -d "$(jq -n --arg o "$(jq -r .user.id <<<"$COTEACHER")" '{new_owner_id: $o}')" >/dev/null \
+  || { echo "transfer refused" >&2; exit 1; }
+browse e2eteacher2 | tail -1 | jq -e --arg c "$COURSE_ID" '.course_id == $c and .course_role == "owner" and .rename == 200' >/dev/null \
+  || { echo "the new owner cannot rename the course" >&2; exit 1; }
+browse e2eteacher | tail -1 | jq -e --arg c "$COURSE_ID" '.course_id == $c and .course_role == "owner" and .documents == 200 and .rename == 403' >/dev/null \
+  || { echo "the previous owner is not a teacher of the course" >&2; exit 1; }
 echo "== Stored"
 docker exec lti-e2e-db psql -U postgres -d microlearning -tAc \
   "select 'users ' || count(*) || ', moodle_user_id ' || string_agg(moodle_user_id::text, ',') from users" -c \
@@ -136,7 +148,7 @@ docker exec -u www-data lti-e2e-moodle php /e2e/unenrol.php e2estudent
 SYNC="$(sync 2)"; echo "$SYNC"
 jq -e '.removed == 1 and .skipped == 0' <<<"$SYNC" >/dev/null && [[ "$(members)" == 1 ]] \
   || { echo "the roster check did not remove the student" >&2; exit 1; }
-echo "== Teacher still owns the course after the check"
-browse e2eteacher | tail -1 | jq -e '.course_role == "owner" and .documents == 200' >/dev/null || { echo "teacher lost the course" >&2; exit 1; }
-browse e2eteacher2 | tail -1 | jq -e '.course_role == "owner" and .rename == 403' >/dev/null || { echo "second teacher lost the course" >&2; exit 1; }
+echo "== Both teachers keep the course after the check: the second owns it, the first teaches it"
+browse e2eteacher2 | tail -1 | jq -e '.course_role == "owner" and .rename == 200' >/dev/null || { echo "new owner lost the course" >&2; exit 1; }
+browse e2eteacher | tail -1 | jq -e '.course_role == "owner" and .documents == 200 and .rename == 403' >/dev/null || { echo "first teacher lost the course" >&2; exit 1; }
 echo "== All checks passed"

@@ -258,3 +258,60 @@ def test_an_account_that_owns_courses_is_not_erased_and_a_lecturer_cannot_erase(
         assert db.get(User, uuid.UUID(lecturer_id)).is_active
         db.query(Course).filter_by(id=course_id).delete()
         db.commit()
+
+
+def test_a_course_handed_over_keeps_its_material_and_lets_the_previous_lecturer_be_erased(admin, lecturer):
+    """A lecturer leaves: the admin hands the course to another, who owns everything under it; the previous
+    one stays a teacher if asked, and with no course of their own their data can then be erased."""
+    from app.models import Document, DocumentStatus
+    previous_id = uuid.UUID(lecturer["user"]["id"])
+    successor = create_and_login(client, _email("successor"))
+    with SessionLocal() as db:
+        course = Course(name="Handed over", owner_id=previous_id)
+        db.add(course)
+        db.flush()
+        db.add(Document(course_id=course.id, filename="notes.pdf", status=DocumentStatus.embedded))
+        db.commit()
+        course_id = str(course.id)
+
+    listed = client.get(f"/admin/users/{previous_id}/courses", headers=_bearer(admin)).json()
+    assert [c["id"] for c in listed] == [course_id]
+    moved = client.post(f"/admin/courses/{course_id}/transfer", headers=_bearer(admin),
+                        json={"new_owner_id": successor["user"]["id"], "keep_previous_as_teacher": True})
+
+    assert moved.status_code == 200
+    assert [c["id"] for c in client.get("/courses", headers=_bearer(successor)).json()] == [course_id]
+    documents = client.get("/documents", params={"course_id": course_id}, headers=_bearer(successor)).json()
+    assert [d["filename"] for d in documents] == ["notes.pdf"]
+    # The previous lecturer still teaches it, without owning it.
+    assert client.get("/documents", params={"course_id": course_id}, headers=_bearer(lecturer)).status_code == 200
+    assert client.delete(f"/courses/{course_id}", headers=_bearer(lecturer)).status_code == 403
+    assert client.get(f"/admin/users/{previous_id}/courses", headers=_bearer(admin)).json() == []
+    assert client.post(f"/admin/users/{previous_id}/erase", headers=_bearer(admin)).status_code == 200
+    with SessionLocal() as db:
+        db.query(Course).filter_by(id=uuid.UUID(course_id)).delete()
+        db.commit()
+
+
+def test_a_course_is_not_handed_to_someone_who_cannot_teach_it_nor_by_a_lecturer(admin, lecturer):
+    lecturer_id = lecturer["user"]["id"]
+    disabled = create_and_login(client, _email("disabled"))
+    with SessionLocal() as db:
+        db.get(User, uuid.UUID(disabled["user"]["id"])).is_active = False
+        course = Course(name="Stays", owner_id=uuid.UUID(lecturer_id))
+        db.add(course)
+        db.commit()
+        course_id = course.id
+
+    def transfer(to, who=admin):
+        return client.post(f"/admin/courses/{course_id}/transfer", headers=_bearer(who), json={"new_owner_id": to})
+
+    assert transfer(disabled["user"]["id"]).status_code == 422
+    assert transfer(lecturer_id).status_code == 409
+    assert client.post(f"/admin/courses/{uuid.uuid4()}/transfer", headers=_bearer(admin),
+                       json={"new_owner_id": lecturer_id}).status_code == 404
+    assert transfer(admin["user"]["id"], who=lecturer).status_code == 404
+    with SessionLocal() as db:
+        assert db.get(Course, course_id).owner_id == uuid.UUID(lecturer_id)
+        db.delete(db.get(Course, course_id))
+        db.commit()
