@@ -1,6 +1,6 @@
 # HLD và LLD
 
-Trạng thái: cập nhật 2026-11-20, khớp với main sau PR #185.
+Trạng thái: cập nhật 2026-11-20, khớp với main sau PR #188.
 Thay bộ ảnh PNG ngày 05-06/11 trong `hld-lld/`, vốn thiếu flashcard, video, SCORM, trang học viên, OpenRouter, đồng giảng viên và hồ sơ production.
 Hình viết bằng Mermaid để GitHub tự vẽ và sửa được bằng tay; script vẽ ảnh cũ đã mất.
 Số đo nằm trong report (mục Results), tài liệu này chỉ mô tả thiết kế.
@@ -68,7 +68,7 @@ flowchart TB
   DEP -->|tác giả: owner hoặc teacher| AUTHOR[documents, modules,<br/>flashcards, videos, jobs]
   DEP -->|chỉ owner| OWN[đổi tên, xóa môn,<br/>liên kết Moodle]
   DEP -->|member learner| LEARN["/learn: đọc, chat riêng"]
-  DEP -->|admin| ADM[tài khoản, job lỗi,<br/>nghiên cứu, erase_user]
+  DEP -->|admin| ADM[tài khoản, job lỗi,<br/>nghiên cứu, chuyển môn,<br/>erase_user]
   AUTHOR & OWN & LEARN & ADM --> RLS[(RLS trong Postgres<br/>app.current_user_id)]
 ```
 
@@ -77,6 +77,7 @@ Mỗi request chạy bằng role `app_runtime`, đặt `app.current_user_id` cho
 Không có quyền thì trả 404, không phải 403, để một id không tự xác nhận là có tồn tại; riêng đồng giảng viên chạm vào việc chỉ owner được làm thì nhận 403 có lý do.
 Thao tác admin xuyên tenant đi qua hàm `SECURITY DEFINER` có kiểm tra `current_user_is_admin()`.
 `erase_user` (0048) xóa email, tên, mật khẩu, liên kết Moodle, chat, membership, phiên đăng nhập và tên trong danh sách người chấm; giữ dòng user để lượt chấm còn khóa ngoại; từ chối khi người đó còn sở hữu môn học.
+`transfer_course` (0050) chuyển một môn cho giảng viên khác: chỉ đổi `courses.owner_id`, nên tài liệu, module, flashcard, video và liên kết Moodle đi theo môn; người cũ ở lại làm `teacher` nếu admin chọn. Admin chuyển hết môn trước, rồi mới xóa dữ liệu được.
 
 ### 2.2 LTI 1.3 và người trong môn
 
