@@ -32,11 +32,13 @@ function e2e_user($username, $first) {
 
 $teacher = e2e_user('e2eteacher', 'Teacher');
 $student = e2e_user('e2estudent', 'Student');
+$coteacher = e2e_user('e2eteacher2', 'Coteacher');
 
 $course = $DB->get_record('course', ['shortname' => 'HDH-E2E']) ?: create_course((object)[
     'fullname' => 'Hệ điều hành E2E', 'shortname' => 'HDH-E2E', 'category' => 1,
 ]);
 enrol_try_internal_enrol($course->id, $teacher->id, $DB->get_field('role', 'id', ['shortname' => 'editingteacher']));
+enrol_try_internal_enrol($course->id, $coteacher->id, $DB->get_field('role', 'id', ['shortname' => 'editingteacher']));
 enrol_try_internal_enrol($course->id, $student->id, $DB->get_field('role', 'id', ['shortname' => 'student']));
 
 $type = $DB->get_record('lti_types', ['name' => 'Microlearning E2E']);
