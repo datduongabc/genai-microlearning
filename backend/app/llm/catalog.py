@@ -172,7 +172,9 @@ _KEY_WORDS = ("api_key", "api key", "credential", "unauthorized", "authenticatio
 _QUOTA_WORDS = ("rate limit", "quota", "resource_exhausted")
 # Only explicit credit signals: Gemini's free-tier quota 429 also says "plan and billing details".
 _BALANCE_ERROR = re.compile(
-    r"\b(?:insufficient_quota|billing_hard_limit_reached|credits?|insufficient[ _]funds)\b",
+    # "balance": OpenRouter refuses image and video output below $1 with "requires at least $1.00 in
+    # balance", a 402 like an empty account and fixed the same way.
+    r"\b(?:insufficient_quota|billing_hard_limit_reached|credits?|insufficient[ _]funds|balance)\b",
     re.IGNORECASE,
 )
 
