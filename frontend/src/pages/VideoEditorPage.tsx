@@ -11,6 +11,7 @@ import {
   MAX_SCENES,
   publishVideo,
   renderVideo,
+  reviseVideo,
   saveVideoScenes,
   type VideoDetail,
   type VideoJob,
@@ -70,7 +71,8 @@ export function VideoEditorPage() {
   const [loadFailed, setLoadFailed] = useState(false)
   const [missing, setMissing] = useState(false)
   const [attempt, setAttempt] = useState(0)
-  const [busy, setBusy] = useState<'save' | 'draw' | 'render' | 'publish' | 'delete' | 'reload' | null>(null)
+  const [busy, setBusy] = useState<'save' | 'revise' | 'draw' | 'render' | 'publish' | 'delete' | 'reload' | null>(null)
+  const [request, setRequest] = useState('')
   const [stale, setStale] = useState(false)
   // The one scene open for editing, by its draft key; the others are read as the learner sees them.
   const [openKey, setOpenKey] = useState<number | null>(null)
@@ -372,6 +374,23 @@ export function VideoEditorPage() {
     }
   }
 
+  async function revise() {
+    setBusy('revise')
+    try {
+      const { reply, changed, ...video } = await reviseVideo(videoId, base.version, request.trim())
+      adopt(video)
+      setStale(false)
+      setRequest('')
+      if (changed) notifyDone(reply || 'Đã sửa lời thoại.')
+      else notifyFailed(reply || 'Lời thoại không thay đổi.')
+    } catch (err) {
+      setStale(axios.isAxiosError(err) && err.response?.status === 409)
+      notifyFailed(apiErrorMessage(err, 'Sửa lời thoại thất bại. Vui lòng thử lại.'))
+    } finally {
+      setBusy(null)
+    }
+  }
+
   function reload() {
     if (!confirmLeave(dirty)) return
     void act('reload', () => getVideo(videoId), 'Không tải lại được bản nháp')
@@ -422,6 +441,18 @@ export function VideoEditorPage() {
             />
           ))}
         </ol>
+
+        <section className="module-ai-edit flashcard-revise" aria-labelledby="video-revise-title">
+          <h2 id="video-revise-title" className="module-part-title">Yêu cầu chỉnh sửa</h2>
+          <textarea aria-labelledby="video-revise-title" value={request} onChange={(e) => setRequest(e.target.value)} maxLength={2000} rows={3}
+            disabled={busy !== null} className="ui-input mt-2 w-full" />
+          {/* The request rewrites the saved draft, so it waits for a scene open for editing or not yet saved. */}
+          <button type="button" onClick={() => void revise()}
+            disabled={busy !== null || openKey !== null || dirty || jobRunning || request.trim() === ''}
+            className="ui-button primary mt-2 w-fit">
+            {busy === 'revise' ? 'Đang sửa…' : 'Gửi yêu cầu'}
+          </button>
+        </section>
 
         <button type="button" onClick={addScene} disabled={scenes.length >= MAX_SCENES || openKey !== null || busy !== null}
           className="ui-button">

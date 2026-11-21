@@ -158,6 +158,13 @@ export async function saveVideoScenes(id: string, draftVersion: number, scenes: 
   return data
 }
 
+// The script rewritten as the lecturer asks in words, with what was done; `changed` is false when nothing was.
+export async function reviseVideo(id: string, draftVersion: number, message: string) {
+  const { data } = await api.post<VideoDetail & { reply: string; changed: boolean }>(
+    `/videos/${id}/revise`, { draft_version: draftVersion, message })
+  return data
+}
+
 // Without indexes, every illustration whose picture is missing or older than its description.
 export async function drawIllustrations(id: string, sceneIndexes?: number[]) {
   const { data } = await api.post<{ job_id: string; scene_indexes: number[] }>(

@@ -128,6 +128,33 @@ describe('VideoEditorPage', () => {
     expect(renderButton.compareDocumentPosition(publish) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
   })
 
+  it('rewrites the script from a request in words and shows the new draft', async () => {
+    vi.mocked(api.getVideo).mockResolvedValue(video([scene(1)]))
+    vi.mocked(api.reviseVideo).mockResolvedValue({
+      ...video([scene(1), scene(2, { title: 'Cảnh thêm' })], { draft_version: 2 }), reply: 'Đã thêm một cảnh.', changed: true,
+    })
+
+    renderPage()
+    const box = await screen.findByRole('textbox', { name: 'Yêu cầu chỉnh sửa' })
+    await userEvent.type(box, 'Thêm một cảnh ví dụ')
+    await userEvent.click(screen.getByRole('button', { name: 'Gửi yêu cầu' }))
+
+    await waitFor(() => expect(api.reviseVideo).toHaveBeenCalledWith('video-1', 1, 'Thêm một cảnh ví dụ'))
+    expect(await screen.findByText('Đã thêm một cảnh.')).toBeInTheDocument()
+    expect(await sceneItems()).toHaveLength(2)
+    expect(box).toHaveValue('')
+  })
+
+  it('waits for an opened scene before a request in words', async () => {
+    vi.mocked(api.getVideo).mockResolvedValue(video([scene(1)]))
+
+    renderPage()
+    await openScene(1)
+    await userEvent.type(screen.getByRole('textbox', { name: 'Yêu cầu chỉnh sửa' }), 'Ngắn hơn')
+
+    expect(screen.getByRole('button', { name: 'Gửi yêu cầu' })).toBeDisabled()
+  })
+
   it('cancels an opened scene without saving', async () => {
     vi.mocked(api.getVideo).mockResolvedValue(video([scene(1)]))
 

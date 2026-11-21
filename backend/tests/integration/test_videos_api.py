@@ -957,3 +957,73 @@ def test_a_learner_cannot_call_author_routes(world):
 
     for method, path, kwargs in _routes(world, video_id):
         assert client.request(method, path, headers=h, **kwargs).status_code == 403, (method, path)
+
+
+def _revise_model(monkeypatch, scenes, reply="Đã sửa."):
+    """The model returns `scenes`, each (from_scene, title, bullets, sentences) with every text citing S1;
+    the judge flags a scene that says WRONG."""
+    from app.generation import fact_check
+    from app.generation import video_script as generation
+    seen = {}
+
+    def complete(prompt, schema, **kwargs):
+        seen["prompt"] = prompt
+        return schema(reply=reply, scenes=[
+            {"from_scene": origin, "kind": "summary", "title": title,
+             "bullets": [{"text": b, "sources": ["S1"]} for b in bullets],
+             "narration": [{"text": t, "sources": ["S1"] if t != "NO SOURCE" else []} for t in sentences]}
+            for origin, title, bullets, sentences in scenes])
+    monkeypatch.setattr(generation, "complete_structured", complete)
+    monkeypatch.setattr(generation, "retrieve", lambda *a, **k: [])
+    monkeypatch.setattr(fact_check, "judge_alias", lambda alias: "claude-fast")
+    monkeypatch.setattr(fact_check, "check_items_against_sources", lambda batches, alias, language: [
+        ["Câu 1: không có trong nguồn" if any("WRONG" in text for _, text in items) else None] for items, _ in batches])
+    return seen
+
+
+def test_a_script_is_revised_in_words_keeping_the_scenes_and_media_the_request_left_alone(world, monkeypatch):
+    kept = scene(world, title="Giữ", author="lecturer", flags=["Ghi chú của giảng viên"],
+                 image_key="videos/a.png", voice_key="videos/a.wav", voice_text_used="x")
+    changed = scene(world, title="Đổi", voice_key="videos/b.wav", voice_text_used="old", voice_alias_used="voice-heygen")
+    video_id = make_video(world, [kept, changed])
+    same_sentences = kept["narration"].split("\n")
+    seen = _revise_model(monkeypatch, [
+        (1, "Giữ", kept["bullets"], same_sentences),
+        (2, "Đổi", changed["bullets"], ["Câu mới về FCFS.", "Câu thứ hai."]),
+        (None, "Mới", ["Ý một", "Ý hai"], ["WRONG claim.", "Một câu nữa."]),
+        (None, "Không nguồn", ["Ý một", "Ý hai"], ["NO SOURCE"]),
+    ])
+
+    response = client.post(f"/videos/{video_id}/revise", headers=headers(world["owner"]),
+                           json={"draft_version": 1, "message": "Viết lại cảnh 2, thêm một cảnh"})
+
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["reply"] == "Đã sửa." and body["changed"] is True and body["draft_version"] == 2
+    with SessionLocal() as db:
+        stored = db.get(Video, video_id).scenes
+    # The untouched scene is the same scene: author, flags, picture and voice.
+    assert stored[0] == kept
+    # A rewritten scene is the model's and keeps its old voice until the render compares what it read.
+    assert stored[1]["author"] == "model" and stored[1]["narration"] == "Câu mới về FCFS.\nCâu thứ hai."
+    assert (stored[1]["voice_key"], stored[1]["voice_text_used"]) == ("videos/b.wav", "old")
+    # A new scene is fact-checked; one with no sourced sentence is dropped.
+    assert [s["title"] for s in stored] == ["Giữ", "Đổi", "Mới"]
+    assert stored[2]["flags"] == ["Câu 1: không có trong nguồn"] and stored[2]["voice_key"] is None
+    assert "SAYS: FCFS chạy theo thứ tự đến. SOURCES: ['S1']" in seen["prompt"]
+
+
+def test_a_revision_on_an_older_version_emptying_or_lengthening_the_video_is_refused(world, monkeypatch):
+    video_id = make_video(world, [scene(world)])
+    h = headers(world["owner"])
+    _revise_model(monkeypatch, [])
+    assert client.post(f"/videos/{video_id}/revise", headers=h, json={"draft_version": 0, "message": "x"}).status_code == 409
+    assert client.post(f"/videos/{video_id}/revise", headers=h, json={"draft_version": 1, "message": "Xóa hết"}).status_code == 422
+
+    long_sentences = ["Một câu thoại dài về cách FCFS xếp các tiến trình theo thứ tự đến trong hàng đợi."] * 12
+    _revise_model(monkeypatch, [(None, f"Cảnh {n}", ["Ý một", "Ý hai"], long_sentences) for n in range(9)])
+    longer = client.post(f"/videos/{video_id}/revise", headers=h, json={"draft_version": 1, "message": "Dài hơn"})
+    assert longer.status_code == 422 and "8 phút" in longer.json()["detail"]
+    with SessionLocal() as db:
+        video = db.get(Video, video_id)
+        assert (video.draft_version, [s["title"] for s in video.scenes]) == (1, ["FCFS"])
