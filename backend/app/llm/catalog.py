@@ -177,6 +177,11 @@ _BALANCE_ERROR = re.compile(
 )
 
 
+def out_of_credit(text: str) -> bool:
+    """Whether a provider's error says the account has no credit left (OpenRouter's 402 among them)."""
+    return bool(_BALANCE_ERROR.search(text))
+
+
 def _reason(error: openai.APIError) -> str:
     """Câu giải thích cho giảng viên, sau khi probe đã phân loại lỗi.
 

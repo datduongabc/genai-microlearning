@@ -13,6 +13,7 @@ from pathlib import Path
 from sqlalchemy.orm import Session
 
 from app.generation.video_script import Scene
+from app.llm.catalog import out_of_credit
 from app.models import Video
 from app.storage import media_store, staging_dir
 
@@ -36,6 +37,9 @@ def refusal_reason(label: str, refusal: ValueError, kind: str) -> str:
         # may keep or train on what it is sent, which course material must never allow.
         return (f"mô hình {label} không có nhà cung cấp nào cam kết không lưu dữ liệu, "
                 f"hãy chọn mô hình {kind} khác")
+    if out_of_credit(str(refusal)):
+        # Every model is paid from the one OpenRouter balance, so choosing another does not help.
+        return "tài khoản gọi mô hình của hệ thống đã hết tiền, hãy báo quản trị viên nạp thêm"
     return f"mô hình {label} từ chối: {refusal}"
 
 
