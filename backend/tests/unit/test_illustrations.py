@@ -263,6 +263,16 @@ def test_a_provider_refusal_names_the_model(monkeypatch, store):
     assert "không có nhà cung cấp nào" in video.error and "không lưu dữ liệu" in video.error
 
 
+def test_an_empty_balance_says_so_instead_of_quoting_openrouter(monkeypatch, store):
+    video = _video([_scene("Biểu đồ Gantt")])
+    _fake_images(monkeypatch, fail=lambda p: ValueError(
+        "HTTP 402: Insufficient credits. Add more using https://openrouter.ai/settings/credits"))
+    with pytest.raises(ValueError):
+        draw_illustrations(FakeDb(video), video.id)
+    assert "hết tiền" in video.error and "quản trị viên" in video.error
+    assert "openrouter.ai" not in video.error
+
+
 def test_another_refusal_quotes_the_provider(monkeypatch, store):
     video = _video([_scene("Biểu đồ Gantt")])
     _fake_images(monkeypatch, fail=lambda p: ValueError("HTTP 400: prompt rejected by safety filter"))

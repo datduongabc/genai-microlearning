@@ -747,7 +747,7 @@ a.learn-link:hover { background:var(--bg-subtle); color:var(--accent-default); }
 [data-sonner-toast][data-type=error] [data-icon] { color:var(--status-danger); }
 /* The close button sits in the top right corner, clear of the icon, with room kept for it. */
 [data-sonner-toast] { padding-right:44px !important; align-items:flex-start !important; --toast-close-button-start:unset; --toast-close-button-end:10px; --toast-close-button-transform:none; }
-[data-sonner-toast][data-styled=true] [data-close-button] { left:auto !important; right:10px !important; transform:none !important; top:12px; width:26px; height:26px; border:0; background:transparent; color:var(--text-secondary); border-radius:var(--radius-sm); }
+[data-sonner-toast][data-styled=true] [data-close-button] { left:auto !important; right:10px !important; transform:none !important; top:12px !important; width:26px; height:26px; border:0; background:transparent; color:var(--text-secondary); border-radius:var(--radius-sm); }
 [data-sonner-toast][data-styled=true] [data-close-button]:hover { color:var(--text-primary); background:var(--bg-subtle); }
 [data-sonner-toast] [data-icon] { margin-top:3px; }
 /* A long refusal scrolls inside the toast instead of running off the top of the screen. */
