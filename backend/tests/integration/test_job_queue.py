@@ -603,3 +603,30 @@ def test_a_step_that_lost_its_job_does_not_write_its_result(seed_document):
         assert "chunks" not in current.payload
     finally:
         db.close()
+
+
+def test_a_render_is_taken_only_by_a_render_worker_and_the_rest_only_by_a_general_one(seed_document, monkeypatch):
+    """An encode holds the task's CPU for minutes: on AWS it runs on tasks of its own, so that it does
+    not slow every other job of a general worker, and two videos render on two tasks."""
+    from app.config import settings
+
+    db = SessionLocal()
+    try:
+        doc = seed_document(db)
+        jobs = {kind: enqueue_job(db, job_type=kind, step="x", document_id=doc.id)
+                for kind in (JobType.video_render, JobType.document_pipeline)}
+        for job in jobs.values():
+            # Ahead of whatever other tests left queued, as above.
+            job.created_at = datetime(2000, 1, 1, tzinfo=UTC)
+        db.commit()
+        ids = {kind: job.id for kind, job in jobs.items()}
+    finally:
+        db.close()
+
+    def first_taken(queue):
+        monkeypatch.setattr(settings, "worker_queue", queue)
+        taken = claim_next_job(f"test-{queue}")
+        return taken.job_type if taken is not None and taken.id in ids.values() else None
+
+    assert first_taken("general") == JobType.document_pipeline
+    assert first_taken("render") == JobType.video_render

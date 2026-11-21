@@ -154,6 +154,19 @@ def hold(db: Session, job: Job) -> Job:
     return current
 
 
+# Jobs held mostly by the CPU of the task (ffmpeg and Chromium), not by waiting on a provider.
+RENDER_JOB_TYPES = (JobType.video_render,)
+
+
+def queue_filter():
+    """The jobs settings.worker_queue takes."""
+    if settings.worker_queue == "render":
+        return Job.job_type.in_(RENDER_JOB_TYPES)
+    if settings.worker_queue == "general":
+        return Job.job_type.not_in(RENDER_JOB_TYPES)
+    return True
+
+
 def claim_next_job(worker_id: str) -> Job | None:
     """Mở transaction riêng, tự commit -- FOR UPDATE SKIP LOCKED chỉ có tác
     dụng đúng nếu mỗi lần claim là 1 transaction độc lập (nhiều worker/nhiều
@@ -168,7 +181,7 @@ def claim_next_job(worker_id: str) -> Job | None:
         # cho cả 2 đầu loại hẳn lớp lỗi này, không chỉ vá 1 lần chạy cụ thể.
         job = (
             db.query(Job)
-            .filter(Job.status == JobStatus.queued, Job.run_after <= func.now())
+            .filter(Job.status == JobStatus.queued, Job.run_after <= func.now(), queue_filter())
             .order_by(Job.created_at)
             .with_for_update(skip_locked=True)
             .first()

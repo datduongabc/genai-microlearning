@@ -148,7 +148,7 @@ def test_only_the_failed_question_is_regenerated_once(monkeypatch, repair):
 
 
 def test_exhausted_failure_still_completes_the_generation_job_with_its_module(monkeypatch):
-    job = SimpleNamespace(id=uuid.uuid4(), document_id=uuid.uuid4(), payload={}, status=JobStatus.running)
+    job = SimpleNamespace(id=uuid.uuid4(), document_id=uuid.uuid4(), payload={}, status=JobStatus.running, checkpoint=None)
     module = SimpleNamespace(id=uuid.uuid4(), components=[SimpleNamespace(
         type=ComponentType.quiz, content={"questions": [{"passed": False, "fail_reason": "C and D are correct"}]})])
 

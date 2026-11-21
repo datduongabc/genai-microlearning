@@ -135,28 +135,37 @@ ENVIRONMENT=staging infra/scripts/tf.sh destroy
 
 ## Moodle cho bản AWS
 
-Moodle không nằm trong stack. Để thử LTI với một Moodle thật mà không tốn thêm tiền, chạy Moodle của kho mã trên máy mình và đưa nó ra Internet qua Cloudflare quick tunnel (không cần tài khoản Cloudflare):
+Moodle không nằm trong stack.
+Để thử LTI và xuất bài với một Moodle thật mà không tốn thêm tiền, chạy Moodle của kho mã trên máy mình và đưa nó ra Internet qua tên miền tĩnh miễn phí của ngrok.
+Địa chỉ Moodle là issuer LTI, nên nó phải cố định: đổi địa chỉ là mất mọi tài khoản và khóa học đã tạo qua địa chỉ cũ.
+
+Một lần: tạo tài khoản ngrok miễn phí, lấy authtoken và tên miền tĩnh (dạng `abc.ngrok-free.dev`), rồi thêm vào `devops/.env`:
 
 ```bash
-bash infra/scripts/moodle-tunnel.sh    # sau deploy.sh; Ctrl-C để dừng
+NGROK_AUTHTOKEN=...
+NGROK_DOMAIN=abc.ngrok-free.dev
 ```
 
-Script dựng Moodle 5.2 dùng một lần (Postgres và moodledata trên tmpfs, không đụng stack compose), tạo khóa học, một giảng viên, một sinh viên và công cụ LTI trỏ tới output `url`, đăng ký Moodle này vào database trên AWS bằng một task ECS, rồi in địa chỉ và mật khẩu. Mở khóa học bằng tài khoản giảng viên trước, sau đó tới sinh viên.
+Sau đó:
 
-Giới hạn:
+```bash
+bash infra/scripts/moodle-demo.sh           # bật, hoặc dựng lần đầu
+bash infra/scripts/moodle-demo.sh down      # tắt, giữ dữ liệu
+bash infra/scripts/moodle-demo.sh destroy   # xóa hẳn Moodle và dữ liệu
+```
 
-- **Địa chỉ đổi mỗi lần chạy,** và issuer LTI đổi theo: tài khoản và khóa học tạo qua lần chạy trước không được nhận lại. Giữ script chạy suốt buổi demo; máy ngủ hoặc mất mạng là mất Moodle đó.
-- **Chỉ có LTI** (launch và danh sách lớp). Xuất Book và Quiz sang Moodle cần thêm `moodle_base_url`, `moodle_wwwroot` bằng địa chỉ tunnel và `moodle-token` trong SSM, tức một lần `infra/scripts/tf.sh apply` nữa cho mỗi địa chỉ.
-  Script in token ở dòng `Token:`. Nạp nó rồi apply:
-  ```bash
-  aws ssm put-parameter --overwrite --type SecureString --name /microlearning-demo/moodle-token --value <Token>
-  infra/scripts/tf.sh apply -var moodle_base_url=<Moodle> -var moodle_wwwroot=<Moodle>
-  ```
-  Một `deploy.sh` sau đó apply lại không có hai biến này, nên đặt chúng qua môi trường cho lần deploy đó: `TF_VAR_moodle_base_url=<Moodle> TF_VAR_moodle_wwwroot=<Moodle> infra/scripts/deploy.sh`.
-- Thử luồng launch không cần trình duyệt: `MOODLE=<Moodle> TOOL=<url> E2E_USER_PASSWORD=<mật khẩu> python devops/lti-e2e/browser.py <moodle.json> e2eteacher` (`TOKEN_FILE=...` giữ token của người đó để gọi tiếp API).
-- Lưu lượng đi qua Cloudflare, nên chỉ dùng với dữ liệu thử.
+- **Lần đầu** script cài Moodle 5.2, tạo khóa học, một giảng viên, một sinh viên và công cụ LTI trỏ tới output `url`.
+  Nó đăng ký Moodle vào database trên AWS bằng một task ECS, nạp token web service vào SSM và ghi `moodle_base_url`, `moodle_wwwroot` vào `infra/terraform/terraform.tfvars`.
+  Chạy `infra/scripts/deploy.sh` một lần để api và worker nhận địa chỉ và token; các lần deploy sau không cần biến gì thêm.
+- **Các lần sau** chỉ bật lại container; địa chỉ, dữ liệu và mật khẩu giữ nguyên.
+- Dữ liệu nằm trong hai volume Docker, mật khẩu và token trong `devops/moodle-demo.env` (git bỏ qua).
+  Container chạy với `--restart unless-stopped`: đóng terminal không tắt Moodle, và khởi động lại máy thì Moodle tự chạy lại khi Docker Desktop chạy (bật "Start Docker Desktop when you sign in").
+- Máy tắt hay mất mạng thì Moodle tạm không truy cập được, nhưng bật lại vẫn đúng địa chỉ và dữ liệu cũ.
+- Tài khoản ngrok miễn phí hiện một trang cảnh báo ở lần đầu trình duyệt mở Moodle; bấm "Visit Site" một lần. Lệnh gọi từ AWS không bị trang này chặn.
+- Thử luồng launch không cần trình duyệt: `MOODLE=<Moodle> TOOL=<url> E2E_USER_PASSWORD=<USER_PW> python devops/lti-e2e/browser.py ~/.local/share/microlearning-moodle-demo/moodle.json e2eteacher`.
+- Lưu lượng đi qua ngrok, nên chỉ dùng với dữ liệu thử.
 
-Cần một địa chỉ ổn định thì thay bằng một EC2 nhỏ chạy Moodle (khoảng $0,02 đến $0,03 một giờ), chưa có trong Terraform này.
+Cần Moodle chạy cả khi máy tắt thì thay bằng một EC2 nhỏ chạy Moodle (khoảng $15 đến $25 một tháng), chưa có trong Terraform này.
 
 ## Tạm dừng khi không dùng
 

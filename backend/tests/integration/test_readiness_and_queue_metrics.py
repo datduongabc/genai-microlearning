@@ -84,6 +84,7 @@ def test_queue_counts_leave_out_jobs_waiting_out_a_backoff(document):
     after = _counts()
 
     assert after["JobsReady"] - before["JobsReady"] == 2
+    assert after["RenderJobsReady"] == before["RenderJobsReady"]
     assert after["JobsRunning"] - before["JobsRunning"] == 1
     assert abs(after["OldestReadyJobAgeSeconds"] - 30 * 86400) < 60
 
@@ -116,3 +117,18 @@ def test_a_database_that_accepts_and_never_answers_is_not_ready_by_the_deadline(
         time.sleep(0.05)
     monkeypatch.undo()
     assert db.database_ready() is True
+
+
+def test_a_due_render_is_counted_for_the_render_service_not_the_general_workers(document):
+    before = _counts()
+    db = SessionLocal()
+    try:
+        db.add(Job(job_type=JobType.video_render, step="render", document_id=document, status=JobStatus.queued,
+                   run_after=datetime.now(UTC) - timedelta(seconds=5), payload={}))
+        db.commit()
+    finally:
+        db.close()
+
+    after = _counts()
+
+    assert (after["RenderJobsReady"] - before["RenderJobsReady"], after["JobsReady"] - before["JobsReady"]) == (1, 0)

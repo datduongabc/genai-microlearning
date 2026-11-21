@@ -22,14 +22,15 @@ flowchart LR
   subgraph ECS[ECS Fargate]
     API[api<br/>REST, SSE chat, LTI]
     W[worker<br/>job queue]
+    R[renderer<br/>dựng video, 0-n task]
     GW[llm-gateway<br/>LiteLLM, min 2 task]
     EMB[embedder<br/>TEI Qwen3-0.6B]
     RR[reranker Jina<br/>chỉ khi chọn jina]
   end
-  API & W --> DB[(RDS PostgreSQL 16<br/>pgvector, RLS, queue)]
+  API & W & R --> DB[(RDS PostgreSQL 16<br/>pgvector, RLS, queue)]
   API --> VK[(Valkey<br/>rate limit)]
-  API & W --> S3[(S3<br/>uploads/, media/, study-files/)]
-  API & W --> GW --> OR[OpenRouter<br/>chat, judge, TTS, ảnh, Whisper]
+  API & W & R --> S3[(S3<br/>uploads/, media/, study-files/)]
+  API & W & R --> GW --> OR[OpenRouter<br/>chat, judge, TTS, ảnh, Whisper]
   GW --> EMB
   API & W -. mặc định .-> JEV[Jev rerank API]
   API & W -. tùy chọn .-> RR
@@ -37,7 +38,8 @@ flowchart LR
 ```
 
 Kiểu kiến trúc: modular monolith.
-Một image backend chạy thành hai service với tín hiệu scale khác nhau: `api` theo request và CPU, `worker` theo số job đang chờ (`JobsReady`).
+Một image backend chạy thành ba service với tín hiệu scale khác nhau: `api` theo request và CPU, `worker` theo số job đang chờ (`JobsReady`), `renderer` theo số video chờ dựng (`RenderJobsReady`).
+Renderer chỉ nhận job `video_render`, mỗi task một video (2 vCPU, 4 GB), và về 0 task khi không có video nào chờ, nên ffmpeg và Chromium không làm chậm job khác và hai video dựng trên hai task.
 Mọi service đều stateless: dữ liệu, vector và hàng đợi ở Postgres, file ở S3, bộ đếm rate limit ở Valkey (mất cũng không sao).
 Mọi lệnh gọi model đi qua gateway, chỉ gateway giữ khóa OpenRouter; reranker là ngoại lệ, gọi thẳng từ backend.
 
@@ -48,10 +50,11 @@ Mọi lệnh gọi model đi qua gateway, chỉ gateway giữ khóa OpenRouter; 
 | Mục tiêu | Chạy khi cần đo hoặc demo, vừa $200 credit | Khoảng 30.000 người dùng, 10-20% online cùng lúc |
 | api | 1-4 task | 2-12 task, 1 vCPU, 2 GB |
 | worker | 1-8 task, 4 job mỗi task | 2-12 task, 1 vCPU, 3 GB, 4 job mỗi task |
+| renderer | 0-4 task, 2 vCPU, 4 GB, 1 video mỗi task | 0-8 task |
 | gateway | 2-4 task, scale theo CPU | 2-6 task, 1 vCPU |
 | embedder | 1-2 task, 4 vCPU, 8 GB | 1-3 task |
 | RDS | `db.t4g.medium`, single-AZ, backup 1 ngày | `db.m7g.large`, Multi-AZ, chống xóa, backup 14 ngày |
-| Kết nối DB khi tải đầy | 349/407 | 653/897 (Terraform check chặn nếu vượt) |
+| Kết nối DB khi tải đầy | 393/407 | 741/897 (Terraform check chặn nếu vượt) |
 
 Hồ sơ production chưa được apply và chưa load test; nó được `terraform test` kiểm tra trên AWS giả lập trong CI.
 Quá 12 api và 12 worker, bước tiếp theo là PgBouncer ở transaction mode (`scalable-design.md`, mục 7).
@@ -120,7 +123,7 @@ stateDiagram-v2
 
 Bảy loại job: `document_pipeline`, `module_generation`, `flashcard_generation`, `video_script`, `video_images`, `video_render`, `study_judge`.
 `handle_job_error` đánh dấu job và đối tượng của nó (document, set, video) thất bại trong một transaction.
-Worker xin ECS scale-in protection khi đang có job; khi bị dừng, nó trả job về hàng đợi sau 100 s mà không tính một lần thử.
+Worker và renderer xin ECS scale-in protection khi đang có job; khi bị dừng, nó trả job về hàng đợi sau 100 s mà không tính một lần thử.
 
 ### 2.4 Nạp tài liệu
 
@@ -171,7 +174,7 @@ flowchart TB
 
 Mỗi mô-đun khoảng 14-25 lệnh gọi model.
 Điều kiện no-RAG của nghiên cứu chạy cùng các bước, bỏ khối nguồn; mô-đun đối chứng không xuất bản được.
-Giới hạn còn lại: job không có checkpoint giữa các bước, nên chạy lại sau khi bị dừng sẽ gọi lại model đã trả tiền.
+Mỗi bước xong (Learning Objective, Content, Slides, Example, từng câu hỏi) được ghi ngay vào `jobs.checkpoint`; job chạy lại sau khi bị dừng hoặc lỗi bắt đầu từ bước chưa xong, nên không trả tiền hai lần cho một lệnh gọi model.
 
 ### 2.7 Flashcard và video
 
@@ -244,8 +247,6 @@ Gói là ảnh chụp tại lúc thêm, nên giảng viên sửa, dựng lại h
 
 ## 3. Còn thiếu so với kiến trúc đầy đủ
 
-- Job sinh mô-đun chưa có checkpoint giữa các bước.
-- Render video dùng chung worker (1 vCPU, 3 GB) với các job khác; tách một worker render riêng khi lượng video tăng.
 - Chưa có PgBouncer; cần khi vượt 12 api và 12 worker.
 - Hồ sơ production chưa được apply và chưa load test.
 - Chưa có giao diện nhập mô-đun mẫu do giảng viên viết (nhóm `human` đã có ở backend).

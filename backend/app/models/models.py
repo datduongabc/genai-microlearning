@@ -406,6 +406,8 @@ class Job(Base):
     # Trạng thái trung gian giữa các step (vd raw_text/chunk_units đã trích
     # cho document_pipeline) -- JSON thuần, không phải object Python.
     payload: Mapped[dict] = mapped_column(JSONB, default=dict)
+    # The steps of a module generation already done and paid for (app/generation/checkpoint.py, alembic 0051).
+    checkpoint: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     attempts: Mapped[int] = mapped_column(default=0)
     max_attempts: Mapped[int] = mapped_column(default=5)
     # timezone=True (khác các bảng khác trong file này, dùng datetime naive

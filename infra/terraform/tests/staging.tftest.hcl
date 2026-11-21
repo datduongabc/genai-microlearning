@@ -22,7 +22,7 @@ run "staging_is_its_own_environment" {
     error_message = "Run with -var-file=../environments/staging.tfvars: every name must carry staging, or it collides with demo."
   }
   assert {
-    condition     = toset(keys(aws_ecs_service.service)) == toset(["api", "worker", "gateway", "embedder"])
+    condition     = toset(keys(aws_ecs_service.service)) == toset(["api", "worker", "renderer", "gateway", "embedder"])
     error_message = "Staging runs every service demo runs with Jev."
   }
   assert {

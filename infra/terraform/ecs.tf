@@ -57,8 +57,9 @@ locals {
 
   # The provider keys reach the gateway and nothing else: the backend never holds one.
   secrets_by_task = {
-    api    = local.backend_secrets
-    worker = local.backend_secrets
+    api      = local.backend_secrets
+    worker   = local.backend_secrets
+    renderer = local.backend_secrets
     migrate = {
       DATABASE_URL             = local.ssm["database-url"]
       APP_RUNTIME_DATABASE_URL = local.ssm["app-runtime-database-url"]
@@ -99,6 +100,7 @@ locals {
       command = ["/app/.venv/bin/python", "-m", "app.jobs.worker"]
       environment = merge(local.backend_environment, {
         QUEUE_METRICS = "true"
+        WORKER_QUEUE  = "general"
         # Below stop_timeout, so the worker puts unfinished jobs back itself before it is killed.
         WORKER_SHUTDOWN_GRACE_SECONDS = "100"
       })
@@ -106,6 +108,23 @@ locals {
       health       = null
       start_period = 0
       stop_timeout = 120 # the most Fargate allows
+      task_role    = aws_iam_role.task["worker"].arn
+    }
+    # The worker's image, role and network, taking only video renders, one at a time.
+    renderer = {
+      image   = local.backend
+      cpu     = var.renderer.cpu
+      memory  = var.renderer.memory
+      command = ["/app/.venv/bin/python", "-m", "app.jobs.worker"]
+      environment = merge(local.backend_environment, {
+        WORKER_QUEUE                  = "render"
+        WORKER_POOL_SIZE              = "1"
+        WORKER_SHUTDOWN_GRACE_SECONDS = "100"
+      })
+      port         = null
+      health       = null
+      start_period = 0
+      stop_timeout = 120
       task_role    = aws_iam_role.task["worker"].arn
     }
     migrate = {
@@ -230,6 +249,7 @@ locals {
     {
       api      = { count = var.api.min, security_group = aws_security_group.api.id, serves = null }
       worker   = { count = var.worker.min, security_group = aws_security_group.worker.id, serves = null }
+      renderer = { count = var.renderer.min, security_group = aws_security_group.worker.id, serves = null }
       gateway  = { count = var.gateway.min, security_group = aws_security_group.gateway.id, serves = { name = "gateway", port = 4000 } }
       embedder = { count = var.embedder.min, security_group = aws_security_group.embedder.id, serves = { name = "embedder", port = 80 } }
     },

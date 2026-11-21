@@ -8,7 +8,7 @@ from urllib.parse import parse_qs, urljoin, urlparse
 import httpx
 from bs4 import BeautifulSoup
 
-# The defaults are run.sh; infra/scripts/moodle-tunnel.sh points them at the tunnel and the deployment.
+# The defaults are run.sh; infra/scripts/moodle-demo.sh points them at the public Moodle and the deployment.
 MOODLE = os.environ.get("MOODLE", "http://localhost:58081")
 TOOL = os.environ.get("TOOL", "http://localhost:58000")
 PASSWORD = os.environ.get("E2E_USER_PASSWORD", "E2e-user-pass-1!")

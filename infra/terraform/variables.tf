@@ -37,6 +37,20 @@ variable "worker" {
   }
 }
 
+variable "renderer" {
+  # Video renders only (app/jobs/queue.py RENDER_JOB_TYPES), one per task: ffmpeg and Chromium hold
+  # the CPU for minutes, which on a general worker slowed every job beside them, and two videos on
+  # one vCPU each took twice as long. At zero when nothing renders; the general workers report the
+  # renders waiting, which starts one task each.
+  type    = object({ cpu = number, memory = number, min = number, max = number })
+  default = { cpu = 2048, memory = 4096, min = 0, max = 4 }
+
+  validation {
+    condition     = var.renderer.min >= 0 && var.renderer.max >= max(var.renderer.min, 1)
+    error_message = "renderer.max must be at least 1 and at least renderer.min."
+  }
+}
+
 variable "embedder" {
   # CPU-bound, not memory-bound. 2 vCPU/4 GB was tried on AWS on 2026-11-17: ingesting one 1.2 MB
   # PDF held it at 98% CPU for over 8 minutes, its health checks timed out and ECS replaced it

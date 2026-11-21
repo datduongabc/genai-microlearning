@@ -29,7 +29,7 @@ run "demo_with_the_self_hosted_reranker" {
   }
 
   assert {
-    condition     = toset(keys(aws_ecs_service.service)) == toset(["api", "worker", "gateway", "embedder", "reranker"])
+    condition     = toset(keys(aws_ecs_service.service)) == toset(["api", "worker", "renderer", "gateway", "embedder", "reranker"])
     error_message = "jina needs the reranker service."
   }
   assert {
@@ -62,7 +62,7 @@ run "demo_with_the_self_hosted_reranker" {
     error_message = "A dashboard metric line is not a list."
   }
   assert {
-    condition     = local.connections_peak == 4 * 22 + 8 * 32 + 5
+    condition     = local.connections_peak == 4 * 22 + 8 * 32 + 4 * 11 + 5
     error_message = "Connection budget changed: ${local.connections_peak}."
   }
   assert {
@@ -84,6 +84,15 @@ run "demo_with_the_self_hosted_reranker" {
   assert {
     condition     = tonumber(local.tasks.worker.environment.WORKER_SHUTDOWN_GRACE_SECONDS) < local.tasks.worker.stop_timeout
     error_message = "The worker must release its jobs before ECS kills it."
+  }
+  assert {
+    condition = (local.tasks.worker.environment.WORKER_QUEUE == "general" && local.tasks.renderer.environment.WORKER_QUEUE == "render"
+    && local.tasks.renderer.environment.WORKER_POOL_SIZE == "1" && !contains(keys(local.tasks.renderer.environment), "QUEUE_METRICS"))
+    error_message = "Renders run one per task on the renderer service, every other job on the workers, which report both queues."
+  }
+  assert {
+    condition     = aws_ecs_service.service["renderer"].desired_count == 0 && aws_cloudwatch_metric_alarm.renderer_backlog.metric_name == "RenderJobsReady"
+    error_message = "The renderer starts at zero and is started by the renders waiting."
   }
   assert {
     condition     = aws_lb_target_group.api.health_check[0].path == "/ready"

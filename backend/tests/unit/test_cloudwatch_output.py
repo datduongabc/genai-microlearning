@@ -66,10 +66,11 @@ def test_an_empty_queue_reports_zero_age():
         def execute(self, _):
             class Row:
                 def one(self):
-                    return 0, None
+                    return 0, 0, None
             return Row()
 
         def scalar(self, _):
             return 0
 
-    assert queue_counts(EmptyQueue()) == {"JobsReady": 0.0, "JobsRunning": 0.0, "OldestReadyJobAgeSeconds": 0.0}
+    assert queue_counts(EmptyQueue()) == {"JobsReady": 0.0, "RenderJobsReady": 0.0, "JobsRunning": 0.0,
+                                          "OldestReadyJobAgeSeconds": 0.0}
