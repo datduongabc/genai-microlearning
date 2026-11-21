@@ -39,7 +39,7 @@ def refusal_reason(label: str, refusal: ValueError, kind: str) -> str:
                 f"hãy chọn mô hình {kind} khác")
     if out_of_credit(str(refusal)):
         # Every model is paid from the one OpenRouter balance, so choosing another does not help.
-        return "tài khoản gọi mô hình của hệ thống đã hết tiền, hãy báo quản trị viên nạp thêm"
+        return "tài khoản gọi mô hình của hệ thống đã hết tiền hoặc không đủ số dư tối thiểu, hãy báo quản trị viên nạp thêm"
     return f"mô hình {label} từ chối: {refusal}"
 
 

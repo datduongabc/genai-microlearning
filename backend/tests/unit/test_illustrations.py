@@ -263,14 +263,18 @@ def test_a_provider_refusal_names_the_model(monkeypatch, store):
     assert "không có nhà cung cấp nào" in video.error and "không lưu dữ liệu" in video.error
 
 
-def test_an_empty_balance_says_so_instead_of_quoting_openrouter(monkeypatch, store):
+@pytest.mark.parametrize("refusal", [
+    "HTTP 402: Insufficient credits. Add more using https://openrouter.ai/settings/credits",
+    # Seen on AWS on 2026-11-21 with $0.9 left: images need a dollar in the account.
+    "HTTP 402: This request requires at least $1.00 in balance for image or video output.",
+])
+def test_an_empty_balance_says_so_instead_of_quoting_openrouter(monkeypatch, store, refusal):
     video = _video([_scene("Biểu đồ Gantt")])
-    _fake_images(monkeypatch, fail=lambda p: ValueError(
-        "HTTP 402: Insufficient credits. Add more using https://openrouter.ai/settings/credits"))
+    _fake_images(monkeypatch, fail=lambda p: ValueError(refusal))
     with pytest.raises(ValueError):
         draw_illustrations(FakeDb(video), video.id)
     assert "hết tiền" in video.error and "quản trị viên" in video.error
-    assert "openrouter.ai" not in video.error
+    assert "openrouter.ai" not in video.error and "HTTP 402" not in video.error
 
 
 def test_another_refusal_quotes_the_provider(monkeypatch, store):
