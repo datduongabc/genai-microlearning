@@ -22,7 +22,7 @@ lịch sử được giữ làm bằng chứng của những lần đo trước.
 
 | API | Nội dung |
 | --- | --- |
-| `POST /studies` | JSON `{"name":"Nghiên cứu 1","rubric_version":"v1"}`; trả 201, nghiên cứu ở trạng thái `draft` |
+| `POST /studies` | JSON `{"name":"Nghiên cứu 1"}`; trả 201, nghiên cứu ở trạng thái `draft`, rubric do máy chủ đặt theo `RUBRIC_VERSION` (hiện là `v3`) |
 | `GET /studies` | Danh sách nghiên cứu |
 | `GET /studies/{id}` | Nghiên cứu cùng toàn bộ đơn vị, gồm nhóm dành cho admin |
 | `POST /studies/{id}/items` | JSON có `module_ids` và/hoặc `human_packets`; trả 201 với toàn bộ đơn vị sau khi gán lại mã |
@@ -81,7 +81,7 @@ chạy judge. Lượt chấm judge không khóa việc nạp sau khi job đã xo
 judge để chấm cả các đơn vị mới.
 
 Các trường chấm của bảng `ratings` khớp `ModuleEvaluation` và
-[rubric dùng chung](rubric.md), không thêm cột điểm số thứ chín. `rater_kind`
+[rubric dùng chung](rubric.md); `examples_feedback` và `quiz_flaws` (rubric v3, migration 0052) để trống ở lượt chấm theo rubric cũ. `rater_kind`
 là `human` kèm `user_id`, hoặc `llm_judge` không có `user_id`. Mỗi người có
 tối đa một lượt chấm trên một đơn vị; mỗi hãng LLM có tối đa một hàng theo
 unique index `(study_item_id, judge_family)`. `judge_alias` và `judge_model`
@@ -117,9 +117,11 @@ có một thứ tự riêng và tải lại trang giữ nguyên thứ tự đó.
 không đổi theo người chấm.
 
 Thân `PUT .../rating` được kiểm bằng `ModuleEvaluation` của
-`app/generation/evaluation.py`: tám tiêu chí, mỗi tiêu chí có `score` nguyên từ
-1 đến 5 và `justification`, cùng `hallucination_findings` (mỗi mục có `claim`,
-`field`, `reason`) và `overall_notes`. `anon_id` phải bằng mã ẩn danh của đơn
+`app/generation/evaluation.py`: chín tiêu chí của rubric v3, mỗi tiêu chí có `score` nguyên từ
+1 đến 5 và `justification`, cùng `quiz_flaws` (mỗi câu quiz và bài luyện tập đúng một mục, đánh số từ 1),
+`hallucination_findings` (mỗi mục có `claim`, `field`, `reason`) và `overall_notes`.
+Điểm `quiz_quality` được máy chủ tính lại từ `quiz_flaws`, không lấy số gửi lên.
+Nghiên cứu tạo theo rubric cũ từ chối lượt chấm mô-đun mới và lượt chạy judge với 409. `anon_id` phải bằng mã ẩn danh của đơn
 vị, nếu không nhận 422. Gọi lại cùng đường dẫn sẽ sửa lượt chấm đã lưu. Lưu
 lượt chấm không đổi trạng thái nghiên cứu; khi đã có lượt chấm của người thì không nạp
 thêm đơn vị được nữa (409). Nghiên cứu `closed` từ chối lưu và sửa lượt chấm
@@ -129,7 +131,7 @@ Trang **Chấm nghiên cứu** (`/studies`) liệt kê các nghiên cứu đư�
 tiến độ "Đã chấm n/tổng". Trang chấm của một đơn vị hiện mã ẩn danh và chủ đề
 ở đầu trang; gói chấm chia thành các tab, mở sẵn tab đoạn nguồn: đoạn nguồn,
 mục tiêu học tập, nội dung, slide, ví dụ, bài luyện tập, quiz và giải thích
-đáp án, mỗi lần chỉ hiện một tab. Bên cạnh là biểu mẫu tám tiêu chí chấm điểm của rubric cùng danh sách khẳng định không có căn cứ;
+đáp án, mỗi lần chỉ hiện một tab. Bên cạnh là biểu mẫu chín tiêu chí chấm điểm của rubric, trong đó chất lượng quiz là danh sách lỗi của từng câu, cùng danh sách khẳng định không có căn cứ;
 mức Bloom khai báo chỉ hiện cạnh tiêu chí `bloom_fidelity`, không hiện trong gói. Nội dung đang
 nhập không được lưu nháp: khi biểu mẫu có thay đổi chưa lưu, chuyển sang gói
 khác, bấm một liên kết, đăng xuất, tải lại hoặc đóng trang đều hỏi xác nhận

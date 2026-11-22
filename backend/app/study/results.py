@@ -12,12 +12,18 @@ import uuid
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.generation.evaluation import DimensionScore, ModuleEvaluation
+from app.generation.evaluation import RUBRIC_VERSION, DimensionScore, ModuleEvaluation
 from app.models import Rating, Study, StudyItem, User
 from app.study.media import CRITERIA as MEDIA_CRITERIA
 
 # The scored criteria, in rubric order; overall_notes and the findings list are not scores.
 CRITERIA = [name for name, field in ModuleEvaluation.model_fields.items() if field.annotation is DimensionScore]
+# What a study made before rubric v3 was rated on: v3 added examples_feedback.
+LEGACY_CRITERIA = [c for c in CRITERIA if c != "examples_feedback"]
+
+
+def criteria_of(study: Study) -> list[str]:
+    return CRITERIA if study.rubric_version == RUBRIC_VERSION else LEGACY_CRITERIA
 
 
 def finding_notes(findings: list[dict] | None) -> str:
@@ -68,21 +74,21 @@ def judge_ratings(db: Session, study_id: uuid.UUID) -> list[tuple[StudyItem, Rat
 
 
 def evaluation_of(rating: Rating, anon_code: str) -> dict:
-    return ModuleEvaluation(anon_id=anon_code, **{
-        key: getattr(rating, key) for key in ModuleEvaluation.model_fields if key != "anon_id"
-    }).model_dump()
+    # As stored: a rating of an older rubric lacks the criteria added since.
+    return {"anon_id": anon_code, **{key: getattr(rating, key) for key in ModuleEvaluation.model_fields
+                                     if key != "anon_id" and getattr(rating, key) is not None}}
 
 
-def rater_csv(ratings: list[tuple[StudyItem, Rating]]) -> str:
+def rater_csv(ratings: list[tuple[StudyItem, Rating]], criteria: list[str] = CRITERIA) -> str:
     """One rater's file in the format of docs/rubric.md section 5, which analyze_study.py reads."""
     out = io.StringIO()
     writer = csv.writer(out, lineterminator="\n")
-    writer.writerow(["anon_id", *CRITERIA, "hallucination_notes"])
+    writer.writerow(["anon_id", *criteria, "hallucination_notes"])
     # Module packets only: analyze_study.py compares RAG to no-RAG on the module rubric.
     for item, rating in ratings:
         if rating.scores is not None:
             continue
-        writer.writerow([item.anon_code, *(getattr(rating, c)["score"] for c in CRITERIA),
+        writer.writerow([item.anon_code, *(getattr(rating, c)["score"] for c in criteria),
                          finding_notes(rating.hallucination_findings)])
     return out.getvalue()
 
@@ -128,10 +134,11 @@ def judge_jsonl(db: Session, study_id: uuid.UUID) -> str:
     }, ensure_ascii=False) + "\n" for item, rating in rows)
 
 
-def _rating_view(rater: str, kind: str, rating: Rating) -> dict:
+def _rating_view(rater: str, kind: str, rating: Rating, criteria: list[str]) -> dict:
     return {
         "rater": rater, "kind": kind,
-        "scores": rating.scores if rating.scores is not None else {c: getattr(rating, c) for c in CRITERIA},
+        "scores": rating.scores if rating.scores is not None else {c: getattr(rating, c) for c in criteria},
+        "quiz_flaws": rating.quiz_flaws or [],
         "findings": rating.hallucination_findings or [],
         "notes": rating.overall_notes,
     }
@@ -143,14 +150,15 @@ def study_results(db: Session, study: Study) -> dict:
     items = list(db.scalars(select(StudyItem).where(StudyItem.study_id == study.id).order_by(StudyItem.anon_code)))
     pairs, unpaired = pair_ids(items)
     humans = human_ratings(db, study.id)
+    criteria = criteria_of(study)
     numbers = {email: n for n, email in enumerate(humans, start=1)}
     names = rater_names(db, sorted({email.lower() for email in study.rater_emails or []} | set(humans)))
     by_item: dict[uuid.UUID, list[dict]] = {item.id: [] for item in items}
     for email, ratings in humans.items():
         for item, rating in ratings:
-            by_item[item.id].append(_rating_view(names[email], "human", rating))
+            by_item[item.id].append(_rating_view(names[email], "human", rating, criteria))
     for item, rating in judge_ratings(db, study.id):
-        by_item[item.id].append(_rating_view(rating.judge_alias or "Mô hình chấm", "llm_judge", rating))
+        by_item[item.id].append(_rating_view(rating.judge_alias or "Mô hình chấm", "llm_judge", rating, criteria))
 
     invited = {email.lower() for email in study.rater_emails or []}
     given = study.rater_pairs or {}
@@ -167,7 +175,7 @@ def study_results(db: Session, study: Study) -> dict:
         for email in sorted(invited | set(humans)) if assigned(email) or humans.get(email)
     ]
     return {
-        "criteria": CRITERIA,
+        "criteria": criteria,
         "total": len(items),
         "raters": raters,
         "has_judge": any(r["kind"] == "llm_judge" for rs in by_item.values() for r in rs),
@@ -176,7 +184,7 @@ def study_results(db: Session, study: Study) -> dict:
         "items": [{
             "id": item.id, "anon_code": item.anon_code, "group": item.group,
             "pair_code": pairs[item.anon_code], "topic": item.packet.get("topic", ""),
-            "criteria": list(MEDIA_CRITERIA.get(item.group, CRITERIA)),
+            "criteria": list(MEDIA_CRITERIA.get(item.group, criteria)),
             "ratings": by_item[item.id],
         } for item in items],
     }

@@ -10,6 +10,11 @@ cách hàm đang cài đặt:
 - Spearman giữa 1,2,3,4,5 và 2,1,4,3,5: tổng d^2 = 4, rho = 1 - 6x4/(5x24) = 0,8.
 - Kappa trọng số bậc hai trên thang 1-5 cho cùng hai dãy đó: bất đồng quan sát 4 x (1/16) / 5 = 0,05,
   bất đồng kỳ vọng 100 / (16 x 25) = 0,25, kappa = 1 - 0,05/0,25 = 0,8.
+- AC2 của Gwet, trọng số bậc hai, 10 gói: 8 gói hai bên cùng cho 5, 2 gói lệch một mức (5 và 4).
+  Đồng thuận quan sát (8 + 2 x 15/16) / 10 = 0,9875. Tổng trọng số 25 - 100/16 = 18,75, chia
+  5 x 4 = 0,9375. Tỉ lệ mức 5 là 0,9, mức 4 là 0,1, nên đồng thuận ngẫu nhiên 0,9375 x 0,18 = 0,16875.
+  AC2 = (0,9875 - 0,16875) / 0,83125 = 0,98496. Kappa trên cùng dữ liệu âm (-1/9): điểm dồn về
+  một đầu thang làm kappa sụp dù hai bên gần như đồng ý.
 """
 
 import json
@@ -25,7 +30,10 @@ def _line(anon_id, pair_id, group, accuracy=3, other=3, findings=0, judge="j") -
     scores = {c: {"score": other, "justification": ""} for c in CRITERIA}
     scores["accuracy"] = {"score": accuracy, "justification": ""}
     finding = {"claim": "c", "field": "content", "reason": "r"}
-    evaluation = {"anon_id": anon_id, **scores, "hallucination_findings": [finding] * findings, "overall_notes": ""}
+    # One flawless question and one with two flaws: half the questions are acceptable, so quiz_quality is 3.
+    quiz_flaws = [{"question": 1, "flaws": []}, {"question": 2, "flaws": ["vague_terms", "absolute_terms"]}]
+    evaluation = {"anon_id": anon_id, **scores, "quiz_flaws": quiz_flaws,
+                  "hallucination_findings": [finding] * findings, "overall_notes": ""}
     return {"anon_id": anon_id, "pair_id": pair_id, "group": group, "judge": judge, "evaluation": evaluation}
 
 
@@ -45,11 +53,19 @@ def study(tmp_path):
     return analyze_study.load_judgements([_write(tmp_path / "judge.jsonl", lines)])["j"]
 
 
-def test_the_criteria_are_the_eight_scored_dimensions_of_the_rubric():
+def test_the_criteria_are_the_nine_scored_dimensions_of_rubric_v3():
     assert CRITERIA == [
         "accuracy", "completeness", "consistency", "hallucination_score",
-        "slide_quality", "quiz_quality", "bloom_fidelity", "query_alignment",
+        "slide_quality", "quiz_quality", "bloom_fidelity", "query_alignment", "examples_feedback",
     ]
+
+
+def test_gwet_ac2_matches_the_hand_computed_value_where_kappa_collapses():
+    first, second = [5] * 8 + [4, 5], [5] * 8 + [5, 4]
+
+    assert analyze_study.gwet_ac2(first, second) == pytest.approx(0.98496, abs=1e-5)
+    assert analyze_study.quadratic_weighted_kappa(first, second) == pytest.approx(-1 / 9)
+    assert analyze_study.gwet_ac2([1, 3, 5, 2], [1, 3, 5, 2]) == pytest.approx(1.0)
 
 
 def test_group_means(study):

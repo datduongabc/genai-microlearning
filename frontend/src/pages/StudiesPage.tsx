@@ -5,6 +5,7 @@ import Markdown from "react-markdown";
 import { AppShell } from "../components/AppShell";
 import { Tabs } from "../components/Tabs";
 import { RatingForm } from "../components/RatingForm";
+import { RUBRIC_VERSION } from "../lib/ratingSchema";
 import { modelMarkdownProps } from "../lib/markdownMath";
 import { notifyFailed } from "../lib/notify";
 import { apiErrorMessage } from "../api/client";
@@ -287,12 +288,16 @@ export function BlindRatingPage() {
               <Packet key={`packet-${item.id}`} studyId={studyId!} item={item} />
               {data.study.status === "closed" ? (
                 <p>Nghiên cứu đã đóng.</p>
+              ) : item.kind === "module" && data.study.rubric_version !== RUBRIC_VERSION ? (
+                <p className="ui-card">Nghiên cứu này dùng rubric {data.study.rubric_version}, không chấm thêm mô-đun
+                  được nữa. Hãy báo quản trị viên tạo nghiên cứu mới theo rubric {RUBRIC_VERSION}.</p>
               ) : (
                 <RatingForm
                   key={`rating-${item.id}`}
                   kind={item.kind}
                   code={item.anon_code}
                   bloomLevel={item.kind === "module" ? item.packet.bloom_level : undefined}
+                  questions={item.kind === "module" ? [...item.packet.quiz, item.packet.practice].map((q) => q.stem) : []}
                   rating={item.rating}
                   onSave={async (values) => {
                     const rating = await saveRating(studyId!, item.id, values);

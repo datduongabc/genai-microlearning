@@ -22,9 +22,7 @@ from app.generation.study_packets import module_packet, reference_chunks
 from app.llm.gateway import capture_models, experiment_mode, using_model
 from app.llm.judge import model_family
 from app.models import Module
-
-CRITERIA = ("accuracy", "completeness", "consistency", "hallucination_score", "slide_quality", "quiz_quality",
-            "bloom_fidelity", "query_alignment")
+from app.study.results import CRITERIA
 
 
 def main() -> None:

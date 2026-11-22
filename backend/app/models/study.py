@@ -75,6 +75,7 @@ class StudyFile(Base):
 
 
 _RUBRIC = "accuracy, completeness, consistency, hallucination_score, slide_quality, quiz_quality, bloom_fidelity, query_alignment"
+_V3 = "examples_feedback, quiz_flaws"
 
 
 class Rating(Base):
@@ -87,9 +88,10 @@ class Rating(Base):
                         name="ck_ratings_judge_family"),
         Index("uq_ratings_llm_judge", "study_item_id", "judge_family", unique=True,
               postgresql_where=text("rater_kind = 'llm_judge'")),
-        # A module rating fills the eight rubric columns, a flashcard or video one `scores` (alembic 0046).
-        CheckConstraint(f"(num_nonnulls({_RUBRIC}) = 8 AND scores IS NULL) OR "
-                        f"(num_nonnulls({_RUBRIC}) = 0 AND scores IS NOT NULL)", name="ck_ratings_shape"),
+        # A module rating fills the eight rubric columns, and on rubric v3 both v3 columns too; a flashcard
+        # or video one fills `scores` only (alembic 0046, 0052).
+        CheckConstraint(f"(num_nonnulls({_RUBRIC}) = 8 AND scores IS NULL AND num_nonnulls({_V3}) IN (0, 2)) OR "
+                        f"(num_nonnulls({_RUBRIC}, {_V3}) = 0 AND scores IS NOT NULL)", name="ck_ratings_shape"),
     )
 
     id: Mapped[uuid.UUID] = uuid_pk()
@@ -100,7 +102,7 @@ class Rating(Base):
     judge_family: Mapped[str | None]
     judge_alias: Mapped[str | None]
     judge_model: Mapped[str | None]
-    # ModuleEvaluation's rubric: eight scored dimensions, then overall notes (criterion 9).
+    # ModuleEvaluation's rubric: the scored criteria, then overall notes (docs/rubric.md).
     # Empty on a flashcard or video rating, whose criteria are in `scores` (alembic 0046).
     accuracy: Mapped[dict | None] = mapped_column(JSONB)
     completeness: Mapped[dict | None] = mapped_column(JSONB)
@@ -110,6 +112,9 @@ class Rating(Base):
     quiz_quality: Mapped[dict | None] = mapped_column(JSONB)
     bloom_fidelity: Mapped[dict | None] = mapped_column(JSONB)
     query_alignment: Mapped[dict | None] = mapped_column(JSONB)
+    # Rubric v3 (alembic 0052): empty on a rating made under an older rubric.
+    examples_feedback: Mapped[dict | None] = mapped_column(JSONB)
+    quiz_flaws: Mapped[list | None] = mapped_column(JSONB)
     scores: Mapped[dict | None] = mapped_column(JSONB)
     overall_notes: Mapped[str] = mapped_column(Text)
     hallucination_findings: Mapped[list] = mapped_column(JSONB, default=list, server_default="[]")

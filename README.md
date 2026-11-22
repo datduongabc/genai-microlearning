@@ -195,7 +195,7 @@ Danh sách đầy đủ và kế hoạch phát triển nằm ở chương Conclu
 
 ## Tài liệu
 
-- [docs/rubric.md](docs/rubric.md): rubric tám tiêu chí, metric claim và trích dẫn, cách xuất và phân tích.
+- [docs/rubric.md](docs/rubric.md): rubric v3 chín tiêu chí kèm căn cứ khoa học, metric claim và trích dẫn, cách xuất và phân tích.
 - [docs/studies.md](docs/studies.md): thiết lập nghiên cứu và chấm mù.
 - [docs/gateway-routing.md](docs/gateway-routing.md): alias model, nhà cung cấp, fallback và chế độ thí nghiệm.
 - [devops/README.md](devops/README.md): vận hành stack, phân quyền credential, scale và công khai.

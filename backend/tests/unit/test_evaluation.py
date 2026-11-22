@@ -5,11 +5,17 @@ import pytest
 from pydantic import ValidationError
 
 from app.generation.evaluation import (
+    _SYSTEM_INSTRUCTION,
+    ITEM_WRITING_FLAWS,
     ExampleInput,
     ModuleContentInput,
+    ModuleEvaluation,
+    QuestionFlaws,
     QuizQuestionInput,
     SlideInput,
     _build_prompt,
+    question_context,
+    quiz_quality_score,
 )
 
 
@@ -91,3 +97,46 @@ def test_packet_accepts_answers_at_both_choice_boundaries(field, index):
     validated = ModuleContentInput.model_validate(packet)
     answer = validated.quiz[0] if field == "quiz" else validated.practice
     assert answer.choices[answer.correct_index] in ("X", "Y")
+
+
+def test_quiz_quality_is_the_share_of_questions_with_at_most_one_flaw():
+    """Six questions, n of them with two flaws: 1 + round(4 x (6 - n) / 6), the values docs/rubric.md lists."""
+    def flawed(n):
+        return [QuestionFlaws(question=i + 1, flaws=["vague_terms", "lost_sequence"] if i < n else ["vague_terms"])
+                for i in range(6)]
+    assert [quiz_quality_score(flawed(n)) for n in range(7)] == [5, 4, 4, 3, 2, 2, 1]
+    # The same flaw marked twice is one flaw.
+    assert quiz_quality_score([QuestionFlaws(question=1, flaws=["vague_terms", "vague_terms"])]) == 5
+
+
+def _evaluation(flaws: list[dict]) -> dict:
+    score = {"score": 1, "justification": "x"}
+    return {"anon_id": "M01", **{c: score for c in (
+        "accuracy", "completeness", "consistency", "hallucination_score", "slide_quality", "quiz_quality",
+        "bloom_fidelity", "query_alignment", "examples_feedback")}, "quiz_flaws": flaws, "overall_notes": ""}
+
+
+def test_the_judge_must_check_every_question_of_the_packet_once():
+    context = question_context(_packet())  # two quiz questions and the practice question
+    every = [{"question": n} for n in (1, 2, 3)]
+    evaluation = ModuleEvaluation.model_validate(_evaluation(every), context=context)
+    assert evaluation.quiz_quality.score == 5 and evaluation.accuracy.score == 1
+    for flaws in (every[:2], [*every, {"question": 4}], [every[1], every[0], every[2]]):
+        with pytest.raises(ValidationError):
+            ModuleEvaluation.model_validate(_evaluation(flaws), context=context)
+
+
+def test_the_judge_is_told_every_flaw_and_how_many_questions_to_check():
+    assert all(f"- {key}:" in _SYSTEM_INSTRUCTION for key in ITEM_WRITING_FLAWS)
+    assert len(ITEM_WRITING_FLAWS) == 19
+    assert "quiz_flaws co dung 3 muc: cau 1..2 la quiz, cau 3 la practice" in _build_prompt(_packet())
+
+
+def test_the_rating_form_offers_the_same_flaws_the_server_accepts():
+    """The form lists the flaws in Vietnamese on its own; a key that drifted would be refused with 422."""
+    import re
+    from pathlib import Path
+
+    form = (Path(__file__).resolve().parents[3] / "frontend/src/lib/ratingSchema.ts").read_text(encoding="utf-8")
+    block = form.split("export const ITEM_WRITING_FLAWS")[1].split("];")[0]
+    assert re.findall(r'\["(\w+)",', block) == list(ITEM_WRITING_FLAWS)

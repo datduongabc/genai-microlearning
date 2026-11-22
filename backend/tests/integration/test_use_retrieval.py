@@ -576,7 +576,7 @@ def test_legacy_default_alias_pair_imports_and_exports_without_regeneration(docu
 
     monkeypatch.setattr("app.generation.study_packets.run_module_generation", unexpected_generation)
     headers = {"Authorization": f"Bearer {create_access_token(str(document['user']))}"}
-    response = client.post("/studies", headers=headers, json={"name": "Legacy pair", "rubric_version": "v1"})
+    response = client.post("/studies", headers=headers, json={"name": "Legacy pair"})
     assert response.status_code == 201, response.text
     study_id = uuid.UUID(response.json()["id"])
     try:

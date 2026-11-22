@@ -12,11 +12,11 @@ mô hình chấm:
 
 - điểm trung bình mỗi tiêu chí của từng nhóm;
 - Wilcoxon signed-rank hai phía trên các cặp cùng chủ đề (rag_llm trừ llm_no_rag) cho từng tiêu chí,
-  kèm p đã hiệu chỉnh Holm cho tám tiêu chí. Các cặp chênh 0 bị loại theo cách của Wilcoxon;
+  kèm p đã hiệu chỉnh Holm cho chín tiêu chí. Các cặp chênh 0 bị loại theo cách của Wilcoxon;
 - McNemar chính xác (kiểm nhị thức trên các cặp bất đồng) cho "có ít nhất một hallucination".
 
-Giữa từng cặp mô hình chấm, và giữa mỗi mô hình chấm với người: Spearman và kappa trọng số bậc hai trên
-thang 1-5, ghép theo mã ẩn danh. Một chỉ số không xác định (ví dụ mọi điểm bằng nhau) ghi là null.
+Giữa từng cặp mô hình chấm, và giữa mỗi mô hình chấm với người: Spearman, kappa trọng số bậc hai và AC2
+của Gwet trọng số bậc hai trên thang 1-5, ghép theo mã ẩn danh. Một chỉ số không xác định (ví dụ mọi điểm bằng nhau) ghi là null.
 
 Lặp --human cho mỗi người chấm (scripts/export_human_ratings.py xuất sẵn mỗi người một tệp). Từ hai
 người trở lên còn có đồng thuận giữa từng cặp người và độ tin cậy của cả nhóm: Krippendorff's alpha
@@ -39,7 +39,7 @@ from app.generation.claim_evaluation import ClaimEvaluation
 from app.generation.evaluation import ModuleEvaluation
 from app.study.results import CRITERIA
 
-# CRITERIA là tám tiêu chí chấm điểm, theo đúng thứ tự của rubric. Tiêu chí thứ chín là danh sách
+# CRITERIA là chín tiêu chí chấm điểm của rubric v3, theo đúng thứ tự của rubric. Danh sách
 # hallucination_findings, được phân tích bằng McNemar chứ không bằng điểm.
 SCALE = range(1, 6)
 
@@ -152,6 +152,19 @@ def quadratic_weighted_kappa(first: list[int], second: list[int]) -> float | Non
     return None if expected == 0 else 1 - seen / expected
 
 
+def gwet_ac2(first: list[int], second: list[int]) -> float | None:
+    """AC2 của Gwet với trọng số bậc hai trên đủ năm mức, cho hai người chấm (Gwet 2014, chương 3).
+    Báo cạnh kappa vì khi điểm dồn về một đầu thang, kappa có thể thấp dù hai bên gần như đồng ý,
+    còn AC2 ít đổi theo phân bố điểm hơn (Quarfoot & Levine 2016)."""
+    k, n = len(SCALE), len(first)
+    weight = [[1 - (i - j) ** 2 / (k - 1) ** 2 for j in range(k)] for i in range(k)]
+    index = {level: i for i, level in enumerate(SCALE)}
+    seen = sum(weight[index[a]][index[b]] for a, b in zip(first, second, strict=True)) / n
+    share = [(first.count(level) + second.count(level)) / (2 * n) for level in SCALE]
+    chance = sum(map(sum, weight)) / (k * (k - 1)) * sum(p * (1 - p) for p in share)
+    return None if chance == 1 else (seen - chance) / (1 - chance)
+
+
 def _squared_difference(metric: str, levels: list[int], totals: dict[int, int]):
     """delta^2 giữa hai giá trị theo loại thang của Krippendorff (2011)."""
     if metric == "nominal":
@@ -250,7 +263,8 @@ def agreement(first: dict[str, dict[str, int]], second: dict[str, dict[str, int]
         a = [first[code][c] for code in codes]
         b = [second[code][c] for code in codes]
         spearman = stats.spearmanr(a, b).statistic if len(codes) > 1 and len(set(a)) > 1 and len(set(b)) > 1 else None
-        result[c] = {"n": len(codes), "spearman": _finite(spearman), "kappa": quadratic_weighted_kappa(a, b)}
+        result[c] = {"n": len(codes), "spearman": _finite(spearman), "kappa": quadratic_weighted_kappa(a, b),
+                     "ac2": gwet_ac2(a, b)}
     return result
 
 
@@ -308,9 +322,9 @@ def _print_report(report: dict) -> None:
         )
     for name, per_criterion in report["agreement"].items():
         print(f"\n== Đồng thuận {name}")
-        print(f"{'tiêu chí':<22}{'n':>4}{'Spearman':>10}{'kappa':>8}")
+        print(f"{'tiêu chí':<22}{'n':>4}{'Spearman':>10}{'kappa':>8}{'AC2':>8}")
         for c, a in per_criterion.items():
-            print(f"{c:<22}{a['n']:>4}{fmt(a['spearman']):>10}{fmt(a['kappa']):>8}")
+            print(f"{c:<22}{a['n']:>4}{fmt(a['spearman']):>10}{fmt(a['kappa']):>8}{fmt(a['ac2']):>8}")
     for group, per_criterion in report.get("reliability", {}).items():
         print(f"\n== Độ tin cậy nhóm {group}")
         print(f"{'tiêu chí':<22}{'người':>6}{'gói':>5}{'đủ':>5}{'α thứ bậc':>11}{'α khoảng':>10}{'Fleiss κ':>10}")
