@@ -6,9 +6,9 @@
 
 environment = "staging"
 
-api      = { cpu = 512, memory = 1024, min = 1, max = 2 }
-worker   = { cpu = 1024, memory = 3072, min = 1, max = 2, pool_size = 4 }
-gateway  = { cpu = 256, memory = 512, min = 1, max = 2 }
+api     = { cpu = 512, memory = 1024, min = 1, max = 2 }
+worker  = { cpu = 1024, memory = 3072, min = 1, max = 2, pool_size = 4 }
+gateway = { cpu = 256, memory = 512, min = 1, max = 2 }
 
 # db.t4g.small (2 GiB): max_connections about 190 with the default parameter group, above the
 # 113 that two api and two worker tasks can open (checks.tf).
