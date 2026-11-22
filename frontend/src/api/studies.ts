@@ -117,6 +117,8 @@ export interface ResultRating {
   kind: "human" | "llm_judge";
   scores: Record<string, { score: number; justification: string }>;
   findings: { claim: string; field: string; reason: string }[];
+  // Rubric v3: the item-writing flaws of each question; empty on an older rubric and on media.
+  quiz_flaws: { question: number; flaws: string[] }[];
   notes: string;
 }
 export type StudyGroup = "rag_llm" | "llm_no_rag" | "human" | "flashcards" | "video";

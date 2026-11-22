@@ -92,8 +92,10 @@ def world():
 
 
 def create_study(world):
+    # The rubric is the server's: a client cannot start a study on another one.
     response = client.post("/studies", headers=world["headers"], json={"name": "Study", "rubric_version": "v1"})
     assert response.status_code == 201, response.text
+    assert response.json()["rubric_version"] == "v3"
     world["studies"].append(uuid.UUID(response.json()["id"]))
     return response.json()["id"]
 
@@ -169,7 +171,7 @@ def test_every_endpoint_is_admin_only(world):
     sid = create_study(world)
     load(world, sid, human_packets=[human_packet()])
     for method, path, body in (("GET", "/studies", None), ("GET", f"/studies/{sid}", None),
-                               ("POST", "/studies", {"name": "S", "rubric_version": "v1"}),
+                               ("POST", "/studies", {"name": "S"}),
                                ("POST", f"/studies/{sid}/items", {"human_packets": [human_packet()]})):
         for headers, status in (({}, 401), (world["teacher_headers"], 404)):
             response = client.request(method, path, headers=headers, json=body)
@@ -239,7 +241,7 @@ def test_invalid_manual_packets_and_empty_load_are_rejected(world):
     packet["quiz"] = []
     assert load(world, sid, human_packets=[packet]).status_code == 422
     assert load(world, sid).status_code == 422
-    assert client.post("/studies", headers=world["headers"], json={"name": " ", "rubric_version": "v1"}).status_code == 422
+    assert client.post("/studies", headers=world["headers"], json={"name": " "}).status_code == 422
     assert load(world, str(uuid.uuid4()), human_packets=[human_packet()]).status_code == 404
 
 
@@ -247,7 +249,8 @@ def rating_values():
     score = {"score": 3, "justification": "Acceptable"}
     return ModuleEvaluation(anon_id="M01", **{field: score for field in (
         "accuracy", "completeness", "consistency", "hallucination_score", "slide_quality",
-        "quiz_quality", "bloom_fidelity", "query_alignment")}, overall_notes="Overall").model_dump(exclude={"anon_id"})
+        "quiz_quality", "bloom_fidelity", "query_alignment", "examples_feedback")},
+        quiz_flaws=[{"question": 1}, {"question": 2}], overall_notes="Overall").model_dump(exclude={"anon_id"})
 
 
 def test_loading_freezes_after_a_human_rating_or_leaving_draft(world):

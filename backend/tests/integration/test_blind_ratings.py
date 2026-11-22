@@ -13,12 +13,16 @@ from tests.integration.test_studies import world as study_world
 world = study_world
 
 DIMENSIONS = ('accuracy', 'completeness', 'consistency', 'hallucination_score',
-              'slide_quality', 'quiz_quality', 'bloom_fidelity', 'query_alignment')
+              'slide_quality', 'quiz_quality', 'bloom_fidelity', 'query_alignment', 'examples_feedback')
 
 
 def evaluation(code):
+    # The test packets have one quiz question and the practice question, each with one flaw at most, so
+    # the computed quiz_quality is 5 whatever is sent; it is sent as 5 so the saved rating reads back as sent.
     return {'anon_id': code, **{key: {'score': 4, 'justification': 'Supported by source'}
-                               for key in DIMENSIONS}, 'overall_notes': 'Good',
+                               for key in DIMENSIONS}, 'quiz_quality': {'score': 5, 'justification': 'One flaw'},
+            'quiz_flaws': [{'question': 1, 'flaws': ['vague_terms']}, {'question': 2, 'flaws': []}],
+            'overall_notes': 'Good',
             'hallucination_findings': [{'claim': 'Unsupported', 'field': 'content', 'reason': 'No source'}]}
 
 
@@ -117,6 +121,44 @@ def test_uninvited_revoked_inactive_and_foreign_item_access(blind):
     assert client.get(path, headers=blind['teacher_headers']).status_code == 404
 
 
+def test_quiz_quality_is_computed_from_the_flaws_of_every_question(blind):
+    sid, item = blind['sid'], blind['items'][0]
+    path = f"/studies/mine/{sid}/items/{item['id']}/rating"
+    body = evaluation(item['anon_code'])
+    # Two flaws on one of the two questions: half the questions are acceptable, so 3, whatever is sent.
+    body['quiz_flaws'][0]['flaws'] = ['vague_terms', 'absolute_terms']
+    saved = client.put(path, headers=blind['teacher_headers'], json=body)
+    assert saved.status_code == 200 and saved.json()['quiz_quality']['score'] == 3
+    # Every question of the packet is checked once: one left out, or one that is not there, is refused.
+    for flaws in ([{'question': 1}], [{'question': 1}, {'question': 2}, {'question': 3}],
+                  [{'question': 1}, {'question': 2, 'flaws': ['not_a_flaw']}]):
+        response = client.put(path, headers=blind['teacher_headers'], json={**body, 'quiz_flaws': flaws})
+        assert response.status_code == 422, flaws
+
+
+def test_a_study_on_an_older_rubric_takes_no_new_module_rating_and_keeps_its_results(blind):
+    sid, item = blind['sid'], blind['items'][0]
+    path = f"/studies/mine/{sid}/items/{item['id']}/rating"
+    legacy = {key: {'score': 4, 'justification': 'v1'} for key in DIMENSIONS if key != 'examples_feedback'}
+    with SessionLocal() as db:
+        db.get(Study, uuid.UUID(sid)).rubric_version = 'v1'
+        db.add(Rating(study_item_id=uuid.UUID(item['id']), user_id=blind['second'], rater_kind='human',
+                      overall_notes='v1 rating', **legacy))
+        db.commit()
+    refused = client.put(path, headers=blind['teacher_headers'], json=evaluation(item['anon_code']))
+    assert refused.status_code == 409 and 'rubric v1' in refused.json()['detail']
+    assert client.post(f'/studies/{sid}/judge', headers=blind['headers']).status_code == 409
+    results = client.get(f'/studies/{sid}/results', headers=blind['headers']).json()
+    assert 'examples_feedback' not in results['criteria'] and len(results['criteria']) == 8
+    shown = next(i for i in results['items'] if i['id'] == item['id'])['ratings'][0]
+    assert set(shown['scores']) == set(legacy) and shown['quiz_flaws'] == []
+    second = client.get(f'/studies/mine/{sid}/items', headers=blind['second_headers']).json()
+    mine = next(i for i in second['items'] if i['id'] == item['id'])['rating']
+    assert mine['accuracy'] == {'score': 4, 'justification': 'v1'} and 'examples_feedback' not in mine
+    assert client.get(f'/studies/{sid}/results/raters/1.csv', headers=blind['headers']).text.splitlines()[0] == (
+        'anon_id,' + ','.join(k for k in DIMENSIONS if k != 'examples_feedback') + ',hallucination_notes')
+
+
 def test_database_blind_projection_and_rating_rls(blind):
     sid = blind['sid']
     item = blind['items'][0]
@@ -138,7 +180,8 @@ def test_database_blind_projection_and_rating_rls(blind):
             if who != 'teacher':
                 assert db.execute(text('UPDATE ratings SET overall_notes=\'stolen\' WHERE id=:id'), {'id': rating_id}).rowcount == 0
                 foreign = Rating(study_item_id=uuid.UUID(item['id']), user_id=blind['teacher'], rater_kind='human',
-                                 **{key: {'score': 1, 'justification': 'x'} for key in DIMENSIONS}, overall_notes='stolen')
+                                 **{key: {'score': 1, 'justification': 'x'} for key in DIMENSIONS}, quiz_flaws=[],
+                                 overall_notes='stolen')
                 db.add(foreign)
                 with pytest.raises(ProgrammingError):
                     db.flush()

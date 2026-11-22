@@ -130,7 +130,7 @@ def test_someone_not_invited_gets_nothing(blind):
 
 
 def test_a_file_from_another_study_cannot_be_picked(blind, world):
-    other = client.post("/studies", headers=world["headers"], json={"name": "Other", "rubric_version": "v1"}).json()["id"]
+    other = client.post("/studies", headers=world["headers"], json={"name": "Other"}).json()["id"]
     world["studies"].append(uuid.UUID(other))
     file = _upload({**blind, "sid": other})
     item = _admin_items(blind)[0]

@@ -1,6 +1,11 @@
 # Rubric đánh giá module Microlearning
 
-Rubric này dùng chung cho mô hình chấm (`judge_module` trong `backend/app/generation/evaluation.py`) và cho người chấm, để so được độ đồng thuận giữa hai bên. Mỗi module được chấm trên **9 tiêu chí**: 8 tiêu chí cho điểm từ 1 đến 5 và ghi chú tổng quan `overall_notes`; `hallucination_findings` là danh sách phát hiện đi kèm điểm hallucination.
+Đây là **rubric v3** (`RUBRIC_VERSION` trong `backend/app/generation/evaluation.py`).
+Rubric dùng chung cho mô hình chấm (`judge_module`) và cho người chấm, để so được độ đồng thuận giữa hai bên.
+Mỗi module được chấm trên **9 tiêu chí cho điểm từ 1 đến 5**, kèm ghi chú tổng quan `overall_notes`.
+Hai danh sách đi kèm điểm: `hallucination_findings` (khẳng định không có căn cứ) và `quiz_flaws` (lỗi viết câu hỏi của từng câu).
+Mỗi tiêu chí được neo vào một nguồn đã công bố, liệt kê ở [mục 9](#9-căn-cứ-khoa-học); các nguồn đã được đọc toàn văn trừ khi ghi khác.
+Một nghiên cứu ghi rubric lúc tạo (`studies.rubric_version`, do máy chủ đặt) và chỉ nhận đánh giá mô-đun mới theo rubric hiện hành; nghiên cứu cũ vẫn xem và xuất được kết quả theo tiêu chí của nó.
 
 ## 1. Thiết kế nghiên cứu
 
@@ -32,10 +37,13 @@ Rubric này dùng chung cho mô hình chấm (`judge_module` trong `backend/app/
 ## 3. Chín tiêu chí
 
 Tên trong ngoặc là tên cột trong tệp điểm và trong kết quả của mô hình chấm.
+Mô hình chấm được dặn thêm: độ dài của module không phải chất lượng, vì mô hình chấm có xu hướng ưu ái câu trả lời dài (verbosity bias, Zheng et al. 2023).
 
 ### 3.1. Độ chính xác (`accuracy`)
 
-Nội dung, ví dụ, câu quiz, bài luyện tập và lời giải thích có đúng với **tài liệu nguồn** được cung cấp không. Chỉ đối chiếu với tài liệu nguồn, không dựa vào hiểu biết riêng của người chấm về chủ đề.
+Nội dung, ví dụ, câu quiz, bài luyện tập và lời giải thích có đúng với **tài liệu nguồn** được cung cấp không, và mức chi tiết có phù hợp không.
+Chỉ đối chiếu với tài liệu nguồn, không dựa vào hiểu biết riêng của người chấm về chủ đề.
+Căn cứ: mục "Content quality" của LORI (độ xác thực, chính xác, mức chi tiết phù hợp; Leacock & Nesbit 2007) và faithfulness của RAGAS (câu trả lời phải dựa trên ngữ cảnh được cung cấp; Es et al. 2024).
 
 - **5**: mọi thông tin khớp với nguồn.
 - **3**: có một vài chi tiết sai lệch nhưng ý chính vẫn đúng.
@@ -49,9 +57,13 @@ So với **toàn bộ** tài liệu nguồn, không chỉ với phạm vi hẹp 
 - **3**: thiếu một ý cần thiết, hoặc nhiều ý chỉ được nhắc lướt.
 - **1**: thiếu phần lớn các ý cần thiết, người học không đạt được Learning Objective chỉ với module này.
 
+Căn cứ: mục "Central" trong rubric chấm câu hỏi do LLM sinh của Scaria et al. (2024): điều được hỏi có quan trọng với chủ đề của ngữ cảnh không.
+
 ### 3.3. Tính nhất quán (`consistency`)
 
-Mỗi câu quiz và bài luyện tập có hỏi đúng điều đã dạy trong nội dung không; lời giải thích của mỗi câu có khớp với đáp án đúng của chính câu đó không; các ví dụ có mâu thuẫn với nội dung không.
+Theo constructive alignment (Biggs 2014): động từ của Learning Objective (ví dụ "phân biệt", "tính", "giải thích") phải là việc nội dung dạy, ví dụ minh hoạ và câu hỏi đòi hỏi.
+Biggs mô tả động từ trong mục tiêu là mối nối giữa mục tiêu, hoạt động học và bài kiểm tra.
+Cụ thể: mỗi câu quiz và bài luyện tập có hỏi đúng điều đã dạy trong nội dung không; lời giải thích của mỗi câu có khớp với đáp án đúng của chính câu đó không; các ví dụ có mâu thuẫn với nội dung không.
 
 - **5**: mọi câu hỏi, lời giải và ví dụ khớp với nội dung và với nhau.
 - **3**: một câu hỏi về điều nội dung chưa dạy, hoặc một lời giải lệch đáp án.
@@ -59,7 +71,10 @@ Mỗi câu quiz và bài luyện tập có hỏi đúng điều đã dạy trong
 
 ### 3.4. Hallucination (`hallucination_score` và danh sách hallucination)
 
-Liệt kê **từng** câu hoặc ý trong nội dung, slide, ví dụ, quiz, bài luyện tập hay lời giải thích **không có căn cứ** trong tài liệu nguồn, kèm vị trí (một trong sáu phần đó) và lý do. Mục tiêu học tập không thuộc danh sách: nó là đích đến chứ không phải khẳng định, và đã được `bloom_fidelity`, `query_alignment` kiểm. Phải kiểm từng câu, kể cả khi module trông sạch. Một ý diễn đạt lại hoặc suy ra trực tiếp từ nguồn không phải hallucination; một con số, tên riêng, định nghĩa hay khẳng định mà nguồn không có thì là hallucination, kể cả khi nó đúng ngoài đời.
+Tách nội dung thành từng ý nhỏ (atomic claim) và kiểm từng ý có căn cứ trong tài liệu nguồn không, theo cách của FActScore (Min et al. 2023).
+FActScore đo độ chính xác chứ không đo độ bao phủ, nên ý bị thiếu thuộc `completeness`, không thuộc tiêu chí này.
+Liệt kê **từng** ý trong nội dung, slide, ví dụ, quiz, bài luyện tập hay lời giải thích **không có căn cứ** trong tài liệu nguồn, kèm vị trí (một trong sáu phần đó) và lý do.
+Bối cảnh giả định của một ví dụ (tên người, tình huống) không phải khẳng định; chỉ khẳng định về kiến thức của bài mới tính. Mục tiêu học tập không thuộc danh sách: nó là đích đến chứ không phải khẳng định, và đã được `bloom_fidelity`, `query_alignment` kiểm. Phải kiểm từng câu, kể cả khi module trông sạch. Một ý diễn đạt lại hoặc suy ra trực tiếp từ nguồn không phải hallucination; một con số, tên riêng, định nghĩa hay khẳng định mà nguồn không có thì là hallucination, kể cả khi nó đúng ngoài đời.
 
 - **5**: không có câu nào không có căn cứ; danh sách rỗng.
 - **4**: một câu không có căn cứ, ở chi tiết phụ.
@@ -71,23 +86,59 @@ Phân tích thống kê dùng danh sách này dưới dạng nhị phân: module
 
 ### 3.5. Chất lượng slide (`slide_quality`)
 
-Các gạch đầu dòng trên slide có tóm tắt đúng nội dung, rõ ràng, độ dài hợp lý không.
+Theo ba nguyên tắc thiết kế đa phương tiện của Mayer (2023), mỗi nguyên tắc có bằng chứng thực nghiệm:
 
-- **5**: tóm tắt đúng và đủ ý chính, mỗi gạch đầu dòng ngắn gọn.
-- **3**: đúng nhưng thiếu ý chính, hoặc gạch đầu dòng dài như đoạn văn.
+- **Coherence**: bỏ chi tiết thừa không phục vụ mục tiêu (đúng ở 18/19 thí nghiệm, hệ số ảnh hưởng trung vị 0,86).
+- **Signaling**: tiêu đề và gạch đầu dòng làm nổi ý chính và cấu trúc (26/28 thí nghiệm, 0,70).
+- **Segmenting**: chia bài thành phần nhỏ, mỗi slide một ý (7/7 thí nghiệm, 0,67).
+
+Gạch đầu dòng còn phải tóm tắt đúng nội dung.
+
+- **5**: đạt cả ba nguyên tắc và tóm tắt đúng.
+- **3**: vi phạm rõ một nguyên tắc (ví dụ gạch đầu dòng dài như đoạn văn), hoặc có gạch đầu dòng tóm tắt sai.
 - **1**: slide sai nội dung, rời rạc, hoặc chép nguyên văn cả đoạn.
 
 ### 3.6. Chất lượng quiz (`quiz_quality`)
 
-Các câu quiz và bài luyện tập có đúng độ khó theo mức Bloom khai báo không; phương án nhiễu có hợp lý, không sai lộ liễu không; cả bộ câu hỏi có để lộ đáp án không (ví dụ đáp án đúng luôn là phương án dài nhất); các câu có kiểm những ý khác nhau của bài hay lặp lại một ý.
+Điểm này **không do người chấm chọn**: nó được tính từ danh sách lỗi viết câu hỏi (`quiz_flaws`).
+Người chấm (hoặc mô hình chấm) đánh dấu, cho **từng** câu quiz và cho bài luyện tập, những lỗi trong 19 lỗi viết câu hỏi (item-writing flaws) của Tarrant et al. (2006), theo đúng cách diễn đạt trong bảng 1 của Moore et al. (2024).
+Câu quiz đánh số 1..n theo thứ tự, bài luyện tập là câu n+1; mỗi câu phải có đúng một mục, kể cả khi không có lỗi nào.
 
-- **5**: độ khó đúng mức, phương án nhiễu đều hợp lý, không lộ đáp án, mỗi câu kiểm một ý khác nhau.
-- **3**: có một vài phương án nhiễu sai lộ liễu, hoặc hai câu kiểm cùng một ý.
-- **1**: đáp án đoán được mà không cần học, hoặc câu hỏi không kiểm được gì của bài.
+| Khoá | Câu hỏi mắc lỗi nếu |
+|---|---|
+| `longest_option_correct` | đáp án đúng dài và chi tiết hơn các phương án khác |
+| `ambiguous_information` | câu hỏi hoặc phương án viết mơ hồ, khó hiểu |
+| `implausible_distractors` | có phương án nhiễu vô lý |
+| `true_or_false` | các phương án là chuỗi mệnh đề đúng/sai |
+| `absolute_terms` | dùng từ tuyệt đối (luôn luôn, không bao giờ, tất cả) |
+| `complex_k_type` | phương án là tổ hợp các phương án khác |
+| `negatively_worded` | câu hỏi dùng dạng phủ định |
+| `convergence_cues` | đáp án đúng chung nhiều thành phần nhất với các phương án khác |
+| `lost_sequence` | phương án không xếp theo thứ tự số hoặc thời gian |
+| `unfocused_stem` | phải đọc phương án mới hiểu và trả lời được câu hỏi |
+| `none_of_the_above` | có phương án "không có đáp án nào đúng" |
+| `word_repeats` | một từ của câu hỏi chỉ lặp lại ở đáp án đúng |
+| `more_than_one_correct` | có hơn một đáp án đúng |
+| `logical_cues` | câu hỏi và đáp án có gợi ý giúp đoán ra đáp án |
+| `all_of_the_above` | có phương án "tất cả đều đúng" |
+| `fill_in_the_blank` | câu hỏi bỏ trống chữ ở giữa để phương án điền vào |
+| `vague_terms` | phương án dùng từ mơ hồ (thường, đôi khi) |
+| `grammatical_cues` | không phải mọi phương án đều khớp ngữ pháp với câu hỏi |
+| `gratuitous_information` | câu hỏi có thông tin thừa không cần để trả lời |
+
+Theo Tarrant et al. (2006), như Moore et al. (2024) nhắc lại, câu có **tối đa một lỗi** là dùng được, từ hai lỗi trở lên là không dùng được.
+Với p là tỉ lệ câu dùng được, điểm = 1 + làm tròn(4p): mọi câu dùng được cho 5, không câu nào dùng được cho 1.
+Ví dụ với 6 câu: 6, 5, 4, 3, 2, 1, 0 câu dùng được lần lượt cho 5, 4, 4, 3, 2, 2, 1.
+Nhận xét của tiêu chí vẫn bắt buộc, để nói lỗi chính.
+Độ khó theo mức Bloom chấm ở `bloom_fidelity`, không ở đây.
+
+Lý do chấm bằng danh sách có/không thay vì một điểm tổng thể: với cùng một cặp module Tree, hai mô hình chấm theo rubric v1 cho quiz 5 và 3.
+Chấm theo danh sách các câu hỏi có/không làm các mô hình chấm đồng thuận hơn so với thang Likert (CheckEval, Lee et al. 2025, bản arXiv; đo trên tóm tắt văn bản và hội thoại, giữa các mô hình với nhau).
+Moore et al. (2023) cũng ghi nhận GPT-4 chỉ bắt được 79% số lỗi mà người chấm tìm ra, nên lỗi của mô hình chấm cần được đối chiếu với người.
 
 ### 3.7. Độ khớp mức Bloom (`bloom_fidelity`)
 
-Mức Bloom khai báo có khớp với mức **thực tế** mà nội dung, quiz và bài luyện tập đòi hỏi không. Đối chiếu theo bảng neo ở mục 4. Trang chấm mù hiện mức Bloom khai báo ngay cạnh tiêu chí này ("Mức Bloom đặt ra"), không hiện trong gói.
+Mức Bloom khai báo có khớp với mức **thực tế** mà nội dung, quiz và bài luyện tập đòi hỏi không. Đối chiếu theo bảng neo ở mục 4, dựa trên Bloom bản sửa đổi (Krathwohl 2002). Trang chấm mù hiện mức Bloom khai báo ngay cạnh tiêu chí này ("Mức Bloom đặt ra"), không hiện trong gói.
 
 - **5**: khớp hoàn toàn mức khai báo.
 - **3**: lệch một mức ở một phần (ví dụ khai báo Apply nhưng một nửa số câu chỉ đòi Remember).
@@ -95,13 +146,27 @@ Mức Bloom khai báo có khớp với mức **thực tế** mà nội dung, qui
 
 ### 3.8. Bám chủ đề gốc (`query_alignment`)
 
-Module có thực sự trả lời đúng **chủ đề gốc** được giao không (trường "Chủ đề"). Khác với `bloom_fidelity`, vốn chỉ đối chiếu với Learning Objective do chính module đặt ra. Một module có thể chính xác, nhất quán, không hallucination mà vẫn lạc chủ đề: khi đó tiêu chí này phải thấp dù các tiêu chí khác cao.
+Module có thực sự trả lời đúng **chủ đề gốc** được giao không (trường "Chủ đề"), và có tập trung vào **một** mục tiêu chính không.
+Khác với `bloom_fidelity`, vốn chỉ đối chiếu với Learning Objective do chính module đặt ra.
+Một module có thể chính xác, nhất quán, không hallucination mà vẫn lạc chủ đề: khi đó tiêu chí này phải thấp dù các tiêu chí khác cao.
+Tính "micro" theo tổng quan hệ thống của Monib et al. (2024): microlearning là nội dung ngắn, hướng hành động, tập trung vào một mục tiêu cụ thể; bài này cũng nhắc lại (trích McNeill & Fitch) rằng quá nhiều mục tiêu hay quá nhiều nội dung gây quá tải.
 
-- **5**: toàn bộ module xoay quanh đúng chủ đề gốc.
-- **3**: có phần đáng kể nói về chủ đề lân cận.
+- **5**: toàn bộ module xoay quanh đúng chủ đề gốc, một mục tiêu rõ.
+- **3**: đúng chủ đề nhưng dàn trải, hoặc có phần đáng kể nói về chủ đề lân cận.
 - **1**: module nói về chủ đề khác.
 
-### 3.9. Ghi chú tổng quan (`overall_notes`)
+### 3.9. Ví dụ và lời giải (`examples_feedback`)
+
+Hai phần dạy bằng phản hồi của module:
+
+- **Ví dụ** có đúng, có trình bày từng bước hoặc bước con để người học theo được cách làm, và có giúp hiểu khái niệm không (worked examples; Atkinson et al. 2000).
+- **Lời giải** của mỗi câu có nói vì sao đáp án đúng là đúng và vì sao phương án nhiễu sai, cụ thể và ngắn gọn, thay vì chỉ xác nhận đúng/sai không (elaborated feedback; Shute 2008, bảng 2: phản hồi nên nêu "cái gì, thế nào, vì sao" và chia thành phần vừa sức).
+
+- **5**: ví dụ có bước rõ ràng và mọi lời giải nêu lý do.
+- **3**: ví dụ chỉ nêu kết quả, hoặc nhiều lời giải chỉ xác nhận đáp án.
+- **1**: ví dụ sai, hoặc không có lời giải dùng được.
+
+### 3.10. Ghi chú tổng quan (`overall_notes`)
 
 Nhận xét tổng thể về ưu điểm và hạn chế của module, không cho thêm điểm số.
 
@@ -124,16 +189,18 @@ Cùng bảng mà pipeline sinh dùng (`BLOOM_VERB_TABLE` và `BLOOM_LEVEL_ANCHOR
 2. **Đọc tài liệu nguồn trước.** Mỗi gói kèm các đoạn tài liệu nguồn. `accuracy` và hallucination chỉ đối chiếu với các đoạn này, không với hiểu biết riêng của bạn.
 3. **Đọc hết module** (chủ đề, Learning Objective và các mục tiêu con, nội dung, slide, ví dụ, từng câu quiz cùng lời giải, bài luyện tập) rồi mới cho điểm. Mức Bloom khai báo chỉ hiện cạnh tiêu chí `bloom_fidelity`; dùng nó khi chấm `bloom_fidelity` và độ khó quiz.
 4. **Cho điểm nguyên từ 1 đến 5** theo các mức neo ở mục 3. Không chắc giữa hai mức thì chọn mức trung gian 2 hoặc 4.
+   Riêng `quiz_quality`: đánh dấu lỗi của từng câu, điểm tự tính (mục 3.6). Trong ứng dụng, mỗi câu hiện kèm đề bài và danh sách 19 lỗi để đánh dấu.
 5. **Ghi lại hallucination** trong cột `hallucination_notes`: mỗi câu không có căn cứ một dòng, kèm vị trí. Cột này không vào thống kê điểm nhưng giúp đối chiếu với danh sách của mô hình chấm.
 6. **Hiệu chuẩn trước khi chấm thật.** Chấm thử hai gói không nằm trong mẫu, rồi đối chiếu với người nghiên cứu để thống nhất cách hiểu các mức neo. Không sửa điểm của gói thật sau khi đã xem điểm của mô hình chấm.
 7. **Mỗi người chấm một tệp CSV riêng**, mã hoá UTF-8, dòng đầu là tên cột:
 
 ```csv
-anon_id,accuracy,completeness,consistency,hallucination_score,slide_quality,quiz_quality,bloom_fidelity,query_alignment,hallucination_notes
-M-3fa9c2d1,4,3,5,4,4,3,5,5,"nội dung: câu về năm 1998 không có trong nguồn"
+anon_id,accuracy,completeness,consistency,hallucination_score,slide_quality,quiz_quality,bloom_fidelity,query_alignment,examples_feedback,hallucination_notes
+M-3fa9c2d1,4,3,5,4,4,3,5,5,4,"nội dung: câu về năm 1998 không có trong nguồn"
 ```
 
 Để trống một ô khi không chấm được tiêu chí đó; ô trống không được tính. Mỗi mã ẩn danh chỉ xuất hiện một lần trong tệp.
+Chấm ngoài ứng dụng bằng CSV thì tự tính `quiz_quality` theo công thức ở mục 3.6; tệp CSV không mang danh sách lỗi từng câu.
 
 ## 6. Quy trình chạy và phân tích
 
@@ -169,9 +236,11 @@ Có hai hệ mã ẩn danh, không được trộn. Nghiên cứu trong ứng d�
 `analyze_study.py` báo cáo:
 
 - **Điểm trung bình** mỗi tiêu chí của từng nhóm, theo từng mô hình chấm.
-- **Wilcoxon signed-rank hai phía** trên các cặp (rag_llm trừ llm_no_rag) cho từng tiêu chí, kèm p đã hiệu chỉnh Holm cho 8 tiêu chí. Dùng Wilcoxon vì điểm là thang thứ bậc và mẫu nhỏ, không giả định phân phối chuẩn.
+- **Wilcoxon signed-rank hai phía** trên các cặp (rag_llm trừ llm_no_rag) cho từng tiêu chí, kèm p đã hiệu chỉnh Holm cho 9 tiêu chí. Dùng Wilcoxon vì điểm là thang thứ bậc và mẫu nhỏ, không giả định phân phối chuẩn.
 - **McNemar chính xác** cho tỉ lệ module có ít nhất một hallucination giữa hai nhóm, trên các cặp.
-- **Spearman và kappa trọng số bậc hai** (thang 1-5) cho từng tiêu chí, giữa hai mô hình chấm, giữa mỗi mô hình chấm với từng người, và giữa từng cặp người chấm.
+- **Spearman, kappa trọng số bậc hai và AC2 của Gwet trọng số bậc hai** (thang 1-5) cho từng tiêu chí, giữa hai mô hình chấm, giữa mỗi mô hình chấm với từng người, và giữa từng cặp người chấm.
+  AC2 được báo kèm kappa vì khi điểm dồn về một đầu thang, kappa có thể thấp dù hai bên gần như đồng ý ("kappa paradox"), còn AC2 ít đổi theo phân bố điểm hơn (Quarfoot & Levine 2016).
+  Ví dụ đã kiểm trong test: 10 gói, 8 gói hai bên cùng cho 5 và 2 gói lệch một mức cho AC2 = 0,985 nhưng kappa = -0,111.
 - **Độ tin cậy của cả nhóm người chấm** (khi có từ hai tệp `--human`), cho từng tiêu chí:
   - **Krippendorff's α thứ bậc** (kèm α khoảng) trên mọi điểm đã cho. Đây là chỉ số chính: nó đúng với thang thứ bậc 1-5 và chịu được việc mỗi người không chấm đủ mọi gói.
   - **Fleiss' κ** trên những gói mà ai cũng chấm. Fleiss coi thang là danh nghĩa (lệch 1 điểm bị tính như lệch 4 điểm), nên thường thấp hơn α thứ bậc trên cùng dữ liệu; báo kèm vì đây là chỉ số quen thuộc.
@@ -210,4 +279,31 @@ PYTHONPATH=. uv run pytest -q tests/integration/test_claim_evaluation.py tests/i
   Từ ngày này, độ chính xác kiểm thêm ví dụ và bài luyện tập; hallucination kiểm thêm slide, ví dụ và bài luyện tập; tính nhất quán và chất lượng quiz gồm cả bài luyện tập.
   Lời nhắc của mô hình chấm và form chấm trong ứng dụng đổi cùng lúc.
   Lượt chấm thử `module-study/judge-groq-qwen.jsonl` dùng rubric cũ, nên không gộp với các lượt chấm chính thức.
+- **2026-11-22: rubric v3.**
+  Mỗi tiêu chí được neo vào một nguồn đã công bố (mục 9), các nguồn được đọc toàn văn trước khi dẫn.
+  `quiz_quality` chuyển từ một điểm tổng thể sang danh sách 19 lỗi viết câu hỏi cho từng câu, điểm tự tính; thêm tiêu chí thứ chín `examples_feedback`; `query_alignment` thêm tính tập trung vào một mục tiêu; `slide_quality` theo ba nguyên tắc của Mayer; hallucination kiểm theo từng ý nhỏ và không tính bối cảnh giả định của ví dụ.
+  Phân tích báo thêm AC2 của Gwet.
+  Nghiên cứu tạo trước v3 (rubric `v1` và `docs/rubric.md 2026-11-07`) giữ tám tiêu chí cũ: xem và xuất được, nhưng không nhận đánh giá mô-đun hay lượt chấm mới.
 
+## 9. Căn cứ khoa học
+
+Các nguồn dưới đây đã được đọc toàn văn, trừ hai nguồn ghi "chỉ xác minh trang tóm tắt".
+
+- Atkinson, R. K., Derry, S. J., Renkl, A., & Wortham, D. (2000). Learning from examples: Instructional principles from the worked examples research. *Review of Educational Research, 70*(2), 181-214.
+- Biggs, J. (2014). Constructive alignment in university teaching. *HERDSA Review of Higher Education, 1*, 5-22.
+- Biggs, J. (1996). Enhancing teaching through constructive alignment. *Higher Education, 32*, 347-364. Chỉ xác minh trang tóm tắt; nội dung dùng ở đây lấy từ Biggs (2014).
+- Es, S., James, J., Espinosa-Anke, L., & Schockaert, S. (2024). RAGAs: Automated evaluation of retrieval augmented generation. *Proceedings of EACL 2024: System Demonstrations*, 150-158.
+- Haladyna, T. M., Downing, S. M., & Rodriguez, M. C. (2002). A review of multiple-choice item-writing guidelines for classroom assessment. *Applied Measurement in Education, 15*(3), 309-333. Chỉ xác minh trang tóm tắt (31 nguyên tắc, tổng hợp từ 27 giáo trình); bộ lỗi dùng ở mục 3.6 lấy từ Tarrant et al. (2006) qua Moore et al. (2024).
+- Krathwohl, D. R. (2002). A revision of Bloom's taxonomy: An overview. *Theory Into Practice, 41*(4), 212-218.
+- Leacock, T. L., & Nesbit, J. C. (2007). A framework for evaluating the quality of multimedia learning resources. *Educational Technology & Society, 10*(2), 44-59.
+- Lee, Y., Kim, J., Kim, J., Cho, H., Kang, J., Kang, P., & Kim, N. (2025). CheckEval: A reliable LLM-as-a-Judge framework for evaluating text generation using checklists. arXiv:2403.18771v3.
+- Mayer, R. E. (2023). Research-based principles for designing multimedia instruction. Trong C. E. Overson, C. M. Hakala, L. L. Kordonowy, & V. A. Benassi (Eds.), *In their own words*. Division 2, American Psychological Association.
+- Min, S., Krishna, K., Lyu, X., Lewis, M., Yih, W., Koh, P. W., Iyyer, M., Zettlemoyer, L., & Hajishirzi, H. (2023). FActScore: Fine-grained atomic evaluation of factual precision in long form text generation. *Proceedings of EMNLP 2023*, 12076-12100.
+- Monib, W. K., Qazi, A., & Apong, R. A. (2024). Microlearning beyond boundaries: A systematic review and a novel framework for improving learning outcomes. *Heliyon, 11*(2), e41413.
+- Moore, S., Nguyen, H. A., Chen, T., & Stamper, J. (2023). Assessing the quality of multiple-choice questions using GPT-4 and rule-based methods. Trong *Responsive and Sustainable Educational Futures (EC-TEL 2023)*, 229-245. Springer.
+- Moore, S., Costello, E., Nguyen, H. A., & Stamper, J. (2024). An automatic question usability evaluation toolkit. *Artificial Intelligence in Education (AIED 2024)*. arXiv:2405.20529.
+- Quarfoot, D., & Levine, R. A. (2016). How robust are multirater interrater reliability indices to changes in frequency distribution? *The American Statistician, 70*(4), 373-384.
+- Scaria, N., Chenna, S. D., & Subramani, D. (2024). How good are modern LLMs in generating relevant and high-quality questions at different Bloom's skill levels for Indian high school social science curriculum? *Proceedings of the 19th Workshop on Innovative Use of NLP for Building Educational Applications (BEA 2024)*, 1-10.
+- Shute, V. J. (2008). Focus on formative feedback. *Review of Educational Research, 78*(1), 153-189.
+- Tarrant, M., Knierim, A., Hayes, S. K., & Ware, J. (2006). The frequency of item writing flaws in multiple-choice questions used in high stakes nursing assessments. *Nurse Education Today, 26*(8), 662-671. Dẫn qua Moore et al. (2024), chưa đọc bản gốc.
+- Zheng, L., Chiang, W.-L., Sheng, Y., et al. (2023). Judging LLM-as-a-judge with MT-Bench and Chatbot Arena. *NeurIPS 2023 Datasets and Benchmarks Track*.

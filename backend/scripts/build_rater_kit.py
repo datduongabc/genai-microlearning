@@ -25,9 +25,9 @@ import markdown
 sys.path.insert(0, str(Path(__file__).parent))
 from run_judge import _load, anon_code
 
+from app.study.results import CRITERIA
+
 RUBRIC = Path(__file__).resolve().parents[2] / "docs" / "rubric.md"
-CRITERIA = ["accuracy", "completeness", "consistency", "hallucination_score", "slide_quality",
-            "quiz_quality", "bloom_fidelity", "query_alignment"]
 ALLOWED_TAGS = sorted(set(bleach.sanitizer.ALLOWED_TAGS) | {
     "p", "pre", "h1", "h2", "h3", "h4", "h5", "h6", "table", "thead", "tbody", "tr", "th", "td", "hr", "br",
     "sup", "sub", "img",

@@ -255,12 +255,14 @@ _REPLY_BROKE_SCHEMA = re.compile(r"does not match the expected schema|failed_gen
 
 def complete_structured[T: BaseModel](
     prompt: str, response_model: type[T], system_instruction: str | None = None,
-    response_format: dict | None = None, **kwargs
+    response_format: dict | None = None, validation_context: dict | None = None, **kwargs
 ) -> T:
     """JSON-schema-constrained completion -- litellm maps `response_format`
     to each provider's native structured-output mechanism (Gemini's
     response_schema, OpenAI's json_schema, ...). `response_format` can constrain
-    the schema for this call, while the reply is still parsed as `response_model`."""
+    the schema for this call, while the reply is still parsed as `response_model`.
+    `validation_context` reaches the model's validators, so a reply that breaks a rule the schema
+    cannot state (one depending on the prompt) is asked again like a malformed one."""
     messages = []
     if system_instruction:
         messages.append({"role": "system", "content": system_instruction})
@@ -287,7 +289,8 @@ def complete_structured[T: BaseModel](
             # strict=False: model hay để lọt tab, xuống dòng trần vào giữa chuỗi JSON khi viết công
             # thức, và trình đọc nghiêm từ chối cả câu trả lời dù nó vẫn đọc được. Schema vẫn được
             # kiểm đầy đủ ngay sau đó.
-            return response_model.model_validate(json.loads(choice.message.content, strict=False))
+            return response_model.model_validate(json.loads(choice.message.content, strict=False),
+                                                 context=validation_context)
         except (json.JSONDecodeError, ValidationError):
             # Both are ValueError, which the job queue treats as permanent: without asking again here,
             # one bad reply late in a module would throw away every paid call made before it.

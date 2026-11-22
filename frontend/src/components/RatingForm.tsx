@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { Controller, useFieldArray, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
-  fromRatingForm, ratingFormSchema, rubricOf, toRatingForm,
+  fromRatingForm, ITEM_WRITING_FLAWS, quizQualityScore, ratingFormSchema, rubricOf, toRatingForm,
   type MediaRating, type PacketKind, type Rating, type RatingForm as RatingValues,
 } from "../lib/ratingSchema";
 import { apiErrorMessage } from "../api/client";
@@ -30,12 +30,15 @@ export function RatingForm({
   kind = "module",
   code,
   bloomLevel = "",
+  questions = [],
   rating,
   onSave,
 }: {
   kind?: PacketKind;
   code: string;
   bloomLevel?: string;
+  // The stems of a module packet's quiz questions and of its practice question, each checked for flaws.
+  questions?: string[];
   rating: Rating | MediaRating | null;
   onSave: (values: Rating | MediaRating) => Promise<void>;
 }) {
@@ -46,12 +49,19 @@ export function RatingForm({
     control,
     handleSubmit,
     reset,
+    setValue,
     formState: { errors, isSubmitting, isDirty },
   } = useForm<RatingValues>({
     resolver: zodResolver(ratingFormSchema(kind)),
-    defaultValues: toRatingForm(kind, code, rating),
+    defaultValues: toRatingForm(kind, code, rating, questions.length),
   });
   const values = useWatch({ control });
+  const quizFlaws = useWatch({ control, name: "quiz_flaws" });
+  // The quiz score is not chosen: it follows the flaws marked, as the server computes it too.
+  useEffect(() => {
+    if (kind !== "module" || !quizFlaws.length) return;
+    setValue("scores.quiz_quality.score", quizQualityScore(quizFlaws), { shouldDirty: true });
+  }, [kind, quizFlaws, setValue]);
   const { fields, append, remove } = useFieldArray({ control, name: "hallucination_findings" });
   // Unsaved input is not kept as a draft, so leaving it (another item, another page, logging
   // out, a reload or closing the tab) asks first. Links and the logout button are caught here
@@ -112,7 +122,24 @@ export function RatingForm({
           {/* bloom_fidelity is judged against the declared level, so it is shown here only, not in the packet. */}
           {criterion.key === "bloom_fidelity" && <p className="small muted">Mức Bloom đặt ra: {BLOOM_LABELS[bloomLevel] ?? bloomLevel}</p>}
           <p className="rubric-question">{criterion.question}</p>
-          <Controller control={control} name={`scores.${criterion.key}.score`} render={({ field }) => (
+          {kind === "module" && criterion.key === "quiz_quality" ? <div className="question-flaws">
+            {quizFlaws.map((q, n) => <details key={q.question} className="question-flaw">
+              <summary>
+                <span className="flaw-question"><span>{n === quizFlaws.length - 1 ? "Bài luyện tập" : `Câu ${q.question}`}</span>
+                  <span className="muted" title={questions[n]}>{questions[n]}</span></span>
+                <span className={q.flaws.length > 1 ? "flaw-count danger-text" : "flaw-count muted"}>
+                  {q.flaws.length ? `${q.flaws.length} lỗi` : "Không lỗi"}</span>
+              </summary>
+              <div className="flaw-options">
+                {ITEM_WRITING_FLAWS.map(([key, label]) => <label key={key}>
+                  <input type="checkbox" value={key} {...register(`quiz_flaws.${n}.flaws`)} />
+                  <span>{label}</span>
+                </label>)}
+              </div>
+            </details>)}
+            <p className="small"><strong>Điểm tự tính: {values.scores?.quiz_quality?.score}/5</strong>
+              {" "}<span className="muted">(câu có tối đa một lỗi là đạt)</span></p>
+          </div> : <Controller control={control} name={`scores.${criterion.key}.score`} render={({ field }) => (
             <div className="scores" role="radiogroup" aria-label={`Điểm ${criterion.label}`}>
               {[1, 2, 3, 4, 5].map((n) => <label key={n}>
                 <input type="radio" name={field.name} value={n} checked={field.value === n}
@@ -120,7 +147,7 @@ export function RatingForm({
                 <span>{n}</span>
               </label>)}
             </div>
-          )} />
+          )} />}
           {errors.scores?.[criterion.key]?.score && (
             <p role="alert" className="danger-text">
               Vui lòng chọn điểm nguyên từ 1 đến 5.

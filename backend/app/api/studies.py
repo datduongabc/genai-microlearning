@@ -17,7 +17,7 @@ from app.api.modules import _generate_without_retrieval as generate_control
 from app.api.stored_files import download_link, send_stored
 from app.auth.rate_limit import limiter, user_or_address
 from app.db import get_db
-from app.generation.evaluation import ModuleContentInput, ModuleEvaluation
+from app.generation.evaluation import RUBRIC_VERSION, ModuleContentInput, ModuleEvaluation, question_context
 from app.generation.limits import has_full_access
 from app.generation.module_generation_pipeline import (
     IncompleteModuleError,
@@ -47,7 +47,7 @@ from app.study.items import MODULE_GROUPS, assign_codes, existing_pair, shuffle_
 from app.study.judge import validate_judge
 from app.study.media import MediaEvaluation, MediaKind, media_candidates, media_item, next_code, packet_model
 from app.study.references import attach_source
-from app.study.results import human_ratings, judge_jsonl, media_csv, rater_csv, study_results
+from app.study.results import criteria_of, human_ratings, judge_jsonl, media_csv, rater_csv, study_results
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/studies", tags=["studies"])
@@ -55,8 +55,8 @@ Nonempty = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1,
 
 
 class CreateStudy(BaseModel):
+    # The rubric is not chosen: a new study is rated on the current one (RUBRIC_VERSION).
     name: Nonempty
-    rubric_version: Nonempty
 
 
 class ImportedPacket(BaseModel):
@@ -103,7 +103,7 @@ def _item_out(item: StudyItem) -> dict:
 
 @router.post("", status_code=201, dependencies=[Depends(require_admin)])
 def create_study(body: CreateStudy, db: Session = Depends(get_db)):
-    study = Study(name=body.name, rubric_version=body.rubric_version)
+    study = Study(name=body.name, rubric_version=RUBRIC_VERSION)
     db.add(study)
     db.commit()
     db.refresh(study)
@@ -158,9 +158,17 @@ def _rating_out(rating: Rating, anon_code: str, kind: str = "module"):
         return MediaEvaluation(anon_id=anon_code, kind=kind, scores=rating.scores,
                                hallucination_findings=rating.hallucination_findings,
                                overall_notes=rating.overall_notes).model_dump()
-    return ModuleEvaluation(anon_id=anon_code, **{
-        key: getattr(rating, key) for key in ModuleEvaluation.model_fields if key != "anon_id"
-    }).model_dump()
+    # As stored, not revalidated: a rating of an older rubric lacks the criteria added since.
+    return {"anon_id": anon_code, **{key: getattr(rating, key) for key in ModuleEvaluation.model_fields
+                                     if key != "anon_id" and getattr(rating, key) is not None}}
+
+
+def check_current_rubric(rubric_version: str) -> None:
+    """A study is rated on one rubric: one made under an older one takes no new module ratings."""
+    if rubric_version != RUBRIC_VERSION:
+        raise HTTPException(status_code=409, detail=(
+            f"Nghiên cứu này dùng rubric {rubric_version}, không chấm thêm được theo rubric {RUBRIC_VERSION}. "
+            "Hãy tạo nghiên cứu mới."))
 
 
 @router.get("/mine")
@@ -192,8 +200,11 @@ def save_rating(study_id: uuid.UUID, item_id: uuid.UUID, raw: dict = Body(...),
         raise HTTPException(status_code=404, detail="Study item not found")
     # The item says which rubric applies, so a module rating cannot be saved on a video or back.
     kind = _kind(item["packet"])
+    if kind == "module":
+        check_current_rubric(_my_study(db, study_id)["rubric_version"])
     try:
-        body = (ModuleEvaluation.model_validate(raw) if kind == "module"
+        body = (ModuleEvaluation.model_validate(raw, context=question_context(ModuleContentInput.model_validate(
+                    item["packet"]))) if kind == "module"
                 else MediaEvaluation.model_validate({**raw, "kind": kind}))
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
@@ -275,11 +286,11 @@ def results(study_id: uuid.UUID, db: Session = Depends(get_db)):
 
 @router.get("/{study_id}/results/raters/{number}.csv", dependencies=[Depends(require_admin)])
 def rater_file(study_id: uuid.UUID, number: int, db: Session = Depends(get_db)):
-    _study_or_404(db, study_id)
+    study = _study_or_404(db, study_id)
     raters = list(human_ratings(db, study_id).values())
     if not 1 <= number <= len(raters):
         raise HTTPException(status_code=404, detail="No rater with this number has rated yet")
-    return Response(rater_csv(raters[number - 1]), media_type="text/csv; charset=utf-8",
+    return Response(rater_csv(raters[number - 1], criteria_of(study)), media_type="text/csv; charset=utf-8",
                     headers={"Content-Disposition": f'attachment; filename="rater-{number}.csv"'})
 
 
@@ -605,6 +616,7 @@ def judge_study(study_id: uuid.UUID, db: Session = Depends(get_db)):
     study = db.scalar(select(Study).where(Study.id == study_id).with_for_update())
     if study is None:
         raise HTTPException(status_code=404, detail="Study not found")
+    check_current_rubric(study.rubric_version)
     busy = db.scalar(select(Job.id).where(Job.study_id == study_id,
                      Job.status.in_([JobStatus.queued, JobStatus.running])).limit(1))
     if busy is not None:

@@ -2,13 +2,14 @@ import { useEffect, useState } from "react";
 import { ChevronDown } from "lucide-react";
 import { downloadStudyFile, getStudyResults, type StudyResults as Results } from "../api/studies";
 import { apiErrorMessage } from "../api/client";
-import { GROUP_LABEL, mediaRubric, rubric } from "../lib/ratingSchema";
+import { GROUP_LABEL, ITEM_WRITING_FLAWS, mediaRubric, rubric } from "../lib/ratingSchema";
 import { notifyFailed } from "../lib/notify";
 
 const FIELD_LABEL: Record<string, string> = {
   content: "Nội dung", slides: "Slide", example: "Ví dụ", quiz: "Quiz", practice: "Bài luyện tập", explanation: "Lời giải thích",
   card: "Thẻ", narration: "Lời đọc",
 };
+const FLAW_LABEL: Record<string, string> = Object.fromEntries(ITEM_WRITING_FLAWS);
 const CRITERION_LABEL: Record<string, string> = Object.fromEntries(
   [...rubric, ...mediaRubric.flashcards, ...mediaRubric.video].map((c) => [c.key, c.label]));
 
@@ -111,6 +112,17 @@ function ResultItem({ item }: { item: Results["items"][number] }) {
               <td key={`n${i}`}>{r.scores[c]?.justification ?? ""}</td>,
             ])}
           </tr>)}
+          {item.ratings.some((r) => r.quiz_flaws?.length) && <tr>
+            <th scope="row">Lỗi câu hỏi</th>
+            {item.ratings.map((r, i) => <td key={i} colSpan={2} className="result-rater-head">
+              {!r.quiz_flaws?.some((q) => q.flaws.length) ? <span className="muted">Không có</span> : <ul className="result-findings">
+                {r.quiz_flaws.filter((q) => q.flaws.length).map((q) => <li key={q.question}>
+                  <span className="result-field">{q.question === r.quiz_flaws.length ? "Bài luyện tập" : `Câu ${q.question}`}</span>
+                  <span>{q.flaws.map((f) => FLAW_LABEL[f] ?? f).join("; ")}</span>
+                </li>)}
+              </ul>}
+            </td>)}
+          </tr>}
           <tr>
             <th scope="row">Thông tin bịa</th>
             {item.ratings.map((r, i) => <td key={i} colSpan={2} className="result-rater-head">

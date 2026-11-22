@@ -32,5 +32,7 @@ def _evaluation(anon_id: str, score: int = 4) -> ModuleEvaluation:
     dim = DimensionScore(score=score, justification="ổn")
     return ModuleEvaluation(
         anon_id=anon_id, accuracy=dim, completeness=dim, consistency=dim, hallucination_score=dim,
-        slide_quality=dim, quiz_quality=dim, bloom_fidelity=dim, query_alignment=dim, overall_notes="",
+        slide_quality=dim, quiz_quality=dim, bloom_fidelity=dim, query_alignment=dim, examples_feedback=dim,
+        # _packet() has one quiz question and the practice question; no flaw, so quiz_quality is 5.
+        quiz_flaws=[{"question": 1}, {"question": 2}], overall_notes="",
     )

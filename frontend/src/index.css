@@ -221,7 +221,7 @@ h1[tabindex="-1"]:focus-visible { outline:none; }
 .criterion > summary { display:flex; align-items:center; gap:12px; cursor:pointer; font-weight:600; list-style:none; }
 .criterion:not([open]) { padding:12px 24px; }
 .criterion[open] { background:var(--bg-subtle); }
-.criterion fieldset { margin-top:12px; }
+.criterion fieldset { margin-top:12px; min-width:0; }
 .scores { display:flex; gap:8px; }
 .scores label { position:relative; cursor:pointer; }
 .scores input { position:absolute; opacity:0; width:100%; height:100%; }
@@ -522,6 +522,17 @@ h1[tabindex="-1"]:focus-visible { outline:none; }
 .finding-remove:hover { background:var(--bg-danger-soft); border-color:var(--status-danger); }
 .finding-field { display:flex; flex-direction:column; gap:4px; font-size:14px; font-weight:600; color:var(--text-secondary); }
 .finding-field .ui-input, .finding-field .ui-select { font-weight:400; font-size:14px; }
+/* Rubric v3: the item-writing flaws of each question, the quiz score computed from them. */
+.question-flaws { display:flex; flex-direction:column; gap:8px; margin-bottom:12px; }
+.question-flaw { border:1px solid var(--border-default); border-radius:var(--radius-sm); background:var(--bg-surface); }
+.question-flaw > summary { display:flex; justify-content:space-between; align-items:center; gap:12px; padding:8px 12px; cursor:pointer; font-size:14px; font-weight:600; }
+.question-flaw .flaw-count { font-weight:400; }
+.flaw-question { display:flex; flex-direction:column; gap:2px; min-width:0; }
+.flaw-question .muted { font-weight:400; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.question-flaw .flaw-count { flex:none; }
+.flaw-options { display:flex; flex-direction:column; gap:6px; padding:4px 12px 12px; border-top:1px solid var(--border-default); }
+.flaw-options label { display:grid; grid-template-columns:16px minmax(0,1fr); gap:8px; align-items:start; padding-top:6px; font-size:14px; line-height:20px; cursor:pointer; }
+.flaw-options input { margin-top:2px; accent-color:var(--accent-default); }
 
 /* --- Study results for the admin. */
 .study-main { display:flex; flex-direction:column; gap:24px; min-width:0; }
@@ -536,6 +547,8 @@ h1[tabindex="-1"]:focus-visible { outline:none; }
 .result-item { border:1px solid var(--border-default); border-radius:var(--radius-sm); }
 .result-item + .result-item { margin-top:8px; }
 .result-head { display:flex; align-items:center; gap:12px; padding:8px 8px 8px 16px; }
+/* On a phone the topic gets a line of its own: beside the code, group and count it shrank to a letter. */
+@media(max-width:600px) { .result-head { flex-wrap:wrap; row-gap:4px; } .result-head > .flex-1 { order:1; flex-basis:100%; white-space:normal; } }
 .result-item[data-open=true] > .result-head { border-bottom:1px solid var(--border-default); background:var(--bg-subtle); }
 .result-chevron { transition:transform .15s; }
 [aria-expanded=true] > .result-chevron { transform:rotate(180deg); }

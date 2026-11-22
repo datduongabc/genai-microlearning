@@ -26,8 +26,8 @@ from pathlib import Path
 from sqlalchemy import select
 
 from app.db import SessionLocal
-from app.models import StudyItem
-from app.study.results import human_ratings, judge_jsonl, pair_ids, rater_csv
+from app.models import Study, StudyItem
+from app.study.results import criteria_of, human_ratings, judge_jsonl, pair_ids, rater_csv
 
 
 def _pair_ids(items: list[StudyItem]) -> dict[str, str]:
@@ -50,6 +50,7 @@ def export(study_id: uuid.UUID, out: Path) -> list[Path]:
         )
     with SessionLocal() as db:
         humans = human_ratings(db, study_id)
+        criteria = criteria_of(db.get(Study, study_id))
         _pair_ids(list(db.scalars(select(StudyItem).where(StudyItem.study_id == study_id))))
         judge = judge_jsonl(db, study_id)
     out.mkdir(parents=True, exist_ok=True)
@@ -62,7 +63,7 @@ def export(study_id: uuid.UUID, out: Path) -> list[Path]:
     # Same numbering as the admin page: by email among raters who rated at least one packet.
     for n, (email, ratings) in enumerate(humans.items(), start=1):
         path = out / f"rater-{n}.csv"
-        path.write_text(rater_csv(ratings), encoding="utf-8", newline="")
+        path.write_text(rater_csv(ratings, criteria), encoding="utf-8", newline="")
         print(f"{path.name}: {email} ({len(ratings)} gói)")
         written.append(path)
     return written

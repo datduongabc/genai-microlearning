@@ -14,7 +14,7 @@ vi.mock("../../../api/admin");
 const study = {
   id: "s1",
   name: "Nghiên cứu",
-  rubric_version: "v1",
+  rubric_version: "v3",
   status: "draft",
   created_at: "",
 };
@@ -100,7 +100,7 @@ it("renders the whole anonymous packet and saves/edits all rubric criteria", asy
   expect(await screen.findByText("Mục tiêu con")).toBeInTheDocument();
   for (const [tab, text] of [["Mục tiêu", "Mục tiêu con"], ["Nội dung", "Nội dung bài"], ["Slide", "Ý chính"], ["Ví dụ", "Bối cảnh"], ["Luyện tập", "Câu hỏi"], ["Quiz", "Câu hỏi"]]) {
     await user.click(screen.getByRole("tab", { name: tab }));
-    expect(screen.getByText(text)).toBeInTheDocument();
+    expect(within(screen.getByRole("tabpanel")).getByText(text)).toBeInTheDocument();
   }
   await user.click(screen.getByRole("tab", { name: "Giải thích đáp án" }));
   expect(screen.getAllByText("Lời giải")).toHaveLength(2);
@@ -110,6 +110,17 @@ it("renders the whole anonymous packet and saves/edits all rubric criteria", asy
     await user.click(within(group).getByRole("radio", { name: "4" }));
   for (const field of screen.getAllByRole("textbox", { name: /Nhận xét/ }))
     await user.type(field, "Có căn cứ");
+  // The quiz score is computed from the flaws marked: two on one of the two questions halves it.
+  expect(screen.queryByRole("radiogroup", { name: "Điểm Chất lượng quiz" })).not.toBeInTheDocument();
+  expect(screen.getByText("Điểm tự tính: 5/5")).toBeInTheDocument();
+  const first = screen.getByText("Câu 1").closest("details")!;
+  // Each question is named with its stem, so the rater need not look it up in the Quiz tab.
+  expect(first.querySelector("summary")).toHaveTextContent("Câu 1Câu hỏi");
+  await user.click(screen.getByText("Câu 1"));
+  await user.click(within(first).getByLabelText("Dùng từ tuyệt đối (luôn luôn, không bao giờ, tất cả)"));
+  await user.click(within(first).getByLabelText("Có phương án nhiễu vô lý"));
+  expect(screen.getByText("2 lỗi")).toBeInTheDocument();
+  expect(screen.getByText("Điểm tự tính: 3/5")).toBeInTheDocument();
   await user.click(screen.getByText("Ghi chú chung"));
   await user.type(screen.getByLabelText("Ghi chú tổng quan"), "Tổng quan");
   expect(screen.getByRole("heading", { name: "Khẳng định không có căn cứ 0" })).toBeInTheDocument();
@@ -121,6 +132,11 @@ it("renders the whole anonymous packet and saves/edits all rubric criteria", asy
   expect(await screen.findByText("Đã lưu đánh giá.")).toBeInTheDocument();
   const body = vi.mocked(api.saveRating).mock.calls[0][2] as Rating;
   expect(body.accuracy).toEqual({ score: 4, justification: "Có căn cứ" });
+  expect(body.examples_feedback).toEqual({ score: 4, justification: "Có căn cứ" });
+  expect(body.quiz_quality).toEqual({ score: 3, justification: "Có căn cứ" });
+  expect(body.quiz_flaws.map((q) => [q.question, [...q.flaws].sort()])).toEqual([
+    [1, ["absolute_terms", "implausible_distractors"]], [2, []],
+  ]);
   expect(body.hallucination_findings).toEqual([
     { claim: "Khẳng định", field: "content", reason: "Không có nguồn" },
   ]);
@@ -147,7 +163,13 @@ it("keeps a criterion opened by a failed save open while its comment is typed", 
   await user.type(within(criterion).getByRole("textbox", { name: /Nhận xét/ }), "C");
   await waitFor(() => expect(within(criterion).queryByRole("alert")).not.toBeInTheDocument());
   expect(criterion).toHaveAttribute("open");
-  expect(within(criterion).getByText("Câu hỏi, lời giải và ví dụ có khớp nhau không?")).toBeInTheDocument();
+  expect(within(criterion).getByText(/động từ của mục tiêu/)).toBeInTheDocument();
+});
+it("shows no module form on a study made under an older rubric", async () => {
+  vi.mocked(api.myStudyItems).mockResolvedValue({ ...data, study: { ...study, rubric_version: "v1" } });
+  blind();
+  expect(await screen.findByText(/dùng rubric v1, không chấm thêm mô-đun/)).toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: "Lưu đánh giá" })).not.toBeInTheDocument();
 });
 it("keeps edits and progress unchanged after a failed save", async () => {
   const score = { score: 3, justification: "Đã chấm" };
@@ -161,6 +183,8 @@ it("keeps edits and progress unchanged after a failed save", async () => {
     quiz_quality: score,
     bloom_fidelity: score,
     query_alignment: score,
+    examples_feedback: score,
+    quiz_flaws: [{ question: 1, flaws: [] }, { question: 2, flaws: [] }],
     overall_notes: "Cũ",
     hallucination_findings: [],
   };
@@ -193,6 +217,8 @@ it("asks before a link or logout discards unsaved input, and not once it is save
     quiz_quality: score,
     bloom_fidelity: score,
     query_alignment: score,
+    examples_feedback: score,
+    quiz_flaws: [{ question: 1, flaws: [] }, { question: 2, flaws: [] }],
     overall_notes: "Cũ",
     hallucination_findings: [],
   };
@@ -274,12 +300,12 @@ it("shows the study and the anonymous code in the breadcrumb", async () => {
 it("counts the criteria still missing a score or a comment beside the save button", async () => {
   const user = userEvent.setup();
   blind();
-  expect(await screen.findByText("Còn 8 tiêu chí")).toBeInTheDocument();
+  expect(await screen.findByText("Còn 9 tiêu chí")).toBeInTheDocument();
   const accuracy = screen.getByRole("radiogroup", { name: "Điểm Độ chính xác" });
   await user.click(within(accuracy).getByRole("radio", { name: "5" }));
-  expect(screen.getByText("Còn 8 tiêu chí")).toBeInTheDocument();
+  expect(screen.getByText("Còn 9 tiêu chí")).toBeInTheDocument();
   await user.type(screen.getByRole("textbox", { name: "Nhận xét Độ chính xác" }), "Khớp nguồn");
-  expect(screen.getByText("Còn 7 tiêu chí")).toBeInTheDocument();
+  expect(screen.getByText("Còn 8 tiêu chí")).toBeInTheDocument();
 });
 
 it("keeps the correct answer out of the Quiz tab and shows it under Giải thích đáp án", async () => {
@@ -349,6 +375,7 @@ it("shows the admin each rater's progress, and per packet the scores, findings a
       { id: "i1", anon_code: "M01", group: "rag_llm", pair_code: "M01", topic: "Chủ đề", criteria: ["accuracy", "completeness"], ratings: [{
         rater: "Lan", kind: "human", scores, notes: "Ổn",
         findings: [{ claim: "Câu bịa", field: "example", reason: "Nguồn không có" }],
+        quiz_flaws: [{ question: 1, flaws: [] }, { question: 2, flaws: ["vague_terms", "absolute_terms"] }],
       }] },
       { id: "i2", anon_code: "M02", group: "llm_no_rag", pair_code: "M01", topic: "Chủ đề", criteria: ["accuracy", "completeness"], ratings: [] },
     ],
@@ -379,6 +406,9 @@ it("shows the admin each rater's progress, and per packet the scores, findings a
   expect(table.getByText("Câu bịa")).toBeVisible();
   expect(table.getByText("Ví dụ")).toBeVisible();
   expect(table.getByRole("row", { name: /Ghi chú Ổn/ })).toBeVisible();
+  // The last question is the practice one; a question without flaws is not listed.
+  expect(table.getByRole("row", { name: /Lỗi câu hỏi Bài luyện tập\s*Phương án dùng từ mơ hồ/ })).toBeVisible();
+  expect(table.queryByText("Câu 1")).not.toBeInTheDocument();
   await user.click(within(results).getByRole("button", { name: "Tải CSV mô-đun" }));
   expect(api.downloadStudyFile).toHaveBeenCalledWith("s1", "raters/1.csv");
   await user.click(within(results).getByRole("button", { name: "Tải CSV flashcard và video" }));
