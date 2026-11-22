@@ -10,11 +10,11 @@ Terraform cho bản đồ án của `docs/architecture/system-design-v1.md`: m�
 | --- | --- | --- |
 | Mạng | VPC 2 AZ, subnet public cho task, subnet data không có đường ra Internet, S3 gateway endpoint | Không NAT: task có IP công khai, không có rule inbound từ Internet |
 | Vào | CloudFront (`/api/*` tới ALB, còn lại là frontend trong S3), ALB chỉ nhận từ CloudFront | ALB kiểm header bí mật `X-Origin-Verify`, health check `/ready` |
-| Tính toán | ECS Fargate: `api`, `worker`, `llm-gateway`, `embedder`, và `reranker` khi `reranker_provider = "jina"` | Service Connect: tên `gateway`, `embedder`, `reranker` giống compose |
+| Tính toán | ECS Fargate: `api`, `worker`, `renderer`, `llm-gateway` | Service Connect: tên `gateway` giống compose; embedding (Gemini) và rerank (Jev) là API của nhà cung cấp, không có task chạy model |
 | Dữ liệu | RDS PostgreSQL 16 (pgvector, bắt buộc TLS), ElastiCache Valkey một node, S3 cho tệp tải lên và media | Trình duyệt gửi tệp thẳng vào S3 bằng presigned POST (CORS chỉ cho phép POST từ địa chỉ CloudFront); tệp tự hết hạn sau 7 ngày, phòng job lỗi bỏ lại |
 | Bí mật | Parameter Store SecureString | Khóa nhà cung cấp chỉ tới `llm-gateway`; URL chủ DB chỉ tới task migrate |
-| Scale | `api` theo request/task và CPU; `worker` theo `JobsReady`; `embedder` theo CPU | Worker có job đang chạy được bảo vệ khỏi scale-in |
-| Giám sát | Log JSON 14 ngày, cảnh báo qua SNS, AWS Budgets $50/$100/$150 | Cảnh báo Jev chỉ có khi `reranker_provider = "jev"` |
+| Scale | `api` theo request/task và CPU; `worker` theo `JobsReady`; `renderer` theo video chờ dựng | Worker có job đang chạy được bảo vệ khỏi scale-in |
+| Giám sát | Log JSON 14 ngày, cảnh báo qua SNS, AWS Budgets $50/$100/$150 | Cảnh báo khi Jev rơi về thứ tự tìm kiếm hoặc từ chối khoá |
 
 ## Lần đầu
 
@@ -39,7 +39,7 @@ terraform init -backend-config=backend.hcl
 
 # 1. Kho ECR trước, để có chỗ đẩy image.
 IMAGE_TAG=$TAG ../scripts/tf.sh apply -target=aws_ecr_repository.repo -target=aws_ecr_lifecycle_policy.keep_recent
-IMAGES_ONLY=1 ../scripts/deploy.sh             # thêm WITH_RERANKER=1 nếu dùng jina
+IMAGES_ONLY=1 ../scripts/deploy.sh
 
 # 2. Phần còn lại. Service khởi động trước migration, nên api chưa qua /ready và lần deploy đầu có
 #    thể bị circuit breaker đánh dấu thất bại; bước 4 khởi động lại service đó sau migration.
@@ -206,8 +206,7 @@ Kho ECR cũng bị xóa cùng image, nên lần dựng sau bắt đầu lại t�
 - **Địa chỉ client.** Uvicorn chỉ tin VPC (ALB) và dải IP của CloudFront, nên rate limit theo IP thấy đúng địa chỉ người dùng mà người dùng không giả được. Tin `*` thì client tự ghi được `X-Forwarded-For`.
 - **CloudFront tới ALB là HTTP.** HTTPS ở chặng này cần tên miền và chứng chỉ riêng. Chặng người dùng tới CloudFront vẫn là HTTPS.
 - **Ngân sách kết nối DB.** `check "connection_budget"` báo khi `api.max` và `worker.max` cộng lại có thể mở nhiều kết nối hơn RDS nhận. Mặc định: 349 trên 407.
-- **Embedder 4 vCPU, 8 GB, vì CPU.** Ngày 2026-11-17 đã thử 2 vCPU, 4 GB trên AWS: nạp một PDF giải tích 1,2 MB, embedder ở 98% CPU hơn 8 phút, health check hết giờ, và ECS thay task hai lần (14:14 và 14:18 UTC), mỗi lần giết lượt nhúng đang chạy. Autoscaling thêm task thứ hai, cũng ở 98%. Bộ nhớ chỉ đạt đỉnh 57% của 4 GB, nên giới hạn là CPU, không phải bộ nhớ: đừng giảm cỡ này nếu chưa đo lại lúc nạp tài liệu.
-- **Model embedder nằm trong image** (`devops/embedder`), như reranker. Task mới không phải tải 2,4 GB từ Hugging Face trước khi phục vụ, và không phụ thuộc Hugging Face lúc chạy. Đổi model thì phải nhúng lại toàn bộ chunk, xem `devops/embedder/prepare_model.py`.
+- **Không có task embedder.** Embedding là Gemini Embedding 001 qua gateway (`embed-default`). Qwen3 tự host cần task 4 vCPU, 8 GB chạy cả ngày (2 vCPU thì một PDF 1,2 MB giữ 98% CPU hơn 8 phút và ECS thay task giữa chừng), trong khi Gemini truy xuất ngang bằng trên 250 câu hỏi, xem `docs/measurements/2026-11-22-gemini-embedding.md`. Qwen3 vẫn chạy được ở compose (`--profile local-embedder`); đưa lên AWS thì phải thêm lại service.
 - **Moodle không nằm trong stack này.** Điền `moodle_base_url` nếu có.
 - **Không tự đăng ký tài khoản.** Hạn mức sinh module tính theo tài khoản, nên để ai cũng đăng ký được thì một người tạo nhiều tài khoản để tiêu tiền nhà cung cấp. Biến `self_registration` mặc định tắt: admin tạo tài khoản, còn người mở từ Moodle có tài khoản qua LTI. Bản chạy trên máy (compose) vẫn mở.
 - **Valkey không có mật khẩu,** chỉ có TLS và security group. Nó chỉ giữ bộ đếm rate limit.

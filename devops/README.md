@@ -7,9 +7,9 @@ and it points `env_file` at `devops/.env`, the single env file the compose stack
 
 ## What is here
 
-- `docker-compose.yml`: the whole stack (database, Moodle, migrate, backend, frontend, LLM gateway, local embedder and reranker, HTTPS proxy).
+- `docker-compose.yml`: the whole stack (database, Moodle, migrate, backend, frontend, LLM gateway, HTTPS proxy, and an optional local embedder behind the `local-embedder` profile).
 - `docker-compose.scale.yml`: several API and worker containers on one host.
-- `gateway/`: the LLM gateway image and its model routing. Chat and transcription models are called through a provider's API; embeddings and reranking run locally in the `embedder` and `reranker` services.
+- `gateway/`: the LLM gateway image and its model routing. Chat, transcription and embedding models are called through a provider's API, and reranking through Jev's; the `embedder` service is the optional self-hosted embedding.
 - `moodle/`: the Moodle image.
 - `caddy/Caddyfile`: the HTTPS proxy in front of the frontend and the API (`/api`).
 - `scripts/rotate_secrets.py`: replaces the database and Moodle admin passwords everywhere they live.
@@ -47,8 +47,7 @@ Postgres on every search.
 ```
 
 Each worker container runs `WORKER_POOL_SIZE` jobs at once (four by default), with `QUESTION_CONCURRENCY` questions at
-a time inside a module and at most `RERANKER_MAX_CONCURRENT` rerank requests at a time per container. Raise the last one
-when adding reranker containers. With `UPLOAD_STORE=local` (the compose default) the browser sends the file to the API,
+a time inside a module; Jev calls per process are bounded by `JEV_MAX_CONCURRENT`. With `UPLOAD_STORE=local` (the compose default) the browser sends the file to the API,
 which keeps it in the shared bind mount, so running on several hosts needs `UPLOAD_STORE=s3`: the browser then posts
 the file straight to the bucket with a presigned POST, and needs the bucket's CORS to allow the site's origin.
 
@@ -72,7 +71,7 @@ are merged in source order, removing matching overlap text and retaining absolut
 segment locators. Normalization preserves duration-based pricing; the overlap adds
 about 0.3% audio duration for an 80-minute lecture.
 
-Use `./devops/scripts/compose.sh up -d` to select GPU embedding automatically on the
+When the optional local embedder is used (`--profile local-embedder`), `./devops/scripts/compose.sh` selects GPU embedding automatically on the
 measured NVIDIA Ampere 8.6 hardware (including the RTX 3050 Ti). The launcher applies
 `devops/docker-compose.gpu.yml` after the CPU base configuration. NVIDIA Container
 Toolkit must expose the GPU to Docker. On other hardware it keeps CPU; force that path

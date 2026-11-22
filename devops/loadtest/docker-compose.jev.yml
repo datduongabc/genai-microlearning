@@ -6,7 +6,6 @@ services:
   backend:
     image: do-an-load-backend-jev
     environment: &jev
-      RERANKER_PROVIDER: jev
       TYPESAFE_API_KEY: ${TYPESAFE_API_KEY:?}
   worker:
     image: do-an-load-backend-jev

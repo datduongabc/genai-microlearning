@@ -15,7 +15,7 @@ variable "environment" {
 }
 
 variable "image_tag" {
-  description = "Tag of the images in ECR (backend, gateway, embedder, reranker). A commit hash: images are immutable."
+  description = "Tag of the images in ECR (backend, gateway). A commit hash: images are immutable."
   type        = string
 }
 
@@ -51,14 +51,6 @@ variable "renderer" {
   }
 }
 
-variable "embedder" {
-  # CPU-bound, not memory-bound. 2 vCPU/4 GB was tried on AWS on 2026-11-17: ingesting one 1.2 MB
-  # PDF held it at 98% CPU for over 8 minutes, its health checks timed out and ECS replaced it
-  # twice mid-embed, while memory peaked at 57% of 4 GB (infra/README.md).
-  type    = object({ cpu = number, memory = number, min = number, max = number })
-  default = { cpu = 4096, memory = 8192, min = 1, max = 2 }
-}
-
 variable "gateway" {
   # Every model call goes through it, so one task is the one fault that stops all AI: two at least,
   # each in its own zone, and more by CPU when generation and chat are busy.
@@ -70,25 +62,6 @@ variable "api_requests_per_target" {
   description = "Requests per minute per api task the scaling keeps to. Measured: about 199 requests/s on one task, so this is about half."
   type        = number
   default     = 6000
-}
-
-# --- Retrieval
-
-variable "reranker_provider" {
-  description = "jev (approved 2026-11-08) sends the question and candidate chunk text to TypeSafe in the US and runs no reranker task. jina runs the self-hosted reranker service instead."
-  type        = string
-  default     = "jev"
-
-  validation {
-    condition     = contains(["jina", "jev"], var.reranker_provider)
-    error_message = "jina or jev."
-  }
-}
-
-variable "reranker" {
-  description = "The self-hosted reranker, used only when reranker_provider is jina. Scaled by CPU: on CPU it was the measured bottleneck of chat (about 400% CPU at 22.5 messages/minute)."
-  type        = object({ cpu = number, memory = number, min = number, max = number })
-  default     = { cpu = 4096, memory = 8192, min = 1, max = 3 }
 }
 
 variable "self_registration" {

@@ -11,7 +11,8 @@ ADMIN_EMAIL and ADMIN_PASSWORD it makes the accounts, and each uploads the lectu
 `seed` reads and embeds one real lecture once and copies its chunks to every course. `generate` waits
 for the jobs, then adds a row with throughput, tokens and per-stage timings to the results file. `chat` sends
 real chat messages and records throughput and latency. `ack` times how long the API takes to answer an
-upload or a generation request (NFR02), without the file transfer. `check` fails when the last row broke a stop condition."""
+upload or a generation request (NFR02), without the file transfer. `media-http` has that many seeded lecturers ask for a module, a flashcard set and a video at once, and
+times each job's queue wait and run. `check` fails when the last row broke a stop condition."""
 
 import argparse
 import asyncio
@@ -87,7 +88,8 @@ def seed_http(count: int) -> None:
 
     source = fitz.open(LECTURE)
     excerpt = fitz.open()
-    excerpt.insert_pdf(source, from_page=0, to_page=2)
+    # Three pages keep a read test cheap; a video needs enough passages for its six scenes.
+    excerpt.insert_pdf(source, from_page=0, to_page=int(os.environ.get("SEED_PAGES", "3")) - 1)
     pdf = excerpt.tobytes()
     admin = httpx.Client(base_url=BASE, timeout=60)
     login = admin.post("/auth/login", json={"email": os.environ["ADMIN_EMAIL"], "password": os.environ["ADMIN_PASSWORD"]})
@@ -355,6 +357,150 @@ def ack(concurrency: int, label: str, out: str) -> None:
     print(json.dumps(row, indent=1))
 
 
+class _Account:
+    """One seeded lecturer over HTTP, signing in again when the 15-minute access token runs out."""
+
+    def __init__(self, user: dict):
+        self.user = user
+        self.client = httpx.Client(base_url=BASE, timeout=60)
+        self._login()
+
+    def _login(self) -> None:
+        while (r := self.client.post("/auth/login", json={"email": self.user["email"],
+                                                           "password": self.user["password"]})).status_code == 429:
+            time.sleep(7)
+        r.raise_for_status()
+        self.client.headers["Authorization"] = "Bearer " + r.json()["access_token"]
+
+    def call(self, method: str, url: str, **kwargs) -> httpx.Response:
+        for _ in range(30):
+            try:
+                r = self.client.request(method, url, **kwargs)
+            except httpx.TransportError:
+                time.sleep(3)
+                continue
+            if r.status_code == 401:
+                self._login()
+            elif r.status_code >= 500 and method == "GET":
+                time.sleep(3)
+            else:
+                return r
+        r.raise_for_status()
+        return r
+
+
+POLL_SECONDS = 2
+
+
+def _wait_job(account: _Account, job_id: str, submitted: float, t0: float) -> dict:
+    """Polls a job until it ends. `started` is the first poll that saw it running, so it is late by up
+    to POLL_SECONDS; the queue keeps no start time of its own (locked_at moves with the heartbeat)."""
+    started = None
+    while True:
+        job = account.call("GET", f"/modules/jobs/{job_id}").json()
+        now = time.perf_counter()
+        if started is None and job["status"] != "queued":
+            started = now
+        if job["status"] in ("done", "failed"):
+            started = started or now
+            return {"status": job["status"], "attempts": job["attempts"], "error": (job.get("last_error") or "")[:200],
+                    "submitted": round(submitted - t0, 1), "wait": round(started - submitted, 1),
+                    "run": round(now - started, 1), "total": round(now - submitted, 1)}
+        time.sleep(POLL_SECONDS)
+
+
+def media_http(count: int, label: str, out: str, skip: int = 0) -> None:
+    """`count` seeded lecturers at once, each asking for a module, a flashcard set and a video of their
+    document, then drawing the video's pictures and rendering it, as one lecturer would in the editor.
+    Times each job from request to end: waiting in the queue, then running. Real models, real cost."""
+    # `skip`: each account may generate three items a day, so a second run takes the next accounts.
+    users = json.loads(USERS_FILE.read_text())[skip:skip + count]
+    if len(users) < count:
+        raise SystemExit(f"only {len(users)} seeded users")
+    accounts = [_Account(u) for u in users]
+    rows: list[dict] = []
+    t0 = time.perf_counter()
+
+    def timed_post(account: _Account, url: str, **kwargs) -> tuple[dict, float, float]:
+        sent = time.perf_counter()
+        r = account.call("POST", url, **kwargs)
+        if r.status_code >= 300:
+            raise RuntimeError(f"POST {url}: {r.status_code} {r.text[:200]}")
+        return r.json(), sent, time.perf_counter() - sent
+
+    def module(account: _Account) -> dict:
+        body, sent, ack = timed_post(account, "/modules/generate", params={"document_id": account.user["document_id"]},
+                                     json={"output_language": "vi"})
+        return {"ack": round(ack, 2), **_wait_job(account, body["job_id"], sent, t0)}
+
+    def flashcards(account: _Account) -> dict:
+        body, sent, ack = timed_post(account, "/flashcard-sets", params={"document_id": account.user["document_id"]},
+                                     json={"output_language": "vi"})
+        row = {"ack": round(ack, 2), **_wait_job(account, body["job_id"], sent, t0)}
+        row["cards"] = len(account.call("GET", f"/flashcard-sets/{body['id']}").json().get("cards") or [])
+        return row
+
+    def video(account: _Account) -> dict:
+        body, sent, ack = timed_post(account, "/videos", params={"document_id": account.user["document_id"]},
+                                     json={"output_language": "vi"})
+        stages = {"script": {"ack": round(ack, 2), **_wait_job(account, body["job_id"], sent, t0)}}
+        if stages["script"]["status"] != "done":
+            return stages
+        detail = account.call("GET", f"/videos/{body['id']}").json()
+        stages["scenes"] = len(detail["scenes"])
+        if any(s["kind"] == "illustration" and (s.get("image_prompt") or "").strip() for s in detail["scenes"]):
+            drawn, sent, ack = timed_post(account, f"/videos/{body['id']}/illustrations")
+            stages["images"] = {"ack": round(ack, 2), "pictures": len(drawn["scene_indexes"]),
+                                **_wait_job(account, drawn["job_id"], sent, t0)}
+            if stages["images"]["status"] != "done":
+                return stages
+        rendered, sent, ack = timed_post(account, f"/videos/{body['id']}/render")
+        stages["render"] = {"ack": round(ack, 2), **_wait_job(account, rendered["job_id"], sent, t0)}
+        stages["duration_seconds"] = account.call("GET", f"/videos/{body['id']}").json().get("duration_seconds")
+        return stages
+
+    def one(account: _Account) -> None:
+        row: dict = {"email": account.user["email"]}
+        # The three requests go together, as a lecturer clicking through the menu would send them.
+        with concurrent.futures.ThreadPoolExecutor(3) as pool:
+            futures = {name: pool.submit(fn, account) for name, fn in
+                       (("module", module), ("flashcards", flashcards), ("video", video))}
+            for name, future in futures.items():
+                try:
+                    row[name] = future.result()
+                except (httpx.HTTPError, RuntimeError, KeyError) as error:  # a refused request is a result too
+                    row[name] = {"status": "error", "error": str(error)[:300]}
+        rows.append(row)
+        print(f"[{time.perf_counter() - t0:6.0f}s] {account.user['email']} done", flush=True)
+
+    started_at = datetime.now(UTC).isoformat()
+    with concurrent.futures.ThreadPoolExecutor(count) as pool:
+        list(pool.map(one, accounts))
+
+    def stage(path: tuple[str, ...]) -> dict:
+        found = []
+        for r in rows:
+            item = r
+            for key in path:
+                item = item.get(key) if isinstance(item, dict) else None
+            if isinstance(item, dict) and "total" in item:
+                found.append(item)
+        done = [s for s in found if s["status"] == "done"]
+        return {"n": len(found), "done": len(done), "failed": len(found) - len(done),
+                "errors": sorted({s.get("error", "") for s in found if s["status"] != "done"}),
+                **{k: _stats([s[k] for s in done]) for k in ("wait", "run", "total")},
+                "ack": _stats([s["ack"] for s in found if "ack" in s])}
+
+    summary = {"label": label, "started_at": started_at, "ended_at": datetime.now(UTC).isoformat(),
+               "lecturers": count, "wall_seconds": round(time.perf_counter() - t0, 1), "poll_seconds": POLL_SECONDS,
+               "stages": {name: stage(path) for name, path in (
+                   ("module", ("module",)), ("flashcards", ("flashcards",)), ("video_script", ("video", "script")),
+                   ("video_images", ("video", "images")), ("video_render", ("video", "render")))},
+               "rows": rows}
+    _append(out, summary)
+    print(json.dumps({k: v for k, v in summary.items() if k != "rows"}, indent=1, ensure_ascii=False))
+
+
 def check(out: str, token_cap: int) -> None:
     target = RESULTS / out
     if not target.exists():
@@ -376,7 +522,7 @@ def check(out: str, token_cap: int) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("step", choices=["seed", "seed-http", "login-http", "generate", "chat", "chat-stream", "ack", "check"])
+    parser.add_argument("step", choices=["seed", "seed-http", "login-http", "generate", "chat", "chat-stream", "ack", "media-http", "check"])
     parser.add_argument("--users", type=int, default=40)
     parser.add_argument("--modules", type=int, default=8)
     parser.add_argument("--label", default="run")
@@ -385,6 +531,7 @@ def main() -> None:
     parser.add_argument("--concurrency", type=int, default=25)
     parser.add_argument("--messages", type=int, default=50)
     parser.add_argument("--rate", type=float)
+    parser.add_argument("--skip", type=int, default=0)
     parser.add_argument("--token-cap", type=int, default=30_000_000)
     args = parser.parse_args()
     if args.step == "seed":
@@ -399,6 +546,8 @@ def main() -> None:
         chat(args.concurrency, args.messages, args.label, args.out)
     elif args.step == "ack":
         ack(args.concurrency, args.label, args.out)
+    elif args.step == "media-http":
+        media_http(args.users, args.label, args.out, args.skip)
     elif args.step == "chat-stream":
         chat_stream(args.concurrency, args.messages, args.label, args.out, args.rate)
     else:

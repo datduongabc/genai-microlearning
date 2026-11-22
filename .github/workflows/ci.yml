@@ -78,8 +78,6 @@ jobs:
 
   # The images deploy.sh pushes, built from the same Dockerfiles, so a broken build or a fixable
   # critical or high finding stops a pull request instead of a deploy. ECR scans again on push.
-  # The embedder is left out: its build downloads a 2.4 GB model, and only its model and base
-  # image change it, not this repository's code.
   images:
     runs-on: ubuntu-latest
     env:

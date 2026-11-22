@@ -9,7 +9,6 @@ services:
   runner:
     image: do-an-load-backend-chat
     environment: &settings
-      RERANKER_PROVIDER: jev
       TYPESAFE_API_KEY: ${TYPESAFE_API_KEY:?}
       LLM_RATE_LIMIT_RETRIES: ${LLM_RATE_LIMIT_RETRIES:-0}
       CHAT_MAX_STREAMS: "1000"

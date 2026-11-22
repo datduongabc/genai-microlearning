@@ -1,15 +1,13 @@
 # Load test
 
 Measures the system without paying for a model. `mock_gateway.py` replaces the LLM gateway, waits around the
-latency measured on real models and returns JSON that fits the requested schema. Postgres, Redis, the reranker,
-the embedder, the API and the workers are all real. Because the mock has no rate limit, the results do not include
-provider quotas.
+latency measured on real models and returns JSON that fits the requested schema. Postgres, Redis, the embedder,
+the API and the workers are all real; reranking uses Jev when `TYPESAFE_API_KEY` is set (`docker-compose.jev.yml`)
+and keeps the hybrid order otherwise. Because the mock has no rate limit, the results do not include provider quotas.
+The scaling matrix with the self-hosted Jina reranker (`run_matrix.sh`, removed with Jina) is recorded in
+`docs/measurements/2026-11-05-generation-throughput.md`.
 
-```bash
-DOCUMENTS_DIR=/path/to/docs/documents ./run_matrix.sh
-```
-
-The run takes about an hour and writes to `results/`. Remove the stack with `docker compose --profile k6 down`.
+Remove the stack with `docker compose --profile k6 down`.
 Failure tests, which stop each kind of service while it works and check that no job is lost, are
 `./run_failures.sh` (about an hour and a quarter; results in `docs/measurements/2026-11-06-failure-tests.md`).
 

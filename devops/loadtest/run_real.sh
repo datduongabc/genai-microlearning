@@ -19,10 +19,10 @@ set -a; source <(grep -E '^(OPENROUTER|TYPESAFE)_API_KEY=' ../.env); set +a
 # EXTRA_COMPOSE adds an override, and ONLY limits the run to the labels it names.
 dc() { docker compose -f docker-compose.yml -f docker-compose.real.yml ${EXTRA_COMPOSE:+-f "$EXTRA_COMPOSE"} "$@"; }
 py() { dc exec -T runner /app/.venv/bin/python drive_generation.py "$@"; }
-scale() { # workers backends rerankers embedders gateways
-  dc up -d --force-recreate --scale worker="$1" --scale backend="$2" --scale reranker="$3" --scale embedder="$4" \
-    --scale gateway="$5" backend worker reranker embedder gateway proxy 2>&1 | tail -1
-  until dc exec -T runner /app/.venv/bin/python -c "import httpx; httpx.get('http://gateway:4000/health/liveliness', timeout=3).raise_for_status(); httpx.get('http://embedder:80/health', timeout=3).raise_for_status(); httpx.get('http://reranker:80/health', timeout=3).raise_for_status(); httpx.get('http://backend:8000/health', timeout=3).raise_for_status()" 2>/dev/null; do sleep 3; done
+scale() { # workers backends embedders gateways
+  dc up -d --force-recreate --scale worker="$1" --scale backend="$2" --scale embedder="$3" \
+    --scale gateway="$4" backend worker embedder gateway proxy 2>&1 | tail -1
+  until dc exec -T runner /app/.venv/bin/python -c "import httpx; httpx.get('http://gateway:4000/health/liveliness', timeout=3).raise_for_status(); httpx.get('http://embedder:80/health', timeout=3).raise_for_status(); httpx.get('http://backend:8000/health', timeout=3).raise_for_status()" 2>/dev/null; do sleep 3; done
   sleep 5
 }
 sample() { while true; do date +%s | tr '\n' ' '; docker stats --no-stream --format '{{.Name}},{{.CPUPerc}},{{.MemUsage}}' | grep do-an-load | tr '\n' ' '; echo; sleep 15; done >> "results/$OUT.$1.stats"; }
@@ -47,10 +47,10 @@ clear_jobs() { # Before workers start: they would otherwise pick up jobs left by
   dc stop worker >/dev/null 2>&1
   dc exec -T db psql -U postgres -d microlearning -qc "DELETE FROM jobs WHERE status IN ('queued','running')"
 }
-generation() { # label workers modules rerankers embedders gateways
+generation() { # label workers modules embedders gateways
   finished "$1" && return
   clear_jobs
-  scale "$2" 2 "$4" "$5" "$6"
+  scale "$2" 2 "$4" "$5"
   sample "$1" & P=$!
   py generate --modules "$3" --label "$1" --out "$OUT" --max-seconds 2400 | tail -1 | cut -c1-420
   kill $P 2>/dev/null
@@ -58,7 +58,7 @@ generation() { # label workers modules rerankers embedders gateways
 }
 chat() { # label backends concurrency messages
   finished "$1" && return
-  scale 1 "$2" 1 1 1
+  scale 1 "$2" 1 1
   sample "$1" & P=$!
   py chat --concurrency "$3" --messages "$4" --label "$1" --out "$OUT" | tail -1 | cut -c1-420
   kill $P 2>/dev/null
@@ -75,18 +75,17 @@ dc exec -T runner /app/.venv/bin/alembic upgrade head 2>&1 | tail -1
 py seed --users "${SEED_USERS:-40}" | tail -1
 
 # One worker first: if the model or the key is wrong, this stops after four modules.
-generation worker-1x4 1 4 1 1 1
-generation worker-2x4 2 8 1 1 1
-generation worker-4x4 4 16 1 1 1
-generation reranker-2-worker-4x4 4 16 2 1 1
-generation embedder-2-worker-4x4 4 16 1 2 1
-generation gateway-2-worker-4x4 4 16 1 1 2
+generation worker-1x4 1 4 1 1
+generation worker-2x4 2 8 1 1
+generation worker-4x4 4 16 1 1
+generation embedder-2-worker-4x4 4 16 2 1
+generation gateway-2-worker-4x4 4 16 1 2
 chat chat-api-1 1 25 50
 chat chat-api-2 2 50 100
 chat chat-api-4 4 100 200
 # Last, since it needs the most memory: a low-memory stop here loses no other run.
-generation worker-8x4 8 32 1 1 1
+generation worker-8x4 8 32 1 1
 # More modules than worker slots, so a queue forms and the result is a sustained rate. Only when named in ONLY; needs SEED_USERS=96.
-[ -n "$ONLY" ] && generation worker-8x4-queue96 8 96 1 1 1
-[ -n "$ONLY" ] && generation worker-4x4-queue32 4 32 1 1 1
+[ -n "$ONLY" ] && generation worker-8x4-queue96 8 96 1 1
+[ -n "$ONLY" ] && generation worker-4x4-queue32 4 32 1 1
 echo "finished $alias"

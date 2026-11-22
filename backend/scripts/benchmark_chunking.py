@@ -45,7 +45,7 @@ from benchmark_rerank import CAC_MUC_K, TOI_THIEU_KY_TU, _chi_so, _hoi_llm, _mcn
 
 from app.config import settings
 from app.ingestion import document_readers
-from app.ingestion.chunker import _locator_heading, chunk_units, document_title
+from app.ingestion.chunker import chunk_units, document_title, locator_heading
 from app.ingestion.document_readers import read_document
 from app.ingestion.embeddings import embed_texts
 from app.models.models import Chunk, Course, Document, DocumentStatus, User
@@ -195,8 +195,8 @@ def nap(db: Session) -> None:
                     db.add(Chunk(id=uuid.uuid4(), document_id=tai_lieu.id, course_id=khoa_hoc[cach].id,
                                  chunk_index=chi_so, content=noi_dung, source_ref=nguon, embedding=vector[noi_dung]))
             db.commit()
-            nhan_cu = [_locator_heading(json.loads(n)) for _, n in hai_cach["cu"]]
-            nhan_moi = [_locator_heading(json.loads(n)) for _, n in hai_cach["moi"]]
+            nhan_cu = [locator_heading(json.loads(n)) for _, n in hai_cach["cu"]]
+            nhan_moi = [locator_heading(json.loads(n)) for _, n in hai_cach["moi"]]
             thong_ke.append({
                 "course": mon, "file": tep.name, "chunks_cu": len(hai_cach["cu"]), "chunks_moi": len(hai_cach["moi"]),
                 "giong_nhau": len({c for c, _ in hai_cach["cu"]} & {c for c, _ in hai_cach["moi"]}),

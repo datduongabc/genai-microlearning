@@ -1,6 +1,6 @@
 """Text to vectors, made by the model behind the gateway's embedding alias (see
-devops/gateway/config.yaml): the embedder container by default, or a provider. The backend does not
-carry the model itself, so its image stays light.
+devops/gateway/config.yaml): Gemini Embedding through OpenRouter by default, or the optional
+self-hosted embedder container. The backend does not carry a model itself, so its image stays light.
 
 A provider limits how many texts it takes per minute (Gemini's free tier: 100, counted per text). A
 refused request is waited out and asked again, batch by batch, so one refusal never sends the batches
@@ -18,7 +18,7 @@ from litellm.exceptions import RateLimitError
 from app.config import settings
 from app.models.models import EMBEDDING_DIM
 
-# The most texts a provider takes in one request; the embedder is set to take as many.
+# The most texts a provider takes in one request; the optional embedder is set to take as many.
 BATCH_SIZE = 100
 # The limit is per minute, so waiting less would only be refused again.
 RATE_LIMIT_WAIT_SECONDS = 60

@@ -1,0 +1,98 @@
+{
+ "window": [
+  "2026-11-22T04:20:47Z",
+  "2026-11-22T04:33:39Z"
+ ],
+ "services": {
+  "api": {
+   "cpu_percent": {
+    "points": 13,
+    "mean": 63.0,
+    "max": 100.0
+   },
+   "cpu_percent_peak_task": {
+    "points": 13,
+    "mean": 70.3,
+    "max": 100.0
+   },
+   "memory_percent": {
+    "points": 13,
+    "mean": 20.2,
+    "max": 21.4
+   }
+  },
+  "worker": {
+   "cpu_percent": {
+    "points": 13,
+    "mean": 1.4,
+    "max": 3.0
+   },
+   "cpu_percent_peak_task": {
+    "points": 13,
+    "mean": 2.1,
+    "max": 11.8
+   },
+   "memory_percent": {
+    "points": 13,
+    "mean": 11.6,
+    "max": 12.1
+   }
+  },
+  "renderer": {
+   "cpu_percent": {},
+   "cpu_percent_peak_task": {},
+   "memory_percent": {}
+  },
+  "embedder": {
+   "cpu_percent": {
+    "points": 13,
+    "mean": 0.3,
+    "max": 0.4
+   },
+   "cpu_percent_peak_task": {
+    "points": 13,
+    "mean": 0.4,
+    "max": 0.4
+   },
+   "memory_percent": {
+    "points": 13,
+    "mean": 29.2,
+    "max": 29.2
+   }
+  },
+  "gateway": {
+   "cpu_percent": {
+    "points": 13,
+    "mean": 4.6,
+    "max": 4.7
+   },
+   "cpu_percent_peak_task": {
+    "points": 13,
+    "mean": 12.9,
+    "max": 13.7
+   },
+   "memory_percent": {
+    "points": 13,
+    "mean": 43.8,
+    "max": 43.8
+   }
+  }
+ },
+ "database": {
+  "cpu_percent": {
+   "points": 13,
+   "mean": 15.5,
+   "max": 25.4
+  },
+  "connections": {
+   "points": 13,
+   "mean": 27.4,
+   "max": 44.0
+  },
+  "freeable_memory_mb": {
+   "points": 13,
+   "mean": 2856.2,
+   "max": 2869.7890625
+  }
+ }
+}

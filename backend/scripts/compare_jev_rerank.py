@@ -1,12 +1,15 @@
-"""Compares Jev with the Jina reranker and with no rerank, on the same hybrid search candidates.
+"""Compares Jev with no rerank, on the same hybrid search candidates.
+
+The Jina variant that produced docs/measurements/jev-rerank/ was removed with the self-hosted reranker;
+its numbers stay in that folder, and commit 0a81138 still runs it.
 
 Jev reads text, so each call sends the question and the candidate chunks to TypeSafe. It needs TYPESAFE_API_KEY, and the
 same BENCHMARK_DATABASE_URL as benchmark_rerank.py. Answers are cached, so a repeated run spends nothing, and the cache
 holds only scores and token counts. `dev` picks the variant and `test` measures it, so the wording is not tuned on the
 questions that report the result.
 
-    python scripts/compare_jev_rerank.py questions.json out.json --subset dev --variants none jina jev-pair jev-batch
-    python scripts/compare_jev_rerank.py questions.json out.json --subset test --variants none jina jev-pair
+    python scripts/compare_jev_rerank.py questions.json out.json --subset dev --variants none jev-pair jev-batch
+    python scripts/compare_jev_rerank.py questions.json out.json --subset test --variants none jev-pair
 """
 
 import argparse
@@ -26,9 +29,8 @@ from sqlalchemy.orm import Session
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from benchmark_rerank import _chi_so, _mcnemar
+from benchmark_rerank import _chi_so
 
-from app.retrieval.reranker import rerank_scored
 from app.retrieval.search import _adaptive_k_largest_gap, hybrid_search
 
 URL = "https://api.typesafe.ai/v1/systemone"
@@ -131,11 +133,6 @@ def measure(db: Session, questions: list[dict], variants: list[str], client: Jev
             if variant == "none":
                 # Decreasing as RRF does, the same stand-in the product uses when Jev fails.
                 scores, used, spent = [1 / (60 + i) for i in range(len(ids))], 0, 0.0
-            elif variant == "jina":
-                started = time.perf_counter()
-                scored = rerank_scored(query, candidates)
-                by_chunk = {id(c): score for c, score in scored}
-                scores, used, spent = [by_chunk[id(c)] for c in candidates], 0, time.perf_counter() - started
             else:
                 scores, used, spent = (jev_pair if variant == "jev-pair" else jev_batch)(client, query, texts)
             rank = _rank([ids[i] for i in _order(scores)], question["chunk_id"])
@@ -157,8 +154,6 @@ def measure(db: Session, questions: list[dict], variants: list[str], client: Jev
         "cost_usd": round(tokens[v] * PRICE_PER_INPUT_TOKEN, 4),
         "mean_seconds": round(statistics.fmean(seconds[v]), 3) if seconds[v] else None,
         "p95_seconds": round(sorted(seconds[v])[round(0.95 * (len(seconds[v]) - 1))], 3) if seconds[v] else None,
-        "against_jina_recall@1": _mcnemar(*[[r == 1 for r in ranks[x]] for x in ("jina", v)])
-        if "jina" in ranks and v != "jina" else None,
         "ranks": ranks[v],
     } for v in variants}
 
@@ -168,7 +163,7 @@ def main() -> None:
     parser.add_argument("questions")
     parser.add_argument("output")
     parser.add_argument("--subset", choices=["dev", "test", "all"], required=True)
-    parser.add_argument("--variants", nargs="+", choices=["none", "jina", "jev-pair", "jev-batch"], required=True)
+    parser.add_argument("--variants", nargs="+", choices=["none", "jev-pair", "jev-batch"], required=True)
     parser.add_argument("--cache", default="jev_cache.jsonl")
     args = parser.parse_args()
     client = None

@@ -7,9 +7,8 @@ from app.moodle import client as moodle_client
 
 @pytest.fixture(autouse=True)
 def no_call_leaves_for_typesafe(monkeypatch):
-    """Jev is the default reranker, and a test must never send text to TypeSafe: tests rerank with
-    the Jina client, whose HTTP call they stub; Jev's own tests switch to it explicitly."""
-    monkeypatch.setattr(settings, "reranker_provider", "jina")
+    """A test must never send text to TypeSafe: without a key the reranker keeps the search order and
+    sends nothing; Jev's own tests set a key and stub the HTTP client."""
     monkeypatch.setattr(settings, "typesafe_api_key", "")
 
 
