@@ -1,0 +1,110 @@
+{
+ "window": [
+  "2026-11-22T03:40:00Z",
+  "2026-11-22T03:55:00Z"
+ ],
+ "services": {
+  "api": {
+   "cpu_percent": {
+    "points": 15,
+    "mean": 7.3,
+    "max": 21.8
+   },
+   "cpu_percent_peak_task": {
+    "points": 15,
+    "mean": 11.8,
+    "max": 45.7
+   },
+   "memory_percent": {
+    "points": 15,
+    "mean": 20.1,
+    "max": 20.3
+   }
+  },
+  "worker": {
+   "cpu_percent": {
+    "points": 15,
+    "mean": 3.1,
+    "max": 11.3
+   },
+   "cpu_percent_peak_task": {
+    "points": 15,
+    "mean": 13.5,
+    "max": 74.1
+   },
+   "memory_percent": {
+    "points": 15,
+    "mean": 16.1,
+    "max": 19.0
+   }
+  },
+  "renderer": {
+   "cpu_percent": {
+    "points": 10,
+    "mean": 22.5,
+    "max": 59.9
+   },
+   "cpu_percent_peak_task": {
+    "points": 10,
+    "mean": 61.4,
+    "max": 96.3
+   },
+   "memory_percent": {
+    "points": 10,
+    "mean": 8.6,
+    "max": 14.0
+   }
+  },
+  "embedder": {
+   "cpu_percent": {
+    "points": 15,
+    "mean": 9.4,
+    "max": 98.9
+   },
+   "cpu_percent_peak_task": {
+    "points": 15,
+    "mean": 16.8,
+    "max": 98.9
+   },
+   "memory_percent": {
+    "points": 15,
+    "mean": 28.0,
+    "max": 29.2
+   }
+  },
+  "gateway": {
+   "cpu_percent": {
+    "points": 15,
+    "mean": 6.8,
+    "max": 9.4
+   },
+   "cpu_percent_peak_task": {
+    "points": 15,
+    "mean": 15.8,
+    "max": 20.5
+   },
+   "memory_percent": {
+    "points": 15,
+    "mean": 42.0,
+    "max": 44.8
+   }
+  }
+ },
+ "database": {
+  "cpu_percent": {
+   "points": 15,
+   "mean": 5.2,
+   "max": 7.1
+  },
+  "connections": {
+   "points": 15,
+   "mean": 31.7,
+   "max": 44.0
+  },
+  "freeable_memory_mb": {
+   "points": 15,
+   "mean": 2867.3,
+   "max": 2945.70703125
+  }
+ }
+}

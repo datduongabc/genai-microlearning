@@ -1,0 +1,1251 @@
+[
+  {
+    "label": "media-5",
+    "started_at": "2026-11-22T03:40:45.442844+00:00",
+    "ended_at": "2026-11-22T03:47:50.268202+00:00",
+    "lecturers": 5,
+    "wall_seconds": 424.8,
+    "poll_seconds": 2,
+    "stages": {
+      "module": {
+        "n": 5,
+        "done": 5,
+        "failed": 0,
+        "errors": [],
+        "wait": {
+          "n": 5,
+          "mean": 2.18,
+          "p50": 2.6,
+          "p95": 2.7,
+          "max": 2.7
+        },
+        "run": {
+          "n": 5,
+          "mean": 252.68,
+          "p50": 260.2,
+          "p95": 292.8,
+          "max": 292.8
+        },
+        "total": {
+          "n": 5,
+          "mean": 254.86,
+          "p50": 262.9,
+          "p95": 295.4,
+          "max": 295.4
+        },
+        "ack": {
+          "n": 5,
+          "mean": 0.304,
+          "p50": 0.3,
+          "p95": 0.6,
+          "max": 0.6
+        }
+      },
+      "flashcards": {
+        "n": 5,
+        "done": 5,
+        "failed": 0,
+        "errors": [],
+        "wait": {
+          "n": 5,
+          "mean": 20.28,
+          "p50": 27.2,
+          "p95": 39.6,
+          "max": 39.6
+        },
+        "run": {
+          "n": 5,
+          "mean": 18.04,
+          "p50": 14.4,
+          "p95": 26.7,
+          "max": 26.7
+        },
+        "total": {
+          "n": 5,
+          "mean": 38.34,
+          "p50": 39.6,
+          "p95": 53.9,
+          "max": 53.9
+        },
+        "ack": {
+          "n": 5,
+          "mean": 0.534,
+          "p50": 0.5,
+          "p95": 0.61,
+          "max": 0.61
+        }
+      },
+      "video_script": {
+        "n": 5,
+        "done": 5,
+        "failed": 0,
+        "errors": [],
+        "wait": {
+          "n": 5,
+          "mean": 65.84,
+          "p50": 54.0,
+          "p95": 121.6,
+          "max": 121.6
+        },
+        "run": {
+          "n": 5,
+          "mean": 89.32,
+          "p50": 86.1,
+          "p95": 106.6,
+          "max": 106.6
+        },
+        "total": {
+          "n": 5,
+          "mean": 155.16,
+          "p50": 140.1,
+          "p95": 207.4,
+          "max": 207.4
+        },
+        "ack": {
+          "n": 5,
+          "mean": 0.582,
+          "p50": 0.58,
+          "p95": 0.62,
+          "max": 0.62
+        }
+      },
+      "video_images": {
+        "n": 5,
+        "done": 5,
+        "failed": 0,
+        "errors": [],
+        "wait": {
+          "n": 5,
+          "mean": 17.28,
+          "p50": 22.6,
+          "p95": 30.8,
+          "max": 30.8
+        },
+        "run": {
+          "n": 5,
+          "mean": 10.24,
+          "p50": 10.2,
+          "p95": 14.3,
+          "max": 14.3
+        },
+        "total": {
+          "n": 5,
+          "mean": 27.52,
+          "p50": 32.8,
+          "p95": 43.1,
+          "max": 43.1
+        },
+        "ack": {
+          "n": 5,
+          "mean": 0.062,
+          "p50": 0.06,
+          "p95": 0.07,
+          "max": 0.07
+        }
+      },
+      "video_render": {
+        "n": 5,
+        "done": 5,
+        "failed": 0,
+        "errors": [],
+        "wait": {
+          "n": 5,
+          "mean": 162.98,
+          "p50": 159.7,
+          "p95": 178.2,
+          "max": 178.2
+        },
+        "run": {
+          "n": 5,
+          "mean": 45.42,
+          "p50": 40.9,
+          "p95": 57.3,
+          "max": 57.3
+        },
+        "total": {
+          "n": 5,
+          "mean": 208.36,
+          "p50": 208.8,
+          "p95": 217.0,
+          "max": 217.0
+        },
+        "ack": {
+          "n": 5,
+          "mean": 0.146,
+          "p50": 0.14,
+          "p95": 0.16,
+          "max": 0.16
+        }
+      }
+    },
+    "rows": [
+      {
+        "email": "load-9344db7584@example.com",
+        "module": {
+          "ack": 0.6,
+          "status": "done",
+          "attempts": 0,
+          "error": "",
+          "submitted": 0.0,
+          "wait": 2.7,
+          "run": 260.2,
+          "total": 262.9
+        },
+        "flashcards": {
+          "ack": 0.58,
+          "status": "done",
+          "attempts": 0,
+          "error": "",
+          "submitted": 0.0,
+          "wait": 2.7,
+          "run": 24.6,
+          "total": 27.3,
+          "cards": 4
+        },
+        "video": {
+          "script": {
+            "ack": 0.52,
+            "status": "done",
+            "attempts": 0,
+            "error": "",
+            "submitted": 0.0,
+            "wait": 2.7,
+            "run": 106.6,
+            "total": 109.3
+          },
+          "scenes": 7,
+          "images": {
+            "ack": 0.06,
+            "pictures": 2,
+            "status": "done",
+            "attempts": 0,
+            "error": "",
+            "submitted": 109.4,
+            "wait": 30.8,
+            "run": 10.3,
+            "total": 41.1
+          },
+          "render": {
+            "ack": 0.14,
+            "status": "done",
+            "attempts": 0,
+            "error": "",
+            "submitted": 150.4,
+            "wait": 159.7,
+            "run": 40.9,
+            "total": 200.6
+          },
+          "duration_seconds": 217.458
+        }
+      },
+      {
+        "email": "load-7afa86e046@example.com",
+        "module": {
+          "ack": 0.3,
+          "status": "done",
+          "attempts": 0,
+          "error": "",
+          "submitted": 0.0,
+          "wait": 2.6,
+          "run": 258.0,
+          "total": 260.6
+        },
+        "flashcards": {
+          "ack": 0.49,
+          "status": "done",
+          "attempts": 0,
+          "error": "",
+          "submitted": 0.0,
+          "wait": 27.2,
+          "run": 14.4,
+          "total": 41.6,
+          "cards": 4
+        },
+        "video": {
+          "script": {
+            "ack": 0.61,
+            "status": "done",
+            "attempts": 0,
+            "error": "",
+            "submitted": 0.0,
+            "wait": 41.7,
+            "run": 79.9,
+            "total": 121.6
+          },
+          "scenes": 7,
+          "images": {
+            "ack": 0.07,
+            "pictures": 3,
+            "status": "done",
+            "attempts": 0,
+            "error": "",
+            "submitted": 121.7,
+            "wait": 28.8,
+            "run": 14.3,
+            "total": 43.1
+          },
+          "render": {
+            "ack": 0.15,
+            "status": "done",
+            "attempts": 0,
+            "error": "",
+            "submitted": 164.8,
+            "wait": 151.6,
+            "run": 57.3,
+            "total": 208.8
+          },
+          "duration_seconds": 207.625
+        }
+      },
+      {
+        "email": "load-54da64d0ae@example.com",
+        "module": {
+          "ack": 0.09,
+          "status": "done",
+          "attempts": 0,
+          "error": "",
+          "submitted": 0.0,
+          "wait": 0.4,
+          "run": 163.7,
+          "total": 164.1
+        },
+        "flashcards": {
+          "ack": 0.61,
+          "status": "done",
+          "attempts": 0,
+          "error": "",
+          "submitted": 0.0,
+          "wait": 29.3,
+          "run": 10.2,
+          "total": 39.6,
+          "cards": 3
+        },
+        "video": {
+          "script": {
+            "ack": 0.58,
+            "status": "done",
+            "attempts": 0,
+            "error": "",
+            "submitted": 0.0,
+            "wait": 54.0,
+            "run": 86.1,
+            "total": 140.1
+          },
+          "scenes": 6,
+          "images": {
+            "ack": 0.06,
+            "pictures": 2,
+            "status": "done",
+            "attempts": 0,
+            "error": "",
+            "submitted": 140.2,
+            "wait": 22.6,
+            "run": 10.2,
+            "total": 32.8
+          },
+          "render": {
+            "ack": 0.14,
+            "status": "done",
+            "attempts": 0,
+            "error": "",
+            "submitted": 173.0,
+            "wait": 178.2,
+            "run": 36.8,
+            "total": 214.9
+          },
+          "duration_seconds": 172.75
+        }
+      },
+      {
+        "email": "load-a93381aff5@example.com",
+        "module": {
+          "ack": 0.32,
+          "status": "done",
+          "attempts": 0,
+          "error": "",
+          "submitted": 0.0,
+          "wait": 2.6,
+          "run": 292.8,
+          "total": 295.4
+        },
+        "flashcards": {
+          "ack": 0.49,
+          "status": "done",
+          "attempts": 0,
+          "error": "",
+          "submitted": 0.0,
+          "wait": 2.6,
+          "run": 26.7,
+          "total": 29.3,
+          "cards": 5
+        },
+        "video": {
+          "script": {
+            "ack": 0.58,
+            "status": "done",
+            "attempts": 0,
+            "error": "",
+            "submitted": 0.0,
+            "wait": 109.2,
+            "run": 98.2,
+            "total": 207.4
+          },
+          "scenes": 7,
+          "images": {
+            "ack": 0.06,
+            "pictures": 2,
+            "status": "done",
+            "attempts": 0,
+            "error": "",
+            "submitted": 207.5,
+            "wait": 2.1,
+            "run": 8.2,
+            "total": 10.3
+          },
+          "render": {
+            "ack": 0.14,
+            "status": "done",
+            "attempts": 0,
+            "error": "",
+            "submitted": 217.8,
+            "wait": 159.6,
+            "run": 40.9,
+            "total": 200.5
+          },
+          "duration_seconds": 229.5
+        }
+      },
+      {
+        "email": "load-3fd132aa76@example.com",
+        "module": {
+          "ack": 0.21,
+          "status": "done",
+          "attempts": 0,
+          "error": "",
+          "submitted": 0.0,
+          "wait": 2.6,
+          "run": 288.7,
+          "total": 291.3
+        },
+        "flashcards": {
+          "ack": 0.5,
+          "status": "done",
+          "attempts": 0,
+          "error": "",
+          "submitted": 0.0,
+          "wait": 39.6,
+          "run": 14.3,
+          "total": 53.9,
+          "cards": 4
+        },
+        "video": {
+          "script": {
+            "ack": 0.62,
+            "status": "done",
+            "attempts": 0,
+            "error": "",
+            "submitted": 0.0,
+            "wait": 121.6,
+            "run": 75.8,
+            "total": 197.4
+          },
+          "scenes": 7,
+          "images": {
+            "ack": 0.06,
+            "pictures": 3,
+            "status": "done",
+            "attempts": 0,
+            "error": "",
+            "submitted": 197.5,
+            "wait": 2.1,
+            "run": 8.2,
+            "total": 10.3
+          },
+          "render": {
+            "ack": 0.16,
+            "status": "done",
+            "attempts": 0,
+            "error": "",
+            "submitted": 207.8,
+            "wait": 165.8,
+            "run": 51.2,
+            "total": 217.0
+          },
+          "duration_seconds": 199.958
+        }
+      }
+    ]
+  },
+  {
+    "label": "media-10",
+    "started_at": "2026-11-22T03:47:59.195487+00:00",
+    "ended_at": "2026-11-22T03:54:17.439302+00:00",
+    "lecturers": 10,
+    "wall_seconds": 378.3,
+    "poll_seconds": 2,
+    "stages": {
+      "module": {
+        "n": 10,
+        "done": 10,
+        "failed": 0,
+        "errors": [],
+        "wait": {
+          "n": 10,
+          "mean": 2.11,
+          "p50": 2.5,
+          "p95": 2.6,
+          "max": 2.6
+        },
+        "run": {
+          "n": 10,
+          "mean": 197.46,
+          "p50": 186.8,
+          "p95": 305.4,
+          "max": 305.4
+        },
+        "total": {
+          "n": 10,
+          "mean": 199.56,
+          "p50": 189.2,
+          "p95": 307.9,
+          "max": 307.9
+        },
+        "ack": {
+          "n": 10,
+          "mean": 0.132,
+          "p50": 0.14,
+          "p95": 0.16,
+          "max": 0.16
+        }
+      },
+      "flashcards": {
+        "n": 10,
+        "done": 10,
+        "failed": 0,
+        "errors": [],
+        "wait": {
+          "n": 10,
+          "mean": 122.04,
+          "p50": 146.3,
+          "p95": 179.1,
+          "max": 179.1
+        },
+        "run": {
+          "n": 10,
+          "mean": 18.83,
+          "p50": 18.4,
+          "p95": 30.7,
+          "max": 30.7
+        },
+        "total": {
+          "n": 10,
+          "mean": 140.85,
+          "p50": 166.7,
+          "p95": 207.6,
+          "max": 207.6
+        },
+        "ack": {
+          "n": 10,
+          "mean": 0.403,
+          "p50": 0.42,
+          "p95": 0.62,
+          "max": 0.62
+        }
+      },
+      "video_script": {
+        "n": 10,
+        "done": 10,
+        "failed": 0,
+        "errors": [],
+        "wait": {
+          "n": 10,
+          "mean": 132.77,
+          "p50": 160.7,
+          "p95": 179.3,
+          "max": 179.3
+        },
+        "run": {
+          "n": 10,
+          "mean": 93.38,
+          "p50": 96.4,
+          "p95": 106.6,
+          "max": 106.6
+        },
+        "total": {
+          "n": 10,
+          "mean": 226.15,
+          "p50": 252.5,
+          "p95": 283.8,
+          "max": 283.8
+        },
+        "ack": {
+          "n": 10,
+          "mean": 0.437,
+          "p50": 0.46,
+          "p95": 0.62,
+          "max": 0.62
+        }
+      },
+      "video_images": {
+        "n": 10,
+        "done": 10,
+        "failed": 0,
+        "errors": [],
+        "wait": {
+          "n": 10,
+          "mean": 14.22,
+          "p50": 2.1,
+          "p95": 79.9,
+          "max": 79.9
+        },
+        "run": {
+          "n": 10,
+          "mean": 11.45,
+          "p50": 10.2,
+          "p95": 16.4,
+          "max": 16.4
+        },
+        "total": {
+          "n": 10,
+          "mean": 25.65,
+          "p50": 16.4,
+          "p95": 90.1,
+          "max": 90.1
+        },
+        "ack": {
+          "n": 10,
+          "mean": 0.063,
+          "p50": 0.06,
+          "p95": 0.08,
+          "max": 0.08
+        }
+      },
+      "video_render": {
+        "n": 10,
+        "done": 10,
+        "failed": 0,
+        "errors": [],
+        "wait": {
+          "n": 10,
+          "mean": 8.56,
+          "p50": 2.3,
+          "p95": 24.7,
+          "max": 24.7
+        },
+        "run": {
+          "n": 10,
+          "mean": 50.93,
+          "p50": 53.2,
+          "p95": 65.4,
+          "max": 65.4
+        },
+        "total": {
+          "n": 10,
+          "mean": 59.48,
+          "p50": 61.5,
+          "p95": 80.0,
+          "max": 80.0
+        },
+        "ack": {
+          "n": 10,
+          "mean": 0.134,
+          "p50": 0.13,
+          "p95": 0.2,
+          "max": 0.2
+        }
+      }
+    },
+    "rows": [
+      {
+        "email": "load-0ee6514a1c@example.com",
+        "module": {
+          "ack": 0.07,
+          "status": "done",
+          "attempts": 0,
+          "error": "",
+          "submitted": 0.0,
+          "wait": 0.6,
+          "run": 159.9,
+          "total": 160.5
+        },
+        "flashcards": {
+          "ack": 0.43,
+          "status": "done",
+          "attempts": 0,
+          "error": "",
+          "submitted": 0.0,
+          "wait": 146.3,
+          "run": 20.4,
+          "total": 166.7,
+          "cards": 6
+        },
+        "video": {
+          "script": {
+            "ack": 0.29,
+            "status": "done",
+            "attempts": 0,
+            "error": "",
+            "submitted": 0.0,
+            "wait": 39.7,
+            "run": 86.1,
+            "total": 125.7
+          },
+          "scenes": 7,
+          "images": {
+            "ack": 0.08,
+            "pictures": 2,
+            "status": "done",
+            "attempts": 0,
+            "error": "",
+            "submitted": 125.8,
+            "wait": 53.3,
+            "run": 10.2,
+            "total": 63.5
+          },
+          "render": {
+            "ack": 0.1,
+            "status": "done",
+            "attempts": 0,
+            "error": "",
+            "submitted": 189.3,
+            "wait": 2.2,
+            "run": 42.9,
+            "total": 45.1
+          },
+          "duration_seconds": 215.25
+        }
+      },
+      {
+        "email": "load-0ddb6a33f0@example.com",
+        "module": {
+          "ack": 0.07,
+          "status": "done",
+          "attempts": 0,
+          "error": "",
+          "submitted": 0.0,
+          "wait": 0.6,
+          "run": 186.6,
+          "total": 187.2
+        },
+        "flashcards": {
+          "ack": 0.28,
+          "status": "done",
+          "attempts": 0,
+          "error": "",
+          "submitted": 0.0,
+          "wait": 29.4,
+          "run": 10.2,
+          "total": 39.6,
+          "cards": 3
+        },
+        "video": {
+          "script": {
+            "ack": 0.19,
+            "status": "done",
+            "attempts": 0,
+            "error": "",
+            "submitted": 0.0,
+            "wait": 2.5,
+            "run": 96.4,
+            "total": 98.9
+          },
+          "scenes": 7,
+          "images": {
+            "ack": 0.06,
+            "pictures": 2,
+            "status": "done",
+            "attempts": 0,
+            "error": "",
+            "submitted": 99.0,
+            "wait": 79.9,
+            "run": 10.2,
+            "total": 90.1
+          },
+          "render": {
+            "ack": 0.16,
+            "status": "done",
+            "attempts": 0,
+            "error": "",
+            "submitted": 189.1,
+            "wait": 2.2,
+            "run": 57.3,
+            "total": 59.5
+          },
+          "duration_seconds": 203.833
+        }
+      },
+      {
+        "email": "load-debb4af9d6@example.com",
+        "module": {
+          "ack": 0.14,
+          "status": "done",
+          "attempts": 0,
+          "error": "",
+          "submitted": 0.0,
+          "wait": 2.4,
+          "run": 186.8,
+          "total": 189.2
+        },
+        "flashcards": {
+          "ack": 0.28,
+          "status": "done",
+          "attempts": 0,
+          "error": "",
+          "submitted": 0.0,
+          "wait": 99.0,
+          "run": 14.3,
+          "total": 113.3,
+          "cards": 5
+        },
+        "video": {
+          "script": {
+            "ack": 0.35,
+            "status": "done",
+            "attempts": 0,
+            "error": "",
+            "submitted": 0.0,
+            "wait": 146.2,
+            "run": 90.0,
+            "total": 236.2
+          },
+          "scenes": 7,
+          "images": {
+            "ack": 0.06,
+            "pictures": 2,
+            "status": "done",
+            "attempts": 0,
+            "error": "",
+            "submitted": 236.3,
+            "wait": 2.1,
+            "run": 8.2,
+            "total": 10.3
+          },
+          "render": {
+            "ack": 0.13,
+            "status": "done",
+            "attempts": 0,
+            "error": "",
+            "submitted": 246.6,
+            "wait": 2.2,
+            "run": 40.9,
+            "total": 43.1
+          },
+          "duration_seconds": 206.667
+        }
+      },
+      {
+        "email": "load-2392107051@example.com",
+        "module": {
+          "ack": 0.16,
+          "status": "done",
+          "attempts": 0,
+          "error": "",
+          "submitted": 0.0,
+          "wait": 2.5,
+          "run": 196.9,
+          "total": 199.4
+        },
+        "flashcards": {
+          "ack": 0.28,
+          "status": "done",
+          "attempts": 0,
+          "error": "",
+          "submitted": 0.0,
+          "wait": 2.6,
+          "run": 26.7,
+          "total": 29.3,
+          "cards": 4
+        },
+        "video": {
+          "script": {
+            "ack": 0.28,
+            "status": "done",
+            "attempts": 0,
+            "error": "",
+            "submitted": 0.0,
+            "wait": 125.6,
+            "run": 88.0,
+            "total": 213.6
+          },
+          "scenes": 7,
+          "images": {
+            "ack": 0.06,
+            "pictures": 5,
+            "status": "done",
+            "attempts": 0,
+            "error": "",
+            "submitted": 213.7,
+            "wait": 2.1,
+            "run": 16.4,
+            "total": 18.5
+          },
+          "render": {
+            "ack": 0.2,
+            "status": "done",
+            "attempts": 0,
+            "error": "",
+            "submitted": 232.2,
+            "wait": 2.3,
+            "run": 65.4,
+            "total": 67.7
+          },
+          "duration_seconds": 208.208
+        }
+      },
+      {
+        "email": "load-da28d085d4@example.com",
+        "module": {
+          "ack": 0.15,
+          "status": "done",
+          "attempts": 0,
+          "error": "",
+          "submitted": 0.0,
+          "wait": 2.5,
+          "run": 243.9,
+          "total": 246.4
+        },
+        "flashcards": {
+          "ack": 0.28,
+          "status": "done",
+          "attempts": 0,
+          "error": "",
+          "submitted": 0.0,
+          "wait": 130.0,
+          "run": 16.4,
+          "total": 146.3,
+          "cards": 5
+        },
+        "video": {
+          "script": {
+            "ack": 0.46,
+            "status": "done",
+            "attempts": 0,
+            "error": "",
+            "submitted": 0.0,
+            "wait": 160.7,
+            "run": 85.9,
+            "total": 246.6
+          },
+          "scenes": 7,
+          "images": {
+            "ack": 0.06,
+            "pictures": 2,
+            "status": "done",
+            "attempts": 0,
+            "error": "",
+            "submitted": 246.7,
+            "wait": 0.1,
+            "run": 10.2,
+            "total": 10.3
+          },
+          "render": {
+            "ack": 0.13,
+            "status": "done",
+            "attempts": 0,
+            "error": "",
+            "submitted": 257.0,
+            "wait": 2.2,
+            "run": 41.0,
+            "total": 43.2
+          },
+          "duration_seconds": 225.375
+        }
+      },
+      {
+        "email": "load-d4b23c9453@example.com",
+        "module": {
+          "ack": 0.14,
+          "status": "done",
+          "attempts": 0,
+          "error": "",
+          "submitted": 0.0,
+          "wait": 2.4,
+          "run": 235.8,
+          "total": 238.2
+        },
+        "flashcards": {
+          "ack": 0.28,
+          "status": "done",
+          "attempts": 0,
+          "error": "",
+          "submitted": 0.0,
+          "wait": 113.6,
+          "run": 16.4,
+          "total": 130.0,
+          "cards": 5
+        },
+        "video": {
+          "script": {
+            "ack": 0.43,
+            "status": "done",
+            "attempts": 0,
+            "error": "",
+            "submitted": 0.0,
+            "wait": 152.4,
+            "run": 100.1,
+            "total": 252.5
+          },
+          "scenes": 7,
+          "images": {
+            "ack": 0.06,
+            "pictures": 3,
+            "status": "done",
+            "attempts": 0,
+            "error": "",
+            "submitted": 252.6,
+            "wait": 2.2,
+            "run": 8.2,
+            "total": 10.3
+          },
+          "render": {
+            "ack": 0.11,
+            "status": "done",
+            "attempts": 0,
+            "error": "",
+            "submitted": 262.9,
+            "wait": 2.2,
+            "run": 59.3,
+            "total": 61.5
+          },
+          "duration_seconds": 206.708
+        }
+      },
+      {
+        "email": "load-b22f57a481@example.com",
+        "module": {
+          "ack": 0.14,
+          "status": "done",
+          "attempts": 0,
+          "error": "",
+          "submitted": 0.0,
+          "wait": 2.5,
+          "run": 164.0,
+          "total": 166.5
+        },
+        "flashcards": {
+          "ack": 0.57,
+          "status": "done",
+          "attempts": 0,
+          "error": "",
+          "submitted": 0.0,
+          "wait": 176.9,
+          "run": 18.4,
+          "total": 195.3,
+          "cards": 5
+        },
+        "video": {
+          "script": {
+            "ack": 0.61,
+            "status": "done",
+            "attempts": 0,
+            "error": "",
+            "submitted": 0.0,
+            "wait": 177.2,
+            "run": 77.9,
+            "total": 255.1
+          },
+          "scenes": 7,
+          "images": {
+            "ack": 0.06,
+            "pictures": 4,
+            "status": "done",
+            "attempts": 0,
+            "error": "",
+            "submitted": 255.2,
+            "wait": 0.1,
+            "run": 10.2,
+            "total": 10.3
+          },
+          "render": {
+            "ack": 0.11,
+            "status": "done",
+            "attempts": 0,
+            "error": "",
+            "submitted": 265.5,
+            "wait": 24.7,
+            "run": 42.9,
+            "total": 67.6
+          },
+          "duration_seconds": 193.0
+        }
+      },
+      {
+        "email": "load-204b18e8cc@example.com",
+        "module": {
+          "ack": 0.14,
+          "status": "done",
+          "attempts": 0,
+          "error": "",
+          "submitted": 0.0,
+          "wait": 2.5,
+          "run": 149.8,
+          "total": 152.2
+        },
+        "flashcards": {
+          "ack": 0.62,
+          "status": "done",
+          "attempts": 0,
+          "error": "",
+          "submitted": 0.0,
+          "wait": 176.9,
+          "run": 30.7,
+          "total": 207.6,
+          "cards": 8
+        },
+        "video": {
+          "script": {
+            "ack": 0.56,
+            "status": "done",
+            "attempts": 0,
+            "error": "",
+            "submitted": 0.0,
+            "wait": 179.3,
+            "run": 100.3,
+            "total": 279.6
+          },
+          "scenes": 8,
+          "images": {
+            "ack": 0.06,
+            "pictures": 5,
+            "status": "done",
+            "attempts": 0,
+            "error": "",
+            "submitted": 279.7,
+            "wait": 0.1,
+            "run": 16.4,
+            "total": 16.5
+          },
+          "render": {
+            "ack": 0.17,
+            "status": "done",
+            "attempts": 0,
+            "error": "",
+            "submitted": 296.2,
+            "wait": 4.3,
+            "run": 45.0,
+            "total": 49.3
+          },
+          "duration_seconds": 229.0
+        }
+      },
+      {
+        "email": "load-1cc88017a5@example.com",
+        "module": {
+          "ack": 0.15,
+          "status": "done",
+          "attempts": 0,
+          "error": "",
+          "submitted": 0.0,
+          "wait": 2.6,
+          "run": 145.5,
+          "total": 148.1
+        },
+        "flashcards": {
+          "ack": 0.42,
+          "status": "done",
+          "attempts": 0,
+          "error": "",
+          "submitted": 0.0,
+          "wait": 166.6,
+          "run": 18.4,
+          "total": 185.0,
+          "cards": 5
+        },
+        "video": {
+          "script": {
+            "ack": 0.58,
+            "status": "done",
+            "attempts": 0,
+            "error": "",
+            "submitted": 0.0,
+            "wait": 166.9,
+            "run": 102.5,
+            "total": 269.5
+          },
+          "scenes": 8,
+          "images": {
+            "ack": 0.07,
+            "pictures": 3,
+            "status": "done",
+            "attempts": 0,
+            "error": "",
+            "submitted": 269.6,
+            "wait": 2.2,
+            "run": 8.2,
+            "total": 10.3
+          },
+          "render": {
+            "ack": 0.14,
+            "status": "done",
+            "attempts": 0,
+            "error": "",
+            "submitted": 279.9,
+            "wait": 18.6,
+            "run": 61.4,
+            "total": 80.0
+          },
+          "duration_seconds": 212.458
+        }
+      },
+      {
+        "email": "load-b543d7e415@example.com",
+        "module": {
+          "ack": 0.16,
+          "status": "done",
+          "attempts": 0,
+          "error": "",
+          "submitted": 0.0,
+          "wait": 2.5,
+          "run": 305.4,
+          "total": 307.9
+        },
+        "flashcards": {
+          "ack": 0.59,
+          "status": "done",
+          "attempts": 0,
+          "error": "",
+          "submitted": 0.0,
+          "wait": 179.1,
+          "run": 16.4,
+          "total": 195.4,
+          "cards": 5
+        },
+        "video": {
+          "script": {
+            "ack": 0.62,
+            "status": "done",
+            "attempts": 0,
+            "error": "",
+            "submitted": 0.0,
+            "wait": 177.2,
+            "run": 106.6,
+            "total": 283.8
+          },
+          "scenes": 7,
+          "images": {
+            "ack": 0.06,
+            "pictures": 2,
+            "status": "done",
+            "attempts": 0,
+            "error": "",
+            "submitted": 283.9,
+            "wait": 0.1,
+            "run": 16.3,
+            "total": 16.4
+          },
+          "render": {
+            "ack": 0.09,
+            "status": "done",
+            "attempts": 0,
+            "error": "",
+            "submitted": 300.3,
+            "wait": 24.7,
+            "run": 53.2,
+            "total": 77.8
+          },
+          "duration_seconds": 205.917
+        }
+      }
+    ]
+  }
+]

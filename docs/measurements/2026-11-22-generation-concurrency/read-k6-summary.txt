@@ -1,0 +1,20 @@
+  █ TOTAL RESULTS 
+    checks_total.......: 58160   75.44682/s
+    checks_succeeded...: 100.00% 58160 out of 58160
+    checks_failed......: 0.00%   0 out of 58160
+    ✓ module 200
+    ✓ course 200
+    ✓ courses 200
+    HTTP
+    http_req_duration..............: med=125.25ms p(95)=6.05s  p(99)=6.69s  max=7.39s 
+      { expected_response:true }...: med=125.29ms p(95)=6.05s  p(99)=6.69s  max=7.39s 
+    http_req_failed................: 0.01%  8 out of 58198
+    http_reqs......................: 58198  75.496115/s
+    EXECUTION
+    iteration_duration.............: med=17.18s   p(95)=36.35s p(99)=41.38s max=45.57s
+    iterations.....................: 26558  34.451799/s
+    vus............................: 1      min=0          max=1200
+    vus_max........................: 1200   min=1200       max=1200
+    NETWORK
+    data_received..................: 657 MB 852 kB/s
+    data_sent......................: 5.5 MB 7.1 kB/s
