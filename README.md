@@ -20,7 +20,7 @@ Báo cáo cuối kỳ: [`final-report/report.pdf`](final-report/report.pdf). Đ�
 | Nhóm | Chức năng |
 | --- | --- |
 | Tài liệu | Upload ba bước, có thể gửi thẳng lên S3 bằng presigned POST. Đọc PDF có sửa công thức, OCR trang và chữ trong hình. Đọc slide, ghi chú và SmartArt của PPTX. Phiên âm audio/video bằng Whisper, giữ mốc thời gian. Chia đoạn theo cấu trúc nguồn. |
-| Truy xuất | Dense (Qwen3-Embedding chạy tại chỗ) cộng BM25, gộp bằng Reciprocal Rank Fusion, rerank bằng Jev (mặc định) hoặc Jina tự host. Số đoạn chọn theo adaptive-k. |
+| Truy xuất | Dense (Gemini Embedding qua gateway) cộng BM25, gộp bằng Reciprocal Rank Fusion, rerank bằng Jev; Jev lỗi thì giữ thứ tự hybrid. Số đoạn chọn theo adaptive-k. |
 | Sinh mô-đun | Planner chọn khái niệm, sinh LO và sub-objective, kiểm tra độ liên quan rồi viết lại truy vấn khi thiếu nguồn, viết Content kèm `[S#]`, sau đó Slides và Example. Câu hỏi do model tự kiểm, có bẫy cú pháp và luật cân bằng độ dài; khi trượt thì giữ bản ít lỗi nhất. |
 | Biên tập | Mở đoạn nguồn của từng trích dẫn, sửa từng thành phần hoặc từng câu hỏi, sửa qua chat, xuất slide ra PPTX. |
 | Moodle | Liên kết tài khoản, xác nhận ngay trong Moodle. Kiểm quyền giảng viên theo khóa học. Tạo Book, Practice (phản hồi ngay) và Quiz (phản hồi sau khi nộp), kèm điều kiện hoàn thành để khóa học tính được và cấp chứng chỉ. |
@@ -37,8 +37,8 @@ Báo cáo cuối kỳ: [`final-report/report.pdf`](final-report/report.pdf). Đ�
 | Dữ liệu | PostgreSQL 16 với pgvector: dữ liệu, vector, hàng đợi job và Row Level Security. |
 | Bộ đếm rate limit | Redis 7 khi chạy local, Valkey trong thiết kế AWS. Mất dữ liệu ở đây không mất việc. |
 | Cổng mô hình | LiteLLM. Giữ một khóa duy nhất của OpenRouter; mọi model (GPT-6 Luna mặc định, Gemini, Claude, DeepSeek, Whisper) đều đi qua OpenRouter. |
-| Embedding | Text Embeddings Inference với Qwen3-Embedding-0.6B, chạy GPU hoặc CPU. |
-| Rerank | Jev (TypeSafe), hoặc Jina reranker v2 INT8 tự host (chỉ được dùng phi thương mại). |
+| Embedding | Gemini Embedding 001 qua OpenRouter (768 chiều). Tuỳ chọn: Qwen3-Embedding-0.6B tự host bằng Text Embeddings Inference (`--profile local-embedder`). |
+| Rerank | Jev (TypeSafe). Jina tự host đã được đo và bỏ, số liệu ở `docs/measurements/jev-rerank/`. |
 | Frontend | React 19, TypeScript, Vite, Tailwind CSS. |
 | LMS | Moodle 5.2 với plugin `local_lms_bridge`, kèm LTI 1.3. |
 | Hạ tầng | Docker Compose và Caddy khi chạy local. Terraform cho AWS (ECS Fargate, CloudFront), đã chạy trên AWS từ ngày 2026-11-11, xem [infra/README.md](infra/README.md). |
@@ -57,7 +57,7 @@ Chính sách định tuyến, fallback và ghim model khi đo xem ở [docs/gate
 | `backend/scripts` | Script vận hành (tạo admin, đăng ký nền tảng LTI, embed lại) và các script đo. |
 | `frontend/src` | Trang, component, API client và test. |
 | `moodle-plugin/local_lms_bridge` | Plugin Moodle và test PHPUnit. |
-| `devops` | Compose, cấu hình gateway, image embedder/reranker, Caddy, load test, các kịch bản e2e trình duyệt và LTI. |
+| `devops` | Compose, cấu hình gateway, image reranker, Caddy, load test, các kịch bản e2e trình duyệt và LTI. |
 | `infra` | Terraform cho AWS và script triển khai. |
 | `docs` | Báo cáo đo kèm dữ liệu thô, rubric, giao thức nghiên cứu, ghi chú thiết kế. |
 | `final-report` | Báo cáo cuối kỳ (chỉ lưu PDF trong git). |
@@ -68,7 +68,7 @@ Chính sách định tuyến, fallback và ghim model khi đo xem ở [docs/gate
 - Mã nguồn Moodle 5.2, tải riêng (xem bước 2 bên dưới).
 - Khóa API trong `devops/.env`:
   - `OPENROUTER_API_KEY` cho mọi model: GPT-6 Luna (mặc định), Gemini, Claude, DeepSeek và Whisper (phiên âm).
-  - `TYPESAFE_API_KEY` cho Jev. Muốn rerank ngay trên máy, không gửi đoạn tài liệu cho dịch vụ rerank bên ngoài, thì đặt `RERANKER_PROVIDER=jina`.
+  - `TYPESAFE_API_KEY` cho Jev. Bỏ trống thì không rerank, giữ thứ tự của tìm kiếm hybrid.
 
 ## Chạy hệ thống
 
@@ -90,7 +90,7 @@ Chính sách định tuyến, fallback và ghim model khi đo xem ở [docs/gate
    ./devops/scripts/compose.sh up -d
    ```
 
-   Script tự dùng GPU cho embedder khi có, không có thì dùng CPU. Muốn ép CPU thì đặt `EMBEDDER_DEVICE=cpu`.
+   Embedding mặc định là Gemini qua gateway. Muốn tự host Qwen3 thì thêm `--profile local-embedder` và đặt `EMBEDDING_MODEL=embed-qwen3`; script tự dùng GPU cho nó khi có (ép CPU bằng `EMBEDDER_DEVICE=cpu`).
    Migration chạy một lần trong service `migrate` trước khi backend khởi động.
 
 4. Tin chứng chỉ cục bộ của Caddy một lần, rồi tạo admin đầu tiên:
@@ -127,7 +127,6 @@ Dựng lại image để script tự sửa: `./devops/scripts/compose.sh up -d -
 | --- | --- | --- |
 | `LLM_MODEL` | `openai-fast` | Alias sinh mặc định (GPT-6 Luna), chọn theo `docs/measurements/2026-11-16-four-chat-models.md` và `2026-11-16-four-models-rest.md`. |
 | `LLM_EXPERIMENT_MODE` | `false` | Ghim model và tắt fallback khi đo. |
-| `RERANKER_PROVIDER` | `jev` | `jev` hoặc `jina`. |
 | `WORKER_POOL_SIZE` | `4` | Số job một worker chạy cùng lúc. |
 | `QUESTION_CONCURRENCY` | `5` | Số câu hỏi sinh song song trong một mô-đun. |
 | `NON_TEACHER_DAILY_GENERATION_LIMIT` | `3` | Số mô-đun mỗi ngày của tài khoản chưa liên kết Moodle. |

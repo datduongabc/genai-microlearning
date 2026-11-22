@@ -14,11 +14,9 @@ x-app: &app
     LLM_GATEWAY_URL: http://gateway:4000
     LLM_GATEWAY_KEY: load-test
     FORMULA_VISION_MODEL: ""
-    RERANKER_URL: http://reranker:80
     RUN_JOB_WORKER: "false"
     RATE_LIMIT_STORAGE_URI: redis://redis:6379/0
     WORKER_POOL_SIZE: ${WORKER_POOL_SIZE:-4}
-    RERANKER_MAX_CONCURRENT: ${RERANKER_MAX_CONCURRENT:-2}
     NON_TEACHER_DAILY_GENERATION_LIMIT: "1000000"
     FORWARDED_ALLOW_IPS: 172.16.0.0/12,192.168.0.0/16,10.0.0.0/8
     UPLOAD_STORAGE_DIR: /uploads
@@ -47,11 +45,6 @@ services:
               --max-client-batch-size, "128", --tokenization-workers, "2", --api-key, load-test]
     volumes: [embedder_models:/data]
     healthcheck: {test: ["CMD", "curl", "-fsS", "http://127.0.0.1:80/health"], interval: 5s, retries: 12, start_period: 15m}
-  reranker:
-    build: ../reranker
-    image: do-an-reranker
-    cpus: ${RERANKER_CPUS:-4}
-    healthcheck: {test: ["CMD", "curl", "-fsS", "http://127.0.0.1:80/health"], interval: 5s, retries: 12, start_period: 2m}
   gateway:
     <<: *app
     build: ../../backend
@@ -69,7 +62,6 @@ services:
       db: {condition: service_healthy}
       redis: {condition: service_healthy}
       embedder: {condition: service_healthy}
-      reranker: {condition: service_healthy}
       gateway: {condition: service_started}
       uploads-owner: {condition: service_completed_successfully}
     volumes:

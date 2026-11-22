@@ -1,11 +1,10 @@
 locals {
-  scalable = merge({
+  scalable = {
     api      = var.api
     worker   = var.worker
     renderer = var.renderer
-    embedder = var.embedder
     gateway  = var.gateway
-  }, local.use_reranker ? { reranker = var.reranker } : {})
+  }
 }
 
 resource "aws_appautoscaling_target" "service" {
@@ -44,7 +43,7 @@ resource "aws_appautoscaling_policy" "api_requests" {
 }
 
 resource "aws_appautoscaling_policy" "cpu" {
-  for_each           = toset(concat(["api", "embedder", "gateway"], local.use_reranker ? ["reranker"] : []))
+  for_each           = toset(["api", "gateway"])
   name               = "${local.name}-${each.key}-cpu"
   policy_type        = "TargetTrackingScaling"
   service_namespace  = "ecs"

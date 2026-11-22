@@ -21,16 +21,12 @@ override_resource {
   values          = { bucket_regional_domain_name = "up.s3.ap-southeast-1.amazonaws.com" }
 }
 
-run "demo_with_the_self_hosted_reranker" {
+run "demo" {
   command = plan
 
-  variables {
-    reranker_provider = "jina"
-  }
-
   assert {
-    condition     = toset(keys(aws_ecs_service.service)) == toset(["api", "worker", "renderer", "gateway", "embedder", "reranker"])
-    error_message = "jina needs the reranker service."
+    condition     = toset(keys(aws_ecs_service.service)) == toset(["api", "worker", "renderer", "gateway"])
+    error_message = "Reranking and embeddings are provider APIs, so no service runs a model."
   }
   assert {
     condition     = output.image_tag == "50d64a7"
@@ -41,8 +37,8 @@ run "demo_with_the_self_hosted_reranker" {
     error_message = "Two AZs, even where the region has three."
   }
   assert {
-    condition     = !contains(keys(aws_cloudwatch_metric_alarm.alarm), "jev-fallbacks")
-    error_message = "No Jev alarm while Jev is not used."
+    condition     = contains(keys(aws_cloudwatch_metric_alarm.alarm), "jev-fallbacks") && contains(keys(aws_cloudwatch_metric_alarm.alarm), "jev-key-or-credit")
+    error_message = "Jev falling back must raise an alarm."
   }
   assert {
     condition     = length(aws_cloudwatch_log_metric_filter.quality) == 2 * length(local.quality_metrics) && aws_cloudwatch_log_metric_filter.quality["ChatRefused-api"].metric_transformation[0].value == "$.refused"
@@ -112,32 +108,6 @@ run "demo_with_the_self_hosted_reranker" {
   }
 }
 
-run "jev_is_the_default" {
-  command = plan
-
-  assert {
-    condition     = var.reranker_provider == "jev" && !contains(keys(aws_ecs_service.service), "reranker")
-    error_message = "Jev is the default since 2026-11-08, so the default plan runs no reranker task."
-  }
-}
-
-run "jev_drops_the_reranker_and_adds_its_alarms" {
-  command = plan
-
-  variables {
-    reranker_provider = "jev"
-  }
-
-  assert {
-    condition     = !contains(keys(aws_ecs_service.service), "reranker") && !contains(keys(aws_ecs_task_definition.task), "reranker")
-    error_message = "No reranker task with Jev."
-  }
-  assert {
-    condition     = contains(keys(aws_cloudwatch_metric_alarm.alarm), "jev-fallbacks") && contains(keys(aws_cloudwatch_metric_alarm.alarm), "jev-key-or-credit")
-    error_message = "Jev falling back must raise an alarm."
-  }
-}
-
 run "a_scale_the_database_cannot_hold_is_reported" {
   command = plan
 
@@ -160,6 +130,11 @@ run "worker_cannot_scale_to_zero" {
 
 run "the_page_may_talk_only_to_itself_and_the_uploads_bucket" {
   command = plan
+
+  # A local terraform.tfvars may name a Moodle; this run is about the page without one.
+  variables {
+    moodle_wwwroot = ""
+  }
 
   override_resource {
     target          = aws_cloudfront_response_headers_policy.security

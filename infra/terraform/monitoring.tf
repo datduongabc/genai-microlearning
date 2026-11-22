@@ -116,7 +116,7 @@ resource "aws_cloudwatch_dashboard" "quality" {
 
 locals {
   alarms = merge(
-    var.reranker_provider == "jev" ? {
+    {
       jev-fallbacks = {
         description = "Jev failed and retrieval fell back to the search order more than 10 times in 5 minutes."
         namespace   = "Microlearning/Retrieval", metric = "JevFallbacks", statistic = "Sum"
@@ -127,7 +127,7 @@ locals {
         namespace   = "Microlearning/Retrieval", metric = "JevNeedsAttention", statistic = "Sum"
         period      = 60, periods = 1, threshold = 0, operator = "GreaterThanThreshold", dimensions = {}
       }
-    } : {},
+    },
     {
       fact-check-failing = {
         description = "The fact-check judge failed more than 5 times in 15 minutes: flashcards and videos reach lecturers unchecked."

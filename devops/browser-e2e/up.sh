@@ -7,8 +7,8 @@
 # Throwaway: Postgres on tmpfs for both Moodle and the backend, moodledata on tmpfs, no volume, and
 # nothing of the compose stack (do-an_db_data, ./moodle/config.php) is touched. Nothing paid is
 # called: the LLM gateway is devops/loadtest/mock_gateway.py, every provider key is blank, and the
-# gateway and embedder keys are placeholders the mocks do not check. The reranker is left out, so
-# chat keeps the hybrid order. About 5.5 GB of RAM, most of it the CPU embedder.
+# gateway and embedder keys are placeholders the mocks do not check. With no Jev key nothing is
+# reranked, so chat keeps the hybrid order. About 5.5 GB of RAM, most of it the CPU embedder.
 #
 # Runtime files (logs, screenshots, browser sessions, Moodle's ids) go to $BE2E_WORK.
 set -euo pipefail
@@ -84,7 +84,6 @@ export APP_WORKER_DATABASE_URL=postgresql+psycopg://app_worker:e2e-worker-pw@loc
 export SECRET_KEY=e2e-secret-key-not-for-production-000000 PUBLIC_URL="http://localhost:$TOOL_PORT" RUN_JOB_WORKER=true
 export UPLOAD_STORAGE_DIR="$WORK/uploads"
 export LLM_GATEWAY_URL=http://localhost:58004 EMBEDDER_URL=http://localhost:58082 FORMULA_VISION_MODEL=''
-export RERANKER_PROVIDER=jina RERANKER_URL=http://localhost:58099
 # Blank, so that devops/.env's real keys are never used by this run; placeholders where the mocks want one.
 export OPENROUTER_API_KEY='' TYPESAFE_API_KEY='' MOODLE_TOKEN=''
 export LLM_GATEWAY_KEY=mock-not-a-real-key EMBEDDER_API_KEY=mock-not-a-real-key

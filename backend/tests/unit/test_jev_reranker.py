@@ -13,7 +13,7 @@ from app.retrieval import reranker
 
 @pytest.fixture
 def jev(monkeypatch):
-    monkeypatch.setattr(settings, "reranker_provider", "jev")
+    monkeypatch.setattr(settings, "typesafe_api_key", "test-key")
     monkeypatch.setattr(reranker.time, "sleep", lambda _: None)
 
     def use(handler):
@@ -101,10 +101,6 @@ def test_a_caller_with_someone_waiting_can_limit_the_tries(jev):
     reranker.rerank_scored("q", _chunks("a"), attempts=2)
 
     assert len(calls) == 2
-
-
-def test_jev_is_the_default():
-    assert type(settings).model_fields["reranker_provider"].default == "jev"
 
 
 @pytest.mark.parametrize("retry_after", ["120", "Wed, 21 Oct 2026 07:28:00 GMT", "nan", "-3"])

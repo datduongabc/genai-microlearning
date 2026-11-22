@@ -1,7 +1,7 @@
 """Nhúng lại mọi chunk chưa có vector, sau khi một migration xoá vector cũ vì đổi model nhúng
 (như 0005) hoặc sau khi một job dừng giữa chừng. Dừng giữa chừng thì chạy lại là làm tiếp.
 
-    docker exec do-an-backend uv run python scripts/reembed_chunks.py
+    docker exec -e PYTHONPATH=/app do-an-backend uv run python scripts/reembed_chunks.py
 """
 
 import sys

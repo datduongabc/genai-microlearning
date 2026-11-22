@@ -1,6 +1,6 @@
 #!/bin/bash
 # Failure tests: stop each kind of service while it is working and check that nothing is lost and that the
-# system recovers on its own. The local stand-in for S6 on AWS. Same stack as run_matrix.sh, so no paid model:
+# system recovers on its own. The local stand-in for S6 on AWS. Same stack as the other load tests, so no paid model:
 # the LLM is mock_gateway.py, everything else is real. About an hour and a quarter. Results in results/.
 #
 #   ./run_failures.sh                  every scenario
@@ -15,7 +15,7 @@ export MOCK_LLM_MEDIAN_SECONDS=13.3
 OUT=failures.json
 run() { docker compose exec -T runner /app/.venv/bin/python drive_generation.py "$@"; }
 sql() { docker compose exec -T db psql -U postgres -d microlearning -tAc "$1"; }
-stack() { docker compose up -d --scale worker=2 --scale backend=2 --scale reranker=1 2>&1 | tail -1; }
+stack() { docker compose up -d --scale worker=2 --scale backend=2 2>&1 | tail -1; }
 wanted() { [ -z "$SELECTED" ] || [[ " $SELECTED " == *" $1 "* ]]; }
 SELECTED="$*"
 
@@ -50,13 +50,12 @@ generation worker-sigterm 60 "docker stop -t 120 $W1 >/dev/null" 5 "docker start
 # A crash: nothing puts the jobs back, the sweeper does once their heartbeat is 15 minutes old.
 generation worker-sigkill 60 "docker kill -s KILL $W1 >/dev/null" 5 "docker start $W1 >/dev/null"
 generation gateway-60s 60 "docker compose stop gateway >/dev/null 2>&1" 60 "docker compose start gateway >/dev/null 2>&1"
-generation reranker-60s 60 "docker compose stop reranker >/dev/null 2>&1" 60 "docker compose start reranker >/dev/null 2>&1"
 generation embedder-60s 60 "docker compose stop embedder >/dev/null 2>&1" 60 "docker compose start embedder >/dev/null 2>&1"
 generation database-restart 60 "docker compose restart db >/dev/null 2>&1" 0 ""
 generation api-sigkill 60 "docker kill -s KILL do-an-load-backend-1 >/dev/null" 5 "docker start do-an-load-backend-1 >/dev/null"
 
 # Chat while a dependency is down: Redis should not matter (rate limits fall back to each process), a missing
-# reranker should leave the hybrid order, a missing embedder cannot be worked around.
+# embedder cannot be worked around. A failing Jev keeps the hybrid order (tests/unit/test_jev_reranker.py).
 chat_down() { local label=$1 service=$2
   wanted "$label" || return 0
   stack; sleep 20
@@ -72,6 +71,5 @@ print(f"{row['label']}: status codes {row['status_codes']}, latency {row['latenc
 PY
 }
 chat_down chat-redis-down redis
-chat_down chat-reranker-down reranker
 chat_down chat-embedder-down embedder
 echo finished

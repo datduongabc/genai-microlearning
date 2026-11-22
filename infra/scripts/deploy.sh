@@ -43,7 +43,6 @@ if [[ -n "$DB" ]]; then
 fi
 ECR_JSON="$(tf output -json ecr)"
 repo() { jq -r --arg k "$1" '.[$k]' <<<"$ECR_JSON"; }
-# Before the first full apply there are no services yet; WITH_RERANKER=1 builds its image then.
 SERVICES="$(tf output -json services 2>/dev/null | jq -r '.[]' || true)"
 
 echo "== Deploying $TAG to ${ENVIRONMENT:-demo}"
@@ -68,8 +67,6 @@ if [[ -n "${PROMOTE_FROM:-}" ]]; then
     target_repo="$(repo "$name" | cut -d/ -f2-)"
     expected="$(digest "$source_repo")"
     if [[ -z "$expected" || "$expected" == None ]]; then
-      # The reranker exists only with jina; every other image must have run in the source first.
-      if [[ "$name" == reranker ]]; then continue; fi
       echo "No $source_repo:$TAG: deploy $TAG to $PROMOTE_FROM first." >&2
       exit 1
     fi
@@ -102,12 +99,6 @@ if [[ "${SKIP_BUILD:-0}" != 1 ]]; then
   }
   build backend "$ROOT/backend"
   build gateway "$ROOT/devops/gateway"
-  # 2.4 GB of model. Rebuilt on a machine that still has the build cache, its layers are the same
-  # bytes, and ECR skips the layers it holds; a fresh machine uploads them again.
-  build embedder "$ROOT/devops/embedder"
-  if [[ "${WITH_RERANKER:-0}" == 1 ]] || grep -qx reranker <<<"$SERVICES"; then
-    build reranker "$ROOT/devops/reranker"
-  fi
 fi
 if [[ "${IMAGES_ONLY:-0}" == 1 ]]; then
   echo "== Images pushed for $TAG"

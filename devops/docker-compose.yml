@@ -21,10 +21,8 @@ x-backend-environment: &backend-environment
   LLM_MODEL: ${LLM_MODEL:-openai-fast}
   # The alias that re-reads a PDF page whose formulas look broken (must accept images).
   FORMULA_VISION_MODEL: ${FORMULA_VISION_MODEL:-claude-fast}
-  RERANKER_URL: http://reranker:80
-  # jev (default, approved 2026-11-08): TypeSafe's API, which receives the question and the
-  # candidate chunk text, outside the school; it needs TYPESAFE_API_KEY. jina: the reranker service below.
-  RERANKER_PROVIDER: ${RERANKER_PROVIDER:-jev}
+  # Jev reranks through TypeSafe's API, which receives the question and the candidate chunk text
+  # (approved 2026-11-08). Without a key, search order is kept and nothing is sent.
   TYPESAFE_API_KEY: ${TYPESAFE_API_KEY:-}
   FORWARDED_ALLOW_IPS: 172.16.0.0/12,192.168.0.0/16,10.0.0.0/8
   # The API hands jobs to the worker service and shares its rate limit counters through Redis.
@@ -32,7 +30,6 @@ x-backend-environment: &backend-environment
   RATE_LIMIT_STORAGE_URI: redis://redis:6379/0
   WORKER_POOL_SIZE: ${WORKER_POOL_SIZE:-4}
   QUESTION_CONCURRENCY: ${QUESTION_CONCURRENCY:-5}
-  RERANKER_MAX_CONCURRENT: ${RERANKER_MAX_CONCURRENT:-2}
 
 services:
   db:
@@ -114,14 +111,14 @@ services:
       - ./moodle-plugin/local_lms_bridge:/var/www/html/public/local/lms_bridge
       - moodle_data:/var/www/moodledata
 
-  # Model nhung chay tai cho: khong co han muc ngay nhu goi mien phi cua Gemini
-  # (1000 chunk moi ngay, mot kho tai lieu mat nhieu ngay moi nhung xong), va tai
-  # lieu cua giang vien khong roi khoi may chu. Do tren cau hoi cu cua 5 mon, model
-  # nay truy hoi ngang Gemini, xem docs/measurements/2026-09-25-model-nhung.md.
+  # Optional self-hosted embeddings (Qwen3-Embedding 0.6B), for a deployment whose documents must
+  # not leave the server: start with `--profile local-embedder` and set EMBEDDING_MODEL=embed-qwen3.
+  # The default is Gemini through the gateway, see devops/gateway/config.yaml.
   # CPU fallback; scripts/compose.sh selects the GPU override on the measured Ampere 8.6 GPU.
   # Ban ONNX chay duoc tren CPU cua moi may chu; cho ra dung vector cua ban goc.
   # Chi gateway goi toi no, nen khong mo cong nao ra may that.
   embedder:
+    profiles: [local-embedder]
     image: ghcr.io/huggingface/text-embeddings-inference:cpu-1.9.4
     container_name: do-an-embedder
     command:
@@ -157,23 +154,6 @@ services:
       # Lan dau con phai tai model.
       start_period: 15m
 
-  # Shared reranker for chat and generation: Jina AI v2 multilingual INT8.
-  # CC-BY-NC-4.0: non-commercial research/thesis use; commercial use needs licensing.
-  # Exact model revision and graph checksum are in devops/reranker/prepare_model.py.
-  # Evidence: docs/measurements/2026-10-14-crosslingual-rerank.md.
-  reranker:
-    build: ./devops/reranker
-    container_name: do-an-reranker
-    # Model/tokenizer are baked into the image; no Hub download at startup.
-    # TEI still serves /rerank, so chat and generation share the existing HTTP client.
-    cpus: ${RERANKER_CPUS:-4}
-    healthcheck:
-      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:80/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 6
-      start_period: 2m
-
   gateway:
     build: ./devops/gateway
     container_name: do-an-gateway
@@ -205,13 +185,6 @@ services:
       migrate:
         condition: service_completed_successfully
       gateway:
-        condition: service_healthy
-      # Backend chi goi no qua gateway, nhung khong co no thi moi tai lieu tai len deu
-      # hong o buoc nhung.
-      embedder:
-        condition: service_healthy
-      # Moi lan truy xuat cua LO, Content va cau hoi deu di qua no.
-      reranker:
         condition: service_healthy
       redis:
         condition: service_healthy

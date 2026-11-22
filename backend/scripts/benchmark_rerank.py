@@ -1,7 +1,6 @@
 """Đo xem tầng rerank có đáng giữ không.
 
-Câu hỏi cần trả lời: cross-encoder (nay chạy ở service reranker
-riêng, xem devops/docker-compose.yml) cải thiện truy hồi bao nhiêu so với hybrid
+Câu hỏi cần trả lời: rerank (lúc đo là Jina tự host, nay là Jev) cải thiện truy hồi bao nhiêu so với hybrid
 search không rerank, và so với dense search đơn thuần?
 
 Nhãn đúng sinh tự động: lấy một chunk, nhờ LLM đặt câu hỏi mà chỉ đoạn đó trả lời
@@ -32,7 +31,7 @@ Biến môi trường:
   BENCHMARK_DATABASE_URL  database riêng, không dùng chung với database bộ test
   BENCHMARK_DOCUMENTS     thư mục tài liệu (trong container nằm ngoài /app)
   BENCHMARK_KET_QUA       thư mục ghi kết quả
-  RERANKER_URL            service reranker (trong stack compose: http://reranker:80)
+  TYPESAFE_API_KEY        khoá Jev; bỏ trống thì cấu hình rerank giữ thứ tự hybrid
 """
 
 import argparse

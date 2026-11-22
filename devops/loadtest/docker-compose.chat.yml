@@ -6,7 +6,6 @@ services:
   backend:
     image: do-an-load-backend-chat
     environment:
-      RERANKER_PROVIDER: jev
       TYPESAFE_API_KEY: ${TYPESAFE_API_KEY:?}
       CHAT_MAX_STREAMS: "5000"
     # Rate limits count per user; the driver has few users for this many messages.

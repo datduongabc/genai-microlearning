@@ -1,5 +1,5 @@
 resource "aws_ecr_repository" "repo" {
-  for_each             = toset(["backend", "gateway", "embedder", "reranker"])
+  for_each             = toset(["backend", "gateway"])
   name                 = "${local.name}/${each.key}"
   image_tag_mutability = "IMMUTABLE" # a tag is a commit, and a rollback must get the same bytes
   force_delete         = true

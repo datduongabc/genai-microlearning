@@ -5,8 +5,8 @@
 # key here). A provider whose key is empty simply cannot be used.
 #
 # One provider key covers every remote alias: OPENROUTER_API_KEY, billed on one balance
-# (Gemini, OpenAI, Anthropic, the open-weight models and Whisper). Only the local embedder
-# has a key of its own. Whisper through OpenRouter returns segment timestamps
+# (Gemini, OpenAI, Anthropic, the open-weight models, Whisper and the embeddings). Only the
+# optional local embedder has a key of its own. Whisper through OpenRouter returns segment timestamps
 # (verbose_json), which citations of recordings need; litellm has no OpenRouter
 # transcription route, so it is called over the OpenAI protocol with OpenRouter's api_base.
 #
@@ -40,14 +40,28 @@ model_list:
       display_name: Gemini 3.8 Flash
       note: bám nguồn tốt nhất, đắt nhất; đọc được ảnh
 
-  # Embeddings for retrieval (backend/app/ingestion/embeddings.py), served by the `embedder`
-  # service of docker-compose.yml rather than a provider: the free Gemini tier embeds only 1000
-  # chunks a day, so a course's documents took days, and it retrieved no better, see
-  # docs/measurements/2026-09-25-model-nhung.md. Multilingual, so Vietnamese documents are
-  # searched properly, and in a container of its own so the backend image stays light.
-  # "openai/" only names the protocol the embedder speaks. It returns 1024 numbers but was
-  # trained to be cut shorter, so the backend's `dimensions` gives the 768 of chunks.embedding.
+  # Embeddings for retrieval (backend/app/ingestion/embeddings.py). Gemini through OpenRouter
+  # retrieved as well as the self-hosted Qwen3 on the 250 benchmark questions (MRR@10 0.931 vs
+  # 0.932 with Jev), and spares a 4 vCPU task that ran all day and peaked at 99% CPU while
+  # ingesting, see docs/measurements/2026-11-22-gemini-embedding.md. It cuts its 3072 numbers to
+  # the 768 of chunks.embedding through the backend's `dimensions`. Vectors of two models cannot
+  # be compared, so changing this alias means clearing chunks.embedding (a migration, like 0053)
+  # and running scripts/reembed_chunks.py.
   - model_name: embed-default
+    litellm_params:
+      model: openrouter/google/gemini-embedding-001
+      extra_body:
+        provider: {order: [google-vertex], allow_fallbacks: false, data_collection: deny}
+      api_key: os.environ/OPENROUTER_API_KEY
+    model_info:
+      display_name: Gemini Embedding 001
+      mode: embedding
+
+  # The self-hosted option for a school that keeps documents inside: the `embedder` service of
+  # docker-compose.yml (profile local-embedder), chosen with EMBEDDING_MODEL=embed-qwen3.
+  # "openai/" only names the protocol the embedder speaks. It returns 1024 numbers but was
+  # trained to be cut shorter, so the backend's `dimensions` gives 768.
+  - model_name: embed-qwen3
     litellm_params:
       model: openai/Qwen3-Embedding-0.6B
       api_base: http://embedder:80/v1
@@ -58,9 +72,7 @@ model_list:
       display_name: Qwen3 Embedding 0.6B (chạy tại chỗ)
       mode: embedding
 
-  # Other embedding models, chosen with EMBEDDING_MODEL. Vectors of two models cannot be
-  # compared, so switching means clearing chunks.embedding and running scripts/reembed_chunks.py.
-  # The provider cuts its vectors to 768 through the same `dimensions` argument.
+  # Another provider model, not measured on the benchmark questions.
   - model_name: embed-openai
     litellm_params:
       model: openrouter/openai/text-embedding-3-small

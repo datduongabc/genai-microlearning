@@ -23,11 +23,6 @@ resource "tls_private_key" "lti" {
   rsa_bits  = 2048
 }
 
-resource "random_password" "embedder_key" {
-  length  = 40
-  special = false
-}
-
 locals {
   ssm_prefix = "/${local.name}"
 
@@ -37,7 +32,6 @@ locals {
     "app-worker-database-url"  = local.db_url.app_worker
     "secret-key"               = random_password.secret_key.result
     "llm-gateway-key"          = "sk-${random_password.gateway_key.result}"
-    "embedder-api-key"         = random_password.embedder_key.result
     "lti-private-key"          = tls_private_key.lti.private_key_pem
   }
 

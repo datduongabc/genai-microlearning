@@ -1,0 +1,702 @@
+{
+  "cu": {
+    "dense": {
+      "chung": {
+        "recall@1": 0.784,
+        "recall@3": 0.912,
+        "recall@5": 0.956,
+        "recall@8": 0.984,
+        "recall@10": 0.988,
+        "mrr@10": 0.854542857142857,
+        "ndcg@10": 0.8871688050556892
+      },
+      "tung_mon": {
+        "advanced-programming": {
+          "recall@1": 0.8,
+          "recall@3": 0.88,
+          "recall@5": 0.94,
+          "recall@8": 1.0,
+          "recall@10": 1.0,
+          "mrr@10": 0.8603571428571429,
+          "ndcg@10": 0.8937964866432327
+        },
+        "calculus 1": {
+          "recall@1": 0.6,
+          "recall@3": 0.8,
+          "recall@5": 0.9,
+          "recall@8": 0.94,
+          "recall@10": 0.96,
+          "mrr@10": 0.7106666666666667,
+          "ndcg@10": 0.7709421950534034
+        },
+        "machine-learning": {
+          "recall@1": 0.86,
+          "recall@3": 0.96,
+          "recall@5": 0.98,
+          "recall@8": 0.98,
+          "recall@10": 0.98,
+          "mrr@10": 0.914,
+          "ndcg@10": 0.9308300315018365
+        },
+        "operating-system": {
+          "recall@1": 0.78,
+          "recall@3": 0.96,
+          "recall@5": 0.98,
+          "recall@8": 1.0,
+          "recall@10": 1.0,
+          "mrr@10": 0.8631666666666666,
+          "ndcg@10": 0.8971393290375512
+        },
+        "scientific-socialism": {
+          "recall@1": 0.88,
+          "recall@3": 0.96,
+          "recall@5": 0.98,
+          "recall@8": 1.0,
+          "recall@10": 1.0,
+          "mrr@10": 0.9245238095238095,
+          "ndcg@10": 0.943135983042422
+        }
+      }
+    },
+    "hybrid": {
+      "chung": {
+        "recall@1": 0.8,
+        "recall@3": 0.948,
+        "recall@5": 0.964,
+        "recall@8": 0.972,
+        "recall@10": 0.98,
+        "mrr@10": 0.8725936507936508,
+        "ndcg@10": 0.8994986263443278
+      },
+      "tung_mon": {
+        "advanced-programming": {
+          "recall@1": 0.84,
+          "recall@3": 0.98,
+          "recall@5": 1.0,
+          "recall@8": 1.0,
+          "recall@10": 1.0,
+          "mrr@10": 0.9073333333333333,
+          "ndcg@10": 0.9308300315018365
+        },
+        "calculus 1": {
+          "recall@1": 0.56,
+          "recall@3": 0.86,
+          "recall@5": 0.9,
+          "recall@8": 0.9,
+          "recall@10": 0.92,
+          "mrr@10": 0.7088888888888889,
+          "ndcg@10": 0.762052208021936
+        },
+        "machine-learning": {
+          "recall@1": 0.88,
+          "recall@3": 0.98,
+          "recall@5": 0.98,
+          "recall@8": 0.98,
+          "recall@10": 0.98,
+          "mrr@10": 0.9266666666666667,
+          "ndcg@10": 0.9404743802857166
+        },
+        "operating-system": {
+          "recall@1": 0.84,
+          "recall@3": 0.96,
+          "recall@5": 0.96,
+          "recall@8": 0.98,
+          "recall@10": 1.0,
+          "mrr@10": 0.8988888888888888,
+          "ndcg@10": 0.9236191239411566
+        },
+        "scientific-socialism": {
+          "recall@1": 0.88,
+          "recall@3": 0.96,
+          "recall@5": 0.98,
+          "recall@8": 1.0,
+          "recall@10": 1.0,
+          "mrr@10": 0.9211904761904762,
+          "ndcg@10": 0.9405173879709929
+        }
+      }
+    },
+    "hybrid+jev": {
+      "chung": {
+        "recall@1": 0.856,
+        "recall@3": 0.964,
+        "recall@5": 0.98,
+        "recall@8": 0.98,
+        "recall@10": 0.98,
+        "mrr@10": 0.9094,
+        "ndcg@10": 0.9273630392191106
+      },
+      "tung_mon": {
+        "advanced-programming": {
+          "recall@1": 0.86,
+          "recall@3": 1.0,
+          "recall@5": 1.0,
+          "recall@8": 1.0,
+          "recall@10": 1.0,
+          "mrr@10": 0.9233333333333333,
+          "ndcg@10": 0.9430929753571458
+        },
+        "calculus 1": {
+          "recall@1": 0.84,
+          "recall@3": 0.92,
+          "recall@5": 0.94,
+          "recall@8": 0.94,
+          "recall@10": 0.94,
+          "mrr@10": 0.8806666666666666,
+          "ndcg@10": 0.8955928413589782
+        },
+        "machine-learning": {
+          "recall@1": 0.76,
+          "recall@3": 0.96,
+          "recall@5": 0.98,
+          "recall@8": 0.98,
+          "recall@10": 0.98,
+          "mrr@10": 0.8540000000000001,
+          "ndcg@10": 0.8860672216446949
+        },
+        "operating-system": {
+          "recall@1": 0.88,
+          "recall@3": 1.0,
+          "recall@5": 1.0,
+          "recall@8": 1.0,
+          "recall@10": 1.0,
+          "mrr@10": 0.94,
+          "ndcg@10": 0.9557115704285749
+        },
+        "scientific-socialism": {
+          "recall@1": 0.94,
+          "recall@3": 0.94,
+          "recall@5": 0.98,
+          "recall@8": 0.98,
+          "recall@10": 0.98,
+          "mrr@10": 0.9490000000000001,
+          "ndcg@10": 0.9563505873061586
+        }
+      }
+    },
+    "adaptive_k": {
+      "trung": 0.98,
+      "k_trung_binh": 8.628
+    },
+    "kiem_dinh": {
+      "hybrid+jev so với hybrid, recall@1": {
+        "chi_sau_dung": 37,
+        "chi_truoc_dung": 23,
+        "p": 0.09246098107292373
+      },
+      "hybrid+jev so với hybrid, recall@10": {
+        "chi_sau_dung": 1,
+        "chi_truoc_dung": 1,
+        "p": 1.0
+      },
+      "hybrid so với dense, recall@1": {
+        "chi_sau_dung": 12,
+        "chi_truoc_dung": 8,
+        "p": 0.5034446716308594
+      },
+      "hybrid so với dense, recall@10": {
+        "chi_sau_dung": 0,
+        "chi_truoc_dung": 2,
+        "p": 0.5
+      },
+      "hybrid+jev so với dense, recall@1": {
+        "chi_sau_dung": 39,
+        "chi_truoc_dung": 21,
+        "p": 0.027340133868077935
+      },
+      "hybrid+jev so với dense, recall@10": {
+        "chi_sau_dung": 0,
+        "chi_truoc_dung": 2,
+        "p": 0.5
+      }
+    }
+  },
+  "moi": {
+    "dense": {
+      "chung": {
+        "recall@1": 0.816,
+        "recall@3": 0.932,
+        "recall@5": 0.968,
+        "recall@8": 0.992,
+        "recall@10": 0.996,
+        "mrr@10": 0.8810920634920635,
+        "ndcg@10": 0.9093045331293076
+      },
+      "tung_mon": {
+        "advanced-programming": {
+          "recall@1": 0.8,
+          "recall@3": 0.88,
+          "recall@5": 0.94,
+          "recall@8": 1.0,
+          "recall@10": 1.0,
+          "mrr@10": 0.8603571428571429,
+          "ndcg@10": 0.8937964866432327
+        },
+        "calculus 1": {
+          "recall@1": 0.76,
+          "recall@3": 0.9,
+          "recall@5": 0.96,
+          "recall@8": 0.98,
+          "recall@10": 1.0,
+          "mrr@10": 0.8434126984126984,
+          "ndcg@10": 0.8816208354214956
+        },
+        "machine-learning": {
+          "recall@1": 0.86,
+          "recall@3": 0.96,
+          "recall@5": 0.98,
+          "recall@8": 0.98,
+          "recall@10": 0.98,
+          "mrr@10": 0.914,
+          "ndcg@10": 0.9308300315018365
+        },
+        "operating-system": {
+          "recall@1": 0.78,
+          "recall@3": 0.96,
+          "recall@5": 0.98,
+          "recall@8": 1.0,
+          "recall@10": 1.0,
+          "mrr@10": 0.8631666666666666,
+          "ndcg@10": 0.8971393290375512
+        },
+        "scientific-socialism": {
+          "recall@1": 0.88,
+          "recall@3": 0.96,
+          "recall@5": 0.98,
+          "recall@8": 1.0,
+          "recall@10": 1.0,
+          "mrr@10": 0.9245238095238095,
+          "ndcg@10": 0.943135983042422
+        }
+      }
+    },
+    "hybrid": {
+      "chung": {
+        "recall@1": 0.84,
+        "recall@3": 0.956,
+        "recall@5": 0.976,
+        "recall@8": 0.984,
+        "recall@10": 0.992,
+        "mrr@10": 0.8993936507936507,
+        "ndcg@10": 0.9224274425018367
+      },
+      "tung_mon": {
+        "advanced-programming": {
+          "recall@1": 0.84,
+          "recall@3": 0.98,
+          "recall@5": 1.0,
+          "recall@8": 1.0,
+          "recall@10": 1.0,
+          "mrr@10": 0.9073333333333333,
+          "ndcg@10": 0.9308300315018365
+        },
+        "calculus 1": {
+          "recall@1": 0.76,
+          "recall@3": 0.9,
+          "recall@5": 0.96,
+          "recall@8": 0.96,
+          "recall@10": 0.98,
+          "mrr@10": 0.8428888888888889,
+          "ndcg@10": 0.8766962888094811
+        },
+        "machine-learning": {
+          "recall@1": 0.88,
+          "recall@3": 0.98,
+          "recall@5": 0.98,
+          "recall@8": 0.98,
+          "recall@10": 0.98,
+          "mrr@10": 0.9266666666666667,
+          "ndcg@10": 0.9404743802857166
+        },
+        "operating-system": {
+          "recall@1": 0.84,
+          "recall@3": 0.96,
+          "recall@5": 0.96,
+          "recall@8": 0.98,
+          "recall@10": 1.0,
+          "mrr@10": 0.8988888888888888,
+          "ndcg@10": 0.9236191239411566
+        },
+        "scientific-socialism": {
+          "recall@1": 0.88,
+          "recall@3": 0.96,
+          "recall@5": 0.98,
+          "recall@8": 1.0,
+          "recall@10": 1.0,
+          "mrr@10": 0.9211904761904762,
+          "ndcg@10": 0.9405173879709929
+        }
+      }
+    },
+    "hybrid+jev": {
+      "chung": {
+        "recall@1": 0.884,
+        "recall@3": 0.98,
+        "recall@5": 0.992,
+        "recall@8": 0.992,
+        "recall@10": 0.992,
+        "mrr@10": 0.9312666666666667,
+        "ndcg@10": 0.9467681899616007
+      },
+      "tung_mon": {
+        "advanced-programming": {
+          "recall@1": 0.86,
+          "recall@3": 1.0,
+          "recall@5": 1.0,
+          "recall@8": 1.0,
+          "recall@10": 1.0,
+          "mrr@10": 0.9233333333333333,
+          "ndcg@10": 0.9430929753571458
+        },
+        "calculus 1": {
+          "recall@1": 0.98,
+          "recall@3": 1.0,
+          "recall@5": 1.0,
+          "recall@8": 1.0,
+          "recall@10": 1.0,
+          "mrr@10": 0.99,
+          "ndcg@10": 0.9926185950714291
+        },
+        "machine-learning": {
+          "recall@1": 0.76,
+          "recall@3": 0.96,
+          "recall@5": 0.98,
+          "recall@8": 0.98,
+          "recall@10": 0.98,
+          "mrr@10": 0.8540000000000001,
+          "ndcg@10": 0.8860672216446949
+        },
+        "operating-system": {
+          "recall@1": 0.88,
+          "recall@3": 1.0,
+          "recall@5": 1.0,
+          "recall@8": 1.0,
+          "recall@10": 1.0,
+          "mrr@10": 0.94,
+          "ndcg@10": 0.9557115704285749
+        },
+        "scientific-socialism": {
+          "recall@1": 0.94,
+          "recall@3": 0.94,
+          "recall@5": 0.98,
+          "recall@8": 0.98,
+          "recall@10": 0.98,
+          "mrr@10": 0.9490000000000001,
+          "ndcg@10": 0.9563505873061586
+        }
+      }
+    },
+    "adaptive_k": {
+      "trung": 0.992,
+      "k_trung_binh": 8.604
+    },
+    "kiem_dinh": {
+      "hybrid+jev so với hybrid, recall@1": {
+        "chi_sau_dung": 32,
+        "chi_truoc_dung": 21,
+        "p": 0.16897782228771874
+      },
+      "hybrid+jev so với hybrid, recall@10": {
+        "chi_sau_dung": 1,
+        "chi_truoc_dung": 1,
+        "p": 1.0
+      },
+      "hybrid so với dense, recall@1": {
+        "chi_sau_dung": 16,
+        "chi_truoc_dung": 10,
+        "p": 0.32693958282470703
+      },
+      "hybrid so với dense, recall@10": {
+        "chi_sau_dung": 0,
+        "chi_truoc_dung": 1,
+        "p": 1.0
+      },
+      "hybrid+jev so với dense, recall@1": {
+        "chi_sau_dung": 36,
+        "chi_truoc_dung": 19,
+        "p": 0.030028945411892487
+      },
+      "hybrid+jev so với dense, recall@10": {
+        "chi_sau_dung": 0,
+        "chi_truoc_dung": 1,
+        "p": 1.0
+      }
+    }
+  },
+  "cu-noi": {
+    "dense": {
+      "chung": {
+        "recall@1": 0.84,
+        "recall@3": 0.948,
+        "recall@5": 0.972,
+        "recall@8": 0.992,
+        "recall@10": 0.996,
+        "mrr@10": 0.8981428571428571,
+        "ndcg@10": 0.9222315014074234
+      },
+      "tung_mon": {
+        "advanced-programming": {
+          "recall@1": 0.8,
+          "recall@3": 0.88,
+          "recall@5": 0.94,
+          "recall@8": 1.0,
+          "recall@10": 1.0,
+          "mrr@10": 0.8603571428571429,
+          "ndcg@10": 0.8937964866432327
+        },
+        "calculus 1": {
+          "recall@1": 0.88,
+          "recall@3": 0.98,
+          "recall@5": 0.98,
+          "recall@8": 0.98,
+          "recall@10": 1.0,
+          "mrr@10": 0.9286666666666666,
+          "ndcg@10": 0.9462556768120745
+        },
+        "machine-learning": {
+          "recall@1": 0.86,
+          "recall@3": 0.96,
+          "recall@5": 0.98,
+          "recall@8": 0.98,
+          "recall@10": 0.98,
+          "mrr@10": 0.914,
+          "ndcg@10": 0.9308300315018365
+        },
+        "operating-system": {
+          "recall@1": 0.78,
+          "recall@3": 0.96,
+          "recall@5": 0.98,
+          "recall@8": 1.0,
+          "recall@10": 1.0,
+          "mrr@10": 0.8631666666666666,
+          "ndcg@10": 0.8971393290375512
+        },
+        "scientific-socialism": {
+          "recall@1": 0.88,
+          "recall@3": 0.96,
+          "recall@5": 0.98,
+          "recall@8": 1.0,
+          "recall@10": 1.0,
+          "mrr@10": 0.9245238095238095,
+          "ndcg@10": 0.943135983042422
+        }
+      }
+    },
+    "hybrid": {
+      "chung": {
+        "recall@1": 0.852,
+        "recall@3": 0.968,
+        "recall@5": 0.976,
+        "recall@8": 0.988,
+        "recall@10": 0.996,
+        "mrr@10": 0.9091650793650794,
+        "ndcg@10": 0.9307679521416448
+      },
+      "tung_mon": {
+        "advanced-programming": {
+          "recall@1": 0.84,
+          "recall@3": 0.98,
+          "recall@5": 1.0,
+          "recall@8": 1.0,
+          "recall@10": 1.0,
+          "mrr@10": 0.9073333333333333,
+          "ndcg@10": 0.9308300315018365
+        },
+        "calculus 1": {
+          "recall@1": 0.82,
+          "recall@3": 0.96,
+          "recall@5": 0.96,
+          "recall@8": 0.98,
+          "recall@10": 1.0,
+          "mrr@10": 0.8917460317460317,
+          "ndcg@10": 0.9183988370085211
+        },
+        "machine-learning": {
+          "recall@1": 0.88,
+          "recall@3": 0.98,
+          "recall@5": 0.98,
+          "recall@8": 0.98,
+          "recall@10": 0.98,
+          "mrr@10": 0.9266666666666667,
+          "ndcg@10": 0.9404743802857166
+        },
+        "operating-system": {
+          "recall@1": 0.84,
+          "recall@3": 0.96,
+          "recall@5": 0.96,
+          "recall@8": 0.98,
+          "recall@10": 1.0,
+          "mrr@10": 0.8988888888888888,
+          "ndcg@10": 0.9236191239411566
+        },
+        "scientific-socialism": {
+          "recall@1": 0.88,
+          "recall@3": 0.96,
+          "recall@5": 0.98,
+          "recall@8": 1.0,
+          "recall@10": 1.0,
+          "mrr@10": 0.9211904761904762,
+          "ndcg@10": 0.9405173879709929
+        }
+      }
+    },
+    "hybrid+jev": {
+      "chung": {
+        "recall@1": 0.876,
+        "recall@3": 0.976,
+        "recall@5": 0.988,
+        "recall@8": 0.992,
+        "recall@10": 0.992,
+        "mrr@10": 0.9257666666666666,
+        "ndcg@10": 0.9425537684830294
+      },
+      "tung_mon": {
+        "advanced-programming": {
+          "recall@1": 0.86,
+          "recall@3": 1.0,
+          "recall@5": 1.0,
+          "recall@8": 1.0,
+          "recall@10": 1.0,
+          "mrr@10": 0.9233333333333333,
+          "ndcg@10": 0.9430929753571458
+        },
+        "calculus 1": {
+          "recall@1": 0.94,
+          "recall@3": 0.98,
+          "recall@5": 0.98,
+          "recall@8": 1.0,
+          "recall@10": 1.0,
+          "mrr@10": 0.9625,
+          "ndcg@10": 0.9715464876785728
+        },
+        "machine-learning": {
+          "recall@1": 0.76,
+          "recall@3": 0.96,
+          "recall@5": 0.98,
+          "recall@8": 0.98,
+          "recall@10": 0.98,
+          "mrr@10": 0.8540000000000001,
+          "ndcg@10": 0.8860672216446949
+        },
+        "operating-system": {
+          "recall@1": 0.88,
+          "recall@3": 1.0,
+          "recall@5": 1.0,
+          "recall@8": 1.0,
+          "recall@10": 1.0,
+          "mrr@10": 0.94,
+          "ndcg@10": 0.9557115704285749
+        },
+        "scientific-socialism": {
+          "recall@1": 0.94,
+          "recall@3": 0.94,
+          "recall@5": 0.98,
+          "recall@8": 0.98,
+          "recall@10": 0.98,
+          "mrr@10": 0.9490000000000001,
+          "ndcg@10": 0.9563505873061586
+        }
+      }
+    },
+    "adaptive_k": {
+      "trung": 0.992,
+      "k_trung_binh": 8.628
+    },
+    "kiem_dinh": {
+      "hybrid+jev so với hybrid, recall@1": {
+        "chi_sau_dung": 28,
+        "chi_truoc_dung": 22,
+        "p": 0.47988766169832786
+      },
+      "hybrid+jev so với hybrid, recall@10": {
+        "chi_sau_dung": 0,
+        "chi_truoc_dung": 1,
+        "p": 1.0
+      },
+      "hybrid so với dense, recall@1": {
+        "chi_sau_dung": 12,
+        "chi_truoc_dung": 9,
+        "p": 0.6636238098144531
+      },
+      "hybrid so với dense, recall@10": {
+        "chi_sau_dung": 0,
+        "chi_truoc_dung": 0,
+        "p": 1.0
+      },
+      "hybrid+jev so với dense, recall@1": {
+        "chi_sau_dung": 29,
+        "chi_truoc_dung": 20,
+        "p": 0.2528697301676033
+      },
+      "hybrid+jev so với dense, recall@10": {
+        "chi_sau_dung": 0,
+        "chi_truoc_dung": 1,
+        "p": 1.0
+      }
+    }
+  },
+  "moi_so_voi_cu_noi": {
+    "dense, recall@1": {
+      "chi_sau_dung": 4,
+      "chi_truoc_dung": 10,
+      "p": 0.1795654296875
+    },
+    "dense, recall@10": {
+      "chi_sau_dung": 0,
+      "chi_truoc_dung": 0,
+      "p": 1.0
+    },
+    "hybrid, recall@1": {
+      "chi_sau_dung": 4,
+      "chi_truoc_dung": 7,
+      "p": 0.548828125
+    },
+    "hybrid, recall@10": {
+      "chi_sau_dung": 0,
+      "chi_truoc_dung": 1,
+      "p": 1.0
+    },
+    "hybrid+jev, recall@1": {
+      "chi_sau_dung": 3,
+      "chi_truoc_dung": 1,
+      "p": 0.625
+    },
+    "hybrid+jev, recall@10": {
+      "chi_sau_dung": 0,
+      "chi_truoc_dung": 0,
+      "p": 1.0
+    }
+  },
+  "moi_so_voi_cu": {
+    "dense, recall@1": {
+      "chi_sau_dung": 9,
+      "chi_truoc_dung": 1,
+      "p": 0.021484375
+    },
+    "dense, recall@10": {
+      "chi_sau_dung": 2,
+      "chi_truoc_dung": 0,
+      "p": 0.5
+    },
+    "hybrid, recall@1": {
+      "chi_sau_dung": 12,
+      "chi_truoc_dung": 2,
+      "p": 0.012939453125
+    },
+    "hybrid, recall@10": {
+      "chi_sau_dung": 3,
+      "chi_truoc_dung": 0,
+      "p": 0.25
+    },
+    "hybrid+jev, recall@1": {
+      "chi_sau_dung": 8,
+      "chi_truoc_dung": 1,
+      "p": 0.0390625
+    },
+    "hybrid+jev, recall@10": {
+      "chi_sau_dung": 3,
+      "chi_truoc_dung": 0,
+      "p": 0.25
+    }
+  }
+}

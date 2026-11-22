@@ -9,15 +9,14 @@ resource "aws_ecs_cluster" "main" {
   }
 }
 
-# Service Connect: api and worker reach the gateway as http://gateway:4000, the gateway reaches
-# the embedder as http://embedder:80, the same names compose uses, so no URL differs between them.
+# Service Connect: api and worker reach the gateway as http://gateway:4000, the same name compose
+# uses, so no URL differs between them.
 resource "aws_service_discovery_http_namespace" "main" {
   name = local.name
 }
 
 locals {
-  use_reranker = var.reranker_provider == "jina"
-  backend      = "${aws_ecr_repository.repo["backend"].repository_url}:${var.image_tag}"
+  backend = "${aws_ecr_repository.repo["backend"].repository_url}:${var.image_tag}"
 
   # The client address uvicorn reports is the right-most one in X-Forwarded-For that is not a
   # trusted proxy. Trusting the VPC (the load balancer) and CloudFront's origin-facing ranges
@@ -35,8 +34,6 @@ locals {
     UPLOAD_S3_REGION  = var.region
     LLM_GATEWAY_URL   = "http://gateway:4000"
     LLM_MODEL         = var.llm_model
-    RERANKER_PROVIDER = var.reranker_provider
-    RERANKER_URL      = "http://reranker:80"
     MOODLE_BASE_URL   = var.moodle_base_url
     MOODLE_WWWROOT    = var.moodle_wwwroot
     WORKER_POOL_SIZE  = tostring(var.worker.pool_size)
@@ -67,11 +64,8 @@ locals {
     }
     gateway = {
       LLM_GATEWAY_KEY    = local.ssm["llm-gateway-key"]
-      EMBEDDER_API_KEY   = local.ssm["embedder-api-key"]
       OPENROUTER_API_KEY = local.ssm["openrouter-api-key"]
     }
-    embedder = { API_KEY = local.ssm["embedder-api-key"] }
-    reranker = {}
   }
 
   python_get = "python -c \"import urllib.request,sys; urllib.request.urlopen(sys.argv[1], timeout=4)\""
@@ -151,41 +145,9 @@ locals {
       stop_timeout = 30
       task_role    = null
     }
-    embedder = {
-      image  = "${aws_ecr_repository.repo["embedder"].repository_url}:${var.image_tag}"
-      cpu    = var.embedder.cpu
-      memory = var.embedder.memory
-      # Model, revision and batch sizes are in the image (devops/embedder), so a new task reads the
-      # model from its own layers instead of fetching 2.4 GB from Hugging Face first.
-      command = null
-      environment = {
-        PORT = "80"
-        # Docker and Fargate set HOSTNAME to the task's own name, which the server would bind to;
-        # the health check and Service Connect reach it on every address.
-        HOSTNAME = "0.0.0.0"
-      }
-      port   = 80
-      health = "curl -fsS http://127.0.0.1:80/health"
-      # Loading the ONNX graph from local disk; the image pull happens before this counts.
-      start_period = 120
-      stop_timeout = 30
-      task_role    = null
-    }
-    reranker = {
-      image        = "${aws_ecr_repository.repo["reranker"].repository_url}:${var.image_tag}"
-      cpu          = var.reranker.cpu
-      memory       = var.reranker.memory
-      command      = null
-      environment  = {}
-      port         = 80
-      health       = "curl -fsS http://127.0.0.1:80/health"
-      start_period = 120
-      stop_timeout = 30
-      task_role    = null
-    }
   }
 
-  enabled_tasks = { for k, v in local.tasks : k => v if k != "reranker" || local.use_reranker }
+  enabled_tasks = local.tasks
 }
 
 resource "aws_cloudwatch_log_group" "task" {
@@ -251,11 +213,7 @@ locals {
       worker   = { count = var.worker.min, security_group = aws_security_group.worker.id, serves = null }
       renderer = { count = var.renderer.min, security_group = aws_security_group.worker.id, serves = null }
       gateway  = { count = var.gateway.min, security_group = aws_security_group.gateway.id, serves = { name = "gateway", port = 4000 } }
-      embedder = { count = var.embedder.min, security_group = aws_security_group.embedder.id, serves = { name = "embedder", port = 80 } }
     },
-    local.use_reranker ? {
-      reranker = { count = var.reranker.min, security_group = aws_security_group.reranker.id, serves = { name = "reranker", port = 80 } }
-    } : {},
   )
 }
 

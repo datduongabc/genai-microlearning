@@ -9,7 +9,6 @@ api    = { cpu = 1024, memory = 2048, min = 2, max = 12 }
 worker = { cpu = 1024, memory = 3072, min = 2, max = 12, pool_size = 4 }
 # One render a task, started when a render waits: eight lecturers' videos at once.
 renderer = { cpu = 2048, memory = 4096, min = 0, max = 8 }
-embedder = { cpu = 4096, memory = 8192, min = 1, max = 3 }
 gateway  = { cpu = 1024, memory = 2048, min = 2, max = 6 }
 
 # A zone failing must not stop the system, and the database must not go with one command.

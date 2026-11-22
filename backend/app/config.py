@@ -102,12 +102,6 @@ class Settings(BaseSettings):
     # At most this many pages of one document are sent, so one badly typeset file cannot spend
     # much of the model balance.
     formula_vision_max_pages: int = Field(default=40, ge=0)
-    # The reranker service of devops/docker-compose.yml, a cross-encoder in a container of its
-    # own so the backend image carries no torch. Not behind the gateway: it holds no provider key.
-    reranker_url: str = "http://localhost:8082"
-    # "jev" sends the query and the candidate chunks to TypeSafe (app/retrieval/reranker.py); approved
-    # 2026-11-08 and the default since. "jina" is the self-hosted service above, nothing sent out.
-    reranker_provider: Literal["jina", "jev"] = "jev"
     typesafe_api_key: str = ""
     # Pinned: the `jev-latest` alias moves with each release, so its scores could change with no change here.
     jev_model: str = "jev-1.14.0"
@@ -154,9 +148,6 @@ class Settings(BaseSettings):
     worker_queue: Literal["all", "general", "render"] = "all"
     # Jobs one process runs at once. Read from WORKER_POOL_SIZE.
     worker_pool_size: int = Field(default=4, ge=1)
-    # Rerank calls one process has in flight. The service counts each candidate text against its queue
-    # and answers 429 when full, so this keeps a bursty pipeline from being refused.
-    reranker_max_concurrent: int = Field(default=2, ge=1)
     # Questions of one module generated at once. They do not depend on each other.
     question_concurrency: int = Field(default=5, ge=1)
     # Requests one API process serves at once, and its database connections. FastAPI opens the
