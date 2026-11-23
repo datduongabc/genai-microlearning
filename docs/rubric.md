@@ -149,7 +149,7 @@ Mức Bloom khai báo có khớp với mức **thực tế** mà nội dung, qui
 Module có thực sự trả lời đúng **chủ đề gốc** được giao không (trường "Chủ đề"), và có tập trung vào **một** mục tiêu chính không.
 Khác với `bloom_fidelity`, vốn chỉ đối chiếu với Learning Objective do chính module đặt ra.
 Một module có thể chính xác, nhất quán, không hallucination mà vẫn lạc chủ đề: khi đó tiêu chí này phải thấp dù các tiêu chí khác cao.
-Tính "micro" theo tổng quan hệ thống của Monib et al. (2024): microlearning là nội dung ngắn, hướng hành động, tập trung vào một mục tiêu cụ thể; bài này cũng nhắc lại (trích McNeill & Fitch) rằng quá nhiều mục tiêu hay quá nhiều nội dung gây quá tải.
+Tính "micro" theo tổng quan hệ thống của Monib et al. (2025): microlearning là nội dung ngắn, hướng hành động, tập trung vào một mục tiêu cụ thể; bài này cũng nhắc lại (trích McNeill & Fitch) rằng quá nhiều mục tiêu hay quá nhiều nội dung gây quá tải.
 
 - **5**: toàn bộ module xoay quanh đúng chủ đề gốc, một mục tiêu rõ.
 - **3**: đúng chủ đề nhưng dàn trải, hoặc có phần đáng kể nói về chủ đề lân cận.
@@ -293,13 +293,16 @@ Các nguồn dưới đây đã được đọc toàn văn, trừ hai nguồn gh
 - Biggs, J. (2014). Constructive alignment in university teaching. *HERDSA Review of Higher Education, 1*, 5-22.
 - Biggs, J. (1996). Enhancing teaching through constructive alignment. *Higher Education, 32*, 347-364. Chỉ xác minh trang tóm tắt; nội dung dùng ở đây lấy từ Biggs (2014).
 - Es, S., James, J., Espinosa-Anke, L., & Schockaert, S. (2024). RAGAs: Automated evaluation of retrieval augmented generation. *Proceedings of EACL 2024: System Demonstrations*, 150-158.
+- Fleiss, J. L. (1971). Measuring nominal scale agreement among many raters. *Psychological Bulletin, 76*(5), 378-382.
 - Haladyna, T. M., Downing, S. M., & Rodriguez, M. C. (2002). A review of multiple-choice item-writing guidelines for classroom assessment. *Applied Measurement in Education, 15*(3), 309-333. Chỉ xác minh trang tóm tắt (31 nguyên tắc, tổng hợp từ 27 giáo trình); bộ lỗi dùng ở mục 3.6 lấy từ Tarrant et al. (2006) qua Moore et al. (2024).
+- Krippendorff, K. (2004). *Content analysis: An introduction to its methodology* (2nd ed.). Sage.
+- Krippendorff, K. (2011). Computing Krippendorff's alpha-reliability. Annenberg School for Communication, University of Pennsylvania.
 - Krathwohl, D. R. (2002). A revision of Bloom's taxonomy: An overview. *Theory Into Practice, 41*(4), 212-218.
 - Leacock, T. L., & Nesbit, J. C. (2007). A framework for evaluating the quality of multimedia learning resources. *Educational Technology & Society, 10*(2), 44-59.
 - Lee, Y., Kim, J., Kim, J., Cho, H., Kang, J., Kang, P., & Kim, N. (2025). CheckEval: A reliable LLM-as-a-Judge framework for evaluating text generation using checklists. arXiv:2403.18771v3.
 - Mayer, R. E. (2023). Research-based principles for designing multimedia instruction. Trong C. E. Overson, C. M. Hakala, L. L. Kordonowy, & V. A. Benassi (Eds.), *In their own words*. Division 2, American Psychological Association.
 - Min, S., Krishna, K., Lyu, X., Lewis, M., Yih, W., Koh, P. W., Iyyer, M., Zettlemoyer, L., & Hajishirzi, H. (2023). FActScore: Fine-grained atomic evaluation of factual precision in long form text generation. *Proceedings of EMNLP 2023*, 12076-12100.
-- Monib, W. K., Qazi, A., & Apong, R. A. (2024). Microlearning beyond boundaries: A systematic review and a novel framework for improving learning outcomes. *Heliyon, 11*(2), e41413.
+- Monib, W. K., Qazi, A., & Apong, R. A. (2025). Microlearning beyond boundaries: A systematic review and a novel framework for improving learning outcomes. *Heliyon, 11*(2), e41413.
 - Moore, S., Nguyen, H. A., Chen, T., & Stamper, J. (2023). Assessing the quality of multiple-choice questions using GPT-4 and rule-based methods. Trong *Responsive and Sustainable Educational Futures (EC-TEL 2023)*, 229-245. Springer.
 - Moore, S., Costello, E., Nguyen, H. A., & Stamper, J. (2024). An automatic question usability evaluation toolkit. *Artificial Intelligence in Education (AIED 2024)*. arXiv:2405.20529.
 - Quarfoot, D., & Levine, R. A. (2016). How robust are multirater interrater reliability indices to changes in frequency distribution? *The American Statistician, 70*(4), 373-384.
