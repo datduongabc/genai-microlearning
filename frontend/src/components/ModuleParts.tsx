@@ -428,7 +428,7 @@ function ExamplesEditor({
                   className="w-full rounded border border-gray-300 p-3 text-sm outline-none focus:border-accent"
                 />
               ) : (
-                <p className="lesson-para">{example[field]}</p>
+                <p className="lesson-para whitespace-pre-line">{example[field]}</p>
               )}
             </div>
           ))}

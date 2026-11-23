@@ -346,6 +346,7 @@ def test_each_inline_code_is_checked_against_its_own_chunk_and_uncited_claims_ar
                 ce.ExtractedClaim(text='A holds.', start=0, end=8),
                 ce.ExtractedClaim(text='Uncited C.', start=19, end=29)])
         return ce.SupportVerdict(supported='A' in data['evidence'], reason='own chunk')
+
     monkeypatch.setattr(ce, 'complete_structured', complete)
     citations = [ce.StoredCitation(claim='A holds.', source_id=f'S{i+1}', start=0, end=8,
         locator=f'p{i}', chunk_id=str(i), chunk_content=text, resolution='resolved')
@@ -355,5 +356,31 @@ def test_each_inline_code_is_checked_against_its_own_chunk_and_uncited_claims_ar
     assert result.citation_count == 2 and result.correct_citations == 1
     assert [c.supported for c in result.citations] == [True, False]
     assert calls[0][1]['content'] == 'A holds. [S1][S2]\n  Uncited C.'
-    assert [c[1]['evidence'] for c in calls[-2:]] == [['A'], ['irrelevant']]
-    assert len(calls) == 5  # extraction, both claims independently, one check per inline code
+    # Together, then each alone; 'irrelevant' alone fails and 'A' without it still holds, so it is not needed.
+    assert [c[1]['evidence'] for c in calls[3:]] == [['A', 'irrelevant'], ['A'], ['irrelevant'], ['A']]
+
+
+def test_a_sentence_citing_two_chunks_is_checked_against_both_together(monkeypatch):
+    """Cell theory is in S5 and Darwin in S6: each alone does not support the sentence, both do."""
+    seen = []
+
+    def fake(prompt, model, **kwargs):
+        data = json.loads(prompt)
+        if model is ce.ClaimExtraction:
+            return ce.ClaimExtraction(claims=[])
+        seen.append(data["evidence"])
+        evidence = " ".join(data["evidence"])
+        return ce.SupportVerdict(supported="cells" in evidence and "Darwin" in evidence, reason="both parts")
+
+    monkeypatch.setattr(ce, "complete_structured", fake)
+    claim = "The premises are cell theory and Darwin's evolution"
+    cited = [ce.StoredCitation(claim=claim, start=0, end=len(claim), source_id=f"S{i}", locator=f"p{i}",
+                               chunk_id=str(i), chunk_content=text, resolution="resolved")
+             for i, text in ((5, "All living things are made of cells."), (6, "Darwin described evolution."))]
+    unresolved = ce.StoredCitation(claim="Other", start=60, end=65, locator="?", resolution="missing")
+
+    result = ce.assess_content(claim, [], reference(0, "partial"), [*cited, unresolved])
+
+    assert seen[0] == ["All living things are made of cells.", "Darwin described evolution."]
+    assert [c.supported for c in result.citations] == [True, True, False]
+    assert result.citation_accuracy == pytest.approx(2 / 3)

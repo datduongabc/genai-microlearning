@@ -11,7 +11,9 @@ Không chấm độ liên quan riêng cho từng câu: Corrective RAG chỉ ch�
 Practice tái dùng NGUYÊN hàm và gate này (mode="practice"), không tốn hạ tầng riêng.
 """
 
+import random
 import re
+import statistics
 import unicodedata
 import uuid
 from dataclasses import dataclass, field
@@ -95,12 +97,23 @@ class OptionCheck(BaseModel):
     reason: str = Field(min_length=1, description="Vì sao đúng/sai theo nguồn; chỉ rõ phương án trùng ý hoặc nhiễu quá rõ")
 
 
-class AnswerabilityCheck(BaseModel):
-    """One strict review, including an independent verdict for every option in index order."""
+class OptionReview(BaseModel):
+    """The blind half of the review: the reviewer sees the stem, the options and the sources, never the
+    key, the reasoning or the explanation, so it cannot reason its way to the generator's answer."""
 
     model_config = ConfigDict(extra="forbid", strict=True)
 
     option_checks: list[OptionCheck] = Field(min_length=4, max_length=4)
+    wording_pass: bool = Field(description="Không đoán được đáp án nào qua độ dài, chi tiết, ngữ pháp, lặp từ hoặc cách diễn đạt")
+    wording_reason: str
+
+
+class AnswerabilityCheck(BaseModel):
+    """The half of the review that needs the key: does the reasoning lead to it, and does the question ask
+    for the declared level."""
+
+    model_config = ConfigDict(extra="forbid", strict=True)
+
     answerability_pass: bool = Field(
         description="Đúng 1 đáp án đúng, không mâu thuẫn nội tại, không có 2 phương án cùng hợp lý"
     )
@@ -110,8 +123,6 @@ class AnswerabilityCheck(BaseModel):
         "kiểm chứng độc lập với bước sinh, vì chỉ yêu cầu qua prompt không đảm bảo model tuân thủ đúng"
     )
     bloom_level_reason: str
-    wording_pass: bool = Field(description="Không lộ key qua độ dài, chi tiết, ngữ pháp, lặp từ hoặc cách diễn đạt")
-    wording_reason: str
 
 
 class GroundednessAnswerabilityCheck(AnswerabilityCheck):
@@ -164,7 +175,9 @@ Quy trình BẮT BUỘC (đúng thứ tự):
    MỖI phương án nhiễu tương ứng chính xác 1 misconception theo đúng thứ tự.
    Rồi điền `correct_index` (phải trỏ đúng phương án đúng theo `reasoning`) và
    `explanation` (giải thích ngắn gọn cho người học, tổng hợp từ `reasoning`:
-   vì sao đáp án đúng là đúng và vì sao MỖI phương án nhiễu sai).
+   vì sao đáp án đúng là đúng và vì sao MỖI phương án nhiễu sai). Trong
+   `explanation`, gọi mỗi phương án bằng chính nội dung của nó, KHÔNG bằng số
+   thứ tự hay chữ cái: thứ tự các phương án được xáo lại khi lưu.
 5. Các phương án PHẢI cân bằng độ dài/ngữ pháp với nhau — không để đáp án
    đúng dài/chi tiết hơn hẳn distractor (dễ đoán): đáp án đúng thường KHÔNG phải
    phương án dài nhất, và mỗi phương án nhiễu cụ thể, đầy đủ ngang đáp án đúng.
@@ -173,7 +186,10 @@ Quy trình BẮT BUỘC (đúng thứ tự):
    kỳ phương án nào — dễ bị loại trừ mà không cần hiểu bài. Phương án nhiễu là
    một nhầm lẫn mà người học có thể tin thật (đổi vai trò hai khái niệm, áp dụng
    đúng quy tắc vào sai trường hợp, bỏ sót một điều kiện), KHÔNG phải câu phủ định
-   thẳng nội dung tài liệu hay một khẳng định vô lý.
+   thẳng nội dung tài liệu hay một khẳng định vô lý. KHÔNG dùng: câu hỏi phủ
+   định ("KHÔNG đúng", "sai", "ngoại trừ"), câu bỏ trống ở giữa để điền, phương
+   án gộp ("tất cả các ý trên", "không có đáp án nào", "cả A và B"), từ mơ hồ
+   ("đôi khi", "hầu hết") trong phương án.
 6. Nếu mode="practice", đây là câu tổng hợp của cả bài: kiểm ĐÚNG mức Bloom của
    Learning Objective tổng thể (không phải của từng target), thường bằng một
    tình huống cần kết hợp nhiều ý của bài; vẫn qua cùng gate chất lượng như quiz.
@@ -205,21 +221,33 @@ sửa đúng lỗi này, không lặp lại:
 {feedback}
 """
 
+_OPTION_REVIEW_BODY = """Bạn tự giải một câu hỏi trắc nghiệm dựa trên tài liệu được cung cấp,
+như một người học giỏi đã đọc kỹ tài liệu. Bạn KHÔNG được biết đáp án mà người ra đề chọn.
+
+- option_checks: xét từng phương án 0, 1, 2, 3 theo đúng thứ tự.
+  is_correct=true nếu có thể bảo vệ phương án đó là đúng theo stem và tài liệu.
+  Phương án diễn đạt lại hoặc tương đương với một phương án đúng khác cũng là đúng.
+  distinct_pass=false nếu phương án trùng ý hoặc diễn đạt lại một phương án khác.
+  plausible_pass=false nếu một phương án sai mà vô lý, lạc đề hoặc loại được không cần hiểu bài.
+  reason nêu vì sao đúng hoặc sai, kèm bằng chứng trong tài liệu.
+- wording_pass: fail nếu đoán được phương án đúng mà không cần hiểu bài: qua độ dài, mức
+  chi tiết, lặp từ của stem, ngữ pháp, hoặc vì các phương án còn lại dùng từ tuyệt đối/cực
+  đoan ("hoàn toàn", "toàn bộ", "bất kỳ"…) hay phủ định thẳng tài liệu.
+"""
+
+_OPTION_REVIEW_SOURCE_RULES = """- Tài liệu là các đoạn nguồn (SOURCE CHUNK): một phương án đúng hay sai theo chính các
+  đoạn đó, không theo hiểu biết riêng của bạn.
+"""
+
+_OPTION_REVIEW_NO_SOURCE_RULES = """- Tài liệu là NỘI DUNG BÀI HỌC đã viết: một phương án đúng hay sai theo điều bài học
+  đã dạy, không theo hiểu biết riêng của bạn.
+"""
+
 _QUESTION_CHECK_BODY = """Bạn là bộ kiểm tra Answerability & Bloom's Fidelity cho câu hỏi trắc nghiệm
-đã sinh, dựa trên tài liệu được cung cấp.
+đã sinh, dựa trên tài liệu được cung cấp. Từng phương án đã được một người khác giải độc lập;
+bạn kiểm phần còn lại, cần biết đáp án đã chọn.
 
 Chấm các tiêu chí sau:
-- option_checks: kiểm ĐỘC LẬP từng phương án 0, 1, 2, 3 theo đúng thứ tự,
-  trước khi nhìn key/reasoning. Không tin lời giải của generator là bằng chứng.
-  Với mỗi phương án: is_correct nếu có thể bảo vệ là đúng theo stem và nguồn;
-  distinct_pass=false nếu trùng ý/diễn đạt lại key HOẶC một nhiễu khác;
-  plausible_pass=false nếu nhiễu vô lý, lạc đề hoặc quá dễ loại trừ.
-  reason phải chỉ rõ vì sao đúng/sai và bằng chứng nguồn. Phương án là cách
-  diễn đạt lại hoặc phát biểu tương đương với key cũng ĐÚNG (is_correct=true),
-  dù key chỉ đánh dấu một. KHÔNG hợp lý hóa key bằng reasoning có sẵn.
-- wording_pass: fail nếu đoán được key qua độ dài, mức chi tiết, lặp từ từ
-  stem, ngữ pháp, hoặc nhiễu dùng từ tuyệt đối/cực đoan ("hoàn toàn", "toàn
-  bộ", "bất kỳ"…) hay phủ định thẳng tài liệu, loại được mà không cần hiểu bài.
 - answerability_pass: câu hỏi có ĐÚNG 1 đáp án đúng duy nhất, không mâu thuẫn
   nội tại, và KHÔNG có 2 phương án cùng hợp lý (gây khó phân biệt) không?
   `reasoning` đi kèm (viết trước khi có các phương án) nêu đáp án đúng là gì:
@@ -241,7 +269,9 @@ Chấm các tiêu chí sau:
 
 _QUESTION_CHECK_SOURCE_RULES = """- groundedness_pass (tài liệu là các đoạn nguồn): `stem`, đáp án đúng, và
   `explanation` có được bảo chứng HOÀN TOÀN bởi nội dung nguồn không (không
-  suy diễn/thêm dữ kiện ngoài nguồn)?
+  suy diễn/thêm dữ kiện ngoài nguồn)? Kiểm TỪNG ý của `explanation`, kể cả
+  lý do bác bỏ mỗi phương án nhiễu: một ứng dụng, ví dụ, con số hay khái niệm
+  mà nguồn không có là fail, kể cả khi nó đúng ngoài đời.
 
 Nếu vi phạm bất kỳ tiêu chí nào, đặt pass=false và nêu rõ lý do cụ thể (để
 dùng làm feedback sinh lại).
@@ -263,6 +293,22 @@ NO_SOURCE_QUESTION_CHECK_SYSTEM_INSTRUCTION = system_instruction(
 # ---------------------------------------------------------------------------
 # Kiểm một câu
 # ---------------------------------------------------------------------------
+
+# Item-writing flaws of Tarrant et al. (2006), the list rubric v3 scores quiz quality by, that a
+# pattern finds without false alarms on the stored questions (docs/rubric.md section 3.6). Word
+# repeats are left to the model's blind review: at the syllable level Vietnamese repeats words such as
+# "nghĩa" or "hội" between a stem and its options without giving the answer away.
+_NEGATIVE_STEM = re.compile(r"\b(?:không đúng|ngoại trừ|except|not true)\b|\b(?:sai|false|incorrect)\s*\?*\s*$", re.IGNORECASE)
+_NEGATIVE_STEM_EMPHASIS = re.compile(r"\b(?:KHÔNG|SAI|NOT|EXCEPT)\b")
+_COMBINED_OPTION = re.compile(
+    r"tất cả (?:các )?(?:phương án|đáp án|ý)|không (?:có )?(?:phương án|đáp án) nào|cả (?:hai|ba) (?:phương án|đáp án)"
+    r"|all of the above|none of the above|\bcả [A-D] (?:và|lẫn) [A-D]\b|\bboth [A-D] and [A-D]\b", re.IGNORECASE)
+_BLANK = re.compile(r"_{2,}|\.{3,}|…")
+_VAGUE = re.compile(r"\b(?:đôi khi|thỉnh thoảng|thường thường|hầu hết|usually|sometimes|often|generally|mostly)\b", re.IGNORECASE)
+# The options are shuffled after generation (shuffled_choices), so an explanation that names an option by
+# its letter or number would point at the wrong one.
+_POSITIONAL = re.compile(r"(?:phương án|đáp án|lựa chọn|câu|option|choice|answer)\s*[\"“(]?\s*[A-D1-4]\b(?!\w)", re.IGNORECASE)
+
 
 def _syntax_iwf_check(question: QuizQuestion) -> list[str]:
     issues = []
@@ -287,14 +333,39 @@ def _syntax_iwf_check(question: QuizQuestion) -> list[str]:
     if min(lengths) > 0 and max(lengths) > 2 * min(lengths):
         issues.append("Độ dài phương án chênh lệch quá lớn (có thể lộ đáp án)")
     key_length = lengths[question.correct_index]
-    other_longest = max(n for i, n in enumerate(lengths) if i != question.correct_index)
-    if key_length >= 1.5 * max(1, other_longest) and key_length - other_longest >= 12:
-        issues.append("Đáp án đúng dài vượt trội so với mọi nhiễu (lộ đáp án)")
+    others = [n for i, n in enumerate(lengths) if i != question.correct_index]
+    # Against the typical distractor, not the longest one: on the 80 stored questions the key was at most
+    # 1.29 times the longest distractor, so a 1.5 threshold on that never fired.
+    typical = statistics.median(others)
+    if key_length > max(others) and key_length >= 1.25 * max(1, typical) and key_length - typical >= 15:
+        issues.append("Đáp án đúng dài vượt trội so với các phương án nhiễu (lộ đáp án)")
+    if _NEGATIVE_STEM.search(question.stem) or _NEGATIVE_STEM_EMPHASIS.search(question.stem):
+        issues.append("Câu hỏi dạng phủ định (KHÔNG, SAI, ngoại trừ): hỏi điều đúng thay vì điều sai")
+    blank = _BLANK.search(question.stem)
+    if blank and re.search(r"\w", question.stem[blank.end():]):
+        issues.append("Câu hỏi bỏ trống ở giữa để điền: viết thành một câu hỏi trọn vẹn")
+    if _POSITIONAL.search(question.explanation):
+        issues.append("Lời giải gọi phương án theo số thứ tự hoặc chữ cái: gọi bằng chính nội dung của phương án")
     for i, choice in enumerate(question.choices):
         lowered = choice.lower()
         if any(w in lowered for w in ABSOLUTE_WORDS):
             issues.append(f"Phương án {i} chứa từ mang tính tuyệt đối (dễ bị loại trừ)")
+        if _COMBINED_OPTION.search(choice):
+            issues.append(f"Phương án {i} gộp các phương án khác (tất cả/không có/cả A và B)")
+        if _VAGUE.search(choice):
+            issues.append(f"Phương án {i} dùng từ mơ hồ (đôi khi, hầu hết...)")
     return issues
+
+
+def shuffled_choices(question: QuizQuestion) -> QuizQuestion:
+    """The options in an order that does not depend on the model: models put the key early (on the 80
+    stored questions positions 0-3 held it 24, 30, 17 and 9 times). Seeded by the stem, so the same
+    question always gets the same order."""
+    order = list(range(len(question.choices)))
+    random.Random(question.stem).shuffle(order)
+    return question.model_copy(update={
+        "choices": [question.choices[i] for i in order], "correct_index": order.index(question.correct_index),
+    })
 
 
 @dataclass
@@ -340,6 +411,13 @@ def _verify_question(
     if not self_check or not 0 <= q.correct_index < len(q.choices):
         return result
 
+    review = complete_structured(
+        f"{material}CÂU HỎI:\nstem: {q.stem}\n"
+        + "".join(f"phương án {i}: {choice}\n" for i, choice in enumerate(q.choices))
+        + "\nXét từng phương án.",
+        OptionReview, system_instruction=system_instruction(
+            _OPTION_REVIEW_BODY, _OPTION_REVIEW_SOURCE_RULES, _OPTION_REVIEW_NO_SOURCE_RULES, sourced=sourced),
+    )
     bloom_level = lo.bloom_level
     prompt = (
         f"{material}"
@@ -366,18 +444,18 @@ def _verify_question(
             prompt, AnswerabilityCheck, system_instruction=NO_SOURCE_QUESTION_CHECK_SYSTEM_INSTRUCTION
         )
     result.answerability_pass, result.answerability_reason = check.answerability_pass, check.answerability_reason
-    correct = [i for i, option in enumerate(check.option_checks) if option.is_correct]
+    correct = [i for i, option in enumerate(review.option_checks) if option.is_correct]
     if correct != [q.correct_index]:
         result.answerability_pass = False
         result.answerability_reason = (
             f"Key={q.correct_index}; các phương án có thể đúng={correct}. "
-            + "; ".join(f"{i}: {o.reason}" for i, o in enumerate(check.option_checks))
+            + "; ".join(f"{i}: {o.reason}" for i, o in enumerate(review.option_checks))
         )
-    bad_options = [f"{i}: {o.reason}" for i, o in enumerate(check.option_checks)
+    bad_options = [f"{i}: {o.reason}" for i, o in enumerate(review.option_checks)
                    if not o.distinct_pass or (i != q.correct_index and not o.plausible_pass)]
     result.distractors_pass = not bad_options
     result.distractors_reason = "; ".join(bad_options)
-    result.wording_pass, result.wording_reason = check.wording_pass, check.wording_reason
+    result.wording_pass, result.wording_reason = review.wording_pass, review.wording_reason
     result.bloom_level_pass, result.bloom_level_reason = check.bloom_level_pass, check.bloom_level_reason
     return result
 
@@ -472,7 +550,7 @@ def generate_quiz_question(
             f"LEARNING OBJECTIVE: {lo.objective_text} (bloom_level={bloom_level})\n"
             f"MÔ TẢ HÀNH VI CẤP ĐỘ {bloom_level} (dùng để quyết định dạng câu hỏi, không tự suy luận khác): "
             f"{BLOOM_LEVEL_ANCHORS[bloom_level]}\n"
-            f"Target có thể ở cấp thấp hơn LO; bám động từ của target, không tự nâng cấp. "
+            f"Target ở đúng cấp của LO, trừ tối đa một target nền thấp hơn một bậc; bám động từ của target. "
             f"NEO HÀNH VI BLOOM: {BLOOM_LEVEL_ANCHORS}\n"
             f"ĐIỀU CẦN KIỂM: {query}\n"
             f"MODE: {mode}\n\n"
@@ -511,9 +589,12 @@ LENGTH_TELL_FEEDBACK = (
 
 
 def question_to_rebalance(questions: list[QuizQuestion]) -> int | None:
-    """Câu nên sinh lại khi đáp án đúng dài nhất ở quá nửa số câu của bộ (ngẫu nhiên thì chỉ
-    khoảng một phần tư): trong các câu đó, câu có đáp án đúng dài vượt trội nhất so với phương án
-    dài kế tiếp. None khi bộ chỉ có một câu (một câu đơn lẻ thì dài nhất là chuyện bình thường).
+    """Câu nên sinh lại khi đáp án đúng dài nhất ở từ hai câu trở lên và ở hơn một phần tư số câu
+    của bộ (ngẫu nhiên thì khoảng một phần tư): trong các câu đó, câu có đáp án đúng dài vượt trội
+    nhất so với phương án dài kế tiếp. None khi bộ chỉ có một câu.
+
+    Ngưỡng cũ là quá nửa số câu, và chỉ sửa một câu: trên 80 câu đã lưu, đáp án đúng vẫn dài nhất ở
+    44 câu (55%). Bộ gọi hàm này nhiều lượt (MAX_REBALANCES), mỗi lượt sửa một câu.
 
     Trước 2026-11-08 luật chỉ bắt khi đáp án đúng dài nhất ở MỌI câu, nên bộ 4 câu có 3 câu lộ đáp
     án vẫn lọt; cả hai judge rubric đều chỉ ra lỗi này (docs/measurements/2026-11-08-jev-five-subjects.md)."""
@@ -525,6 +606,6 @@ def question_to_rebalance(questions: list[QuizQuestion]) -> int | None:
         longest_other = max(n for i, n in enumerate(lengths) if i != q.correct_index)
         if lengths[q.correct_index] > longest_other:
             margins[index] = lengths[q.correct_index] / max(1, longest_other)
-    if 2 * len(margins) <= len(questions):
+    if len(margins) < 2 or 4 * len(margins) <= len(questions):
         return None
     return max(margins, key=margins.__getitem__)

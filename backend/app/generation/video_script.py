@@ -652,6 +652,15 @@ def _total_chars(scenes: list[_Draft]) -> int:
     return sum(s.narration_chars() for s in scenes)
 
 
+def draft_script(query: str, topics: str, chunks: list[Chunk], language: OutputLanguage) -> ScriptDraft:
+    """The first model call, which writes the scenes; scripts/injection_eval.py calls it with planted passages."""
+    return complete_structured(
+        f"FOCUS: {query}\n{topics}\n{format_source_chunks(chunks)}", ScriptDraft,
+        system_instruction=_script_instruction(language) + output_language_instruction(language),
+        temperature=0.3,
+    )
+
+
 def generate_video_script(db: Session, video_id: uuid.UUID, before_save: Callable[[], None] | None = None) -> None:
     """`before_save` runs right before the script is written, in the transaction that writes it:
     the job queue checks there that its worker still holds the job (app/jobs/queue.py, hold)."""
@@ -672,11 +681,7 @@ def generate_video_script(db: Session, video_id: uuid.UUID, before_save: Callabl
         with using_model(video.model_alias):
             found = focus_passages(db, doc, video)
             query, chunks = found.query, found.chunks
-            draft = complete_structured(
-                f"FOCUS: {query}\n{topics_line(found)}\n{format_source_chunks(chunks)}", ScriptDraft,
-                system_instruction=_script_instruction(language) + output_language_instruction(language),
-                temperature=0.3,
-            )
+            draft = draft_script(query, topics_line(found), chunks, language)
             scenes, dropped, uncited = _kept_scenes(draft.scenes, chunks)
             if not scenes:
                 raise ValueError("Không viết được cảnh nào có trích nguồn từ tài liệu. Hãy thử lại "

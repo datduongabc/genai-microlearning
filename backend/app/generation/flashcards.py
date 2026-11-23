@@ -67,6 +67,15 @@ Check every card once more before you return it: the back answers its front, and
 row ("việc việc")."""
 
 
+def draft_cards(query: str, topics: str, chunks: list, language: OutputLanguage) -> "FlashcardDraft":
+    """The one model call that writes the cards; scripts/injection_eval.py calls it with planted passages."""
+    return complete_structured(
+        f"TOPIC: {query}\n{topics}\n{format_source_chunks(chunks)}", FlashcardDraft,
+        system_instruction=_INSTRUCTION + f"\n{term_rules(language)}" + output_language_instruction(language),
+        temperature=0.2,
+    )
+
+
 def generate_flashcards(
     db: Session, flashcard_set_id: uuid.UUID, before_save: Callable[[], None] | None = None,
 ) -> None:
@@ -89,11 +98,7 @@ def generate_flashcards(
         with using_model(card_set.model_alias):
             found = focus_passages(db, doc, card_set)
             chunks = found.chunks
-            draft = complete_structured(
-                f"TOPIC: {found.query}\n{topics_line(found)}\n{format_source_chunks(chunks)}", FlashcardDraft,
-                system_instruction=_INSTRUCTION + f"\n{term_rules(language)}" + output_language_instruction(language),
-                temperature=0.2,
-            )
+            draft = draft_cards(found.query, topics_line(found), chunks, language)
 
         cards = []
         for item in draft.cards:

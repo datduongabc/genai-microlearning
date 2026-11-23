@@ -247,7 +247,7 @@ def test_every_generation_provider_call_releases_worker_transactions(document_wo
     from app.generation import content, example, objective, planner, quiz_graph, relevance, slides
     from app.generation.content import ContentVerification, LessonText, LessonVerification
     from app.generation.objective import LearningObjective
-    from app.generation.quiz_graph import AnswerabilityCheck, GroundednessAnswerabilityCheck
+    from app.generation.quiz_graph import AnswerabilityCheck, GroundednessAnswerabilityCheck, OptionReview
     from app.ingestion import embeddings
     from tests.conftest import _offline_embedding
     from tests.integration.generation_helpers import OUTPUTS, passing_check
@@ -275,7 +275,7 @@ def test_every_generation_provider_call_releases_worker_transactions(document_wo
             return ContentVerification(groundedness_pass=True, groundedness_reason="ok",
                                        completeness_pass=True, completeness_reason="ok",
                                        scope_pass=True, scope_reason="ok")
-        if response_model in (GroundednessAnswerabilityCheck, AnswerabilityCheck):
+        if response_model in (GroundednessAnswerabilityCheck, AnswerabilityCheck, OptionReview):
             return passing_check(response_model)
         return OUTPUTS[response_model].model_copy(deep=True)
 

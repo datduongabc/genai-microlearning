@@ -77,7 +77,7 @@ def build_book_chapters(module: Module) -> list[dict]:
             "".join(
                 f"<h4>Ví dụ {n}</h4>"
                 f"<p><strong>Bối cảnh:</strong> {html.escape(str(e.get('context', '')))}</p>"
-                f"<p><strong>Phân tích:</strong> {html.escape(str(e.get('analysis', '')))}</p>"
+                f"<p><strong>Phân tích:</strong><br>{html.escape(str(e.get('analysis', ''))).replace(chr(10), '<br>')}</p>"
                 for n, e in enumerate(examples, start=1)
             ),
             "Ví dụ",

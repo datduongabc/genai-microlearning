@@ -40,6 +40,7 @@ from app.generation.quiz_graph import (
     QuizQuestion,
     generate_quiz_question,
     question_to_rebalance,
+    shuffled_choices,
 )
 from app.generation.relevance import CorrectiveResult, corrective_retrieve
 from app.generation.slides import SlidesOutput, generate_slides
@@ -197,6 +198,9 @@ def is_control(db: Session, module_id: uuid.UUID) -> bool:
 
 # Một bài 5-10 phút: mỗi câu quiz kiểm một sub-objective, tối đa ba câu.
 MAX_QUIZ_QUESTIONS = 3
+# Rewrites of one question whose key is the longest option, after which the set is accepted as it is:
+# each rewrite is a paid generation and review.
+MAX_REBALANCES = 2
 
 
 @dataclass
@@ -255,8 +259,10 @@ def _generate_questions(
              for item in wanted]
 
     made = [a for a in asked if a.state.get("question") is not None]
-    index = question_to_rebalance([a.state["question"] for a in made])
-    if index is not None:
+    for _ in range(MAX_REBALANCES):
+        index = question_to_rebalance([a.state["question"] for a in made])
+        if index is None:
+            break
         stale = made[index]
         redone = generate_quiz_question(
             db, doc.course_id, stale.target, lo, stale.type.value, scope, feedback=LENGTH_TELL_FEEDBACK,
@@ -266,10 +272,13 @@ def _generate_questions(
         # Keep the evidence even if a rebalance cannot produce a replacement.
         if redone.get("question") is not None:
             stale.state = redone
-        if question_to_rebalance([a.state["question"] for a in made]) is not None:
-            stale.state = {**stale.state, "passed": False, "fail_reason": "; ".join(
-                r for r in (stale.state.get("fail_reason"), LENGTH_TELL_FEEDBACK) if r
-            )}
+    if (index := question_to_rebalance([a.state["question"] for a in made])) is not None:
+        stale = made[index]
+        stale.state = {**stale.state, "passed": False, "fail_reason": "; ".join(
+            r for r in (stale.state.get("fail_reason"), LENGTH_TELL_FEEDBACK) if r
+        )}
+    for a in made:
+        a.state = {**a.state, "question": shuffled_choices(a.state["question"])}
     return asked
 
 

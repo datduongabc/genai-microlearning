@@ -16,6 +16,7 @@ from app.generation.objective import LearningObjective
 from app.generation.quiz_graph import (
     SYNTAX_RETRY,
     GroundednessAnswerabilityCheck,
+    OptionReview,
     QuizQuestion,
     _syntax_iwf_check,
     generate_quiz_question,
@@ -47,8 +48,14 @@ class FakeModel:
     def __init__(self, questions=(BALANCED,), checks=(PASS,)):
         self.answers = {QuizQuestion: list(questions), GroundednessAnswerabilityCheck: list(checks)}
         self.calls: list[tuple[str, str]] = []
+        self.blind_reviews: list[str] = []
 
     def __call__(self, prompt, response_model, system_instruction=None, **kwargs):
+        # The blind half of each check (option verdicts without the key) passes; the tests here are
+        # about the half that sees the key, so the call sequence lists only that one.
+        if response_model is OptionReview:
+            self.blind_reviews.append(prompt)
+            return passing_check(OptionReview)
         self.calls.append((response_model.__name__, prompt))
         queue = self.answers[response_model]
         return queue.pop(0) if len(queue) > 1 else queue[0]

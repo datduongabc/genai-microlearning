@@ -11,6 +11,7 @@ import pkgutil
 import re
 import types
 import uuid
+from collections import Counter
 
 import pytest
 
@@ -284,11 +285,13 @@ def _checks(llm) -> list[str]:
 
 def test_only_content_and_questions_of_the_control_are_checked_like_the_rag_ones(rag_module, llm):
     """Hai sub-objective: Content, Slides, Example, rồi ba câu (hai quiz, một practice), mỗi câu một
-    lượt sinh và một lượt kiểm; Content một lượt kiểm. Slides và Example không có lượt kiểm nào."""
+    lượt sinh và hai lượt kiểm (mù, rồi có đáp án); Content một lượt kiểm. Slides và Example không có
+    lượt kiểm nào."""
     _pair(rag_module)
 
-    assert _checks(llm) == ["LessonVerification"] + ["AnswerabilityCheck"] * 3
-    assert len(llm.calls) == 3 + 1 + 3 * 2
+    # The questions are asked in parallel, so only the counts are fixed, not the order.
+    assert Counter(_checks(llm)) == {"LessonVerification": 1, "OptionReview": 3, "AnswerabilityCheck": 3}
+    assert len(llm.calls) == 3 + 1 + 3 * 3
 
 
 def test_without_self_check_the_control_makes_no_check_call_at_all(rag_module, llm):

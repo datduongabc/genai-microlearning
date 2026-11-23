@@ -41,6 +41,11 @@ def review(**updates):
     }
 
 
+def answer(schema, data):
+    """The fields of one review that this call's schema asks for: the blind and the keyed half."""
+    return schema(**{k: v for k, v in data.items() if k in schema.model_fields})
+
+
 @pytest.mark.parametrize("choices,fragment", [
     (["  CAFE\u0301! ", "café", "Runtime dispatch", "Class inheritance"], "trùng"),
     (["Hide implementation details behind an interface",
@@ -91,9 +96,9 @@ def test_extreme_wording_found_by_the_rubric_judges_is_caught(extreme):
 
 def test_strict_review_requires_all_four_option_verdicts():
     with pytest.raises(ValidationError):
-        quiz.GroundednessAnswerabilityCheck(**review(option_checks=[]))
+        answer(quiz.OptionReview, review(option_checks=[]))
     with pytest.raises(ValidationError):
-        quiz.GroundednessAnswerabilityCheck(**review(wording_pass="true"))
+        answer(quiz.OptionReview, review(wording_pass="true"))
 
 
 @pytest.mark.parametrize("defect", ["two_correct", "wrong_key", "paraphrase", "trivial", "wording", "bloom", "source"])
@@ -110,7 +115,7 @@ def test_semantic_failures_override_an_overall_pass(monkeypatch, defect):
         field = {"wording": "wording", "bloom": "bloom_level", "source": "groundedness"}[defect]
         data[f"{field}_pass"] = False
         data[f"{field}_reason"] = defect
-    monkeypatch.setattr(quiz, "complete_structured", lambda *a, **kw: quiz.GroundednessAnswerabilityCheck(**data))
+    monkeypatch.setattr(quiz, "complete_structured", lambda prompt, schema, **kw: answer(schema, data))
     result = quiz._verify_question(question(), LO, "S1", "quiz", True)
     assert quiz.failed_criteria(result, quiz.QUESTION_CRITERIA)
 
@@ -121,19 +126,23 @@ def test_only_the_failed_question_is_regenerated_once(monkeypatch, repair):
     bad = question(**fixture)
     generated = []
     checked = []
+    reviews = []
 
     def model(prompt, schema, **kwargs):
         if schema is quiz.QuizQuestion:
             generated.append(prompt)
             return bad if len(generated) == 2 or (not repair and len(generated) == 3) else question(stem=f"Q{len(generated)}")
-        checked.append(prompt)
         data = review()
-        if len(checked) == 2 or (not repair and len(checked) == 3):
-            data["option_checks"][0]["is_correct"] = False
-            data["option_checks"][2]["is_correct"] = True
-            data["option_checks"][3]["is_correct"] = True
-            data["option_checks"][3]["reason"] = "D also describes abstraction"
-        return schema(**data)
+        if schema is quiz.OptionReview:
+            reviews.append(prompt)
+            if len(reviews) == 2 or (not repair and len(reviews) == 3):
+                data["option_checks"][0]["is_correct"] = False
+                data["option_checks"][2]["is_correct"] = True
+                data["option_checks"][3]["is_correct"] = True
+                data["option_checks"][3]["reason"] = "D also describes abstraction"
+        else:
+            checked.append(prompt)
+        return answer(schema, data)
 
     monkeypatch.setattr(quiz, "complete_structured", model)
     monkeypatch.setattr(quiz, "retrieve", lambda *a, **kw: [])
@@ -169,3 +178,69 @@ def test_exhausted_failure_still_completes_the_generation_job_with_its_module(mo
     pipeline.run_module_generation_step(job)
     assert job.status is JobStatus.done
     assert job.module_id == module.id
+
+
+def test_the_blind_review_never_sees_the_key_reasoning_or_explanation(monkeypatch):
+    """A reviewer shown the generator's answer and its reasoning tends to agree with it."""
+    prompts = {}
+
+    def model(prompt, schema, **kwargs):
+        prompts[schema] = prompt
+        return answer(schema, review())
+
+    monkeypatch.setattr(quiz, "complete_structured", model)
+    q = question(reasoning="SECRET-REASONING", explanation="SECRET-EXPLANATION")
+    quiz._verify_question(q, LO, "S1", "quiz", True)
+
+    blind = prompts[quiz.OptionReview]
+    assert all(choice in blind for choice in q.choices)
+    assert "SECRET" not in blind and "correct_index" not in blind
+    assert "SECRET-EXPLANATION" in prompts[quiz.GroundednessAnswerabilityCheck]
+
+
+@pytest.mark.parametrize("updates,fragment", [
+    ({"stem": "Phát biểu nào sau đây KHÔNG đúng về trừu tượng hóa?"}, "phủ định"),
+    ({"stem": "Which statement about abstraction is false?"}, "phủ định"),
+    ({"stem": "Abstraction ___ the details of an implementation."}, "bỏ trống"),
+    ({"explanation": "Phương án A đúng vì S1 nói vậy."}, "số thứ tự"),
+    ({"choices": ["Hide implementation details", "All of the above", "Bundle state", "Dispatch by type"]}, "gộp"),
+    ({"choices": ["Hide implementation details", "Sometimes derive a class", "Bundle state", "Dispatch by type"]}, "mơ hồ"),
+])
+def test_pattern_item_writing_flaws_are_caught(updates, fragment):
+    assert any(fragment in issue for issue in quiz._syntax_iwf_check(question(**updates)))
+
+
+@pytest.mark.parametrize("stem", [
+    "Hàm chi phí đo lường mức độ sai sót tổng thể của mô hình bằng cách nào?",
+    "Điểm khác biệt nào làm cho đồ thị của dãy số không phải là một đường liền nét?",
+])
+def test_ordinary_wording_is_not_taken_for_a_negative_stem(stem):
+    """Two stored stems that a looser pattern flagged: "sai sót" and "không phải là" belong to the content."""
+    assert quiz._syntax_iwf_check(question(stem=stem)) == []
+
+
+def test_a_key_a_little_longer_than_the_longest_distractor_but_far_above_the_others_is_caught():
+    """Lengths of a stored question: the key is 1.15 times the longest distractor, 1.35 times the median."""
+    q = question(choices=["k" * 177, "a" * 154, "b" * 131, "c" * 134])
+    assert any("dài vượt trội" in issue for issue in quiz._syntax_iwf_check(q))
+
+
+def test_shuffling_keeps_the_key_and_is_stable():
+    q = question(choices=["key", "d1", "d2", "d3"], correct_index=0)
+    once, twice = quiz.shuffled_choices(q), quiz.shuffled_choices(q)
+    assert once == twice and sorted(once.choices) == sorted(q.choices)
+    assert once.choices[once.correct_index] == "key"
+
+
+def test_the_key_lands_in_every_position_across_questions():
+    positions = {quiz.shuffled_choices(question(stem=f"Q{i}", choices=["key", "d1", "d2", "d3"], correct_index=0))
+                 .correct_index for i in range(40)}
+    assert positions == {0, 1, 2, 3}
+
+
+@pytest.mark.parametrize("longest,expected", [(1, False), (2, True)])
+def test_two_long_keys_in_four_questions_trigger_a_rewrite(longest, expected):
+    long_key = question(choices=["k" * 40, "a" * 30, "b" * 30, "c" * 30])
+    short_key = question(choices=["k" * 30, "a" * 40, "b" * 30, "c" * 30])
+    questions = [long_key] * longest + [short_key] * (4 - longest)
+    assert (quiz.question_to_rebalance(questions) is not None) is expected
