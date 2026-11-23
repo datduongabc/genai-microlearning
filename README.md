@@ -37,7 +37,7 @@ Báo cáo cuối kỳ: [`final-report/report.pdf`](final-report/report.pdf). Đ�
 | Dữ liệu | PostgreSQL 16 với pgvector: dữ liệu, vector, hàng đợi job và Row Level Security. |
 | Bộ đếm rate limit | Redis 7 khi chạy local, Valkey trong thiết kế AWS. Mất dữ liệu ở đây không mất việc. |
 | Cổng mô hình | LiteLLM. Giữ một khóa duy nhất của OpenRouter; mọi model (GPT-6 Luna mặc định, Gemini, Claude, DeepSeek, Whisper) đều đi qua OpenRouter. |
-| Embedding | Gemini Embedding 001 qua OpenRouter (768 chiều). Tuỳ chọn: Qwen3-Embedding-0.6B tự host bằng Text Embeddings Inference (`--profile local-embedder`). |
+| Embedding | Gemini Embedding 001 qua OpenRouter (768 chiều). |
 | Rerank | Jev (TypeSafe). Jina tự host đã được đo và bỏ, số liệu ở `docs/measurements/jev-rerank/`. |
 | Frontend | React 19, TypeScript, Vite, Tailwind CSS. |
 | LMS | Moodle 5.2 với plugin `local_lms_bridge`, kèm LTI 1.3. |
@@ -90,7 +90,6 @@ Chính sách định tuyến, fallback và ghim model khi đo xem ở [docs/gate
    ./devops/scripts/compose.sh up -d
    ```
 
-   Embedding mặc định là Gemini qua gateway. Muốn tự host Qwen3 thì thêm `--profile local-embedder` và đặt `EMBEDDING_MODEL=embed-qwen3`; script tự dùng GPU cho nó khi có (ép CPU bằng `EMBEDDER_DEVICE=cpu`).
    Migration chạy một lần trong service `migrate` trước khi backend khởi động.
 
 4. Tin chứng chỉ cục bộ của Caddy một lần, rồi tạo admin đầu tiên:
