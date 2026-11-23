@@ -16,7 +16,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy.sql import func
+from sqlalchemy.sql import func, text
 
 from app.db import Base
 
@@ -186,6 +186,8 @@ class Chunk(Base):
     # lớn (không phải pattern truy vấn thật của hệ thống này).
     __table_args__ = (
         Index("ix_chunks_document_id_chunk_index", "document_id", "chunk_index"),
+        # Only chunks without a vector, for the workers' re-embedding pass (migration 0054).
+        Index("ix_chunks_without_vector", "document_id", "chunk_index", postgresql_where=text("embedding IS NULL")),
         # (document_id, course_id) rather than document_id alone: course_id is a
         # denormalised copy of the document's course, and this makes Postgres
         # reject a chunk whose course_id disagrees with its document's.

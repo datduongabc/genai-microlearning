@@ -4,14 +4,17 @@ It works in batches and commits each one, and leaves a chunk that has a vector a
 stopped and started again. The job workers run it on their own (app/jobs/queue.py, _reembed_loop), so
 after such a migration nothing needs to be run by hand."""
 
+from litellm.exceptions import RateLimitError
 from sqlalchemy.orm import Session
 
 from app.ingestion.embeddings import BATCH_SIZE, embed_texts
 from app.models import Chunk
 
 
-def reembed_missing(db: Session, batch_size: int = BATCH_SIZE) -> int:
-    """Returns how many chunks got a vector."""
+def reembed_missing(db: Session, batch_size: int = BATCH_SIZE, wait: bool = True) -> int:
+    """Returns how many chunks got a vector. wait=False (the workers' background pass) stops at the first
+    refusal instead of waiting out the provider's limit: the batch is locked meanwhile, and deleting its
+    document would wait as long. The next pass takes up where this one stopped."""
     done = 0
     while True:
         rows = (
@@ -25,7 +28,14 @@ def reembed_missing(db: Session, batch_size: int = BATCH_SIZE) -> int:
         )
         if not rows:
             return done
-        for row, vector in zip(rows, embed_texts([row.content for row in rows]), strict=True):
+        try:
+            vectors = embed_texts([row.content for row in rows], **({} if wait else {"rate_limit_retries": 0}))
+        except RateLimitError:
+            if wait:
+                raise
+            db.rollback()
+            return done
+        for row, vector in zip(rows, vectors, strict=True):
             row.embedding = vector
         db.commit()
         done += len(rows)

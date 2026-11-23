@@ -38,3 +38,18 @@ def test_a_job_still_waits_out_the_limit(monkeypatch):
 
     assert len(embeddings.embed_texts(["một đoạn"])[0]) == embeddings.EMBEDDING_DIM
     assert len(waits) == 1
+
+
+def test_a_refused_model_call_in_a_request_is_a_503_not_a_500():
+    from fastapi.testclient import TestClient
+
+    from app.main import create_app
+
+    app = create_app()
+
+    @app.get("/boom")
+    def boom():
+        raise RateLimitError("limit", llm_provider="openai", model="embed-default")
+
+    response = TestClient(app, raise_server_exceptions=False).get("/boom")
+    assert response.status_code == 503 and "thử lại" in response.json()["detail"]

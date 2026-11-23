@@ -50,14 +50,14 @@ def _scoped(query, scope: ChunkScope | None):
 
 
 def dense_search(
-    db: Session, course_id: UUID, query: str, top_k: int = 20, scope: ChunkScope | None = None
+    db: Session, course_id: UUID, query: str, top_k: int = 20, scope: ChunkScope | None = None, wait: bool = True,
 ) -> list[Chunk]:
     """Cosine similarity qua pgvector. Filter course_id o WHERE clause -- ap
     dung TRUOC khi vao vector search (mục 4: hard metadata filtering,
     khong tin tuong LLM tu loc quyen). `scope` thu hep tiep xuong 1 khoang
     chunk cua 1 tai lieu, cung o WHERE clause."""
     with timing.timed("embed_query"):
-        query_embedding = embed_text(query)
+        query_embedding = embed_text(query, wait=wait)
     return _vector_search(db, course_id, query_embedding, top_k, scope)
 
 
@@ -151,12 +151,12 @@ def reciprocal_rank_fusion(rankings: list[list[Chunk]], k: int = RRF_K) -> list[
 
 def hybrid_search(
     db: Session, course_id: UUID, query: str, top_k: int = 8, candidate_k: int = 20,
-    scope: ChunkScope | None = None,
+    scope: ChunkScope | None = None, wait: bool = True,
 ) -> list[Chunk]:
     """Dense + Sparse + RRF, khong rerank. Dung khi can so sanh truoc/sau
     rerank (xem scripts/try_retrieval.py); pipeline sinh noi dung nen goi
     `retrieve_for_generation()` ben duoi thay vi ham nay truc tiep."""
-    dense = dense_search(db, course_id, query, top_k=candidate_k, scope=scope)
+    dense = dense_search(db, course_id, query, top_k=candidate_k, scope=scope, wait=wait)
     sparse = sparse_search(db, course_id, query, top_k=candidate_k, scope=scope)
     with timing.timed("rrf"):
         fused = reciprocal_rank_fusion([dense, sparse])
@@ -196,7 +196,7 @@ def _adaptive_k_largest_gap(
 
 def retrieve(
     db: Session, course_id: UUID, query: str, top_k: int | None = 8, candidate_k: int = 30,
-    min_k: int = 2, scope: ChunkScope | None = None,
+    min_k: int = 2, scope: ChunkScope | None = None, wait: bool = True,
 ) -> list[Chunk]:
     """mục 2 kien truc: pipeline retrieval chung cua toan he thong;
     sinh module dung `retrieve_for_generation()` de tach transaction doc.
@@ -216,8 +216,11 @@ def retrieve(
     PHẢI truyền min_k cao hơn ở tầng gọi (modules.py dùng 8) -- min_k=2 mặc
     định chỉ phù hợp câu hỏi factoid hẹp như Quiz, không phù hợp tổng hợp
     toàn khái niệm. Verify thật: với min_k=2, Adaptive-k từng chỉ chọn 6/13
-    chunk của 1 tài liệu và bỏ sót pseudocode BFS/DFS dù có sẵn trong nguồn."""
-    candidates = hybrid_search(db, course_id, query, top_k=candidate_k, candidate_k=candidate_k, scope=scope)
+    chunk của 1 tài liệu và bỏ sót pseudocode BFS/DFS dù có sẵn trong nguồn.
+
+    wait=False for a request someone is waiting on: a refused embedding raises at once
+    (app/main.py answers 503) instead of waiting out the provider's per-minute limit."""
+    candidates = hybrid_search(db, course_id, query, top_k=candidate_k, candidate_k=candidate_k, scope=scope, wait=wait)
     return _reranked(query, candidates, top_k, min_k)
 
 

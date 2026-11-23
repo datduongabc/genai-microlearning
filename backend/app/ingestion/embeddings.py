@@ -70,10 +70,10 @@ def _embed_batch(texts: list[str], **request) -> list[list[float]]:
     return [_unit(vector) for vector in vectors]
 
 
-def embed_texts(texts: list[str]) -> list[list[float]]:
+def embed_texts(texts: list[str], **request) -> list[list[float]]:
     vectors: list[list[float]] = []
     for start in range(0, len(texts), BATCH_SIZE):
-        vectors.extend(_embed_batch(texts[start : start + BATCH_SIZE]))
+        vectors.extend(_embed_batch(texts[start : start + BATCH_SIZE], **request))
     return vectors
 
 

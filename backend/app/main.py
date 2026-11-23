@@ -4,6 +4,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
+from litellm.exceptions import APIConnectionError, RateLimitError, Timeout
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 
@@ -50,6 +51,16 @@ async def _rate_limited(request: Request, exc: RateLimitExceeded):
     return _rate_limit_exceeded_handler(request, exc)
 
 
+async def _provider_busy(request: Request, exc: Exception):
+    # A model call in a request that the provider refused or did not answer in time: the user can try again,
+    # it is not a bug of ours, so not a 500.
+    gateway_logger.warning("provider_busy path=%r error=%s", request.url.path, type(exc).__name__)
+    return JSONResponse(
+        status_code=503,
+        content={"detail": "Nhà cung cấp mô hình đang quá tải hoặc chưa trả lời, vui lòng thử lại sau ít phút."},
+    )
+
+
 async def _gateway_unavailable(request: Request, exc: GatewayUnavailable):
     # Không đưa chi tiết lỗi của httpx ra client: nó chứa địa chỉ nội bộ của gateway.
     gateway_logger.warning("gateway_unavailable path=%r error=%s", request.url.path, exc)
@@ -92,6 +103,8 @@ def create_app(app_settings: Settings = settings) -> FastAPI:
     api.state.limiter = limiter
     api.add_exception_handler(RateLimitExceeded, _rate_limited)
     api.add_exception_handler(GatewayUnavailable, _gateway_unavailable)
+    for error in (RateLimitError, Timeout, APIConnectionError):
+        api.add_exception_handler(error, _provider_busy)
 
     # The last one added is the outermost, so the headers also reach the 413 that the
     # size limit answers on its own.

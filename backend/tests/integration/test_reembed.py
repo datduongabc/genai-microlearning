@@ -104,3 +104,23 @@ def test_a_small_batch_size_still_reaches_every_chunk(chunks):
         db.close()
 
     assert all(r.embedding is not None for r in _all(chunks["doc"]))
+
+
+def test_the_background_pass_stops_at_a_refusal_and_frees_its_batch(chunks, monkeypatch):
+    """A refused batch must not wait out the limit while it holds its rows: deleting the document would wait as long."""
+    from litellm.exceptions import RateLimitError
+
+    from app.ingestion import embeddings, reembed
+
+    def refuse(texts, **request):
+        assert request == {"rate_limit_retries": 0}
+        raise RateLimitError("limit", llm_provider="openai", model="embed-default")
+
+    monkeypatch.setattr(reembed, "embed_texts", refuse)
+    monkeypatch.setattr(embeddings.time, "sleep", lambda _: pytest.fail("the background pass must not wait"))
+    db = SessionLocal()
+    try:
+        assert reembed_missing(db, wait=False) == 0
+        assert not db.in_transaction()
+    finally:
+        db.close()

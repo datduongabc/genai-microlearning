@@ -812,7 +812,7 @@ def revise_video_script(db: Session, video: Video, request: str) -> tuple[str, l
     by_id = {str(c.id): c for c in db.query(Chunk).filter(
         Chunk.document_id == doc.id, Chunk.id.in_([uuid.UUID(c) for c in cited_ids]))} if cited_ids else {}
     chunks = [by_id[c] for c in cited_ids if c in by_id]
-    chunks += [c for c in retrieve(db, doc.course_id, request, top_k=8, scope=ChunkScope(doc.id)) if str(c.id) not in by_id]
+    chunks += [c for c in retrieve(db, doc.course_id, request, top_k=8, scope=ChunkScope(doc.id), wait=False) if str(c.id) not in by_id]
     code = {str(c.id): source_id(i) for i, c in enumerate(chunks)}
     current = "\n\n".join(_current_scene(n, scene, code) for n, scene in enumerate(stored, 1))
     with using_model(alias):
