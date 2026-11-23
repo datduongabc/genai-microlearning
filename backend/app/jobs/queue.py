@@ -8,10 +8,9 @@ Tham khảo thiết kế từ `jobs.py` (giữ ở `chunk_and_parse/`, code th�
 án khác của tác giả) -- claim FOR UPDATE SKIP LOCKED, retry/backoff phân
 biệt lỗi tạm thời vs vĩnh viễn, sweep job "running" bị kẹt quá lâu (worker
 crash giữa chừng). Khác bản gốc: chuyển sang sync SQLAlchemy (dự án này
-không dùng async ORM) và KHÔNG resumable-per-batch -- bản gốc cần vậy vì
-Speechmatics polling + quota embed_content rất chặt của dự án đó; ở đây mỗi
-job step chạy đủ nhanh trong 1 lần nên retry nguyên step khi lỗi tạm thời là
-đủ, không cần chia nhỏ hơn.
+không dùng async ORM). Một job sinh nội dung dài lưu phần đã xong qua
+Checkpoint (app/generation/checkpoint.py), nên lần thử lại chỉ làm tiếp phần
+còn lại thay vì làm lại cả job.
 """
 
 import logging

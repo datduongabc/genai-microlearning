@@ -32,7 +32,7 @@ api.interceptors.request.use((config) => {
   return config
 })
 
-// access token sống 1h (trước là 7 ngày) -- 1 request 401 vì hết hạn giữa
+// access token sống 15 phút (ACCESS_TOKEN_EXPIRE_MINUTES ở backend) -- 1 request 401 vì hết hạn giữa
 // phiên làm việc giờ là chuyện BÌNH THƯỜNG, không phải lỗi auth thật. Tự
 // refresh 1 lần rồi phát lại đúng request gốc thay vì đá thẳng người dùng
 // về /login. Gộp các lần refresh chồng nhau (nhiều request 401 cùng lúc)

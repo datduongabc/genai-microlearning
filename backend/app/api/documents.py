@@ -17,7 +17,7 @@ from app.ingestion.document_readers import (
     LEGACY_EXTENSIONS,
     SUPPORTED_EXTENSIONS,
 )
-from app.jobs.failures import open_failures
+from app.jobs.failures import open_failures, status_error
 from app.jobs.queue import enqueue_job
 from app.models import (
     Course,
@@ -231,7 +231,7 @@ def get_document_job_status(
         raise HTTPException(status_code=404, detail="Job not found")
     return {
         "id": job.id, "step": job.step, "status": job.status,
-        "attempts": job.attempts, "last_error": job.last_error,
+        "attempts": job.attempts, "last_error": status_error(job),
         "document_status": doc.status,
     }
 

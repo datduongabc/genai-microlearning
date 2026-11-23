@@ -33,6 +33,12 @@ def lecturer_message(job: Job) -> str:
     return SYSTEM_FAILURE_MESSAGE if job.system_failure else (job.last_error or "")[:MAX_ERROR_CHARS]
 
 
+def status_error(job: Job) -> str | None:
+    """The error a job status route shows. None until the job has failed: a job waiting for its next try
+    holds the raw exception of the last one, and system_failure is only decided when the tries run out."""
+    return lecturer_message(job) if job.status == JobStatus.failed else None
+
+
 def _open_failure_filter():
     newer = aliased(Job)
     return (
