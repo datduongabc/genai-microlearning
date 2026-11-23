@@ -155,7 +155,7 @@ def test_without_the_embedder_chat_searches_by_keyword(world, monkeypatch, passt
     prompts = []
     _scripted_model(monkeypatch, "Heap là cây [S1].", prompts=prompts)
 
-    def down(text):
+    def down(text, wait=True):
         raise search.httpx.ConnectError("embedder down")
 
     monkeypatch.setattr(search, "embed_text", down)
@@ -180,7 +180,7 @@ def test_generation_still_fails_without_the_embedder(world, monkeypatch):
     """The job queue retries a generation step; answering from keywords alone would lower its quality silently."""
     _, _, course_id, _ = world
 
-    def down(text):
+    def down(text, wait=True):
         raise search.httpx.ConnectError("embedder down")
 
     monkeypatch.setattr(search, "embed_text", down)

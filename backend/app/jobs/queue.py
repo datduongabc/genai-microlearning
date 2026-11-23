@@ -500,7 +500,7 @@ def _reembed_loop() -> None:
     while not _stop_event.wait(REEMBED_INTERVAL_SECONDS):
         try:
             with WorkerSessionLocal() as db:
-                done = reembed_missing(db)
+                done = reembed_missing(db, wait=False)
             if done:
                 logger.info(f"[job_queue] embedded {done} chunk(s) that had no vector")
         except Exception:

@@ -20,7 +20,7 @@ WORK="${BE2E_WORK:-${TMPDIR:-/tmp}/browser-e2e}"
 TOOL_PORT="${TOOL_PORT:-58010}"
 # Moodle's source is not in git (see .gitignore); a worktree points at the main checkout's copy.
 MOODLE_SRC="${MOODLE_SRC:-$ROOT/moodle}"
-# The compose embedder: the public TEI image, with the model cached in compose's volume (read only).
+# The embedder: the public TEI image, with the model cached in a volume that the first run fills.
 EMBEDDER_IMAGE="${EMBEDDER_IMAGE:-ghcr.io/huggingface/text-embeddings-inference:cpu-1.9.4}"
 EMBEDDER_MODELS_VOLUME="${EMBEDDER_MODELS_VOLUME:-do-an_embedder_models}"
 DB_PW=e2e-only-password
@@ -48,7 +48,7 @@ echo "== Database, embedder"
 docker network create "$NET" >/dev/null
 docker run -d --rm --name be2e-db --network "$NET" -p 55434:5432 -e POSTGRES_PASSWORD=$DB_PW \
   --tmpfs /var/lib/postgresql/data pgvector/pgvector:pg16 >/dev/null
-docker run -d --rm --name be2e-embedder -p 58082:80 --memory 3g -v "$EMBEDDER_MODELS_VOLUME:/data:ro" -e HF_HUB_OFFLINE=1 \
+docker run -d --rm --name be2e-embedder -p 58082:80 --memory 3g -v "$EMBEDDER_MODELS_VOLUME:/data" \
   "$EMBEDDER_IMAGE" --model-id onnx-community/Qwen3-Embedding-0.6B-ONNX --revision c25a394dd583836952667c12f008335071b3f43d \
   --pooling last-token --max-batch-tokens 1024 --max-client-batch-size 128 --api-key mock-not-a-real-key >/dev/null
 until docker exec be2e-db pg_isready -U postgres >/dev/null 2>&1; do sleep 1; done
@@ -101,6 +101,8 @@ cd "$ROOT/frontend"
 BACKEND_URL=http://localhost:58001 nohup node node_modules/vite/bin/vite.js --port "$TOOL_PORT" --strictPort \
   >"$WORK/logs/vite.log" 2>&1 &
 echo $! >>"$WORK/pids"
+# The first run on a machine downloads the model (about 1.2 GB) into the volume first.
+for _ in $(seq 1 450); do curl -fs -o /dev/null localhost:58082/health && break; sleep 2; done
 for _ in $(seq 1 60); do
   curl -fs -o /dev/null "localhost:$TOOL_PORT/api/ready" && curl -fs -o /dev/null localhost:58082/health && break
   sleep 2

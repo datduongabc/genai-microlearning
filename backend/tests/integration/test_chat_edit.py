@@ -244,8 +244,8 @@ def test_large_scope_sends_only_retrieved_document_chunks(lesson, monkeypatch):
             content=f"Filler chunk {i}.", source_ref=f"lesson.txt#{i}") for i in range(1, 70)])
         db.commit()
     seen = {}
-    def fake_retrieve(db, course_id, query, top_k, scope):
-        seen.update(course_id=course_id, query=query, scope=scope)
+    def fake_retrieve(db, course_id, query, top_k, scope, wait):
+        seen.update(course_id=course_id, query=query, scope=scope, wait=wait)
         return db.query(Chunk).filter(Chunk.document_id == document_id, Chunk.chunk_index == 0).all()
     monkeypatch.setattr(modules_api, "retrieve", fake_retrieve)
     prompts = []
@@ -256,6 +256,8 @@ def test_large_scope_sends_only_retrieved_document_chunks(lesson, monkeypatch):
     assert send(lesson, "shorten slide 1").status_code == 200
     assert seen["course_id"] == ids["course"] and seen["query"] == "shorten slide 1"
     assert seen["scope"] == ChunkScope(document_id)
+    # Someone is waiting on this request, so a refused embedding must not wait out the limit.
+    assert seen["wait"] is False
     assert "A stack is LIFO." in prompts[0] and "Filler chunk" not in prompts[0]
 
 
@@ -273,7 +275,7 @@ def test_large_scope_content_edit_keeps_citations_outside_retrieved_chunks(lesso
         db.commit()
         content_id = content.id
         chunk_42 = str(db.query(Chunk).filter(Chunk.document_id == document_id, Chunk.chunk_index == 42).one().id)
-    monkeypatch.setattr(modules_api, "retrieve", lambda db, course_id, query, top_k, scope: db.query(Chunk).filter(
+    monkeypatch.setattr(modules_api, "retrieve", lambda db, course_id, query, top_k, scope, wait: db.query(Chunk).filter(
         Chunk.document_id == document_id, Chunk.chunk_index == 0).all())
     prompts = []
 

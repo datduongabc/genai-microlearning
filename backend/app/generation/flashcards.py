@@ -157,7 +157,7 @@ def revise_flashcards(db: Session, card_set: FlashcardSet, request: str) -> tupl
         Chunk.document_id == doc.id, Chunk.id.in_([uuid.UUID(c) for c in cited_ids])).all()} if cited_ids else {}
     chunks = [by_id[c] for c in cited_ids if c in by_id]
     known = set(by_id)
-    chunks += [c for c in retrieve(db, doc.course_id, request, top_k=8, scope=ChunkScope(doc.id)) if str(c.id) not in known]
+    chunks += [c for c in retrieve(db, doc.course_id, request, top_k=8, scope=ChunkScope(doc.id), wait=False) if str(c.id) not in known]
     code = {str(c.id): f"S{i + 1}" for i, c in enumerate(chunks)}
     current = "\n".join(
         f"{i + 1}. FRONT: {card['front']}\n   BACK: {card['back']}\n   SOURCES: {[code[c] for c in card['citations'] if c in code]}"

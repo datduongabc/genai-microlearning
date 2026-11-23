@@ -560,7 +560,7 @@ def chat_edit_module(
     history = [{"role": r.role.value, "content": r.content} for r in reversed(history_rows)]
     scope_chunks = chunks = reference_scope_chunks(db, module)
     if chunks and not small_reference(chunks):
-        chunks = retrieve(db, module.course_id, message, top_k=8, scope=ChunkScope(module.document_id))
+        chunks = retrieve(db, module.course_id, message, top_k=8, scope=ChunkScope(module.document_id), wait=False)
     # The passages the content already cites stay citable: the model sees them under IDs too.
     citations = resolved_citations(db, module) or []
     cited = {c.chunk_id for c in citations} - {str(c.id) for c in chunks}
