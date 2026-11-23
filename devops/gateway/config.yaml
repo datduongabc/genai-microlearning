@@ -5,8 +5,7 @@
 # key here). A provider whose key is empty simply cannot be used.
 #
 # One provider key covers every remote alias: OPENROUTER_API_KEY, billed on one balance
-# (Gemini, OpenAI, Anthropic, the open-weight models, Whisper and the embeddings). Only the
-# optional local embedder has a key of its own. Whisper through OpenRouter returns segment timestamps
+# (Gemini, OpenAI, Anthropic, the open-weight models, Whisper and the embeddings). Whisper through OpenRouter returns segment timestamps
 # (verbose_json), which citations of recordings need; litellm has no OpenRouter
 # transcription route, so it is called over the OpenAI protocol with OpenRouter's api_base.
 #
@@ -55,32 +54,6 @@ model_list:
       api_key: os.environ/OPENROUTER_API_KEY
     model_info:
       display_name: Gemini Embedding 001
-      mode: embedding
-
-  # The self-hosted option for a school that keeps documents inside: the `embedder` service of
-  # docker-compose.yml (profile local-embedder), chosen with EMBEDDING_MODEL=embed-qwen3.
-  # "openai/" only names the protocol the embedder speaks. It returns 1024 numbers but was
-  # trained to be cut shorter, so the backend's `dimensions` gives 768.
-  - model_name: embed-qwen3
-    litellm_params:
-      model: openai/Qwen3-Embedding-0.6B
-      api_base: http://embedder:80/v1
-      api_key: os.environ/EMBEDDER_API_KEY
-      # litellm only lets `dimensions` through for OpenAI models it knows can take it.
-      allowed_openai_params: ["dimensions"]
-    model_info:
-      display_name: Qwen3 Embedding 0.6B (chạy tại chỗ)
-      mode: embedding
-
-  # Another provider model, not measured on the benchmark questions.
-  - model_name: embed-openai
-    litellm_params:
-      model: openrouter/openai/text-embedding-3-small
-      extra_body:
-        provider: {order: [openai], allow_fallbacks: false, data_collection: deny}
-      api_key: os.environ/OPENROUTER_API_KEY
-    model_info:
-      display_name: OpenAI Embedding 3 Small
       mode: embedding
 
   - model_name: openai-fast

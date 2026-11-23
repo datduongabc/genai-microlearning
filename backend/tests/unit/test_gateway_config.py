@@ -39,9 +39,8 @@ def _deployments(gateway) -> list[dict]:
 
 
 def _remote_providers(gateway) -> set[str]:
-    """The local embedder and Whisper are reached over the OpenAI protocol ("openai/..." with an
-    api_base), but no key of OpenAI's is involved: an OpenRouter api_base counts as OpenRouter,
-    and the local embedder is no provider."""
+    """Whisper is reached over the OpenAI protocol ("openai/..." with an api_base), but no key of
+    OpenAI's is involved: an OpenRouter api_base counts as OpenRouter."""
     providers = set()
     for d in _deployments(gateway):
         params = d["litellm_params"]
@@ -86,93 +85,31 @@ def test_no_secret_is_written_in_the_gateway_config(gateway):
     assert all(str(k).startswith("os.environ/") for k in keys)
 
 
-def _embedder_command(compose) -> list[str]:
-    return [str(part) for part in compose["services"]["embedder"]["command"]]
-
-
-def _option(command: list[str], name: str) -> str:
-    return command[command.index(name) + 1]
-
-
-LOCAL_EMBEDDING_ALIAS = "embed-qwen3"
-
-
 def _deployment(gateway, alias: str) -> dict:
     return next(d for d in _deployments(gateway) if d["model_name"] == alias)
 
 
-def test_the_only_model_that_can_run_in_the_stack_is_the_optional_embedder(gateway, compose):
-    """Text and the default embeddings come from providers; the one model that can be served here
-    is the self-hosted embedder, reached only through its own alias."""
-    local = {d["model_name"]: d["litellm_params"]["api_base"] for d in _deployments(gateway)
-             if "api_base" in d["litellm_params"] and not d["litellm_params"]["api_base"].startswith("https://openrouter.ai/")}
+def test_no_model_runs_in_the_stack(gateway, compose):
+    """Text, transcription and embeddings all come from providers: no alias points inside the
+    stack, and no service serves a model."""
+    local = [d["model_name"] for d in _deployments(gateway)
+             if "api_base" in d["litellm_params"] and not d["litellm_params"]["api_base"].startswith("https://openrouter.ai/")]
 
-    assert local == {LOCAL_EMBEDDING_ALIAS: "http://embedder:80/v1"}
-    assert not {name for name in compose["services"] if "ollama" in name}
+    assert local == []
+    assert not {name for name in compose["services"] if name in {"embedder", "reranker"} or "ollama" in name}
 
 
 def test_the_default_embedding_alias_is_a_provider_model(gateway):
-    """The stack starts without the embedder, so the alias the backend embeds with by default must
-    not need it."""
     deployment = _deployment(gateway, Settings.model_fields["embedding_model"].default)
 
     assert deployment["litellm_params"]["model"].startswith("openrouter/")
 
 
 def test_the_default_embedding_alias_is_never_offered_as_a_chat_model(gateway):
-    """The model picker lists only aliases whose mode is "chat", and litellm cannot infer a mode
-    for a model it serves by protocol only."""
-    alias = Settings.model_fields["embedding_model"].default
-    deployment = next(d for d in _deployments(gateway) if d["model_name"] == alias)
+    """The model picker lists only aliases whose mode is "chat"."""
+    deployment = _deployment(gateway, Settings.model_fields["embedding_model"].default)
 
     assert deployment["model_info"]["mode"] == "embedding"
-
-
-def test_the_size_the_backend_asks_for_reaches_the_embedder(gateway):
-    """litellm drops `dimensions` with an error for an OpenAI-protocol model it does not know,
-    and without it the embedder returns 1024 numbers for a column of 768."""
-    deployment = _deployment(gateway, LOCAL_EMBEDDING_ALIAS)
-
-    assert "dimensions" in deployment["litellm_params"]["allowed_openai_params"]
-
-
-def test_the_embedder_is_not_published_on_the_host(compose):
-    assert "ports" not in compose["services"]["embedder"]
-
-
-def test_the_embedder_runs_a_pinned_image_and_a_pinned_model(compose):
-    """Chunks already in the database can only be compared with vectors of the very model that
-    made them, so neither the server nor the model may move under them."""
-    image = compose["services"]["embedder"]["image"]
-    command = _embedder_command(compose)
-
-    assert re.fullmatch(r"\S+:[a-z0-9]+-\d+\.\d+\.\d+", image)
-    assert re.fullmatch(r"[0-9a-f]{40}", _option(command, "--revision"))
-
-
-def test_the_embedder_takes_a_whole_batch_of_the_backend(compose):
-    from app.ingestion.embeddings import BATCH_SIZE
-
-    assert int(_option(_embedder_command(compose), "--max-client-batch-size")) >= BATCH_SIZE
-
-
-def test_the_embedder_asks_for_a_key_that_only_the_gateway_holds(gateway, compose):
-    """Without a key of its own the gateway would send OPENAI_API_KEY to the embedder instead."""
-    deployment = _deployment(gateway, LOCAL_EMBEDDING_ALIAS)
-    services = compose["services"]
-
-    assert _option(_embedder_command(compose), "--api-key") == "${EMBEDDER_API_KEY}"
-    assert deployment["litellm_params"]["api_key"] == "os.environ/EMBEDDER_API_KEY"
-    assert services["gateway"]["environment"]["EMBEDDER_API_KEY"] == "${EMBEDDER_API_KEY}"
-    assert "EMBEDDER_API_KEY" not in services["backend"]["environment"]
-
-
-def test_the_embedder_starts_only_when_asked_for(compose):
-    """A default `up` must not download 2.4 GB of model nor wait on it: the backend embeds through a
-    provider unless EMBEDDING_MODEL selects the local alias."""
-    assert compose["services"]["embedder"]["profiles"] == ["local-embedder"]
-    assert "embedder" not in compose["services"]["backend"]["depends_on"]
-    assert "healthcheck" in compose["services"]["embedder"]
 
 
 def test_the_gateway_is_only_published_on_the_loopback_interface(compose):
@@ -244,7 +181,7 @@ def test_transcription_alias_routes_to_whisper_through_openrouter(gateway):
 def test_router_accepts_the_config(gateway, monkeypatch):
     from litellm import Router
 
-    for name in (*PROVIDER_KEY_VARIABLES, "LLM_GATEWAY_KEY", "EMBEDDER_API_KEY"):
+    for name in (*PROVIDER_KEY_VARIABLES, "LLM_GATEWAY_KEY"):
         monkeypatch.setenv(name, "test-key")
     router = Router(model_list=gateway["model_list"], **gateway["router_settings"])
     assert router.routing_strategy == "simple-shuffle"
@@ -263,7 +200,7 @@ def test_provider_429_uses_the_configured_fallback(gateway, monkeypatch):
 
     import litellm
 
-    for name in (*PROVIDER_KEY_VARIABLES, "LLM_GATEWAY_KEY", "EMBEDDER_API_KEY"):
+    for name in (*PROVIDER_KEY_VARIABLES, "LLM_GATEWAY_KEY"):
         monkeypatch.setenv(name, "test-key")
     attempts = []
     async def provider(**kwargs):
@@ -288,7 +225,7 @@ def test_the_default_never_falls_back_to_a_paid_opt_in_model(gateway, monkeypatc
 
     import litellm
 
-    for name in (*PROVIDER_KEY_VARIABLES, "LLM_GATEWAY_KEY", "EMBEDDER_API_KEY"):
+    for name in (*PROVIDER_KEY_VARIABLES, "LLM_GATEWAY_KEY"):
         monkeypatch.setenv(name, "test-key")
     attempts = []
     async def provider(**kwargs):
@@ -330,7 +267,7 @@ def test_paid_alias_falls_back_to_gemini_and_experiment_flag_refuses_it(gateway,
 
     import litellm
 
-    for name in (*PROVIDER_KEY_VARIABLES, "LLM_GATEWAY_KEY", "EMBEDDER_API_KEY"):
+    for name in (*PROVIDER_KEY_VARIABLES, "LLM_GATEWAY_KEY"):
         monkeypatch.setenv(name, "test-key")
     router = litellm.Router(model_list=gateway["model_list"], **gateway["router_settings"])
     for flag in ("mock_testing_fallbacks", "mock_testing_context_fallbacks"):
@@ -362,7 +299,7 @@ def test_a_pinned_paid_call_at_temperature_zero_is_served_by_its_own_model(gatew
 
     import litellm
 
-    for name in (*PROVIDER_KEY_VARIABLES, "LLM_GATEWAY_KEY", "EMBEDDER_API_KEY"):
+    for name in (*PROVIDER_KEY_VARIABLES, "LLM_GATEWAY_KEY"):
         monkeypatch.setenv(name, "test-key")
     router = litellm.Router(model_list=gateway["model_list"], **gateway["router_settings"])
     expected = next(d for d in _deployments(gateway) if d["model_name"] == alias)["litellm_params"]["model"]
@@ -385,7 +322,7 @@ def test_every_paid_model_goes_through_openrouter_with_its_one_key(gateway):
     are no longer read anywhere."""
     paid = {d["model_name"] for d in _openrouter_deployments(gateway)}
 
-    assert PAID_ALIASES | {"gemini-flash", "embed-default", "embed-openai"} == paid
+    assert PAID_ALIASES | {"gemini-flash", "embed-default"} == paid
     assert {d["litellm_params"]["api_key"] for d in _openrouter_deployments(gateway)} == {
         "os.environ/OPENROUTER_API_KEY"}
 
@@ -407,7 +344,7 @@ def test_the_routing_preferences_reach_the_openrouter_request(gateway, monkeypat
 
     import litellm
 
-    for name in (*PROVIDER_KEY_VARIABLES, "LLM_GATEWAY_KEY", "EMBEDDER_API_KEY"):
+    for name in (*PROVIDER_KEY_VARIABLES, "LLM_GATEWAY_KEY"):
         monkeypatch.setenv(name, "test-key")
     sent = {}
 
