@@ -36,6 +36,7 @@ from app.generation.module_generation_pipeline import (
 )
 from app.generation.slides import SlidesOutput
 from app.generation.study_packets import reference_scope_chunks, resolved_citations, small_reference
+from app.jobs.failures import status_error
 from app.jobs.queue import enqueue_job
 from app.llm import catalog
 from app.llm.gateway import using_model
@@ -232,7 +233,7 @@ def get_module_job_status(
         raise HTTPException(status_code=404, detail="Job not found")
     return {
         "id": job.id, "step": job.step, "status": job.status,
-        "attempts": job.attempts, "last_error": job.last_error,
+        "attempts": job.attempts, "last_error": status_error(job),
         "module_id": job.module_id,
     }
 
@@ -609,9 +610,9 @@ def chat_edit_module(
         raise HTTPException(status_code=422, detail="Kết quả chỉnh sửa không hợp lệ nên mô-đun chưa thay đổi. Hãy thử lại.") from exc
     db.add_all([
         ChatMessage(session_id=session.id, role=ChatRole.user, content=message, citations=[],
-                    created_at=datetime.now(UTC).replace(tzinfo=None)),
+                    created_at=datetime.now(UTC)),
         ChatMessage(session_id=session.id, role=ChatRole.assistant, content=edit.reply,
-                    citations=[], applied_edit=applied, created_at=datetime.now(UTC).replace(tzinfo=None)),
+                    citations=[], applied_edit=applied, created_at=datetime.now(UTC)),
     ])
     db.commit()
     return {"session_id": session.id, "reply": edit.reply, "applied": applied,
