@@ -116,3 +116,15 @@ def test_a_long_or_odd_retry_after_waits_a_few_seconds_at_most(jev, monkeypatch,
 
     assert ranked[0][1] == 0.7
     assert len(waits) == 1 and 0 <= waits[0] <= reranker.MAX_RETRY_AFTER_SECONDS
+
+
+def test_a_missing_key_is_logged_once_in_the_words_the_alarm_counts(monkeypatch, caplog):
+    monkeypatch.setattr(settings, "typesafe_api_key", "")
+    monkeypatch.setattr(reranker, "_no_key_reported", False)
+
+    reranker.rerank_scored("q", _chunks("a"))
+    reranker.rerank_scored("q", _chunks("b"))
+
+    assert [r.getMessage() for r in caplog.records if r.getMessage().startswith("jev_fallback")] == [
+        "jev_fallback status=None, keeping the search order: no TYPESAFE_API_KEY"
+    ]

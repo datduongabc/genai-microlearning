@@ -78,7 +78,7 @@ export SECRET_KEY=e2e-secret-key-not-for-production-000000 PUBLIC_URL=http://loc
 LTI_PRIVATE_KEY="$(cat "$WORK/tool.pem")"
 export LTI_PRIVATE_KEY
 # Blank, so that devops/.env's real keys are never used by this run.
-export OPENROUTER_API_KEY='' TYPESAFE_API_KEY='' LLM_GATEWAY_KEY='' EMBEDDER_API_KEY='' MOODLE_TOKEN=''
+export OPENROUTER_API_KEY='' TYPESAFE_API_KEY='' LLM_GATEWAY_KEY='' MOODLE_TOKEN=''
 cd "$ROOT/backend"
 uv run alembic upgrade head >/dev/null
 j() { jq -r ".$1" "$WORK/moodle.json"; }

@@ -65,6 +65,9 @@ def _ask_jev(query: str, text: str, attempts: int = MAX_ATTEMPTS) -> tuple[float
     raise AssertionError("unreachable")
 
 
+_no_key_reported = False
+
+
 def _search_order(count: int) -> list[float]:
     """Decreasing as RRF does, so Adaptive-k has no large gap to cut at."""
     return [1 / (60 + position) for position in range(count)]
@@ -73,7 +76,12 @@ def _search_order(count: int) -> list[float]:
 def _jev_scores(query: str, chunks: list[Chunk], span: dict, attempts: int = MAX_ATTEMPTS) -> list[float]:
     """A failed call must not send a generation back to the queue, so the search order stands in for the scores."""
     if not settings.typesafe_api_key:
-        # No key (tests, local runs without Jev): nothing is sent, and the search order stands.
+        # No key (tests, local runs without Jev): nothing is sent, and the search order stands. Said once
+        # per process in the words the fallback alarm counts, so a deployment missing the key is noticed.
+        global _no_key_reported
+        if not _no_key_reported:
+            _no_key_reported = True
+            logger.warning("jev_fallback status=None, keeping the search order: no TYPESAFE_API_KEY")
         span["fallback"] = True
         return _search_order(len(chunks))
     try:
