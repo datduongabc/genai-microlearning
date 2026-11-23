@@ -239,7 +239,7 @@ def search_for_chat(db: Session, course_id: UUID, query: str, candidate_k: int =
     does not do this, it fails the step and the job queue retries it once the embedder is back."""
     try:
         with timing.timed("embed_query"):
-            query_embedding = embed_text(query)
+            query_embedding = embed_text(query, wait=False)
     except Exception as error:  # any failure to embed leaves the keyword search
         logger.warning("query embedding failed, chat searches by keyword only: %s: %s", type(error).__name__, error)
         return sparse_search(db, course_id, query, top_k=candidate_k)

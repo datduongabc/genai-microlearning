@@ -59,9 +59,9 @@ variable "gateway" {
 }
 
 variable "api_requests_per_target" {
-  description = "Requests per minute per api task the scaling keeps to. Measured: about 199 requests/s on one task, so this is about half."
+  description = "Requests per minute per api task the scaling keeps to. Measured on AWS: one task saturates at about 127 requests/s and keeps p95 under 1 s at 86, so this (about 67) leaves room for the minutes a new task takes to start."
   type        = number
-  default     = 6000
+  default     = 4000
 }
 
 variable "self_registration" {

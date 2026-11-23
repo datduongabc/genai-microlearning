@@ -62,6 +62,9 @@ ROSTER_CHECK_INTERVAL_SECONDS = 5 * 60
 POLL_INTERVAL_SECONDS = 2.0
 # One CloudWatch data point a minute, the finest that standard resolution keeps.
 METRICS_INTERVAL_SECONDS = 60
+# How often a worker looks for chunks without a vector, left by a migration that changed the embedding
+# model (as 0053 did) or by restoring data embedded with another model.
+REEMBED_INTERVAL_SECONDS = 5 * 60
 
 
 def jittered_backoff(attempts: int, base: float = BASE_BACKOFF_SECONDS) -> float:
@@ -489,6 +492,21 @@ def _worker_loop(worker_id: str, *, run_sweeper: bool) -> None:
     logger.info(f"[job_queue] worker {worker_id} stopped")
 
 
+def _reembed_loop() -> None:
+    """A thread of its own, like the metrics: embedding a whole corpus again takes long and must not hold
+    up jobs. Until it is done, dense search simply skips the chunks without a vector."""
+    from app.ingestion.reembed import reembed_missing
+
+    while not _stop_event.wait(REEMBED_INTERVAL_SECONDS):
+        try:
+            with WorkerSessionLocal() as db:
+                done = reembed_missing(db)
+            if done:
+                logger.info(f"[job_queue] embedded {done} chunk(s) that had no vector")
+        except Exception:
+            logger.exception("[job_queue] re-embedding error")
+
+
 def _metrics_loop() -> None:
     """A thread of its own: the sweeper's thread also runs jobs, and a backlog is exactly when it
     would be busy with a long one and the scaling signal would stop."""
@@ -519,6 +537,11 @@ def start_worker() -> None:
         _worker_threads.append(t)
     if settings.queue_metrics:
         t = threading.Thread(target=_metrics_loop, daemon=True)
+        t.start()
+        _worker_threads.append(t)
+    # Renderers only render; the general workers hold the gateway work.
+    if settings.worker_queue != "render":
+        t = threading.Thread(target=_reembed_loop, daemon=True)
         t.start()
         _worker_threads.append(t)
 
