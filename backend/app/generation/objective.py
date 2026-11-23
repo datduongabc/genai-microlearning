@@ -47,6 +47,10 @@ Ràng buộc BẮT BUỘC:
       mặc định hạ về "understand" cho an toàn khi nguồn rõ ràng hỗ trợ cấp độ
       cao hơn. "Understand" không phải lựa chọn ngầm định — chỉ chọn khi
       nguồn thực sự chỉ dừng ở mức diễn giải, không phải khi không chắc.
+  (c) Chỉ chọn apply trở lên khi nguồn có đủ ví dụ, bài tập hay tình huống để
+      đặt ít nhất một câu hỏi ở đúng cấp độ đó cho MỖI sub-objective (xem
+      ràng buộc về sub_objectives bên dưới). Một bài chủ yếu là định nghĩa,
+      chỉ kèm một ví dụ minh họa, vẫn là understand.
 - objective_text BẮT BUỘC bắt đầu bằng 1 động từ hành động ĐO LƯỜNG ĐƯỢC đúng
   cấp độ đã chọn (xem bảng động từ Bloom's ở trên), dạng "Sau khi hoàn thành
   module, người học có thể [động từ] ...".
@@ -71,10 +75,13 @@ bao phủ khái niệm trong một bài học 5-10 phút, không chia nhỏ cho 
 là 1 Enabling Objective cụ thể (dạng "[động từ] ...", KHÔNG cần lặp lại "Sau
 khi hoàn thành module..."), mỗi sub-objective nhắm đúng 1 khía cạnh/năng lực
 THÀNH PHẦN khác nhau cần đạt để hoàn thành Terminal Objective — không được 2
-sub-objective trùng lặp cùng 1 khía cạnh. Cấp độ Bloom's của từng
-sub-objective PHẢI ≤ cấp độ của objective_text (không được cao hơn mục tiêu
-tổng thể nó phục vụ). Mục đích: ép Content bám đủ rộng theo từng khía cạnh
-thay vì chỉ tổng hợp 1 góc hẹp của nguồn.
+sub-objective trùng lặp cùng 1 khía cạnh. Mọi sub-objective ở ĐÚNG cấp độ
+Bloom's của objective_text (động từ cùng cấp trong bảng), trừ TỐI ĐA MỘT
+sub-objective nền thấp hơn đúng MỘT bậc (ví dụ "mô tả" một khái niệm mà các
+sub-objective khác cần dùng). Lý do: mỗi sub-objective có một câu quiz kiểm
+đúng động từ của nó, nên sub-objective thấp hơn cấp độ khai báo làm cả bộ câu
+hỏi thấp hơn mục tiêu đã hứa với người học. Mục đích: ép Content bám đủ rộng
+theo từng khía cạnh thay vì chỉ tổng hợp 1 góc hẹp của nguồn.
 
 Ví dụ mẫu (Few-Shot CoT — 2 ví dụ đầy đủ chuỗi lập luận, KHÔNG copy nguyên
 văn cho chủ đề mới, chỉ học đúng CÁCH suy luận; cả hai ví dụ cố ý thuộc một
@@ -92,6 +99,8 @@ Ví dụ 1 — nguồn chỉ định nghĩa/liệt kê (không giải thích sâ
   lượng ánh sáng để tạo ra glucose từ CO2 và nước."
   sub_objectives=["Nêu các chất tham gia và sản phẩm của quang hợp",
   "Giải thích vai trò của năng lượng ánh sáng trong quá trình tạo glucose"]
+  (cái đầu là sub-objective nền ở remember, thấp hơn một bậc; cái sau ở
+  understand)
 
 Ví dụ 2 — nguồn có so sánh/phân tích thật (không chỉ định nghĩa):
   Khái niệm: "Nguyên phân và giảm phân". Nguồn có: định nghĩa nguyên phân
@@ -107,8 +116,10 @@ Ví dụ 2 — nguồn có so sánh/phân tích thật (không chỉ định ngh
   hoàn thành module, người học có thể phân tích sự khác biệt về cơ chế phân
   chia, kết quả và vai trò giữa nguyên phân và giảm phân."
   sub_objectives=["So sánh số lần phân chia và số tế bào con của hai quá
-  trình", "Phân biệt số nhiễm sắc thể trong tế bào con của mỗi quá trình",
-  "Xác định vai trò của từng quá trình (sinh trưởng vs sinh sản hữu tính)"]
+  trình", "Chỉ ra mối liên hệ giữa số nhiễm sắc thể của tế bào con và vai trò
+  của mỗi quá trình", "Mô tả vai trò của từng quá trình (sinh trưởng vs sinh
+  sản hữu tính)"] (hai cái đầu ở analyze; cái cuối là sub-objective nền ở
+  understand, thấp hơn một bậc)
 """
 
 

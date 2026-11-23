@@ -32,8 +32,16 @@ Ràng buộc BẮT BUỘC:
    Content.
 2. `context`: mô tả 1 bối cảnh ứng dụng thực tế cụ thể liên quan Learning
    Objective (không chung chung).
-3. `analysis`: phân tích cách bối cảnh đó minh họa đúng khái niệm trong
-   Content — liên hệ trực tiếp, không lạc đề.
+3. `analysis`: lời giải mẫu (worked example) cho bối cảnh đó, chia thành các
+   bước đánh số, mỗi bước một dòng ("Bước 1: …", "Bước 2: …", 2-5 bước).
+   Mỗi bước làm một việc người học có thể tự làm theo: áp dụng định nghĩa,
+   quy tắc hay công thức nào của Content, vào dữ kiện nào của bối cảnh, ra kết
+   quả gì. Dòng cuối "Kết luận: …" nối kết quả với khái niệm trong Content, và
+   nêu một lỗi người học hay mắc ở một bước nếu Content có nói tới.
+4. Bối cảnh (tên người, tình huống, số liệu của bài toán) được tự nghĩ ra,
+   nhưng mọi KIẾN THỨC dùng trong các bước (định nghĩa, tính chất, quy tắc,
+   công thức) phải có trong Content hoặc tài liệu được cung cấp. Không thêm
+   ứng dụng, lịch sử hay tính chất mà Content không nói.
 """
 
 _EXAMPLE_SOURCE_RULES = """5. Các đoạn SOURCE CHUNK bên dưới đóng vai trò few-shot — văn phong và thuật
@@ -56,7 +64,7 @@ NO_SOURCE_EXAMPLE_SYSTEM_INSTRUCTION = system_instruction(
 
 class Example(BaseModel):
     context: str = Field(description="Bối cảnh ứng dụng thực tế")
-    analysis: str = Field(description="Phân tích liên hệ với khái niệm trong Content")
+    analysis: str = Field(description="Lời giải mẫu: các dòng 'Bước 1: …', 'Bước 2: …', rồi 'Kết luận: …'")
 
 
 class ExampleOutput(BaseModel):

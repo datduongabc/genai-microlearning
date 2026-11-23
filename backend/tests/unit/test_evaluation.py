@@ -48,7 +48,7 @@ def test_the_prompt_names_the_topic_and_the_anonymous_id_only():
 
     assert "Chủ đề gốc của bài" in prompt
     assert "anon_id=M01" in prompt
-    assert 'phai dung bang "M01"' in prompt
+    assert 'phải đúng bằng "M01"' in prompt
 
 
 def test_every_example_and_every_sub_objective_reaches_the_judge():
@@ -129,7 +129,7 @@ def test_the_judge_must_check_every_question_of_the_packet_once():
 def test_the_judge_is_told_every_flaw_and_how_many_questions_to_check():
     assert all(f"- {key}:" in _SYSTEM_INSTRUCTION for key in ITEM_WRITING_FLAWS)
     assert len(ITEM_WRITING_FLAWS) == 19
-    assert "quiz_flaws co dung 3 muc: cau 1..2 la quiz, cau 3 la practice" in _build_prompt(_packet())
+    assert "quiz_flaws có đúng 3 mục: câu 1..2 là quiz, câu 3 là practice" in _build_prompt(_packet())
 
 
 def test_the_rating_form_offers_the_same_flaws_the_server_accepts():
@@ -140,3 +140,17 @@ def test_the_rating_form_offers_the_same_flaws_the_server_accepts():
     form = (Path(__file__).resolve().parents[3] / "frontend/src/lib/ratingSchema.ts").read_text(encoding="utf-8")
     block = form.split("export const ITEM_WRITING_FLAWS")[1].split("];")[0]
     assert re.findall(r'\["(\w+)",', block) == list(ITEM_WRITING_FLAWS)
+
+
+def test_judges_read_the_same_flaw_wording_as_human_raters():
+    """Agreement between judges and raters is only meaningful when both score the same text."""
+    import re
+    from pathlib import Path
+
+    screen = (Path(__file__).parents[3] / "frontend/src/lib/ratingSchema.ts").read_text(encoding="utf-8")
+    pairs = re.findall(r'\["(\w+)", "((?:[^"\\]|\\.)*)"\]', screen.split("ITEM_WRITING_FLAWS")[1].split("];")[0])
+    assert {key: text.replace('\\"', '"') for key, text in pairs} == ITEM_WRITING_FLAWS
+
+
+def test_the_judge_prompt_is_written_with_vietnamese_diacritics():
+    assert "Bạn là chuyên gia đánh giá" in _SYSTEM_INSTRUCTION and "Ban la chuyen gia" not in _SYSTEM_INSTRUCTION

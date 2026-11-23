@@ -52,24 +52,24 @@ def _generate(document, self_check: bool) -> set[str]:
         db.close()
 
 
-def test_with_self_check_one_module_costs_15_calls(document, llm):
+def test_with_self_check_one_module_costs_19_calls(document, llm):
     """Ba sub-objective cho ba câu quiz và một câu practice, bốn câu hỏi:
 
     Planner 1 + Learning Objective 1 + chấm độ liên quan cho Content 1 + Content 1 + kiểm Content 1
-    + Slides 1 + Example 1 = 7, cộng mỗi câu hỏi 2 (sinh, kiểm) x 4 = 8: 15. Câu hỏi không còn
-    chấm độ liên quan riêng (trước đây thêm 1 lượt mỗi câu, 19 lượt); Corrective RAG chỉ chạy
-    một lần, trước Content.
+    + Slides 1 + Example 1 = 7, cộng mỗi câu hỏi 3 (sinh, kiểm mù từng phương án, kiểm phần cần biết
+    đáp án) x 4 = 12: 19. Câu hỏi không còn chấm độ liên quan riêng; Corrective RAG chỉ chạy một
+    lần, trước Content.
 
     Tối đa khi mọi bước đều trượt: Planner 1 + LO 1 + chấm độ liên quan 2 (chấm, truy hồi lại, chấm
-    lại) + Content 2 x 2 (sinh, kiểm, hai lần) + Slides 1 + Example 1 = 10, cộng bốn câu x 4 (sinh,
-    kiểm, hai lần) = 16, cộng sinh lại một câu vì lộ đáp án qua độ dài 4: 30."""
+    lại) + Content 2 x 2 (sinh, kiểm, hai lần) + Slides 1 + Example 1 = 10, cộng bốn câu x 6 (sinh,
+    hai lượt kiểm, hai lần) = 24, cộng sinh lại tối đa hai câu vì lộ đáp án qua độ dài 2 x 6: 46."""
     criteria = _generate(document, self_check=True)
 
-    assert len(llm) == 15
+    assert len(llm) == 19
     assert Counter(llm) == {
         "PlannerOutput": 1, "LearningObjective": 1, "RelevanceCheck": 1, "ContentOutput": 1,
         "ContentVerification": 1, "SlidesOutput": 1, "ExampleOutput": 1, "QuizQuestion": 4,
-        "GroundednessAnswerabilityCheck": 4,
+        "OptionReview": 4, "GroundednessAnswerabilityCheck": 4,
     }
     assert criteria == {
         "content_relevance_pass", "content_groundedness_pass",

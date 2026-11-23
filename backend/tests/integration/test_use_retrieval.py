@@ -222,8 +222,8 @@ def test_the_two_arms_prompts_differ_only_in_the_source_block(document, llm):
         # The questions read the lesson where the RAG arm reads the passages found for them.
         lesson = f"NỘI DUNG BÀI HỌC:\n{LESSON}\n\n"
         assert _without_sources(rag["prompt"]) == control["prompt"].replace(lesson, "")
-    # Content, its check, Example, and every question with its check carried passages in the RAG arm.
-    assert sourced == 2 + 1 + 4 * 2
+    # Content, its check, Example, and every question with its two checks carried passages in the RAG arm.
+    assert sourced == 2 + 1 + 4 * 3
 
 
 STEP_BODIES = {
@@ -232,6 +232,7 @@ STEP_BODIES = {
     "ExampleOutput": example._EXAMPLE_BODY,
     "QuizQuestion": quiz_graph._QUESTION_BODY,
     "GroundednessAnswerabilityCheck": quiz_graph._QUESTION_CHECK_BODY,
+    "OptionReview": quiz_graph._OPTION_REVIEW_BODY,
 }
 
 

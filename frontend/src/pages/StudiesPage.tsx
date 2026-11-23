@@ -186,7 +186,7 @@ function ModulePacketView({ packet: p }: { packet: ModulePacket }) {
         {p.examples.map((example, i) => (
           <div key={i} className="mt-3">
             <p>{example.context}</p>
-            <p>{example.analysis}</p>
+            <p className="whitespace-pre-line">{example.analysis}</p>
           </div>
         ))}
       </section>}

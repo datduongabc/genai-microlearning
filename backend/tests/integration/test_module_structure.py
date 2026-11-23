@@ -230,21 +230,21 @@ def test_every_example_is_kept(run):
 def test_when_every_answer_is_the_longest_one_question_is_redone_with_the_reason_and_replaced(run):
     install, calls, _ = run
     telling = [_question(stem=f"Q{i}", choices=LONG_CORRECT) for i in range(3)]
-    balanced = _question(stem="REDONE", choices=("một phương án khá dài", "B", "C", "D"))
+    balanced = [_question(stem=f"REDONE{i}", choices=("một phương án khá dài", "B", "C", "D")) for i in range(2)]
 
-    _, parts = install(["s1", "s2"], [*telling, balanced])
+    _, parts = install(["s1", "s2"], [*telling, *balanced])
 
-    redo = calls["quiz"][-1]
-    assert redo["feedback"] == LENGTH_TELL_FEEDBACK
+    # Three long keys in three questions: two rewrites bring it down to one, as chance would.
+    assert [c["feedback"] for c in calls["quiz"][3:]] == [LENGTH_TELL_FEEDBACK] * 2
     all_stems = [s for t in (ComponentType.quiz, ComponentType.practice) for _, s, _ in parts[t][1]]
-    assert "REDONE" in all_stems and len(all_stems) == 3
+    assert {"REDONE0", "REDONE1"} <= set(all_stems) and len(all_stems) == 3
 
 
 def test_a_redo_that_produces_no_question_keeps_the_original_one(run):
     install, _, _ = run
     telling = [_question(stem=f"Q{i}", choices=LONG_CORRECT) for i in range(3)]
 
-    _, parts = install(["s1", "s2"], [*telling, None])
+    _, parts = install(["s1", "s2"], [*telling, None, None])
 
     all_stems = [s for t in (ComponentType.quiz, ComponentType.practice) for _, s, _ in parts[t][1]]
     assert sorted(all_stems) == ["Q0", "Q1", "Q2"]
@@ -254,10 +254,10 @@ def test_a_redo_that_produces_no_question_keeps_the_original_one(run):
 
 def test_an_unsuccessful_rebalance_is_recorded_as_a_failure(run):
     install, calls, _ = run
-    telling = [_question(stem=f"Q{i}", choices=LONG_CORRECT) for i in range(4)]
+    telling = [_question(stem=f"Q{i}", choices=LONG_CORRECT) for i in range(5)]
     _, parts = install(["s1", "s2"], telling)
 
-    assert len(calls["quiz"]) == 4  # no unbounded rebalancing loop
+    assert len(calls["quiz"]) == 3 + pipeline.MAX_REBALANCES  # no unbounded rebalancing loop
     failed = parts[ComponentType.quiz][0]["questions"][0]
     assert failed["passed"] is False
     assert LENGTH_TELL_FEEDBACK in failed["fail_reason"]
