@@ -110,6 +110,12 @@ rate-limit 429s, including Gemini `RESOURCE_EXHAUSTED`, are treated as usable,
 because normal generation, including paid aliases, can rely on router fallbacks
 to Gemini. Experiment generation still refuses fallback and can fail on the
 same quota-limited model.
+Provider refusals and failures, a 400 or a 5xx such as OpenRouter's
+"Request path cannot be relayed" or Gemini's 503 "high demand", are treated as
+usable for the same reason, since the chain can still reach `gemini-flash-direct`.
+An alias the gateway does not know (LiteLLM's "Invalid model name", or a 404),
+a missing provider key and a rejected gateway key stay refused.
+In experiment mode only plain rate-limit 429s pass, because that run will not fall back.
 
 ## Actual model records
 

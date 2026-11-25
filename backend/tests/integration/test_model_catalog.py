@@ -247,7 +247,7 @@ def test_khoa_co_nhung_chua_nap_tien_thi_bao_het_so_du(monkeypatch):
 def test_loi_khong_ro_nguyen_nhan_thi_khong_doan_bua(monkeypatch):
     """Đoán sai còn tệ hơn không nói: bảo "hết số dư" khi thực ra là thiếu khóa thì người ta
     đi nạp tiền. Không nhận ra nguyên nhân thì câu thông báo không được nêu nguyên nhân."""
-    monkeypatch.setattr(litellm, "completion", _nem(litellm_errors.BadRequestError(
+    monkeypatch.setattr(litellm, "completion", _nem(litellm_errors.NotFoundError(
         message="something unexpected happened", model="x", llm_provider="openai",
     )))
 
@@ -256,6 +256,50 @@ def test_loi_khong_ro_nguyen_nhan_thi_khong_doan_bua(monkeypatch):
 
     reason = raised.value.reason.lower()
     assert "api key" not in reason and "số dư" not in reason and "hạn mức" not in reason
+
+
+_RELAY_REFUSED = "OpenrouterException - Request path cannot be relayed"
+
+
+@pytest.mark.parametrize("error", [
+    # The 2026-11-25 outage: OpenRouter refused every inference POST, while the direct Gemini route still served.
+    litellm_errors.BadRequestError(message=_RELAY_REFUSED, model="gemini-flash", llm_provider="openrouter"),
+    litellm_errors.ServiceUnavailableError(
+        message="This model is currently experiencing high demand", model="gemini-flash", llm_provider="gemini",
+    ),
+    litellm_errors.InternalServerError(message="upstream failed", model="gemini-flash", llm_provider="openrouter"),
+])
+def test_a_provider_refusing_the_call_leaves_the_alias_to_its_backups(error, monkeypatch):
+    from app.api.modules import _usable_alias
+
+    monkeypatch.setattr(catalog, "is_available", lambda alias: True)
+    monkeypatch.setattr(litellm, "completion", _nem(error))
+    assert _usable_alias("gemini-flash") == "gemini-flash"
+
+
+def test_a_pinned_run_is_refused_when_the_provider_refuses_since_it_will_not_fall_back(monkeypatch):
+    from app.llm import gateway
+
+    monkeypatch.setattr(litellm, "completion", _nem(litellm_errors.BadRequestError(
+        message=_RELAY_REFUSED, model="gemini-flash", llm_provider="openrouter",
+    )))
+    with gateway.experiment_mode(), pytest.raises(catalog.ModelUnusable):
+        catalog.probe("gemini-flash")
+
+
+@pytest.mark.parametrize("error", [
+    # LiteLLM proxy's answer for an alias missing from its config.
+    litellm_errors.BadRequestError(
+        message="Invalid model name passed in model=retired-model. Call `/v1/models` to view available models",
+        model="retired-model", llm_provider="openai",
+    ),
+    litellm_errors.NotFoundError(message="model not found", model="retired-model", llm_provider="openai"),
+    litellm_errors.AuthenticationError(message="Invalid proxy key", model="retired-model", llm_provider="openai"),
+])
+def test_an_alias_the_gateway_cannot_serve_at_all_is_still_refused(error, monkeypatch):
+    monkeypatch.setattr(litellm, "completion", _nem(error))
+    with pytest.raises(catalog.ModelUnusable):
+        catalog.probe("retired-model")
 
 
 def test_gateway_khong_voi_toi_duoc_thi_la_gateway_sap_chu_khong_phai_model_hong(monkeypatch):

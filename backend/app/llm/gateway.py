@@ -64,6 +64,11 @@ def experiment_mode():
         _experiment.reset(token)
 
 
+def pinned() -> bool:
+    """Whether calls must stay on the alias they name, with no gateway fallback."""
+    return settings.llm_experiment_mode or _experiment.get()
+
+
 @contextlib.contextmanager
 def capture_models():
     calls: list[dict] = []
@@ -174,7 +179,7 @@ def _completion(**kwargs):
     extra_body["metadata"] = {
         **extra_body.get("metadata", {}), RETURN_RAW_MODEL_NAME_METADATA_KEY: True,
     }
-    if settings.llm_experiment_mode or _experiment.get():
+    if pinned():
         extra_body["disable_fallbacks"] = True
     # "openai/" only means "speak the OpenAI-compatible protocol to api_base";
     # the gateway decides which provider actually serves the alias.
@@ -198,7 +203,7 @@ async def stream_text(prompt: str, system_instruction: str | None = None) -> Asy
     """The reply piece by piece, without holding a thread while it waits. Retries stay with the gateway: once a
     word has reached the reader, the reply cannot start over."""
     alias = active_model()
-    extra_body = {"disable_fallbacks": True} if settings.llm_experiment_mode or _experiment.get() else {}
+    extra_body = {"disable_fallbacks": True} if pinned() else {}
     messages = [{"role": "system", "content": system_instruction}] if system_instruction else []
     messages.append({"role": "user", "content": prompt})
     # Someone is reading: on a stream the timeout bounds each wait for the next piece, not the whole reply,
