@@ -85,7 +85,7 @@ export SECRET_KEY=e2e-secret-key-not-for-production-000000 PUBLIC_URL="http://lo
 export UPLOAD_STORAGE_DIR="$WORK/uploads"
 export LLM_GATEWAY_URL=http://localhost:58004 EMBEDDER_URL=http://localhost:58082 FORMULA_VISION_MODEL=''
 # Blank, so that devops/.env's real keys are never used by this run; placeholders where the mocks want one.
-export OPENROUTER_API_KEY='' TYPESAFE_API_KEY='' MOODLE_TOKEN=''
+export OPENROUTER_API_KEY='' GEMINI_API_KEY='' TYPESAFE_API_KEY='' MOODLE_TOKEN=''
 export LLM_GATEWAY_KEY=mock-not-a-real-key EMBEDDER_API_KEY=mock-not-a-real-key
 export MOCK_LLM_MEDIAN_SECONDS=1 MOCK_COMPLETION_TOKENS=200
 cd "$ROOT/backend"

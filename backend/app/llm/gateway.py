@@ -26,9 +26,9 @@ from app.config import settings
 # A 429 that says the account has no money or the wrong plan: waiting will not help.
 _NOT_A_RATE_LIMIT = re.compile(r"insufficient_quota|billing|credit balance|no credits", re.IGNORECASE)
 MAX_RATE_LIMIT_WAIT_SECONDS = 60.0
-# The gateway owns retries and fallbacks (devops/gateway/config.yaml router_settings): 120 s x 2 tries x 2 models
+# The gateway owns retries and fallbacks (devops/gateway/config.yaml router_settings): 120 s x 2 tries x 3 routes
 # in the longest chain. Without this the client retried the whole chain itself and waited up to 100 minutes.
-GATEWAY_TIMEOUT_SECONDS = 540
+GATEWAY_TIMEOUT_SECONDS = 780
 # For a call made while a web request waits on it: CloudFront answers 504 at 60 s (infra cdn.tf), and a call still
 # running after that only holds one of the API task's request slots. The job path keeps GATEWAY_TIMEOUT_SECONDS.
 REQUEST_TIMEOUT_SECONDS = 55
@@ -201,10 +201,13 @@ async def stream_text(prompt: str, system_instruction: str | None = None) -> Asy
     extra_body = {"disable_fallbacks": True} if settings.llm_experiment_mode or _experiment.get() else {}
     messages = [{"role": "system", "content": system_instruction}] if system_instruction else []
     messages.append({"role": "user", "content": prompt})
+    # Someone is reading: on a stream the timeout bounds each wait for the next piece, not the whole reply,
+    # so a long answer still finishes, while a chain whose routes all fail no longer holds the reader for
+    # the job path's 13 minutes (seen on 2026-11-25 with OpenRouter refusing and Google overloaded).
     stream = await litellm.acompletion(
         model=f"openai/{alias}", api_base=settings.llm_gateway_url, api_key=settings.llm_gateway_key,
         extra_body=extra_body, messages=messages, stream=True,
-        max_retries=0, timeout=GATEWAY_TIMEOUT_SECONDS,
+        max_retries=0, timeout=REQUEST_TIMEOUT_SECONDS,
     )
     async for chunk in stream:
         text = chunk.choices[0].delta.content if chunk.choices else None

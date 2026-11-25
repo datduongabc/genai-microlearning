@@ -65,6 +65,7 @@ locals {
     gateway = {
       LLM_GATEWAY_KEY    = local.ssm["llm-gateway-key"]
       OPENROUTER_API_KEY = local.ssm["openrouter-api-key"]
+      GEMINI_API_KEY     = local.ssm["gemini-api-key"]
     }
   }
 

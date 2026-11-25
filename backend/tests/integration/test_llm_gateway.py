@@ -324,7 +324,8 @@ def test_the_backend_does_not_retry_on_top_of_the_gateway_and_gives_up_after_its
 
     assert asyncio.run(read()) == ["hi"]
     assert streamed["max_retries"] == 0
-    assert streamed["timeout"] == llm.GATEWAY_TIMEOUT_SECONDS
+    # A reader waits on it, so the web request's bound, not the job path's.
+    assert streamed["timeout"] == llm.REQUEST_TIMEOUT_SECONDS
 
 
 def test_a_reply_with_no_answer_says_the_output_limit_ran_out(monkeypatch):

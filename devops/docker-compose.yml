@@ -117,6 +117,8 @@ services:
     environment:
       LLM_GATEWAY_KEY: ${LLM_GATEWAY_KEY}
       OPENROUTER_API_KEY: ${OPENROUTER_API_KEY}
+      # Optional: only the fallback for when OpenRouter refuses every call (devops/gateway/config.yaml).
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
     ports:
       - 127.0.0.1:4000:4000
     volumes:

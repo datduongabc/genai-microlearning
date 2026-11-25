@@ -68,6 +68,7 @@ Chính sách định tuyến, fallback và ghim model khi đo xem ở [docs/gate
 - Mã nguồn Moodle 5.2, tải riêng (xem bước 2 bên dưới).
 - Khóa API trong `devops/.env`:
   - `OPENROUTER_API_KEY` cho mọi model: GPT-6 Luna (mặc định), Gemini, Claude, DeepSeek và Whisper (phiên âm).
+  - `GEMINI_API_KEY` (tùy chọn) cho nhánh dự phòng gọi thẳng Google AI Studio khi OpenRouter từ chối mọi request. Khóa miễn phí dùng được, nhưng khi đó Google có thể dùng tài liệu gửi lên để cải thiện sản phẩm; để trống thì tắt nhánh này.
   - `TYPESAFE_API_KEY` cho Jev. Bỏ trống thì không rerank, giữ thứ tự của tìm kiếm hybrid.
 
 ## Chạy hệ thống

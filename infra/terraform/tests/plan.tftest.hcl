@@ -66,7 +66,8 @@ run "demo" {
     error_message = "uvicorn must trust the load balancer and CloudFront, and nothing else."
   }
   assert {
-    condition     = !contains(keys(local.secrets_by_task.api), "OPENROUTER_API_KEY") && contains(keys(local.secrets_by_task.gateway), "OPENROUTER_API_KEY")
+    condition = alltrue([for key in ["OPENROUTER_API_KEY", "GEMINI_API_KEY"] :
+    !contains(keys(local.secrets_by_task.api), key) && !contains(keys(local.secrets_by_task.worker), key) && contains(keys(local.secrets_by_task.gateway), key)])
     error_message = "Provider keys reach the gateway and nothing else."
   }
   assert {

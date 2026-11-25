@@ -19,9 +19,11 @@ GATEWAY_DOCKERFILE = REPO_ROOT / "devops" / "gateway" / "Dockerfile"
 COMPOSE = REPO_ROOT / "devops" / "docker-compose.yml"
 BACKEND_LOCK = REPO_ROOT / "backend" / "uv.lock"
 
-# Every remote model goes through OpenRouter, Whisper included.
-SUPPORTED_PROVIDERS = {"openrouter"}
-PROVIDER_KEY_VARIABLES = ("OPENROUTER_API_KEY",)
+# Every alias the backend names goes through OpenRouter, Whisper included; Google AI Studio ("gemini")
+# only serves the "-direct" fallbacks for when OpenRouter refuses every call.
+SUPPORTED_PROVIDERS = {"openrouter", "gemini"}
+PROVIDER_KEY_VARIABLES = ("OPENROUTER_API_KEY", "GEMINI_API_KEY")
+DIRECT_FALLBACKS = {"gemini-flash": "gemini-flash-direct", "embed-default": "embed-default-direct"}
 
 
 @pytest.fixture(scope="module")
@@ -258,7 +260,7 @@ def test_evaluation_paid_aliases_are_current_and_never_fallback_targets(gateway)
     for setting in ("fallbacks", "context_window_fallbacks"):
         chains = {alias: backups for chain in gateway["router_settings"][setting] for alias, backups in chain.items()}
         for alias in expected:
-            assert chains[alias] == ["gemini-flash"]
+            assert chains[alias] == (["gemini-flash", "gemini-flash-direct"] if setting == "fallbacks" else ["gemini-flash"])
         assert not PAID_ALIASES & {backup for backups in chains.values() for backup in backups}
 
 
@@ -434,3 +436,105 @@ def test_the_backend_waits_out_the_gateways_worst_case(gateway):
     longest_chain = 1 + max(len(backups) for chain in settings["fallbacks"] for backups in chain.values())
     worst = settings["timeout"] * (1 + settings["num_retries"]) * longest_chain
     assert worst < GATEWAY_TIMEOUT_SECONDS <= worst * 1.2
+
+
+def test_each_direct_fallback_is_its_openrouter_twin_reached_with_the_google_key(gateway):
+    """A vector of another model cannot be compared with the stored chunks, and a fallback answering
+    with another model would be invisible to the measurements, so the direct route must be the very
+    model its OpenRouter alias names; and only the Google key may reach it."""
+    for alias, direct in DIRECT_FALLBACKS.items():
+        twin = _deployment(gateway, alias)["litellm_params"]["model"]
+        params = _deployment(gateway, direct)["litellm_params"]
+        assert params == {"model": "gemini/" + twin.removeprefix("openrouter/google/"), "api_key": "os.environ/GEMINI_API_KEY"}
+        assert _deployment(gateway, direct)["model_info"]["mode"] == _deployment(gateway, alias)["model_info"]["mode"]
+
+
+def test_a_direct_fallback_is_never_offered_to_lecturers(gateway):
+    from app.llm.catalog import to_choices
+
+    offered = {c.alias for c in to_choices([
+        {"model_name": d["model_name"], "litellm_params": d["litellm_params"], "model_info": d.get("model_info", {})}
+        for d in _deployments(gateway)
+    ])}
+    assert not offered & set(DIRECT_FALLBACKS.values())
+
+
+def _refused_by_openrouter(model: str):
+    import litellm
+
+    # What OpenRouter answered every inference call from a Vietnamese network on 2026-11-25.
+    return litellm.BadRequestError("Request path cannot be relayed", model=model, llm_provider="openrouter")
+
+
+@pytest.mark.parametrize(("alias", "chain"), [
+    ("openai-fast", ["openrouter/openai/gpt-6-luna", "openrouter/google/gemini-3.8-flash", "gemini/gemini-3.8-flash"]),
+    ("gemini-flash", ["openrouter/google/gemini-3.8-flash", "gemini/gemini-3.8-flash"]),
+])
+def test_when_openrouter_refuses_every_call_generation_reaches_gemini_directly(gateway, monkeypatch, alias, chain):
+    import asyncio
+
+    import litellm
+
+    for name in (*PROVIDER_KEY_VARIABLES, "LLM_GATEWAY_KEY"):
+        monkeypatch.setenv(name, "test-key")
+    attempts = []
+
+    async def provider(**kwargs):
+        attempts.append(kwargs["model"])
+        if kwargs["model"].startswith("openrouter/"):
+            raise _refused_by_openrouter(kwargs["model"])
+        return litellm.ModelResponse(model=kwargs["model"], choices=[{"message": {"role": "assistant", "content": "ok"}}])
+
+    monkeypatch.setattr(litellm, "acompletion", provider)
+    router = litellm.Router(model_list=gateway["model_list"], **gateway["router_settings"])
+    response = asyncio.run(router.acompletion(model=alias, messages=[{"role": "user", "content": "hi"}]))
+
+    assert attempts == chain
+    assert response.model == "gemini/gemini-3.8-flash"
+    router.reset()
+
+
+def test_when_openrouter_refuses_every_call_embeddings_reach_the_same_model_directly(gateway, monkeypatch):
+    import asyncio
+
+    import litellm
+
+    for name in (*PROVIDER_KEY_VARIABLES, "LLM_GATEWAY_KEY"):
+        monkeypatch.setenv(name, "test-key")
+    attempts = []
+
+    async def provider(**kwargs):
+        attempts.append((kwargs["model"], kwargs.get("dimensions")))
+        if kwargs["model"].startswith("openrouter/"):
+            raise _refused_by_openrouter(kwargs["model"])
+        return litellm.EmbeddingResponse(model=kwargs["model"], data=[{"object": "embedding", "index": 0, "embedding": [0.1] * 768}])
+
+    monkeypatch.setattr(litellm, "aembedding", provider)
+    router = litellm.Router(model_list=gateway["model_list"], **gateway["router_settings"])
+    asyncio.run(router.aembedding(model="embed-default", input=["hi"], dimensions=768))
+
+    assert attempts == [("openrouter/google/gemini-embedding-001", 768), ("gemini/gemini-embedding-001", 768)]
+    router.reset()
+
+
+def test_experiment_mode_never_reaches_the_direct_route(gateway, monkeypatch):
+    """A measured run must be served by the alias it names; disable_fallbacks is how the backend pins it."""
+    import asyncio
+
+    import litellm
+
+    for name in (*PROVIDER_KEY_VARIABLES, "LLM_GATEWAY_KEY"):
+        monkeypatch.setenv(name, "test-key")
+    attempts = []
+
+    async def provider(**kwargs):
+        attempts.append(kwargs["model"])
+        raise _refused_by_openrouter(kwargs["model"])
+
+    monkeypatch.setattr(litellm, "acompletion", provider)
+    router = litellm.Router(model_list=gateway["model_list"], **gateway["router_settings"])
+    with pytest.raises(litellm.BadRequestError):
+        asyncio.run(router.acompletion(model="gemini-flash", messages=[{"role": "user", "content": "hi"}],
+                                       num_retries=0, disable_fallbacks=True))
+    assert attempts == ["openrouter/google/gemini-3.8-flash"]
+    router.reset()

@@ -34,7 +34,7 @@ def _environment(service: dict) -> dict:
 
 NOT_FOR_THE_BACKEND = (
     "DATABASE_URL", "DB_PASSWORD", "DB_USER", "MOODLE_ADMIN_PASSWORD", "MOODLE_ADMIN_USER",
-    "OPENROUTER_API_KEY",
+    "OPENROUTER_API_KEY", "GEMINI_API_KEY",
 )
 
 
