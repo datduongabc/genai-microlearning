@@ -144,8 +144,9 @@ def probe(alias: str) -> None:
     KHÔNG kế thừa litellm.APIError. Bắt theo litellm thì quá hạn chờ bị xếp nhầm thành
     "model hỏng", còn lỗi khóa lọt qua câu bắt tổng quát.
     """
+    from app.llm.gateway import _completion, pinned, using_model
+
     try:
-        from app.llm.gateway import _completion, using_model
 
         with using_model(alias):
             _completion(
@@ -158,10 +159,25 @@ def probe(alias: str) -> None:
     except openai.APIConnectionError as error:
         raise GatewayUnavailable(str(error)) from error
     except openai.APIError as error:
-        # Quota alone does not make the alias unusable: generation can use its backups.
-        if error.status_code == 429 and not _BALANCE_ERROR.search(str(error)):
+        if _backups_may_serve(error, pinned()):
             return
         raise ModelUnusable(alias, _reason(error)) from error
+
+
+def _backups_may_serve(error: openai.APIError, pinned: bool) -> bool:
+    """Quota, or a provider refusing or failing the call (OpenRouter's 400 "Request path cannot be relayed" on
+    2026-11-25), does not make the alias unusable: generation can use its backups. A pinned run cannot, so only
+    quota passes there. Missing credit, a missing key and an alias the gateway does not know stay refused."""
+    text = str(error)
+    if _BALANCE_ERROR.search(text):
+        return False
+    if error.status_code == 429:
+        return True
+    if pinned or isinstance(error, AuthenticationError) or _UNKNOWN_ALIAS.search(text):
+        return False
+    if any(k in text.lower() for k in _KEY_WORDS):
+        return False
+    return error.status_code == 400 or (error.status_code or 0) >= 500
 
 
 # Từ khoá lấy từ thông báo lỗi thật của gateway, đo trên chính stack này: khóa OpenAI
@@ -169,6 +185,8 @@ def probe(alias: str) -> None:
 # nên KHÔNG ra 401 như người ta hay tưởng); khóa Anthropic chưa nạp tiền thì trả 400 mang
 # "credit", "balance", "billing".
 _KEY_WORDS = ("api_key", "api key", "credential", "unauthorized", "authentication")
+# LiteLLM's proxy answers an alias missing from its config with a 400 "Invalid model name passed in model=...".
+_UNKNOWN_ALIAS = re.compile(r"invalid model name|model not found|no such model", re.IGNORECASE)
 _QUOTA_WORDS = ("rate limit", "quota", "resource_exhausted")
 # Only explicit credit signals: Gemini's free-tier quota 429 also says "plan and billing details".
 _BALANCE_ERROR = re.compile(

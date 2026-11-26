@@ -4,8 +4,15 @@
 # place that reads the provider API keys, from the environment (never write a
 # key here). A provider whose key is empty simply cannot be used.
 #
-# One provider key covers every remote alias: OPENROUTER_API_KEY, billed on one balance
-# (Gemini, OpenAI, Anthropic, the open-weight models, Whisper and the embeddings). Whisper through OpenRouter returns segment timestamps
+# OPENROUTER_API_KEY covers every alias the backend asks for, billed on one balance
+# (Gemini, OpenAI, Anthropic, the open-weight models, Whisper and the embeddings). GEMINI_API_KEY
+# only serves the two "-direct" aliases, which no request names: they are the last fallback of
+# gemini-flash and embed-default for when OpenRouter itself refuses every call (as it did from a
+# Vietnamese network on 2026-11-25: "Request path cannot be relayed" for every model). The project
+# runs it on a free-tier key (billing needs a prepayment it cannot afford): Google may then use what
+# it receives to improve its products, so while OpenRouter is down, course material reaches a
+# route without the data_collection: deny promise of the others. A billed key removes that, and an
+# empty one turns the fallback off. Whisper through OpenRouter returns segment timestamps
 # (verbose_json), which citations of recordings need; litellm has no OpenRouter
 # transcription route, so it is called over the OpenAI protocol with OpenRouter's api_base.
 #
@@ -56,6 +63,26 @@ model_list:
       display_name: Gemini Embedding 001
       mode: embedding
 
+  # The same two Gemini models straight from Google AI Studio, for when OpenRouter is unreachable.
+  # The embedding is the same model, so its vectors sit in the same space as the stored chunks;
+  # anything else would need a re-embed. hidden keeps gemini-flash-direct out of the model picker.
+  - model_name: gemini-flash-direct
+    litellm_params:
+      model: gemini/gemini-3.8-flash
+      api_key: os.environ/GEMINI_API_KEY
+    model_info:
+      mode: chat
+      hidden: true
+      display_name: Gemini 3.8 Flash (Google AI Studio trực tiếp)
+
+  - model_name: embed-default-direct
+    litellm_params:
+      model: gemini/gemini-embedding-001
+      api_key: os.environ/GEMINI_API_KEY
+    model_info:
+      display_name: Gemini Embedding 001 (Google AI Studio trực tiếp)
+      mode: embedding
+
   - model_name: openai-fast
     litellm_params:
       model: openrouter/openai/gpt-6-luna
@@ -94,7 +121,9 @@ model_list:
       note: rẻ, bám nguồn tốt; chậm khi viết lời thoại video
 
 # LiteLLM owns retries and failover.
-# Generation never falls back to OpenAI, Claude or DeepSeek; gemini-flash is the only fallback target.
+# Generation never falls back to OpenAI, Claude or DeepSeek; Gemini 3.8 Flash is the only fallback model,
+# first through OpenRouter, then straight from Google. LiteLLM does not follow a fallback's own fallbacks,
+# so each chain lists both.
 router_settings:
   routing_strategy: simple-shuffle
   num_retries: 1
@@ -105,11 +134,13 @@ router_settings:
   disable_cooldowns: true
   enable_pre_call_checks: true
   optional_pre_call_checks: [enforce_model_rate_limits]
-  # gemini-flash has no fallback: it is the last resort of the others, the default openai-fast included.
   fallbacks:
-    - openai-fast: [gemini-flash]
-    - claude-fast: [gemini-flash]
-    - deepseek-flash: [gemini-flash]
+    - openai-fast: [gemini-flash, gemini-flash-direct]
+    - claude-fast: [gemini-flash, gemini-flash-direct]
+    - deepseek-flash: [gemini-flash, gemini-flash-direct]
+    - gemini-flash: [gemini-flash-direct]
+    - embed-default: [embed-default-direct]
+  # The direct route has the same context window as gemini-flash, so it is no help here.
   context_window_fallbacks:
     - openai-fast: [gemini-flash]
     - claude-fast: [gemini-flash]

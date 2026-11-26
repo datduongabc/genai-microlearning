@@ -10,12 +10,22 @@ Provider keys are read only by the gateway from the runtime environment.
 
 ## Providers and keys
 
-Since 2026-11-08 one key covers every remote alias:
+Since 2026-11-08 one key covers every alias the backend asks for; a second, optional key serves only the fallbacks for when OpenRouter itself fails:
 
 | Key | Aliases | Why this route |
 | --- | --- | --- |
-| `OPENROUTER_API_KEY` | `gemini-flash`, `claude-fast`, `openai-fast`, `deepseek-flash`, `embed-openai`, `transcribe`, formula re-read | One key and one balance for every model |
-| `EMBEDDER_API_KEY` | `embed-default` | The local embedder container |
+| `OPENROUTER_API_KEY` | `gemini-flash`, `claude-fast`, `openai-fast`, `deepseek-flash`, `embed-default`, `transcribe`, formula re-read, voices and pictures | One key and one balance for every model |
+| `GEMINI_API_KEY` (optional) | `gemini-flash-direct`, `embed-default-direct` | The same two Gemini models straight from Google AI Studio, so OpenRouter is not the one thing every call depends on |
+
+On 2026-11-25 OpenRouter answered every inference call from a Vietnamese network with `400 Request path cannot be relayed`, whatever the model, upstream pin or IP version, while its free `GET /models` and `GET /credits` still worked.
+Every remote alias failed at once, the `gemini-flash` fallback included, because it also went through OpenRouter.
+The direct aliases are the answer to that kind of outage.
+The project uses a free-tier `GEMINI_API_KEY`, because enabling billing on Google AI Studio needs a prepayment of about 800,000 VND.
+The free tier has two costs.
+It limits requests per minute and per day, which is acceptable for a route used only while OpenRouter is down; a refused embedding batch is waited out by the backend like any 429.
+Google may also use what the free tier receives to improve its products, so during an OpenRouter outage course material reaches a route without the `data_collection: deny` promise of the others.
+A key of a billed project removes that cost without any other change.
+Left empty, the direct route fails like any provider without a key, one more failed attempt at the end of the chain, so leaving it empty turns the fallback off.
 
 Whisper (`transcribe`) returns segment timestamps through OpenRouter (`verbose_json`), which citations of recordings need.
 LiteLLM has no OpenRouter transcription route, so the alias uses the OpenAI protocol with OpenRouter's `api_base`.
@@ -42,8 +52,10 @@ The bare provider slug also matches DeepInfra's priority endpoint, at another pr
 All four have chat Ragas and prompt-injection numbers in `docs/measurements/2026-11-16-four-chat-models.md`; module cost per model is not measured yet.
 `tests/unit/test_gateway_config.py` pins the offered set.
 
-`gemini-flash` has no fallback; it is the fallback of the other three.
-Outside experiment mode their ordinary and context-window failures fall back to `gemini-flash`.
+Outside experiment mode an ordinary failure of the other three falls back to `gemini-flash`, then to `gemini-flash-direct`; a failure of `gemini-flash` goes straight to `gemini-flash-direct`.
+LiteLLM does not follow a fallback's own fallbacks, so each chain in the configuration lists both.
+A context-window failure falls back to `gemini-flash` only, since the direct route has the same window.
+`gemini-flash-direct` is marked `hidden`, so the model picker never offers it; a module it served records `gemini-3.8-flash` as its `served_model`, which is still the Gemini family for the judge and fact-check rules.
 
 Claude Haiku 5.5 and GPT-6 Luna accept only `temperature=1`.
 Their deployments drop the `temperature` the pipeline sends (0 at most steps), so they always sample at 1.
@@ -57,11 +69,12 @@ A no-RAG control keeps its pair's alias, so a pair never differs in more than re
 Exact provider model IDs and display names are defined in [`devops/gateway/config.yaml`](../devops/gateway/config.yaml).
 No paid API call is required to validate configuration.
 Provider availability and credit still require explicit deployment verification.
-Embeddings remain local Qwen3-Embedding-0.6B through `embed-default`.
-No fallbacks apply to embeddings or transcription.
+Embeddings come from Gemini Embedding 001 through `embed-default`, and fall back to the same model through `embed-default-direct`.
+Only the same model may serve as an embedding fallback: a vector of another model cannot be compared with the stored chunks.
+Transcription, voices and pictures have no fallback; they still depend on OpenRouter alone.
 
 PDF ingestion sends a rendered page to `FORMULA_VISION_MODEL` (default `claude-fast`; the alias must accept images) only when its rebuilt formulas still look broken, at most `FORMULA_VISION_MAX_PAGES` (default 40) pages per document.
-Outside experiment mode a failed `claude-fast` call falls back to `gemini-flash`, like any other call of that alias.
+Outside experiment mode a failed `claude-fast` call falls back to `gemini-flash`, then `gemini-flash-direct`, like any other call of that alias.
 There is no ground truth per page: the measurement counts pages that pass the acceptance check (at least 90% of the text layer's words kept, at most 10% new words), which shows the transcript keeps the text, not that its formulas are right.
 An empty `FORMULA_VISION_MODEL` turns the re-read off; such pages keep the rebuilt text and get a `formula_unverified` warning.
 See `docs/measurements/2026-10-27-formula-figure-reader.md`.
@@ -97,6 +110,12 @@ rate-limit 429s, including Gemini `RESOURCE_EXHAUSTED`, are treated as usable,
 because normal generation, including paid aliases, can rely on router fallbacks
 to Gemini. Experiment generation still refuses fallback and can fail on the
 same quota-limited model.
+Provider refusals and failures, a 400 or a 5xx such as OpenRouter's
+"Request path cannot be relayed" or Gemini's 503 "high demand", are treated as
+usable for the same reason, since the chain can still reach `gemini-flash-direct`.
+An alias the gateway does not know (LiteLLM's "Invalid model name", or a 404),
+a missing provider key and a rejected gateway key stay refused.
+In experiment mode only plain rate-limit 429s pass, because that run will not fall back.
 
 ## Actual model records
 

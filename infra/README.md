@@ -49,7 +49,7 @@ IMAGE_TAG=$TAG ../scripts/tf.sh apply
 # 3. Khóa nhà cung cấp. Terraform không bao giờ thấy chúng và không ghi đè sau lần tạo.
 PREFIX=$(terraform output -raw ssm_prefix)
 aws ssm put-parameter --overwrite --type SecureString --name "$PREFIX/openrouter-api-key" --value "..."
-#   tương tự: typesafe-api-key, moodle-token
+#   tương tự: gemini-api-key (tùy chọn, nhánh dự phòng khi OpenRouter sập), typesafe-api-key, moodle-token
 aws ecs update-service --cluster "$(terraform output -raw cluster)" --service gateway --force-new-deployment
 
 # 4. Migration, frontend, smoke test.
@@ -94,7 +94,7 @@ IMAGES_ONLY=1 infra/scripts/deploy.sh
 IMAGE_TAG=$TAG infra/scripts/tf.sh apply
 PREFIX=$(infra/scripts/tf.sh output -raw ssm_prefix)   # /microlearning-staging, khác của demo
 aws ssm put-parameter --overwrite --type SecureString --name "$PREFIX/openrouter-api-key" --value "..."
-#   tương tự: typesafe-api-key
+#   tương tự: gemini-api-key, typesafe-api-key
 aws ecs update-service --cluster "$(infra/scripts/tf.sh output -raw cluster)" --service gateway --force-new-deployment
 SKIP_BUILD=1 infra/scripts/deploy.sh
 ```

@@ -36,7 +36,7 @@ Báo cáo cuối kỳ: [`final-report/report.pdf`](final-report/report.pdf). Đ�
 | Backend (`api`, `worker`) | Python 3.14, FastAPI, SQLAlchemy 2, Alembic. Cùng một image, hai tiến trình. |
 | Dữ liệu | PostgreSQL 16 với pgvector: dữ liệu, vector, hàng đợi job và Row Level Security. |
 | Bộ đếm rate limit | Redis 7 khi chạy local, Valkey trong thiết kế AWS. Mất dữ liệu ở đây không mất việc. |
-| Cổng mô hình | LiteLLM. Giữ một khóa duy nhất của OpenRouter; mọi model (GPT-6 Luna mặc định, Gemini, Claude, DeepSeek, Whisper) đều đi qua OpenRouter. |
+| Cổng mô hình | LiteLLM. Mọi model (GPT-6 Luna mặc định, Gemini, Claude, DeepSeek, Whisper) đều đi qua OpenRouter; riêng Gemini có thêm nhánh dự phòng gọi thẳng Google AI Studio khi OpenRouter từ chối. |
 | Embedding | Gemini Embedding 001 qua OpenRouter (768 chiều). |
 | Rerank | Jev (TypeSafe). Jina tự host đã được đo và bỏ, số liệu ở `docs/measurements/jev-rerank/`. |
 | Frontend | React 19, TypeScript, Vite, Tailwind CSS. |
@@ -68,6 +68,7 @@ Chính sách định tuyến, fallback và ghim model khi đo xem ở [docs/gate
 - Mã nguồn Moodle 5.2, tải riêng (xem bước 2 bên dưới).
 - Khóa API trong `devops/.env`:
   - `OPENROUTER_API_KEY` cho mọi model: GPT-6 Luna (mặc định), Gemini, Claude, DeepSeek và Whisper (phiên âm).
+  - `GEMINI_API_KEY` (tùy chọn) cho nhánh dự phòng gọi thẳng Google AI Studio khi OpenRouter từ chối mọi request. Khóa miễn phí dùng được, nhưng khi đó Google có thể dùng tài liệu gửi lên để cải thiện sản phẩm; để trống thì tắt nhánh này.
   - `TYPESAFE_API_KEY` cho Jev. Bỏ trống thì không rerank, giữ thứ tự của tìm kiếm hybrid.
 
 ## Chạy hệ thống

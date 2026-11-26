@@ -30,7 +30,7 @@ output "cloudfront_distribution_id" {
 }
 
 output "ssm_prefix" {
-  description = "Where the provider keys go: aws ssm put-parameter --overwrite --type SecureString --name <prefix>/openrouter-api-key --value ..."
+  description = "Where the provider keys go: aws ssm put-parameter --overwrite --type SecureString --name <prefix>/openrouter-api-key (and gemini-api-key) --value ..."
   value       = local.ssm_prefix
 }
 
