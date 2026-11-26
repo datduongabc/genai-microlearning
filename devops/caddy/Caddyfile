@@ -12,6 +12,9 @@
 		# "localhost" must get: pinning it would also break Moodle's plain http port.
 		# A public site sets HSTS_MAX_AGE=31536000.
 		Strict-Transport-Security "max-age={$HSTS_MAX_AGE:0}"
+		# Same as CloudFront (infra/terraform/cdn.tf): links leak only the origin, and no device access.
+		Referrer-Policy "strict-origin-when-cross-origin"
+		Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(), usb=()"
 		-Server
 	}
 

@@ -93,9 +93,9 @@ resource "aws_cloudfront_response_headers_policy" "security" {
       content_security_policy = join("; ", [
         "default-src 'self'",
         "script-src 'self'",
-        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-        "font-src 'self' https://fonts.gstatic.com data:", # Vite inlines one KaTeX font
-        "img-src 'self' data: blob:",                      # slide previews come down with the token and show as blobs
+        "style-src 'self' 'unsafe-inline'",
+        "font-src 'self' data:",      # fonts are self-hosted; Vite inlines one small KaTeX font
+        "img-src 'self' data: blob:", # slide previews come down with the token and show as blobs
         # Videos play from a presigned GET on the bucket, or without S3 from a blob of the API file.
         "media-src 'self' blob: https://${aws_s3_bucket.uploads.bucket_regional_domain_name}",
         "connect-src 'self' https://${aws_s3_bucket.uploads.bucket_regional_domain_name}",
@@ -112,6 +112,20 @@ resource "aws_cloudfront_response_headers_policy" "security" {
       include_subdomains         = true
     }
     content_type_options {
+      override = false
+    }
+    # The page links to sources and Moodle; those sites need no more than the origin.
+    referrer_policy {
+      override        = false
+      referrer_policy = "strict-origin-when-cross-origin"
+    }
+  }
+
+  # Nothing in the app uses these devices, so a prompt-injected page cannot ask for them either.
+  custom_headers_config {
+    items {
+      header   = "Permissions-Policy"
+      value    = "camera=(), microphone=(), geolocation=(), payment=(), usb=()"
       override = false
     }
   }

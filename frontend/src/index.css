@@ -775,3 +775,10 @@ a.learn-link:hover { background:var(--bg-subtle); color:var(--accent-default); }
   .account-row.table-heading > :nth-child(2), .account-row.table-heading > :nth-child(3) { display:none; }
   .account-row .break-all { word-break:normal; overflow-wrap:anywhere; }
 }
+
+/* A printed or PDF-saved lesson is the lesson only: no navigation, publishing panel or edit controls. */
+@media print {
+  .sidebar, .mobile-bar, .breadcrumb, .module-publish, .ui-button, .ui-select, [data-sonner-toaster] { display:none !important; }
+  .shell-main, [data-sidebar=collapsed] .shell-main { margin-left:0 !important; padding:0 !important; }
+  body { background:#fff; }
+}

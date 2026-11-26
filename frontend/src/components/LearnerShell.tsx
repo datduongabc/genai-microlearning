@@ -8,6 +8,7 @@ export function LearnerShell({ children }: { children: ReactNode }) {
 
   return (
     <div className="learner-page">
+      <a className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded focus:bg-white focus:px-3 focus:py-2" href="#learner-main">Đến nội dung chính</a>
       <header className="learner-header">
         <Brand />
         <div className="learner-user">
@@ -17,7 +18,7 @@ export function LearnerShell({ children }: { children: ReactNode }) {
           </button>
         </div>
       </header>
-      <main className="learner-main">{children}</main>
+      <main id="learner-main" className="learner-main" tabIndex={-1}>{children}</main>
     </div>
   );
 }
