@@ -306,7 +306,6 @@ h1[tabindex="-1"]:focus-visible { outline:none; }
   .module-source { position:fixed; left:0; right:0; bottom:0; top:auto; z-index:40; max-height:60vh; border-radius:var(--radius-lg) var(--radius-lg) 0 0; box-shadow:var(--shadow-overlay); transform:translateY(100%); visibility:hidden; transition:transform .2s ease, visibility 0s .2s; }
   .module-source[data-open=true] { transform:none; visibility:visible; transition:transform .2s ease; }
 }
-@media(prefers-reduced-motion:reduce) { .module-source { transition:none !important; } }
 
 .part-subtitle { font:600 16px/24px var(--font-sans); }
 .part-label { font-size:14px; line-height:20px; font-weight:600; color:var(--text-secondary); margin-bottom:4px; }
@@ -499,7 +498,6 @@ h1[tabindex="-1"]:focus-visible { outline:none; }
     font:500 14px/20px var(--font-sans); white-space:nowrap; pointer-events:none; }
 }
 @media(max-width:700px) { .sidebar-toggle { display:none; } }
-@media(prefers-reduced-motion:reduce) { .sidebar, .shell-main { transition:none !important; } }
 /* The room the collapsed sidebar gives back is enough for the parts rail on a laptop screen. */
 @media(min-width:1360px) {
   [data-sidebar=collapsed] .module-layout { grid-template-columns:150px minmax(0,1fr) 320px; }
@@ -776,9 +774,22 @@ a.learn-link:hover { background:var(--bg-subtle); color:var(--accent-default); }
   .account-row .break-all { word-break:normal; overflow-wrap:anywhere; }
 }
 
-/* A printed or PDF-saved lesson is the lesson only: no navigation, publishing panel or edit controls. */
+/* Someone who asked their system for less motion gets none: this also stops the opening and closing
+   animations of dialogs, menus and side sheets, which come from a library and have no rule of their own. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration:.01ms !important; animation-iteration-count:1 !important; transition-duration:.01ms !important; scroll-behavior:auto !important; }
+}
+
+/* Hidden until a keyboard user tabs to it; then an outlined chip that stands out on the white header. */
+.skip-link:focus { position:fixed; left:16px; top:16px; z-index:50; padding:8px 12px; background:var(--bg-surface); color:var(--accent-default); font-weight:600; text-decoration:underline; border-radius:var(--radius-sm); outline:2px solid var(--accent-default); outline-offset:2px; box-shadow:0 2px 8px rgb(0 0 0 / .15); }
+
+/* A printed or PDF-saved lesson is the lesson only, on the full width of the paper: no navigation,
+   parts rail, source column, edit request, publishing panel or controls. Citation numbers stay. */
 @media print {
-  .sidebar, .mobile-bar, .breadcrumb, .module-publish, .ui-button, .ui-select, [data-sonner-toaster] { display:none !important; }
+  .sidebar, .mobile-bar, .breadcrumb, .module-parts, .module-source, .module-ai-edit, .module-publish,
+  .ui-button, .ui-select, .link-action, .icon-button, .skip-link, [data-sonner-toaster] { display:none !important; }
+  .module-layout { display:block !important; }
   .shell-main, [data-sidebar=collapsed] .shell-main { margin-left:0 !important; padding:0 !important; }
+  .shell-content, .shell-content:has(.module-layout) { max-width:none; }
   body { background:#fff; }
 }

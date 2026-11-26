@@ -8,7 +8,7 @@ export function LearnerShell({ children }: { children: ReactNode }) {
 
   return (
     <div className="learner-page">
-      <a className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded focus:bg-white focus:px-3 focus:py-2" href="#learner-main">Đến nội dung chính</a>
+      <a className="skip-link sr-only focus:not-sr-only" href="#learner-main">Đến nội dung chính</a>
       <header className="learner-header">
         <Brand />
         <div className="learner-user">
