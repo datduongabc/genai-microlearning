@@ -1,17 +1,25 @@
 """Unit tests for worker lifecycle, ECS scale-in protection, CloudWatch EMF metrics, and judge guard."""
 
 import json
+import logging
 import signal
+import sys
 import threading
+import uuid
 from types import SimpleNamespace
+from unittest.mock import patch
 
 import httpx
 import litellm
 import pytest
+from fastapi.testclient import TestClient
 
+from app import main
+from app.auth.rate_limit import build_limiter
 from app.config import settings
 from app.jobs import ecs_protection, metrics, worker
 from app.llm import judge
+from app.logging_config import JsonFormatter
 
 # --- ScaleInProtection & worker -------------------------------------------------------------------
 
@@ -41,15 +49,20 @@ def _err_response(status=500):
 
 def test_ecs_protection_tracks_busy_transitions_and_retries_after_http_errors(caplog):
     busy = {"flag": False}
-    client = _FakeClient([_ok_response(), _ok_response(), _ok_response(), _err_response(503), _ok_response()])
+    client = _FakeClient(
+        [_err_response(500), _ok_response(), _ok_response(), _ok_response(), _err_response(503), _ok_response()]
+    )
     prot = ecs_protection.ScaleInProtection("http://ecs-agent", lambda: busy["flag"], client=client)
 
     with caplog.at_level("INFO"):
-        # First idle tick transitions None -> False (sends False), second idle tick is skipped.
+        # Initial HTTP 500 keeps protected=None so the next idle tick retries.
+        prot.tick()
+        assert prot.protected is None
+        # Retry succeeds: transitions None -> False (sends False), second idle tick is skipped.
         prot.tick()
         prot.tick()
         assert prot.protected is False
-        assert client.calls == [("http://ecs-agent/task-protection/v1/state", {"ProtectionEnabled": False})]
+        assert client.calls[-1] == ("http://ecs-agent/task-protection/v1/state", {"ProtectionEnabled": False})
 
         # Busy ticks renew PUT every tick, but log enabled=True only on the transition.
         busy["flag"] = True
@@ -68,7 +81,7 @@ def test_ecs_protection_tracks_busy_transitions_and_retries_after_http_errors(ca
         assert prot.protected is True
         prot.tick()
         assert prot.protected is False
-        assert len(client.calls) == 5
+        assert len(client.calls) == 6
 
 
 def test_ecs_protection_start_noops_without_agent_uri_and_loops_with_agent_uri(monkeypatch):
@@ -185,6 +198,79 @@ def test_report_queue_metrics_skips_when_disabled_and_writes_stdout_when_enabled
     assert parsed["JobsReady"] == 3.0 and parsed["JobsRunning"] == 1.0
 
 
+def _record(message, *args, **extra):
+    record = logging.LogRecord("app.retrieval.reranker", logging.WARNING, __file__, 1, message, args, None)
+    record.__dict__.update(extra)
+    return record
+
+
+def test_a_json_log_line_keeps_the_message_text_and_the_extra_fields():
+    line = JsonFormatter().format(_record("jev_fallback status=%s, keeping the search order", 402, course_id="c1"))
+
+    entry = json.loads(line)
+    # A metric filter on the fixed opening must match on both log formats.
+    assert entry["message"].startswith("jev_fallback status=402")
+    assert entry["level"] == "WARNING"
+    assert entry["logger"] == "app.retrieval.reranker"
+    assert entry["course_id"] == "c1"
+    assert "\n" not in line, "one event per line, or CloudWatch splits it"
+
+
+def test_a_json_log_line_carries_the_traceback_inside_the_line():
+    try:
+        raise RuntimeError("boom")
+    except RuntimeError:
+        record = _record("job failed")
+        record.exc_info = sys.exc_info()
+    entry = json.loads(JsonFormatter().format(record))
+    assert "RuntimeError: boom" in entry["exception"]
+
+
+def test_a_field_json_cannot_encode_does_not_lose_the_line():
+    entry = json.loads(JsonFormatter().format(_record("x", job_id=uuid.UUID(int=1))))
+    assert entry["job_id"] == "00000000-0000-0000-0000-000000000001"
+
+
+def test_an_empty_queue_reports_zero_age():
+    class EmptyQueue:
+        def execute(self, _):
+            class Row:
+                def one(self):
+                    return 0, 0, None
+            return Row()
+
+        def scalar(self, _):
+            return 0
+
+    assert metrics.queue_counts(EmptyQueue()) == {
+        "JobsReady": 0.0,
+        "RenderJobsReady": 0.0,
+        "JobsRunning": 0.0,
+        "OldestReadyJobAgeSeconds": 0.0,
+    }
+
+
+def test_api_starts_the_worker_only_when_configured():
+    for configured, calls in ((True, 1), (False, 0)):
+        with patch.object(main.settings, "run_job_worker", configured), \
+                patch.object(main, "start_worker") as start, patch.object(main, "stop_worker") as stop, \
+                TestClient(main.create_app()):
+            pass
+        assert (start.call_count, stop.call_count) == (calls, calls)
+
+
+def test_limiter_uses_the_configured_store_and_survives_its_outage():
+    limiter = build_limiter("redis://redis:6379/0")
+    assert limiter._storage_uri == "redis://redis:6379/0"
+    assert limiter._in_memory_fallback_enabled
+
+
+def test_health():
+    response = TestClient(main.app).get("/health")
+    assert response.status_code == 200
+    assert response.json() == {"status": "ok"}
+
+
 # --- Cross-family judge guard ---------------------------------------------------------------------
 
 
@@ -204,6 +290,10 @@ MODEL_INFO = [
     "litellm_name,expected",
     [
         ("openrouter/google/gemini-3.8-flash", "google"),
+        ("anthropic/claude-sonnet-5", "anthropic"),
+        ("groq/openai/gpt-oss-120b", "openai"),
+        ("groq/llama-3.3-70b-versatile", "meta"),
+        ("openrouter/deepseek/deepseek-v4.1-flash", "deepseek"),
         ("groq/meta-llama/custom-model", "meta-llama"),
         ("groq/moonshotai/kimi-k2", "moonshotai"),
         ("openai/gpt-5.4-mini", "openai"),

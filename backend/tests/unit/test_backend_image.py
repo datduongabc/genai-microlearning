@@ -9,8 +9,13 @@ import json
 import re
 from pathlib import Path
 
+import pytest
+import yaml
+
 REPO_ROOT = Path(__file__).resolve().parents[3]
 DOCKERFILE = REPO_ROOT / "backend" / "Dockerfile"
+WORKFLOW = REPO_ROOT / ".github" / "workflows" / "ci.yml"
+GHIM_HOP_LE = re.compile(r"^(v\d+(\.\d+)*|[0-9a-f]{40})$")
 
 
 def _stage(name: str) -> str:
@@ -124,10 +129,40 @@ def test_the_image_installs_the_chromium_of_the_locked_playwright():
 
 
 def test_ci_installs_chromium_before_the_backend_tests():
-    import yaml
-
-    workflow = yaml.safe_load((REPO_ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8"))
+    workflow = yaml.safe_load(WORKFLOW.read_text(encoding="utf-8"))
     runs = [s.get("run", "") for s in workflow["jobs"]["backend"]["steps"]]
     install = next(i for i, r in enumerate(runs) if "playwright install" in r and "chromium" in r)
     tests = next(i for i, r in enumerate(runs) if "pytest" in r)
     assert install < tests
+
+
+@pytest.fixture(scope="module")
+def cac_action() -> list[tuple[str, str]]:
+    workflow = yaml.safe_load(WORKFLOW.read_text(encoding="utf-8"))
+    dung = []
+    for job in workflow["jobs"].values():
+        for step in job["steps"]:
+            if "uses" in step:
+                ten, _, phien_ban = step["uses"].partition("@")
+                dung.append((ten, phien_ban))
+    return dung
+
+
+def test_workflow_co_dung_action(cac_action):
+    assert cac_action
+
+
+def test_moi_action_deu_duoc_ghim_vao_mot_phien_ban(cac_action):
+    khong_ghim = sorted({f"{ten}@{pb or '(khong co)'}" for ten, pb in cac_action if not GHIM_HOP_LE.match(pb)})
+
+    assert khong_ghim == [], f"action chưa được ghim vào phiên bản: {khong_ghim}"
+
+
+def test_cung_mot_action_thi_moi_job_dung_cung_phien_ban(cac_action):
+    theo_ten: dict[str, set[str]] = {}
+    for ten, phien_ban in cac_action:
+        theo_ten.setdefault(ten, set()).add(phien_ban)
+
+    lech = {ten: sorted(pb) for ten, pb in theo_ten.items() if len(pb) > 1}
+
+    assert lech == {}, f"cùng một action nhưng các job dùng phiên bản khác nhau: {lech}"

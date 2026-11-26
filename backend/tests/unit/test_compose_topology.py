@@ -7,6 +7,7 @@ not the database owner's URL (only the migration step has it), not the Moodle ad
 password, not the provider keys. The
 proxy that terminates HTTPS is what the outside world talks to."""
 
+import re
 import subprocess
 from pathlib import Path
 
@@ -18,6 +19,13 @@ COMPOSE = REPO_ROOT / "devops" / "docker-compose.yml"
 ROOT_COMPOSE = REPO_ROOT / "docker-compose.yml"
 CADDYFILE = REPO_ROOT / "devops" / "caddy" / "Caddyfile"
 ENTRYPOINT = REPO_ROOT / "backend" / "docker-entrypoint.sh"
+ENV_EXAMPLE = REPO_ROOT / "devops" / ".env.example"
+
+TIEN_TO = "do-an-"
+THAM_CHIEU_BIEN = re.compile(
+    r"(?<!\$)\$(?:\{([A-Za-z_][A-Za-z0-9_]*)(?::?([-?])[^}]*)?\}|([A-Za-z_][A-Za-z0-9_]*))"
+)
+KHAI_BAO_BIEN = re.compile(r"^([A-Za-z_][A-Za-z0-9_]*)=", re.MULTILINE)
 
 
 @pytest.fixture(scope="module")
@@ -131,10 +139,9 @@ def test_the_compose_file_at_the_root_only_includes_the_one_in_devops():
     assert included["env_file"] == "devops/.env"
 
 
-def test_every_path_the_compose_file_builds_or_mounts_exists():
-    compose = yaml.safe_load(COMPOSE.read_text(encoding="utf-8"))["services"]
+def test_every_path_the_compose_file_builds_or_mounts_exists(services):
     missing = []
-    for name, service in compose.items():
+    for name, service in services.items():
         build = service.get("build")
         if isinstance(build, dict):
             context = REPO_ROOT / build.get("context", ".")
@@ -187,10 +194,9 @@ def test_moi_nguon_duoc_mien_tru_deu_thuc_su_nam_ngoai_kho_ma():
     )
 
 
-def test_danh_sach_mien_tru_khong_con_muc_chet():
+def test_danh_sach_mien_tru_khong_con_muc_chet(services):
     """Một mục miễn trừ không còn được compose mount nữa thì chỉ là chỗ để lần sau ai đó vô
     tình dựa vào, nên phải bị gỡ cùng lúc với cái mount đã bỏ."""
-    services = yaml.safe_load(COMPOSE.read_text(encoding="utf-8"))["services"]
     dang_mount = {
         str(volume).split(":", 1)[0]
         for service in services.values()
@@ -198,4 +204,97 @@ def test_danh_sach_mien_tru_khong_con_muc_chet():
     }
 
     assert NGUON_NGOAI_KHO <= dang_mount, f"miễn trừ không còn được mount: {sorted(NGUON_NGOAI_KHO - dang_mount)}"
+
+
+def test_moi_service_deu_dat_ten_container_tuong_minh(services):
+    """Để Compose tự sinh thì tên có thêm hậu tố số thứ tự và đổi theo tên thư mục
+    làm việc, nên các lệnh docker exec viết sẵn sẽ hỏng khi kho được clone chỗ khác."""
+    thieu = [ten for ten, service in services.items() if "container_name" not in service]
+
+    assert thieu == [], f"service chưa đặt container_name: {thieu}"
+
+
+def test_ten_container_luon_la_tien_to_cong_ten_service(services):
+    lech = {
+        ten: service["container_name"]
+        for ten, service in services.items()
+        if service.get("container_name") != TIEN_TO + ten
+    }
+
+    assert lech == {}, f"tên container không suy ra được từ tên service: {lech}"
+
+
+def _thu_muc_build(service):
+    build = service.get("build")
+    if build is None:
+        return None
+    return build if isinstance(build, str) else build.get("context", ".") + "|" + build.get("dockerfile", "")
+
+
+def test_cac_service_build_tu_cung_mot_cho_dung_chung_mot_image(services):
+    """Không đặt `image` thì Compose tạo cho mỗi service một image riêng dù cùng
+    Dockerfile. Bản thừa vừa chiếm thêm nguyên một ảnh nhiều GB, vừa có thể cũ hơn
+    bản kia, nên bước migration chạy trên code khác với tiến trình nó chuẩn bị cho."""
+    theo_thu_muc = {}
+    for ten, service in services.items():
+        thu_muc = _thu_muc_build(service)
+        if thu_muc is not None:
+            theo_thu_muc.setdefault(thu_muc, []).append((ten, service.get("image")))
+
+    lech = {
+        thu_muc: cac_service
+        for thu_muc, cac_service in theo_thu_muc.items()
+        if len(cac_service) > 1 and (len({image for _, image in cac_service}) != 1 or cac_service[0][1] is None)
+    }
+
+    assert lech == {}, f"các service cùng Dockerfile nhưng không chung image: {lech}"
+
+
+def _ten_bien_duoc_khai_bao() -> list[str]:
+    return KHAI_BAO_BIEN.findall(ENV_EXAMPLE.read_text(encoding="utf-8"))
+
+
+def _bien_bat_buoc(noi_dung: str) -> set[str]:
+    return {
+        trong_ngoac or khong_ngoac
+        for trong_ngoac, toan_tu, khong_ngoac in THAM_CHIEU_BIEN.findall(noi_dung)
+        if toan_tu != "-"
+    }
+
+
+def test_khong_bien_nao_bi_khai_bao_hai_lan():
+    ten = _ten_bien_duoc_khai_bao()
+
+    trung = sorted({t for t in ten if ten.count(t) > 1})
+
+    assert trung == [], f"biến bị khai báo nhiều lần, lần sau ghi đè lần trước: {trung}"
+
+
+def test_moi_bien_compose_can_deu_co_trong_ban_mau():
+    khai_bao = set(_ten_bien_duoc_khai_bao())
+
+    bat_buoc = _bien_bat_buoc(COMPOSE.read_text(encoding="utf-8"))
+
+    assert bat_buoc <= khai_bao, f"compose cần nhưng .env.example không khai báo: {sorted(bat_buoc - khai_bao)}"
+
+
+def test_nhan_dien_duoc_moi_dang_noi_suy_cua_compose():
+    mau = (
+        "a: ${BAT_BUOC_NGOAC}\n"
+        "b: $BAT_BUOC_KHONG_NGOAC\n"
+        "c: ${BAT_BUOC_BAO_LOI:?phai co}\n"
+        "d: ${BAT_BUOC_BAO_LOI_NGAN?phai co}\n"
+        "e: ${CO_MAC_DINH:-x}\n"
+        "f: ${CO_MAC_DINH_NGAN-x}\n"
+        "g: $${DUOC_THOAT}\n"
+    )
+
+    assert _bien_bat_buoc(mau) == {
+        "BAT_BUOC_NGOAC", "BAT_BUOC_KHONG_NGOAC", "BAT_BUOC_BAO_LOI", "BAT_BUOC_BAO_LOI_NGAN",
+    }
+
+
+def test_moodle_is_given_the_token_the_backend_uses(services):
+    assert services["moodle"]["environment"]["MOODLE_TOKEN"] == "${MOODLE_TOKEN}"
+    assert services["backend"]["environment"]["MOODLE_TOKEN"] == "${MOODLE_TOKEN}"
 

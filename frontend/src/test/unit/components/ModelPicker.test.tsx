@@ -49,20 +49,24 @@ beforeEach(() => {
 })
 
 describe('ModelPicker', () => {
-  it('liệt kê các model kèm nhà cung cấp', async () => {
+  it('liệt kê model với mặc định hệ thống, hiện nút đặt mặc định khi đổi và lưu alias mới', async () => {
     vi.mocked(api.listModels).mockResolvedValue(danhSach)
+    vi.mocked(api.setDefaultModel).mockResolvedValue({ ...danhSach, default: 'deepseek-flash' })
     render(<Khung />)
 
     expect(await screen.findByRole('option', { name: 'Gemini 3.8 Flash (google)' })).toBeInTheDocument()
     expect(screen.getByRole('option', { name: 'DeepSeek V4.1 Flash (deepseek)' })).toBeInTheDocument()
-  })
-
-  it('chưa có mặc định thì chọn sẵn cấu hình hệ thống', async () => {
-    vi.mocked(api.listModels).mockResolvedValue(danhSach)
-    render(<Khung />)
-
-    await screen.findByRole('option', { name: 'Gemini 3.8 Flash (google)' })
     expect(oChon().value).toBe('')
+    expect(screen.queryByRole('button', { name: /đặt làm mặc định/i })).not.toBeInTheDocument()
+
+    await userEvent.selectOptions(oChon(), 'deepseek-flash')
+    expect(screen.getByRole('button', { name: /đặt làm mặc định/i })).toBeInTheDocument()
+
+    await userEvent.click(screen.getByRole('button', { name: /đặt làm mặc định/i }))
+    expect(api.setDefaultModel).toHaveBeenCalledWith('deepseek-flash')
+    await waitFor(() =>
+      expect(screen.queryByRole('button', { name: /đặt làm mặc định/i })).not.toBeInTheDocument(),
+    )
   })
 
   it('có mặc định đã lưu thì chọn sẵn nó và báo lên cha', async () => {
@@ -72,31 +76,6 @@ describe('ModelPicker', () => {
 
     await waitFor(() => expect(oChon().value).toBe('deepseek-flash'))
     expect(onChange).toHaveBeenCalledWith('deepseek-flash')
-  })
-
-  it('chỉ hiện nút đặt mặc định khi lựa chọn khác với mặc định đã lưu', async () => {
-    vi.mocked(api.listModels).mockResolvedValue(danhSach)
-    render(<Khung />)
-    await screen.findByRole('option', { name: 'Gemini 3.8 Flash (google)' })
-
-    expect(screen.queryByRole('button', { name: /đặt làm mặc định/i })).not.toBeInTheDocument()
-    await userEvent.selectOptions(oChon(), 'deepseek-flash')
-    expect(screen.getByRole('button', { name: /đặt làm mặc định/i })).toBeInTheDocument()
-  })
-
-  it('đặt làm mặc định thì lưu đúng alias và nút biến mất', async () => {
-    vi.mocked(api.listModels).mockResolvedValue(danhSach)
-    vi.mocked(api.setDefaultModel).mockResolvedValue({ ...danhSach, default: 'deepseek-flash' })
-    render(<Khung />)
-    await screen.findByRole('option', { name: 'Gemini 3.8 Flash (google)' })
-
-    await userEvent.selectOptions(oChon(), 'deepseek-flash')
-    await userEvent.click(screen.getByRole('button', { name: /đặt làm mặc định/i }))
-
-    expect(api.setDefaultModel).toHaveBeenCalledWith('deepseek-flash')
-    await waitFor(() =>
-      expect(screen.queryByRole('button', { name: /đặt làm mặc định/i })).not.toBeInTheDocument(),
-    )
   })
 
   it('chọn lại cấu hình hệ thống rồi đặt mặc định thì xoá mặc định đã lưu', async () => {

@@ -124,24 +124,17 @@ def test_the_judge_is_told_every_flaw_and_how_many_questions_to_check():
     assert "quiz_flaws có đúng 3 mục: câu 1..2 là quiz, câu 3 là practice" in _build_prompt(_packet())
 
 
-def test_the_rating_form_offers_the_same_flaws_the_server_accepts():
-    """The form lists the flaws in Vietnamese on its own; a key that drifted would be refused with 422."""
+def test_the_rating_form_and_judges_share_the_same_flaws_and_wording():
+    """The form lists the flaws in Vietnamese on its own; keys and wording must match the server."""
     import re
     from pathlib import Path
 
     form = (Path(__file__).resolve().parents[3] / "frontend/src/lib/ratingSchema.ts").read_text(encoding="utf-8")
     block = form.split("export const ITEM_WRITING_FLAWS")[1].split("];")[0]
     assert re.findall(r'\["(\w+)",', block) == list(ITEM_WRITING_FLAWS)
-
-
-def test_judges_read_the_same_flaw_wording_as_human_raters():
-    """Agreement between judges and raters is only meaningful when both score the same text."""
-    import re
-    from pathlib import Path
-
-    screen = (Path(__file__).parents[3] / "frontend/src/lib/ratingSchema.ts").read_text(encoding="utf-8")
-    pairs = re.findall(r'\["(\w+)", "((?:[^"\\]|\\.)*)"\]', screen.split("ITEM_WRITING_FLAWS")[1].split("];")[0])
-    assert {key: text.replace('\\"', '"') for key, text in pairs} == ITEM_WRITING_FLAWS
+    raw_pairs = re.findall(r'\["(\w+)", "((?:[^"\\]|\\.)*)"\]', block)
+    pairs = [(key, text.replace('\\"', '"')) for key, text in raw_pairs]
+    assert list(pairs) == list(ITEM_WRITING_FLAWS.items())
 
 
 def test_the_judge_prompt_is_written_with_vietnamese_diacritics():

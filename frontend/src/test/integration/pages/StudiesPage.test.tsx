@@ -152,57 +152,71 @@ it("renders the whole anonymous packet and saves/edits all rubric criteria", asy
     ),
   );
 }, 15_000);
-it("keeps a criterion opened by a failed save open while its comment is typed", async () => {
+
+it("shows breadcrumb, tabs, Bloom placement, hidden quiz answers, missing counter, failed save criterion focus, and finding locations", async () => {
   const user = userEvent.setup();
   blind();
-  const criterion = (await screen.findByText(/3\. Tính nhất quán/)).closest("details")!;
-  expect(criterion).not.toHaveAttribute("open");
+
+  const trail = await screen.findByRole("navigation", { name: "Đường dẫn" });
+  expect(trail).toHaveTextContent("Nghiên cứu / Nghiên cứu / M01");
+
+  expect(screen.getByText("Mục tiêu con")).toBeVisible();
+  // Raters check against the reference file; a tab of passages meant nothing to them.
+  expect(screen.queryByRole("tab", { name: /Đoạn nguồn/ })).not.toBeInTheDocument();
+  expect(screen.queryByText("Nguồn đối chiếu")).not.toBeInTheDocument();
+  screen.getByRole("tab", { name: "Mục tiêu" }).focus();
+  await user.keyboard("{ArrowRight}");
+  expect(screen.getByRole("tab", { name: "Nội dung" })).toHaveFocus();
+  expect(screen.getByText("Nội dung bài")).toBeVisible();
+
+  const bloomCriterion = screen.getByText(/7\. Độ khớp mức Bloom/).closest("details")!;
+  expect(within(bloomCriterion).getByText("Mức Bloom đặt ra: Hiểu")).toBeInTheDocument();
+  expect(screen.getAllByText(/Mức Bloom đặt ra/)).toHaveLength(1);
+  for (const tab of screen.getAllByRole("tab")) {
+    await user.click(tab);
+    const panel = screen.getByRole("tabpanel");
+    expect(within(panel).queryByText(/Mức Bloom|Hiểu|understand/)).not.toBeInTheDocument();
+    if (tab.textContent === "Quiz") {
+      expect(within(panel).getByText("Câu hỏi")).toBeInTheDocument();
+      expect(screen.queryByLabelText("Đáp án đúng")).not.toBeInTheDocument();
+      expect(screen.queryByText("Lời giải")).not.toBeInTheDocument();
+    } else if (tab.textContent === "Giải thích đáp án") {
+      expect(screen.getAllByLabelText("Đáp án đúng")).toHaveLength(2);
+    }
+  }
+
+  expect(screen.getByText("Còn 9 tiêu chí")).toBeInTheDocument();
+  const accuracy = screen.getByRole("radiogroup", { name: "Điểm Độ chính xác" });
+  await user.click(within(accuracy).getByRole("radio", { name: "5" }));
+  expect(screen.getByText("Còn 9 tiêu chí")).toBeInTheDocument();
+  await user.type(screen.getByRole("textbox", { name: "Nhận xét Độ chính xác" }), "Khớp nguồn");
+  expect(screen.getByText("Còn 8 tiêu chí")).toBeInTheDocument();
+
+  const criterion3 = screen.getByText(/3\. Tính nhất quán/).closest("details")!;
+  expect(criterion3).not.toHaveAttribute("open");
   await user.click(screen.getByRole("button", { name: "Lưu đánh giá" }));
-  await waitFor(() => expect(criterion).toHaveAttribute("open"));
-  await user.click(within(criterion).getByRole("radio", { name: "4" }));
-  await user.type(within(criterion).getByRole("textbox", { name: /Nhận xét/ }), "C");
-  await waitFor(() => expect(within(criterion).queryByRole("alert")).not.toBeInTheDocument());
-  expect(criterion).toHaveAttribute("open");
-  expect(within(criterion).getByText(/động từ của mục tiêu/)).toBeInTheDocument();
+  await waitFor(() => expect(criterion3).toHaveAttribute("open"));
+  await user.click(within(criterion3).getByRole("radio", { name: "4" }));
+  await user.type(within(criterion3).getByRole("textbox", { name: /Nhận xét/ }), "C");
+  await waitFor(() => expect(within(criterion3).queryByRole("alert")).not.toBeInTheDocument());
+  expect(criterion3).toHaveAttribute("open");
+  expect(within(criterion3).getByText(/động từ của mục tiêu/)).toBeInTheDocument();
+
+  await user.click(screen.getByRole("button", { name: /Thêm/ }));
+  const location = screen.getByRole("combobox", { name: /Vị trí 1/ });
+  expect(within(location).getAllByRole("option").map((o) => o.textContent)).toEqual(
+    ["Nội dung", "Slide", "Ví dụ", "Quiz", "Bài luyện tập", "Lời giải thích"],
+  );
 });
+
 it("shows no module form on a study made under an older rubric", async () => {
   vi.mocked(api.myStudyItems).mockResolvedValue({ ...data, study: { ...study, rubric_version: "v1" } });
   blind();
   expect(await screen.findByText(/dùng rubric v1, không chấm thêm mô-đun/)).toBeInTheDocument();
   expect(screen.queryByRole("button", { name: "Lưu đánh giá" })).not.toBeInTheDocument();
 });
-it("keeps edits and progress unchanged after a failed save", async () => {
-  const score = { score: 3, justification: "Đã chấm" };
-  const rating = {
-    anon_id: "M01",
-    accuracy: score,
-    completeness: score,
-    consistency: score,
-    hallucination_score: score,
-    slide_quality: score,
-    quiz_quality: score,
-    bloom_fidelity: score,
-    query_alignment: score,
-    examples_feedback: score,
-    quiz_flaws: [{ question: 1, flaws: [] }, { question: 2, flaws: [] }],
-    overall_notes: "Cũ",
-    hallucination_findings: [],
-  };
-  vi.mocked(api.myStudyItems).mockResolvedValue({
-    ...data,
-    rated: 1,
-    items: [{ ...item, rating }],
-  });
-  vi.mocked(api.saveRating).mockRejectedValue(new Error("offline"));
-  blind();
-  await screen.findByText("Mục tiêu con");
-  await userEvent.click(screen.getByText("Ghi chú chung"));
-  await userEvent.type(screen.getByLabelText("Ghi chú tổng quan"), " mới");
-  await userEvent.click(screen.getByRole("button", { name: "Lưu đánh giá" }));
-  expect(await screen.findByText("Không lưu được đánh giá.")).toBeInTheDocument();
-  expect(screen.getByLabelText("Ghi chú tổng quan")).toHaveValue("Cũ mới");
-});
-it("asks before a link or logout discards unsaved input, and not once it is saved", async () => {
+
+it("keeps edits after a failed save and blocks link, logout, or beforeunload until saved", async () => {
   const user = userEvent.setup();
   const { logout } = auth.useAuth();
   const confirm = vi.spyOn(window, "confirm").mockReturnValue(false);
@@ -227,48 +241,54 @@ it("asks before a link or logout discards unsaved input, and not once it is save
     rated: 1,
     items: [{ ...item, rating }],
   });
-  vi.mocked(api.saveRating).mockImplementation(async (_s, _i, body) => body);
-  render(
-    <MemoryRouter initialEntries={["/studies/s1/items/i1"]}>
-      <Routes>
-        <Route path="/studies/:studyId/items/:itemId" element={<BlindRatingPage />} />
-        <Route path="/studies" element={<p>Danh sách</p>} />
-      </Routes>
-    </MemoryRouter>,
-  );
-  await screen.findByText("Mục tiêu con");
-  await user.click(screen.getByText("Ghi chú chung"));
-  await user.type(screen.getByLabelText("Ghi chú tổng quan"), " mới");
-  await user.click(within(screen.getByRole("navigation", { name: "Đường dẫn" })).getByRole("link", { name: "Nghiên cứu" }));
-  expect(confirm).toHaveBeenCalledTimes(1);
-  await user.click(screen.getByRole("button", { name: /Giảng viên/ }));
-  await user.click(screen.getByRole("button", { name: "Đăng xuất" }));
-  expect(confirm).toHaveBeenCalledTimes(2);
-  expect(logout).not.toHaveBeenCalled();
-  expect(screen.getByLabelText("Ghi chú tổng quan")).toHaveValue("Cũ mới");
-  const unload = new Event("beforeunload", { cancelable: true });
-  window.dispatchEvent(unload);
-  expect(unload.defaultPrevented).toBe(true);
+  vi.mocked(api.saveRating)
+    .mockRejectedValueOnce(new Error("offline"))
+    .mockImplementation(async (_s, _i, body) => body);
+  try {
+    render(
+      <MemoryRouter initialEntries={["/studies/s1/items/i1"]}>
+        <Routes>
+          <Route path="/studies/:studyId/items/:itemId" element={<BlindRatingPage />} />
+          <Route path="/studies" element={<p>Danh sách</p>} />
+        </Routes>
+      </MemoryRouter>,
+    );
+    await screen.findByText("Mục tiêu con");
+    await user.click(screen.getByText("Ghi chú chung"));
+    await user.type(screen.getByLabelText("Ghi chú tổng quan"), " mới");
 
-  await user.click(screen.getByRole("button", { name: "Lưu đánh giá" }));
-  await screen.findByText("Đã lưu đánh giá.");
-  const afterSave = new Event("beforeunload", { cancelable: true });
-  window.dispatchEvent(afterSave);
-  expect(afterSave.defaultPrevented).toBe(false);
-  await user.click(screen.getByRole("button", { name: /Giảng viên/ }));
-  await user.click(screen.getByRole("button", { name: "Đăng xuất" }));
-  expect(confirm).toHaveBeenCalledTimes(2);
-  expect(logout).toHaveBeenCalledTimes(1);
-  await user.click(within(screen.getByRole("navigation", { name: "Đường dẫn" })).getByRole("link", { name: "Nghiên cứu" }));
-  expect(confirm).toHaveBeenCalledTimes(2);
-  expect(await screen.findByText("Danh sách")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Lưu đánh giá" }));
+    expect(await screen.findByText("Không lưu được đánh giá.")).toBeInTheDocument();
+    expect(screen.getByLabelText("Ghi chú tổng quan")).toHaveValue("Cũ mới");
+
+    await user.click(within(screen.getByRole("navigation", { name: "Đường dẫn" })).getByRole("link", { name: "Nghiên cứu" }));
+    expect(confirm).toHaveBeenCalledTimes(1);
+    await user.click(screen.getByRole("button", { name: /Giảng viên/ }));
+    await user.click(screen.getByRole("button", { name: "Đăng xuất" }));
+    expect(confirm).toHaveBeenCalledTimes(2);
+    expect(logout).not.toHaveBeenCalled();
+    expect(screen.getByLabelText("Ghi chú tổng quan")).toHaveValue("Cũ mới");
+    const unload = new Event("beforeunload", { cancelable: true });
+    window.dispatchEvent(unload);
+    expect(unload.defaultPrevented).toBe(true);
+
+    await user.click(screen.getByRole("button", { name: "Lưu đánh giá" }));
+    await screen.findByText("Đã lưu đánh giá.");
+    const afterSave = new Event("beforeunload", { cancelable: true });
+    window.dispatchEvent(afterSave);
+    expect(afterSave.defaultPrevented).toBe(false);
+    await user.click(screen.getByRole("button", { name: /Giảng viên/ }));
+    await user.click(screen.getByRole("button", { name: "Đăng xuất" }));
+    expect(confirm).toHaveBeenCalledTimes(2);
+    expect(logout).toHaveBeenCalledTimes(1);
+    await user.click(within(screen.getByRole("navigation", { name: "Đường dẫn" })).getByRole("link", { name: "Nghiên cứu" }));
+    expect(confirm).toHaveBeenCalledTimes(2);
+    expect(await screen.findByText("Danh sách")).toBeInTheDocument();
+  } finally {
+    confirm.mockRestore();
+  }
 });
-it("reports missing or revoked invitations", async () => {
-  vi.mocked(api.myStudyItems).mockRejectedValue(new Error("404"));
-  blind();
-  expect(await screen.findByRole("alert")).toHaveTextContent("Không tải được nghiên cứu");
-  expect(screen.queryByRole("button", { name: "Lưu đánh giá" })).not.toBeInTheDocument();
-});
+
 it("loads the raters again when the same study is picked after a failed load", async () => {
   vi.mocked(api.getRaters).mockRejectedValueOnce(new Error("offline"));
   render(<MemoryRouter><AdminStudiesPanel /></MemoryRouter>);
@@ -280,87 +300,38 @@ it("loads the raters again when the same study is picked after a failed load", a
   expect(api.getRaters).toHaveBeenCalledTimes(2);
 });
 
-it("shows the declared Bloom level only beside the bloom_fidelity criterion", async () => {
-  blind();
-  const criterion = (await screen.findByText(/7\. Độ khớp mức Bloom/)).closest("details")!;
-  expect(within(criterion).getByText("Mức Bloom đặt ra: Hiểu")).toBeInTheDocument();
-  expect(screen.getAllByText(/Mức Bloom đặt ra/)).toHaveLength(1);
-  for (const tab of screen.getAllByRole("tab")) {
-    await userEvent.click(tab);
-    expect(within(screen.getByRole("tabpanel")).queryByText(/Mức Bloom|Hiểu|understand/)).not.toBeInTheDocument();
-  }
-});
-
-it("shows the study and the anonymous code in the breadcrumb", async () => {
-  blind();
-  const trail = await screen.findByRole("navigation", { name: "Đường dẫn" });
-  expect(trail).toHaveTextContent("Nghiên cứu / Nghiên cứu / M01");
-});
-
-it("counts the criteria still missing a score or a comment beside the save button", async () => {
-  const user = userEvent.setup();
-  blind();
-  expect(await screen.findByText("Còn 9 tiêu chí")).toBeInTheDocument();
-  const accuracy = screen.getByRole("radiogroup", { name: "Điểm Độ chính xác" });
-  await user.click(within(accuracy).getByRole("radio", { name: "5" }));
-  expect(screen.getByText("Còn 9 tiêu chí")).toBeInTheDocument();
-  await user.type(screen.getByRole("textbox", { name: "Nhận xét Độ chính xác" }), "Khớp nguồn");
-  expect(screen.getByText("Còn 8 tiêu chí")).toBeInTheDocument();
-});
-
-it("keeps the correct answer out of the Quiz tab and shows it under Giải thích đáp án", async () => {
-  const user = userEvent.setup();
-  blind();
-  await user.click(await screen.findByRole("tab", { name: "Quiz" }));
-  expect(within(screen.getByRole("tabpanel")).getByText("Câu hỏi")).toBeInTheDocument();
-  expect(screen.queryByLabelText("Đáp án đúng")).not.toBeInTheDocument();
-  expect(screen.queryByText("Lời giải")).not.toBeInTheDocument();
-  await user.click(screen.getByRole("tab", { name: "Giải thích đáp án" }));
-  expect(screen.getAllByLabelText("Đáp án đúng")).toHaveLength(2);
-});
-
-it("opens on the objectives, offers no source passages, and switches packet tabs with arrow keys", async () => {
-  blind();
-  expect(await screen.findByText("Mục tiêu con")).toBeVisible();
-  // Raters check against the reference file; a tab of passages meant nothing to them.
-  expect(screen.queryByRole("tab", { name: /Đoạn nguồn/ })).not.toBeInTheDocument();
-  expect(screen.queryByText("Nguồn đối chiếu")).not.toBeInTheDocument();
-  screen.getByRole("tab", { name: "Mục tiêu" }).focus();
-  await userEvent.keyboard("{ArrowRight}");
-  expect(screen.getByRole("tab", { name: "Nội dung" })).toHaveFocus();
-  expect(screen.getByText("Nội dung bài")).toBeVisible();
-});
-
-it("shows only the packet picked when moving between packets and back", async () => {
+it("navigates between packets without keeping old ones and offers only that packet's reference file", async () => {
   const second = {
     ...item,
     id: "i2",
     anon_code: "M02",
     packet: { ...item.packet, anon_id: "M02", sub_objectives: ["Mục tiêu của gói hai"] },
   };
-  vi.mocked(api.myStudyItems).mockResolvedValue({ ...data, items: [item, second], total: 2 });
+  vi.mocked(api.myStudyItems).mockResolvedValue({
+    ...data,
+    items: [{ ...item, reference: { filename: "Bài giảng 3.pdf", size: 1258291 } }, second],
+    total: 2,
+  });
+  vi.mocked(api.downloadPacketReference).mockResolvedValue();
   const user = userEvent.setup();
   blind();
+
   await screen.findByText("Mục tiêu con");
+  expect(screen.getByText("Bài giảng 3.pdf")).toBeInTheDocument();
+  await user.click(screen.getByRole("button", { name: "Tải xuống" }));
+  expect(api.downloadPacketReference).toHaveBeenCalledWith("s1", "i1");
+
   const packets = within(screen.getByRole("navigation", { name: "Gói chấm" }));
   await user.click(packets.getByRole("link", { name: /M02/ }));
   await screen.findByText("Mục tiêu của gói hai");
+  expect(screen.queryByText("Bài giảng 3.pdf")).not.toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: "Tải xuống" })).not.toBeInTheDocument();
+
   await user.click(packets.getByRole("link", { name: /M01/ }));
   await screen.findByText("Mục tiêu con");
   // The packet left behind must be gone, not kept beside the one now rated.
   expect(screen.queryByText("Mục tiêu của gói hai")).not.toBeInTheDocument();
   expect(screen.getAllByRole("article")).toHaveLength(1);
-});
-
-it("offers every part of the module that can hold an unsupported claim, but not the objective", async () => {
-  const user = userEvent.setup();
-  blind();
-  await screen.findByText("Mục tiêu con");
-  await user.click(screen.getByRole("button", { name: /Thêm/ }));
-  const location = screen.getByRole("combobox", { name: /Vị trí 1/ });
-  expect(within(location).getAllByRole("option").map((o) => o.textContent)).toEqual(
-    ["Nội dung", "Slide", "Ví dụ", "Quiz", "Bài luyện tập", "Lời giải thích"],
-  );
 });
 
 it("shows the admin each rater's progress, and per packet the scores, findings and group", async () => {
@@ -433,97 +404,87 @@ async function openAddDialog(tab?: string) {
   return dialog;
 }
 
-it("gives a pair one file picker, so both packets always share the file", async () => {
+it("uploads a reference file, shares one picker across a pair, and confirms before deleting and clearing pickers", async () => {
   vi.mocked(api.getStudyItems).mockResolvedValue([
     summary("a", "M01", "rag_llm", "p1"), summary("b", "M04", "llm_no_rag", "p1"), summary("c", "M02", "human", null),
   ]);
-  vi.mocked(api.listStudyFiles).mockResolvedValue([lecture]);
+  vi.mocked(api.uploadStudyFile).mockResolvedValue(lecture);
   vi.mocked(api.setItemReference).mockResolvedValue([
     { id: "a", reference_file_id: "f1" }, { id: "b", reference_file_id: "f1" }, { id: "c", reference_file_id: null },
   ]);
-  const region = await openStudy();
-  expect(within(region).getByText("1,2 MB")).toBeInTheDocument();
-  const pair = within(region).getByRole("combobox", { name: "Tài liệu gốc của M01, M04" });
-  expect(within(region).getByRole("combobox", { name: "Tài liệu gốc của M02" })).toHaveValue("");
-
-  await userEvent.selectOptions(pair, "f1");
-
-  expect(api.setItemReference).toHaveBeenCalledWith("s1", "a", "f1");
-  await waitFor(() => expect(pair).toHaveValue("f1"));
-  expect(within(region).getByRole("combobox", { name: "Tài liệu gốc của M02" })).toHaveValue("");
-});
-
-it("uploads a file to the study and offers it to every packet", async () => {
-  vi.mocked(api.getStudyItems).mockResolvedValue([summary("c", "M02", "human", null)]);
-  vi.mocked(api.uploadStudyFile).mockResolvedValue(lecture);
-  const region = await openStudy();
-  expect(within(region).queryByRole("list", { name: "Tệp tài liệu gốc" })).not.toBeInTheDocument();
-  const file = new File(["%PDF"], "Bài giảng 3.pdf", { type: "application/pdf" });
-
-  await userEvent.upload(within(region).getByLabelText("Tải tệp lên"), file);
-
-  expect(api.uploadStudyFile).toHaveBeenCalledWith("s1", file, expect.any(Function));
-  expect(await within(region).findByRole("button", { name: "Tải Bài giảng 3.pdf" })).toBeInTheDocument();
-  expect(within(region).getByRole("option", { name: "Bài giảng 3.pdf" })).toBeInTheDocument();
-});
-
-it("asks before deleting a file and clears it from the packets that used it", async () => {
-  vi.mocked(api.getStudyItems).mockResolvedValue([{ ...summary("c", "M02", "human", null), reference_file_id: "f1" }]);
-  vi.mocked(api.listStudyFiles).mockResolvedValue([lecture]);
   vi.mocked(api.deleteStudyFile).mockResolvedValue();
   const confirm = vi.spyOn(window, "confirm").mockReturnValueOnce(false).mockReturnValueOnce(true);
   try {
     const region = await openStudy();
+    expect(within(region).queryByRole("list", { name: "Tệp tài liệu gốc" })).not.toBeInTheDocument();
+    const file = new File(["%PDF"], "Bài giảng 3.pdf", { type: "application/pdf" });
+
+    await userEvent.upload(within(region).getByLabelText("Tải tệp lên"), file);
+    expect(api.uploadStudyFile).toHaveBeenCalledWith("s1", file, expect.any(Function));
+    expect(await within(region).findByRole("button", { name: "Tải Bài giảng 3.pdf" })).toBeInTheDocument();
+    expect(within(region).getByText("1,2 MB")).toBeInTheDocument();
+
+    const pair = within(region).getByRole("combobox", { name: "Tài liệu gốc của M01, M04" });
+    expect(within(pair).getByRole("option", { name: "Bài giảng 3.pdf" })).toBeInTheDocument();
+    expect(within(region).getByRole("combobox", { name: "Tài liệu gốc của M02" })).toHaveValue("");
+
+    await userEvent.selectOptions(pair, "f1");
+    expect(api.setItemReference).toHaveBeenCalledWith("s1", "a", "f1");
+    await waitFor(() => expect(pair).toHaveValue("f1"));
+    expect(within(region).getByRole("combobox", { name: "Tài liệu gốc của M02" })).toHaveValue("");
+
     const remove = within(region).getByRole("button", { name: "Xóa Bài giảng 3.pdf" });
     await userEvent.click(remove);
     expect(api.deleteStudyFile).not.toHaveBeenCalled();
 
     await userEvent.click(remove);
-
     expect(api.deleteStudyFile).toHaveBeenCalledWith("s1", "f1");
-    await waitFor(() => expect(within(region).getByRole("combobox", { name: "Tài liệu gốc của M02" })).toHaveValue(""));
+    await waitFor(() => expect(pair).toHaveValue(""));
     expect(within(region).queryByRole("list", { name: "Tệp tài liệu gốc" })).not.toBeInTheDocument();
   } finally {
     confirm.mockRestore();
   }
 });
 
-it("offers the rater the packet's own file, and nothing when there is none", async () => {
-  vi.mocked(api.myStudyItems).mockResolvedValue({ ...data, items: [
-    { ...item, reference: { filename: "Bài giảng 3.pdf", size: 1258291 } },
-    { ...item, id: "i2", anon_code: "M02" },
-  ] });
-  vi.mocked(api.downloadPacketReference).mockResolvedValue();
-  blind();
-  expect(await screen.findByText("Bài giảng 3.pdf")).toBeInTheDocument();
-
-  await userEvent.click(screen.getByRole("button", { name: "Tải xuống" }));
-
-  expect(api.downloadPacketReference).toHaveBeenCalledWith("s1", "i1");
-  await userEvent.click(screen.getByRole("link", { name: "M02" }));
-  await waitFor(() => expect(screen.queryByText("Bài giảng 3.pdf")).not.toBeInTheDocument());
-  expect(screen.queryByRole("button", { name: "Tải xuống" })).not.toBeInTheDocument();
-});
-
-it("adds a pair whose no-RAG twin is made, and asks before making one", async () => {
+it("adds ready/none module pairs and Video/Flashcard items within the same dialog", async () => {
   vi.mocked(api.listPairCandidates).mockResolvedValue([
     { id: "m1", title: "Tiến trình", course_name: "Hệ điều hành", state: "ready" },
     { id: "m2", title: "Luồng", course_name: "Hệ điều hành", state: "none" },
   ]);
   vi.mocked(api.addPair).mockResolvedValueOnce("added").mockResolvedValueOnce("generating");
+  const video = { id: "v1", kind: "video" as const, title: "Bài 1.pdf", topic: "Toàn bộ tài liệu", course_name: "Hệ điều hành", state: "in_study" as const };
+  const cards = { id: "f1", kind: "flashcards" as const, title: "Bài 1.pdf", topic: "Định nghĩa", course_name: "Hệ điều hành" };
+  // The list is read again once something is added.
+  vi.mocked(api.listMediaCandidates).mockResolvedValue([{ ...cards, state: "ready" }, video]);
+  vi.mocked(api.addMedia).mockResolvedValue([]);
   const confirm = vi.spyOn(window, "confirm").mockReturnValue(true);
-  await openStudy();
-  const dialog = await openAddDialog();
-  const rows = await within(within(dialog).getByRole("list", { name: "Mô-đun có thể thêm" })).findAllByRole("listitem");
+  try {
+    await openStudy();
+    const dialog = await openAddDialog();
+    const rows = await within(within(dialog).getByRole("list", { name: "Mô-đun có thể thêm" })).findAllByRole("listitem");
 
-  await userEvent.click(within(rows[0]).getByRole("button", { name: "Thêm" }));
-  await waitFor(() => expect(api.addPair).toHaveBeenCalledWith("s1", "m1"));
-  // A twin already made costs nothing, so nothing is asked.
-  expect(confirm).not.toHaveBeenCalled();
+    await userEvent.click(within(rows[0]).getByRole("button", { name: "Thêm" }));
+    await waitFor(() => expect(api.addPair).toHaveBeenCalledWith("s1", "m1"));
+    // A twin already made costs nothing, so nothing is asked.
+    expect(confirm).not.toHaveBeenCalled();
 
-  await userEvent.click(within(rows[1]).getByRole("button", { name: "Thêm" }));
-  expect(confirm).toHaveBeenCalledTimes(1);
-  await waitFor(() => expect(api.addPair).toHaveBeenLastCalledWith("s1", "m2"));
+    await userEvent.click(within(rows[1]).getByRole("button", { name: "Thêm" }));
+    expect(confirm).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(api.addPair).toHaveBeenLastCalledWith("s1", "m2"));
+
+    await userEvent.click(within(dialog).getByRole("tab", { name: "Video" }));
+    expect(within(within(dialog).getByRole("list", { name: "Video có thể thêm" })).getByText("Đã thêm")).toBeInTheDocument();
+    await userEvent.click(within(dialog).getByRole("tab", { name: "Flashcard" }));
+    const flashcards = within(dialog).getByRole("list", { name: "Flashcard có thể thêm" });
+
+    vi.mocked(api.listMediaCandidates).mockResolvedValue([{ ...cards, state: "in_study" }, video]);
+    await userEvent.click(within(flashcards).getByRole("button", { name: "Thêm" }));
+    await waitFor(() => expect(api.addMedia).toHaveBeenCalledWith("s1", "flashcards", "f1"));
+    expect(confirm).toHaveBeenCalledTimes(1);
+    expect(await within(flashcards).findByText("Đã thêm")).toBeInTheDocument();
+  } finally {
+    confirm.mockRestore();
+  }
 });
 
 it("gives each row to the accounts picked for it, so different rows go to different people", async () => {
@@ -586,18 +547,31 @@ it("asks before taking a pair out of the study, then lists what is left", async 
   }
 });
 
-it("renames a flashcard set for its raters from the row menu", async () => {
+it("lists a pair as one row alongside a flashcard row and renames the flashcard row from its menu", async () => {
+  const pairItems = [
+    { ...summary("a", "M01", "rag_llm", "p1"), source: { title: "Tiến trình", course_name: "HĐH", created_at: "2026-11-19T10:00:00Z" } },
+    { ...summary("b", "M02", "llm_no_rag", "p1"), source: { title: "Tiến trình", course_name: "HĐH", created_at: "2026-11-19T10:00:00Z" } },
+  ];
   vi.mocked(api.getStudyItems).mockResolvedValue([
+    ...pairItems,
     { ...summary("c", "F01", "flashcards", null), packet: { topic: "Toàn bộ tài liệu" },
-      source: { title: "Bài 1.pdf", course_name: "HĐH", created_at: "" } },
+      source: { title: "Bài 1.pdf", course_name: "HĐH", created_at: "2026-11-20T10:00:00Z" } },
   ]);
   vi.mocked(api.renameStudyItem).mockResolvedValue([
+    ...pairItems,
     { ...summary("c", "F01", "flashcards", null), packet: { topic: "Định nghĩa token" },
-      source: { title: "Bài 1.pdf", course_name: "HĐH", created_at: "" } },
+      source: { title: "Bài 1.pdf", course_name: "HĐH", created_at: "2026-11-20T10:00:00Z" } },
   ]);
+
   const card = await openStudy();
-  expect(within(card).getByText("Toàn bộ tài liệu")).toBeInTheDocument();
-  expect(within(card).getByText("Bài 1.pdf")).toBeInTheDocument();
+  const rows = within(card).getAllByRole("row").slice(1);
+  expect(rows).toHaveLength(2);
+  expect(within(rows[0]).getByText("Tiến trình")).toBeInTheDocument();
+  expect(within(rows[0]).getByText(/Có và không dùng tài liệu/)).toBeInTheDocument();
+  expect(within(rows[1]).getByText("Flashcard")).toBeInTheDocument();
+  expect(within(rows[1]).getByText("Toàn bộ tài liệu")).toBeInTheDocument();
+  expect(within(rows[1]).getByText("Bài 1.pdf")).toBeInTheDocument();
+
   within(card).getByRole("button", { name: "Thao tác khác với F01" }).focus();
   await userEvent.keyboard("{Enter}");
   await userEvent.click(await screen.findByRole("menuitem", { name: "Đổi tên" }));
@@ -608,60 +582,20 @@ it("renames a flashcard set for its raters from the row menu", async () => {
   expect(await within(card).findByText("Định nghĩa token")).toBeInTheDocument();
 });
 
-it("lists each thing to rate by its real name, a pair as one row", async () => {
-  vi.mocked(api.getStudyItems).mockResolvedValue([
-    { ...summary("a", "M01", "rag_llm", "p1"), source: { title: "Tiến trình", course_name: "HĐH", created_at: "2026-11-19T10:00:00Z" } },
-    { ...summary("b", "M02", "llm_no_rag", "p1"), source: { title: "Tiến trình", course_name: "HĐH", created_at: "2026-11-19T10:00:00Z" } },
-    { ...summary("c", "F01", "flashcards", null), source: { title: "Bài 1.pdf", course_name: "HĐH", created_at: "2026-11-20T10:00:00Z" } },
-  ]);
-  const region = await openStudy();
-  const rows = within(region).getAllByRole("row").slice(1);
-  expect(rows).toHaveLength(2);
-  expect(within(rows[0]).getByText("Tiến trình")).toBeInTheDocument();
-  expect(within(rows[0]).getByText(/Có và không dùng tài liệu/)).toBeInTheDocument();
-  expect(within(rows[1]).getByText("Flashcard")).toBeInTheDocument();
-  expect(within(rows[1]).getByText("Bài 1.pdf")).toBeInTheDocument();
-});
-
 it("opens the study named in the address, so a reload stays on it", async () => {
   render(<MemoryRouter initialEntries={["/admin?tab=studies&study=s1"]}><AdminStudiesPanel /></MemoryRouter>);
   expect(await screen.findByRole("region", { name: "Nội dung chấm" })).toBeInTheDocument();
   expect(api.getRaters).toHaveBeenCalledWith("s1");
 });
 
-it("does not open a closed study the address still names, and opens the only one listed", async () => {
+it("falls back to the sole study when the address names a closed study and hides the study nav list", async () => {
   vi.mocked(api.listStudies).mockResolvedValue([study]);
   render(<MemoryRouter initialEntries={["/admin?tab=studies&study=closed"]}><AdminStudiesPanel /></MemoryRouter>);
   expect(await screen.findByRole("heading", { name: "Nghiên cứu" })).toBeInTheDocument();
+  expect(await screen.findByRole("region", { name: "Nội dung chấm" })).toBeInTheDocument();
   await waitFor(() => expect(api.getRaters).toHaveBeenCalledWith("s1"));
   expect(api.getRaters).not.toHaveBeenCalledWith("closed");
-});
-
-it("opens the only study by itself, with no list to choose from", async () => {
-  vi.mocked(api.listStudies).mockResolvedValue([study]);
-  render(<MemoryRouter><AdminStudiesPanel /></MemoryRouter>);
-  expect(await screen.findByRole("region", { name: "Nội dung chấm" })).toBeInTheDocument();
   expect(screen.queryByRole("navigation", { name: "Nghiên cứu" })).not.toBeInTheDocument();
-});
-
-it("adds a flashcard set to the study with nothing generated", async () => {
-  const video = { id: "v1", kind: "video" as const, title: "Bài 1.pdf", topic: "Toàn bộ tài liệu", course_name: "Hệ điều hành", state: "in_study" as const };
-  const cards = { id: "f1", kind: "flashcards" as const, title: "Bài 1.pdf", topic: "Định nghĩa", course_name: "Hệ điều hành" };
-  // The list is read again once something is added.
-  vi.mocked(api.listMediaCandidates).mockResolvedValueOnce([{ ...cards, state: "ready" }, video])
-    .mockResolvedValue([{ ...cards, state: "in_study" }, video]);
-  vi.mocked(api.addMedia).mockResolvedValue([]);
-  const confirm = vi.spyOn(window, "confirm");
-  await openStudy();
-  const dialog = await openAddDialog("Video");
-  expect(within(within(dialog).getByRole("list", { name: "Video có thể thêm" })).getByText("Đã thêm")).toBeInTheDocument();
-  await userEvent.click(within(dialog).getByRole("tab", { name: "Flashcard" }));
-  const flashcards = within(dialog).getByRole("list", { name: "Flashcard có thể thêm" });
-
-  await userEvent.click(within(flashcards).getByRole("button", { name: "Thêm" }));
-  await waitFor(() => expect(api.addMedia).toHaveBeenCalledWith("s1", "flashcards", "f1"));
-  expect(confirm).not.toHaveBeenCalled();
-  expect(await within(flashcards).findByText("Đã thêm")).toBeInTheDocument();
 });
 
 it("rates a flashcard set on its own four criteria and sends them as scores", async () => {
@@ -701,6 +635,7 @@ it("shows video packet tabs, recovers failed video renewal limit, and handles st
     </MemoryRouter>,
   );
   expect(await screen.findByRole("alert")).toHaveTextContent("Không tải được nghiên cứu");
+  expect(screen.queryByRole("button", { name: "Lưu đánh giá" })).not.toBeInTheDocument();
   first.unmount();
 
   const videoWithMedia = {

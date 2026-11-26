@@ -1,6 +1,8 @@
 """Jev as the reranker: its order, and that its failure does not fail a generation."""
 
 import json
+import tomllib
+from pathlib import Path
 from types import SimpleNamespace
 
 import httpx
@@ -128,3 +130,43 @@ def test_a_missing_key_is_logged_once_in_the_words_the_alarm_counts(monkeypatch,
     assert [r.getMessage() for r in caplog.records if r.getMessage().startswith("jev_fallback")] == [
         "jev_fallback status=None, keeping the search order: no TYPESAFE_API_KEY"
     ]
+
+
+def test_nothing_to_rank_calls_nothing(monkeypatch):
+    def ask(*args, **kwargs):
+        raise AssertionError("an empty list must not reach Jev")
+
+    monkeypatch.setattr(reranker, "_ask_jev", ask)
+
+    assert reranker.rerank_scored("q", []) == []
+
+
+def test_without_a_key_nothing_is_sent_and_the_search_order_stands(monkeypatch):
+    def ask(*args, **kwargs):
+        raise AssertionError("no key: nothing may be sent to TypeSafe")
+
+    monkeypatch.setattr(reranker, "_ask_jev", ask)
+    chunks = _chunks("a", "b", "c")
+
+    with timing.capture_timings() as spans:
+        ranked = reranker.rerank_scored("q", chunks)
+
+    assert [c.content for c, _ in ranked] == ["a", "b", "c"]
+    assert [(s["kind"], s["candidates"], s.get("fallback")) for s in spans] == [("rerank", 3, True)]
+
+
+def test_rerank_keeps_the_top_k(monkeypatch):
+    monkeypatch.setattr(settings, "typesafe_api_key", "test-key")
+    monkeypatch.setattr(reranker, "_ask_jev", lambda query, text, attempts: (len(text) / 10, 0))
+
+    assert [c.content for c in reranker.rerank("q", _chunks("a", "ccc", "bb"), top_k=2)] == ["ccc", "bb"]
+
+
+def test_the_backend_does_not_depend_on_torch():
+    """torch and sentence-transformers made the backend image 5 GB; reranking and embeddings are
+    provider APIs."""
+    pyproject = tomllib.loads((Path(__file__).resolve().parents[2] / "pyproject.toml").read_text(encoding="utf-8"))
+    names = {dep.split(">")[0].split("=")[0].split("<")[0].split("[")[0].strip().lower()
+             for dep in pyproject["project"]["dependencies"]}
+
+    assert not names & {"torch", "sentence-transformers", "transformers"}

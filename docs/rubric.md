@@ -267,7 +267,7 @@ Chạy lại cùng lệnh/tệp chỉ chấm gói còn thiếu; dòng cuối ghi
 Kiểm chứng miễn phí bằng fake judge: 10 claim với 2 claim không có trong nguồn cho `unsupported_rate = 0,2`; claim được nguồn khác hỗ trợ nhưng trích sai chunk cho `citation_accuracy = 0`.
 
 ```bash
-PYTHONPATH=. uv run pytest -q tests/integration/test_claim_evaluation.py tests/integration/test_run_judge.py \
+PYTHONPATH=. uv run pytest -q tests/unit/test_claim_evaluation.py tests/unit/test_run_judge.py \
     tests/unit/test_analyze_study.py tests/unit/test_evaluation.py
 ```
 

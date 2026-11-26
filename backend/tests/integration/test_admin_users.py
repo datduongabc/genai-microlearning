@@ -3,7 +3,11 @@ it is logged. The admin flag and locked state are read from the database on ever
 takes effect with the token the person already holds."""
 
 import logging
+import os
+import subprocess
+import sys
 import uuid
+from pathlib import Path
 
 import jwt
 import pytest
@@ -16,6 +20,7 @@ from app.models import Course, RefreshToken, User
 from tests.auth_helpers import STRONG_PASSWORD, create_and_login, make_account
 
 client = TestClient(app)
+BACKEND = Path(__file__).resolve().parents[2]
 
 
 def _email(prefix: str) -> str:
@@ -315,3 +320,111 @@ def test_a_course_is_not_handed_to_someone_who_cannot_teach_it_nor_by_a_lecturer
         assert db.get(Course, course_id).owner_id == uuid.UUID(lecturer_id)
         db.delete(db.get(Course, course_id))
         db.commit()
+
+
+# --- create_admin.py CLI (merged from test_create_admin_script.py) ---
+
+
+def _run_create_admin(email: str, password: str, *args: str) -> subprocess.CompletedProcess:
+    return subprocess.run(
+        [sys.executable, "scripts/create_admin.py", email, *args],
+        cwd=BACKEND,
+        capture_output=True,
+        text=True,
+        timeout=120,
+        check=False,
+        stdin=subprocess.DEVNULL,
+        env={**os.environ, "PYTHONPATH": ".", "ADMIN_PASSWORD": password},
+    )
+
+
+def test_the_command_creates_an_admin_who_is_not_a_lecturer():
+    email = f"cli-admin-{uuid.uuid4().hex[:8]}@Example.edu"
+
+    result = _run_create_admin(email, "A long enough phrase", "--name", "Quản trị viên")
+
+    assert result.returncode == 0, result.stderr
+    assert email.lower() in result.stdout
+    with SessionLocal() as db:
+        user = db.query(User).filter(User.email == email.lower()).one()
+        assert user.is_admin == True and user.is_active and user.name == "Quản trị viên"
+
+
+def test_the_command_refuses_a_weak_password_and_a_taken_email_and_never_prints_the_password():
+    email = f"cli-admin-{uuid.uuid4().hex[:8]}@example.edu"
+
+    weak = _run_create_admin(email, "short")
+    assert weak.returncode != 0 and "ít nhất 8 ký tự" in weak.stderr
+    assert _run_create_admin(email, "A long enough phrase").returncode == 0
+
+    taken = _run_create_admin(email, "Another long phrase 1")
+    assert taken.returncode != 0 and "đã được đăng ký" in taken.stderr
+    assert "A long enough phrase" not in taken.stdout + taken.stderr + weak.stdout + weak.stderr
+
+
+def test_the_admin_can_use_any_valid_email():
+    email = f"cli-admin-{uuid.uuid4().hex[:8]}@gmail.com"
+
+    result = _run_create_admin(email, "A long enough phrase")
+
+    assert result.returncode == 0
+    with SessionLocal() as db:
+        assert db.query(User).filter(User.email == email).one().is_admin
+
+
+# --- Account deactivation and reactivation (merged from test_admin_activation.py) ---
+
+
+def _activation_account(*, is_admin: bool = False) -> dict:
+    return create_and_login(client, f"activation-{uuid.uuid4().hex}@example.com", is_admin=is_admin)
+
+
+def test_deactivation_retains_identity_and_reactivation_restores_data(caplog):
+    adm, user = _activation_account(is_admin=True), _activation_account()
+    uid = user["user"]["id"]
+    course = client.post("/courses", headers=_bearer(user), json={"name": "Preserved"}).json()
+    moodle_id = 10_000 + uuid.uuid4().int % 10**9
+    with SessionLocal() as db:
+        stored = db.get(User, uuid.UUID(uid))
+        stored.moodle_user_id = moodle_id
+        db.commit()
+    with caplog.at_level(logging.INFO):
+        response = client.post(f"/admin/users/{uid}/disable", headers=_bearer(adm))
+    assert response.status_code == 200
+    assert client.get("/courses", headers=_bearer(user)).status_code == 401
+    assert client.post("/auth/refresh", json={"refresh_token": user["refresh_token"]}).status_code == 401
+    with SessionLocal() as db:
+        assert db.get(User, uuid.UUID(uid)).moodle_user_id == moodle_id
+    rows = client.get("/admin/users?is_active=false", headers=_bearer(adm)).json()
+    assert rows and all(not row["is_active"] for row in rows)
+    assert any(row["id"] == uid for row in rows)
+    active_rows = client.get("/admin/users?is_active=true", headers=_bearer(adm)).json()
+    assert all(row["is_active"] for row in active_rows)
+    assert client.post(f"/admin/users/{uid}/enable", headers=_bearer(adm)).status_code == 200
+    login = _login(user["user"]["email"])
+    assert login.status_code == 200
+    assert any(row["id"] == course["id"] for row in client.get("/courses", headers=_bearer(login.json())).json())
+    assert client.delete(f"/admin/users/{uid}", headers=_bearer(adm)).status_code == 404
+    assert "admin_disable_user" in caplog.text
+
+
+def test_no_admin_can_be_deactivated_and_lecturers_cannot_toggle():
+    adm, other, user = (
+        _activation_account(is_admin=True),
+        _activation_account(is_admin=True),
+        _activation_account(),
+    )
+    for target in [adm, other]:
+        assert client.post(f"/admin/users/{target['user']['id']}/disable", headers=_bearer(adm)).status_code == 409
+    assert client.post(f"/admin/users/{user['user']['id']}/disable", headers=_bearer(user)).status_code == 404
+
+
+def test_deactivated_email_stays_registered_with_reactivation_hint():
+    adm, user = _activation_account(is_admin=True), _activation_account()
+    assert client.post(f"/admin/users/{user['user']['id']}/disable", headers=_bearer(adm)).status_code == 200
+    payload = {"email": user["user"]["email"], "name": "New Account", "password": STRONG_PASSWORD}
+    for path, auth in [("/auth/register", {}), ("/admin/users", _bearer(adm))]:
+        response = client.post(path, json=payload, headers=auth)
+        assert response.status_code == 409
+        assert "Email đã được đăng ký" in response.json()["detail"]
+        assert "admin" in response.json()["detail"] and "kích hoạt lại" in response.json()["detail"]

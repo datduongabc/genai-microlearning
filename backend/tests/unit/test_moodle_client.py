@@ -4,6 +4,7 @@ import httpx
 import pytest
 
 from app.config import settings
+from app.export.lesson import clean_html as _clean_html
 from app.moodle import client as moodle_client
 from app.moodle.errors import MOODLE_FAILURES, MOODLE_NOT_CONFIGURED, moodle_failure
 
@@ -144,3 +145,15 @@ def test_a_moodle_error_reaches_the_caller(monkeypatch):
 
     with pytest.raises(moodle_client.MoodleError):
         moodle_client.create_book(999, "B", CHAPTERS, actor_user_id=9)
+
+
+def test_clean_html_strips_event_handler_attributes():
+    cleaned = _clean_html('<p onclick="alert(1)">click me</p>')
+    assert "onclick" not in cleaned
+    assert "click me" in cleaned
+
+
+def test_clean_html_keeps_allowed_formatting():
+    cleaned = _clean_html("<h1>Title</h1><ul><li><strong>bold</strong> item</li></ul>")
+    assert "<h1>Title</h1>" in cleaned
+    assert "<strong>bold</strong>" in cleaned

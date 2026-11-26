@@ -161,17 +161,13 @@ describe('GenerateDialog', () => {
     expect(onGenerate).not.toHaveBeenCalled()
   })
 
-  it('names a video the same way, the model above the voice and the picture model', () => {
-    renderDialog('video')
+  it('asks a video for its voice and image model, defaults to undefined aliases, and sends selected choices', async () => {
+    const { onGenerate } = renderDialog('video')
+
     const labels = screen.getAllByRole('combobox').map((select) => select.getAttribute('aria-label') ?? select.closest('label')?.firstChild?.textContent?.trim())
     expect(labels).toEqual(['Ngôn ngữ đầu ra', 'Mô hình', 'Giọng đọc', 'Vẽ hình'])
-
     expect(screen.getByRole('heading', { name: 'Tạo video' })).toBeInTheDocument()
     expect(screen.getByLabelText('Video nên tập trung vào nội dung gì?')).toBeInTheDocument()
-  })
-
-  it('asks a video for its voice and image model, HeyGen and Nano Banana first, with no price', async () => {
-    const { onGenerate } = renderDialog('video')
 
     const voice = screen.getByLabelText('Giọng đọc')
     const image = screen.getByLabelText('Vẽ hình')
@@ -184,12 +180,15 @@ describe('GenerateDialog', () => {
     expect(screen.getByRole('option', { name: 'Qwen Image 2.1 Turbo' })).toBeInTheDocument()
     expect(screen.queryByText(/\$/)).not.toBeInTheDocument()
 
+    await userEvent.click(screen.getByRole('button', { name: 'Tạo video' }))
+    await waitFor(() => expect(onGenerate).toHaveBeenCalledWith('vi', '', { modelAlias: '', voiceAlias: undefined, imageAlias: undefined }))
+
     await userEvent.selectOptions(voice, 'voice-gemini-lite')
     await userEvent.selectOptions(image, 'image-qwen')
     await userEvent.type(screen.getByLabelText(/nên tập trung vào nội dung gì/), 'BFS')
     await userEvent.click(screen.getByRole('button', { name: 'Tạo video' }))
 
-    await waitFor(() => expect(onGenerate).toHaveBeenCalledWith('vi', 'BFS', { modelAlias: '', voiceAlias: 'voice-gemini-lite', imageAlias: 'image-qwen' }))
+    await waitFor(() => expect(onGenerate).toHaveBeenLastCalledWith('vi', 'BFS', { modelAlias: '', voiceAlias: 'voice-gemini-lite', imageAlias: 'image-qwen' }))
   })
 
   it('offers no voice or image model to a module or a flashcard set, and asks the server for none', () => {
@@ -208,12 +207,4 @@ describe('GenerateDialog', () => {
 
     await waitFor(() => expect(onGenerate).toHaveBeenCalledWith('vi', '', { modelAlias: '', voiceAlias: undefined, imageAlias: undefined }))
   })
-})
-
-it('sends no voice or picture model when the system default is kept, so the server picks', async () => {
-  const onGenerate = vi.fn()
-  render(<GenerateDialog open onOpenChange={vi.fn()} onGenerate={onGenerate} kind="video" />)
-  await waitFor(() => expect(screen.getByRole('option', { name: 'HeyGen Voice 1 Turbo' })).toBeInTheDocument())
-  await userEvent.click(screen.getByRole('button', { name: 'Tạo video' }))
-  await waitFor(() => expect(onGenerate).toHaveBeenCalledWith('vi', '', { modelAlias: '', voiceAlias: undefined, imageAlias: undefined }))
 })

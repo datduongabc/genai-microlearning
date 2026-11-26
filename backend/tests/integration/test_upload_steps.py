@@ -18,6 +18,7 @@ from app.jobs.maintenance import purge_old_records
 from app.main import app
 from app.models import Course, Document, DocumentStatus, Job, User
 from app.storage import upload_key, upload_store
+from tests.upload_helpers import upload_document
 
 client = TestClient(app)
 BODY = b"<p>Khai niem A la mot y quan trong.</p>"
@@ -136,3 +137,86 @@ def test_an_empty_file_is_refused(world):
     assert response.status_code == 422
     assert client.post(f"/documents/{started['document_id']}/complete",
                        headers=world["owner_headers"]).status_code == 409
+
+
+@pytest.fixture
+def upload_guard_world():
+    """A teacher with two courses; everything created is removed afterwards
+    (the ON DELETE CASCADE from courses also removes documents and jobs, so
+    no queued job is left behind for the job-queue tests)."""
+    db = SessionLocal()
+    try:
+        user = User(
+            email=f"upload-{uuid.uuid4().hex[:8]}@example.com", name="T", hashed_password="x", is_admin=False
+        )
+        db.add(user)
+        db.flush()
+        course = Course(name="Upload guard A", owner_id=user.id)
+        other = Course(name="Upload guard B", owner_id=user.id)
+        db.add_all([course, other])
+        db.commit()
+        ids = {"user": user.id, "course": course.id, "other": other.id}
+    finally:
+        db.close()
+
+    yield {**ids, "token": create_access_token(ids["user"])}
+
+    db = SessionLocal()
+    try:
+        db.query(Course).filter(Course.id.in_([ids["course"], ids["other"]])).delete(synchronize_session=False)
+        db.query(User).filter(User.id == ids["user"]).delete(synchronize_session=False)
+        db.commit()
+    finally:
+        db.close()
+
+
+def _add_document(course_id, status: DocumentStatus) -> None:
+    db = SessionLocal()
+    try:
+        db.add(Document(course_id=course_id, filename=f"{status.value}.txt", status=status))
+        db.commit()
+    finally:
+        db.close()
+
+
+def _document_count(course_id) -> int:
+    db = SessionLocal()
+    try:
+        return db.query(Document).filter(Document.course_id == course_id).count()
+    finally:
+        db.close()
+
+
+def _upload(upload_guard_world, course_id):
+    return upload_document(
+        client, course_id, "notes.html", b"<p>hello world</p>",
+        {"Authorization": f"Bearer {upload_guard_world['token']}"},
+    )
+
+
+@pytest.mark.parametrize("status", [DocumentStatus.uploaded, DocumentStatus.processing])
+def test_upload_is_refused_while_a_document_of_the_course_is_still_being_processed(upload_guard_world, status):
+    _add_document(upload_guard_world["course"], status)
+
+    response = _upload(upload_guard_world, upload_guard_world["course"])
+
+    assert response.status_code == 409
+    assert _document_count(upload_guard_world["course"]) == 1  # nothing new was created
+
+
+@pytest.mark.parametrize("status", [DocumentStatus.embedded, DocumentStatus.failed])
+def test_upload_is_accepted_once_previous_documents_are_finished(upload_guard_world, status):
+    _add_document(upload_guard_world["course"], status)
+
+    response = _upload(upload_guard_world, upload_guard_world["course"])
+
+    assert response.status_code == 200
+    assert _document_count(upload_guard_world["course"]) == 2
+
+
+def test_a_document_being_processed_in_another_course_does_not_block_uploads(upload_guard_world):
+    _add_document(upload_guard_world["other"], DocumentStatus.processing)
+
+    response = _upload(upload_guard_world, upload_guard_world["course"])
+
+    assert response.status_code == 200

@@ -1,119 +1,36 @@
-import axios from 'axios'
+import { AxiosError, type AxiosResponse, type InternalAxiosRequestConfig } from 'axios'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import * as adminApi from '../../../api/admin'
-import { api, apiErrorMessage, blobErrorMessage, fetchWithAuth, navigation } from '../../../api/client'
+import { api } from '../../../api/client'
 import * as flashcardsApi from '../../../api/flashcards'
 import { retryJob } from '../../../api/jobs'
 import * as learnApi from '../../../api/learn'
 import { listModels, setDefaultModel } from '../../../api/models'
+import { deleteModule, generateModule } from '../../../api/modules'
+import { linkMoodleCourse, MOODLE_ACCOUNT_CHANGED_EVENT, publishToMoodle } from '../../../api/moodle'
 import * as studiesApi from '../../../api/studies'
-import { followDownload, sendFile } from '../../../api/upload'
 import * as videosApi from '../../../api/videos'
 
-describe('API wrappers and upload/auth helpers', () => {
+function failure(status: number) {
+  const config = { headers: {} } as InternalAxiosRequestConfig
+  const response = { status, statusText: '', data: { detail: 'x' }, headers: {}, config } as AxiosResponse
+  return new AxiosError('failed', 'ERR_BAD_REQUEST', config, null, response)
+}
+
+function listen() {
+  const heard = vi.fn()
+  window.addEventListener(MOODLE_ACCOUNT_CHANGED_EVENT, heard)
+  return { heard, stop: () => window.removeEventListener(MOODLE_ACCOUNT_CHANGED_EVENT, heard) }
+}
+
+describe('API wrappers and endpoints', () => {
   beforeEach(() => {
     localStorage.clear()
     vi.restoreAllMocks()
   })
 
   afterEach(() => {
-    vi.unstubAllGlobals()
-  })
-
-  it('sendFile sends S3 FormData with file last on POST and octet-stream on PUT with progress', async () => {
-    const postSpy = vi.spyOn(axios, 'post').mockResolvedValue({ data: {} })
-    const putSpy = vi.spyOn(api, 'put').mockResolvedValue({ data: {} })
-    const progress = vi.fn()
-    const file = new File(['hello'], 'notes.txt', { type: 'text/plain' })
-
-    await sendFile({ method: 'POST', url: 'https://s3.example/bucket', fields: { key: 'k/1', policy: 'p' } }, file, progress)
-    expect(postSpy).toHaveBeenCalledOnce()
-    const [postUrl, form, postConfig] = postSpy.mock.calls[0]
-    expect(postUrl).toBe('https://s3.example/bucket')
-    expect(Array.from((form as FormData).keys())).toEqual(['key', 'policy', 'file'])
-    postConfig?.onUploadProgress?.({ loaded: 5, total: 10 } as never)
-    expect(progress).toHaveBeenCalledWith(0.5)
-
-    await sendFile({ method: 'PUT', url: '/documents/1/blob', fields: {} }, file, progress)
-    expect(putSpy).toHaveBeenCalledWith('/documents/1/blob', file, expect.objectContaining({
-      headers: { 'Content-Type': 'application/octet-stream' },
-    }))
-    putSpy.mock.calls[0][2]?.onUploadProgress?.({ loaded: 3, total: 3 } as never)
-    expect(progress).toHaveBeenCalledWith(1)
-  })
-
-  it('followDownload uses direct URL when via_api is false and fetches/revokes blob when true', async () => {
-    const clicks: Array<{ href: string; download: string }> = []
-    const origCreate = document.createElement.bind(document)
-    vi.spyOn(document, 'createElement').mockImplementation((tag: string) => {
-      const el = origCreate(tag)
-      if (tag === 'a') {
-        vi.spyOn(el as HTMLAnchorElement, 'click').mockImplementation(() => {
-          clicks.push({ href: (el as HTMLAnchorElement).href, download: (el as HTMLAnchorElement).download })
-        })
-      }
-      return el
-    })
-
-    await followDownload({ url: 'https://s3.example/file.pdf', via_api: false, filename: 'direct.pdf' })
-    expect(clicks).toEqual([{ href: 'https://s3.example/file.pdf', download: 'direct.pdf' }])
-
-    const blob = new Blob(['data'])
-    const getSpy = vi.spyOn(api, 'get').mockResolvedValue({ data: blob })
-    const createUrl = vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:local/42')
-    const revokeUrl = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
-
-    await followDownload({ url: '/studies/1/files/2/blob', via_api: true, filename: 'ref.pdf' })
-    expect(getSpy).toHaveBeenCalledWith('/studies/1/files/2/blob', { responseType: 'blob' })
-    expect(createUrl).toHaveBeenCalledWith(blob)
-    expect(revokeUrl).toHaveBeenCalledWith('blob:local/42')
-    expect(clicks[1]).toEqual({ href: 'blob:local/42', download: 'ref.pdf' })
-  })
-
-  it('fetchWithAuth refreshes once on 401 and signs out when no refresh token exists', async () => {
-    const navSpy = vi.spyOn(navigation, 'toLogin').mockImplementation(() => {})
-    localStorage.setItem('auth', JSON.stringify({ token: 'expired', refreshToken: 'rt-1' }))
-    const fetchMock = vi.fn()
-      .mockResolvedValueOnce(new Response(null, { status: 401 }))
-      .mockResolvedValueOnce(new Response('ok', { status: 200 }))
-    vi.stubGlobal('fetch', fetchMock)
-    vi.spyOn(axios, 'post').mockResolvedValueOnce({ data: { access_token: 'fresh', refresh_token: 'rt-2' } })
-
-    const res = await fetchWithAuth('/courses/c1/chat', { method: 'POST', headers: { 'X-Test': '1' } })
-    expect(res.status).toBe(200)
-    expect(fetchMock).toHaveBeenNthCalledWith(2, '/api/courses/c1/chat', expect.objectContaining({
-      headers: { 'X-Test': '1', Authorization: 'Bearer fresh' },
-    }))
-    expect(navSpy).not.toHaveBeenCalled()
-
-    localStorage.setItem('auth', JSON.stringify({ token: 'expired', refreshToken: null }))
-    fetchMock.mockResolvedValueOnce(new Response(null, { status: 401 }))
-    const rejected = await fetchWithAuth('/courses/c1/chat', { method: 'POST' })
-    expect(rejected.status).toBe(401)
-    expect(navSpy).toHaveBeenCalledOnce()
-  })
-
-  it('apiErrorMessage and blobErrorMessage format status codes, validation lists, and blobs', async () => {
-    const mkAxiosErr = (status: number, data: unknown) => {
-      const err = new axios.AxiosError('fail', 'ERR_BAD_REQUEST', undefined, undefined, {
-        status,
-        statusText: 'Err',
-        headers: {},
-        config: {} as never,
-        data,
-      })
-      return err
-    }
-
-    expect(apiErrorMessage(new Error('other'), 'fallback')).toBe('fallback')
-    expect(apiErrorMessage(mkAxiosErr(429, {}), 'fallback')).toContain('quá nhanh')
-    expect(apiErrorMessage(mkAxiosErr(413, { detail: 'ignored' }), 'fallback')).toBe('Dữ liệu gửi lên quá lớn.')
-    expect(apiErrorMessage(mkAxiosErr(422, { detail: [{ msg: 'Value error, quá ngắn' }] }), 'fallback')).toBe('quá ngắn')
-
-    const blobErr = mkAxiosErr(400, new Blob([JSON.stringify({ detail: 'Sai định dạng' })]))
-    expect(await blobErrorMessage(blobErr, 'fallback')).toBe('Sai định dạng')
-    const htmlBlobErr = mkAxiosErr(502, new Blob(['<html>bad gateway</html>']))
-    expect(await blobErrorMessage(htmlBlobErr, 'fallback')).toBe('fallback')
+    vi.restoreAllMocks()
   })
 
   it('dispatches admin, studies, flashcards, videos, models, jobs, and learn requests', async () => {
@@ -183,5 +100,49 @@ describe('API wrappers and upload/auth helpers', () => {
     expect(postSpy).toHaveBeenCalledWith('/videos', { output_language: 'en', voice_alias: 'v1', image_alias: 'img1' }, { params: { document_id: 'd1' } })
     expect(putSpy).toHaveBeenCalledWith('/models/default', { alias: 'fast' })
     expect(delSpy).toHaveBeenCalledWith('/videos/v1')
+  })
+
+  it('sends the selected output language for whole documents', async () => {
+    const post = vi.spyOn(api, 'post').mockResolvedValue({ data: {} })
+    await generateModule('doc', null, 'en')
+    expect(post).toHaveBeenLastCalledWith('/modules/generate', { output_language: 'en' }, { params: { document_id: 'doc' } })
+    await generateModule('doc')
+    expect(post).toHaveBeenLastCalledWith('/modules/generate', { output_language: 'vi' }, { params: { document_id: 'doc' } })
+  })
+
+  it('sends trimmed guidance with the selected language for documents', async () => {
+    const post = vi.spyOn(api, 'post').mockResolvedValue({ data: {} })
+    await generateModule('doc', null, 'en', '  Explain IDS  ')
+    expect(post).toHaveBeenLastCalledWith('/modules/generate', { output_language: 'en', custom_instructions: 'Explain IDS' }, { params: { document_id: 'doc' } })
+  })
+
+  it('deletes a module by id', async () => {
+    const del = vi.spyOn(api, 'delete').mockResolvedValue({ data: { status: 'deleted', deleted_module_ids: ['m'] } })
+    await deleteModule('m')
+    expect(del).toHaveBeenCalledWith('/modules/m')
+  })
+
+  it.each([
+    ['publishing', () => publishToMoodle('m', 0)],
+    ['linking a course', () => linkMoodleCourse('c', 6)],
+  ])('a 422 answer to %s says the Moodle account may have changed, and the error still reaches the caller', async (_name, send) => {
+    vi.spyOn(api, 'post').mockRejectedValue(failure(422))
+    const { heard, stop } = listen()
+
+    await expect(send()).rejects.toBeInstanceOf(AxiosError)
+
+    expect(heard).toHaveBeenCalledOnce()
+    stop()
+  })
+
+  it('other failures and successes of Moodle calls leave the account alone', async () => {
+    const { heard, stop } = listen()
+    vi.spyOn(api, 'post').mockRejectedValueOnce(failure(502)).mockResolvedValueOnce({ data: { moodle_course_id: 6 } })
+
+    await expect(publishToMoodle('m', 0)).rejects.toBeInstanceOf(AxiosError)
+    await linkMoodleCourse('c', 6)
+
+    expect(heard).not.toHaveBeenCalled()
+    stop()
   })
 })

@@ -12,13 +12,13 @@ from app.jobs.queue import execute_job_step
 from app.models import Job, JobStatus, Rating, StudyItem
 from app.study import judge
 from tests.integration import test_studies as study_tests
-from tests.integration.judge_helpers import GATEWAY, _evaluation
 from tests.integration.test_studies import (
     client,
     create_study,
     human_packet,
     load,
 )
+from tests.judge_helpers import GATEWAY, _evaluation
 
 world = study_tests.world
 

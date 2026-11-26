@@ -3,7 +3,7 @@ import uuid
 import pytest
 
 from app.models import Chunk
-from app.retrieval.search import _tokenize, reciprocal_rank_fusion
+from app.retrieval.search import _adaptive_k_largest_gap, _tokenize, reciprocal_rank_fusion
 
 
 def _make_chunk(content="text"):
@@ -58,8 +58,6 @@ def test_chat_search_closes_its_session_when_the_search_fails(monkeypatch):
 
 
 def test_adaptive_k_largest_gap_handles_small_flat_and_buffered_distributions():
-    from app.retrieval.search import _adaptive_k_largest_gap
-
     chunks = [_make_chunk(f"c{i}") for i in range(10)]
 
     # n <= min_k returns n directly.
@@ -83,6 +81,41 @@ def test_adaptive_k_largest_gap_handles_small_flat_and_buffered_distributions():
     assert _adaptive_k_largest_gap(scored, buffer=10, search_fraction=0.9, min_k=2) == 6
     # min_k enforces lower bound even when cut + buffer is smaller.
     assert _adaptive_k_largest_gap(scored, buffer=0, search_fraction=0.9, min_k=4) == 4
+    # Unclamped buffer=5 on 10 items: cut_at=3 (0.85 -> 0.30) + 5 = 8.
+    ten = [
+        (chunks[i], s)
+        for i, s in enumerate([0.9, 0.88, 0.85, 0.3, 0.25, 0.2, 0.19, 0.18, 0.17, 0.16])
+    ]
+    assert _adaptive_k_largest_gap(ten, buffer=5) == 8
+
+
+def test_adaptive_k_ignores_gaps_in_the_bottom_10_percent():
+    # A huge artificial gap right at the tail (last item) should not be
+    # picked if it falls outside the top 90% search window.
+    scored = [(None, s) for s in [0.9] * 9 + [0.01]]
+    result = _adaptive_k_largest_gap(scored, buffer=0, search_fraction=0.9, min_k=2)
+    assert result >= 8
+
+
+def test_a_refused_chat_query_falls_back_to_keywords_without_sleeping(monkeypatch):
+    import litellm
+    from litellm.exceptions import RateLimitError
+
+    from app.ingestion import embeddings
+    from app.retrieval import search
+
+    calls = []
+
+    def refuse(**kwargs):
+        calls.append(kwargs)
+        raise RateLimitError("limit", llm_provider="openai", model="embed-default")
+
+    monkeypatch.setattr(litellm, "embedding", refuse)
+    monkeypatch.setattr(embeddings.time, "sleep", lambda _: pytest.fail("a chat query must not wait"))
+    monkeypatch.setattr(search, "sparse_search", lambda db, course_id, query, top_k: ["keyword hit"])
+
+    assert search.search_for_chat(None, "course", "tiến trình là gì") == ["keyword hit"]
+    assert len(calls) == 1 and calls[0]["timeout"] == embeddings.CHAT_TIMEOUT_SECONDS
 
 
 def test_reranked_and_rerank_for_chat_and_scoped_filter(monkeypatch):

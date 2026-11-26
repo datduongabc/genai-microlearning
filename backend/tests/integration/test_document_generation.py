@@ -445,3 +445,21 @@ def test_a_job_run_again_after_a_failure_pays_only_for_the_steps_not_yet_done(do
         assert len(quiz_part.questions) == 2
     finally:
         db.close()
+
+
+STAGES = [
+    "planner", "retrieval", "learning_objective", "content_retrieval",
+    "content", "slides", "example", "questions",
+]
+
+
+def test_a_generated_module_keeps_the_time_of_every_stage(document_world, seen):
+    with SessionLocal() as db:
+        module_id = pipeline.run_module_generation(db, db.get(Document, document_world["doc"])).id
+
+    with SessionLocal() as db:
+        timings = db.get(Module, module_id).generation_timings
+
+    assert [s["stage"] for s in timings["spans"] if s["kind"] == "stage"] == STAGES
+    assert set(timings["summary"]) == set(STAGES)
+    assert timings["total_seconds"] >= sum(timings["summary"][s]["seconds"] for s in STAGES) - 1e-6
