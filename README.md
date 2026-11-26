@@ -36,7 +36,7 @@ Báo cáo cuối kỳ: [`final-report/report.pdf`](final-report/report.pdf). Đ�
 | Backend (`api`, `worker`) | Python 3.14, FastAPI, SQLAlchemy 2, Alembic. Cùng một image, hai tiến trình. |
 | Dữ liệu | PostgreSQL 16 với pgvector: dữ liệu, vector, hàng đợi job và Row Level Security. |
 | Bộ đếm rate limit | Redis 7 khi chạy local, Valkey trong thiết kế AWS. Mất dữ liệu ở đây không mất việc. |
-| Cổng mô hình | LiteLLM. Giữ một khóa duy nhất của OpenRouter; mọi model (GPT-6 Luna mặc định, Gemini, Claude, DeepSeek, Whisper) đều đi qua OpenRouter. |
+| Cổng mô hình | LiteLLM. Mọi model (GPT-6 Luna mặc định, Gemini, Claude, DeepSeek, Whisper) đều đi qua OpenRouter; riêng Gemini có thêm nhánh dự phòng gọi thẳng Google AI Studio khi OpenRouter từ chối. |
 | Embedding | Gemini Embedding 001 qua OpenRouter (768 chiều). |
 | Rerank | Jev (TypeSafe). Jina tự host đã được đo và bỏ, số liệu ở `docs/measurements/jev-rerank/`. |
 | Frontend | React 19, TypeScript, Vite, Tailwind CSS. |
