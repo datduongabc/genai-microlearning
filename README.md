@@ -1,8 +1,5 @@
 # GENAILMS: sinh mô-đun Microlearning từ tài liệu môn học
 
-Đề tài HK261-DAGD1-033, Đồ án chuyên ngành, Khoa Khoa học và Kỹ thuật Máy tính, Trường Đại học Bách khoa – ĐHQG-HCM.
-Sinh viên: Dương Nguyễn Tấn Đạt (2352222). Giảng viên hướng dẫn: TS. Nguyễn Quang Hùng, PGS. TS. Thoại Nam.
-
 GENAILMS là công cụ cho giảng viên:
 
 1. Tải tài liệu môn học lên: PDF, PPTX, DOCX, HTML, âm thanh hoặc video bài giảng.
@@ -47,7 +44,7 @@ Các service đều không giữ trạng thái, nên thêm task là scale đư�
 Backend không bao giờ cầm khóa nhà cung cấp: nó chỉ biết địa chỉ gateway, một khóa nội bộ và tên alias.
 Chính sách định tuyến, fallback và ghim model khi đo xem ở [docs/gateway-routing.md](docs/gateway-routing.md).
 
-## Cấu trúc kho mã
+## Cấu trúc
 
 | Đường dẫn | Nội dung |
 | --- | --- |
