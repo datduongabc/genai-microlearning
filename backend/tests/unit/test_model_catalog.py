@@ -175,23 +175,13 @@ def _nem(ngoai_le):
     return gia_lap
 
 
-def test_thu_thanh_cong_thi_khong_bao_gi(ghi_lai_lenh_thu):
-    catalog.probe("deepseek-flash")
-
-
-def test_thu_dung_model_da_chon_va_chi_xin_mot_token(ghi_lai_lenh_thu):
-    """Một token là đủ để biết khóa và số dư còn dùng được, mà không tốn hạn mức đáng kể."""
+def test_thu_thanh_cong_dung_model_mot_token_va_ngat_truoc_cloudfront(ghi_lai_lenh_thu):
+    """Một token và timeout <= 20s để probe không tốn hạn mức và ngắt trước CloudFront 504 (60s)."""
     catalog.probe("deepseek-flash")
 
     assert ghi_lai_lenh_thu["model"] == "openai/deepseek-flash"
     assert ghi_lai_lenh_thu["max_tokens"] == 1
     assert ghi_lai_lenh_thu["extra_body"]["disable_fallbacks"] is True
-
-
-def test_the_probe_gives_up_long_before_cloudfront_does(ghi_lai_lenh_thu):
-    """The probe runs while the lecturer waits on "Sinh", and CloudFront answers 504 at 60 s."""
-    catalog.probe("deepseek-flash")
-
     assert ghi_lai_lenh_thu["timeout"] <= 20
 
 
@@ -302,21 +292,18 @@ def test_an_alias_the_gateway_cannot_serve_at_all_is_still_refused(error, monkey
         catalog.probe("retired-model")
 
 
-def test_gateway_khong_voi_toi_duoc_thi_la_gateway_sap_chu_khong_phai_model_hong(monkeypatch):
+@pytest.mark.parametrize(
+    "error",
+    [
+        litellm_errors.APIConnectionError(message="refused", llm_provider="openai", model="x"),
+        litellm_errors.Timeout(message="timeout", model="x", llm_provider="openai"),
+    ],
+    ids=["connection-refused", "timeout"],
+)
+def test_gateway_loi_ket_noi_hoac_qua_han_la_gateway_sap(monkeypatch, error):
     """Phân biệt quan trọng: gateway sập thì mọi model đều hỏng và đổi model không giúp gì,
     nên phải báo 503 chứ không bảo giảng viên chọn model khác."""
-    monkeypatch.setattr(litellm, "completion", _nem(
-        litellm_errors.APIConnectionError(message="refused", llm_provider="openai", model="x")
-    ))
-
-    with pytest.raises(catalog.GatewayUnavailable):
-        catalog.probe("deepseek-flash")
-
-
-def test_gateway_qua_han_cho_cung_la_gateway_sap(monkeypatch):
-    monkeypatch.setattr(litellm, "completion", _nem(
-        litellm_errors.Timeout(message="timeout", model="x", llm_provider="openai")
-    ))
+    monkeypatch.setattr(litellm, "completion", _nem(error))
 
     with pytest.raises(catalog.GatewayUnavailable):
         catalog.probe("deepseek-flash")

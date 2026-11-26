@@ -1,4 +1,4 @@
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { beforeEach, expect, it, vi } from "vitest";
@@ -691,4 +691,55 @@ it("rates a flashcard set on its own four criteria and sends them as scores", as
   const body = vi.mocked(api.saveRating).mock.calls[0][2] as { scores: Record<string, { score: number }> };
   expect(Object.keys(body.scores)).toEqual(["accuracy", "focus", "clarity", "no_duplicates"]);
   expect(body.scores.clarity.score).toBe(4);
+});
+
+it("shows video packet tabs, recovers failed video renewal limit, and handles study/item errors", async () => {
+  vi.mocked(api.myStudyItems).mockRejectedValueOnce(new Error("forbidden"));
+  const first = render(
+    <MemoryRouter initialEntries={["/studies/s1"]}>
+      <Routes><Route path="/studies/:studyId" element={<BlindRatingPage />} /></Routes>
+    </MemoryRouter>,
+  );
+  expect(await screen.findByRole("alert")).toHaveTextContent("Không tải được nghiên cứu");
+  first.unmount();
+
+  const videoWithMedia = {
+    id: "v-item", anon_code: "V01", kind: "video" as const, rating: null, reference: null,
+    packet: {
+      kind: "video" as const, anon_id: "V01", topic: "Thuật toán sắp xếp", has_video: true,
+      scenes: [{ title: "Mở đầu", bullets: ["Ý 1"], narration: "Lời thoại cảnh 1" }],
+    },
+  };
+  vi.mocked(api.myStudyItems).mockResolvedValue({ ...data, items: [videoWithMedia], total: 1 });
+  vi.mocked(api.getPacketVideo).mockResolvedValue({ url: "https://s3.example/video.mp4", via_api: false, filename: "v.mp4" });
+  const videoView = render(
+    <MemoryRouter initialEntries={["/studies/s1/items/v-item"]}>
+      <Routes><Route path="/studies/:studyId/items/:itemId" element={<BlindRatingPage />} /></Routes>
+    </MemoryRouter>,
+  );
+  const player = await screen.findByLabelText("Video", { selector: "video" });
+  await waitFor(() => expect(player).toHaveAttribute("src", "https://s3.example/video.mp4"));
+  await userEvent.click(screen.getByRole("tab", { name: "Các cảnh" }));
+  expect(screen.getByText("1. Mở đầu")).toBeInTheDocument();
+  expect(screen.getByText("Lời thoại cảnh 1")).toBeInTheDocument();
+
+  await userEvent.click(screen.getByRole("tab", { name: "Video" }));
+  const remountedPlayer = await screen.findByLabelText("Video", { selector: "video" });
+  await waitFor(() => expect(remountedPlayer).toHaveAttribute("src", "https://s3.example/video.mp4"));
+  vi.mocked(api.getPacketVideo).mockClear();
+  fireEvent.error(remountedPlayer);
+  await waitFor(() => expect(api.getPacketVideo).toHaveBeenCalledTimes(1));
+  fireEvent.error(screen.getByLabelText("Video", { selector: "video" }));
+  await waitFor(() => expect(api.getPacketVideo).toHaveBeenCalledTimes(2));
+  fireEvent.error(screen.getByLabelText("Video", { selector: "video" }));
+  expect(await screen.findByText("Không tải được video. Hãy tải lại trang.")).toBeInTheDocument();
+  videoView.unmount();
+
+  vi.mocked(api.myStudyItems).mockResolvedValue({ ...data, items: [videoWithMedia], total: 1 });
+  render(
+    <MemoryRouter initialEntries={["/studies/s1/items/does-not-exist"]}>
+      <Routes><Route path="/studies/:studyId/items/:itemId" element={<BlindRatingPage />} /></Routes>
+    </MemoryRouter>,
+  );
+  expect(await screen.findByRole("alert")).toHaveTextContent("Không tìm thấy gói chấm.");
 });

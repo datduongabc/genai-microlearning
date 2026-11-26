@@ -20,7 +20,7 @@ from app.models import User
 client = TestClient(app)
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def user_id():
     db = SessionLocal()
     try:
@@ -55,39 +55,33 @@ def _in_an_hour() -> datetime:
     return datetime.now(UTC) + timedelta(hours=1)
 
 
+def _unsigned(user_id) -> str:
+    def part(data: dict) -> str:
+        return base64.urlsafe_b64encode(json.dumps(data).encode()).rstrip(b"=").decode()
+
+    return f"{part({'alg': 'none', 'typ': 'JWT'})}.{part({'sub': str(user_id), 'exp': int(time.time()) + 3600})}."
+
+
 def test_a_correctly_signed_unexpired_token_of_an_existing_user_is_accepted(user_id):
     assert _status(_sign({"sub": str(user_id), "exp": _in_an_hour()})) == 200
 
 
-def test_a_token_signed_with_another_key_is_refused(user_id):
-    forged = _sign({"sub": str(user_id), "exp": _in_an_hour()}, key="a-different-key-" + "x" * 32)
-
-    assert _status(forged) == 401
-
-
-def test_an_unsigned_token_is_refused(user_id):
-    def part(data: dict) -> str:
-        return base64.urlsafe_b64encode(json.dumps(data).encode()).rstrip(b"=").decode()
-
-    unsigned = f"{part({'alg': 'none', 'typ': 'JWT'})}.{part({'sub': str(user_id), 'exp': int(time.time()) + 3600})}."
-
-    assert _status(unsigned) == 401
-
-
 # The CI key is shorter than PyJWT recommends for SHA-512; signing with the server's
-# own key is the whole point of this case (the algorithm, not the key, is what is wrong).
+# own key is the whole point of wrong-algorithm (the algorithm, not the key, is what is wrong).
 @pytest.mark.filterwarnings("ignore::jwt.warnings.InsecureKeyLengthWarning")
-def test_a_token_signed_with_another_algorithm_is_refused(user_id):
-    assert _status(_sign({"sub": str(user_id), "exp": _in_an_hour()}, algorithm="HS512")) == 401
-
-
-def test_an_expired_token_is_refused(user_id):
-    assert _status(_sign({"sub": str(user_id), "exp": datetime.now(UTC) - timedelta(seconds=5)})) == 401
-
-
-def test_a_token_without_an_expiry_is_refused(user_id):
-    # Such a token would never stop working.
-    assert _status(_sign({"sub": str(user_id)})) == 401
+@pytest.mark.parametrize(
+    "build_token",
+    [
+        lambda uid: _sign({"sub": str(uid), "exp": _in_an_hour()}, key="a-different-key-" + "x" * 32),
+        _unsigned,
+        lambda uid: _sign({"sub": str(uid), "exp": _in_an_hour()}, algorithm="HS512"),
+        lambda uid: _sign({"sub": str(uid), "exp": datetime.now(UTC) - timedelta(seconds=5)}),
+        lambda uid: _sign({"sub": str(uid)}),
+    ],
+    ids=["wrong-key", "unsigned-alg-none", "wrong-algorithm", "expired", "missing-exp"],
+)
+def test_tokens_failing_signature_or_expiry_claims_are_refused(user_id, build_token):
+    assert _status(build_token(user_id)) == 401
 
 
 def test_a_token_for_a_user_that_does_not_exist_is_refused():

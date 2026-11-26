@@ -173,10 +173,11 @@ def _text(html: str) -> str:
     return BeautifulSoup(html, "html.parser").get_text(" ")
 
 
-def test_a_module_is_published_as_a_book_then_the_practice_quiz_then_the_quiz(published, moodle):
+def test_full_module_publish_builds_moodle_book_chapters_and_activity_cmids(published, moodle):
     response = published.publish(full_module(published), section_num=3)
 
     assert response.status_code == 200
+    body = response.json()
     assert [kind for kind, _ in moodle] == ["book", "quiz", "quiz"]
     assert [args["name"] for _, args in moodle] == [
         "Encapsulation", "Encapsulation - Practice", "Encapsulation - Quiz",
@@ -185,41 +186,24 @@ def test_a_module_is_published_as_a_book_then_the_practice_quiz_then_the_quiz(pu
     assert {args["section"] for _, args in moodle} == {3}
     with SessionLocal() as db:
         assert {args["actor_user_id"] for _, args in moodle} == {db.get(User, published.user_id).moodle_user_id}
-
-
-def test_the_response_names_each_activity_that_was_created(published, moodle):
-    body = published.publish(full_module(published)).json()
-
     assert body["moodle_course_id"] == published.moodle_course_id
     assert body["book_cmid"] == 101
     assert {"quiz_cmid", "practice_cmid"} <= set(body)
     assert "page_cmid" not in body
 
-
-def test_the_book_has_a_chapter_for_the_objective_the_content_the_slides_and_the_example(published, moodle):
-    published.publish(full_module(published))
-
     chapters = _book(moodle)["chapters"]
+    assert [c["title"] for c in chapters if c["subchapter"] == 0] == [
+        "Mục tiêu học tập", "Nội dung", "Slide", "Ví dụ",
+    ]
+    for chapter in chapters:
+        assert set(chapter) == {"title", "content", "subchapter"}
+        assert chapter["title"].strip() and chapter["content"].strip()
+        assert type(chapter["subchapter"]) is int
 
-    top_level = [c["title"] for c in chapters if c["subchapter"] == 0]
-    assert top_level == ["Mục tiêu học tập", "Nội dung", "Slide", "Ví dụ"]
-
-
-def test_the_objective_chapter_has_the_objective_and_the_sub_objectives_but_no_bloom_level(published, moodle):
-    published.publish(full_module(published))
-
-    objective = _text(_book(moodle)["chapters"][0]["content"])
-
-    assert "phân tích Encapsulation" in objective
-    assert "Mô tả cách gộp dữ liệu vào lớp" in objective
-    assert "So sánh public và private" in objective
+    objective = _text(chapters[0]["content"])
+    for text in ("phân tích Encapsulation", "Mô tả cách gộp dữ liệu vào lớp", "So sánh public và private"):
+        assert text in objective
     assert "Bloom" not in objective
-
-
-def test_every_slide_is_a_short_sub_chapter_of_the_slide_chapter(published, moodle):
-    published.publish(full_module(published))
-
-    chapters = _book(moodle)["chapters"]
 
     titles = [c["title"] for c in chapters]
     slide_at = titles.index("Slide")
@@ -231,56 +215,32 @@ def test_every_slide_is_a_short_sub_chapter_of_the_slide_chapter(published, mood
     assert "Bảo vệ toàn vẹn dữ liệu" in _text(subchapters[1]["content"])
     assert chapters[slide_at + 3]["title"] == "Ví dụ"
 
-
-def test_the_content_and_every_example_are_in_their_chapters(published, moodle):
-    published.publish(full_module(published))
-
-    by_title = {c["title"]: _text(c["content"]) for c in _book(moodle)["chapters"]}
-
+    by_title = {c["title"]: _text(c["content"]) for c in chapters}
     assert "Gộp dữ liệu và phương thức" in by_title["Nội dung"]
     for text in ("Tài khoản ngân hàng", "Số dư là private", "Hồ sơ sinh viên", "Điểm chỉ sửa qua phương thức"):
         assert text in by_title["Ví dụ"]
 
 
-def test_chapter_fields_are_what_moodle_expects(published, moodle):
-    published.publish(full_module(published))
-
-    for chapter in _book(moodle)["chapters"]:
-        assert set(chapter) == {"title", "content", "subchapter"}
-        assert chapter["title"].strip() and chapter["content"].strip()
-        # Moodle parses this as an integer: True would arrive as the text "True".
-        assert type(chapter["subchapter"]) is int
-
-
-def test_the_explanation_is_not_in_the_book_but_is_the_feedback_of_the_quiz_question(published, moodle):
+def test_full_module_publish_routes_explanations_and_behaviours_to_quizzes_only(published, moodle):
+    """Các câu của một quiz cùng được tạo trong một transaction: nếu thứ tự không được giữ bằng vị
+    trí, lời giải của câu này sẽ nằm dưới câu kia."""
     published.publish(full_module(published))
 
     book_text = " ".join(_text(c["content"]) for c in _book(moodle)["chapters"])
     assert "EXPLANATION-MARKER" not in book_text
 
-    quiz = next(q for q in _quizzes(moodle) if q["name"].endswith("- Quiz"))
-    assert "EXPLANATION-MARKER" in quiz["questions"][0]["explanation"]
-
-
-def test_every_quiz_question_gets_the_explanation_written_for_it_in_order(published, moodle):
-    """Các câu của một quiz cùng được tạo trong một transaction: nếu thứ tự không được giữ bằng vị
-    trí, lời giải của câu này sẽ nằm dưới câu kia."""
-    published.publish(full_module(published))
-
-    quiz = next(q for q in _quizzes(moodle) if q["name"].endswith("- Quiz"))
-
+    quizzes = _quizzes(moodle)
+    quiz = next(q for q in quizzes if q["name"].endswith("- Quiz"))
+    practice = next(q for q in quizzes if q["name"].endswith("- Practice"))
     assert [q["stem"] for q in quiz["questions"]] == [QUIZ_STEM, QUIZ_STEM_2]
     assert "EXPLANATION-MARKER" in quiz["questions"][0]["explanation"]
     assert "EXPLANATION-2-MARKER" in quiz["questions"][1]["explanation"]
-
-
-def test_the_practice_question_keeps_its_own_explanation(published, moodle):
-    published.publish(full_module(published))
-
-    practice = next(q for q in _quizzes(moodle) if q["name"].endswith("- Practice"))
-
     assert practice["questions"][0]["explanation"] == "Giải thích của câu luyện tập"
     assert practice["questions"][0]["correct_index"] == 1
+    assert {q["name"].rsplit(" - ", 1)[1]: q["behaviour"] for q in quizzes} == {
+        "Practice": "immediatefeedback",
+        "Quiz": "deferredfeedback",
+    }
 
 
 def test_a_quiz_without_a_generated_explanation_keeps_the_question_explanation(published, moodle):
@@ -440,31 +400,15 @@ def test_a_second_publish_while_one_is_running_is_refused(published, moodle):
     assert moodle == []
 
 
-def test_a_publish_that_created_nothing_can_simply_be_tried_again(published, monkeypatch):
+def test_a_publish_that_created_nothing_names_nothing_and_can_be_retried(published, monkeypatch):
     def failing_book(*args, **kwargs):
         raise httpx.ConnectError("down")
 
     monkeypatch.setattr(moodle_client, "create_book", failing_book)
     module_id = full_module(published)
+    first = published.publish(module_id)
+    assert first.status_code == 502 and first.json()["detail"] == UNREACHABLE
     assert published.publish(module_id).status_code == 502
-    assert published.publish(module_id).status_code == 502
-
-
-def test_a_failure_before_anything_was_created_names_nothing(published, monkeypatch):
-    def failing_book(*args, **kwargs):
-        raise httpx.ConnectError("down")
-
-    monkeypatch.setattr(moodle_client, "create_book", failing_book)
-
-    assert published.publish(full_module(published)).json()["detail"] == UNREACHABLE
-
-
-def test_the_practice_gets_immediate_feedback_and_the_quiz_keeps_deferred_feedback(published, moodle):
-    published.publish(full_module(published))
-
-    behaviour = {q["name"].rsplit(" - ", 1)[1]: q["behaviour"] for q in _quizzes(moodle)}
-
-    assert behaviour == {"Practice": "immediatefeedback", "Quiz": "deferredfeedback"}
 
 
 def _failing_module(p: Published) -> uuid.UUID:

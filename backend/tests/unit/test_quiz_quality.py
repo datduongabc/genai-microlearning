@@ -1,6 +1,9 @@
 """Quiz gate regressions: no provider or database calls."""
 
 import json
+import subprocess
+import sys
+import tomllib
 import uuid
 from pathlib import Path
 from types import SimpleNamespace
@@ -8,10 +11,13 @@ from types import SimpleNamespace
 import pytest
 from pydantic import ValidationError
 
+from app.generation import common, content
 from app.generation import module_generation_pipeline as pipeline
 from app.generation import quiz_graph as quiz
+from app.generation.example import Example, ExampleOutput
 from app.generation.objective import LearningObjective
 from app.models import ComponentType, Job, JobStatus
+from app.retrieval.search import ChunkScope
 
 LO = LearningObjective(bloom_level="understand", verb="explain", objective_text="Explain OOP",
                        sub_objectives=["Define abstraction", "Compare inheritance and encapsulation"])
@@ -244,3 +250,278 @@ def test_two_long_keys_in_four_questions_trigger_a_rewrite(longest, expected):
     short_key = question(choices=["k" * 30, "a" * 40, "b" * 30, "c" * 30])
     questions = [long_key] * longest + [short_key] * (4 - longest)
     assert (quiz.question_to_rebalance(questions) is not None) is expected
+
+
+# --- generate_quiz_question retry/grounding/retrieval flow & schema invariants --------------------
+
+BACKEND_ROOT = Path(__file__).resolve().parents[2]
+GRAPH_LO = LearningObjective(
+    bloom_level="understand",
+    verb="giải thích",
+    objective_text="Giải thích khái niệm",
+    sub_objectives=["Nêu định nghĩa", "Phân biệt hai trường hợp", "Giải thích vai trò"],
+)
+BALANCED = quiz.QuizQuestion(
+    common_misconceptions=["m1", "m2", "m3"],
+    stem="Hỏi",
+    reasoning="r",
+    choices=["pa một", "pa hai", "pa ba", "pa bốn"],
+    correct_index=1,
+    explanation="lời giải",
+)
+ABSOLUTE = BALANCED.model_copy(update={"choices": ["luôn luôn", "pa hai", "pa ba", "pa bốn"]})
+def _graph_review():
+    return review(option_checks=[
+        {"is_correct": i == 1, "distinct_pass": True, "plausible_pass": True,
+         "reason": "Supported by S1" if i == 1 else "Plausible confusion, wrong for this stem"}
+        for i in range(4)
+    ])
+
+
+GRAPH_PASS = answer(quiz.GroundednessAnswerabilityCheck, _graph_review())
+UNGROUNDED = GRAPH_PASS.model_copy(update={"groundedness_pass": False, "groundedness_reason": "ngoài nguồn"})
+
+
+class FakeQuizModel:
+    def __init__(self, questions=(BALANCED,), checks=(GRAPH_PASS,)):
+        self.answers = {quiz.QuizQuestion: list(questions), quiz.GroundednessAnswerabilityCheck: list(checks)}
+        self.calls: list[tuple[str, str]] = []
+        self.blind_reviews: list[str] = []
+
+    def __call__(self, prompt, response_model, system_instruction=None, **kwargs):
+        if response_model is quiz.OptionReview:
+            self.blind_reviews.append(prompt)
+            return answer(quiz.OptionReview, _graph_review())
+        self.calls.append((response_model.__name__, prompt))
+        queue = self.answers[response_model]
+        return queue.pop(0) if len(queue) > 1 else queue[0]
+
+    def names(self):
+        return [name for name, _ in self.calls]
+
+    def question_prompts(self):
+        return [prompt for name, prompt in self.calls if name == "QuizQuestion"]
+
+
+@pytest.fixture
+def searches(monkeypatch):
+    seen = []
+
+    def fake_retrieve(db, course_id, query, top_k=8, scope=None, **kwargs):
+        seen.append({"query": query, "top_k": top_k, "scope": scope, **kwargs})
+        return []
+
+    monkeypatch.setattr(quiz, "retrieve", fake_retrieve)
+    return seen
+
+
+def _use_quiz_model(monkeypatch, model):
+    monkeypatch.setattr(quiz, "complete_structured", model)
+    return model
+
+
+def test_a_question_that_passes_its_check_is_generated_once(monkeypatch, searches):
+    model = _use_quiz_model(monkeypatch, FakeQuizModel())
+
+    result = quiz.generate_quiz_question(None, uuid.uuid4(), "Nêu định nghĩa", GRAPH_LO)
+
+    assert model.names() == ["QuizQuestion", "GroundednessAnswerabilityCheck"]
+    assert result["passed"] is True and result["fail_reason"] is None
+    assert result["correction_retry_count"] == 0
+    assert result["question"] == BALANCED
+
+
+def test_a_question_that_fails_is_regenerated_exactly_once_with_the_reason(monkeypatch, searches):
+    model = _use_quiz_model(monkeypatch, FakeQuizModel(checks=[UNGROUNDED]))
+
+    result = quiz.generate_quiz_question(None, uuid.uuid4(), "Nêu định nghĩa", GRAPH_LO)
+
+    assert common.MAX_CORRECTION_RETRY == 1
+    assert model.names() == ["QuizQuestion", "GroundednessAnswerabilityCheck"] * 2
+    assert result["passed"] is False
+    assert result["fail_reason"] == "Groundedness fail: ngoài nguồn"
+    assert result["correction_retry_count"] == 1
+    first, second = model.question_prompts()
+    assert "ngoài nguồn" not in first and "Groundedness fail: ngoài nguồn" in second
+
+
+def test_a_draft_failing_the_syntax_trap_is_regenerated_before_the_model_checks_it(monkeypatch, searches):
+    model = _use_quiz_model(monkeypatch, FakeQuizModel(questions=[ABSOLUTE, BALANCED]))
+
+    result = quiz.generate_quiz_question(None, uuid.uuid4(), "Nêu định nghĩa", GRAPH_LO)
+
+    assert model.names() == ["QuizQuestion", "QuizQuestion", "GroundednessAnswerabilityCheck"]
+    assert result["passed"] is True and result["correction_retry_count"] == 1
+    assert result["question"] == BALANCED
+    assert "Syntax/IWF fail" in model.question_prompts()[1]
+
+
+def test_the_syntax_retries_are_capped_for_the_whole_question(monkeypatch, searches):
+    model = _use_quiz_model(monkeypatch, FakeQuizModel(questions=[ABSOLUTE]))
+
+    result = quiz.generate_quiz_question(None, uuid.uuid4(), "Nêu định nghĩa", GRAPH_LO)
+
+    assert quiz.SYNTAX_RETRY == 2
+    assert model.names() == [
+        "QuizQuestion", "QuizQuestion", "QuizQuestion",
+        "GroundednessAnswerabilityCheck", "QuizQuestion", "GroundednessAnswerabilityCheck",
+    ]
+    assert result["passed"] is False and "tuyệt đối" in result["fail_reason"]
+
+
+def test_a_retry_that_fails_more_criteria_than_the_first_attempt_is_dropped(monkeypatch, searches):
+    worse = UNGROUNDED.model_copy(update={"bloom_level_pass": False, "bloom_level_reason": "sai cấp"})
+    second = BALANCED.model_copy(update={"stem": "Hỏi lại"})
+    model = _use_quiz_model(monkeypatch, FakeQuizModel(questions=[BALANCED, second], checks=[UNGROUNDED, worse]))
+
+    result = quiz.generate_quiz_question(None, uuid.uuid4(), "Nêu định nghĩa", GRAPH_LO)
+
+    assert model.names().count("QuizQuestion") == 2
+    assert result["question"] == BALANCED
+    assert result["fail_reason"] == "Groundedness fail: ngoài nguồn"
+    assert result["correction_retry_count"] == 1
+
+
+def test_among_drafts_failing_the_syntax_trap_the_one_with_fewest_issues_is_checked(monkeypatch, searches):
+    two_issues = BALANCED.model_copy(update={"choices": ["luôn luôn", "tất cả đều đúng", "pa ba", "pa bốn"]})
+    model = _use_quiz_model(monkeypatch, FakeQuizModel(questions=[ABSOLUTE, two_issues, two_issues, BALANCED]))
+
+    result = quiz.generate_quiz_question(None, uuid.uuid4(), "Nêu định nghĩa", GRAPH_LO)
+
+    checked = next(p for n, p in model.calls if n == "GroundednessAnswerabilityCheck")
+    assert "luôn luôn" in checked and "tất cả đều" not in checked
+    assert result["question"] == BALANCED
+
+
+def test_each_question_retrieves_five_passages_for_what_it_asks_and_never_grades_them(monkeypatch, searches):
+    model = _use_quiz_model(monkeypatch, FakeQuizModel())
+    scope = ChunkScope(uuid.uuid4(), 1, 2)
+
+    quiz.generate_quiz_question(None, uuid.uuid4(), "Nêu định nghĩa", GRAPH_LO, scope=scope)
+
+    assert searches == [{"query": "Nêu định nghĩa", "top_k": 5, "candidate_k": 15, "scope": scope}]
+    assert "RelevanceCheck" not in model.names()
+
+
+@pytest.mark.parametrize("mode", ["quiz", "practice"])
+def test_without_self_check_the_model_never_checks_and_the_syntax_trap_still_blocks(monkeypatch, searches, mode):
+    model = _use_quiz_model(monkeypatch, FakeQuizModel(questions=[ABSOLUTE]))
+
+    result = quiz.generate_quiz_question(None, uuid.uuid4(), "q", GRAPH_LO, mode, self_check=False)
+
+    assert model.names() == ["QuizQuestion"] * (common.MAX_CORRECTION_RETRY + 1 + quiz.SYNTAX_RETRY)
+    assert result["passed"] is False and "tuyệt đối" in result["fail_reason"]
+    assert result["syntax_issues"]
+
+
+def test_set_level_feedback_stays_on_the_retry_along_with_the_check_reason(monkeypatch, searches):
+    model = _use_quiz_model(monkeypatch, FakeQuizModel(checks=[UNGROUNDED]))
+
+    quiz.generate_quiz_question(None, uuid.uuid4(), "q", GRAPH_LO, feedback="đáp án đúng dài nhất")
+
+    first, second = model.question_prompts()
+    assert "đáp án đúng dài nhất" in first
+    assert "đáp án đúng dài nhất" in second and "ngoài nguồn" in second
+
+
+def test_content_and_questions_share_one_retry_budget_after_the_model_check():
+    assert content._checked is common._checked
+    assert quiz.MAX_CORRECTION_RETRY is common.MAX_CORRECTION_RETRY
+
+
+def test_nothing_imports_langgraph_any_more():
+    script = (
+        "import importlib, pkgutil, sys, app\n"
+        "for info in pkgutil.walk_packages(app.__path__, 'app.'):\n"
+        "    importlib.import_module(info.name)\n"
+        "print(sorted(m for m in sys.modules if m.split('.')[0] == 'langgraph'))\n"
+    )
+    loaded = subprocess.run(
+        [sys.executable, "-c", script], cwd=BACKEND_ROOT, capture_output=True, text=True, check=True,
+    ).stdout.strip()
+    assert loaded == "[]"
+
+    dependencies = tomllib.loads((BACKEND_ROOT / "pyproject.toml").read_text())["project"]["dependencies"]
+    assert not any(d.startswith("langgraph") for d in dependencies)
+
+
+def _rebalance_q(choices):
+    return quiz.QuizQuestion(
+        common_misconceptions=["m1", "m2", "m3"],
+        stem="stem",
+        reasoning="reasoning",
+        choices=list(choices),
+        correct_index=1,
+        explanation="short",
+    )
+
+
+def test_rebalance_ties_single_question_and_worst_index_selection():
+    long_c = ("ngắn", "một đáp án đúng dài hơn hẳn mọi phương án khác", "cũng ngắn", "ngắn nữa")
+    not_long = ("dài nhất trong câu này", "B", "C", "D")
+    mild = ("aaaa", "bbbbb", "cccc", "dddd")
+    tie = ("dài bằng nhau", "dài bằng nhau", "C", "D")
+
+    assert quiz.question_to_rebalance([_rebalance_q(long_c), _rebalance_q(not_long)]) is None
+    assert quiz.question_to_rebalance([_rebalance_q(long_c)]) is None
+    assert quiz.question_to_rebalance([_rebalance_q(tie), _rebalance_q(tie)]) is None
+    # Tie must not count toward margins (only 1 strictly longest in 4 -> None).
+    assert quiz.question_to_rebalance([
+        _rebalance_q(tie), _rebalance_q(long_c), _rebalance_q(not_long), _rebalance_q(not_long)
+    ]) is None
+    # Exact 25% boundary (2 of 8) stays None; 2 of 2 and 2 of 3 trigger rebalance.
+    assert quiz.question_to_rebalance([_rebalance_q(long_c)] * 2 + [_rebalance_q(not_long)] * 6) is None
+    assert quiz.question_to_rebalance([_rebalance_q(long_c), _rebalance_q(long_c)]) == 0
+    assert quiz.question_to_rebalance([_rebalance_q(long_c), _rebalance_q(long_c), _rebalance_q(not_long)]) == 0
+    assert quiz.question_to_rebalance([
+        _rebalance_q(mild), _rebalance_q(not_long), _rebalance_q(long_c), _rebalance_q(mild)
+    ]) == 2
+    assert quiz.question_to_rebalance([
+        _rebalance_q(mild), _rebalance_q(long_c), _rebalance_q(mild)
+    ]) == 1
+
+
+def test_syntax_and_verify_boundary_guards():
+    # Dissimilar >=5-word options must not trip near-duplicate detection.
+    unrelated = question(choices=[
+        "First distinct option with enough tokens",
+        "Alternative separate idea presented right here",
+        "Another third branch in this item",
+        "Final fourth distractor of normal length",
+    ])
+    assert quiz._syntax_iwf_check(unrelated) == []
+
+    # Empty option must not also emit length-imbalance error.
+    empty_opt = question(choices=["", "mot phuong an binh thuong", "ngan hon", "vua du"])
+    assert not any("Độ dài" in issue for issue in quiz._syntax_iwf_check(empty_opt))
+
+    # Exact 2x boundary (20 vs 10) is permitted without flagging length imbalance.
+    exact_2x = question(choices=["k" * 10, "a" * 20, "b" * 10, "c" * 10])
+    assert not any("Độ dài" in issue for issue in quiz._syntax_iwf_check(exact_2x))
+
+    # Key equal to longest distractor (60 vs 60) or slightly above (50 vs 49) does not trip key-dominance.
+    tie_long = question(choices=["k" * 60, "a" * 60, "b" * 40, "c" * 40])
+    slightly_long = question(choices=["k" * 50, "a" * 49, "b" * 49, "c" * 49])
+    assert not any("dài vượt trội" in issue for issue in quiz._syntax_iwf_check(tie_long))
+    assert not any("dài vượt trội" in issue for issue in quiz._syntax_iwf_check(slightly_long))
+
+    # Exact key-dominance threshold (75 vs 60: ratio == 1.25 and diff == 15) must flag.
+    exact_dom = question(choices=["k" * 75, "a" * 60, "b" * 60, "c" * 60])
+    assert any("dài vượt trội" in issue for issue in quiz._syntax_iwf_check(exact_dom))
+
+    # Invalid correct_index returns immediately even when self_check=True without touching choices[correct_index].
+    assert not quiz._verify_question(question(correct_index=4), LO, "S1", "quiz", True).syntax_pass
+
+
+def test_an_objective_and_examples_enforce_cardinalities():
+    fields = {"bloom_level": "understand", "verb": "giải thích", "objective_text": "o"}
+    assert len(LearningObjective(**fields, sub_objectives=["a", "b", "c", "d"]).sub_objectives) == 4
+    for wrong in (["a"], ["a", "b", "c", "d", "e"]):
+        with pytest.raises(ValidationError):
+            LearningObjective(**fields, sub_objectives=wrong)
+
+    example = Example(context="c", analysis="a")
+    assert len(ExampleOutput(examples=[example] * 2).examples) == 2
+    for count in (0, 1, 3):
+        with pytest.raises(ValidationError):
+            ExampleOutput(examples=[example] * count)
