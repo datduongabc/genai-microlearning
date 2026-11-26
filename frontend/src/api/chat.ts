@@ -32,7 +32,11 @@ export function parseChatEvents(buffer: string): { events: ChatEvent[]; rest: st
     const lines = block.split('\n')
     const name = lines.find((line) => line.startsWith('event: '))?.slice(7)
     const data = lines.find((line) => line.startsWith('data: '))?.slice(6)
-    if (name && data) events.push({ name, data: JSON.parse(data) } as ChatEvent)
+    if (!name || !data) continue
+    let parsed: unknown
+    // A garbled frame (a proxy cutting the stream mid-line) is a broken answer, not a SyntaxError to show.
+    try { parsed = JSON.parse(data) } catch { throw new Error(STREAM_BROKE) }
+    events.push({ name, data: parsed } as ChatEvent)
   }
   return { events, rest }
 }

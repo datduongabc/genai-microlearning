@@ -1,4 +1,6 @@
 // How model output (generated text, chat answers) is rendered as Markdown, in one place.
+// Loaded with the renderer, so pages without formulas never fetch KaTeX's stylesheet or fonts.
+import 'katex/dist/katex.min.css'
 import rehypeKatex from 'rehype-katex'
 import remarkMath from 'remark-math'
 import type { Options } from 'react-markdown'

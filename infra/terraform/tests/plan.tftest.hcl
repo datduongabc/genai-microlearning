@@ -148,8 +148,16 @@ run "the_page_may_talk_only_to_itself_and_the_uploads_bucket" {
     error_message = "The browser posts uploads to the bucket and talks to nothing else: ${aws_cloudfront_response_headers_policy.security.security_headers_config[0].content_security_policy[0].content_security_policy}"
   }
   assert {
-    condition     = strcontains(aws_cloudfront_response_headers_policy.security.security_headers_config[0].content_security_policy[0].content_security_policy, "img-src 'self' data: blob:;") && strcontains(aws_cloudfront_response_headers_policy.security.security_headers_config[0].content_security_policy[0].content_security_policy, "font-src 'self' https://fonts.gstatic.com data:;") && endswith(aws_cloudfront_response_headers_policy.security.security_headers_config[0].content_security_policy[0].content_security_policy, "frame-ancestors 'none'")
+    condition     = strcontains(aws_cloudfront_response_headers_policy.security.security_headers_config[0].content_security_policy[0].content_security_policy, "img-src 'self' data: blob:;") && strcontains(aws_cloudfront_response_headers_policy.security.security_headers_config[0].content_security_policy[0].content_security_policy, "font-src 'self' data:;") && endswith(aws_cloudfront_response_headers_policy.security.security_headers_config[0].content_security_policy[0].content_security_policy, "frame-ancestors 'none'")
     error_message = "No outside images, and no framing without an LMS: ${aws_cloudfront_response_headers_policy.security.security_headers_config[0].content_security_policy[0].content_security_policy}"
+  }
+  assert {
+    condition     = !strcontains(aws_cloudfront_response_headers_policy.security.security_headers_config[0].content_security_policy[0].content_security_policy, "fonts.g")
+    error_message = "Fonts are self-hosted, so the page sends nothing to Google"
+  }
+  assert {
+    condition     = aws_cloudfront_response_headers_policy.security.security_headers_config[0].referrer_policy[0].referrer_policy == "strict-origin-when-cross-origin" && strcontains(one([for item in aws_cloudfront_response_headers_policy.security.custom_headers_config[0].items : item.value if item.header == "Permissions-Policy"]), "camera=()")
+    error_message = "Links leak only the origin, and the page cannot ask for the camera"
   }
   assert {
     condition     = strcontains(aws_cloudfront_response_headers_policy.security.security_headers_config[0].content_security_policy[0].content_security_policy, "media-src 'self' blob: https://up.s3.ap-southeast-1.amazonaws.com;")

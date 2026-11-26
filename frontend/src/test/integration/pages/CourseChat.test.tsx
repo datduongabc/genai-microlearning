@@ -287,4 +287,7 @@ describe('parseChatEvents', () => {
     expect(parseChatEvents(first.rest + whole.slice(10)).events).toEqual([{ name: 'delta', data: { text: 'a' } }])
   })
 
+  it('reports a garbled frame as a broken connection instead of a JSON error', () => {
+    expect(() => parseChatEvents('event: delta\ndata: {"text": "a\n\n')).toThrow('Mất kết nối trước khi có đủ câu trả lời')
+  })
 })
