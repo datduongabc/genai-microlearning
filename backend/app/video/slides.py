@@ -123,8 +123,8 @@ def slide_tag(scene: Scene, image_key: str | None, lang: str) -> str:
     """An ETag for the slide `slide_html` prints: the fields it prints, the picture's stored key (a
     redrawn picture has a new one) and the look. The same tag is the same PNG, so a browser that
     has it is told so without a render."""
-    printed = [scene.kind, scene.title, scene.bullets, scene.formula, scene.code, scene.table, scene.diagram,
-               image_key, lang, _LOOK]
+    printed = [scene.kind, scene.title, scene.bullets, scene.formula, scene.code, scene.table,
+               diagram_as_drawn(scene.diagram) if scene.diagram else None, image_key, lang, _LOOK]
     return '"' + hashlib.sha256(json.dumps(printed, ensure_ascii=False).encode()).hexdigest()[:32] + '"'
 
 

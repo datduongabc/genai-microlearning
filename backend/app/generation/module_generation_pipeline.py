@@ -75,18 +75,19 @@ def _get_or_cache_planner(
     lap lai 18 tai lieu that: 3/17 doi ket qua). Cache 1 lan, tai su dung
     moi lan sau.
     """
-    if (
-        doc.planner_concepts
-        and doc.planner_concepts[0].get("output_language") == output_language
-        and doc.planner_concepts[0].get("custom_instructions", "") == custom_instructions
-    ):
-        return PlannerOutput(concepts=[Concept(**c) for c in doc.planner_concepts])
+    instructions = custom_instructions.strip()
+    def same_key(c: dict) -> bool:
+        return c.get("output_language") == output_language and c.get("custom_instructions", "") == instructions
+    cached = [c for c in doc.planner_concepts or [] if same_key(c)]
+    if cached:
+        return PlannerOutput(concepts=[Concept(**c) for c in cached])
 
     # Do not retain the source reads while waiting on the planner.
     db.commit()
     planner_out = run_planner(doc.raw_text, output_language=output_language, custom_instructions=custom_instructions)
-    doc.planner_concepts = [
-        {**c.model_dump(), "output_language": output_language, "custom_instructions": custom_instructions.strip()} for c in planner_out.concepts
+    # Each (language, instructions) keeps its own list, so asking for another never evicts this one.
+    doc.planner_concepts = [c for c in doc.planner_concepts or [] if not same_key(c)] + [
+        {**c.model_dump(), "output_language": output_language, "custom_instructions": instructions} for c in planner_out.concepts
     ]
     db.commit()
     return planner_out
