@@ -96,6 +96,24 @@ def test_switching_language_back_keeps_each_language_cached(monkeypatch):
         assert calls == [("vi", ""), ("en", ""), ("vi", "ví dụ")]
 
 
+def test_a_list_another_session_cached_while_the_planner_ran_is_kept(monkeypatch):
+    from app.generation import module_generation_pipeline as pipeline
+    from app.generation.planner import Concept, PlannerOutput
+    with SessionLocal() as db:
+        db.expire_on_commit = False  # as the worker runs
+        doc = _seed_document(db)
+        def planner(text, output_language="vi", custom_instructions=""):
+            if output_language == "vi":
+                with SessionLocal() as other:
+                    _get_or_cache_planner(other, other.get(Document, doc.id), output_language="en")
+            return PlannerOutput(concepts=[Concept(name=f"Concept {output_language}", priority=1, summary="s")])
+        monkeypatch.setattr(pipeline, "run_planner", planner)
+        _get_or_cache_planner(db, doc, output_language="vi", custom_instructions="ví dụ")
+    with SessionLocal() as db:
+        stored = db.get(Document, doc.id).planner_concepts
+    assert sorted((c["output_language"], c["custom_instructions"]) for c in stored) == [("en", ""), ("vi", "ví dụ")]
+
+
 def test_a_title_is_found_in_any_cached_planner_list(monkeypatch):
     from app.generation import module_generation_pipeline as pipeline
     from app.generation.planner import Concept, PlannerOutput

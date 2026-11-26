@@ -458,6 +458,8 @@ def _needs_top_up(scenes: list[_Draft]) -> bool:
 
 # A figure, and a short label with a number (x1, P2, L3), as a picture or a diagram would show them.
 _FIGURE = re.compile(r"(?<![\w.,])\d+(?:[.,]\d+)?(?!\w)")
+# Mermaid numbers are JS numbers: a comma there separates list items ("bar [10,20,30]").
+_DIAGRAM_FIGURE = re.compile(r"(?<![\w.])\d+(?:\.\d+)?(?!\w)")
 # A source may write a figure against its unit ("24ms"), which a picture or diagram shows apart.
 _SOURCE_FIGURE = re.compile(r"\d+(?:[.,]\d+)?")
 _LABEL = re.compile(r"\b[^\W\d_]{1,3}\d+\b")
@@ -476,8 +478,10 @@ def _invented(s: _Draft) -> list[str]:
     source = _subscripts_joined(unicodedata.normalize("NFKC", " ".join(c.content for c in s.chunks())))
     # A PDF's text may space a label out ("P 3"), which a description writes as one word.
     labels = {f"{m[1]}{m[2]}".casefold() for m in _SPACED_LABEL.finditer(source)}
-    known = labels | set(_SOURCE_FIGURE.findall(source)) | {"0"}
-    named = (_LABEL.findall(shown) if s.image_prompt else []) + _FIGURE.findall(shown)
+    figures = _SOURCE_FIGURE.findall(source)
+    # A source's "6,8" may be one decimal or a list, which a diagram writes as 6.8 or as 6 and 8.
+    known = labels | set(figures) | {f.replace(",", ".") for f in figures} | {p for f in figures for p in f.split(",")} | {"0"}
+    named = _LABEL.findall(shown) + _FIGURE.findall(shown) if s.image_prompt else _DIAGRAM_FIGURE.findall(shown)
     return list(dict.fromkeys(w for w in named if w.casefold() not in known))
 
 

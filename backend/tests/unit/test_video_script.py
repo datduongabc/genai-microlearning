@@ -632,6 +632,21 @@ def test_a_figure_its_source_writes_against_its_unit_is_not_flagged(monkeypatch)
     assert video.scenes[2]["flags"] == []
 
 
+@pytest.mark.parametrize("diagram, flags", [
+    ("xychart-beta\n  bar [10,20,30]", []),
+    ('xychart-beta\n  x-axis ["6,8", "9,9"]\n  bar [6.8,9.9]', []),
+    ("xychart-beta\n  bar [10,20,40]", ["Sơ đồ có 40, không có trong đoạn nguồn của cảnh: hãy sửa trước khi vẽ."]),
+])
+def test_a_diagram_list_is_checked_value_by_value(monkeypatch, diagram, flags):
+    chunks = _chunks(2)
+    chunks[0].content = "Ba nhóm có 10, 20 và 30 người; hai lớp đạt 6,8 và 9,9 điểm."
+    scenes = _script()
+    scenes[2].update(kind="diagram", diagram=diagram)
+    db, video, _ = _setup(monkeypatch, chunks, scenes)
+    video_script.generate_video_script(db, video.id)
+    assert video.scenes[2]["flags"] == flags
+
+
 def test_a_diagram_scene_without_code_becomes_a_text_scene(monkeypatch):
     scenes = _script()
     scenes[2].update(kind="diagram", diagram="  ")

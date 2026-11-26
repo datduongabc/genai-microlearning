@@ -85,6 +85,8 @@ def _get_or_cache_planner(
     # Do not retain the source reads while waiting on the planner.
     db.commit()
     planner_out = run_planner(doc.raw_text, output_language=output_language, custom_instructions=custom_instructions)
+    # Another request may have cached its own list while the planner ran.
+    db.refresh(doc, ["planner_concepts"], with_for_update=True)
     # Each (language, instructions) keeps its own list, so asking for another never evicts this one.
     doc.planner_concepts = [c for c in doc.planner_concepts or [] if not same_key(c)] + [
         {**c.model_dump(), "output_language": output_language, "custom_instructions": instructions} for c in planner_out.concepts
