@@ -458,6 +458,8 @@ def _needs_top_up(scenes: list[_Draft]) -> bool:
 
 # A figure, and a short label with a number (x1, P2, L3), as a picture or a diagram would show them.
 _FIGURE = re.compile(r"(?<![\w.,])\d+(?:[.,]\d+)?(?!\w)")
+# A source may write a figure against its unit ("24ms"), which a picture or diagram shows apart.
+_SOURCE_FIGURE = re.compile(r"\d+(?:[.,]\d+)?")
 _LABEL = re.compile(r"\b[^\W\d_]{1,3}\d+\b")
 _SPACED_LABEL = re.compile(r"\b([^\W\d_]{1,3}) ?(\d+)\b")
 
@@ -474,7 +476,7 @@ def _invented(s: _Draft) -> list[str]:
     source = _subscripts_joined(unicodedata.normalize("NFKC", " ".join(c.content for c in s.chunks())))
     # A PDF's text may space a label out ("P 3"), which a description writes as one word.
     labels = {f"{m[1]}{m[2]}".casefold() for m in _SPACED_LABEL.finditer(source)}
-    known = labels | set(_FIGURE.findall(source)) | {"0"}
+    known = labels | set(_SOURCE_FIGURE.findall(source)) | {"0"}
     named = (_LABEL.findall(shown) if s.image_prompt else []) + _FIGURE.findall(shown)
     return list(dict.fromkeys(w for w in named if w.casefold() not in known))
 
@@ -636,6 +638,17 @@ _FENCE = re.compile(r"^\s*```[\w-]*\s*\n?|\n?\s*```\s*$")
 _NUMBER_LIST = re.compile(r"^\s*(?:bar|line)\b[^\[]*\[([^\]]*)\]", re.MULTILINE)
 
 
+_GANTT_TIME = re.compile(r"\d+(?:\.\d+)?|[^\W\d][\w-]*|after\b.*")
+
+
+def _plain_number_times(lines: list[str]) -> bool:
+    """Whether every task's start and end is a plain number (the rest being tags, ids or "after")."""
+    values = [v.strip() for line in lines
+              if ":" in line and not re.match(r"\s*(title|acc\w+|%%)", line)
+              for v in line.split(":", 1)[1].split(",")]
+    return any(re.fullmatch(r"\d+(?:\.\d+)?", v) for v in values) and all(_GANTT_TIME.fullmatch(v) for v in values)
+
+
 def diagram_as_drawn(code: str) -> str:
     """The Mermaid code as the slide draws it: without the Markdown fence a model wraps it in; a
     gantt of plain numbers on a millisecond axis printed as numbers, since Mermaid reads them as
@@ -649,6 +662,8 @@ def diagram_as_drawn(code: str) -> str:
         formats = {m[1]: m[2].strip() for line in lines if (m := re.match(r"\s*(dateFormat|axisFormat)\b(.*)", line))}
         if formats.get("dateFormat", "x") not in ("x", "X"):
             return code  # real dates
+        if "dateFormat" not in formats and not _plain_number_times(lines[1:]):
+            return code  # Mermaid's default YYYY-MM-DD
         kept = [line for line in lines[1:] if not re.match(r"\s*(dateFormat|axisFormat)\b", line)]
         return "\n".join(["gantt", "  dateFormat x", "  axisFormat %Q", *kept])
     if kind == "xychart-beta":

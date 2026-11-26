@@ -622,6 +622,16 @@ def test_a_diagram_with_figures_its_sources_lack_is_flagged_but_not_its_node_ids
     assert video.scenes[2]["flags"] == ["Sơ đồ có 12, không có trong đoạn nguồn của cảnh: hãy sửa trước khi vẽ."]
 
 
+def test_a_figure_its_source_writes_against_its_unit_is_not_flagged(monkeypatch):
+    chunks = _chunks(2)
+    chunks[0].content = "Việc A chạy 24ms, việc B cần 3s."
+    scenes = _script()
+    scenes[2].update(kind="diagram", diagram="gantt\n  Việc A : 0, 24\n  Việc B : 24, 3")
+    db, video, _ = _setup(monkeypatch, chunks, scenes)
+    video_script.generate_video_script(db, video.id)
+    assert video.scenes[2]["flags"] == []
+
+
 def test_a_diagram_scene_without_code_becomes_a_text_scene(monkeypatch):
     scenes = _script()
     scenes[2].update(kind="diagram", diagram="  ")
@@ -658,6 +668,10 @@ def test_a_long_title_scene_is_shortened_to_a_framing_length(monkeypatch):
     ("gantt\n  section A\n  Việc A : 0, 3", "gantt\n  dateFormat x\n  axisFormat %Q\n  section A\n  Việc A : 0, 3"),
     # dateFormat X put every task after the first at 0, so it is read as milliseconds too.
     ("gantt\n  dateFormat X\n  axisFormat %s\n  Việc A : 0, 3", "gantt\n  dateFormat x\n  axisFormat %Q\n  Việc A : 0, 3"),
+    # With no dateFormat, Mermaid reads YYYY-MM-DD, so real dates are as written.
+    ("gantt\n  section Dự án\n  Thiết kế : 2024-01-01, 10d", "gantt\n  section Dự án\n  Thiết kế : 2024-01-01, 10d"),
+    ("gantt\n  Việc A : a1, 0, 3\n  Việc B : crit, after a1, 4",
+     "gantt\n  dateFormat x\n  axisFormat %Q\n  Việc A : a1, 0, 3\n  Việc B : crit, after a1, 4"),
     # Real dates are as written.
     ("gantt\n  dateFormat YYYY-MM-DD\n  Việc A : 2024-01-01, 3d", "gantt\n  dateFormat YYYY-MM-DD\n  Việc A : 2024-01-01, 3d"),
     # A bar chart's value axis starts at 0, keeping its title.
