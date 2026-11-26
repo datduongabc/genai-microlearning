@@ -45,6 +45,8 @@ function renderPage() {
 beforeEach(() => {
   vi.clearAllMocks()
   vi.mocked(api.getMoodleAccount).mockResolvedValue({ email: 'teacher@example.com', status: 'linked' })
+  vi.mocked(api.getLatestModuleChat).mockResolvedValue({ session_id: null, messages: [] })
+  vi.mocked(api.startNewModuleChat).mockResolvedValue('session-fresh')
 })
 
 it('shows citation labels and reveals the original chunk only when opened', async () => {
@@ -791,5 +793,43 @@ describe('ModulePreviewPage - keyboard focus', () => {
     await user.keyboard('{Enter}')
     await waitFor(() => expect(api.updateComponentContent).toHaveBeenCalled())
     await waitFor(() => expect(within(part).getByRole('button', { name: 'Sửa' })).toHaveFocus())
+  })
+})
+
+describe('ModulePreviewPage - UX-01 chat-edit history', () => {
+  it('restores the latest module chat-edit session, continues it, and starts a new conversation on request', async () => {
+    vi.mocked(api.getModule).mockResolvedValue(baseModule)
+    vi.mocked(api.getLatestModuleChat).mockResolvedValue({
+      session_id: 'session-saved',
+      messages: [
+        { id: 'm1', role: 'user', content: 'Rút gọn slide 1' },
+        { id: 'm2', role: 'assistant', content: 'Đã rút gọn slide 1.' },
+      ],
+    })
+    vi.mocked(api.chatEditModule)
+      .mockResolvedValueOnce({ session_id: 'session-saved', applied: false, reply: 'Đã thêm ví dụ.', edit_count: 0 })
+      .mockResolvedValueOnce({ session_id: 'session-fresh', applied: false, reply: 'Bắt đầu mạch mới.', edit_count: 0 })
+
+    renderPage()
+
+    const log = await screen.findByRole('log', { name: 'Lịch sử chỉnh sửa' })
+    await waitFor(() => expect(log).toHaveTextContent('Rút gọn slide 1'))
+    expect(log).toHaveTextContent('Đã rút gọn slide 1.')
+
+    const field = screen.getByRole('textbox', { name: 'Yêu cầu chỉnh sửa' })
+    await userEvent.type(field, 'Thêm ví dụ')
+    await userEvent.click(screen.getByRole('button', { name: 'Gửi yêu cầu' }))
+    await waitFor(() => expect(api.chatEditModule).toHaveBeenLastCalledWith('module-1', 'Thêm ví dụ', 'session-saved'))
+    expect(log).toHaveTextContent('Đã thêm ví dụ.')
+
+    await userEvent.click(screen.getByRole('button', { name: 'Cuộc trò chuyện mới' }))
+    await waitFor(() => expect(api.startNewModuleChat).toHaveBeenCalledWith('module-1'))
+    expect(log).toHaveTextContent('')
+    expect(screen.queryByRole('button', { name: 'Cuộc trò chuyện mới' })).not.toBeInTheDocument()
+
+    await userEvent.type(field, 'Đổi câu hỏi')
+    await userEvent.click(screen.getByRole('button', { name: 'Gửi yêu cầu' }))
+    await waitFor(() => expect(api.chatEditModule).toHaveBeenLastCalledWith('module-1', 'Đổi câu hỏi', 'session-fresh'))
+    expect(log).toHaveTextContent('Bắt đầu mạch mới.')
   })
 })

@@ -187,6 +187,8 @@ ATTACKS = [
     ("POST", "/modules/generate", {"document_id": "{document}"}, {}),
     ("GET", "/modules/jobs/{failed_job}", None, {}),
     ("GET", "/modules/{module}", None, {}),
+    ("GET", "/modules/{module}/chat-edit/latest", None, {}),
+    ("POST", "/modules/{module}/chat-edit/sessions", None, {}),
     ("POST", "/modules/{module}/chat-edit", None, {"json": {"message": "shorten slide 1"}}),
     ("GET", "/modules/{module}/slides.pptx", None, {}),
     ("GET", "/modules/{module}/scorm.zip", None, {}),

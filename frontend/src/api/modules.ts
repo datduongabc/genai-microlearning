@@ -139,6 +139,27 @@ export async function updateQuestion(
   return data as Omit<QuestionInfo, 'position'>
 }
 
+export interface ModuleChatMessage {
+  id: string
+  role: string
+  content: string
+}
+
+export interface LatestModuleChat {
+  session_id: string | null
+  messages: ModuleChatMessage[]
+}
+
+export async function getLatestModuleChat(moduleId: string, signal?: AbortSignal) {
+  const { data } = await api.get<LatestModuleChat>(`/modules/${moduleId}/chat-edit/latest`, { signal })
+  return data
+}
+
+export async function startNewModuleChat(moduleId: string) {
+  const { data } = await api.post<{ session_id: string }>(`/modules/${moduleId}/chat-edit/sessions`)
+  return data.session_id
+}
+
 export async function chatEditModule(moduleId: string, message: string, sessionId?: string) {
   const { data } = await api.post<{ session_id: string; reply: string; applied: boolean; edit_count: number }>(
     `/modules/${moduleId}/chat-edit`, { message, session_id: sessionId },

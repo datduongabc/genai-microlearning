@@ -641,4 +641,46 @@ describe('VideoEditorPage', () => {
 
     await waitFor(() => expect(screen.getByLabelText('Video đã dựng')).toHaveAttribute('src', 'https://s3.example/v2.mp4'))
   })
+
+  it('shows an inline save-banner above video actions when a scene is open or dirty, and saves, closes, or cancels from it', async () => {
+    const initial = video([scene(1), scene(2, { kind: 'illustration', image_prompt: 'Hình', has_image: true })])
+    vi.mocked(api.getVideo).mockResolvedValue(initial)
+    vi.mocked(api.saveVideoScenes).mockResolvedValue(
+      video([scene(1), scene(2, { kind: 'illustration', title: 'Cảnh 2 đã lưu', image_prompt: 'Hình', has_image: true })], { draft_version: 2 }),
+    )
+
+    renderPage()
+
+    await openScene(2)
+    expect(screen.getByText(/Đang mở sửa Cảnh 2\. Đóng khung sửa trước khi/)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Vẽ hình' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Dựng video' })).toBeDisabled()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Đóng sửa cảnh 2' }))
+    expect(screen.queryByLabelText('Tiêu đề cảnh 2')).not.toBeInTheDocument()
+    expect(screen.queryByText(/Đang mở sửa Cảnh 2/)).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Dựng video' })).toBeEnabled()
+
+    await openScene(2)
+    const titleInput = screen.getByLabelText('Tiêu đề cảnh 2')
+    await userEvent.clear(titleInput)
+    expect(screen.getByText(/Cảnh 2 có thay đổi chưa lưu/)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Lưu cảnh 2' })).toBeDisabled()
+
+    await userEvent.type(titleInput, 'Cảnh 2 đã lưu')
+    const saveBannerBtn = screen.getByRole('button', { name: 'Lưu cảnh 2' })
+    expect(saveBannerBtn).toBeEnabled()
+    await userEvent.click(saveBannerBtn)
+
+    await waitFor(() => expect(api.saveVideoScenes).toHaveBeenCalledTimes(1))
+    expect(screen.queryByText(/có thay đổi chưa lưu/)).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Dựng video' })).toBeEnabled()
+
+    await openScene(2)
+    await userEvent.type(screen.getByLabelText('Tiêu đề cảnh 2'), ' nháp')
+    expect(screen.getByText(/Cảnh 2 có thay đổi chưa lưu/)).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Hủy sửa cảnh 2' }))
+    expect(screen.queryByLabelText('Tiêu đề cảnh 2')).not.toBeInTheDocument()
+    expect(screen.queryByText(/có thay đổi chưa lưu/)).not.toBeInTheDocument()
+  })
 })

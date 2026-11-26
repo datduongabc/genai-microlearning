@@ -8,6 +8,7 @@ import { apiErrorMessage, getMoodleAccount, unlinkMoodleAccount, MOODLE_ACCOUNT_
 import { Brand } from "./AuthLayout";
 import { MoodleAccountSection, type MoodleAccountState } from "./MoodleAccountSection";
 import { initials } from "../lib/initials";
+import { OPEN_ACCOUNT_MENU_EVENT } from "../lib/accountMenu";
 import type { Crumb } from "../lib/useCourseCrumbs";
 import { confirmLeavingUnsavedWork } from "../lib/useLeaveGuard";
 import { useMediaQuery } from "../lib/useMediaQuery";
@@ -34,10 +35,11 @@ function readCollapsed() {
 }
 
 // `fullTitle` is for a title that was cut short: the whole text stays available on hover.
+// `subtitle` sits directly beneath the heading for page-level state such as a linked Moodle course.
 // `actions` sits beside the page title, e.g. a "⋯" menu with what can be done to the whole page.
 // `crumbs` are the pages above this one, each a link back, shown over the title.
-export function AppShell({ title, fullTitle, actions, crumbs, children }: {
-  title: string; fullTitle?: string; actions?: ReactNode; crumbs?: Crumb[]; children: ReactNode;
+export function AppShell({ title, fullTitle, subtitle, actions, crumbs, children }: {
+  title: string; fullTitle?: string; subtitle?: ReactNode; actions?: ReactNode; crumbs?: Crumb[]; children: ReactNode;
 }) {
   useDocumentTitle(fullTitle ?? title);
   const { user, logout } = useAuth();
@@ -57,6 +59,19 @@ export function AppShell({ title, fullTitle, actions, crumbs, children }: {
   const trigger = useRef<HTMLButtonElement>(null);
   const panel = useRef<HTMLDivElement>(null);
   const container = useRef<HTMLDivElement>(null);
+  const focusAccountControl = useRef(false);
+
+  useEffect(() => {
+    const onOpen = () => {
+      focusAccountControl.current = true;
+      setError(null);
+      setAccount(null);
+      if (mobile) setDrawer(true);
+      setOpen(true);
+    };
+    window.addEventListener(OPEN_ACCOUNT_MENU_EVENT, onOpen);
+    return () => window.removeEventListener(OPEN_ACCOUNT_MENU_EVENT, onOpen);
+  }, [mobile]);
 
   useEffect(() => {
     if (!open) return;
@@ -66,6 +81,15 @@ export function AppShell({ title, fullTitle, actions, crumbs, children }: {
     document.addEventListener("pointerdown", outside);
     return () => { cancelled = true; document.removeEventListener("pointerdown", outside); };
   }, [open, user?.is_admin]);
+
+  useEffect(() => {
+    if (!open || !focusAccountControl.current) return;
+    if (!user?.is_admin && account === null && error === null) return;
+    focusAccountControl.current = false;
+    requestAnimationFrame(() => {
+      panel.current?.querySelector<HTMLElement>('input[type="email"], a[href], button:not(:disabled)')?.focus();
+    });
+  }, [open, user?.is_admin, account, error]);
 
   const linked = useCallback((status: MoodleAccountState) => {
     if (status !== "linked") return;
@@ -132,6 +156,10 @@ export function AppShell({ title, fullTitle, actions, crumbs, children }: {
       </div>
   </>;
 
+  const heading = subtitle
+    ? <div className="page-title-group min-w-0"><h1 className="page-title" title={fullTitle}>{title}</h1><p className="course-meta">{subtitle}</p></div>
+    : <h1 className="page-title" title={fullTitle}>{title}</h1>;
+
   return <div className="min-h-screen bg-paper" data-sidebar={collapsed ? "collapsed" : "expanded"}>
     <a className="skip-link sr-only focus:not-sr-only" href="#main-content">Đến nội dung chính</a>
     {mobile ? <header className="mobile-bar">
@@ -148,7 +176,7 @@ export function AppShell({ title, fullTitle, actions, crumbs, children }: {
     <main id="main-content" className="shell-main" tabIndex={-1}><div className="shell-content">{crumbs && crumbs.length > 0 && <nav aria-label="Đường dẫn" className="breadcrumb">
       <ol>{crumbs.map((crumb) => <li key={crumb.to}><Link to={crumb.to}>{crumb.label}</Link></li>)}</ol>
     </nav>}{actions
-      ? <div className="page-head"><h1 className="page-title" title={fullTitle}>{title}</h1>{actions}</div>
-      : <h1 className="page-title" title={fullTitle}>{title}</h1>}{children}</div></main>
+      ? <div className="page-head">{heading}{actions}</div>
+      : heading}{children}</div></main>
   </div>;
 }

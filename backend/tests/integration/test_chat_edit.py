@@ -526,3 +526,52 @@ def test_a_save_while_the_model_edits_a_question_is_not_written_over(lesson, mon
     assert send(lesson, "make quiz question 1 harder").status_code == 200
     with SessionLocal() as db:
         assert db.get(ModuleComponent, ids["quiz"]).content.get("saved_meanwhile") is True
+
+
+def test_latest_module_chat_restores_history_isolated_and_resets_cleanly(lesson, monkeypatch):
+    ids, headers = lesson
+    latest_url = f"/modules/{ids['module']}/chat-edit/latest"
+    sessions_url = f"/modules/{ids['module']}/chat-edit/sessions"
+
+    assert client.get(latest_url, headers=headers).json() == {"session_id": None, "messages": []}
+
+    monkeypatch.setattr(
+        service, "complete_structured",
+        lambda prompt, response_model, **kw: response_model(
+            target=None, question_number=None, revised=None, reply="Đã ghi nhận yêu cầu."
+        ),
+    )
+    first = send(lesson, "rút gọn slide 1").json()
+    second = send(lesson, "thêm ví dụ thực tế", session_id=first["session_id"]).json()
+    assert second["session_id"] == first["session_id"]
+
+    restored = client.get(latest_url, headers=headers).json()
+    assert restored["session_id"] == first["session_id"]
+    assert [(m["role"], m["content"]) for m in restored["messages"]] == [
+        ("user", "rút gọn slide 1"),
+        ("assistant", "Đã ghi nhận yêu cầu."),
+        ("user", "thêm ví dụ thực tế"),
+        ("assistant", "Đã ghi nhận yêu cầu."),
+    ]
+    # Isolated from course chat and from sibling modules.
+    assert client.get(f"/courses/{ids['course']}/chat/latest", headers=headers).json() == {"session_id": None, "messages": []}
+    with SessionLocal() as db:
+        module = db.get(Module, ids["module"])
+        sibling = Module(course_id=module.course_id, document_id=module.document_id, title="Other module")
+        db.add(sibling)
+        db.commit()
+        sibling_id = sibling.id
+
+    assert client.get(f"/modules/{sibling_id}/chat-edit/latest", headers=headers).json() == {"session_id": None, "messages": []}
+
+    fresh = client.post(sessions_url, headers=headers)
+    again = client.post(sessions_url, headers=headers)
+    assert fresh.status_code == 201 and again.status_code == 201
+    assert fresh.json()["session_id"] == again.json()["session_id"] != first["session_id"]
+    assert client.get(latest_url, headers=headers).json() == {"session_id": fresh.json()["session_id"], "messages": []}
+
+    with SessionLocal() as db:
+        job = db.query(Job).filter(Job.module_id == ids["module"]).one()
+        job.payload = {"output_language": "en", "use_retrieval": False}
+        db.commit()
+    assert client.post(sessions_url, headers=headers).status_code == 422

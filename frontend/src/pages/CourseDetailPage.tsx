@@ -1,15 +1,16 @@
 import { confirmAction } from "../lib/confirm";
 import { usePolling } from "../lib/usePolling";
 import { notifyDone, notifyFailed } from "../lib/notify";
-import { BookOpenText, ChevronDown, Clapperboard, Ellipsis, Layers, Plus, Trash2 } from "lucide-react";
+import { BookOpenText, ChevronDown, Clapperboard, Ellipsis, Layers, Pencil, Plus, Trash2, Unlink } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../components/ui/dropdown-menu";
 import axios from "axios";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import {
   apiErrorMessage,
+  deleteCourse,
   deleteDocument,
   deleteFlashcardSet,
   deleteModule,
@@ -25,8 +26,10 @@ import {
   listFlashcardSets,
   listModules,
   listVideos,
+  renameCourse,
   retryJob,
   listMoodleCourses,
+  unlinkMoodleCourse,
   uploadDocument,
   type Course,
   type DocumentFailure,
@@ -34,17 +37,21 @@ import {
   type FlashcardSetSummary,
   type ModuleConcept,
   type ModuleSummary,
+  type MoodleAccount,
   type MoodleCourse,
   type VideoSummary,
 } from "../api";
 import { AppShell } from "../components/AppShell";
+import { openAccountMenu } from "../lib/accountMenu";
 import { CourseChat } from "../components/CourseChat";
 import type { MoodleAccountState } from "../components/MoodleAccountSection";
 import { GenerateDialog, type GenerateKind, type GenerateChoice } from "../components/GenerateDialog";
 import { focusReturnTarget } from "../lib/focusReturn";
 import {
+  createCourseSchema,
   linkMoodleCourseSchema,
   uploadDocumentSchema,
+  type CreateCourseFormValues,
   type LinkMoodleCourseFormValues,
   type UploadDocumentFormValues,
 } from "../lib/formSchemas";
@@ -251,7 +258,10 @@ async function loadCoursePage(courseId: string, apply: CoursePageSetters) {
 
 export function CourseDetailPage() {
   const { courseId } = useParams<{ courseId: string }>();
+  const navigate = useNavigate();
   const [course, setCourse] = useState<Course | null>(null);
+  const [renamingCourse, setRenamingCourse] = useState(false);
+  const [deletingCourse, setDeletingCourse] = useState(false);
   const [documents, setDocuments] = useState<DocumentInfo[]>([]);
   // The document a generate dialog is for and the button to give focus back to. Kept after the
   // dialog closes: the dialog hands focus back only once it has finished closing.
@@ -577,8 +587,80 @@ export function CourseDetailPage() {
     }
   }
 
+  async function handleUnlinkCourse() {
+    if (!course || course.moodle_course_id === null) return;
+    const confirmed = await confirmAction({
+      title: `Hủy liên kết với khóa học Moodle #${course.moodle_course_id}?`,
+      description: "Khóa học và nội dung trên Moodle vẫn giữ nguyên.",
+      action: "Hủy liên kết",
+    });
+    if (!confirmed) return;
+    try {
+      await unlinkMoodleCourse(course.id);
+    } catch (err) {
+      notifyFailed(apiErrorMessage(err, "Hủy liên kết thất bại"));
+      return;
+    }
+    notifyDone("Đã hủy liên kết khóa học Moodle.");
+    await refresh().catch(() => notifyFailed("Không tải lại được thông tin môn học, hãy tải lại trang."));
+  }
+
+  async function handleDeleteCourse() {
+    if (!course) return;
+    const confirmed = await confirmAction({
+      title: `Xóa môn học "${course.name}"?`,
+      description: `Toàn bộ tài liệu, mô-đun, quiz, flashcard và video trong môn học bị xóa theo. Không thể khôi phục.${
+        course.moodle_course_id !== null ? " Khóa học trên Moodle vẫn giữ nguyên." : ""
+      }`,
+      action: "Xóa môn học",
+      destructive: true,
+    });
+    if (!confirmed) return;
+    setDeletingCourse(true);
+    try {
+      await deleteCourse(course.id);
+      notifyDone(`Đã xóa môn học "${course.name}".`);
+      navigate("/courses");
+    } catch (err) {
+      notifyFailed(apiErrorMessage(err, "Xóa môn học thất bại"));
+      setDeletingCourse(false);
+    }
+  }
+
   return (
-    <AppShell title={course?.name ?? "Tài liệu môn học"}>
+    <AppShell
+      title={course?.name ?? "Tài liệu môn học"}
+      subtitle={course && course.moodle_course_id !== null ? `Đã liên kết khóa học Moodle #${course.moodle_course_id}` : undefined}
+      actions={course ? (
+        <DropdownMenu>
+          <DropdownMenuTrigger className="icon-button" aria-label={`Thao tác khác với ${course.name}`}>
+            <Ellipsis aria-hidden="true" />
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="doc-menu">
+            <DropdownMenuItem onSelect={() => setRenamingCourse(true)}>
+              <Pencil aria-hidden="true" />Đổi tên
+            </DropdownMenuItem>
+            {course.moodle_course_id !== null && (
+              <DropdownMenuItem onSelect={() => void handleUnlinkCourse()}>
+                <Unlink aria-hidden="true" />Hủy liên kết Moodle
+              </DropdownMenuItem>
+            )}
+            <DropdownMenuItem variant="destructive" disabled={deletingCourse} onSelect={() => void handleDeleteCourse()}>
+              <Trash2 aria-hidden="true" />{deletingCourse ? "Đang xóa…" : "Xóa môn học"}
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      ) : undefined}
+    >
+      {renamingCourse && course && (
+        <CourseRenameBar
+          course={course}
+          onDone={async (renamed) => {
+            setRenamingCourse(false);
+            if (renamed) await refresh().catch(() => notifyFailed("Không tải lại được thông tin môn học, hãy tải lại trang."));
+          }}
+        />
+      )}
       <GenerateDialog {...dialogProps("module")} documentId={asking?.document.id} onGenerate={(language, instructions, { modelAlias, concept }) => {
         if (asking) void handleGenerate(asking.document, language, instructions, modelAlias, concept);
       }} />
@@ -785,23 +867,65 @@ export function CourseDetailPage() {
   );
 }
 
+function CourseRenameBar({ course, onDone }: { course: Course; onDone: (renamed: boolean) => void }) {
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<CreateCourseFormValues>({ resolver: zodResolver(createCourseSchema), defaultValues: { name: course.name } });
+
+  async function save({ name }: CreateCourseFormValues) {
+    if (name === course.name) return onDone(false);
+    try {
+      await renameCourse(course.id, name);
+    } catch (err) {
+      notifyFailed(apiErrorMessage(err, "Đổi tên môn học thất bại"));
+      return;
+    }
+    notifyDone(`Đã đổi tên thành "${name}".`);
+    onDone(true);
+  }
+
+  return (
+    <form
+      onSubmit={handleSubmit(save)}
+      noValidate
+      className="course-create course-rename mb-6"
+      onKeyDown={(e) => { if (e.key === "Escape") onDone(false); }}
+    >
+      <input {...register("name")} aria-label="Tên môn học" autoFocus className="ui-input min-w-0 flex-1" />
+      <button disabled={isSubmitting} className="ui-button primary">{isSubmitting ? "Đang lưu…" : "Lưu"}</button>
+      <button type="button" onClick={() => onDone(false)} className="ui-button">Hủy</button>
+      {errors.name && <p className="basis-full text-sm danger-text">{errors.name.message}</p>}
+    </form>
+  );
+}
+
 function MoodleLinkSection({ course, onLinked }: { course: Course; onLinked: () => void }) {
-  // The account is linked from the account menu; here it only decides whether courses can be picked.
-  // "unknown" until the server answers, and the server refuses a course link without the account anyway.
-  const [account, setAccount] = useState<MoodleAccountState>("unknown");
+  // The account is linked from the account menu; here we reflect all 4 lecturer states so it stays
+  // obvious why courses cannot be picked yet or which Moodle course is linked.
+  const [accountInfo, setAccountInfo] = useState<MoodleAccount | null>(null);
+  const account: MoodleAccountState = accountInfo?.status ?? "unknown";
+  const [reloads, setReloads] = useState(0);
   useEffect(() => {
     let cancelled = false;
-    const read = () => getMoodleAccount().then(
-      (answer) => { if (!cancelled) setAccount(answer.status); },
-      () => { if (!cancelled) setAccount("unknown"); },
+    Promise.resolve(getMoodleAccount()).then(
+      (answer) => { if (!cancelled && answer) setAccountInfo(answer); },
+      () => { if (!cancelled) setAccountInfo(null); },
     );
-    void read();
-    window.addEventListener(MOODLE_ACCOUNT_CHANGED_EVENT, read);
-    return () => {
-      cancelled = true;
-      window.removeEventListener(MOODLE_ACCOUNT_CHANGED_EVENT, read);
-    };
+    return () => { cancelled = true; };
+  }, [reloads]);
+  useEffect(() => {
+    const reload = () => setReloads((n) => n + 1);
+    window.addEventListener(MOODLE_ACCOUNT_CHANGED_EVENT, reload);
+    return () => window.removeEventListener(MOODLE_ACCOUNT_CHANGED_EVENT, reload);
   }, []);
+  useEffect(() => {
+    if (account !== "pending") return;
+    const timer = window.setInterval(() => setReloads((n) => n + 1), 5000);
+    return () => window.clearInterval(timer);
+  }, [account]);
+
   const [courses, setCourses] = useState<MoodleCourse[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -846,9 +970,9 @@ function MoodleLinkSection({ course, onLinked }: { course: Course; onLinked: () 
     }
   }
 
-  // Only a choice to make earns a line: a linked course, or an account still to link, shows nothing,
-  // since the account menu holds the Moodle account.
-  if (linked || account !== "linked") return null;
+  // Linked courses show their target in the page header subtitle + "⋯ -> Hủy liên kết Moodle";
+  // unavailable deployments without Moodle keep the page clean.
+  if (linked || account === "unknown" || account === "unavailable") return null;
 
   const panel = (row: ReactNode) => (
     <div className="moodle-panel">
@@ -856,6 +980,48 @@ function MoodleLinkSection({ course, onLinked }: { course: Course; onLinked: () 
       {error && <p className="moodle-error danger-text">{error}</p>}
     </div>
   );
+
+  if (account === "not_linked" || account === "rejected" || account === "expired") {
+    return panel(
+      <>
+        <p>
+          <span className="moodle-key">Khóa học Moodle:</span>{" "}
+          <span className="muted">
+            {account === "rejected"
+              ? "Yêu cầu liên kết tài khoản Moodle đã bị từ chối."
+              : account === "expired"
+                ? "Yêu cầu liên kết tài khoản Moodle đã hết hạn."
+                : "Chưa liên kết tài khoản Moodle."}
+          </span>
+        </p>
+        <button type="button" className="link-action" onClick={openAccountMenu}>
+          Liên kết trong menu Tài khoản
+        </button>
+      </>,
+    );
+  }
+
+  if (account === "pending") {
+    return panel(
+      <>
+        <p>
+          <span className="moodle-key">Tài khoản Moodle:</span>{" "}
+          <span className="muted">
+            Chờ xác nhận trong Moodle{accountInfo?.email ? ` (${accountInfo.email})` : ""}
+          </span>
+        </p>
+        {accountInfo?.confirmation_url ? (
+          <a href={accountInfo.confirmation_url} target="_blank" rel="noopener noreferrer" className="link-action">
+            Mở Moodle để xác nhận
+          </a>
+        ) : (
+          <button type="button" className="link-action" onClick={openAccountMenu}>
+            Xem trong menu Tài khoản
+          </button>
+        )}
+      </>,
+    );
+  }
 
   return panel(
     <form
