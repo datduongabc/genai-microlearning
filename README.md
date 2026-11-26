@@ -21,7 +21,7 @@ Báo cáo cuối kỳ: [`final-report/report.pdf`](final-report/report.pdf). Đ�
 | --- | --- |
 | Tài liệu | Upload ba bước, có thể gửi thẳng lên S3 bằng presigned POST. Đọc PDF có sửa công thức, OCR trang và chữ trong hình. Đọc slide, ghi chú và SmartArt của PPTX. Phiên âm audio/video bằng Whisper, giữ mốc thời gian. Chia đoạn theo cấu trúc nguồn. |
 | Truy xuất | Dense (Gemini Embedding qua gateway) cộng BM25, gộp bằng Reciprocal Rank Fusion, rerank bằng Jev; Jev lỗi thì giữ thứ tự hybrid. Số đoạn chọn theo adaptive-k. |
-| Sinh mô-đun | Planner chọn khái niệm, sinh LO và sub-objective, kiểm tra độ liên quan rồi viết lại truy vấn khi thiếu nguồn, viết Content kèm `[S#]`, sau đó Slides và Example. Câu hỏi do model tự kiểm, có bẫy cú pháp và luật cân bằng độ dài; khi trượt thì giữ bản ít lỗi nhất. |
+| Sinh mô-đun | Planner đề xuất danh sách khái niệm để giảng viên chọn (không chọn thì lấy khái niệm ưu tiên nhất), sinh LO và sub-objective, kiểm tra độ liên quan rồi viết lại truy vấn khi thiếu nguồn, viết Content kèm `[S#]`, sau đó Slides và Example. Câu hỏi do model tự kiểm, có bẫy cú pháp và luật cân bằng độ dài; khi trượt thì giữ bản ít lỗi nhất. |
 | Biên tập | Mở đoạn nguồn của từng trích dẫn, sửa từng thành phần hoặc từng câu hỏi, sửa qua chat, xuất slide ra PPTX. |
 | Moodle | Liên kết tài khoản, xác nhận ngay trong Moodle. Kiểm quyền giảng viên theo khóa học. Tạo Book, Practice (phản hồi ngay) và Quiz (phản hồi sau khi nộp), kèm điều kiện hoàn thành để khóa học tính được và cấp chứng chỉ. |
 | LTI 1.3 | Giảng viên và sinh viên vào thẳng từ hoạt động External tool. Danh sách lớp được đồng bộ qua NRPS, sinh viên rời lớp bị gỡ quyền sau khoảng một giờ. |

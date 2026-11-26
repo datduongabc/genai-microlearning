@@ -1,6 +1,7 @@
 """Slides are HTML with KaTeX, captured by a headless Chromium. These tests render for real."""
 
 import io
+import itertools
 import re
 
 import pytest
@@ -140,7 +141,7 @@ def test_a_date_gantt_into_a_new_month_keeps_its_axis_labels_apart(renderer):
     assert shot.diagram_error is None and not shot.overflows
     labels = re.findall(r"\b(\d\d)/(\d\d)\b", shot.visible_text)
     days = [(int(m) - 1) * 31 + int(d) for d, m in labels]
-    assert len(days) > 5 and all(b - a >= 2 for a, b in zip(days, days[1:]))
+    assert len(days) > 5 and all(b - a >= 2 for a, b in itertools.pairwise(days))
 
 
 def test_a_broken_diagram_is_shown_not_left_hanging(renderer):
