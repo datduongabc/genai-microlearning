@@ -683,12 +683,18 @@ def test_a_long_title_scene_is_shortened_to_a_framing_length(monkeypatch):
     ("gantt\n  section A\n  Việc A : 0, 3", "gantt\n  dateFormat x\n  axisFormat %Q\n  section A\n  Việc A : 0, 3"),
     # dateFormat X put every task after the first at 0, so it is read as milliseconds too.
     ("gantt\n  dateFormat X\n  axisFormat %s\n  Việc A : 0, 3", "gantt\n  dateFormat x\n  axisFormat %Q\n  Việc A : 0, 3"),
-    # With no dateFormat, Mermaid reads YYYY-MM-DD, so real dates are as written.
-    ("gantt\n  section Dự án\n  Thiết kế : 2024-01-01, 10d", "gantt\n  section Dự án\n  Thiết kế : 2024-01-01, 10d"),
+    # With no dateFormat, Mermaid reads YYYY-MM-DD, so real dates are kept, with a day/month axis
+    # since the default full dates every few days overlap.
+    ("gantt\n  section Dự án\n  Thiết kế : 2024-01-01, 10d",
+     "gantt\n  axisFormat %d/%m\n  section Dự án\n  Thiết kế : 2024-01-01, 10d"),
     ("gantt\n  Việc A : a1, 0, 3\n  Việc B : crit, after a1, 4",
      "gantt\n  dateFormat x\n  axisFormat %Q\n  Việc A : a1, 0, 3\n  Việc B : crit, after a1, 4"),
-    # Real dates are as written.
-    ("gantt\n  dateFormat YYYY-MM-DD\n  Việc A : 2024-01-01, 3d", "gantt\n  dateFormat YYYY-MM-DD\n  Việc A : 2024-01-01, 3d"),
+    ("gantt\n  dateFormat YYYY-MM-DD\n  Việc A : 2024-01-01, 3d",
+     "gantt\n  axisFormat %d/%m\n  dateFormat YYYY-MM-DD\n  Việc A : 2024-01-01, 3d"),
+    # An axis format the model gave, or a format other than days, is as written.
+    ("gantt\n  dateFormat YYYY-MM-DD\n  axisFormat %b\n  Việc A : 2024-01-01, 3d",
+     "gantt\n  dateFormat YYYY-MM-DD\n  axisFormat %b\n  Việc A : 2024-01-01, 3d"),
+    ("gantt\n  dateFormat HH:mm\n  Việc A : 08:00, 2h", "gantt\n  dateFormat HH:mm\n  Việc A : 08:00, 2h"),
     # A bar chart's value axis starts at 0, keeping its title.
     ('xychart-beta\n  x-axis ["A", "B"]\n  y-axis "Điểm"\n  bar [6.8, 8.1]',
      'xychart-beta\n  y-axis "Điểm" 0 --> 8.1\n  x-axis ["A", "B"]\n  bar [6.8, 8.1]'),

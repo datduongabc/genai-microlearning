@@ -664,10 +664,12 @@ def diagram_as_drawn(code: str) -> str:
     kind = lines[0].strip()
     if kind == "gantt":
         formats = {m[1]: m[2].strip() for line in lines if (m := re.match(r"\s*(dateFormat|axisFormat)\b(.*)", line))}
-        if formats.get("dateFormat", "x") not in ("x", "X"):
-            return code  # real dates
-        if "dateFormat" not in formats and not _plain_number_times(lines[1:]):
-            return code  # Mermaid's default YYYY-MM-DD
+        date_format = formats.get("dateFormat")
+        if date_format not in ("x", "X") and (date_format or not _plain_number_times(lines[1:])):
+            if "axisFormat" in formats or date_format not in (None, "YYYY-MM-DD"):
+                return code  # real dates, as written
+            # Mermaid's default axis prints a full YYYY-MM-DD every few days, overlapping on a slide.
+            return "\n".join([lines[0], "  axisFormat %d/%m", *lines[1:]])
         kept = [line for line in lines[1:] if not re.match(r"\s*(dateFormat|axisFormat)\b", line)]
         return "\n".join(["gantt", "  dateFormat x", "  axisFormat %Q", *kept])
     if kind == "xychart-beta":
