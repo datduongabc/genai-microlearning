@@ -1,6 +1,8 @@
 """Slides are HTML with KaTeX, captured by a headless Chromium. These tests render for real."""
 
 import io
+import itertools
+import re
 
 import pytest
 from PIL import Image, ImageDraw
@@ -107,6 +109,59 @@ def test_a_broken_formula_is_shown_not_left_hanging(renderer):
     shot = renderer.capture(_scene(kind="formula", formula=r"\frac{1}{"), None)
     assert shot.tex_error
     assert _size(shot.png) == (1280, 720)
+
+
+def test_a_diagram_is_drawn_from_its_mermaid_code(renderer):
+    """Mermaid draws it in the page, in the slide's font, with every label as written."""
+    code = 'flowchart LR\n  A["Đầu vào (x)"] --> B["Xử lý: bước 1"] --> C["Kết quả"]'
+    shot = renderer.capture(_scene(kind="diagram", diagram=code), None)
+    assert shot.diagram_error is None and not shot.overflows and shot.blocked == []
+    assert "<svg" in shot.dom and "Xử lý: bước 1" in shot.visible_text
+    assert "Be Vietnam Pro" in shot.dom
+
+
+def test_a_gantt_of_plain_times_shows_numbers_not_dates(renderer):
+    code = "gantt\n  section Máy 1\n  Việc A : 0, 24\n  Việc B : 24, 27\n  Việc C : 27, 30"
+    shot = renderer.capture(_scene(kind="diagram", diagram=code), None)
+    assert shot.diagram_error is None
+    assert "1970" not in shot.visible_text and "Việc B" in shot.visible_text
+    # Each task starts where the one before it ends: 24 of 30 units, then 3 and 3.
+    bars = re.findall(r'<rect[^>]*class="task[^"]*"[^>]*>', shot.dom)
+    spans = [(float(re.search(r' x="([\d.]+)"', b)[1]), float(re.search(r'width="([\d.]+)"', b)[1])) for b in bars]
+    (x1, w1), (x2, w2), (x3, w3) = spans
+    assert x2 == pytest.approx(x1 + w1, abs=2) and x3 == pytest.approx(x2 + w2, abs=2)
+    assert w1 == pytest.approx(8 * w2, rel=0.02) and w2 == pytest.approx(w3, rel=0.02)
+
+
+def test_a_date_gantt_into_a_new_month_keeps_its_axis_labels_apart(renderer):
+    """d3 restarts its every-other-day ticks on the 1st, so 31/01 sits one day before 01/02; a day
+    is ~30px on this 37-day axis, less than a dd/mm label, so only labels 2+ days apart are shown."""
+    code = "gantt\n  section Dự án\n  Thiết kế : 2024-01-01, 20d\n  Kiểm thử : 2024-01-21, 17d"
+    shot = renderer.capture(_scene(kind="diagram", diagram=code), None)
+    assert shot.diagram_error is None and not shot.overflows
+    labels = re.findall(r"\b(\d\d)/(\d\d)\b", shot.visible_text)
+    days = [(int(m) - 1) * 31 + int(d) for d, m in labels]
+    assert len(days) > 5 and all(b - a >= 2 for a, b in itertools.pairwise(days))
+
+
+def test_a_broken_diagram_is_shown_not_left_hanging(renderer):
+    shot = renderer.capture(_scene(kind="diagram", diagram="flowchart LR\n  A[Đầu (vào] --> "), None)
+    assert shot.diagram_error
+    assert "flowchart LR" in shot.visible_text
+    assert _size(shot.png) == (1280, 720)
+
+
+def test_a_diagram_cannot_run_script(renderer):
+    code = 'flowchart LR\n  A["<img src=x onerror=document.body.dataset.pwned=1>"] --> B\n  click A call alert()'
+    shot = renderer.capture(_scene(kind="diagram", diagram=code), None)
+    # The handler would have set data-pwned on the body; strict mode prints the label as text instead.
+    assert "data-pwned" not in shot.dom
+
+
+def test_a_wide_diagram_is_shrunk_into_the_slide(renderer):
+    code = "flowchart LR\n" + "\n".join(f'  N{i}["Bước số {i} của quy trình"] --> N{i + 1}' for i in range(12))
+    shot = renderer.capture(_scene(kind="diagram", diagram=code), None)
+    assert shot.diagram_error is None and not shot.overflows
 
 
 def test_no_network_is_needed_to_render(renderer):

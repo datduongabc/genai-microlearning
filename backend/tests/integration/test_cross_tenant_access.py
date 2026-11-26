@@ -183,6 +183,7 @@ ATTACKS = [
     ("GET", "/documents/{document}/chunks", None, {}),
     ("GET", "/documents/jobs/{pipeline_job}", None, {}),
     ("GET", "/modules", {"document_id": "{document}"}, {}),
+    ("GET", "/modules/concepts", {"document_id": "{document}"}, {}),
     ("POST", "/modules/generate", {"document_id": "{document}"}, {}),
     ("GET", "/modules/jobs/{failed_job}", None, {}),
     ("GET", "/modules/{module}", None, {}),

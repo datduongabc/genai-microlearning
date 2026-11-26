@@ -21,7 +21,7 @@ const video = {
   render_problems: [], render_warnings: [], job: null, cost: null, captions: [],
   scenes: [{
     kind: 'summary', title: 'Cảnh 1', bullets: ['Ý một'], bullet_citations: [[]], formula: null, code: null,
-    table: null, image_prompt: null, narration: 'Câu một.', narration_citations: [[]], citations: [],
+    table: null, diagram: null, image_prompt: null, narration: 'Câu một.', narration_citations: [[]], citations: [],
     author: 'model', flags: [], has_image: false, image_outdated: false, needs_image: false, sources: [],
   }],
 } as VideoDetail

@@ -1,9 +1,9 @@
 """The slide of a scene: text the system prints, the model's picture beside it, captured as a PNG.
 
-The title, bullets, formula, code and table are printed from the script, so the text
+The title, bullets, formula, code, table and diagram are printed from the script, so the text
 on a slide is always spelled right and matches its source; the image model only draws the picture
 (app/video/illustrations.py). The page is HTML set in Be Vietnam Pro, with formulas typeset by
-KaTeX, and a headless Chromium takes the screenshot.
+KaTeX and diagrams drawn by Mermaid, and a headless Chromium takes the screenshot.
 
 Everything the page loads is served by the renderer itself from a made-up origin: the page, the
 picture and the bundled assets (app/video/assets, rebuilt by scripts/vendor_slide_assets.sh). Every
@@ -26,7 +26,7 @@ from urllib.parse import urlsplit
 
 from playwright.sync_api import Route, sync_playwright
 
-from app.generation.video_script import Scene
+from app.generation.video_script import Scene, diagram_as_drawn
 
 SIZE = (1280, 720)
 ASSETS = Path(__file__).parent / "assets"
@@ -89,6 +89,8 @@ def _content(scene: Scene, focus: int | None = None) -> str:
         head, *rows = scene.table
         parts.append("<table><tr>" + "".join(f"<th>{_inline(c)}</th>" for c in head) + "</tr>" + "".join(
             "<tr>" + "".join(f"<td>{_inline(c)}</td>" for c in row) + "</tr>" for row in rows) + "</table>")
+    if scene.diagram and scene.diagram.strip():
+        parts.append(f'<div class="d" data-mermaid="{html.escape(diagram_as_drawn(scene.diagram), quote=True)}"></div>')
     return "\n".join(parts)
 
 
@@ -100,7 +102,7 @@ def _composed(scene: Scene) -> Scene:
 
     return scene.model_copy(update={
         "title": nfc(scene.title), "bullets": [nfc(b) for b in scene.bullets], "formula": nfc(scene.formula),
-        "code": nfc(scene.code), "table": [[nfc(c) for c in row] for row in scene.table] if scene.table else scene.table,
+        "code": nfc(scene.code), "diagram": nfc(scene.diagram), "table": [[nfc(c) for c in row] for row in scene.table] if scene.table else scene.table,
     })
 
 
@@ -121,7 +123,8 @@ def slide_tag(scene: Scene, image_key: str | None, lang: str) -> str:
     """An ETag for the slide `slide_html` prints: the fields it prints, the picture's stored key (a
     redrawn picture has a new one) and the look. The same tag is the same PNG, so a browser that
     has it is told so without a render."""
-    printed = [scene.kind, scene.title, scene.bullets, scene.formula, scene.code, scene.table, image_key, lang, _LOOK]
+    printed = [scene.kind, scene.title, scene.bullets, scene.formula, scene.code, scene.table,
+               diagram_as_drawn(scene.diagram) if scene.diagram else None, image_key, lang, _LOOK]
     return '"' + hashlib.sha256(json.dumps(printed, ensure_ascii=False).encode()).hexdigest()[:32] + '"'
 
 
@@ -137,6 +140,7 @@ class SlideCapture:
     scale: float
     overflows: bool
     tex_error: str | None
+    diagram_error: str | None
     code_font: str | None
     fonts_loaded: dict[str, bool]
     blocked: list[str]
@@ -158,6 +162,7 @@ _INSPECT = """() => ({
   scale: parseFloat(document.body.dataset.scale || '1'),
   overflows: document.body.dataset.overflows === '1',
   texError: document.body.dataset.texError || null,
+  diagramError: document.body.dataset.diagramError || null,
   codeFont: document.querySelector('code') ? getComputedStyle(document.querySelector('code')).fontFamily : null,
   fonts: {
     'Be Vietnam Pro 400': document.fonts.check('400 28px "Be Vietnam Pro"', 'Tiến trình'),
@@ -241,7 +246,7 @@ class SlideRenderer:
         return SlideCapture(
             png=png, dom=info["dom"], visible_text=info["text"], layout=info["layout"],
             text_width=info["textWidth"], scale=info["scale"], overflows=info["overflows"],
-            tex_error=info["texError"], code_font=info["codeFont"], fonts_loaded=info["fonts"], blocked=blocked,
+            tex_error=info["texError"], diagram_error=info["diagramError"], code_font=info["codeFont"], fonts_loaded=info["fonts"], blocked=blocked,
         )
 
 

@@ -91,7 +91,7 @@ def scene(world, **extra) -> dict:
 
 def edit(stored: dict, **changes) -> dict:
     """The scene as the editor sends it back: what it was given, with the lecturer's changes."""
-    fields = ("kind", "title", "bullets", "bullet_citations", "formula", "code", "table", "image_prompt",
+    fields = ("kind", "title", "bullets", "bullet_citations", "formula", "code", "table", "diagram", "image_prompt",
               "narration", "narration_citations")
     return {f: stored.get(f) for f in fields} | changes
 
@@ -591,6 +591,22 @@ def test_a_lecturers_edit_is_cleaned_as_the_script_is(world):
     # A field the kind does not show is dropped, so the slide never has to choose.
     assert (edited["formula"], edited["code"], edited["table"]) == (None, None, None)
     assert edited["narration"] == "Câu một.\nCâu hai."
+
+
+def test_a_diagram_scene_keeps_its_code_and_a_scene_of_another_kind_drops_it(world):
+    video_id = make_video(world)
+    code = 'flowchart LR\n  A["Đến"] --> B["Chạy"]'
+    url, h = f"/videos/{video_id}/scenes", headers(world["owner"])
+
+    saved = client.put(url, headers=h, json={"draft_version": 1, "scenes": [
+        edit(scene(world), kind="diagram", diagram=f"  {code}\n")]}).json()["scenes"][0]
+    assert (saved["kind"], saved["diagram"]) == ("diagram", code)
+    # Changing the code makes the scene the lecturer's, as any field the slide shows does.
+    assert saved["author"] == "lecturer"
+
+    again = client.put(url, headers=h, json={"draft_version": 2, "scenes": [
+        edit(saved, kind="text", diagram=code)]}).json()["scenes"][0]
+    assert (again["kind"], again["diagram"]) == ("text", None)
 
 
 # --- Drawing and rendering ---

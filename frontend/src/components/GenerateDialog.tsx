@@ -1,7 +1,7 @@
-import { useState } from "react";
-import { useForm } from "react-hook-form";
+import { useEffect, useRef, useState } from "react";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import type { MediaChoice } from "../api";
+import { listModuleConcepts, type MediaChoice, type ModuleConcept } from "../api";
 import { generateModuleSchema, type GenerateModuleFormValues } from "../lib/formSchemas";
 import { useMediaModels } from "../lib/useMediaModels";
 import { ModelPicker } from "./ModelPicker";
@@ -15,7 +15,8 @@ export type GenerateKind = "module" | "flashcards" | "video";
 const KIND_TEXT: Record<GenerateKind, { title: string; field: string; tooLong: string }> = {
   module: {
     title: "Tạo mô-đun",
-    field: "Chủ đề mà bạn muốn tập trung vào?",
+    // What the module is about is the concept picked above; this is guidance on how to write it.
+    field: "Yêu cầu thêm cho mô-đun (không bắt buộc)",
     tooLong: "",
   },
   flashcards: {
@@ -37,6 +38,32 @@ export interface GenerateChoice {
   modelAlias: string;
   voiceAlias?: string;
   imageAlias?: string;
+  // A module's concept, picked from the planner's list; undefined leaves it to the server.
+  concept?: ModuleConcept;
+}
+
+type Concepts = ModuleConcept[] | "loading" | "failed";
+
+// The planner's concepts for a module, by document and language. Asked when the dialog opens and when
+// the language changes, never as the guidance is typed, and kept, so switching back costs nothing.
+function useModuleConcepts(documentId: string | undefined, language: "vi" | "en", wanted: boolean): Concepts | null {
+  const [byKey, setByKey] = useState<Record<string, ModuleConcept[] | "failed">>({});
+  const asked = useRef(new Set<string>());
+  const key = documentId ? `${documentId}:${language}` : null;
+  useEffect(() => {
+    if (!wanted || !documentId || !key || asked.current.has(key)) return;
+    asked.current.add(key);
+    // Not cancelled when the language changes: the answer is kept under its own key for later.
+    listModuleConcepts(documentId, language).then(
+      (concepts) => setByKey((was) => ({ ...was, [key]: concepts.length ? concepts : "failed" })),
+      () => {
+        // Asked again the next time the dialog opens: a planner that timed out has often finished by then.
+        asked.current.delete(key);
+        setByKey((was) => ({ ...was, [key]: "failed" }));
+      },
+    );
+  }, [wanted, documentId, language, key]);
+  return wanted && key ? (byKey[key] ?? "loading") : null;
 }
 
 function MediaSelect({ label, value, onChange, choices }: {
@@ -63,7 +90,7 @@ function MediaSelect({ label, value, onChange, choices }: {
   );
 }
 
-export function GenerateDialog({ open, onOpenChange, returnFocusTo, onGenerate, kind = "module" }: {
+export function GenerateDialog({ open, onOpenChange, returnFocusTo, onGenerate, kind = "module", documentId }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   // What gets focus back on close; the menu item that opened the dialog no longer exists then.
@@ -71,6 +98,8 @@ export function GenerateDialog({ open, onOpenChange, returnFocusTo, onGenerate, 
   // The second argument is the module guidance or, for the other kinds, the focus.
   onGenerate: (language: "vi" | "en", instructions: string, choice: GenerateChoice) => void;
   kind?: GenerateKind;
+  // The document a module is for: its concepts are listed to pick from.
+  documentId?: string;
 }) {
   const text = KIND_TEXT[kind];
   const models = useMediaModels(kind === "video");
@@ -84,16 +113,22 @@ export function GenerateDialog({ open, onOpenChange, returnFocusTo, onGenerate, 
   const {
     register,
     handleSubmit,
+    control,
     formState: { errors },
   } = useForm<GenerateModuleFormValues>({
     resolver: zodResolver(generateModuleSchema),
     defaultValues: { language: "vi", instructions: "" },
   });
+  const concepts = useModuleConcepts(documentId, useWatch({ control, name: "language" }), kind === "module" && open);
+  // The name picked; "" until the list is there, which then means its first, the most important.
+  const [conceptPick, setConceptPick] = useState("");
+  const listed = Array.isArray(concepts) ? concepts : null;
+  const concept = listed ? (listed.find((c) => c.name === conceptPick) ?? listed[0]) : undefined;
 
   function onValid(values: GenerateModuleFormValues) {
     onOpenChange(false);
     onGenerate(values.language, values.instructions,
-      kind === "video" ? { modelAlias, voiceAlias, imageAlias } : { modelAlias });
+      kind === "video" ? { modelAlias, voiceAlias, imageAlias } : concept ? { modelAlias, concept } : { modelAlias });
   }
 
   return (
@@ -109,6 +144,22 @@ export function GenerateDialog({ open, onOpenChange, returnFocusTo, onGenerate, 
             <option value="en">English</option>
           </select>
         </label>
+        {concepts !== null && (
+          concepts === "failed" ? (
+            <p className="course-hint mt-4">Chưa lấy được danh sách khái niệm. Mô-đun sẽ tự chọn khái niệm quan trọng nhất của tài liệu.</p>
+          ) : (
+            <label className="mt-4 flex flex-col gap-2 text-sm">
+              Khái niệm của mô-đun
+              <select aria-label="Khái niệm của mô-đun" value={concept?.name ?? ""} disabled={!listed}
+                onChange={(e) => setConceptPick(e.target.value)} className="ui-select w-full disabled:opacity-60">
+                {listed ? listed.map((c, i) => (
+                  <option key={c.name} value={c.name}>{i === 0 ? `${c.name} (quan trọng nhất)` : c.name}</option>
+                )) : <option value="">Đang tìm các khái niệm trong tài liệu…</option>}
+              </select>
+              {concept?.summary && <span className="course-hint">{concept.summary}</span>}
+            </label>
+          )
+        )}
         <label className="mt-4 flex flex-col gap-2 text-sm">
           {text.field}
           <textarea {...register("instructions")} maxLength={1000} rows={4} className="ui-input w-full" />

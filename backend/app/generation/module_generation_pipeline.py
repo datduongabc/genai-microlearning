@@ -75,18 +75,21 @@ def _get_or_cache_planner(
     lap lai 18 tai lieu that: 3/17 doi ket qua). Cache 1 lan, tai su dung
     moi lan sau.
     """
-    if (
-        doc.planner_concepts
-        and doc.planner_concepts[0].get("output_language") == output_language
-        and doc.planner_concepts[0].get("custom_instructions", "") == custom_instructions
-    ):
-        return PlannerOutput(concepts=[Concept(**c) for c in doc.planner_concepts])
+    instructions = custom_instructions.strip()
+    def same_key(c: dict) -> bool:
+        return c.get("output_language") == output_language and c.get("custom_instructions", "") == instructions
+    cached = [c for c in doc.planner_concepts or [] if same_key(c)]
+    if cached:
+        return PlannerOutput(concepts=[Concept(**c) for c in cached])
 
     # Do not retain the source reads while waiting on the planner.
     db.commit()
     planner_out = run_planner(doc.raw_text, output_language=output_language, custom_instructions=custom_instructions)
-    doc.planner_concepts = [
-        {**c.model_dump(), "output_language": output_language, "custom_instructions": custom_instructions.strip()} for c in planner_out.concepts
+    # Another request may have cached its own list while the planner ran.
+    db.refresh(doc, ["planner_concepts"], with_for_update=True)
+    # Each (language, instructions) keeps its own list, so asking for another never evicts this one.
+    doc.planner_concepts = [c for c in doc.planner_concepts or [] if not same_key(c)] + [
+        {**c.model_dump(), "output_language": output_language, "custom_instructions": instructions} for c in planner_out.concepts
     ]
     db.commit()
     return planner_out
@@ -113,8 +116,12 @@ def learning_objective_of(module: Module) -> LearningObjective:
 
 
 def concept_query_of(module: Module) -> str:
-    """Câu truy vấn pipeline RAG đã dùng cho module: "tên khái niệm: tóm tắt" của Planner. Không tìm
-    lại được khái niệm (Planner đã chạy lại, đổi tên) thì dùng tên module cùng Learning Objective."""
+    """Câu truy vấn pipeline RAG đã dùng cho module: "tên khái niệm: tóm tắt" của Planner. Khái niệm
+    giảng viên chọn nằm trong payload; không có thì tìm trong Planner đã lưu, và không tìm lại được
+    (Planner đã chạy lại, đổi tên) thì dùng tên module cùng Learning Objective."""
+    chosen = (module.generation_payload or {}).get("concept")
+    if chosen:
+        return f"{chosen['name']}: {chosen['summary']}"
     for concept in module.document.planner_concepts or []:
         if concept.get("name") == module.title:
             return f"{concept['name']}: {concept['summary']}"
@@ -146,6 +153,7 @@ def generation_payload_of(db: Session, module_id: uuid.UUID) -> dict:
 
 def generation_payload(
     alias: str | None, self_check: bool = True, output_language: OutputLanguage = "vi", custom_instructions: str = "",
+    concept: Concept | None = None,
 ) -> dict:
     """Không ghi alias khi chưa chọn, thay vì ghi sẵn giá trị từ cấu hình: ghi sẵn thì
     đổi cấu hình hệ thống sẽ không tác dụng với các job đã nằm trong hàng đợi. `self_check`
@@ -155,6 +163,9 @@ def generation_payload(
         payload["custom_instructions"] = custom_instructions.strip()
     if alias:
         payload["model_alias"] = alias
+    # Only when the lecturer picked one: left out, the worker takes the planner's first, as before.
+    if concept is not None:
+        payload["concept"] = {"name": concept.name, "summary": concept.summary}
     return payload
 
 
@@ -378,9 +389,10 @@ def run_module_generation(
     self_check: bool = True, use_retrieval: bool = True, paired_module: Module | None = None,
     output_language: OutputLanguage = "vi", custom_instructions: str = "",
     before_save: Callable[[Session, Module], None] | None = None,
-    checkpoint: Checkpoint | None = None,
+    checkpoint: Checkpoint | None = None, concept: Concept | None = None,
 ) -> Module:
-    """`checkpoint` holds the steps an earlier run of the same job finished (app/generation/checkpoint.py).
+    """`concept` is the one the lecturer picked from the planner's list; None takes the planner's first.
+    `checkpoint` holds the steps an earlier run of the same job finished (app/generation/checkpoint.py).
     `before_save` runs once the module has its id, in the transaction that writes it: the job queue
     checks there that its worker still holds the job and marks it done (app/jobs/queue.py, hold)."""
     # Keep read values in memory after each commit; expired attributes would silently reopen
@@ -390,7 +402,7 @@ def run_module_generation(
     try:
         with timing.capture_timings() as spans:
             return _generate_module(db, doc, self_check, use_retrieval, paired_module,
-                                    output_language, custom_instructions, spans, before_save, checkpoint)
+                                    output_language, custom_instructions, spans, before_save, checkpoint, concept)
     finally:
         db.expire_on_commit = expire_on_commit
 
@@ -408,11 +420,14 @@ class _Objective:
 
 def _objective_from_sources(
     db: Session, doc: Document, scope: ChunkScope,
-    output_language: OutputLanguage, custom_instructions: str,
+    output_language: OutputLanguage, custom_instructions: str, chosen: Concept | None = None,
 ) -> _Objective:
-    with timing.stage("planner"):
-        planner_out = _get_or_cache_planner(db, doc, output_language, custom_instructions)
-    top_concept = min(planner_out.concepts, key=lambda c: c.priority)
+    if chosen is not None:
+        top_concept = chosen
+    else:
+        with timing.stage("planner"):
+            planner_out = _get_or_cache_planner(db, doc, output_language, custom_instructions)
+        top_concept = min(planner_out.concepts, key=lambda c: c.priority)
     query = f"{top_concept.name}: {top_concept.summary}"
     db.commit()
     with timing.stage("retrieval"):
@@ -437,10 +452,10 @@ def _objective_from_pair(doc: Document, paired_module: Module | None) -> _Object
 
 def _new_module(
     doc: Document, objective: _Objective, paired_module: Module | None, self_check: bool,
-    use_retrieval: bool, output_language: OutputLanguage, custom_instructions: str,
+    use_retrieval: bool, output_language: OutputLanguage, custom_instructions: str, concept: Concept | None = None,
 ) -> Module:
     if use_retrieval:
-        payload = {**generation_payload(requested_model(), self_check, output_language, custom_instructions),
+        payload = {**generation_payload(requested_model(), self_check, output_language, custom_instructions, concept),
                    "use_retrieval": True}
     else:
         payload = control_payload(paired_module.id, requested_model(), self_check, output_language, custom_instructions)
@@ -541,7 +556,7 @@ def _generate_module(
     use_retrieval: bool = True, paired_module: Module | None = None,
     output_language: OutputLanguage = "vi", custom_instructions: str = "",
     spans: list[dict] | None = None, before_save: Callable[[Session, Module], None] | None = None,
-    checkpoint: Checkpoint | None = None,
+    checkpoint: Checkpoint | None = None, concept: Concept | None = None,
 ) -> Module:
     """Planner -> LO -> Content -> Slides -> Example -> Quiz/Practice ->
     Explanation. Nguyên logic chuyển từ _run_generate_module() cũ
@@ -567,14 +582,15 @@ def _generate_module(
     if saved is not None:
         objective = _objective_in(db, doc, saved)
     elif use_retrieval:
-        objective = _objective_from_sources(db, doc, scope, output_language, custom_instructions)
+        objective = _objective_from_sources(db, doc, scope, output_language, custom_instructions, concept)
     else:
         objective = _objective_from_pair(doc, paired_module)
     if checkpoint is not None and saved is None:
         checkpoint.put("objective", _objective_out(objective))
     lo = objective.lo
     db.commit()
-    module = _new_module(doc, objective, paired_module, self_check, use_retrieval, output_language, custom_instructions)
+    module = _new_module(doc, objective, paired_module, self_check, use_retrieval, output_language, custom_instructions,
+                         concept)
 
     saved = checkpoint.get("content") if checkpoint is not None else None
     if saved is not None:
@@ -674,11 +690,25 @@ def run_module_generation_step(job: Job) -> None:
                 db, doc, self_check=self_check, use_retrieval=use_retrieval, paired_module=paired_module,
                 output_language=current_job.payload.get("output_language", "vi"),
                 custom_instructions=current_job.payload.get("custom_instructions", ""),
+                concept=_chosen_concept(current_job.payload),
                 before_save=lambda session, module: _finish(hold(session, job), module),
                 checkpoint=Checkpoint(db, current_job.id),
             )
     finally:
         db.close()
+
+
+def _chosen_concept(payload: dict) -> Concept | None:
+    chosen = payload.get("concept")
+    # The priority is the planner's ranking, which a concept the lecturer picked no longer needs.
+    return Concept(name=chosen["name"], summary=chosen["summary"], priority=1) if chosen else None
+
+
+def planner_concepts(db: Session, doc: Document, output_language: OutputLanguage) -> list[Concept]:
+    """The concepts a lecturer picks a module's from, most important first. Asked without the
+    lecturer's guidance, so that typing it does not ask the planner again; the planner's answer is
+    kept on the document, so a dialog opened again costs nothing."""
+    return sorted(_get_or_cache_planner(db, doc, output_language).concepts, key=lambda c: c.priority)
 
 
 def _finish(job: Job, module: Module) -> None:

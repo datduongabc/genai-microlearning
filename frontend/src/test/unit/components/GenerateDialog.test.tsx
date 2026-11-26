@@ -27,12 +27,78 @@ const mediaModels = {
 vi.mock('../../../api', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../../../api')>()),
   listModels: vi.fn(),
+  listModuleConcepts: vi.fn(),
 }))
 
 beforeEach(() => {
   vi.mocked(videos.getMediaModels).mockReset().mockResolvedValue(mediaModels)
   vi.mocked(api.listModels).mockReset().mockResolvedValue({
     models: [{ alias: 'deepseek-flash', label: 'DeepSeek V4.1 Flash', provider: 'deepseek', note: null }], default: null,
+  })
+  vi.mocked(api.listModuleConcepts).mockReset()
+})
+
+const concepts = {
+  vi: [{ name: 'Bảng băm', summary: 'Cấu trúc lưu cặp khóa và giá trị.' }, { name: 'Xung đột', summary: 'Hai khóa cùng một chỉ số.' }],
+  en: [{ name: 'Hash table', summary: 'Stores key and value pairs.' }],
+}
+
+describe('GenerateDialog for a module of a document', () => {
+  function renderModule() {
+    const onGenerate = vi.fn()
+    render(<GenerateDialog open onOpenChange={vi.fn()} onGenerate={onGenerate} kind="module" documentId="doc-1" />)
+    return onGenerate
+  }
+
+  it('lists the concepts, most important first and picked, and hands over the one picked', async () => {
+    vi.mocked(api.listModuleConcepts).mockImplementation(async (_doc, language) => concepts[language])
+    const onGenerate = renderModule()
+
+    const select = await screen.findByRole('combobox', { name: 'Khái niệm của mô-đun' })
+    await waitFor(() => expect(select).toHaveValue('Bảng băm'))
+    expect(screen.getByRole('option', { name: 'Bảng băm (quan trọng nhất)' })).toBeInTheDocument()
+    expect(screen.getByText('Cấu trúc lưu cặp khóa và giá trị.')).toBeInTheDocument()
+
+    await userEvent.selectOptions(select, 'Xung đột')
+    expect(screen.getByText('Hai khóa cùng một chỉ số.')).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Tạo mô-đun' }))
+
+    await waitFor(() => expect(onGenerate).toHaveBeenCalledWith('vi', '', { modelAlias: '', concept: concepts.vi[1] }))
+  })
+
+  it('asks again only for another language, not while the guidance is typed', async () => {
+    vi.mocked(api.listModuleConcepts).mockImplementation(async (_doc, language) => concepts[language])
+    renderModule()
+
+    await screen.findByRole('option', { name: 'Bảng băm (quan trọng nhất)' })
+    await userEvent.type(screen.getByLabelText(/Yêu cầu thêm cho mô-đun/), 'Thêm ví dụ')
+    await userEvent.selectOptions(screen.getByLabelText(/^Ngôn ngữ đầu ra$/), 'en')
+    await screen.findByRole('option', { name: 'Hash table (quan trọng nhất)' })
+    await userEvent.selectOptions(screen.getByLabelText(/^Ngôn ngữ đầu ra$/), 'vi')
+    await screen.findByRole('option', { name: 'Bảng băm (quan trọng nhất)' })
+
+    expect(vi.mocked(api.listModuleConcepts).mock.calls).toEqual([['doc-1', 'vi'], ['doc-1', 'en']])
+  })
+
+  it('still generates, leaving the concept to the server, when the list cannot be had', async () => {
+    vi.mocked(api.listModuleConcepts).mockRejectedValue(new Error('timeout'))
+    const onGenerate = renderModule()
+
+    expect(await screen.findByText(/Chưa lấy được danh sách khái niệm/)).toBeInTheDocument()
+    expect(screen.queryByRole('combobox', { name: 'Khái niệm của mô-đun' })).not.toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Tạo mô-đun' }))
+
+    await waitFor(() => expect(onGenerate).toHaveBeenCalledWith('vi', '', { modelAlias: '' }))
+  })
+
+  it('can generate while the list is still on its way', async () => {
+    vi.mocked(api.listModuleConcepts).mockReturnValue(new Promise(() => {}))
+    const onGenerate = renderModule()
+
+    expect(await screen.findByRole('option', { name: /Đang tìm các khái niệm/ })).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Tạo mô-đun' }))
+
+    await waitFor(() => expect(onGenerate).toHaveBeenCalledWith('vi', '', { modelAlias: '' }))
   })
 })
 
@@ -54,7 +120,7 @@ describe('GenerateDialog', () => {
     expect(onOpenChange).toHaveBeenCalledWith(false)
 
     await userEvent.selectOptions(screen.getByLabelText(/^Ngôn ngữ đầu ra$/), 'en')
-    await userEvent.type(screen.getByLabelText(/Chủ đề mà bạn muốn tập trung vào/), '  Explain IDS ')
+    await userEvent.type(screen.getByLabelText(/Yêu cầu thêm cho mô-đun/), '  Explain IDS ')
     // The model is picked in the dialog, under the guidance.
     await userEvent.selectOptions(await screen.findByRole('combobox', { name: 'Mô hình' }), 'deepseek-flash')
     await userEvent.click(screen.getByRole('button', { name: 'Tạo mô-đun' }))
@@ -65,7 +131,7 @@ describe('GenerateDialog', () => {
   it('refuses guidance over 1000 characters and says so', async () => {
     const { onOpenChange, onGenerate } = renderDialog()
 
-    fireEvent.change(screen.getByLabelText(/Chủ đề mà bạn muốn tập trung vào/), { target: { value: 'a'.repeat(1001) } })
+    fireEvent.change(screen.getByLabelText(/Yêu cầu thêm cho mô-đun/), { target: { value: 'a'.repeat(1001) } })
     await userEvent.click(screen.getByRole('button', { name: 'Tạo mô-đun' }))
 
     expect(await screen.findByText('Yêu cầu thêm tối đa 1000 ký tự')).toBeInTheDocument()
@@ -77,7 +143,7 @@ describe('GenerateDialog', () => {
     const { onOpenChange, onGenerate } = renderDialog('flashcards')
 
     expect(screen.getByRole('heading', { name: 'Tạo flashcard' })).toBeInTheDocument()
-    expect(screen.queryByLabelText(/Chủ đề mà bạn muốn tập trung vào/)).not.toBeInTheDocument()
+    expect(screen.queryByLabelText(/Yêu cầu thêm cho mô-đun/)).not.toBeInTheDocument()
     await userEvent.type(screen.getByLabelText('Flashcard nên tập trung vào nội dung gì?'), '  Ví dụ: các định nghĩa trong chương 2 ')
     await userEvent.click(screen.getByRole('button', { name: 'Tạo flashcard' }))
 

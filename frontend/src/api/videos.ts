@@ -6,7 +6,8 @@ import type { DownloadTarget } from './upload'
 // A passage a scene cites, resolved by the server from its chunk id (the same shape a card has).
 export type VideoSource = FlashcardSource
 
-export type SceneKind = 'title' | 'illustration' | 'formula' | 'code' | 'table' | 'summary'
+// 'text' is bullets alone; scripts made before it used 'summary' for that, mid-video too.
+export type SceneKind = 'title' | 'text' | 'illustration' | 'diagram' | 'formula' | 'code' | 'table' | 'summary'
 
 export type VideoStatus = 'generating' | 'draft' | 'drawing' | 'rendering' | 'ready' | 'failed'
 
@@ -19,13 +20,15 @@ export interface VideoScene {
   formula: string | null
   code: string | null
   table: string[][] | null
+  // Mermaid code, which the slide draws.
+  diagram: string | null
   image_prompt: string | null
   // One sentence per line; narration_citations[i] belongs to line i.
   narration: string
   narration_citations: string[][]
   citations: string[]
   author: 'model' | 'lecturer'
-  // "Ý n: ..." and "Câu n: ..." are about one item, "Công thức", "Code", "Bảng" about that field,
+  // "Ý n: ..." and "Câu n: ..." are about one item, "Công thức", "Code", "Bảng", "Sơ đồ" about that field,
   // "Chưa có nguồn: Ý n" is derived from empty citations, and anything else is about the scene.
   flags: string[]
   has_image: boolean
@@ -84,6 +87,7 @@ export interface SceneEdit {
   formula: string | null
   code: string | null
   table: string[][] | null
+  diagram: string | null
   image_prompt: string | null
   narration: string
   narration_citations: string[][]

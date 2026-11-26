@@ -131,7 +131,7 @@ above, and return one verdict for every number."""
 # title scene, whose other sentences state facts that must still be checked.
 _FRAMING_RULE = """
 A sentence that only greets the viewer, says what the lesson or the next scene is about, or links one scene to
-the next (for example "Chào các bạn, hôm nay chúng ta tìm hiểu FCFS và Round Robin", "Tiếp theo, hãy xem một
+the next (for example "Chào các bạn, hôm nay chúng ta tìm hiểu hai khái niệm mới", "Tiếp theo, hãy xem một
 ví dụ") makes no claim about the subject: it is supported. A sentence that also states a fact about the subject
 is judged on that fact."""
 

@@ -41,13 +41,13 @@ from app.video.media_jobs import (
 
 logger = logging.getLogger(__name__)
 
-# What the image model is asked, around the scene's description. The description already names
-# every label the picture shows (app/generation/video_script.py); the slide prints the rest.
+# What the image model is asked, around the scene's description. A picture is of a concept only:
+# figures, charts and schedules are diagram scenes, which the slide draws (app/generation/video_script.py).
 IMAGE_PROMPT = (
     "Draw the picture described below as one clean flat vector illustration for a lecture slide, "
-    "on a plain white or very light background. Draw no text, letters, numbers or labels other than "
-    "the ones the description names, and no title, caption or legend: the slide prints its own text "
-    "beside the picture. Leave empty space around the drawing.\n\n"
+    "on a plain white or very light background. Draw no numbers, no charts or axes, and no text other "
+    "than the short labels the description names, and no title, caption or legend: the slide prints its "
+    "own text beside the picture. Leave empty space around the drawing.\n\n"
     "Picture: {description}"
 )
 # The slide's picture column is about 4:3 (560 x 520 px less padding).

@@ -19,7 +19,9 @@ import { SourcePassages } from './SourcePassages'
 
 const KIND_LABEL: Record<SceneKind, string> = {
   title: 'Mở đầu',
+  text: 'Nội dung',
   illustration: 'Minh họa',
+  diagram: 'Sơ đồ',
   formula: 'Công thức',
   code: 'Code',
   table: 'Bảng',
@@ -271,6 +273,13 @@ export function VideoSceneEditor({ scene: s, number, count, slide, canDraw, next
           Code
           <AutoGrowTextarea aria-label={`Mã nguồn cảnh ${number}`} aria-describedby={fieldNotes} value={s.code} maxLength={4000} rows={6} spellCheck={false}
             onChange={(e) => set({ code: e.target.value })} className="ui-input w-full font-mono" />
+        </label>
+      )}
+      {s.kind === 'diagram' && (
+        <label className="flashcard-field">
+          Sơ đồ (mã Mermaid)
+          <AutoGrowTextarea aria-label={`Sơ đồ cảnh ${number}`} aria-describedby={fieldNotes} value={s.diagram} maxLength={4000} rows={6} spellCheck={false}
+            onChange={(e) => set({ diagram: e.target.value })} className="ui-input w-full font-mono" />
         </label>
       )}
       {s.kind === 'table' && (

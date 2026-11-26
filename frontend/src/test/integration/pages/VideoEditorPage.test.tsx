@@ -23,7 +23,7 @@ const source = { chunk_id: 'c1', locator: 'Chapter 5.pdf · trang 9', content: '
 
 const scene = (n: number, extra: Partial<VideoScene> = {}): VideoScene => ({
   kind: 'summary', title: `Cảnh ${n}`, bullets: [`Ý một của cảnh ${n}`, `Ý hai của cảnh ${n}`],
-  bullet_citations: [['c1'], ['c1']], formula: null, code: null, table: null, image_prompt: null,
+  bullet_citations: [['c1'], ['c1']], formula: null, code: null, table: null, diagram: null, image_prompt: null,
   narration: `Câu một của cảnh ${n}.\nCâu hai của cảnh ${n}.`, narration_citations: [['c1'], ['c1']],
   citations: ['c1'], author: 'model', flags: [], has_image: false, image_outdated: false, needs_image: false,
   sources: [source], ...extra,

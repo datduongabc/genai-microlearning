@@ -83,8 +83,23 @@ function modelBody(modelAlias?: string | null) {
   return modelAlias ? { model_alias: modelAlias } : {}
 }
 
-export async function generateModule(documentId: string, modelAlias?: string | null, outputLanguage: "vi" | "en" = "vi", customInstructions = "") {
-  const { data } = await api.post('/modules/generate', { ...modelBody(modelAlias), output_language: outputLanguage, ...(customInstructions.trim() ? { custom_instructions: customInstructions.trim() } : {}) }, {
+// A concept the planner found in a document, which a module can be built on.
+export interface ModuleConcept {
+  name: string
+  summary: string
+}
+
+// Most important first. The first call for a document and language waits for the planner.
+export async function listModuleConcepts(documentId: string, outputLanguage: "vi" | "en") {
+  const { data } = await api.get<ModuleConcept[]>('/modules/concepts', {
+    params: { document_id: documentId, output_language: outputLanguage },
+  })
+  return data
+}
+
+// Without a concept the worker builds the module on the planner's first, as before the lecturer could pick.
+export async function generateModule(documentId: string, modelAlias?: string | null, outputLanguage: "vi" | "en" = "vi", customInstructions = "", concept?: ModuleConcept | null) {
+  const { data } = await api.post('/modules/generate', { ...modelBody(modelAlias), output_language: outputLanguage, ...(customInstructions.trim() ? { custom_instructions: customInstructions.trim() } : {}), ...(concept ? { concept } : {}) }, {
     params: { document_id: documentId },
   })
   return data as { job_id: string; status: string }

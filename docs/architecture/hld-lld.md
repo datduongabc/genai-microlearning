@@ -158,7 +158,7 @@ Phạm vi: module trong một tài liệu, chat trong cả môn.
 
 ```mermaid
 flowchart TB
-  P[planner: 8 khái niệm<br/>cache theo tài liệu] --> LO[LO + Bloom + sub-objectives]
+  P[planner: 8 khái niệm<br/>cache theo tài liệu, ngôn ngữ, yêu cầu<br/>giảng viên chọn một khái niệm] --> LO[LO + Bloom + sub-objectives]
   LO --> RET[truy hồi + relevance check<br/>viết lại query 1 lần]
   RET --> CT["Content có [S#]"]
   CT --> SC{tự kiểm}
@@ -191,12 +191,13 @@ flowchart TB
   VE --> VR[video_render]
   VI --> VR
   VR --> TTS[TTS mỗi cảnh<br/>giữ giọng nếu lời không đổi]
-  VR --> SLD[slide HTML + KaTeX<br/>Chromium chụp PNG, không mạng]
+  VR --> SLD[slide HTML + KaTeX + Mermaid<br/>Chromium chụp PNG, không mạng]
   TTS & SLD --> FF[ffmpeg ghép MP4 + phụ đề<br/>trần 8 phút]
   FF --> S3[(S3 media/)]
 ```
 
-Ảnh, giọng và chữ tách nhau: model ảnh chỉ vẽ hình, chữ trên slide do hệ thống in từ kịch bản nên luôn đúng chính tả và khớp nguồn.
+Ảnh, giọng và chữ tách nhau: model ảnh chỉ vẽ hình minh họa khái niệm, không có số; biểu đồ và sơ đồ là cảnh `diagram` viết bằng Mermaid, do trang slide tự vẽ.
+Chữ trên slide do hệ thống in từ kịch bản nên luôn đúng chính tả và khớp nguồn.
 Ảnh và giọng đã trả tiền được giữ khi một cảnh khác lỗi; job lỗi nêu tên cảnh lỗi.
 Trình duyệt hỏi lại slide đã có sẽ nhận 304 theo ETag, không render lại.
 

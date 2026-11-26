@@ -9,8 +9,13 @@ checks below decide what is kept, before the lecturer reviews it:
   nothing to say, so it is removed too. A script left shorter than MIN_SCENES is still saved, with
   a flag on its first scene: the lecturer can add scenes or generate again, and failing it would
   throw away the scenes that are good. Only a script with no scene left at all fails.
-- At most MAX_ILLUSTRATIONS scenes are illustrations, since each costs an image model call.
-- A script under MIN_CHARS, or with a scene under NARRATION_MIN_CHARS, is topped up once: in the
+- At most MAX_ILLUSTRATIONS scenes are illustrations, since each costs an image model call. An
+  image model draws figures and labels wrong, so a picture is only of a concept; anything with
+  structure or figures (a flow, a timeline, a schedule, a chart) is a diagram scene, Mermaid code
+  the slide draws itself, so every label and figure on it is the one the script wrote.
+- The title and summary scenes are short, as an opening and a recap are; every other scene says
+  about NARRATION_TARGET_CHARS.
+- A script under MIN_CHARS, or with a content scene under NARRATION_MIN_CHARS, is topped up once: in the
   trial the model wrote about four minutes when asked for five, in the first live run 2:18, and in
   the second 4:10, just above the minimum. The top-up asks for a stated length
   per scene, and what each step wrote is recorded with the script's cost, so a short video can be
@@ -18,7 +23,9 @@ checks below decide what is kept, before the lecturer reviews it:
 - A bullet that only repeats the slide's table or formula is removed, as long as two remain.
 - What reaches the voice, the image model and the formula renderer is normalized: no LaTeX or
   underscores in narration, labels in image prompts written as they are shown, words in formulas
-  set in \\text{}.
+  set in \\text{}, and a gantt diagram told its times are plain numbers.
+- A figure or label in a picture's description or a diagram that no chunk the scene cites has is
+  flagged for the lecturer.
 - A model of another family reads each scene against the passages it cites. What it doubts is a
   flag for the lecturer, never a reason to drop the scene or refuse the render.
 """
@@ -70,16 +77,21 @@ CHARS_PER_SECOND = 15
 MAX_ILLUSTRATIONS = 5
 MIN_SCENES = 6
 MAX_SCENES = 9
-# Asked for: about 480 characters a scene, so 7 or 8 scenes make the 3,600 of 4 minutes. Models write
-# the low end of a range (asked for 8 to 10, the live run got 8), so the range is narrow.
-# MIN_SCENES stays what a script is flagged under.
-ASKED_SCENES = (7, 8)
+# Asked for: about 480 characters a content scene, so 6 or 7 of them, with a short title and summary
+# scene, make the 3,600 of 4 minutes. Models write the low end of a range (asked for 8 to 10, the live
+# run got 8), so the range is narrow. MIN_SCENES stays what a script is flagged under.
+ASKED_SCENES = (8, 9)
 NARRATION_MIN_CHARS = 420
 NARRATION_MAX_CHARS = 550
 NARRATION_TARGET_CHARS = 480
 # A model keeps a count of sentences far better than a count of characters: the live run's scenes
 # were asked for 420 to 550 characters and came out at 2 or 3 sentences, 211 to 331 characters.
 NARRATION_SENTENCES = (5, 7)
+# An opening or a recap read at a content scene's length was 30 seconds over a slide with a title on
+# it; one to three sentences is what a lecturer says there.
+FRAMING_KINDS = ("title", "summary")
+FRAMING_SENTENCES = (1, 3)
+FRAMING_MAX_CHARS = 250
 TARGET_CHARS = TARGET_SECONDS * CHARS_PER_SECOND
 # The least the model is asked for, and below it the script is topped up: 3,100 characters read at
 # the 15.9 a second of live run 2 is 3:15, and the top of the range, 4,100, is 4:18.
@@ -90,10 +102,13 @@ MIN_CHARS = TARGET_CHARS - 500
 MAX_CHARS = TARGET_CHARS + 500
 # A scene over this is shortened: a little room over what it is asked for, so one rich scene stays.
 NARRATION_TRIM_CHARS = NARRATION_MAX_CHARS + 150
+FRAMING_TRIM_CHARS = FRAMING_MAX_CHARS + 100
 SENTENCE_MAX_WORDS = 25
 MIN_BULLETS, MAX_BULLETS = 2, 4
 
-SceneKind = Literal["title", "illustration", "formula", "code", "table", "summary"]
+# "text" is a slide of bullets alone. Scripts made before it existed used "summary" for that, which
+# is why a stored summary scene may sit in the middle of a video.
+SceneKind = Literal["title", "text", "illustration", "diagram", "formula", "code", "table", "summary"]
 
 
 class Scene(BaseModel):
@@ -111,6 +126,7 @@ class Scene(BaseModel):
     formula: str | None = None
     code: str | None = None
     table: list[list[str]] | None = None
+    diagram: str | None = None
     image_prompt: str | None = None
     narration: str
     citations: list[str]
@@ -141,6 +157,7 @@ class SceneDraft(BaseModel):
     code: str | None = Field(default=None, description="a short code excerpt, only for kind code")
     table: list[list[str]] | None = Field(
         default=None, description="rows, the first row is the header, only for kind table")
+    diagram: str | None = Field(default=None, description="Mermaid code, only for kind diagram")
     image_prompt: str | None = Field(
         default=None, description="English description of the illustration, only for kind illustration")
     narration: list[CitedText] = Field(description="the sentences the voice says over this slide, in order")
@@ -162,42 +179,100 @@ class TopUpDraft(BaseModel):
 
 _LANGUAGE_NAMES = {"vi": "Vietnamese", "en": "English"}
 _LOW, _HIGH = NARRATION_SENTENCES
+_F_LOW, _F_HIGH = FRAMING_SENTENCES
 
 _NARRATION_RULES = f"""Narration:
 - Natural speech, as the lecturer would say it in class.
-- Every scene's narration has {_LOW} to {_HIGH} sentences and {NARRATION_MIN_CHARS} to {NARRATION_MAX_CHARS} characters (about
-  {NARRATION_TARGET_CHARS}), whatever its kind, the title and the summary scenes included. A scene of 2 or 3 sentences is
-  far too short; a scene of 1,000 characters is far too long.
+- The title scene and the summary scene are short: {_F_LOW} to {_F_HIGH} sentences, at most {FRAMING_MAX_CHARS} characters. The title
+  scene says what the video is about; the summary scene recaps its main points.
+- Every other scene's narration has {_LOW} to {_HIGH} sentences and {NARRATION_MIN_CHARS} to {NARRATION_MAX_CHARS} characters (about
+  {NARRATION_TARGET_CHARS}). Such a scene of 2 or 3 sentences is far too short; one of 1,000 characters is far too long.
 - Each sentence is short, as said aloud: at most {SENTENCE_MAX_WORDS} words, one idea. Split a long sentence in two.
 - Say more than the slide: explain what each bullet means and why it matters; walk through a worked example
-  step by step with its figures (each process, its burst time, when it starts and ends, how long it waits);
+  step by step with its own figures (its data, each step, the result); say what the diagram shows, part by part;
   link the scene to the one before. Explaining, restating and walking through what a chunk states is not
   outside knowledge: cite that chunk. Many sentences may cite the same chunk.
 - One sentence per item of `narration`, each with its own `sources`.
 - The voice reads the text as written, so read symbols and fractions as the words they mean, never as
   LaTeX or symbols: in Vietnamese "một phần n", "n trừ một nhân q"; in English "one over n",
-  "n minus one times q". Write labels as they are said: P1, not P_1."""
+  "n minus one times q". Write labels as they are said: x1, not x_1."""
 
 
 # The example the model copies: live run 2's Vietnamese formulas kept the English one word for word.
+# About no subject in particular, so that no lecture's figures leak into another's video.
 _FORMULA_EXAMPLE = {
-    "vi": "\\text{Thời gian chờ trung bình} = \\frac{0 + 24 + 27}{3} = 17, "
-          "\\text{Thời gian chuyển ngữ cảnh} < 10\\,\\mu s \\ll q.",
-    "en": "\\text{Average waiting time} = \\frac{0 + 24 + 27}{3} = 17.",
+    "vi": "\\text{Giá trị trung bình} = \\frac{\\text{tổng các giá trị}}{n}.",
+    "en": "\\text{Mean value} = \\frac{\\text{sum of the values}}{n}.",
 }
 
 
 def _slide_language_rule(language: OutputLanguage) -> str:
     """The first live run's Vietnamese video showed the deck's English bullets as they were; the second
     still copied one table header ("Process | Burst Time") and the formulas' \\text{} words."""
-    rule = (f"Titles, bullets, table cells, the table's header row and the words in \\text{{}} of a formula are written in "
-            f"{_LANGUAGE_NAMES[language]}, like the narration; never copy the source's English bullets, table header or "
-            "formula words as they are.")
+    rule = (f"Titles, bullets, table cells, the table's header row, the labels of a diagram and the words in \\text{{}} of a "
+            f"formula are written in {_LANGUAGE_NAMES[language]}, like the narration; never copy the source's English "
+            "bullets, table header, labels or formula words as they are.")
     if language == "vi":
-        rule += (' A technical term may follow in English in brackets, for example "trưng dụng (preemption)", '
-                 '"hàng đợi sẵn sàng (ready queue)"; the names of algorithms stay as they are (FCFS, Round Robin). '
-                 'A table header reads, for example, "Tiến trình | Thời gian chạy (ms)", not "Process | Burst Time".')
+        rule += (' A technical term may follow in English in brackets, for example "độ chính xác (accuracy)"; the names '
+                 'of methods, algorithms, standards and products stay as they are. A table header reads, for example, '
+                 '"Thành phần | Vai trò", not "Component | Role".')
     return rule
+
+
+# A diagram is drawn by the slide, so it is only as good as its syntax: these are the mistakes that
+# keep Mermaid from drawing it, and the gantt rule keeps plain times from being read as dates in 1970.
+_DIAGRAM_RULES = """diagram, for diagram scenes only: Mermaid code for one diagram, nothing around it. Use only the names, labels
+and figures of the chunks the scene cites; never add one they do not give. Write it so that it draws:
+- The first line is the type: flowchart LR or flowchart TD (steps, a flow, a cycle, a tree, parts and how they
+  connect), sequenceDiagram (messages between parties in order), stateDiagram-v2 (states and transitions),
+  gantt (what runs when, on a time axis), xychart-beta (a bar or line chart of figures), timeline (events by period).
+- In a flowchart, every node has a short id and its label in double quotes: A["Bước 1 (đầu vào)"] --> B["Kết quả"].
+  An edge label goes in pipes and double quotes: A -->|"có"| B. Never a double quote inside a label.
+- In a sequenceDiagram a party is named without quotes, a message after a colon: participant C as Máy khách,
+  then C->>S: Gửi yêu cầu.
+- A gantt whose times are plain numbers (milliseconds, steps, units) starts with these lines exactly, and each task
+  is a name without a colon, then its start and its end:
+    gantt
+      dateFormat x
+      axisFormat %Q
+      section Tên làn
+      Việc A : 0, 3
+      Việc B : 3, 7
+- An xychart-beta lists its categories and its values: x-axis ["A", "B", "C"], y-axis "what is measured", then
+  bar [3, 5, 2] or line [3, 5, 2].
+- At most about 12 nodes, tasks or bars, so that it reads on a slide."""
+
+
+def _kind_rules(language: OutputLanguage) -> str:
+    """What each kind of scene shows and how it is written: for the first draft and for a scene the
+    lecturer's request has the model write."""
+    return f"""Kinds of scene. The first scene is of kind title and the last of kind summary; for every other scene pick the
+kind that shows its content best:
+- diagram: anything with structure, order or figures: a process or flow of steps, a cycle, a hierarchy, states and
+  their transitions, what happens when (a timeline or a schedule), parts and how they connect, a chart of figures.
+  Draw every worked example the chunks give that has such a structure, each in its own scene.
+- table: a small table of figures or of a comparison, as rows with the header row first.
+- formula: a formula, as LaTeX in `formula`.
+- code: a short code excerpt, in `code`.
+- illustration: a picture of a concept with no figures and nothing to read: what a thing looks like, an analogy, a
+  physical setup. At most {MAX_ILLUSTRATIONS}, and none when the chunks hold nothing to picture. Never a chart, a timeline,
+  a schedule or a diagram with labels or numbers: an image model draws those wrong, so they are diagram or table scenes.
+- text: points with nothing else to show, such as a definition, a list of properties or the pros and cons of something.
+Take every formula, code, table and diagram from the source chunks.
+- bullets: {MIN_BULLETS} to {MAX_BULLETS} very short points shown on the slide. They add to what the slide's table, formula, code or
+  diagram shows: never repeat the table's header or its rows, or the formula, as a bullet.
+- {_slide_language_rule(language)}
+
+image_prompt, for illustration scenes only, in English:
+- Describe one concrete picture of the concept, faithful to the source.
+- No numbers, no figures, no axes or charts. A short label only where the picture cannot be read without it, written
+  as it is to appear ("x1", not "x_1" or "$x_1$"), and only a word the cited chunks use.
+- Flat vector style, white background.
+
+{_DIAGRAM_RULES}
+
+formula: words inside a formula go in \\text{{...}}, so that they are not set in italics like variables, and they are
+written in {_LANGUAGE_NAMES[language]}: {_FORMULA_EXAMPLE[language]}"""
 
 
 def _script_instruction(language: OutputLanguage) -> str:
@@ -205,45 +280,19 @@ def _script_instruction(language: OutputLanguage) -> str:
 at home before class. It must last about {TARGET_SECONDS // 60} minutes (3 to 5). The voice reads about {CHARS_PER_SECOND} characters a
 second, so the narration of all scenes together is about {TARGET_CHARS} characters ({MIN_CHARS} to {MAX_CHARS}).
 Both ways fail: 2,000 characters is a video of only 2 minutes, and 8,000 is 9 minutes, longer than a video may be. The
-video is a list of scenes; each
-scene is one slide shown while a voice reads its narration.
+video is a list of scenes; each scene is one slide shown while a voice reads its narration.
 
 It is about the FOCUS given. When TOPICS lists several, cover every topic in TOPICS, each in scenes of its own and about
-as much on each. A chunk about something else (another algorithm, an exercise, the chapter's summary) is only context:
+as much on each. A chunk about something else (another topic, an exercise, the chapter's summary) is only context:
 write no scene about it.
 
 Use ONLY what the source chunks say: no outside knowledge, nothing the chunks do not state.
 Every bullet and every narration sentence lists in `sources` the IDs of the chunks it is taken from
 (for example ["S2"]). A bullet or sentence without a source is removed.
 
-Scenes:
-- Write {ASKED_SCENES[0]} to {ASKED_SCENES[1]} scenes. The first is of kind title and introduces the topic; the last is of kind
-  summary and recaps it. Use summary for the last scene only.
-- Use 3 to {MAX_ILLUSTRATIONS} scenes of kind illustration, never more than {MAX_ILLUSTRATIONS}. These are the scenes that are pictures:
-  - the schedule of a worked example: the Gantt chart of the order its processes run in, with its time marks
-    (FCFS, SJF, Round Robin with its q). Draw every worked example the chunks give, each in its own scene;
-  - a process timeline: when each process arrives, waits, runs and finishes;
-  - a queue: the ready queue, or the order processes are taken from it and put back at its end;
-  - how a parameter changes the result, such as the same processes run with a small and a large time quantum.
-  A scene that walks through such a schedule is an illustration: its figures go in the picture and its narration (the
-  burst times alone may be a table scene before it). A definition, a list of criteria or a comparison has no picture in it: when the chunks hold fewer than 3
-  of the things above, write fewer illustrations rather than a picture that shows nothing.
-- A formula goes in a scene of kind formula, as LaTeX in `formula`; a short code excerpt in kind code; a small table
-  of figures in kind table, as rows with the header row first. Take them from the source chunks.
-- bullets: {MIN_BULLETS} to {MAX_BULLETS} very short points shown on the slide. They add to what the slide's table, formula or code
-  shows: never repeat the table's header or its rows, or the formula, as a bullet.
-- {_slide_language_rule(language)}
+Write {ASKED_SCENES[0]} to {ASKED_SCENES[1]} scenes. Use title for the first scene and summary for the last only.
 
-image_prompt, for illustration scenes only, in English:
-- Describe one concrete picture, faithful to the source. Use only the processes and figures of the chunks the scene cites:
-  never add a process or a figure they do not give (no P4 or P5 when the example has P1, P2 and P3).
-- Give every figure and label the picture shows, exactly as in the source: burst times, the time marks of a Gantt
-  chart, the order of the processes. Never leave a number for the image model to make up.
-- Write each label as it will appear in the picture: "P1", not "P_1" or "$P_1$".
-- Flat vector style, white background, no text other than those labels and figures.
-
-formula: words inside a formula go in \\text{{...}}, so that they are not set in italics like variables, and they are
-written in {_LANGUAGE_NAMES[language]}: {_FORMULA_EXAMPLE[language]}
+{_kind_rules(language)}
 
 {_NARRATION_RULES}
 {term_rules(language)}"""
@@ -251,18 +300,16 @@ written in {_LANGUAGE_NAMES[language]}: {_FORMULA_EXAMPLE[language]}
 
 _TOP_UP_INSTRUCTION = IGNORE_EMBEDDED_INSTRUCTIONS + f"""The narration of some scenes of a narrated lecture video came out
 too short: the video must last about {TARGET_SECONDS // 60} minutes and at least 3. For each scene given, write its narration
-again so that it has {_LOW} to {_HIGH} sentences and at least {NARRATION_MIN_CHARS} characters, about {NARRATION_TARGET_CHARS} characters. Keep what it
-says, and add to it: explain what its slide shows and why it matters, walk through its example and its figures step by
-step. Use ONLY what the source chunks say. Every sentence lists in `sources` the IDs of the chunks it is taken from,
+again to the length its line asks for ("wanted"). Keep what it says, and add to it: explain what its slide shows and
+why it matters, walk through its example and its figures step by step. Use ONLY what the source chunks say. Every sentence lists in `sources` the IDs of the chunks it is taken from,
 such as the chunks the scene already cites: a sentence without a source is removed, and a new narration that ends up no
 longer than the old one is thrown away. Return each scene with the number it was given, as `index`.
 
 {_NARRATION_RULES}"""
 
 _TRIM_INSTRUCTION = IGNORE_EMBEDDED_INSTRUCTIONS + f"""The narration of some scenes of a narrated lecture video came out
-too long: the video must last about {TARGET_SECONDS // 60} minutes. For each scene given, write its narration again so
-that it has {_LOW} to {_HIGH} short sentences and {NARRATION_MIN_CHARS} to {NARRATION_MAX_CHARS} characters, about {NARRATION_TARGET_CHARS}.
-Keep what matters most for its slide: what each bullet means, and the figures of its example. Drop repetition and
+too long: the video must last about {TARGET_SECONDS // 60} minutes. For each scene given, write its narration again to
+the length its line asks for ("wanted"), in short sentences. Keep what matters most for its slide: what each bullet means, and the figures of its example. Drop repetition and
 asides. Use ONLY what the source chunks say. Every sentence lists in `sources` the IDs of the chunks it is taken from,
 such as the chunks the scene already cites: a sentence without a source is removed, and a new narration that ends up no
 shorter than the old one is thrown away. Return each scene with the number it was given, as `index`.
@@ -281,8 +328,12 @@ class _Draft:
     formula: str | None = None
     code: str | None = None
     table: list[list[str]] | None = None
+    diagram: str | None = None
     image_prompt: str | None = None
     flags: list[str] = field(default_factory=list)
+
+    def framing(self) -> bool:
+        return self.kind in FRAMING_KINDS
 
     def narration_chars(self) -> int:
         return len(" ".join(text for text, _ in self.narration))
@@ -325,7 +376,8 @@ def _kept_scenes(drafts: list[SceneDraft], chunks: list[Chunk]) -> tuple[list[_D
             dropped += 1
             continue
         scenes.append(_Draft(kind=d.kind, title=d.title.strip(), bullets=bullets, narration=narration,
-                             formula=d.formula, code=d.code, table=d.table, image_prompt=d.image_prompt))
+                             formula=d.formula, code=d.code, table=d.table, diagram=d.diagram,
+                             image_prompt=d.image_prompt))
     if len(scenes) > MAX_SCENES:
         # The closing summary is what a cut from the end would lose, so the cut is made before it.
         scenes = scenes[:MAX_SCENES - 1] + scenes[-1:]
@@ -339,13 +391,14 @@ def _blank(value: str | None) -> bool:
 def _settle_kinds(scenes: list[_Draft]) -> None:
     """Each scene keeps only what its kind shows, so the slide renderer never has to choose, and a
     kind whose content is missing becomes a text scene. Only the first MAX_ILLUSTRATIONS
-    illustrations keep their picture."""
+    illustrations keep their picture; the others become text scenes too."""
     illustrations = 0
     for s in scenes:
         missing = {
             "illustration": _blank(s.image_prompt),
             "formula": _blank(s.formula),
             "code": _blank(s.code),
+            "diagram": _blank(s.diagram),
             # A header and at least one row.
             "table": not s.table or len(s.table) < 2,
         }.get(s.kind, False)
@@ -353,11 +406,12 @@ def _settle_kinds(scenes: list[_Draft]) -> None:
             illustrations += 1
             missing = illustrations > MAX_ILLUSTRATIONS
         if missing:
-            s.kind = "summary"
+            s.kind = "text"
         s.image_prompt = s.image_prompt.strip() if s.kind == "illustration" else None
         s.formula = s.formula.strip() if s.kind == "formula" else None
         s.code = s.code if s.kind == "code" else None
         s.table = s.table if s.kind == "table" else None
+        s.diagram = s.diagram.strip() if s.kind == "diagram" else None
         s.bullets = _without_repeats(s)[:MAX_BULLETS]
 
 
@@ -382,52 +436,80 @@ def _without_repeats(s: _Draft) -> list[tuple[str, list[Chunk]]]:
     return fresh if len(fresh) >= MIN_BULLETS else s.bullets
 
 
+def _floor(s: _Draft) -> int:
+    return 0 if s.framing() else NARRATION_MIN_CHARS
+
+
+def _ceiling(s: _Draft) -> int:
+    return FRAMING_MAX_CHARS if s.framing() else NARRATION_MAX_CHARS
+
+
+def _trim_limit(s: _Draft) -> int:
+    return FRAMING_TRIM_CHARS if s.framing() else NARRATION_TRIM_CHARS
+
+
 def _needs_top_up(scenes: list[_Draft]) -> bool:
-    """Under the floor in all, or any scene under what a scene is asked for. Live run 2 passed the old
-    rule (0.8 x target) at 3,960 characters with two scenes under 420, and came out 10 s above 4
-    minutes: a slightly shorter draft would have skipped the top-up and been under."""
-    return _total_chars(scenes) < MIN_CHARS or any(s.narration_chars() < NARRATION_MIN_CHARS for s in scenes)
+    """Under the floor in all, or any content scene under what it is asked for. Live run 2 passed the
+    old rule (0.8 x target) at 3,960 characters with two scenes under 420, and came out 10 s above 4
+    minutes: a slightly shorter draft would have skipped the top-up and been under. The title and
+    summary scenes are short on purpose and are never lengthened."""
+    return _total_chars(scenes) < MIN_CHARS or any(s.narration_chars() < _floor(s) for s in scenes)
 
 
-# A process label as a slide or its PDF text writes it: P1, P 1, P_1, P_{1}.
-_PROCESS = re.compile(r"\bP\s?_?\{?(\d+)\}?")
-_FIGURE = re.compile(r"\d+(?:[.,]\d+)?")
+# A figure, and a short label with a number (x1, P2, L3), as a picture or a diagram would show them.
+_FIGURE = re.compile(r"(?<![\w.,])\d+(?:[.,]\d+)?(?!\w)")
+# Mermaid numbers are JS numbers: a comma there separates list items ("bar [10,20,30]").
+_DIAGRAM_FIGURE = re.compile(r"(?<![\w.])\d+(?:\.\d+)?(?!\w)")
+# A source may write a figure against its unit ("24ms"), which a picture or diagram shows apart.
+_SOURCE_FIGURE = re.compile(r"\d+(?:[.,]\d+)?")
+_LABEL = re.compile(r"\b[^\W\d_]{1,3}\d+\b")
+_SPACED_LABEL = re.compile(r"\b([^\W\d_]{1,3}) ?(\d+)\b")
 
 
-def _invented_in_picture(s: _Draft) -> list[str]:
-    """The processes and figures the image prompt names that no chunk the scene cites has. Live run 2's
-    Round Robin picture showed P4 and P5, which exist nowhere in the source: the script model wrote
-    them into the prompt, and the image model drew what it was told. Flagged, not removed: the
-    lecturer fixes the description before paying for the picture."""
-    if not s.image_prompt:
+def _invented(s: _Draft) -> list[str]:
+    """The figures and labels the image prompt, or the figures the diagram, shows that no chunk the
+    scene cites has. Live run 2's picture showed two labels that exist nowhere in the source: the
+    script model wrote them into the prompt, and the image model drew what it was told. In a diagram
+    only figures count, since its node ids (A1) are syntax the slide does not show; 0 is where an
+    axis starts, not a claim. Flagged, not removed: the lecturer fixes it before it is drawn."""
+    shown = labels_as_shown(s.image_prompt) if s.image_prompt else s.diagram
+    if not shown:
         return []
-    source = " ".join(c.content for c in s.chunks())
-    labels = {f"P{n}" for n in _PROCESS.findall(source)}
-    figures = set(_FIGURE.findall(source))
-    asked = labels_as_shown(s.image_prompt)
-    named = [f"P{n}" for n in _PROCESS.findall(asked)]
-    shown = _FIGURE.findall(_PROCESS.sub(" ", asked))
-    missing = [label for label in named if label not in labels] + [f for f in shown if f not in figures]
-    return list(dict.fromkeys(missing))
+    source = _subscripts_joined(unicodedata.normalize("NFKC", " ".join(c.content for c in s.chunks())))
+    # A PDF's text may space a label out ("P 3"), which a description writes as one word.
+    labels = {f"{m[1]}{m[2]}".casefold() for m in _SPACED_LABEL.finditer(source)}
+    figures = _SOURCE_FIGURE.findall(source)
+    # A source's "6,8" may be one decimal or a list, which a diagram writes as 6.8 or as 6 and 8.
+    known = labels | set(figures) | {f.replace(",", ".") for f in figures} | {p for f in figures for p in f.split(",")} | {"0"}
+    named = _LABEL.findall(shown) + _FIGURE.findall(shown) if s.image_prompt else _DIAGRAM_FIGURE.findall(shown)
+    return list(dict.fromkeys(w for w in named if w.casefold() not in known))
+
+
+def _invention_flags(s: _Draft) -> list[str]:
+    invented = _invented(s)
+    if not invented:
+        return []
+    what = "Mô tả hình" if s.image_prompt else "Sơ đồ"
+    return [f"{what} có {', '.join(invented)}, không có trong đoạn nguồn của cảnh: hãy sửa trước khi vẽ."]
 
 
 def _scenes_to_top_up(scenes: list[_Draft]) -> list[int]:
-    """Indexes of the scenes to lengthen: the ones shorter than a scene is asked to be, or, when every
-    scene reaches that and there are too few of them, the shortest third."""
-    by_length = sorted(range(len(scenes)), key=lambda i: scenes[i].narration_chars())
-    short = [i for i in by_length if scenes[i].narration_chars() < NARRATION_MIN_CHARS]
-    return sorted(short or by_length[:math.ceil(len(scenes) / 3)])
+    """Indexes of the content scenes to lengthen: the ones shorter than a scene is asked to be, or, when
+    every one reaches that and the whole is still short, the shortest third of them."""
+    content = sorted((i for i in range(len(scenes)) if not scenes[i].framing()), key=lambda i: scenes[i].narration_chars())
+    short = [i for i in content if scenes[i].narration_chars() < NARRATION_MIN_CHARS]
+    return sorted(short or content[:math.ceil(len(content) / 3)])
 
 
 def _needs_trim(scenes: list[_Draft]) -> bool:
-    return _total_chars(scenes) > MAX_CHARS or any(s.narration_chars() > NARRATION_TRIM_CHARS for s in scenes)
+    return _total_chars(scenes) > MAX_CHARS or any(s.narration_chars() > _trim_limit(s) for s in scenes)
 
 
 def _scenes_to_trim(scenes: list[_Draft]) -> list[int]:
-    """The scenes longer than a scene may be, or, when none is and the whole is still too long, the
-    longest third."""
+    """The scenes longer than a scene of their kind may be, or, when none is and the whole is still too
+    long, the longest third."""
     by_length = sorted(range(len(scenes)), key=lambda i: -scenes[i].narration_chars())
-    long = [i for i in by_length if scenes[i].narration_chars() > NARRATION_MAX_CHARS]
+    long = [i for i in by_length if scenes[i].narration_chars() > _ceiling(scenes[i])]
     return sorted(long or by_length[:math.ceil(len(scenes) / 3)])
 
 
@@ -440,18 +522,22 @@ class _TopUpResult:
 
 def _top_up(scenes: list[_Draft], query: str, chunks: list[Chunk], language: OutputLanguage) -> _TopUpResult:
     return _rewrite(scenes, _scenes_to_top_up(scenes), query, chunks, language, _TOP_UP_INSTRUCTION,
-                    f"wanted: at least {NARRATION_MIN_CHARS} characters, {_LOW} to {_HIGH} sentences", longer=True)
+                    lambda s: f"wanted: at least {NARRATION_MIN_CHARS} characters, {_LOW} to {_HIGH} sentences", longer=True)
 
 
 def _trim(scenes: list[_Draft], query: str, chunks: list[Chunk], language: OutputLanguage) -> _TopUpResult:
-    return _rewrite(scenes, _scenes_to_trim(scenes), query, chunks, language, _TRIM_INSTRUCTION,
-                    f"wanted: at most {NARRATION_MAX_CHARS} characters, {_LOW} to {_HIGH} short sentences", longer=False)
+    def wanted(s: _Draft) -> str:
+        low, high = FRAMING_SENTENCES if s.framing() else NARRATION_SENTENCES
+        return f"wanted: at most {_ceiling(s)} characters, {low} to {high} short sentences"
+    return _rewrite(scenes, _scenes_to_trim(scenes), query, chunks, language, _TRIM_INSTRUCTION, wanted, longer=False)
 
 
 def _rewrite(scenes: list[_Draft], chosen: list[int], query: str, chunks: list[Chunk], language: OutputLanguage,
-             instruction: str, wanted: str, *, longer: bool) -> _TopUpResult:
+             instruction: str, wanted: Callable[[_Draft], str], *, longer: bool) -> _TopUpResult:
     """Has the model write the chosen scenes' narration again, longer or shorter. A reply is kept
     only when its cited sentences move the length the way asked."""
+    if not chosen:
+        return _TopUpResult()
     ids = {c.id: source_id(n) for n, c in enumerate(chunks)}
     listed = []
     for i in chosen:
@@ -461,7 +547,7 @@ def _rewrite(scenes: list[_Draft], chosen: list[int], query: str, chunks: list[C
         # The IDs it already cites, so the longer narration has a source at hand for every sentence.
         cites = ", ".join(ids[c.id] for c in s.chunks() if c.id in ids)
         listed.append(f"SCENE {i + 1}: {s.title}\nThis scene cites {cites}.\nSlide:\n{bullets}\n"
-                      f"Narration now ({s.narration_chars()} characters, {len(s.narration)} sentences; {wanted}): {narration}")
+                      f"Narration now ({s.narration_chars()} characters, {len(s.narration)} sentences; {wanted(s)}): {narration}")
     reply = complete_structured(
         f"FOCUS: {query}\n\n" + "\n\n".join(listed) + f"\n\n{format_source_chunks(chunks)}", TopUpDraft,
         system_instruction=instruction + f"\n{term_rules(language)}" + output_language_instruction(language),
@@ -550,6 +636,57 @@ def normalize_narration(text: str, language: str = "vi") -> str:
     return "\n".join(lines)
 
 
+_FENCE = re.compile(r"^\s*```[\w-]*\s*\n?|\n?\s*```\s*$")
+
+
+_NUMBER_LIST = re.compile(r"^\s*(?:bar|line)\b[^\[]*\[([^\]]*)\]", re.MULTILINE)
+
+
+_GANTT_TIME = re.compile(r"\d+(?:\.\d+)?|[^\W\d][\w-]*|after\b.*")
+
+
+def _plain_number_times(lines: list[str]) -> bool:
+    """Whether every task's start and end is a plain number (the rest being tags, ids or "after")."""
+    values = [v.strip() for line in lines
+              if ":" in line and not re.match(r"\s*(title|acc\w+|%%)", line)
+              for v in line.split(":", 1)[1].split(",")]
+    return any(re.fullmatch(r"\d+(?:\.\d+)?", v) for v in values) and all(_GANTT_TIME.fullmatch(v) for v in values)
+
+
+def diagram_as_drawn(code: str) -> str:
+    """The Mermaid code as the slide draws it: without the Markdown fence a model wraps it in; a
+    gantt of plain numbers on a millisecond axis printed as numbers, since Mermaid reads them as
+    dates in 1970 otherwise (and with dateFormat X it put every task after the first at 0); and a
+    chart's value axis from 0, which Mermaid starts at the smallest value, so 6.8 against 8.1
+    looked like nothing against a lot."""
+    code = _FENCE.sub("", code.strip()).strip()
+    lines = code.split("\n")
+    kind = lines[0].strip()
+    if kind == "gantt":
+        formats = {m[1]: m[2].strip() for line in lines if (m := re.match(r"\s*(dateFormat|axisFormat)\b(.*)", line))}
+        date_format = formats.get("dateFormat")
+        if date_format not in ("x", "X") and (date_format or not _plain_number_times(lines[1:])):
+            if "axisFormat" in formats or date_format not in (None, "YYYY-MM-DD"):
+                return code  # real dates, as written
+            # Mermaid's default axis prints a full YYYY-MM-DD every few days, overlapping on a slide.
+            return "\n".join([lines[0], "  axisFormat %d/%m", *lines[1:]])
+        kept = [line for line in lines[1:] if not re.match(r"\s*(dateFormat|axisFormat)\b", line)]
+        return "\n".join(["gantt", "  dateFormat x", "  axisFormat %Q", *kept])
+    if kind == "xychart-beta":
+        try:
+            values = [float(v) for m in _NUMBER_LIST.finditer(code) for v in m[1].split(",") if v.strip()]
+        except ValueError:
+            return code
+        if not values or min(values) < 0 or any(re.match(r"\s*y-axis\b.*-->", line) for line in lines):
+            return code
+        top = f"{max(values):g}"
+        kept = [line for line in lines[1:] if not re.match(r"\s*y-axis\b", line)]
+        title = next((m[1] for line in lines if (m := re.match(r'\s*y-axis\s+("[^"]*")', line))), "")
+        axis = f"  y-axis {title} 0 --> {top}" if title else f"  y-axis 0 --> {top}"
+        return "\n".join([lines[0], axis, *kept])
+    return code
+
+
 def labels_as_shown(image_prompt: str) -> str:
     """The image model draws a label as it is written, so "P_1" would be drawn with its underscore."""
     return re.sub(r"[ \t]+", " ", _subscripts_joined(image_prompt.replace("$", ""))).strip()
@@ -621,6 +758,8 @@ def _items(s: _Draft, language: str) -> list[tuple[str, str]]:
         items.append(("Code", s.code))
     if s.table:
         items.append(("Bảng", "\n".join(" | ".join(row) for row in s.table)))
+    if s.diagram:
+        items.append(("Sơ đồ", s.diagram))
     items.extend((f"Câu {n}", text) for n, (text, _) in enumerate(_spoken(s, language), 1))
     return items
 
@@ -631,7 +770,7 @@ def _stored(s: _Draft, language: str) -> dict:
     narration_citations = [[str(c.id) for c in used] for _, used in spoken]
     return Scene(
         kind=s.kind, title=s.title, bullets=[text for text, _ in s.bullets],
-        formula=text_words_in_formula(s.formula) if s.formula else None, code=s.code, table=s.table,
+        formula=text_words_in_formula(s.formula) if s.formula else None, code=s.code, table=s.table, diagram=s.diagram,
         image_prompt=labels_as_shown(s.image_prompt) if s.image_prompt else None,
         narration="\n".join(narration), citations=[str(c.id) for c in s.chunks()],
         bullet_citations=[[str(c.id) for c in used] for _, used in s.bullets],
@@ -719,10 +858,7 @@ def generate_video_script(db: Session, video_id: uuid.UUID, before_save: Callabl
                   "shorten_failed": trim_failed, "final_chars": _total_chars(scenes)}
 
         for s in scenes:
-            invented = _invented_in_picture(s)
-            if invented:
-                s.flags.append(f"Mô tả hình có {', '.join(invented)}, không có trong đoạn nguồn của cảnh: "
-                               "hãy sửa mô tả trước khi vẽ.")
+            s.flags.extend(_invention_flags(s))
         verdicts = fact_check.check_items_against_sources(
             [(_items(s, language), [c.content for c in s.chunks()]) for s in scenes], video.model_alias, language)
         for s, item_flags in zip(scenes, verdicts, strict=True):
@@ -766,15 +902,15 @@ Return the whole script as it should be after the request: change, add, remove o
 and copy every other scene exactly as it is, word for word, with the same sources. Set `from_scene` to the number of
 the current scene each scene comes from, changed or not; leave it empty for a new scene.
 A scene you write or change follows the rules of the others: {MIN_BULLETS} to {MAX_BULLETS} short bullets on the slide and
-the narration as sentences, each bullet and sentence citing the chunks it is taken from and saying ONLY what they say.
-At most {MAX_SCENES} scenes and {MAX_ILLUSTRATIONS} illustration scenes. Keep the video near {TARGET_SECONDS // 60} minutes:
+the narration as sentences, each bullet and sentence citing the chunks it is taken from and saying ONLY what they say,
+and the kind rules below. At most {MAX_SCENES} scenes and {MAX_ILLUSTRATIONS} illustration scenes. Keep the video near {TARGET_SECONDS // 60} minutes:
 a scene you add or change has about as much narration as the others.
 If the request cannot be done from the chunks, or is not about this video, return the scenes unchanged and say why in
 `reply`. Write `reply` in the language of the script.
 """
 
 # What makes a revised scene the same scene as before: then it keeps its author, its flags and its media.
-_SAME = ("kind", "title", "bullets", "formula", "code", "table", "image_prompt", "narration",
+_SAME = ("kind", "title", "bullets", "formula", "code", "table", "diagram", "image_prompt", "narration",
          "bullet_citations", "narration_citations")
 # The fields the media jobs fill and compare (app/api/videos.py, MEDIA_FIELDS): a changed scene keeps
 # them, so its picture or voice is made again only if what they were made from changed.
@@ -793,6 +929,8 @@ def _current_scene(number: int, scene: Scene, code: dict[str, str]) -> str:
         lines.append(f"  CODE: {scene.code}")
     if scene.table:
         lines.append(f"  TABLE: {scene.table}")
+    if scene.diagram:
+        lines.append(f"  DIAGRAM:\n{scene.diagram}")
     if scene.image_prompt:
         lines.append(f"  IMAGE: {scene.image_prompt}")
     sentences = [line for line in scene.narration.split("\n") if line.strip()]
@@ -823,7 +961,7 @@ def revise_video_script(db: Session, video: Video, request: str) -> tuple[str, l
     with using_model(alias):
         revised = complete_structured(
             f"CURRENT SCENES:\n{current}\n\n{format_source_chunks(chunks)}\n\nREQUEST: {request}", RevisedScript,
-            system_instruction=_REVISE_INSTRUCTION + _NARRATION_RULES + "\n" + _slide_language_rule(language)
+            system_instruction=_REVISE_INSTRUCTION + _kind_rules(language) + "\n\n" + _NARRATION_RULES
             + f"\n{term_rules(language)}" + output_language_instruction(language),
             temperature=0.2,
         )
@@ -841,7 +979,7 @@ def revise_video_script(db: Session, video: Video, request: str) -> tuple[str, l
         if before is not None:
             taken.add(origin)
         drafts.append((_Draft(kind=d.kind, title=d.title.strip(), bullets=bullets, narration=narration, formula=d.formula,
-                              code=d.code, table=d.table, image_prompt=d.image_prompt), before))
+                              code=d.code, table=d.table, diagram=d.diagram, image_prompt=d.image_prompt), before))
     drafts = drafts[:MAX_SCENES]
     _settle_kinds([draft for draft, _ in drafts])
 
@@ -859,9 +997,7 @@ def revise_video_script(db: Session, video: Video, request: str) -> tuple[str, l
     verdicts = fact_check.check_items_against_sources(
         [(_items(draft, language), [c.content for c in draft.chunks()]) for _, draft in fresh], alias, language)
     for (index, draft), item_flags in zip(fresh, verdicts, strict=True):
-        invented = _invented_in_picture(draft)
-        flags = [f"Mô tả hình có {', '.join(invented)}, không có trong đoạn nguồn của cảnh: hãy sửa mô tả trước khi vẽ."] if invented else []
-        scenes[index]["flags"] = flags + [flag for flag in item_flags if flag]
+        scenes[index]["flags"] = _invention_flags(draft) + [flag for flag in item_flags if flag]
     return revised.reply.strip(), scenes  # type: ignore[return-value]
 
 

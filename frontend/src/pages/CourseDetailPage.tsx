@@ -32,6 +32,7 @@ import {
   type DocumentFailure,
   type DocumentInfo,
   type FlashcardSetSummary,
+  type ModuleConcept,
   type ModuleSummary,
   type MoodleCourse,
   type VideoSummary,
@@ -379,12 +380,13 @@ export function CourseDetailPage() {
     }
   }
 
-  async function handleGenerate(doc: DocumentInfo, outputLanguage: "vi" | "en", customInstructions: string, modelAlias: string) {
+  async function handleGenerate(doc: DocumentInfo, outputLanguage: "vi" | "en", customInstructions: string, modelAlias: string,
+    concept?: ModuleConcept) {
     if (isGenerating(doc)) return;
     const documentId = doc.id;
     setStartingIds((ids) => new Set(ids).add(documentId));
     try {
-      await generateModule(documentId, modelAlias, outputLanguage, customInstructions);
+      await generateModule(documentId, modelAlias, outputLanguage, customInstructions, concept);
       // From here the document says it is generating, and the list is read again until it no longer
       // does (above); a failed job comes back on the document with its error and a retry button.
       await refresh();
@@ -577,8 +579,8 @@ export function CourseDetailPage() {
 
   return (
     <AppShell title={course?.name ?? "Tài liệu môn học"}>
-      <GenerateDialog {...dialogProps("module")} onGenerate={(language, instructions, { modelAlias }) => {
-        if (asking) void handleGenerate(asking.document, language, instructions, modelAlias);
+      <GenerateDialog {...dialogProps("module")} documentId={asking?.document.id} onGenerate={(language, instructions, { modelAlias, concept }) => {
+        if (asking) void handleGenerate(asking.document, language, instructions, modelAlias, concept);
       }} />
       <GenerateDialog {...dialogProps("flashcards")} onGenerate={(language, focus, { modelAlias }) => {
         if (asking) void handleGenerateFlashcards(asking.document, language, focus, modelAlias);

@@ -1,3 +1,4 @@
+import logging
 import uuid
 from datetime import UTC, datetime
 from io import BytesIO
@@ -33,7 +34,9 @@ from app.generation.module_generation_pipeline import (
     generation_payload_of,
     is_control,
     learning_objective_of,
+    planner_concepts,
 )
+from app.generation.planner import Concept
 from app.generation.slides import SlidesOutput
 from app.generation.study_packets import reference_scope_chunks, resolved_citations, small_reference
 from app.jobs.failures import status_error
@@ -55,7 +58,16 @@ from app.models import (
 )
 from app.retrieval.search import ChunkScope, retrieve
 
+logger = logging.getLogger(__name__)
+
 router = APIRouter(prefix="/modules", tags=["modules"], dependencies=[Depends(get_current_user)])
+
+
+class ChosenConcept(BaseModel):
+    """A concept from GET /modules/concepts, as the lecturer picked it."""
+
+    name: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=300)]
+    summary: Annotated[str, StringConstraints(strip_whitespace=True, max_length=2000)] = ""
 
 
 class GenerateRequest(BaseModel):
@@ -77,6 +89,8 @@ class GenerateRequest(BaseModel):
     # đúng Learning Objective và tài liệu của nó. Model và cờ tự kiểm bỏ trống thì theo module RAG đó.
     use_retrieval: bool = True
     paired_module_id: uuid.UUID | None = None
+    # The concept the module is about, picked from the planner's list. Left out, the planner's first.
+    concept: ChosenConcept | None = None
 
 
 def _selected_alias(body: GenerateRequest | None, current_user: User) -> str | None:
@@ -164,6 +178,29 @@ def _generate_without_retrieval(
     return {"job_id": job.id, "status": job.status}
 
 
+@router.get("/concepts")
+@limiter.limit("10/minute", key_func=user_or_address)
+def list_concepts(
+    request: Request, document_id: uuid.UUID, output_language: OutputLanguage = "vi",
+    db: Session = Depends(get_db), current_user: User = Depends(get_current_user),
+):
+    """The concepts the planner finds in the document, most important first, for the lecturer to pick
+    the module's from. The first call for a document and language asks the planner, which can take
+    longer than the proxy waits; the dialog then generates without a pick, as it did before."""
+    doc = _owned_document(db, document_id, current_user)
+    if not doc.raw_text:
+        raise HTTPException(status_code=422, detail="Tài liệu chưa xử lý xong.")
+    alias = current_user.default_model_alias
+    try:
+        with using_model(catalog.served_or_default(alias)):
+            concepts = planner_concepts(db, doc, output_language)
+    except Exception as exc:
+        logger.warning(f"[concepts] document {doc.id}: the planner did not answer", exc_info=True)
+        # Optional to the dialog, which still generates without a pick, so a provider error is not a 500.
+        raise HTTPException(status_code=503, detail="Chưa lấy được danh sách khái niệm. Mô-đun sẽ tự chọn khái niệm quan trọng nhất.") from exc
+    return [{"name": c.name, "summary": c.summary} for c in concepts]
+
+
 @router.post("/generate")
 @limiter.limit("10/minute", key_func=user_or_address)
 def generate_module(
@@ -212,10 +249,12 @@ def generate_module(
     # generate_module() thật đo được mất 10+ phút (17 lệnh gọi LLM tuần tự) --
     # chạy nền qua job queue thay vì giữ request HTTP chờ suốt, xem
     # app/services/module_generation_pipeline.py + job_queue.py.
+    chosen = body.concept if body is not None else None
+    concept = Concept(name=chosen.name, summary=chosen.summary, priority=1) if chosen is not None else None
     reserve_generations(db, current_user, full_access=full_access)
     job = enqueue_job(
         db, job_type=JobType.module_generation, step="generate", document_id=document_id,
-        payload=generation_payload(alias, self_check, output_language, custom_instructions),
+        payload=generation_payload(alias, self_check, output_language, custom_instructions, concept),
     )
     db.commit()
     return {"job_id": job.id, "status": job.status}
