@@ -722,12 +722,15 @@ it('renders numbered inline citations in reading order and opens the exact chunk
       { claim: 'Fact.', source_id: 'S1', locator: 'page 1', chunk_content: 'First physical chunk', resolution: 'resolved' },
     ],
     components: [{ id: 'content-1', type: 'content', questions: [], content: {
-      markdown: '- Fact. [S2][S1]\n- Repeated source. [S2]', source_map: {},
+      markdown: '- Fact. [S2][S1]\n- Repeated source. [S2]\n- Unresolved. [S3]', source_map: {},
     } }],
   } as ModuleDetail)
   renderPage()
   const buttons = await screen.findAllByRole('button', { name: 'Nguồn 1' })
   expect(buttons).toHaveLength(2)
+  // A marker with no resolved citation stays as written instead of becoming a dead link.
+  expect(screen.getByText(/Unresolved\. \[S3\]/)).toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: 'Nguồn 3' })).not.toBeInTheDocument()
   expect(screen.getByRole('button', { name: 'Nguồn 2' })).toHaveTextContent('[2]')
   await userEvent.click(buttons[0])
   expect(screen.getByRole('dialog')).toHaveTextContent('Second physical chunk')
