@@ -240,6 +240,33 @@ def test_the_job_step_without_a_section_generates_from_the_whole_document(docume
         db.close()
 
 
+def test_a_job_with_a_picked_concept_builds_the_module_on_it_without_the_planner(document_world, seen, monkeypatch):
+    queries = []
+    fake_retrieve = pipeline.retrieve
+    monkeypatch.setattr(pipeline, "retrieve", lambda db, course_id, query, **kw: queries.append(query)
+                        or fake_retrieve(db, course_id, query, **kw))
+    picked = Concept(name="Merge sort", priority=1, summary="split, sort each half, merge")
+    db = SessionLocal()
+    try:
+        job = Job(job_type=JobType.module_generation, step="generate", status=JobStatus.running,
+                  document_id=document_world["doc"], payload=pipeline.generation_payload(None, concept=picked))
+        db.add(job)
+        db.commit()
+        job_id = job.id
+
+        pipeline.run_module_generation_step(job)
+
+        db.expire_all()
+        module = db.get(Module, db.get(Job, job_id).module_id)
+        assert seen["planner_inputs"] == []
+        assert module.title == "Merge sort"
+        assert queries[0] == "Merge sort: split, sort each half, merge"
+        # A no-RAG control of this module searches for the same concept, whatever the planner says later.
+        assert pipeline.concept_query_of(module) == "Merge sort: split, sort each half, merge"
+    finally:
+        db.close()
+
+
 @pytest.mark.parametrize("mode", ["whole" , "cached", "control"])
 def test_every_generation_provider_call_releases_worker_transactions(document_world, monkeypatch, mode):
     from sqlalchemy import select, text

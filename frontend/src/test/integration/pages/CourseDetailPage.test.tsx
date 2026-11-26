@@ -88,6 +88,7 @@ beforeEach(() => {
   })
   // Ô chọn model gọi API này ngay khi trang mở, như listDocuments ở trên.
   vi.mocked(api.listModels).mockResolvedValue({ models: [], default: null })
+  vi.mocked(api.listModuleConcepts).mockResolvedValue([{ name: 'Tìm kiếm', summary: 'Tìm trong không gian trạng thái.' }])
   // The course chat loads its last conversation on open.
   vi.mocked(api.getLatestCourseChat).mockResolvedValue({ session_id: null, messages: [] })
   // The Moodle account line asks too; without an answer it threw after the test ended.
@@ -555,10 +556,14 @@ describe('CourseDetailPage - module generation availability', () => {
       expect((screen.getByRole('combobox', { name: /^mô hình$/i }) as HTMLSelectElement).value).toBe('deepseek-flash'),
     )
     await userEvent.selectOptions(screen.getByRole('combobox', { name: /^ngôn ngữ đầu ra$/i }), 'en')
-    await userEvent.type(screen.getByLabelText(/Chủ đề mà bạn muốn tập trung vào/), 'Ví dụ: thêm ví dụ có lời giải từng bước')
+    await screen.findByRole('option', { name: 'Tìm kiếm (quan trọng nhất)' })
+    await userEvent.type(screen.getByLabelText(/Yêu cầu thêm cho mô-đun/), 'Ví dụ: thêm ví dụ có lời giải từng bước')
     await userEvent.click(screen.getByRole('button', { name: 'Tạo mô-đun' }))
 
-    expect(api.generateModule).toHaveBeenCalledWith('doc-1', 'deepseek-flash', 'en', 'Ví dụ: thêm ví dụ có lời giải từng bước')
+    // The concept is the planner's first for the document, which the dialog picks until the lecturer picks another.
+    expect(api.listModuleConcepts).toHaveBeenCalledWith('doc-1', 'en')
+    expect(api.generateModule).toHaveBeenCalledWith('doc-1', 'deepseek-flash', 'en', 'Ví dụ: thêm ví dụ có lời giải từng bước',
+      { name: 'Tìm kiếm', summary: 'Tìm trong không gian trạng thái.' })
   })
 
   it('shows why a chosen model cannot be used instead of a generic failure', async () => {
@@ -588,9 +593,10 @@ describe('CourseDetailPage - module generation availability', () => {
 
     renderPage()
     await chooseCreate(/^mô-đun$/i)
+    await screen.findByRole('option', { name: 'Tìm kiếm (quan trọng nhất)' })
     await userEvent.click(screen.getByRole('button', { name: 'Tạo mô-đun' }))
 
-    expect(api.generateModule).toHaveBeenCalledWith('doc-1', '', 'vi', '')
+    expect(api.generateModule).toHaveBeenCalledWith('doc-1', '', 'vi', '', { name: 'Tìm kiếm', summary: 'Tìm trong không gian trạng thái.' })
     expect(await createItem(/^mô-đun$/i)).toHaveAttribute('aria-disabled', 'true')
     expect(screen.getByText('Mô-đun mới')).toBeInTheDocument()
   })
