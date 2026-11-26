@@ -133,7 +133,7 @@ export function AppShell({ title, fullTitle, actions, crumbs, children }: {
   </>;
 
   return <div className="min-h-screen bg-paper" data-sidebar={collapsed ? "collapsed" : "expanded"}>
-    <a className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded focus:bg-white focus:px-3 focus:py-2" href="#main-content">Đến nội dung chính</a>
+    <a className="skip-link sr-only focus:not-sr-only" href="#main-content">Đến nội dung chính</a>
     {mobile ? <header className="mobile-bar">
       <Link to={homeFor(user?.is_admin)} aria-label="GENAILMS, trang chủ"><Brand /></Link>
       <Sheet open={drawer} onOpenChange={setDrawer}>

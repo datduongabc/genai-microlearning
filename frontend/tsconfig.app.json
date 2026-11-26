@@ -17,7 +17,8 @@
     "jsx": "react-jsx",
     "paths": { "@/*": ["./src/*"] },
 
-    /* Linting */
+    /* Linting. TypeScript 6 is strict by default; written out so a reader or an older compiler sees it. */
+    "strict": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "erasableSyntaxOnly": true,
