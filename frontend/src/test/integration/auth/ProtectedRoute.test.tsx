@@ -10,12 +10,16 @@ function renderProtected(initialEntry: string) {
       <Routes>
         <Route path="/login" element={<div>Login page</div>} />
         <Route path="/courses" element={<div>Courses page</div>} />
+        <Route path="/learn" element={<div>Learner home</div>} />
         <Route path="/admin" element={<div>Admin page</div>} />
         <Route element={<ProtectedRoute />}>
           <Route path="/private" element={<div>Private content</div>} />
         </Route>
         <Route element={<ProtectedRoute adminOnly />}>
           <Route path="/admin-only" element={<div>Admin only content</div>} />
+        </Route>
+        <Route element={<ProtectedRoute authorOnly />}>
+          <Route path="/author-only" element={<div>Author only content</div>} />
         </Route>
         <Route element={<ProtectedRoute />}>
           <Route path="/teacher-only" element={<div>Teacher only content</div>} />
@@ -25,11 +29,11 @@ function renderProtected(initialEntry: string) {
   )
 }
 
-function signedInAs(role: string) {
+function signedInAs(role: string, canAuthor?: boolean) {
   vi.spyOn(AuthHookModule, 'useAuth').mockReturnValue({
     token: 'a-token',
     refreshToken: 'a-refresh-token',
-    user: { id: '1', email: 'a@b.com', name: 'A', is_admin: role === 'admin' },
+    user: { id: '1', email: 'a@b.com', name: 'A', is_admin: role === 'admin', can_author: canAuthor },
     login: vi.fn(),
     loginWithLaunchCode: vi.fn(),
     logout: vi.fn(),
@@ -89,5 +93,17 @@ describe('ProtectedRoute', () => {
     signedInAs('teacher')
     renderProtected('/teacher-only')
     expect(screen.getByText('Teacher only content')).toBeInTheDocument()
+  })
+
+  it('sends a student account away from author pages and lets an author in even when can_author is undefined', () => {
+    signedInAs('teacher', false)
+    const { unmount } = renderProtected('/author-only')
+    expect(screen.getByText('Learner home')).toBeInTheDocument()
+    expect(screen.queryByText('Author only content')).not.toBeInTheDocument()
+    unmount()
+
+    signedInAs('teacher', undefined)
+    renderProtected('/author-only')
+    expect(screen.getByText('Author only content')).toBeInTheDocument()
   })
 })

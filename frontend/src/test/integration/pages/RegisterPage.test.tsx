@@ -2,7 +2,7 @@ import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { AxiosError, type AxiosResponse, type InternalAxiosRequestConfig } from 'axios'
 import { MemoryRouter } from 'react-router-dom'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import * as api from '../../../api'
 import { RegisterPage } from '../../../pages/RegisterPage'
 
@@ -16,6 +16,14 @@ function refusal(status: number, data: unknown) {
   const config = { headers: {} } as InternalAxiosRequestConfig
   const response = { status, statusText: '', data, headers: {}, config } as AxiosResponse
   return new AxiosError('Request failed', 'ERR_BAD_REQUEST', config, null, response)
+}
+
+function renderRegisterPage() {
+  return render(
+    <MemoryRouter>
+      <RegisterPage />
+    </MemoryRouter>,
+  )
 }
 
 async function fill({ name = 'Nguyen Van A', password = 'a-long-passphrase', confirm = undefined as string | undefined } = {}) {
@@ -32,16 +40,19 @@ async function fill({ name = 'Nguyen Van A', password = 'a-long-passphrase', con
 beforeEach(() => {
   mockNavigate.mockReset()
   vi.restoreAllMocks()
-  render(
-    <MemoryRouter>
-      <RegisterPage />
-    </MemoryRouter>,
-  )
+})
+
+afterEach(() => {
+  vi.restoreAllMocks()
 })
 
 describe('RegisterPage', () => {
-  it('signs the person up and sends them to the login page', async () => {
+  it('tells the password manager to offer a new password and signs the person up', async () => {
     const register = vi.spyOn(api, 'register').mockResolvedValue(undefined as never)
+    renderRegisterPage()
+
+    expect(screen.getByLabelText('Mật khẩu')).toHaveAttribute('autocomplete', 'new-password')
+    expect(screen.getByLabelText('Nhập lại mật khẩu')).toHaveAttribute('autocomplete', 'new-password')
 
     await fill()
 
@@ -51,6 +62,7 @@ describe('RegisterPage', () => {
 
   it('points out a password that is too short without asking the server', async () => {
     const register = vi.spyOn(api, 'register')
+    renderRegisterPage()
 
     await fill({ password: 'short' })
 
@@ -62,6 +74,7 @@ describe('RegisterPage', () => {
     vi.spyOn(api, 'register').mockRejectedValue(
       refusal(422, { detail: [{ msg: 'Value error, Mật khẩu này quá phổ biến và dễ bị đoán, hãy chọn mật khẩu khác.' }] }),
     )
+    renderRegisterPage()
 
     await fill()
 
@@ -71,17 +84,21 @@ describe('RegisterPage', () => {
 
   it('shows what the server said when the email is already taken', async () => {
     vi.spyOn(api, 'register').mockRejectedValue(refusal(409, { detail: 'Email đã được đăng ký' }))
+    renderRegisterPage()
 
     await fill()
 
     expect(await screen.findByText('Email đã được đăng ký')).toBeInTheDocument()
   })
 
-  it('tells the password manager to offer a new password rather than a saved one', () => {
-    const passwordField = screen.getByLabelText('Mật khẩu')
-    const confirmField = screen.getByLabelText('Nhập lại mật khẩu')
+  it('explains instead of showing a form when registration is closed', async () => {
+    vi.spyOn(api, 'getAuthOptions').mockResolvedValue({ self_registration: false })
+    const register = vi.spyOn(api, 'register')
+    renderRegisterPage()
 
-    expect(passwordField).toHaveAttribute('autocomplete', 'new-password')
-    expect(confirmField).toHaveAttribute('autocomplete', 'new-password')
+    expect(await screen.findByText(/Đăng ký tài khoản đã đóng/)).toBeInTheDocument()
+    await waitFor(() => expect(screen.queryByRole('button', { name: /tạo tài khoản/i })).not.toBeInTheDocument())
+    expect(screen.getByRole('link', { name: 'Đăng nhập' })).toBeInTheDocument()
+    expect(register).not.toHaveBeenCalled()
   })
 })

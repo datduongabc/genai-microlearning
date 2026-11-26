@@ -76,27 +76,55 @@ it('shows citation labels and reveals the original chunk only when opened', asyn
   expect(screen.queryByText('A grounded claim')).not.toBeInTheDocument()
 })
 
-it('downloads slides through the authenticated API client', async () => {
+it('exports PPTX and SCORM, shows SCORM 422 error, prompts unlinked Moodle, and hides generation_models', async () => {
   vi.mocked(api.getModule).mockResolvedValue({
     ...baseModule,
+    generation_models: [{ requested_alias: 'gemini-flash', served_model: 'google/gemini-3.8-flash' }],
     components: [{ id: 'slides-1', type: 'slides', content: { slides: [] }, questions: [] }],
   })
-  const blob = new Blob(['pptx'])
-  const request = vi.spyOn(api.api, 'get').mockResolvedValue({ data: blob })
-  const createURL = vi.fn().mockReturnValue('blob:slides')
+  const pptxBlob = new Blob(['pptx'])
+  const zipBlob = new Blob(['zip'])
+  const errorBody = new Blob([JSON.stringify({ detail: 'Còn 1 câu hỏi cần xem lại (quiz 1). Lý do ghi dưới từng câu; hãy sửa trước khi xuất gói SCORM.' })], { type: 'application/json' })
+  const refused = new AxiosError('422', 'ERR_BAD_REQUEST', undefined, undefined, {
+    status: 422, data: errorBody, statusText: '', headers: {}, config: {} as InternalAxiosRequestConfig,
+  } as AxiosResponse)
+  let scormAttempts = 0
+  const request = vi.spyOn(api.api, 'get').mockImplementation(async (path) => {
+    if (path === '/modules/module-1/slides.pptx') return { data: pptxBlob }
+    if (path === '/modules/module-1/scorm.zip') {
+      scormAttempts += 1
+      if (scormAttempts === 1) throw refused
+      return { data: zipBlob }
+    }
+    return { data: {} }
+  })
+  const createURL = vi.fn((b: Blob) => (b === pptxBlob ? 'blob:slides' : 'blob:scorm'))
   const revokeURL = vi.fn()
   vi.stubGlobal('URL', { createObjectURL: createURL, revokeObjectURL: revokeURL })
+  const downloads: { href: string; download: string }[] = []
   const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function (this: HTMLAnchorElement) {
-    expect(this.href).toBe('blob:slides')
-    expect(this.download).toBe('Test Module.pptx')
+    downloads.push({ href: this.href, download: this.download })
   })
   try {
     renderPage()
-    await userEvent.click(await screen.findByRole('button', { name: 'Tải slide PPTX' }))
-    await waitFor(() => expect(click).toHaveBeenCalledOnce())
+    expect(await screen.findByText(/chưa liên kết với moodle/i)).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /^xuất bản lên moodle$/i })).not.toBeInTheDocument()
+    expect(screen.queryByText(/gemini-3.8-flash/)).not.toBeInTheDocument()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Tải slide PPTX' }))
+    await waitFor(() => expect(click).toHaveBeenCalledTimes(1))
     expect(request).toHaveBeenCalledWith('/modules/module-1/slides.pptx', { responseType: 'blob' })
-    expect(createURL).toHaveBeenCalledWith(blob)
+    expect(createURL).toHaveBeenCalledWith(pptxBlob)
     expect(revokeURL).toHaveBeenCalledWith('blob:slides')
+    expect(downloads[0]).toEqual({ href: 'blob:slides', download: 'Test Module.pptx' })
+
+    await userEvent.click(screen.getByRole('button', { name: 'Tải gói SCORM (.zip)' }))
+    expect(await screen.findByText('Còn 1 câu hỏi cần xem lại (quiz 1). Lý do ghi dưới từng câu; hãy sửa trước khi xuất gói SCORM.')).toBeInTheDocument()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Tải gói SCORM (.zip)' }))
+    await waitFor(() => expect(click).toHaveBeenCalledTimes(2))
+    expect(request).toHaveBeenCalledWith('/modules/module-1/scorm.zip', { responseType: 'blob' })
+    expect(downloads[1]).toEqual({ href: 'blob:scorm', download: 'Test Module - SCORM.zip' })
   } finally {
     request.mockRestore()
     click.mockRestore()
@@ -104,101 +132,18 @@ it('downloads slides through the authenticated API client', async () => {
   }
 })
 
-describe('ModulePreviewPage - SCORM package', () => {
-  it('downloads the package even when the course is not linked to Moodle', async () => {
-    vi.mocked(api.getModule).mockResolvedValue(baseModule)
-    const blob = new Blob(['zip'])
-    const request = vi.spyOn(api.api, 'get').mockResolvedValue({ data: blob })
-    vi.stubGlobal('URL', { createObjectURL: vi.fn().mockReturnValue('blob:scorm'), revokeObjectURL: vi.fn() })
-    const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function (this: HTMLAnchorElement) {
-      expect(this.download).toBe('Test Module - SCORM.zip')
-    })
-    try {
-      renderPage()
-      await userEvent.click(await screen.findByRole('button', { name: 'Tải gói SCORM (.zip)' }))
-      await waitFor(() => expect(click).toHaveBeenCalledOnce())
-      expect(request).toHaveBeenCalledWith('/modules/module-1/scorm.zip', { responseType: 'blob' })
-    } finally {
-      request.mockRestore()
-      click.mockRestore()
-      vi.unstubAllGlobals()
-    }
-  })
-
-  it("shows the server's reason when the package is refused", async () => {
-    vi.mocked(api.getModule).mockResolvedValue(baseModule)
-    const body = new Blob([JSON.stringify({ detail: 'Còn 1 câu hỏi cần xem lại (quiz 1). Lý do ghi dưới từng câu; hãy sửa trước khi xuất gói SCORM.' })], { type: 'application/json' })
-    const refused = new AxiosError('422', 'ERR_BAD_REQUEST', undefined, undefined, {
-      status: 422, data: body, statusText: '', headers: {}, config: {} as InternalAxiosRequestConfig,
-    } as AxiosResponse)
-    const request = vi.spyOn(api.api, 'get').mockRejectedValue(refused)
-    try {
-      renderPage()
-      await userEvent.click(await screen.findByRole('button', { name: 'Tải gói SCORM (.zip)' }))
-      expect(await screen.findByText('Còn 1 câu hỏi cần xem lại (quiz 1). Lý do ghi dưới từng câu; hãy sửa trước khi xuất gói SCORM.')).toBeInTheDocument()
-    } finally {
-      request.mockRestore()
-    }
-  })
-
-  it('is not offered for a control module', async () => {
-    vi.mocked(api.getModule).mockResolvedValue({ ...baseModule, is_control: true })
-    renderPage()
-    await screen.findByText('Bản đối chứng cho nghiên cứu, không dùng tài liệu')
-    expect(screen.queryByRole('button', { name: 'Tải gói SCORM (.zip)' })).not.toBeInTheDocument()
-  })
+it('labels a control module and hides SCORM, Moodle publishing, and chat edit even when linked', async () => {
+  vi.mocked(api.getModule).mockResolvedValue({ ...baseModule, is_control: true, moodle_course_id: 6 })
+  vi.mocked(api.getMoodleSections).mockResolvedValue([])
+  renderPage()
+  expect(await screen.findByText('Bản đối chứng cho nghiên cứu, không dùng tài liệu')).toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: 'Tải gói SCORM (.zip)' })).not.toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: /^xuất bản lên moodle$/i })).not.toBeInTheDocument()
+  expect(api.publishToMoodle).not.toHaveBeenCalled()
+  expect(screen.queryByRole('textbox', { name: 'Yêu cầu chỉnh sửa' })).not.toBeInTheDocument()
 })
 
 describe('ModulePreviewPage - publish to Moodle', () => {
-  it('labels a control module and hides publishing even when the course is linked', async () => {
-    vi.mocked(api.getModule).mockResolvedValue({ ...baseModule, is_control: true, moodle_course_id: 6 })
-    vi.mocked(api.getMoodleSections).mockResolvedValue([])
-    renderPage()
-    expect(await screen.findByText('Bản đối chứng cho nghiên cứu, không dùng tài liệu')).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: /^xuất bản lên moodle$/i })).not.toBeInTheDocument()
-    expect(api.publishToMoodle).not.toHaveBeenCalled()
-  })
-
-  it('prompts to link the course first when it has no moodle_course_id', async () => {
-    vi.mocked(api.getModule).mockResolvedValue(baseModule)
-
-    renderPage()
-
-    expect(await screen.findByText(/chưa liên kết với moodle/i)).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: /^xuất bản lên moodle$/i })).not.toBeInTheDocument()
-  })
-
-  it('disables the push button after a successful publish so it cannot be clicked twice', async () => {
-    vi.mocked(api.getModule).mockResolvedValue({ ...baseModule, moodle_course_id: 6 })
-    vi.mocked(api.getMoodleSections).mockResolvedValue([{ sectionnum: 0, name: 'General' }])
-    vi.mocked(api.publishToMoodle).mockResolvedValue({
-      moodle_course_id: 6,
-      book_cmid: 42,
-      practice_cmid: 43,
-      quiz_cmid: 44,
-    })
-
-    renderPage()
-
-    const button = await screen.findByRole('button', { name: /^xuất bản lên moodle$/i })
-    expect(button).toBeEnabled()
-
-    await userEvent.click(button)
-
-    await waitFor(() => {
-      expect(screen.getByRole('button', { name: /đã xuất bản lên moodle/i })).toBeDisabled()
-    })
-    expect(api.publishToMoodle).toHaveBeenCalledTimes(1)
-    // Says what was created, in the order it was created.
-    expect(screen.getByText(/sách nội dung, bài luyện tập, quiz\./i)).toBeInTheDocument()
-
-    // Clicking again (e.g. a stray extra click before React re-renders)
-    // must not fire a second request -- moodle_client.create_book/create_quiz
-    // are not idempotent, a second call would create duplicate content.
-    await userEvent.click(screen.getByRole('button', { name: /đã xuất bản lên moodle/i }))
-    expect(api.publishToMoodle).toHaveBeenCalledTimes(1)
-  })
-
   it('says when a module already went to Moodle and publishes again only after the lecturer confirms', async () => {
     vi.mocked(api.getModule).mockResolvedValue({ ...baseModule, moodle_course_id: 6, moodle_published_at: '2026-11-18T03:00:00Z' })
     vi.mocked(api.getMoodleSections).mockResolvedValue([{ sectionnum: 0, name: 'General' }])
@@ -290,38 +235,28 @@ describe('ModulePreviewPage - module structure', () => {
     ],
   }
 
-  it('shows every example of the module', async () => {
-    vi.mocked(api.getModule).mockResolvedValue(structured)
-
-    renderPage()
-
-    for (const text of ['BỐI-CẢNH-MỘT', 'PHÂN-TÍCH-MỘT', 'BỐI-CẢNH-HAI', 'PHÂN-TÍCH-HAI']) {
-      expect(await screen.findByText(text)).toBeInTheDocument()
-    }
-  })
-
-  it('shows every quiz question in its order, each with its own explanation', async () => {
-    vi.mocked(api.getModule).mockResolvedValue(structured)
-
-    renderPage()
-
-    const first = await screen.findByText('CÂU-HỎI-MỘT')
-    const second = screen.getByText('CÂU-HỎI-HAI')
-    expect(first.compareDocumentPosition(second) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
-    const quizCard = first.closest('section') as HTMLElement
-    const firstExplanation = within(quizCard).getByText('LỜI-GIẢI-MỘT')
-    expect(first.compareDocumentPosition(firstExplanation) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
-    expect(firstExplanation.compareDocumentPosition(second) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
-  })
-
-  it('saves an edited explanation for the question it belongs to and keeps the others', async () => {
+  it('shows examples, ordered quiz questions, hides AI reasoning, and saves edited explanation 2', async () => {
     vi.mocked(api.getModule).mockResolvedValue(structured)
     vi.mocked(api.updateComponentContent).mockResolvedValue({ id: 'explanation-1', content: {} })
     const user = userEvent.setup()
 
     renderPage()
 
-    const explanationCard = (await screen.findByRole('heading', { name: 'Giải thích đáp án' })).closest('section') as HTMLElement
+    for (const text of ['BỐI-CẢNH-MỘT', 'PHÂN-TÍCH-MỘT', 'BỐI-CẢNH-HAI', 'PHÂN-TÍCH-HAI']) {
+      expect(await screen.findByText(text)).toBeInTheDocument()
+    }
+
+    const first = screen.getByText('CÂU-HỎI-MỘT')
+    const second = screen.getByText('CÂU-HỎI-HAI')
+    expect(first.compareDocumentPosition(second) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    const quizCard = first.closest('section') as HTMLElement
+    const firstExplanation = within(quizCard).getByText('LỜI-GIẢI-MỘT')
+    expect(firstExplanation).toBeVisible()
+    expect(screen.queryByText('LẬP-LUẬN-MỘT')).not.toBeInTheDocument()
+    expect(first.compareDocumentPosition(firstExplanation) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(firstExplanation.compareDocumentPosition(second) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+
+    const explanationCard = screen.getByRole('heading', { name: 'Giải thích đáp án' }).closest('section') as HTMLElement
     await user.click(within(explanationCard).getByRole('button', { name: 'Sửa' }))
     const field = within(explanationCard).getByLabelText('Giải thích Câu kiểm tra 2')
     await user.clear(field)
@@ -341,45 +276,31 @@ describe('ModulePreviewPage - module structure', () => {
 })
 
 describe('ModulePreviewPage - reading the module', () => {
-  it('renders the content as formatted Markdown, not as raw text', async () => {
+  it('renders sub-objectives, Markdown headings/lists without images, overridden explanations, and CRAG flags', async () => {
     vi.mocked(api.getModule).mockResolvedValue({
       ...baseModule,
+      sub_objectives: ['MỤC-TIÊU-CON-A', 'MỤC-TIÊU-CON-B'],
       components: [
-        { id: 'content-1', type: 'content', content: { markdown: '## TIÊU-ĐỀ-PHẦN\n- ý đầu tiên' }, questions: [] },
-      ],
-    })
-
-    renderPage()
-
-    expect(await screen.findByRole('heading', { name: 'TIÊU-ĐỀ-PHẦN' })).toBeInTheDocument()
-    const content = screen.getByRole('heading', { name: 'Nội dung' }).closest('section') as HTMLElement
-    expect(within(content).getByRole('listitem')).toHaveTextContent('ý đầu tiên')
-    expect(screen.queryByText(/## TIÊU-ĐỀ-PHẦN/)).not.toBeInTheDocument()
-  })
-
-  it('loads no image the generated content asks for', async () => {
-    vi.mocked(api.getModule).mockResolvedValue({
-      ...baseModule,
-      components: [
-        { id: 'content-1', type: 'content', content: { markdown: 'Bài học. ![](https://evil.example/p)' }, questions: [] },
-      ],
-    })
-    const { container } = renderPage()
-
-    expect(await screen.findByText(/Bài học\./)).toBeInTheDocument()
-    expect(container.querySelector('img')).toBeNull()
-  })
-
-  it('shows under each question the explanation the teacher edited, which is the one Moodle gets', async () => {
-    vi.mocked(api.getModule).mockResolvedValue({
-      ...baseModule,
-      components: [
+        {
+          id: 'content-1',
+          type: 'content',
+          content: {
+            markdown: '## TIÊU-ĐỀ-PHẦN\n- ý đầu tiên\n\n## Khái niệm\n\nA.\n\n### Chi tiết\n\nB.\n\n#### Ghi chú\n\nC.\n\nBài học. ![](https://evil.example/p)',
+          },
+          questions: [],
+        },
         {
           id: 'quiz-1',
           type: 'quiz',
-          content: { questions: [{ passed: true }] },
+          content: {
+            questions: [
+              { passed: true },
+              { passed: false, fail_reason: "Bloom's level fail: chỉ là nhận diện; Wording fail: Phương án 0 dài hơn; dễ đoán" },
+            ],
+          },
           questions: [
-            { id: 'q1', position: 0, stem: 'CÂU-HỎI', choices: { options: ['A', 'B', 'C', 'D'] }, answer_key: '0', explanation: 'BẢN-LÚC-SINH' },
+            { id: 'q1', position: 0, stem: 'CÂU-MỘT', choices: { options: ['A', 'B', 'C', 'D'] }, answer_key: '0', explanation: 'BẢN-LÚC-SINH' },
+            { id: 'q2', position: 1, stem: 'CÂU-HAI', choices: { options: ['A', 'B', 'C', 'D'] }, answer_key: '0', explanation: 'e' },
           ],
         },
         {
@@ -388,100 +309,50 @@ describe('ModulePreviewPage - reading the module', () => {
           content: { items: [{ component: 'quiz', position: 0, reasoning: 'r', explanation_text: 'BẢN-ĐÃ-SỬA' }] },
           questions: [],
         },
-      ],
-    })
-
-    renderPage()
-
-    const quizCard = (await screen.findByText('CÂU-HỎI')).closest('section') as HTMLElement
-    expect(within(quizCard).getByText('BẢN-ĐÃ-SỬA')).toBeInTheDocument()
-    expect(within(quizCard).queryByText('BẢN-LÚC-SINH')).not.toBeInTheDocument()
-  })
-
-  it('says a question was not self-checked instead of claiming it passed the CRAG check', async () => {
-    vi.mocked(api.getModule).mockResolvedValue({
-      ...baseModule,
-      components: [
         {
-          id: 'quiz-1',
-          type: 'quiz',
+          id: 'practice-1',
+          type: 'practice',
           content: { self_checked: false, questions: [{ passed: true }] },
           questions: [
-            { id: 'q1', position: 0, stem: 'CÂU-HỎI', choices: { options: ['A', 'B', 'C', 'D'] }, answer_key: '0', explanation: 'e' },
+            { id: 'p1', position: 0, stem: 'CÂU-LUYỆN-TẬP', choices: { options: ['A', 'B', 'C', 'D'] }, answer_key: '0', explanation: 'e' },
           ],
         },
       ],
     })
 
-    renderPage()
+    const { container } = renderPage()
 
-    const quizCard = (await screen.findByText('CÂU-HỎI')).closest('section') as HTMLElement
-    expect(within(quizCard).getByText('Các câu hỏi này chưa được kiểm với tài liệu nguồn.')).toBeInTheDocument()
-    expect(within(quizCard).queryByText('Cần xem lại')).not.toBeInTheDocument()
-  })
+    expect(await screen.findByText('MỤC-TIÊU-CON-A')).toBeInTheDocument()
+    expect(screen.getByText('MỤC-TIÊU-CON-B')).toBeInTheDocument()
+    expect(screen.getByText('Understand X')).toBeInTheDocument()
+    expect(screen.queryByText(/^Bloom:/i)).not.toBeInTheDocument()
+    expect(screen.queryByText(/^understand$/i)).not.toBeInTheDocument()
 
-  it('treats a module saved before the self-check flag existed as self-checked', async () => {
-    vi.mocked(api.getModule).mockResolvedValue({
-      ...baseModule,
-      components: [
-        {
-          id: 'quiz-1',
-          type: 'quiz',
-          content: { questions: [{ passed: true }] },
-          questions: [
-            { id: 'q1', position: 0, stem: 'CÂU-HỎI', choices: { options: ['A', 'B', 'C', 'D'] }, answer_key: '0', explanation: 'e' },
-          ],
-        },
-      ],
-    })
+    expect(screen.getByRole('heading', { name: 'TIÊU-ĐỀ-PHẦN' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Nội dung', level: 2 })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Khái niệm', level: 3 })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Chi tiết', level: 4 })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Ghi chú', level: 5 })).toBeInTheDocument()
+    const content = screen.getByRole('heading', { name: 'Nội dung', level: 2 }).closest('section') as HTMLElement
+    expect(within(content).getByRole('listitem')).toHaveTextContent('ý đầu tiên')
+    expect(screen.queryByText(/## TIÊU-ĐỀ-PHẦN/)).not.toBeInTheDocument()
+    expect(screen.getByText(/Bài học\./)).toBeInTheDocument()
+    expect(container.querySelector('img')).toBeNull()
 
-    renderPage()
-
-    // A question that passed carries no mark at all.
-    const quizCard = (await screen.findByText('CÂU-HỎI')).closest('section') as HTMLElement
-    expect(within(quizCard).queryByText('Cần xem lại')).not.toBeInTheDocument()
+    const quizCard = screen.getByText('CÂU-MỘT').closest('section') as HTMLElement
+    expect(within(quizCard).getByText('BẢN-ĐÃ-SỬA')).toBeInTheDocument()
+    expect(within(quizCard).queryByText('BẢN-LÚC-SINH')).not.toBeInTheDocument()
     expect(within(quizCard).queryByText('Các câu hỏi này chưa được kiểm với tài liệu nguồn.')).not.toBeInTheDocument()
-  })
-
-  it('marks only the flagged question, with each reason under it in Vietnamese', async () => {
-    vi.mocked(api.getModule).mockResolvedValue({
-      ...baseModule,
-      components: [
-        {
-          id: 'quiz-1',
-          type: 'quiz',
-          content: { questions: [
-            { passed: true },
-            { passed: false, fail_reason: "Bloom's level fail: chỉ là nhận diện; Wording fail: Phương án 0 dài hơn; dễ đoán" },
-          ] },
-          questions: [
-            { id: 'q1', position: 0, stem: 'CÂU-MỘT', choices: { options: ['A', 'B', 'C', 'D'] }, answer_key: '0', explanation: 'e' },
-            { id: 'q2', position: 1, stem: 'CÂU-HAI', choices: { options: ['A', 'B', 'C', 'D'] }, answer_key: '0', explanation: 'e' },
-          ],
-        },
-      ],
-    })
-
-    renderPage()
-
-    const quizCard = (await screen.findByText('CÂU-HAI')).closest('section') as HTMLElement
     expect(within(quizCard).getAllByText('Cần xem lại')).toHaveLength(1)
     const reasons = within(quizCard).getByRole('list', { name: 'Lý do câu 2 cần xem lại' })
     expect(within(reasons).getAllByRole('listitem').map((li) => li.textContent)).toEqual([
       'Chưa đúng mức Bloom: chỉ là nhận diện',
       'Cách diễn đạt: Phương án 0 dài hơn; dễ đoán',
     ])
-  })
 
-  it('lists the sub-objectives under the learning objective', async () => {
-    vi.mocked(api.getModule).mockResolvedValue({ ...baseModule, sub_objectives: ['MỤC-TIÊU-CON-A', 'MỤC-TIÊU-CON-B'] })
-
-    renderPage()
-
-    expect(await screen.findByText('MỤC-TIÊU-CON-A')).toBeInTheDocument()
-    expect(screen.getByText('MỤC-TIÊU-CON-B')).toBeInTheDocument()
-    expect(screen.getByText('Understand X')).toBeInTheDocument()
-    expect(screen.queryByText(/Bloom:/i)).not.toBeInTheDocument()
+    const practiceCard = screen.getByText('CÂU-LUYỆN-TẬP').closest('section') as HTMLElement
+    expect(within(practiceCard).getByText('Các câu hỏi này chưa được kiểm với tài liệu nguồn.')).toBeInTheDocument()
+    expect(within(practiceCard).queryByText('Cần xem lại')).not.toBeInTheDocument()
   })
 })
 
@@ -506,15 +377,6 @@ it.each(['quiz', 'practice'] as const)('edits and saves a %s question', async (t
   await user.click(screen.getByRole('button', { name: 'Lưu' }))
   await waitFor(() => expect(api.updateQuestion).toHaveBeenCalledWith('module-1', 'q1', { stem: 'Edited stem', choices: ['A', 'Edited B'], answer_key: 1, explanation: 'Edited explanation' }))
   expect(await screen.findByText('Edited stem')).toBeInTheDocument()
-})
-
-it('shows the explanation students get and not the AI reasoning behind it', async () => {
-  vi.mocked(api.getModule).mockResolvedValue({ ...baseModule, components: [
-    { id: 'exp-1', type: 'explanation', content: { items: [{ component: 'quiz', position: 0, reasoning: 'LẬP-LUẬN', explanation_text: 'LỜI-GIẢI' }] }, questions: [] },
-  ] })
-  renderPage()
-  expect(await screen.findByText('LỜI-GIẢI')).toBeVisible()
-  expect(screen.queryByText('LẬP-LUẬN')).not.toBeInTheDocument()
 })
 
 it('falls back to the question explanation when its Explanation item is empty', async () => {
@@ -548,26 +410,6 @@ it('shows the Vietnamese deleted-course error and offers relinking immediately',
   expect(screen.queryByRole('button', { name: /^xuất bản lên moodle$/i })).not.toBeInTheDocument()
 })
 
-it('refreshes the preview after an applied chat edit and shows the reply', async () => {
-  vi.mocked(api.getModule).mockResolvedValueOnce(baseModule).mockResolvedValue({ ...baseModule, title: 'Updated module' })
-  vi.mocked(api.chatEditModule).mockResolvedValue({ session_id: 'session-1', applied: true, reply: 'Đã sửa slide 1.', edit_count: 1 })
-  renderPage()
-  await userEvent.type(await screen.findByRole('textbox', { name: 'Yêu cầu chỉnh sửa' }), 'Rút gọn slide 1')
-  await userEvent.click(screen.getByRole('button', { name: 'Gửi yêu cầu' }))
-  expect(await screen.findByText('Đã sửa slide 1.')).toBeInTheDocument()
-  expect(await screen.findByText('Mô-đun: Updated module')).toBeInTheDocument()
-})
-
-it('shows a clarification reply without refreshing the preview', async () => {
-  vi.mocked(api.getModule).mockResolvedValue(baseModule)
-  vi.mocked(api.chatEditModule).mockResolvedValue({ session_id: 'session-2', applied: false, reply: 'Bạn muốn sửa phần nào?', edit_count: 0 })
-  renderPage()
-  await userEvent.type(await screen.findByRole('textbox', { name: 'Yêu cầu chỉnh sửa' }), 'Sửa lại')
-  await userEvent.click(screen.getByRole('button', { name: 'Gửi yêu cầu' }))
-  expect(await screen.findByText('Bạn muốn sửa phần nào?')).toBeInTheDocument()
-  expect(api.getModule).toHaveBeenCalledTimes(1)
-})
-
 it('asks for a reload instead of a retry when the refresh after an applied chat edit fails', async () => {
   vi.mocked(api.getModule).mockResolvedValueOnce(baseModule).mockRejectedValue(new Error('offline'))
   vi.mocked(api.chatEditModule).mockResolvedValue({ session_id: 'session-3', applied: true, reply: 'Đã sửa slide 1.', edit_count: 1 })
@@ -578,78 +420,64 @@ it('asks for a reload instead of a retry when the refresh after an applied chat 
   expect(screen.queryByText('Chỉnh sửa thất bại. Vui lòng thử lại.')).not.toBeInTheDocument()
 })
 
-it('hides the chat edit panel for research control modules', async () => {
-  vi.mocked(api.getModule).mockResolvedValue({ ...baseModule, is_control: true })
-  renderPage()
-  expect(await screen.findByText('Bản đối chứng cho nghiên cứu, không dùng tài liệu')).toBeInTheDocument()
-  expect(screen.queryByRole('textbox', { name: 'Yêu cầu chỉnh sửa' })).not.toBeInTheDocument()
-})
-
-it('opens the editor on the chat-edited content instead of the stale draft', async () => {
-  const withContent = (markdown: string) => ({ ...baseModule, components: [
-    { id: 'content-1', type: 'content' as const, content: { markdown }, questions: [] },
-  ] })
-  vi.mocked(api.getModule).mockResolvedValueOnce(withContent('Bản gốc dài')).mockResolvedValue(withContent('Bản rút gọn'))
-  vi.mocked(api.chatEditModule).mockResolvedValue({ session_id: 'session-4', applied: true, reply: 'Đã rút gọn.', edit_count: 1 })
-  renderPage()
-  await userEvent.type(await screen.findByRole('textbox', { name: 'Yêu cầu chỉnh sửa' }), 'Rút gọn nội dung')
-  await userEvent.click(screen.getByRole('button', { name: 'Gửi yêu cầu' }))
-  expect(await screen.findByText('Bản rút gọn')).toBeInTheDocument()
-  await userEvent.click(screen.getByRole('button', { name: 'Sửa' }))
-  expect(screen.getByDisplayValue('Bản rút gọn')).toBeInTheDocument()
-})
-
 describe('ModulePreviewPage - forms', () => {
   const withComponent = (component: ModuleDetail['components'][number]): ModuleDetail => ({ ...baseModule, components: [component] })
 
-  it('asks for a request instead of sending a blank chat message', async () => {
-    vi.mocked(api.getModule).mockResolvedValue(baseModule)
+  it('validates chat input, keeps input on failure, carries session_id, clarifies without refresh, and refreshes title & editor draft on applied edit', async () => {
+    const withContent = (title: string, markdown: string): ModuleDetail => ({
+      ...baseModule,
+      title,
+      components: [{ id: 'content-1', type: 'content', content: { markdown }, questions: [] }],
+    })
+    vi.mocked(api.getModule)
+      .mockResolvedValueOnce(withContent('Test Module', 'Bản gốc dài'))
+      .mockResolvedValue(withContent('Updated module', 'Bản rút gọn'))
+    vi.mocked(api.chatEditModule)
+      .mockRejectedValueOnce(new Error('boom'))
+      .mockResolvedValueOnce({ session_id: 'session-1', applied: false, reply: 'Bạn muốn sửa phần nào?', edit_count: 0 })
+      .mockResolvedValueOnce({ session_id: 'session-1', applied: false, reply: 'Rõ rồi.', edit_count: 0 })
+      .mockResolvedValueOnce({ session_id: 'session-1', applied: true, reply: 'Đã sửa slide 1.', edit_count: 1 })
+
     renderPage()
     const field = await screen.findByRole('textbox', { name: 'Yêu cầu chỉnh sửa' })
+
     await userEvent.type(field, '   ')
     expect(screen.getByRole('button', { name: 'Gửi yêu cầu' })).toBeDisabled()
     fireEvent.submit(field.closest('form')!)
     expect(await screen.findByText('Vui lòng nhập yêu cầu chỉnh sửa')).toBeInTheDocument()
     expect(api.chatEditModule).not.toHaveBeenCalled()
-  })
 
-  it('sends the trimmed chat message with the session of the last turn and empties the field', async () => {
-    vi.mocked(api.getModule).mockResolvedValue(baseModule)
-    vi.mocked(api.chatEditModule)
-      .mockResolvedValueOnce({ session_id: 'session-1', applied: false, reply: 'Phần nào?', edit_count: 0 })
-      .mockResolvedValueOnce({ session_id: 'session-1', applied: false, reply: 'Rõ rồi.', edit_count: 0 })
-    renderPage()
-    const field = await screen.findByRole('textbox', { name: 'Yêu cầu chỉnh sửa' })
-    await userEvent.type(field, '  Sửa lại ')
-    await userEvent.click(screen.getByRole('button', { name: 'Gửi yêu cầu' }))
-    await screen.findByText('Phần nào?')
-    expect(api.chatEditModule).toHaveBeenLastCalledWith('module-1', 'Sửa lại', undefined)
-    expect(field).toHaveValue('')
-    await userEvent.type(field, 'Slide 3')
-    await userEvent.click(screen.getByRole('button', { name: 'Gửi yêu cầu' }))
-    await screen.findByText('Rõ rồi.')
-    expect(api.chatEditModule).toHaveBeenLastCalledWith('module-1', 'Slide 3', 'session-1')
-  })
-
-  it('keeps the chat message for another try when the edit fails', async () => {
-    vi.mocked(api.getModule).mockResolvedValue(baseModule)
-    vi.mocked(api.chatEditModule).mockRejectedValue(new Error('boom'))
-    renderPage()
-    const field = await screen.findByRole('textbox', { name: 'Yêu cầu chỉnh sửa' })
-    await userEvent.type(field, 'Sửa lại')
-    await userEvent.click(screen.getByRole('button', { name: 'Gửi yêu cầu' }))
-    expect(await screen.findByText('Chỉnh sửa thất bại. Vui lòng thử lại.')).toBeInTheDocument()
-    expect(field).toHaveValue('Sửa lại')
-  })
-
-  it('refuses a chat message over 4000 characters', async () => {
-    vi.mocked(api.getModule).mockResolvedValue(baseModule)
-    renderPage()
-    const field = await screen.findByRole('textbox', { name: 'Yêu cầu chỉnh sửa' })
     fireEvent.change(field, { target: { value: 'a'.repeat(4001) } })
     await userEvent.click(screen.getByRole('button', { name: 'Gửi yêu cầu' }))
     expect(await screen.findByText('Yêu cầu tối đa 4000 ký tự')).toBeInTheDocument()
     expect(api.chatEditModule).not.toHaveBeenCalled()
+
+    fireEvent.change(field, { target: { value: 'Sửa lại' } })
+    await userEvent.click(screen.getByRole('button', { name: 'Gửi yêu cầu' }))
+    expect(await screen.findByText('Chỉnh sửa thất bại. Vui lòng thử lại.')).toBeInTheDocument()
+    expect(field).toHaveValue('Sửa lại')
+
+    await userEvent.clear(field)
+    await userEvent.type(field, '  Sửa lại ')
+    await userEvent.click(screen.getByRole('button', { name: 'Gửi yêu cầu' }))
+    expect(await screen.findByText('Bạn muốn sửa phần nào?')).toBeInTheDocument()
+    expect(api.chatEditModule).toHaveBeenLastCalledWith('module-1', 'Sửa lại', undefined)
+    expect(api.getModule).toHaveBeenCalledTimes(1)
+    expect(field).toHaveValue('')
+
+    await userEvent.type(field, 'Slide 3')
+    await userEvent.click(screen.getByRole('button', { name: 'Gửi yêu cầu' }))
+    expect(await screen.findByText('Rõ rồi.')).toBeInTheDocument()
+    expect(api.chatEditModule).toHaveBeenLastCalledWith('module-1', 'Slide 3', 'session-1')
+    expect(api.getModule).toHaveBeenCalledTimes(1)
+
+    await userEvent.type(field, 'Rút gọn nội dung')
+    await userEvent.click(screen.getByRole('button', { name: 'Gửi yêu cầu' }))
+    expect(await screen.findByText('Đã sửa slide 1.')).toBeInTheDocument()
+    expect(await screen.findByText('Mô-đun: Updated module')).toBeInTheDocument()
+    expect(await screen.findByText('Bản rút gọn')).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Sửa' }))
+    expect(screen.getByDisplayValue('Bản rút gọn')).toBeInTheDocument()
   })
 
   // From the keyboard, as in CoursesPage.test: in jsdom a Radix trigger can stop opening on a mouse press.
@@ -659,86 +487,80 @@ describe('ModulePreviewPage - forms', () => {
     await userEvent.click(await screen.findByRole('menuitem', { name: 'Đổi tên' }))
   }
 
-  it('renames the module and goes back to the heading', async () => {
+  it('validates title length, restores on cancel, keeps open on failure, and renames heading on save', async () => {
     vi.mocked(api.getModule).mockResolvedValue(baseModule)
-    vi.mocked(api.updateModuleTitle).mockResolvedValue({ id: 'module-1', title: 'Tên mới' })
+    vi.mocked(api.updateModuleTitle)
+      .mockRejectedValueOnce(new Error('Network Error'))
+      .mockResolvedValueOnce({ id: 'module-1', title: 'Tên mới' })
     renderPage()
+
     await chooseRename()
     const field = screen.getByRole('textbox', { name: 'Tên mô-đun' })
     expect(field).toHaveValue('Test Module')
-    await userEvent.clear(field)
-    await userEvent.type(field, 'Tên mới')
+    fireEvent.change(field, { target: { value: 'a'.repeat(201) } })
+    await userEvent.click(screen.getByRole('button', { name: 'Lưu' }))
+    expect(await screen.findByText('Tên mô-đun tối đa 200 ký tự')).toBeInTheDocument()
+    expect(api.updateModuleTitle).not.toHaveBeenCalled()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Hủy' }))
+    await chooseRename()
+    const reopened = screen.getByRole('textbox', { name: 'Tên mô-đun' })
+    expect(reopened).toHaveValue('Test Module')
+
+    await userEvent.type(reopened, ' 2')
+    await userEvent.click(screen.getByRole('button', { name: 'Lưu' }))
+    expect(await screen.findByText(/không thể lưu/i)).toBeInTheDocument()
+    expect(reopened).toHaveValue('Test Module 2')
+
+    await userEvent.clear(reopened)
+    await userEvent.type(reopened, 'Tên mới')
     vi.mocked(api.getModule).mockResolvedValue({ ...baseModule, title: 'Tên mới' })
     await userEvent.click(screen.getByRole('button', { name: 'Lưu' }))
     await waitFor(() => expect(api.updateModuleTitle).toHaveBeenCalledWith('module-1', 'Tên mới'))
     expect(await screen.findByRole('heading', { name: 'Mô-đun: Tên mới' })).toBeInTheDocument()
   })
 
-  it('refuses a module title over 200 characters and puts the old one back on cancel', async () => {
-    vi.mocked(api.getModule).mockResolvedValue(baseModule)
+  it('discards Content edits on cancel, keeps editor open on [S99] failure, and preserves extra fields on save', async () => {
+    vi.mocked(api.getModule).mockResolvedValue(withComponent({
+      id: 'content-1', type: 'content', content: { markdown: 'Bản gốc', extra: 1, source_map: {} }, questions: [],
+    }))
+    vi.mocked(api.updateComponentContent)
+      .mockRejectedValueOnce(new Error('Content cites unknown source IDs: S99'))
+      .mockResolvedValueOnce({ id: 'content-1', content: {} })
     renderPage()
-    await chooseRename()
-    const field = screen.getByRole('textbox', { name: 'Tên mô-đun' })
-    fireEvent.change(field, { target: { value: 'a'.repeat(201) } })
-    await userEvent.click(screen.getByRole('button', { name: 'Lưu' }))
-    expect(await screen.findByText('Tên mô-đun tối đa 200 ký tự')).toBeInTheDocument()
-    expect(api.updateModuleTitle).not.toHaveBeenCalled()
-    await userEvent.click(screen.getByRole('button', { name: 'Hủy' }))
-    await chooseRename()
-    expect(screen.getByRole('textbox', { name: 'Tên mô-đun' })).toHaveValue('Test Module')
-  })
 
-  it('saves edited Markdown content and keeps the rest of the component content', async () => {
-    vi.mocked(api.getModule).mockResolvedValue(withComponent({ id: 'content-1', type: 'content', content: { markdown: 'Bản gốc', extra: 1 }, questions: [] }))
-    vi.mocked(api.updateComponentContent).mockResolvedValue({ id: 'content-1', content: {} })
-    renderPage()
-    await userEvent.click(await screen.findByRole('button', { name: 'Sửa' }))
-    const field = screen.getByRole('textbox', { name: 'Nội dung' })
-    expect(field).toHaveValue('Bản gốc')
-    await userEvent.clear(field)
-    await userEvent.type(field, 'Bản sửa')
-    await userEvent.click(screen.getByRole('button', { name: 'Lưu' }))
-    await waitFor(() => expect(api.updateComponentContent).toHaveBeenCalledWith('module-1', 'content-1', { markdown: 'Bản sửa', extra: 1 }))
-  })
-
-  it('discards an edit of the Markdown content on cancel', async () => {
-    vi.mocked(api.getModule).mockResolvedValue(withComponent({ id: 'content-1', type: 'content', content: { markdown: 'Bản gốc' }, questions: [] }))
-    renderPage()
     await userEvent.click(await screen.findByRole('button', { name: 'Sửa' }))
     await userEvent.type(screen.getByRole('textbox', { name: 'Nội dung' }), ' thêm')
     await userEvent.click(screen.getByRole('button', { name: 'Hủy' }))
     await userEvent.click(screen.getByRole('button', { name: 'Sửa' }))
-    expect(screen.getByRole('textbox', { name: 'Nội dung' })).toHaveValue('Bản gốc')
+    const field = screen.getByRole('textbox', { name: 'Nội dung' })
+    expect(field).toHaveValue('Bản gốc')
+
+    fireEvent.change(field, { target: { value: 'Revised. [S99]' } })
+    await userEvent.click(screen.getByRole('button', { name: 'Lưu' }))
+    expect(await screen.findByText(/không thể lưu/i)).toBeInTheDocument()
+    expect(field).toHaveValue('Revised. [S99]')
+
+    await userEvent.clear(field)
+    await userEvent.type(field, 'Bản sửa')
+    await userEvent.click(screen.getByRole('button', { name: 'Lưu' }))
+    await waitFor(() => expect(api.updateComponentContent).toHaveBeenCalledWith('module-1', 'content-1', {
+      markdown: 'Bản sửa', extra: 1, source_map: {},
+    }))
   })
 
-  it('saves edited slides, a line to a bullet, and keeps what else a slide holds', async () => {
+  it('keeps slides editor open on failure, clears alert on cancel, and saves edited bullets preserving notes', async () => {
     vi.mocked(api.getModule).mockResolvedValue(withComponent({
       id: 'slides-1',
       type: 'slides',
       content: { slides: [{ title: 'Một', bullets: ['a', 'b'], notes: 'n' }, { title: 'Hai', bullets: ['c'] }] },
       questions: [],
     }))
-    vi.mocked(api.updateComponentContent).mockResolvedValue({ id: 'slides-1', content: {} })
+    vi.mocked(api.updateComponentContent)
+      .mockRejectedValueOnce(new Error('Network Error'))
+      .mockResolvedValueOnce({ id: 'slides-1', content: {} })
     renderPage()
-    await userEvent.click(await screen.findByRole('button', { name: 'Sửa' }))
-    const title = screen.getByRole('textbox', { name: 'Tiêu đề slide 1' })
-    await userEvent.clear(title)
-    await userEvent.type(title, 'Một mới')
-    const bullets = screen.getByRole('textbox', { name: 'Nội dung slide 1' })
-    expect(bullets).toHaveValue('a\nb')
-    await userEvent.type(bullets, '{Enter}c')
-    await userEvent.click(screen.getByRole('button', { name: 'Lưu' }))
-    await waitFor(() => expect(api.updateComponentContent).toHaveBeenCalledWith('module-1', 'slides-1', {
-      slides: [{ title: 'Một mới', bullets: ['a', 'b', 'c'], notes: 'n' }, { title: 'Hai', bullets: ['c'] }],
-    }))
-  })
 
-  it('keeps the slides editor open and says so when the save fails', async () => {
-    vi.mocked(api.getModule).mockResolvedValue(withComponent({
-      id: 'slides-1', type: 'slides', content: { slides: [{ title: 'Một', bullets: ['a'] }] }, questions: [],
-    }))
-    vi.mocked(api.updateComponentContent).mockRejectedValue(new Error('Network Error'))
-    renderPage()
     await userEvent.click(await screen.findByRole('button', { name: 'Sửa' }))
     const title = screen.getByRole('textbox', { name: 'Tiêu đề slide 1' })
     await userEvent.type(title, ' mới')
@@ -747,18 +569,18 @@ describe('ModulePreviewPage - forms', () => {
     expect(title).toHaveValue('Một mới')
     await userEvent.click(screen.getByRole('button', { name: 'Hủy' }))
     expect(screen.queryByRole('alert')).not.toBeInTheDocument()
-  })
 
-  it('keeps the title field open and says so when the rename fails', async () => {
-    vi.mocked(api.getModule).mockResolvedValue(baseModule)
-    vi.mocked(api.updateModuleTitle).mockRejectedValue(new Error('Network Error'))
-    renderPage()
-    await chooseRename()
-    const field = screen.getByRole('textbox', { name: 'Tên mô-đun' })
-    await userEvent.type(field, ' 2')
+    await userEvent.click(screen.getByRole('button', { name: 'Sửa' }))
+    const reopenedTitle = screen.getByRole('textbox', { name: 'Tiêu đề slide 1' })
+    await userEvent.clear(reopenedTitle)
+    await userEvent.type(reopenedTitle, 'Một mới')
+    const bullets = screen.getByRole('textbox', { name: 'Nội dung slide 1' })
+    expect(bullets).toHaveValue('a\nb')
+    await userEvent.type(bullets, '{Enter}c')
     await userEvent.click(screen.getByRole('button', { name: 'Lưu' }))
-    expect(await screen.findByText(/không thể lưu/i)).toBeInTheDocument()
-    expect(field).toHaveValue('Test Module 2')
+    await waitFor(() => expect(api.updateComponentContent).toHaveBeenLastCalledWith('module-1', 'slides-1', {
+      slides: [{ title: 'Một mới', bullets: ['a', 'b', 'c'], notes: 'n' }, { title: 'Hai', bullets: ['c'] }],
+    }))
   })
 
   it('saves an edited example and keeps the others', async () => {
@@ -781,36 +603,32 @@ describe('ModulePreviewPage - forms', () => {
   })
 
   describe('editing a question', () => {
-    const question = { id: 'q1', position: 0, stem: 'Original stem', choices: { options: ['A', 'B'] }, answer_key: '0', explanation: 'Original explanation' }
+    const question = { id: 'q1', position: 0, stem: 'Original stem', choices: { options: ['A', 'B'] }, answer_key: '1', explanation: 'Original explanation' }
     const quiz = withComponent({ id: 'quiz-1', type: 'quiz', content: {}, questions: [question] })
 
-    it('asks for the question before saving it', async () => {
+    it('validates stem and choices, checks the saved answer radio, and reports save failure', async () => {
       vi.mocked(api.getModule).mockResolvedValue(quiz)
-      renderPage()
-      await userEvent.click(await screen.findByRole('button', { name: 'Sửa' }))
-      await userEvent.clear(screen.getByRole('textbox', { name: 'Câu hỏi' }))
-      await userEvent.click(screen.getByRole('button', { name: 'Lưu' }))
-      expect(await screen.findByText('Vui lòng nhập câu hỏi')).toBeInTheDocument()
-      expect(api.updateQuestion).not.toHaveBeenCalled()
-    })
-
-    it('asks for every choice before saving the question', async () => {
-      vi.mocked(api.getModule).mockResolvedValue(quiz)
-      renderPage()
-      await userEvent.click(await screen.findByRole('button', { name: 'Sửa' }))
-      await userEvent.clear(screen.getByRole('textbox', { name: 'Phương án B' }))
-      await userEvent.click(screen.getByRole('button', { name: 'Lưu' }))
-      expect(await screen.findByText('Vui lòng nhập phương án')).toBeInTheDocument()
-      expect(api.updateQuestion).not.toHaveBeenCalled()
-    })
-
-    it('starts the editor on the saved answer and says when the save fails', async () => {
-      vi.mocked(api.getModule).mockResolvedValue({ ...quiz, components: [{ ...quiz.components[0], questions: [{ ...question, answer_key: '1' }] }] })
       vi.mocked(api.updateQuestion).mockRejectedValue(new Error('boom'))
       renderPage()
+
       await userEvent.click(await screen.findByRole('button', { name: 'Sửa' }))
       expect(screen.getByRole('radio', { name: 'Đáp án B' })).toBeChecked()
       expect(screen.getByRole('radio', { name: 'Đáp án A' })).not.toBeChecked()
+
+      const stem = screen.getByRole('textbox', { name: 'Câu hỏi' })
+      await userEvent.clear(stem)
+      await userEvent.click(screen.getByRole('button', { name: 'Lưu' }))
+      expect(await screen.findByText('Vui lòng nhập câu hỏi')).toBeInTheDocument()
+      expect(api.updateQuestion).not.toHaveBeenCalled()
+
+      await userEvent.type(stem, 'Original stem')
+      const choiceB = screen.getByRole('textbox', { name: 'Phương án B' })
+      await userEvent.clear(choiceB)
+      await userEvent.click(screen.getByRole('button', { name: 'Lưu' }))
+      expect(await screen.findByText('Vui lòng nhập phương án')).toBeInTheDocument()
+      expect(api.updateQuestion).not.toHaveBeenCalled()
+
+      await userEvent.type(choiceB, 'B')
       await userEvent.click(screen.getByRole('button', { name: 'Lưu' }))
       expect(await screen.findByText('Lưu câu hỏi thất bại')).toBeInTheDocument()
       expect(api.updateQuestion).toHaveBeenCalledWith('module-1', 'q1', expect.objectContaining({ answer_key: 1 }))
@@ -822,14 +640,37 @@ describe('ModulePreviewPage - forms', () => {
     const sections = [{ sectionnum: 0, name: 'General' }, { sectionnum: 1, name: 'Tuần 1' }, { sectionnum: 2, name: 'Tuần 2' }]
     const result = { moodle_course_id: 6, book_cmid: 1 }
 
-    it('pushes to the section picked from the drop-down', async () => {
+    it('fetches sections once, pushes to section 2, disables against double-click, and lists created activities', async () => {
       vi.mocked(api.getModule).mockResolvedValue(linked)
       vi.mocked(api.getMoodleSections).mockResolvedValue(sections)
-      vi.mocked(api.publishToMoodle).mockResolvedValue(result)
+      vi.mocked(api.publishToMoodle).mockResolvedValue({
+        moodle_course_id: 6,
+        book_cmid: 42,
+        practice_cmid: 43,
+        quiz_cmid: 44,
+      })
       renderPage()
-      await userEvent.selectOptions(await screen.findByRole('combobox'), '2')
-      await userEvent.click(screen.getByRole('button', { name: /^xuất bản lên moodle$/i }))
+
+      const button = await screen.findByRole('button', { name: /^xuất bản lên moodle$/i })
+      expect(button).toBeEnabled()
+      expect(api.getMoodleSections).toHaveBeenCalledOnce()
+
+      await userEvent.selectOptions(screen.getByRole('combobox'), '2')
+      await userEvent.click(button)
+
       await waitFor(() => expect(api.publishToMoodle).toHaveBeenCalledWith('module-1', 2, false))
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: /đã xuất bản lên moodle/i })).toBeDisabled()
+      })
+      expect(api.publishToMoodle).toHaveBeenCalledTimes(1)
+      // Says what was created, in the order it was created.
+      expect(screen.getByText(/sách nội dung, bài luyện tập, quiz\./i)).toBeInTheDocument()
+
+      // Clicking again (e.g. a stray extra click before React re-renders)
+      // must not fire a second request -- moodle_client.create_book/create_quiz
+      // are not idempotent, a second call would create duplicate content.
+      await userEvent.click(screen.getByRole('button', { name: /đã xuất bản lên moodle/i }))
+      expect(api.publishToMoodle).toHaveBeenCalledTimes(1)
     })
 
     it('pushes to a new section, numbered after the existing ones, and hides the drop-down', async () => {
@@ -873,24 +714,6 @@ it('does not ask Moodle for sections where this environment has no Moodle', asyn
   expect(api.getMoodleSections).not.toHaveBeenCalled()
 })
 
-it('asks for sections once the linked account has answered', async () => {
-  vi.mocked(api.getModule).mockResolvedValue({ ...baseModule, moodle_course_id: 72 })
-  vi.mocked(api.getMoodleSections).mockResolvedValue([{ sectionnum: 0, name: 'General' }])
-  renderPage()
-  expect(await screen.findByRole('button', { name: /^xuất bản lên moodle$/i })).toBeInTheDocument()
-  expect(api.getMoodleSections).toHaveBeenCalledOnce()
-})
-
-it('names no model on the page, even when generation used a fallback', async () => {
-  vi.mocked(api.getModule).mockResolvedValue({
-    ...baseModule,
-    generation_models: [{ requested_alias: 'gemini-flash', served_model: 'google/gemini-3.8-flash' }],
-  })
-  renderPage()
-  await screen.findByRole('heading', { name: `Mô-đun: ${baseModule.title}` })
-  expect(screen.queryByText(/gemini-3.8-flash/)).not.toBeInTheDocument()
-})
-
 it('renders numbered inline citations in reading order and opens the exact chunk', async () => {
   vi.mocked(api.getModule).mockResolvedValue({
     ...baseModule,
@@ -912,21 +735,6 @@ it('renders numbered inline citations in reading order and opens the exact chunk
   await userEvent.click(screen.getByRole('button', { name: 'Đóng nguồn' }))
   await userEvent.click(screen.getByRole('button', { name: 'Nguồn 2' }))
   expect(screen.getByRole('dialog')).toHaveTextContent('First physical chunk')
-})
-
-it('keeps the Content editor open and reports a rejected source marker', async () => {
-  vi.mocked(api.getModule).mockResolvedValue({ ...baseModule, components: [
-    { id: 'content-1', type: 'content', content: { markdown: 'Original. [S1]', source_map: {} }, questions: [] },
-  ] })
-  vi.mocked(api.updateComponentContent).mockRejectedValue(new Error('Content cites unknown source IDs: S99'))
-  renderPage()
-  const section = (await screen.findByRole('heading', { name: 'Nội dung' })).closest('section')!
-  await userEvent.click(within(section).getByRole('button', { name: 'Sửa' }))
-  const field = within(section).getByRole('textbox', { name: 'Nội dung' })
-  fireEvent.change(field, { target: { value: 'Revised. [S99]' } })
-  await userEvent.click(within(section).getByRole('button', { name: 'Lưu' }))
-  expect(await screen.findByText(/không thể lưu/i)).toBeInTheDocument()
-  expect(field).toHaveValue('Revised. [S99]')
 })
 
 describe('ModulePreviewPage - load failure', () => {
@@ -980,19 +788,5 @@ describe('ModulePreviewPage - keyboard focus', () => {
     await user.keyboard('{Enter}')
     await waitFor(() => expect(api.updateComponentContent).toHaveBeenCalled())
     await waitFor(() => expect(within(part).getByRole('button', { name: 'Sửa' })).toHaveFocus())
-  })
-})
-
-describe('ModulePreviewPage - heading levels', () => {
-  it('puts the Markdown headings of a part one level under the part title', async () => {
-    vi.mocked(api.getModule).mockResolvedValue({
-      ...baseModule,
-      components: [{ id: 'content-1', type: 'content', content: { markdown: '## Khái niệm\n\nA.\n\n### Chi tiết\n\nB.\n\n#### Ghi chú\n\nC.' }, questions: [] }],
-    })
-    renderPage()
-    expect(await screen.findByRole('heading', { name: 'Khái niệm', level: 3 })).toBeInTheDocument()
-    expect(screen.getByRole('heading', { name: 'Nội dung', level: 2 })).toBeInTheDocument()
-    expect(screen.getByRole('heading', { name: 'Chi tiết', level: 4 })).toBeInTheDocument()
-    expect(screen.getByRole('heading', { name: 'Ghi chú', level: 5 })).toBeInTheDocument()
   })
 })

@@ -2,7 +2,7 @@ import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { AxiosError, type AxiosResponse, type InternalAxiosRequestConfig } from 'axios'
 import { MemoryRouter } from 'react-router-dom'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { LoginPage } from '../../../pages/LoginPage'
 import * as api from '../../../api'
 import * as AuthHookModule from '../../../auth/useAuth'
@@ -19,6 +19,10 @@ beforeEach(() => {
     loginWithLaunchCode: vi.fn(),
     logout: vi.fn(),
   })
+})
+
+afterEach(() => {
+  vi.restoreAllMocks()
 })
 
 function refusal(status: number, data: unknown) {
@@ -121,12 +125,21 @@ describe('LoginPage', () => {
     expect(screen.getByLabelText('Email')).toHaveAttribute('autocomplete', 'username')
     expect(screen.getByLabelText('Mật khẩu')).toHaveAttribute('autocomplete', 'current-password')
   })
-})
 
-it('offers open registration and admin support', async () => {
-  vi.spyOn(api, 'getAuthOptions').mockResolvedValue({ self_registration: true })
-  renderLoginPage()
-  expect(await screen.findByRole('link', { name: 'Đăng ký' })).toHaveAttribute('href', '/register')
-  expect(screen.getByRole('link', { name: 'Quên mật khẩu?' })).toHaveAttribute('href', expect.stringContaining('mailto:'))
-  expect(screen.getByRole('link', { name: 'Quên mật khẩu?' })).toHaveAccessibleDescription('Liên hệ quản trị viên để đặt lại mật khẩu.')
+  it('offers open registration and admin support', async () => {
+    vi.spyOn(api, 'getAuthOptions').mockResolvedValue({ self_registration: true })
+    renderLoginPage()
+    expect(await screen.findByRole('link', { name: 'Đăng ký' })).toHaveAttribute('href', '/register')
+    expect(screen.getByRole('link', { name: 'Quên mật khẩu?' })).toHaveAttribute('href', expect.stringContaining('mailto:'))
+    expect(screen.getByRole('link', { name: 'Quên mật khẩu?' })).toHaveAccessibleDescription('Liên hệ quản trị viên để đặt lại mật khẩu.')
+  })
+
+  it('drops the sign-up link when registration is closed', async () => {
+    vi.spyOn(api, 'getAuthOptions').mockResolvedValue({ self_registration: false })
+    renderLoginPage()
+
+    await waitFor(() => expect(api.getAuthOptions).toHaveBeenCalled())
+    expect(screen.queryByText(/Chưa có tài khoản/)).not.toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'Đăng ký' })).not.toBeInTheDocument()
+  })
 })

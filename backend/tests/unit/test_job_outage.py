@@ -2,6 +2,7 @@
 
 import threading
 import uuid
+from types import SimpleNamespace
 
 import httpx
 import pytest
@@ -9,6 +10,8 @@ from litellm.exceptions import APIConnectionError, InternalServerError, RateLimi
 from sqlalchemy.exc import OperationalError
 
 from app.jobs import queue
+from app.jobs.failures import SYSTEM_FAILURE_MESSAGE, status_error
+from app.models import JobStatus
 
 
 def _status_error(code: int) -> httpx.HTTPStatusError:
@@ -82,3 +85,23 @@ def test_a_failed_beat_is_retried_soon(monkeypatch):
 
     assert waits[:3] == [queue.HEARTBEAT_INTERVAL_SECONDS, queue.HEARTBEAT_RETRY_SECONDS,
                          queue.HEARTBEAT_INTERVAL_SECONDS]
+
+
+RAW_FAILURE = "ConnectError: http://gateway:4000/v1/embeddings refused"
+
+
+def _job(status, system_failure, last_error=RAW_FAILURE):
+    return SimpleNamespace(status=status, system_failure=system_failure, last_error=last_error)
+
+
+def test_a_job_waiting_for_its_next_try_shows_no_error():
+    assert status_error(_job(JobStatus.queued, False)) is None
+    assert status_error(_job(JobStatus.running, False)) is None
+
+
+def test_a_system_failure_shows_the_general_message():
+    assert status_error(_job(JobStatus.failed, True)) == SYSTEM_FAILURE_MESSAGE
+
+
+def test_a_failure_caused_by_the_input_shows_its_message():
+    assert status_error(_job(JobStatus.failed, False, "Tài liệu không có chữ.")) == "Tài liệu không có chữ."

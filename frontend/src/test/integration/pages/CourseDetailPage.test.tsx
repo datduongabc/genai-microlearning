@@ -68,7 +68,6 @@ function renderPage() {
           <Route path="/courses/:courseId" element={<CourseDetailPage />} />
         </Routes>
       </MemoryRouter>
-      
     </AuthProvider>,
   )
 }
@@ -112,62 +111,38 @@ describe('CourseDetailPage - Moodle linking', () => {
     vi.mocked(api.listMoodleCourses).mockResolvedValue(moodleCourses)
   })
 
-  it('offers authorized Moodle courses in a drop-down when the course is not linked to Moodle', async () => {
-    vi.mocked(api.listCourses).mockResolvedValue([unlinkedCourse])
-
-    renderPage()
-
-    const select = await screen.findByRole('combobox', { name: /khóa học moodle/i })
-    await waitFor(() => expect(within(select).getAllByRole('option')).toHaveLength(3))
-    expect(within(select).getByRole('option', { name: 'Databases (DB)' })).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: /tạo course moodle/i })).not.toBeInTheDocument()
-    expect(screen.queryByPlaceholderText(/tìm course moodle/i)).not.toBeInTheDocument()
-  })
-
-  it('lets the teacher choose a Moodle course from the drop-down and link it', async () => {
+  it('offers authorized Moodle courses, validates empty submit, reports link error, and links the chosen course', async () => {
     vi.mocked(api.listCourses)
       .mockResolvedValueOnce([unlinkedCourse])
       .mockResolvedValueOnce([{ ...unlinkedCourse, moodle_course_id: 6 }])
-    vi.mocked(api.linkMoodleCourse).mockResolvedValue({ moodle_course_id: 6 })
+    vi.mocked(api.linkMoodleCourse)
+      .mockRejectedValueOnce(axiosFailure(404, 'Không tìm thấy khóa học Moodle này'))
+      .mockResolvedValueOnce({ moodle_course_id: 6 })
 
     renderPage()
 
     const select = await screen.findByRole('combobox', { name: /khóa học moodle/i })
     expect(screen.getByRole('button', { name: 'Liên kết' })).toBeDisabled()
-    await screen.findByRole('option', { name: /Intro2AI/ })
+    await waitFor(() => expect(within(select).getAllByRole('option')).toHaveLength(3))
+    expect(within(select).getByRole('option', { name: 'Databases (DB)' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /tạo course moodle/i })).not.toBeInTheDocument()
+    expect(screen.queryByPlaceholderText(/tìm course moodle/i)).not.toBeInTheDocument()
+
+    fireEvent.submit(select.closest('form')!)
+    expect(await screen.findByText('Vui lòng chọn một khóa học Moodle')).toBeInTheDocument()
+    expect(api.linkMoodleCourse).not.toHaveBeenCalled()
+
     await userEvent.selectOptions(select, '6')
     await userEvent.click(screen.getByRole('button', { name: 'Liên kết' }))
+    expect(await screen.findByText('Không tìm thấy khóa học Moodle này')).toBeInTheDocument()
 
+    await userEvent.click(screen.getByRole('button', { name: 'Liên kết' }))
     await waitFor(() => {
       expect(api.linkMoodleCourse).toHaveBeenCalledWith('course-1', 6)
     })
     expect(await screen.findByText('Đã liên kết với khóa học Moodle #6.')).toBeInTheDocument()
     // Linked, the course has no choice left to make, so the line goes.
     await waitFor(() => expect(screen.queryByRole('combobox', { name: /khóa học moodle/i })).not.toBeInTheDocument())
-  })
-
-  it('asks for a course to be chosen instead of linking nothing', async () => {
-    vi.mocked(api.listCourses).mockResolvedValue([unlinkedCourse])
-
-    renderPage()
-    const select = await screen.findByRole('combobox', { name: /khóa học moodle/i })
-    await screen.findByRole('option', { name: /Intro2AI/ })
-    fireEvent.submit(select.closest('form')!)
-
-    expect(await screen.findByText('Vui lòng chọn một khóa học Moodle')).toBeInTheDocument()
-    expect(api.linkMoodleCourse).not.toHaveBeenCalled()
-  })
-
-  it('says what the server said when a Moodle course cannot be linked', async () => {
-    vi.mocked(api.listCourses).mockResolvedValue([unlinkedCourse])
-    vi.mocked(api.linkMoodleCourse).mockRejectedValue(axiosFailure(404, 'Không tìm thấy khóa học Moodle này'))
-
-    renderPage()
-    await screen.findByRole('option', { name: /Intro2AI/ })
-    await userEvent.selectOptions(screen.getByRole('combobox', { name: /khóa học moodle/i }), '6')
-    await userEvent.click(screen.getByRole('button', { name: 'Liên kết' }))
-
-    expect(await screen.findByText('Không tìm thấy khóa học Moodle này')).toBeInTheDocument()
   })
 
   it('says so when the list of Moodle courses cannot be loaded', async () => {
@@ -179,31 +154,47 @@ describe('CourseDetailPage - Moodle linking', () => {
     expect(await screen.findByText('Moodle không phản hồi')).toBeInTheDocument()
   })
 
-  it('offers no Moodle course until the account is linked, and leaves the account to the account menu', async () => {
-    vi.mocked(api.listCourses).mockResolvedValue([unlinkedCourse])
-    vi.mocked(api.getMoodleAccount).mockResolvedValue({ email: 'lan@x.edu', status: 'not_linked' })
-
-    renderPage()
-
-    await screen.findByRole('heading', { name: 'Tài liệu' })
-    // The account is linked from the account menu, not a second time on the page.
-    expect(screen.queryByText('Khóa học Moodle:')).not.toBeInTheDocument()
-    expect(screen.queryByRole('region', { name: 'Tài khoản Moodle' })).not.toBeInTheDocument()
-    expect(screen.queryByLabelText('Email Moodle')).not.toBeInTheDocument()
-    expect(screen.queryByRole('combobox', { name: /khóa học moodle/i })).not.toBeInTheDocument()
-    expect(api.listMoodleCourses).not.toHaveBeenCalled()
-  })
-
-  it('shows no Moodle line once the course is linked', async () => {
-    vi.mocked(api.listCourses).mockResolvedValue([{ ...unlinkedCourse, moodle_course_id: 6 }])
+  it.each([
+    {
+      caseName: 'the account is not linked',
+      account: { email: 'lan@x.edu', status: 'not_linked' as const },
+      course: unlinkedCourse,
+      checkAccountMenu: true,
+      checkUnlink: false,
+    },
+    {
+      caseName: 'the course is already linked',
+      account: { email: 'lan@x.edu', status: 'linked' as const },
+      course: { ...unlinkedCourse, moodle_course_id: 6 },
+      checkAccountMenu: false,
+      checkUnlink: true,
+    },
+    {
+      caseName: 'the environment has no Moodle',
+      account: { email: 'lan@x.edu', status: 'unavailable' as const },
+      course: unlinkedCourse,
+      checkAccountMenu: false,
+      checkUnlink: false,
+    },
+  ])('shows no Moodle course line when $caseName', async ({ account, course, checkAccountMenu, checkUnlink }) => {
+    vi.mocked(api.listCourses).mockResolvedValue([course])
+    vi.mocked(api.getMoodleAccount).mockResolvedValue(account)
 
     renderPage()
 
     await screen.findByRole('heading', { name: 'Tài liệu' })
     await waitFor(() => expect(api.getMoodleAccount).toHaveBeenCalled())
     expect(screen.queryByText('Khóa học Moodle:')).not.toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: /hủy liên kết/i })).not.toBeInTheDocument()
     expect(screen.queryByRole('combobox', { name: /khóa học moodle/i })).not.toBeInTheDocument()
+    if (checkAccountMenu) {
+      // The account is linked from the account menu, not a second time on the page.
+      expect(screen.queryByRole('region', { name: 'Tài khoản Moodle' })).not.toBeInTheDocument()
+      expect(screen.queryByLabelText('Email Moodle')).not.toBeInTheDocument()
+      expect(api.listMoodleCourses).not.toHaveBeenCalled()
+    }
+    if (checkUnlink) {
+      expect(screen.queryByRole('button', { name: /hủy liên kết/i })).not.toBeInTheDocument()
+    }
   })
 
   it('stops offering courses when the server says the account link must be made again', async () => {
@@ -219,25 +210,6 @@ describe('CourseDetailPage - Moodle linking', () => {
 
     await waitFor(() => expect(screen.queryByRole('combobox', { name: /khóa học moodle/i })).not.toBeInTheDocument())
   })
-
-})
-
-describe('CourseDetailPage - no Moodle', () => {
-  afterEach(() => {
-    vi.restoreAllMocks()
-  })
-
-
-  it('shows no Moodle course line where the environment has no Moodle', async () => {
-    vi.mocked(api.listCourses).mockResolvedValue([unlinkedCourse])
-    vi.mocked(api.getMoodleAccount).mockResolvedValue({ email: 'lan@x.edu', status: 'unavailable' })
-    renderPage()
-
-    await screen.findByRole('heading', { name: 'Tài liệu' })
-    await waitFor(() => expect(screen.queryByText('Khóa học Moodle:')).not.toBeInTheDocument())
-    expect(screen.queryByRole('combobox', { name: /khóa học moodle/i })).not.toBeInTheDocument()
-  })
-
 })
 
 describe('CourseDetailPage - delete document', () => {
@@ -245,34 +217,34 @@ describe('CourseDetailPage - delete document', () => {
     vi.restoreAllMocks()
   })
 
-  it('asks for confirmation and does not delete when the user cancels', async () => {
-    vi.mocked(api.listCourses).mockResolvedValue([unlinkedCourse])
-    vi.mocked(api.listDocuments).mockResolvedValue([sampleDocument])
-    vi.spyOn(window, 'confirm').mockReturnValue(false)
-
-    renderPage()
-
-    await openMenu(/thao tác khác với/i)
-    await userEvent.click(screen.getByRole('menuitem', { name: /xóa tài liệu/i }))
-
-    expect(window.confirm).toHaveBeenCalled()
-    expect(api.deleteDocument).not.toHaveBeenCalled()
-    expect(screen.getByText('syllabus.pdf')).toBeInTheDocument()
-  })
-
-  it('deletes the document and refreshes the list when confirmed', async () => {
+  it('asks for confirmation, shows error when delete fails, and deletes and refreshes when confirmed', async () => {
     vi.mocked(api.listCourses).mockResolvedValue([unlinkedCourse])
     vi.mocked(api.listDocuments)
       .mockResolvedValueOnce([sampleDocument])
       .mockResolvedValueOnce([])
-    vi.mocked(api.deleteDocument).mockResolvedValue(undefined)
-    vi.spyOn(window, 'confirm').mockReturnValue(true)
+    vi.mocked(api.deleteDocument)
+      .mockRejectedValueOnce(new Error('boom'))
+      .mockResolvedValueOnce(undefined)
+    vi.spyOn(window, 'confirm')
+      .mockReturnValueOnce(false)
+      .mockReturnValueOnce(true)
+      .mockReturnValueOnce(true)
 
     renderPage()
 
     await openMenu(/thao tác khác với/i)
     await userEvent.click(screen.getByRole('menuitem', { name: /xóa tài liệu/i }))
+    expect(window.confirm).toHaveBeenCalledTimes(1)
+    expect(api.deleteDocument).not.toHaveBeenCalled()
+    expect(screen.getByText('syllabus.pdf')).toBeInTheDocument()
 
+    await openMenu(/thao tác khác với/i)
+    await userEvent.click(screen.getByRole('menuitem', { name: /xóa tài liệu/i }))
+    expect(await screen.findByText(/xóa tài liệu thất bại/i)).toBeInTheDocument()
+    expect(screen.getByText('syllabus.pdf')).toBeInTheDocument()
+
+    await openMenu(/thao tác khác với/i)
+    await userEvent.click(screen.getByRole('menuitem', { name: /xóa tài liệu/i }))
     await waitFor(() => {
       expect(api.deleteDocument).toHaveBeenCalledWith('doc-1')
     })
@@ -298,20 +270,6 @@ describe('CourseDetailPage - delete document', () => {
     expect(screen.getByText(/tài liệu đã được xóa/i)).toBeInTheDocument()
     expect(screen.queryByText(/xóa tài liệu thất bại/i)).not.toBeInTheDocument()
   })
-
-  it('shows the server error when deleting the document fails', async () => {
-    vi.mocked(api.listCourses).mockResolvedValue([unlinkedCourse])
-    vi.mocked(api.listDocuments).mockResolvedValue([sampleDocument])
-    vi.mocked(api.deleteDocument).mockRejectedValue(new Error('boom'))
-    vi.spyOn(window, 'confirm').mockReturnValue(true)
-
-    renderPage()
-    await openMenu(/thao tác khác với/i)
-    await userEvent.click(screen.getByRole('menuitem', { name: /xóa tài liệu/i }))
-
-    expect(await screen.findByText(/xóa tài liệu thất bại/i)).toBeInTheDocument()
-    expect(screen.getByText('syllabus.pdf')).toBeInTheDocument()
-  })
 })
 
 describe('CourseDetailPage - upload availability', () => {
@@ -329,137 +287,78 @@ describe('CourseDetailPage - upload availability', () => {
     vi.useRealTimers()
   })
 
-  it.each(['uploaded', 'processing'])(
-    'stays disabled and busy when the server reports a %s document, e.g. after a page refresh',
-    async (status) => {
-      vi.mocked(api.listDocuments).mockResolvedValue([{ ...processingDocument, status }])
-
-      renderPage()
-
-      expect(await screen.findByText(/đang xử lý tài liệu/i)).toBeInTheDocument()
-      expect(uploadInput()).toBeDisabled()
-    },
-  )
-
-  it('is enabled when every document is ready or failed', async () => {
-    vi.mocked(api.listDocuments).mockResolvedValue([
-      sampleDocument,
-      { ...sampleDocument, id: 'doc-3', status: 'failed' },
-    ])
-
-    renderPage()
-
-    expect(await screen.findByText('Tải tài liệu lên')).toBeInTheDocument()
-    expect(uploadInput()).toBeEnabled()
-  })
-
-  it('is disabled until the first document list has loaded', async () => {
+  it('disables while loading, enables for ready/failed, validates size, shows 409 and upload progress, and stays disabled as uploaded', async () => {
     let resolveDocuments!: (docs: DocumentInfo[]) => void
-    vi.mocked(api.listDocuments).mockReturnValue(
-      new Promise<DocumentInfo[]>((resolve) => {
+    let resolveUpload!: (res: { id: string; status: string; job_id: string }) => void
+    vi.mocked(api.listDocuments)
+      .mockReturnValueOnce(new Promise<DocumentInfo[]>((resolve) => {
         resolveDocuments = resolve
-      }),
-    )
+      }))
+      .mockResolvedValue([{ ...processingDocument, status: 'uploaded' }])
+    vi.mocked(api.uploadDocument)
+      .mockRejectedValueOnce(
+        Object.assign(new Error('Request failed with status code 409'), {
+          isAxiosError: true,
+          response: { status: 409, data: { detail: 'Đang có tài liệu khác được xử lý' } },
+        }),
+      )
+      .mockImplementationOnce(async (_course, _file, onProgress) => {
+        onProgress?.(0.42)
+        return new Promise((resolve) => {
+          resolveUpload = resolve
+        })
+      })
 
     renderPage()
 
     expect(uploadInput()).toBeDisabled()
-    await act(async () => resolveDocuments([]))
+    await act(async () => resolveDocuments([sampleDocument, { ...sampleDocument, id: 'doc-3', status: 'failed' }]))
+    expect(await screen.findByText('Tải tài liệu lên')).toBeInTheDocument()
     await waitFor(() => expect(uploadInput()).toBeEnabled())
+
+    const oversized = new File(['x'], 'lecture.pdf', { type: 'application/pdf' })
+    Object.defineProperty(oversized, 'size', { value: 25 * 1024 * 1024 + 1 })
+    await userEvent.upload(uploadInput(), oversized)
+    expect(await screen.findByText('Tài liệu tối đa 25 MB')).toBeInTheDocument()
+    expect(api.uploadDocument).not.toHaveBeenCalled()
+    expect(uploadInput()).toBeEnabled()
+
+    await userEvent.upload(uploadInput(), new File(['x'], 'big.pdf', { type: 'application/pdf' }))
+    expect(await screen.findByText('Đang có tài liệu khác được xử lý')).toBeInTheDocument()
+
+    const lectureFile = new File(['x'], 'lecture.mp4', { type: 'video/mp4' })
+    await userEvent.upload(uploadInput(), lectureFile)
+    expect(await screen.findByText('Đang tải lên 42%')).toBeInTheDocument()
+    expect(uploadInput()).toBeDisabled()
+    expect(api.uploadDocument).toHaveBeenLastCalledWith('course-1', lectureFile, expect.any(Function))
+
+    await act(async () => resolveUpload({ id: 'doc-2', status: 'uploaded', job_id: 'job-1' }))
+    expect(await screen.findByText(/đang xử lý tài liệu/i)).toBeInTheDocument()
+    expect(uploadInput()).toBeDisabled()
   })
 
-  it('becomes available again by itself once polling sees the document finish', async () => {
+  it('stays disabled for uploaded and processing documents and becomes available once polling sees embedded', async () => {
     vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] })
     vi.mocked(api.listDocuments)
+      .mockResolvedValueOnce([{ ...processingDocument, status: 'uploaded' }])
       .mockResolvedValueOnce([processingDocument])
       .mockResolvedValue([{ ...processingDocument, status: 'embedded' }])
 
     renderPage()
     expect(await screen.findByText(/đang xử lý tài liệu/i)).toBeInTheDocument()
+    expect(uploadInput()).toBeDisabled()
 
     await act(async () => {
-      await vi.advanceTimersByTimeAsync(10_000)
+      await vi.advanceTimersByTimeAsync(3_000)
+    })
+    expect(await screen.findByText(/đang xử lý tài liệu/i)).toBeInTheDocument()
+    expect(uploadInput()).toBeDisabled()
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(3_000)
     })
 
     await waitFor(() => expect(uploadInput()).toBeEnabled())
-  })
-
-  it('stays disabled after a successful upload until the server reports the document done', async () => {
-    vi.mocked(api.listDocuments)
-      .mockResolvedValueOnce([])
-      .mockResolvedValue([{ ...processingDocument, status: 'uploaded' }])
-    vi.mocked(api.uploadDocument).mockResolvedValue({ id: 'doc-2', status: 'uploaded', job_id: 'job-1' })
-
-    renderPage()
-    await screen.findByText('Tải tài liệu lên')
-    await userEvent.upload(uploadInput(), new File(['x'], 'big.pdf', { type: 'application/pdf' }))
-
-    expect(await screen.findByText(/đang xử lý tài liệu/i)).toBeInTheDocument()
-    expect(uploadInput()).toBeDisabled()
-  })
-
-  it("shows the server's explanation when it refuses the upload with 409", async () => {
-    vi.mocked(api.listDocuments).mockResolvedValue([])
-    vi.mocked(api.uploadDocument).mockRejectedValue(
-      Object.assign(new Error('Request failed with status code 409'), {
-        isAxiosError: true,
-        response: { status: 409, data: { detail: 'Đang có tài liệu khác được xử lý' } },
-      }),
-    )
-
-    renderPage()
-    await screen.findByText('Tải tài liệu lên')
-    await userEvent.upload(uploadInput(), new File(['x'], 'big.pdf', { type: 'application/pdf' }))
-
-    expect(await screen.findByText('Đang có tài liệu khác được xử lý')).toBeInTheDocument()
-  })
-})
-
-describe('CourseDetailPage - upload form', () => {
-  function uploadInput() {
-    return document.querySelector('input[type="file"]') as HTMLInputElement
-  }
-
-  beforeEach(() => {
-    vi.mocked(api.listCourses).mockResolvedValue([unlinkedCourse])
-  })
-
-  it('sends the picked file to the server', async () => {
-    vi.mocked(api.uploadDocument).mockResolvedValue({ id: 'doc-2', status: 'uploaded', job_id: 'job-1' })
-    const file = new File(['x'], 'lecture.pdf', { type: 'application/pdf' })
-
-    renderPage()
-    await screen.findByText('Tải tài liệu lên')
-    await userEvent.upload(uploadInput(), file)
-
-    await waitFor(() => expect(api.uploadDocument).toHaveBeenCalledWith('course-1', file, expect.any(Function)))
-  })
-
-  it('shows how much of the file has been sent while it is being sent', async () => {
-    vi.mocked(api.uploadDocument).mockImplementation(async (_course, _file, onProgress) => {
-      onProgress?.(0.42)
-      return new Promise(() => {}) // still sending
-    })
-
-    renderPage()
-    await screen.findByText('Tải tài liệu lên')
-    await userEvent.upload(uploadInput(), new File(['x'], 'lecture.mp4', { type: 'video/mp4' }))
-
-    expect(await screen.findByText('Đang tải lên 42%')).toBeInTheDocument()
-    expect(uploadInput()).toBeDisabled()
-  })
-
-  it('says a file is too big instead of sending it', async () => {
-    const file = new File(['x'], 'lecture.pdf', { type: 'application/pdf' })
-    Object.defineProperty(file, 'size', { value: 25 * 1024 * 1024 + 1 })
-
-    renderPage()
-    await screen.findByText('Tải tài liệu lên')
-    await userEvent.upload(uploadInput(), file)
-
-    expect(await screen.findByText('Tài liệu tối đa 25 MB')).toBeInTheDocument()
-    expect(api.uploadDocument).not.toHaveBeenCalled()
-    expect(uploadInput()).toBeEnabled()
   })
 })
 
@@ -481,44 +380,46 @@ describe('CourseDetailPage - module generation availability', () => {
     vi.useRealTimers()
   })
 
-  it('offers to generate a module when nothing is in progress', async () => {
-    vi.mocked(api.listDocuments).mockResolvedValue([sampleDocument])
+  it('offers creation, returns focus on Escape, cancels cleanly, shows 422 model error, and starts busy generation', async () => {
+    vi.mocked(api.listDocuments).mockResolvedValueOnce([sampleDocument]).mockResolvedValue([generatingDocument])
+    const config = { headers: {} } as InternalAxiosRequestConfig
+    const response = {
+      status: 422,
+      data: { detail: "Model 'openai-fast' chưa dùng được: chưa có API key hợp lệ. Hãy chọn model khác." },
+    }
+    vi.mocked(api.generateModule)
+      .mockRejectedValueOnce(new AxiosError('failed', 'ERR_BAD_REQUEST', config, null, response as AxiosResponse))
+      .mockResolvedValueOnce({ job_id: 'job-1', status: 'queued' })
 
     renderPage()
 
     expect(await createItem(/^mô-đun$/i)).not.toHaveAttribute('aria-disabled')
-  })
 
-  it('gives focus back to the create button when the dialog is closed', async () => {
-    vi.mocked(api.listDocuments).mockResolvedValue([sampleDocument])
-    renderPage()
     await chooseCreate(/^video$/i)
     expect(await screen.findByRole('dialog', { name: 'Tạo video' })).toBeInTheDocument()
     await userEvent.keyboard('{Escape}')
     await waitFor(() => expect(screen.getByRole('button', { name: /tạo nội dung từ/i })).toHaveFocus())
-  })
 
-  it('cancels the dialog without starting generation', async () => {
-    vi.mocked(api.listDocuments).mockResolvedValue([sampleDocument])
-    renderPage()
     await chooseCreate(/^mô-đun$/i)
     expect(screen.getByRole('dialog')).toBeInTheDocument()
     await userEvent.click(screen.getByRole('button', { name: 'Hủy' }))
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
     expect(api.generateModule).not.toHaveBeenCalled()
-  })
 
-  it('shows the button busy and disabled when the server reports a generation in progress, e.g. after a refresh', async () => {
-    vi.mocked(api.listDocuments).mockResolvedValue([generatingDocument])
+    await chooseCreate(/^mô-đun$/i)
+    await userEvent.click(screen.getByRole('button', { name: 'Tạo mô-đun' }))
+    expect(await screen.findByText(/chưa có API key hợp lệ/)).toBeInTheDocument()
 
-    renderPage()
+    await chooseCreate(/^mô-đun$/i)
+    await screen.findByRole('option', { name: 'Tìm kiếm (quan trọng nhất)' })
+    await userEvent.click(screen.getByRole('button', { name: 'Tạo mô-đun' }))
 
+    expect(api.generateModule).toHaveBeenLastCalledWith('doc-1', '', 'vi', '', { name: 'Tìm kiếm', summary: 'Tìm trong không gian trạng thái.' })
     expect(await createItem(/^mô-đun$/i)).toHaveAttribute('aria-disabled', 'true')
-    // The module being made has its row, as a set or a video being made has.
     expect(screen.getByText('Mô-đun mới')).toBeInTheDocument()
   })
 
-  it('becomes available again and shows the new module once polling sees the generation finish', async () => {
+  it('shows the button busy with a pending row when generating and reveals the new module once polling finishes', async () => {
     vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] })
     vi.mocked(api.listDocuments)
       .mockResolvedValueOnce([generatingDocument])
@@ -527,6 +428,8 @@ describe('CourseDetailPage - module generation availability', () => {
 
     renderPage()
     expect(await createItem(/^mô-đun$/i)).toHaveAttribute('aria-disabled', 'true')
+    // The module being made has its row, as a set or a video being made has.
+    expect(screen.getByText('Mô-đun mới')).toBeInTheDocument()
 
     await act(async () => {
       await vi.advanceTimersByTimeAsync(10_000)
@@ -564,41 +467,6 @@ describe('CourseDetailPage - module generation availability', () => {
     expect(api.listModuleConcepts).toHaveBeenCalledWith('doc-1', 'en')
     expect(api.generateModule).toHaveBeenCalledWith('doc-1', 'deepseek-flash', 'en', 'Ví dụ: thêm ví dụ có lời giải từng bước',
       { name: 'Tìm kiếm', summary: 'Tìm trong không gian trạng thái.' })
-  })
-
-  it('shows why a chosen model cannot be used instead of a generic failure', async () => {
-    // Backend thử model trước khi xếp hàng và trả 422 kèm lý do, ví dụ khóa trống.
-    // Giảng viên phải đọc được đúng lý do đó để biết mà chọn model khác.
-    vi.mocked(api.listDocuments).mockResolvedValue([sampleDocument])
-    const config = { headers: {} } as InternalAxiosRequestConfig
-    const response = {
-      status: 422,
-      data: { detail: "Model 'openai-fast' chưa dùng được: chưa có API key hợp lệ. Hãy chọn model khác." },
-    }
-    vi.mocked(api.generateModule).mockRejectedValue(
-      new AxiosError('failed', 'ERR_BAD_REQUEST', config, null, response as AxiosResponse),
-    )
-
-    renderPage()
-    await chooseCreate(/^mô-đun$/i)
-    await userEvent.click(screen.getByRole('button', { name: 'Tạo mô-đun' }))
-
-    expect(await screen.findByText(/chưa có API key hợp lệ/)).toBeInTheDocument()
-  })
-
-  it('starts a generation and shows it as busy while the job runs', async () => {
-    // Once queued, the server says the document is generating; that is what keeps it busy.
-    vi.mocked(api.listDocuments).mockResolvedValueOnce([sampleDocument]).mockResolvedValue([generatingDocument])
-    vi.mocked(api.generateModule).mockResolvedValue({ job_id: 'job-1', status: 'queued' })
-
-    renderPage()
-    await chooseCreate(/^mô-đun$/i)
-    await screen.findByRole('option', { name: 'Tìm kiếm (quan trọng nhất)' })
-    await userEvent.click(screen.getByRole('button', { name: 'Tạo mô-đun' }))
-
-    expect(api.generateModule).toHaveBeenCalledWith('doc-1', '', 'vi', '', { name: 'Tìm kiếm', summary: 'Tìm trong không gian trạng thái.' })
-    expect(await createItem(/^mô-đun$/i)).toHaveAttribute('aria-disabled', 'true')
-    expect(screen.getByText('Mô-đun mới')).toBeInTheDocument()
   })
 })
 
@@ -644,33 +512,24 @@ describe('CourseDetailPage - flashcard sets', () => {
     expect(within(other).getAllByRole('listitem')).toHaveLength(1)
   })
 
-  it('generates a set with the focus and the chosen model, then shows it as generating', async () => {
-    vi.mocked(api.generateFlashcards).mockResolvedValue({ id: 'set-1', job_id: 'job-1' })
-    vi.mocked(api.listFlashcardSets)
-      .mockResolvedValueOnce([])
-      .mockResolvedValue([{ ...flashcardSet, status: 'generating', card_count: 0 }])
-
-    renderPage()
-    await chooseCreate(/^flashcard$/i)
-    // Each kind has its own dialog in the page, so the field is looked up in the open one.
-    await userEvent.type(within(screen.getByRole('dialog', { name: 'Tạo flashcard' })).getByLabelText(/nên tập trung vào nội dung gì/), 'Mảng')
-    await userEvent.click(screen.getByRole('button', { name: 'Tạo flashcard' }))
-
-    expect(api.generateFlashcards).toHaveBeenCalledWith('doc-1', { focus: 'Mảng', outputLanguage: 'vi', modelAlias: '' })
-    expect(await screen.findByText('Đang tạo…')).toBeInTheDocument()
-  })
-
-  it('shows a pending set at once and takes no second submit while the request is out', async () => {
+  it('handles 409 conflict, shows a pending set while in-flight, and generates a set with focus', async () => {
     let answer!: (value: { id: string; job_id: string }) => void
-    vi.mocked(api.generateFlashcards).mockReturnValue(new Promise((resolve) => { answer = resolve }))
+    vi.mocked(api.generateFlashcards)
+      .mockRejectedValueOnce(axiosFailure(409, 'Bộ thẻ này đang được sinh, vui lòng chờ.'))
+      .mockImplementationOnce(() => new Promise((resolve) => { answer = resolve }))
+      .mockResolvedValueOnce({ id: 'set-2', job_id: 'job-2' })
     vi.mocked(api.listFlashcardSets)
       .mockResolvedValueOnce([])
       .mockResolvedValue([{ ...flashcardSet, status: 'generating', card_count: 0 }])
 
     renderPage()
+
     await chooseCreate(/^flashcard$/i)
     await userEvent.click(screen.getByRole('button', { name: 'Tạo flashcard' }))
+    expect(await screen.findByText('Bộ thẻ này đang được sinh, vui lòng chờ.')).toBeInTheDocument()
 
+    await chooseCreate(/^flashcard$/i)
+    await userEvent.click(screen.getByRole('button', { name: 'Tạo flashcard' }))
     const list = await screen.findByRole('list', { name: 'Nội dung tạo từ syllabus.pdf' })
     const pending = within(list).getByRole('listitem')
     expect(pending).toHaveTextContent('Toàn bộ tài liệu')
@@ -680,16 +539,28 @@ describe('CourseDetailPage - flashcard sets', () => {
     answer({ id: 'set-1', job_id: 'job-1' })
     expect(await screen.findByText('Đang tạo…')).toBeInTheDocument()
     expect(screen.queryByText('Đang gửi yêu cầu…')).not.toBeInTheDocument()
+    expect(await createItem(/^flashcard$/i)).not.toHaveAttribute('aria-disabled')
+
+    await chooseCreate(/^flashcard$/i)
+    // Each kind has its own dialog in the page, so the field is looked up in the open one.
+    await userEvent.type(within(screen.getByRole('dialog', { name: 'Tạo flashcard' })).getByLabelText(/nên tập trung vào nội dung gì/), 'Mảng')
+    await userEvent.click(screen.getByRole('button', { name: 'Tạo flashcard' }))
+
+    expect(api.generateFlashcards).toHaveBeenLastCalledWith('doc-1', { focus: 'Mảng', outputLanguage: 'vi', modelAlias: '' })
+    expect(await screen.findByText('Đang tạo…')).toBeInTheDocument()
   })
 
-  it('says an identical set is already being generated when the server answers 409', async () => {
-    vi.mocked(api.generateFlashcards).mockRejectedValue(axiosFailure(409, 'Bộ thẻ này đang được sinh, vui lòng chờ.'))
+  it('says the set started, not that it failed, when only the list cannot be reloaded after it', async () => {
+    vi.mocked(api.generateFlashcards).mockResolvedValue({ id: 'set-1', job_id: 'job-1' })
+    vi.mocked(api.listFlashcardSets).mockResolvedValueOnce([]).mockRejectedValue(new Error('network down'))
 
     renderPage()
     await chooseCreate(/^flashcard$/i)
     await userEvent.click(screen.getByRole('button', { name: 'Tạo flashcard' }))
 
-    expect(await screen.findByText('Bộ thẻ này đang được sinh, vui lòng chờ.')).toBeInTheDocument()
+    expect(await screen.findByText('Đã bắt đầu tạo flashcard.')).toBeInTheDocument()
+    expect(await screen.findByText(/không tải lại được danh sách/i)).toBeInTheDocument()
+    expect(screen.queryByText(/sinh flashcard thất bại/i)).not.toBeInTheDocument()
   })
 
   it('follows a generating set until the server reports it done', async () => {
@@ -726,13 +597,13 @@ describe('CourseDetailPage - videos', () => {
     vi.useRealTimers()
   })
 
-  it('lists videos under their document with their status', async () => {
+  it('lists videos under their document with their status and dates only rows that share a title', async () => {
     vi.mocked(api.listVideos).mockResolvedValue([
-      videoSummary,
-      { ...videoSummary, id: 'video-2', focus: null, status: 'generating', scene_count: 0 },
-      { ...videoSummary, id: 'video-3', status: 'rendering' },
-      { ...videoSummary, id: 'video-4', status: 'ready', rendered_version: 1, duration_seconds: 291, published_at: '2026-01-02T00:00:00Z' },
-      { ...videoSummary, id: 'video-5', status: 'failed', scene_count: 0, error: 'Sinh lời thoại thất bại' },
+      { ...videoSummary, id: 'video-1', focus: 'FCFS', created_at: '2026-11-13T09:05:00Z' },
+      { ...videoSummary, id: 'video-2', focus: null, status: 'generating', scene_count: 0, created_at: '2026-11-14T00:00:00Z' },
+      { ...videoSummary, id: 'video-3', focus: 'FCFS', status: 'rendering', created_at: '2026-11-16T00:20:15Z' },
+      { ...videoSummary, id: 'video-4', focus: 'SJF', status: 'ready', rendered_version: 1, duration_seconds: 291, published_at: '2026-01-02T00:00:00Z' },
+      { ...videoSummary, id: 'video-5', focus: 'RR', status: 'failed', scene_count: 0, error: 'Sinh lời thoại thất bại' },
     ])
 
     renderPage()
@@ -750,51 +621,68 @@ describe('CourseDetailPage - videos', () => {
     expect(within(items[2]).getByText('Đang dựng video…')).toHaveAttribute('data-status', 'processing')
     expect(items[3]).not.toHaveTextContent(/Đã giao|phút/)
     expect(within(items[4]).getByText('Tạo thất bại')).toHaveAttribute('data-status', 'failed')
+
+    const times = items.map((item) => item.querySelector('time'))
+    expect(times[0]).toHaveAttribute('dateTime', '2026-11-13T09:05:00Z')
+    expect(times[2]).toHaveAttribute('dateTime', '2026-11-16T00:20:15Z')
+    expect(times[0]?.textContent).toMatch(/^Tạo lúc \d{2}:\d{2}, \d{2}\/\d{2}$/)
+    expect(times[0]?.textContent).not.toBe(times[2]?.textContent)
+    expect(times[1]).toBeNull()
+    expect(times[3]).toBeNull()
+    expect(times[4]).toBeNull()
   })
 
-  it('generates a video with the focus, the model, the voice and the image model', async () => {
-    vi.mocked(api.generateVideo).mockResolvedValue({ id: 'video-1', job_id: 'job-1' })
-    vi.mocked(api.listVideos)
-      .mockResolvedValueOnce([])
-      .mockResolvedValue([{ ...videoSummary, status: 'generating', scene_count: 0 }])
-
-    renderPage()
-    await chooseCreate(/^video$/i)
-    await userEvent.type(within(screen.getByRole('dialog', { name: 'Tạo video' })).getByLabelText(/nên tập trung vào nội dung gì/), 'FCFS')
-    await userEvent.selectOptions(await screen.findByRole('combobox', { name: 'Vẽ hình' }), 'image-qwen')
-    await userEvent.click(screen.getByRole('button', { name: 'Tạo video' }))
-
-    await waitFor(() => expect(api.generateVideo).toHaveBeenCalledWith('doc-1', {
-      focus: 'FCFS', outputLanguage: 'vi', modelAlias: '', voiceAlias: undefined, imageAlias: 'image-qwen',
-    }))
-    expect(await screen.findByText('Đang tạo…')).toBeInTheDocument()
-  })
-
-  it('shows a pending row at once and takes no second submit while the request is out', async () => {
-    // The request can take seconds (live run 2: 8 s); until it returns the lecturer must see it was taken.
+  it('handles 409/429 errors, shows pending row while in-flight, and generates with image-qwen and focus', async () => {
     let answer!: (value: { id: string; job_id: string }) => void
-    vi.mocked(api.generateVideo).mockReturnValue(new Promise((resolve) => { answer = resolve }))
+    vi.mocked(api.generateVideo)
+      .mockRejectedValueOnce(axiosFailure(409, 'Video này đang được sinh lời thoại, vui lòng chờ.'))
+      .mockRejectedValueOnce(axiosFailure(429, 'Bạn đã dùng hết lượt sinh hôm nay.'))
+      .mockImplementationOnce(() => new Promise((resolve) => { answer = resolve }))
+      .mockResolvedValueOnce({ id: 'video-2', job_id: 'job-2' })
     vi.mocked(api.listVideos)
       .mockResolvedValueOnce([])
       .mockResolvedValue([{ ...videoSummary, status: 'generating', scene_count: 0 }])
 
     renderPage()
+
+    await chooseCreate(/^video$/i)
+    await userEvent.click(screen.getByRole('button', { name: 'Tạo video' }))
+    expect(await screen.findByText('Video này đang được sinh lời thoại, vui lòng chờ.')).toBeInTheDocument()
+    expect(screen.queryByText('Đang gửi yêu cầu…')).not.toBeInTheDocument()
+    expect(await createItem(/^video$/i)).not.toHaveAttribute('aria-disabled')
+
+    await chooseCreate(/^video$/i)
+    await userEvent.click(screen.getByRole('button', { name: 'Tạo video' }))
+    expect(await screen.findByText('Bạn đã dùng hết lượt sinh hôm nay.')).toBeInTheDocument()
+
+    // The request can take seconds (live run 2: 8 s); until it returns the lecturer must see it was taken.
     await chooseCreate(/^video$/i)
     await userEvent.type(within(screen.getByRole('dialog', { name: 'Tạo video' })).getByLabelText(/nên tập trung vào nội dung gì/), 'FCFS')
     await userEvent.click(screen.getByRole('button', { name: 'Tạo video' }))
-
     const list = await screen.findByRole('list', { name: 'Nội dung tạo từ syllabus.pdf' })
     const pending = within(list).getByRole('listitem')
     expect(pending).toHaveTextContent('FCFS')
     expect(pending).toHaveAttribute('aria-busy', 'true')
     expect(within(pending).getByText('Đang gửi yêu cầu…')).toHaveAttribute('data-status', 'processing')
     expect(await createItem(/^video$/i)).toHaveAttribute('aria-disabled', 'true')
-    expect(api.generateVideo).toHaveBeenCalledTimes(1)
+    expect(api.generateVideo).toHaveBeenCalledTimes(3)
 
     answer({ id: 'video-1', job_id: 'job-1' })
     expect(await screen.findByText('Đang tạo…')).toBeInTheDocument()
     expect(screen.queryByText('Đang gửi yêu cầu…')).not.toBeInTheDocument()
     expect(await createItem(/^video$/i)).not.toHaveAttribute('aria-disabled')
+
+    await chooseCreate(/^video$/i)
+    const focusInput = within(screen.getByRole('dialog', { name: 'Tạo video' })).getByLabelText(/nên tập trung vào nội dung gì/)
+    await userEvent.clear(focusInput)
+    await userEvent.type(focusInput, 'FCFS')
+    await userEvent.selectOptions(await screen.findByRole('combobox', { name: 'Vẽ hình' }), 'image-qwen')
+    await userEvent.click(screen.getByRole('button', { name: 'Tạo video' }))
+
+    await waitFor(() => expect(api.generateVideo).toHaveBeenLastCalledWith('doc-1', {
+      focus: 'FCFS', outputLanguage: 'vi', modelAlias: '', voiceAlias: undefined, imageAlias: 'image-qwen',
+    }))
+    expect(await screen.findByText('Đang tạo…')).toBeInTheDocument()
   })
 
   it('says the video started, not that it failed, when only the list cannot be reloaded after it', async () => {
@@ -809,61 +697,6 @@ describe('CourseDetailPage - videos', () => {
     expect(await screen.findByText(/không tải lại được danh sách/i)).toBeInTheDocument()
     expect(screen.queryByText(/sinh video thất bại/i)).not.toBeInTheDocument()
     expect(screen.queryByText('Đang gửi yêu cầu…')).not.toBeInTheDocument()
-  })
-
-  it('says the set started, not that it failed, when only the list cannot be reloaded after it', async () => {
-    vi.mocked(api.generateFlashcards).mockResolvedValue({ id: 'set-1', job_id: 'job-1' })
-    vi.mocked(api.listFlashcardSets).mockResolvedValueOnce([]).mockRejectedValue(new Error('network down'))
-
-    renderPage()
-    await chooseCreate(/^flashcard$/i)
-    await userEvent.click(screen.getByRole('button', { name: 'Tạo flashcard' }))
-
-    expect(await screen.findByText('Đã bắt đầu tạo flashcard.')).toBeInTheDocument()
-    expect(await screen.findByText(/không tải lại được danh sách/i)).toBeInTheDocument()
-    expect(screen.queryByText(/sinh flashcard thất bại/i)).not.toBeInTheDocument()
-  })
-
-  it('drops the pending row when the request is refused', async () => {
-    vi.mocked(api.generateVideo).mockRejectedValue(axiosFailure(409, 'Video này đang được sinh lời thoại, vui lòng chờ.'))
-    vi.mocked(api.listVideos).mockResolvedValue([])
-
-    renderPage()
-    await chooseCreate(/^video$/i)
-    await userEvent.click(screen.getByRole('button', { name: 'Tạo video' }))
-
-    expect(await screen.findByText('Video này đang được sinh lời thoại, vui lòng chờ.')).toBeInTheDocument()
-    expect(screen.queryByText('Đang gửi yêu cầu…')).not.toBeInTheDocument()
-    expect(await createItem(/^video$/i)).not.toHaveAttribute('aria-disabled')
-  })
-
-  it('dates the rows that share a title, and only those', async () => {
-    vi.mocked(api.listVideos).mockResolvedValue([
-      { ...videoSummary, id: 'video-1', created_at: '2026-11-13T09:05:00Z' },
-      { ...videoSummary, id: 'video-2', created_at: '2026-11-16T00:20:15Z' },
-      { ...videoSummary, id: 'video-3', focus: 'SJF' },
-    ])
-
-    renderPage()
-
-    const list = await screen.findByRole('list', { name: 'Nội dung tạo từ syllabus.pdf' })
-    const items = within(list).getAllByRole('listitem')
-    const times = items.map((item) => item.querySelector('time'))
-    expect(times[0]).toHaveAttribute('dateTime', '2026-11-13T09:05:00Z')
-    expect(times[1]).toHaveAttribute('dateTime', '2026-11-16T00:20:15Z')
-    expect(times[0]?.textContent).toMatch(/^Tạo lúc \d{2}:\d{2}, \d{2}\/\d{2}$/)
-    expect(times[0]?.textContent).not.toBe(times[1]?.textContent)
-    expect(times[2]).toBeNull()
-  })
-
-  it('shows the server message when the generation quota is used up', async () => {
-    vi.mocked(api.generateVideo).mockRejectedValue(axiosFailure(429, 'Bạn đã dùng hết lượt sinh hôm nay.'))
-
-    renderPage()
-    await chooseCreate(/^video$/i)
-    await userEvent.click(screen.getByRole('button', { name: 'Tạo video' }))
-
-    expect(await screen.findByText('Bạn đã dùng hết lượt sinh hôm nay.')).toBeInTheDocument()
   })
 
   it('follows a video until no job is left', async () => {
@@ -897,43 +730,34 @@ describe('CourseDetailPage - delete module', () => {
     vi.restoreAllMocks()
   })
 
-  it('asks for confirmation and keeps the module when the user cancels', async () => {
-    vi.mocked(api.listModules).mockResolvedValue([module])
-    vi.spyOn(window, 'confirm').mockReturnValue(false)
+  it('asks for confirmation, handles failure, and deletes and refreshes when confirmed', async () => {
+    vi.mocked(api.listModules).mockResolvedValueOnce([module]).mockResolvedValueOnce([])
+    vi.mocked(api.deleteModule)
+      .mockRejectedValueOnce(new Error('boom'))
+      .mockResolvedValueOnce({ status: 'deleted', deleted_module_ids: ['module-1'] })
+    vi.spyOn(window, 'confirm')
+      .mockReturnValueOnce(false)
+      .mockReturnValueOnce(true)
+      .mockReturnValueOnce(true)
 
     renderPage()
-    await userEvent.click(await screen.findByRole('button', { name: /xóa mô-đun giới thiệu ai/i }))
 
-    expect(window.confirm).toHaveBeenCalled()
+    const deleteButton = await screen.findByRole('button', { name: /xóa mô-đun giới thiệu ai/i })
+    await userEvent.click(deleteButton)
+    expect(window.confirm).toHaveBeenCalledTimes(1)
     expect(api.deleteModule).not.toHaveBeenCalled()
     expect(screen.getByText(/giới thiệu ai/i)).toBeInTheDocument()
-  })
 
-  it('deletes the module and refreshes the list when confirmed', async () => {
-    vi.mocked(api.listModules).mockResolvedValueOnce([module]).mockResolvedValueOnce([])
-    vi.mocked(api.deleteModule).mockResolvedValue({ status: 'deleted', deleted_module_ids: ['module-1'] })
-    vi.spyOn(window, 'confirm').mockReturnValue(true)
+    await userEvent.click(deleteButton)
+    expect(await screen.findByText(/xóa mô-đun thất bại/i)).toBeInTheDocument()
+    expect(screen.getByText(/giới thiệu ai/i)).toBeInTheDocument()
 
-    renderPage()
-    await userEvent.click(await screen.findByRole('button', { name: /xóa mô-đun giới thiệu ai/i }))
-
+    await userEvent.click(deleteButton)
     await waitFor(() => expect(api.deleteModule).toHaveBeenCalledWith('module-1'))
     await waitFor(() =>
       expect(screen.queryByRole('button', { name: /xóa mô-đun giới thiệu ai/i })).not.toBeInTheDocument(),
     )
     expect(screen.getByText(/đã xóa mô-đun "giới thiệu ai"/i)).toBeInTheDocument()
-  })
-
-  it('shows the server error and keeps the module when deleting fails', async () => {
-    vi.mocked(api.listModules).mockResolvedValue([module])
-    vi.mocked(api.deleteModule).mockRejectedValue(new Error('boom'))
-    vi.spyOn(window, 'confirm').mockReturnValue(true)
-
-    renderPage()
-    await userEvent.click(await screen.findByRole('button', { name: /xóa mô-đun giới thiệu ai/i }))
-
-    expect(await screen.findByText(/xóa mô-đun thất bại/i)).toBeInTheDocument()
-    expect(screen.getByText(/giới thiệu ai/i)).toBeInTheDocument()
   })
 
   it('says the module is deleted, and only the reload failed, when the list cannot be reloaded afterwards', async () => {
@@ -1033,41 +857,34 @@ describe('CourseDetailPage - filter the documents by status', () => {
     await userEvent.selectOptions(await screen.findByLabelText('Trạng thái'), label)
   }
 
-  it('shows every document by default', async () => {
+  it('shows all by default, filters across Đang xử lý, Lỗi, and Sẵn sàng, and preserves filter on poll', async () => {
     renderPage()
 
     expect(await screen.findByText('ready.pdf')).toBeInTheDocument()
     expect(screen.getByText('running.pdf')).toBeInTheDocument()
     expect(screen.getByText('broken.pdf')).toBeInTheDocument()
     expect(screen.getByText('ready-but-generation-failed.pdf')).toBeInTheDocument()
-  })
 
-  it('narrows to the documents being processed', async () => {
-    renderPage()
     await pick('Đang xử lý')
-
     expect(screen.getByText('running.pdf')).toBeInTheDocument()
     expect(screen.queryByText('ready.pdf')).not.toBeInTheDocument()
     expect(screen.queryByText('broken.pdf')).not.toBeInTheDocument()
-  })
 
-  it('narrows to the ready documents', async () => {
-    renderPage()
-    await pick('Sẵn sàng')
-
-    expect(screen.getByText('ready.pdf')).toBeInTheDocument()
-    expect(screen.queryByText('running.pdf')).not.toBeInTheDocument()
-    expect(screen.queryByText('broken.pdf')).not.toBeInTheDocument()
-  })
-
-  it('narrows to what failed, including a ready document whose generation failed', async () => {
-    renderPage()
     await pick('Lỗi')
-
     expect(screen.getByText('broken.pdf')).toBeInTheDocument()
     expect(screen.getByText('ready-but-generation-failed.pdf')).toBeInTheDocument()
     expect(screen.queryByText('ready.pdf')).not.toBeInTheDocument()
     expect(screen.queryByText('running.pdf')).not.toBeInTheDocument()
+
+    await pick('Sẵn sàng')
+    expect(screen.getByText('ready.pdf')).toBeInTheDocument()
+    expect(screen.queryByText('running.pdf')).not.toBeInTheDocument()
+    expect(screen.queryByText('broken.pdf')).not.toBeInTheDocument()
+
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 10))
+    })
+    expect(screen.queryByText('broken.pdf')).not.toBeInTheDocument()
   })
 
   it('says so when nothing has the chosen status', async () => {
@@ -1076,17 +893,6 @@ describe('CourseDetailPage - filter the documents by status', () => {
     await pick('Lỗi')
 
     expect(screen.getByText(/không có tài liệu nào ở trạng thái này/i)).toBeInTheDocument()
-  })
-
-  it('keeps the filter when the list is polled again', async () => {
-    renderPage()
-    await pick('Sẵn sàng')
-
-    await act(async () => {
-      await new Promise((resolve) => setTimeout(resolve, 10))
-    })
-
-    expect(screen.queryByText('broken.pdf')).not.toBeInTheDocument()
   })
 })
 
@@ -1103,14 +909,28 @@ describe('CourseDetailPage - failed work and retry', () => {
     vi.mocked(api.listModules).mockResolvedValue([])
   })
 
-  it('shows a failed document with its error and a retry button', async () => {
-    vi.mocked(api.listDocuments).mockResolvedValue([{ ...sampleDocument, status: 'failed', failures: [pipelineFailure] }])
+  it('shows pipeline, flashcard, and video script failures with retry button across documents', async () => {
+    vi.mocked(api.listDocuments).mockResolvedValue([
+      { ...sampleDocument, id: 'doc-1', filename: 'broken.pdf', status: 'failed', failures: [pipelineFailure] },
+      {
+        ...sampleDocument,
+        id: 'doc-2',
+        filename: 'media.pdf',
+        failures: [
+          { job_id: 'job-f', job_type: 'flashcard_generation', error: 'Model từ chối' },
+          { job_id: 'job-v', job_type: 'video_script', error: 'Kịch bản hỏng' },
+        ],
+      },
+    ])
 
     renderPage()
 
     expect(await screen.findByText('Xử lý tài liệu thất bại')).toBeInTheDocument()
     expect(screen.getByText('Không đọc được tệp PDF')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /thử lại/i })).toBeEnabled()
+    expect(screen.getByRole('button', { name: /Thử lại: Xử lý tài liệu thất bại/i })).toBeEnabled()
+    expect(screen.getByText('Tạo flashcard thất bại')).toBeInTheDocument()
+    expect(screen.getByText('Viết lời thoại video thất bại')).toBeInTheDocument()
+    expect(screen.queryByText('Tạo mô-đun thất bại')).not.toBeInTheDocument()
   })
 
   it('keeps a failed generation visible on its document after a reload', async () => {
@@ -1125,31 +945,26 @@ describe('CourseDetailPage - failed work and retry', () => {
     expect(await screen.findByText('Tạo mô-đun thất bại')).toBeInTheDocument()
   })
 
-  it('names a failed flashcard set or video script for what it is, not as a module', async () => {
-    vi.mocked(api.listDocuments).mockResolvedValue([{
-      ...sampleDocument,
-      failures: [
-        { job_id: 'job-f', job_type: 'flashcard_generation', error: 'Model từ chối' },
-        { job_id: 'job-v', job_type: 'video_script', error: 'Kịch bản hỏng' },
-      ],
-    }])
-
-    renderPage()
-
-    expect(await screen.findByText('Tạo flashcard thất bại')).toBeInTheDocument()
-    expect(screen.getByText('Viết lời thoại video thất bại')).toBeInTheDocument()
-    expect(screen.queryByText('Tạo mô-đun thất bại')).not.toBeInTheDocument()
-  })
-
-  it('retries the failed job from the lecturer screen and reloads the list', async () => {
+  it('handles retry error, disables while retrying, and reloads the list on success', async () => {
+    let resolveRetry!: (value: { id: string; status: string }) => void
     vi.mocked(api.listDocuments)
       .mockResolvedValueOnce([{ ...sampleDocument, failures: [generationFailure] }])
       .mockResolvedValue([{ ...sampleDocument, generating: true, failures: [] }])
-    vi.mocked(api.retryJob).mockResolvedValue({ id: 'job-s', status: 'queued' })
+    vi.mocked(api.retryJob)
+      .mockRejectedValueOnce(new Error('boom'))
+      .mockImplementationOnce(() => new Promise((resolve) => { resolveRetry = resolve }))
 
     renderPage()
-    await userEvent.click(await screen.findByRole('button', { name: /thử lại/i }))
 
+    const retryButton = await screen.findByRole('button', { name: /thử lại/i })
+    await userEvent.click(retryButton)
+    expect(await screen.findByText(/thử lại thất bại/i)).toBeInTheDocument()
+    expect(screen.getByText('Hết hạn mức')).toBeInTheDocument()
+
+    await userEvent.click(retryButton)
+    expect(retryButton).toBeDisabled()
+
+    await act(async () => resolveRetry({ id: 'job-s', status: 'queued' }))
     await waitFor(() => expect(api.retryJob).toHaveBeenCalledWith('job-s'))
     await waitFor(() => expect(screen.queryByText('Hết hạn mức')).not.toBeInTheDocument())
     expect(api.generateModule).not.toHaveBeenCalled() // the same job runs again, nothing is created
@@ -1168,17 +983,6 @@ describe('CourseDetailPage - failed work and retry', () => {
     expect(await screen.findByText(/đã gửi yêu cầu thử lại\./i)).toBeInTheDocument()
     expect(await screen.findByText(/không tải lại được danh sách/i)).toBeInTheDocument()
     expect(screen.queryByText(/thử lại thất bại/i)).not.toBeInTheDocument()
-  })
-
-  it('says why a retry was refused and keeps the failure on screen', async () => {
-    vi.mocked(api.listDocuments).mockResolvedValue([{ ...sampleDocument, failures: [generationFailure] }])
-    vi.mocked(api.retryJob).mockRejectedValue(new Error('boom'))
-
-    renderPage()
-    await userEvent.click(await screen.findByRole('button', { name: /thử lại/i }))
-
-    expect(await screen.findByText(/thử lại thất bại/i)).toBeInTheDocument()
-    expect(screen.getByText('Hết hạn mức')).toBeInTheDocument()
   })
 
   it('does not raise a transient banner for a failed generation: the failure lives on the document', async () => {
@@ -1202,36 +1006,30 @@ describe('CourseDetailPage - OCR warnings', () => {
   })
   const ocrWarning = (page: number) => ({ code: 'ocr_failed', page })
 
-  it('keeps an OCR page warning on an embedded document after remounting', async () => {
+  it('shows sorted OCR page warnings and unverified formula warnings per document', async () => {
     vi.mocked(api.listCourses).mockResolvedValue([unlinkedCourse])
-    vi.mocked(api.listDocuments).mockResolvedValue([{ ...sampleDocument, extraction_warnings: [ocrWarning(2)] }])
-    const first = renderPage()
-    expect(await screen.findByText(/Không nhận dạng được chữ ở trang 2\./)).toBeInTheDocument()
-    expect(screen.getByText('syllabus.pdf')).toBeInTheDocument()
-    first.unmount()
-    renderPage()
-    expect(await screen.findByText(/Không nhận dạng được chữ ở trang 2\./)).toBeInTheDocument()
-  })
+    vi.mocked(api.listDocuments).mockResolvedValue([
+      {
+        ...sampleDocument,
+        id: 'doc-1',
+        filename: 'syllabus.pdf',
+        extraction_warnings: [{ code: 'formula_unverified', page: 7 }, ocrWarning(2)],
+      },
+      {
+        ...sampleDocument,
+        id: 'doc-2',
+        filename: 'notes.pdf',
+        extraction_warnings: [ocrWarning(9), ocrWarning(2), ocrWarning(5)],
+      },
+    ])
 
-  it('lists every failed page of a document on one warning line', async () => {
-    vi.mocked(api.listCourses).mockResolvedValue([unlinkedCourse])
-    vi.mocked(api.listDocuments).mockResolvedValue([{
-      ...sampleDocument, extraction_warnings: [ocrWarning(9), ocrWarning(2), ocrWarning(5)],
-    }])
     renderPage()
-    expect(await screen.findByText(/Không nhận dạng được chữ ở các trang 2, 5, 9\./)).toBeInTheDocument()
-    expect(screen.getAllByText(/Không nhận dạng được chữ ở/)).toHaveLength(1)
-  })
 
-  it('asks to check the formulas of pages whose formulas could not be re-read', async () => {
-    vi.mocked(api.listCourses).mockResolvedValue([unlinkedCourse])
-    vi.mocked(api.listDocuments).mockResolvedValue([{
-      ...sampleDocument, extraction_warnings: [{ code: 'formula_unverified', page: 7 }, ocrWarning(2)],
-    }])
-    renderPage()
-    expect(await screen.findByText(/Công thức có thể đọc chưa đúng ở trang 7\. Hãy soát lại công thức/))
-      .toBeInTheDocument()
+    expect(await screen.findByText('syllabus.pdf')).toBeInTheDocument()
+    expect(screen.getByText(/Công thức có thể đọc chưa đúng ở trang 7\. Hãy soát lại công thức/)).toBeInTheDocument()
     expect(screen.getByText(/Không nhận dạng được chữ ở trang 2\. Nội dung có thể thiếu/)).toBeInTheDocument()
+    expect(screen.getByText(/Không nhận dạng được chữ ở các trang 2, 5, 9\./)).toBeInTheDocument()
+    expect(screen.getAllByText(/Không nhận dạng được chữ ở/)).toHaveLength(2)
   })
 })
 

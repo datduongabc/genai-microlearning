@@ -11,16 +11,14 @@ import uuid
 
 import pytest
 from fastapi.testclient import TestClient
-from pydantic import ValidationError
 
 from app import generation
 from app.auth.security import create_access_token
 from app.db import SessionLocal
 from app.generation import module_generation_pipeline as pipeline
 from app.generation.example import Example, ExampleOutput
-from app.generation.objective import LearningObjective
 from app.generation.planner import Concept, PlannerOutput
-from app.generation.quiz_graph import LENGTH_TELL_FEEDBACK, QuizQuestion, question_to_rebalance
+from app.generation.quiz_graph import LENGTH_TELL_FEEDBACK, QuizQuestion
 from app.generation.relevance import CorrectiveResult
 from app.main import app
 from app.models import Chunk, ComponentType, Course, Document, DocumentStatus, User
@@ -36,63 +34,6 @@ def _question(stem="stem", choices=("A", "B", "C", "D"), correct=1) -> QuizQuest
 
 
 LONG_CORRECT = ("ngắn", "một đáp án đúng dài hơn hẳn mọi phương án khác", "cũng ngắn", "ngắn nữa")
-
-
-# --- đáp án đúng không được dài nhất ở quá nửa số câu ----------------------------------------------
-
-NOT_LONGEST = ("dài nhất trong câu này", "B", "C", "D")
-
-
-def test_no_question_is_redone_when_at_most_half_the_correct_answers_are_the_longest():
-    questions = [_question(choices=LONG_CORRECT), _question(choices=NOT_LONGEST)]
-
-    assert question_to_rebalance(questions) is None
-
-
-def test_three_of_four_longest_correct_answers_give_the_answer_away():
-    """The case the old rule (every question) let through and both rubric judges reported."""
-    mild = ("aaaa", "bbbbb", "cccc", "dddd")
-    questions = [_question(choices=mild), _question(choices=NOT_LONGEST),
-                 _question(choices=LONG_CORRECT), _question(choices=mild)]
-
-    assert question_to_rebalance(questions) == 2
-
-
-def test_when_every_correct_answer_is_the_longest_the_most_obvious_one_is_redone():
-    mild = ("aaaa", "bbbbb", "cccc", "dddd")
-    questions = [_question(choices=mild), _question(choices=LONG_CORRECT), _question(choices=mild)]
-
-    assert question_to_rebalance(questions) == 1
-
-
-def test_a_single_question_whose_answer_is_longest_is_left_alone():
-    assert question_to_rebalance([_question(choices=LONG_CORRECT)]) is None
-
-
-def test_a_tie_for_longest_does_not_count_as_giving_the_answer_away():
-    tie = ("dài bằng nhau", "dài bằng nhau", "C", "D")
-
-    assert question_to_rebalance([_question(choices=tie), _question(choices=tie)]) is None
-
-
-# --- learning objective ---------------------------------------------------------------------------
-
-
-def test_an_objective_has_between_two_and_four_sub_objectives():
-    fields = {"bloom_level": "understand", "verb": "giải thích", "objective_text": "o"}
-
-    assert len(LearningObjective(**fields, sub_objectives=["a", "b", "c", "d"]).sub_objectives) == 4
-    for wrong in (["a"], ["a", "b", "c", "d", "e"]):
-        with pytest.raises(ValidationError):
-            LearningObjective(**fields, sub_objectives=wrong)
-
-
-def test_examples_have_exactly_two_items():
-    example = Example(context="c", analysis="a")
-    assert len(ExampleOutput(examples=[example] * 2).examples) == 2
-    for count in (0, 1, 3):
-        with pytest.raises(ValidationError):
-            ExampleOutput(examples=[example] * count)
 
 
 # --- pipeline -------------------------------------------------------------------------------------

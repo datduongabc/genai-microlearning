@@ -169,4 +169,25 @@ describe('AppShell', () => {
     expect(trigger).toHaveFocus()
     expect(trigger).toHaveAttribute('aria-expanded', 'false')
   })
+
+  it('opens the mobile Sheet drawer on narrow viewports and closes it on nav link click', async () => {
+    window.matchMedia = vi.fn().mockImplementation((query: string) => ({
+      matches: true,
+      media: query,
+      onchange: null,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    }))
+    renderShell(true, '/admin')
+    expect(document.querySelector('aside.sidebar')).toBeNull()
+    const openMenu = screen.getByRole('button', { name: 'Mở menu' })
+    await userEvent.click(openMenu)
+    const dialog = await screen.findByRole('dialog')
+    expect(within(dialog).getByRole('link', { name: 'Quản trị' })).toHaveAttribute('aria-current', 'page')
+    await userEvent.click(within(dialog).getByRole('link', { name: 'Nghiên cứu' }))
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+  })
 })
