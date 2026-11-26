@@ -45,7 +45,7 @@ def _chunks(n=3):
 LONG = "x" * 519 + "."
 
 
-def _scene(kind="summary", title="t", bullets=("first point", "second point"), narration=(LONG,), sources=("S1",),
+def _scene(kind="text", title="t", bullets=("first point", "second point"), narration=(LONG,), sources=("S1",),
            **fields):
     return {"kind": kind, "title": title,
             "bullets": [{"text": b, "sources": list(sources)} for b in bullets],
@@ -96,7 +96,7 @@ def test_more_than_five_illustrations_become_text_scenes(monkeypatch):
     video_script.generate_video_script(db, video.id)
     kinds = [s["kind"] for s in video.scenes]
     assert kinds[:MAX_ILLUSTRATIONS] == ["illustration"] * 5
-    assert kinds[5:] == ["summary"] * 3
+    assert kinds[5:] == ["text"] * 3
     assert all(s["image_prompt"] is None for s in video.scenes[5:])
     assert all(s["image_prompt"] for s in video.scenes[:5])
 
@@ -368,7 +368,8 @@ def test_a_kind_without_its_content_becomes_a_text_scene(monkeypatch):
     scenes[3].update(kind="summary", formula="x = 1", image_prompt="a queue")
     db, video, _ = _setup(monkeypatch, _chunks(), scenes)
     video_script.generate_video_script(db, video.id)
-    assert [s["kind"] for s in video.scenes[1:4]] == ["summary"] * 3
+    # The summary keeps its kind: only a kind whose content is missing becomes a text scene.
+    assert [s["kind"] for s in video.scenes[1:4]] == ["text", "text", "summary"]
     assert video.scenes[3]["formula"] is None and video.scenes[3]["image_prompt"] is None
 
 
@@ -410,9 +411,27 @@ def test_the_prompt_carries_the_rules_of_the_trial(monkeypatch):
     prompt, _, kwargs = calls[0]
     system = kwargs["system_instruction"]
     assert "FCFS" in prompt and "SOURCE CHUNK [S1]" in prompt
-    assert "trưng dụng" in system and "420" in system and "550" in system
-    assert '"P1"' in system and "\\text{" in system
+    assert "420" in system and "550" in system and "\\text{" in system
     assert "one over n" in system or "một phần n" in system
+
+
+# The prompt was written on one lecture (CPU scheduling) and read like it: its examples, its glossary
+# and its picture rules named processes, burst times and Gantt charts, whatever the video was about.
+# Case matters: "gantt" is a Mermaid diagram type, which the diagram rules name.
+_ONE_SUBJECTS_WORDS = ("FCFS", "Round Robin", "Gantt", "burst", "processes", "P1", "P4", "tiến trình", "trưng dụng",
+                       "hàng đợi", "waiting time", "Thời gian chờ", "ready queue")
+
+
+@pytest.mark.parametrize("language", ["vi", "en"])
+def test_no_prompt_names_one_subjects_terms(monkeypatch, language):
+    short = [_scene(title=f"s{i}", narration=("y" * 300 + ".",)) for i in range(MIN_SCENES)]
+    db, video, calls = _setup(monkeypatch, _chunks(), short)
+    video.output_language = language
+    video_script.generate_video_script(db, video.id)
+    assert len(calls) >= 2
+    for _, _, kwargs in calls:
+        system = kwargs["system_instruction"]
+        assert [w for w in _ONE_SUBJECTS_WORDS if w in system] == []
 
 
 def test_retrieval_uses_the_focus_adaptively_within_the_document(monkeypatch):
@@ -479,14 +498,6 @@ def test_the_prompt_asks_each_scene_for_its_length_in_sentences_and_characters(m
     assert f"{video_script.TARGET_CHARS}" in system and "2 minutes" in system and "9 minutes" in system
 
 
-def test_the_prompt_asks_for_illustrations_wherever_a_picture_helps(monkeypatch):
-    db, video, calls = _setup(monkeypatch, _chunks(), _script())
-    video_script.generate_video_script(db, video.id)
-    system = calls[0][2]["system_instruction"]
-    assert f"3 to {MAX_ILLUSTRATIONS} scenes of kind illustration" in system
-    assert f"never more than {MAX_ILLUSTRATIONS}" in system
-
-
 @pytest.mark.parametrize(("language", "named"), [("vi", "Vietnamese"), ("en", "English")])
 def test_slide_text_is_asked_for_in_the_videos_language(monkeypatch, language, named):
     db, video, calls = _setup(monkeypatch, _chunks(), _script())
@@ -496,8 +507,6 @@ def test_slide_text_is_asked_for_in_the_videos_language(monkeypatch, language, n
     assert f"of a formula are written in {named}" in system
     # Copying the deck's English bullets into a Vietnamese video is what this replaces.
     assert "keep the English term where the source uses it" not in system
-    if language == "vi":
-        assert "trưng dụng (preemption)" in system
 
 
 def test_a_focus_naming_two_topics_asks_for_both(monkeypatch):
@@ -513,13 +522,10 @@ def test_the_top_up_names_the_length_wanted_and_each_scenes_sources(monkeypatch)
     short = [_scene(title=f"s{i}", narration=("y" * 300 + ".",), sources=("S2",)) for i in range(MIN_SCENES)]
     db, video, calls = _setup(monkeypatch, chunks, short)
     video_script.generate_video_script(db, video.id)
-    asked, _, kwargs = calls[1]
+    asked, _, _ = calls[1]
     assert "SCENE 1: s0" in asked and "cites S2" in asked
-    system = kwargs["system_instruction"]
     low, high = video_script.NARRATION_SENTENCES
-    assert f"at least {video_script.NARRATION_MIN_CHARS} characters" in system
-    assert f"{low} to {high} sentences" in system
-    assert f"about {video_script.NARRATION_TARGET_CHARS} characters" in system
+    assert f"wanted: at least {video_script.NARRATION_MIN_CHARS} characters, {low} to {high} sentences" in asked
 
 
 def test_the_length_at_each_step_is_recorded(monkeypatch):
@@ -592,25 +598,6 @@ def test_the_judge_is_asked_to_answer_in_the_videos_language(monkeypatch):
 
 # --- Live run 2 (2026-11-16): 2 pictures of the 3 to 5 asked, P4 and P5 invented, English left on slides ---
 
-def test_the_prompt_says_which_scenes_are_pictures_without_forcing_them(monkeypatch):
-    db, video, calls = _setup(monkeypatch, _chunks(), _script())
-    video_script.generate_video_script(db, video.id)
-    system = calls[0][2]["system_instruction"]
-    for kind in ("Gantt chart", "timeline", "ready queue"):
-        assert kind in system
-    assert "every worked example" in system
-    # Not forced: a definition or a list has no picture in it, and fewer is right then.
-    assert "write fewer illustrations" in system
-
-
-def test_the_image_prompt_may_use_only_what_its_chunk_gives(monkeypatch):
-    db, video, calls = _setup(monkeypatch, _chunks(), _script())
-    video_script.generate_video_script(db, video.id)
-    system = calls[0][2]["system_instruction"]
-    assert "only the processes and figures of the chunks the scene cites" in system
-    assert "never add a process" in system
-
-
 def test_an_image_prompt_naming_processes_or_figures_its_sources_lack_is_flagged(monkeypatch):
     chunks = _chunks(2)
     chunks[0].content = "Example of RR with Time Quantum q = 4\nProcess Burst Time\nP_1 24\nP2 3\nP 3 3\n0 4 7 10 30"
@@ -620,7 +607,70 @@ def test_an_image_prompt_naming_processes_or_figures_its_sources_lack_is_flagged
     db, video, _ = _setup(monkeypatch, chunks, scenes)
     video_script.generate_video_script(db, video.id)
     flags = video.scenes[3]["flags"]
-    assert flags == ["Mô tả hình có P4, P5, 12, không có trong đoạn nguồn của cảnh: hãy sửa mô tả trước khi vẽ."]
+    assert flags == ["Mô tả hình có P4, P5, 12, không có trong đoạn nguồn của cảnh: hãy sửa trước khi vẽ."]
+
+
+def test_a_diagram_with_figures_its_sources_lack_is_flagged_but_not_its_node_ids(monkeypatch):
+    chunks = _chunks(2)
+    chunks[0].content = "Layer 1 has 64 units and layer 2 has 10."
+    scenes = _script()
+    scenes[2].update(kind="diagram", diagram='flowchart LR\n  L1["Lớp 1: 64"] --> L2["Lớp 2: 12"]')
+    db, video, _ = _setup(monkeypatch, chunks, scenes)
+    video_script.generate_video_script(db, video.id)
+    assert video.scenes[2]["kind"] == "diagram"
+    assert video.scenes[2]["diagram"].startswith("flowchart LR")
+    assert video.scenes[2]["flags"] == ["Sơ đồ có 12, không có trong đoạn nguồn của cảnh: hãy sửa trước khi vẽ."]
+
+
+def test_a_diagram_scene_without_code_becomes_a_text_scene(monkeypatch):
+    scenes = _script()
+    scenes[2].update(kind="diagram", diagram="  ")
+    scenes[3].update(kind="text", diagram="flowchart LR\n  A --> B")
+    db, video, _ = _setup(monkeypatch, _chunks(), scenes)
+    video_script.generate_video_script(db, video.id)
+    assert [s["kind"] for s in video.scenes[2:4]] == ["text", "text"]
+    assert video.scenes[2]["diagram"] is None and video.scenes[3]["diagram"] is None
+
+
+def test_the_title_and_summary_scenes_stay_short_and_are_never_lengthened(monkeypatch):
+    opening = "Chào các bạn, hôm nay ta tìm hiểu chủ đề này."
+    scenes = [_scene(kind="title", narration=(opening,))] + _script(6) + [_scene(kind="summary", narration=(opening,))]
+    db, video, calls = _setup(monkeypatch, _chunks(), scenes)
+    video_script.generate_video_script(db, video.id)
+    # Six content scenes of 520 characters are long enough: the short opening and recap ask for no top-up.
+    assert len(calls) == 1
+    assert video.scenes[0]["narration"] == opening and video.scenes[-1]["narration"] == opening
+
+
+def test_a_long_title_scene_is_shortened_to_a_framing_length(monkeypatch):
+    scenes = [_scene(kind="title", narration=("z" * 400 + ".",))] + _script(6)
+    db, video, calls = _setup(monkeypatch, _chunks(), scenes, top_up=[{"index": 1, "narration": [
+        {"text": "Hôm nay ta tìm hiểu chủ đề này.", "sources": ["S1"]}]}])
+    video_script.generate_video_script(db, video.id)
+    asked = calls[1][0]
+    assert "SCENE 1:" in asked and f"wanted: at most {video_script.FRAMING_MAX_CHARS} characters" in asked
+    assert "SCENE 2:" not in asked
+    assert video.scenes[0]["narration"] == "Hôm nay ta tìm hiểu chủ đề này."
+
+
+@pytest.mark.parametrize(("code", "drawn"), [
+    # Plain times: a millisecond axis printed as numbers, not dates in 1970.
+    ("gantt\n  section A\n  Việc A : 0, 3", "gantt\n  dateFormat x\n  axisFormat %Q\n  section A\n  Việc A : 0, 3"),
+    # dateFormat X put every task after the first at 0, so it is read as milliseconds too.
+    ("gantt\n  dateFormat X\n  axisFormat %s\n  Việc A : 0, 3", "gantt\n  dateFormat x\n  axisFormat %Q\n  Việc A : 0, 3"),
+    # Real dates are as written.
+    ("gantt\n  dateFormat YYYY-MM-DD\n  Việc A : 2024-01-01, 3d", "gantt\n  dateFormat YYYY-MM-DD\n  Việc A : 2024-01-01, 3d"),
+    # A bar chart's value axis starts at 0, keeping its title.
+    ('xychart-beta\n  x-axis ["A", "B"]\n  y-axis "Điểm"\n  bar [6.8, 8.1]',
+     'xychart-beta\n  y-axis "Điểm" 0 --> 8.1\n  x-axis ["A", "B"]\n  bar [6.8, 8.1]'),
+    # A range the model gave, or negative values, are as written.
+    ('xychart-beta\n  y-axis 5 --> 10\n  bar [6, 8]', 'xychart-beta\n  y-axis 5 --> 10\n  bar [6, 8]'),
+    ("xychart-beta\n  line [-2, 3]", "xychart-beta\n  line [-2, 3]"),
+    # A Markdown fence is not part of the diagram.
+    ("```mermaid\nflowchart LR\n  A --> B\n```", "flowchart LR\n  A --> B"),
+])
+def test_a_diagram_is_drawn_as_mermaid_needs_it(code, drawn):
+    assert video_script.diagram_as_drawn(code) == drawn
 
 
 def test_an_image_prompt_true_to_its_sources_is_not_flagged(monkeypatch):
@@ -637,11 +687,11 @@ def test_table_headers_and_formula_words_are_asked_for_in_vietnamese(monkeypatch
     db, video, calls = _setup(monkeypatch, _chunks(), _script())
     video_script.generate_video_script(db, video.id)
     system = calls[0][2]["system_instruction"]
-    assert "the table's header row and the words in \\text{} of a formula" in system
-    assert '"Tiến trình | Thời gian chạy (ms)", not "Process | Burst Time"' in system
-    assert "\\text{Thời gian chờ trung bình}" in system
+    assert "the table's header row, the labels of a diagram and the words in \\text{} of a formula" in system
+    assert '"Thành phần | Vai trò", not "Component | Role"' in system
+    assert "\\text{Giá trị trung bình}" in system
     # The English example was what the model copied into a Vietnamese slide.
-    assert "\\text{Average waiting time}" not in system
+    assert "\\text{Mean value}" not in system
 
 
 def test_an_english_video_keeps_english_formula_words(monkeypatch):
@@ -649,8 +699,8 @@ def test_an_english_video_keeps_english_formula_words(monkeypatch):
     video.output_language = "en"
     video_script.generate_video_script(db, video.id)
     system = calls[0][2]["system_instruction"]
-    assert "\\text{Average waiting time}" in system
-    assert "Thời gian" not in system
+    assert "\\text{Mean value}" in system
+    assert "Giá trị" not in system
 
 
 def test_the_script_and_its_top_up_share_the_flashcards_term_glossary(monkeypatch):
@@ -658,7 +708,7 @@ def test_the_script_and_its_top_up_share_the_flashcards_term_glossary(monkeypatc
     db, video, calls = _setup(monkeypatch, _chunks(), short)
     video_script.generate_video_script(db, video.id)
     glossary = media_common.term_rules("vi")
-    assert '"trưng dụng" (never "trưng thu")' in glossary
+    assert glossary
     assert glossary in calls[0][2]["system_instruction"]
     assert glossary in calls[1][2]["system_instruction"]
 

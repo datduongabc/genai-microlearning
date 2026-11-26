@@ -54,15 +54,14 @@ Do not write a card you cannot ground in a chunk. Cover different ideas; do not 
 
 Stay on the TOPIC. When TOPICS lists several, write cards on every topic in TOPICS:
 at least 2 cards on each topic in TOPICS, and about as many on each. Every card is about one of them: a chunk that is about something else (another
-algorithm, an exercise, a summary of the chapter) is only there for context, so write no card from it.
+topic, an exercise, a summary of the chapter) is only there for context, so write no card from it.
 
-When the chunks work through an example with figures (the waiting time of each process in a schedule, and their
-average), at least one card works through it: the front gives the example's data and asks for the result, and the
-back gives the steps and the result with the chunk's own figures, for example "P1 = 0, P2 = 24, P3 = 27, so the
-average is (0 + 24 + 27)/3 = 17".
+When the chunks work through an example with figures (a calculation, a worked problem, a result computed from given
+data), at least one card works through it: the front gives the example's data and asks for the result, and the back
+gives the steps and the result with the chunk's own figures, never figures of its own.
 
-The back answers exactly what the front asks, and nothing else in its place: a front that asks about waiting time
-and response time is answered with waiting time and response time, not turnaround time.
+The back answers exactly what the front asks, and nothing else in its place: a front that asks for two quantities is
+answered with those two, not with a third one the chunk also gives.
 Check every card once more before you return it: the back answers its front, and no word is written twice in a
 row ("việc việc")."""
 

@@ -15,7 +15,7 @@ import {
 
 const scene = (extra: Partial<VideoScene> = {}): VideoScene => ({
   kind: 'summary', title: 'FCFS', bullets: ['Đến trước', 'Phục vụ trước'], bullet_citations: [['c1'], ['c2']],
-  formula: null, code: null, table: null, image_prompt: null, narration: 'Câu một.\nCâu hai.',
+  formula: null, code: null, table: null, diagram: null, image_prompt: null, narration: 'Câu một.\nCâu hai.',
   narration_citations: [['c1'], []], citations: ['c1', 'c2'], author: 'model', flags: [],
   has_image: false, image_outdated: false, needs_image: false, sources: [], ...extra,
 })
@@ -34,7 +34,7 @@ describe('videoDraft', () => {
     expect(edits.map((e) => e.from_index)).toEqual([0, 1])
     expect(edits[0]).toEqual({
       from_index: 0, kind: 'summary', title: 'FCFS', bullets: ['Đến trước', 'Phục vụ trước'],
-      bullet_citations: [['c1'], ['c2']], formula: null, code: null, table: null, image_prompt: null,
+      bullet_citations: [['c1'], ['c2']], formula: null, code: null, table: null, diagram: null, image_prompt: null,
       narration: 'Câu một.\nCâu hai.', narration_citations: [['c1'], []], flags: [],
     })
   })
@@ -69,6 +69,20 @@ describe('videoDraft', () => {
 
     expect(shownFlags(draft)).toEqual(['Công thức: sai dấu'])
     expect(shownFlags({ ...draft, kind: 'summary' })).toEqual([])
+  })
+
+  it('sends a diagram only while the scene is a diagram, and its flag with it', () => {
+    const code = 'flowchart LR\n  A["Đầu vào"] --> B["Kết quả"]'
+    const [draft] = toDrafts(video([scene({ kind: 'diagram', diagram: code, flags: ['Sơ đồ: thiếu bước'] })]), counter())
+
+    expect(toEdits([draft])[0]).toMatchObject({ kind: 'diagram', diagram: code })
+    expect(shownFlags(draft)).toEqual(['Sơ đồ: thiếu bước'])
+    expect(toEdits([{ ...draft, kind: 'text' }])[0].diagram).toBeNull()
+    expect(shownFlags({ ...draft, kind: 'text' })).toEqual([])
+  })
+
+  it('starts a scene the lecturer adds as a text scene, not a summary', () => {
+    expect(newScene(counter()).kind).toBe('text')
   })
 
   it('drops blank items with their citations, so each line keeps its own list', () => {

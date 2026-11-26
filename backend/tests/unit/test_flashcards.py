@@ -236,10 +236,9 @@ def test_a_vietnamese_set_gets_the_shared_term_glossary(monkeypatch):
     flashcards.generate_flashcards(db, card_set.id)
     system = card_set.asked[0][1]
     assert media_common.term_rules("vi") in system
-    assert '"trưng dụng" (never "trưng thu")' in system
 
 
 def test_an_english_set_has_no_vietnamese_glossary(monkeypatch):
     db, card_set, _ = _setup(monkeypatch, _chunks(), [_draft("q")])
     flashcards.generate_flashcards(db, card_set.id)
-    assert "trưng" not in card_set.asked[0][1]
+    assert media_common.term_rules("vi") not in card_set.asked[0][1]

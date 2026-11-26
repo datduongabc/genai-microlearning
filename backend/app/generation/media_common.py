@@ -28,17 +28,16 @@ _MIN_TOPIC_CHARS = 3
 _TOPIC_SEPARATOR = re.compile(r"\s*[,;]\s*|\s+(?:và|and|&|vs\.?|versus)\s+", re.IGNORECASE)
 
 
-# One glossary for the video and the flashcards, so a lesson says one word for one idea. Live run 2's
+# One rule for the video and the flashcards, so a lesson says one word for one idea. Live run 2's
 # card said "trưng thu" (to requisition) for preemption, while the video of the same focus said
-# "trưng dụng"; the card also began a Vietnamese sentence with an English noun phrase.
-_VIETNAMESE_TERMS = """Terms in Vietnamese: write the Vietnamese term; the English one may follow it in brackets.
-- preemption: "trưng dụng" (never "trưng thu"); preemptive: "có trưng dụng"; non-preemptive: "không trưng dụng"
-- process: "tiến trình"; thread: "luồng"; scheduler: "bộ lập lịch"; ready queue: "hàng đợi sẵn sàng"
-- context switch: "chuyển ngữ cảnh"; time quantum: "lượng tử thời gian"; burst time: "thời gian chạy"
-- waiting time: "thời gian chờ"; turnaround time: "thời gian hoàn thành"; response time: "thời gian phản hồi";
-  throughput: "thông lượng"
-- The names of algorithms stay as they are (FCFS, SJF, Round Robin), but a sentence is Vietnamese around them:
-  "Lập lịch FCFS là ...", not "FCFS scheduling là ..."."""
+# "trưng dụng"; the card also began a Vietnamese sentence with an English noun phrase. A glossary
+# of one subject's terms is no help for another, so the rule points at the source's own terms.
+_VIETNAMESE_TERMS = """Terms in Vietnamese: write the Vietnamese term; the English one may follow it in brackets the first time.
+- Use the Vietnamese term the source chunks use. When they give only the English one, use the usual Vietnamese term of
+  the field, never a word-for-word translation of your own.
+- One idea, one term: once a term is chosen, use it for that idea everywhere, never a synonym in its place.
+- The names of methods, algorithms, standards and products stay as they are, but a sentence is Vietnamese around them:
+  "Thuật toán X là ...", not "X algorithm là ..."."""
 
 
 def term_rules(language: str) -> str:

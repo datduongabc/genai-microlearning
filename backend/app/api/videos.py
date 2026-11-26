@@ -66,9 +66,9 @@ PREVIEW_WAIT_SECONDS = 1.5
 # draw or voice again, so an edit carries them over and never sets them itself.
 MEDIA_FIELDS = ("image_key", "image_prompt_used", "voice_key", "voice_text_used", "voice_alias_used")
 # A scene with any of these changed is the lecturer's: they decide what the slide shows and says.
-CONTENT_FIELDS = ("kind", "title", "bullets", "formula", "code", "table", "image_prompt", "narration")
+CONTENT_FIELDS = ("kind", "title", "bullets", "formula", "code", "table", "diagram", "image_prompt", "narration")
 # How the script job names the items of a scene in its fact check flags (app/generation/video_script.py, _items).
-WHOLE_ITEMS = {"formula": "Công thức", "code": "Code", "table": "Bảng"}
+WHOLE_ITEMS = {"formula": "Công thức", "code": "Code", "table": "Bảng", "diagram": "Sơ đồ"}
 
 # Bounds well above what the script job writes, so a scene the model wrote always saves back.
 Line = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=500)]
@@ -97,6 +97,7 @@ class SceneEdit(BaseModel):
     formula: Annotated[str, StringConstraints(max_length=2000)] | None = None
     code: Annotated[str, StringConstraints(max_length=4000)] | None = None
     table: Annotated[list[Annotated[list[Cell], Field(max_length=10)]], Field(max_length=20)] | None = None
+    diagram: Annotated[str, StringConstraints(max_length=4000)] | None = None
     image_prompt: Annotated[str, StringConstraints(max_length=2000)] | None = None
     # One sentence per line; blank lines are dropped. narration_citations[i] are line i's sources.
     narration: Annotated[str, StringConstraints(max_length=6000)] = ""
@@ -264,6 +265,7 @@ def _content(edit: SceneEdit, number: int) -> dict:
     kind = edit.kind
     formula = edit.formula.strip() if kind == "formula" and edit.formula and edit.formula.strip() else None
     code = edit.code if kind == "code" and edit.code and edit.code.strip() else None
+    diagram = edit.diagram.strip() if kind == "diagram" and edit.diagram and edit.diagram.strip() else None
     prompt = edit.image_prompt if kind == "illustration" and edit.image_prompt and edit.image_prompt.strip() else None
     return {
         "kind": kind, "title": edit.title, "bullets": list(edit.bullets),
@@ -271,6 +273,7 @@ def _content(edit: SceneEdit, number: int) -> dict:
         "formula": text_words_in_formula(formula) if formula else None,
         "code": code,
         "table": edit.table if kind == "table" and edit.table else None,
+        "diagram": diagram,
         "image_prompt": labels_as_shown(prompt) if prompt else None,
         "narration": "\n".join(lines),
         "narration_citations": _aligned(edit.narration_citations, lines, number, "câu thoại"),

@@ -7,8 +7,8 @@ import { CHARS_PER_SECOND, type SceneEdit, type SceneKind, type VideoDetail, typ
 export const NO_SOURCE = 'Chưa có nguồn'
 
 // How the server labels the item a flag is about (app/api/videos.py _items).
-export const WHOLE_ITEM_LABEL: Partial<Record<SceneKind, string>> = { formula: 'Công thức', code: 'Code', table: 'Bảng' }
-const ITEM_FLAG = /^(Ý \d+|Câu \d+|Công thức|Code|Bảng): (.*)$/s
+export const WHOLE_ITEM_LABEL: Partial<Record<SceneKind, string>> = { formula: 'Công thức', code: 'Code', table: 'Bảng', diagram: 'Sơ đồ' }
+const ITEM_FLAG = /^(Ý \d+|Câu \d+|Công thức|Code|Bảng|Sơ đồ): (.*)$/s
 
 // A bullet or a sentence as it is edited. `label` is the one it had in the loaded draft ("Ý 2"),
 // which is how its stored flags name it, so they stay with it when items are moved or removed.
@@ -31,6 +31,7 @@ export interface SceneDraft {
   code: string
   // One row a line, cells split by "|".
   table: string
+  diagram: string
   imagePrompt: string
   // The saved scene is the model's: only there is a bullet or sentence without a source flagged, as on
   // the server, since the lecturer has no way to cite a passage.
@@ -58,6 +59,7 @@ export function toDrafts(video: VideoDetail, nextKey: () => number): SceneDraft[
     formula: s.formula ?? '',
     code: s.code ?? '',
     table: (s.table ?? []).map((row) => row.join(' | ')).join('\n'),
+    diagram: s.diagram ?? '',
     imagePrompt: s.image_prompt ?? '',
     byModel: s.author === 'model',
     flags: s.flags.filter((f) => !f.startsWith(`${NO_SOURCE}: `)),
@@ -87,6 +89,7 @@ export function toEdits(scenes: SceneDraft[]): SceneEdit[] {
       formula: s.kind === 'formula' && s.formula.trim() ? s.formula : null,
       code: s.kind === 'code' && s.code.trim() ? s.code : null,
       table: s.kind === 'table' ? parseTable(s.table) : null,
+      diagram: s.kind === 'diagram' && s.diagram.trim() ? s.diagram : null,
       image_prompt: s.kind === 'illustration' && s.imagePrompt.trim() ? s.imagePrompt : null,
       narration: sentences.map((t) => t.text.trim()).join('\n'),
       narration_citations: sentences.map((t) => t.citations),
@@ -104,7 +107,7 @@ export function estimatedSeconds(scenes: SceneDraft[]): number {
 
 // A short stand-in for what a slide prints, so its preview is asked for again only when that changes.
 export function slideVersion(scene: VideoScene, index: number, picturesDrawn: number): string {
-  const printed = JSON.stringify([index, scene.kind, scene.title, scene.bullets, scene.formula, scene.code, scene.table,
+  const printed = JSON.stringify([index, scene.kind, scene.title, scene.bullets, scene.formula, scene.code, scene.table, scene.diagram,
     scene.citations, scene.has_image, scene.image_outdated, scene.kind === 'illustration' ? picturesDrawn : 0])
   let hash = 5381
   for (let i = 0; i < printed.length; i++) hash = (hash * 33 + printed.charCodeAt(i)) | 0
@@ -122,9 +125,9 @@ export const flagMessage = (flag: string) => flag.match(ITEM_FLAG)?.[2] ?? flag
 // A scene the lecturer adds: nothing drawn or voiced, no flags, one sentence to start writing in.
 export function newScene(nextKey: () => number): SceneDraft {
   return {
-    key: nextKey(), fromIndex: null, byModel: false, kind: 'summary', title: '', bullets: [],
+    key: nextKey(), fromIndex: null, byModel: false, kind: 'text', title: '', bullets: [],
     sentences: [{ key: nextKey(), text: '', citations: [], label: null }],
-    formula: '', code: '', table: '', imagePrompt: '', flags: [], sources: [],
+    formula: '', code: '', table: '', diagram: '', imagePrompt: '', flags: [], sources: [],
   }
 }
 

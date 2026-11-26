@@ -2,7 +2,7 @@
 # Rebuilds backend/app/video/assets from pinned npm packages.
 #
 # The slide renderer must work with no network (a worker has no reason to reach a CDN, and a
-# CDN outage must not stop a render), so KaTeX and the fonts live in the repo. They are vendored
+# CDN outage must not stop a render), so KaTeX, Mermaid and the fonts live in the repo. They are vendored
 # rather than installed at image build time because three places need them: the host and CI,
 # where the unit tests render slides, and the compose dev container, whose bind mount over /app
 # would hide anything the image installed there. Only the woff2 files are kept: Chromium reads
@@ -11,21 +11,22 @@ set -euo pipefail
 
 KATEX_VERSION=0.16.47
 FONTSOURCE_VERSION=5.3.0
+MERMAID_VERSION=12.3.0
 
 ASSETS="$(cd "$(dirname "$0")/.." && pwd)/app/video/assets"
 WORK="$(mktemp -d)"
 trap 'rm -rf "$WORK"' EXIT
 
 cd "$WORK"
-npm pack --silent "katex@${KATEX_VERSION}" "@fontsource/be-vietnam-pro@${FONTSOURCE_VERSION}" \
+npm pack --silent "katex@${KATEX_VERSION}" "mermaid@${MERMAID_VERSION}" "@fontsource/be-vietnam-pro@${FONTSOURCE_VERSION}" \
   "@fontsource/jetbrains-mono@${FONTSOURCE_VERSION}" >/dev/null
-for pkg in katex be-vietnam-pro jetbrains-mono; do
+for pkg in katex mermaid be-vietnam-pro jetbrains-mono; do
   mkdir "$pkg"
   tar xzf ./*"${pkg}"-*.tgz -C "$pkg" --strip-components=1
 done
 
 rm -rf "$ASSETS"
-mkdir -p "$ASSETS/katex/fonts" "$ASSETS/fonts"
+mkdir -p "$ASSETS/katex/fonts" "$ASSETS/mermaid" "$ASSETS/fonts"
 
 cp katex/dist/katex.min.js "$ASSETS/katex/"
 cp katex/dist/fonts/*.woff2 "$ASSETS/katex/fonts/"
@@ -33,6 +34,9 @@ cp katex/dist/fonts/*.woff2 "$ASSETS/katex/fonts/"
 sed -E 's/,url\(fonts\/[^)]*\.(woff|ttf)\) format\("(woff|truetype)"\)//g' katex/dist/katex.min.css \
   > "$ASSETS/katex/katex.min.css"
 cp katex/LICENSE "$ASSETS/katex/LICENSE"
+
+# The single-file build: it loads no chunk at run time, which the offline renderer could not serve.
+cp mermaid/dist/mermaid.min.js mermaid/LICENSE "$ASSETS/mermaid/"
 
 # Be Vietnam Pro 400 and 700 for the slide text, JetBrains Mono 400 for code; the subsets a
 # Vietnamese or English slide uses.
@@ -51,4 +55,4 @@ done
 cp be-vietnam-pro/LICENSE "$ASSETS/fonts/LICENSE-be-vietnam-pro"
 cp jetbrains-mono/LICENSE "$ASSETS/fonts/LICENSE-jetbrains-mono"
 
-echo "KaTeX ${KATEX_VERSION}, Be Vietnam Pro and JetBrains Mono ${FONTSOURCE_VERSION} -> ${ASSETS}"
+echo "KaTeX ${KATEX_VERSION}, Mermaid ${MERMAID_VERSION}, Be Vietnam Pro and JetBrains Mono ${FONTSOURCE_VERSION} -> ${ASSETS}"
