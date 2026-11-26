@@ -120,6 +120,13 @@ async function drawDiagrams() {
     try {
       const { svg } = await mermaid.render('diagram-' + n++, box.dataset.mermaid);
       box.innerHTML = svg;
+      // d3 restarts its every-few-days gantt ticks on each month's 1st, putting 31/01 a day before
+      // 01/02 so the two labels overlap; a label closer than 12px to the one before it is left out.
+      let end = -Infinity;
+      for (const label of box.querySelectorAll('.grid .tick text')) {
+        const { left, right } = label.getBoundingClientRect();
+        if (left < end + 12) label.style.display = 'none'; else end = right;
+      }
     } catch (err) {
       // As a formula: the lecturer sees the code in red on the preview, instead of a slide that never renders.
       box.textContent = box.dataset.mermaid;

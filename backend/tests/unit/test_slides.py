@@ -132,6 +132,17 @@ def test_a_gantt_of_plain_times_shows_numbers_not_dates(renderer):
     assert w1 == pytest.approx(8 * w2, rel=0.02) and w2 == pytest.approx(w3, rel=0.02)
 
 
+def test_a_date_gantt_into_a_new_month_keeps_its_axis_labels_apart(renderer):
+    """d3 restarts its every-other-day ticks on the 1st, so 31/01 sits one day before 01/02; a day
+    is ~30px on this 37-day axis, less than a dd/mm label, so only labels 2+ days apart are shown."""
+    code = "gantt\n  section Dự án\n  Thiết kế : 2024-01-01, 20d\n  Kiểm thử : 2024-01-21, 17d"
+    shot = renderer.capture(_scene(kind="diagram", diagram=code), None)
+    assert shot.diagram_error is None and not shot.overflows
+    labels = re.findall(r"\b(\d\d)/(\d\d)\b", shot.visible_text)
+    days = [(int(m) - 1) * 31 + int(d) for d, m in labels]
+    assert len(days) > 5 and all(b - a >= 2 for a, b in zip(days, days[1:]))
+
+
 def test_a_broken_diagram_is_shown_not_left_hanging(renderer):
     shot = renderer.capture(_scene(kind="diagram", diagram="flowchart LR\n  A[Đầu (vào] --> "), None)
     assert shot.diagram_error
