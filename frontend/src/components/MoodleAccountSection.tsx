@@ -18,6 +18,7 @@ export function MoodleAccountSection({ onStatus }: { onStatus?: (status: MoodleA
   const [reloads, setReloads] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const requestVersion = useRef(0);
+  const skipNextReload = useRef(false);
   const status = answer?.status ?? "unknown";
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<z.infer<typeof emailSchema>>({
     resolver: zodResolver(emailSchema),
@@ -34,7 +35,6 @@ export function MoodleAccountSection({ onStatus }: { onStatus?: (status: MoodleA
       },
       (err) => {
         if (cancelled || version !== requestVersion.current) return;
-        setAnswer(null);
         setError(apiErrorMessage(err, "Không kiểm tra được tài khoản Moodle."));
       },
     );
@@ -42,7 +42,13 @@ export function MoodleAccountSection({ onStatus }: { onStatus?: (status: MoodleA
   }, [reloads]);
 
   useEffect(() => {
-    const reload = () => setReloads((n) => n + 1);
+    const reload = () => {
+      if (skipNextReload.current) {
+        skipNextReload.current = false;
+        return;
+      }
+      setReloads((n) => n + 1);
+    };
     window.addEventListener(MOODLE_ACCOUNT_CHANGED_EVENT, reload);
     return () => window.removeEventListener(MOODLE_ACCOUNT_CHANGED_EVENT, reload);
   }, []);
@@ -58,8 +64,11 @@ export function MoodleAccountSection({ onStatus }: { onStatus?: (status: MoodleA
   async function submit(values: z.infer<typeof emailSchema>) {
     requestVersion.current += 1;
     setError(null);
-    try { setAnswer(await requestMoodleLink(values.email)); }
-    catch (err) { setError(apiErrorMessage(err, "Không gửi được yêu cầu liên kết Moodle.")); }
+    try {
+      setAnswer(await requestMoodleLink(values.email));
+      skipNextReload.current = true;
+      window.dispatchEvent(new Event(MOODLE_ACCOUNT_CHANGED_EVENT));
+    } catch (err) { setError(apiErrorMessage(err, "Không gửi được yêu cầu liên kết Moodle.")); }
   }
 
   return (

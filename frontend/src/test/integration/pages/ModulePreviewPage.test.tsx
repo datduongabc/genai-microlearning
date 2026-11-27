@@ -45,6 +45,8 @@ function renderPage() {
 beforeEach(() => {
   vi.clearAllMocks()
   vi.mocked(api.getMoodleAccount).mockResolvedValue({ email: 'teacher@example.com', status: 'linked' })
+  vi.mocked(api.getLatestModuleChat).mockResolvedValue({ session_id: null, messages: [] })
+  vi.mocked(api.startNewModuleChat).mockResolvedValue('session-fresh')
 })
 
 it('shows citation labels and reveals the original chunk only when opened', async () => {
@@ -414,7 +416,9 @@ it('asks for a reload instead of a retry when the refresh after an applied chat 
   vi.mocked(api.getModule).mockResolvedValueOnce(baseModule).mockRejectedValue(new Error('offline'))
   vi.mocked(api.chatEditModule).mockResolvedValue({ session_id: 'session-3', applied: true, reply: 'Đã sửa slide 1.', edit_count: 1 })
   renderPage()
-  await userEvent.type(await screen.findByRole('textbox', { name: 'Yêu cầu chỉnh sửa' }), 'Rút gọn slide 1')
+  const field = await screen.findByRole('textbox', { name: 'Yêu cầu chỉnh sửa' })
+  await waitFor(() => expect(field).toBeEnabled())
+  await userEvent.type(field, 'Rút gọn slide 1')
   await userEvent.click(screen.getByRole('button', { name: 'Gửi yêu cầu' }))
   expect(await screen.findByText('Đã áp dụng chỉnh sửa nhưng không tải lại được mô-đun. Vui lòng tải lại trang.')).toBeInTheDocument()
   expect(screen.queryByText('Chỉnh sửa thất bại. Vui lòng thử lại.')).not.toBeInTheDocument()
@@ -791,5 +795,73 @@ describe('ModulePreviewPage - keyboard focus', () => {
     await user.keyboard('{Enter}')
     await waitFor(() => expect(api.updateComponentContent).toHaveBeenCalled())
     await waitFor(() => expect(within(part).getByRole('button', { name: 'Sửa' })).toHaveFocus())
+  })
+})
+
+describe('ModulePreviewPage - UX-01 chat-edit history', () => {
+  it('restores the latest module chat-edit session, continues it, and starts a new conversation on request', async () => {
+    vi.mocked(api.getModule).mockResolvedValue(baseModule)
+    vi.mocked(api.getLatestModuleChat).mockResolvedValue({
+      session_id: 'session-saved',
+      messages: [
+        { id: 'm1', role: 'user', content: 'Rút gọn slide 1' },
+        { id: 'm2', role: 'assistant', content: 'Đã rút gọn slide 1.' },
+      ],
+    })
+    vi.mocked(api.chatEditModule)
+      .mockResolvedValueOnce({ session_id: 'session-saved', applied: false, reply: 'Đã thêm ví dụ.', edit_count: 0 })
+      .mockResolvedValueOnce({ session_id: 'session-fresh', applied: false, reply: 'Bắt đầu mạch mới.', edit_count: 0 })
+
+    renderPage()
+
+    const log = await screen.findByRole('log', { name: 'Lịch sử chỉnh sửa' })
+    await waitFor(() => expect(log).toHaveTextContent('Rút gọn slide 1'))
+    expect(log).toHaveTextContent('Đã rút gọn slide 1.')
+
+    const field = screen.getByRole('textbox', { name: 'Yêu cầu chỉnh sửa' })
+    await userEvent.type(field, 'Thêm ví dụ')
+    await userEvent.click(screen.getByRole('button', { name: 'Gửi yêu cầu' }))
+    await waitFor(() => expect(api.chatEditModule).toHaveBeenLastCalledWith('module-1', 'Thêm ví dụ', 'session-saved'))
+    expect(log).toHaveTextContent('Đã thêm ví dụ.')
+
+    await userEvent.click(screen.getByRole('button', { name: 'Cuộc trò chuyện mới' }))
+    await waitFor(() => expect(api.startNewModuleChat).toHaveBeenCalledWith('module-1'))
+    expect(log).toHaveTextContent('')
+    expect(screen.queryByRole('button', { name: 'Cuộc trò chuyện mới' })).not.toBeInTheDocument()
+
+    await userEvent.type(field, 'Đổi câu hỏi')
+    await userEvent.click(screen.getByRole('button', { name: 'Gửi yêu cầu' }))
+    await waitFor(() => expect(api.chatEditModule).toHaveBeenLastCalledWith('module-1', 'Đổi câu hỏi', 'session-fresh'))
+    expect(log).toHaveTextContent('Bắt đầu mạch mới.')
+  })
+
+  it('keeps sending closed until the saved history arrives, so the next edit continues that session', async () => {
+    vi.mocked(api.getModule).mockResolvedValue(baseModule)
+    let resolveLatest!: (value: Awaited<ReturnType<typeof api.getLatestModuleChat>>) => void
+    vi.mocked(api.getLatestModuleChat).mockReturnValue(new Promise((resolve) => { resolveLatest = resolve }))
+    vi.mocked(api.chatEditModule).mockResolvedValue({ session_id: 'session-saved', applied: false, reply: 'Đã thêm ví dụ.', edit_count: 0 })
+
+    renderPage()
+    const field = await screen.findByRole('textbox', { name: 'Yêu cầu chỉnh sửa' })
+    expect(screen.getByRole('status')).toHaveTextContent('Đang tải lịch sử chỉnh sửa…')
+    expect(field).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Gửi yêu cầu' })).toBeDisabled()
+
+    resolveLatest({ session_id: 'session-saved', messages: [{ id: 'm1', role: 'user', content: 'Rút gọn slide 1' }] })
+    await waitFor(() => expect(field).toBeEnabled())
+    await userEvent.type(field, 'Thêm ví dụ')
+    await userEvent.click(screen.getByRole('button', { name: 'Gửi yêu cầu' }))
+    await waitFor(() => expect(api.chatEditModule).toHaveBeenCalledWith('module-1', 'Thêm ví dụ', 'session-saved'))
+  })
+
+  it('says in Vietnamese that the saved history could not be loaded when the server fails', async () => {
+    vi.mocked(api.getModule).mockResolvedValue(baseModule)
+    const response = { status: 500, statusText: 'Internal Server Error', headers: {}, config: {} as InternalAxiosRequestConfig, data: {} } as AxiosResponse
+    vi.mocked(api.getLatestModuleChat).mockRejectedValue(new AxiosError('Request failed with status code 500', 'ERR_BAD_RESPONSE', undefined, undefined, response))
+
+    renderPage()
+    expect(await screen.findByText('Không tải được lịch sử chỉnh sửa trước.')).toBeInTheDocument()
+    expect(screen.queryByText(/Request failed/)).not.toBeInTheDocument()
+    expect(screen.getByRole('textbox', { name: 'Yêu cầu chỉnh sửa' })).toBeEnabled()
   })
 })

@@ -1,6 +1,6 @@
 import logging
 import uuid
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from io import BytesIO
 from typing import Annotated
 from urllib.parse import quote
@@ -12,7 +12,13 @@ from pydantic import BaseModel, Field, StringConstraints, ValidationError, model
 from sqlalchemy import delete, select
 from sqlalchemy.orm import Session, joinedload, selectinload
 
-from app.api.chat import ChatRequest, _get_or_create_session
+from app.api.chat import (
+    ChatMessageResponse,
+    ChatRequest,
+    LatestChatResponse,
+    _get_or_create_session,
+    _latest_session,
+)
 from app.api.deletion import check_study_references, commit_deletion
 from app.api.deps import get_current_user, is_course_author
 from app.api.model_alias import usable_alias as _usable_alias
@@ -46,6 +52,7 @@ from app.llm.gateway import using_model
 from app.models import (
     ChatMessage,
     ChatRole,
+    ChatSession,
     ComponentType,
     Document,
     Job,
@@ -647,12 +654,48 @@ def chat_edit_module(
     except (ValidationError, ValueError) as exc:
         db.rollback()
         raise HTTPException(status_code=422, detail="Kết quả chỉnh sửa không hợp lệ nên mô-đun chưa thay đổi. Hãy thử lại.") from exc
+    now = datetime.now(UTC)
     db.add_all([
         ChatMessage(session_id=session.id, role=ChatRole.user, content=message, citations=[],
-                    created_at=datetime.now(UTC)),
+                    created_at=now),
         ChatMessage(session_id=session.id, role=ChatRole.assistant, content=edit.reply,
-                    citations=[], applied_edit=applied, created_at=datetime.now(UTC)),
+                    citations=[], applied_edit=applied, created_at=now + timedelta(microseconds=1)),
     ])
     db.commit()
     return {"session_id": session.id, "reply": edit.reply, "applied": applied,
             "edit_count": module_edit_count(db, module.id)}
+
+
+@router.get("/{module_id}/chat-edit/latest", response_model=LatestChatResponse)
+def get_latest_module_chat(
+    module_id: uuid.UUID, db: Session = Depends(get_db), current_user: User = Depends(get_current_user),
+):
+    module = _owned_module(db, module_id, current_user)
+    session = _latest_session(db, module.course_id, current_user.id, module.id)
+    if session is None:
+        return LatestChatResponse(session_id=None, messages=[])
+    return LatestChatResponse(session_id=session.id, messages=[
+        ChatMessageResponse(id=m.id, role=m.role.value, content=m.content, citations=m.citations)
+        for m in session.messages
+    ])
+
+
+@router.post("/{module_id}/chat-edit/sessions", status_code=201)
+@limiter.limit("30/minute", key_func=user_or_address)
+def start_new_module_chat(
+    request: Request, module_id: uuid.UUID, db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    module = _owned_module(db, module_id, current_user)
+    if is_control(db, module.id):
+        raise HTTPException(
+            status_code=422,
+            detail="Bản đối chứng chỉ dùng cho nghiên cứu nên không sửa theo yêu cầu được.",
+        )
+    latest = _latest_session(db, module.course_id, current_user.id, module.id)
+    if latest is not None and not latest.messages:
+        return {"session_id": latest.id}
+    session = ChatSession(course_id=module.course_id, user_id=current_user.id, module_id=module.id, title=None)
+    db.add(session)
+    db.commit()
+    return {"session_id": session.id}

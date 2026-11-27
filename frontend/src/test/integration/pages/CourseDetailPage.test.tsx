@@ -65,6 +65,7 @@ function renderPage() {
     <AuthProvider>
       <MemoryRouter initialEntries={['/courses/course-1']}>
         <Routes>
+          <Route path="/courses" element={<p>Danh sách môn học</p>} />
           <Route path="/courses/:courseId" element={<CourseDetailPage />} />
         </Routes>
       </MemoryRouter>
@@ -110,14 +111,20 @@ describe('CourseDetailPage - Moodle linking', () => {
     vi.mocked(api.getMoodleAccount).mockResolvedValue({ email: 'lan@x.edu', status: 'linked' })
     vi.mocked(api.listMoodleCourses).mockResolvedValue(moodleCourses)
   })
+  afterEach(() => {
+    vi.useRealTimers()
+  })
 
-  it('offers authorized Moodle courses, validates empty submit, reports link error, and links the chosen course', async () => {
+  it('offers authorized Moodle courses, validates empty submit, reports link error, links the chosen course, and supports header unlink', async () => {
     vi.mocked(api.listCourses)
       .mockResolvedValueOnce([unlinkedCourse])
       .mockResolvedValueOnce([{ ...unlinkedCourse, moodle_course_id: 6 }])
+      .mockResolvedValueOnce([unlinkedCourse])
     vi.mocked(api.linkMoodleCourse)
       .mockRejectedValueOnce(axiosFailure(404, 'Không tìm thấy khóa học Moodle này'))
       .mockResolvedValueOnce({ moodle_course_id: 6 })
+    vi.mocked(api.unlinkMoodleCourse).mockResolvedValue(undefined)
+    vi.spyOn(window, 'confirm').mockReturnValue(true)
 
     renderPage()
 
@@ -141,8 +148,14 @@ describe('CourseDetailPage - Moodle linking', () => {
       expect(api.linkMoodleCourse).toHaveBeenCalledWith('course-1', 6)
     })
     expect(await screen.findByText('Đã liên kết với khóa học Moodle #6.')).toBeInTheDocument()
-    // Linked, the course has no choice left to make, so the line goes.
+    // Linked: picker row clears, subtitle & header "⋯ -> Hủy liên kết Moodle" hold the state.
+    expect(await screen.findByText('Đã liên kết khóa học Moodle #6')).toBeInTheDocument()
     await waitFor(() => expect(screen.queryByRole('combobox', { name: /khóa học moodle/i })).not.toBeInTheDocument())
+
+    await openMenu(/^Thao tác khác với AI 101$/)
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Hủy liên kết Moodle' }))
+    await waitFor(() => expect(api.unlinkMoodleCourse).toHaveBeenCalledWith('course-1'))
+    expect(await screen.findByRole('combobox', { name: /khóa học moodle/i })).toBeInTheDocument()
   })
 
   it('says so when the list of Moodle courses cannot be loaded', async () => {
@@ -154,47 +167,106 @@ describe('CourseDetailPage - Moodle linking', () => {
     expect(await screen.findByText('Moodle không phản hồi')).toBeInTheDocument()
   })
 
-  it.each([
-    {
-      caseName: 'the account is not linked',
-      account: { email: 'lan@x.edu', status: 'not_linked' as const },
-      course: unlinkedCourse,
-      checkAccountMenu: true,
-      checkUnlink: false,
-    },
-    {
-      caseName: 'the course is already linked',
-      account: { email: 'lan@x.edu', status: 'linked' as const },
-      course: { ...unlinkedCourse, moodle_course_id: 6 },
-      checkAccountMenu: false,
-      checkUnlink: true,
-    },
-    {
-      caseName: 'the environment has no Moodle',
-      account: { email: 'lan@x.edu', status: 'unavailable' as const },
-      course: unlinkedCourse,
-      checkAccountMenu: false,
-      checkUnlink: false,
-    },
-  ])('shows no Moodle course line when $caseName', async ({ account, course, checkAccountMenu, checkUnlink }) => {
-    vi.mocked(api.listCourses).mockResolvedValue([course])
-    vi.mocked(api.getMoodleAccount).mockResolvedValue(account)
+  it('shows State 1 (not linked) with shortcut to the sidebar account menu and focuses Email Moodle', async () => {
+    vi.mocked(api.listCourses).mockResolvedValue([unlinkedCourse])
+    vi.mocked(api.getMoodleAccount).mockResolvedValue({ email: '', status: 'not_linked' })
 
     renderPage()
 
+    expect(await screen.findByText('Chưa liên kết tài khoản Moodle.')).toBeInTheDocument()
+    expect(screen.queryByRole('combobox', { name: /khóa học moodle/i })).not.toBeInTheDocument()
+    expect(api.listMoodleCourses).not.toHaveBeenCalled()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Liên kết trong menu Tài khoản' }))
+    const emailInput = await screen.findByLabelText('Email Moodle')
+    await waitFor(() => expect(emailInput).toHaveFocus())
+  })
+
+  it('focuses Email Moodle, not logout, when the account menu section answers after a delay', async () => {
+    vi.mocked(api.listCourses).mockResolvedValue([unlinkedCourse])
+    vi.mocked(api.getMoodleAccount).mockResolvedValue({ email: '', status: 'not_linked' })
+
+    renderPage()
+    await screen.findByText('Chưa liên kết tài khoản Moodle.')
+
+    let answerSection!: (account: api.MoodleAccount) => void
+    vi.mocked(api.getMoodleAccount)
+      .mockResolvedValueOnce({ email: '', status: 'not_linked' })
+      .mockReturnValueOnce(new Promise((resolve) => { answerSection = resolve }))
+    await userEvent.click(screen.getByRole('button', { name: 'Liên kết trong menu Tài khoản' }))
+    const logout = await screen.findByRole('button', { name: 'Đăng xuất' })
+    await waitFor(() => expect(api.getMoodleAccount).toHaveBeenCalledTimes(3))
+    await act(() => new Promise((resolve) => requestAnimationFrame(() => resolve(undefined))))
+    expect(logout).not.toHaveFocus()
+
+    await act(async () => { answerSection({ email: '', status: 'not_linked' }) })
+    const emailInput = await screen.findByLabelText('Email Moodle')
+    await waitFor(() => expect(emailInput).toHaveFocus())
+  })
+
+  it('keeps the pending line and keeps polling when one check of the account fails', async () => {
+    vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] })
+    vi.mocked(api.listCourses).mockResolvedValue([unlinkedCourse])
+    vi.mocked(api.getMoodleAccount)
+      .mockResolvedValueOnce({ email: 'lan@x.edu', status: 'pending', confirmation_url: 'https://moodle.example/confirm/abc' })
+      .mockRejectedValueOnce(axiosFailure(502, 'Moodle không phản hồi'))
+      .mockResolvedValue({ email: 'lan@x.edu', status: 'linked' })
+
+    renderPage()
+    expect(await screen.findByText(/Chờ xác nhận trong Moodle \(lan@x\.edu\)/)).toBeInTheDocument()
+
+    await act(async () => { await vi.advanceTimersByTimeAsync(5_000) })
+    expect(api.getMoodleAccount).toHaveBeenCalledTimes(2)
+    expect(screen.getByText(/Chờ xác nhận trong Moodle \(lan@x\.edu\)/)).toBeInTheDocument()
+
+    await act(async () => { await vi.advanceTimersByTimeAsync(5_000) })
+    expect(await screen.findByRole('combobox', { name: /khóa học moodle/i })).toBeInTheDocument()
+  })
+
+  it('shows State 2 (pending) with confirmation link', async () => {
+    vi.mocked(api.listCourses).mockResolvedValue([unlinkedCourse])
+    vi.mocked(api.getMoodleAccount).mockResolvedValue({
+      email: 'lan@x.edu',
+      status: 'pending',
+      confirmation_url: 'https://moodle.example/confirm/abc',
+    })
+
+    renderPage()
+
+    expect(await screen.findByText(/Chờ xác nhận trong Moodle \(lan@x\.edu\)/)).toBeInTheDocument()
+    const link = screen.getByRole('link', { name: 'Mở Moodle để xác nhận' })
+    expect(link).toHaveAttribute('href', 'https://moodle.example/confirm/abc')
+    expect(api.listMoodleCourses).not.toHaveBeenCalled()
+  })
+
+  it('hides Moodle controls when unavailable, and allows renaming and deleting the course from its page menu', async () => {
+    vi.mocked(api.listCourses)
+      .mockResolvedValueOnce([unlinkedCourse])
+      .mockResolvedValueOnce([{ ...unlinkedCourse, name: 'AI 202' }])
+    vi.mocked(api.getMoodleAccount).mockResolvedValue({ email: '', status: 'unavailable' })
+    vi.mocked(api.renameCourse).mockResolvedValue({ ...unlinkedCourse, name: 'AI 202' })
+    vi.mocked(api.deleteCourse).mockResolvedValue(undefined)
+    vi.spyOn(window, 'confirm').mockReturnValue(true)
+
+    renderPage()
     await screen.findByRole('heading', { name: 'Tài liệu' })
     await waitFor(() => expect(api.getMoodleAccount).toHaveBeenCalled())
     expect(screen.queryByText('Khóa học Moodle:')).not.toBeInTheDocument()
-    expect(screen.queryByRole('combobox', { name: /khóa học moodle/i })).not.toBeInTheDocument()
-    if (checkAccountMenu) {
-      // The account is linked from the account menu, not a second time on the page.
-      expect(screen.queryByRole('region', { name: 'Tài khoản Moodle' })).not.toBeInTheDocument()
-      expect(screen.queryByLabelText('Email Moodle')).not.toBeInTheDocument()
-      expect(api.listMoodleCourses).not.toHaveBeenCalled()
-    }
-    if (checkUnlink) {
-      expect(screen.queryByRole('button', { name: /hủy liên kết/i })).not.toBeInTheDocument()
-    }
+
+    await openMenu(/^Thao tác khác với AI 101$/)
+    expect(screen.queryByRole('menuitem', { name: 'Hủy liên kết Moodle' })).not.toBeInTheDocument()
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Đổi tên' }))
+    const nameInput = screen.getByLabelText('Tên môn học')
+    await userEvent.clear(nameInput)
+    await userEvent.type(nameInput, 'AI 202')
+    await userEvent.click(screen.getByRole('button', { name: 'Lưu' }))
+    await waitFor(() => expect(api.renameCourse).toHaveBeenCalledWith('course-1', 'AI 202'))
+    expect(await screen.findByRole('heading', { name: 'AI 202' })).toBeInTheDocument()
+
+    await openMenu(/^Thao tác khác với AI 202$/)
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Xóa môn học' }))
+    await waitFor(() => expect(api.deleteCourse).toHaveBeenCalledWith('course-1'))
+    expect(await screen.findByText('Danh sách môn học')).toBeInTheDocument()
   })
 
   it('stops offering courses when the server says the account link must be made again', async () => {
@@ -232,18 +304,18 @@ describe('CourseDetailPage - delete document', () => {
 
     renderPage()
 
-    await openMenu(/thao tác khác với/i)
+    await openMenu(/thao tác khác với syllabus\.pdf/i)
     await userEvent.click(screen.getByRole('menuitem', { name: /xóa tài liệu/i }))
     expect(window.confirm).toHaveBeenCalledTimes(1)
     expect(api.deleteDocument).not.toHaveBeenCalled()
     expect(screen.getByText('syllabus.pdf')).toBeInTheDocument()
 
-    await openMenu(/thao tác khác với/i)
+    await openMenu(/thao tác khác với syllabus\.pdf/i)
     await userEvent.click(screen.getByRole('menuitem', { name: /xóa tài liệu/i }))
     expect(await screen.findByText(/xóa tài liệu thất bại/i)).toBeInTheDocument()
     expect(screen.getByText('syllabus.pdf')).toBeInTheDocument()
 
-    await openMenu(/thao tác khác với/i)
+    await openMenu(/thao tác khác với syllabus\.pdf/i)
     await userEvent.click(screen.getByRole('menuitem', { name: /xóa tài liệu/i }))
     await waitFor(() => {
       expect(api.deleteDocument).toHaveBeenCalledWith('doc-1')
@@ -262,7 +334,7 @@ describe('CourseDetailPage - delete document', () => {
     vi.spyOn(window, 'confirm').mockReturnValue(true)
 
     renderPage()
-    await openMenu(/thao tác khác với/i)
+    await openMenu(/thao tác khác với syllabus\.pdf/i)
     await userEvent.click(screen.getByRole('menuitem', { name: /xóa tài liệu/i }))
 
     expect(await screen.findByText(/đã xóa tài liệu "syllabus.pdf"/i)).toBeInTheDocument()

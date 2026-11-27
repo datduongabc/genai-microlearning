@@ -6,7 +6,7 @@ import * as flashcardsApi from '../../../api/flashcards'
 import { retryJob } from '../../../api/jobs'
 import * as learnApi from '../../../api/learn'
 import { listModels, setDefaultModel } from '../../../api/models'
-import { deleteModule, generateModule } from '../../../api/modules'
+import { chatEditModule, deleteModule, generateModule, getLatestModuleChat, startNewModuleChat } from '../../../api/modules'
 import { linkMoodleCourse, MOODLE_ACCOUNT_CHANGED_EVENT, publishToMoodle } from '../../../api/moodle'
 import * as studiesApi from '../../../api/studies'
 import * as videosApi from '../../../api/videos'
@@ -116,10 +116,18 @@ describe('API wrappers and endpoints', () => {
     expect(post).toHaveBeenLastCalledWith('/modules/generate', { output_language: 'en', custom_instructions: 'Explain IDS' }, { params: { document_id: 'doc' } })
   })
 
-  it('deletes a module by id', async () => {
+  it('deletes a module by id and loads or resets module chat-edit sessions', async () => {
     const del = vi.spyOn(api, 'delete').mockResolvedValue({ data: { status: 'deleted', deleted_module_ids: ['m'] } })
+    const get = vi.spyOn(api, 'get').mockResolvedValue({ data: { session_id: 's1', messages: [] } })
+    const post = vi.spyOn(api, 'post').mockResolvedValue({ data: { session_id: 's2', reply: 'ok', applied: false, edit_count: 0 } })
     await deleteModule('m')
     expect(del).toHaveBeenCalledWith('/modules/m')
+    await getLatestModuleChat('m')
+    expect(get).toHaveBeenCalledWith('/modules/m/chat-edit/latest', { signal: undefined })
+    expect(await startNewModuleChat('m')).toBe('s2')
+    expect(post).toHaveBeenCalledWith('/modules/m/chat-edit/sessions')
+    await chatEditModule('m', 'rút gọn', 's2')
+    expect(post).toHaveBeenLastCalledWith('/modules/m/chat-edit', { message: 'rút gọn', session_id: 's2' })
   })
 
   it.each([

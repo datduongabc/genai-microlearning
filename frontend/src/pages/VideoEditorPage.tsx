@@ -237,7 +237,9 @@ export function VideoEditorPage() {
   const toDraw = saved.scenes.filter((s) => s.needs_image || s.image_outdated).length
   // The saved scenes as edits, to tell which scene's slide no longer shows what is being edited.
   const savedEdits = toEdits(toDrafts(saved, () => 0)).map((e) => JSON.stringify(e))
-  const canStartJob = !dirty && !jobRunning && busy === null
+  const canStartJob = !dirty && openKey === null && !jobRunning && busy === null
+  const openIndex = openKey === null ? -1 : scenes.findIndex((s) => s.key === openKey)
+  const openScene = openIndex >= 0 ? scenes[openIndex] : undefined
 
   const backLink = (
     <Link to={`/courses/${courseId}`} className="link-action">
@@ -426,7 +428,7 @@ export function VideoEditorPage() {
                 origin: s.fromIndex === null ? undefined : saved.scenes[s.fromIndex],
                 changed: s.fromIndex !== null && JSON.stringify(toEdits([s])[0]) !== savedEdits[s.fromIndex],
               }}
-              canDraw={canStartJob && openKey === null}
+              canDraw={canStartJob}
               nextKey={nextKey}
               onChange={(change) => editScene(s.key, change)}
               onMove={(by) => moveScene(index, by)}
@@ -479,6 +481,54 @@ export function VideoEditorPage() {
             </ul>
           )}
           {saved.render_warnings.map((warning, i) => <p key={`${i}-${warning}`} className="doc-warning">{warning}</p>)}
+          {(dirty || openIndex >= 0) && (
+            <div role="status" className="doc-warning video-flag">
+              {dirty ? (
+                <>
+                  <span>
+                    {openIndex >= 0
+                      ? `Cảnh ${openIndex + 1} có thay đổi chưa lưu. Lưu hoặc hủy trước khi gửi yêu cầu sửa, vẽ hình hay dựng video.`
+                      : 'Có thay đổi chưa lưu. Lưu hoặc hủy trước khi gửi yêu cầu sửa, vẽ hình hay dựng video.'}
+                  </span>
+                  <div className="video-flag-actions">
+                    <button
+                      type="button"
+                      onClick={() => void save()}
+                      disabled={busy !== null || (openScene !== undefined && openScene.title.trim() === '')}
+                      aria-label={openIndex >= 0 ? `Lưu cảnh ${openIndex + 1}` : 'Lưu thay đổi'}
+                      className="link-action small-action"
+                    >
+                      {busy === 'save' ? 'Đang lưu…' : 'Lưu'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={cancel}
+                      disabled={busy !== null}
+                      aria-label={openIndex >= 0 ? `Hủy sửa cảnh ${openIndex + 1}` : 'Hủy thay đổi'}
+                      className="link-action quiet-danger small-action"
+                    >
+                      Hủy
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <span>{`Đang mở sửa Cảnh ${openIndex + 1}. Đóng khung sửa trước khi gửi yêu cầu sửa, vẽ hình hay dựng video.`}</span>
+                  <div className="video-flag-actions">
+                    <button
+                      type="button"
+                      onClick={cancel}
+                      disabled={busy !== null}
+                      aria-label={`Đóng sửa cảnh ${openIndex + 1}`}
+                      className="link-action small-action"
+                    >
+                      Đóng
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
           <div className="flashcard-actions">
             <button
               type="button"

@@ -67,6 +67,8 @@ h1[tabindex="-1"]:focus-visible { outline:none; }
 .shell-main { margin-left:288px; padding:32px 48px 48px; min-width:0; }
 .shell-content { max-width:1120px; margin:auto; }
 .page-title { font:600 28px/36px var(--font-sans); margin-bottom:24px; letter-spacing:-.02em; }
+.page-title-group { margin-bottom:24px; }
+.page-title-group .page-title { margin-bottom:0; }
 .breadcrumb { margin-bottom:8px; font-size:14px; line-height:20px; }
 .breadcrumb ol { display:flex; flex-wrap:wrap; align-items:center; gap:4px 8px; }
 .breadcrumb li { display:flex; align-items:center; gap:8px; min-width:0; }
@@ -466,7 +468,8 @@ h1[tabindex="-1"]:focus-visible { outline:none; }
 @media(max-width:520px) { .learner-header { flex-wrap:wrap; } }
 .slides-download { margin-top:16px; padding-top:12px; border-top:1px dashed var(--border-default); }
 .module-ai-edit { scroll-margin-top:24px; }
-.module-ai-edit .module-part-title { margin-bottom:12px; }
+.module-ai-edit .chat-head .module-part-title { margin-bottom:0; }
+.module-ai-edit .chat-form { margin-top:12px; padding-top:0; border-top:0; }
 .module-publish { margin-top:24px; padding:24px 40px 28px; background:var(--bg-surface); border:1px solid var(--border-default); border-radius:var(--radius-sm); }
 .module-publish .module-part-title { margin-bottom:12px; }
 .publish-actions { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:12px; }
@@ -691,6 +694,8 @@ h1[tabindex="-1"]:focus-visible { outline:none; }
 .video-step { width:100%; display:flex; flex-direction:column; align-items:flex-start; gap:10px; padding-top:16px; border-top:1px solid var(--border-default); }
 .video-step .course-section-title { margin-bottom:0; }
 .video-step .course-hint, .video-step .doc-warning { margin-top:0; }
+.video-step .video-flag { width:100%; }
+.video-flag-actions { display:inline-flex; align-items:baseline; gap:12px; flex:none; }
 .video-problems { display:flex; flex-direction:column; gap:4px; }
 .video-player { width:100%; aspect-ratio:16 / 9; background:var(--bg-navy); border-radius:var(--radius-sm); }
 @media (max-width: 640px) {

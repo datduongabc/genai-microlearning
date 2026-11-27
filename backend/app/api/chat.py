@@ -185,14 +185,16 @@ class LatestChatResponse(BaseModel):
     messages: list[ChatMessageResponse]
 
 
-def _latest_session(db: Session, course_id: uuid.UUID, user_id: uuid.UUID) -> ChatSession | None:
+def _latest_session(
+    db: Session, course_id: uuid.UUID, user_id: uuid.UUID, module_id: uuid.UUID | None = None,
+) -> ChatSession | None:
     # By its newest message, or when it was opened if it has none yet: "Cuộc trò chuyện mới" opens
     # an empty one, and a reload must bring that back rather than the conversation it replaced.
     used = func.coalesce(func.max(ChatMessage.created_at), ChatSession.created_at)
+    scope = ChatSession.module_id == module_id if module_id is not None else ChatSession.module_id.is_(None)
     return db.scalar(
         select(ChatSession).outerjoin(ChatMessage)
-        .where(ChatSession.course_id == course_id, ChatSession.user_id == user_id,
-               ChatSession.module_id.is_(None))
+        .where(ChatSession.course_id == course_id, ChatSession.user_id == user_id, scope)
         .group_by(ChatSession.id).order_by(used.desc()).limit(1)
     )
 

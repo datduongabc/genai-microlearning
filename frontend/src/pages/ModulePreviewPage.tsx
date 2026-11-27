@@ -21,10 +21,13 @@ import {
 import {
   apiErrorMessage,
   chatEditModule,
+  getLatestModuleChat,
   getMoodleSections,
   getModule,
   publishToMoodle,
+  startNewModuleChat,
   updateModuleTitle,
+  type ModuleChatMessage,
   type ModuleDetail,
   type MoodleSection,
   type PublishToMoodleResult,
@@ -220,9 +223,25 @@ export function ModulePreviewPage() {
   )
 }
 
+function moduleTurnsFrom(messages: ModuleChatMessage[]): { message: string; reply: string }[] {
+  const turns: { message: string; reply: string }[] = []
+  for (const m of messages) {
+    if (m.role === 'user') turns.push({ message: m.content, reply: '' })
+    else if (turns.length && !turns[turns.length - 1]!.reply) {
+      turns[turns.length - 1] = { ...turns[turns.length - 1]!, reply: m.content }
+    } else {
+      turns.push({ message: '', reply: m.content })
+    }
+  }
+  return turns
+}
+
 function ModuleChatPanel({ module, onSaved }: { module: ModuleDetail; onSaved: () => Promise<void> }) {
-  const [sessionId, setSessionId] = useState<string>()
+  const sessionId = useRef<string | undefined>(undefined)
+  const loadController = useRef<AbortController | null>(null)
   const [turns, setTurns] = useState<{ message: string; reply: string }[]>([])
+  const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState('')
   const {
     register,
     handleSubmit,
@@ -232,11 +251,32 @@ function ModuleChatPanel({ module, onSaved }: { module: ModuleDetail; onSaved: (
   } = useForm<ChatEditFormValues>({ resolver: zodResolver(chatEditSchema), defaultValues: { message: '' } })
   const blank = !useWatch({ control, name: 'message' }).trim()
 
+  useEffect(() => {
+    // Another module mounts a fresh panel (key={module.id}), so state starts clean without synchronous effect resets.
+    const controller = new AbortController()
+    loadController.current = controller
+    Promise.resolve(getLatestModuleChat(module.id, controller.signal))
+      .then((latest) => {
+        if (!latest || controller.signal.aborted) return
+        sessionId.current = latest.session_id ?? undefined
+        setTurns(moduleTurnsFrom(latest.messages))
+      })
+      .catch((err) => {
+        if (!controller.signal.aborted) {
+          setLoadError(apiErrorMessage(err, 'Không tải được lịch sử chỉnh sửa trước.'))
+        }
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setLoading(false)
+      })
+    return () => controller.abort()
+  }, [module.id])
+
   async function send({ message }: ChatEditFormValues) {
     let applied = false
     try {
-      const result = await chatEditModule(module.id, message, sessionId)
-      setSessionId(result.session_id)
+      const result = await chatEditModule(module.id, message, sessionId.current)
+      sessionId.current = result.session_id
       setTurns((previous) => [...previous, { message, reply: result.reply }])
       reset()
       applied = result.applied
@@ -248,19 +288,38 @@ function ModuleChatPanel({ module, onSaved }: { module: ModuleDetail; onSaved: (
     }
   }
 
-  return <section id="part-ai-edit" className="module-ai-edit">
-    <h2 id="module-chat-title" className="module-part-title">Yêu cầu chỉnh sửa</h2>
-    <div aria-live="polite" className="mt-3 space-y-3 text-sm">
-      {turns.map((turn, i) => <div key={i}>
-        <p className="muted">{turn.message}</p>
-        <p className="mt-1 whitespace-pre-wrap">{turn.reply}</p>
+  function startOver() {
+    loadController.current?.abort()
+    setLoading(false)
+    sessionId.current = undefined
+    setTurns([])
+    setLoadError('')
+    Promise.resolve(startNewModuleChat(module.id)).then(
+      (id) => { if (sessionId.current === undefined && id) sessionId.current = id },
+      () => {},
+    )
+  }
+
+  return <section id="part-ai-edit" className="module-ai-edit" aria-labelledby="module-chat-title">
+    <div className="chat-head">
+      <h2 id="module-chat-title" className="module-part-title">Yêu cầu chỉnh sửa</h2>
+      {turns.length > 0 && <button type="button" onClick={startOver} disabled={sending}
+        className="link-action small-action">Cuộc trò chuyện mới</button>}
+    </div>
+    {loading && <p role="status" className="chat-note">Đang tải lịch sử chỉnh sửa…</p>}
+    {loadError && <p className="chat-note">{loadError}</p>}
+    <div role="log" aria-label="Lịch sử chỉnh sửa" aria-live="polite" className="chat-log">
+      {turns.map((turn, i) => <div key={i} className="chat-turn">
+        {turn.message && <p className="chat-question">{turn.message}</p>}
+        {turn.reply && <p className="chat-answer whitespace-pre-wrap">{turn.reply}</p>}
       </div>)}
     </div>
-    <form onSubmit={handleSubmit(send)} noValidate className="mt-3 flex flex-col gap-2">
-      <textarea id="module-chat-message" aria-labelledby="module-chat-title" maxLength={4000} rows={3} disabled={sending}
+    {/* oxlint-disable-next-line react/refs -- handleSubmit is react-hook-form's submit wrapper, not a ref read during render */}
+    <form onSubmit={handleSubmit(send)} noValidate className="chat-form">
+      <textarea id="module-chat-message" aria-labelledby="module-chat-title" maxLength={4000} rows={3} disabled={sending || loading}
         {...register('message')} className="ui-input w-full" />
       {errors.message && <p className="text-sm danger-text">{errors.message.message}</p>}
-      <button type="submit" disabled={sending || blank}
+      <button type="submit" disabled={sending || loading || blank}
         className="ui-button primary w-fit">
         {sending ? 'Đang chỉnh sửa…' : 'Gửi yêu cầu'}
       </button>
