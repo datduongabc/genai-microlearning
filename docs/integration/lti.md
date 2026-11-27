@@ -111,7 +111,7 @@ Kiểm tra trên id_token:
   Bản nháp hoặc bản đã ngừng giao trả 404 và hiện "Không tải được...".
   Sinh viên chỉ đọc: không sinh, sửa hay giao gì.
 - **Tầng DB (migration 0027):** thành viên chỉ được SELECT khóa học, `documents` và `chunks`. Mọi thao tác ghi trên khóa và các bảng con vẫn đòi là chủ. Module, câu hỏi, job và đánh giá chỉ chủ thấy. Phiên chat thuộc về người đã chat: giảng viên không đọc chat của sinh viên, sinh viên không đọc chat của nhau.
-- **Tài khoản:** tài khoản mà launch `Learner` tạo ra có `can_author = false`, nên không tạo được khóa học. Launch `Instructor` sau đó bật lại quyền này. Nếu người đó đã là thành viên của chính khóa ấy thì vẫn bị từ chối như giảng viên thứ hai.
+- **Tài khoản:** tài khoản mà launch `Learner` tạo ra có `can_author = false`, nên không tạo được khóa học. Launch `Instructor` sau đó bật lại quyền này. Nếu người đó đã là sinh viên của chính khóa ấy thì trở thành giảng viên của khóa (migration 0049).
 - **Hạn mức:** `LEARNER_DAILY_CHAT_LIMIT` (mặc định 30) tin mỗi ngày cho mỗi tài khoản sinh viên, vì mỗi tin là một lần gọi model trả tiền. Giảng viên không bị tính.
 
 ## Rời lớp
@@ -149,6 +149,5 @@ Launch chỉ thêm sinh viên vào khóa học, không nói khi nào họ rời 
   Video và flashcard thì chỉ xem được trong công cụ, không đi vào Book, Quiz hay gói SCORM.
 - **Phần video và flashcard chưa được kiểm bằng một launch LTI thật.** Nó được kiểm bằng tài khoản thành viên có `course_members.source = 'lti'` (xem [số đo](../measurements/2026-11-12-video-trial.md)); quyền đọc cùng tầng RLS với chat, nhưng chưa đi qua Moodle.
 - **Rời lớp không có hiệu lực ngay.** Sinh viên mất khóa học trong vòng khoảng `LTI_ROSTER_SYNC_MINUTES` cộng 5 phút sau khi bị rút khỏi khóa LMS, chứ không phải tức thì. Nếu LMS không bật Names and Role Provisioning hoặc công cụ không có khóa thì thời hạn vẫn là 14 ngày như trước.
-- **Mỗi khóa học thuộc một giảng viên.** Giảng viên thứ hai mở cùng khóa LMS sẽ nhận thông báo khóa đã thuộc người khác.
 - **State không gắn với trình duyệt.** Không có cookie, nên kẻ tấn công có thể khiến nạn nhân đăng nhập vào tài khoản LTI của chính kẻ tấn công (login CSRF). Họ không lấy được gì của nạn nhân, nhưng nạn nhân có thể vô tình tải tài liệu vào khóa học của kẻ tấn công. Gắn state với cookie `SameSite=None` khi mở cửa sổ mới sẽ chặn được.
 
