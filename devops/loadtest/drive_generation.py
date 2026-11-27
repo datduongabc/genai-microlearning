@@ -12,7 +12,8 @@ ADMIN_EMAIL and ADMIN_PASSWORD it makes the accounts, and each uploads the lectu
 for the jobs, then adds a row with throughput, tokens and per-stage timings to the results file. `chat` sends
 real chat messages and records throughput and latency. `ack` times how long the API takes to answer an
 upload or a generation request (NFR02), without the file transfer. `media-http` has that many seeded lecturers ask for a module, a flashcard set and a video at once, and
-times each job's queue wait and run. `check` fails when the last row broke a stop condition."""
+times each job's queue wait and run. `lti-launch` has learners open the tool from an LMS course, signed by a
+fake LMS, and times login, launch and the token trade. `check` fails when the last row broke a stop condition."""
 
 import argparse
 import asyncio
@@ -313,6 +314,146 @@ def chat_stream(concurrency: int, messages: int, label: str, out: str, rate: flo
                   "latency_seconds": _stats([r["total"] for r in done])})
 
 
+LTI_ISSUER = "https://lms.load.test"
+LTI_CLIENT = "load-tool"
+LTI_DEPLOYMENT = "load-dep"
+LTI_CLAIM = "https://purl.imsglobal.org/spec/lti/claim/"
+
+
+class _FakeLms:
+    """Signs id_tokens with a real RSA key and serves its key set to the api, as Moodle would: the
+    launch itself (state, signature, claims, account, membership, code) runs unchanged."""
+
+    def __init__(self, port: int = 8765):
+        import threading
+        from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+
+        import jwt
+        from cryptography.hazmat.primitives import serialization
+        from cryptography.hazmat.primitives.asymmetric import rsa
+
+        # One key across runs: the api waits 30 s before it fetches a key set again for an unknown key.
+        saved = RESULTS / "lti-load-key.pem"
+        if not saved.exists():
+            saved.write_bytes(rsa.generate_private_key(public_exponent=65537, key_size=2048).private_bytes(
+                serialization.Encoding.PEM, serialization.PrivateFormat.PKCS8, serialization.NoEncryption()))
+        self.jwt, self.key, self.kid = jwt, serialization.load_pem_private_key(saved.read_bytes(), None), "load-key"
+        jwk = jwt.algorithms.RSAAlgorithm.to_jwk(self.key.public_key(), as_dict=True)
+        body = json.dumps({"keys": [{**jwk, "kid": self.kid, "alg": "RS256", "use": "sig"}]}).encode()
+
+        class Keys(BaseHTTPRequestHandler):
+            def do_GET(self):
+                self.send_response(200)
+                self.send_header("content-type", "application/json")
+                self.end_headers()
+                self.wfile.write(body)
+
+            def log_message(self, *args):
+                pass
+
+        threading.Thread(target=ThreadingHTTPServer(("0.0.0.0", port), Keys).serve_forever, daemon=True).start()
+        self.jwks_url = f"http://{os.environ.get('HOSTNAME', 'runner')}:{port}/jwks"
+
+    def register(self) -> None:
+        # Straight into the table: the registration script only accepts https or a Moodle host.
+        from app.models import LtiDeployment, LtiPlatform
+
+        with SessionLocal() as db:
+            platform = db.scalar(select(LtiPlatform).where(LtiPlatform.issuer == LTI_ISSUER))
+            if platform is None:
+                platform = LtiPlatform(issuer=LTI_ISSUER, client_id=LTI_CLIENT, auth_login_url=f"{LTI_ISSUER}/auth",
+                                       jwks_url=self.jwks_url)
+                db.add(platform)
+                db.flush()
+                db.add(LtiDeployment(platform_id=platform.id, deployment_id=LTI_DEPLOYMENT))
+            platform.jwks_url = self.jwks_url
+            db.commit()
+
+    def id_token(self, nonce: str, sub: str, *, instructor: bool, context: str) -> str:
+        now = int(time.time())
+        role = "Instructor" if instructor else "Learner"
+        return self.jwt.encode({
+            "iss": LTI_ISSUER, "aud": LTI_CLIENT, "sub": sub, "iat": now, "exp": now + 300, "nonce": nonce,
+            "name": f"Load {sub}", LTI_CLAIM + "version": "1.3.0",
+            LTI_CLAIM + "message_type": "LtiResourceLinkRequest", LTI_CLAIM + "deployment_id": LTI_DEPLOYMENT,
+            LTI_CLAIM + "roles": [f"http://purl.imsglobal.org/vocab/lis/v2/membership#{role}"],
+            LTI_CLAIM + "context": {"id": context, "title": f"Load {context}"},
+            LTI_CLAIM + "resource_link": {"id": f"link-{context}"},
+        }, self.key, algorithm="RS256", headers={"kid": self.kid})
+
+
+def lti_launch(launches: int, rate: float, label: str, out: str, *, one_address: bool) -> None:
+    """Learners open the tool from one LMS course at `rate` a second: login, launch with a signed id_token,
+    then the code traded for tokens, as the browser does. Each learner comes from an address of its own,
+    unless `one_address` (a campus behind one NAT). Learners are named after LTI_COHORT (default: the
+    label), so a second run with the same cohort times returning learners, whose account already exists. Straight to the api, which trusts this network's X-Forwarded-For."""
+    from urllib.parse import parse_qs, urlparse
+
+    base = os.environ.get("LTI_BASE", "http://backend:8000")
+    lms = _FakeLms()
+    lms.register()
+    context = os.environ.get("LTI_CONTEXT", "load-course")
+    cohort = os.environ.get("LTI_COHORT", label)
+    rows: list[dict] = []
+
+    async def open_tool(client: httpx.AsyncClient, i: int, *, sub: str, instructor: bool) -> dict:
+        address = "10.9.0.1" if one_address else f"10.{9 + i // 62_500}.{i // 250 % 250}.{i % 250 + 1}"
+        headers = {"x-forwarded-for": address}
+        row: dict = {"status": None}
+        started = time.perf_counter()
+        try:
+            login = await client.get(f"{base}/lti/login", headers=headers, params={
+                "iss": LTI_ISSUER, "login_hint": sub, "client_id": LTI_CLIENT})
+            if login.status_code != 302:
+                return {**row, "status": f"login-{login.status_code}"}
+            query = parse_qs(urlparse(login.headers["location"]).query)
+            row["login"] = time.perf_counter() - started
+            token = lms.id_token(query["nonce"][0], sub, instructor=instructor, context=context)
+            at = time.perf_counter()
+            launched = await client.post(f"{base}/lti/launch", headers=headers,
+                                         data={"id_token": token, "state": query["state"][0]})
+            if launched.status_code != 303:
+                return {**row, "status": f"launch-{launched.status_code}"}
+            row["launch"] = time.perf_counter() - at
+            code = parse_qs(urlparse(launched.headers["location"]).fragment)["code"][0]
+            at = time.perf_counter()
+            session = await client.post(f"{base}/lti/session", headers=headers, json={"code": code})
+            if session.status_code != 200:
+                return {**row, "status": f"session-{session.status_code}"}
+            row["session"] = time.perf_counter() - at
+            row["total"] = time.perf_counter() - started
+            row["status"] = "ok"
+        except httpx.HTTPError as error:
+            row["status"] = type(error).__name__
+        return row
+
+    async def learner(client: httpx.AsyncClient, i: int) -> None:
+        await asyncio.sleep(i / rate)
+        rows.append(await open_tool(client, i, sub=f"{cohort}-{i}", instructor=False))
+
+    async def run() -> None:
+        limits = httpx.Limits(max_connections=None, max_keepalive_connections=None)
+        async with httpx.AsyncClient(timeout=60, limits=limits) as client:
+            # The course exists only once its lecturer has opened it; learners before that are refused.
+            first = await open_tool(client, 10**6, sub="load-lecturer", instructor=True)
+            if first["status"] != "ok":
+                sys.exit(f"lecturer launch failed: {first['status']}")
+            t0 = time.perf_counter()
+            await asyncio.gather(*(learner(client, i) for i in range(launches)))
+            return time.perf_counter() - t0
+
+    wall = asyncio.run(run())
+    ok = [r for r in rows if r["status"] == "ok"]
+    codes: dict[str, int] = {}
+    for row in rows:
+        codes[str(row["status"])] = codes.get(str(row["status"]), 0) + 1
+    _append(out, {"label": label, "cohort": cohort, "rate": rate, "launches": launches, "one_address": one_address,
+                  "status_codes": codes, "failed": launches - len(ok),
+                  "wall_seconds": round(wall, 1), "launches_per_second": round(len(ok) / wall, 1),
+                  "total_seconds": _stats([r["total"] for r in ok]), "login_seconds": _stats([r["login"] for r in ok]),
+                  "launch_seconds": _stats([r["launch"] for r in ok]), "session_seconds": _stats([r["session"] for r in ok])})
+
+
 def ack(concurrency: int, label: str, out: str) -> None:
     """Every seeded user at once, `concurrency` at a time: ask to upload a small PDF, send it (not timed:
     NFR02 excludes the transfer), complete the upload, then ask for a module, a flashcard set and a video
@@ -522,7 +663,7 @@ def check(out: str, token_cap: int) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("step", choices=["seed", "seed-http", "login-http", "generate", "chat", "chat-stream", "ack", "media-http", "check"])
+    parser.add_argument("step", choices=["seed", "seed-http", "login-http", "generate", "chat", "chat-stream", "ack", "media-http", "lti-launch", "check"])
     parser.add_argument("--users", type=int, default=40)
     parser.add_argument("--modules", type=int, default=8)
     parser.add_argument("--label", default="run")
@@ -533,6 +674,7 @@ def main() -> None:
     parser.add_argument("--rate", type=float)
     parser.add_argument("--skip", type=int, default=0)
     parser.add_argument("--token-cap", type=int, default=30_000_000)
+    parser.add_argument("--one-address", action="store_true")
     args = parser.parse_args()
     if args.step == "seed":
         seed(args.users)
@@ -550,6 +692,9 @@ def main() -> None:
         media_http(args.users, args.label, args.out, args.skip)
     elif args.step == "chat-stream":
         chat_stream(args.concurrency, args.messages, args.label, args.out, args.rate)
+    elif args.step == "lti-launch":
+        lti_launch(args.messages, args.rate or 10, args.label, args.out,
+                   one_address=args.one_address)
     else:
         check(args.out, args.token_cap)
 

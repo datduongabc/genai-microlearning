@@ -118,7 +118,7 @@ stateDiagram-v2
   running --> queued: lỗi tạm thời, backoff 30-240 s
   running --> queued: mất 5 heartbeat (sweeper) hoặc task dừng
   running --> failed: hết 5 lần hoặc lỗi vĩnh viễn
-  failed --> queued: Thử lại (giảng viên hoặc admin)
+  failed --> queued: Thử lại (giảng viên, hoặc admin nếu lỗi do hệ thống)
 ```
 
 Bảy loại job: `document_pipeline`, `module_generation`, `flashcard_generation`, `video_script`, `video_images`, `video_render`, `study_judge`.

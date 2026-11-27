@@ -24,7 +24,7 @@ Báo cáo cuối kỳ: [`final-report/report.pdf`](final-report/report.pdf). Đ�
 | LTI 1.3 | Giảng viên và sinh viên vào thẳng từ hoạt động External tool. Danh sách lớp được đồng bộ qua NRPS, sinh viên rời lớp bị gỡ quyền sau khoảng một giờ. |
 | Hỏi đáp | Chat theo khóa học, câu trả lời stream (SSE), có trích dẫn và lưu lịch sử. Sinh viên được 30 tin mỗi ngày. |
 | Nghiên cứu | Cặp module RAG và không RAG, gói chấm mù với thứ tự xáo riêng cho từng người chấm, chấm bằng model judge, phân tích độ đồng thuận. |
-| Quản trị | Quản lý tài khoản; xem và thử lại job lỗi mà không đọc được nội dung của giảng viên. |
+| Quản trị | Quản lý tài khoản; xem job lỗi mà không đọc được nội dung của giảng viên, thử lại lỗi do hệ thống sau khi sửa nguyên nhân; lỗi do nội dung để giảng viên tự xử lý. |
 
 ## Kiến trúc
 

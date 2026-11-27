@@ -134,3 +134,15 @@ def test_a_refused_request_says_how_to_retry(two_users):
 
     assert refused.status_code == 429
     assert "error" in refused.json()
+
+
+def test_a_campus_behind_one_address_keeps_its_sessions_until_the_shared_limit(monkeypatch):
+    """Every learner renews a session from the campus address: the old 30 a minute held one address
+    to about 450 learners signed in. The step is counted, not the token: an unknown token is
+    refused 401 until the limit, then 429."""
+    from app.config import settings
+
+    monkeypatch.setattr(settings, "shared_address_requests_per_minute", 70)
+    codes = _codes(71, lambda: client.post("/auth/refresh", json={"refresh_token": "unknown"}))
+    assert codes[:70] == [401] * 70
+    assert codes[70] == 429

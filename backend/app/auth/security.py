@@ -12,6 +12,11 @@ from app.config import settings
 # bcrypt only ever reads this many bytes of a password.
 MAX_PASSWORD_BYTES = 72
 
+# Stored for an account that signs in only through an LMS: not a bcrypt hash, so no password matches
+# it. Hashing a random password instead cost a quarter second of CPU on every learner's first launch,
+# which held one api task to about four new learners a second.
+NO_PASSWORD = "!lms-only"
+
 
 def hash_password(password: str) -> str:
     raw = password.encode("utf-8")

@@ -23,6 +23,10 @@ def build_limiter(storage_uri: str) -> Limiter:
 limiter = build_limiter(settings.rate_limit_storage_uri)
 
 
+def shared_address_limit() -> str:
+    return f"{settings.shared_address_requests_per_minute}/minute"
+
+
 def user_or_address(request: Request) -> str:
     """Rate limit key for endpoints behind a login: the user, not the address. People who
     share an address (a campus network, or every request that reaches the container

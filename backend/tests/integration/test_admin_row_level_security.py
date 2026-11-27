@@ -57,7 +57,8 @@ def world():
         db.flush()
         db.add(ChatMessage(session_id=session.id, role=ChatRole.user, content="secret chat", citations=[]))
         failed = Job(job_type=JobType.document_pipeline, document_id=document.id, step="extract",
-                     status=JobStatus.failed, last_error="boom", payload={"units": ["secret payload"]})
+                     status=JobStatus.failed, last_error="boom", payload={"units": ["secret payload"]},
+                     system_failure=True)
         queued = Job(job_type=JobType.module_generation, document_id=document.id, step="generate", status=JobStatus.queued)
         db.add_all([failed, queued])
         db.commit()

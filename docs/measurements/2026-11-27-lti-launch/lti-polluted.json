@@ -1,0 +1,501 @@
+[
+  {
+    "label": "smoke",
+    "cohort": "smoke",
+    "rate": 5.0,
+    "launches": 20,
+    "one_address": false,
+    "status_codes": {
+      "ok": 20
+    },
+    "failed": 0,
+    "wall_seconds": 4.2,
+    "launches_per_second": 4.8,
+    "total_seconds": {
+      "n": 20,
+      "mean": 0.335,
+      "p50": 0.315,
+      "p95": 0.484,
+      "max": 0.486
+    },
+    "login_seconds": {
+      "n": 20,
+      "mean": 0.007,
+      "p50": 0.006,
+      "p95": 0.012,
+      "max": 0.016
+    },
+    "launch_seconds": {
+      "n": 20,
+      "mean": 0.319,
+      "p50": 0.3,
+      "p95": 0.464,
+      "max": 0.472
+    },
+    "session_seconds": {
+      "n": 20,
+      "mean": 0.009,
+      "p50": 0.008,
+      "p95": 0.013,
+      "max": 0.035
+    }
+  },
+  {
+    "label": "first-time",
+    "cohort": "r1",
+    "rate": 5.0,
+    "launches": 20,
+    "one_address": false,
+    "status_codes": {
+      "ok": 20
+    },
+    "failed": 0,
+    "wall_seconds": 4.2,
+    "launches_per_second": 4.8,
+    "total_seconds": {
+      "n": 20,
+      "mean": 0.328,
+      "p50": 0.362,
+      "p95": 0.465,
+      "max": 0.468
+    },
+    "login_seconds": {
+      "n": 20,
+      "mean": 0.01,
+      "p50": 0.012,
+      "p95": 0.018,
+      "max": 0.019
+    },
+    "launch_seconds": {
+      "n": 20,
+      "mean": 0.298,
+      "p50": 0.293,
+      "p95": 0.399,
+      "max": 0.404
+    },
+    "session_seconds": {
+      "n": 20,
+      "mean": 0.02,
+      "p50": 0.009,
+      "p95": 0.054,
+      "max": 0.058
+    }
+  },
+  {
+    "label": "returning",
+    "cohort": "r1",
+    "rate": 5.0,
+    "launches": 20,
+    "one_address": false,
+    "status_codes": {
+      "ok": 20
+    },
+    "failed": 0,
+    "wall_seconds": 3.8,
+    "launches_per_second": 5.2,
+    "total_seconds": {
+      "n": 20,
+      "mean": 0.025,
+      "p50": 0.024,
+      "p95": 0.028,
+      "max": 0.031
+    },
+    "login_seconds": {
+      "n": 20,
+      "mean": 0.008,
+      "p50": 0.008,
+      "p95": 0.009,
+      "max": 0.016
+    },
+    "launch_seconds": {
+      "n": 20,
+      "mean": 0.009,
+      "p50": 0.009,
+      "p95": 0.01,
+      "max": 0.01
+    },
+    "session_seconds": {
+      "n": 20,
+      "mean": 0.007,
+      "p50": 0.006,
+      "p95": 0.008,
+      "max": 0.01
+    }
+  },
+  {
+    "label": "campus-nat",
+    "cohort": "nat",
+    "rate": 10.0,
+    "launches": 120,
+    "one_address": true,
+    "status_codes": {
+      "ok": 27,
+      "login-429": 63,
+      "session-429": 30
+    },
+    "failed": 93,
+    "wall_seconds": 14.0,
+    "launches_per_second": 1.9,
+    "total_seconds": {
+      "n": 27,
+      "mean": 5.492,
+      "p50": 6.073,
+      "p95": 8.369,
+      "max": 8.77
+    },
+    "login_seconds": {
+      "n": 27,
+      "mean": 0.472,
+      "p50": 0.475,
+      "p95": 1.073,
+      "max": 1.08
+    },
+    "launch_seconds": {
+      "n": 27,
+      "mean": 2.547,
+      "p50": 2.705,
+      "p95": 3.912,
+      "max": 4.398
+    },
+    "session_seconds": {
+      "n": 27,
+      "mean": 2.473,
+      "p50": 2.71,
+      "p95": 3.499,
+      "max": 3.796
+    }
+  },
+  {
+    "label": "first-rate-2",
+    "cohort": "new2",
+    "rate": 2.0,
+    "launches": 40,
+    "one_address": false,
+    "status_codes": {
+      "login-429": 1,
+      "ok": 39
+    },
+    "failed": 1,
+    "wall_seconds": 19.7,
+    "launches_per_second": 2.0,
+    "total_seconds": {
+      "n": 39,
+      "mean": 0.22,
+      "p50": 0.219,
+      "p95": 0.234,
+      "max": 0.24
+    },
+    "login_seconds": {
+      "n": 39,
+      "mean": 0.008,
+      "p50": 0.008,
+      "p95": 0.01,
+      "max": 0.015
+    },
+    "launch_seconds": {
+      "n": 39,
+      "mean": 0.204,
+      "p50": 0.203,
+      "p95": 0.212,
+      "max": 0.22
+    },
+    "session_seconds": {
+      "n": 39,
+      "mean": 0.008,
+      "p50": 0.007,
+      "p95": 0.01,
+      "max": 0.019
+    }
+  },
+  {
+    "label": "first-rate-4",
+    "cohort": "new4",
+    "rate": 4.0,
+    "launches": 80,
+    "one_address": false,
+    "status_codes": {
+      "ok": 80
+    },
+    "failed": 0,
+    "wall_seconds": 20.0,
+    "launches_per_second": 4.0,
+    "total_seconds": {
+      "n": 80,
+      "mean": 0.217,
+      "p50": 0.216,
+      "p95": 0.225,
+      "max": 0.234
+    },
+    "login_seconds": {
+      "n": 80,
+      "mean": 0.005,
+      "p50": 0.005,
+      "p95": 0.006,
+      "max": 0.01
+    },
+    "launch_seconds": {
+      "n": 80,
+      "mean": 0.204,
+      "p50": 0.203,
+      "p95": 0.211,
+      "max": 0.221
+    },
+    "session_seconds": {
+      "n": 80,
+      "mean": 0.007,
+      "p50": 0.007,
+      "p95": 0.009,
+      "max": 0.012
+    }
+  },
+  {
+    "label": "first-rate-8",
+    "cohort": "new8",
+    "rate": 8.0,
+    "launches": 160,
+    "one_address": false,
+    "status_codes": {
+      "ok": 160
+    },
+    "failed": 0,
+    "wall_seconds": 40.8,
+    "launches_per_second": 3.9,
+    "total_seconds": {
+      "n": 160,
+      "mean": 17.111,
+      "p50": 18.889,
+      "p95": 25.91,
+      "max": 26.907
+    },
+    "login_seconds": {
+      "n": 160,
+      "mean": 3.939,
+      "p50": 3.547,
+      "p95": 8.06,
+      "max": 8.379
+    },
+    "launch_seconds": {
+      "n": 160,
+      "mean": 7.759,
+      "p50": 8.891,
+      "p95": 13.489,
+      "max": 13.995
+    },
+    "session_seconds": {
+      "n": 160,
+      "mean": 5.412,
+      "p50": 5.594,
+      "p95": 10.01,
+      "max": 11.697
+    }
+  },
+  {
+    "label": "warm-ret",
+    "cohort": "ret",
+    "rate": 30.0,
+    "launches": 600,
+    "one_address": false,
+    "status_codes": {
+      "ok": 278,
+      "launch-503": 293,
+      "session-503": 29
+    },
+    "failed": 322,
+    "wall_seconds": 78.2,
+    "launches_per_second": 3.6,
+    "total_seconds": {
+      "n": 278,
+      "mean": 51.946,
+      "p50": 58.213,
+      "p95": 70.981,
+      "max": 71.319
+    },
+    "login_seconds": {
+      "n": 278,
+      "mean": 13.275,
+      "p50": 4.082,
+      "p95": 26.882,
+      "max": 27.111
+    },
+    "launch_seconds": {
+      "n": 278,
+      "mean": 21.131,
+      "p50": 22.899,
+      "p95": 34.912,
+      "max": 36.504
+    },
+    "session_seconds": {
+      "n": 278,
+      "mean": 17.539,
+      "p50": 19.679,
+      "p95": 29.238,
+      "max": 31.693
+    }
+  },
+  {
+    "label": "returning-rate-30",
+    "cohort": "ret",
+    "rate": 30.0,
+    "launches": 450,
+    "one_address": false,
+    "status_codes": {
+      "ok": 448,
+      "ReadError": 2
+    },
+    "failed": 2,
+    "wall_seconds": 50.1,
+    "launches_per_second": 8.9,
+    "total_seconds": {
+      "n": 448,
+      "mean": 11.464,
+      "p50": 0.023,
+      "p95": 37.515,
+      "max": 38.26
+    },
+    "login_seconds": {
+      "n": 448,
+      "mean": 2.499,
+      "p50": 0.005,
+      "p95": 9.899,
+      "max": 10.125
+    },
+    "launch_seconds": {
+      "n": 448,
+      "mean": 4.82,
+      "p50": 0.009,
+      "p95": 21.765,
+      "max": 25.368
+    },
+    "session_seconds": {
+      "n": 448,
+      "mean": 4.143,
+      "p50": 0.008,
+      "p95": 19.415,
+      "max": 22.908
+    }
+  },
+  {
+    "label": "returning-rate-60",
+    "cohort": "ret",
+    "rate": 60.0,
+    "launches": 600,
+    "one_address": false,
+    "status_codes": {
+      "ok": 600
+    },
+    "failed": 0,
+    "wall_seconds": 41.0,
+    "launches_per_second": 14.6,
+    "total_seconds": {
+      "n": 600,
+      "mean": 6.988,
+      "p50": 0.023,
+      "p95": 31.805,
+      "max": 32.129
+    },
+    "login_seconds": {
+      "n": 600,
+      "mean": 0.846,
+      "p50": 0.005,
+      "p95": 4.217,
+      "max": 4.444
+    },
+    "launch_seconds": {
+      "n": 600,
+      "mean": 3.542,
+      "p50": 0.008,
+      "p95": 22.874,
+      "max": 26.995
+    },
+    "session_seconds": {
+      "n": 600,
+      "mean": 2.599,
+      "p50": 0.01,
+      "p95": 17.558,
+      "max": 23.0
+    }
+  },
+  {
+    "label": "returning-rate-120",
+    "cohort": "ret",
+    "rate": 120.0,
+    "launches": 600,
+    "one_address": false,
+    "status_codes": {
+      "ok": 598,
+      "ReadError": 2
+    },
+    "failed": 2,
+    "wall_seconds": 17.1,
+    "launches_per_second": 35.0,
+    "total_seconds": {
+      "n": 598,
+      "mean": 7.344,
+      "p50": 8.235,
+      "p95": 13.412,
+      "max": 14.955
+    },
+    "login_seconds": {
+      "n": 598,
+      "mean": 2.648,
+      "p50": 1.063,
+      "p95": 9.052,
+      "max": 13.043
+    },
+    "launch_seconds": {
+      "n": 598,
+      "mean": 2.493,
+      "p50": 1.241,
+      "p95": 7.358,
+      "max": 13.596
+    },
+    "session_seconds": {
+      "n": 598,
+      "mean": 2.203,
+      "p50": 1.127,
+      "p95": 7.033,
+      "max": 13.492
+    }
+  },
+  {
+    "label": "returning-rate-200",
+    "cohort": "ret",
+    "rate": 200.0,
+    "launches": 600,
+    "one_address": false,
+    "status_codes": {
+      "ok": 600
+    },
+    "failed": 0,
+    "wall_seconds": 19.0,
+    "launches_per_second": 31.5,
+    "total_seconds": {
+      "n": 600,
+      "mean": 10.128,
+      "p50": 11.881,
+      "p95": 16.286,
+      "max": 18.079
+    },
+    "login_seconds": {
+      "n": 600,
+      "mean": 3.661,
+      "p50": 2.209,
+      "p95": 12.447,
+      "max": 15.223
+    },
+    "launch_seconds": {
+      "n": 600,
+      "mean": 3.5,
+      "p50": 1.954,
+      "p95": 11.154,
+      "max": 15.161
+    },
+    "session_seconds": {
+      "n": 600,
+      "mean": 2.966,
+      "p50": 1.614,
+      "p95": 8.831,
+      "max": 15.054
+    }
+  }
+]

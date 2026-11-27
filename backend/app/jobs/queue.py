@@ -132,7 +132,7 @@ def retry_failed_job(db: Session, job_id: uuid.UUID) -> bool:
     lecturer already generated again, or it is neither the caller's nor the caller an admin.
 
     The one function behind both retry buttons, the lecturer's on their own jobs and the admin's
-    on any: the work is the database function retry_failed_job (migration 0007), which an admin
+    on what the system failed (migration 0055): the work is the database function retry_failed_job, which an admin
     could not do with plain statements because row level security hides other lecturers' jobs from
     them. The caller commits."""
     return bool(db.scalar(select(func.retry_failed_job(job_id))))
