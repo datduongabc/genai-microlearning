@@ -27,15 +27,15 @@ final class create_book_test extends \advanced_testcase {
         $course = $this->getDataGenerator()->create_course();
         $bookcount = $DB->count_records('book');
         $modulecount = $DB->count_records('course_modules');
-        // A title longer than the 255 characters of book_chapters.title fails after the book exists.
+        // A title longer than the 1333 characters of book_chapters.title fails after the book exists.
         $chapters = [
             ['title' => 'Bai 1', 'content' => '<p>Mot</p>', 'subchapter' => 0],
-            ['title' => str_repeat('x', 300), 'content' => '<p>Hai</p>', 'subchapter' => 0],
+            ['title' => str_repeat('x', 1400), 'content' => '<p>Hai</p>', 'subchapter' => 0],
         ];
 
         try {
             create_book::execute($course->id, 'Bai hoc', $chapters, $USER->id);
-            $this->fail('A chapter title over 255 characters was accepted');
+            $this->fail('A chapter title over 1333 characters was accepted');
         } catch (\dml_exception $exception) {
             $this->assertEquals($bookcount, $DB->count_records('book'));
             $this->assertEquals($modulecount, $DB->count_records('course_modules'));

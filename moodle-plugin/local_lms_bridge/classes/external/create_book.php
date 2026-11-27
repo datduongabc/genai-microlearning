@@ -65,7 +65,15 @@ class create_book extends external_api {
             $cmid = self::create($course, $module, $params);
             $transaction->allow_commit();
         } catch (\Throwable $e) {
-            $transaction->rollback($e);
+            try {
+                $transaction->rollback($e);
+            } finally {
+                // A Moodle step that opens its own transaction and throws without closing it (save_question() does)
+                // makes rollback() only rethrow, leaving every write open. Undo all levels, as Moodle's handler does.
+                if ($DB->is_transaction_started()) {
+                    $DB->force_transaction_rollback();
+                }
+            }
         }
         return $cmid;
     }
