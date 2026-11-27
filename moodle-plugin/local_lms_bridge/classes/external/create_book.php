@@ -58,6 +58,20 @@ class create_book extends external_api {
         require_capability('moodle/course:manageactivities', $context);
 
         $module = $DB->get_record('modules', ['name' => 'book'], '*', MUST_EXIST);
+        // One write or none: a chapter refused part way would otherwise leave a book without the rest, visible to
+        // students, and the app's retry would make a second one beside it.
+        $transaction = $DB->start_delegated_transaction();
+        try {
+            $cmid = self::create($course, $module, $params);
+            $transaction->allow_commit();
+        } catch (\Throwable $e) {
+            $transaction->rollback($e);
+        }
+        return $cmid;
+    }
+
+    private static function create(\stdClass $course, \stdClass $module, array $params): int {
+        global $DB;
 
         $data = new \stdClass();
         $data->course = $course->id;

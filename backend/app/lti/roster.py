@@ -31,10 +31,10 @@ import httpx
 import jwt
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric.rsa import RSAPrivateKey
-from sqlalchemy import delete, func, or_, select, update
+from sqlalchemy import delete, func, or_, select, text, update
 
 from app.config import settings
-from app.db import WorkerSessionLocal
+from app.db import WorkerSessionLocal, worker_engine
 from app.lti.launch import INSTRUCTOR_ROLES, LEARNER_ROLES, same_origin
 from app.models import CourseMember, LtiContext, LtiIdentity, LtiPlatform
 
@@ -56,6 +56,7 @@ COURSES_PER_CHECK = 50
 # A course whose list could not be read is tried again after this, not on every check: an LMS that
 # is down costs a timeout per course, in the thread that also sweeps stuck jobs.
 RETRY_AFTER_SKIP = timedelta(minutes=15)
+_LOCK_KEY = "lti-roster-sync"
 ELIGIBLE_ROLES = LEARNER_ROLES | INSTRUCTOR_ROLES
 
 # Tests swap in an httpx.MockTransport.
@@ -180,6 +181,22 @@ def sync_rosters(now: datetime | None = None) -> dict[str, int]:
     if tool_key() is None:
         return counts
     now = now or datetime.now(UTC)
+    # Every worker process checks on its own timer. One check at a time, or each process would pick the same
+    # due courses and read every list from the LMS once per process. Released with the connection if it dies.
+    # Autocommit: a session lock needs no transaction, and one left open for the whole check would sit idle in it.
+    with worker_engine.connect().execution_options(isolation_level="AUTOCOMMIT") as lock:
+        if not lock.scalar(text("SELECT pg_try_advisory_lock(hashtextextended(:key, 0))"), {"key": _LOCK_KEY}):
+            return counts
+        try:
+            _sync_due(now, counts)
+        finally:
+            lock.execute(text("SELECT pg_advisory_unlock(hashtextextended(:key, 0))"), {"key": _LOCK_KEY})
+    if counts["courses"] or counts["skipped"]:
+        logger.info("lti_roster checked=%(courses)d removed=%(removed)d skipped=%(skipped)d", counts)
+    return counts
+
+
+def _sync_due(now: datetime, counts: dict[str, int]) -> None:
     cutoff = now - timedelta(minutes=settings.lti_roster_sync_minutes)
     db = WorkerSessionLocal()
     try:
@@ -194,7 +211,7 @@ def sync_rosters(now: datetime | None = None) -> dict[str, int]:
             .limit(COURSES_PER_CHECK)
         ).all()
         if not due:
-            return counts
+            return
         with httpx.Client(timeout=HTTP_TIMEOUT_SECONDS, transport=_transport) as client:
             for course_id in due:
                 try:
@@ -213,9 +230,6 @@ def sync_rosters(now: datetime | None = None) -> dict[str, int]:
                 counts["removed"] += removed
     finally:
         db.close()
-    if counts["courses"] or counts["skipped"]:
-        logger.info("lti_roster checked=%(courses)d removed=%(removed)d skipped=%(skipped)d", counts)
-    return counts
 
 
 def _sync_course(db, client: httpx.Client, course_id: uuid.UUID, now: datetime) -> int:

@@ -21,6 +21,7 @@ def world(tmp_path, monkeypatch):
         raise RuntimeError("OCR test failure")
 
     monkeypatch.setattr("app.ingestion.document_readers.pytesseract.image_to_string", broken)
+    monkeypatch.setattr("app.config.settings.upload_storage_dir", str(tmp_path))
     db = SessionLocal()
     user = User(email=f"ocr-{uuid.uuid4().hex}@example.com", name="OCR", hashed_password="x")
     db.add(user)
@@ -50,7 +51,7 @@ def _upload(world, text):
     db.add(doc)
     db.flush()
     job = enqueue_job(db, job_type=JobType.document_pipeline, step="extract", document_id=doc.id,
-                      payload={"storage_path": str(world["path"])})
+                      payload={"storage_key": world["path"].name})
     db.commit()
     ids = doc.id, job.id
     db.close()

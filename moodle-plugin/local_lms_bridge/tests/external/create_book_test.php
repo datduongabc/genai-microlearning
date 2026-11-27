@@ -19,4 +19,26 @@ final class create_book_test extends \advanced_testcase {
         $this->assertEquals(COMPLETION_VIEW_REQUIRED, $cm->completionview);
         $this->assertEquals(1, $DB->count_records('book_chapters', ['bookid' => $cm->instance]));
     }
+
+    public function test_a_chapter_the_database_refuses_leaves_no_book_behind(): void {
+        global $DB, $USER;
+        $this->resetAfterTest();
+        $this->setAdminUser();
+        $course = $this->getDataGenerator()->create_course();
+        $bookcount = $DB->count_records('book');
+        $modulecount = $DB->count_records('course_modules');
+        // A title longer than the 255 characters of book_chapters.title fails after the book exists.
+        $chapters = [
+            ['title' => 'Bai 1', 'content' => '<p>Mot</p>', 'subchapter' => 0],
+            ['title' => str_repeat('x', 300), 'content' => '<p>Hai</p>', 'subchapter' => 0],
+        ];
+
+        try {
+            create_book::execute($course->id, 'Bai hoc', $chapters, $USER->id);
+            $this->fail('A chapter title over 255 characters was accepted');
+        } catch (\dml_exception $exception) {
+            $this->assertEquals($bookcount, $DB->count_records('book'));
+            $this->assertEquals($modulecount, $DB->count_records('course_modules'));
+        }
+    }
 }

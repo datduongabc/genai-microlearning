@@ -166,6 +166,23 @@ describe('CourseChat', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent('Hệ thống đang bận')
   })
 
+  it('tells a learner whose questions for the day are used up to come back tomorrow, not to slow down', async () => {
+    const limit = 'Bạn đã hỏi đủ 30 câu hôm nay. Hãy quay lại vào ngày mai.'
+    fetchMock.mockResolvedValueOnce(Response.json({ detail: limit }, { status: 429 }))
+    render(<CourseChat courseId="course-1" />)
+
+    await ask('Hỏi')
+    expect(await screen.findByRole('alert')).toHaveTextContent(limit)
+  })
+
+  it('asks to slow down when the rate limiter refuses without a message', async () => {
+    fetchMock.mockResolvedValueOnce(Response.json({ error: 'Rate limit exceeded: 20 per 1 minute' }, { status: 429 }))
+    render(<CourseChat courseId="course-1" />)
+
+    await ask('Hỏi')
+    expect(await screen.findByRole('alert')).toHaveTextContent('Bạn thao tác quá nhanh')
+  })
+
   it('renews an expired session and sends the question again', async () => {
     const axios = (await import('axios')).default
     const post = vi.spyOn(axios, 'post').mockResolvedValue({ data: { access_token: 'new', refresh_token: 'r2' } })

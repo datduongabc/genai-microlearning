@@ -242,14 +242,9 @@ def study_file_key(file_id, filename: str) -> str:
 
 
 def uploaded_file(payload: dict) -> tuple[UploadStore, str] | None:
-    """The store and key of a document pipeline job's file.
-
-    A job enqueued before keys existed names its file by `storage_path`, a path as the API saw it
-    on the shared disk, which a store rooted nowhere reads as it is."""
+    """The store and key of a document pipeline job's file."""
     if "storage_key" in payload:
         return upload_store(), payload["storage_key"]
-    if "storage_path" in payload:
-        return LocalUploadStore(""), payload["storage_path"]
     return None
 
 

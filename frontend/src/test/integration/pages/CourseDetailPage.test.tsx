@@ -550,6 +550,20 @@ describe('CourseDetailPage - flashcard sets', () => {
     expect(await screen.findByText('Đang tạo…')).toBeInTheDocument()
   })
 
+  it('says the module started, not that it failed, when only the list cannot be reloaded after it', async () => {
+    vi.mocked(api.generateModule).mockResolvedValue({ job_id: 'job-1', status: 'queued' })
+    vi.mocked(api.listDocuments).mockResolvedValueOnce([sampleDocument]).mockRejectedValue(new Error('network down'))
+
+    renderPage()
+    await chooseCreate(/^mô-đun$/i)
+    await screen.findByRole('option', { name: 'Tìm kiếm (quan trọng nhất)' })
+    await userEvent.click(screen.getByRole('button', { name: 'Tạo mô-đun' }))
+
+    expect(await screen.findByText('Đã bắt đầu tạo mô-đun.')).toBeInTheDocument()
+    expect(await screen.findByText(/không tải lại được danh sách/i)).toBeInTheDocument()
+    expect(screen.queryByText(/tạo mô-đun thất bại/i)).not.toBeInTheDocument()
+  })
+
   it('says the set started, not that it failed, when only the list cannot be reloaded after it', async () => {
     vi.mocked(api.generateFlashcards).mockResolvedValue({ id: 'set-1', job_id: 'job-1' })
     vi.mocked(api.listFlashcardSets).mockResolvedValueOnce([]).mockRejectedValue(new Error('network down'))

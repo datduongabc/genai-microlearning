@@ -25,7 +25,8 @@ from scripts.import_study_packets import packets
 PACKETS_FOLDER = Path(__file__).parents[3] / "docs/measurements/module-study/packets"
 
 
-def _study_item(group, *, code=None, objective=None, subs=("A",), anon_id=None, topic=None, extra_packet=None):
+def _study_item(group, *, code=None, objective=None, subs=("A",), anon_id=None, topic=None, extra_packet=None,
+                pair_id=None):
     packet = {}
     if objective is not None:
         packet["learning_objective"] = objective
@@ -36,7 +37,7 @@ def _study_item(group, *, code=None, objective=None, subs=("A",), anon_id=None, 
         packet["topic"] = topic
     if extra_packet:
         packet.update(extra_packet)
-    kwargs = {"group": group, "packet": packet}
+    kwargs = {"group": group, "packet": packet, "pair_id": pair_id}
     if code is not None:
         kwargs["anon_code"] = code
     return StudyItem(**kwargs)
@@ -134,6 +135,19 @@ def test_unpaired_and_ambiguous_items_keep_their_own_code_and_are_named_in_a_war
     assert "M01" not in warning and "M02" not in warning and "M08" not in warning
 
 
+def test_two_pairs_with_the_same_objective_are_paired_by_their_pair_id(capsys):
+    first, second = uuid.uuid4(), uuid.uuid4()
+    pair_ids = export_human_ratings._pair_ids([
+        _study_item("rag_llm", code="M01", objective="Same", pair_id=first),
+        _study_item("llm_no_rag", code="M02", objective="Same", pair_id=second),
+        _study_item("rag_llm", code="M03", objective="Same", pair_id=second),
+        _study_item("llm_no_rag", code="M04", objective="Same", pair_id=first),
+    ])
+
+    assert pair_ids == {"M01": "M01", "M04": "M01", "M03": "M03", "M02": "M03"}
+    assert capsys.readouterr().out == ""
+
+
 def test_a_fully_paired_study_prints_no_warning(capsys):
     export_human_ratings._pair_ids([
         _study_item("rag_llm", code="M01", objective="X"),
@@ -197,7 +211,7 @@ def _question(stem="AI question", explanation="AI explanation"):
 
 
 def _lesson():
-    components = [NS(type=kind, content=content, questions=questions) for kind, content, questions in [
+    components = [NS(type=kind, content=content, questions=questions, version=1) for kind, content, questions in [
         (ComponentType.content, {"markdown": "AI text"}, []),
         (ComponentType.slides, {"slides": [{"title": "AI", "bullets": ["AI bullet"]}]}, []),
         (ComponentType.example, {"examples": [{"context": "AI context", "analysis": "AI analysis"}]}, []),
@@ -220,7 +234,7 @@ def test_first_manual_edit_saves_original_and_later_edit_cannot_replace_it(monke
     monkeypatch.setattr(modules, "_owned_module", lambda *a: module)
     for text in ["Teacher first", "Teacher second"]:
         modules.update_component("module", "component", modules.ComponentUpdate(
-            content={"markdown": text, "ai_original": {"markdown": "Forged"}}), db, NS())
+            content={"markdown": text, "ai_original": {"markdown": "Forged"}}, version=component.version), db, NS())
         assert component.content["ai_original"] == {"markdown": "AI text"}
         assert component.content["markdown"] == text
 
@@ -241,18 +255,15 @@ def test_packet_uses_original_components_and_question_snapshot():
     assert module_packet(module, ["Reference"]) == expected
 
 
-def test_question_edit_after_manual_quiz_edit_keeps_original_rows(monkeypatch):
+def test_question_edit_after_manual_quiz_edit_keeps_original_rows():
     module = _lesson()
     component = module.components[3]
-    component.module_id = "module"
-    component.id = "quiz"
-    db = NS(get=lambda *a, **kw: component, commit=lambda: None)
-    monkeypatch.setattr(modules, "_owned_module", lambda *a: module)
-    modules.update_component("module", "quiz", modules.ComponentUpdate(content={"questions": []}), db, NS())
+    # A quiz is no longer edited whole; this is what such an edit, made before that, left behind.
+    component.content = {"questions": [], "ai_original": modules._ai_original(component)}
     original = component.content["ai_original"]
     modules._apply_question_update(module, component, component.questions[0], modules.QuestionUpdate(
         stem="Teacher question", choices=["New A", "New B"], answer_key=1,
-        explanation="Teacher explanation"))
+        explanation="Teacher explanation", version=1))
     assert module_packet(module, []).quiz[0].stem == "AI question"
     assert module_packet(module, []).quiz[0].explanation == "AI explanation"
     assert component.content["ai_original"] == original
@@ -279,7 +290,7 @@ def test_legacy_quiz_edit_then_other_question_edit_keeps_ai_explanation():
     }
     modules._apply_question_update(module, practice, practice.questions[0], modules.QuestionUpdate(
         stem="Teacher practice", choices=["New A", "New B"], answer_key=1,
-        explanation="Teacher practice explanation"))
+        explanation="Teacher practice explanation", version=1))
     packet = module_packet(module, [])
     assert packet.quiz[0].explanation == "AI explanation"
     assert packet.practice.explanation == "AI explanation"

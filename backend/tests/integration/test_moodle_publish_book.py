@@ -434,8 +434,9 @@ def test_a_failing_question_once_edited_no_longer_blocks_publishing(published, m
     module_id = _failing_module(published)
     detail = client.get(f"/modules/{module_id}", headers=published.headers).json()
     question = next(c for c in detail["components"] if c["type"] == "quiz")["questions"][1]
+    version = next(c for c in detail["components"] if c["type"] == "quiz")["version"]
     response = client.patch(f'/modules/{module_id}/questions/{question["id"]}', headers=published.headers, json={
-        "stem": "FIXED", "choices": ["A", "B", "C", "D"], "answer_key": 2, "explanation": "only C",
+        "stem": "FIXED", "choices": ["A", "B", "C", "D"], "answer_key": 2, "explanation": "only C", "version": version,
     })
     assert response.status_code == 200
 
@@ -453,11 +454,14 @@ def test_question_edits_keep_ai_original_and_publish_the_latest_version(publishe
     component = next(c for c in detail["components"] if c["type"] == kind)
     question = component["questions"][0]
     url = f'/modules/{module_id}/questions/{question["id"]}'
+    version = component["version"]
     for stem in ["EDIT-ONE", "EDIT-TWO"]:
         response = client.patch(url, headers=published.headers, json={
             "stem": stem, "choices": ["New A", "New B"], "answer_key": 0, "explanation": "EDIT-EXPLANATION",
+            "version": version,
         })
         assert response.status_code == 200
+        version = response.json()["version"]
     with SessionLocal() as db:
         stored = db.get(ModuleComponent, component["id"])
         original = stored.content["ai_original"]
@@ -466,11 +470,12 @@ def test_question_edits_keep_ai_original_and_publish_the_latest_version(publishe
         assert original["questions"][0]["choices"] == question["choices"]
         assert original["questions"][0]["answer_key"] == question["answer_key"]
         assert original["questions"][0]["explanation"] == question["explanation"]
-    # An existing whole-component editor cannot remove or forge the snapshot.
-    response = client.patch(f'/modules/{module_id}/components/{component["id"]}',
-                            headers=published.headers, json={"content": {"ai_original": {"forged": True}}})
-    assert response.status_code == 200
-    assert response.json()["content"]["ai_original"] == original
+    # A quiz or practice is not edited whole, which could remove or forge the snapshot: its questions are.
+    response = client.patch(f'/modules/{module_id}/components/{component["id"]}', headers=published.headers,
+                            json={"content": {"ai_original": {"forged": True}}, "version": version})
+    assert response.status_code == 422
+    with SessionLocal() as db:
+        assert db.get(ModuleComponent, component["id"]).content["ai_original"] == original
     assert published.publish(module_id).status_code == 200
     quiz = next(q for q in _quizzes(moodle) if q["name"].endswith(f'- {kind.title()}'))
     edited = quiz["questions"][0]
@@ -489,7 +494,7 @@ def test_question_edit_by_non_owner_returns_404(published):
     other = Published()
     try:
         response = client.patch(f'/modules/{module_id}/questions/{question["id"]}', headers=other.headers,
-                                json={"stem": "x", "choices": ["A", "B"], "answer_key": 0, "explanation": "e"})
+                                json={"stem": "x", "choices": ["A", "B"], "answer_key": 0, "explanation": "e", "version": 1})
         assert response.status_code == 404
     finally:
         other.cleanup()

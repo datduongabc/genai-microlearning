@@ -137,22 +137,6 @@ def test_local_store_renames_into_its_directory(tmp_path):
     assert not (tmp_path / "uploads" / "doc.html").exists()
 
 
-def test_a_job_queued_before_keys_still_finds_its_file_by_path(tmp_path, monkeypatch):
-    # Before app/storage.py the payload held the path as the API wrote it, relative or absolute.
-    monkeypatch.setattr(settings, "upload_store", "s3")
-    monkeypatch.setattr(settings, "upload_s3_bucket", "bucket")
-    monkeypatch.setattr(storage, "_s3_client", FakeS3)
-    old = tmp_path / "old.html"
-    old.write_text("<p>old</p>")
-
-    store, key = uploaded_file({"storage_path": str(old)})
-
-    with store.local_copy(key) as path:
-        assert Path(path).read_text() == "<p>old</p>"
-    store.delete(key)
-    assert not old.exists()
-
-
 def test_a_key_payload_goes_to_the_configured_store(monkeypatch):
     monkeypatch.setattr(settings, "upload_store", "s3")
     monkeypatch.setattr(settings, "upload_s3_bucket", "bucket")

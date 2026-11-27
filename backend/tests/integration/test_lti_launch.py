@@ -223,6 +223,27 @@ def test_a_learner_has_a_daily_chat_limit(lms, monkeypatch):
                            headers=_bearer(lecturer)).status_code == 200
 
 
+def test_a_learner_keeps_the_message_when_the_answer_fails(lms, monkeypatch):
+    monkeypatch.setattr(settings, "learner_daily_chat_limit", 1)
+    trade(launch(lms))
+    student = trade(launch(lms, **STUDENT)).json()
+    course = student["course_id"]
+
+    async def provider_down(*_args, **_kwargs):
+        raise RuntimeError("provider down")
+
+    with monkeypatch.context() as patched:
+        patched.setattr("app.api.chat.condense_query_streamed", provider_down)
+        failed = client.post(f"/courses/{course}/chat/stream", json={"message": "a"}, headers=_bearer(student))
+    assert [name for name, _ in events(failed)][-1] == "error"
+
+    answered = client.post(f"/courses/{course}/chat/stream", json={"message": "b"}, headers=_bearer(student))
+    assert answered.status_code == 200
+    assert [name for name, _ in events(answered)][-1] == "done"
+    assert client.post(f"/courses/{course}/chat/stream", json={"message": "c"},
+                       headers=_bearer(student)).status_code == 429
+
+
 def test_an_instructor_launch_makes_a_student_account_an_author(lms):
     trade(launch(lms))
     trade(launch(lms, **STUDENT))

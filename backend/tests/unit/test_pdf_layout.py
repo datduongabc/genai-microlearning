@@ -14,6 +14,7 @@ import pytest
 
 from app.ingestion.document_readers import read_document
 from app.ingestion.pdf_layout import (
+    _line_text,
     map_font_text,
     page_lines,
     suspect_formula_lines,
@@ -450,3 +451,64 @@ def test_a_formula_with_an_empty_group_a_dangling_operator_or_stray_limits_is_su
 )
 def test_a_rebuilt_formula_an_interval_a_numbered_list_or_one_short_line_is_not_suspect(lines):
     assert suspect_formula_lines(lines) == []
+
+
+def test_the_edge_of_a_rounded_box_is_not_a_fraction_bar_between_the_text_in_it_and_the_footer(page):
+    # A Beamer block (Calculus 1, chapter 2, page 5): the box's lower edge runs as wide as the last line in it and
+    # the running footer just under it, which were read as one fraction "(line)/(footer)".
+    page.draw_rect(pymupdf.Rect(20, 200, 250, 263), radius=0.05, width=0.5)
+    x = 25
+    for text, font in (("The set (a - ", "tiro"), ("e", "symb"), (", a + ", "tiro"), ("e", "symb"),
+                       (") is a neighbourhood of a, written O(a, ", "tiro"), ("e", "symb"), (").", "tiro")):
+        page.insert_text((x, 260), text, fontname=font, fontsize=9)
+        x += pymupdf.get_text_length(text, fontname=font, fontsize=9)
+    page.insert_text((25, 270), "Dr. Le Xuan Dai (HCMUT)   LIMITS AND CONTINUITY OF A FUNCTION   5 / 53",
+                     fontname="tiro", fontsize=6)
+
+    lines = page_lines(page)
+
+    assert not any("/(Dr." in line for line in lines), lines
+    assert any(line.startswith("Dr. Le Xuan Dai") for line in lines), lines
+
+
+def _span(font, text, x0, x1, size=17.2, y=100.0):
+    """A span as PyMuPDF's rawdict gives it, its characters spread evenly from x0 to x1."""
+    step = (x1 - x0) / max(len(text), 1)
+    chars = [{"c": c, "bbox": (x0 + i * step, y - size, x0 + (i + 1) * step, y), "origin": (x0 + i * step, y)}
+             for i, c in enumerate(text)]
+    return {"font": font, "size": size, "flags": 0, "chars": chars, "origin": (x0, y)}
+
+
+def test_a_gap_between_a_word_and_a_formula_in_another_font_keeps_its_space():
+    # The spans of Calculus 1, chapter 1, page 8: TeX spaces "số" from the formula after it by position, with no
+    # space character, and joined as written the line read "Nếu sốh > −1".
+    spans = [_span("vnss17", "Nếu", 182.8, 209.7), _span("vnss17", " ", 209.7, 215.0),
+             _span("vnss17", "số", 215.0, 229.1), _span("CMSSI17", "h", 234.3, 242.7),
+             _span("CMMI12", " >", 242.7, 260.9), _span("CMSY10", " −", 260.9, 279.1), _span("CMSS17", "1", 279.1, 287.2)]
+
+    assert _line_text(spans, frozenset()) == "Nếu số h > −1"
+
+
+def test_a_gap_inside_one_span_is_a_space_too():
+    # "hội tụ đến" on Calculus 1, chapter 1, page 29: one span "tụđến", with the gap of a space between ụ and đ.
+    chars = [("t", 159.4, 165.1), ("ụ", 165.1, 173.5), ("đ", 178.8, 187.1), ("ế", 187.1, 194.2), ("n", 194.2, 202.6)]
+    span = {"font": "vnss17", "size": 17.2, "flags": 0, "origin": (159.4, 100.0),
+            "chars": [{"c": c, "bbox": (x0, 83, x1, 100), "origin": (x0, 100)} for c, x0, x1 in chars]}
+
+    assert _line_text([span], frozenset()) == "tụ đến"
+
+
+def test_letters_of_one_word_in_two_fonts_are_not_split():
+    spans = [_span("vnss17", "đẳ", 46.6, 62.0), _span("vnssb17", "ng", 62.1, 78.9)]
+
+    assert _line_text(spans, frozenset()) == "đẳng"
+
+
+@pytest.mark.parametrize("code, arrow", [("", "→"), ("", "→"), ("", "←"), ("", "→"), ("", "↑")])
+def test_a_wingdings_arrow_stays_an_arrow(code, arrow):
+    # "A ⇒ B" read as "A • B" loses what leads to what.
+    assert map_font_text(code, "Wingdings") == (arrow, False)
+
+
+def test_a_wingdings_arrowhead_used_as_a_bullet_stays_a_bullet():
+    assert map_font_text("", "Wingdings") == ("•", False)

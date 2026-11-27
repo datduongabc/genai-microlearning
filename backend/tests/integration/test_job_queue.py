@@ -15,6 +15,7 @@ from datetime import UTC, datetime, timedelta
 import pytest
 from litellm.exceptions import RateLimitError
 
+from app.config import settings
 from app.db import SessionLocal
 from app.jobs.queue import (
     STUCK_THRESHOLD_SECONDS,
@@ -77,8 +78,10 @@ def test_is_terminal_error_classifies_correctly():
 
 
 @pytest.mark.parametrize("encrypted", [False, True], ids=["corrupted", "encrypted"])
-def test_unreadable_pdf_fails_on_first_extract_attempt(seed_document, tmp_path, encrypted):
+def test_unreadable_pdf_fails_on_first_extract_attempt(seed_document, tmp_path, monkeypatch, encrypted):
     import pymupdf
+
+    monkeypatch.setattr(settings, "upload_storage_dir", str(tmp_path))
 
     path = tmp_path / "broken.pdf"
     if encrypted:
@@ -91,7 +94,7 @@ def test_unreadable_pdf_fails_on_first_extract_attempt(seed_document, tmp_path, 
         doc = seed_document(db)
         doc_id = doc.id
         job = enqueue_job(db, job_type=JobType.document_pipeline, step="extract",
-                          document_id=doc_id, payload={"storage_path": str(path)})
+                          document_id=doc_id, payload={"storage_key": path.name})
         db.commit()
         job_id = job.id
         with pytest.raises(Exception) as failure:
@@ -151,10 +154,11 @@ def test_extract_releases_database_reads_before_transcription(seed_document, mon
         return [DocumentUnit(text="Transcript")]
 
     monkeypatch.setattr(document_pipeline, "read_document", transcribe)
+    monkeypatch.setattr(settings, "upload_storage_dir", str(tmp_path))
     with SessionLocal() as db:
         doc = seed_document(db)
         job = enqueue_job(db, job_type=JobType.document_pipeline, step="extract", document_id=doc.id,
-                          payload={"storage_path": str(tmp_path / "lecture.mp3")})
+                          payload={"storage_key": "lecture.mp3"})
         job.status, job.locked_by = JobStatus.running, "test-worker"  # a step runs only on a claimed job
         db.commit()
         execute_job_step(job)

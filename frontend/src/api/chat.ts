@@ -41,11 +41,14 @@ export function parseChatEvents(buffer: string): { events: ChatEvent[]; rest: st
   return { events, rest }
 }
 
+// The server's own message first: a 429 is also the learner's daily limit, which says to come back
+// tomorrow. The rate limiter's 429 carries no `detail`, so it gets the general wording.
 async function refusalMessage(response: Response): Promise<string> {
+  const body = await response.json().catch(() => null) as { detail?: unknown } | null
+  if (typeof body?.detail === 'string' && body.detail) return body.detail
   if (response.status === 429) return 'Bạn thao tác quá nhanh, vui lòng đợi một chút rồi thử lại.'
   if (response.status === 503) return 'Hệ thống đang bận, vui lòng thử lại sau ít phút.'
-  const body = await response.json().catch(() => null) as { detail?: unknown } | null
-  return typeof body?.detail === 'string' && body.detail ? body.detail : 'Không gửi được câu hỏi, vui lòng thử lại.'
+  return 'Không gửi được câu hỏi, vui lòng thử lại.'
 }
 
 // Resolves with the saved reply. Rejects with a message to show when the question was refused,
