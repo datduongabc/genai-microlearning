@@ -35,7 +35,6 @@ export function MoodleAccountSection({ onStatus }: { onStatus?: (status: MoodleA
       },
       (err) => {
         if (cancelled || version !== requestVersion.current) return;
-        setAnswer(null);
         setError(apiErrorMessage(err, "Không kiểm tra được tài khoản Moodle."));
       },
     );

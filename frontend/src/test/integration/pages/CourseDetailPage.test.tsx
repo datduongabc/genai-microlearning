@@ -111,6 +111,9 @@ describe('CourseDetailPage - Moodle linking', () => {
     vi.mocked(api.getMoodleAccount).mockResolvedValue({ email: 'lan@x.edu', status: 'linked' })
     vi.mocked(api.listMoodleCourses).mockResolvedValue(moodleCourses)
   })
+  afterEach(() => {
+    vi.useRealTimers()
+  })
 
   it('offers authorized Moodle courses, validates empty submit, reports link error, links the chosen course, and supports header unlink', async () => {
     vi.mocked(api.listCourses)
@@ -177,6 +180,47 @@ describe('CourseDetailPage - Moodle linking', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Liên kết trong menu Tài khoản' }))
     const emailInput = await screen.findByLabelText('Email Moodle')
     await waitFor(() => expect(emailInput).toHaveFocus())
+  })
+
+  it('focuses Email Moodle, not logout, when the account menu section answers after a delay', async () => {
+    vi.mocked(api.listCourses).mockResolvedValue([unlinkedCourse])
+    vi.mocked(api.getMoodleAccount).mockResolvedValue({ email: '', status: 'not_linked' })
+
+    renderPage()
+    await screen.findByText('Chưa liên kết tài khoản Moodle.')
+
+    let answerSection!: (account: api.MoodleAccount) => void
+    vi.mocked(api.getMoodleAccount)
+      .mockResolvedValueOnce({ email: '', status: 'not_linked' })
+      .mockReturnValueOnce(new Promise((resolve) => { answerSection = resolve }))
+    await userEvent.click(screen.getByRole('button', { name: 'Liên kết trong menu Tài khoản' }))
+    const logout = await screen.findByRole('button', { name: 'Đăng xuất' })
+    await waitFor(() => expect(api.getMoodleAccount).toHaveBeenCalledTimes(3))
+    await act(() => new Promise((resolve) => requestAnimationFrame(() => resolve(undefined))))
+    expect(logout).not.toHaveFocus()
+
+    await act(async () => { answerSection({ email: '', status: 'not_linked' }) })
+    const emailInput = await screen.findByLabelText('Email Moodle')
+    await waitFor(() => expect(emailInput).toHaveFocus())
+  })
+
+  it('keeps the pending line and keeps polling when one check of the account fails', async () => {
+    vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] })
+    vi.mocked(api.listCourses).mockResolvedValue([unlinkedCourse])
+    vi.mocked(api.getMoodleAccount)
+      .mockResolvedValueOnce({ email: 'lan@x.edu', status: 'pending', confirmation_url: 'https://moodle.example/confirm/abc' })
+      .mockRejectedValueOnce(axiosFailure(502, 'Moodle không phản hồi'))
+      .mockResolvedValue({ email: 'lan@x.edu', status: 'linked' })
+
+    renderPage()
+    expect(await screen.findByText(/Chờ xác nhận trong Moodle \(lan@x\.edu\)/)).toBeInTheDocument()
+
+    await act(async () => { await vi.advanceTimersByTimeAsync(5_000) })
+    expect(api.getMoodleAccount).toHaveBeenCalledTimes(2)
+    expect(screen.getByText(/Chờ xác nhận trong Moodle \(lan@x\.edu\)/)).toBeInTheDocument()
+
+    await act(async () => { await vi.advanceTimersByTimeAsync(5_000) })
+    expect(await screen.findByRole('combobox', { name: /khóa học moodle/i })).toBeInTheDocument()
   })
 
   it('shows State 2 (pending) with confirmation link', async () => {

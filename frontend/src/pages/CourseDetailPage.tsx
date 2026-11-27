@@ -911,7 +911,7 @@ function MoodleLinkSection({ course, onLinked }: { course: Course; onLinked: () 
     let cancelled = false;
     Promise.resolve(getMoodleAccount()).then(
       (answer) => { if (!cancelled && answer) setAccountInfo(answer); },
-      () => { if (!cancelled) setAccountInfo(null); },
+      () => {},
     );
     return () => { cancelled = true; };
   }, [reloads]);

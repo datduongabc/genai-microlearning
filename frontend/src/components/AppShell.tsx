@@ -82,21 +82,27 @@ export function AppShell({ title, fullTitle, subtitle, actions, crumbs, children
     return () => { cancelled = true; document.removeEventListener("pointerdown", outside); };
   }, [open, user?.is_admin]);
 
-  useEffect(() => {
-    if (!open || !focusAccountControl.current) return;
-    if (!user?.is_admin && account === null && error === null) return;
+  const focusFirstControl = useCallback(() => {
+    if (!focusAccountControl.current) return;
     focusAccountControl.current = false;
     requestAnimationFrame(() => {
       panel.current?.querySelector<HTMLElement>('input[type="email"], a[href], button:not(:disabled)')?.focus();
     });
-  }, [open, user?.is_admin, account, error]);
+  }, []);
+
+  useEffect(() => {
+    if (!open) return;
+    if (!user?.is_admin && (account === null ? error === null : account.status !== "linked")) return;
+    focusFirstControl();
+  }, [open, user?.is_admin, account, error, focusFirstControl]);
 
   const linked = useCallback((status: MoodleAccountState) => {
+    if (status !== "unknown") focusFirstControl();
     if (status !== "linked") return;
     if (document.activeElement === document.body || panel.current?.contains(document.activeElement)) panel.current?.querySelector<HTMLButtonElement>("[data-leaves-page]")?.focus();
     setAccount(null);
     getMoodleAccount().then(setAccount, () => setError("Không kiểm tra được tài khoản Moodle."));
-  }, []);
+  }, [focusFirstControl]);
 
   function close() { setOpen(false); trigger.current?.focus(); }
   async function unlink() {
