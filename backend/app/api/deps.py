@@ -1,6 +1,6 @@
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from sqlalchemy import select, text
+from sqlalchemy import select, text, update
 from sqlalchemy.orm import Session
 
 from app.auth.security import decode_token, token_user_id
@@ -108,3 +108,12 @@ def count_learner_chat(db: Session, user: User) -> None:
             f"Bạn đã hỏi đủ {settings.learner_daily_chat_limit} câu hôm nay. Hãy quay lại vào ngày mai."))
     user.chat_day = day
     user.chat_count = used + 1
+
+
+def return_learner_chat(db: Session, user_id) -> None:
+    """Gives back the message count_learner_chat took, for an answer that failed: the learner got nothing
+    for it. One statement, so it cannot race a message being counted. Commits."""
+    db.execute(update(User).where(
+        User.id == user_id, User.can_author.is_(False), User.chat_day == today(), User.chat_count > 0,
+    ).values(chat_count=User.chat_count - 1))
+    db.commit()

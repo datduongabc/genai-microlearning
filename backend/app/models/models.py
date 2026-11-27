@@ -294,6 +294,8 @@ class ModuleComponent(Base):
     type: Mapped[ComponentType] = mapped_column(Enum(ComponentType))
     # Markdown for content/slides/example/explanation; structured JSON for quiz/practice.
     content: Mapped[dict] = mapped_column(JSONB)
+    # Moved on by every write; a save names the one it was made from (alembic 0056).
+    version: Mapped[int] = mapped_column(default=1, server_default="1")
     created_at: Mapped[datetime] = created_at_column()
 
     module: Mapped["Module"] = relationship(back_populates="components")

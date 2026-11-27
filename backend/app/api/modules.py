@@ -2,13 +2,13 @@ import logging
 import uuid
 from datetime import UTC, datetime
 from io import BytesIO
-from typing import Annotated
+from typing import Annotated, Literal
 from urllib.parse import quote
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import Response
 from pptx import Presentation
-from pydantic import BaseModel, Field, StringConstraints, ValidationError, model_validator
+from pydantic import BaseModel, ConfigDict, Field, StringConstraints, ValidationError, model_validator
 from sqlalchemy import delete, select
 from sqlalchemy.orm import Session, joinedload, selectinload
 
@@ -363,6 +363,7 @@ def get_module(
                 "id": c.id,
                 "type": c.type,
                 "content": c.content,
+                "version": c.version,
                 "questions": [
                     {"id": q.id, "position": q.position, "stem": q.stem, "choices": q.choices,
                      "answer_key": q.answer_key, "explanation": q.explanation}
@@ -491,6 +492,55 @@ def _ai_original(component: ModuleComponent) -> dict:
 
 class ComponentUpdate(BaseModel):
     content: dict
+    # The component's version the edit was made from.
+    version: int
+
+
+# The shape a manual edit must keep, as the Book, the SCORM package and the editors read it. Not the generation's
+# counts (two examples, two to eight slides): a lecturer may keep fewer.
+class _SlideEdit(BaseModel):
+    model_config = ConfigDict(extra="allow")
+    title: str
+    bullets: list[str]
+
+
+class _SlidesEdit(BaseModel):
+    model_config = ConfigDict(extra="allow")
+    slides: list[_SlideEdit] = Field(min_length=1)
+
+
+class _ExampleEdit(BaseModel):
+    model_config = ConfigDict(extra="allow")
+    context: str
+    analysis: str
+
+
+class _ExamplesEdit(BaseModel):
+    model_config = ConfigDict(extra="allow")
+    examples: list[_ExampleEdit] = Field(min_length=1)
+
+
+class _ExplanationItemEdit(BaseModel):
+    model_config = ConfigDict(extra="allow")
+    component: Literal["quiz", "practice"]
+    position: int = Field(ge=0)
+    reasoning: str | None = None
+    explanation_text: str
+
+
+class _ExplanationsEdit(BaseModel):
+    model_config = ConfigDict(extra="allow")
+    items: list[_ExplanationItemEdit]
+
+
+_EDIT_SHAPES = {ComponentType.slides: _SlidesEdit, ComponentType.example: _ExamplesEdit,
+                ComponentType.explanation: _ExplanationsEdit}
+STALE_EDIT = "Phần này vừa được sửa ở nơi khác. Hãy tải lại trang rồi sửa tiếp."
+
+
+def _check_version(component: ModuleComponent, version: int) -> None:
+    if component.version != version:
+        raise HTTPException(status_code=409, detail=STALE_EDIT)
 
 
 @router.patch("/{module_id}/components/{component_id}")
@@ -502,7 +552,16 @@ def update_component(
     component = db.get(ModuleComponent, component_id, with_for_update=True)
     if component is None or component.module_id != module_id:
         raise HTTPException(status_code=404, detail="Component not found")
+    _check_version(component, payload.version)
     content = {k: v for k, v in payload.content.items() if k != "ai_original"}
+    if component.type in (ComponentType.quiz, ComponentType.practice):
+        # Their questions are rows, edited one by one; this would only replace the generation's checks.
+        raise HTTPException(status_code=422, detail="Câu hỏi được sửa từng câu.")
+    if component.type in _EDIT_SHAPES:
+        try:
+            content.update(_EDIT_SHAPES[component.type].model_validate(content).model_dump())
+        except ValidationError as exc:
+            raise HTTPException(status_code=422, detail="Nội dung không đúng dạng nên chưa được lưu.") from exc
     if component.type == ComponentType.content:
         markdown = content.get("markdown")
         if not isinstance(markdown, str):
@@ -524,8 +583,9 @@ def update_component(
             content["source_locators"] = component.content.get("source_locators", []) if unchanged else []
     content["ai_original"] = _ai_original(component)
     component.content = content
+    component.version += 1
     db.commit()
-    return {"id": component.id, "content": component.content}
+    return {"id": component.id, "content": component.content, "version": component.version}
 
 
 class QuestionUpdate(BaseModel):
@@ -533,6 +593,8 @@ class QuestionUpdate(BaseModel):
     choices: list[str] = Field(min_length=2)
     answer_key: int = Field(ge=0)
     explanation: str
+    # The version of the question's quiz or practice the edit was made from.
+    version: int
 
 
 @router.patch("/{module_id}/questions/{question_id}")
@@ -547,10 +609,11 @@ def update_question(
     component = db.get(ModuleComponent, question.component_id, with_for_update=True)
     if component.module_id != module_id or component.type not in (ComponentType.quiz, ComponentType.practice):
         raise HTTPException(status_code=404, detail="Question not found")
+    _check_version(component, payload.version)
     _apply_question_update(module, component, question, payload)
     db.commit()
     return {"id": question.id, "stem": question.stem, "choices": question.choices,
-            "answer_key": question.answer_key, "explanation": question.explanation}
+            "answer_key": question.answer_key, "explanation": question.explanation, "version": component.version}
 
 
 def _apply_question_update(module: Module, component: ModuleComponent, question: Question,
@@ -568,7 +631,9 @@ def _apply_question_update(module: Module, component: ModuleComponent, question:
     question.choices = {"options": payload.choices}
     question.answer_key = str(payload.answer_key)
     question.explanation = payload.explanation
+    component.version += 1
     if explanation is not None:
+        explanation.version += 1
         explanation.content = {**explanation.content,
             "ai_original": explanation.content.get("ai_original", explanation.content), "items": [
             {**item, "explanation_text": payload.explanation}
@@ -631,7 +696,8 @@ def chat_edit_module(
                     raise ValueError("Question position not found")
                 _apply_question_update(module, component, question, QuestionUpdate(
                     stem=revised.stem, choices=revised.choices, answer_key=revised.correct_index,
-                    explanation=revised.explanation,
+                    # Read again under the lock just above, so the model's edit is never stale.
+                    explanation=revised.explanation, version=component.version,
                 ))
             else:
                 if edit.question_number is not None:
@@ -644,6 +710,7 @@ def chat_edit_module(
                 prior = {k: v for k, v in component.content.items() if edit.target != "content" or k != "claim_citations"}
                 component.content = {**prior, **content,
                                      "ai_original": component.content.get("ai_original", component.content)}
+                component.version += 1
     except (ValidationError, ValueError) as exc:
         db.rollback()
         raise HTTPException(status_code=422, detail="Kết quả chỉnh sửa không hợp lệ nên mô-đun chưa thay đổi. Hãy thử lại.") from exc

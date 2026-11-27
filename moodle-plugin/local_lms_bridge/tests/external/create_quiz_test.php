@@ -95,4 +95,27 @@ final class create_quiz_test extends \advanced_testcase {
             $this->assertEquals($modulecount, $DB->count_records('course_modules'));
         }
     }
+
+    public function test_a_question_moodle_refuses_leaves_no_quiz_behind(): void {
+        global $DB, $USER;
+        $this->resetAfterTest();
+        $this->setAdminUser();
+        $course = $this->getDataGenerator()->create_course();
+        $quizcount = $DB->count_records('quiz');
+        $modulecount = $DB->count_records('course_modules');
+        // The second question has one choice, which Moodle refuses after the quiz and the first question exist.
+        $questions = [
+            ['stem' => 'Q1?', 'choices' => ['A', 'B'], 'correct_index' => 0, 'explanation' => ''],
+            ['stem' => 'Q2?', 'choices' => ['A'], 'correct_index' => 0, 'explanation' => ''],
+        ];
+
+        try {
+            create_quiz::execute($course->id, 'Half', $questions, $USER->id);
+            $this->fail('A question with one choice was accepted');
+        } catch (\moodle_exception $exception) {
+            // A retry from the app creates the quiz again, so a half-made one must not stay visible to students.
+            $this->assertEquals($quizcount, $DB->count_records('quiz'));
+            $this->assertEquals($modulecount, $DB->count_records('course_modules'));
+        }
+    }
 }

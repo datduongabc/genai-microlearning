@@ -41,6 +41,8 @@ export interface ModuleComponentInfo {
   id: string
   type: 'content' | 'slides' | 'example' | 'quiz' | 'practice' | 'explanation'
   content: Record<string, unknown>
+  // Moved on by every save; a save names the one it was made from and is refused (409) when it is stale.
+  version: number
   questions: QuestionInfo[]
 }
 
@@ -125,18 +127,20 @@ export async function updateComponentContent(
   moduleId: string,
   componentId: string,
   content: Record<string, unknown>,
+  version: number,
 ) {
-  const { data } = await api.patch(`/modules/${moduleId}/components/${componentId}`, { content })
-  return data as { id: string; content: Record<string, unknown> }
+  const { data } = await api.patch(`/modules/${moduleId}/components/${componentId}`, { content, version })
+  return data as { id: string; content: Record<string, unknown>; version: number }
 }
 
 export async function updateQuestion(
   moduleId: string,
   questionId: string,
   question: { stem: string; choices: string[]; answer_key: number; explanation: string },
+  version: number,
 ) {
-  const { data } = await api.patch(`/modules/${moduleId}/questions/${questionId}`, question)
-  return data as Omit<QuestionInfo, 'position'>
+  const { data } = await api.patch(`/modules/${moduleId}/questions/${questionId}`, { ...question, version })
+  return data as Omit<QuestionInfo, 'position'> & { version: number }
 }
 
 export async function chatEditModule(moduleId: string, message: string, sessionId?: string) {

@@ -85,6 +85,7 @@ def test_slide_edit_is_scoped_preserves_original_and_counts_only_applied_turns(l
             {"title": "Stack", "bullets": ["LIFO"]}, original["slides"][1],
         ]}, reply="Đã rút gọn slide 1.")
     monkeypatch.setattr(service, "complete_structured", fake)
+    opened = _version(ids["module"], ids["slides"], headers)
     response = send(lesson)
     assert response.status_code == 200, response.text
     assert response.json()["applied"] is True
@@ -99,6 +100,11 @@ def test_slide_edit_is_scoped_preserves_original_and_counts_only_applied_turns(l
         assert session.module_id == ids["module"]
         assert len(session.messages) == 2
     assert client.get(f"/modules/{ids['module']}", headers=headers).json()["chat_edit_count"] == 1
+    # The model's edit moves the version on: an editor opened before it cannot save over it.
+    assert _version(ids["module"], ids["slides"], headers) == opened + 1
+    stale = client.patch(f"/modules/{ids['module']}/components/{ids['slides']}", headers=headers,
+                         json={"content": {"slides": [{"title": "Old", "bullets": ["x"]}]}, "version": opened})
+    assert stale.status_code == 409
 
 
 def test_quiz_edit_snapshots_original_once(lesson, monkeypatch):
@@ -229,11 +235,47 @@ def test_manual_component_edit_snapshots_original(lesson):
     with SessionLocal() as db:
         original = copy.deepcopy(db.get(ModuleComponent, ids["slides"]).content)
     response = client.patch(f"/modules/{ids['module']}/components/{ids['slides']}", headers=headers,
-        json={"content": {"slides": [{"title": "Manual", "bullets": ["x"]}]}})
+        json={"content": {"slides": [{"title": "Manual", "bullets": ["x"]}]},
+              "version": _version(ids["module"], ids["slides"], headers)})
     assert response.status_code == 200, response.text
     with SessionLocal() as db:
         assert db.get(ModuleComponent, ids["slides"]).content == {
             "slides": [{"title": "Manual", "bullets": ["x"]}], "ai_original": original}
+
+
+def _version(module_id, component_id, headers):
+    components = client.get(f"/modules/{module_id}", headers=headers).json()["components"]
+    return next(c["version"] for c in components if c["id"] == str(component_id))
+
+
+def test_a_manual_edit_of_the_wrong_shape_is_refused_so_publishing_still_works(lesson):
+    # Stored as it came, {"slides": "x"} made the Moodle Book and the SCORM package fail with a 500.
+    ids, headers = lesson
+    url = f"/modules/{ids['module']}/components/{ids['slides']}"
+    version = _version(ids["module"], ids["slides"], headers)
+    for content in ({"slides": "x"}, {"slides": [{"title": "No bullets"}]}, {"slides": []}):
+        response = client.patch(url, headers=headers, json={"content": content, "version": version})
+        assert response.status_code == 422, (content, response.text)
+    with SessionLocal() as db:
+        assert isinstance(db.get(ModuleComponent, ids["slides"]).content["slides"], list)
+
+
+def test_a_save_made_from_an_older_copy_is_refused_instead_of_writing_over_a_newer_one(lesson):
+    # Two teachers of the course, or two tabs: the second save was based on what the first replaced.
+    ids, headers = lesson
+    url = f"/modules/{ids['module']}/components/{ids['slides']}"
+    version = _version(ids["module"], ids["slides"], headers)
+    first = client.patch(url, headers=headers, json={
+        "content": {"slides": [{"title": "First", "bullets": ["a"]}]}, "version": version})
+    assert first.status_code == 200, first.text
+    assert first.json()["version"] == version + 1
+
+    stale = client.patch(url, headers=headers, json={
+        "content": {"slides": [{"title": "Second", "bullets": ["b"]}]}, "version": version})
+
+    assert stale.status_code == 409
+    with SessionLocal() as db:
+        assert db.get(ModuleComponent, ids["slides"]).content["slides"][0]["title"] == "First"
 
 
 def test_large_scope_sends_only_retrieved_document_chunks(lesson, monkeypatch):
@@ -414,7 +456,7 @@ def test_manual_slide_edits_keep_original_and_study_packet_uses_it(lesson):
                                 headers=headers, json={"content": {
                                     "slides": [{"title": title, "bullets": ["Teacher bullet"]}],
                                     "ai_original": {"forged": True},
-                                }})
+                                }, "version": _version(ids["module"], ids["slides"], headers)})
         assert response.status_code == 200, response.text
         assert response.json()["content"]["ai_original"] == original
     with SessionLocal() as db:
@@ -438,13 +480,14 @@ def test_manual_content_edit_rederives_citations_and_cannot_replace_server_map(l
         component_id = component.id
     url = f'/modules/{ids["module"]}/components/{component_id}'
     response = client.patch(url, headers=headers, json={'content': {
-        'markdown': 'New fact. [S1]', 'source_map': {'S1': {'chunk_id': str(uuid.uuid4()), 'locator': 'forged'}}}})
+        'markdown': 'New fact. [S1]', 'source_map': {'S1': {'chunk_id': str(uuid.uuid4()), 'locator': 'forged'}}},
+        'version': 1})
     assert response.status_code == 200, response.text
     saved = response.json()['content']
     assert saved['source_map'] == source_map
     assert [c['claim'] for c in saved['inline_citations']] == ['New fact.']
-    assert client.patch(url, headers=headers, json={'content': {'markdown': 'Bad. [S99]'}}).status_code == 422
-    response = client.patch(url, headers=headers, json={'content': {'markdown': 'Uncited replacement.'}})
+    assert client.patch(url, headers=headers, json={'content': {'markdown': 'Bad. [S99]'}, 'version': 2}).status_code == 422
+    response = client.patch(url, headers=headers, json={'content': {'markdown': 'Uncited replacement.'}, 'version': 2})
     assert response.status_code == 200
     assert response.json()['content']['inline_citations'] == []
     assert client.get(f'/modules/{ids["module"]}', headers=headers).json()['claim_citations'] == []
@@ -460,10 +503,10 @@ def test_manual_edit_of_map_less_content_keeps_bracketed_text_and_rejects_real_m
         component_id = component.id
     url = f'/modules/{ids["module"]}/components/{component_id}'
     response = client.patch(url, headers=headers, json={'content': {
-        'markdown': 'Store logs in an [S3 bucket] at [s3://logs].'}})
+        'markdown': 'Store logs in an [S3 bucket] at [s3://logs].'}, 'version': 1})
     assert response.status_code == 200, response.text
     assert response.json()['content']['markdown'] == 'Store logs in an [S3 bucket] at [s3://logs].'
-    assert client.patch(url, headers=headers, json={'content': {'markdown': 'Fact. [S1]'}}).status_code == 422
+    assert client.patch(url, headers=headers, json={'content': {'markdown': 'Fact. [S1]'}, 'version': 2}).status_code == 422
 
 
 def test_chat_remaps_old_codes_to_the_edit_prompt_and_rederives_saved_citations(lesson, monkeypatch):

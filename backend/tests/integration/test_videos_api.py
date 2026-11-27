@@ -1007,7 +1007,6 @@ def test_a_script_is_revised_in_words_keeping_the_scenes_and_media_the_request_l
         (1, "Giữ", kept["bullets"], same_sentences),
         (2, "Đổi", changed["bullets"], ["Câu mới về FCFS.", "Câu thứ hai."]),
         (None, "Mới", ["Ý một", "Ý hai"], ["WRONG claim.", "Một câu nữa."]),
-        (None, "Không nguồn", ["Ý một", "Ý hai"], ["NO SOURCE"]),
     ])
 
     response = client.post(f"/videos/{video_id}/revise", headers=headers(world["owner"]),
@@ -1023,10 +1022,39 @@ def test_a_script_is_revised_in_words_keeping_the_scenes_and_media_the_request_l
     # A rewritten scene is the model's and keeps its old voice until the render compares what it read.
     assert stored[1]["author"] == "model" and stored[1]["narration"] == "Câu mới về FCFS.\nCâu thứ hai."
     assert (stored[1]["voice_key"], stored[1]["voice_text_used"]) == ("videos/b.wav", "old")
-    # A new scene is fact-checked; one with no sourced sentence is dropped.
+    # A new scene is fact-checked.
     assert [s["title"] for s in stored] == ["Giữ", "Đổi", "Mới"]
     assert stored[2]["flags"] == ["Câu 1: không có trong nguồn"] and stored[2]["voice_key"] is None
     assert "SAYS: FCFS chạy theo thứ tự đến. SOURCES: ['S1']" in seen["prompt"]
+
+
+def test_a_revision_that_would_lose_a_scene_for_want_of_sources_is_refused(world, monkeypatch):
+    kept = scene(world, title="Giữ")
+    video_id = make_video(world, [kept, scene(world, title="Hai")])
+    # The model copies scene 2 but loses its sources: saving would delete a scene nobody asked to remove.
+    _revise_model(monkeypatch, [(1, "Giữ", kept["bullets"], kept["narration"].split("\n")),
+                                (2, "Hai", ["Ý một", "Ý hai"], ["NO SOURCE"])])
+
+    response = client.post(f"/videos/{video_id}/revise", headers=headers(world["owner"]),
+                           json={"draft_version": 1, "message": "Sửa cảnh 1"})
+
+    assert response.status_code == 422 and "Hai" in response.json()["detail"]
+    with SessionLocal() as db:
+        video = db.get(Video, video_id)
+        assert (video.draft_version, [s["title"] for s in video.scenes]) == (1, ["Giữ", "Hai"])
+
+
+def test_a_revision_with_too_many_scenes_keeps_the_closing_one(world, monkeypatch):
+    video_id = make_video(world, [scene(world)])
+    _revise_model(monkeypatch, [(None, f"Cảnh {n}", ["Ý một", "Ý hai"], ["Một câu."]) for n in range(1, 11)])
+
+    response = client.post(f"/videos/{video_id}/revise", headers=headers(world["owner"]),
+                           json={"draft_version": 1, "message": "Thêm cảnh"})
+
+    assert response.status_code == 200, response.text
+    with SessionLocal() as db:
+        titles = [s["title"] for s in db.get(Video, video_id).scenes]
+    assert titles == [f"Cảnh {n}" for n in range(1, 9)] + ["Cảnh 10"]
 
 
 def test_a_revision_on_an_older_version_emptying_or_lengthening_the_video_is_refused(world, monkeypatch):

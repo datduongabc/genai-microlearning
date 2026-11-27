@@ -12,7 +12,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app.api.deps import count_learner_chat, get_current_user, require_course_reader
+from app.api.deps import count_learner_chat, get_current_user, require_course_reader, return_learner_chat
 from app.auth.rate_limit import limiter, user_or_address
 from app.chat.service import (
     HISTORY_TURNS,
@@ -121,6 +121,11 @@ def _save_answer(turn: _Turn, answer: ChatAnswer) -> ChatMessageResponse:
         return ChatMessageResponse(id=saved.id, role=saved.role.value, content=saved.content, citations=saved.citations)
 
 
+def _return_message(turn: _Turn) -> None:
+    with _user_session(turn.user_id) as db:
+        return_learner_chat(db, turn.user_id)
+
+
 def _event(name: str, data: dict) -> str:
     return f"event: {name}\ndata: {json.dumps(data, ensure_ascii=False)}\n\n"
 
@@ -140,6 +145,10 @@ async def _answer_events(turn: _Turn) -> AsyncIterator[str]:
     except Exception:
         # The 200 has already gone out, so this is the only way left to tell the reader.
         logger.exception("chat stream failed in session %s", turn.session_id)
+        try:
+            await asyncio.to_thread(_return_message, turn)
+        except Exception:
+            logger.exception("could not give back the learner's message in session %s", turn.session_id)
         yield _event("error", {"detail": "Không tạo được câu trả lời, vui lòng thử lại."})
 
 

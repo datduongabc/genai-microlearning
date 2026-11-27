@@ -249,6 +249,8 @@ function MarkdownFieldEditor({
     },
   }
   const [editing, setEditing] = useState(false)
+  // The version the edit starts from: a save from it is refused once another one was saved meanwhile.
+  const [openedVersion, setOpenedVersion] = useState(component.version)
   const {
     register,
     handleSubmit,
@@ -257,7 +259,7 @@ function MarkdownFieldEditor({
   } = useForm<MarkdownContentFormValues>({ resolver: zodResolver(markdownContentSchema), defaultValues: { markdown: original } })
 
   async function handleSave({ markdown }: MarkdownContentFormValues) {
-    await updateComponentContent(moduleId, component.id, { ...component.content, markdown })
+    await updateComponentContent(moduleId, component.id, { ...component.content, markdown }, openedVersion)
     await onSaved()
     setEditing(false)
     notifyDone('Đã lưu.')
@@ -282,6 +284,7 @@ function MarkdownFieldEditor({
         saving={saving}
         onEdit={() => {
           reset({ markdown: original })
+          setOpenedVersion(component.version)
           setEditing(true)
         }}
         onSave={handleSubmit(handleSave)}
@@ -313,6 +316,8 @@ function SlidesEditor({
     slides: originalSlides.map((s) => ({ title: s.title, bulletsText: s.bullets.join('\n') })),
   })
   const [editing, setEditing] = useState(false)
+  // The version the edit starts from: a save from it is refused once another one was saved meanwhile.
+  const [openedVersion, setOpenedVersion] = useState(component.version)
   const {
     register,
     handleSubmit,
@@ -328,7 +333,7 @@ function SlidesEditor({
       title: s.title,
       bullets: s.bulletsText.split('\n'),
     }))
-    await updateComponentContent(moduleId, component.id, { ...component.content, slides })
+    await updateComponentContent(moduleId, component.id, { ...component.content, slides }, openedVersion)
     await onSaved()
     setEditing(false)
     notifyDone('Đã lưu.')
@@ -369,6 +374,7 @@ function SlidesEditor({
         saving={saving}
         onEdit={() => {
           reset(formValues())
+          setOpenedVersion(component.version)
           setEditing(true)
         }}
         onSave={handleSubmit(handleSave)}
@@ -395,6 +401,8 @@ function ExamplesEditor({
     examples: original.map((e) => ({ context: e.context, analysis: e.analysis })),
   })
   const [editing, setEditing] = useState(false)
+  // The version the edit starts from: a save from it is refused once another one was saved meanwhile.
+  const [openedVersion, setOpenedVersion] = useState(component.version)
   const {
     register,
     handleSubmit,
@@ -404,7 +412,7 @@ function ExamplesEditor({
 
   async function handleSave(values: ExamplesContentFormValues) {
     const examples = original.map((e, i) => ({ ...e, ...values.examples[i] }))
-    await updateComponentContent(moduleId, component.id, { examples })
+    await updateComponentContent(moduleId, component.id, { examples }, openedVersion)
     await onSaved()
     setEditing(false)
     notifyDone('Đã lưu.')
@@ -439,6 +447,7 @@ function ExamplesEditor({
         saving={saving}
         onEdit={() => {
           reset(formValues())
+          setOpenedVersion(component.version)
           setEditing(true)
         }}
         onSave={handleSubmit(handleSave)}
@@ -469,6 +478,8 @@ function ExplanationEditor({
     items: original.map((item) => ({ reasoning: item.reasoning, explanation_text: item.explanation_text })),
   })
   const [editing, setEditing] = useState(false)
+  // The version the edit starts from: a save from it is refused once another one was saved meanwhile.
+  const [openedVersion, setOpenedVersion] = useState(component.version)
   const {
     register,
     handleSubmit,
@@ -478,7 +489,7 @@ function ExplanationEditor({
 
   async function handleSave(values: ExplanationsContentFormValues) {
     const items = original.map((item, i) => ({ ...item, ...values.items[i] }))
-    await updateComponentContent(moduleId, component.id, { items })
+    await updateComponentContent(moduleId, component.id, { items }, openedVersion)
     await onSaved()
     setEditing(false)
     notifyDone('Đã lưu.')
@@ -511,6 +522,7 @@ function ExplanationEditor({
         saving={saving}
         onEdit={() => {
           reset(formValues())
+          setOpenedVersion(component.version)
           setEditing(true)
         }}
         onSave={handleSubmit(handleSave)}
@@ -559,7 +571,7 @@ function QuizDisplay({
                 {checkReasons(check.fail_reason).map((reason, i) => <li key={i}>{reason}</li>)}
               </ul>
             )}
-            <QuestionEditor moduleId={moduleId} question={question}
+            <QuestionEditor moduleId={moduleId} question={question} version={component.version}
               explanation={explanations[question.position] || question.explanation || ''} onSaved={onSaved} />
           </div>
         )
@@ -574,9 +586,11 @@ function QuizDisplay({
   )
 }
 
-function QuestionEditor({ moduleId, question, explanation, onSaved }: {
+function QuestionEditor({ moduleId, question, version, explanation, onSaved }: {
   moduleId: string
   question: QuestionInfo
+  // The version of its quiz or practice.
+  version: number
   explanation: string
   onSaved: () => Promise<void>
 }) {
@@ -587,6 +601,8 @@ function QuestionEditor({ moduleId, question, explanation, onSaved }: {
     explanation,
   })
   const [editing, setEditing] = useState(false)
+  // The version the edit starts from: a save from it is refused once another one was saved meanwhile.
+  const [openedVersion, setOpenedVersion] = useState(version)
   const {
     register,
     handleSubmit,
@@ -598,7 +614,7 @@ function QuestionEditor({ moduleId, question, explanation, onSaved }: {
   })
   async function save(values: QuestionEditFormValues) {
     try {
-      await updateQuestion(moduleId, question.id, values)
+      await updateQuestion(moduleId, question.id, values, openedVersion)
       await onSaved()
       setEditing(false)
       notifyDone('Đã lưu câu hỏi.')
@@ -626,6 +642,7 @@ function QuestionEditor({ moduleId, question, explanation, onSaved }: {
       {explanation && <p className="text-sm muted"><span className="font-semibold">Giải thích: </span>{explanation}</p>}
       <SaveCancelRow editing={false} saving={saving} onSave={handleSubmit(save)} onCancel={() => setEditing(false)} onEdit={() => {
         reset(formValues())
+        setOpenedVersion(version)
         setEditing(true)
       }} />
     </>}

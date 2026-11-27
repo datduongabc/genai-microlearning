@@ -3,7 +3,6 @@ import { usePolling } from "../lib/usePolling";
 import { notifyDone, notifyFailed } from "../lib/notify";
 import { BookOpenText, ChevronDown, Clapperboard, Ellipsis, Layers, Plus, Trash2 } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../components/ui/dropdown-menu";
-import axios from "axios";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -386,16 +385,12 @@ export function CourseDetailPage() {
     const documentId = doc.id;
     setStartingIds((ids) => new Set(ids).add(documentId));
     try {
-      await generateModule(documentId, modelAlias, outputLanguage, customInstructions, concept);
       // From here the document says it is generating, and the list is read again until it no longer
       // does (above); a failed job comes back on the document with its error and a retry button.
-      await refresh();
-    } catch (err) {
-      if (axios.isAxiosError(err) && err.response?.status === 409) {
-        notifyFailed("Tài liệu này đang sinh một mô-đun khác. Chờ lượt đó xong rồi thử lại.");
-      } else {
-        notifyFailed(apiErrorMessage(err, "Tạo mô-đun thất bại"));
-      }
+      await startGeneration(
+        () => generateModule(documentId, modelAlias, outputLanguage, customInstructions, concept),
+        refresh, "Tạo mô-đun thất bại", "Đã bắt đầu tạo mô-đun",
+      );
     } finally {
       setStartingIds((ids) => {
         const next = new Set(ids);

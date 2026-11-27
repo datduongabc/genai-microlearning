@@ -36,7 +36,8 @@ SAMPLE_TEXT = (
 
 
 @pytest.fixture
-def seed_document_with_file(tmp_path):
+def seed_document_with_file(tmp_path, monkeypatch):
+    monkeypatch.setattr("app.config.settings.upload_storage_dir", str(tmp_path))
     created_doc_ids: list[uuid.UUID] = []
 
     def _seed(db):
@@ -80,10 +81,10 @@ def seed_document_with_file(tmp_path):
 def test_document_pipeline_extract_chunk_embed_end_to_end(seed_document_with_file):
     db = SessionLocal()
     try:
-        doc, storage_path = seed_document_with_file(db)
+        doc, _path = seed_document_with_file(db)
         job = enqueue_job(
             db, job_type=JobType.document_pipeline, step="extract",
-            document_id=doc.id, payload={"storage_path": storage_path},
+            document_id=doc.id, payload={"storage_key": "sample.html"},
         )
         # As if the extract had taken an hour (a long video): the next step is due from when it is
         # queued, or the oldest-ready-job metric counts that hour as waiting for a worker.

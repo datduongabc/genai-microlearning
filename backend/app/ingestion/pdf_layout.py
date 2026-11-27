@@ -94,6 +94,15 @@ _BLACKBOARD = dict(zip("CNPQRZ", "ℂℕℙℚℝℤ"))
 # Phông ký hiệu trang trí: gần như luôn là dấu đầu dòng, còn mã gốc của nó không mang nghĩa
 # gì khi đọc thành chữ.
 _DINGBAT_FONTS = ("wingdings", "webdings", "monotypesorts", "zapfdingbats", "dingbats")
+# Trừ các mũi tên có thân của Wingdings (0xDF-0xF4): "A ⇒ B" đọc thành "A • B" thì mất ý cái gì dẫn tới
+# cái gì. Các đầu nhọn trước đó (0xD7-0xDE, như ➢) vẫn là dấu đầu dòng. Mỗi hướng có nhiều kiểu vẽ, đều đổi
+# về một mũi tên thường để phông nào cũng hiện được.
+_WINGDINGS_ARROWS = {
+    **dict.fromkeys((0xDF, 0xE7, 0xEF), "←"), **dict.fromkeys((0xE0, 0xE8, 0xF0), "→"),
+    **dict.fromkeys((0xE1, 0xE9, 0xF1), "↑"), **dict.fromkeys((0xE2, 0xEA, 0xF2), "↓"),
+    **dict.fromkeys((0xE3, 0xEB), "↖"), **dict.fromkeys((0xE4, 0xEC), "↗"),
+    **dict.fromkeys((0xE5, 0xED), "↙"), **dict.fromkeys((0xE6, 0xEE), "↘"), 0xF3: "↔", 0xF4: "↕",
+}
 # Phông của ký hiệu toán: khối chứa chúng được phép nối với khối bên cạnh cùng hàng, vì đó
 # là các phần của cùng một công thức.
 _MATH_FONTS = ("symbol", "cmmi", "cmsy", "cmex", "cmr", "msam", "msbm", "mt extra", "mt-extra", "cambria math",
@@ -176,6 +185,11 @@ def _is_private(c: str) -> bool:
     return 0xE000 <= ord(c) <= 0xF8FF
 
 
+def _font_code(c: str) -> int:
+    """Mã của ký tự trong phông ký hiệu: phông này được ghi là mã gốc hoặc U+F000 + mã."""
+    return ord(c) - 0xF000 if 0xF000 <= ord(c) <= 0xF0FF else ord(c)
+
+
 def map_font_text(text: str, font: str, vni_fonts: frozenset[str] = frozenset()) -> tuple[str, bool]:
     """Đổi mã của phông ký hiệu và phông VNI sang Unicode. Trả thêm cờ cho biết đây có phải mảnh
     ngoặc lớn."""
@@ -183,7 +197,8 @@ def map_font_text(text: str, font: str, vni_fonts: frozenset[str] = frozenset())
         return vni_to_unicode(text), False
     name = font.lower()
     if any(f in name for f in _DINGBAT_FONTS):
-        return "".join("•" if _is_private(c) or not c.isspace() else c for c in text), False
+        arrows = _WINGDINGS_ARROWS if "wingdings" in name else {}
+        return "".join(c if c.isspace() else arrows.get(_font_code(c), "•") for c in text), False
     base = name.split(",")[0].split("-")[0].removesuffix("mt")
     is_symbol = base == "symbol"
     is_cmex, is_blackboard = base.startswith("cmex"), base.startswith("msbm")
@@ -255,6 +270,7 @@ class _Rule:
     x1: float
     y: float
     radical: bool = False
+    outline: bool = False
 
 
 def _strokes(page: pymupdf.Page) -> tuple[list[_Rule], list[tuple[float, float, float]]]:
@@ -263,11 +279,15 @@ def _strokes(page: pymupdf.Page) -> tuple[list[_Rule], list[tuple[float, float, 
     verticals: list[tuple[float, float, float]] = []
     diagonals = []
     for drawing in page.get_drawings():
+        # A path with curves is a shape, such as a Beamer block's rounded box. Its straight lower edge, as wide as the
+        # last line in it and the footer under it, read as a fraction "(line)/(footer)" (Calculus 1, chapter 2,
+        # page 5). It stays a rule, which still sends the region to the geometric reading, but never a fraction bar.
+        outline = any(item[0] == "c" for item in drawing["items"])
         for item in drawing["items"]:
             if item[0] == "l":
                 p, q = item[1], item[2]
                 if abs(p.y - q.y) < 0.8 and abs(q.x - p.x) > 3:
-                    rules.append(_Rule(min(p.x, q.x), max(p.x, q.x), (p.y + q.y) / 2))
+                    rules.append(_Rule(min(p.x, q.x), max(p.x, q.x), (p.y + q.y) / 2, outline=outline))
                 elif abs(p.x - q.x) < 0.8 and abs(q.y - p.y) > 6:
                     verticals.append((p.x, min(p.y, q.y), max(p.y, q.y)))
                 else:
@@ -292,6 +312,7 @@ def _strokes(page: pymupdf.Page) -> tuple[list[_Rule], list[tuple[float, float, 
                      >= 0.8 * max(u.x1 - u.x0, rule.x1 - rule.x0)), None)
         if twin is not None:
             twin.radical = twin.radical or rule.radical
+            twin.outline = twin.outline and rule.outline
             continue
         unique.append(rule)
     return unique, verticals
@@ -608,6 +629,8 @@ def _structures(pieces: list[_Piece], rules: list[_Rule]) -> list[_Piece]:
             if touching:
                 signs[id(min(touching, key=lambda r: r.y))] = p
     for rule in sorted(rules, key=lambda r: r.x1 - r.x0):
+        if rule.outline:
+            continue
         within = [p for p in pieces if rule.x0 - 1 <= p.cx <= rule.x1 + 1]
         if not within:
             continue
@@ -688,6 +711,19 @@ def _span_pieces(span: dict, vni_fonts: frozenset[str]) -> list[_Piece]:
     return pieces
 
 
+def _spaced_text(span: dict) -> str:
+    """The span's text with a space where its characters leave the gap of one and the file wrote none ("tụ đến",
+    Calculus 1, chapter 1, page 29). A fifth of an em: letters of a word touch, a space is a quarter em or more."""
+    out, end = [], None
+    for c in span["chars"]:
+        if end is not None and not c["c"].isspace() and out and not out[-1].isspace() \
+                and c["bbox"][0] - end > 0.2 * span["size"]:
+            out.append(" ")
+        out.append(c["c"])
+        end = c["bbox"][2]
+    return "".join(out)
+
+
 def _line_text(spans: list[dict], vni_fonts: frozenset[str]) -> str:
     """Một dòng PyMuPDF bình thường: chỉ đổi mã phông và đánh dấu chỉ số trên/dưới nằm trong dòng."""
     visible = [s for s in spans if _span_text(s).strip()]
@@ -695,14 +731,23 @@ def _line_text(spans: list[dict], vni_fonts: frozenset[str]) -> str:
         return ""
     base = max(visible, key=lambda s: s["size"])
     out = []
+    end = None
     for s in spans:
-        text = map_font_text(_span_text(s), s["font"], vni_fonts)[0]
+        text = map_font_text(_spaced_text(s), s["font"], vni_fonts)[0]
+        script = False
         if s is not base and text.strip() and s["size"] < 0.8 * base["size"] and len(text.strip()) <= 4:
             shift = base["origin"][1] - s["origin"][1]
             if shift > 0.2 * base["size"]:
-                text = "^" + text.strip()
+                text, script = "^" + text.strip(), True
             elif shift < -0.1 * base["size"]:
-                text = "_" + text.strip()
+                text, script = "_" + text.strip(), True
+        # TeX spaces a word from the formula after it by position, with no space character ("Nếu số h", Calculus 1,
+        # chapter 1, page 8): a gap of a fifth of an em is a space, while letters of one word in two fonts touch.
+        if (s["chars"] and end is not None and not script and out and not out[-1].endswith(" ")
+                and not text.startswith(" ") and s["chars"][0]["bbox"][0] - end > 0.2 * base["size"]):
+            text = " " + text
+        if s["chars"]:
+            end = s["chars"][-1]["bbox"][2]
         out.append(text)
     text = "".join(out).rstrip()
     # Chỉ thụt lề của mã nguồn mang nghĩa; khoảng trắng đầu dòng chữ thường bỏ đi.

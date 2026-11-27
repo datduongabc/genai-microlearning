@@ -7,6 +7,7 @@ Removing someone cannot be retried away, so most of these are about when nobody 
 import base64
 import hashlib
 import json
+import threading
 import time
 from datetime import UTC, datetime, timedelta
 from urllib.parse import parse_qs
@@ -162,6 +163,31 @@ def test_a_list_is_read_once_per_interval(nrps):
     assert _sync(now + timedelta(minutes=settings.lti_roster_sync_minutes - 1))["courses"] == 0
     assert len(nrps.calls) == calls
     assert _sync(now + timedelta(minutes=settings.lti_roster_sync_minutes + 1))["courses"] >= 1
+
+
+def test_two_worker_processes_checking_at_once_read_each_list_once(nrps, monkeypatch):
+    _class(nrps.lms)
+    nrps.pages = [[TEACHER_ROW, member(STUDENT["sub"]), member(OTHER["sub"])]]
+    reading, finish = threading.Event(), threading.Event()
+    answer = nrps.handler
+
+    def slow_first_list(request):
+        if str(request.url).startswith(MEMBERS_URL) and not reading.is_set():
+            reading.set()
+            finish.wait(10)
+        return answer(request)
+
+    monkeypatch.setattr(roster, "_transport", httpx.MockTransport(slow_first_list))
+    first = threading.Thread(target=_sync)
+    first.start()
+    try:
+        assert reading.wait(10)
+        # The second process checks while the first is still reading the list.
+        assert _sync()["courses"] == 0
+    finally:
+        finish.set()
+        first.join(10)
+    assert sum(call.startswith(MEMBERS_URL) for call in nrps.calls) == 1
 
 
 @pytest.mark.parametrize("fault", ["list_fails", "token_refused", "list_names_nobody", "foreign_next_page"])

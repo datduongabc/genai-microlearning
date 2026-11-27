@@ -8,6 +8,7 @@ from datetime import UTC, datetime, timedelta
 import pytest
 from fastapi.testclient import TestClient
 
+from app.config import settings
 from app.db import SessionLocal
 from app.ingestion.document_pipeline import run_document_pipeline_step
 from app.jobs.failures import SYSTEM_FAILURE_MESSAGE
@@ -174,14 +175,15 @@ def test_retrying_a_failed_document_shows_it_processing_again(lecturer):
         assert db.get(Job, job).step == "chunk"  # from where it stopped
 
 
-def test_retrying_a_document_that_failed_part_way_finishes_it_without_uploading_again(lecturer, tmp_path):
+def test_retrying_a_document_that_failed_part_way_finishes_it_without_uploading_again(lecturer, tmp_path, monkeypatch):
+    monkeypatch.setattr(settings, "upload_storage_dir", str(tmp_path))
     path = tmp_path / "bai.html"
     path.write_text("<p>Khái niệm A rất quan trọng.</p><p>Khái niệm B khác khái niệm A.</p>", encoding="utf-8")
     with SessionLocal() as db:
         doc = Document(course_id=lecturer["course"], filename="bai.html", status=DocumentStatus.uploaded)
         db.add(doc)
         db.flush()
-        job = Job(job_type=JobType.document_pipeline, document_id=doc.id, step="extract", payload={"storage_path": str(path)})
+        job = Job(job_type=JobType.document_pipeline, document_id=doc.id, step="extract", payload={"storage_key": path.name})
         db.add(job)
         db.commit()
         doc_id, job_id = doc.id, job.id

@@ -31,12 +31,14 @@ def finding_notes(findings: list[dict] | None) -> str:
 
 
 def pair_ids(items: list[StudyItem]) -> tuple[dict[str, str], list[str]]:
-    """Pair code by anonymous code: each rag_llm packet with the one llm_no_rag packet of the same
-    objective and sub-objectives. Also returns the codes that could not be paired, which keep their
-    own code and so drop out of the paired tests."""
+    """Pair code by anonymous code: each rag_llm packet with the one llm_no_rag packet of the same pair,
+    named by pair_id as the judge and the raters' assignments name it, or, for a packet without one, of
+    the same objective and sub-objectives. Also returns the codes that could not be paired, which keep
+    their own code and so drop out of the paired tests."""
     by_objective: dict[tuple, dict[str, list[StudyItem]]] = {}
     for item in items:
-        key = (item.packet.get("learning_objective"), tuple(item.packet.get("sub_objectives") or []))
+        key = (("pair", str(item.pair_id)) if item.pair_id is not None else
+               ("objective", item.packet.get("learning_objective"), tuple(item.packet.get("sub_objectives") or [])))
         by_objective.setdefault(key, {}).setdefault(item.group, []).append(item)
     pairs = {item.anon_code: item.anon_code for item in items}
     unpaired = []

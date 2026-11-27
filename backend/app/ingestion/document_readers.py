@@ -40,7 +40,7 @@ from pptx.shapes.picture import Picture
 from app.config import settings
 from app.ingestion.figures import MAX_RENDER_PIXELS, is_content_figure, is_page_scan, new_text, ocr_figures
 from app.ingestion.formula_repair import repair_page
-from app.ingestion.pdf_layout import page_lines, suspect_formula_lines, title_candidates
+from app.ingestion.pdf_layout import map_font_text, page_lines, suspect_formula_lines, title_candidates
 from app.llm.gateway import transcribe_audio
 
 logger = logging.getLogger(__name__)
@@ -278,6 +278,20 @@ def _pptx_table_lines(table) -> list[str]:
 
 _DRAWING_PARAGRAPH = "{http://schemas.openxmlformats.org/drawingml/2006/main}p"
 _DRAWING_TEXT = "{http://schemas.openxmlformats.org/drawingml/2006/main}t"
+_DRAWING_RUN = "{http://schemas.openxmlformats.org/drawingml/2006/main}r"
+_RUN_FONTS = tuple(f"{_DRAWING_RUN}Pr/{_DRAWING_RUN[:-1]}{tag}" for tag in ("sym", "latin"))
+
+
+def _map_symbol_runs(element) -> None:
+    """Chữ gõ bằng phông ký hiệu (Wingdings, Symbol) thành Unicode, sửa ngay trên bản đã mở trong bộ nhớ.
+    Mã của nó là mã riêng chỉ phông đó vẽ được, nên đọc thẳng ra chỉ là ô trống; tệp gốc không bị ghi lại."""
+    for run in element.iter(_DRAWING_RUN):
+        text = run.find(_DRAWING_TEXT)
+        if text is None or not text.text or not any(0xE000 <= ord(c) <= 0xF8FF for c in text.text):
+            continue
+        font = next((f.get("typeface") for path in _RUN_FONTS if (f := run.find(path)) is not None), None)
+        if font:
+            text.text = map_font_text(text.text, font)[0]
 
 
 def _smartart_lines(shape, slide) -> list[str]:
@@ -290,6 +304,7 @@ def _smartart_lines(shape, slide) -> list[str]:
         data = parse_xml(slide.part.related_part(ids[0]).blob)
     except (KeyError, XMLSyntaxError):
         return []
+    _map_symbol_runs(data)
     lines = []
     for paragraph in data.iter(_DRAWING_PARAGRAPH):
         # Một chữ có dấu có thể bị tách thành hai lượt gõ, chữ gốc và dấu thanh kết hợp.
@@ -317,6 +332,9 @@ def read_pptx(path: str) -> list[DocumentUnit]:
     pictures: list[tuple[str, float, bytes]] = []
     slides = []
     for slide_index, slide in enumerate(prs.slides):
+        _map_symbol_runs(slide._element)
+        if slide.has_notes_slide:
+            _map_symbol_runs(slide.notes_slide._element)
         title_shape = slide.shapes.title
         # Chữ của slide, hoặc chỉ số của một hình: hình chỉ được chọn đọc khi đã biết nó có mặt trên
         # bao nhiêu slide, và được đọc cùng lúc cho cả bộ slide.

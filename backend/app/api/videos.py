@@ -35,6 +35,7 @@ from app.generation.video_script import (
     MAX_ILLUSTRATIONS,
     MAX_SCENES,
     MAX_SECONDS,
+    RevisionRefused,
     Scene,
     SceneKind,
     estimated_seconds,
@@ -399,6 +400,9 @@ def revise_script(
     reserve_edit(db, current_user)
     try:
         reply, scenes = revise_video_script(db, video, body.message)
+    except RevisionRefused as exc:
+        db.rollback()
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
     except (ValidationError, ValueError) as exc:
         db.rollback()
         raise HTTPException(status_code=422, detail="Kết quả chỉnh sửa không hợp lệ nên video chưa thay đổi. Hãy thử lại.") from exc

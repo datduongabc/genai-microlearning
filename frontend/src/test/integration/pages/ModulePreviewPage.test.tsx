@@ -56,7 +56,7 @@ it('shows citation labels and reveals the original chunk only when opened', asyn
   const module = {
     ...baseModule,
     claim_citations: citations,
-    components: [{ id: 'content-1', type: 'content' as const, content: { markdown: 'Lesson' }, questions: [] }],
+    components: [{ id: 'content-1', type: 'content' as const, version: 1, content: { markdown: 'Lesson' }, questions: [] }],
   }
   vi.mocked(api.getModule).mockResolvedValue(module)
   const page = renderPage()
@@ -80,7 +80,7 @@ it('exports PPTX and SCORM, shows SCORM 422 error, prompts unlinked Moodle, and 
   vi.mocked(api.getModule).mockResolvedValue({
     ...baseModule,
     generation_models: [{ requested_alias: 'gemini-flash', served_model: 'google/gemini-3.8-flash' }],
-    components: [{ id: 'slides-1', type: 'slides', content: { slides: [] }, questions: [] }],
+    components: [{ id: 'slides-1', type: 'slides', version: 1, content: { slides: [] }, questions: [] }],
   })
   const pptxBlob = new Blob(['pptx'])
   const zipBlob = new Blob(['zip'])
@@ -202,7 +202,7 @@ describe('ModulePreviewPage - module structure', () => {
     components: [
       {
         id: 'example-1',
-        type: 'example',
+        type: 'example', version: 1,
         content: {
           examples: [
             { context: 'BỐI-CẢNH-MỘT', analysis: 'PHÂN-TÍCH-MỘT' },
@@ -213,7 +213,7 @@ describe('ModulePreviewPage - module structure', () => {
       },
       {
         id: 'quiz-1',
-        type: 'quiz',
+        type: 'quiz', version: 1,
         content: { questions: [{ passed: true }, { passed: false }] },
         // Out of order on purpose: the page must follow position, not the order they arrive in.
         questions: [
@@ -223,7 +223,7 @@ describe('ModulePreviewPage - module structure', () => {
       },
       {
         id: 'explanation-1',
-        type: 'explanation',
+        type: 'explanation', version: 1,
         content: {
           items: [
             { component: 'quiz', position: 0, reasoning: 'LẬP-LUẬN-MỘT', explanation_text: 'LỜI-GIẢI-MỘT' },
@@ -237,7 +237,7 @@ describe('ModulePreviewPage - module structure', () => {
 
   it('shows examples, ordered quiz questions, hides AI reasoning, and saves edited explanation 2', async () => {
     vi.mocked(api.getModule).mockResolvedValue(structured)
-    vi.mocked(api.updateComponentContent).mockResolvedValue({ id: 'explanation-1', content: {} })
+    vi.mocked(api.updateComponentContent).mockResolvedValue({ id: 'explanation-1', content: {}, version: 2 })
     const user = userEvent.setup()
 
     renderPage()
@@ -283,7 +283,7 @@ describe('ModulePreviewPage - reading the module', () => {
       components: [
         {
           id: 'content-1',
-          type: 'content',
+          type: 'content', version: 1,
           content: {
             markdown: '## TIÊU-ĐỀ-PHẦN\n- ý đầu tiên\n\n## Khái niệm\n\nA.\n\n### Chi tiết\n\nB.\n\n#### Ghi chú\n\nC.\n\nBài học. ![](https://evil.example/p)',
           },
@@ -291,7 +291,7 @@ describe('ModulePreviewPage - reading the module', () => {
         },
         {
           id: 'quiz-1',
-          type: 'quiz',
+          type: 'quiz', version: 1,
           content: {
             questions: [
               { passed: true },
@@ -305,13 +305,13 @@ describe('ModulePreviewPage - reading the module', () => {
         },
         {
           id: 'explanation-1',
-          type: 'explanation',
+          type: 'explanation', version: 1,
           content: { items: [{ component: 'quiz', position: 0, reasoning: 'r', explanation_text: 'BẢN-ĐÃ-SỬA' }] },
           questions: [],
         },
         {
           id: 'practice-1',
-          type: 'practice',
+          type: 'practice', version: 1,
           content: { self_checked: false, questions: [{ passed: true }] },
           questions: [
             { id: 'p1', position: 0, stem: 'CÂU-LUYỆN-TẬP', choices: { options: ['A', 'B', 'C', 'D'] }, answer_key: '0', explanation: 'e' },
@@ -358,7 +358,7 @@ describe('ModulePreviewPage - reading the module', () => {
 
 it.each(['quiz', 'practice'] as const)('edits and saves a %s question', async (type) => {
   const question = { id: 'q1', position: 0, stem: 'Original stem', choices: { options: ['A', 'B'] }, answer_key: '0', explanation: 'Original explanation' }
-  const module = { ...baseModule, components: [{ id: 'quiz-1', type, content: {}, questions: [question] }] }
+  const module = { ...baseModule, components: [{ id: 'quiz-1', type, content: {}, version: 4, questions: [question] }] }
   vi.mocked(api.getModule).mockResolvedValue(module)
   const user = userEvent.setup()
   renderPage()
@@ -375,15 +375,15 @@ it.each(['quiz', 'practice'] as const)('edits and saves a %s question', async (t
   await user.type(explanation, 'Edited explanation')
   vi.mocked(api.getModule).mockResolvedValue({ ...module, components: [{ ...module.components[0], questions: [{ ...question, stem: 'Edited stem', choices: { options: ['A', 'Edited B'] }, answer_key: '1', explanation: 'Edited explanation' }] }] })
   await user.click(screen.getByRole('button', { name: 'Lưu' }))
-  await waitFor(() => expect(api.updateQuestion).toHaveBeenCalledWith('module-1', 'q1', { stem: 'Edited stem', choices: ['A', 'Edited B'], answer_key: 1, explanation: 'Edited explanation' }))
+  await waitFor(() => expect(api.updateQuestion).toHaveBeenCalledWith('module-1', 'q1', { stem: 'Edited stem', choices: ['A', 'Edited B'], answer_key: 1, explanation: 'Edited explanation' }, 4))
   expect(await screen.findByText('Edited stem')).toBeInTheDocument()
 })
 
 it('falls back to the question explanation when its Explanation item is empty', async () => {
   const question = { id: 'q1', position: 0, stem: 'Original stem', choices: { options: ['A', 'B'] }, answer_key: '0', explanation: 'Question explanation' }
   vi.mocked(api.getModule).mockResolvedValue({ ...baseModule, components: [
-    { id: 'quiz-1', type: 'quiz', content: {}, questions: [question] },
-    { id: 'exp-1', type: 'explanation', content: { items: [{ component: 'quiz', position: 0, reasoning: 'r', explanation_text: '' }] }, questions: [] },
+    { id: 'quiz-1', type: 'quiz', version: 1, content: {}, questions: [question] },
+    { id: 'exp-1', type: 'explanation', version: 1, content: { items: [{ component: 'quiz', position: 0, reasoning: 'r', explanation_text: '' }] }, questions: [] },
   ] })
   const user = userEvent.setup()
   renderPage()
@@ -393,7 +393,7 @@ it('falls back to the question explanation when its Explanation item is empty', 
   await user.clear(stem)
   await user.type(stem, 'Edited stem')
   await user.click(screen.getByRole('button', { name: 'Lưu' }))
-  await waitFor(() => expect(api.updateQuestion).toHaveBeenCalledWith('module-1', 'q1', { stem: 'Edited stem', choices: ['A', 'B'], answer_key: 0, explanation: 'Question explanation' }))
+  await waitFor(() => expect(api.updateQuestion).toHaveBeenCalledWith('module-1', 'q1', { stem: 'Edited stem', choices: ['A', 'B'], answer_key: 0, explanation: 'Question explanation' }, 1))
 })
 
 it('shows the Vietnamese deleted-course error and offers relinking immediately', async () => {
@@ -427,7 +427,7 @@ describe('ModulePreviewPage - forms', () => {
     const withContent = (title: string, markdown: string): ModuleDetail => ({
       ...baseModule,
       title,
-      components: [{ id: 'content-1', type: 'content', content: { markdown }, questions: [] }],
+      components: [{ id: 'content-1', type: 'content', version: 1, content: { markdown }, questions: [] }],
     })
     vi.mocked(api.getModule)
       .mockResolvedValueOnce(withContent('Test Module', 'Bản gốc dài'))
@@ -522,11 +522,11 @@ describe('ModulePreviewPage - forms', () => {
 
   it('discards Content edits on cancel, keeps editor open on [S99] failure, and preserves extra fields on save', async () => {
     vi.mocked(api.getModule).mockResolvedValue(withComponent({
-      id: 'content-1', type: 'content', content: { markdown: 'Bản gốc', extra: 1, source_map: {} }, questions: [],
+      id: 'content-1', type: 'content', version: 1, content: { markdown: 'Bản gốc', extra: 1, source_map: {} }, questions: [],
     }))
     vi.mocked(api.updateComponentContent)
       .mockRejectedValueOnce(new Error('Content cites unknown source IDs: S99'))
-      .mockResolvedValueOnce({ id: 'content-1', content: {} })
+      .mockResolvedValueOnce({ id: 'content-1', content: {}, version: 2 })
     renderPage()
 
     await userEvent.click(await screen.findByRole('button', { name: 'Sửa' }))
@@ -546,19 +546,19 @@ describe('ModulePreviewPage - forms', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Lưu' }))
     await waitFor(() => expect(api.updateComponentContent).toHaveBeenCalledWith('module-1', 'content-1', {
       markdown: 'Bản sửa', extra: 1, source_map: {},
-    }))
+    }, 1))
   })
 
   it('keeps slides editor open on failure, clears alert on cancel, and saves edited bullets preserving notes', async () => {
     vi.mocked(api.getModule).mockResolvedValue(withComponent({
       id: 'slides-1',
-      type: 'slides',
+      type: 'slides', version: 1,
       content: { slides: [{ title: 'Một', bullets: ['a', 'b'], notes: 'n' }, { title: 'Hai', bullets: ['c'] }] },
       questions: [],
     }))
     vi.mocked(api.updateComponentContent)
       .mockRejectedValueOnce(new Error('Network Error'))
-      .mockResolvedValueOnce({ id: 'slides-1', content: {} })
+      .mockResolvedValueOnce({ id: 'slides-1', content: {}, version: 2 })
     renderPage()
 
     await userEvent.click(await screen.findByRole('button', { name: 'Sửa' }))
@@ -580,17 +580,17 @@ describe('ModulePreviewPage - forms', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Lưu' }))
     await waitFor(() => expect(api.updateComponentContent).toHaveBeenLastCalledWith('module-1', 'slides-1', {
       slides: [{ title: 'Một mới', bullets: ['a', 'b', 'c'], notes: 'n' }, { title: 'Hai', bullets: ['c'] }],
-    }))
+    }, 1))
   })
 
   it('saves an edited example and keeps the others', async () => {
     vi.mocked(api.getModule).mockResolvedValue(withComponent({
       id: 'example-1',
-      type: 'example',
+      type: 'example', version: 1,
       content: { examples: [{ context: 'C1', analysis: 'A1' }, { context: 'C2', analysis: 'A2' }] },
       questions: [],
     }))
-    vi.mocked(api.updateComponentContent).mockResolvedValue({ id: 'example-1', content: {} })
+    vi.mocked(api.updateComponentContent).mockResolvedValue({ id: 'example-1', content: {}, version: 2 })
     renderPage()
     await userEvent.click(await screen.findByRole('button', { name: 'Sửa' }))
     const field = screen.getByLabelText('Phân tích ví dụ 2')
@@ -599,12 +599,12 @@ describe('ModulePreviewPage - forms', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Lưu' }))
     await waitFor(() => expect(api.updateComponentContent).toHaveBeenCalledWith('module-1', 'example-1', {
       examples: [{ context: 'C1', analysis: 'A1' }, { context: 'C2', analysis: 'A2 mới' }],
-    }))
+    }, 1))
   })
 
   describe('editing a question', () => {
     const question = { id: 'q1', position: 0, stem: 'Original stem', choices: { options: ['A', 'B'] }, answer_key: '1', explanation: 'Original explanation' }
-    const quiz = withComponent({ id: 'quiz-1', type: 'quiz', content: {}, questions: [question] })
+    const quiz = withComponent({ id: 'quiz-1', type: 'quiz', version: 1, content: {}, questions: [question] })
 
     it('validates stem and choices, checks the saved answer radio, and reports save failure', async () => {
       vi.mocked(api.getModule).mockResolvedValue(quiz)
@@ -631,7 +631,7 @@ describe('ModulePreviewPage - forms', () => {
       await userEvent.type(choiceB, 'B')
       await userEvent.click(screen.getByRole('button', { name: 'Lưu' }))
       expect(await screen.findByText('Lưu câu hỏi thất bại')).toBeInTheDocument()
-      expect(api.updateQuestion).toHaveBeenCalledWith('module-1', 'q1', expect.objectContaining({ answer_key: 1 }))
+      expect(api.updateQuestion).toHaveBeenCalledWith('module-1', 'q1', expect.objectContaining({ answer_key: 1 }), 1)
     })
   })
 
@@ -721,7 +721,7 @@ it('renders numbered inline citations in reading order and opens the exact chunk
       { claim: 'Fact.', source_id: 'S2', locator: 'page 2', chunk_content: 'Second physical chunk', resolution: 'resolved' },
       { claim: 'Fact.', source_id: 'S1', locator: 'page 1', chunk_content: 'First physical chunk', resolution: 'resolved' },
     ],
-    components: [{ id: 'content-1', type: 'content', questions: [], content: {
+    components: [{ id: 'content-1', type: 'content', version: 1, questions: [], content: {
       markdown: '- Fact. [S2][S1]\n- Repeated source. [S2]\n- Unresolved. [S3]', source_map: {},
     } }],
   } as ModuleDetail)
@@ -770,7 +770,7 @@ describe('ModulePreviewPage - keyboard focus', () => {
   it('keeps the focus in the editor when its buttons are swapped for fields and back', async () => {
     vi.mocked(api.getModule).mockResolvedValue({
       ...baseModule,
-      components: [{ id: 'content-1', type: 'content', content: { markdown: 'Lesson' }, questions: [] }],
+      components: [{ id: 'content-1', type: 'content', version: 1, content: { markdown: 'Lesson' }, questions: [] }],
     })
     vi.mocked(api.updateComponentContent).mockResolvedValue(undefined as never)
     const user = userEvent.setup()

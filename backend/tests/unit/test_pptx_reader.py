@@ -172,3 +172,22 @@ def test_read_document_gives_deck_units_the_course_and_the_source_name(tmp_path)
     units = read_document(_deck(tmp_path, build), course_id="course-1", source_id="bai-giang.pptx")
 
     assert [(u.course_id, u.source_id) for u in units] == [("course-1", "bai-giang.pptx")]
+
+
+def test_an_arrow_typed_in_wingdings_is_read_as_an_arrow(tmp_path):
+    # As in the course's Chapter1.pptx: "1848-1851, ⇒ phát triển". The arrow is a private-use code that only
+    # Wingdings draws, so it reached the model as an empty box and the "leads to" was lost.
+    from lxml import etree
+    from pptx.oxml.ns import qn
+
+    def build(prs):
+        slide = prs.slides.add_slide(prs.slide_layouts[BLANK])
+        paragraph = _text_box(slide.shapes, "1848-1851, ").text_frame.paragraphs[0]
+        for text, font in (("", "Wingdings"), (" phát triển lý luận", None)):
+            run = paragraph.add_run()
+            run.text = text
+            if font:
+                etree.SubElement(run._r.get_or_add_rPr(), qn("a:sym"), typeface=font)
+
+    (unit,) = read_pptx(_deck(tmp_path, build))
+    assert _lines(unit) == ["1848-1851, → phát triển lý luận"]

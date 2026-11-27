@@ -78,6 +78,28 @@ class create_quiz extends external_api {
         require_capability('mod/quiz:addinstance', $context);
 
         $module = $DB->get_record('modules', ['name' => 'quiz'], '*', MUST_EXIST);
+        // One write or none: a question Moodle refuses part way would otherwise leave a quiz with the questions
+        // before it, visible to students, and the app's retry would make a second one beside it.
+        $transaction = $DB->start_delegated_transaction();
+        try {
+            $cmid = self::create($course, $module, $params);
+            $transaction->allow_commit();
+        } catch (\Throwable $e) {
+            try {
+                $transaction->rollback($e);
+            } finally {
+                // A Moodle step that opens its own transaction and throws without closing it (save_question() does)
+                // makes rollback() only rethrow, leaving every write open. Undo all levels, as Moodle's handler does.
+                if ($DB->is_transaction_started()) {
+                    $DB->force_transaction_rollback();
+                }
+            }
+        }
+        return $cmid;
+    }
+
+    private static function create(\stdClass $course, \stdClass $module, array $params): int {
+        global $DB, $USER;
 
         $data = new \stdClass();
         $data->course = $course->id;

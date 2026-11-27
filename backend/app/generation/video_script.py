@@ -939,6 +939,10 @@ def _current_scene(number: int, scene: Scene, code: dict[str, str]) -> str:
     return "\n".join(lines)
 
 
+class RevisionRefused(ValueError):
+    """A revision that cannot be saved as it is; the message says why, for the lecturer."""
+
+
 def revise_video_script(db: Session, video: Video, request: str) -> tuple[str, list[dict]]:
     """The video's scenes after the lecturer's request, and what the model says it did. A scene it
     copies unchanged is kept as it was; one it writes or changes is checked and fact-checked as a
@@ -968,10 +972,12 @@ def revise_video_script(db: Session, video: Video, request: str) -> tuple[str, l
 
     drafts: list[tuple[_Draft, Scene | None]] = []
     taken: set[int] = set()
+    unsourced = []
     for d in revised.scenes:
         bullets, _ = _cited(d.bullets, chunks)
         narration, _ = _cited(d.narration, chunks)
         if len(bullets) < MIN_BULLETS or not narration:
+            unsourced.append(d.title.strip() or "(không tên)")
             continue
         origin = d.from_scene - 1 if d.from_scene and 0 < d.from_scene <= len(stored) else None
         # One stored scene's files go to one scene only, or drawing one again would delete the other's.
@@ -980,7 +986,13 @@ def revise_video_script(db: Session, video: Video, request: str) -> tuple[str, l
             taken.add(origin)
         drafts.append((_Draft(kind=d.kind, title=d.title.strip(), bullets=bullets, narration=narration, formula=d.formula,
                               code=d.code, table=d.table, diagram=d.diagram, image_prompt=d.image_prompt), before))
-    drafts = drafts[:MAX_SCENES]
+    if unsourced:
+        # Dropping it would delete a scene the lecturer may not have asked to remove, without a word.
+        raise RevisionRefused(f"Bản sửa có cảnh thiếu nguồn ({', '.join(unsourced)}) nên video chưa thay đổi. "
+                              "Hãy thử lại hoặc nói rõ hơn.")
+    if len(drafts) > MAX_SCENES:
+        # As for a first draft: the cut is made before the closing summary.
+        drafts = drafts[:MAX_SCENES - 1] + drafts[-1:]
     _settle_kinds([draft for draft, _ in drafts])
 
     scenes: list[dict | None] = []
