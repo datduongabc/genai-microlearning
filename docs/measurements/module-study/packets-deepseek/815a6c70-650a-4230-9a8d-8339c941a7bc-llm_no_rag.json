@@ -1,0 +1,276 @@
+{
+  "pair_id": "815a6c70-650a-4230-9a8d-8339c941a7bc",
+  "group": "llm_no_rag",
+  "generator_model": "deepseek-flash",
+  "generation_models": [
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    }
+  ],
+  "packet": {
+    "anon_id": "",
+    "topic": "Hồi quy có trọng số cục bộ (locally weighted regression)",
+    "bloom_level": "analyze",
+    "learning_objective": "Sau khi hoàn thành module, người học có thể phân tích sự khác biệt giữa hồi quy có trọng số cục bộ (locally weighted regression) và hồi quy tuyến tính thông thường về cách khớp dữ liệu và cách dự đoán tại một giá trị x.",
+    "sub_objectives": [
+      "So sánh cách hồi quy tuyến tính và hồi quy có trọng số cục bộ khớp dữ liệu khi phải dự đoán tại một giá trị x",
+      "Phân loại hồi quy tuyến tính và hồi quy có trọng số cục bộ vào nhóm thuật toán học tham số và phi tham số theo tiêu chí số lượng tham số cần lưu trữ",
+      "Chỉ ra mối liên hệ giữa việc chỉ tập trung vào các mẫu huấn luyện gần điểm cần dự đoán với khả năng khớp được các hàm rất phi tuyến",
+      "Mô tả cách hồi quy có trọng số cục bộ khớp một đường thẳng cục bộ trong lân cận của điểm cần dự đoán"
+    ],
+    "content_markdown": "# Nội dung cốt lõi\n\n## 1. So sánh cách hồi quy tuyến tính và hồi quy có trọng số cục bộ khớp dữ liệu khi phải dự đoán tại một giá trị x\n\n- **Hồi quy tuyến tính (linear regression)**\n  - Giả thuyết: $h_\\theta(x) = \\theta^T x$ (hay $\\theta_0 + \\theta_1 x$ với một biến).\n  - Ước lượng $\\theta$ **một lần duy nhất** bằng cách cực tiểu hoá tổng bình phương sai số trên **toàn bộ** tập huấn luyện: $J(\\theta) = \\tfrac{1}{2}\\sum_i (y_i - \\theta^T x_i)^2$.\n  - Kết quả là **một đường thẳng (siêu phẳng) toàn cục duy nhất**, cố định cho mọi điểm truy vấn.\n  - Dự đoán tại $x$: chỉ cần thay $x$ vào công thức đã học; **không cần** dữ liệu huấn luyện nữa.\n\n- **Hồi quy có trọng số cục bộ (locally weighted regression, LWR)**\n  - **Không** học một $\\theta$ cố định dùng chung. Với **mỗi** điểm truy vấn $x$, giải một bài toán bình phương tối thiểu **có trọng số riêng**: $J(\\theta_x) = \\tfrac{1}{2}\\sum_i w_i(x)\\,(y_i - \\theta_x^T x_i)^2$.\n  - Trọng số $w_i(x)$ lớn khi $x_i$ gần $x$ và tiến về 0 khi $x_i$ xa $x$.\n  - Vì $\\theta_x$ phụ thuộc vào $x$, **mỗi giá trị $x$ cho một bộ tham số và một đường khớp khác nhau**.\n  - Dự đoán tại $x$ = giá trị của đường thẳng cục bộ vừa khớp, đánh giá đúng tại $x$.\n  - Hệ quả: mỗi lần dự đoán phải **chạy lại** toàn bộ quá trình tối ưu trên dữ liệu huấn luyện.\n\n- **Bảng so sánh nhanh**\n\n| Tiêu chí | Hồi quy tuyến tính | Hồi quy có trọng số cục bộ |\n|---|---|---|\n| Số đường khớp | Một đường toàn cục | Một đường cục bộ cho mỗi $x$ |\n| Ảnh hưởng của mẫu ở xa điểm truy vấn | Như mọi mẫu khác | Gần như bị bỏ qua |\n| Thời điểm tính toán | Một lần, lúc huấn luyện | Lặp lại ở mỗi lần dự đoán |\n| Dạng hàm biểu diễn được | Chỉ tuyến tính | Phi tuyến (ghép nhiều đường thẳng cục bộ) |\n| Cần dữ liệu huấn luyện khi dự đoán | Không | Có |\n\n## 2. Phân loại hồi quy tuyến tính và hồi quy có trọng số cục bộ vào nhóm thuật toán học tham số và phi tham số theo tiêu chí số lượng tham số cần lưu trữ\n\n- **Tiêu chí phân loại:** số lượng tham số mà mô hình phải lưu trữ có bị **chốt trước** và **không đổi** theo kích thước tập huấn luyện $n$ hay không.\n\n- **Hồi quy tuyến tính → học tham số (parametric)**\n  - Số tham số **cố định** = $d + 1$ ($d$ đặc trưng cộng hệ số chặn), được chọn trước khi học.\n  - Không phụ thuộc vào $n$. Sau huấn luyện chỉ cần lưu vector $\\theta$; có thể **loại bỏ toàn bộ** dữ liệu huấn luyện.\n\n- **Hồi quy có trọng số cục bộ → học phi tham số (non-parametric)**\n  - **Không** có vector tham số cố định dùng cho mọi truy vấn; mô hình phải \"mang theo\" dữ liệu huấn luyện.\n  - Số tham số **hiệu dụng tăng theo $n$**: về bản chất phải lưu cả tập huấn luyện, kích thước bộ nhớ cỡ $n \\times (d+1)$.\n  - Phần điều khiển được là các **siêu tham số (hyperparameter)** như bandwidth $\\tau$ và dạng kernel — số này cố định, nhưng **không đủ** để thay thế dữ liệu.\n\n- **Lưu ý tránh nhầm lẫn:** tại mỗi điểm truy vấn, LWR vẫn giải một bài toán hồi quy tuyến tính có trọng số, nên **mô hình cục bộ là tuyến tính**; nhưng **thuật toán học vẫn là phi tham số** vì giả thuyết thay đổi theo dữ liệu và theo điểm truy vấn.\n\n- **Hệ quả thực tiễn**\n  - Parametric: dự đoán nhanh, bộ nhớ nhỏ, nhưng áp đặt giả định mạnh về dạng hàm.\n  - Non-parametric: linh hoạt, tốn bộ nhớ và tính toán, cần dữ liệu đủ dày trong lân cận điểm truy vấn.\n\n## 3. Mối liên hệ giữa việc chỉ tập trung vào các mẫu huấn luyện gần điểm cần dự đoán với khả năng khớp được các hàm rất phi tuyến\n\n- **Ý tưởng chính:** một hàm phi tuyến trơn, khi thu hẹp vào một lân cận **đủ nhỏ** quanh một điểm, có thể xấp xỉ rất tốt bằng một hàm tuyến tính (khai triển Taylor bậc nhất quanh điểm đó).\n- **Suy ra:** nếu mỗi lần chỉ khớp một đường thẳng trên lân cận nhỏ của $x$, đường thẳng đó mô tả đúng hành vi **cục bộ** của hàm, dù hàm **toàn cục** rất phi tuyến.\n- **Ghép nhiều đường cục bộ** tại nhiều vị trí $x$ khác nhau tạo thành đường dự đoán uốn cong, độ dốc thay đổi liên tục ⇒ khớp được các dạng phi tuyến.\n- **Cơ chế \"tập trung\":** trọng số $w_i(x)$ giảm theo khoảng cách $\\lVert x_i - x \\rVert$, nên các mẫu ở xa gần như không tham gia xác định độ dốc tại $x$; đường cục bộ không bị \"kéo\" bởi xu hướng chung của dữ liệu ở xa.\n- **Đối chiếu:** hồi quy tuyến tính buộc **một độ dốc duy nhất** đúng cho mọi vùng; nếu hàm thật đổi độ dốc nhiều lần thì mô hình khớp kém ở mọi vùng (underfitting).\n- **Vai trò của bandwidth $\\tau$ — đánh đổi thiên lệch – phương sai (bias–variance)**\n  - $\\tau$ nhỏ ⇒ lân cận hẹp, bám dữ liệu, khớp được cấu trúc phi tuyến mịn hơn, nhưng dễ bị nhiễu (phương sai cao, overfitting).\n  - $\\tau$ lớn ⇒ lân cận rộng, các trọng số gần tương đương nhau, mô hình **tiến dần về hồi quy tuyến tính toàn cục** (thiên lệch cao).\n- **Điều kiện đi kèm:** muốn khớp tốt cần dữ liệu **đủ dày** trong lân cận điểm truy vấn; ở vùng dữ liệu thưa, đường cục bộ kém tin cậy.\n\n## 4. Mô tả cách hồi quy có trọng số cục bộ khớp một đường thẳng cục bộ trong lân cận của điểm cần dự đoán\n\n- **Bước 1 — Nhận điểm truy vấn** $x$ (giá trị cần dự đoán).\n- **Bước 2 — Tính trọng số cho từng mẫu huấn luyện** $(x_i, y_i)$ theo khoảng cách tới $x$, ví dụ kernel Gaussian: $w_i = \\exp\\!\\big(-\\lVert x_i - x \\rVert^2 / (2\\tau^2)\\big)$.\n  - $x_i$ gần $x$ ⇒ $w_i \\approx 1$; $x_i$ xa $x$ ⇒ $w_i \\approx 0$.\n  - $\\tau$ (bandwidth) quyết định \"bán kính\" của lân cận.\n- **Bước 3 — Giải bài toán bình phương tối thiểu có trọng số** với đúng các trọng số vừa tính:\n  - $\\theta_x = \\arg\\min_\\theta \\sum_i w_i\\,(y_i - \\theta^T x_i)^2$\n  - Dạng nghiệm đóng (closed-form): $\\theta_x = (X^T W X)^{-1} X^T W y$, với $W = \\mathrm{diag}(w_1, \\dots, w_n)$ **phụ thuộc vào $x$**.\n- **Bước 4 — Dự đoán:** $\\hat{y} = \\theta_x^T x$, tức giá trị của đường thẳng cục bộ tại **đúng điểm $x$** (không lấy giá trị tại các điểm khác).\n- **Bước 5 — Với một $x$ mới, lặp lại toàn bộ từ Bước 2**; không có $\\theta$ dùng chung giữa các truy vấn.\n- **Đặc điểm của \"đường thẳng cục bộ\"**\n  - Vẫn là mô hình **tuyến tính theo tham số** $\\theta_x$, nhưng chỉ có hiệu lực trong lân cận quanh $x$.\n  - Độ dốc và hệ số chặn **thay đổi theo $x$** ⇒ tập hợp các đường cục bộ tạo thành một đường cong.\n  - Các mẫu ngoài lân cận (trọng số $\\approx 0$) hầu như không ảnh hưởng tới $\\theta_x$.\n- **Ghi chú mở rộng:** cùng khung này có thể dùng để khớp đa thức cục bộ bậc cao hơn (local polynomial regression); trường hợp bậc 1 chính là đường thẳng cục bộ mô tả ở trên — vẫn giải bài toán có trọng số tương tự, chỉ khác vector đặc trưng.",
+    "slides": [
+      {
+        "title": "Mục tiêu module: phân tích hai cách tiếp cận hồi quy",
+        "bullets": [
+          "Phân tích sự khác biệt giữa hồi quy có trọng số cục bộ (locally weighted regression, LWR) và hồi quy tuyến tính thông thường",
+          "Hai trục phân tích: cách khớp dữ liệu — cách dự đoán tại một giá trị x"
+        ]
+      },
+      {
+        "title": "Hồi quy tuyến tính: mô hình và cách ước lượng θ",
+        "bullets": [
+          "Giả thuyết: h_θ(x) = θ^T x (hay θ_0 + θ_1 x với một biến)",
+          "Ước lượng θ một lần duy nhất",
+          "Cực tiểu hoá tổng bình phương sai số trên toàn bộ tập huấn luyện: J(θ) = ½ Σ_i (y_i − θ^T x_i)²"
+        ]
+      },
+      {
+        "title": "Hồi quy tuyến tính: khớp dữ liệu và dự đoán tại x",
+        "bullets": [
+          "Một đường thẳng (siêu phẳng) toàn cục duy nhất, cố định cho mọi điểm truy vấn",
+          "Dự đoán tại x: chỉ cần thay x vào công thức đã học",
+          "Không cần dữ liệu huấn luyện nữa khi dự đoán"
+        ]
+      },
+      {
+        "title": "LWR: ý tưởng cốt lõi",
+        "bullets": [
+          "Không học một θ cố định dùng chung",
+          "Với mỗi điểm truy vấn x: giải một bài toán bình phương tối thiểu có trọng số riêng",
+          "J(θ_x) = ½ Σ_i w_i(x) (y_i − θ_x^T x_i)²"
+        ]
+      },
+      {
+        "title": "LWR: trọng số cục bộ w_i(x)",
+        "bullets": [
+          "w_i(x) lớn khi x_i gần x",
+          "w_i(x) tiến về 0 khi x_i xa x",
+          "Mẫu ở xa gần như không tham gia xác định đường khớp tại x"
+        ]
+      },
+      {
+        "title": "LWR: khớp dữ liệu và dự đoán tại x",
+        "bullets": [
+          "θ_x phụ thuộc vào x ⇒ mỗi giá trị x cho một bộ tham số và một đường khớp khác nhau",
+          "Dự đoán tại x = giá trị của đường thẳng cục bộ vừa khớp, đánh giá đúng tại x",
+          "Mỗi lần dự đoán phải chạy lại toàn bộ quá trình tối ưu trên dữ liệu huấn luyện"
+        ]
+      },
+      {
+        "title": "So sánh nhanh (1/2): đường khớp, ảnh hưởng mẫu xa, dạng hàm",
+        "bullets": [
+          "Số đường khớp: một đường toàn cục ↔ một đường cục bộ cho mỗi x",
+          "Mẫu ở xa điểm truy vấn: như mọi mẫu khác ↔ gần như bị bỏ qua",
+          "Dạng hàm biểu diễn được: chỉ tuyến tính ↔ phi tuyến (ghép nhiều đường thẳng cục bộ)"
+        ]
+      },
+      {
+        "title": "So sánh nhanh (2/2): chi phí tính toán và nhu cầu dữ liệu",
+        "bullets": [
+          "Thời điểm tính toán: một lần, lúc huấn luyện ↔ lặp lại ở mỗi lần dự đoán",
+          "Cần dữ liệu huấn luyện khi dự đoán: không ↔ có"
+        ]
+      }
+    ],
+    "examples": [
+      {
+        "context": "Một kỹ sư phân tích của một chuỗi bán lẻ muốn dự đoán doanh thu (triệu đồng) tại mức chi phí quảng cáo x = 3 (trăm triệu đồng) bằng hồi quy có trọng số cục bộ (locally weighted regression) với kernel Gaussian và bandwidth τ = 1. Tập huấn luyện chỉ gồm 4 mẫu (x_i, y_i): (1, 1), (2, 2), (4, 7), (5, 8). Mỗi lần dự đoán, kỹ sư phải khớp lại một đường thẳng cục bộ trong lân cận của x = 3.",
+        "analysis": "Bước 1: Nhận điểm truy vấn x = 3, tính khoảng cách tới từng mẫu huấn luyện (|1 − 3| = 2; |2 − 3| = 1; |4 − 3| = 1; |5 − 3| = 2) rồi áp dụng công thức trọng số Gaussian w_i = exp(−‖x_i − x‖²/(2τ²)) với τ = 1: mẫu x = 1 và x = 5 (cách 2) có w = 0,1353; mẫu x = 2 và x = 4 (cách 1) có w = 0,6065 — mẫu càng gần x thì trọng số càng lớn.\nBước 2: Lập bài toán bình phương tối thiểu có trọng số J(θ_3) = ½·Σ_i w_i·(y_i − θ_3^T x_i)² và tính các tổng có trọng số: Σw = 1,4836; Σw·x = 4,4508; Σw·x² = 15,6478; Σw·y = 6,6762; Σw·x·y = 24,9553.\nBước 3: Thay các tổng này vào dạng nghiệm đóng θ_3 = (X^T W X)^(−1)·X^T W y, tức giải hệ phương trình chuẩn 1,4836·θ0 + 4,4508·θ1 = 6,6762 và 4,4508·θ0 + 15,6478·θ1 = 24,9553, thu được θ0 ≈ −1,939 và θ1 ≈ 2,146; đường thẳng cục bộ quanh x = 3 là ŷ = −1,939 + 2,146x.\nBước 4: Dự đoán tại đúng điểm truy vấn: ŷ = −1,939 + 2,146 × 3 ≈ 4,50 (triệu đồng), tức giá trị của đường thẳng cục bộ vừa khớp, đánh giá đúng tại x = 3.\nKết luận: Đường thẳng cục bộ ŷ = −1,939 + 2,146x được khớp chỉ nhờ các trọng số w_i(x) tính theo khoảng cách tới x = 3 và chỉ có hiệu lực trong lân cận quanh x = 3, đúng như mô tả ở mục 4: mỗi điểm truy vấn có một bộ θ_x riêng và dự đoán chính là giá trị của đường cục bộ tại đúng x đó. Lỗi người học hay mắc: dùng lại θ_3 = (−1,939; 2,146) để dự đoán cho một giá trị x khác — vì θ_x phụ thuộc vào x, mỗi truy vấn mới phải lặp lại toàn bộ quá trình từ bước tính trọng số."
+      },
+      {
+        "context": "Một nhóm kỹ sư xây dựng dịch vụ dự đoán nhu cầu điện năng chạy trên thiết bị biên có bộ nhớ hạn chế. Tập huấn luyện gồm n = 50.000 mẫu, mỗi mẫu có d = 6 đặc trưng (nhiệt độ, độ ẩm, giờ trong ngày, ...). Nhóm phải quyết định dùng hồi quy tuyến tính hay hồi quy có trọng số cục bộ, và cần biết mỗi cách phải lưu bao nhiêu giá trị trong bộ nhớ thiết bị.",
+        "analysis": "Bước 1: Xác định tiêu chí phân loại theo mục 2 của nội dung: số lượng tham số mà mô hình phải lưu trữ có bị chốt trước và không đổi theo kích thước tập huấn luyện n hay không.\nBước 2: Với hồi quy tuyến tính, số tham số cần lưu là d + 1 = 6 + 1 = 7 (6 hệ số đặc trưng cộng hệ số chặn), con số này chốt trước khi học và không phụ thuộc n = 50.000 ⇒ thuộc nhóm học tham số (parametric); sau huấn luyện chỉ cần giữ vector θ gồm 7 số và có thể loại bỏ toàn bộ dữ liệu huấn luyện.\nBước 3: Với hồi quy có trọng số cục bộ, không có vector tham số cố định dùng cho mọi truy vấn nên mô hình phải \"mang theo\" tập huấn luyện, kích thước bộ nhớ cỡ n × (d + 1) = 50.000 × 7 = 350.000 giá trị, tăng theo n ⇒ thuộc nhóm học phi tham số (non-parametric); các siêu tham số (hyperparameter) như bandwidth τ và dạng kernel tuy cố định nhưng không đủ để thay thế dữ liệu.\nBước 4: Kiểm tra một nhầm lẫn thường gặp: tại mỗi điểm truy vấn, hồi quy có trọng số cục bộ vẫn giải một bài toán hồi quy tuyến tính có trọng số nên mô hình cục bộ là tuyến tính, nhưng vì giả thuyết thay đổi theo điểm truy vấn và mô hình phải mang theo dữ liệu huấn luyện, thuật toán học vẫn được xếp vào nhóm phi tham số.\nKết luận: Theo tiêu chí số tham số phải lưu có bị chốt trước hay không, hồi quy tuyến tính (7 tham số, không đổi theo n) là học tham số còn hồi quy có trọng số cục bộ (khoảng 350.000 giá trị, tăng theo n) là học phi tham số, đúng như phân loại ở mục 2; hệ quả thực tiễn là nếu thiết bị biên chỉ đủ chỗ cho vài nghìn giá trị thì chỉ hồi quy tuyến tính khả thi, còn hồi quy có trọng số cục bộ tốn bộ nhớ và cần dữ liệu đủ dày trong lân cận điểm truy vấn. Lỗi người học hay mắc: kết luận hồi quy có trọng số cục bộ là học tham số vì mỗi lần khớp chỉ là một bài toán hồi quy tuyến tính có trọng số, hoặc vì bandwidth τ là một con số cố định."
+      }
+    ],
+    "quiz": [
+      {
+        "stem": "Trong một bài toán hồi quy, quan hệ giữa x và y rất phi tuyến. Người ta lần lượt dùng hồi quy tuyến tính và hồi quy có trọng số cục bộ (LWR) để dự đoán y tại cùng một giá trị x cho trước. Phát biểu nào nêu đúng khác biệt giữa hai cách khớp dữ liệu khi tạo ra dự đoán tại x?",
+        "choices": [
+          "Hai phương pháp cùng ước lượng tham số trên tập huấn luyện; LWR chỉ thêm trọng số khoảng cách vào hàm mất mát rồi dùng chung bộ tham số đó cho các giá trị x khác.",
+          "Vì đường cục bộ của LWR vẫn là mô hình tuyến tính theo tham số, nên đường dự đoán của LWR chỉ biểu diễn được quan hệ tuyến tính giống hồi quy tuyến tính.",
+          "Ở cả hai phương pháp, mẫu ở xa điểm truy vấn vẫn góp phần xác định độ dốc tại x như mẫu gần; LWR chỉ khác ở kernel làm trơn đường dự đoán.",
+          "Hồi quy tuyến tính thay x vào bộ tham số cố định đã ước lượng, còn LWR giải lại bài toán có trọng số riêng cho x rồi lấy giá trị tại x."
+        ],
+        "correct_index": 3,
+        "explanation": "Hồi quy tuyến tính ước lượng một bộ tham số cố định trên tập huấn luyện, tạo ra một đường toàn cục, nên dự đoán tại x chỉ là thay x vào bộ tham số đã học; còn LWR tính trọng số theo khoảng cách cho từng x, giải lại bài toán bình phương tối thiểu có trọng số để có theta_x phụ thuộc vào x và lấy giá trị của đường cục bộ tại đúng điểm x — đó là khác biệt cốt lõi khi tạo ra dự đoán tại x. Phương án nói hai phương pháp cùng ước lượng tham số trên tập huấn luyện rồi dùng chung bộ tham số đó cho các giá trị x khác là sai, vì LWR không có bộ tham số dùng chung giữa các truy vấn: mỗi x cho một bộ tham số và một đường khớp khác nhau. Phương án cho rằng mẫu ở xa điểm truy vấn vẫn góp phần xác định độ dốc tại x như mẫu gần là sai, vì trọng số w_i(x) lớn khi x_i gần x và tiến về 0 khi x_i xa x, nên các mẫu ở xa gần như không tham gia xác định độ dốc tại x. Phương án suy ra từ việc đường cục bộ là tuyến tính rằng LWR chỉ biểu diễn được quan hệ tuyến tính là sai, vì độ dốc và hệ số chặn của đường cục bộ thay đổi theo x, và tập hợp các đường cục bộ tại nhiều vị trí tạo thành đường dự đoán uốn cong, khớp được các dạng phi tuyến."
+      },
+      {
+        "stem": "Hồi quy tuyến tính và hồi quy có trọng số cục bộ (locally weighted regression, LWR) được xếp vào hai nhóm thuật toán học khác nhau. Phát biểu nào sau đây chỉ ra đúng sự khác biệt cốt lõi giữa chúng theo tiêu chí số lượng tham số mà mô hình phải lưu trữ?",
+        "choices": [
+          "Hồi quy tuyến tính là tham số vì d + 1 tham số được chốt trước và không đổi theo n; LWR là phi tham số vì phải lưu tập huấn luyện.",
+          "Cả hai đều là tham số vì LWR vẫn khớp một hồi quy tuyến tính có trọng số với d + 1 tham số tại mỗi truy vấn, và bandwidth τ là siêu tham số cố định.",
+          "Hồi quy tuyến tính là phi tham số vì phải dùng tập huấn luyện để ước lượng θ, còn LWR là tham số vì mỗi truy vấn lưu một vector θ_x riêng.",
+          "Cả hai đều là phi tham số vì cả hai đều học từ dữ liệu, nên số tham số cần lưu tăng lên khi kích thước tập huấn luyện n tăng."
+        ],
+        "correct_index": 0,
+        "explanation": "Tiêu chí phân loại trong bài là số lượng tham số mô hình phải lưu trữ có bị chốt trước và không đổi theo kích thước tập huấn luyện n hay không. Hồi quy tuyến tính có số tham số cố định bằng d + 1, chọn trước khi học, không phụ thuộc n, sau huấn luyện chỉ cần lưu vector θ nên là học tham số; LWR không có vector tham số cố định dùng cho mọi truy vấn, số tham số hiệu dụng tăng theo n vì về bản chất phải mang theo tập huấn luyện, nên là học phi tham số. Vì vậy phát biểu nói hồi quy tuyến tính là tham số với d + 1 tham số chốt trước và LWR là phi tham số vì phải lưu tập huấn luyện là đúng. Phát biểu gán hồi quy tuyến tính cho nhóm phi tham số và LWR cho nhóm tham số sai vì đã đảo ngược vai trò: việc dùng tập huấn luyện để ước lượng θ một lần không làm số tham số của hồi quy tuyến tính phụ thuộc n, còn θ_x của LWR không phải là bộ tham số dùng chung mà thay đổi theo từng điểm truy vấn. Phát biểu nói cả hai đều là tham số sai vì tuy tại mỗi điểm truy vấn LWR vẫn giải một bài toán hồi quy tuyến tính có trọng số, mô hình cục bộ là tuyến tính nhưng thuật toán học vẫn là phi tham số, và các siêu tham số như bandwidth τ không đủ để thay thế dữ liệu huấn luyện. Phát biểu nói cả hai đều là phi tham số sai vì hồi quy tuyến tính có số tham số cố định bằng d + 1 và không phụ thuộc n, nên không thuộc nhóm phi tham số."
+      },
+      {
+        "stem": "Một tập huấn luyện có quan hệ giữa y và x uốn cong liên tục, độ dốc đổi chiều nhiều lần. Hồi quy tuyến tính khớp kém ở các vùng, còn hồi quy có trọng số cục bộ (LWR) với bandwidth nhỏ lại cho đường dự đoán bám sát dạng uốn cong đó. Vì sao việc chỉ tập trung vào các mẫu huấn luyện gần điểm cần dự đoán lại cho phép LWR làm được điều này?",
+        "choices": [
+          "Mỗi lần chỉ khớp một đường thẳng trên lân cận nhỏ quanh x vì trọng số giảm theo khoảng cách, nên đường đó mô tả đúng độ dốc cục bộ; ghép các đường cục bộ có độ dốc khác nhau tạo thành đường cong.",
+          "Việc giải lại bài toán tối ưu có trọng số ở mỗi điểm x giúp tích lũy thông tin từ cả các vùng dữ liệu ở xa, nhờ đó đường dự đoán uốn theo xu hướng chung của tập dữ liệu.",
+          "Vì thuật toán phi tham số phải mang theo dữ liệu huấn luyện nên số tham số hiệu dụng tăng lên theo n, giúp mô hình biểu diễn được nhiều dạng cong phức tạp của hàm thật.",
+          "Hàm giả thuyết của mô hình tại mỗi điểm x vốn đã có dạng phi tuyến theo x, nên chỉ cần khớp một lần trên lân cận hẹp là tạo ra được độ cong thay đổi liên tục của hàm thật."
+        ],
+        "correct_index": 0,
+        "explanation": "Đáp án đúng là phương án nói rằng mỗi lần chỉ khớp một đường thẳng trên lân cận nhỏ quanh x vì trọng số giảm theo khoảng cách, nên đường đó mô tả đúng độ dốc cục bộ, và ghép các đường cục bộ có độ dốc khác nhau tạo thành đường cong: tài liệu nêu trọng số w_i(x) lớn khi x_i gần x và tiến về 0 khi x_i xa x, nên các mẫu ở xa gần như không tham gia xác định độ dốc tại x; một hàm phi tuyến trơn trong lân cận đủ nhỏ có thể xấp xỉ tốt bằng hàm tuyến tính, và nhiều đường cục bộ ghép lại cho đường dự đoán uốn cong. Phương án nói hàm giả thuyết tại mỗi điểm x vốn đã có dạng phi tuyến theo x là sai, vì tại mỗi điểm truy vấn LWR vẫn giải một bài toán hồi quy tuyến tính có trọng số, tức mô hình cục bộ là tuyến tính theo θ_x và chỉ có hiệu lực trong lân cận quanh x. Phương án nói việc giải lại bài toán tối ưu giúp tích lũy thông tin từ cả các vùng dữ liệu ở xa là sai, vì trọng số làm các mẫu ở xa gần như bị bỏ qua, và việc chạy lại quá trình tối ưu không phải nguồn gốc của độ cong. Phương án quy khả năng khớp phi tuyến cho việc thuật toán phi tham số phải mang theo dữ liệu huấn luyện là sai, vì số tham số hiệu dụng tăng theo n chỉ là tiêu chí phân loại tham số/phi tham số, không phải cơ chế tạo ra độ cong."
+      }
+    ],
+    "practice": {
+      "stem": "Trên một tập dữ liệu mà quan hệ giữa y và x uốn cong rõ rệt, hai mô hình được dùng để dự đoán y tại một giá trị x₀: hồi quy tuyến tính thông thường và hồi quy có trọng số cục bộ (kernel Gaussian, bandwidth τ). Phát biểu nào sau đây mô tả đúng sự khác biệt giữa hai mô hình về cách khớp dữ liệu và cách dự đoán tại x₀?",
+      "choices": [
+        "Hồi quy tuyến tính bị buộc vào một độ dốc chung cho các vùng dữ liệu, còn hồi quy có trọng số cục bộ khớp được các dạng phi tuyến tốt hơn khi tăng bandwidth τ, vì τ lớn làm lân cận quanh x₀ hẹp lại.",
+        "Hồi quy tuyến tính ước lượng một bộ tham số trên tập huấn luyện; hồi quy có trọng số cục bộ cũng ước lượng một bộ tham số như vậy nhưng có thêm trọng số theo khoảng cách, rồi dùng lại bộ tham số đó cho các điểm truy vấn khác.",
+        "Hồi quy tuyến tính ước lượng một bộ tham số trên tập huấn luyện rồi dự đoán tại x₀ bằng công thức đã học; hồi quy có trọng số cục bộ tính lại trọng số theo khoảng cách tới x₀ và khớp một đường thẳng cục bộ riêng cho mỗi lần dự đoán.",
+        "Cả hai mô hình đều dự đoán tại x₀ bằng cách thay x₀ vào công thức đã học; khác biệt là hồi quy có trọng số cục bộ chỉ giữ lại các mẫu gần x₀ và loại bỏ các mẫu ở xa trước khi khớp đường thẳng."
+      ],
+      "correct_index": 2,
+      "explanation": "Đáp án đúng là phương án nói rằng hồi quy tuyến tính ước lượng một bộ tham số trên tập huấn luyện rồi dự đoán tại x₀ bằng công thức đã học, còn hồi quy có trọng số cục bộ tính lại trọng số theo khoảng cách tới x₀ và khớp một đường thẳng cục bộ riêng cho mỗi lần dự đoán: tài liệu nêu hồi quy tuyến tính cực tiểu hoá tổng bình phương sai số trên tập huấn luyện để có một đường toàn cục cố định và khi dự đoán chỉ cần thay x vào công thức, trong khi hồi quy có trọng số cục bộ giải một bài toán bình phương tối thiểu có trọng số riêng cho từng điểm truy vấn, với wᵢ(x) lớn khi xᵢ gần x, nên mỗi x cho một θₓ và mỗi lần dự đoán phải chạy lại quá trình tối ưu. Phương án nói hồi quy có trọng số cục bộ cũng ước lượng một bộ tham số có thêm trọng số rồi dùng lại cho các điểm truy vấn khác là sai vì tài liệu khẳng định không có θ dùng chung giữa các truy vấn. Phương án nói cả hai mô hình đều dự đoán bằng cách thay x₀ vào công thức và hồi quy có trọng số cục bộ chỉ giữ lại các mẫu gần x₀ rồi loại bỏ các mẫu ở xa là sai vì tài liệu dùng trọng số giảm theo khoảng cách cho các mẫu chứ không lọc bỏ mẫu, và bài toán bình phương tối thiểu ở đây là bài toán có trọng số. Phương án nói tăng bandwidth τ giúp khớp phi tuyến tốt hơn vì τ lớn làm lân cận quanh x₀ hẹp lại là sai vì tài liệu ghi τ nhỏ mới cho lân cận hẹp và dễ bị nhiễu, còn τ lớn làm các trọng số gần tương đương nhau và mô hình tiến dần về hồi quy tuyến tính toàn cục."
+    },
+    "source_chunks": [
+      "Week03\nWhat I'd like to do today is continue our discussion of supervised learning. So, last Wednesday you saw the linear regression algorithm, including both gradient descent, how the formative problem, then gradient descent, and then the normal equations. What I'd like to do today is talk about locally weighted regression, which is a way to modify linear regression to make it fit very non-linear functions, so you aren't just making straight lines. And then we'll talk about a probabilistic interpretation of linear regression, and that will lead us into the first classification algorithm you see in this class, called logistic",
+      "Week03\nyou then return theta transpose x. For locally weighted regression, you do something slightly different, which is if this is the value of x and you want to make a prediction around that value of x, What you do is you look in a little local neighborhood at the training examples close to that point X where you want to make a prediction. And then I'll describe this in... informally for now, but we'll formalize this in math in a second. But focusing mainly on these examples and looking a little bit at further out examples, but really focusing mainly on these examples, you try to fill a straight line like that,",
+      "Week03\nfocusing on the training examples that are close to where you want to make a prediction. And by close, I mean the values are similar on the x-axis. The x values are similar. and then to actually make a prediction you will use this green line that you just fit to make a prediction at that value of x. Now, if you want to make a prediction at a different point let's say that the user now says hey, make a prediction for this point then what you would do is focus on this local area kind of look at those points and when I say focus, put most of the weight on these points but you kind of take a glance at the points further away,",
+      "Week03\nwhich is a type of algorithm for automatically deciding, do you want x squared as a feature or square root of x as a feature, or maybe you want longer of x as a feature, right? But what set of features does the best job fitting the data that you have if it's not fit well by a perfectly straight line? What I'd like to do today is, so you hear about feature selection later this quarter. What I want to share with you today is a different way of addressing this problem of what if the data isn't just fit well by a straight line. And in particular I want to share with you an idea called locally weighted regression or locally weighted linear regression So let me use a slightly different example to illustrate this which is that if you have a data set that looks like that",
+      "Week03\nso it's pretty clear what the shape of this data is, but how do you fit a curve that kind of looks like that? And it's actually quite difficult to find features. Is it square root of x, log of x, x cubed, like third root of x, x to the power of two-thirds? But what is the set of features that lets you do this? So we'll sidestep all those problems in an algorithm called locally-weighted regression. And to introduce a bit more machine learning terminology, in machine learning we sometimes distinguish between parametric learning algorithms and non-parametric learning algorithms.",
+      "Week03\nBut in a parametric learning algorithm, you fit some fixed set of parameters, such as data i to data. And so linear regression, as you saw last Wednesday, is a parametric learning algorithm because there's a fixed set of parameters. The theta i's that you fit to data, and then you're done, right? Locally weighted regression will be our first exposure to a non-parametric learning algorithm. And what that means is that the amount of data slash parameters you need to keep grows. And in this case, it grows linearly with the size of the data, with size of the training set. Okay? So with a parametric learning algorithm,",
+      "Week03\nregression. And we'll talk about an algorithm called Newton's method for logistic regression. And so the dependency of ideas in this class is that locally weighted regression will depend on what you learned in linear regression. And then, we're actually going to just cover the key ideas of locally weighted regression and let you play some of the ideas yourself in the problem set one, which we'll release later this week. And then, I guess, give a problem-less interpretation of linear regression, logistic regression depend on that, and Newtis method is for logistic regression. Okay? To recap the notation you saw on Wednesday,",
+      "Week03\nAgain, you get to practice implementing locally weighted regression homework, so I'm going to go over the high-level ideas relatively quickly and then let you gain practice in the problem set. All right, so let me redraw that data set. Let me do something like this. Well, all right, so say you have a data set like this. Now, for linear regression, if you want to evaluate h at a certain value of the input, So, to make a prediction at a certain value of x, for linear regression, what you do is you fit theta to minimize this cost function. And then you return theta transpose x. So you fit a straight line, and then if you want to make a prediction at this value x,"
+    ]
+  },
+  "reference": {
+    "coverage": "unknown",
+    "chunk_ids": [],
+    "total_chunks": null
+  },
+  "claim_citations": null
+}

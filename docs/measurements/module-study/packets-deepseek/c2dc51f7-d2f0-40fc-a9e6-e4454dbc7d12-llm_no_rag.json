@@ -1,0 +1,319 @@
+{
+  "pair_id": "c2dc51f7-d2f0-40fc-a9e6-e4454dbc7d12",
+  "group": "llm_no_rag",
+  "generator_model": "deepseek-flash",
+  "generation_models": [
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    }
+  ],
+  "packet": {
+    "anon_id": "",
+    "topic": "Khái niệm tiến trình (Process Concept)",
+    "bloom_level": "analyze",
+    "learning_objective": "Sau khi hoàn thành module, người học có thể phân tích mối quan hệ giữa chương trình và tiến trình về trạng thái lưu trữ, khả năng thực thi và quan hệ một chương trình – nhiều tiến trình.",
+    "sub_objectives": [
+      "So sánh chương trình và tiến trình về trạng thái lưu trữ (thụ động trên đĩa so với chủ động trong bộ nhớ) và khả năng thực thi",
+      "Chỉ ra mối liên hệ giữa một chương trình và nhiều tiến trình được tạo ra từ nó khi nhiều người dùng cùng thực thi chương trình đó",
+      "Phân loại các loại dữ liệu của chương trình (biến toàn cục, biến cục bộ, dữ liệu cấp phát động) vào đúng phân vùng bộ nhớ của tiến trình (text section, data section, heap, stack)",
+      "Mô tả tiến trình là một chương trình đang được thực thi với quá trình thực thi tiến triển theo trình tự"
+    ],
+    "content_markdown": "## 1. So sánh chương trình và tiến trình về trạng thái lưu trữ và khả năng thực thi\n\n- **Chương trình (program) — thực thể thụ động (passive entity)**\n  - Tồn tại dưới dạng **tệp trên thiết bị lưu trữ** (đĩa, SSD): tệp thực thi (executable), mã nguồn hoặc mã trung gian.\n  - Bản chất là **tập chỉ thị + dữ liệu tĩnh**, không có trạng thái biến đổi theo thời gian.\n  - Không có con trỏ lệnh (program counter), không có ngăn xếp đang hoạt động, không tiêu tốn chu kỳ CPU.\n  - Thời gian sống **dài hạn**: không biến mất khi máy tắt hay khi không ai chạy nó.\n- **Tiến trình (process) — thực thể chủ động (active entity)**\n  - Được nạp (một phần hoặc toàn bộ) vào **bộ nhớ chính**, có **không gian địa chỉ riêng**.\n  - Có trạng thái thực thi luôn biến đổi: program counter, thanh ghi (registers), stack, heap, các tài nguyên được cấp (ví dụ tệp đang mở).\n  - Thời gian sống **hữu hạn**: sinh ra, tiến triển, rồi kết thúc và giải phóng tài nguyên.\n- **Khả năng thực thi**\n  - Chương trình chỉ **mang tiềm năng** thực thi; nó chỉ thực sự chạy khi hệ điều hành nạp nó vào bộ nhớ và cấp phát tài nguyên.\n  - Tiến trình là **hiện thực hóa** tiềm năng đó: CPU thực sự thi hành các chỉ thị của nó.\n  - Vì vậy “chạy chương trình” trên thực tế là **tạo ra một tiến trình từ chương trình**.\n- **Bảng đối chiếu nhanh**\n\n| Tiêu chí | Chương trình | Tiến trình |\n|---|---|---|\n| Trạng thái lưu trữ | Thụ động, trên đĩa | Chủ động, trong bộ nhớ |\n| Trạng thái nội tại | Tĩnh, không đổi | Động, thay đổi liên tục |\n| Đơn vị quản lý của OS | Tệp / thực thể lưu trữ | Đơn vị cấp phát CPU và tài nguyên |\n| Số lượng tương ứng | 1 tệp chương trình | N tiến trình độc lập |\n| Vòng đời | Dài hạn | Hữu hạn |\n\n- **Hệ quả cần phân tích**\n  - Thay đổi giá trị dữ liệu khi chạy **không** làm thay đổi tệp chương trình (trừ khi tiến trình chủ động ghi lại tệp).\n  - Lỗi hay thay đổi trạng thái ở tiến trình này **không tự động lan sang** tiến trình khác cùng chương trình.\n\n## 2. Quan hệ một chương trình – nhiều tiến trình khi nhiều người dùng cùng thực thi\n\n- **Cơ chế hình thành**\n  - Khi nhiều người dùng (hoặc một người dùng nhiều lần) thực thi cùng một tệp chương trình, hệ điều hành tạo **một tiến trình riêng cho mỗi lần thực thi**.\n  - Kết quả là quan hệ **một chương trình – nhiều tiến trình (1–n)**: một mã nguồn/mã lệnh duy nhất, nhiều thực thể thực thi.\n- **Mỗi tiến trình có phần riêng**\n  - Mã định danh riêng (PID), chủ sở hữu (owner) và quyền truy cập riêng theo người dùng khởi tạo.\n  - Không gian địa chỉ ảo riêng: biến toàn cục của tiến trình A **không phải** biến toàn cục của tiến trình B.\n  - Stack, heap và tập tài nguyên riêng; trạng thái và thời điểm kết thúc độc lập.\n- **Phần có thể được chia sẻ**\n  - Phần **mã lệnh (text)** thường ở dạng chỉ đọc nên hệ điều hành có thể cho các tiến trình cùng chương trình dùng chung các trang nhớ mã lệnh.\n  - Dữ liệu chỉ đọc (hằng, bảng hằng) cũng có thể chia sẻ; dữ liệu ghi được thì không.\n  - Khi tiến trình mới được tạo bằng cơ chế sao chép tiến trình (fork), kỹ thuật **copy-on-write** cho phép dùng chung trang nhớ cho tới khi có thao tác ghi.\n- **Hệ quả phân tích**\n  - **Tính độc lập**: tiến trình này ghi đè biến toàn cục của nó không ảnh hưởng tới tiến trình kia.\n  - **Chia sẻ ngoài không gian địa chỉ** (tệp, socket, thiết bị) là nguồn gốc tranh chấp dữ liệu (race condition) → cần cơ chế đồng bộ.\n  - Các tiến trình cùng chương trình là các thực thể **ngang hàng, cùng “cha”**, không phải bản sao đồng nhất về trạng thái tại mọi thời điểm.\n  - Khi nhiều **người dùng** cùng chạy: khác biệt quan trọng so với việc một người chạy nhiều lần là **danh tính và quyền hạn** (owner, quyền truy cập tệp và tài nguyên) của từng tiến trình.\n\n## 3. Phân loại dữ liệu của chương trình vào các phân vùng bộ nhớ của tiến trình\n\n- **Bốn phân vùng điển hình trong không gian địa chỉ của tiến trình**\n  - **text section**: mã lệnh; thường chỉ đọc, kích thước cố định sau khi nạp.\n  - **data section**: dữ liệu toàn cục/static **đã khởi tạo**; kích thước cố định sau khi nạp.\n  - **heap**: vùng cấp phát động, lớn lên/thu lại trong quá trình chạy.\n  - **stack**: vùng cho lời gọi hàm, lớn lên/thu lại theo độ sâu gọi hàm.\n- **Bảng phân loại**\n\n| Loại dữ liệu | Phân vùng | Ghi chú |\n|---|---|---|\n| Mã lệnh, hằng chuỗi literal, bảng hằng | text section | Chỉ đọc |\n| Biến toàn cục (global) có khởi tạo | data section (initialized data) | Thời gian sống toàn chương trình |\n| Biến static có khởi tạo | data section | Kể cả static khai báo trong hàm |\n| Biến toàn cục/static không khởi tạo (mặc định bằng 0) | data section, vùng bss (uninitialized data) | Không chiếm dung lượng trong tệp |\n| Biến cục bộ, tham số hàm, địa chỉ trả về, frame của hàm | stack | Sinh ra và mất đi theo lời gọi hàm |\n| Dữ liệu cấp phát động (malloc/new hoặc tương đương) | heap | Do lập trình viên quản lý vòng đời |\n\n- **Lưu ý phân tích khi phân loại**\n  - **Kích thước**: text, data, bss cố định tại thời điểm nạp; heap và stack thay đổi trong khi chạy.\n  - **Hướng tăng trưởng**: heap thường phát triển theo hướng tăng địa chỉ, stack theo hướng giảm; hai vùng có thể tiến sát nhau.\n  - **Con trỏ và vùng được trỏ tới**: biến cục bộ kiểu con trỏ nằm ở stack, nhưng vùng nhớ mà nó trỏ tới (nếu cấp phát động) nằm ở heap → phải phân biệt “ô chứa con trỏ” với “vùng được trỏ tới”.\n  - **static khai báo trong hàm**: phạm vi truy cập là cục bộ nhưng thời gian sống là toàn chương trình → nằm ở data/bss, **không** nằm ở stack.\n  - **Tham số truyền theo giá trị** nằm ở stack; dữ liệu được truyền bằng tham chiếu vẫn có thể nằm ở heap hoặc vùng toàn cục.\n  - **Biến cục bộ hết hiệu lực khi hàm trả về** → trả về con trỏ/tham chiếu tới biến cục bộ là lỗi.\n  - **Nhầm lẫn thường gặp**: xếp biến toàn cục vào text section — sai, vì text chỉ chứa mã lệnh và dữ liệu chỉ đọc.\n  - **Tính khái quát**: tên gọi và cách chia chi tiết có thể khác nhau tùy hệ điều hành và kiến trúc (một số hệ thống tách thêm vùng dữ liệu chỉ đọc), nhưng mô hình text/data/bss/heap/stack là mô hình chuẩn để phân tích.\n\n## 4. Tiến trình là chương trình đang được thực thi với quá trình thực thi tiến triển theo trình tự\n\n- **Định nghĩa cốt lõi**\n  - Tiến trình là **một chương trình đang được thực thi** (a program in execution).\n  - Nó gồm cả **phần tĩnh đã nạp** (text, data) và **phần trạng thái động** (program counter, thanh ghi, stack, heap).\n  - Kèm theo thông tin quản lý: mã định danh, trạng thái (new, ready, running, waiting, terminated), ngữ cảnh thực thi.\n- **Biểu hiện của “đang được thực thi”**\n  - CPU liên tục **nhận chỉ thị → giải mã → thi hành**, mỗi bước cập nhật program counter, thanh ghi và bộ nhớ.\n  - Trạng thái của tiến trình **thay đổi theo thời gian**: giá trị biến, nội dung stack, dữ liệu heap đều tiến triển theo từng chỉ thị đã thi hành.\n  - Kết quả của chỉ thị trước ảnh hưởng tới chỉ thị sau → tạo thành **dòng thực thi có trật tự**.\n- **Tính trình tự của quá trình thực thi**\n  - Trong một tiến trình đơn luồng, các chỉ thị được thi hành **tuần tự** theo dòng điều khiển do program counter quyết định.\n  - Rẽ nhánh, vòng lặp, gọi hàm làm thay đổi dòng điều khiển nhưng vẫn là một **chuỗi chỉ thị có thứ tự xác định** theo ngữ nghĩa chương trình.\n  - Khi nhiều tiến trình cùng tồn tại, hệ điều hành **chuyển ngữ cảnh (context switch)** giữa chúng → có xen kẽ ở mức toàn hệ thống, nhưng **bên trong mỗi tiến trình vẫn là một dòng thực thi tuần tự**.\n- **Trạng thái tiến triển và các mốc can thiệp**\n  - Tiến trình lần lượt đi qua các trạng thái: khởi tạo → sẵn sàng → đang chạy → chờ → kết thúc.\n  - Ngắt (interrupt), gọi hệ thống (system call) hoặc hết thời gian cấp phát CPU là những điểm hệ điều hành tạm dừng và can thiệp.\n  - Khi tiến trình kết thúc, tài nguyên (bộ nhớ, tệp đang mở) được thu hồi; phần “đang được thực thi” chấm dứt, còn tệp chương trình vẫn tồn tại nguyên vẹn trên đĩa.\n- **Hệ quả phân tích**\n  - “Chương trình đang chạy” **không** có nghĩa là tệp chương trình đang bị thay đổi, mà là một **thực thể động** có dòng thực thi tuần tự và trạng thái biến đổi theo thời gian.\n  - Vì tính trình tự này, sai sót ở một bước thực thi có thể **lan truyền theo dòng thực thi** trong cùng một tiến trình, dù không lan sang tiến trình khác cùng chương trình.",
+    "slides": [
+      {
+        "title": "Phân tích chương trình và tiến trình",
+        "bullets": [
+          "Mục tiêu: phân tích quan hệ giữa chương trình và tiến trình",
+          "Bốn nội dung: trạng thái lưu trữ và khả năng thực thi; quan hệ một chương trình – nhiều tiến trình; phân vùng bộ nhớ; tiến trình đang được thực thi"
+        ]
+      },
+      {
+        "title": "Chương trình (program) — thực thể thụ động",
+        "bullets": [
+          "Tồn tại dưới dạng tệp trên thiết bị lưu trữ (đĩa, SSD)",
+          "Bản chất: tập chỉ thị + dữ liệu tĩnh, không có trạng thái biến đổi",
+          "Không có program counter, không có stack hoạt động, không tốn chu kỳ CPU"
+        ]
+      },
+      {
+        "title": "Thời gian sống của chương trình",
+        "bullets": [
+          "Dài hạn: không biến mất khi máy tắt",
+          "Không biến mất khi không ai chạy nó",
+          "Tệp thực thi, mã nguồn hay mã trung gian đều là thực thể lưu trữ"
+        ]
+      },
+      {
+        "title": "Tiến trình (process) — thực thể chủ động",
+        "bullets": [
+          "Được nạp vào bộ nhớ chính, có không gian địa chỉ riêng",
+          "Trạng thái thực thi luôn biến đổi: program counter, thanh ghi, stack, heap, tài nguyên được cấp",
+          "Thời gian sống hữu hạn: sinh ra → tiến triển → kết thúc, giải phóng tài nguyên"
+        ]
+      },
+      {
+        "title": "Khả năng thực thi: tiềm năng và hiện thực hóa",
+        "bullets": [
+          "Chương trình chỉ mang tiềm năng thực thi",
+          "Chỉ thực sự chạy khi OS nạp vào bộ nhớ và cấp phát tài nguyên",
+          "Tiến trình hiện thực hóa tiềm năng: CPU thi hành các chỉ thị của nó"
+        ]
+      },
+      {
+        "title": "Chạy chương trình nghĩa là gì?",
+        "bullets": [
+          "\"Chạy chương trình\" thực tế là tạo ra một tiến trình từ chương trình",
+          "Tệp chương trình vẫn là thực thể thụ động trên đĩa",
+          "Tiến trình mới là thực thể chủ động được CPU thi hành"
+        ]
+      },
+      {
+        "title": "Đối chiếu nhanh: chương trình và tiến trình",
+        "bullets": [
+          "Trạng thái lưu trữ: thụ động trên đĩa → chủ động trong bộ nhớ",
+          "Trạng thái nội tại: tĩnh, không đổi → động, thay đổi liên tục",
+          "Đơn vị quản lý của OS: tệp/thực thể lưu trữ → đơn vị cấp phát CPU và tài nguyên"
+        ]
+      },
+      {
+        "title": "Đối chiếu nhanh (tiếp): số lượng và vòng đời",
+        "bullets": [
+          "Số lượng tương ứng: 1 tệp chương trình → N tiến trình độc lập",
+          "Vòng đời: dài hạn → hữu hạn"
+        ]
+      }
+    ],
+    "examples": [
+      {
+        "context": "",
+        "analysis": ""
+      },
+      {
+        "context": "",
+        "analysis": ""
+      }
+    ],
+    "quiz": [
+      {
+        "stem": "Ba người dùng cùng chạy một tệp chương trình trên một máy; mỗi lần chạy hệ điều hành tạo ra một tiến trình riêng. Trong lúc chạy, một tiến trình cập nhật giá trị biến toàn cục của nó rồi kết thúc. Cách mô tả nào sau đây khớp với quan hệ giữa tệp chương trình và các tiến trình đó?",
+        "choices": [
+          "Các tiến trình cùng chương trình chia sẻ chung một vùng biến toàn cục nên giá trị được lan sang nhau.",
+          "Tệp chương trình bị cập nhật giá trị biến toàn cục mỗi khi một trong các tiến trình chạy xong và kết thúc.",
+          "Tệp chương trình là thực thể chủ động trên đĩa, còn mỗi tiến trình là bản sao thụ động trong bộ nhớ.",
+          "Tệp chương trình vẫn thụ động trên đĩa, còn mỗi tiến trình là thực thể chủ động trong bộ nhớ với biến toàn cục riêng."
+        ],
+        "correct_index": 3,
+        "explanation": "Đáp án đúng là “Tệp chương trình vẫn thụ động trên đĩa, còn mỗi tiến trình là thực thể chủ động trong bộ nhớ với biến toàn cục riêng”: bài học nêu chương trình là thực thể thụ động gồm tập chỉ thị và dữ liệu tĩnh trên thiết bị lưu trữ, còn tiến trình là thực thể chủ động được nạp vào bộ nhớ chính với không gian địa chỉ riêng, nên biến toàn cục của tiến trình này không phải biến toàn cục của tiến trình kia. Phương án “Tệp chương trình là thực thể chủ động trên đĩa, còn mỗi tiến trình là bản sao thụ động trong bộ nhớ” sai vì đảo ngược vai trò: chương trình chỉ mang tiềm năng thực thi và không tiêu tốn chu kỳ CPU, còn tiến trình mới là nơi CPU thực sự thi hành chỉ thị. Phương án “Tệp chương trình bị cập nhật giá trị biến toàn cục mỗi khi một trong các tiến trình chạy xong và kết thúc” sai vì thay đổi giá trị dữ liệu khi chạy không làm thay đổi tệp chương trình, trừ khi tiến trình chủ động ghi lại tệp. Phương án “Các tiến trình cùng chương trình chia sẻ chung một vùng biến toàn cục nên giá trị được lan sang nhau” sai vì mỗi tiến trình có không gian địa chỉ ảo riêng và các tiến trình cùng chương trình là những thực thể độc lập, chỉ có thể chia sẻ phần mã lệnh chỉ đọc và dữ liệu chỉ đọc."
+      },
+      {
+        "stem": "Một tệp thực thi được đặt trên đĩa của một máy chủ. Ba người dùng khác nhau lần lượt chạy tệp đó, mỗi lần chạy tạo ra một tiến trình đang hoạt động. Cách diễn giải nào sau đây đúng về mối quan hệ giữa tệp chương trình đó với ba tiến trình này?",
+        "choices": [
+          "Một tệp chương trình trên đĩa sinh ra ba tiến trình riêng biệt, mỗi tiến trình có không gian địa chỉ, chủ sở hữu và trạng thái riêng.",
+          "Ba tiến trình là ba bản sao đồng nhất của cùng một chương trình, có chung mã định danh và trạng thái nên tiến triển rồi kết thúc giống nhau.",
+          "Ba tiến trình nhận quyền truy cập từ tệp chương trình trên đĩa nên có cùng chủ sở hữu và cùng quyền truy cập tài nguyên.",
+          "Ba tiến trình dùng chung mã lệnh nên cũng dùng chung vùng dữ liệu toàn cục, khi một người ghi đè biến thì hai người kia đọc được giá trị mới."
+        ],
+        "correct_index": 0,
+        "explanation": "Một tệp chương trình trên đĩa sinh ra ba tiến trình riêng biệt, mỗi tiến trình có không gian địa chỉ, chủ sở hữu và trạng thái riêng là đúng: tài liệu nêu khi nhiều người dùng thực thi cùng một tệp chương trình, hệ điều hành tạo một tiến trình riêng cho mỗi lần thực thi, quan hệ là một chương trình – nhiều tiến trình; mỗi tiến trình có mã định danh, chủ sở hữu, quyền truy cập, không gian địa chỉ ảo, stack, heap và tập tài nguyên riêng, với trạng thái và thời điểm kết thúc độc lập, còn phần mã lệnh chỉ đọc mới có thể được dùng chung. Phương án cho rằng ba tiến trình dùng chung mã lệnh nên cũng dùng chung vùng dữ liệu toàn cục, khi một người ghi đè biến thì hai người kia đọc được giá trị mới là sai vì tài liệu nêu biến toàn cục của tiến trình A không phải biến toàn cục của tiến trình B, và dữ liệu ghi được thì không chia sẻ, chỉ dữ liệu chỉ đọc mới có thể chia sẻ. Phương án cho rằng ba tiến trình là ba bản sao đồng nhất của cùng một chương trình, có chung mã định danh và trạng thái nên tiến triển rồi kết thúc giống nhau là sai vì tài liệu nêu các tiến trình cùng chương trình là các thực thể ngang hàng, cùng “cha”, không phải bản sao đồng nhất về trạng thái tại mọi thời điểm, và mỗi tiến trình có mã định danh riêng cùng trạng thái, thời điểm kết thúc độc lập. Phương án cho rằng ba tiến trình nhận quyền truy cập từ tệp chương trình trên đĩa nên có cùng chủ sở hữu và cùng quyền truy cập tài nguyên là sai vì tài liệu nêu khác biệt quan trọng khi nhiều người dùng cùng chạy là danh tính và quyền hạn (owner, quyền truy cập tệp và tài nguyên) riêng theo người dùng khởi tạo từng tiến trình."
+      },
+      {
+        "stem": "Cho đoạn mã C sau:\n\n```c\nint total = 10;              // (1)\nvoid count(void) {\n    static int calls = 0;    // (2)\n    int local = 1;           // (3)\n    char *buf = malloc(64);  // (4)\n}\n```\n\nCách phân loại nào sau đây mô tả đúng phân vùng bộ nhớ của (1), (2), (3) và của vùng nhớ được cấp bởi malloc ở (4) trong không gian địa chỉ của tiến trình?",
+        "choices": [
+          "(1) và (2) nằm ở data section, (3) nằm ở stack, vùng nhớ cấp bởi malloc ở (4) nằm ở heap.",
+          "(1) nằm ở data section, (2) nằm ở stack do chỉ truy cập được trong hàm, (3) nằm ở stack, vùng nhớ cấp bởi malloc ở (4) nằm ở heap.",
+          "(1) và (2) nằm ở data section, (3) nằm ở stack, vùng nhớ cấp bởi malloc ở (4) nằm ở stack do con trỏ buf là biến cục bộ.",
+          "(1) và (2) nằm ở text section cùng với mã lệnh, (3) nằm ở stack, vùng nhớ cấp bởi malloc ở (4) nằm ở heap."
+        ],
+        "correct_index": 0,
+        "explanation": "(1) là biến toàn cục có khởi tạo nên thuộc data section (initialized data); (2) là biến static khai báo trong hàm, có phạm vi truy cập cục bộ nhưng thời gian sống toàn chương trình nên cũng thuộc data/bss, không nằm ở stack; (3) là biến cục bộ nên thuộc stack; vùng nhớ do malloc cấp là dữ liệu cấp phát động nên thuộc heap. Phương án nói (1) và (2) nằm ở text section cùng với mã lệnh là sai vì text section chỉ chứa mã lệnh và dữ liệu chỉ đọc. Phương án đặt (2) ở stack do chỉ truy cập được trong hàm là sai vì đã nhầm phạm vi truy cập với thời gian sống của biến. Phương án đặt vùng nhớ cấp bởi malloc ở stack do con trỏ buf là biến cục bộ là sai vì đã nhầm ô chứa con trỏ (nằm ở stack) với vùng được trỏ tới (nằm ở heap)."
+      }
+    ],
+    "practice": {
+      "stem": "Hai người dùng A và B trên cùng một máy lần lượt chạy cùng một tệp thực thi `thongke` lấy từ đĩa, tạo ra hai tiến trình P1 và P2 cùng tồn tại. Trong lúc chạy, P1 gán giá trị mới cho biến toàn cục `tong` (đã khởi tạo trong `thongke`) và cấp phát một mảng động bằng malloc. Nhận định nào sau đây phản ánh đúng mối quan hệ giữa tệp `thongke` với P1, P2 và trạng thái lưu trữ của chúng?",
+      "choices": [
+        "Tệp `thongke` vẫn là thực thể thụ động trên đĩa; biến `tong` và mảng cấp phát động mà P1 thay đổi nằm ở data section và heap riêng của P1, không lan sang P2.",
+        "P1 và P2 cùng sinh ra từ tệp `thongke` nên dùng chung không gian địa chỉ, vì vậy giá trị `tong` do P1 gán được P2 nhìn thấy ngay, chỉ khác nhau ở PID và owner.",
+        "Tệp `thongke` là thực thể chủ động: khi P1 chạy, program counter và stack hiện tại của P1 được ghi trở lại tệp để lần chạy sau tiếp tục đúng chỗ đã dừng.",
+        "Khi P1 và P2 cùng chạy, hệ điều hành xen kẽ chỉ thị của hai tiến trình trong một dòng thực thi chung nên kết quả mỗi bước không còn phụ thuộc chỉ thị trước đó."
+      ],
+      "correct_index": 0,
+      "explanation": "Tiến trình là một chương trình đang được thực thi: tệp `thongke` trên đĩa chỉ là thực thể thụ động gồm tập chỉ thị và dữ liệu tĩnh, còn P1 và P2 là các thực thể chủ động trong bộ nhớ với không gian địa chỉ riêng, nên biến toàn cục `tong` nằm ở data section của riêng từng tiến trình và mảng cấp phát động nằm ở heap riêng của tiến trình đã cấp phát. Phương án nói tệp `thongke` là thực thể chủ động và program counter, stack của P1 được ghi trở lại tệp là sai vì trạng thái động như program counter, thanh ghi, stack, heap chỉ thuộc về tiến trình, tệp chương trình không chứa trạng thái đó và không bị thay đổi khi chạy. Phương án nói P1 và P2 dùng chung không gian địa chỉ là sai vì các tiến trình cùng chương trình chỉ có thể dùng chung phần mã lệnh ở dạng chỉ đọc (và dữ liệu chỉ đọc), còn biến toàn cục, stack, heap là riêng của từng tiến trình. Phương án nói chỉ thị của hai tiến trình xen kẽ trong một dòng thực thi chung và kết quả mỗi bước không phụ thuộc chỉ thị trước đó là sai vì hệ điều hành chỉ chuyển ngữ cảnh giữa các tiến trình, còn bên trong mỗi tiến trình vẫn là một dòng thực thi tuần tự, trong đó kết quả của chỉ thị trước ảnh hưởng tới chỉ thị sau."
+    },
+    "source_chunks": [
+      "Chapter 3 Processes › Chapter 3: Processes\nSilberschatz, Galvin and Gagne ©2018\nOperating System Concepts\nChapter 3: Processes\n2\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nChapter 3: Processes\n• Process Concept\n• Process Scheduling\n• Operations on Processes\n• Inter-Process Communication (IPC)\n• IPC in Shared-Memory Systems\n• IPC in Message-Passing Systems\n• Examples of IPC Systems\n• Communication in Client-Server Systems",
+      "Chapter 3 Processes › Objectives\n3\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nObjectives\n• Identify the separate components of a process and illustrate how they\nare represented and scheduled in an operating system.\n• Describe how processes are created and terminated in an operating\nsystem, including developing programs using the appropriate system\ncalls that perform these operations.\n• Describe and contrast inter-process communication using shared\nmemory and message passing.\n• Design programs that uses pipes and POSIX shared memory to\nperform inter-process communication.\n• Describe client-server communication using sockets and remote\nprocedure calls.\n• Design kernel modules that interact with the Linux operating system.\n4\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nProcess Concept\n• An operating system executes a variety of programs that run as\nprocesses\n• Process – a program in execution; process execution must progress\nin sequential fashion\n• Multiple parts\no The program code, also called text section\no Current activity including program counter, and processor registers\no Stack section containing temporary data\n• Function parameters, return addresses, local variables\no Data section containing global variables\no Heap section containing memory dynamically allocated during run time",
+      "Chapter 3 Processes › Process Concept (Cont.)\n5\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nProcess Concept (Cont.)\n• Program is passive entity stored on disk (e.g., executable file)\n• Process is active entity\no Program becomes process when executable file loaded into memory\n• Execution of program can be started via GUI mouse clicks, command\nline (CLI) entry of its name, etc.\n• One program can be several processes\no E.g., Consider multiple users executing the same program\n#ps -aux\n6\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nProcess in Memory\n(memory limits of a process)\n#size <pid>",
+      "Chapter 3 Processes › Memory Layout of a C Program\n7\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nMemory Layout of a C Program\nHình: #include <stdio.h>\n#include <stdlib.h>\nhigh\nargc, agrv\nmemory 96 4g\nint main(int argc, char *argv[])\nL7 *values;\nint, 3;\nuninitialized\ndata values = (int *)malloc(sizeof (int) *5) ;\ninitialized for(i = 0; i < 5; i++)\ndata values[i] = 1;\nlow\nreturn 0;\n8\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nProcess State\n• As a process executes, it changes state\no New – The process is being created\no Running – Instructions are being executed\no Waiting – The process is waiting for some event to occur\no Ready – The process is waiting to be assigned to a processor\no Terminated – The process has finished execution",
+      "Chapter 3 Processes › Diagram of Process State\n9\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nDiagram of Process State\n10\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nProcess Control Block (PCB)\n• Process Control Block (PCB) – Information associated with\neach process, also called Task Control Block (TCB), includes:\no Process state – running, waiting, etc.\no Process number – identity of the process\no Program counter – location of instruction to next execute\no CPU registers – contents of all process-centric registers\no CPU scheduling info – priorities, scheduling queue pointers\no Memory-management information – memory allocated to the\nprocess\no Accounting information – CPU used, clock time elapsed\nsince start, time limits\no I/O status information – I/O devices allocated to process, list of\nopen files",
+      "Chapter 3 Processes › Threads\n11\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nThreads\n• So far, process has a single thread of execution\n• Consider having multiple program counters per process\no Multiple locations can execute at once\n• Multiple threads of control –> threads\n• Must then have storage for thread details\n• Multiple program counters in PCB\n12\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nProcess Representation in Linux\n• Represented by the C structure task_struct\npid t_pid;\n/* process identifier */\nlong state;\n/* state of the process */\nunsigned int time_slice\n/* scheduling information */\nstruct task_struct *parent;\n/* this process’s parent */\nstruct list_head children;\n/* this process’s children */\nstruct files_struct *files;\n/* list of open files */\nstruct mm_struct *mm;\n/* address space of this process */\nHình: ⁄Z ™ Z MZ N\nstruct task_ struct struct task_ struct struct task_ struct\nprocess information process information sẻ process information\nt | an ⁄\ncurrent\n(currently executing proccess)",
+      "Chapter 3 Processes › Process Scheduling\n13\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nProcess Scheduling\n• Maximize CPU use ⇢quickly switch processes onto CPU core\n• Process scheduler selects one process among available (ready)\nprocesses for next execution on CPU core\n• Maintains scheduling queues of processes\no Ready queue – set of all processes residing in main memory, ready and\nwaiting to execute\no Wait queues – set of processes waiting for an event (e.g., I/O)\n• Processes migrate among the various queues\n14\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nReady and Wait Queues\nHình: queue header PCB ; PCB ;\nready\nqueue",
+      "Chapter 3 Processes › Representation of Process Scheduling\n15\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nRepresentation of Process Scheduling\nnew process\nHình: ready queue\n(vo) I/O wait queue\nchild\nterminates\ninterrupt\noccurs\nI/O request\ntime slice\nexpired\nchild\ntermination\nWait queue\ncreate child\nprocess\nwait for an\ninterrupt\ninterrupt\nwait queue\n16\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nCPU Switch from Process to Process\n• A context switch\noccurs when the\nCPU switches\nfrom one process\nto another.\nHình: process Py operating system process P,\ninterrupt or system call\nexecuting {\nẦ save state into PCBạ\ne\ne\nreload state from PCB,\n> idle interrupt or system call executing\nsave state into PCB,\ne\nJ reload state from PCB,\nexecuting “|\nidle\nidle",
+      "Chapter 3 Processes › Context Switch\n17\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nContext Switch\n• When CPU switches to another process, the system must save the\nstate of the old process and load the saved state for the new process\nvia a context switch\n• Context of a process represented in the PCB\n• Context-switch time is overhead, the system does no useful work\nwhile switching\no The more complex the OS and the PCB, the longer the context switch\n• Time dependent on hardware support\no Some hardware provides multiple sets of registers per CPU, multiple\ncontexts loaded at once\n18\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nMultitasking in Mobile Systems\n• Some mobile systems (e.g., early version of iOS)  allow only one\nprocess to run, others suspended\n• Due to screen real state, user interface limits iOS provides for a\no Single foreground process – controlled via user interface\no Multiple background processes – in memory, running, but not on the\ndisplay, and with limits\no Limits include single, short task, receiving notification of events, specific\nlong-running tasks like audio playback\n• Android runs foreground and background, with fewer limits\no Background process uses a service to perform tasks\no Service can keep running even if background process is suspended\no Service has no user interface, small memory use",
+      "Chapter 3 Processes › Operations on Processes\n19\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nOperations on Processes\n• System must provide mechanisms for:\no process creation\no process termination\n20\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nProcess Creation\n• Parent processes create children processes, which, in turn create\nother processes, forming a tree of processes\n• Process identified and managed via a Process Identifier (PID)\n• Resource sharing options\no Parent and children share all resources\no Children share subset of parent’s resources\no Parent and child share no resources",
+      "Chapter 3 Processes › Process Creation (Cont.)\n21\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nProcess Creation (Cont.)\n• Execution options\no Parent and children execute concurrently\no Parent waits until children terminate\n• Address space\no Child duplicate of parent\no Child has a program loaded into it\n22\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nA Tree of Processes in Linux\n#pstree\nHình: systemd\npid = 1\nsshd\npid = 3028\nlogind\npid =8415\npython\npid =2808\nbash\npid = 8416\nsshd\npid = 3610\ntcsh\npid = 4005\nvim\npid = 9204\npS\npid = 9298",
+      "Chapter 3 Processes › Process Creation (Cont.)\n23\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nProcess Creation (Cont.)\n• UNIX examples\no system() to execute a command from within a program\no fork() system call creates new process\no exec() system call used after a fork() to replace the process’\nmemory space with a new program\no Parent process calls wait() waiting for the child to terminate\nHình: parent (pid > 0)\nC wa0 > parent resumes\nparent\nchild (pid = 0)\n24\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nsystem() system call\n• hands the argument command to the command interpreter sh: $/bin/sh –c <command>\no Ex: $/bin/sh –c ls\n• If command is NULL, system() return a nonzero value if a shell is available, or 0 if\nno shell is available\n• If system() return -1: child process could not be created or its status could not be\nretrieve\n#include <stdlib.h>\nint system(const char *command);\nHình: #include <std11b.h>\n* * Vans-MacBoo\nint main ( ) 2.2.c.rtfd\naddrspace\nint return_value ;\nreturn_value = system ( \"1s.\" );\nreturn return_value;\nHình: Vans-MacBook-Air:c-examp ltvan$ ./systemsimple\n2.2.c.rtfd ex fork2.c pid\naddrspace ex.c forkp pid.cpp",
+      "Chapter 3 Processes › C Program Forking A Separate Process: fork()\n25\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nC Program Forking A Separate Process: fork()\nHình: #include <sys/types.h>\n#include <stdio.h>\n#include <unistd.h>\nint main()\npid.t pid;\nd process */\nif (pid < 0) { /* error occurred */\nfprintf(stderr, \"Fork Failed\");\nreturn 1;\nelse if (pid == 0) { /* child process */\nexeclp(\"/bin/1s\",\"1s\",NULL) ;\nelse { /* parent process */\n/* parent will wait for the child to complete */\nprintf(\"Child Complete\") ;\nreturn 0;\n27\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nExample\n• ….\n• int main(){\n•  printf(“Hello \\n”);\n•  1. fork();\n•  2. fork();\n• printf(“Hello \\n”);\n• return 0;\n• }\nHow many processes will be generated?",
+      "Chapter 3 Processes › Process Termination\n28\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nProcess Termination\n• Process executes last statement and then asks the operating system\nto delete it using the exit() system call.\no Returns status data from child to parent (via wait())\no Process’resources are deallocated by operating system\n• Parent may terminate the execution of children processes using the\nabort() system call. Some reasons for doing so:\no Child has exceeded allocated resources\no Task assigned to child is no longer required\no The parent is exiting and the operating systems does not allow a child to\ncontinue if its parent terminates",
+      "Chapter 3 Processes › Process Termination (Cont.)\n29\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nProcess Termination (Cont.)\n• Some operating systems do not allow child to exists if its parent has terminated. If\na process terminates, then all its children must also be terminated.\no Cascading termination: All children, grandchildren, etc. are  terminated\no The termination is initiated by the operating system\n• The parent process may wait for termination of a child process by using the\nwait() system call. The call returns status information and the pid of the\nterminated process\n• pid = wait(&status);\n• waitpid() suspends execution of the calling process until a child specified\nby pid argument has changed state\n• If no parent waiting (did not invoke wait()), process is a zombie\n• If parent terminated without invoking wait(), process is an orphan",
+      "Chapter 3 Processes › waitpid() example\n30\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nwaitpid() example\n#include <sys/types.h>\n#include <sys/wait.h>\npid_t waitpid(pid_t pid, int\n*status, int options);\no pid< -1: wait for any child process\nwhose process group ID is equal to the\nabsolute value of pid.\no pid =1: wait for any child process\no pid = 0: wait for any child process\nwhose process group ID is equal to that\nof the calling process\no pid>0: wait for the child whose process\nID is equal to the value of pid\nwait(&status) is equivalent to\nwaitpid(-1, &status, 0);\nHình: Vans-MacBook-Air:c-examp 1tvan$ ./forkwpidr\nChild proc id = 9716, lgroupld = 9715\nParent proc id = 9715\nHình: #include<stdio.h>\n#include<sys/wait.h>\n#include<unistd.h>\nint main(){\npid_t pid=fork();\nif (pid==@) {\nprintf(\"Child proc id = %d, groupid = %d \\n\",\ngetpid(),getpgrp());\nelse if(pid>9){\nwaitpid(pid,NULL,9);\nprintf(\"Parent proc id = %d \\n\",getpid());\nreturn 0;",
+      "Chapter 3 Processes › wait(&status) example\n31\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nwait(&status) example\n#include <sys/types.h>\n#include <sys/wait.h>\npid_t wait(int *status);\nHình: #include <stdio.h> TH BH NGH OS BY SL\n#include <unistd.h> h h h *\n#include <sys/wait.h> pid_t wait(int status);\nint main (int argc, char *argv[]){\nint return_code;\nint status;\n/* create a new process */\nreturn_code = fork();\nif (return_code > 9){\nint id = wait(&status);\nprin Parent process:pcnild's pid =%d with returned value = %d_\\n\",idCWEXITSTATUS(status) ) ;\nprintf(\"child's pid =%d with raw returned value = %d \\n*, id\nprintf(\"Pid of child %d \\n\",return_code);\nreturn 0;\nelse if (return_code == 0){\nprintf(\"This is child process \\n\");\nelse {\nprintf(\"Fork error\\n\");\nreturn 1;",
+      "Chapter 3 Processes › Exercise\n32\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nExercise\n• Given the following code:\nint main(){\nint i;\nfor(i=0; i<n;i++)\nfork();\nreturn 0;\n}\nHow many processes will be generated if n = 2?\n33\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nImportance Hierarchy of Android Process\n• Mobile operating systems often have to terminate processes to\nreclaim system resources such as memory. From most to least\nimportant:\n▲Foreground process\n▲Visible process\n▲Service process\n▲Background process\n▲Empty process\n• Android will begin terminating processes that are least important.",
+      "Chapter 3 Processes › Multiprocess Architecture – Chrome Browser\n34\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nMultiprocess Architecture – Chrome Browser\n• Many web browsers ran as a single process (some still do)\no If one web site causes trouble, entire browser can hang or crash\n• Google Chrome Browser is multiprocess with 3 different types of\nprocesses:\no Browser process manages user interface, disk and network I/O\no Renderer process renders web pages, deals with HTML, JavaScript. A\nnew renderer created for each website opened\n• Runs in sandbox restricting disk and network I/O, minimizing effect of security\nexploits\no Plug-in process for each type of plug-in\nHình: © Chrome Browser\nx OS-BOOK.COM x Operating SystemC x Homepage\nWw\nCG\nLOi chrome\nDOWNLOAD x SET x x\nEach tab represents a separate process.\nCHROMECAST x\n35\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nInter-Process Communication (IPC)\n• Processes within a system may be independent or cooperating\no Independent process does not share data with any other processes\nexecuting in the system\no Cooperating process can affect or be affected by other processes,\nincluding sharing data\n• Reasons for cooperating processes:\no Information sharing\no Computation speed-up\no Modularity\no Convenience\n• Cooperating processes need Inter-Process communication (IPC)",
+      "Chapter 3 Processes › Communication Models\n36\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nCommunication Models\n• Two models of IPC\no Shared memory\no Message passing\nShared memory\nMessage passing\n37\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nInter-Process Communication – Shared Memory\n• An area of memory shared among the processes that wish to\ncommunicate\n• The communication is under the control of the users processes, not\nthe operating system.\n• Major issues is to provide mechanism that will allow the user\nprocesses to synchronize their actions when they access shared\nmemory.",
+      "Chapter 3 Processes › Producer-Consumer Problem\n38\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nProducer-Consumer Problem\n• Producer-Consumer relationship\n• Paradigm for cooperating processes, producer process produces\ninformation that is consumed by a consumer process\no unbounded-buffer places no practical limit on the size of the buffer\no bounded-buffer assumes that there is a fixed buffer size\n39\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nBounded-Buffer – Shared-Memory Solution\n• Shared data\n#define BUFFER_SIZE 10\ntypedef struct {\n. . .\n} item;\nitem buffer[BUFFER_SIZE];\nint in = 0;\nint out = 0;\n• Solution is correct, but can only use BUFFER_SIZE-1 elements",
+      "Chapter 3 Processes › Producer Process – Shared Memory\n40\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nProducer Process – Shared Memory\nitem next_produced;\nwhile (true) {\n/* produce an item in next produced */\nwhile (((in + 1) % BUFFER_SIZE) == out)\n; /* do nothing */\nbuffer[in] = next_produced;\nin = (in + 1) % BUFFER_SIZE;\n}\n41\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nConsumer Process – Shared Memory\nitem next_consumed;\nwhile (true) {\nwhile (in == out)\n; /* do nothing */\nnext_consumed = buffer[out];\nout = (out + 1) % BUFFER_SIZE;\n/* consume the item in next consumed */\n}",
+      "Chapter 3 Processes › Inter-Process Communication – Message Passing\n42\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nInter-Process Communication – Message\nPassing\n• Mechanism for processes to communicate and to synchronize their\nactions\n• Message system – processes communicate with each other without\nresorting to shared variables\n• IPC facility provides two operations:\no send(message)\no receive(message)\n• The message size is either fixed or variable\n43\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nMessage Passing (Cont.)\n• If processes P and Q wish to communicate, they need to:\no Establish a communication link between them\no Exchange messages via send/receive\n• Implementation issues:\no How are links established?\no Can a link be associated with more than two processes?\no How many links can there be between every pair of communicating\nprocesses?\no What is the capacity of a link?\no Is the size of a message that the link can accommodate fixed or variable?\no Is a link unidirectional or bi-directional?",
+      "Chapter 3 Processes › Direct Communication\n45\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nDirect Communication\n• Processes must name each other explicitly:\no send (P, message) – send a message to process P\no receive(Q, message) – receive a message from process Q\n• Properties of communication link\no Links are established automatically\no A link is associated with exactly one pair of communicating processes\no Between each pair there exists exactly one link\no The link may be unidirectional, but is usually bi-directional\n46\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nIndirect Communication\n• Messages are directed and received from mailboxes (also referred to\nas ports)\no Each mailbox has a unique ID\no Processes can communicate only if they share a mailbox\n• Properties of communication link\no Link established only if processes share a common mailbox\no A link may be associated with many processes\no Each pair of processes may share several communication links\no Link may be unidirectional or bi-directional",
+      "Chapter 3 Processes › Indirect Communication (Cont.)\n47\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nIndirect Communication (Cont.)\n• Operations\no create a new mailbox (or port)\no send and receive messages through mailbox\no destroy a mailbox\n• Primitives are defined as:\no\nsend(A, message) – send a message to mailbox A\no\nreceive(A, message) – receive a message from mailbox A\n48\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nIndirect Communication (Cont.)\n• Mailbox sharing\no Example\n• P_1, P_2, and P_3 share mailbox A,\n• P_1 sends; P_2 and P_3 receive.\n• Who gets the message?\no Solutions\n• Allow a link to be associated with at most two processes\n• Allow only one process at a time to execute a receive operation\n• Allow the system to select arbitrarily the receiver. Sender is notified who the\nreceiver was",
+      "Chapter 3 Processes › Message Passing – Synchronization\n49\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nMessage Passing – Synchronization\n• Message passing may be either blocking or non-blocking\n• Blocking is considered synchronous\no Blocking send – the sender is blocked until the message is received\no Blocking receive – the receiver is blocked until a message is available\n• Non-blocking is considered asynchronous\no Non-blocking send – the sender sends the message and continue\no Non-blocking receive – the receiver receives:\n• A valid message, or Null message\n• Different combinations possible\no If both send and receive are blocking, we have a rendezvous\n50\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nProducer – Message Passing\nmessage next_produced;\nwhile (true) {\n/* produce an item in next_produced */\nsend(next_produced);\n}",
+      "Chapter 3 Processes › Consumer – Message Passing\n51\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nConsumer – Message Passing\nmessage next_consumed;\nwhile (true) {\nreceive(next_consumed)\n/* consume the item in next_consumed */\n}\n52\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nBuffering\n• Queue of messages attached to the link.\n• Implemented in one of three ways\no Zero capacity – no messages are queued on a link\n• Sender must wait for receiver (rendezvous)\no Bounded capacity – finite length of n messages\n• Sender must wait if link full\no Unbounded capacity – infinite length\n• Sender never waits",
+      "Chapter 3 Processes › Examples of IPC Systems - POSIX\n53\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nExamples of IPC Systems - POSIX\n• POSIX Shared Memory\no Process first creates shared memory segment\nshm_fd = shm_open(name, O CREAT | O RDWR, 0666);\no Also used to open an existing segment\no Set the size of the object\nftruncate(shm_fd, 4096);\no Use mmap() to memory-map a file pointer to the shared memory object\no Reading and writing to shared memory is done by using the pointer\nreturned by mmap().\n61\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nPipes\n• Acts as a conduit allowing two processes to communicate\n• Issues:\no Is communication unidirectional or bidirectional?\no In the case of two-way communication, is it half or full-duplex?\no Must there exist a relationship (e.g., parent-child) between the\ncommunicating processes?\no Can the pipes be used over a network?\n• Ordinary pipes – cannot be accessed from outside the process that\ncreated it. Typically, a parent process creates a pipe and uses it to\ncommunicate with a child process that it created.\n• Named pipes – can be accessed without a parent-child relationship.",
+      "Chapter 3 Processes › Ordinary Pipes\n62\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nOrdinary Pipes\n• Ordinary Pipes allow communication in standard producer-consumer\nstyle\no Producer writes to one end (the write-end of the pipe)\no Consumer reads from the other end (the read-end of the pipe)\n• Ordinary pipes are therefore unidirectional\n• Require parent-child relationship between communicating processes\n63\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nNamed Pipes\n• Named pipes are more powerful than ordinary pipes\n• Communication is bidirectional\n• No parent-child relationship is necessary between the communicating\nprocesses\n• Several processes can use the named pipe for communication\n• Provided on both UNIX and Windows systems",
+      "Chapter 3 Processes › Communications in Client-Server Systems\n64\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nCommunications in Client-Server Systems\n• Sockets\no A socket is defined as an endpoint for communication\no It is a concatenation of IP address and port – a number included at start\nof message packet to differentiate network services on a host\n• E.g., The socket 161.25.19.8:1625 refers to port 1625 on host 161.25.19.8\no Communication consists between a pair of sockets\no All ports below 1024 are well known, used for standard services\no Special IP address 127.0.0.1 (loopback) to refer to system on which\nprocess is running\n• Remote Procedure Calls (RPC)\n65\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nSocket Communication\nHình: host X\n(146.86.5.20)\nsocket\n(146.86.5.20:1625)\nweb server\n(161.25.19.8)\nsocket\n(161.25.19.8:80)",
+      "Chapter 3 Processes › Sockets in Java – Server\n66\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nSockets in Java – Server\n• Three types of sockets\no Connection-oriented\n(TCP)\no Connectionless\n(UDP)\no MulticastSocket\nclass– data can be\nsent to multiple\nrecipients\n• Consider this “Date”\nserver in Java:\nHình: import java.net.*;\nimport java.io.*;\npublic class DateServer\npublic static void main(String[] args) {\ntry {\nServerSocket sock = new ServerSocket(6013) ;\n/* now listen for connections */\nwhile (true) {\nSocket client = sock.accept() ;\nPrintWriter pout = new\nPrintWriter(client.getOutputStream(), true);\n/* write the Date to the socket */\npout.println(new java.util.Date().toString()) ;\n/* close the socket and resume */\n/* listening for connections */\nclient.close();\ncatch (IOException ioe) {\nSystem.err.print1n(ioe) ;",
+      "Chapter 3 Processes › Sockets in Java – Client\n67\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nSockets in Java – Client\n• The equivalent\n“Date” client\nHình: import java.net.*;\nimport java.io.*;\npublic class DateClient\npublic static void main(String[] args) {\ntry {\n/* make connection to server socket */\nSocket sock = new Socket(\"127.0.0.1\",6013) ;\nInputStream in = sock.getInputStream() ;\nBufferedReader bin = new\nBufferedReader(new InputStreamReader(in)) ;\n/* read the date from the socket */\nString line;\nwhile ( (line = bin.readLine()) != null)\nSystem.out.println(line) ;\n/* close the socket connection*/\nsock.close();\ncatch ioe) {\nSystem.err.print1n(ioe) ;\n68\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nRemote Procedure Calls\n• Remote Procedure Call (RPC) abstracts procedure calls between\nprocesses on networked systems\no Again uses ports for service differentiation\n• Stubs – proxies for the actual procedure on the server and client\nsides\no The client-side stub locates the server and marshals the parameters\no The server-side stub receives this message, unpacks the marshalled\nparameters, and performs the procedure on the server\n• On Windows, stub code compile from specification written in\nMicrosoft Interface Definition Language (MIDL)",
+      "Chapter 3 Processes › Remote Procedure Calls (Cont.)\n69\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nRemote Procedure Calls (Cont.)\n• Data representation handled via External Data Representation\n(XDR) format to account for different architectures\no E.g., Big-endian (Motorola) and little-endian (Intel x86)\n• Remote communication has more failure scenarios than local\no Messages can be delivered exactly once rather than at most once\n• OS typically provides a rendezvous (or matchmaker) service to\nconnect client and server\nSilberschatz, Galvin and Gagne ©2018\nOperating System Concepts\nEnd of Chapter 3"
+    ]
+  },
+  "reference": {
+    "coverage": "complete",
+    "chunk_ids": [
+      "407da1ef-911d-414c-ab7c-aea1907fc3b5",
+      "2cf4cdf7-b3cb-4b74-b019-d7834fc2a837",
+      "6f9e1c3a-10c9-4881-91b0-bfa857f827c7",
+      "4424dd17-4833-4975-9ffb-b7d2fd0a69c0",
+      "10df11ea-93ae-42d2-9261-e327f71a9bf1",
+      "ad91be46-c767-4d85-aa0d-61d3c5d6d36d",
+      "a3ccc703-3ff7-4830-8f51-11a33200e469",
+      "a5f1ff58-f9b3-489a-bae4-c5d503b091ff",
+      "207a34f1-dd4a-49fc-91cd-a62e163b375f",
+      "0356b4ed-8b0c-4171-b7b5-ecc89403158d",
+      "549b936f-adee-4652-9134-71938ca8a2b7",
+      "a6736230-3fc2-4dfd-9371-8992c838b358",
+      "96ab664e-b90b-4262-bdac-773740bd41d0",
+      "708f7a3d-bc0e-47c8-88c8-3c65826c5de1",
+      "a7abc32c-5b17-4397-9586-36245618d8b8",
+      "8ecdddc5-0d56-415f-9a8c-1228f5db4e3a",
+      "21d259cf-8679-40f8-98a4-018750efe0ab",
+      "07ec2bd6-3651-436d-9682-bf2c3d8d180e",
+      "416004db-2681-45c8-8339-89cffa86bf73",
+      "4908a791-bed4-4d20-9b86-cd3441befd5a",
+      "f42026b4-bb11-4309-93dd-0520f16360dc",
+      "a9005c13-7255-4a72-8913-553a81d68ba7",
+      "20d9827c-2c5f-475d-8018-1b4269a6146b",
+      "fcb330a2-4401-4beb-bcf0-1c86ebd87f21",
+      "4c83ab6b-11b0-41fa-98f9-18c306fb8a60",
+      "8710b2a3-b0be-48a5-8119-959328d942b9",
+      "ad1b91e9-245d-4201-bdd7-dc634572b28f",
+      "6862cd0a-d956-41c5-babf-665dac72e3ae",
+      "491d3ec1-5a33-40c8-aaef-e1c20954891d",
+      "56e8ab00-43d4-42ac-baf4-008a5d8b6e01",
+      "cbddddce-4e19-4a4d-a343-1ea2cb2c5700",
+      "7622d4e0-7078-437f-8ae6-8368bb94b79d",
+      "150cdf3d-4b5b-4a8c-8eb3-e8d5c9693835"
+    ],
+    "total_chunks": 33
+  },
+  "claim_citations": null
+}

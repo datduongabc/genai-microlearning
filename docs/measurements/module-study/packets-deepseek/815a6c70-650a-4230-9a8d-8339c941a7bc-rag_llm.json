@@ -1,0 +1,869 @@
+{
+  "pair_id": "815a6c70-650a-4230-9a8d-8339c941a7bc",
+  "group": "rag_llm",
+  "generator_model": "deepseek-flash",
+  "generation_models": [
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    }
+  ],
+  "packet": {
+    "anon_id": "",
+    "topic": "Hồi quy có trọng số cục bộ (locally weighted regression)",
+    "bloom_level": "analyze",
+    "learning_objective": "Sau khi hoàn thành module, người học có thể phân tích sự khác biệt giữa hồi quy có trọng số cục bộ (locally weighted regression) và hồi quy tuyến tính thông thường về cách khớp dữ liệu và cách dự đoán tại một giá trị x.",
+    "sub_objectives": [
+      "So sánh cách hồi quy tuyến tính và hồi quy có trọng số cục bộ khớp dữ liệu khi phải dự đoán tại một giá trị x",
+      "Phân loại hồi quy tuyến tính và hồi quy có trọng số cục bộ vào nhóm thuật toán học tham số và phi tham số theo tiêu chí số lượng tham số cần lưu trữ",
+      "Chỉ ra mối liên hệ giữa việc chỉ tập trung vào các mẫu huấn luyện gần điểm cần dự đoán với khả năng khớp được các hàm rất phi tuyến",
+      "Mô tả cách hồi quy có trọng số cục bộ khớp một đường thẳng cục bộ trong lân cận của điểm cần dự đoán"
+    ],
+    "content_markdown": "## So sánh cách hồi quy tuyến tính và hồi quy có trọng số cục bộ khớp dữ liệu khi phải dự đoán tại một giá trị x\n\n- Với hồi quy tuyến tính, để dự đoán tại một giá trị x, ta khớp theta bằng cách cực tiểu hóa hàm chi phí, rồi trả về theta chuyển vị nhân x — tức là khớp một đường thẳng với dữ liệu và dùng chính đường thẳng đó để dự đoán.      \n- Với thuật toán tham số, sau khi khớp xong các tham số theta, có thể xóa tập huấn luyện khỏi bộ nhớ máy tính và chỉ dùng theta để dự đoán.      \n- Với hồi quy có trọng số cục bộ (locally weighted regression), khi cần dự đoán quanh một giá trị x, ta nhìn vào một lân cận nhỏ gồm các mẫu huấn luyện gần điểm x đó; tập trung chủ yếu vào các mẫu này, chỉ liếc qua các mẫu ở xa hơn, rồi khớp một đường thẳng cục bộ.      \n- \"Gần\" ở đây nghĩa là các giá trị tương tự nhau trên trục x; sau đó dùng đường thẳng vừa khớp để đưa ra dự đoán tại giá trị x đó.      \n- Nếu người dùng yêu cầu dự đoán tại một điểm khác, quy trình được lặp lại: tập trung vào vùng cục bộ quanh điểm mới, dành phần lớn trọng số cho các điểm đó, khớp một đường thẳng mới và dùng nó để dự đoán.      \n- Khác biệt cốt lõi: hồi quy tuyến tính khớp một đường thẳng duy nhất cho dữ liệu rồi dùng nó cho mọi dự đoán      , còn hồi quy có trọng số cục bộ khớp một đường thẳng riêng cho lân cận của từng điểm cần dự đoán           .\n- Về ngoại suy (extrapolation): thuật toán vẫn dùng được và các công thức vẫn hoạt động, nhưng kết quả có thể không tốt; hồi quy tuyến tính có trọng số cục bộ thường không giỏi ngoại suy.      \n\n## Phân loại hồi quy tuyến tính và hồi quy có trọng số cục bộ vào nhóm thuật toán học tham số và phi tham số theo tiêu chí số lượng tham số cần lưu trữ\n\n- Trong machine learning, người ta đôi khi phân biệt thuật toán học tham số (parametric learning algorithm) và thuật toán học phi tham số (non-parametric learning algorithm).     \n- Thuật toán học tham số là thuật toán khớp một tập tham số cố định với dữ liệu.     \n- Hồi quy tuyến tính là thuật toán tham số vì có một tập tham số cố định (các theta) được khớp với dữ liệu, khớp xong là xong.     \n- Với thuật toán tham số, dù tập huấn luyện lớn đến đâu, sau khi khớp các tham số theta ta có thể xóa tập huấn luyện khỏi bộ nhớ và dự đoán chỉ bằng các tham số đó.      \n- Hồi quy có trọng số cục bộ là thuật toán phi tham số đầu tiên được giới thiệu; điều này có nghĩa là lượng dữ liệu/tham số cần giữ tăng lên, và tăng tuyến tính theo kích thước tập huấn luyện.     \n- Với thuật toán phi tham số, lượng thứ cần giữ trong bộ nhớ hoặc trên đĩa tăng tuyến tính theo kích thước tập huấn luyện, nên phải giữ toàn bộ dữ liệu để có thể dự đoán; loại thuật toán này có thể không phù hợp khi tập dữ liệu thực sự khổng lồ.      \n- Chi phí tính toán: phép tối thiểu hóa cần thiết tương tự như với normal equations, liên quan đến việc giải một hệ phương trình tuyến tính có số chiều bằng số mẫu huấn luyện; với khoảng một nghìn đến vài nghìn mẫu thì không quá tệ.      \n- Khi có hàng triệu mẫu, có những thuật toán tinh vi hơn như KD trees để xử lý.      \n\n## Mối liên hệ giữa việc chỉ tập trung vào các mẫu huấn luyện gần điểm cần dự đoán với khả năng khớp được các hàm rất phi tuyến\n\n- Hồi quy có trọng số cục bộ là một cách sửa đổi hồi quy tuyến tính để nó khớp được các hàm rất phi tuyến, thay vì chỉ tạo ra các đường thẳng.     \n- Vấn đề đặt ra khi dữ liệu không được khớp tốt bởi một đường thẳng là chọn tập đặc trưng nào: x bình phương, căn bậc hai của x, log của x, x lập phương, căn bậc ba của x, x mũ hai phần ba... — việc tìm ra tập đặc trưng phù hợp là rất khó.         \n- Hồi quy có trọng số cục bộ đi vòng qua (sidestep) toàn bộ vấn đề tìm đặc trưng đó.     \n- Cơ chế: khi dự đoán tại một giá trị x, chỉ các mẫu gần x mới nhận trọng số đáng kể, còn các mẫu ở xa bị nhân với 0 hoặc một hằng số rất gần 0; do đó việc khớp chỉ thực chất dựa trên các điểm gần điểm dự đoán và tạo ra một đường thẳng cục bộ tại đó           . Vì mỗi lần dự đoán lại khớp một đường thẳng riêng cho lân cận của điểm đó           , nên tổng thể mô hình có thể bám theo các dạng rất phi tuyến     .\n- Kết quả là thuật toán khớp dữ liệu đó khá tốt mà không cần người dùng mò mẫm chỉnh đặc trưng bằng tay.      \n- Băng thông tau ảnh hưởng tới việc khớp quá mức (overfitting) và khớp thiếu (underfitting): nếu tau quá rộng thì làm trơn dữ liệu quá mức, nếu tau quá hẹp thì đường khớp trở nên rất răng cưa.      \n- Ngoài dạng đường cong kiểu Gaussian, người ta còn dùng các dạng hàm khác, ví dụ hàm hình tam giác (triangle shape function) — có nhiều phiên bản khác nhau của thuật toán này.      \n- Hồi quy tuyến tính có trọng số cục bộ thường được dùng khi dữ liệu có số chiều tương đối thấp (số đặc trưng n khá nhỏ, cỡ hai hoặc ba), có nhiều dữ liệu, và người dùng không muốn phải suy nghĩ về việc chọn đặc trưng nào.      \n\n## Mô tả cách hồi quy có trọng số cục bộ khớp một đường thẳng cục bộ trong lân cận của điểm cần dự đoán\n\n- Cụ thể hóa: trong hồi quy có trọng số cục bộ, ta khớp theta để cực tiểu hóa một hàm chi phí đã được sửa đổi, trong đó w_i là một hàm trọng số.      \n- Trong công thức này, x là vị trí cần dự đoán và x_i là giá trị đầu vào x của mẫu huấn luyện thứ i.      \n- w_i là hàm trọng số, nhận giá trị trong khoảng từ 0 đến 1, cho biết nên \"để ý\" bao nhiêu đến cặp giá trị (x_i, y_i) khi khớp đường thẳng cục bộ.      \n- Nếu x_i trừ x là nhỏ — tức mẫu huấn luyện gần nơi cần dự đoán — thì trọng số gần bằng 1 (xấp xỉ e mũ 0).           \n- Ngược lại, nếu x_i trừ x là lớn thì w_i gần bằng 0.      \n- Sửa đổi chính so với hàm chi phí thông thường là việc thêm số hạng trọng số: nếu một mẫu ở xa nơi cần dự đoán, số hạng sai số của nó bị nhân với 0 (hoặc với một hằng số rất gần 0); nếu mẫu ở gần, số hạng sai số được nhân với 1.           \n- Hệ quả: tổng thực chất chỉ còn các số hạng sai số bình phương của những mẫu gần giá trị x cần dự đoán, nên khi khớp theta ta chỉ thực sự để ý đến các điểm gần đó và khớp một đường thẳng cục bộ đi qua vùng ấy.           \n- Dạng hàm trọng số thường dùng có hình dạng rất giống đường cong chuông Gaussian, nhưng nó không phải là mật độ Gaussian: hàm mật độ xác suất Gaussian phải có tích phân bằng 1, còn hàm này thì không.           \n- Trọng số gán cho một mẫu bằng đúng \"chiều cao\" của đường cong đó tại mẫu ấy; vì vậy một mẫu ở rất xa sẽ nhận trọng số gần như bằng 0, khiến chỉ các mẫu lân cận được tính đến khi khớp đường thẳng cục bộ.           \n- Độ \"béo\" hay \"mảnh\" của đường cong do băng thông tau (bandwidth parameter) quyết định; tau là một tham số hay siêu tham số của thuật toán, và trong công thức tau xuất hiện ở dạng bình phương.           \n- Tùy vào lựa chọn tau, ta có đường cong béo hơn hoặc mảnh hơn, từ đó quyết định cửa sổ rộng hay hẹp — tức dùng bao nhiêu mẫu lân cận để khớp đường thẳng cục bộ.      \n- Cũng có thể dùng tau thay đổi tùy theo mật độ điểm trong vùng cục bộ; đã có một lượng lớn tài liệu về các công thức chọn tau khác nhau.      ",
+    "slides": [
+      {
+        "title": "Hồi quy tuyến tính: dự đoán tại một giá trị x",
+        "bullets": [
+          "Khớp theta bằng cách cực tiểu hóa hàm chi phí",
+          "Dự đoán = theta chuyển vị nhân x",
+          "Khớp một đường thẳng duy nhất rồi dùng chính nó cho mọi dự đoán"
+        ]
+      },
+      {
+        "title": "Hồi quy có trọng số cục bộ: dự đoán tại một giá trị x",
+        "bullets": [
+          "Khi dự đoán quanh x: nhìn vào lân cận nhỏ gồm các mẫu gần x",
+          "Tập trung chủ yếu vào các mẫu gần, chỉ liếc qua các mẫu ở xa",
+          "Khớp một đường thẳng cục bộ để đưa ra dự đoán tại x"
+        ]
+      },
+      {
+        "title": "Mỗi điểm dự đoán mới: lặp lại toàn bộ quy trình",
+        "bullets": [
+          "\"Gần\" = các giá trị tương tự nhau trên trục x",
+          "Điểm mới → tập trung vào vùng cục bộ quanh điểm mới",
+          "Dành phần lớn trọng số cho các điểm đó, khớp đường thẳng mới"
+        ]
+      },
+      {
+        "title": "Khác biệt cốt lõi giữa hai cách khớp dữ liệu",
+        "bullets": [
+          "Hồi quy tuyến tính: một đường thẳng duy nhất cho mọi dự đoán",
+          "LWR: một đường thẳng riêng cho lân cận của từng điểm cần dự đoán"
+        ]
+      },
+      {
+        "title": "Ngoại suy (extrapolation)",
+        "bullets": [
+          "Thuật toán vẫn dùng được, công thức vẫn hoạt động",
+          "Nhưng kết quả có thể không tốt",
+          "LWR thường không giỏi ngoại suy"
+        ]
+      },
+      {
+        "title": "Hai nhóm thuật toán học trong machine learning",
+        "bullets": [
+          "Học tham số (parametric): khớp một tập tham số cố định với dữ liệu",
+          "Học phi tham số (non-parametric): lượng cần giữ tăng theo kích thước tập huấn luyện"
+        ]
+      },
+      {
+        "title": "Hồi quy tuyến tính là thuật toán tham số",
+        "bullets": [
+          "Có một tập tham số cố định (các theta) khớp với dữ liệu, khớp xong là xong",
+          "Tập huấn luyện lớn đến đâu cũng có thể xóa khỏi bộ nhớ",
+          "Dự đoán chỉ bằng các tham số theta"
+        ]
+      },
+      {
+        "title": "LWR là thuật toán phi tham số",
+        "bullets": [
+          "Phải giữ toàn bộ dữ liệu để có thể dự đoán",
+          "Lượng cần giữ tăng tuyến tính theo kích thước tập huấn luyện",
+          "Có thể không phù hợp khi tập dữ liệu thực sự khổng lồ"
+        ]
+      }
+    ],
+    "examples": [
+      {
+        "context": "",
+        "analysis": ""
+      },
+      {
+        "context": "",
+        "analysis": ""
+      }
+    ],
+    "quiz": [
+      {
+        "stem": "Một tập huấn luyện gồm các điểm dữ liệu trải dọc theo trục x, và cần dự đoán giá trị y tại một giá trị x cho trước. Cách hồi quy có trọng số cục bộ (locally weighted regression) khớp dữ liệu để đưa ra dự đoán tại x khác cách hồi quy tuyến tính thông thường ở chỗ nào?",
+        "choices": [
+          "Hồi quy có trọng số cục bộ khớp đường thẳng chỉ từ các điểm nằm trong vùng lân cận của x, còn điểm ở xa bị bỏ ra khỏi phép khớp.",
+          "Hồi quy có trọng số cục bộ khớp một đường thẳng cố định dùng chung cho các giá trị x, chỉ khác ở cost function có thêm số hạng trọng số.",
+          "Hồi quy có trọng số cục bộ khớp một đường cong hình chuông kiểu Gaussian quanh x để thay cho đường thẳng như hồi quy tuyến tính.",
+          "Hồi quy có trọng số cục bộ khớp lại một đường thẳng mới cho x, đặt trọng số lớn cho điểm gần x và trọng số nhỏ cho điểm xa."
+        ],
+        "correct_index": 3,
+        "explanation": "Đáp án đúng là: với mỗi giá trị x cần dự đoán, hồi quy có trọng số cục bộ khớp lại một đường thẳng mới, dồn trọng số vào các điểm gần x và giảm trọng số cho các điểm xa. Tài liệu mô tả việc \"look in a little local neighborhood at the training examples close to that point X where you want to make a prediction\" rồi \"try to fill a straight line\" (S1), và khi muốn dự đoán ở điểm khác thì lại \"focus on this local area\" để khớp đường thẳng mới rồi dùng nó để dự đoán (S4). Về trọng số, tài liệu cho biết khi |xi − x| nhỏ thì \"the weight will be close to one\" (S5), còn khi |xi − x| lớn thì \"wi is close to 0\" (S2), tức điểm xa vẫn được xét nhưng đóng góp ít.\n\nPhương án \"khớp một đường thẳng cố định dùng chung cho các giá trị x, chỉ khác ở cost function có thêm số hạng trọng số\" sai vì bỏ mất việc khớp lại đường thẳng cho từng điểm dự đoán: tài liệu nói khi dự đoán ở điểm khác thì phải tập trung vào vùng lân cận mới và khớp một đường thẳng mới (S4). Phương án \"chỉ dùng các điểm trong vùng lân cận của x, còn điểm ở xa bị bỏ ra khỏi phép khớp\" sai vì tài liệu nói vẫn \"take a glance at the points further away\" (S4) — các điểm xa vẫn tham gia với trọng số nhỏ, chứ không bị loại bỏ. Phương án \"khớp một đường cong hình chuông kiểu Gaussian quanh x\" sai vì dạng chuông đó là hình của hàm trọng số, và tài liệu nói rõ \"this has nothing to do with a Gaussian density\" (S3); mô hình được khớp vẫn là một đường thẳng (S1, S4)."
+      },
+      {
+        "stem": "Một kỹ sư khớp hai mô hình trên cùng một tập huấn luyện lớn: hồi quy tuyến tính và hồi quy có trọng số cục bộ (locally weighted regression). Sau khi khớp xong, cô ấy muốn xóa tập huấn luyện khỏi bộ nhớ để tiết kiệm dung lượng, nhưng vẫn phải dự đoán được tại một giá trị x mới. Phát biểu nào sau đây mô tả đúng mối liên hệ giữa cách mỗi thuật toán khớp dữ liệu và yêu cầu lưu trữ của nó?",
+        "choices": [
+          "Hồi quy có trọng số cục bộ khớp một đường thẳng chung với trọng số Gaussian trên tập huấn luyện rồi dùng lại đường thẳng đó khi dự đoán tại các giá trị x khác, nên sau khi khớp nó cũng xóa được tập huấn luyện khỏi bộ nhớ.",
+          "Hồi quy tuyến tính phải giữ tập huấn luyện vì nó dựa vào các điểm dữ liệu để khớp, còn hồi quy có trọng số cục bộ chỉ khớp dựa trên các điểm gần x nên chỉ cần giữ các tham số của đường thẳng cục bộ và dung lượng lưu trữ không tăng theo kích thước tập huấn luyện.",
+          "Cả hai đều chỉ cần giữ một bộ tham số cố định, vì hồi quy có trọng số cục bộ cũng khớp một đường thẳng, và khác biệt chỉ nằm ở chỗ nó gán trọng số Gaussian cho các điểm khi khớp bộ tham số đó.",
+          "Hồi quy tuyến tính chỉ cần giữ bộ tham số theta đã khớp trên tập huấn luyện nên có thể xóa dữ liệu, còn hồi quy có trọng số cục bộ phải giữ tập huấn luyện vì mỗi lần dự đoán tại một x mới nó lại khớp một đường thẳng mới dựa trên các điểm gần x đó."
+        ],
+        "correct_index": 3,
+        "explanation": "Hồi quy tuyến tính là thuật toán học tham số: sau khi khớp một bộ tham số theta cố định, có thể xóa tập huấn luyện khỏi bộ nhớ và dự đoán chỉ bằng các tham số đó (S1, S2). Hồi quy có trọng số cục bộ là thuật toán phi tham số: tại mỗi x cần dự đoán, nó tập trung vào các điểm huấn luyện gần x và khớp một đường thẳng cục bộ, nên lượng dữ liệu cần giữ tăng theo kích thước tập huấn luyện (S2, S3, S5). Phương án nói cả hai chỉ cần giữ một bộ tham số cố định và khác nhau chỉ ở trọng số Gaussian là sai, vì hồi quy có trọng số cục bộ không có bộ tham số cố định nào để giữ lại và dùng cho lần dự đoán sau. Phương án nói hồi quy có trọng số cục bộ khớp một đường thẳng chung rồi dùng lại cho các giá trị x khác là sai, vì nó phải khớp lại một đường thẳng mới cho từng x cần dự đoán dựa trên vùng lân cận của x đó (S3, S5). Phương án đảo ngược vai trò, cho rằng hồi quy tuyến tính phải giữ tập huấn luyện còn hồi quy có trọng số cục bộ chỉ giữ tham số cục bộ, cũng sai: chính hồi quy tuyến tính mới là thuật toán tham số có thể xóa tập huấn luyện, còn hồi quy có trọng số cục bộ mới là thuật toán cần giữ dữ liệu, với lượng cần lưu tăng theo kích thước tập huấn luyện (S1, S2)."
+      },
+      {
+        "stem": "Một tập dữ liệu huấn luyện có quan hệ giữa x và y uốn lượn theo dạng sóng. Hồi quy tuyến tính thông thường khớp một đường thẳng và bỏ lỡ dạng uốn lượn đó, còn hồi quy có trọng số cục bộ (locally weighted regression) bám theo dạng uốn lượn: tại mỗi điểm cần dự đoán, hàm mất mát gán trọng số gần bằng 0 cho các mẫu ở xa và gần bằng 1 cho các mẫu ở gần, rồi khớp một đường thẳng. Đâu là cách giải thích đúng về mối liên hệ giữa việc tập trung vào các mẫu gần điểm dự đoán và khả năng bám theo quan hệ phi tuyến?",
+        "choices": [
+          "Vùng lân cận quanh điểm dự đoán càng rộng, tức tau càng lớn, thì đường khớp càng uốn theo dữ liệu, nên việc mở rộng lân cận là nguồn gốc của khả năng bám theo quan hệ phi tuyến.",
+          "Các mẫu ở xa nhận trọng số gần bằng 0 nên bị coi như nhiễu và bị loại khỏi tập huấn luyện, còn dạng đường khớp vẫn là một đường thẳng như trong hồi quy tuyến tính thông thường.",
+          "Tại mỗi điểm dự đoán, một đường thẳng được khớp lại cho vùng lân cận, nên khi điểm dự đoán dịch dọc trục x, đường thẳng cục bộ xoay theo dữ liệu gần, ghép lại thành đường bám theo dạng uốn lượn.",
+          "Trọng số được tính theo hàm Gaussian có dạng đường cong chuông, nên hàm dự đoán mang dạng đường cong chuông và nhờ dạng cong chuông đó mà bám được quan hệ phi tuyến giữa x và y."
+        ],
+        "correct_index": 2,
+        "explanation": "Đáp án đúng mô tả đúng cơ chế: tại mỗi giá trị x cần dự đoán, mô hình khớp lại một đường thẳng cho vùng lân cận của điểm đó, nên khi điểm dự đoán dịch chuyển, đường thẳng cục bộ xoay theo dữ liệu gần và ghép lại thành đường bám theo quan hệ phi tuyến; nguồn diễn đạt việc này là 'weighting only the nearby examples when trying to fit a straight line'. Phương án cho rằng các mẫu ở xa bị coi như nhiễu và dạng đường khớp vẫn là đường thẳng như hồi quy tuyến tính thông thường không giải thích được khả năng bám theo dạng uốn lượn, vì nguồn nêu trọng số gần 0 làm các số hạng sai số bình phương ở xa biến mất và đường thẳng được khớp riêng cho từng điểm dự đoán. Phương án cho rằng hàm dự đoán mang dạng đường cong chuông sai vì nguồn nêu rõ dạng cong chuông thuộc về trọng số: 'this has nothing to do with a Gaussian density'. Phương án cho rằng tau càng lớn thì đường khớp càng uốn theo dữ liệu sai vì nguồn nêu tau quá rộng gây 'over smoothing the data', còn tau quá hẹp mới cho đường khớp 'very jagged'."
+      }
+    ],
+    "practice": {
+      "stem": "Một tập dữ liệu có quan hệ giữa x và y phi tuyến rõ rệt. Học viên huấn luyện hồi quy tuyến tính thông thường và hồi quy có trọng số cục bộ (locally weighted regression) trên cùng tập dữ liệu đó, rồi yêu cầu mỗi mô hình dự đoán tại cùng một giá trị x. Nhận định nào sau đây đúng về cách hai mô hình khớp dữ liệu và tạo ra dự đoán tại x?",
+      "choices": [
+        "Hồi quy tuyến tính khớp một đường thẳng trên cả tập huấn luyện, còn hồi quy có trọng số cục bộ khớp một đường cong bậc cao cho vùng dữ liệu quanh giá trị x cần dự đoán.",
+        "Hồi quy tuyến tính phải khớp lại mô hình cho từng giá trị x cần dự đoán, còn hồi quy có trọng số cục bộ giữ một bộ tham số cố định dùng cho mọi giá trị x.",
+        "Hồi quy tuyến tính khớp một đường thẳng chung cho cả tập huấn luyện, còn hồi quy có trọng số cục bộ khớp lại một đường thẳng quanh giá trị x cần dự đoán.",
+        "Cả hai đều khớp một đường thẳng chung cho cả tập huấn luyện, nhưng hồi quy có trọng số cục bộ gán trọng số lớn hơn cho các mẫu gần giá trị x cần dự đoán."
+      ],
+      "correct_index": 2,
+      "explanation": "Nhận định đúng là: hồi quy tuyến tính khớp một đường thẳng chung cho cả tập huấn luyện, còn hồi quy có trọng số cục bộ khớp lại một đường thẳng quanh giá trị x cần dự đoán. Tài liệu nêu rằng với locally weighted regression, khi cần dự đoán quanh một giá trị x, thuật toán nhìn vào một lân cận nhỏ gồm các mẫu huấn luyện gần điểm đó rồi khớp một đường thẳng tại chỗ để dự đoán, và khi cần dự đoán ở điểm khác thì lại tập trung vào vùng lân cận mới; nhờ vậy nó khớp được các hàm rất phi tuyến chứ không chỉ tạo ra đường thẳng. Nhận định 'cả hai đều khớp một đường thẳng chung cho cả tập huấn luyện, chỉ khác trọng số gán cho mẫu gần' sai vì tài liệu mô tả việc khớp đường thẳng theo từng vùng lân cận của điểm dự đoán, không phải một đường thẳng chung. Nhận định 'hồi quy tuyến tính phải khớp lại mô hình cho từng giá trị x cần dự đoán, còn hồi quy có trọng số cục bộ giữ một bộ tham số cố định' sai vì tài liệu xếp hồi quy tuyến tính là thuật toán tham số với bộ tham số cố định khớp vào dữ liệu, còn locally weighted regression là thuật toán phi tham số. Nhận định 'khớp một đường cong bậc cao cho vùng dữ liệu quanh điểm dự đoán' sai vì tài liệu nói thuật toán khớp một đường thẳng trong lân cận cục bộ, không phải một đường cong bậc cao."
+    },
+    "source_chunks": [
+      "Week03\nWhat I'd like to do today is continue our discussion of supervised learning. So, last Wednesday you saw the linear regression algorithm, including both gradient descent, how the formative problem, then gradient descent, and then the normal equations. What I'd like to do today is talk about locally weighted regression, which is a way to modify linear regression to make it fit very non-linear functions, so you aren't just making straight lines. And then we'll talk about a probabilistic interpretation of linear regression, and that will lead us into the first classification algorithm you see in this class, called logistic",
+      "Week03\nyou then return theta transpose x. For locally weighted regression, you do something slightly different, which is if this is the value of x and you want to make a prediction around that value of x, What you do is you look in a little local neighborhood at the training examples close to that point X where you want to make a prediction. And then I'll describe this in... informally for now, but we'll formalize this in math in a second. But focusing mainly on these examples and looking a little bit at further out examples, but really focusing mainly on these examples, you try to fill a straight line like that,",
+      "Week03\nfocusing on the training examples that are close to where you want to make a prediction. And by close, I mean the values are similar on the x-axis. The x values are similar. and then to actually make a prediction you will use this green line that you just fit to make a prediction at that value of x. Now, if you want to make a prediction at a different point let's say that the user now says hey, make a prediction for this point then what you would do is focus on this local area kind of look at those points and when I say focus, put most of the weight on these points but you kind of take a glance at the points further away,",
+      "Week03\nwhich is a type of algorithm for automatically deciding, do you want x squared as a feature or square root of x as a feature, or maybe you want longer of x as a feature, right? But what set of features does the best job fitting the data that you have if it's not fit well by a perfectly straight line? What I'd like to do today is, so you hear about feature selection later this quarter. What I want to share with you today is a different way of addressing this problem of what if the data isn't just fit well by a straight line. And in particular I want to share with you an idea called locally weighted regression or locally weighted linear regression So let me use a slightly different example to illustrate this which is that if you have a data set that looks like that",
+      "Week03\nso it's pretty clear what the shape of this data is, but how do you fit a curve that kind of looks like that? And it's actually quite difficult to find features. Is it square root of x, log of x, x cubed, like third root of x, x to the power of two-thirds? But what is the set of features that lets you do this? So we'll sidestep all those problems in an algorithm called locally-weighted regression. And to introduce a bit more machine learning terminology, in machine learning we sometimes distinguish between parametric learning algorithms and non-parametric learning algorithms.",
+      "Week03\nBut in a parametric learning algorithm, you fit some fixed set of parameters, such as data i to data. And so linear regression, as you saw last Wednesday, is a parametric learning algorithm because there's a fixed set of parameters. The theta i's that you fit to data, and then you're done, right? Locally weighted regression will be our first exposure to a non-parametric learning algorithm. And what that means is that the amount of data slash parameters you need to keep grows. And in this case, it grows linearly with the size of the data, with size of the training set. Okay? So with a parametric learning algorithm,",
+      "Week03\nregression. And we'll talk about an algorithm called Newton's method for logistic regression. And so the dependency of ideas in this class is that locally weighted regression will depend on what you learned in linear regression. And then, we're actually going to just cover the key ideas of locally weighted regression and let you play some of the ideas yourself in the problem set one, which we'll release later this week. And then, I guess, give a problem-less interpretation of linear regression, logistic regression depend on that, and Newtis method is for logistic regression. Okay? To recap the notation you saw on Wednesday,",
+      "Week03\nAgain, you get to practice implementing locally weighted regression homework, so I'm going to go over the high-level ideas relatively quickly and then let you gain practice in the problem set. All right, so let me redraw that data set. Let me do something like this. Well, all right, so say you have a data set like this. Now, for linear regression, if you want to evaluate h at a certain value of the input, So, to make a prediction at a certain value of x, for linear regression, what you do is you fit theta to minimize this cost function. And then you return theta transpose x. So you fit a straight line, and then if you want to make a prediction at this value x,"
+    ]
+  },
+  "reference": {
+    "coverage": "unknown",
+    "chunk_ids": [],
+    "total_chunks": null
+  },
+  "claim_citations": [
+    {
+      "claim": "Với hồi quy tuyến tính, để dự đoán tại một giá trị x, ta khớp theta bằng cách cực tiểu hóa hàm chi phí, rồi trả về theta chuyển vị nhân x — tức là khớp một đường thẳng với dữ liệu và dùng chính đường thẳng đó để dự đoán.",
+      "source_id": "S11",
+      "start": 116,
+      "end": 336,
+      "marker_start": 337,
+      "marker_end": 342,
+      "locator": "{\"end_ms\": 565540, \"start_ms\": 489240}",
+      "chunk_id": "fae63fe1-92f6-457c-892d-634a2099c3dc",
+      "chunk_content": "Week03\nAgain, you get to practice implementing locally weighted regression homework, so I'm going to go over the high-level ideas relatively quickly and then let you gain practice in the problem set. All right, so let me redraw that data set. Let me do something like this. Well, all right, so say you have a data set like this. Now, for linear regression, if you want to evaluate h at a certain value of the input, So, to make a prediction at a certain value of x, for linear regression, what you do is you fit theta to minimize this cost function. And then you return theta transpose x. So you fit a straight line, and then if you want to make a prediction at this value x,",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "Với thuật toán tham số, sau khi khớp xong các tham số theta, có thể xóa tập huấn luyện khỏi bộ nhớ máy tính và chỉ dùng theta để dự đoán.",
+      "source_id": "S10",
+      "start": 345,
+      "end": 482,
+      "marker_start": 483,
+      "marker_end": 488,
+      "locator": "{\"end_ms\": 488200, \"start_ms\": 440720}",
+      "chunk_id": "3a5f1beb-2d95-42f3-9882-e9273698f871",
+      "chunk_content": "Week03\nno matter how big your training set is, you fit the parameters theta i then you could erase the training set from your computer memory and make predictions just using the parameters theta i In a non learning algorithm which we see in a second the amount of stuff you need to keep around in computer memory, or the amount of stuff you need to store around, grows linearly as a function of the training set size. And so this type of algorithm may not be great if you have a really, really massive data set, because you need to keep all of the data around in computer memory or on disk just to make predictions. But we'll see an example of this, and one of the effects of this is that it will be able to fit that data that I drew up there quite well without you needing to fiddle manually with features.",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "Với hồi quy có trọng số cục bộ (locally weighted regression), khi cần dự đoán quanh một giá trị x, ta nhìn vào một lân cận nhỏ gồm các mẫu huấn luyện gần điểm x đó; tập trung chủ yếu vào các mẫu này, chỉ liếc qua các mẫu ở xa hơn, rồi khớp một đường thẳng cục bộ.",
+      "source_id": "S12",
+      "start": 491,
+      "end": 754,
+      "marker_start": 755,
+      "marker_end": 760,
+      "locator": "{\"end_ms\": 615340, \"start_ms\": 565620}",
+      "chunk_id": "bf72f9f2-b177-4373-b954-131d0b19999b",
+      "chunk_content": "Week03\nyou then return theta transpose x. For locally weighted regression, you do something slightly different, which is if this is the value of x and you want to make a prediction around that value of x, What you do is you look in a little local neighborhood at the training examples close to that point X where you want to make a prediction. And then I'll describe this in... informally for now, but we'll formalize this in math in a second. But focusing mainly on these examples and looking a little bit at further out examples, but really focusing mainly on these examples, you try to fill a straight line like that,",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "\"Gần\" ở đây nghĩa là các giá trị tương tự nhau trên trục x; sau đó dùng đường thẳng vừa khớp để đưa ra dự đoán tại giá trị x đó.",
+      "source_id": "S13",
+      "start": 763,
+      "end": 891,
+      "marker_start": 892,
+      "marker_end": 897,
+      "locator": "{\"end_ms\": 657800, \"start_ms\": 615880}",
+      "chunk_id": "cd3da293-126e-4fb3-a2e5-0a3ca87e49a7",
+      "chunk_content": "Week03\nfocusing on the training examples that are close to where you want to make a prediction. And by close, I mean the values are similar on the x-axis. The x values are similar. and then to actually make a prediction you will use this green line that you just fit to make a prediction at that value of x. Now, if you want to make a prediction at a different point let's say that the user now says hey, make a prediction for this point then what you would do is focus on this local area kind of look at those points and when I say focus, put most of the weight on these points but you kind of take a glance at the points further away,",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "Nếu người dùng yêu cầu dự đoán tại một điểm khác, quy trình được lặp lại: tập trung vào vùng cục bộ quanh điểm mới, dành phần lớn trọng số cho các điểm đó, khớp một đường thẳng mới và dùng nó để dự đoán.",
+      "source_id": "S13",
+      "start": 900,
+      "end": 1103,
+      "marker_start": 1104,
+      "marker_end": 1109,
+      "locator": "{\"end_ms\": 657800, \"start_ms\": 615880}",
+      "chunk_id": "cd3da293-126e-4fb3-a2e5-0a3ca87e49a7",
+      "chunk_content": "Week03\nfocusing on the training examples that are close to where you want to make a prediction. And by close, I mean the values are similar on the x-axis. The x values are similar. and then to actually make a prediction you will use this green line that you just fit to make a prediction at that value of x. Now, if you want to make a prediction at a different point let's say that the user now says hey, make a prediction for this point then what you would do is focus on this local area kind of look at those points and when I say focus, put most of the weight on these points but you kind of take a glance at the points further away,",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "Khác biệt cốt lõi: hồi quy tuyến tính khớp một đường thẳng duy nhất cho dữ liệu rồi dùng nó cho mọi dự đoán",
+      "source_id": "S11",
+      "start": 1112,
+      "end": 1219,
+      "marker_start": 1220,
+      "marker_end": 1225,
+      "locator": "{\"end_ms\": 565540, \"start_ms\": 489240}",
+      "chunk_id": "fae63fe1-92f6-457c-892d-634a2099c3dc",
+      "chunk_content": "Week03\nAgain, you get to practice implementing locally weighted regression homework, so I'm going to go over the high-level ideas relatively quickly and then let you gain practice in the problem set. All right, so let me redraw that data set. Let me do something like this. Well, all right, so say you have a data set like this. Now, for linear regression, if you want to evaluate h at a certain value of the input, So, to make a prediction at a certain value of x, for linear regression, what you do is you fit theta to minimize this cost function. And then you return theta transpose x. So you fit a straight line, and then if you want to make a prediction at this value x,",
+      "resolution": "resolved"
+    },
+    {
+      "claim": ", còn hồi quy có trọng số cục bộ khớp một đường thẳng riêng cho lân cận của từng điểm cần dự đoán",
+      "source_id": "S12",
+      "start": 1225,
+      "end": 1322,
+      "marker_start": 1323,
+      "marker_end": 1328,
+      "locator": "{\"end_ms\": 615340, \"start_ms\": 565620}",
+      "chunk_id": "bf72f9f2-b177-4373-b954-131d0b19999b",
+      "chunk_content": "Week03\nyou then return theta transpose x. For locally weighted regression, you do something slightly different, which is if this is the value of x and you want to make a prediction around that value of x, What you do is you look in a little local neighborhood at the training examples close to that point X where you want to make a prediction. And then I'll describe this in... informally for now, but we'll formalize this in math in a second. But focusing mainly on these examples and looking a little bit at further out examples, but really focusing mainly on these examples, you try to fill a straight line like that,",
+      "resolution": "resolved"
+    },
+    {
+      "claim": ", còn hồi quy có trọng số cục bộ khớp một đường thẳng riêng cho lân cận của từng điểm cần dự đoán",
+      "source_id": "S13",
+      "start": 1225,
+      "end": 1322,
+      "marker_start": 1328,
+      "marker_end": 1333,
+      "locator": "{\"end_ms\": 657800, \"start_ms\": 615880}",
+      "chunk_id": "cd3da293-126e-4fb3-a2e5-0a3ca87e49a7",
+      "chunk_content": "Week03\nfocusing on the training examples that are close to where you want to make a prediction. And by close, I mean the values are similar on the x-axis. The x values are similar. and then to actually make a prediction you will use this green line that you just fit to make a prediction at that value of x. Now, if you want to make a prediction at a different point let's say that the user now says hey, make a prediction for this point then what you would do is focus on this local area kind of look at those points and when I say focus, put most of the weight on these points but you kind of take a glance at the points further away,",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "Về ngoại suy (extrapolation): thuật toán vẫn dùng được và các công thức vẫn hoạt động, nhưng kết quả có thể không tốt; hồi quy tuyến tính có trọng số cục bộ thường không giỏi ngoại suy.",
+      "source_id": "S23",
+      "start": 1337,
+      "end": 1522,
+      "marker_start": 1523,
+      "marker_end": 1528,
+      "locator": "{\"end_ms\": 1158860, \"start_ms\": 1115320}",
+      "chunk_id": "30280708-5f5b-4480-b798-c63868c48244",
+      "chunk_content": "Week03\nnet impact of that. Okay? Question? Is tau, is the tau there or is that just a... Thank you. This is tau squared. Yeah. Yeah. So what happens if you need to infer a value of H at a point outside the scope of the data set? What happens if you need to infer a value of H outside the scope of the data set? It turns out that you could still use this algorithm, it's just that its results may not be very good. It depends, I guess. Locally weighted linear regression is usually not great at extrapolation, But then most, many learning algorithms are not great at extrapolation. So all the formulas still work.",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "Trong machine learning, người ta đôi khi phân biệt thuật toán học tham số (parametric learning algorithm) và thuật toán học phi tham số (non-parametric learning algorithm).",
+      "source_id": "S8",
+      "start": 1685,
+      "end": 1857,
+      "marker_start": 1858,
+      "marker_end": 1862,
+      "locator": "{\"end_ms\": 371200, \"start_ms\": 317000}",
+      "chunk_id": "f66f876a-6c97-4e90-b342-2d8df577294e",
+      "chunk_content": "Week03\nso it's pretty clear what the shape of this data is, but how do you fit a curve that kind of looks like that? And it's actually quite difficult to find features. Is it square root of x, log of x, x cubed, like third root of x, x to the power of two-thirds? But what is the set of features that lets you do this? So we'll sidestep all those problems in an algorithm called locally-weighted regression. And to introduce a bit more machine learning terminology, in machine learning we sometimes distinguish between parametric learning algorithms and non-parametric learning algorithms.",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "Thuật toán học tham số là thuật toán khớp một tập tham số cố định với dữ liệu.",
+      "source_id": "S9",
+      "start": 1865,
+      "end": 1943,
+      "marker_start": 1944,
+      "marker_end": 1948,
+      "locator": "{\"end_ms\": 440320, \"start_ms\": 371200}",
+      "chunk_id": "490a46ac-0b7a-4539-87af-60e7f2f1141e",
+      "chunk_content": "Week03\nBut in a parametric learning algorithm, you fit some fixed set of parameters, such as data i to data. And so linear regression, as you saw last Wednesday, is a parametric learning algorithm because there's a fixed set of parameters. The theta i's that you fit to data, and then you're done, right? Locally weighted regression will be our first exposure to a non-parametric learning algorithm. And what that means is that the amount of data slash parameters you need to keep grows. And in this case, it grows linearly with the size of the data, with size of the training set. Okay? So with a parametric learning algorithm,",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "Hồi quy tuyến tính là thuật toán tham số vì có một tập tham số cố định (các theta) được khớp với dữ liệu, khớp xong là xong.",
+      "source_id": "S9",
+      "start": 1951,
+      "end": 2075,
+      "marker_start": 2076,
+      "marker_end": 2080,
+      "locator": "{\"end_ms\": 440320, \"start_ms\": 371200}",
+      "chunk_id": "490a46ac-0b7a-4539-87af-60e7f2f1141e",
+      "chunk_content": "Week03\nBut in a parametric learning algorithm, you fit some fixed set of parameters, such as data i to data. And so linear regression, as you saw last Wednesday, is a parametric learning algorithm because there's a fixed set of parameters. The theta i's that you fit to data, and then you're done, right? Locally weighted regression will be our first exposure to a non-parametric learning algorithm. And what that means is that the amount of data slash parameters you need to keep grows. And in this case, it grows linearly with the size of the data, with size of the training set. Okay? So with a parametric learning algorithm,",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "Với thuật toán tham số, dù tập huấn luyện lớn đến đâu, sau khi khớp các tham số theta ta có thể xóa tập huấn luyện khỏi bộ nhớ và dự đoán chỉ bằng các tham số đó.",
+      "source_id": "S10",
+      "start": 2083,
+      "end": 2245,
+      "marker_start": 2246,
+      "marker_end": 2251,
+      "locator": "{\"end_ms\": 488200, \"start_ms\": 440720}",
+      "chunk_id": "3a5f1beb-2d95-42f3-9882-e9273698f871",
+      "chunk_content": "Week03\nno matter how big your training set is, you fit the parameters theta i then you could erase the training set from your computer memory and make predictions just using the parameters theta i In a non learning algorithm which we see in a second the amount of stuff you need to keep around in computer memory, or the amount of stuff you need to store around, grows linearly as a function of the training set size. And so this type of algorithm may not be great if you have a really, really massive data set, because you need to keep all of the data around in computer memory or on disk just to make predictions. But we'll see an example of this, and one of the effects of this is that it will be able to fit that data that I drew up there quite well without you needing to fiddle manually with features.",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "Hồi quy có trọng số cục bộ là thuật toán phi tham số đầu tiên được giới thiệu; điều này có nghĩa là lượng dữ liệu/tham số cần giữ tăng lên, và tăng tuyến tính theo kích thước tập huấn luyện.",
+      "source_id": "S9",
+      "start": 2254,
+      "end": 2444,
+      "marker_start": 2445,
+      "marker_end": 2449,
+      "locator": "{\"end_ms\": 440320, \"start_ms\": 371200}",
+      "chunk_id": "490a46ac-0b7a-4539-87af-60e7f2f1141e",
+      "chunk_content": "Week03\nBut in a parametric learning algorithm, you fit some fixed set of parameters, such as data i to data. And so linear regression, as you saw last Wednesday, is a parametric learning algorithm because there's a fixed set of parameters. The theta i's that you fit to data, and then you're done, right? Locally weighted regression will be our first exposure to a non-parametric learning algorithm. And what that means is that the amount of data slash parameters you need to keep grows. And in this case, it grows linearly with the size of the data, with size of the training set. Okay? So with a parametric learning algorithm,",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "Với thuật toán phi tham số, lượng thứ cần giữ trong bộ nhớ hoặc trên đĩa tăng tuyến tính theo kích thước tập huấn luyện, nên phải giữ toàn bộ dữ liệu để có thể dự đoán; loại thuật toán này có thể không phù hợp khi tập dữ liệu thực sự khổng lồ.",
+      "source_id": "S10",
+      "start": 2452,
+      "end": 2695,
+      "marker_start": 2696,
+      "marker_end": 2701,
+      "locator": "{\"end_ms\": 488200, \"start_ms\": 440720}",
+      "chunk_id": "3a5f1beb-2d95-42f3-9882-e9273698f871",
+      "chunk_content": "Week03\nno matter how big your training set is, you fit the parameters theta i then you could erase the training set from your computer memory and make predictions just using the parameters theta i In a non learning algorithm which we see in a second the amount of stuff you need to keep around in computer memory, or the amount of stuff you need to store around, grows linearly as a function of the training set size. And so this type of algorithm may not be great if you have a really, really massive data set, because you need to keep all of the data around in computer memory or on disk just to make predictions. But we'll see an example of this, and one of the effects of this is that it will be able to fit that data that I drew up there quite well without you needing to fiddle manually with features.",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "Chi phí tính toán: phép tối thiểu hóa cần thiết tương tự như với normal equations, liên quan đến việc giải một hệ phương trình tuyến tính có số chiều bằng số mẫu huấn luyện; với khoảng một nghìn đến vài nghìn mẫu thì không quá tệ.",
+      "source_id": "S26",
+      "start": 2704,
+      "end": 2934,
+      "marker_start": 2935,
+      "marker_end": 2940,
+      "locator": "{\"end_ms\": 1262840, \"start_ms\": 1228560}",
+      "chunk_id": "17dfd6f5-0c67-45c4-a368-4b541a74c959",
+      "chunk_content": "Week03\nSince you have a lot of, when you have a lot of data, would this be a computation expensive? Oh, sure. Yes, if you have a lot of data, will this be computation expensive? Yes, it would be. I guess a lot of data is relative. Yes, we have, you know, two, three, four-dimensional data and hundreds of examples, I mean, thousands of examples. It turns out the computation needed to fit the minimization is similar to the normal equations. and so it involves solving a Lillian system of equations of dimension equal to the number of training examples you have. So if that's like a thousand or a few thousand,",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "Khi có hàng triệu mẫu, có những thuật toán tinh vi hơn như KD trees để xử lý.",
+      "source_id": "S27",
+      "start": 2943,
+      "end": 3020,
+      "marker_start": 3021,
+      "marker_end": 3026,
+      "locator": "{\"end_ms\": 1304240, \"start_ms\": 1262980}",
+      "chunk_id": "6e8081c1-e47e-425c-bd88-0242e7635a58",
+      "chunk_content": "Week03\nthat's not too bad. If you have millions of examples, then there are also more sophisticated algorithms like KD trees and much more complicated algorithms to do this when you have millions or tens of millions of examples. Okay, so you get a better sense of this algorithm when you play with it in the problem set. Now, the second topic, so I'm going to put aside locally weighted regression. We won't talk about that set of ideas anymore today, but what I want to do today is, on last Wednesday, I had said that I had promised last Wednesday that today, I'll give a justification for why we use the squared error, right?",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "Hồi quy có trọng số cục bộ là một cách sửa đổi hồi quy tuyến tính để nó khớp được các hàm rất phi tuyến, thay vì chỉ tạo ra các đường thẳng.",
+      "source_id": "S1",
+      "start": 3159,
+      "end": 3299,
+      "marker_start": 3300,
+      "marker_end": 3304,
+      "locator": "{\"end_ms\": 43360, \"start_ms\": 0}",
+      "chunk_id": "ef076222-7a6f-4297-87c4-e0a3f5cfc9de",
+      "chunk_content": "Week03\nWhat I'd like to do today is continue our discussion of supervised learning. So, last Wednesday you saw the linear regression algorithm, including both gradient descent, how the formative problem, then gradient descent, and then the normal equations. What I'd like to do today is talk about locally weighted regression, which is a way to modify linear regression to make it fit very non-linear functions, so you aren't just making straight lines. And then we'll talk about a probabilistic interpretation of linear regression, and that will lead us into the first classification algorithm you see in this class, called logistic",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "— việc tìm ra tập đặc trưng phù hợp là rất khó.",
+      "source_id": "S5",
+      "start": 3497,
+      "end": 3544,
+      "marker_start": 3545,
+      "marker_end": 3549,
+      "locator": "{\"end_ms\": 220380, \"start_ms\": 176140}",
+      "chunk_id": "77c0bcf6-a2fc-4d18-a482-ad48c7a6fe31",
+      "chunk_content": "Week03\nbit like that. And so one question that you have to address when fitting models to the data is what are the features you want? Do you want to fit a straight line to this problem or do you want to fit a hypothesis of the form theta 1x plus theta 2x squared since this may be a quadratic function, right? Now the problem with quadratic function is that quadratic function eventually starts, you know, curving back down. Well, that would be a quadratic function that starts curving back down. So maybe you don't want to fit a quadratic function. Instead, maybe you want to fit something like that. If housing prices sort of curve down up a little bit,",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "— việc tìm ra tập đặc trưng phù hợp là rất khó.",
+      "source_id": "S8",
+      "start": 3497,
+      "end": 3544,
+      "marker_start": 3549,
+      "marker_end": 3553,
+      "locator": "{\"end_ms\": 371200, \"start_ms\": 317000}",
+      "chunk_id": "f66f876a-6c97-4e90-b342-2d8df577294e",
+      "chunk_content": "Week03\nso it's pretty clear what the shape of this data is, but how do you fit a curve that kind of looks like that? And it's actually quite difficult to find features. Is it square root of x, log of x, x cubed, like third root of x, x to the power of two-thirds? But what is the set of features that lets you do this? So we'll sidestep all those problems in an algorithm called locally-weighted regression. And to introduce a bit more machine learning terminology, in machine learning we sometimes distinguish between parametric learning algorithms and non-parametric learning algorithms.",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "Hồi quy có trọng số cục bộ đi vòng qua (sidestep) toàn bộ vấn đề tìm đặc trưng đó.",
+      "source_id": "S8",
+      "start": 3556,
+      "end": 3638,
+      "marker_start": 3639,
+      "marker_end": 3643,
+      "locator": "{\"end_ms\": 371200, \"start_ms\": 317000}",
+      "chunk_id": "f66f876a-6c97-4e90-b342-2d8df577294e",
+      "chunk_content": "Week03\nso it's pretty clear what the shape of this data is, but how do you fit a curve that kind of looks like that? And it's actually quite difficult to find features. Is it square root of x, log of x, x cubed, like third root of x, x to the power of two-thirds? But what is the set of features that lets you do this? So we'll sidestep all those problems in an algorithm called locally-weighted regression. And to introduce a bit more machine learning terminology, in machine learning we sometimes distinguish between parametric learning algorithms and non-parametric learning algorithms.",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "Cơ chế: khi dự đoán tại một giá trị x, chỉ các mẫu gần x mới nhận trọng số đáng kể, còn các mẫu ở xa bị nhân với 0 hoặc một hằng số rất gần 0; do đó việc khớp chỉ thực chất dựa trên các điểm gần điểm dự đoán và tạo ra một đường thẳng cục bộ tại đó",
+      "source_id": "S17",
+      "start": 3646,
+      "end": 3893,
+      "marker_start": 3894,
+      "marker_end": 3899,
+      "locator": "{\"end_ms\": 888640, \"start_ms\": 841440}",
+      "chunk_id": "3ca8a8a4-99f7-410c-9325-9e2cc5be9a20",
+      "chunk_content": "Week03\nfrom where you want to make a prediction, multiply that error term by zero, or by a constant very close to zero. Whereas if it's close to where you want to make a prediction, multiply that error term by one. And so the net effect of this is that this is summing, if the terms multiplied by zero disappear, right? So the net effect of this is that this sums over essentially only the terms for the squared error for the examples that are close to the value, close to the value of x where you want to make a prediction. Okay? And that's why when you fit theta to minimize this, you end up paying attention only to the points,",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "Cơ chế: khi dự đoán tại một giá trị x, chỉ các mẫu gần x mới nhận trọng số đáng kể, còn các mẫu ở xa bị nhân với 0 hoặc một hằng số rất gần 0; do đó việc khớp chỉ thực chất dựa trên các điểm gần điểm dự đoán và tạo ra một đường thẳng cục bộ tại đó",
+      "source_id": "S18",
+      "start": 3646,
+      "end": 3893,
+      "marker_start": 3899,
+      "marker_end": 3904,
+      "locator": "{\"end_ms\": 937340, \"start_ms\": 888640}",
+      "chunk_id": "0151641a-2b8b-4258-aee2-6f666863b5a4",
+      "chunk_content": "Week03\nonly to the examples close to where you want to make a prediction and fitting a line like a green line over there Okay So let me draw a couple more pictures to illustrate this So if let me draw a slightly smaller data set just to make this easier to illustrate. So that's your training set. So that's, you know, examples x1, x2, x3, x4. And if you want to make a prediction here, right, at that point X, then this curve here looks, the shape of this curve is actually like this, right, and this is the shape of a Gaussian bell curve, but this has nothing to do with a Gaussian density, right, so this thing does not integrate the one, so sometimes",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "Vì mỗi lần dự đoán lại khớp một đường thẳng riêng cho lân cận của điểm đó",
+      "source_id": "S12",
+      "start": 3906,
+      "end": 3979,
+      "marker_start": 3980,
+      "marker_end": 3985,
+      "locator": "{\"end_ms\": 615340, \"start_ms\": 565620}",
+      "chunk_id": "bf72f9f2-b177-4373-b954-131d0b19999b",
+      "chunk_content": "Week03\nyou then return theta transpose x. For locally weighted regression, you do something slightly different, which is if this is the value of x and you want to make a prediction around that value of x, What you do is you look in a little local neighborhood at the training examples close to that point X where you want to make a prediction. And then I'll describe this in... informally for now, but we'll formalize this in math in a second. But focusing mainly on these examples and looking a little bit at further out examples, but really focusing mainly on these examples, you try to fill a straight line like that,",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "Vì mỗi lần dự đoán lại khớp một đường thẳng riêng cho lân cận của điểm đó",
+      "source_id": "S13",
+      "start": 3906,
+      "end": 3979,
+      "marker_start": 3985,
+      "marker_end": 3990,
+      "locator": "{\"end_ms\": 657800, \"start_ms\": 615880}",
+      "chunk_id": "cd3da293-126e-4fb3-a2e5-0a3ca87e49a7",
+      "chunk_content": "Week03\nfocusing on the training examples that are close to where you want to make a prediction. And by close, I mean the values are similar on the x-axis. The x values are similar. and then to actually make a prediction you will use this green line that you just fit to make a prediction at that value of x. Now, if you want to make a prediction at a different point let's say that the user now says hey, make a prediction for this point then what you would do is focus on this local area kind of look at those points and when I say focus, put most of the weight on these points but you kind of take a glance at the points further away,",
+      "resolution": "resolved"
+    },
+    {
+      "claim": ", nên tổng thể mô hình có thể bám theo các dạng rất phi tuyến",
+      "source_id": "S1",
+      "start": 3990,
+      "end": 4051,
+      "marker_start": 4052,
+      "marker_end": 4056,
+      "locator": "{\"end_ms\": 43360, \"start_ms\": 0}",
+      "chunk_id": "ef076222-7a6f-4297-87c4-e0a3f5cfc9de",
+      "chunk_content": "Week03\nWhat I'd like to do today is continue our discussion of supervised learning. So, last Wednesday you saw the linear regression algorithm, including both gradient descent, how the formative problem, then gradient descent, and then the normal equations. What I'd like to do today is talk about locally weighted regression, which is a way to modify linear regression to make it fit very non-linear functions, so you aren't just making straight lines. And then we'll talk about a probabilistic interpretation of linear regression, and that will lead us into the first classification algorithm you see in this class, called logistic",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "Kết quả là thuật toán khớp dữ liệu đó khá tốt mà không cần người dùng mò mẫm chỉnh đặc trưng bằng tay.",
+      "source_id": "S10",
+      "start": 4060,
+      "end": 4162,
+      "marker_start": 4163,
+      "marker_end": 4168,
+      "locator": "{\"end_ms\": 488200, \"start_ms\": 440720}",
+      "chunk_id": "3a5f1beb-2d95-42f3-9882-e9273698f871",
+      "chunk_content": "Week03\nno matter how big your training set is, you fit the parameters theta i then you could erase the training set from your computer memory and make predictions just using the parameters theta i In a non learning algorithm which we see in a second the amount of stuff you need to keep around in computer memory, or the amount of stuff you need to store around, grows linearly as a function of the training set size. And so this type of algorithm may not be great if you have a really, really massive data set, because you need to keep all of the data around in computer memory or on disk just to make predictions. But we'll see an example of this, and one of the effects of this is that it will be able to fit that data that I drew up there quite well without you needing to fiddle manually with features.",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "Băng thông tau ảnh hưởng tới việc khớp quá mức (overfitting) và khớp thiếu (underfitting): nếu tau quá rộng thì làm trơn dữ liệu quá mức, nếu tau quá hẹp thì đường khớp trở nên rất răng cưa.",
+      "source_id": "S22",
+      "start": 4171,
+      "end": 4361,
+      "marker_start": 4362,
+      "marker_end": 4367,
+      "locator": "{\"end_ms\": 1115320, \"start_ms\": 1073320}",
+      "chunk_id": "879ffe0b-0a86-489d-a21f-e381a47cf4e9",
+      "chunk_content": "Week03\nIt turns out that the choice of the bandwidth tau has an effect on overfitting and underfitting. If you don't know what those terms mean, don't worry about it. We'll define them later this quarter. But what you get to do in the problem set is play with tau yourself and see why if tau is too broad, you end up fitting you end up over smoothing the data and if tau is too thin you end up fitting a very jagged fit to the data. And if any of these things don't make sense yet, don't worry about it. They'll make sense after you play with it in the problem set. Okay? So yeah, since you play with the varying tau in the problem set and see for yourself the",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "Ngoài dạng đường cong kiểu Gaussian, người ta còn dùng các dạng hàm khác, ví dụ hàm hình tam giác (triangle shape function) — có nhiều phiên bản khác nhau của thuật toán này.",
+      "source_id": "S24",
+      "start": 4370,
+      "end": 4544,
+      "marker_start": 4545,
+      "marker_end": 4550,
+      "locator": "{\"end_ms\": 1192520, \"start_ms\": 1158960}",
+      "chunk_id": "662e7875-72a6-4e8a-8a74-d4554232e899",
+      "chunk_content": "Week03\nThey still implement this. But yeah, you can also try it in your problem set and see what happens. One last question. Is it possible to have like a variable tau in the amount of some parts of your data have lots of... Oh, yeah. ...sector of the time of the normal time? Yes, is it possible to have like a variable tau depending on, yes, it is. And there are quite complicated ways to choose tau based on how many points there are in the local region and so on. There's a huge literature on different formulas. Actually, for example, instead of this Gaussian bump thing, sometimes people use that triangle",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "Hồi quy tuyến tính có trọng số cục bộ thường được dùng khi dữ liệu có số chiều tương đối thấp (số đặc trưng n khá nhỏ, cỡ hai hoặc ba), có nhiều dữ liệu, và người dùng không muốn phải suy nghĩ về việc chọn đặc trưng nào.",
+      "source_id": "S25",
+      "start": 4553,
+      "end": 4773,
+      "marker_start": 4774,
+      "marker_end": 4779,
+      "locator": "{\"end_ms\": 1228560, \"start_ms\": 1192520}",
+      "chunk_id": "67a504da-1b5d-498c-9be6-ff1fd4efa3ee",
+      "chunk_content": "Week03\nshape function, so it absolutely goes to zero upside some small range. So there are many versions of this algorithm. So I tend to use locally weighted linear regression when you have a relatively low dimensional dataset. So when the number of features is not too big, right? So when n is quite small, like two or three or something, and we have a lot of data, and you don't want to think about what features to use, right? So that's the scenario. So if you actually have a dataset that looks like these up in drawing, you know, locally weighted linear regression is a pretty good algorithm. All right, just one last question.",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "Cụ thể hóa: trong hồi quy có trọng số cục bộ, ta khớp theta để cực tiểu hóa một hàm chi phí đã được sửa đổi, trong đó w_i là một hàm trọng số.",
+      "source_id": "S14",
+      "start": 4888,
+      "end": 5030,
+      "marker_start": 5031,
+      "marker_end": 5036,
+      "locator": "{\"end_ms\": 741720, \"start_ms\": 657900}",
+      "chunk_id": "3d4574e8-3708-4a0c-bb0a-aed034597c57",
+      "chunk_content": "Week03\nbut most of the attention is on these. Put a straight line to that, and then you use that straight line to make a prediction. Okay? And so to formalize this, in locally weighted regression, you will fit theta to minimize a modified cost function where WI is a weight function. And so a good, well, the default choice, a common choice of WI will be this. I'm going to add something to this equation a little bit later. But wi is a weighting function where, notice that this formula has defining property, right? If xi minus x is small, then the weight will be close to one. if xi and x,",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "Trong công thức này, x là vị trí cần dự đoán và x_i là giá trị đầu vào x của mẫu huấn luyện thứ i.",
+      "source_id": "S15",
+      "start": 5039,
+      "end": 5137,
+      "marker_start": 5138,
+      "marker_end": 5143,
+      "locator": "{\"end_ms\": 788660, \"start_ms\": 741960}",
+      "chunk_id": "0fbea07a-450e-4cb7-8d0a-1af7099a472f",
+      "chunk_content": "Week03\nso x is the location where you want to make a prediction and xi is the input x for your i training example So wi is a weighting function There a value between 0 and 1 that tells you how much should you pay attention to the values of xi comma yi when fitting, say, this green line or that red line. And so if xi minus x is small, so if that's a training example, that is close to where you want to make the prediction for x, then this is about e to the 0, right? e to the negative 0, if the numerator here is small, and e to the 0 is close to 1, right? And conversely,",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "w_i là hàm trọng số, nhận giá trị trong khoảng từ 0 đến 1, cho biết nên \"để ý\" bao nhiêu đến cặp giá trị (x_i, y_i) khi khớp đường thẳng cục bộ.",
+      "source_id": "S15",
+      "start": 5146,
+      "end": 5290,
+      "marker_start": 5291,
+      "marker_end": 5296,
+      "locator": "{\"end_ms\": 788660, \"start_ms\": 741960}",
+      "chunk_id": "0fbea07a-450e-4cb7-8d0a-1af7099a472f",
+      "chunk_content": "Week03\nso x is the location where you want to make a prediction and xi is the input x for your i training example So wi is a weighting function There a value between 0 and 1 that tells you how much should you pay attention to the values of xi comma yi when fitting, say, this green line or that red line. And so if xi minus x is small, so if that's a training example, that is close to where you want to make the prediction for x, then this is about e to the 0, right? e to the negative 0, if the numerator here is small, and e to the 0 is close to 1, right? And conversely,",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "Nếu x_i trừ x là nhỏ — tức mẫu huấn luyện gần nơi cần dự đoán — thì trọng số gần bằng 1 (xấp xỉ e mũ 0).",
+      "source_id": "S14",
+      "start": 5299,
+      "end": 5403,
+      "marker_start": 5404,
+      "marker_end": 5409,
+      "locator": "{\"end_ms\": 741720, \"start_ms\": 657900}",
+      "chunk_id": "3d4574e8-3708-4a0c-bb0a-aed034597c57",
+      "chunk_content": "Week03\nbut most of the attention is on these. Put a straight line to that, and then you use that straight line to make a prediction. Okay? And so to formalize this, in locally weighted regression, you will fit theta to minimize a modified cost function where WI is a weight function. And so a good, well, the default choice, a common choice of WI will be this. I'm going to add something to this equation a little bit later. But wi is a weighting function where, notice that this formula has defining property, right? If xi minus x is small, then the weight will be close to one. if xi and x,",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "Nếu x_i trừ x là nhỏ — tức mẫu huấn luyện gần nơi cần dự đoán — thì trọng số gần bằng 1 (xấp xỉ e mũ 0).",
+      "source_id": "S15",
+      "start": 5299,
+      "end": 5403,
+      "marker_start": 5409,
+      "marker_end": 5414,
+      "locator": "{\"end_ms\": 788660, \"start_ms\": 741960}",
+      "chunk_id": "0fbea07a-450e-4cb7-8d0a-1af7099a472f",
+      "chunk_content": "Week03\nso x is the location where you want to make a prediction and xi is the input x for your i training example So wi is a weighting function There a value between 0 and 1 that tells you how much should you pay attention to the values of xi comma yi when fitting, say, this green line or that red line. And so if xi minus x is small, so if that's a training example, that is close to where you want to make the prediction for x, then this is about e to the 0, right? e to the negative 0, if the numerator here is small, and e to the 0 is close to 1, right? And conversely,",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "Ngược lại, nếu x_i trừ x là lớn thì w_i gần bằng 0.",
+      "source_id": "S16",
+      "start": 5417,
+      "end": 5468,
+      "marker_start": 5469,
+      "marker_end": 5474,
+      "locator": "{\"end_ms\": 841440, \"start_ms\": 789140}",
+      "chunk_id": "ea19d795-e001-43b8-8308-a67576662b8e",
+      "chunk_content": "Week03\nif xi minus x is large, then wi is close to 0. And so if xi is very far away, so let's see if you're fitting this green line, and this is your example, x, i, y, i, then it's saying, give this example all the way out there, if you're fitting the green line, right, look at this first x, saying that example should have a weight very close to zero. Okay? And so, if you look at the cost function, the main modification to the cost function we've made is that we've added this weighting term, right? And so what locally weighted regression does is it's saying, if an example, xi, is far",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "Sửa đổi chính so với hàm chi phí thông thường là việc thêm số hạng trọng số: nếu một mẫu ở xa nơi cần dự đoán, số hạng sai số của nó bị nhân với 0 (hoặc với một hằng số rất gần 0); nếu mẫu ở gần, số hạng sai số được nhân với 1.",
+      "source_id": "S16",
+      "start": 5477,
+      "end": 5704,
+      "marker_start": 5705,
+      "marker_end": 5710,
+      "locator": "{\"end_ms\": 841440, \"start_ms\": 789140}",
+      "chunk_id": "ea19d795-e001-43b8-8308-a67576662b8e",
+      "chunk_content": "Week03\nif xi minus x is large, then wi is close to 0. And so if xi is very far away, so let's see if you're fitting this green line, and this is your example, x, i, y, i, then it's saying, give this example all the way out there, if you're fitting the green line, right, look at this first x, saying that example should have a weight very close to zero. Okay? And so, if you look at the cost function, the main modification to the cost function we've made is that we've added this weighting term, right? And so what locally weighted regression does is it's saying, if an example, xi, is far",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "Sửa đổi chính so với hàm chi phí thông thường là việc thêm số hạng trọng số: nếu một mẫu ở xa nơi cần dự đoán, số hạng sai số của nó bị nhân với 0 (hoặc với một hằng số rất gần 0); nếu mẫu ở gần, số hạng sai số được nhân với 1.",
+      "source_id": "S17",
+      "start": 5477,
+      "end": 5704,
+      "marker_start": 5710,
+      "marker_end": 5715,
+      "locator": "{\"end_ms\": 888640, \"start_ms\": 841440}",
+      "chunk_id": "3ca8a8a4-99f7-410c-9325-9e2cc5be9a20",
+      "chunk_content": "Week03\nfrom where you want to make a prediction, multiply that error term by zero, or by a constant very close to zero. Whereas if it's close to where you want to make a prediction, multiply that error term by one. And so the net effect of this is that this is summing, if the terms multiplied by zero disappear, right? So the net effect of this is that this sums over essentially only the terms for the squared error for the examples that are close to the value, close to the value of x where you want to make a prediction. Okay? And that's why when you fit theta to minimize this, you end up paying attention only to the points,",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "Hệ quả: tổng thực chất chỉ còn các số hạng sai số bình phương của những mẫu gần giá trị x cần dự đoán, nên khi khớp theta ta chỉ thực sự để ý đến các điểm gần đó và khớp một đường thẳng cục bộ đi qua vùng ấy.",
+      "source_id": "S17",
+      "start": 5718,
+      "end": 5926,
+      "marker_start": 5927,
+      "marker_end": 5932,
+      "locator": "{\"end_ms\": 888640, \"start_ms\": 841440}",
+      "chunk_id": "3ca8a8a4-99f7-410c-9325-9e2cc5be9a20",
+      "chunk_content": "Week03\nfrom where you want to make a prediction, multiply that error term by zero, or by a constant very close to zero. Whereas if it's close to where you want to make a prediction, multiply that error term by one. And so the net effect of this is that this is summing, if the terms multiplied by zero disappear, right? So the net effect of this is that this sums over essentially only the terms for the squared error for the examples that are close to the value, close to the value of x where you want to make a prediction. Okay? And that's why when you fit theta to minimize this, you end up paying attention only to the points,",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "Hệ quả: tổng thực chất chỉ còn các số hạng sai số bình phương của những mẫu gần giá trị x cần dự đoán, nên khi khớp theta ta chỉ thực sự để ý đến các điểm gần đó và khớp một đường thẳng cục bộ đi qua vùng ấy.",
+      "source_id": "S18",
+      "start": 5718,
+      "end": 5926,
+      "marker_start": 5932,
+      "marker_end": 5937,
+      "locator": "{\"end_ms\": 937340, \"start_ms\": 888640}",
+      "chunk_id": "0151641a-2b8b-4258-aee2-6f666863b5a4",
+      "chunk_content": "Week03\nonly to the examples close to where you want to make a prediction and fitting a line like a green line over there Okay So let me draw a couple more pictures to illustrate this So if let me draw a slightly smaller data set just to make this easier to illustrate. So that's your training set. So that's, you know, examples x1, x2, x3, x4. And if you want to make a prediction here, right, at that point X, then this curve here looks, the shape of this curve is actually like this, right, and this is the shape of a Gaussian bell curve, but this has nothing to do with a Gaussian density, right, so this thing does not integrate the one, so sometimes",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "Dạng hàm trọng số thường dùng có hình dạng rất giống đường cong chuông Gaussian, nhưng nó không phải là mật độ Gaussian: hàm mật độ xác suất Gaussian phải có tích phân bằng 1, còn hàm này thì không.",
+      "source_id": "S18",
+      "start": 5940,
+      "end": 6138,
+      "marker_start": 6139,
+      "marker_end": 6144,
+      "locator": "{\"end_ms\": 937340, \"start_ms\": 888640}",
+      "chunk_id": "0151641a-2b8b-4258-aee2-6f666863b5a4",
+      "chunk_content": "Week03\nonly to the examples close to where you want to make a prediction and fitting a line like a green line over there Okay So let me draw a couple more pictures to illustrate this So if let me draw a slightly smaller data set just to make this easier to illustrate. So that's your training set. So that's, you know, examples x1, x2, x3, x4. And if you want to make a prediction here, right, at that point X, then this curve here looks, the shape of this curve is actually like this, right, and this is the shape of a Gaussian bell curve, but this has nothing to do with a Gaussian density, right, so this thing does not integrate the one, so sometimes",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "Dạng hàm trọng số thường dùng có hình dạng rất giống đường cong chuông Gaussian, nhưng nó không phải là mật độ Gaussian: hàm mật độ xác suất Gaussian phải có tích phân bằng 1, còn hàm này thì không.",
+      "source_id": "S19",
+      "start": 5940,
+      "end": 6138,
+      "marker_start": 6144,
+      "marker_end": 6149,
+      "locator": "{\"end_ms\": 974460, \"start_ms\": 937340}",
+      "chunk_id": "34543eea-81cd-465e-a164-1791d9f10fe3",
+      "chunk_content": "Week03\nyou're asked, well, is this using Gaussian density, the answer is no, this is just a function that is shaped a lot like a Gaussian, but Gaussian density is probability density functions have to integrate to 1 and this is not. So there's nothing to do with Gaussian probability density. Question? How do you choose the weight of the... Oh, sure. How do you choose the weight? Let me get back to that. And so for this example, this height here says, give this example a weight equal to the height of that thing. Give this example a weight equal height of this, height of this, height of that.",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "Trọng số gán cho một mẫu bằng đúng \"chiều cao\" của đường cong đó tại mẫu ấy; vì vậy một mẫu ở rất xa sẽ nhận trọng số gần như bằng 0, khiến chỉ các mẫu lân cận được tính đến khi khớp đường thẳng cục bộ.",
+      "source_id": "S19",
+      "start": 6152,
+      "end": 6354,
+      "marker_start": 6355,
+      "marker_end": 6360,
+      "locator": "{\"end_ms\": 974460, \"start_ms\": 937340}",
+      "chunk_id": "34543eea-81cd-465e-a164-1791d9f10fe3",
+      "chunk_content": "Week03\nyou're asked, well, is this using Gaussian density, the answer is no, this is just a function that is shaped a lot like a Gaussian, but Gaussian density is probability density functions have to integrate to 1 and this is not. So there's nothing to do with Gaussian probability density. Question? How do you choose the weight of the... Oh, sure. How do you choose the weight? Let me get back to that. And so for this example, this height here says, give this example a weight equal to the height of that thing. Give this example a weight equal height of this, height of this, height of that.",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "Trọng số gán cho một mẫu bằng đúng \"chiều cao\" của đường cong đó tại mẫu ấy; vì vậy một mẫu ở rất xa sẽ nhận trọng số gần như bằng 0, khiến chỉ các mẫu lân cận được tính đến khi khớp đường thẳng cục bộ.",
+      "source_id": "S20",
+      "start": 6152,
+      "end": 6354,
+      "marker_start": 6360,
+      "marker_end": 6365,
+      "locator": "{\"end_ms\": 1016900, \"start_ms\": 975040}",
+      "chunk_id": "29c48abe-49ec-4a45-a657-61c9720bbcbf",
+      "chunk_content": "Week03\nRight? Which is why, if you actually have an example that's way out there, you know, is given a weight that's essentially zero, which is why it's weighting only the nearby examples when trying to fit a straight line, right? For making predictions close to this. Okay? Now, so one last thing that I want to mention, which is the question just now, which is how do you choose the width of this Gaussian density? How fat is it? How thin should it be? And this decides how big a neighborhood should you look in order to decide what's the neighborhood of points you should use to fit this local straight line.",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "Độ \"béo\" hay \"mảnh\" của đường cong do băng thông tau (bandwidth parameter) quyết định; tau là một tham số hay siêu tham số của thuật toán, và trong công thức tau xuất hiện ở dạng bình phương.",
+      "source_id": "S21",
+      "start": 6368,
+      "end": 6559,
+      "marker_start": 6560,
+      "marker_end": 6565,
+      "locator": "{\"end_ms\": 1073320, \"start_ms\": 1017540}",
+      "chunk_id": "d8f0456f-01ab-4c4b-be5c-afe5c4877a85",
+      "chunk_content": "Week03\nAnd so for a Gaussian function like this, I'm going to call this the bandwidth parameter tau. And this is a parameter or hyperparameter of the algorithm. And depending on the choice of tau you can choose a fatter or thinner bell curve which causes you to look in a bigger or a narrower window in order to decide how many nearby examples you use in order to fit the straight line And it turns out that, and I want to leave you to discover this yourself in the problem set. If you've taken a little bit of machine learning elsewhere, I've heard of the terms over... Test is on? Okay, good. It's still on.",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "Độ \"béo\" hay \"mảnh\" của đường cong do băng thông tau (bandwidth parameter) quyết định; tau là một tham số hay siêu tham số của thuật toán, và trong công thức tau xuất hiện ở dạng bình phương.",
+      "source_id": "S23",
+      "start": 6368,
+      "end": 6559,
+      "marker_start": 6565,
+      "marker_end": 6570,
+      "locator": "{\"end_ms\": 1158860, \"start_ms\": 1115320}",
+      "chunk_id": "30280708-5f5b-4480-b798-c63868c48244",
+      "chunk_content": "Week03\nnet impact of that. Okay? Question? Is tau, is the tau there or is that just a... Thank you. This is tau squared. Yeah. Yeah. So what happens if you need to infer a value of H at a point outside the scope of the data set? What happens if you need to infer a value of H outside the scope of the data set? It turns out that you could still use this algorithm, it's just that its results may not be very good. It depends, I guess. Locally weighted linear regression is usually not great at extrapolation, But then most, many learning algorithms are not great at extrapolation. So all the formulas still work.",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "Tùy vào lựa chọn tau, ta có đường cong béo hơn hoặc mảnh hơn, từ đó quyết định cửa sổ rộng hay hẹp — tức dùng bao nhiêu mẫu lân cận để khớp đường thẳng cục bộ.",
+      "source_id": "S21",
+      "start": 6573,
+      "end": 6732,
+      "marker_start": 6733,
+      "marker_end": 6738,
+      "locator": "{\"end_ms\": 1073320, \"start_ms\": 1017540}",
+      "chunk_id": "d8f0456f-01ab-4c4b-be5c-afe5c4877a85",
+      "chunk_content": "Week03\nAnd so for a Gaussian function like this, I'm going to call this the bandwidth parameter tau. And this is a parameter or hyperparameter of the algorithm. And depending on the choice of tau you can choose a fatter or thinner bell curve which causes you to look in a bigger or a narrower window in order to decide how many nearby examples you use in order to fit the straight line And it turns out that, and I want to leave you to discover this yourself in the problem set. If you've taken a little bit of machine learning elsewhere, I've heard of the terms over... Test is on? Okay, good. It's still on.",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "Cũng có thể dùng tau thay đổi tùy theo mật độ điểm trong vùng cục bộ; đã có một lượng lớn tài liệu về các công thức chọn tau khác nhau.",
+      "source_id": "S24",
+      "start": 6741,
+      "end": 6876,
+      "marker_start": 6877,
+      "marker_end": 6882,
+      "locator": "{\"end_ms\": 1192520, \"start_ms\": 1158960}",
+      "chunk_id": "662e7875-72a6-4e8a-8a74-d4554232e899",
+      "chunk_content": "Week03\nThey still implement this. But yeah, you can also try it in your problem set and see what happens. One last question. Is it possible to have like a variable tau in the amount of some parts of your data have lots of... Oh, yeah. ...sector of the time of the normal time? Yes, is it possible to have like a variable tau depending on, yes, it is. And there are quite complicated ways to choose tau based on how many points there are in the local region and so on. There's a huge literature on different formulas. Actually, for example, instead of this Gaussian bump thing, sometimes people use that triangle",
+      "resolution": "resolved"
+    }
+  ]
+}

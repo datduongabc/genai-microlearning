@@ -1,0 +1,619 @@
+{
+  "pair_id": "4e1f25a8-f4de-402f-8b6e-0104998290f5",
+  "group": "rag_llm",
+  "generator_model": "deepseek-flash",
+  "generation_models": [
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    }
+  ],
+  "packet": {
+    "anon_id": "",
+    "topic": "Giới hạn của hàm số",
+    "bloom_level": "analyze",
+    "learning_objective": "Sau khi hoàn thành module, người học có thể phân tích điều kiện áp dụng đúng của các phương pháp tính giới hạn của hàm số một biến (định nghĩa theo dãy, giới hạn một phía, định lý kẹp, giới hạn của hàm hợp).",
+    "sub_objectives": [
+      "So sánh cách giải sai và cách giải đúng trong ví dụ I = lim_(x→0) x^2.sin(1/x) để chỉ ra vì sao không thể tách giới hạn của tích khi lim_(x→0) sin(1/x) không tồn tại",
+      "Chỉ ra mối liên hệ giữa giới hạn hai phía và giới hạn một phía của hàm số qua định lý tương đương lim_(x→a) f(x) = A ⇔ lim_(x→a+0) f(x) = lim_(x→a−0) f(x) = A",
+      "Phân loại các dạng không phải vô định và 7 dạng vô định xuất hiện khi tính giới hạn hàm số",
+      "Mô tả định nghĩa giới hạn của hàm số theo dãy: số A là giới hạn khi x → a nếu mọi dãy (x_n) ⊂ X \\ a hội tụ về a đều cho f(x_n) → A"
+    ],
+    "content_markdown": "## So sánh cách giải sai và cách giải đúng trong ví dụ I = lim_(x→0) x².sin(1/x)\n\n- **Cách giải sai (tách giới hạn của tích):** viết I = lim_(x→0) x² · lim_(x→0) sin(1/x) rồi xử lý riêng từng nhân tử.      \n- **Lý do sai:** cách tách này chỉ hợp lệ khi cả hai giới hạn thành phần tồn tại và hữu hạn — định lý về tính chất của giới hạn chỉ cho lim[f(x).g(x)] = A.B khi đã có lim_(x→a) f(x) = A và lim_(x→a) g(x) = B hữu hạn.     \n- Trong ví dụ này, lim_(x→0) sin(1/x) **KHÔNG tồn tại**, nên không thể áp dụng đẳng thức trên.      \n- **Căn cứ cho việc không tồn tại:** xét hai dãy x_n = 1/(2πn + π/2) → 0 và y_n = 1/(nπ) → 0; ta có lim_(n→∞) f(x_n) = lim_(n→∞) sin(2πn + π/2) = 1, còn lim_(n→∞) f(y_n) = lim_(n→∞) sin(πn) = 0. Hai dãy cùng hội tụ về 0 nhưng dãy giá trị hàm số tiến tới hai giới hạn khác nhau, nên giới hạn tại 0 không tồn tại.     \n- **Cách giải đúng (dùng bất đẳng thức kẹp):** −x² ⩽ x².sin(1/x) ⩽ x² và lim_(x→0)(−x²) = lim_(x→0) x² = 0, do đó I = 0.      \n- **Cơ sở lý thuyết của cách giải đúng:** nếu g(x) ⩽ f(x) ⩽ h(x) với mọi x ∈ O(a, ε) và lim_(x→a) g(x) = A = lim_(x→a) h(x) (với A hữu hạn) thì lim_(x→a) f(x) = A.      \n- **Điểm khác biệt cốt lõi:** cách sai cố tách thành tích hai giới hạn khi một nhân tử không có giới hạn; cách đúng không tách rời mà chặn hàm số giữa hai hàm có cùng giới hạn 0.           \n\n## Mối liên hệ giữa giới hạn hai phía và giới hạn một phía\n\n- Đặt X_a⁺ = {x ∈ X \\ {x > a}} và X_a⁻ = {x ∈ X \\ {x < a}}; xét hàm f(x) xác định trên X ⊂ ℝ với a là điểm giới hạn của X_a⁺ (hoặc X_a⁻).     \n- **Định nghĩa giới hạn một phía:** số A ∈ ℝ là giới hạn của f(x) khi x → a từ bên phải (từ bên trái) nếu lim_(x→a, x∈X_a⁺) f(x) = A (tương ứng lim_(x→a, x∈X_a⁻) f(x) = A).     \n- **Ký hiệu:** giới hạn bên phải là lim_(x→a+0) f(x) hay f(a + 0); giới hạn bên trái là lim_(x→a−0) f(x) hay f(a − 0).     \n- **Định lý tương đương:** nếu a là điểm giới hạn của cả X_a⁺ và X_a⁻ (khi đó a cũng là điểm giới hạn của X), thì đẳng thức lim_(x→a) f(x) = A tương đương với hai đẳng thức lim_(x→a+0) f(x) = A và lim_(x→a−0) f(x) = A.     \n- Hệ quả trực tiếp: giới hạn hai phía tồn tại và bằng A khi và chỉ khi cả hai giới hạn một phía đều tồn tại và cùng bằng A; chỉ cần hai giới hạn một phía khác nhau là giới hạn hai phía không tồn tại.     \n- **Ví dụ minh họa:** với f(x) = sign(x) (bằng 1 khi x > 0, bằng 0 khi x = 0, bằng −1 khi x < 0), ta có f(0 + 0) = lim_(x→0+0) f(x) = 1 còn f(0 − 0) = lim_(x→0−0) f(x) = −1.     \n\n## Phân loại các dạng không phải vô định và 7 dạng vô định\n\n- **Các dạng không phải vô định** (cho kết quả xác định ngay): a/0 = ∞ (với a ≠ 0); a/∞ = 0; ∞/a = ∞; a.∞ = ∞ (với a ≠ 0); q^∞ = 0 (với |q| < 1).      \n- **7 dạng vô định trong giới hạn hàm số:** ∞/∞, 0/0, ∞ − ∞, 0.∞, 1^∞, ∞^0, 0^0.      \n- Điểm phân biệt để phân loại: ở dạng không phải vô định, việc thay giá trị giới hạn của các thành phần cho ngay kết quả (hữu hạn hoặc vô cùng) theo các quy tắc trên; ở 7 dạng vô định thì không thể kết luận trực tiếp mà phải biến đổi.      \n- Các dạng vô định là đối tượng của những kỹ thuật xử lý riêng đã có trong tài liệu, ví dụ dạng 0/0 gắn với giới hạn vô cùng bé.           \n\n## Định nghĩa giới hạn của hàm số theo dãy\n\n- **Điểm giới hạn của tập hợp:** nếu a ∈ ℝ là điểm giới hạn của tập hợp X ⊂ ℝ thì tồn tại dãy số (x_n) ⊂ X \\ {a} hội tụ về a, tức x_n → a.     \n- **Lân cận:** tập hợp (a − ε, a + ε) với ε > 0 tùy ý được gọi là lân cận của a, ký hiệu O(a, ε).     \n- **Định nghĩa theo dãy:** cho hàm số f(x) xác định trên tập hợp X ⊂ ℝ và a ∈ ℝ là điểm giới hạn của X; số A ∈ ℝ được gọi là giới hạn của hàm số f(x) khi x → a nếu với mọi dãy (x_n) ⊂ X \\ {a} hội tụ về a (x_n → a), dãy giá trị tương ứng của hàm số hội tụ về A (f(x_n) → A).     \n- **Ví dụ áp dụng:** giới hạn của f(x) = x + 1 khi x → 0 là 1, vì với mọi x_n → 0 thì f(x_n) = x_n + 1 → 1.     \n- **Hệ quả phủ định (dùng để chứng minh không tồn tại giới hạn):** nếu tồn tại hai dãy (x_n), (y_n) cùng hội tụ về a nhưng f(x_n) và f(y_n) tiến tới hai giới hạn khác nhau thì KHÔNG TỒN TẠI giới hạn lim_(x→a) f(x).     \n- **Lưu ý khi vận dụng định nghĩa theo dãy:** không được dùng trực tiếp các quy tắc vi phân cho dãy số rời rạc — chẳng hạn với I = lim_(n→∞) (ln n)/n, việc viết lim_(n→∞) (ln n)/n = lim_(n→∞) (1/n)/1 = 0 theo L'Hopital là SAI vì KHÔNG TỒN TẠI (ln n)′ và (n)′ với n ∈ ℕ.     \n- **Cách đúng trong ví dụ trên:** tính lim_(x→∞) (ln x)/x = lim_(x→∞) (1/x)/1 = 0 (theo L'Hopital) trên biến liên tục, rồi áp dụng định nghĩa giới hạn của hàm số với x_n = n → ∞ để suy ra f(x_n) = (ln n)/n → 0, tức I = 0.     ",
+    "slides": [
+      {
+        "title": "Mục tiêu và lộ trình module",
+        "bullets": [
+          "Mục tiêu: phân tích điều kiện áp dụng đúng của các phương pháp tính giới hạn hàm một biến",
+          "Bốn phương pháp trọng tâm: định nghĩa theo dãy, giới hạn một phía, định lý kẹp, giới hạn của hàm hợp",
+          "Lộ trình: định nghĩa theo dãy → giới hạn một phía → định lý kẹp → phân loại dạng vô định → ví dụ tổng hợp"
+        ]
+      },
+      {
+        "title": "Nền tảng: điểm giới hạn và lân cận",
+        "bullets": [
+          "a là điểm giới hạn của X ⊂ ℝ nếu tồn tại dãy (x_n) ⊂ X \\ {a} hội tụ về a (x_n → a)",
+          "Lân cận của a: O(a, ε) = (a − ε, a + ε) với ε > 0 tùy ý",
+          "Đây là hai khái niệm chuẩn bị cho định nghĩa giới hạn theo dãy"
+        ]
+      },
+      {
+        "title": "Định nghĩa giới hạn của hàm số theo dãy",
+        "bullets": [
+          "Cho f(x) xác định trên X ⊂ ℝ, a là điểm giới hạn của X",
+          "A là giới hạn của f khi x → a nếu: mọi dãy (x_n) ⊂ X \\ {a}, x_n → a đều cho f(x_n) → A",
+          "Ví dụ: f(x) = x + 1 khi x → 0 có giới hạn 1, vì x_n → 0 thì f(x_n) = x_n + 1 → 1"
+        ]
+      },
+      {
+        "title": "Hệ quả phủ định: chứng minh không tồn tại giới hạn",
+        "bullets": [
+          "Tồn tại hai dãy (x_n), (y_n) cùng hội tụ về a nhưng f(x_n) và f(y_n) tiến tới hai giới hạn khác nhau",
+          "Kết luận: KHÔNG TỒN TẠI lim_(x→a) f(x)"
+        ]
+      },
+      {
+        "title": "Lưu ý khi vận dụng định nghĩa theo dãy",
+        "bullets": [
+          "Không được dùng trực tiếp các quy tắc vi phân cho dãy số rời rạc",
+          "Cách SAI: lim_(n→∞) (ln n)/n = lim_(n→∞) (1/n)/1 = 0 theo L'Hopital — vì (ln n)′ và (n)′ không tồn tại với n ∈ ℕ",
+          "Cách đúng: tính lim_(x→∞) (ln x)/x = lim_(x→∞) (1/x)/1 = 0 trên biến liên tục, rồi áp dụng định nghĩa với x_n = n → ∞ để suy ra I = 0"
+        ]
+      },
+      {
+        "title": "Giới hạn một phía: định nghĩa và ký hiệu",
+        "bullets": [
+          "X_a⁺ = {x ∈ X : x > a}; X_a⁻ = {x ∈ X : x < a}",
+          "A là giới hạn bên phải nếu lim_(x→a, x∈X_a⁺) f(x) = A; tương tự cho bên trái",
+          "Ký hiệu: f(a + 0) = lim_(x→a+0) f(x); f(a − 0) = lim_(x→a−0) f(x)"
+        ]
+      },
+      {
+        "title": "Định lý tương đương giữa giới hạn hai phía và một phía",
+        "bullets": [
+          "Nếu a là điểm giới hạn của cả X_a⁺ và X_a⁻: lim_(x→a) f(x) = A ⇔ lim_(x→a+0) f(x) = lim_(x→a−0) f(x) = A",
+          "Hệ quả: chỉ cần hai giới hạn một phía khác nhau là giới hạn hai phía không tồn tại",
+          "Ví dụ: f(x) = sign(x) có f(0 + 0) = 1 và f(0 − 0) = −1"
+        ]
+      },
+      {
+        "title": "Định lý kẹp (squeeze theorem)",
+        "bullets": [
+          "Điều kiện: g(x) ⩽ f(x) ⩽ h(x) với mọi x ∈ O(a, ε)",
+          "Điều kiện giới hạn: lim_(x→a) g(x) = A = lim_(x→a) h(x), với A hữu hạn",
+          "Kết luận: lim_(x→a) f(x) = A"
+        ]
+      }
+    ],
+    "examples": [
+      {
+        "context": "Một nhóm sinh viên Khoa Điện – Điện tử lắp mạch đo và ghi lại điện áp ra V(t) (mV) của một cảm biến theo vị trí trục quay t (mm). Trong khoảng t < 5 mm, nhà sản xuất cho công thức V(t) = 3 − 0,2t; với t ≥ 5 mm, công thức là V(t) = 0,5t − 1. Nhóm cần biết khi trục quay tiến dần tới vị trí t = 5 mm thì điện áp ra tiến tới giá trị nào, tức cần xét lim_(t→5) V(t).",
+        "analysis": "Bước 1: Xác định a = 5 và hai tập X_a⁻ = {t ∈ X : t < 5}, X_a⁺ = {t ∈ X : t > 5}. Vì 5 là điểm giới hạn của cả hai tập này, áp dụng được định lý tương đương: lim_(t→5) V(t) = A khi và chỉ khi lim_(t→5+0) V(t) = A và lim_(t→5−0) V(t) = A.\nBước 2: Tính giới hạn bên trái. Trên X_a⁻, V(t) = 3 − 0,2t nên lim_(t→5−0) V(t) = 3 − 0,2·5 = 2 (mV).\nBước 3: Tính giới hạn bên phải. Trên X_a⁺, V(t) = 0,5t − 1 nên lim_(t→5+0) V(t) = 0,5·5 − 1 = 1,5 (mV).\nBước 4: So sánh hai kết quả: cả hai giới hạn một phía đều tồn tại nhưng 2 ≠ 1,5. Theo hệ quả trực tiếp của định lý, chỉ cần hai giới hạn một phía khác nhau là giới hạn hai phía không tồn tại, nên lim_(t→5) V(t) không tồn tại.\nKết luận: Kết quả \"không tồn tại\" không phải vì V(t) không xác định tại t = 5, mà vì hai giới hạn một phía lệch nhau — đúng với đẳng thức lim_(x→a) f(x) = A ⇔ lim_(x→a+0) f(x) = lim_(x→a−0) f(x) = A. Lỗi thường gặp: chỉ tính một phía rồi kết luận giới hạn hai phía tồn tại, hoặc thay t = 5 vào nhánh phải để nói giới hạn bằng 1,5 (định nghĩa chỉ dùng các dãy (t_n) ⊂ X \\ {5}, nên giá trị tại t = 5 không quyết định giới hạn)."
+      },
+      {
+        "context": "Trợ giảng Minh phụ trách giờ bài tập Giải tích 1 và nhận được danh sách 11 giới hạn mà sinh viên phải \"phân loại dạng\" trước khi chọn kỹ thuật tính: (A) lim_(x→0) (x + 5)/x²; (B) lim_(x→∞) 4/(x³ + 1); (C) lim_(x→∞) (x³ + 1)/3; (D) lim_(x→∞) (0,5)^x; (E) lim_(x→∞) (3x² − 1)/(x² + 4); (F) lim_(x→0) (sin x)/x; (G) lim_(x→∞) (x² − 5x); (H) lim_(x→∞) (1/x)(x² + 1); (I) lim_(x→0+) (1 + x)^(1/x); (J) lim_(x→∞) (x + 1)^(1/x); (K) lim_(x→0+) x^x. Yêu cầu: tách thành hai nhóm — nhóm cho kết quả xác định ngay và nhóm không thể kết luận trực tiếp.",
+        "analysis": "Bước 1: Thay giá trị giới hạn của x vào từng thành phần để đọc dạng của biểu thức: A → 5/0; B → 4/∞; C → ∞/3; D → 0,5^∞; E → ∞/∞; F → 0/0; G → ∞ − ∞; H → 0·∞; I → 1^∞; J → ∞^0; K → 0^0.\nBước 2: Đối chiếu nhóm thứ nhất với các dạng không phải vô định và cho kết quả ngay: A có dạng a/0 với a = 5 ≠ 0 nên A = ∞; B có dạng a/∞ nên B = 0; C có dạng ∞/a với a = 3 ≠ 0 nên C = ∞; D có dạng q^∞ với |q| = 0,5 < 1 nên D = 0. Bốn giới hạn A, B, C, D không cần biến đổi gì thêm.\nBước 3: Đối chiếu nhóm thứ hai với danh sách 7 dạng vô định: E là ∞/∞, F là 0/0, G là ∞ − ∞, H là 0·∞, I là 1^∞, J là ∞^0, K là 0^0 — vừa đủ 7 dạng.\nBước 4: Với nhóm vô định, không thể kết luận trực tiếp mà phải biến đổi; chẳng hạn F thuộc dạng 0/0 nên được xử lý bằng kỹ thuật giới hạn vô cùng bé.\nKết luận: Điểm phân biệt để phân loại là ở dạng không phải vô định, việc thay giá trị giới hạn của các thành phần cho ngay kết quả (hữu hạn hoặc vô cùng) theo các quy tắc a/0 = ∞ (a ≠ 0), a/∞ = 0, ∞/a = ∞, q^∞ = 0 (|q| < 1); còn ở 7 dạng vô định thì không thể kết luận trực tiếp. Lỗi thường gặp: thay trực tiếp giá trị vào biểu thức ở dạng vô định rồi kết luận ngay, ví dụ gán 0·∞ = 0 hay ∞/∞ = 1."
+      }
+    ],
+    "quiz": [
+      {
+        "stem": "Trong ví dụ tính I = lim_(x→0) x²·sin(1/x), tài liệu trình bày hai cách giải: một cách viết I = (lim_(x→0) x²)·(lim_(x→0) sin(1/x)), một cách dùng bất đẳng thức −x² ⩽ x²·sin(1/x) ⩽ x² rồi kết luận I = 0. Phát biểu nào sau đây so sánh đúng hai cách giải này?",
+        "choices": [
+          "Cách tách tích không áp dụng được vì sin(1/x) bị chặn trong đoạn [−1, 1] nên không có giới hạn, và do đó tích x²·sin(1/x) cũng không có giới hạn.",
+          "Cách tách tích vẫn áp dụng được nếu thay sin(1/x) bằng một giá trị trong đoạn [−1, 1], vì x² dần về 0 nên tích cũng dần về 0.",
+          "Cách tách tích không áp dụng được vì lim_(x→0) sin(1/x) không tồn tại, còn cách kẹp giữa −x² và x² cho I = 0 vì hai hàm chặn cùng dần về 0.",
+          "Cách tách tích áp dụng được sau khi kẹp sin(1/x) giữa hai hằng số −1 và 1 để suy ra giới hạn của nó nằm trong đoạn [−1, 1], rồi nhân với giới hạn 0 của x²."
+        ],
+        "correct_index": 2,
+        "explanation": "Quy tắc tách giới hạn của tích chỉ dùng được khi giới hạn của từng thừa số tồn tại, mà lim_(x→0) sin(1/x) không tồn tại — tài liệu chỉ ra hai dãy cùng dần về 0 nhưng cho hai giá trị giới hạn 1 và 0 — nên không thể viết I thành tích hai giới hạn; cách kẹp giữa −x² và x² cho I = 0 vì hai hàm chặn cùng dần về 0. Phương án nói cách tách tích vẫn áp dụng được nếu thay sin(1/x) bằng một giá trị trong đoạn [−1, 1] là không đúng, vì không thể gán giá trị cho một thừa số không có giới hạn. Phương án cho rằng sin(1/x) bị chặn nên không có giới hạn và tích cũng không có giới hạn là không đúng, vì tài liệu dùng chính bất đẳng thức kẹp để kết luận I = 0. Phương án kẹp sin(1/x) giữa hai hằng số −1 và 1 để suy ra giới hạn của nó là không đúng, vì định lý kẹp chỉ kết luận được khi hai hàm chặn cùng dần về một giá trị, đúng như tài liệu đã làm với −x² và x²."
+      },
+      {
+        "stem": "Cho hàm số h(x) xác định bởi h(x) = 2x − 1 khi x < 3, h(x) = 3x − 4 khi x > 3 và h(x) = 10 khi x = 3. Khẳng định nào sau đây đúng về h(x) tại x = 3?",
+        "choices": [
+          "Giới hạn hai phía lim_{x→3} h(x) = 5, vì cả hai giới hạn một phía tại x = 3 đều bằng 5 dù h(3) = 10.",
+          "Giới hạn hai phía lim_{x→3} h(x) không tồn tại, vì h(3) = 10 khác giá trị chung của hai giới hạn một phía.",
+          "Hàm số h(x) liên tục tại x = 3 vì hai giới hạn một phía tại x = 3 bằng nhau.",
+          "Giới hạn hai phía lim_{x→3} h(x) = 5 chỉ cần dựa vào giới hạn bên trái bằng 5, không cần xét giới hạn bên phải."
+        ],
+        "correct_index": 0,
+        "explanation": "Theo định lý về quan hệ giữa giới hạn hai phía và giới hạn một phía, lim_{x→a} f(x) = A tương đương với việc cả hai giới hạn một phía đều bằng A. Tại x = 3, giới hạn bên trái bằng 5 và giới hạn bên phải bằng 5, nên giới hạn hai phía tồn tại và bằng 5. Phương án nói giới hạn hai phía không tồn tại vì h(3) = 10 là sai, vì giá trị f(a) không quyết định sự tồn tại của giới hạn mà chỉ liên quan đến tính liên tục. Phương án cho rằng chỉ cần giới hạn bên trái bằng 5 là đủ cũng sai, vì định lý đòi hỏi cả hai giới hạn một phía đều bằng A. Phương án nói hàm liên tục tại x = 3 vì hai giới hạn một phía bằng nhau là sai, vì liên tục còn cần f(3) bằng giá trị giới hạn chung, mà ở đây h(3) = 10 khác 5."
+      },
+      {
+        "stem": "Khi tính lim_{x→a} f(x), một sinh viên thay trực tiếp x = a vào biểu thức và ghi lại các ký hiệu nhận được: ∞/∞; a/0 với a ≠ 0; 0·∞; 1^∞; q^∞ với |q| < 1. Cách phân loại nào sau đây tách đúng nhóm ký hiệu còn phải biến đổi tiếp mới kết luận được và nhóm ký hiệu đã cho ngay giá trị giới hạn?",
+        "choices": [
+          "Phải biến đổi tiếp: ∞/∞, 1^∞. Kết luận ngay: a/0 = ∞ (a ≠ 0), 0·∞ = 0, q^∞ = 0 (|q| < 1).",
+          "Phải biến đổi tiếp: ∞/∞, 0·∞, 1^∞, a/0 (a ≠ 0). Kết luận ngay: q^∞ = 0 (|q| < 1).",
+          "Phải biến đổi tiếp: ∞/∞, 0·∞. Kết luận ngay: a/0 = ∞ (a ≠ 0), 1^∞ = 1, q^∞ = 0 (|q| < 1).",
+          "Phải biến đổi tiếp: ∞/∞, 0·∞, 1^∞. Kết luận ngay: a/0 = ∞ (a ≠ 0), q^∞ = 0 (|q| < 1)."
+        ],
+        "correct_index": 3,
+        "explanation": "Tài liệu liệt kê 7 dạng vô định gồm ∞/∞, 0/0, ∞−∞, 0·∞, 1^∞, ∞^0, 0^0 và các dạng không phải vô định gồm a/0 = ∞ (a ≠ 0), a/∞ = 0, ∞/a = ∞, a·∞ = ∞ (a ≠ 0), q^∞ = 0 (|q| < 1). Đối chiếu với các ký hiệu trong đề bài: ∞/∞, 0·∞ và 1^∞ đều thuộc nhóm dạng vô định nên còn phải biến đổi tiếp, còn a/0 = ∞ (a ≠ 0) và q^∞ = 0 (|q| < 1) là dạng không phải vô định nên cho ngay giá trị giới hạn. Phương án xếp a/0 (a ≠ 0) vào nhóm phải biến đổi tiếp là sai vì tài liệu đã cho a/0 = ∞ (a ≠ 0) thuộc nhóm không phải vô định. Phương án cho 1^∞ = 1 và kết luận ngay là sai vì 1^∞ nằm trong danh sách 7 dạng vô định. Phương án cho 0·∞ = 0 và kết luận ngay là sai vì 0·∞ cũng là một trong 7 dạng vô định; chỉ a·∞ = ∞ (a ≠ 0) mới không phải vô định."
+      }
+    ],
+    "practice": {
+      "stem": "Cho lim_{x→a} f(x) = b và lim_{y→b} g(y) = c. Để kết luận lim_{x→a} g(f(x)) = c theo định lý giới hạn hàm hợp, nhận định nào sau đây đúng về điều kiện cần kiểm tra thêm?",
+      "choices": [
+        "Chỉ cần hai giới hạn thành phần lim_{x→a} f(x) = b và lim_{y→b} g(y) = c là đủ, không cần kiểm tra thêm điều kiện nào.",
+        "Cần thêm điều kiện f bị kẹp giữa hai hàm cùng tiến tới một giới hạn hữu hạn khi x → a, giống như trong định lý kẹp.",
+        "Cần thêm điều kiện g(y) khác c trên một lân cận của b, tức điều kiện phải đặt lên hàm ngoài g.",
+        "Cần thêm điều kiện tồn tại một lân cận của a mà trên đó f(x) khác b với x ≠ a, tức f không nhận giá trị b gần a."
+      ],
+      "correct_index": 3,
+      "explanation": "Theo định lý giới hạn hàm hợp trong tài liệu, ngoài lim_{x→a} f(x) = b và lim_{y→b} g(y) = c, còn phải có δ0 > 0 sao cho f(x) ≠ b với mọi x ∈ X\\{a} thỏa |x − a| < δ0; do đó nhận định đúng là nhận định nói cần một lân cận của a mà trên đó f(x) khác b với x ≠ a. Nhận định cho rằng chỉ cần hai giới hạn thành phần là đủ sai vì đã bỏ sót điều kiện thứ ba này của định lý. Nhận định đòi f bị kẹp giữa hai hàm cùng tiến tới một giới hạn hữu hạn mô tả điều kiện của định lý kẹp, không phải điều kiện của định lý giới hạn hàm hợp. Nhận định đòi g(y) khác c trên một lân cận của b đặt điều kiện lên hàm ngoài g, trong khi định lý lại đặt điều kiện lên hàm trong f."
+    },
+    "source_chunks": [
+      "2. Giới hạn và liên tục hàm một biến › TS. Lê Xuân Đại\nGIỚI HẠN - TÍNH LIÊN TỤC CỦA HÀM MỘT BIẾN\nBài giảng điện tử\nTS. Lê Xuân Đại\nTrường Đại học Bách Khoa TP HCM\nKhoa Khoa học ứng dụng, bộmôn Toán ứng dụng\nEmail: ytkadai@hcmut.edu.vn\nTP. HCM — 2013.\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN - TÍNH LIÊN TỤC CỦA HÀM MỘT BIẾN\nTP. HCM — 2013.\n1 / 53\nGiới hạn của hàm số\nBài toán thực tế\nLý thuyết tương đối của Albert Einstein\nNếu L_0 là khoảng cách từngười đứng yên đến vật\nđang đứng yên, L là khoảng cách từngười đứng\nyên đến vật đang chuyển động với vận tốc v(m/s)\nthì ta có công thức\nL = L_0.√(v^2/c^2)1 − ,\nởđây c là vận tốc ánh sáng. Câu hỏi: Nếu vật\nchuyển động với vận tốc gần bằng vận tốc ánh\nsáng thì khoảng cách L sẽnhư thếnào?\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN - TÍNH LIÊN TỤC CỦA HÀM MỘT BIẾN\nTP. HCM — 2013.\n2 / 53",
+      "2. Giới hạn và liên tục hàm một biến\nGiới hạn của hàm số\nBài toán thực tế\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN - TÍNH LIÊN TỤC CỦA HÀM MỘT BIẾN\nTP. HCM — 2013.\n3 / 53\nGiới hạn của hàm số\nBài toán thực tế\nTheo yêu cầu bài toán chúng ta cần tìm\nlim_(v→c) L_0.√(v^2/c^2)1 − = L_0.√(c^2/c^2)1 − = 0\nKết luận: Nếu vật chuyển động với vận tốc càng\ngần với vận tốc ánh sáng, thì khoảng cách giữa\nngười đứng yên và vật chuyển động càng gần về0.\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN - TÍNH LIÊN TỤC CỦA HÀM MỘT BIẾN\nTP. HCM — 2013.\n4 / 53",
+      "2. Giới hạn và liên tục hàm một biến\nGiới hạn của hàm số Định nghĩa điểm giới hạn\nĐịnh nghĩa điểm giới hạn\nCho $X \\subset \\mathbb{R}$ là 1 tập hợp số nào đó, còn $a \\in \\mathbb{R}$ là\n1 số cố định nào đó.\nĐịnh nghĩa\nNếu số $a \\in \\mathbb{R}$ là điểm giới hạn của tập hợp\n$X \\subset \\mathbb{R}$, thì tồn tại dãy số $(x_n) \\subset X \\setminus a$ hội tụ về\nđiểm $a$ này $x_n \\to a$.\nĐịnh nghĩa\nTập hợp $(a - \\varepsilon, a + \\varepsilon)$, với $\\varepsilon > 0$ là số tùy ý, được\ngọi là lân cận của $a$. Kí hiệu $O(a, \\varepsilon)$.\nTS. Lê Xuân Đại (BK TPHCM) GIỚI HẠN - TÍNH LIÊN TỤC CỦA HÀM MỘT BIẾN TP. HCM — 2013. 5 / 53",
+      "2. Giới hạn và liên tục hàm một biến\nGiới hạn của hàm số Định nghĩa giới hạn của hàm số\nCho hàm số f (x) xác định trên tập hợp X ⊂ ℝ và\na ∈ ℝ là điểm giới hạn của tập hợp X này.\nĐịnh nghĩa\nSố A ∈ ℝ được gọi là giới hạn của hàm số f (x)\nkhi x → a, nếu như với mọi dãy ∀(x_n) ⊂ X \\ a hội\ntụ về a : x_n → a, dãy giá trị của hàm số tương\nứng hội tụ về A : f (x_n) → A.\nVí dụ\nGiới hạn của hàm số f (x) = x + 1, khi x → 0 là 1\nvì với ∀x_n → 0 thì f (x_n) = x_n + 1 → 1.\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN - TÍNH LIÊN TỤC CỦA HÀM MỘT BIẾN\nTP. HCM — 2013.\n6 / 53",
+      "2. Giới hạn và liên tục hàm một biến\nGiới hạn của hàm số\nĐịnh nghĩa giới hạn của hàm số\nVí dụ\nTìm giới hạn I = lim_(n→∞)\nn\nln n\nlim_(n→∞) (ln n)/n = lim_(n→∞) (1/n)/1 = 0(theo L’ Hopital) ⇒ SAI\nvì KHÔNG TỒN TẠI (ln n)^′, (n)^′, n ∈ ℕ.\nCách giải đúng.\nlim_(x→∞) (ln x)/x = lim_(x→∞) (1/x)/1 = 0(theo L’ Hopital). Do đó\ntheo định nghĩa giới hạn của hàm số với\nx_n = n → ∞, ta có f (x_n) = (ln n)/n → 0. Vậy I = 0.\nTS. Lê Xuân Đại (BK TPHCM) GIỚI HẠN - TÍNH LIÊN TỤC CỦA HÀM MỘT BIẾN TP. HCM — 2013. 7 / 53",
+      "2. Giới hạn và liên tục hàm một biến\nGiới hạn của hàm số\nĐịnh nghĩa giới hạn của hàm số\nChú ý. Nếu tồn tại 2 dãy (x_n), (y_n) cùng hội tụvề\na nhưng f (x_n), f (y_n) tiến tới 2 giới hạn khác nhau\nthì KHÔNG TỒN TẠI giới hạn lim\n_x_→_a f (x).\nVí dụ\nTìm I = lim_(x→0) sin 1/x\nXét 2 dãy x_n = 1/(2πn+π/2) → 0 và y_n = 1/nπ → 0. Ta có\nlim_(n→∞) f (x_n) = lim_(n→∞) sin(2πn + π/2) = lim_(n→∞) sin(π/2) = 1\nvà lim_(n→∞) f (y_n) = lim_(n→∞) sin(πn) = 0. Vậy ∄I .\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN - TÍNH LIÊN TỤC CỦA HÀM MỘT BIẾN\nTP. HCM — 2013.\n8 / 53",
+      "2. Giới hạn và liên tục hàm một biến\nGiới hạn của hàm số Giới hạn của hàm số từ một phía\n$X_a^+ = \\{x \\in X \\setminus x > a\\}, X_a^- = \\{x \\in X \\setminus x < a\\}$.\nCho hàm số $f(x)$ xác định trên tập hợp $X \\subset \\mathbb{R}$\ncòn $a \\in \\mathbb{R}$ là điểm giới hạn của tập hợp $X_a^+(X_a^-)$.\nĐịnh nghĩa\nSố $A \\in \\mathbb{R}$ được gọi là giới hạn của hàm số $f(x)$\nkhi $x \\to a$ từ bên phải (từ bên trái) nếu như\n$\\lim_{x \\to a, x \\in X_a^+} f(x) = A$ ($\\lim_{x \\to a, x \\in X_a^-} f(x) = A$)\nChúng được kí hiệu là $\\lim_{x \\to a+0} f(x), f(a + 0)$ và\n$\\lim_{x \\to a-0} f(x), f(a - 0)$\nTS. Lê Xuân Đại (BK TPHCM) GIỚI HẠN - TÍNH LIÊN TỤC CỦA HÀM MỘT BIẾN TP. HCM — 2013. 9 / 53",
+      "2. Giới hạn và liên tục hàm một biến › f (x) = signx =\nGiới hạn của hàm số\nGiới hạn của hàm sốtừmột phía\nVí dụ\n{ 1, x > 0\nf (x) = signx = 0, x = 0\n{ −1, x < 0\nDễdàng thấy rằng\nf (0 + 0) = lim_(x→0+0) f (x) = 1\ncòn\nf (0 − 0) = lim_(x→0−0) f (x) = −1.\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN - TÍNH LIÊN TỤC CỦA HÀM MỘT BIẾN\nTP. HCM — 2013.\n10 / 53\nGiới hạn của hàm số\nGiới hạn của hàm số từ một phía\nCho $a \\in \\mathbb{R}$ là điểm giới hạn của tập hợp\n$X_a^+ = \\{x \\in X \\setminus x > a\\}$ và tập hợp\n$X_a^- = \\{x \\in X \\setminus x < a\\}$. Khi đó $a$ cũng là điểm\ngiới hạn của tập hợp $X$. Khi đó ta có định lý sau:\nĐịnh lý\nĐẳng thức $\\lim_{x \\to a} f(x) = A$ tương đương với 2 đẳng\nthức sau\n$\\begin{cases} \\lim_{x \\to a+0} f(x) = A \\\\ \\lim_{x \\to a-0} f(x) = A \\end{cases}$\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN - TÍNH LIÊN TỤC CỦA HÀM MỘT BIẾN\nTP. HCM — 2013.",
+      "2. Giới hạn và liên tục hàm một biến\n11 / 53\nGiới hạn của hàm số\nTính chất của giới hạn của hàm số\nTính chất của giới hạn của hàm số\nĐịnh lý\nNếu hàm số f (x) và g(x) với cùng 1 tập xác định\nX ⊂ ℝ có giới hạn hữu hạn khi x → a :\nlim_(x→a) f (x) = A và lim_(x→a) g(x) = B thì ta có đẳng thức\nlim\n_x_→_a[f (x) ± g(x)] = A ± B\nlim\n_x_→_a[f (x).g(x)] = A.B\nNếu có thêm điều kiện B̸ = 0 thì lim_(x→a) (f (x))/(g_(TP.)(_(HCM)x)) = A/B\nTS. Lê Xuân Đại (BK TPHCM) GIỚI HẠN - TÍNH LIÊN TỤC CỦA HÀM MỘT BIẾN — 2013. 12 / 53",
+      "2. Giới hạn và liên tục hàm một biến › Các dạng không phải vô định\nGiới hạn của hàm số\nTính chất của giới hạn của hàm số\nPhân loại giới hạn của hàm số\nCác dạng không phải vô định\na/0 = ∞(a̸ = 0); a/(∞) = 0; (∞)/a = ∞;\na.∞ = ∞(a̸ = 0); q^∞ = 0(|q| < 1).\n7 dạng vô định trong giới hạn hàm số\n(∞)/(∞) , 0/0 , ∞−∞ , 0.∞ ,1^∞ , ∞^0 , 0^0\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN - TÍNH LIÊN TỤC CỦA HÀM MỘT BIẾN\nTP. HCM — 2013.\n13 / 53\nGiới hạn của hàm số\nTính chất của giới hạn của hàm số\nTính chất của giới hạn của hàm số\n1^o Nếu hàm sốf (x) khi x →a có giới hạn hữu\nhạn lim\n_x_→_a f (x) = A thì giới hạn đó là duy nhất.\n2^o Nếu\n1 g(x) ⩽f (x) ⩽h(x) với mọi ∀x ∈O(a, ε)\n2 lim g(x) = A =_xlim_(→a) h(x). (A - hữu hạn)\nthì lim_(x→a)^(x→a) f (x) = A.\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN - TÍNH LIÊN TỤC CỦA HÀM MỘT BIẾN\nTP. HCM — 2013.",
+      "2. Giới hạn và liên tục hàm một biến\n14 / 53\nGiới hạn của hàm số\nTính chất của giới hạn của hàm số\nVí dụ\nTính giới hạn I = lim_(x→0) x^2. sin 1/x\nI = lim_(x→0) x^2. lim_(x→0) sin 1/x SAI vì lim_(x→0) sin 1/x KHÔNG tồn\ntại.\nCách giải đúng:\n−x^2 ⩽ x^2 sin 1/x ⩽ x^2\nvà lim_(x→0)(−x^2) = lim_(x→0) x^2 = 0. Vậy I = 0.\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN - TÍNH LIÊN TỤC CỦA HÀM MỘT BIẾN\nTP. HCM — 2013.\n15 / 53",
+      "2. Giới hạn và liên tục hàm một biến\nGiới hạn của hàm số\nGiới hạn của hàm hợp\nĐịnh lý\nCho lim_(x→a) f (x) = b, lim_(y→b) g(y) = c và tồn tại số\nδ_0 > 0 sao cho với mọi ∀x ∈ X \\ a thỏa mãn bất\nđẳng thức |x − a| < δ luôn có f (x)̸ = b thì giới\nhạn của hàm hợp là lim_(x→a)^0 g(f (x)) = c.\nVí dụ\nlim_(x→0) sin(x^2 + 2x + 3) = sin 3 vì\nlim_(x→0) x^2 + 2x + 3 = 3 và lim_(y→3) sin y = sin 3\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN - TÍNH LIÊN TỤC CỦA HÀM MỘT BIẾN\nTP. HCM — 2013.\n16 / 53\nGiới hạn vô cùng bé của hàm số\nGiới hạn vô cùng bé của hàm số\nTìm giới hạn I = lim_(x→a) (f (x))/(g(x)) = 0/0\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN - TÍNH LIÊN TỤC CỦA HÀM MỘT BIẾN\nTP. HCM — 2013.\n17 / 53",
+      "2. Giới hạn và liên tục hàm một biến\nGiới hạn vô cùng bé của hàm số\nĐịnh nghĩa\nCho hàm sốα = α(x) xác định trên tập hợp\nX ⊂ℝ và sốa là điểm giới hạn của tập hợp X.\nĐịnh nghĩa\nHàm số α = α(x) được gọi là hàm vô cùng bé\n(VCB) khi x → a, nếu như giới hạn của nó bằng 0\nlim\n_x_→_a α(x) = 0.\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN - TÍNH LIÊN TỤC CỦA HÀM MỘT BIẾN\nTP. HCM — 2013.\n18 / 53\nGiới hạn vô cùng bé của hàm số\nTính chất của hàm vô cùng bé\nCho hàm số α = α(x) và β = β(x) xác định trên\ncùng 1 tập hợp X ⊂ ℝ và số a ∈ ℝ là điểm giới\nhạn của tập hợp X .\nα = α(x) − VCB khi x → a\n1^o {\nβ = β(x) − VCB khi x → a\n⇒ α ± β = α(x) ± β(x) − VCB khi x → a\nα = α(x) −hàm bị chặn ∀x ∈ O(a, ε)\n2^o { ⇒\nβ = β(x) −VCB khi x → a\nα.β = α(x).β(x) = α(x).β(x) − VCB khi x → a\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN - TÍNH LIÊN TỤC CỦA HÀM MỘT BIẾN\nTP. HCM — 2013.",
+      "2. Giới hạn và liên tục hàm một biến\n19 / 53\nGiới hạn vô cùng bé của hàm số\nTính chất của hàm vô cùng bé\n3^o Nếu α = α(x) là VCB khi x →a thì với mọi\n∀c ∈ℝ tích c.α(x) cũng là VCB khi x →a.\n4^o\n{ α = α(x) −VCB khi x →a\nβ = β(x) −VCB khi x →a\n⇒α.β = α(x).β(x) = α(x).β(x)−VCB khi x →a\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN - TÍNH LIÊN TỤC CỦA HÀM MỘT BIẾN\nTP. HCM — 2013.\n20 / 53",
+      "2. Giới hạn và liên tục hàm một biến\nGiới hạn vô cùng bé của hàm số\nSo sánh hàm vô cùng bé\nCho α = α(x) và β = β(x) là những VCB khi\nx →a, khi đó nếu\n1_xlim_(→a) (α(x))/(β(x)) = 0 thì α(x) là VCB có bậc cao hơn β(x).\n2_xlim_(→a) (α(x))/(β(x)) = c̸ = 0(c ∈ ℝ) thì α(x), β(x) là VCB có\ncùng bậc.\n3_xlim_(→a) (α(x))/(β(x)) = ∞ thì α(x) là VCB có bậc thấp hơn β(x).\n4 không tồn tại_xlim_(→a) (α(x))/(β(x)) hữu hạn hay vô cùng thì\nα(x), β(x) được gọi là VCB không so sánh được.\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN - TÍNH LIÊN TỤC CỦA HÀM MỘT BIẾN\nTP. HCM — 2013.\n21 / 53",
+      "2. Giới hạn và liên tục hàm một biến\nGiới hạn vô cùng bé của hàm số Vô cùng bé tương đương\nĐịnh nghĩa\nNhững VCB α = α(x) và β = β(x) khi x → a\nđược gọi là tương đương nếu như lim_(x→a) (α(x))/(β(x)) = 1. Kí\nhiệu α(x) ∼ β(x) khi x → a hay α(x)^x∼^(→a) β(x).\nNguyên lý thay thế VCB tương đương.\nKhi x → a VCB α(x) ∼ α(x) còn VCB\nβ(x) ∼ β(x). Khi đó luôn có đẳng thức\nlim_(x→a) (α(x))/(β(x)) = lim_(x→a) ((x))/((x))α/β nếu như có ít nhất 1 trong 2\ngiới hạn trên tồn tại.\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN - TÍNH LIÊN TỤC CỦA HÀM MỘT BIẾN\nTP. HCM — 2013.\n22 / 53",
+      "2. Giới hạn và liên tục hàm một biến\nGiới hạn vô cùng bé của hàm số\nVô cùng bé tương đương\nQuy tắc ngắt bỏVCB cấp cao.\nlim_(x→a) (Tổng hữu hạn các VCB)/(Tổng hữu hạn các VCB) =\n= lim_(x→a) (Tổng các VCB có bậc thấp nhất của tử)/(Tổng các VCB có bậc thấp nhất của mẫu)\nChú ý. Tổng các VCB có bậc thấp nhất của tửvà\nmẫu phải TỒN TẠI, có nghĩa là chúng không bị\ntriệt tiêu.\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN - TÍNH LIÊN TỤC CỦA HÀM MỘT BIẾN\nTP. HCM — 2013.\n23 / 53",
+      "2. Giới hạn và liên tục hàm một biến › sin x\nGiới hạn vô cùng bé của hàm số\nNhững giới hạn cơ bản\n$\\lim_{x\\to0} \\frac{\\sin x}{x} = 1.$\n$\\lim_{x\\to0} \\frac{\\log_a(1 + x)}{x} = \\log_a e = \\frac{1}{\\ln a} (a > 0, a \\neq 1)$\n$\\lim_{x\\to0} \\frac{\\ln(1 + x)}{x} = 1$\n$\\lim_{x\\to0} (1 + x)^{\\frac{1}{x}} = e.$\n$\\lim_{x\\to0} \\frac{a^x - 1}{x} = \\ln a (a > 0, a \\neq 1)$\n$\\lim_{x\\to0} \\frac{e^x - 1}{x} = 1$\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN - TÍNH LIÊN TỤC CỦA HÀM MỘT BIẾN\nTP. HCM — 2013.\n24 / 53",
+      "2. Giới hạn và liên tục hàm một biến › lim\nGiới hạn vô cùng bé của hàm số Nhữ ng giới hạn cơ bản\n$\\lim_{x \\to 0} \\frac{(1 + x)^\\mu - 1}{x} = \\mu (\\mu \\in \\mathbb{R})$\n$\\lim_{x \\to 0} \\frac{\\sqrt[n]{1 + x} - 1}{x} = \\frac{1}{n} (n \\in \\mathbb{N})$\n$\\lim_{x \\to 0} \\frac{\\sqrt{1 + x} - 1}{x} = \\frac{1}{2}$\n$\\lim_{x \\to 0} \\frac{\\arcsin x}{x} = 1$, $\\lim_{x \\to 0} \\frac{\\arctan x}{x} = 1$\n$\\lim_{x \\to 0} \\frac{\\sinh x}{x} = 1$, $\\lim_{x \\to 0} \\frac{\\cosh x - 1}{x^2} = \\frac{1}{2}$\nTS. Lê Xuân Đại (BK TPHCM) GIỚI HẠN - TÍNH LIÊN TỤC CỦA HÀM MỘT BIẾN TP. HCM — 2013. 25 / 53",
+      "2. Giới hạn và liên tục hàm một biến\nGiới hạn vô cùng bé của hàm số Bảng những hàm vô cùng bé tương đương\nKhi x → 0 những hàm VCB sau tương đương\n1 sin x ∼ x, tan x ∼ x, 1 − cos x ∼ 1/2x^2\n2 arctan x ∼ x, arcsin x ∼ x\n3 a^x − 1 ∼ x. ln a(a > 0, a̸ = 1), e^x − 1 ∼ x\n4 log_a(1 + x) ∼ x log_a e = x/(ln a)(a > 0, a̸ = 1),\nln(1 + x) ∼ x\n5 (1 + x)^µ − 1 ∼ µ.x(µ ∈ ℝ), √(1 + x) − 1 ∼ x/2,\n√(1 + x)^n − 1 ∼ x/n(n ∈ ℕ)\n6 sinh x ∼ x, cosh x − 1 ∼ x^2/(_(CỦA)2)\nTS. Lê Xuân Đại (BK TPHCM) GIỚI HẠN - TÍNH LIÊN TỤC HÀM MỘT BIẾN TP. HCM — 2013. 26 / 53",
+      "2. Giới hạn và liên tục hàm một biến\nGiới hạn vô cùng bé của hàm số\nBảng những hàm vô cùng bé tương đương\nBảng các VCB tương đương thường gặp khi x →0.\nNhóm 1. x, sin x, arcsin x, sinh x, tan x, arctan x,\nln(1 + x), e^x − 1\nlà các VCB tương đương.\nNhóm 2. x^2/2, 1 − cos x, cosh x − 1 là các VCB\ntương đương.\nNhóm 3. (1 + x)^α − 1 và αx là 2 VCB tương\nđương\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN - TÍNH LIÊN TỤC CỦA HÀM MỘT BIẾN\nTP. HCM — 2013.\n27 / 53\nGiới hạn vô cùng bé của hàm số\nBảng những hàm vô cùng bé tương đương\nCách sửdụng VCB tương đương khi tính giới hạn\nĐịnh lý\nNếu\nu(x) → 0 khi x → a\n{ f (x) ∼ g(x) khi x → 0\nthì f (u(x)) ∼ g(u(x)) khi x → a.\nĐịnh lý\nNếu α(x) → α_0̸ = 0(và β)/(.β(x)) (x) ∼ β(x) khi x → a\nthì α(x).β(x) ∼ α_0 khi x → a\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN - TÍNH LIÊN TỤC CỦA HÀM MỘT BIẾN\nTP. HCM — 2013.",
+      "2. Giới hạn và liên tục hàm một biến\n28 / 53\nGiới hạn vô cùng bé của hàm số\nTính giới hạn bằng cách thay vô cùng bé tương đương\nVí dụ\nTính giới hạn I = lim_(x→0) (sin √(1 + x^3) − sin 1)/(√(1 − 2x ln cos x)^5 − 1)\nGiải. Khi x →0, ta có\n(1 − 2x ln cos x)1/5 − 1^x∼^(→0) 1/5(−2x ln cos x) =\n−2x/5 ln(1 + (cos x − 1))^x∼^(→0)\n−2x/5(cos x − 1)^x∼^(→0) −2x/5(−x^2/2) = 1/5x^3\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN - TÍNH LIÊN TỤC CỦA HÀM MỘT BIẾN\nTP. HCM — 2013.\n29 / 53",
+      "2. Giới hạn và liên tục hàm một biến › sin\nGiới hạn vô cùng bé của hàm số\nTính giới hạn bằng cách thay vô cùng bé tương đương\nsin √(1√ + x^3) − sin 1 =\n(√(1 + x^3) + 1)/2 sin (√(1 + x^3) − 1)/2^x∼^(→0)\n2 cos 1.(√(1 + x^3) − 1)/2^x∼^(→0) 2 cos 1.(x^3/2)/2 =\n1/2 cos 1.x^3\nDo đó I = lim_(x→0) (1/2 cos 1.x^3)/(1/5x^3) = 5/2 cos 1.\n2 cos\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN - TÍNH LIÊN TỤC CỦA HÀM MỘT BIẾN\nTP. HCM — 2013.\n30 / 53\nGiới hạn vô cùng bé của hàm số\nNhững lỗi SAI thường gặp\nNhững lỗi SAI thường gặp\n1 Nếu f (x), g(x) là những VCB tương đương khi\nx →a thì f (x) + C ∼g(x) + C, C̸ = 0 SAI\n??? vì f (x) + C, g(x) + C KHÔNG là VCB.",
+      "2. Giới hạn và liên tục hàm một biến\n2 Nếu f (x), g(x) là những VCB tương đương khi\nx →a thì ln f (x) ∼ln g(x) SAI ??? vì\nln f (x), ln g(x) KHÔNG là VCB.\n3 Nếu f (x), g(x) là những VCB tương đương khi\nx →a thì cos f (x) ∼cos g(x) SAI ??? vì\ncos f (x), cos g(x) KHÔNG là VCB.\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN - TÍNH LIÊN TỤC CỦA HÀM MỘT BIẾN\nTP. HCM — 2013.\n31 / 53",
+      "2. Giới hạn và liên tục hàm một biến\nGiới hạn vô cùng bé của hàm số\nNhững lỗi SAI thường gặp\nNhững lỗi SAI thường gặp\n$1$ Nếu $f(x) \\sim \\bar{f}(x), g(x) \\sim \\bar{g}(x)$ khi $x \\to a$ thì\n$f(x) \\pm g(x) \\sim \\bar{f}(x) \\pm \\bar{g}(x)$ có thể SAI ??? ví\ndụ $\\sin x \\sim \\tan x$ khi $x \\to 0$ nhưng $\\sin x - x$ và\n$\\tan x - x$ KHÔNG tương đương nhau.\n$\\lim\\limits_{x \\to 0} \\dfrac{\\sin x - x}{\\tan x - x} = -1/2$. Nguyên nhân SAI:\nVCB có bậc thấp nhất ở tử và mẫu KHÔNG\nTỒN TẠI vì hệ số của nó bằng $0$. SỬ DỤNG\nđược quy tắc ngắt bỏ VCB có bậc cao hơn khi\ntổng các VCB có bậc thấp nhất phải TỒN TẠI.\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN - TÍNH LIÊN TỤC CỦA HÀM MỘT BIẾN\nTP. HCM — 2013.\n$32$ / $53$",
+      "2. Giới hạn và liên tục hàm một biến › Tìm I = lim\nGiới hạn vô cùng bé của hàm số $\\quad$ Những lỗi SAI thường gặp\nVí dụ\nTìm $I = \\lim\\limits_{x \\to 0} \\frac{e^{x^2} - \\cos x}{x^2}$\n$I = \\lim\\limits_{x \\to 0} \\frac{1 - \\cos x}{x^2} = \\frac{1}{2}$ SAI vì $e^{x^2}$ KHÔNG là VCB\nkhi $x \\to 0$.\nCách giải đúng. $I = \\lim\\limits_{x \\to 0} \\frac{(e^{x^2} - 1) + (1 - \\cos x)}{x^2} = \\lim\\limits_{x \\to 0} \\frac{x^2 + x^2/2}{x^2} = \\frac{3}{2}$\nTS. Lê Xuân Đại (BK TPHCM) $\\quad$ GIỚI HẠN - TÍNH LIÊN TỤC CỦA HÀM MỘT BIẾN $\\quad$ TP. HCM — 2013. $\\quad$ 33 / 53\nGiới hạn vô cùng lớn của hàm số\nGiới hạn vô cùng lớn của hàm số\nTìm giới hạn I = lim_(x→a) (f (x))/(g(x)) = (∞)/(∞)\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN - TÍNH LIÊN TỤC CỦA HÀM MỘT BIẾN\nTP. HCM — 2013.",
+      "2. Giới hạn và liên tục hàm một biến\n34 / 53\nGiới hạn vô cùng lớn của hàm số\nĐịnh nghĩa\nCho hàm sốf (x) xác định trên tập hợp X ⊂ℝ và\nsốa là điểm giới hạn của tập hợp X.\nĐịnh nghĩa\nHàm số f (x) được gọi là hàm vô cùng lớn khi\nx → a nếu lim_(x→a) |f (x)| = +∞.\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN - TÍNH LIÊN TỤC CỦA HÀM MỘT BIẾN\nTP. HCM — 2013.\n35 / 53",
+      "2. Giới hạn và liên tục hàm một biến\nGiới hạn vô cùng lớn của hàm số So sánh hàm vô cùng lớn\nCho f (x) và g(x) với cùng 1 tập xác định X ⊂ ℝ\nlà những VCL khi x → a, khi đó nếu\n1. lim_(x→a) (f (x))/(g(x)) = ∞ thì f (x) được gọi là VCL có bậc cao\nhơn g(x).\n2. lim_(x→a) (f (x))/(g(x)) = c̸ = 0(c ∈ ℝ) thì f (x), g(x) được gọi là\nVCL có cùng bậc.\n3. lim_(x→a) (f (x))/(g(x)) = 0 thì f (x) được gọi là VCL có bậc thấp\nhơn g(x).\n4. không tồn tại lim_(x→a) (f (x))/(g(x)) hữu hạn hay vô cùng thì\nf (x), g(x) được gọi là VCL không so sánh được.\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN - TÍNH LIÊN TỤC CỦA HÀM MỘT BIẾN\nTP. HCM — 2013.\n36 / 53",
+      "2. Giới hạn và liên tục hàm một biến\nGiới hạn vô cùng lớn của hàm số\nVô cùng lớn tương đương\nĐịnh nghĩa\nNhững hàm vô cùng lớn f (x) và g(x) khi x → a\nđược gọi là tương đương nếu như lim_(x→a) (f (x))/(g(x)) = 1.\nQuy tắc ngắt bỏVCL cấp thấp.\nlim_(x→a) (Tổng hữu hạn các VCL)/(Tổng hữu hạn các VCL) =\n= lim_(x→a) (Tổng các VCL có bậc cao nhất của tử)/(Tổng các VCL có bậc cao nhất của mẫu)\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN - TÍNH LIÊN TỤC CỦA HÀM MỘT BIẾN\nTP. HCM — 2013.\n37 / 53\nGiới hạn vô cùng lớn của hàm số\nVô cùng lớn tương đương\nNhững giới hạn cơ bản của vô cùng lớn.\n1_(x→)lim_(+∞) x^α/a^x = 0 (a > 1)\n2_(x→)lim_(+∞) (ln^α x)/x^β = 0 (∀α > 0, β > 0)\nThứ tự vô cùng lớn khi x → +∞ :\nln^α x << x^β << a^x, (a > 1)\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN - TÍNH LIÊN TỤC CỦA HÀM MỘT BIẾN\nTP. HCM — 2013.",
+      "2. Giới hạn và liên tục hàm một biến\n38 / 53\nGiới hạn vô cùng lớn của hàm số\nTìm giới hạn bằng cách thay VCL tương đương\nTìm giới hạn bằng cách thay VCL tương đương\nVí dụ\nI = lim_(x→+∞)\n√(x^2 + 4 √) + 2x + 3√x\n√(x^2 − 4) + x\nGiải\nKhi x → +∞ ta có\n√(x^2 + 4)^(x→)∼^(+∞) x, √(x^2 − 4)^(x→)∼^(+∞) x nên\nI = lim_(x→+∞) 3x/2x = 3/2\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN - TÍNH LIÊN TỤC CỦA HÀM MỘT BIẾN\nTP. HCM — 2013.\n39 / 53",
+      "2. Giới hạn và liên tục hàm một biến\nHàm sốliên tục\nHàm sốliên tục tại 1 điểm\nHàm sốliên tục tại 1 điểm\nCho hàm sốf (x) xác định trên tập hợp sốX ⊂ℝ\nvà điểm x_0 ∈X là điểm cốđịnh của tập hợp X\nnày.\nĐịnh nghĩa\nHàm số f (x) được gọi là liên tục tại điểm x_0 ∈ X ,\nnếu như luôn có đẳng thức\nlim\n_x_→_x_0 f (x) = f (x_0).\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN - TÍNH LIÊN TỤC CỦA HÀM MỘT BIẾN\nTP. HCM — 2013.\n40 / 53\nHàm sốliên tục\nHàm sốliên tục tại 1 điểm\nĐịnh lý\nCho điểm x_0 ∈ X là điểm giới hạn của tập hợp\nX_(x0)^+, X_(x0)^− có nghĩa cũng là điểm giới hạn của tập\nhợp X . Khi đó để hàm số f (x) liên tục tại điểm\nx_0 ∈ X điều kiện cần và đủ là luôn có đẳng thức\nf (x_0 + 0) = f (x_0 − 0) = f (x_0).\nĐịnh nghĩa\nHàm số f (x) được gọi là gián đoạn tại điểm\nx_0 ∈ X nếu như nó không liên tục tại điểm x_0 đó.\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN - TÍNH LIÊN TỤC CỦA HÀM MỘT BIẾN\nTP. HCM — 2013.",
+      "2. Giới hạn và liên tục hàm một biến\n41 / 53\nHàm sốliên tục\nHàm sốliên tục tại 1 điểm\nVậy hàm sốf (x) gián đoạn tại điểm x_0 ∈X thì\ntại điểm này không xảy ra ít nhất 1 trong 2 đẳng\nthức f (x_0 + 0) = f (x_0 −0) = f (x_0). Điều đó có\nnghĩa là:\n1 có ít nhất 1 trong 2 giới hạn f (x_0 + 0) và\nf (x_0 −0) không tồn tại hoặc bằng vô cùng.\n2 cả2 giới hạn f (x_0 + 0) và f (x_0 −0) tồn tại\nhữu hạn nhưng không thỏa mãn ít nhất 1 trong\nnhững đẳng thức trên.\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN - TÍNH LIÊN TỤC CỦA HÀM MỘT BIẾN\nTP. HCM — 2013.\n42 / 53",
+      "2. Giới hạn và liên tục hàm một biến\nHàm sốliên tục\nĐiểm gián đoạn loại I.\nĐịnh nghĩa\nĐiểm x_0 ∈ X được gọi là điểm gián đoạn loại I của\nf (x) nếu tại x_0 ∃ giới hạn hữu hạn f (x_0 + 0) và\nf (x_0 − 0) nhưng không thỏa mãn ít nhất 1 trong 2\nđẳng thức f (x_0 + 0) = f (x_0 − 0) = f (x_0).\nĐịnh nghĩa\nĐiểm x_0 ∈ X được gọi là điểm gián đoạn khử được\ncủa f (x) nếu tại x_0 ∃ những giới hạn hữu hạn\nf (x_0 + 0) và f (x_0 − 0) sao cho\nf (x_0 + 0) = f (x_0 − 0)̸ = f (x_0).\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN - TÍNH LIÊN TỤC CỦA HÀM MỘT BIẾN\nTP. HCM — 2013.\n43 / 53\nHàm sốliên tục\nĐiểm gián đoạn loại I.\nVí dụ\nHàm số\n|x|, x̸ = 0\nf (x) = {\n1, x = 0\nRõ ràng f (0 + 0) = lim_(x→0+0) |x| = lim_(x→0+0) x = 0 và\nf (0 − 0) = lim_(x→0−0) |x| = lim_(x→0+0)(−x) = 0. Như vậy\nf (0 + 0) = f (0 − 0) = 0̸ = 1 = f (0). x_0 = 0 là\nđiểm gián đoạn khử được của f (x).\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN - TÍNH LIÊN TỤC CỦA HÀM MỘT BIẾN\nTP. HCM — 2013.",
+      "2. Giới hạn và liên tục hàm một biến\n44 / 53\nHàm sốliên tục\nĐiểm gián đoạn loại I.\nĐịnh nghĩa\nĐiểm x_0 ∈ X được gọi là điểm gián đoạn với bước\nnhảy hữu hạn của hàm số f (x) nếu như tại điểm\nnày tồn tại những giới hạn hữu hạn f (x_0 + 0) và\nf (x_0 − 0) sao cho f (x_0 + 0)̸ = f (x_0 − 0). Khi đó\nf (x_0 + 0) − f (x_0 − 0)̸ = 0 được gọi là bước nhảy\ncủa hàm số f (x) tại điểm x_0.\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN - TÍNH LIÊN TỤC CỦA HÀM MỘT BIẾN\nTP. HCM — 2013.\n45 / 53",
+      "2. Giới hạn và liên tục hàm một biến\nHàm sốliên tục\nĐiểm gián đoạn loại I.\nVí dụ\nHàm số\n{ 1, x > 0\nf (x) = sign(x) = 0, x = 0\n{ −1, x < 0\nRõ ràng f (0 + 0) = lim_(x→0+0) 1 = 1 và\nf (0 − 0) = lim_(x→0−0)(−1) = −1. Như vậy\nf (0 + 0)̸ = f (0 − 0) và x_0 = 0 là điểm gián đoạn\nvới bước nhảy hữu hạn f (0 + 0) − f (0 − 0) = 2\ncủa_(TS.LêXuân)hàm_(Đại(BK)số_(TPHCM))f (x)_(GIỚI).\nHẠN - TÍNH LIÊN TỤC CỦA HÀM MỘT BIẾN TP. HCM — 2013. 46 / 53\nHàm sốliên tục\nĐiểm gián đoạn loại II\nĐịnh nghĩa\nĐiểm x_0 ∈ X được gọi là điểm gián đoạn loại II\ncủa hàm số f (x) nếu như tại điểm này có ít nhất 1\ntrong 2 giới hạn f (x_0 + 0) và f (x_0 − 0) hoặc bằng\nvô cùng hoặc không tồn tại.\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN - TÍNH LIÊN TỤC CỦA HÀM MỘT BIẾN\nTP. HCM — 2013.",
+      "2. Giới hạn và liên tục hàm một biến\n47 / 53\nHàm sốliên tục\nĐiểm gián đoạn loại II\nVí dụ\nHàm số\n{ 1/x, x̸ = 0\nf (x) =\n{ 0, x = 0\nRõ ràng f (0 + 0) = lim_(x→0+0) 1/x = +∞ và\nf (0 − 0) = lim_(x→0−0) 1/x = −∞. Như vậy x_0 = 0 là\nđiểm gián đoạn loại II của hàm số f (x).\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN - TÍNH LIÊN TỤC CỦA HÀM MỘT BIẾN\nTP. HCM — 2013.\n48 / 53",
+      "2. Giới hạn và liên tục hàm một biến\nHàm sốliên tục\nĐiểm gián đoạn loại II\nHàm số\n{ sin 1/x, x̸ = 0\nf (x) =\n0, x = 0\n{\nTa sẽ chứng minh f (0 + 0) không tồn tại. Xét 2\ndãy x_n = 1/(2πn+π/2) → 0 và y_n = 1/nπ → 0. Ta có\nlim_(n→∞) f (x_n) = lim_(n→∞) sin(2πn + π/2) = lim_(n→∞) sin(π/2) = 1\nvà lim_(n→∞) f (y_n) = lim_(n→∞) sin(πn) = 0. Vì vậy f (0 + 0)\nkhông tồn tại. Như vậy x_0 = 0 là điểm gián đoạn\nloại II của hàm số f (x).\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN - TÍNH LIÊN TỤC CỦA HÀM MỘT BIẾN\nTP. HCM — 2013.\n49 / 53\nThực hành MatLab\nCác lệnh tính giới hạn của hàm số\n1 Giới hạn tại 1 điểm: limit(f,x,x0). Ví dụ:\nsyms x; limit(sin(x)/x,x,0) ⇒ans=1.\n2 Giới hạn trái tại 1 điểm : limit(f,x,x0,’left’).\nVí dụ: syms x; limit(abs(x-1)/(x-1),x,1,’left’)\n⇒ans=-1.",
+      "2. Giới hạn và liên tục hàm một biến\n3 Giới hạn phải tại 1 điểm :\nlimit(f,x,x0,’right’). Ví dụ: syms x;\nlimit(abs(x-1)/(x-1),x,1,’right’) ⇒ans=1.\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN - TÍNH LIÊN TỤC CỦA HÀM MỘT BIẾN\nTP. HCM — 2013.\n50 / 53\nThực hành MatLab\nCách lệnh cơ bản đối với hàm số\n1 Tìm hàm hợp: compose(f,g). Ví dụ: syms x;\nf = x ˆ2; g = exp(x); compose(f , g) ⇒\nans = exp(2 ∗x).\n2 Tìm hàm ngược: finverse(f). Ví dụ: syms x;\nf=exp(x); ﬁnverse(f ) ⇒ans = log(x).\n3 Tìm giá trịcủa hàm sốtại 1 điểm:\nsubs(f,x,a). Ví dụ: syms x; f = x ˆ2 + 1;\nsubs(f , x, 2) ⇒ans = 5.\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN - TÍNH LIÊN TỤC CỦA HÀM MỘT BIẾN\nTP. HCM — 2013.\n51 / 53",
+      "2. Giới hạn và liên tục hàm một biến\nThực hành MatLab\nCác lệnh cơ bản đối với biểu thức toán học\n1 Rút gọn biểu thức: $\\text{simplify}(f)$. Ví dụ: $\\text{syms}$\n$x$; $f = \\sin(x)^2 + (\\cos(x))^2$; $\\textit{simplify}(f) \\Rightarrow$\n$\\text{ans} = 1$.\n2 Viết biểu thức dưới dạng ngắn nhất:\n$\\text{simple}(f)$. Ví dụ: $\\text{syms } x$;\n$f = (x + 1) * x * (x - 1)$; $\\textit{simple}(f) \\Rightarrow$\n$\\text{ans} = x^3 - 1$.\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN - TÍNH LIÊN TỤC CỦA HÀM MỘT BIẾN\nTP. HCM — 2013.\n52 / 53\nThực hành MatLab\nCác lệnh nhập - xuất thông tin\n1 Nhập chuỗi ký tựtừbàn phím:\ninput(’Hãy nhập vào giá trịx’, x)\n2 Xuất thông tin: disp(’Giá trịcủa x là’, x)\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN - TÍNH LIÊN TỤC CỦA HÀM MỘT BIẾN\nTP. HCM — 2013.",
+      "2. Giới hạn và liên tục hàm một biến\n53 / 53\nKết thúc\nTHANK YOU FOR ATTENTION\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN - TÍNH LIÊN TỤC CỦA HÀM MỘT BIẾN\nTP. HCM — 2013.\n54 / 53"
+    ]
+  },
+  "reference": {
+    "coverage": "complete",
+    "chunk_ids": [
+      "2fbcf973-1e63-4e23-ad3e-93b34551693c",
+      "ab209315-9082-4ef1-acf2-2740aed3b7ec",
+      "eb3aaaec-20f7-459a-bda2-34930bb6ea19",
+      "3b3c75d5-b3c5-4359-b94f-78d0390c8d32",
+      "206d0df3-8b5c-4dc0-8186-def736f395c9",
+      "9a9f9fc3-aafe-4f11-856a-974ddfb67ec5",
+      "4ca394e0-03ca-432b-b1c8-5c875c0e156d",
+      "8529f4e6-19d2-4a56-9e3a-6beb7076a092",
+      "54374dba-3314-4d27-814c-9075310c26b4",
+      "fa18987f-f112-4d72-9f46-c89fa28e1d05",
+      "fbb96b6b-9ab1-4e48-880b-8d9f4caeb02f",
+      "c965d0a8-0feb-484d-baea-359dc7f7df8c",
+      "3a4aa58a-5f7a-464c-9bd4-8d8bf3ce8aa5",
+      "a2f9082a-8618-4dd9-9740-43222fe1405b",
+      "60fe14c9-a308-421e-a748-da63fb6da450",
+      "eb217861-b781-478b-90fe-86783ce3b5d5",
+      "03282c8f-647b-4e6b-84c6-ddaa49352f26",
+      "1274c9d9-121a-4800-9941-a0362bb19d9c",
+      "e87a587f-7144-4e26-b36f-2a8f49bfc2d9",
+      "aabe39f2-1c82-45fb-8617-59ec4f99db82",
+      "f8116a63-eba6-49c1-8c36-7ffb9715da0a",
+      "d5687da8-0a47-40af-8fb4-1dd1cc69a2f4",
+      "563bfb46-773d-4ff0-8ea6-af85d64ed05b",
+      "67f14ccf-0732-43c4-a612-716c875e5309",
+      "9ad05459-317c-41de-abef-3e4927d50706",
+      "e295b7d9-4afd-4606-855d-f9a51afbfe8c",
+      "524389a3-7617-452a-b07e-73571fd78f01",
+      "0d72d5bd-8016-4373-ba00-ced475c78ae9",
+      "08ffe07d-0a4f-44d6-ba32-dc5a1b696ecc",
+      "11f417f1-95fd-4c53-a026-2e19cacacea0",
+      "56c2c77d-ec91-46c5-bea0-f611df3a5714",
+      "d10519b3-e172-413a-8ce4-a2fb900d8caf",
+      "ebb883cd-fbf8-491c-8c61-dd7d40f43df3",
+      "a555b10b-7a7b-4401-a906-f5d35caf684e",
+      "2ad39bfc-84f1-406d-8dbd-b6e0fd873396",
+      "6ca621d5-3f1f-4870-afa1-2615219f44b7",
+      "20996525-7899-41e1-8659-90b18a76ac77",
+      "f8907500-53ef-43d7-8b84-2b52f787231f",
+      "a97094b0-c079-4f17-aaf6-2a40b52d8c41",
+      "d8512c6c-80ec-4e2b-b6b4-bead4563099e"
+    ],
+    "total_chunks": 40
+  },
+  "claim_citations": [
+    {
+      "claim": "**Cách giải sai (tách giới hạn của tích):** viết I = lim_(x→0) x² · lim_(x→0) sin(1/x) rồi xử lý riêng từng nhân tử.",
+      "source_id": "S11",
+      "start": 84,
+      "end": 200,
+      "marker_start": 201,
+      "marker_end": 206,
+      "locator": "{\"spans\": [{\"page\": 14, \"heading\": \"14 / 53\", \"extraction_method\": \"text_layer\"}, {\"page\": 15, \"heading\": \"Tính giới hạn I = lim\", \"extraction_method\": \"text_layer\"}, {\"page\": 15, \"heading\": \"15 / 53\", \"extraction_method\": \"text_layer\"}]}",
+      "chunk_id": "fbb96b6b-9ab1-4e48-880b-8d9f4caeb02f",
+      "chunk_content": "2. Giới hạn và liên tục hàm một biến\n14 / 53\nGiới hạn của hàm số\nTính chất của giới hạn của hàm số\nVí dụ\nTính giới hạn I = lim_(x→0) x^2. sin 1/x\nI = lim_(x→0) x^2. lim_(x→0) sin 1/x SAI vì lim_(x→0) sin 1/x KHÔNG tồn\ntại.\nCách giải đúng:\n−x^2 ⩽ x^2 sin 1/x ⩽ x^2\nvà lim_(x→0)(−x^2) = lim_(x→0) x^2 = 0. Vậy I = 0.\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN - TÍNH LIÊN TỤC CỦA HÀM MỘT BIẾN\nTP. HCM — 2013.\n15 / 53",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "**Lý do sai:** cách tách này chỉ hợp lệ khi cả hai giới hạn thành phần tồn tại và hữu hạn — định lý về tính chất của giới hạn chỉ cho lim[f(x).g(x)] = A.B khi đã có lim_(x→a) f(x) = A và lim_(x→a) g(x) = B hữu hạn.",
+      "source_id": "S9",
+      "start": 209,
+      "end": 423,
+      "marker_start": 424,
+      "marker_end": 428,
+      "locator": "{\"spans\": [{\"page\": 11, \"heading\": \"11 / 53\", \"extraction_method\": \"vision\"}, {\"page\": 12, \"heading\": null, \"extraction_method\": \"text_layer\"}]}",
+      "chunk_id": "54374dba-3314-4d27-814c-9075310c26b4",
+      "chunk_content": "2. Giới hạn và liên tục hàm một biến\n11 / 53\nGiới hạn của hàm số\nTính chất của giới hạn của hàm số\nTính chất của giới hạn của hàm số\nĐịnh lý\nNếu hàm số f (x) và g(x) với cùng 1 tập xác định\nX ⊂ ℝ có giới hạn hữu hạn khi x → a :\nlim_(x→a) f (x) = A và lim_(x→a) g(x) = B thì ta có đẳng thức\nlim\n_x_→_a[f (x) ± g(x)] = A ± B\nlim\n_x_→_a[f (x).g(x)] = A.B\nNếu có thêm điều kiện B̸ = 0 thì lim_(x→a) (f (x))/(g_(TP.)(_(HCM)x)) = A/B\nTS. Lê Xuân Đại (BK TPHCM) GIỚI HẠN - TÍNH LIÊN TỤC CỦA HÀM MỘT BIẾN — 2013. 12 / 53",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "Trong ví dụ này, lim_(x→0) sin(1/x) **KHÔNG tồn tại**, nên không thể áp dụng đẳng thức trên.",
+      "source_id": "S11",
+      "start": 431,
+      "end": 523,
+      "marker_start": 524,
+      "marker_end": 529,
+      "locator": "{\"spans\": [{\"page\": 14, \"heading\": \"14 / 53\", \"extraction_method\": \"text_layer\"}, {\"page\": 15, \"heading\": \"Tính giới hạn I = lim\", \"extraction_method\": \"text_layer\"}, {\"page\": 15, \"heading\": \"15 / 53\", \"extraction_method\": \"text_layer\"}]}",
+      "chunk_id": "fbb96b6b-9ab1-4e48-880b-8d9f4caeb02f",
+      "chunk_content": "2. Giới hạn và liên tục hàm một biến\n14 / 53\nGiới hạn của hàm số\nTính chất của giới hạn của hàm số\nVí dụ\nTính giới hạn I = lim_(x→0) x^2. sin 1/x\nI = lim_(x→0) x^2. lim_(x→0) sin 1/x SAI vì lim_(x→0) sin 1/x KHÔNG tồn\ntại.\nCách giải đúng:\n−x^2 ⩽ x^2 sin 1/x ⩽ x^2\nvà lim_(x→0)(−x^2) = lim_(x→0) x^2 = 0. Vậy I = 0.\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN - TÍNH LIÊN TỤC CỦA HÀM MỘT BIẾN\nTP. HCM — 2013.\n15 / 53",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "Hai dãy cùng hội tụ về 0 nhưng dãy giá trị hàm số tiến tới hai giới hạn khác nhau, nên giới hạn tại 0 không tồn tại.",
+      "source_id": "S6",
+      "start": 725,
+      "end": 841,
+      "marker_start": 842,
+      "marker_end": 846,
+      "locator": "{\"spans\": [{\"page\": 8, \"heading\": null, \"extraction_method\": \"text_layer\"}, {\"page\": 8, \"heading\": \"8 / 53\", \"extraction_method\": \"text_layer\"}]}",
+      "chunk_id": "9a9f9fc3-aafe-4f11-856a-974ddfb67ec5",
+      "chunk_content": "2. Giới hạn và liên tục hàm một biến\nGiới hạn của hàm số\nĐịnh nghĩa giới hạn của hàm số\nChú ý. Nếu tồn tại 2 dãy (x_n), (y_n) cùng hội tụvề\na nhưng f (x_n), f (y_n) tiến tới 2 giới hạn khác nhau\nthì KHÔNG TỒN TẠI giới hạn lim\n_x_→_a f (x).\nVí dụ\nTìm I = lim_(x→0) sin 1/x\nXét 2 dãy x_n = 1/(2πn+π/2) → 0 và y_n = 1/nπ → 0. Ta có\nlim_(n→∞) f (x_n) = lim_(n→∞) sin(2πn + π/2) = lim_(n→∞) sin(π/2) = 1\nvà lim_(n→∞) f (y_n) = lim_(n→∞) sin(πn) = 0. Vậy ∄I .\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN - TÍNH LIÊN TỤC CỦA HÀM MỘT BIẾN\nTP. HCM — 2013.\n8 / 53",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "**Cách giải đúng (dùng bất đẳng thức kẹp):** −x² ⩽ x².sin(1/x) ⩽ x² và lim_(x→0)(−x²) = lim_(x→0) x² = 0, do đó I = 0.",
+      "source_id": "S11",
+      "start": 849,
+      "end": 967,
+      "marker_start": 968,
+      "marker_end": 973,
+      "locator": "{\"spans\": [{\"page\": 14, \"heading\": \"14 / 53\", \"extraction_method\": \"text_layer\"}, {\"page\": 15, \"heading\": \"Tính giới hạn I = lim\", \"extraction_method\": \"text_layer\"}, {\"page\": 15, \"heading\": \"15 / 53\", \"extraction_method\": \"text_layer\"}]}",
+      "chunk_id": "fbb96b6b-9ab1-4e48-880b-8d9f4caeb02f",
+      "chunk_content": "2. Giới hạn và liên tục hàm một biến\n14 / 53\nGiới hạn của hàm số\nTính chất của giới hạn của hàm số\nVí dụ\nTính giới hạn I = lim_(x→0) x^2. sin 1/x\nI = lim_(x→0) x^2. lim_(x→0) sin 1/x SAI vì lim_(x→0) sin 1/x KHÔNG tồn\ntại.\nCách giải đúng:\n−x^2 ⩽ x^2 sin 1/x ⩽ x^2\nvà lim_(x→0)(−x^2) = lim_(x→0) x^2 = 0. Vậy I = 0.\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN - TÍNH LIÊN TỤC CỦA HÀM MỘT BIẾN\nTP. HCM — 2013.\n15 / 53",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "**Cơ sở lý thuyết của cách giải đúng:** nếu g(x) ⩽ f(x) ⩽ h(x) với mọi x ∈ O(a, ε) và lim_(x→a) g(x) = A = lim_(x→a) h(x) (với A hữu hạn) thì lim_(x→a) f(x) = A.",
+      "source_id": "S10",
+      "start": 976,
+      "end": 1137,
+      "marker_start": 1138,
+      "marker_end": 1143,
+      "locator": "{\"spans\": [{\"page\": 13, \"heading\": \"Các dạng không phải vô định\", \"extraction_method\": \"text_layer\"}, {\"page\": 13, \"heading\": \"7 dạng vô định trong giới hạn hàm số\", \"extraction_method\": \"text_layer\"}, {\"page\": 13, \"heading\": \"13 / 53\", \"extraction_method\": \"text_layer\"}, {\"page\": 14, \"heading\": null, \"extraction_method\": \"text_layer\"}, {\"page\": 14, \"heading\": \"1 g(x) ⩽f (x) ⩽h(x) với mọi ∀x ∈O(a, ε)\", \"extraction_method\": \"text_layer\"}, {\"page\": 14, \"heading\": \"2 lim g(x) = A =_xlim_(→a) h(x). (A - hữu hạn)\", \"extraction_method\": \"text_layer\"}]}",
+      "chunk_id": "fa18987f-f112-4d72-9f46-c89fa28e1d05",
+      "chunk_content": "2. Giới hạn và liên tục hàm một biến › Các dạng không phải vô định\nGiới hạn của hàm số\nTính chất của giới hạn của hàm số\nPhân loại giới hạn của hàm số\nCác dạng không phải vô định\na/0 = ∞(a̸ = 0); a/(∞) = 0; (∞)/a = ∞;\na.∞ = ∞(a̸ = 0); q^∞ = 0(|q| < 1).\n7 dạng vô định trong giới hạn hàm số\n(∞)/(∞) , 0/0 , ∞−∞ , 0.∞ ,1^∞ , ∞^0 , 0^0\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN - TÍNH LIÊN TỤC CỦA HÀM MỘT BIẾN\nTP. HCM — 2013.\n13 / 53\nGiới hạn của hàm số\nTính chất của giới hạn của hàm số\nTính chất của giới hạn của hàm số\n1^o Nếu hàm sốf (x) khi x →a có giới hạn hữu\nhạn lim\n_x_→_a f (x) = A thì giới hạn đó là duy nhất.\n2^o Nếu\n1 g(x) ⩽f (x) ⩽h(x) với mọi ∀x ∈O(a, ε)\n2 lim g(x) = A =_xlim_(→a) h(x). (A - hữu hạn)\nthì lim_(x→a)^(x→a) f (x) = A.\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN - TÍNH LIÊN TỤC CỦA HÀM MỘT BIẾN\nTP. HCM — 2013.",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "**Điểm khác biệt cốt lõi:** cách sai cố tách thành tích hai giới hạn khi một nhân tử không có giới hạn; cách đúng không tách rời mà chặn hàm số giữa hai hàm có cùng giới hạn 0.",
+      "source_id": "S11",
+      "start": 1146,
+      "end": 1322,
+      "marker_start": 1323,
+      "marker_end": 1328,
+      "locator": "{\"spans\": [{\"page\": 14, \"heading\": \"14 / 53\", \"extraction_method\": \"text_layer\"}, {\"page\": 15, \"heading\": \"Tính giới hạn I = lim\", \"extraction_method\": \"text_layer\"}, {\"page\": 15, \"heading\": \"15 / 53\", \"extraction_method\": \"text_layer\"}]}",
+      "chunk_id": "fbb96b6b-9ab1-4e48-880b-8d9f4caeb02f",
+      "chunk_content": "2. Giới hạn và liên tục hàm một biến\n14 / 53\nGiới hạn của hàm số\nTính chất của giới hạn của hàm số\nVí dụ\nTính giới hạn I = lim_(x→0) x^2. sin 1/x\nI = lim_(x→0) x^2. lim_(x→0) sin 1/x SAI vì lim_(x→0) sin 1/x KHÔNG tồn\ntại.\nCách giải đúng:\n−x^2 ⩽ x^2 sin 1/x ⩽ x^2\nvà lim_(x→0)(−x^2) = lim_(x→0) x^2 = 0. Vậy I = 0.\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN - TÍNH LIÊN TỤC CỦA HÀM MỘT BIẾN\nTP. HCM — 2013.\n15 / 53",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "**Điểm khác biệt cốt lõi:** cách sai cố tách thành tích hai giới hạn khi một nhân tử không có giới hạn; cách đúng không tách rời mà chặn hàm số giữa hai hàm có cùng giới hạn 0.",
+      "source_id": "S10",
+      "start": 1146,
+      "end": 1322,
+      "marker_start": 1328,
+      "marker_end": 1333,
+      "locator": "{\"spans\": [{\"page\": 13, \"heading\": \"Các dạng không phải vô định\", \"extraction_method\": \"text_layer\"}, {\"page\": 13, \"heading\": \"7 dạng vô định trong giới hạn hàm số\", \"extraction_method\": \"text_layer\"}, {\"page\": 13, \"heading\": \"13 / 53\", \"extraction_method\": \"text_layer\"}, {\"page\": 14, \"heading\": null, \"extraction_method\": \"text_layer\"}, {\"page\": 14, \"heading\": \"1 g(x) ⩽f (x) ⩽h(x) với mọi ∀x ∈O(a, ε)\", \"extraction_method\": \"text_layer\"}, {\"page\": 14, \"heading\": \"2 lim g(x) = A =_xlim_(→a) h(x). (A - hữu hạn)\", \"extraction_method\": \"text_layer\"}]}",
+      "chunk_id": "fa18987f-f112-4d72-9f46-c89fa28e1d05",
+      "chunk_content": "2. Giới hạn và liên tục hàm một biến › Các dạng không phải vô định\nGiới hạn của hàm số\nTính chất của giới hạn của hàm số\nPhân loại giới hạn của hàm số\nCác dạng không phải vô định\na/0 = ∞(a̸ = 0); a/(∞) = 0; (∞)/a = ∞;\na.∞ = ∞(a̸ = 0); q^∞ = 0(|q| < 1).\n7 dạng vô định trong giới hạn hàm số\n(∞)/(∞) , 0/0 , ∞−∞ , 0.∞ ,1^∞ , ∞^0 , 0^0\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN - TÍNH LIÊN TỤC CỦA HÀM MỘT BIẾN\nTP. HCM — 2013.\n13 / 53\nGiới hạn của hàm số\nTính chất của giới hạn của hàm số\nTính chất của giới hạn của hàm số\n1^o Nếu hàm sốf (x) khi x →a có giới hạn hữu\nhạn lim\n_x_→_a f (x) = A thì giới hạn đó là duy nhất.\n2^o Nếu\n1 g(x) ⩽f (x) ⩽h(x) với mọi ∀x ∈O(a, ε)\n2 lim g(x) = A =_xlim_(→a) h(x). (A - hữu hạn)\nthì lim_(x→a)^(x→a) f (x) = A.\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN - TÍNH LIÊN TỤC CỦA HÀM MỘT BIẾN\nTP. HCM — 2013.",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "Đặt X_a⁺ = {x ∈ X \\ {x > a}} và X_a⁻ = {x ∈ X \\ {x < a}}; xét hàm f(x) xác định trên X ⊂ ℝ với a là điểm giới hạn của X_a⁺ (hoặc X_a⁻).",
+      "source_id": "S7",
+      "start": 1397,
+      "end": 1532,
+      "marker_start": 1533,
+      "marker_end": 1537,
+      "locator": "{\"page\": 9, \"heading\": null, \"extraction_method\": \"vision\"}",
+      "chunk_id": "4ca394e0-03ca-432b-b1c8-5c875c0e156d",
+      "chunk_content": "2. Giới hạn và liên tục hàm một biến\nGiới hạn của hàm số Giới hạn của hàm số từ một phía\n$X_a^+ = \\{x \\in X \\setminus x > a\\}, X_a^- = \\{x \\in X \\setminus x < a\\}$.\nCho hàm số $f(x)$ xác định trên tập hợp $X \\subset \\mathbb{R}$\ncòn $a \\in \\mathbb{R}$ là điểm giới hạn của tập hợp $X_a^+(X_a^-)$.\nĐịnh nghĩa\nSố $A \\in \\mathbb{R}$ được gọi là giới hạn của hàm số $f(x)$\nkhi $x \\to a$ từ bên phải (từ bên trái) nếu như\n$\\lim_{x \\to a, x \\in X_a^+} f(x) = A$ ($\\lim_{x \\to a, x \\in X_a^-} f(x) = A$)\nChúng được kí hiệu là $\\lim_{x \\to a+0} f(x), f(a + 0)$ và\n$\\lim_{x \\to a-0} f(x), f(a - 0)$\nTS. Lê Xuân Đại (BK TPHCM) GIỚI HẠN - TÍNH LIÊN TỤC CỦA HÀM MỘT BIẾN TP. HCM — 2013. 9 / 53",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "**Định nghĩa giới hạn một phía:** số A ∈ ℝ là giới hạn của f(x) khi x → a từ bên phải (từ bên trái) nếu lim_(x→a, x∈X_a⁺) f(x) = A (tương ứng lim_(x→a, x∈X_a⁻) f(x) = A).",
+      "source_id": "S7",
+      "start": 1540,
+      "end": 1710,
+      "marker_start": 1711,
+      "marker_end": 1715,
+      "locator": "{\"page\": 9, \"heading\": null, \"extraction_method\": \"vision\"}",
+      "chunk_id": "4ca394e0-03ca-432b-b1c8-5c875c0e156d",
+      "chunk_content": "2. Giới hạn và liên tục hàm một biến\nGiới hạn của hàm số Giới hạn của hàm số từ một phía\n$X_a^+ = \\{x \\in X \\setminus x > a\\}, X_a^- = \\{x \\in X \\setminus x < a\\}$.\nCho hàm số $f(x)$ xác định trên tập hợp $X \\subset \\mathbb{R}$\ncòn $a \\in \\mathbb{R}$ là điểm giới hạn của tập hợp $X_a^+(X_a^-)$.\nĐịnh nghĩa\nSố $A \\in \\mathbb{R}$ được gọi là giới hạn của hàm số $f(x)$\nkhi $x \\to a$ từ bên phải (từ bên trái) nếu như\n$\\lim_{x \\to a, x \\in X_a^+} f(x) = A$ ($\\lim_{x \\to a, x \\in X_a^-} f(x) = A$)\nChúng được kí hiệu là $\\lim_{x \\to a+0} f(x), f(a + 0)$ và\n$\\lim_{x \\to a-0} f(x), f(a - 0)$\nTS. Lê Xuân Đại (BK TPHCM) GIỚI HẠN - TÍNH LIÊN TỤC CỦA HÀM MỘT BIẾN TP. HCM — 2013. 9 / 53",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "**Ký hiệu:** giới hạn bên phải là lim_(x→a+0) f(x) hay f(a + 0); giới hạn bên trái là lim_(x→a−0) f(x) hay f(a − 0).",
+      "source_id": "S7",
+      "start": 1718,
+      "end": 1834,
+      "marker_start": 1835,
+      "marker_end": 1839,
+      "locator": "{\"page\": 9, \"heading\": null, \"extraction_method\": \"vision\"}",
+      "chunk_id": "4ca394e0-03ca-432b-b1c8-5c875c0e156d",
+      "chunk_content": "2. Giới hạn và liên tục hàm một biến\nGiới hạn của hàm số Giới hạn của hàm số từ một phía\n$X_a^+ = \\{x \\in X \\setminus x > a\\}, X_a^- = \\{x \\in X \\setminus x < a\\}$.\nCho hàm số $f(x)$ xác định trên tập hợp $X \\subset \\mathbb{R}$\ncòn $a \\in \\mathbb{R}$ là điểm giới hạn của tập hợp $X_a^+(X_a^-)$.\nĐịnh nghĩa\nSố $A \\in \\mathbb{R}$ được gọi là giới hạn của hàm số $f(x)$\nkhi $x \\to a$ từ bên phải (từ bên trái) nếu như\n$\\lim_{x \\to a, x \\in X_a^+} f(x) = A$ ($\\lim_{x \\to a, x \\in X_a^-} f(x) = A$)\nChúng được kí hiệu là $\\lim_{x \\to a+0} f(x), f(a + 0)$ và\n$\\lim_{x \\to a-0} f(x), f(a - 0)$\nTS. Lê Xuân Đại (BK TPHCM) GIỚI HẠN - TÍNH LIÊN TỤC CỦA HÀM MỘT BIẾN TP. HCM — 2013. 9 / 53",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "**Định lý tương đương:** nếu a là điểm giới hạn của cả X_a⁺ và X_a⁻ (khi đó a cũng là điểm giới hạn của X), thì đẳng thức lim_(x→a) f(x) = A tương đương với hai đẳng thức lim_(x→a+0) f(x) = A và lim_(x→a−0) f(x) = A.",
+      "source_id": "S8",
+      "start": 1842,
+      "end": 2058,
+      "marker_start": 2059,
+      "marker_end": 2063,
+      "locator": "{\"spans\": [{\"page\": 10, \"heading\": \"f (x) = signx =\", \"extraction_method\": \"text_layer\"}, {\"page\": 10, \"heading\": \"10 / 53\", \"extraction_method\": \"text_layer\"}, {\"page\": 11, \"heading\": null, \"extraction_method\": \"vision\"}]}",
+      "chunk_id": "8529f4e6-19d2-4a56-9e3a-6beb7076a092",
+      "chunk_content": "2. Giới hạn và liên tục hàm một biến › f (x) = signx =\nGiới hạn của hàm số\nGiới hạn của hàm sốtừmột phía\nVí dụ\n{ 1, x > 0\nf (x) = signx = 0, x = 0\n{ −1, x < 0\nDễdàng thấy rằng\nf (0 + 0) = lim_(x→0+0) f (x) = 1\ncòn\nf (0 − 0) = lim_(x→0−0) f (x) = −1.\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN - TÍNH LIÊN TỤC CỦA HÀM MỘT BIẾN\nTP. HCM — 2013.\n10 / 53\nGiới hạn của hàm số\nGiới hạn của hàm số từ một phía\nCho $a \\in \\mathbb{R}$ là điểm giới hạn của tập hợp\n$X_a^+ = \\{x \\in X \\setminus x > a\\}$ và tập hợp\n$X_a^- = \\{x \\in X \\setminus x < a\\}$. Khi đó $a$ cũng là điểm\ngiới hạn của tập hợp $X$. Khi đó ta có định lý sau:\nĐịnh lý\nĐẳng thức $\\lim_{x \\to a} f(x) = A$ tương đương với 2 đẳng\nthức sau\n$\\begin{cases} \\lim_{x \\to a+0} f(x) = A \\\\ \\lim_{x \\to a-0} f(x) = A \\end{cases}$\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN - TÍNH LIÊN TỤC CỦA HÀM MỘT BIẾN\nTP. HCM — 2013.",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "Hệ quả trực tiếp: giới hạn hai phía tồn tại và bằng A khi và chỉ khi cả hai giới hạn một phía đều tồn tại và cùng bằng A; chỉ cần hai giới hạn một phía khác nhau là giới hạn hai phía không tồn tại.",
+      "source_id": "S8",
+      "start": 2066,
+      "end": 2263,
+      "marker_start": 2264,
+      "marker_end": 2268,
+      "locator": "{\"spans\": [{\"page\": 10, \"heading\": \"f (x) = signx =\", \"extraction_method\": \"text_layer\"}, {\"page\": 10, \"heading\": \"10 / 53\", \"extraction_method\": \"text_layer\"}, {\"page\": 11, \"heading\": null, \"extraction_method\": \"vision\"}]}",
+      "chunk_id": "8529f4e6-19d2-4a56-9e3a-6beb7076a092",
+      "chunk_content": "2. Giới hạn và liên tục hàm một biến › f (x) = signx =\nGiới hạn của hàm số\nGiới hạn của hàm sốtừmột phía\nVí dụ\n{ 1, x > 0\nf (x) = signx = 0, x = 0\n{ −1, x < 0\nDễdàng thấy rằng\nf (0 + 0) = lim_(x→0+0) f (x) = 1\ncòn\nf (0 − 0) = lim_(x→0−0) f (x) = −1.\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN - TÍNH LIÊN TỤC CỦA HÀM MỘT BIẾN\nTP. HCM — 2013.\n10 / 53\nGiới hạn của hàm số\nGiới hạn của hàm số từ một phía\nCho $a \\in \\mathbb{R}$ là điểm giới hạn của tập hợp\n$X_a^+ = \\{x \\in X \\setminus x > a\\}$ và tập hợp\n$X_a^- = \\{x \\in X \\setminus x < a\\}$. Khi đó $a$ cũng là điểm\ngiới hạn của tập hợp $X$. Khi đó ta có định lý sau:\nĐịnh lý\nĐẳng thức $\\lim_{x \\to a} f(x) = A$ tương đương với 2 đẳng\nthức sau\n$\\begin{cases} \\lim_{x \\to a+0} f(x) = A \\\\ \\lim_{x \\to a-0} f(x) = A \\end{cases}$\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN - TÍNH LIÊN TỤC CỦA HÀM MỘT BIẾN\nTP. HCM — 2013.",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "**Ví dụ minh họa:** với f(x) = sign(x) (bằng 1 khi x > 0, bằng 0 khi x = 0, bằng −1 khi x < 0), ta có f(0 + 0) = lim_(x→0+0) f(x) = 1 còn f(0 − 0) = lim_(x→0−0) f(x) = −1.",
+      "source_id": "S8",
+      "start": 2271,
+      "end": 2442,
+      "marker_start": 2443,
+      "marker_end": 2447,
+      "locator": "{\"spans\": [{\"page\": 10, \"heading\": \"f (x) = signx =\", \"extraction_method\": \"text_layer\"}, {\"page\": 10, \"heading\": \"10 / 53\", \"extraction_method\": \"text_layer\"}, {\"page\": 11, \"heading\": null, \"extraction_method\": \"vision\"}]}",
+      "chunk_id": "8529f4e6-19d2-4a56-9e3a-6beb7076a092",
+      "chunk_content": "2. Giới hạn và liên tục hàm một biến › f (x) = signx =\nGiới hạn của hàm số\nGiới hạn của hàm sốtừmột phía\nVí dụ\n{ 1, x > 0\nf (x) = signx = 0, x = 0\n{ −1, x < 0\nDễdàng thấy rằng\nf (0 + 0) = lim_(x→0+0) f (x) = 1\ncòn\nf (0 − 0) = lim_(x→0−0) f (x) = −1.\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN - TÍNH LIÊN TỤC CỦA HÀM MỘT BIẾN\nTP. HCM — 2013.\n10 / 53\nGiới hạn của hàm số\nGiới hạn của hàm số từ một phía\nCho $a \\in \\mathbb{R}$ là điểm giới hạn của tập hợp\n$X_a^+ = \\{x \\in X \\setminus x > a\\}$ và tập hợp\n$X_a^- = \\{x \\in X \\setminus x < a\\}$. Khi đó $a$ cũng là điểm\ngiới hạn của tập hợp $X$. Khi đó ta có định lý sau:\nĐịnh lý\nĐẳng thức $\\lim_{x \\to a} f(x) = A$ tương đương với 2 đẳng\nthức sau\n$\\begin{cases} \\lim_{x \\to a+0} f(x) = A \\\\ \\lim_{x \\to a-0} f(x) = A \\end{cases}$\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN - TÍNH LIÊN TỤC CỦA HÀM MỘT BIẾN\nTP. HCM — 2013.",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "**Các dạng không phải vô định** (cho kết quả xác định ngay): a/0 = ∞ (với a ≠ 0); a/∞ = 0; ∞/a = ∞; a.∞ = ∞ (với a ≠ 0); q^∞ = 0 (với |q| < 1).",
+      "source_id": "S10",
+      "start": 2511,
+      "end": 2654,
+      "marker_start": 2655,
+      "marker_end": 2660,
+      "locator": "{\"spans\": [{\"page\": 13, \"heading\": \"Các dạng không phải vô định\", \"extraction_method\": \"text_layer\"}, {\"page\": 13, \"heading\": \"7 dạng vô định trong giới hạn hàm số\", \"extraction_method\": \"text_layer\"}, {\"page\": 13, \"heading\": \"13 / 53\", \"extraction_method\": \"text_layer\"}, {\"page\": 14, \"heading\": null, \"extraction_method\": \"text_layer\"}, {\"page\": 14, \"heading\": \"1 g(x) ⩽f (x) ⩽h(x) với mọi ∀x ∈O(a, ε)\", \"extraction_method\": \"text_layer\"}, {\"page\": 14, \"heading\": \"2 lim g(x) = A =_xlim_(→a) h(x). (A - hữu hạn)\", \"extraction_method\": \"text_layer\"}]}",
+      "chunk_id": "fa18987f-f112-4d72-9f46-c89fa28e1d05",
+      "chunk_content": "2. Giới hạn và liên tục hàm một biến › Các dạng không phải vô định\nGiới hạn của hàm số\nTính chất của giới hạn của hàm số\nPhân loại giới hạn của hàm số\nCác dạng không phải vô định\na/0 = ∞(a̸ = 0); a/(∞) = 0; (∞)/a = ∞;\na.∞ = ∞(a̸ = 0); q^∞ = 0(|q| < 1).\n7 dạng vô định trong giới hạn hàm số\n(∞)/(∞) , 0/0 , ∞−∞ , 0.∞ ,1^∞ , ∞^0 , 0^0\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN - TÍNH LIÊN TỤC CỦA HÀM MỘT BIẾN\nTP. HCM — 2013.\n13 / 53\nGiới hạn của hàm số\nTính chất của giới hạn của hàm số\nTính chất của giới hạn của hàm số\n1^o Nếu hàm sốf (x) khi x →a có giới hạn hữu\nhạn lim\n_x_→_a f (x) = A thì giới hạn đó là duy nhất.\n2^o Nếu\n1 g(x) ⩽f (x) ⩽h(x) với mọi ∀x ∈O(a, ε)\n2 lim g(x) = A =_xlim_(→a) h(x). (A - hữu hạn)\nthì lim_(x→a)^(x→a) f (x) = A.\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN - TÍNH LIÊN TỤC CỦA HÀM MỘT BIẾN\nTP. HCM — 2013.",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "**7 dạng vô định trong giới hạn hàm số:** ∞/∞, 0/0, ∞ − ∞, 0.∞, 1^∞, ∞^0, 0^0.",
+      "source_id": "S10",
+      "start": 2663,
+      "end": 2741,
+      "marker_start": 2742,
+      "marker_end": 2747,
+      "locator": "{\"spans\": [{\"page\": 13, \"heading\": \"Các dạng không phải vô định\", \"extraction_method\": \"text_layer\"}, {\"page\": 13, \"heading\": \"7 dạng vô định trong giới hạn hàm số\", \"extraction_method\": \"text_layer\"}, {\"page\": 13, \"heading\": \"13 / 53\", \"extraction_method\": \"text_layer\"}, {\"page\": 14, \"heading\": null, \"extraction_method\": \"text_layer\"}, {\"page\": 14, \"heading\": \"1 g(x) ⩽f (x) ⩽h(x) với mọi ∀x ∈O(a, ε)\", \"extraction_method\": \"text_layer\"}, {\"page\": 14, \"heading\": \"2 lim g(x) = A =_xlim_(→a) h(x). (A - hữu hạn)\", \"extraction_method\": \"text_layer\"}]}",
+      "chunk_id": "fa18987f-f112-4d72-9f46-c89fa28e1d05",
+      "chunk_content": "2. Giới hạn và liên tục hàm một biến › Các dạng không phải vô định\nGiới hạn của hàm số\nTính chất của giới hạn của hàm số\nPhân loại giới hạn của hàm số\nCác dạng không phải vô định\na/0 = ∞(a̸ = 0); a/(∞) = 0; (∞)/a = ∞;\na.∞ = ∞(a̸ = 0); q^∞ = 0(|q| < 1).\n7 dạng vô định trong giới hạn hàm số\n(∞)/(∞) , 0/0 , ∞−∞ , 0.∞ ,1^∞ , ∞^0 , 0^0\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN - TÍNH LIÊN TỤC CỦA HÀM MỘT BIẾN\nTP. HCM — 2013.\n13 / 53\nGiới hạn của hàm số\nTính chất của giới hạn của hàm số\nTính chất của giới hạn của hàm số\n1^o Nếu hàm sốf (x) khi x →a có giới hạn hữu\nhạn lim\n_x_→_a f (x) = A thì giới hạn đó là duy nhất.\n2^o Nếu\n1 g(x) ⩽f (x) ⩽h(x) với mọi ∀x ∈O(a, ε)\n2 lim g(x) = A =_xlim_(→a) h(x). (A - hữu hạn)\nthì lim_(x→a)^(x→a) f (x) = A.\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN - TÍNH LIÊN TỤC CỦA HÀM MỘT BIẾN\nTP. HCM — 2013.",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "Điểm phân biệt để phân loại: ở dạng không phải vô định, việc thay giá trị giới hạn của các thành phần cho ngay kết quả (hữu hạn hoặc vô cùng) theo các quy tắc trên; ở 7 dạng vô định thì không thể kết luận trực tiếp mà phải biến đổi.",
+      "source_id": "S10",
+      "start": 2750,
+      "end": 2982,
+      "marker_start": 2983,
+      "marker_end": 2988,
+      "locator": "{\"spans\": [{\"page\": 13, \"heading\": \"Các dạng không phải vô định\", \"extraction_method\": \"text_layer\"}, {\"page\": 13, \"heading\": \"7 dạng vô định trong giới hạn hàm số\", \"extraction_method\": \"text_layer\"}, {\"page\": 13, \"heading\": \"13 / 53\", \"extraction_method\": \"text_layer\"}, {\"page\": 14, \"heading\": null, \"extraction_method\": \"text_layer\"}, {\"page\": 14, \"heading\": \"1 g(x) ⩽f (x) ⩽h(x) với mọi ∀x ∈O(a, ε)\", \"extraction_method\": \"text_layer\"}, {\"page\": 14, \"heading\": \"2 lim g(x) = A =_xlim_(→a) h(x). (A - hữu hạn)\", \"extraction_method\": \"text_layer\"}]}",
+      "chunk_id": "fa18987f-f112-4d72-9f46-c89fa28e1d05",
+      "chunk_content": "2. Giới hạn và liên tục hàm một biến › Các dạng không phải vô định\nGiới hạn của hàm số\nTính chất của giới hạn của hàm số\nPhân loại giới hạn của hàm số\nCác dạng không phải vô định\na/0 = ∞(a̸ = 0); a/(∞) = 0; (∞)/a = ∞;\na.∞ = ∞(a̸ = 0); q^∞ = 0(|q| < 1).\n7 dạng vô định trong giới hạn hàm số\n(∞)/(∞) , 0/0 , ∞−∞ , 0.∞ ,1^∞ , ∞^0 , 0^0\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN - TÍNH LIÊN TỤC CỦA HÀM MỘT BIẾN\nTP. HCM — 2013.\n13 / 53\nGiới hạn của hàm số\nTính chất của giới hạn của hàm số\nTính chất của giới hạn của hàm số\n1^o Nếu hàm sốf (x) khi x →a có giới hạn hữu\nhạn lim\n_x_→_a f (x) = A thì giới hạn đó là duy nhất.\n2^o Nếu\n1 g(x) ⩽f (x) ⩽h(x) với mọi ∀x ∈O(a, ε)\n2 lim g(x) = A =_xlim_(→a) h(x). (A - hữu hạn)\nthì lim_(x→a)^(x→a) f (x) = A.\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN - TÍNH LIÊN TỤC CỦA HÀM MỘT BIẾN\nTP. HCM — 2013.",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "Các dạng vô định là đối tượng của những kỹ thuật xử lý riêng đã có trong tài liệu, ví dụ dạng 0/0 gắn với giới hạn vô cùng bé.",
+      "source_id": "S10",
+      "start": 2991,
+      "end": 3117,
+      "marker_start": 3118,
+      "marker_end": 3123,
+      "locator": "{\"spans\": [{\"page\": 13, \"heading\": \"Các dạng không phải vô định\", \"extraction_method\": \"text_layer\"}, {\"page\": 13, \"heading\": \"7 dạng vô định trong giới hạn hàm số\", \"extraction_method\": \"text_layer\"}, {\"page\": 13, \"heading\": \"13 / 53\", \"extraction_method\": \"text_layer\"}, {\"page\": 14, \"heading\": null, \"extraction_method\": \"text_layer\"}, {\"page\": 14, \"heading\": \"1 g(x) ⩽f (x) ⩽h(x) với mọi ∀x ∈O(a, ε)\", \"extraction_method\": \"text_layer\"}, {\"page\": 14, \"heading\": \"2 lim g(x) = A =_xlim_(→a) h(x). (A - hữu hạn)\", \"extraction_method\": \"text_layer\"}]}",
+      "chunk_id": "fa18987f-f112-4d72-9f46-c89fa28e1d05",
+      "chunk_content": "2. Giới hạn và liên tục hàm một biến › Các dạng không phải vô định\nGiới hạn của hàm số\nTính chất của giới hạn của hàm số\nPhân loại giới hạn của hàm số\nCác dạng không phải vô định\na/0 = ∞(a̸ = 0); a/(∞) = 0; (∞)/a = ∞;\na.∞ = ∞(a̸ = 0); q^∞ = 0(|q| < 1).\n7 dạng vô định trong giới hạn hàm số\n(∞)/(∞) , 0/0 , ∞−∞ , 0.∞ ,1^∞ , ∞^0 , 0^0\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN - TÍNH LIÊN TỤC CỦA HÀM MỘT BIẾN\nTP. HCM — 2013.\n13 / 53\nGiới hạn của hàm số\nTính chất của giới hạn của hàm số\nTính chất của giới hạn của hàm số\n1^o Nếu hàm sốf (x) khi x →a có giới hạn hữu\nhạn lim\n_x_→_a f (x) = A thì giới hạn đó là duy nhất.\n2^o Nếu\n1 g(x) ⩽f (x) ⩽h(x) với mọi ∀x ∈O(a, ε)\n2 lim g(x) = A =_xlim_(→a) h(x). (A - hữu hạn)\nthì lim_(x→a)^(x→a) f (x) = A.\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN - TÍNH LIÊN TỤC CỦA HÀM MỘT BIẾN\nTP. HCM — 2013.",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "Các dạng vô định là đối tượng của những kỹ thuật xử lý riêng đã có trong tài liệu, ví dụ dạng 0/0 gắn với giới hạn vô cùng bé.",
+      "source_id": "S12",
+      "start": 2991,
+      "end": 3117,
+      "marker_start": 3123,
+      "marker_end": 3128,
+      "locator": "{\"spans\": [{\"page\": 16, \"heading\": null, \"extraction_method\": \"text_layer\"}, {\"page\": 16, \"heading\": \"16 / 53\", \"extraction_method\": \"text_layer\"}, {\"page\": 17, \"heading\": \"Tìm giới hạn I = lim\", \"extraction_method\": \"text_layer\"}, {\"page\": 17, \"heading\": \"17 / 53\", \"extraction_method\": \"text_layer\"}]}",
+      "chunk_id": "c965d0a8-0feb-484d-baea-359dc7f7df8c",
+      "chunk_content": "2. Giới hạn và liên tục hàm một biến\nGiới hạn của hàm số\nGiới hạn của hàm hợp\nĐịnh lý\nCho lim_(x→a) f (x) = b, lim_(y→b) g(y) = c và tồn tại số\nδ_0 > 0 sao cho với mọi ∀x ∈ X \\ a thỏa mãn bất\nđẳng thức |x − a| < δ luôn có f (x)̸ = b thì giới\nhạn của hàm hợp là lim_(x→a)^0 g(f (x)) = c.\nVí dụ\nlim_(x→0) sin(x^2 + 2x + 3) = sin 3 vì\nlim_(x→0) x^2 + 2x + 3 = 3 và lim_(y→3) sin y = sin 3\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN - TÍNH LIÊN TỤC CỦA HÀM MỘT BIẾN\nTP. HCM — 2013.\n16 / 53\nGiới hạn vô cùng bé của hàm số\nGiới hạn vô cùng bé của hàm số\nTìm giới hạn I = lim_(x→a) (f (x))/(g(x)) = 0/0\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN - TÍNH LIÊN TỤC CỦA HÀM MỘT BIẾN\nTP. HCM — 2013.\n17 / 53",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "**Điểm giới hạn của tập hợp:** nếu a ∈ ℝ là điểm giới hạn của tập hợp X ⊂ ℝ thì tồn tại dãy số (x_n) ⊂ X \\ {a} hội tụ về a, tức x_n → a.",
+      "source_id": "S3",
+      "start": 3176,
+      "end": 3312,
+      "marker_start": 3313,
+      "marker_end": 3317,
+      "locator": "{\"spans\": [{\"page\": 5, \"heading\": null, \"extraction_method\": \"vision\"}, {\"page\": 5, \"heading\": \"1 số cố định nào đó.\", \"extraction_method\": \"vision\"}]}",
+      "chunk_id": "eb3aaaec-20f7-459a-bda2-34930bb6ea19",
+      "chunk_content": "2. Giới hạn và liên tục hàm một biến\nGiới hạn của hàm số Định nghĩa điểm giới hạn\nĐịnh nghĩa điểm giới hạn\nCho $X \\subset \\mathbb{R}$ là 1 tập hợp số nào đó, còn $a \\in \\mathbb{R}$ là\n1 số cố định nào đó.\nĐịnh nghĩa\nNếu số $a \\in \\mathbb{R}$ là điểm giới hạn của tập hợp\n$X \\subset \\mathbb{R}$, thì tồn tại dãy số $(x_n) \\subset X \\setminus a$ hội tụ về\nđiểm $a$ này $x_n \\to a$.\nĐịnh nghĩa\nTập hợp $(a - \\varepsilon, a + \\varepsilon)$, với $\\varepsilon > 0$ là số tùy ý, được\ngọi là lân cận của $a$. Kí hiệu $O(a, \\varepsilon)$.\nTS. Lê Xuân Đại (BK TPHCM) GIỚI HẠN - TÍNH LIÊN TỤC CỦA HÀM MỘT BIẾN TP. HCM — 2013. 5 / 53",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "**Lân cận:** tập hợp (a − ε, a + ε) với ε > 0 tùy ý được gọi là lân cận của a, ký hiệu O(a, ε).",
+      "source_id": "S3",
+      "start": 3320,
+      "end": 3415,
+      "marker_start": 3416,
+      "marker_end": 3420,
+      "locator": "{\"spans\": [{\"page\": 5, \"heading\": null, \"extraction_method\": \"vision\"}, {\"page\": 5, \"heading\": \"1 số cố định nào đó.\", \"extraction_method\": \"vision\"}]}",
+      "chunk_id": "eb3aaaec-20f7-459a-bda2-34930bb6ea19",
+      "chunk_content": "2. Giới hạn và liên tục hàm một biến\nGiới hạn của hàm số Định nghĩa điểm giới hạn\nĐịnh nghĩa điểm giới hạn\nCho $X \\subset \\mathbb{R}$ là 1 tập hợp số nào đó, còn $a \\in \\mathbb{R}$ là\n1 số cố định nào đó.\nĐịnh nghĩa\nNếu số $a \\in \\mathbb{R}$ là điểm giới hạn của tập hợp\n$X \\subset \\mathbb{R}$, thì tồn tại dãy số $(x_n) \\subset X \\setminus a$ hội tụ về\nđiểm $a$ này $x_n \\to a$.\nĐịnh nghĩa\nTập hợp $(a - \\varepsilon, a + \\varepsilon)$, với $\\varepsilon > 0$ là số tùy ý, được\ngọi là lân cận của $a$. Kí hiệu $O(a, \\varepsilon)$.\nTS. Lê Xuân Đại (BK TPHCM) GIỚI HẠN - TÍNH LIÊN TỤC CỦA HÀM MỘT BIẾN TP. HCM — 2013. 5 / 53",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "**Định nghĩa theo dãy:** cho hàm số f(x) xác định trên tập hợp X ⊂ ℝ và a ∈ ℝ là điểm giới hạn của X; số A ∈ ℝ được gọi là giới hạn của hàm số f(x) khi x → a nếu với mọi dãy (x_n) ⊂ X \\ {a} hội tụ về a (x_n → a), dãy giá trị tương ứng của hàm số hội tụ về A (f(x_n) → A).",
+      "source_id": "S4",
+      "start": 3423,
+      "end": 3694,
+      "marker_start": 3695,
+      "marker_end": 3699,
+      "locator": "{\"spans\": [{\"page\": 6, \"heading\": null, \"extraction_method\": \"text_layer\"}, {\"page\": 6, \"heading\": \"6 / 53\", \"extraction_method\": \"text_layer\"}]}",
+      "chunk_id": "3b3c75d5-b3c5-4359-b94f-78d0390c8d32",
+      "chunk_content": "2. Giới hạn và liên tục hàm một biến\nGiới hạn của hàm số Định nghĩa giới hạn của hàm số\nCho hàm số f (x) xác định trên tập hợp X ⊂ ℝ và\na ∈ ℝ là điểm giới hạn của tập hợp X này.\nĐịnh nghĩa\nSố A ∈ ℝ được gọi là giới hạn của hàm số f (x)\nkhi x → a, nếu như với mọi dãy ∀(x_n) ⊂ X \\ a hội\ntụ về a : x_n → a, dãy giá trị của hàm số tương\nứng hội tụ về A : f (x_n) → A.\nVí dụ\nGiới hạn của hàm số f (x) = x + 1, khi x → 0 là 1\nvì với ∀x_n → 0 thì f (x_n) = x_n + 1 → 1.\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN - TÍNH LIÊN TỤC CỦA HÀM MỘT BIẾN\nTP. HCM — 2013.\n6 / 53",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "**Ví dụ áp dụng:** giới hạn của f(x) = x + 1 khi x → 0 là 1, vì với mọi x_n → 0 thì f(x_n) = x_n + 1 → 1.",
+      "source_id": "S4",
+      "start": 3702,
+      "end": 3807,
+      "marker_start": 3808,
+      "marker_end": 3812,
+      "locator": "{\"spans\": [{\"page\": 6, \"heading\": null, \"extraction_method\": \"text_layer\"}, {\"page\": 6, \"heading\": \"6 / 53\", \"extraction_method\": \"text_layer\"}]}",
+      "chunk_id": "3b3c75d5-b3c5-4359-b94f-78d0390c8d32",
+      "chunk_content": "2. Giới hạn và liên tục hàm một biến\nGiới hạn của hàm số Định nghĩa giới hạn của hàm số\nCho hàm số f (x) xác định trên tập hợp X ⊂ ℝ và\na ∈ ℝ là điểm giới hạn của tập hợp X này.\nĐịnh nghĩa\nSố A ∈ ℝ được gọi là giới hạn của hàm số f (x)\nkhi x → a, nếu như với mọi dãy ∀(x_n) ⊂ X \\ a hội\ntụ về a : x_n → a, dãy giá trị của hàm số tương\nứng hội tụ về A : f (x_n) → A.\nVí dụ\nGiới hạn của hàm số f (x) = x + 1, khi x → 0 là 1\nvì với ∀x_n → 0 thì f (x_n) = x_n + 1 → 1.\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN - TÍNH LIÊN TỤC CỦA HÀM MỘT BIẾN\nTP. HCM — 2013.\n6 / 53",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "**Hệ quả phủ định (dùng để chứng minh không tồn tại giới hạn):** nếu tồn tại hai dãy (x_n), (y_n) cùng hội tụ về a nhưng f(x_n) và f(y_n) tiến tới hai giới hạn khác nhau thì KHÔNG TỒN TẠI giới hạn lim_(x→a) f(x).",
+      "source_id": "S6",
+      "start": 3815,
+      "end": 4027,
+      "marker_start": 4028,
+      "marker_end": 4032,
+      "locator": "{\"spans\": [{\"page\": 8, \"heading\": null, \"extraction_method\": \"text_layer\"}, {\"page\": 8, \"heading\": \"8 / 53\", \"extraction_method\": \"text_layer\"}]}",
+      "chunk_id": "9a9f9fc3-aafe-4f11-856a-974ddfb67ec5",
+      "chunk_content": "2. Giới hạn và liên tục hàm một biến\nGiới hạn của hàm số\nĐịnh nghĩa giới hạn của hàm số\nChú ý. Nếu tồn tại 2 dãy (x_n), (y_n) cùng hội tụvề\na nhưng f (x_n), f (y_n) tiến tới 2 giới hạn khác nhau\nthì KHÔNG TỒN TẠI giới hạn lim\n_x_→_a f (x).\nVí dụ\nTìm I = lim_(x→0) sin 1/x\nXét 2 dãy x_n = 1/(2πn+π/2) → 0 và y_n = 1/nπ → 0. Ta có\nlim_(n→∞) f (x_n) = lim_(n→∞) sin(2πn + π/2) = lim_(n→∞) sin(π/2) = 1\nvà lim_(n→∞) f (y_n) = lim_(n→∞) sin(πn) = 0. Vậy ∄I .\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN - TÍNH LIÊN TỤC CỦA HÀM MỘT BIẾN\nTP. HCM — 2013.\n8 / 53",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "**Lưu ý khi vận dụng định nghĩa theo dãy:** không được dùng trực tiếp các quy tắc vi phân cho dãy số rời rạc — chẳng hạn với I = lim_(n→∞) (ln n)/n, việc viết lim_(n→∞) (ln n)/n = lim_(n→∞) (1/n)/1 = 0 theo L'Hopital là SAI vì KHÔNG TỒN TẠI (ln n)′ và (n)′ với n ∈ ℕ.",
+      "source_id": "S5",
+      "start": 4035,
+      "end": 4302,
+      "marker_start": 4303,
+      "marker_end": 4307,
+      "locator": "{\"page\": 7, \"heading\": null, \"extraction_method\": \"text_layer\"}",
+      "chunk_id": "206d0df3-8b5c-4dc0-8186-def736f395c9",
+      "chunk_content": "2. Giới hạn và liên tục hàm một biến\nGiới hạn của hàm số\nĐịnh nghĩa giới hạn của hàm số\nVí dụ\nTìm giới hạn I = lim_(n→∞)\nn\nln n\nlim_(n→∞) (ln n)/n = lim_(n→∞) (1/n)/1 = 0(theo L’ Hopital) ⇒ SAI\nvì KHÔNG TỒN TẠI (ln n)^′, (n)^′, n ∈ ℕ.\nCách giải đúng.\nlim_(x→∞) (ln x)/x = lim_(x→∞) (1/x)/1 = 0(theo L’ Hopital). Do đó\ntheo định nghĩa giới hạn của hàm số với\nx_n = n → ∞, ta có f (x_n) = (ln n)/n → 0. Vậy I = 0.\nTS. Lê Xuân Đại (BK TPHCM) GIỚI HẠN - TÍNH LIÊN TỤC CỦA HÀM MỘT BIẾN TP. HCM — 2013. 7 / 53",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "**Cách đúng trong ví dụ trên:** tính lim_(x→∞) (ln x)/x = lim_(x→∞) (1/x)/1 = 0 (theo L'Hopital) trên biến liên tục, rồi áp dụng định nghĩa giới hạn của hàm số với x_n = n → ∞ để suy ra f(x_n) = (ln n)/n → 0, tức I = 0.",
+      "source_id": "S5",
+      "start": 4310,
+      "end": 4529,
+      "marker_start": 4530,
+      "marker_end": 4534,
+      "locator": "{\"page\": 7, \"heading\": null, \"extraction_method\": \"text_layer\"}",
+      "chunk_id": "206d0df3-8b5c-4dc0-8186-def736f395c9",
+      "chunk_content": "2. Giới hạn và liên tục hàm một biến\nGiới hạn của hàm số\nĐịnh nghĩa giới hạn của hàm số\nVí dụ\nTìm giới hạn I = lim_(n→∞)\nn\nln n\nlim_(n→∞) (ln n)/n = lim_(n→∞) (1/n)/1 = 0(theo L’ Hopital) ⇒ SAI\nvì KHÔNG TỒN TẠI (ln n)^′, (n)^′, n ∈ ℕ.\nCách giải đúng.\nlim_(x→∞) (ln x)/x = lim_(x→∞) (1/x)/1 = 0(theo L’ Hopital). Do đó\ntheo định nghĩa giới hạn của hàm số với\nx_n = n → ∞, ta có f (x_n) = (ln n)/n → 0. Vậy I = 0.\nTS. Lê Xuân Đại (BK TPHCM) GIỚI HẠN - TÍNH LIÊN TỤC CỦA HÀM MỘT BIẾN TP. HCM — 2013. 7 / 53",
+      "resolution": "resolved"
+    }
+  ]
+}
