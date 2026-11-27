@@ -11,6 +11,7 @@ from cryptography.hazmat.primitives.asymmetric import rsa
 from fastapi.testclient import TestClient
 from sqlalchemy import select, text
 
+from app.auth.security import NO_PASSWORD
 from app.config import settings
 from app.db import RequestSessionLocal, SessionLocal
 from app.jobs.maintenance import purge_old_records
@@ -322,6 +323,16 @@ def test_an_expired_launch_code_is_refused(lms):
         db.execute(text("UPDATE lti_launch_codes SET expires_at = now() - interval '1 second'"))
         db.commit()
     assert trade(response).status_code == 401
+
+
+def test_an_lms_account_has_no_password_to_sign_in_with(lms):
+    email = trade(launch(lms)).json()["user"]["email"]
+    with SessionLocal() as db:
+        stored = db.scalar(select(User.hashed_password).where(User.email == email))
+    assert stored == NO_PASSWORD
+    # The timing sentinel's own password must not open it either.
+    for password in ("Timing sentinel local login", NO_PASSWORD):
+        assert client.post("/auth/login", json={"email": email, "password": password}).status_code == 401
 
 
 def test_the_lms_email_never_joins_an_existing_account(lms):

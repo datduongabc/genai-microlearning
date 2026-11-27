@@ -34,7 +34,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.auth.accounts import AccountError, clean_name, normalize_email
-from app.auth.security import hash_password
+from app.auth.security import NO_PASSWORD
 from app.config import settings
 from app.models import (
     Course,
@@ -289,8 +289,7 @@ def _new_user(db: Session, claims: LaunchClaims, moodle_user_id: int | None, *, 
     user = User(
         email=email or f"lti-{uuid.uuid4().hex}@lti.invalid",
         name=name[:100],
-        # A password nobody knows: this account signs in through the LMS only.
-        hashed_password=hash_password(secrets.token_urlsafe(32)),
+        hashed_password=NO_PASSWORD,
         moodle_user_id=moodle_user_id,
         can_author=can_author,
     )

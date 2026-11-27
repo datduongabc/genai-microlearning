@@ -163,6 +163,11 @@ class Settings(BaseSettings):
     api_queue_timeout_seconds: float = Field(default=30, gt=0)
     # memory:// is exact only for one process; several API processes must share a store.
     rate_limit_storage_uri: str = Field(default="memory://", repr=False)
+    # Per address, for the steps every learner takes without a password: the LTI launch and keeping a
+    # session alive. A campus reaches us through one or a few addresses, so at 60 a minute most of a
+    # class was refused at the start of a lesson (docs/measurements/2026-11-27-lti-launch.md); 1000 a
+    # minute lets a few thousand learners share one. Password sign-in keeps its own tight limit.
+    shared_address_requests_per_minute: int = Field(default=1000, ge=1)
 
     # Largest body accepted for anything that is not an upload. The biggest legitimate
     # one is an edited module component, a few tens of kilobytes.

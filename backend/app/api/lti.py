@@ -21,7 +21,7 @@ from app.api.auth import Token, UserResponse
 from app.api.deps import is_course_author
 from app.auth import audit, sessions
 from app.auth.audit import log_auth_event
-from app.auth.rate_limit import limiter
+from app.auth.rate_limit import limiter, shared_address_limit
 from app.auth.security import create_access_token
 from app.config import settings
 from app.db import get_db
@@ -62,7 +62,7 @@ async def _params(request: Request) -> dict[str, str]:
 # the same operation id twice, so each method is registered on its own.
 @router.get("/lti/login", operation_id="lti_login_get")
 @router.post("/lti/login", operation_id="lti_login_post")
-@limiter.limit("60/minute")
+@limiter.limit(shared_address_limit)
 async def lti_login(request: Request, db: Session = Depends(get_db)):
     params = await _params(request)
     if not params.get("iss") or not params.get("login_hint"):
@@ -80,7 +80,7 @@ async def lti_login(request: Request, db: Session = Depends(get_db)):
 
 
 @router.post("/lti/launch")
-@limiter.limit("60/minute")
+@limiter.limit(shared_address_limit)
 def lti_launch(request: Request, id_token: str = Form(max_length=20_000), state: str = Form(max_length=200),
                db: Session = Depends(get_db)):
     try:
@@ -111,7 +111,7 @@ class LtiToken(Token):
 
 
 @router.post("/lti/session", response_model=LtiToken)
-@limiter.limit("30/minute")
+@limiter.limit(shared_address_limit)
 def lti_session(request: Request, payload: ExchangeRequest, db: Session = Depends(get_db)):
     try:
         user, course_id = lti.exchange(db, payload.code)
