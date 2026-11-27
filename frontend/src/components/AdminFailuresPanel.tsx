@@ -1,4 +1,4 @@
-import { ChevronDown, RefreshCw } from "lucide-react";
+import { ChevronDown, FileWarning, RefreshCw, ServerCrash } from "lucide-react";
 import { Fragment, useEffect, useState } from "react";
 import { notifyDone, notifyFailed } from "../lib/notify";
 import { apiErrorMessage, listFailedJobs, retryFailedJobs, type AdminCounts, type FailedJobInfo } from "../api";
@@ -22,7 +22,8 @@ const FILTERS = {
 type Filter = keyof typeof FILTERS | "all";
 
 // The failed jobs of every lecturer: job data, the document's file name and the course name,
-// never what is inside them. Retry one, or pick several and retry them together.
+// never what is inside them. Retry one, or pick several and retry them together, once the cause is
+// fixed: only what the system failed. A failure in the lecturer's input is theirs to fix and retry.
 export function AdminFailuresPanel({ counts, onChange }: { counts: AdminCounts | null; onChange: () => void }) {
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [jobs, setJobs] = useState<FailedJobInfo[] | null>(null);
@@ -79,11 +80,14 @@ export function AdminFailuresPanel({ counts, onChange }: { counts: AdminCounts |
     setRetrying(true);
     try {
       const result = await retryFailedJobs(ids);
-      const videoOnly = Object.keys(result.reasons).length;
-      const stale = result.skipped.length - videoOnly;
+      const explained = Object.keys(result.reasons).length;
+      const stale = result.skipped.length - explained;
+      // One line per reason the server gave, with how many jobs it held back.
+      const byReason = new Map<string, number>();
+      Object.values(result.reasons).forEach((reason) => byReason.set(reason, (byReason.get(reason) ?? 0) + 1));
       const skipped =
         (stale > 0 ? ` ${stale} tác vụ được bỏ qua vì không còn lỗi.` : "") +
-        (videoOnly > 0 ? ` ${videoOnly} tác vụ video cần chạy lại từ trang sửa video.` : "");
+        [...byReason].map(([reason, count]) => ` ${count} tác vụ: ${reason}`).join("");
       notifyDone(`Đã chạy lại ${result.retried.length} tác vụ.${skipped}`);
       reload();
     } catch (err) {
@@ -93,7 +97,8 @@ export function AdminFailuresPanel({ counts, onChange }: { counts: AdminCounts |
     }
   }
 
-  const allPicked = jobs !== null && jobs.length > 0 && jobs.every((j) => selected.has(j.id));
+  const retriable = (jobs ?? []).filter((j) => j.system_failure);
+  const allPicked = retriable.length > 0 && retriable.every((j) => selected.has(j.id));
 
   return (
     <div>
@@ -123,24 +128,30 @@ export function AdminFailuresPanel({ counts, onChange }: { counts: AdminCounts |
         <div className="jobs-table ui-card">
           <table><thead><tr>
             <th><label className="select-all"><input type="checkbox" aria-label="Chọn tất cả" checked={allPicked}
-              onChange={() => setSelected(allPicked ? new Set() : new Set(jobs.map((j) => j.id)))} /><span aria-hidden="true">Chọn tất cả</span></label></th>
-            <th>Tài liệu</th><th>Loại tác vụ</th><th>Người dùng</th><th>Thời gian</th><th>Lỗi</th><th><span className="sr-only">Thao tác</span></th>
+              disabled={retriable.length === 0}
+              onChange={() => setSelected(allPicked ? new Set() : new Set(retriable.map((j) => j.id)))} /><span aria-hidden="true">Chọn tất cả</span></label></th>
+            <th>Tài liệu</th><th>Loại tác vụ</th><th>Người dùng</th><th>Thời gian</th><th>Nguyên nhân</th><th>Lỗi</th><th><span className="sr-only">Thao tác</span></th>
           </tr></thead><tbody>
             {jobs.map((job) => <Fragment key={job.id}>
               <tr>
-                <td><input type="checkbox" aria-label={`Chọn ${job.document_filename}`} checked={selected.has(job.id)} onChange={() => toggle(job.id)} /></td>
+                <td>{job.system_failure && <input type="checkbox" aria-label={`Chọn ${job.document_filename}`} checked={selected.has(job.id)} onChange={() => toggle(job.id)} />}</td>
                 <td><div className="font-semibold truncate" title={job.document_filename}>{job.document_filename}</div><div className="small muted truncate" title={job.course_name}>{job.course_name}</div></td>
                 <td className="small">{JOB_TYPE_LABEL[job.job_type]}</td>
                 <td className="small">{job.owner_name}</td>
                 <td className="small muted">{new Date(job.created_at).toLocaleString("vi-VN")}</td>
+                <td className="small">{job.system_failure
+                  ? <span className="failure-cause" data-cause="system"><ServerCrash aria-hidden="true" className="size-3.5" />Sự cố hệ thống</span>
+                  : <span className="failure-cause" data-cause="input"><FileWarning aria-hidden="true" className="size-3.5" />Nội dung giảng viên</span>}</td>
                 <td><p className={`small truncate ${job.last_error ? "danger-text" : "muted"}`}>{job.last_error || "—"}</p></td>
                 <td><div className="flex gap-2">
-                  <button className="ui-button" aria-label={`Thử lại ${job.document_filename}`} disabled={retrying} onClick={() => handleRetry([job.id])}>Thử lại</button>
+                  {job.system_failure
+                    ? <button className="ui-button" aria-label={`Thử lại ${job.document_filename}`} disabled={retrying} onClick={() => handleRetry([job.id])}>Thử lại</button>
+                    : <span className="small muted handled-by" title="Giảng viên tự sửa nội dung rồi thử lại">Giảng viên xử lý</span>}
                   <button className="expand-job" aria-label={`Chi tiết ${job.document_filename}`} aria-expanded={expanded.has(job.id)}
                     aria-controls={expanded.has(job.id) ? `job-${job.id}` : undefined} onClick={() => toggleExpanded(job.id)}><ChevronDown aria-hidden="true" className="size-4" /></button>
                 </div></td>
               </tr>
-              {expanded.has(job.id) && <tr id={`job-${job.id}`}><td colSpan={7} className="job-detail">
+              {expanded.has(job.id) && <tr id={`job-${job.id}`}><td colSpan={8} className="job-detail">
                 {job.last_error && <pre>{job.last_error}</pre>}
                 <p className="small muted">Bước {job.step}, thử {job.attempts}/{job.max_attempts} lần, {job.owner_email}</p>
               </td></tr>}

@@ -34,7 +34,7 @@ function failedJob(id: string, overrides: Partial<FailedJobInfo> = {}): FailedJo
   return {
     id, job_type: 'document_pipeline', step: 'extract', attempts: 5, max_attempts: 5, last_error: `error of ${id}`,
     created_at: '2026-01-01T00:00:00Z', document_filename: `${id}.pdf`, course_name: 'AI 101',
-    owner_name: 'Lan Nguyễn', owner_email: 'lan@example.com', module_id: null, ...overrides,
+    owner_name: 'Lan Nguyễn', owner_email: 'lan@example.com', module_id: null, system_failure: true, ...overrides,
   }
 }
 
@@ -359,8 +359,28 @@ describe('AdminPage - failed jobs', () => {
     await userEvent.click(await screen.findByRole('checkbox', { name: 'Chọn tất cả' }))
     await userEvent.click(screen.getByRole('button', { name: 'Thử lại 2 tác vụ đã chọn' }))
 
-    expect(await screen.findByText(/1 tác vụ video cần chạy lại từ trang sửa video/i)).toBeInTheDocument()
+    expect(await screen.findByText(/1 tác vụ: Hãy bấm Vẽ lại \/ Dựng lại trong trình sửa video/i)).toBeInTheDocument()
     expect(screen.queryByText(/không còn ở trạng thái lỗi/i)).not.toBeInTheDocument()
+  })
+
+  it('leaves a failure in the lecturer input to the lecturer: no pick, no retry, the cause said in words', async () => {
+    vi.mocked(api.listFailedJobs).mockResolvedValue([
+      failedJob('outage'),
+      failedJob('broken', { system_failure: false, last_error: 'Tệp PDF bị hỏng' }),
+    ])
+    vi.mocked(api.retryFailedJobs).mockResolvedValue({ retried: ['outage'], skipped: [], reasons: {} })
+    await openFailures()
+
+    expect(await screen.findByText('Sự cố hệ thống')).toBeInTheDocument()
+    expect(screen.getByText('Nội dung giảng viên')).toBeInTheDocument()
+    expect(screen.getByText('Giảng viên xử lý')).toBeInTheDocument()
+    expect(screen.queryByRole('checkbox', { name: 'Chọn broken.pdf' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Thử lại broken.pdf' })).not.toBeInTheDocument()
+
+    // Pick all takes only what the admin may retry.
+    await userEvent.click(screen.getByRole('checkbox', { name: 'Chọn tất cả' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Thử lại 1 tác vụ đã chọn' }))
+    expect(api.retryFailedJobs).toHaveBeenCalledWith(['outage'])
   })
 })
 

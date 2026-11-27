@@ -176,6 +176,7 @@ def test_invalid_input_does_not_consume_and_retry_does_not_charge_again(world):
         job = db.get(Job, uuid.UUID(job_id))
         job.status = JobStatus.failed
         job.attempts = job.max_attempts
+        job.system_failure = True  # an outage: what the admin may retry
         db.commit()
         assert db.get(User, uid).generation_count == 1
     response = client.post('/admin/jobs/retry', headers=admin_headers(), json={'job_ids': [job_id]})

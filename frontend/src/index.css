@@ -166,8 +166,13 @@ h1[tabindex="-1"]:focus-visible { outline:none; }
 .jobs-table table { table-layout:fixed; width:100%; min-width:850px; border-collapse:collapse; }
 .jobs-table th { background:var(--bg-subtle); font-size:14px; line-height:20px; text-align:left; font-weight:600; color:var(--text-secondary); }
 .jobs-table td, .jobs-table th { padding:12px 8px; border-bottom:1px solid var(--border-default); }
-.jobs-table th:first-child { width:40px; } .jobs-table th:nth-child(2) { width:23%; } .jobs-table th:nth-child(3) { width:12%; } .jobs-table th:nth-child(4) { width:14%; } .jobs-table th:nth-child(5) { width:13%; } .jobs-table th:last-child { width:132px; }
+.jobs-table th:first-child { width:40px; } .jobs-table th:nth-child(2) { width:20%; } .jobs-table th:nth-child(3) { width:11%; } .jobs-table th:nth-child(4) { width:12%; } .jobs-table th:nth-child(5) { width:11%; } .jobs-table th:last-child { width:176px; }
 .jobs-table input { width:16px; height:16px; accent-color:var(--accent-default); }
+.jobs-table th:nth-child(6) { width:170px; }
+/* Icon and words, not color alone: who has to act on the failure. */
+.failure-cause { display:inline-flex; align-items:center; gap:4px; white-space:nowrap; color:var(--text-secondary); }
+.jobs-table .handled-by { white-space:nowrap; }
+.failure-cause[data-cause=system] { color:var(--status-warning); }
 .expand-job { display:inline-grid; place-items:center; min-width:32px; min-height:32px; border-radius:var(--radius-sm); color:var(--text-secondary); }
 .expand-job:hover { background:var(--bg-subtle); }
 .expand-job svg { transition:transform .15s; }

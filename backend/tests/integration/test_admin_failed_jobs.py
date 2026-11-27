@@ -8,7 +8,10 @@ from datetime import UTC, datetime, timedelta
 import pytest
 from fastapi.testclient import TestClient
 
-from app.db import SessionLocal
+from app.auth.security import create_access_token, decode_token, token_user_id
+from app.db import RequestSessionLocal, SessionLocal
+from app.jobs.queue import retry_failed_job
+from app.lti.launch import act_as
 from app.main import app
 from app.models import (
     Course,
@@ -37,8 +40,9 @@ def _lecturer() -> uuid.UUID:
 
 
 def _failed(owner_id, job_type=JobType.document_pipeline, *, error="boom", status=JobStatus.failed,
-            created_at=None, document=None, payload=None):
-    """A document of `owner_id` with one job. Returns (job id, document id)."""
+            created_at=None, document=None, payload=None, system_failure=True):
+    """A document of `owner_id` with one job, failed by the system (an outage) unless
+    `system_failure` is False (the lecturer's input). Returns (job id, document id)."""
     with SessionLocal() as db:
         suffix = uuid.uuid4().hex[:8]
         if document is None:
@@ -57,7 +61,7 @@ def _failed(owner_id, job_type=JobType.document_pipeline, *, error="boom", statu
         job = Job(
             job_type=job_type, document_id=document_id,
             step="extract" if job_type == JobType.document_pipeline else "generate",
-            status=status, attempts=5, max_attempts=5, last_error=error,
+            status=status, attempts=5, max_attempts=5, last_error=error, system_failure=system_failure,
             payload=payload or {"units": ["SECRET PAYLOAD"]},
         )
         if created_at is not None:
@@ -228,6 +232,46 @@ def test_an_admin_retrying_another_lecturers_failed_set_makes_it_generating_agai
     assert response.json()["retried"] == [str(job_id)]
     with SessionLocal() as db:
         assert db.get(FlashcardSet, set_id).status == MediaStatus.generating
+
+
+def test_the_list_tells_a_system_failure_from_one_in_the_lecturers_input(admin):
+    outage, _ = _failed(_lecturer())
+    unreadable, _ = _failed(_lecturer(), system_failure=False)
+    listed = _failed_ids(admin)
+    assert listed[str(outage)]["system_failure"] is True
+    assert listed[str(unreadable)]["system_failure"] is False
+
+
+def test_an_admin_retries_what_the_system_failed_and_leaves_the_lecturers_input_to_them(admin):
+    outage, _ = _failed(_lecturer())
+    unreadable, _ = _failed(_lecturer(), error="Tệp PDF bị hỏng", system_failure=False)
+
+    body = client.post("/admin/jobs/retry", json={"job_ids": [str(outage), str(unreadable)]}, headers=admin).json()
+
+    assert body["retried"] == [str(outage)]
+    assert body["skipped"] == [str(unreadable)]
+    assert "giảng viên" in body["reasons"][str(unreadable)]
+    with SessionLocal() as db:
+        assert db.get(Job, unreadable).status == JobStatus.failed
+
+
+def test_the_database_refuses_an_admin_a_failure_in_the_lecturers_input(admin):
+    """The rule lives in retry_failed_job too, so a route that forgets the check cannot retry it."""
+    unreadable, _ = _failed(_lecturer(), system_failure=False)
+    admin_id = token_user_id(decode_token(admin["Authorization"].removeprefix("Bearer ")))
+    with RequestSessionLocal() as db:
+        act_as(db, admin_id)
+        assert retry_failed_job(db, unreadable) is False
+        db.commit()
+    with SessionLocal() as db:
+        assert db.get(Job, unreadable).status == JobStatus.failed
+
+
+def test_a_lecturer_still_retries_a_failure_in_their_own_input():
+    owner = make_account(f"jobs-{uuid.uuid4().hex[:10]}@example.com")
+    unreadable, _ = _failed(owner.id, system_failure=False)
+    headers = {"Authorization": f"Bearer {create_access_token(owner.id)}"}
+    assert client.post(f"/jobs/{unreadable}/retry", headers=headers).status_code == 200
 
 
 def test_retry_does_not_touch_a_failure_its_lecturer_already_generated_again(admin):

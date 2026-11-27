@@ -28,6 +28,9 @@ export interface FailedJobInfo {
   owner_name: string
   owner_email: string
   module_id: string | null
+  // The worker ran out of tries on an outage or something unexpected; false is a failure in the
+  // lecturer's input, which only the lecturer retries.
+  system_failure: boolean
 }
 
 // Full totals for the tab and filter labels, whatever filter or cap the lists use.

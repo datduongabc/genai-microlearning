@@ -741,7 +741,7 @@ def test_a_failed_picture_or_render_is_retried_from_the_editor_only(world, job_t
     job_id = add_job(world, video_id, job_type, JobStatus.failed)
     with SessionLocal() as db:
         other = Job(job_type=JobType.module_generation, step="generate", document_id=world["doc"],
-                    status=JobStatus.failed, attempts=5)
+                    status=JobStatus.failed, attempts=5, system_failure=True)
         db.add(other)
         db.commit()
         other_id = other.id

@@ -22,6 +22,8 @@ from app.moodle.accounts import unlink_account
 router = APIRouter(prefix="/admin", tags=["admin"], dependencies=[Depends(require_admin)])
 
 MAX_FAILED_JOBS = 200
+# Why the admin skips a failure in the lecturer's input, shown beside it.
+LECTURER_INPUT_MESSAGE = "Lỗi do nội dung giảng viên gửi lên: giảng viên tự sửa rồi thử lại."
 
 
 class RetryJobsRequest(BaseModel):
@@ -180,21 +182,25 @@ def retry_jobs(
     """Retries the failed jobs picked on the page. A job that is not failed, that its lecturer
     already generated again, or that does not exist is skipped, and the rest are still retried.
 
-    A failed picture or render is skipped too, with the reason in `reasons`: only the video editor
-    retries those, since it locks the video, waits for a job in flight and counts the day's limit."""
+    Two kinds are skipped with the reason in `reasons`. A failure in the lecturer's input (a file that
+    cannot be read, a request that cannot be met) is theirs to fix: the admin retries what the
+    system failed, once its cause is fixed. A failed picture or render is retried only by the video
+    editor, which locks the video, waits for a job in flight and counts the day's limit.
+    retry_failed_job refuses the first kind to an admin as well, so the rule holds without this check."""
     ids = list(dict.fromkeys(payload.job_ids))
     # Read through the view: row level security hides other lecturers' jobs from the admin's session.
-    editor_only = set(db.scalars(
-        text("SELECT id FROM admin_failed_jobs WHERE id = ANY(:ids) AND job_type::text = ANY(:types)"),
-        {"ids": ids, "types": [t.value for t in EDITOR_RETRIED_JOBS]}))
-    retried = [job_id for job_id in ids if job_id not in editor_only and retry_failed_job(db, job_id)]
+    rows = db.execute(text("SELECT id, job_type::text AS job_type, system_failure FROM admin_failed_jobs "
+                           "WHERE id = ANY(:ids)"), {"ids": ids}).all()
+    editor_types = {t.value for t in EDITOR_RETRIED_JOBS}
+    reasons = {row.id: EDITOR_RETRY_MESSAGE if row.job_type in editor_types else LECTURER_INPUT_MESSAGE
+               for row in rows if row.job_type in editor_types or not row.system_failure}
+    retried = [job_id for job_id in ids if job_id not in reasons and retry_failed_job(db, job_id)]
     db.commit()
     log_admin_event(
         audit.ADMIN_RETRY_JOBS, request, actor_id=admin.id,
         detail={"job_ids": [str(j) for j in retried], "skipped": len(ids) - len(retried)},
     )
-    return {"retried": retried, "skipped": [j for j in ids if j not in set(retried)],
-            "reasons": {j: EDITOR_RETRY_MESSAGE for j in ids if j in editor_only}}
+    return {"retried": retried, "skipped": [j for j in ids if j not in set(retried)], "reasons": reasons}
 
 
 @router.post("/users/{user_id}/moodle-unlink")
