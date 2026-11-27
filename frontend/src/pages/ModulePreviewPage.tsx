@@ -263,9 +263,7 @@ function ModuleChatPanel({ module, onSaved }: { module: ModuleDetail; onSaved: (
       })
       .catch((err) => {
         if (!controller.signal.aborted) {
-          setLoadError(err instanceof Error && !(err instanceof TypeError)
-            ? err.message
-            : 'Không tải được lịch sử chỉnh sửa trước.')
+          setLoadError(apiErrorMessage(err, 'Không tải được lịch sử chỉnh sửa trước.'))
         }
       })
       .finally(() => {
@@ -275,8 +273,6 @@ function ModuleChatPanel({ module, onSaved }: { module: ModuleDetail; onSaved: (
   }, [module.id])
 
   async function send({ message }: ChatEditFormValues) {
-    loadController.current?.abort()
-    setLoading(false)
     let applied = false
     try {
       const result = await chatEditModule(module.id, message, sessionId.current)
@@ -320,10 +316,10 @@ function ModuleChatPanel({ module, onSaved }: { module: ModuleDetail; onSaved: (
     </div>
     {/* oxlint-disable-next-line react/refs -- handleSubmit is react-hook-form's submit wrapper, not a ref read during render */}
     <form onSubmit={handleSubmit(send)} noValidate className="chat-form">
-      <textarea id="module-chat-message" aria-labelledby="module-chat-title" maxLength={4000} rows={3} disabled={sending}
+      <textarea id="module-chat-message" aria-labelledby="module-chat-title" maxLength={4000} rows={3} disabled={sending || loading}
         {...register('message')} className="ui-input w-full" />
       {errors.message && <p className="text-sm danger-text">{errors.message.message}</p>}
-      <button type="submit" disabled={sending || blank}
+      <button type="submit" disabled={sending || loading || blank}
         className="ui-button primary w-fit">
         {sending ? 'Đang chỉnh sửa…' : 'Gửi yêu cầu'}
       </button>
