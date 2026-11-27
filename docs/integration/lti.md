@@ -110,7 +110,7 @@ Kiểm tra trên id_token:
   Bộ thẻ lật bằng cú nhấp hoặc phím Space, có "Thẻ sau" và nguồn ở mặt sau.
   Bản nháp hoặc bản đã ngừng giao trả 404 và hiện "Không tải được...".
   Sinh viên chỉ đọc: không sinh, sửa hay giao gì.
-- **Tầng DB (migration 0027):** thành viên chỉ được SELECT khóa học, `documents` và `chunks`. Mọi thao tác ghi trên khóa và các bảng con vẫn đòi là chủ. Module, câu hỏi, job và đánh giá chỉ chủ thấy. Phiên chat thuộc về người đã chat: giảng viên không đọc chat của sinh viên, sinh viên không đọc chat của nhau.
+- **Tầng DB (migration 0027, 0049):** sinh viên (`role = 'learner'`) chỉ được SELECT khóa học, `documents` và `chunks`. Module, câu hỏi, job và đánh giá sinh viên không thấy. Giảng viên phụ (`role = 'teacher'`) đọc và ghi như chủ trên `documents`, `chunks`, `modules`, `flashcard_sets`, `videos` và các bảng con của chúng (câu hỏi, job, đánh giá). Bản thân khóa học (đổi tên, xóa, liên kết Moodle) chỉ chủ được sửa. Phiên chat thuộc về người đã chat: giảng viên không đọc chat của sinh viên, sinh viên không đọc chat của nhau.
 - **Tài khoản:** tài khoản mà launch `Learner` tạo ra có `can_author = false`, nên không tạo được khóa học. Launch `Instructor` sau đó bật lại quyền này. Nếu người đó đã là sinh viên của chính khóa ấy thì trở thành giảng viên của khóa (migration 0049).
 - **Hạn mức:** `LEARNER_DAILY_CHAT_LIMIT` (mặc định 30) tin mỗi ngày cho mỗi tài khoản sinh viên, vì mỗi tin là một lần gọi model trả tiền. Giảng viên không bị tính.
 
