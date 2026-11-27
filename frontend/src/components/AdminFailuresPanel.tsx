@@ -141,7 +141,7 @@ export function AdminFailuresPanel({ counts, onChange }: { counts: AdminCounts |
                 <td className="small muted">{new Date(job.created_at).toLocaleString("vi-VN")}</td>
                 <td className="small">{job.system_failure
                   ? <span className="failure-cause" data-cause="system"><ServerCrash aria-hidden="true" className="size-3.5" />Sự cố hệ thống</span>
-                  : <span className="failure-cause" data-cause="input"><FileWarning aria-hidden="true" className="size-3.5" />Nội dung giảng viên</span>}</td>
+                  : <span className="failure-cause" data-cause="input"><FileWarning aria-hidden="true" className="size-3.5" />Lỗi nội dung</span>}</td>
                 <td><p className={`small truncate ${job.last_error ? "danger-text" : "muted"}`}>{job.last_error || "—"}</p></td>
                 <td><div className="flex gap-2">
                   {job.system_failure

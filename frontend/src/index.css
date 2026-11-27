@@ -166,9 +166,9 @@ h1[tabindex="-1"]:focus-visible { outline:none; }
 .jobs-table table { table-layout:fixed; width:100%; min-width:850px; border-collapse:collapse; }
 .jobs-table th { background:var(--bg-subtle); font-size:14px; line-height:20px; text-align:left; font-weight:600; color:var(--text-secondary); }
 .jobs-table td, .jobs-table th { padding:12px 8px; border-bottom:1px solid var(--border-default); }
-.jobs-table th:first-child { width:40px; } .jobs-table th:nth-child(2) { width:20%; } .jobs-table th:nth-child(3) { width:11%; } .jobs-table th:nth-child(4) { width:12%; } .jobs-table th:nth-child(5) { width:11%; } .jobs-table th:last-child { width:176px; }
+.jobs-table th:first-child { width:40px; } .jobs-table th:nth-child(2) { width:18%; } .jobs-table th:nth-child(3) { width:10%; } .jobs-table th:nth-child(4) { width:11%; } .jobs-table th:nth-child(5) { width:10%; } .jobs-table th:last-child { width:176px; }
 .jobs-table input { width:16px; height:16px; accent-color:var(--accent-default); }
-.jobs-table th:nth-child(6) { width:170px; }
+.jobs-table th:nth-child(6) { width:140px; }
 /* Icon and words, not color alone: who has to act on the failure. */
 .failure-cause { display:inline-flex; align-items:center; gap:4px; white-space:nowrap; color:var(--text-secondary); }
 .jobs-table .handled-by { white-space:nowrap; }

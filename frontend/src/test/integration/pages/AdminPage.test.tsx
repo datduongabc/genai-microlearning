@@ -372,7 +372,7 @@ describe('AdminPage - failed jobs', () => {
     await openFailures()
 
     expect(await screen.findByText('Sự cố hệ thống')).toBeInTheDocument()
-    expect(screen.getByText('Nội dung giảng viên')).toBeInTheDocument()
+    expect(screen.getByText('Lỗi nội dung')).toBeInTheDocument()
     expect(screen.getByText('Giảng viên xử lý')).toBeInTheDocument()
     expect(screen.queryByRole('checkbox', { name: 'Chọn broken.pdf' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Thử lại broken.pdf' })).not.toBeInTheDocument()
