@@ -1,0 +1,287 @@
+{
+  "pair_id": "16d93eff-3ecf-4f2e-bd88-fe110be7f876",
+  "group": "llm_no_rag",
+  "generator_model": "deepseek-flash",
+  "generation_models": [
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    }
+  ],
+  "packet": {
+    "anon_id": "",
+    "topic": "Dịch vụ hệ điều hành (Operating System Services)",
+    "bloom_level": "understand",
+    "learning_objective": "Sau khi hoàn thành module, người học có thể giải thích chức năng của các dịch vụ hệ điều hành dành cho người dùng và các dịch vụ đảm bảo hệ thống vận hành hiệu quả qua chia sẻ tài nguyên.",
+    "sub_objectives": [
+      "Mô tả các dịch vụ hệ điều hành hỗ trợ người dùng, gồm giao diện người dùng (CLI, GUI, touch-screen), thực thi chương trình và thao tác I/O",
+      "Giải thích vì sao hệ điều hành phải cấp phát tài nguyên và ghi log khi nhiều người dùng hoặc nhiều tiến trình chạy đồng thời",
+      "Phân biệt phạm vi của protection và security trong hệ thống nhiều người dùng hoặc nối mạng",
+      "Liệt kê các dịch vụ quản lý hệ thống tập tin, truyền thông và phát hiện lỗi mà hệ điều hành cung cấp"
+    ],
+    "content_markdown": "# Nội dung cốt lõi\n\n## 1. Các dịch vụ hệ điều hành hỗ trợ người dùng\n\n- **Giao diện người dùng (user interface)** — lớp giúp người dùng ra lệnh và nhận kết quả; hệ điều hành thường cung cấp nhiều loại giao diện song song trên cùng một máy:\n  - **CLI (command-line interface / command interpreter, shell)**: người dùng gõ lệnh dạng văn bản; mạnh về tự động hóa, viết script, thao tác chính xác và lặp lại được; bộ thông dịch lệnh có thể nằm trong nhân (kernel) hoặc là chương trình chạy ở chế độ người dùng.\n  - **GUI (graphical user interface)**: thao tác qua cửa sổ, biểu tượng, menu, con trỏ chuột; trực quan hơn với người dùng phổ thông; thường được xây dựng trên nền các dịch vụ mà CLI cũng dùng.\n  - **Touch-screen interface**: biến thể của GUI cho thiết bị cảm ứng; tương tác bằng cử chỉ chạm, vuốt, nhấn giữ; bàn phím ảo xuất hiện khi cần nhập văn bản; hạn chế về không gian hiển thị nên thường đơn giản hóa thao tác.\n- **Thực thi chương trình (program execution)** — hệ điều hành phải:\n  - Nạp mã và dữ liệu của chương trình từ lưu trữ vào bộ nhớ.\n  - Tạo tiến trình (process) tương ứng, cấp phát không gian địa chỉ và cấp CPU để chạy.\n  - Chạy chương trình đến khi kết thúc, rồi thu hồi tài nguyên đã cấp.\n  - Xử lý cả kết thúc bình thường lẫn kết thúc bất thường (lỗi, bị buộc dừng) và báo kết quả cho người dùng.\n- **Thao tác I/O (I/O operations)** — chương trình người dùng không nên điều khiển thiết bị trực tiếp:\n  - Hệ điều hành cung cấp giao diện thống nhất (qua **system call** và **device driver**) để đọc/ghi trên nhiều loại thiết bị khác nhau.\n  - Nhờ đó che giấu chi tiết phần cứng: cùng một lời gọi có thể áp dụng cho đĩa, bàn phím, màn hình, thiết bị mạng.\n  - Hệ điều hành còn đệm dữ liệu (**buffer**, **caching**, **spooling**) để dung hòa tốc độ giữa CPU và thiết bị, đồng thời đảm bảo an toàn khi nhiều tiến trình cùng dùng thiết bị.\n- **Điểm chung**: cả ba nhóm dịch vụ trên đều nhằm che giấu độ phức tạp của phần cứng và tạo môi trường thuận lợi để người dùng chạy chương trình.\n\n## 2. Vì sao hệ điều hành phải cấp phát tài nguyên và ghi log khi nhiều người dùng/tiến trình chạy đồng thời\n\n- **Bản chất vấn đề**: tài nguyên của máy là hữu hạn (CPU, bộ nhớ, dung lượng lưu trữ, thiết bị I/O, băng thông mạng), trong khi số tiến trình và người dùng cùng hoạt động có thể rất lớn → tất yếu xảy ra tranh chấp.\n- **Cấp phát tài nguyên (resource allocation)** là cách hệ điều hành phân chia tài nguyên hữu hạn đó cho các bên đang chạy:\n  - Lập lịch CPU (**CPU scheduling**) để chia thời gian xử lý.\n  - Quản lý bộ nhớ: cấp phát, thu hồi, bảo vệ vùng nhớ giữa các tiến trình.\n  - Cấp phát thiết bị và kiểm soát truy cập thiết bị dùng chung.\n  - Kiểm soát truy cập (access control) đối với tập tin và dữ liệu.\n- **Mục tiêu cần đạt khi cấp phát**:\n  - Công bằng (**fairness**): không để một tiến trình/người dùng chiếm hết tài nguyên.\n  - Hiệu quả (**utilization**): giữ tài nguyên được dùng hữu ích thay vì bỏ trống.\n  - Cô lập (**isolation**): lỗi hay hành vi sai của một tiến trình không kéo sập các tiến trình khác.\n  - Tránh **deadlock** và **starvation** (một số tiến trình chờ vô hạn).\n- **Ghi log / kế toán tài nguyên (logging, accounting)**: hệ điều hành ghi lại ai đã dùng tài nguyên gì, khi nào, bao nhiêu.\n  - Phục vụ tính phí và thống kê mức sử dụng (**accounting**).\n  - Phục vụ kiểm toán và truy vết trách nhiệm (**audit**): khi có sự cố, biết được tiến trình/người dùng nào liên quan.\n  - Hỗ trợ phân tích hiệu năng, gỡ lỗi và phát hiện hành vi bất thường hoặc xâm nhập.\n- **Vì sao hai việc này gắn với nhau**: cấp phát quyết định *ai được dùng tài nguyên*, còn ghi log ghi lại *thực tế đã dùng ra sao*; thiếu log thì không thể kiểm chứng, điều chỉnh chính sách cấp phát hay quy trách nhiệm khi tranh chấp.\n- **Trong hệ nhiều người dùng**, hai cơ chế này còn là nền tảng cho việc phân quyền và cho các cơ chế bảo vệ/an ninh ở mục 3.\n\n## 3. Phân biệt protection và security trong hệ thống nhiều người dùng hoặc nối mạng\n\n- **Protection (bảo vệ)** — cơ chế *bên trong* hệ điều hành:\n  - Trả lời câu hỏi: *ai được phép làm gì với tài nguyên nào, bằng cách nào*.\n  - Kiểm soát truy cập giữa tiến trình/người dùng và tài nguyên: tập tin, vùng nhớ, thiết bị, tiến trình khác.\n  - Công cụ điển hình ở mức khái niệm: định danh người dùng và nhóm (**user ID / group ID**), quyền truy cập tập tin, danh sách kiểm soát truy cập (**access control list**), phân vùng bộ nhớ, mức đặc quyền (**privilege level**), chế độ người dùng và chế độ nhân.\n  - Phạm vi: **bên trong một hệ thống đang chạy**.\n- **Security (an ninh/bảo mật)** — phạm vi *rộng hơn*:\n  - Trả lời câu hỏi: *hệ thống và dữ liệu có bị tổn hại bởi các mối đe dọa hay không*.\n  - Bao gồm các mối đe dọa từ bên ngoài lẫn bên trong: xâm nhập trái phép, mã độc, nghe lén, giả mạo, tấn công qua mạng, rò rỉ dữ liệu, cả yếu tố con người và chính sách tổ chức.\n  - Bao trùm cả protection như một thành phần, cộng thêm xác thực (**authentication**), mã hóa, kiểm soát đường truyền, quy trình vận hành và ứng phó sự cố.\n- **Ranh giới cần nhớ**:\n  - Protection là *điều kiện cần* nhưng *chưa đủ* cho security: cơ chế phân quyền đúng đắn vẫn có thể bị vô hiệu bởi lừa đảo, mật khẩu yếu hay lỗi cấu hình.\n  - Ví dụ phân biệt: một tập tin có quyền truy cập được đặt đúng (vấn đề protection) nhưng người dùng bị lừa cung cấp thông tin đăng nhập (vấn đề security).\n- **Trong hệ nhiều người dùng**: cần định danh người dùng, xác thực khi đăng nhập, phân quyền và kiểm soát truy cập để tách biệt dữ liệu giữa các người dùng.\n- **Trong hệ nối mạng**: bề mặt tấn công mở rộng ra ngoài máy; protection nội bộ vẫn cần thiết nhưng phải bổ sung các biện pháp ở mức mạng và giao thức — những thứ nằm ngoài phạm vi protection thuần túy.\n\n## 4. Các dịch vụ quản lý hệ thống tập tin, truyền thông và phát hiện lỗi\n\n- **Quản lý hệ thống tập tin (file-system management)**:\n  - Tạo, xóa, mở, đóng tập tin và thư mục; đọc và ghi dữ liệu.\n  - Tìm kiếm, liệt kê nội dung thư mục và truy xuất thông tin về tập tin (kích thước, thời điểm, quyền).\n  - Ánh xạ tập tin logic lên thiết bị lưu trữ vật lý, che giấu cấu trúc khối, bảng chỉ mục hay chi tiết phương tiện lưu trữ.\n  - Quản lý quyền truy cập tập tin — điểm nối trực tiếp với protection ở mục 3.\n- **Truyền thông (communications)**:\n  - Cho phép các tiến trình trao đổi dữ liệu, trên cùng một máy hoặc giữa các máy khác nhau qua mạng.\n  - Cơ chế khái niệm: vùng nhớ chia sẻ (**shared memory**) và truyền thông điệp (**message passing**); ở mức mạng là các giao diện lập trình mạng như **socket**.\n  - Hệ điều hành cung cấp giao diện và giao thức để gửi/nhận, đồng thời xử lý các vấn đề đi kèm: định danh hai đầu, đồng bộ, phát hiện mất mát và truyền lại.\n- **Phát hiện lỗi (error detection)**:\n  - Cả phần cứng lẫn phần mềm đều có thể sai: lỗi CPU, lỗi bộ nhớ, lỗi thiết bị I/O, lỗi trong chương trình người dùng.\n  - Hệ điều hành liên tục giám sát và phát hiện các tình huống như: chia cho 0, truy cập bộ nhớ ngoài phạm vi cho phép, thiết bị không phản hồi, dữ liệu hỏng trên đường truyền.\n  - Khi phát hiện, hệ điều hành phản ứng theo cách phù hợp: dừng tiến trình liên quan, thông báo cho người dùng hoặc chương trình, ghi lại sự kiện, cố gắng khôi phục nếu có thể.\n  - Phát hiện lỗi là điều kiện để hệ thống vận hành **đáng tin cậy**, và dữ liệu ghi lại khi phát hiện lỗi chính là một phần của dịch vụ ghi log ở mục 2.\n- **Liên kết với các mục trên**: cấp phát tài nguyên, ghi log, protection và security không tách rời các dịch vụ này — chúng cùng tạo nên môi trường để hệ thống chạy hiệu quả và an toàn.",
+    "slides": [
+      {
+        "title": "Dịch vụ của hệ điều hành: phục vụ người dùng và vận hành hiệu quả",
+        "bullets": [
+          "Mục tiêu: giải thích các dịch vụ hệ điều hành dành cho người dùng",
+          "Mục tiêu: giải thích các dịch vụ đảm bảo hệ thống vận hành hiệu quả qua chia sẻ tài nguyên",
+          "Bốn phần: dịch vụ cho người dùng → cấp phát tài nguyên & ghi log → protection & security → quản lý tập tin, truyền thông, phát hiện lỗi"
+        ]
+      },
+      {
+        "title": "Hai nhóm dịch vụ của hệ điều hành",
+        "bullets": [
+          "Nhóm phục vụ người dùng: giao diện, thực thi chương trình, thao tác I/O",
+          "Nhóm đảm bảo vận hành hiệu quả: chia sẻ tài nguyên, ghi log, bảo vệ, quản lý tập tin, truyền thông, phát hiện lỗi",
+          "Điểm chung: che giấu độ phức tạp của phần cứng"
+        ]
+      },
+      {
+        "title": "Ba nhóm dịch vụ hỗ trợ người dùng",
+        "bullets": [
+          "Giao diện người dùng (user interface)",
+          "Thực thi chương trình (program execution)",
+          "Thao tác I/O (I/O operations)"
+        ]
+      },
+      {
+        "title": "Giao diện người dùng: nhiều loại song song trên cùng một máy",
+        "bullets": [
+          "Lớp giúp người dùng ra lệnh và nhận kết quả",
+          "Một máy thường cung cấp nhiều loại giao diện cùng lúc",
+          "Ba loại: CLI, GUI, touch-screen interface"
+        ]
+      },
+      {
+        "title": "CLI — giao diện dòng lệnh",
+        "bullets": [
+          "Người dùng gõ lệnh dạng văn bản",
+          "Mạnh về: tự động hóa, viết script, thao tác chính xác và lặp lại được",
+          "Bộ thông dịch lệnh (shell): nằm trong kernel hoặc là chương trình ở chế độ người dùng"
+        ]
+      },
+      {
+        "title": "GUI và giao diện cảm ứng",
+        "bullets": [
+          "GUI: cửa sổ, biểu tượng, menu, con trỏ chuột — trực quan với người dùng phổ thông",
+          "GUI thường được xây trên nền các dịch vụ mà CLI cũng dùng",
+          "Touch-screen: biến thể của GUI cho thiết bị cảm ứng — cử chỉ chạm, vuốt, nhấn giữ; bàn phím ảo; đơn giản hóa do hạn chế không gian hiển thị"
+        ]
+      },
+      {
+        "title": "Thực thi chương trình",
+        "bullets": [
+          "Nạp mã và dữ liệu của chương trình từ lưu trữ vào bộ nhớ",
+          "Tạo tiến trình (process): cấp không gian địa chỉ và cấp CPU để chạy",
+          "Chạy đến khi kết thúc rồi thu hồi tài nguyên; xử lý cả kết thúc bất thường và báo kết quả cho người dùng"
+        ]
+      },
+      {
+        "title": "Thao tác I/O: giao diện thống nhất",
+        "bullets": [
+          "Chương trình người dùng không nên điều khiển thiết bị trực tiếp",
+          "Giao diện thống nhất qua system call và device driver",
+          "Che giấu chi tiết phần cứng: cùng một lời gọi áp dụng cho đĩa, bàn phím, màn hình, thiết bị mạng"
+        ]
+      }
+    ],
+    "examples": [
+      {
+        "context": "",
+        "analysis": ""
+      },
+      {
+        "context": "",
+        "analysis": ""
+      }
+    ],
+    "quiz": [
+      {
+        "stem": "Trên cùng một máy, người dùng có thể mở một chương trình bằng cách gõ lệnh trong CLI hoặc nhấp vào biểu tượng trong GUI; sau đó chương trình đọc tệp từ đĩa và hiển thị nội dung lên màn hình. Cách diễn giải nào sau đây đúng về các dịch vụ hỗ trợ người dùng của hệ điều hành?",
+        "choices": [
+          "Thao tác I/O do chương trình người dùng trực tiếp điều khiển phần cứng, còn system call và device driver phục vụ việc đọc ghi trên thiết bị lưu trữ.",
+          "Thực thi chương trình gồm việc nạp mã và dữ liệu vào bộ nhớ để chạy, còn việc tạo tiến trình và cấp CPU là do chương trình tự thực hiện.",
+          "CLI và GUI là hai cách để người dùng ra lệnh và nhận kết quả, còn thực thi chương trình và thao tác I/O là các dịch vụ nền dùng chung.",
+          "Giao diện cảm ứng là một lớp dịch vụ riêng biệt, không dựa trên các dịch vụ nền mà GUI và CLI cùng sử dụng khi chạy chương trình."
+        ],
+        "correct_index": 2,
+        "explanation": "Cách diễn giải đúng là: CLI và GUI là hai cách để người dùng ra lệnh và nhận kết quả, còn thực thi chương trình và thao tác I/O là các dịch vụ nền dùng chung — tài liệu nêu GUI thường được xây dựng trên nền các dịch vụ mà CLI cũng dùng, và cả ba nhóm dịch vụ đều nhằm che giấu độ phức tạp của phần cứng. Phương án nói giao diện cảm ứng là lớp dịch vụ riêng biệt, không dựa trên dịch vụ nền mà GUI và CLI cùng dùng là sai vì tài liệu mô tả touch-screen là một biến thể của GUI. Phương án nói thực thi chương trình gồm việc nạp mã và dữ liệu vào bộ nhớ, còn tạo tiến trình và cấp CPU do chương trình tự thực hiện là sai vì hệ điều hành phải tạo tiến trình, cấp không gian địa chỉ và cấp CPU, rồi thu hồi tài nguyên khi chương trình kết thúc. Phương án nói thao tác I/O do chương trình người dùng trực tiếp điều khiển phần cứng, còn system call và device driver phục vụ việc đọc ghi trên thiết bị lưu trữ là sai vì chương trình người dùng không nên điều khiển thiết bị trực tiếp, và cùng một lời gọi qua system call cùng device driver có thể áp dụng cho đĩa, bàn phím, màn hình hay thiết bị mạng."
+      },
+      {
+        "stem": "Vì sao trong hệ có nhiều người dùng và nhiều tiến trình cùng chạy, hệ điều hành phải cấp phát tài nguyên đi kèm với ghi log?",
+        "choices": [
+          "Các tiến trình tự thương lượng để chia nhau tài nguyên hữu hạn, còn hệ điều hành ghi log để lưu lại lịch sử sử dụng của từng tiến trình.",
+          "Hệ điều hành cấp phát nhằm chia đều tài nguyên hữu hạn cho các bên, còn ghi log để xác nhận mỗi bên nhận được phần bằng nhau.",
+          "Hệ điều hành cấp phát để tránh tranh chấp tài nguyên hữu hạn, còn ghi log là dịch vụ riêng chỉ phục vụ gỡ lỗi chương trình.",
+          "Cấp phát quyết định bên nào được dùng tài nguyên hữu hạn, còn ghi log ghi lại thực tế đã dùng để kiểm chứng chính sách và quy trách nhiệm khi tranh chấp."
+        ],
+        "correct_index": 3,
+        "explanation": "Đáp án đúng là: cấp phát quyết định bên nào được dùng tài nguyên hữu hạn, còn ghi log ghi lại thực tế đã dùng để kiểm chứng chính sách và quy trách nhiệm khi tranh chấp. Vì tài nguyên của máy là hữu hạn trong khi số tiến trình và người dùng cùng hoạt động có thể rất lớn nên dễ xảy ra tranh chấp; cấp phát quyết định ai được dùng tài nguyên, còn ghi log ghi lại thực tế đã dùng ra sao, nhờ đó mới kiểm chứng, điều chỉnh được chính sách cấp phát và quy trách nhiệm khi tranh chấp. Phương án nói các tiến trình tự thương lượng chia nhau tài nguyên rồi hệ điều hành chỉ lưu lịch sử sử dụng là sai vì việc cấp phát (lập lịch CPU, quản lý bộ nhớ, cấp phát thiết bị, kiểm soát truy cập) do hệ điều hành thực hiện. Phương án nói cấp phát nhằm chia đều tài nguyên và ghi log để xác nhận các phần bằng nhau là sai vì mục tiêu cấp phát gồm công bằng, hiệu quả sử dụng, cô lập, tránh deadlock và starvation, không phải chia đều. Phương án nói ghi log là dịch vụ riêng chỉ phục vụ gỡ lỗi chương trình là sai vì ghi log còn phục vụ tính phí, kiểm toán và truy vết trách nhiệm, phân tích hiệu năng, phát hiện bất thường, và chính là cơ sở để kiểm chứng, điều chỉnh chính sách cấp phát."
+      },
+      {
+        "stem": "Theo bài học, cách diễn giải nào đúng về mối quan hệ giữa protection và security trong một hệ thống nhiều người dùng hoặc nối mạng?",
+        "choices": [
+          "Security là cơ chế nội bộ quy định ai được truy cập tài nguyên nào, còn protection bao trùm cả các cuộc tấn công qua mạng và mã độc.",
+          "Protection kiểm soát việc ai được làm gì với tài nguyên bên trong một hệ thống đang chạy, còn security bao trùm cả mối đe dọa đến từ bên ngoài hệ thống đó.",
+          "Protection và security cùng chỉ một tập cơ chế kiểm soát truy cập, chỉ khác ở chỗ một bên áp dụng cho máy đơn còn một bên cho hệ thống nối mạng.",
+          "Khi quyền truy cập tập tin đã được đặt đúng theo chính sách thì protection đủ để bảo đảm security, vì mối đe dọa chính đến từ việc phân quyền sai."
+        ],
+        "correct_index": 1,
+        "explanation": "Protection là cơ chế bên trong hệ điều hành, trả lời câu hỏi ai được phép làm gì với tài nguyên nào bằng cách nào, và có phạm vi bên trong một hệ thống đang chạy; security có phạm vi rộng hơn, xét việc hệ thống và dữ liệu có bị tổn hại bởi các mối đe dọa hay không, bao gồm mối đe dọa từ bên ngoài lẫn bên trong cùng yếu tố con người và chính sách tổ chức. Vì vậy phương án nói protection kiểm soát việc ai được làm gì với tài nguyên bên trong một hệ thống đang chạy, còn security bao trùm cả mối đe dọa đến từ bên ngoài hệ thống đó là đúng. Phương án nói security là cơ chế nội bộ quy định ai được truy cập tài nguyên nào còn protection bao trùm các cuộc tấn công qua mạng và mã độc đã đảo ngược vai trò của hai khái niệm so với bài học. Phương án nói protection và security cùng chỉ một tập cơ chế kiểm soát truy cập, chỉ khác ở máy đơn hay hệ thống nối mạng là sai vì security bao trùm protection như một thành phần và còn gồm xác thực, mã hóa, kiểm soát đường truyền, quy trình vận hành và ứng phó sự cố. Phương án nói quyền truy cập tập tin được đặt đúng thì protection đủ để bảo đảm security là sai vì bài học nêu protection là điều kiện cần nhưng chưa đủ: cơ chế phân quyền đúng vẫn có thể bị vô hiệu bởi lừa đảo, mật khẩu yếu hay lỗi cấu hình."
+      }
+    ],
+    "practice": {
+      "stem": "Trên một máy chủ nhiều người dùng, hệ điều hành vừa lập lịch CPU và cấp bộ nhớ cho các tiến trình, vừa ghi lại mỗi tiến trình đã dùng bao nhiêu tài nguyên và vào lúc nào. Cách diễn giải nào sau đây mô tả đúng vai trò của hai nhóm dịch vụ này và mối liên hệ giữa chúng?",
+      "choices": [
+        "Cấp phát tài nguyên quyết định ai được dùng tài nguyên hữu hạn, còn ghi log ghi lại thực tế đã dùng để kiểm chứng và điều chỉnh chính sách cấp phát khi tranh chấp.",
+        "Cấp phát tài nguyên nhằm che giấu chi tiết phần cứng khi tiến trình đọc ghi thiết bị, còn ghi log là dịch vụ phát hiện lỗi và khôi phục dữ liệu hỏng.",
+        "Cấp phát tài nguyên nhằm thống kê mức sử dụng của từng người dùng, còn ghi log là cách hệ điều hành chia thời gian CPU cho các tiến trình.",
+        "Cấp phát tài nguyên để bảo vệ hệ thống trước các mối đe dọa từ bên ngoài, còn ghi log để phân quyền truy cập tập tin giữa các tiến trình với nhau."
+      ],
+      "correct_index": 0,
+      "explanation": "Đáp án đúng là phương án nói cấp phát tài nguyên quyết định ai được dùng tài nguyên hữu hạn, còn ghi log ghi lại thực tế đã dùng để kiểm chứng và điều chỉnh chính sách khi tranh chấp: tài liệu nêu tài nguyên của máy là hữu hạn trong khi số tiến trình và người dùng cùng hoạt động có thể rất lớn nên tất yếu tranh chấp, cấp phát tài nguyên gồm lập lịch CPU, quản lý bộ nhớ, cấp thiết bị và kiểm soát truy cập, còn ghi log/accounting ghi lại ai đã dùng tài nguyên gì, khi nào, bao nhiêu, và thiếu log thì không thể kiểm chứng hay điều chỉnh chính sách cấp phát khi tranh chấp. Phương án nói cấp phát tài nguyên để bảo vệ hệ thống trước các mối đe dọa từ bên ngoài và ghi log để phân quyền truy cập tập tin là sai vì việc chống mối đe dọa bên ngoài thuộc security, còn phân quyền truy cập tập tin thuộc protection và kiểm soát truy cập trong cấp phát tài nguyên, không phải chức năng của ghi log. Phương án nói cấp phát tài nguyên nhằm thống kê mức sử dụng còn ghi log là cách chia thời gian CPU là sai vì đã đổi vai trò: thống kê mức sử dụng thuộc accounting/ghi log, còn chia thời gian xử lý là lập lịch CPU trong cấp phát tài nguyên. Phương án nói cấp phát tài nguyên nhằm che giấu chi tiết phần cứng khi đọc ghi thiết bị và ghi log là dịch vụ phát hiện lỗi là sai vì che giấu chi tiết phần cứng là chức năng của thao tác I/O (qua system call và device driver), còn phát hiện lỗi là dịch vụ riêng dù dữ liệu ghi lại khi phát hiện lỗi chỉ là một phần của ghi log."
+    },
+    "source_chunks": [
+      "Chapter 2 Operating System Structures › Chapter 2: Operating-System Structures\nSilberschatz, Galvin and Gagne ©2018\nOperating System Concepts\nChapter 2: Operating-System\nStructures\n4\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nOperating System Services\n• Operating systems provide an environment for execution of programs\nand services to programs and users\n• A set of operating-system services provides functions that are helpful\nto the user:\n• User interface - Almost all operating systems have a user interface (UI).\n• Varies between Command-Line Interface (CLI), Graphical User Interface\n(GUI), Touch-screen\n• Program execution - The system must be able to load a program into\nmemory, to run that program, and end execution, either normally or\nabnormally (indicating error)\n• I/O operations - A running program may require I/O, which may involve a\nfile or an I/O device",
+      "Chapter 2 Operating System Structures › Operating System Services (Cont.)\n5\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nOperating System Services (Cont.)\n• File-system manipulation - The file system is of particular interest.\nPrograms need to read and write files and directories, create and delete\nthem, search them, list file Information, permission management.\n• Communications – Processes may exchange information, on the same\ncomputer or between computers over a network\n• Communications may be via shared memory or through message passing\n(packets moved by the OS)\n• Error detection – OS needs to be constantly aware of possible errors\n• May occur in the CPU and memory, hardware, in I/O devices, in user program\n• For each type of error, OS should take the appropriate action to ensure correct\nand consistent computing\n• Debugging facilities can greatly enhance the user’s and programmer’s\nabilities to efficiently use the system",
+      "Chapter 2 Operating System Structures › Operating System Services (Cont.)\n6\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nOperating System Services (Cont.)\n• Another set of OS functions exists for ensuring the efficient operation\nof the system itself via resource sharing\n• Resource allocation - When multiple users or multiple jobs running\nconcurrently, resources must be allocated to each of them\n• Many types of resources - CPU cycles, main memory, file storage, I/O devices.\n• Logging - To keep track of which users use how much and what kinds of\ncomputer resources\n• Protection and security - The owners of information stored in a multiuser\nor networked computer system may want to control use of that\ninformation, concurrent processes should not interfere with each other\n• Protection involves ensuring that all access to system resources is controlled\n• Security of the system from outsiders requires user authentication, extends to\ndefending external I/O devices from invalid access attempts\n7\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nA View of Operating System Services\nHình: user and other system programs\nGUI touch screen | command line\nuser interfaces\nsystem calls\nprogram 1/0 file\nf communication\nexecution operations systems\nresource\nallocation\naccounting\nerror\ndetection\nservices\nprotection\nand\nsecurity\noperating system\nhardware",
+      "Chapter 2 Operating System Structures › User Operating System Interface - CLI\n8\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nUser Operating System Interface - CLI\n• CLI or command interpreter allows direct command entry\n• Sometimes implemented in kernel, sometimes by system programs\n• Sometimes multiple flavors implemented – shells\n• Primarily fetches a command from user and executes it\n• Sometimes commands built-in, sometimes just names of programs\n• If the latter, adding new features doesn’t require shell modification",
+      "Chapter 2 Operating System Structures › Bourne Shell Command Interpreter\n9\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nBourne Shell Command Interpreter\nHình: 1. root@r6181-d5-us01:~ (ssh)\nroot@r6181-d5-us01 3§3\nLast login: Thu Jul 14 08:47:01 on ttys002\niMacPro:~ pbg$ ssh root@r6181-d5-us@1\nroot@r6181-d5-us01's password:\nLast login: Thu Jul 14 06:01:11 2016 from 172.16.16.162\n[root@r6181-d5-us@1 ~]# uptime\n06:57:48 up 16 days, 10:52, 3 users, load average: 129.52, 80.33, 56.55\n[root@r6181-d5-us@1 ~]# df -kh\nFilesystem Size Used Avail Use% Mounted on\n/dev/mapper/vg_ks-1v_root\n50G 19G 28G 41% /\ntmpfs 127G 529K 127G 1% /dev/shm\n⁄Zdev/sda1 477M 71M 381M 16% /boot\n⁄Zdev/dssd0000 1.0T 489G 545G 47% /dssd_xfs\ntcp: ⁄⁄192. 168. 150. 1: 3334/orangefs\n12T 5.7T 6.4T 47% /mnt/orangefs\n/dev/gpfs-test 23T 1.1T 22T 5% /mnt/gpfs\n[root@r6181-d5-us01 ~]#\n[root@r6181-d5-us@1 ~]# ps aux | sort -nrk 3,3 | head -n 5\nroot 97653 11.2 6.6 42665344 17520636 ? S<L1 Jul13 166:23",
+      "Chapter 2 Operating System Structures › Bourne Shell Command Interpreter\n~]# ps aux | sort -nrk 3,3 | head -n 5\nroot 97653 11.2 6.6 42665344 17520636 ? S<L1 Jul13 166:23 /usr/Lpp/mmfs/bin/mmfsd\nroot 69849 6.6 0.0 ⁄) 0 ? S 3u112 181:54 [vpthread-1-1]\nroot 69850 6.4 0.0 ⁄) 0? S 3u112 177:42 [vpthread-1-2]\nroot 3829 3.0 0.0 9 9? S Jun27 730:04 [rp_thread 7:0]\nroot 3826 3.0 0.0 @ @? $ Jun27 728:08 [rp_thread 6:0]\n[root@r6181-d5-us@1 ~]# 1s -1 /usr/Lpp/mmfs/bin/mmfsd\n-r-x 1 root root 20667161 Jun 3 2015 /usr/Lpp/mmfs/bin/mmfsd\n[root@r6181-d5-us01 ~]# fj",
+      "Chapter 2 Operating System Structures › User Operating System Interface - GUI\n10\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nUser Operating System Interface - GUI\n• User-friendly desktop metaphor interface\n• Usually mouse, keyboard, and monitor\n• Icons represent files, programs, actions, etc.\n• Various mouse buttons over objects in the interface cause various\nactions providing information, options, execute function, open directory\n• Invented at Xerox PARC\n• Many systems now include both CLI and GUI interfaces\n• Microsoft Windows is GUI with CLI “command” shell\n• Apple Mac OS X is “Aqua” GUI interface with UNIX kernel underneath\nand shells available\n• Unix and Linux have CLI with optional GUI interfaces (e.g., CDE, KDE,\nGNOME)\n11\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nTouchscreen Interfaces\n• Touchscreen devices require\nnew interfaces\n• Mouse not possible or not\ndesired\n• Actions and selection based\non gestures\n• Virtual keyboard for text entry\n• Voice commands\nHình: eeeco AT&T LTE 14:10 57% ›\n® 8C)\nMessages Calendar Photos Camera\nStocks iTunes Store Clock\nSettings Calculator App Store Weather\nx@ SB Gea\nSeis <*) ®\n@ = Z\nPodcasts Photography Avalanche VPR\nÐ\nAA. x SA\nMtn Project Dropbox Spotify Travel\nTwitter Instagram Weather NYT Now\nPhone Safari",
+      "Chapter 2 Operating System Structures › The Mac OS X GUI\n12\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nThe Mac OS X GUI\n13\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nSystem Calls\n• Programming interface to the services provided by the OS\n• Typically written in a high-level language (e.g., C or C++)\n• Mostly accessed by programs via a high-level Application\nProgramming Interface (API) rather than direct system call use\n• Three most common APIs are Win32 API for Windows, POSIX API\nfor POSIX-based systems (including virtually all versions of UNIX,\nLinux, and Mac OS X), and Java API for the Java Virtual Machine\n(JVM)\n(Note that the system-call names used throughout this text are generic)",
+      "Chapter 2 Operating System Structures › Example of System Calls\n14\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nExample of System Calls\n• System call sequence to copy the contents of one file to another file\nHình: destination file\nExample System Call Sequence\nAcquire input file name\nWrite prompt to screen\nAccept input\nAcquire output file name\nWrite prompt to screen\nAccept input\nOpen the input file\nif file doesn't exist, abort\nCreate output file\nif file exists, abort\nLoop\nRead from input file\nWrite to output file\nUntil read fails\nClose output file\nWrite completion message to screen\nTerminate normally\n16\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nSystem Call Implementation\n• Typically, a number associated with each system call\n• System-call interface maintains a table indexed according to these\nnumbers\n• The system call interface invokes the intended system call in OS\nkernel and returns status of the system call and any return values\n• The caller need know nothing about how the system call is\nimplemented\n• Just needs to obey API and understand what OS will do as a result call\n• Most details of OS interface are hidden from programmer by API\n• Managed by run-time support library (set of functions built into libraries\nincluded with compiler)",
+      "Chapter 2 Operating System Structures › API – System Call – OS Relationship\n17\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nAPI – System Call – OS Relationship\nIndex of open()\nIndex table\nHình: user application\nopen()\nuser\nmode\nsystem call interface\nkernel\nmode\nopen()\nImplementation\nIndex of open() | C= of open()\nsystem call\nIndex table return\n18\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nSystem Call Parameter Passing\n• Often, more information is required than simply identity of desired\nsystem call\n• Exact type and amount of information vary according to OS and call\n• Three general methods used to pass parameters to the OS\n• Simplest: pass the parameters in registers\n• In some cases, may be more parameters than registers\n• Parameters stored in a block, or table, in memory, and address of block\npassed as a parameter in a register\n• This approach taken by Linux and Solaris\n• Parameters placed, or pushed, onto the stack (see Memory structure) by\nthe program and popped off the stack by the operating system\n• Block and stack methods do not limit the number or length of parameters\nbeing passed",
+      "Chapter 2 Operating System Structures › Parameter Passing via Table\n19\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nParameter Passing via Table\nHình: X: parameters\nfor call\nload address X\nsystem call 13\nuser program\nuse parameters\nfrom table X\noperating system\ncode for\nsystem\ncall 13\n20\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nTypes of System Calls\n• Process control\n• create process, terminate process\n• end, abort process execution\n• load, execute\n• get process attributes, set process attributes\n• wait for time, wait event, signal event\n• allocate and free memory\n• dump memory if error\n• debugger for determining bugs, single step execution\n• Locks for managing access to shared data between processes",
+      "Chapter 2 Operating System Structures › Types of System Calls (cont.)\n21\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nTypes of System Calls (cont.)\n• File management\n• create file, delete file\n• open, close file\n• read, write, reposition\n• get and set file attributes\n• Device management\n• request device, release device\n• read, write, reposition\n• get device attributes, set device attributes\n• logically attach or detach devices\n22\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nTypes of System Calls (Cont.)\n• Information maintenance\n• get time or date, set time or date\n• get system data, set system data\n• get and set process, file, or device attributes\n• Communications\n• create, delete communication connection\n• send, receive messages if using message passing model to host name or\nprocess name\n• Shared-memory model create and gain access to memory regions\n• transfer status information\n• attach and detach remote devices",
+      "Chapter 2 Operating System Structures › Types of System Calls (Cont.)\n23\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nTypes of System Calls (Cont.)\n• Protection\n• Control access to resources\n• Get and set permissions\n• Allow and deny user access\n24\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nExamples of Windows and Unix System Calls\nHình: EXAMPLES OF WINDOWS AND UNIX SYSTEM CALLS\nThe following illustrates various equivalent system calls for Windows and\nUNIX operating systems.\nWindows\nProcess CreateProcess()\ncontrol ExitProcess()\nWaitForSingleObject()\nFile CreateFile()\nmanagement ReadFile()\nWriteFile()\nCloseHandle()\nDevice SetConsoleMode()\nmanagement ReadConsole()\nWriteConsole()\nInformation GetCurrentProcessID()\nmaintenance SetTimer ()\nSleep()\nCommunications CreatePipe()\nCreateFileMapping()\nMapView0fFile(\nProtection SetFileSecurity()\nInitlializeSecurityDescriptor()\nSetSecurityDescriptorGroup()\nUnix\nfork()\nexit()\nwait()\nopen()\nread()\nwrite()\nclose()\nioctl()\nread()\nwrite()\ngetpid()\nalarm()\nsleep()\npipe()\nshm_open ()\nmmap ()\nchmod()\numask()\nchown()",
+      "Chapter 2 Operating System Structures › Standard C Library Example\n25\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nStandard C Library Example\n• C program invoking printf() library call, which calls write()\nsystem call\nHình: THE STANDARD C LIBRARY\nThe standard C library provides a portion of the system-call interface for\nmany versions of UNIX and Linux. As an example, let’s assume a C pro-\ngram invokes the printf () statement. The C library intercepts this call and\ninvokes the necessary system call (or calls) in the operating system—in this\ninstance, the system call. The C library takes the value returned by\nwrite() and passes it back to the user program:\n#include <stdio.h>\nint main()\nprintf (\"Greetings\");\nreturn 0;\nuser\nmode\nstandard C library\nkernel\nmode\nwrite()\nwrite()\nsystem call\n28\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nSystem Services\n• System programs provide a convenient environment for program\ndevelopment and execution. They can be divided into:\n• File manipulation\n• Status information sometimes stored in a file\n• Programming language support\n• Program loading and execution\n• Communications\n• Background services\n• Application programs\n• Most users’view of the operation system is defined by system\nprograms, not the actual system calls",
+      "Chapter 2 Operating System Structures › Linkers and Loaders\n32\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nLinkers and Loaders\n• Source code compiled into object files designed to be loaded into any\nphysical memory location – relocatable object file\n• Linker combines these (also, brings in libraries) into single binary\nexecutable file\n• Program resides on secondary storage as binary executable and\nmust be brought into memory by loader to be executed\n• Relocation assigns final addresses to program parts and adjusts code\nand data in program to match those addresses\n• Modern general purpose systems don’t link libraries into executables\n• Rather, dynamically linked libraries (in Windows, DLLs) are loaded as\nneeded, shared by all that use the same version of that same library\n• Object, executable files have standard formats, so\noperating system knows how to load and start them\n33\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nThe Role of the Linker and Loader\nHình: other\nobject\nfiles\nsource\nprogram\nexecutable\nfile\nỶ\nprogram\nin memory\ngcc\nmain.c\ngcc -c main.c\n| generates\nmain.o\n-O main main.o\n{ generates\nmain\n./main\n-1lm",
+      "Chapter 2 Operating System Structures\n38\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nOperating System Structure\n• General-purpose OS is very large program\n• Various ways to structure ones\n• Simple structure – MS-DOS\n• More complex – UNIX\n• Layered – an abstraction\n• Microkernel – Mach\n39\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nMonolithic Structure – Original UNIX\n• UNIX – limited by hardware functionality, the original UNIX operating\nsystem had limited structuring. The UNIX OS consists of two\nseparable parts\n• Systems programs\n• Kernel\n• Consists of everything below the system-call interface and above the physical\nhardware\n• Provides the file system, CPU scheduling, memory management, and other\noperating-system functions; a large number of functions for one level",
+      "Chapter 2 Operating System Structures › Traditional UNIX System Structure\n40\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nTraditional UNIX System Structure\n• Beyond simple but not fully layered\nHình: kernel\n(the users)\nshells and commands\ncompilers and interpreters\nsystem libraries\nsystem-call interface to the kernel\nsignals terminal file system\nhandling\nswapping block I/O\ncharacter I/O system\nsystem\nterminal drivers disk and tape drivers\nCPU scheduling\npage replacement\ndemand paging\nvirtual memory\nkernel interface to the hardware\nterminal controllers device controllers memory controllers\nterminals disks and tapes physical memory\n41\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nLinux System Structure\n• Monolithic plus modular design\nHình: applications\nglibc standard c library\nsystem-call interface\nfile CPU\nsystems scheduler\nnetworks memory\n(TCP/IP) manager\nblock character\ndevices devices\nỶ Ỷ",
+      "Chapter 2 Operating System Structures › Layered Approach\n42\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nLayered Approach\n• The operating system is\ndivided into a number of\nlayers (levels), each built\non top of lower layers.\nThe bottom layer (layer 0),\nis the hardware; the\nhighest (layer N) is the\nuser interface.\n• With modularity, layers\nare selected such that\neach uses functions\n(operations) and services\nof only lower-level layers\n43\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nMicrokernels\n• Moves as much from the kernel into user space\n• Mach is an example of microkernel\n• Mac OS X kernel (i.e., Darwin) partly based on Mach\n• Communication takes place between user modules using message\npassing model\n• Benefits\n• Easier to extend a microkernel\n• Easier to port the operating system to new architectures\n• More reliable (less code is running in kernel mode), more secure\n• Detriments: Performance overhead of user space to kernel space\ncommunication",
+      "Chapter 2 Operating System Structures › Microkernel System Structure\n44\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nMicrokernel System Structure\nHình: application file user\nprogram system mode\na a a\n: messages : : messages :\ninterprocess memory CPU kernel\ncommunication managment scheduling mode\nmicrokernel\n45\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nModules\n• Many modern operating systems implement Loadable Kernel\nModules (LKMs)\n• Uses object-oriented approach\n• Each core component is separate\n• Each talks to the others over known interfaces\n• Each is loadable as needed within the kernel\n• Overall, similar to layers but with more flexible\n• Linux, Solaris, etc.",
+      "Chapter 2 Operating System Structures › Hybrid Systems\n46\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nHybrid Systems\n• Most modern operating systems are actually not one pure model\n• Hybrid combines multiple approaches to address performance, security,\nusability needs\n• Linux and Solaris kernels in kernel address space, so monolithic, plus\nmodular for dynamic loading of functionality\n• Windows mostly monolithic, plus microkernel for different subsystem\npersonalities\n• Apple Mac OS X hybrid, layered, Aqua UI plus Cocoa programming\nenvironment\n• Below is kernel consisting of Mach microkernel and BSD Unix parts, plus\nI/O kit and dynamically loadable modules (called kernel extensions)\n47\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nmacOS and iOS Structure\nHình: Ỷ\nuser experience\napplication frameworks\ncore frameworks\nkernel environment (Darwin)",
+      "Chapter 2 Operating System Structures › Darwin\n48\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nDarwin\nHình: applications\nlibrary interface\nMach BSD (POSIX)\ntraps system calls\nmemory\nscheduling management\n53\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nBuilding and Booting Linux\n• Download Linux source code (http://www.kernel.org)\n• Configure kernel via “make menuconfig”\n• Compile the kernel using “make”\n• Produces vmlinuz, the kernel image\n• Compile kernel modules via “make modules”\n• Install kernel modules into vmlinuz via “make modules_install”\n• Install new kernel on the system via “make install”",
+      "Chapter 2 Operating System Structures › Performance Tuning\n56\nOperating System Concepts\nSilberschatz, Galvin and Gagne ©2018\nPerformance Tuning\n• Improve performance by removing bottlenecks\n• OS must provide means of computing and displaying measures of\nsystem behavior\n• For example, “top” Linux program or Windows Task Manager\nHình: Task Manager\nFile Options View\nProcesses [Performance] App history Startup Users Details Services\ncpu\nR| 16561 CPU\nIntel(R) Core(TM) i5-2520M CPU @ 2.50GHz\nMemory\n18/38 GB (50%)\nDisk 0 (C)\n28%\nEthernet\nWi-Fi\nlA 30 : 360 Kbps\nBluetooth\n14% 1.65GHz\n112 1550 49904\n143:08:39:26\nFewer details | © Open Resource Monitor"
+    ]
+  },
+  "reference": {
+    "coverage": "complete",
+    "chunk_ids": [
+      "a1d36da2-0677-4f83-b924-d7c147793efd",
+      "a16223cf-bece-48a8-aec2-cfb8a8d349e9",
+      "3b416509-32ea-4b88-b193-3efd7f7a8a45",
+      "78272fa9-71cf-445b-9bcf-4ba8705dc937",
+      "764dd340-8b49-40c1-86cf-5eb66627d90f",
+      "c0c6f28e-130b-41e6-a3c4-592700f9be7d",
+      "7c4e0311-1c26-4db0-ae19-b2bd2c520c53",
+      "0397fbda-e4ea-4efb-a639-a2bbf7bae445",
+      "22dfec73-9ef6-406a-a904-292ea3236b7a",
+      "4c3f825c-3cad-4b02-81e7-fca21897187c",
+      "bafbf386-ceb0-46b5-b950-cea12cabe1c3",
+      "b6dcf80b-873a-4c73-b517-0b1a8d108dff",
+      "dc2efb0e-ef3d-43c6-9b9b-e9c938a16763",
+      "766a4211-3b7d-4af3-879f-adc1a361935b",
+      "47be7bd8-6edd-4777-9c4b-1f4d7c794378",
+      "c973569a-48c7-46c7-ae3b-6f21be55b798",
+      "ccbfae3a-ab08-41c5-8880-2094567164e4",
+      "f775b2d0-b976-46ae-a6e6-a80aaf346185",
+      "696f0a97-9729-4347-9a02-9d769680ac17",
+      "8c84fb15-1038-4d3f-bdc1-f51a25b9feea",
+      "2ae05b1f-7534-4bff-b830-6e04316805ce",
+      "69311577-43bd-4301-8e55-249d444ffab3"
+    ],
+    "total_chunks": 22
+  },
+  "claim_citations": null
+}

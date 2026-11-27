@@ -1,0 +1,336 @@
+{
+  "pair_id": "c8ff7419-b5b1-4abf-a7d4-171aea614de4",
+  "group": "llm_no_rag",
+  "generator_model": "deepseek-flash",
+  "generation_models": [
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    }
+  ],
+  "packet": {
+    "anon_id": "",
+    "topic": "Khái niệm dãy số",
+    "bloom_level": "understand",
+    "learning_objective": "Sau khi hoàn thành module, người học có thể mô tả khái niệm dãy số thông qua định nghĩa ánh xạ f: ℕ → ℝ và ký hiệu phần tử tổng quát x_n.",
+    "sub_objectives": [
+      "Nêu định nghĩa dãy số là ánh xạ f: ℕ → ℝ, ký hiệu (x_n) và tên gọi của x_n",
+      "Giải thích cách xác định các số hạng x_1, x_2, ..., x_n của dãy từ phần tử tổng quát (ví dụ x_n = 1/n cho x_1 = 1, x_2 = 1/2, ...)",
+      "Phân biệt hai phương pháp biểu diễn hình học của dãy số: đồ thị các điểm (n, x_n) và các điểm trên trục Ox"
+    ],
+    "content_markdown": "## 1. Định nghĩa dãy số và ký hiệu\n\n- **Dãy số thực** là một ánh xạ `f: ℕ → ℝ` (đôi khi dùng `ℕ*` hoặc `ℕ ∪ {0}` tuỳ quy ước), tức là một quy tắc gán cho mỗi số tự nhiên `n` đúng một số thực.\n- Thay vì viết `f(n)`, người ta dùng ký hiệu gọn:\n  - `x_n := f(n)` — gọi là **số hạng tổng quát** (hay số hạng thứ `n`) của dãy.\n  - Cả dãy được ký hiệu là `(x_n)` hoặc `(x_n)_{n∈ℕ}`.\n- Trong ký hiệu `x_n`:\n  - `n` là **chỉ số** (index), chạy trên tập chỉ số đã chọn.\n  - `x_n` là **giá trị** (một số thực) tại chỉ số đó.\n- Vì tập chỉ số là tập vô hạn đếm được nên dãy có vô hạn số hạng: `x_1, x_2, x_3, ...`\n- Hai dãy `(x_n)` và `(y_n)` được coi là bằng nhau khi cùng tập chỉ số và `x_n = y_n` với mọi `n`.\n- Cần phân biệt: **dãy** là ánh xạ (một quy tắc), còn **các số hạng** `x_1, x_2, ...` là các giá trị cụ thể do ánh xạ đó sinh ra.\n\n## 2. Xác định các số hạng từ phần tử tổng quát\n\n- **Quy trình:** khi biết công thức của `x_n`, lần lượt thay `n = 1, 2, 3, ...` vào công thức để thu được `x_1, x_2, x_3, ...`\n- **Ví dụ chuẩn** `x_n = 1/n`:\n  - `x_1 = 1/1 = 1`\n  - `x_2 = 1/2`\n  - `x_3 = 1/3`\n  - ... và tổng quát `x_n = 1/n`\n- **Ví dụ khác** `x_n = n²`: `x_1 = 1`, `x_2 = 4`, `x_3 = 9`, ...\n- **Trường hợp cho bởi công thức truy hồi** (ví dụ `x_1 = 1`, `x_{n+1} = x_n + 2`): không thay trực tiếp được ngay, phải tính tuần tự `1, 3, 5, 7, ...`\n- **So sánh hai cách cho dãy:**\n  - Công thức tổng quát `x_n = f(n)`: tính được số hạng bất kỳ trực tiếp, không cần các số hạng trước.\n  - Công thức truy hồi: phải biết số hạng (hoặc vài số hạng) đầu rồi mới tính được các số hạng sau.\n- **Chú ý:** chỉ số bắt đầu có thể là `0` hoặc `1` tuỳ quy ước, nên cần đọc rõ tập chỉ số của dãy trước khi tính.\n\n## 3. Hai phương pháp biểu diễn hình học của dãy số\n\n- **Phương pháp 1 — Đồ thị các điểm `(n, x_n)`:**\n  - Dựng hệ trục toạ độ: trục hoành biểu diễn chỉ số `n`, trục tung biểu diễn giá trị `x_n`.\n  - Mỗi số hạng ứng với một điểm rời rạc `(n, x_n)`; tập hợp các điểm này là “đồ thị” của dãy.\n  - Thể hiện rõ dãy như một hàm số xác định trên tập chỉ số rời rạc.\n- **Phương pháp 2 — Các điểm trên trục Ox:**\n  - Mỗi số hạng `x_n` được biểu diễn bằng một điểm có toạ độ `x_n` trên trục số thực.\n  - Dãy tương ứng với một tập điểm rời rạc nằm trên trục `Ox`.\n- **So sánh vai trò:**\n  - Đồ thị `(n, x_n)` làm nổi bật sự phụ thuộc của giá trị vào chỉ số (xu hướng tăng, giảm, dao động).\n  - Biểu diễn trên trục `Ox` làm nổi bật vị trí của các giá trị, thuận lợi khi quan sát các số hạng co cụm lại hoặc dịch chuyển về một vị trí nào đó trên trục số.\n- **Lưu ý thực hành:** dãy có vô hạn số hạng nên cả hai cách chỉ vẽ được một số điểm đầu để minh hoạ; hình vẽ là công cụ trực quan, không phải toàn bộ dãy.",
+    "slides": [
+      {
+        "title": "Dãy số: Định nghĩa và ký hiệu",
+        "bullets": [
+          "Dãy số qua ánh xạ f: ℕ → ℝ",
+          "Ký hiệu số hạng tổng quát x_n",
+          "Mục tiêu: mô tả dãy số bằng định nghĩa ánh xạ và ký hiệu x_n"
+        ]
+      },
+      {
+        "title": "Dãy số thực là gì?",
+        "bullets": [
+          "Dãy số thực là một ánh xạ f: ℕ → ℝ",
+          "Quy tắc: mỗi số tự nhiên n nhận đúng một số thực",
+          "Tập chỉ số: ℕ, có thể là ℕ* hoặc ℕ ∪ {0} tuỳ quy ước"
+        ]
+      },
+      {
+        "title": "Ký hiệu gọn của dãy",
+        "bullets": [
+          "Thay vì f(n), viết x_n := f(n)",
+          "x_n gọi là số hạng tổng quát (số hạng thứ n)",
+          "Cả dãy ký hiệu là (x_n) hoặc (x_n)_{n∈ℕ}"
+        ]
+      },
+      {
+        "title": "Đọc ký hiệu x_n",
+        "bullets": [
+          "n là chỉ số (index) — chạy trên tập chỉ số đã chọn",
+          "x_n là giá trị — một số thực tại chỉ số đó"
+        ]
+      },
+      {
+        "title": "Dãy có bao nhiêu số hạng?",
+        "bullets": [
+          "Tập chỉ số vô hạn đếm được ⇒ dãy có vô hạn số hạng",
+          "Liệt kê: x_1, x_2, x_3, ..."
+        ]
+      },
+      {
+        "title": "Dãy bằng nhau và phân biệt dãy với số hạng",
+        "bullets": [
+          "(x_n) = (y_n) khi cùng tập chỉ số và x_n = y_n với mọi n",
+          "Dãy là ánh xạ (một quy tắc)",
+          "x_1, x_2, ... là các giá trị cụ thể do ánh xạ đó sinh ra"
+        ]
+      },
+      {
+        "title": "Từ số hạng tổng quát ra các số hạng",
+        "bullets": [
+          "Quy trình: lần lượt thay n = 1, 2, 3, ... vào công thức",
+          "Ví dụ x_n = 1/n: x_1 = 1, x_2 = 1/2, x_3 = 1/3",
+          "Ví dụ x_n = n²: x_1 = 1, x_2 = 4, x_3 = 9"
+        ]
+      },
+      {
+        "title": "Dãy cho bởi công thức truy hồi",
+        "bullets": [
+          "Ví dụ: x_1 = 1, x_{n+1} = x_n + 2",
+          "Không thay trực tiếp được ngay",
+          "Phải tính tuần tự: 1, 3, 5, 7, ..."
+        ]
+      }
+    ],
+    "examples": [
+      {
+        "context": "Trong giờ thực hành, giảng viên yêu cầu sinh viên Nguyễn Minh Anh khảo sát dãy số (x_n) cho bởi số hạng tổng quát x_n = (2n + 1)/(n + 3), với tập chỉ số là ℕ* (tức n = 1, 2, 3, ...). Nhiệm vụ đặt ra: viết ra bốn số hạng đầu tiên của dãy và tính số hạng thứ 10.",
+        "analysis": "Bước 1: Đọc rõ tập chỉ số trước khi tính — vì tập chỉ số là ℕ* nên chỉ số n bắt đầu từ 1, do đó bốn số hạng đầu tiên cần viết là x_1, x_2, x_3, x_4 (không phải x_0).\nBước 2: Áp dụng quy trình thay n vào công thức của số hạng tổng quát x_n = (2n + 1)/(n + 3) với n = 1: x_1 = (2·1 + 1)/(1 + 3) = 3/4.\nBước 3: Tiếp tục thay lần lượt n = 2, 3, 4 vào cùng công thức: x_2 = (2·2 + 1)/(2 + 3) = 5/5 = 1; x_3 = (2·3 + 1)/(3 + 3) = 7/6; x_4 = (2·4 + 1)/(4 + 3) = 9/7. Vậy bốn số hạng đầu là x_1 = 3/4, x_2 = 1, x_3 = 7/6, x_4 = 9/7.\nBước 4: Vì đây là dãy cho bởi công thức tổng quát x_n = f(n) nên tính được số hạng bất kỳ trực tiếp, không cần các số hạng trước: thay thẳng n = 10, được x_10 = (2·10 + 1)/(10 + 3) = 21/13.\nKết luận: Việc xác định các số hạng x_1, x_2, x_3, ... chỉ là thay lần lượt n = 1, 2, 3, ... vào công thức của số hạng tổng quát x_n, đúng như quy trình trong Content; vì công thức tổng quát cho phép tính trực tiếp nên không phải tính tuần tự từ x_1 đến x_10. Lỗi người học hay mắc: quên đọc tập chỉ số nên thay nhầm n = 0 để có x_0, hoặc tính dồn từng số hạng từ x_1 đến x_10 dù đã có công thức tổng quát."
+      },
+      {
+        "context": "Một nhóm sinh viên phải trình bày trực quan dãy số (x_n) với số hạng tổng quát x_n = 2 + (−1)^n / n trên bảng, tập chỉ số ℕ*. Nhóm băn khoăn không biết nên chọn cách biểu diễn hình học nào: đồ thị các điểm (n, x_n) hay các điểm trên trục Ox, và mỗi cách làm nổi bật điều gì.",
+        "analysis": "Bước 1: Tính một vài số hạng đầu bằng cách thay n = 1, 2, 3, 4 vào x_n = 2 + (−1)^n / n để có dữ liệu vẽ: x_1 = 2 + (−1)/1 = 1; x_2 = 2 + 1/2 = 5/2; x_3 = 2 + (−1)/3 = 5/3; x_4 = 2 + 1/4 = 9/4.\nBước 2: Nếu chọn phương pháp 1 — đồ thị các điểm (n, x_n): dựng hệ trục toạ độ với trục hoành biểu diễn chỉ số n và trục tung biểu diễn giá trị x_n, rồi đánh dấu các điểm rời rạc (1, 1), (2, 5/2), (3, 5/3), (4, 9/4); cách này làm nổi bật sự phụ thuộc của giá trị vào chỉ số, ở đây là sự dao động xen kẽ trên và dưới mức 2 khi n tăng.\nBước 3: Nếu chọn phương pháp 2 — các điểm trên trục Ox: biểu diễn mỗi số hạng bằng một điểm có toạ độ là chính giá trị đó trên trục số thực, tức các điểm 1; 5/2; 5/3; 9/4 trên Ox; cách này làm nổi bật vị trí của các giá trị, thuận lợi khi quan sát các số hạng co cụm lại quanh vị trí 2 trên trục số.\nBước 4: Đối chiếu với mục tiêu trình bày để chọn: nếu muốn cho người xem thấy xu hướng dao động theo chỉ số thì dùng phương pháp 1; nếu muốn cho thấy các giá trị co cụm về một vị trí trên trục số thì dùng phương pháp 2.\nKết luận: Hai phương pháp biểu diễn hình học không thay thế nhau mà phục vụ hai mục đích quan sát khác nhau — đồ thị (n, x_n) nhấn mạnh sự phụ thuộc của x_n vào chỉ số n, còn các điểm trên trục Ox nhấn mạnh vị trí của các giá trị trên trục số. Lỗi người học hay mắc: nối các điểm (n, x_n) thành một đường liền (trong khi dãy chỉ cho các điểm rời rạc), hoặc đặt nhầm chỉ số n lên trục tung và giá trị x_n lên trục hoành."
+      }
+    ],
+    "quiz": [
+      {
+        "stem": "Một dãy số thực được mô tả bằng ánh xạ f và ký hiệu x_n. Cách diễn giải nào sau đây đúng về mối quan hệ giữa quy tắc gán, chỉ số và số hạng tổng quát?",
+        "choices": [
+          "f là ánh xạ đi từ tập số thực vào tập số tự nhiên, nên mỗi số thực n được gán cho một số tự nhiên x_n gọi là số hạng tổng quát.",
+          "Dãy chính là tập hợp các giá trị x_1, x_2, x_3, ... do quy tắc gán sinh ra, và x_n là một phần tử nằm trong tập hợp các giá trị đó.",
+          "x_n là ký hiệu dùng để chỉ dãy, còn (x_n) là số hạng tổng quát đứng ở vị trí thứ n trong dãy số đó.",
+          "f là quy tắc gán mỗi số tự nhiên n một số thực; n đóng vai trò chỉ số, còn x_n là giá trị (số hạng tổng quát) tại chỉ số đó."
+        ],
+        "correct_index": 3,
+        "explanation": "Phát biểu \"f là quy tắc gán mỗi số tự nhiên n một số thực; n đóng vai trò chỉ số, còn x_n là giá trị (số hạng tổng quát) tại chỉ số đó\" đúng vì bài nêu dãy số thực là ánh xạ f: ℕ → ℝ, một quy tắc gán cho mỗi số tự nhiên n đúng một số thực, trong đó x_n := f(n) là số hạng tổng quát còn n là chỉ số. Phát biểu coi dãy là tập hợp các giá trị x_1, x_2, x_3, ... sai vì bài phân biệt rõ: dãy là ánh xạ (một quy tắc), còn các số hạng x_1, x_2, ... chỉ là các giá trị cụ thể do ánh xạ đó sinh ra. Phát biểu nói x_n là ký hiệu chỉ dãy và (x_n) là số hạng tổng quát sai vì bài dùng (x_n) (hoặc (x_n)_{n∈ℕ}) để ký hiệu cả dãy, còn x_n là số hạng tổng quát. Phát biểu nói f đi từ tập số thực vào tập số tự nhiên sai vì bài xác định tập chỉ số là ℕ (chỉ số n là số tự nhiên) và giá trị x_n là một số thực, tức f: ℕ → ℝ."
+      },
+      {
+        "stem": "Một dãy số được cho bởi công thức số hạng tổng quát x_n = 3n − 1 với n ∈ ℕ*. Phát biểu nào sau đây diễn tả đúng mối liên hệ giữa công thức này và các số hạng của dãy?",
+        "choices": [
+          "Công thức là quy tắc gán mỗi chỉ số n một giá trị, nên thay chỉ số của số hạng vào công thức sẽ ra số hạng đó.",
+          "Trong ký hiệu x_n, giá trị của số hạng là n, còn biểu thức 3n − 1 dùng để xác định vị trí của số hạng trong dãy.",
+          "Muốn tính số hạng thứ năm của dãy thì phải lần lượt tính các số hạng từ thứ nhất đến thứ tư rồi mới suy ra được.",
+          "Công thức x_n = 3n − 1 chỉ cho biết giá trị của một số hạng riêng lẻ, muốn có dãy thì phải liệt kê thêm các số hạng khác."
+        ],
+        "correct_index": 0,
+        "explanation": "Số hạng tổng quát x_n = f(n) là quy tắc gán cho mỗi chỉ số n một giá trị, nên khi biết công thức, ta thay chỉ số của số hạng cần tìm vào công thức là xác định được số hạng đó; đây chính là cách xác định x_1, x_2, x_3, ... từ phần tử tổng quát. Phương án cho rằng công thức chỉ cho biết giá trị của một số hạng riêng lẻ và phải liệt kê thêm mới có dãy là sai, vì dãy là ánh xạ trên tập chỉ số vô hạn đếm được nên công thức sinh ra vô hạn số hạng x_1, x_2, x_3, ... Phương án nói giá trị của số hạng là n còn biểu thức 3n − 1 là vị trí của số hạng là sai, vì trong ký hiệu x_n thì n là chỉ số, còn x_n là giá trị (một số thực) tại chỉ số đó. Phương án đòi tính lần lượt các số hạng đứng trước mới suy ra được số hạng sau là sai, vì đó là cách tính của công thức truy hồi, còn công thức tổng quát cho phép tính trực tiếp số hạng bất kỳ mà không cần các số hạng trước."
+      },
+      {
+        "stem": "Xét hai cách biểu diễn hình học của một dãy số: cách (1) vẽ các điểm (n, x_n) trong mặt phẳng toạ độ, cách (2) vẽ các điểm có toạ độ x_n trên trục Ox. Phát biểu nào mô tả đúng sự khác nhau về vai trò của hai cách này?",
+        "choices": [
+          "Cách (1) cho thấy giá trị thay đổi ra sao khi chỉ số tăng, còn cách (2) cho thấy các giá trị nằm ở vị trí nào trên trục số thực.",
+          "Hai cách đều cho thấy giá trị thay đổi theo chỉ số, điểm khác là cách (2) bỏ trục tung khi vẽ.",
+          "Cách (1) đặt chỉ số trên trục tung và giá trị trên trục hoành, còn cách (2) đặt giá trị trên trục tung.",
+          "Cách (1) dùng cho dãy cho bởi công thức tổng quát, còn cách (2) dùng cho dãy cho bởi công thức truy hồi."
+        ],
+        "correct_index": 0,
+        "explanation": "Phát biểu cho rằng cách (1) cho thấy giá trị thay đổi ra sao khi chỉ số tăng, còn cách (2) cho thấy các giá trị nằm ở vị trí nào trên trục số thực là đúng: đồ thị các điểm (n, x_n) làm nổi bật sự phụ thuộc của giá trị vào chỉ số, còn biểu diễn trên trục Ox làm nổi bật vị trí của các giá trị, thuận lợi khi quan sát các số hạng co cụm lại hoặc dịch chuyển về một vị trí. Phát biểu nói hai cách đều cho thấy giá trị thay đổi theo chỉ số và chỉ khác ở việc bỏ trục tung là sai vì cách vẽ trên trục Ox không biểu diễn chỉ số mà biểu diễn vị trí của giá trị trên trục số thực. Phát biểu nói chỉ số nằm trên trục tung và giá trị nằm trên trục hoành là sai vì trong đồ thị (n, x_n) trục hoành biểu diễn chỉ số n còn trục tung biểu diễn giá trị x_n. Phát biểu gắn cách (1) với công thức tổng quát và cách (2) với công thức truy hồi là sai vì công thức tổng quát và công thức truy hồi là hai cách cho dãy khác nhau ở việc tính số hạng, không gắn với hai cách biểu diễn hình học."
+      }
+    ],
+    "practice": {
+      "stem": "Cho dãy số (x_n) xác định bởi quy tắc gán mỗi số tự nhiên n một số thực x_n, cùng hai cách minh hoạ hình học: cách A dùng các điểm (n, x_n) trên mặt phẳng toạ độ, cách B dùng các điểm có toạ độ x_n trên trục Ox. Cách diễn giải nào sau đây phù hợp với nội dung bài học?",
+      "choices": [
+        "Dãy là tập hợp các số hạng x_1, x_2, x_3, ... do f sinh ra; đồ thị các điểm (n, x_n) nêu bật sự phụ thuộc của giá trị vào chỉ số, còn các điểm trên trục Ox nêu bật vị trí của các giá trị.",
+        "Dãy là ánh xạ f: ℕ → ℝ gán mỗi chỉ số n một giá trị x_n; đồ thị các điểm (n, x_n) nêu bật sự phụ thuộc của giá trị vào chỉ số, còn các điểm trên trục Ox nêu bật vị trí của các giá trị.",
+        "Trong ký hiệu x_n, n là giá trị thực tại vị trí đó và x_n là chỉ số đánh số các giá trị; đồ thị các điểm (n, x_n) nêu bật sự phụ thuộc của giá trị vào chỉ số, còn các điểm trên trục Ox nêu bật vị trí của các giá trị.",
+        "Dãy là ánh xạ f: ℕ → ℝ gán mỗi chỉ số n một giá trị x_n; đồ thị các điểm (n, x_n) nêu bật vị trí của các giá trị trên trục số, còn các điểm trên trục Ox nêu bật sự phụ thuộc của giá trị vào chỉ số."
+      ],
+      "correct_index": 1,
+      "explanation": "Theo nội dung bài học, dãy số thực là một ánh xạ f: ℕ → ℝ, tức một quy tắc gán cho mỗi số tự nhiên n đúng một số thực, và x_n = f(n) là giá trị tại chỉ số n. Vì vậy phương án nói dãy là ánh xạ f: ℕ → ℝ gán mỗi chỉ số n một giá trị x_n, đồng thời cho rằng đồ thị các điểm (n, x_n) nêu bật sự phụ thuộc của giá trị vào chỉ số còn các điểm trên trục Ox nêu bật vị trí của các giá trị, là phương án đúng: bài học nêu rõ đồ thị (n, x_n) làm nổi bật sự phụ thuộc của giá trị vào chỉ số (xu hướng tăng, giảm, dao động), còn biểu diễn trên trục Ox làm nổi bật vị trí của các giá trị trên trục số. Phương án nói dãy là tập hợp các số hạng x_1, x_2, x_3, ... do f sinh ra là sai vì bài học phân biệt: dãy là ánh xạ (một quy tắc), còn các số hạng x_1, x_2, ... chỉ là các giá trị cụ thể do ánh xạ đó sinh ra. Phương án nói trong ký hiệu x_n thì n là giá trị thực tại vị trí đó và x_n là chỉ số đánh số các giá trị là sai vì đã đảo ngược vai trò: n là chỉ số (index) chạy trên tập chỉ số đã chọn, còn x_n là giá trị (một số thực) tại chỉ số đó. Phương án nói đồ thị các điểm (n, x_n) nêu bật vị trí của các giá trị trên trục số còn các điểm trên trục Ox nêu bật sự phụ thuộc của giá trị vào chỉ số là sai vì đã đổi chỗ hai phương pháp: đồ thị (n, x_n) mới là cách thể hiện sự phụ thuộc của giá trị vào chỉ số, còn các điểm trên trục Ox thể hiện vị trí của các giá trị."
+    },
+    "source_chunks": [
+      "1. Giới hạn dãy số › TS. Lê Xuân Đại\nGIỚI HẠN CỦA DÃY SỐ\nBài giảng điện tử\nTS. Lê Xuân Đại\nTrường Đại học Bách Khoa TP HCM\nKhoa Khoa học ứng dụng, bộmôn Toán ứng dụng\nEmail: ytkadai@hcmut.edu.vn\nTP. HCM — 2013.\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN CỦA DÃY SỐ\nTP. HCM — 2013.\n1 / 77\nKhái niệm dãy số\nỨng dụng giới hạn của dãy số\nTính diện tích của hình tròn có bán kính R\nA = lim\n_n_→∞A_n = πR^2.\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN CỦA DÃY SỐ\nTP. HCM — 2013.\n2 / 77",
+      "1. Giới hạn dãy số › 1 Khái niệm dãy số 2 Tính chất của dãy số 3 Giới hạn của dãy số\nKhái niệm dãy số\nNội dung bài học\nNội dung bài học\n1 Khái niệm dãy số\n2 Tính chất của dãy số\n3 Giới hạn của dãy số\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN CỦA DÃY SỐ\nTP. HCM — 2013.\n3 / 77\nKhái niệm dãy số\nĐịnh nghĩa dãy số\nĐịnh nghĩa dãy số\nĐịnh nghĩa\nÁnh xạ f : ℕ −→ ℝ từ tập hợp số tự nhiên lên\ntập hợp số thực ℝ được gọi là dãy số.\nDãy sốđược kí hiệu là (x_n). x_n được gọi là phần tử\ntổng quát thứn của dãy số.\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN CỦA DÃY SỐ\nTP. HCM — 2013.\n4 / 77",
+      "1. Giới hạn dãy số › Cho dãy (x_n) với x_n = 1\nKhái niệm dãy số\nĐịnh nghĩa dãy số\nVí dụ\nCho dãy (x_n) với x_n = 1/n thì\nx_1 = 1, x_2 = 1/2, . . . , x_n = 1/n, . . .\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN CỦA DÃY SỐ\nTP. HCM — 2013.\n5 / 77\nKhái niệm dãy số\nSựbiểu diễn hình học của dãy số\n(Phương pháp thứ nhất.)/(Dãy số (x_n) được biểu diễn)bằng đồ thị của nó từ\nnhững điểm (n, x_n).\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN CỦA DÃY SỐ\nTP. HCM — 2013.\n6 / 77",
+      "1. Giới hạn dãy số › Phương pháp thứhai. Dãy số(x_n) được biểu diễn bởi những điểm của trục Ox\nKhái niệm dãy số\nSựbiểu diễn hình học của dãy số\n(Phương pháp thứ hai.)/(Dãy số (x_n) được biểu diễn) bởi những điểm của\ntrục Ox\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN CỦA DÃY SỐ\nTP. HCM — 2013.\n7 / 77\nKhái niệm dãy số\nTính chất của dãy số\n1. Tính tăng và tính giảm.\nĐịnh nghĩa\nDãy số (x_n) được gọi là dãy tăng (dãy giảm)\nnếu như với mọi n ∈ ℕ luôn có bất đẳng thức\nx_n < x_(n+1)(x_n > x_(n+1)).\n(Bất đẳng thức Bernuli.) Nếu sốh > −1 và h̸ = 0\nthì luôn có bất đẳng thức (1 + h)^n > 1 + nh với\nmọi sốtựnhiên n ⩾2.\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN CỦA DÃY SỐ\nTP. HCM — 2013.\n8 / 77",
+      "1. Giới hạn dãy số › Chứng minh. Vì x_n = (1 + ^1\nKhái niệm dãy số\nTính chất của dãy số\nVí dụ\nDãy x_n = (1 + 1/n)^n, (n ∈ ℕ) là dãy tăng.\nChứng minh. Vì x_n = (1 + 1/n)^n > 0 nên ta chỉ\ncần chứng minh (x_(n+1))/x_n > 1. Ta có\n+1\n(x_(n+1))/x_n = ((1+1/(n+1))^(n+1))/((1+1/n)^n) = (( )^(n+1))/(( )^n)((n+2)/(n+1 n+1))/n = (((n+2)/(n+1))/((n+1)/n))^n .(n+1)/n =\n((n^2+2n)/(n^2+2n+1))^(n+1) .(n+1)/n = (1 − 1/((n+1)^2))^(n+1) .(n+1)/n >",
+      "1. Giới hạn dãy số\n1 − 1/(n+1) .(n+1)/n = n/(n+1).(n+1)/n = 1\nNhư vậy x_n < x_(n+1)■\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN CỦA DÃY SỐ\nTP. HCM — 2013.\n9 / 77",
+      "1. Giới hạn dãy số › Chứng minh. Vì x_n = (1 + ^1 cần chứng minh\nKhái niệm dãy số\nTính chất của dãy số\nVí dụ\nDãy số $x_n = \\left(1 + \\frac{1}{n}\\right)^{n+1}$, ($n \\in \\mathbb{N}$) là dãy giảm.\nChứng minh. Vì $x_n = \\left(1 + \\frac{1}{n}\\right)^{n+1} > 0$ nên ta chỉ\ncần chứng minh $\\frac{x_n}{x_{n+1}} > 1$. Ta có\n$\\frac{x_n}{x_{n+1}} = \\frac{\\left(1 + \\frac{1}{n}\\right)^{n+1}}{\\left(1 + \\frac{1}{n+1}\\right)^{n+2}} = \\frac{\\left(\\frac{n+1}{n}\\right)^{n+1}}{\\left(\\frac{n+2}{n+1}\\right)^{n+2}} = \\left(\\frac{\\frac{n+1}{n}}{\\frac{n+2}{n+1}}\\right)^{n+2} \\cdot \\frac{n}{n+1} =$\n$\\left(\\frac{n^2+2n+1}{n^2+2n}\\right)^{n+2} \\cdot \\frac{n}{n+1} = \\left(1 +",
+      "1. Giới hạn dãy số › Chứng minh. Vì x_n = (1 + ^1 cần chứng minh\n\\cdot \\frac{n}{n+1} = \\left(1 + \\frac{1}{n(n+2)}\\right)^{n+2} \\cdot \\frac{n}{n+1} >$\n$\\left(1 + \\frac{1}{n}\\right) \\cdot \\frac{n}{n+1} = \\frac{n+1}{n} \\cdot \\frac{n}{n+1} = 1$.\nNhư vậy $x_n > x_{n+1}$ $\\blacksquare$\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN CỦA DÃY SỐ\nTP. HCM — 2013.",
+      "1. Giới hạn dãy số\n10 / 77\nKhái niệm dãy số\nTính chất của dãy số\n2. Tính bịchặn.\nĐịnh nghĩa\nDãy số (x_n) ⊂ ℝ được gọi là bị chặn trên (dưới),\nnếu như tồn tại số ∃M ∈ ℝ (m ∈ ℝ), sao cho với\nmọi ∀n ∈ ℕ luôn có x_n ⩽ M(x_n ⩾ m).\nSốM (m) được gọi là cận trên (cận dưới) của dãy\n(x_n).\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN CỦA DÃY SỐ\nTP. HCM — 2013.\n11 / 77",
+      "1. Giới hạn dãy số\nKhái niệm dãy số\nTính chất của dãy số\nĐịnh nghĩa\nDãy số (x_n) ⊂ ℝ được gọi là bị chặn, nếu nó bị\nchặn trên và chặn dưới có nghĩa là nếu như tồn tại\nsố ∃M, m ∈ ℝ sao cho với mọi ∀n ∈ ℕ luôn có\nm ⩽ x_n ⩽ M.\nĐịnh nghĩa\nDãy số (x_n) ⊂ ℝ được gọi là không bị chặn trên\n(dưới), nếu như với mọi số ∀M ∈ ℝ (m ∈ ℝ), tồn\ntại số hạng của dãy số x_(n0) sao cho\nx_(n0) > M (x_(n0) < m).\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN CỦA DÃY SỐ\nTP. HCM — 2013.\n12 / 77\nKhái niệm dãy số\nTính chất của dãy số\nVí dụ\nDãy số x_n = (1 + 1/n)^(n+1) (n ∈ ℕ) bị chặn dưới bởi\nsố m = 0, và bị chặn trên bởi số\nM = (1 + 1)^2 = 4.\nChứng minh. Vì dãy này là dãy giảm nên với\nmọi ∀n ∈ℕ luôn có x_n ⩽x_1 = 4.\nVới mọi ∀n ∈ℕ ta có x_n > 0■\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN CỦA DÃY SỐ\nTP. HCM — 2013.",
+      "1. Giới hạn dãy số\n13 / 77\nKhái niệm dãy số\nTính chất của dãy số\nVí dụ\nDãy số x_n = (1 + 1/n)^n, (n ∈ ℕ) bị chặn dưới bởi số\nm = 0 và bị chặn trên bởi số M = 4.\nChứng minh. Với mọi ∀n ∈ ℕ luôn có x_n > 0,\nvà x_n = (1 + 1/n)^n < (1 + 1/n)^(n+1) ⩽ 4■\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN CỦA DÃY SỐ\nTP. HCM — 2013.\n14 / 77",
+      "1. Giới hạn dãy số\nGiới hạn của dãy số\nNhững khái niệm cơ bản\nĐịnh nghĩa\nSố a ∈ ℝ được gọi là giới hạn của dãy\n(x_n) ⊂ ℝ, nếu như với mọi ∀ε > 0 tồn tại số\nN = N(ε) sao cho với mọi ∀n > N luôn có bất\nđẳng thức |x_n − a| < ε.\nChú ý. Nếu số a ∈ ℝ là giới hạn của dãy\n(x_n) ⊂ ℝ thì ta viết là lim_(n→∞) x_n = a.\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN CỦA DÃY SỐ\nTP. HCM — 2013.\n15 / 77\nGiới hạn của dãy số\nNhững khái niệm cơ bản\nĐịnh nghĩa\nDãy số (x_n) ⊂ ℝ có giới hạn hữu hạn a ∈ ℝ được\ngọi là dãy hội tụ đến a. Khi đó ta viết là\nx_n → a.\nĐịnh nghĩa\nDãy số (x_n) ⊂ ℝ được gọi là phân kỳ nếu như\nmọi số ∀a ∈ ℝ không là giới hạn của dãy số này,\ncó nghĩa là a không tồn tại hoặc bằng ∞.\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN CỦA DÃY SỐ\nTP. HCM — 2013.\n16 / 77",
+      "1. Giới hạn dãy số\nGiới hạn của dãy số\nTính chất của giới hạn hữu hạn của dãy số\nĐịnh lý\nMọi dãy hội tụ (x_n) ⊂ ℝ đều bị chặn.\nChú ý. Điều ngược lại không đúng. Ví dụdãy\na_n = (−1)^n bịchặn nhưng phân kỳ.\nĐịnh lý\nNếu dãy số (x_n) ⊂ ℝ có giới hạn hữu hạn a thì\ngiới hạn đó là duy nhất.\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN CỦA DÃY SỐ\nTP. HCM — 2013.\n17 / 77\nGiới hạn của dãy số\nTính chất của giới hạn hữu hạn của dãy số\nĐịnh lý\nNếu dãy số (x_n) ⊂ ℝ và (y_n) ⊂ ℝ có giới hạn hữu\nhạn tương ứng là a và b thì:\n1 lim |x_n| = |a|.\n2 lim^(n→∞)(x_n ± y_n) = a ± b\n3_nlim_(→∞)^(n→∞)(x_n.y_n) = a.b.\n4 Nếu bổ sung thêm điều kiện b̸ = 0 thì ta có\nlim_(n→∞) x_n/y_n = a/b.\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN CỦA DÃY SỐ\nTP. HCM — 2013.\n18 / 77",
+      "1. Giới hạn dãy số › Những giới hạn cơ bản\nGiới hạn của dãy số\nNhững giới hạn cơ bản\nNhững giới hạn cơ bản\n1 Nếu |q| < 1 thì dãy_nlim_(→∞) q^n = 0.\n2_nlim_(→∞) 1/n^α = 0, α > 0.\n3_nlim_(→∞) 1/(ln^α n) = 0, α > 0.\n4_nlim_(→∞) 1/(√e^n) = 0.\nn\n5 lim √n^p = 1, ∀p.\nn\n6_nlim_(→∞)^(n→∞) √a = 1, a > 0.\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN CỦA DÃY SỐ\nTP. HCM — 2013.\n19 / 77\nGiới hạn của dãy số\nNhững giới hạn cơ bản\nNhững giới hạn cơ bản\n1_nlim_(→∞) n^p/e^n = 0, ∀p.\n2_nlim_(→∞) (1 + 1/n)^n = e.\n3_nlim_(→∞) (1 + a/n)^n = e^a, ∀a.\n4_nlim_(→∞) (ln^p n)/n^α = 0, ∀p, ∀α > 0.\nChú ý. Với p, α > 0, a > 1, khi n →∞thì\nln^p n << n^α << a^n << n!\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN CỦA DÃY SỐ\nTP. HCM — 2013.",
+      "1. Giới hạn dãy số\n20 / 77\nGiới hạn của dãy số\nĐịnh lý kẹp\nĐịnh lý kẹp\nNếu\n1 x_n ⩽ y_n ⩽ z_n, ∀n > n_0\n2 và_nlim_(→∞) x_n =_nlim_(→∞) z_n = a\nthì lim\n_n_→∞y_n = a.\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN CỦA DÃY SỐ\nTP. HCM — 2013.\n21 / 77",
+      "1. Giới hạn dãy số › Tìm giới hạn lim\nGiới hạn của dãy số\nĐịnh lý kẹp\nVí dụ\nTìm giới hạn lim_(n→∞) 7^n/n^n.\nGiải. Ta có\n0 < 7^n/n^n < (7/8)^n , ∀n > 8.\nmà lim_(n→∞) (7/8)^n = 0 nên lim_(n→∞) 7^n/n^n = 0.\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN CỦA DÃY SỐ\nTP. HCM — 2013.\n22 / 77\nGiới hạn của dãy số\nGiới hạn vô cùng của dãy số\nĐịnh nghĩa\nSố +∞(−∞; ∞) được gọi giới hạn của dãy số\n(x_n) ⊂ ℝ, nếu như với mọi ∀M > 0 tồn tại số\nN = N(M) > 0 sao cho với mọi ∀n > N luôn có\nbất đẳng thức x_n > M(x_n < −M; |x_n| > M).\nChú ý. 1/(∞) = 0; 1/0 = ∞\nVí dụ\nDãy số x_n = q^n(n ∈ ℕ) với q > 1 có giới hạn\nlim_(n→∞) q^n = +∞.\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN CỦA DÃY SỐ\nTP. HCM — 2013.",
+      "1. Giới hạn dãy số\n23 / 77\nGiới hạn của dãy số Giới hạn vô cùng của dãy số\nChứng minh. Vì 0 < 1/q < 1 nên theo giới hạn cơ\nbản, ta có\nlim_(n→∞) (1/q)^n = lim_(n→∞) 1/q^n = 0.\nLấy 1 số M > 0 bất kỳ và đặt ε = 1/M > 0, khi đó\ntheo định nghĩa giới hạn thì đối với số ε > 0 này\ntồn tại số N = N(ε) > 0 sao cho với mọi ∀n > N\nluôn có bất đẳng thức |1/q^n − 0| = 1/q^n < ε = 1/M, có\nnghĩa là q^n > M(∀n > N). Như vậy\nlim_(n→∞) q^n = +∞■\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN CỦA DÃY SỐ\nTP. HCM — 2013.\n24 / 77",
+      "1. Giới hạn dãy số\nGiới hạn của dãy số\nGiới hạn vô cùng của dãy số\nVí dụ\nDãy số x_n = q^n(n ∈ ℕ) với q < −1 có giới hạn\nlim_(n→∞) q^n = ∞.\nChứng minh. Vì 0 < |1/q| < 1 nên theo giới hạn\ncơ bản, ta có\nlim_(n→∞) |1/q|^n = lim_(n→∞) 1/(|q|^n) = lim_(n→∞) 1/(|q^n|) = 0.\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN CỦA DÃY SỐ\nTP. HCM — 2013.\n25 / 77",
+      "1. Giới hạn dãy số\nGiới hạn của dãy số\nGiới hạn vô cùng của dãy số\nLấy 1 số M > 0 bất kỳ và đặt ε = 1/M > 0, khi đó\ntheo định nghĩa giới hạn thì đối với số ε > 0 này\ntồn tại số N = N(ε) > 0 sao cho với mọi ∀n > N\nluôn có bất đẳng thức ||1/q^n| − 0| = 1/(|q|^n) < ε = 1/M,\ncó nghĩa là |x_n| = |q^n| = |q|^n > M(∀n > N). Như\nvậy lim_(n→∞) q^n = ∞■\nChú ý. Số +∞ và −∞ trong trường hợp này\nkhông là giới hạn của dãy x_n = q^n(n ∈ ℕ) với\nq < −1. Vì với mọi số chẵn n thì x_n = q^n > 0,\ncòn với mọi số lẻ n thì x_n = q^n < 0.\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN CỦA DÃY SỐ\nTP. HCM — 2013.\n26 / 77",
+      "1. Giới hạn dãy số\nGiới hạn của dãy số\nDãy con\nĐịnh nghĩa\nCho dãy số (x_n) ⊂ ℝ và n_1 < n_2 < . . . < n_k < . . .\nmột dãy số tự nhiên tăng bất kỳ, khi đó dãy số\nx_(n1), x_(n2), . . . , x_(nk), . . . được gọi là dãy con của\ndãy (x_n). Dãy con được kí hiệu là (x_(nk)).\nĐịnh nghĩa\nSố c ∈ ℝ được gọi là giới hạn riêng của dãy\n(x_n), nếu như tồn tại dãy con (x_(nk)) của dãy (x_n),\nhội tụ đến số c.\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN CỦA DÃY SỐ\nTP. HCM — 2013.\n27 / 77\nGiới hạn của dãy số\nDãy con\nVí dụ\nCho dãy (x_n) với x_n = (−1)^n. Với n = 2k thì dãy\n{1, 1, . . . , 1, . . .} được gọi là 1 dãy con của dãy\n(x_n) và giới hạn riêng của nó x_(2k) → 1, k → ∞.\nVới n = 2k + 1 thì dãy {−1, −1, . . . , −1, . . .}\ncũng là 1 dãy con của dãy (x_n) và giới hạn riêng\ncủa nó x_(2k+1) → −1, k → ∞.\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN CỦA DÃY SỐ\nTP. HCM — 2013.",
+      "1. Giới hạn dãy số\n28 / 77\nGiới hạn của dãy số\nMối quan hệgiữa giới hạn riêng và giới hạn của dãy sốhội tụ\nNếu như dãy (x_n) hội tụđến sốa, thì với mọi dãy\ncon (x_n_k) của dãy (x_n), giới hạn của nó là a.\nlim_(n→∞) x_n = a =⇒ lim_(k→∞) x_(nk) = a\nĐịnh lý\nNếu dãy (x_n) hội tụ thì tất cả giới hạn riêng của\ndãy (x_n) đều bằng nhau và bằng giới hạn của dãy\nsố (x_n).\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN CỦA DÃY SỐ\nTP. HCM — 2013.\n29 / 77",
+      "1. Giới hạn dãy số › Chú ý. Đểchứng minh dãy (x_n) phân kỳta làm như sau: Cách 1. Chỉra 2 dãy con hội tụvề2 giới hạn riêng khác nhau. Cách 2. Chỉra 1 dãy con phân kỳ.\nGiới hạn của dãy số\nMối quan hệgiữa giới hạn riêng và giới hạn của dãy sốhội tụ\nChú ý. Đểchứng minh dãy (x_n) phân kỳta làm\nnhư sau:\nCách 1. Chỉra 2 dãy con hội tụvề2 giới hạn\nriêng khác nhau.\nCách 2. Chỉra 1 dãy con phân kỳ.\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN CỦA DÃY SỐ\nTP. HCM — 2013.\n30 / 77\nGiới hạn của dãy số\nMối quan hệgiữa giới hạn riêng và giới hạn của dãy sốhội tụ\nVí dụ\nNói chung đối với một sốdãy sốthì có thểtồn tại\nnhững giới hạn riêng khác nhau.\nĐối với dãy (x_n) = (−1)^n (n ∈ ℕ), dãy con của nó\n(x_(2k)) = (−1)^(2k) = 1 và (x_(2k−1)) = (−1)^(2k−1) = −1\ncó giới hạn riêng lần lượt là 1 và -1. Chúng không\nbằng nhau.\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN CỦA DÃY SỐ\nTP. HCM — 2013.\n31 / 77",
+      "1. Giới hạn dãy số › Không phải với dãy sốnào cũng có giới hạn riêng.\nGiới hạn của dãy số\nMối quan hệgiữa giới hạn riêng và giới hạn của dãy sốhội tụ\nVí dụ\nKhông phải với dãy sốnào cũng có giới hạn riêng.\nDãy số1, 2, . . . , n, . . . không có giới hạn riêng.\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN CỦA DÃY SỐ\nTP. HCM — 2013.\n32 / 77\nGiới hạn của dãy đơn điệu. Định lý Weierstrass\nGiới hạn của dãy đơn điệu. Định lý Weierstrass\nĐịnh lý\nNếu dãy số đơn điệu tăng (giảm) (x_n) ⊂ ℝ bị\nchặn trên (dưới)\nx_1 ⩽x_2 ⩽. . . ⩽x_n ⩽. . . ⩽y\n(x_1 ⩾x_2 ⩾. . . ⩾x_n ⩾. . . ⩾z),\nthì nó có giới hạn hữu hạn. Còn nếu như dãy số\nđơn điệu tăng (giảm) (x_n) ⊂ ℝ không bị chặn trên\n(dưới) thì giới hạn của nó là +∞(−∞).\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN CỦA DÃY SỐ\nTP. HCM — 2013.\n33 / 77",
+      "1. Giới hạn dãy số\nGiới hạn của dãy đơn điệu. Định lý Weierstrass\nVí dụ\nChứng minh rằng dãy số (x_n) = (1 + 1/n)^n(n ∈ ℕ)\ncó giới hạn hữu hạn. Giới hạn này được kí hiệu là\ne.\nChứng minh. Như ta đã biết dãy (x_n) trên là dãy\ntăng và bịchặn trên. Vì vậy theo định lý\nWeierstrass tồn tại giới hạn hữu hạn\nlim_(n→∞) (1 + 1/n)^n = e.\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN CỦA DÃY SỐ\nTP. HCM — 2013.\n34 / 77\nGiới hạn của dãy đơn điệu. Định lý Weierstrass\nChú ý. Sốe là sốsiêu việt (không phải là sốđại\nsố). Nó không là nghiệm của đa thức với hệsố\nnguyên có bậc n ⩾1.\nSốe ≈2, 718281828459045, sốnày còn được gọi\nlà sốNeper hay sốƠle.\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN CỦA DÃY SỐ\nTP. HCM — 2013.\n35 / 77",
+      "1. Giới hạn dãy số › Tìm giới hạn I = lim\nCác phương pháp tìm giới hạn của dãy số\nDùng biến đổi đại sốđểtìm giới hạn của dãy số\nDùng biến đổi đại sốđểtìm giới hạn của dãy số\nVí dụ\nTìm giới hạn I = lim_(n→∞) (n^2/(n + 1) − n^3/(n^2 + 1)) .\nGiải.\nI = lim_(n→∞) (n^2(n^2 + 1) − n^3(n + 1))/((n + 1)(n^2 + 1)) =\nlim_(n→∞) (n^2 − n^3)/((n + 1)(n^2 + 1)) = lim_(n→∞) (1/n − 1)/((1 + 1/n)(1 + 1/n^2)) =\n= −1.\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN CỦA DÃY SỐ\nTP. HCM — 2013.\n36 / 77",
+      "1. Giới hạn dãy số › Tìm giới hạn I = lim\nCác phương pháp tìm giới hạn của dãy số\nDùng biến đổi đại sốđểtìm giới hạn của dãy số\nVí dụ\nTìm giới hạn I = lim_(n→∞) ((n + 1)^4 − (n − 1)^4)/((n^2 + 1)^2 − (n^2 − 1)^2).\nGiải. I =\n((n + 1 − n + 1)(n + 1 + n − 1)((n + 1)^2 + (n − 1)^2))/((n^2 + 1 − n^2 + 1)(n^2 + 1 + n^2 − 1)) =\nlim_(n→∞) (2n(n^2 + 1))/n^2 = ∞.\nlim\nn→∞\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN CỦA DÃY SỐ\nTP. HCM — 2013.\n37 / 77\nCác phương pháp tìm giới hạn của dãy số\nDùng biến đổi đại sốđểtìm giới hạn của dãy số\nVí dụ\nTìm giới hạn I = lim_(n→∞) 1/(n(√(n^2 − 1) − n)).\nGiải.\nI = lim_(n→∞) (√(n^2 − 1) + n)/(n(n^2 − 1 − n^2)) = lim_(n→∞) (√(1 − 1/n^2) + 1)/(−1) =\n= −2.\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN CỦA DÃY SỐ\nTP. HCM — 2013.",
+      "1. Giới hạn dãy số\n38 / 77\nCác phương pháp tìm giới hạn của dãy số\nDùng biến đổi đại sốđểtìm giới hạn của dãy số\nVí dụ\nTìm giới hạn I = lim_(n→∞) (√(n^2 + 1) − n)/(√(n + 1) − √n).\nGiải.\nI = lim_(n→∞) ((n^2 + 1 − n^2)(√(n + 1) + √n))/((n + 1 − n)(√(n^2 + 1) + n)) =\nlim_(n→∞) (√(1/n + 1/n^2) + √(1/n))/(√(1 + 1/n^2) + 1) = 0.\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN CỦA DÃY SỐ\nTP. HCM — 2013.\n39 / 77",
+      "1. Giới hạn dãy số › Tìm giới hạn I = lim\nCác phương pháp tìm giới hạn của dãy số\nDùng biến đổi đại sốđểtìm giới hạn của dãy số\nVí dụ\nTìm giới hạn I = lim_(n→∞) (√(n^2 + 1) − n)/(√(n^3 + 1) − n√n).\nGiải.\nI = lim_(n→∞) ((n^2 + 1 − n^2)( + n√n))/((n^3 + 1 − n^3)(√(n^2 + 1) + n))√(n^3 + 1 √) =\nlim_(n→∞) (√(n + 1/n^3) + √n)/(√(1 + 1/n^2) + 1) = ∞.\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN CỦA DÃY SỐ\nTP. HCM — 2013.\n40 / 77\nCác phương pháp tìm giới hạn của dãy số\nDùng biến đổi đại sốđểtìm giới hạn của dãy số\nVí dụ\nTìm giới hạn I = lim_(n→∞) (√(n^3 + n)^4 − √n)/(n + 2 + √(n + 1)).\nGiải.\nI = lim_(n→∞)",
+      "1. Giới hạn dãy số\n1 + 2/n + √(1/n + 1/n^2)\n√(1/n + 1/n^3)^4 − √(1/n)\n= 0.\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN CỦA DÃY SỐ\nTP. HCM — 2013.\n41 / 77\nCác phương pháp tìm giới hạn của dãy số\nDùng định lý kẹp giữa tìm giới hạn của dãy số\nDùng định lý kẹp giữa tìm giới hạn của dãy số\nĐịnh lý\nNếu y_n ⩽ x ⩽ z_n, ∀n > n và\nlim_(n→∞) y_n = lim_(n→∞)^n z_n = a thì lim_(n→∞)^0 x_n = a.\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN CỦA DÃY SỐ\nTP. HCM — 2013.\n42 / 77",
+      "1. Giới hạn dãy số › Tìm giới hạn\nCác phương pháp tìm giới hạn của dãy số\nDùng định lý kẹp giữa tìm giới hạn của dãy số\nVí dụ\nTìm giới hạn\nlim\nn→∞\n(1 + 2^2 + . . . + n^n)/n^n.\nGiải.\nĐặt\na_n = (1 + 2^2 + . . . + n^n)/n^n.\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN CỦA DÃY SỐ\nTP. HCM — 2013.\n43 / 77\nCác phương pháp tìm giới hạn của dãy số\nDùng định lý kẹp giữa tìm giới hạn của dãy số\nKhi đó ta có\n1 = n^n/n^n ⩽ a_n ⩽ (n^1 + n^2 + . . . + n^n)/n^n = (n^(n+1) − n)/((n − 1)n^n) =\n= (n^n − 1)/n^n.n/(n − 1) < n/(n − 1).\nVì n/(n − 1) → 1 nên a_n → 1 khi n → ∞.\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN CỦA DÃY SỐ\nTP. HCM — 2013.\n44 / 77",
+      "1. Giới hạn dãy số › Tìm giới hạn I = lim\nCác phương pháp tìm giới hạn của dãy số\nDùng định lý kẹp giữa tìm giới hạn của dãy số\nVí dụ\nTìm giới hạn I = lim_(n→∞) 1/(√(n!))\nGiải.\nBằng phương pháp qui nạp toán học ta có thể\nchứng minh được n! > n^2/4, ∀n ∈ ℕ.\nDo đó 0 < 1/(√(n!)) < 2/n. Mặt khác lim_(n→∞) 2/n = 0 nên\nI = 0.\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN CỦA DÃY SỐ\nTP. HCM — 2013.\n45 / 77\nCác phương pháp tìm giới hạn của dãy số\nDùng định lý kẹp giữa tìm giới hạn của dãy số\nVí dụ\nTìm giới hạn I = lim_(n→∞) √n^n\nGiải.\nTheo công thức nhị thức Newton ta có\nn = (1 + (√n^n − 1))^n = 1 + n(√n^n − 1)+\n+(n(n − 1))/2(√n^n − 1)^2 + . . . + (√n^n − 1)^n.\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN CỦA DÃY SỐ\nTP. HCM — 2013.",
+      "1. Giới hạn dãy số\n46 / 77\nCác phương pháp tìm giới hạn của dãy số\nDùng định lý kẹp giữa tìm giới hạn của dãy số\nVới mọi ∀n > 1 ta có n > (n(n−1))/2(√n^n − 1)^2. Do đó\nvới mọi ∀n > 1, 0 < √n^n − 1 < √(2/(n − 1)). Mặt\nkhác lim_(n→∞) √(2/(n − 1)) = 0 nên lim_(n→∞) √n^n − 1 = 0 hay\nI = 1.\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN CỦA DÃY SỐ\nTP. HCM — 2013.\n47 / 77",
+      "1. Giới hạn dãy số › Tìm giới hạn I = lim\nCác phương pháp tìm giới hạn của dãy số\nDùng định lý kẹp giữa tìm giới hạn của dãy số\nVí dụ\nTìm giới hạn I = lim_(n→∞) √a^n , a > 1.\nGiải.\nTheo công thức nhị thức Newton ta có\na = (1 + (√a^n − 1))^n = 1 + n(√a^n − 1)+\n+(n(n − 1))/2(√a^n − 1)^2 + . . . + (√a^n − 1)^n.\nVới a > 1 ta có a > n(√a^n − 1). Do đó 0 < √a^n − 1 < a/n.\nMặt khác lim_(n→∞) a/n = 0 nên lim_(n→∞) √a^n − 1 = 0 hay I = 1.\nTS. Lê Xuân Đại (BK TPHCM) GIỚI HẠN CỦA DÃY SỐ TP. HCM — 2013. 48 / 77",
+      "1. Giới hạn dãy số › Tìm giới hạn I = lim\nCác phương pháp tìm giới hạn của dãy số Dùng định lý kẹp giữa tìm giới hạn của dãy số\nVí dụ\nTìm giới hạn I = lim_(n→∞) q^n, |q| < 1.\nNếu q = 0 thì I = 0.\nNếu q̸ = 0 thì ta có 1/(|q|) > 1, do đó\n1/(|q|) = 1 + h, h > 0. Theo bất đẳng thức Bernouli\n1/(|q|^n) = (1 + h)^n > 1 + nh > nh ⇒ 0 < |q|^n < 1/nh.\nMặt khác lim_((BKTPHCM)n→∞) 1/nh = 0 nên I = 0.\nTS. Lê Xuân Đại GIỚI HẠN CỦA DÃY SỐ TP. HCM — 2013. 49 / 77\nCác phương pháp tìm giới hạn của dãy số Dùng định lý kẹp giữa tìm giới hạn của dãy số\nVí dụ\nTìm giới hạn I = lim_(n→∞) n/a^n, a > 1.\nTheo công thức nhịthức Newton ta có\na^n = (1 + (a −1))^n = 1 + n(a −1)\n+(n(n − 1))/2(a − 1)^2 + . . . + (a − 1)^n.\nVới a > 1 ta có a^n > (n(n−1))/2(a − 1)^2. Do đó",
+      "1. Giới hạn dãy số\n0 < n/a^n < 2/((n − 1)(a − 1)^2). Mặt khác\nlim_(n→∞) 2/((n − 1)(a − 1)^2) = 0 nên I = 0.\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN CỦA DÃY SỐ\nTP. HCM — 2013.\n50 / 77\nCác phương pháp tìm giới hạn của dãy số\nDùng định lý kẹp giữa tìm giới hạn của dãy số\nVí dụ\nI = lim_(n→+∞) ((−1)^n)/n^α, α > 0\nGiải.\nVới α > 0 ta có\n(−1)/n^α ⩽ ((−1)^n)/n^α ⩽ 1/n^α\nMặt khác lim_(n→∞) (−1)/n^α = lim_(n→∞) 1/n^α = 0 nên I = 0.\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN CỦA DÃY SỐ\nTP. HCM — 2013.\n51 / 77",
+      "1. Giới hạn dãy số › Tìm giới hạn của dãy a_n = 1 + 7^n^+2\nCác phương pháp tìm giới hạn của dãy số\nSửdụng giới hạn cơ bản\nSửdụng giới hạn cơ bản\nVí dụ\nTìm giới hạn của dãy a_n = (1 + 7^(n+2))/(3 − 7^n)\nChia tử số và mẫu số cho 7^n ta được\nlim_(n→∞) a_n = lim_(n→∞) (1/7^n + 7^2)/(3/7^n − 1) = −49 vì lim_(n→∞) 1/7^n = 0.\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN CỦA DÃY SỐ\nTP. HCM — 2013.\n52 / 77\nCác phương pháp tìm giới hạn của dãy số\nSửdụng giới hạn cơ bản\nVí dụ\nTìm giới hạn lim\nn→∞\n(2^(n+2) + 3^(n+3))/(2^n + 3^n)\nChia tửsốvà mẫu sốcho 3^n ta có\na_n = (4.2^n/3^n + 3^3)/(2^n/3^n + 1)\nDo đó lim_(n→∞) a_n = lim_(n→∞) (4.2^n/3^n + 3)/(2^n/3^n + 1)^3 = 27 vì\nn\nlim_(n→∞) 2/3^n = 0.\nTS. Lê Xuân Đại (BK TPHCM) GIỚI HẠN CỦA DÃY SỐ TP. HCM — 2013. 53 / 77",
+      "1. Giới hạn dãy số › Tìm giới hạn lim\nCác phương pháp tìm giới hạn của dãy số\nSửdụng giới hạn cơ bản\nVí dụ\nTìm giới hạn lim_(n→∞) (5.2^n − 3.5^(n+1))/(100.2^n + 2.5^n)\nChia tửsốvà mẫu sốcho 5^n ta có\na_n = (5.2^n/5^n − 3.5)/(100.2^n/5^n + 2)\nDo đó lim_(n→∞) a_n = lim_(n→∞) (5.2^n/5^n − 3.5)/(100.2^n/5^n + 2) = −15/2 vì\nn\nlim_(n→∞) 2/5^n = 0.\nTS. Lê Xuân Đại (BK TPHCM) GIỚI HẠN CỦA DÃY SỐ TP. HCM — 2013. 54 / 77",
+      "1. Giới hạn dãy số › Tìm giới hạn lim\nCác phương pháp tìm giới hạn của dãy số Sử dụng giới hạn cơ bản\nVí dụ\nTìm giới hạn $\\lim_{n \\to \\infty} \\frac{(-1)^n . 6^n - 5^{n+1}}{5^n - (-1)^n . 6^{n+1}}$\nChia tử số và mẫu số cho $(-6)^n$ ta có\n$a_n = \\frac{1 - \\frac{5 . 5^n}{(-6)^n}}{\\frac{5^n}{(-6)^n} - 6}$\nDo đó $\\lim_{n \\to \\infty} a_n = \\lim_{n \\to \\infty} \\frac{1 - \\frac{5 . 5^n}{(-6)^n}}{\\frac{5^n}{(-6)^n} - 6} = -\\frac{1}{6}$ vì\n$\\lim_{n \\to \\infty} \\frac{5^n}{(-6)^n} = 0$.\nTS. Lê Xuân Đại (BK TPHCM) GIỚI HẠN CỦA DÃY SỐ TP. HCM — 2013. 55 / 77",
+      "1. Giới hạn dãy số › Tìm giới hạn lim\nCác phương pháp tìm giới hạn của dãy số\nSửdụng giới hạn cơ bản\nVí dụ\nTìm giới hạn lim_(n→∞) (2^n + 3^(−n))/(2^(−n) − 3^n)\nChia tửsốvà mẫu sốcho 3^n ta có\na_n = (2^n/3^n + 1/9^n)/(1/6^n − 1)\nDo đó lim_(n→∞) a_n = lim_(n→∞) (2^n/3^n + 1/9^n)/(1/6^n − 1) = 0 vì\nn\nlim_(n→∞) 2/3^n = lim_(n→∞) 1/9^n = lim_(n→∞) 1/6^n = 0.\nTS. Lê Xuân Đại (BK TPHCM) GIỚI HẠN CỦA DÃY SỐ TP. HCM — 2013. 56 / 77",
+      "1. Giới hạn dãy số › Tìm giới hạn lim\nCác phương pháp tìm giới hạn của dãy số Sử dụng giới hạn cơ bản\nVí dụ\nn\nTìm giới hạn lim_(n→∞) ((−1) + 1/n)/(1/n^2 − (−1)^n)\nChia tử số và mẫu số cho (−1)^n ta có\na_n = (1 + ((−1)^n)/n)/(((−1)^n)/n^2 − 1)\nDo đó lim_(n→∞) a_n = lim_(n→∞) (1 + ((−1)^n)/n)/(((−1)^n)/n^2 − 1)\n= −1 vì\nlim_(n→∞) ((−1)^n)/n = lim_(n→∞) ((−1)^n)/n^2 = 0.\nTS. Lê Xuân Đại (BK TPHCM) GIỚI HẠN CỦA DÃY SỐ TP. HCM — 2013. 57 / 77",
+      "1. Giới hạn dãy số › Chứng minh rằng dãy\nCác phương pháp tìm giới hạn của dãy số\nDùng định lý Weierstrass vềsựtồn tại giới hạn của dãy đơn điệu\nDùng định lý Weierstrass vềsựtồn tại giới hạn của dãy\nđơn điệu\nVí dụ\nChứng minh rằng dãy\na_n = 1/(5 + 1) + 1/(5^2 + 1) + . . . + 1/(5^n + 1) hội tụ.\nGiải.\nDãy a_n là dãy đơn điệu tăng. Thật vậy, vì\na_(n+1) = a_n + 1/(5^(n+1) + 1)\nnên a_(n+1) > a_n.\nGIỚI HẠN CỦA DÃY SỐ TP. HCM — 2013. 58 / 77\nTS. Lê Xuân Đại (BK TPHCM)\nCác phương pháp tìm giới hạn của dãy số\nDùng định lý Weierstrass vềsựtồn tại giới hạn của dãy đơn điệu\nDãy a_n bịchặn trên. Thật vậy\na_n = 1/(5 + 1)+1/(5^2 + 1)+. . .+1/(5^n + 1) < 1/5+1/5^2+. . .+1/5^n\n= 1/4 (1 − 1/5^n) < 1/4.\nNhư vậy, dãy a_n đã cho đơn điệu tăng và bị chặn\ntrên nên nó hội tụ.\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN CỦA DÃY SỐ\nTP. HCM — 2013.",
+      "1. Giới hạn dãy số\n59 / 77\nCác phương pháp tìm giới hạn của dãy số\nDùng định lý Weierstrass vềsựtồn tại giới hạn của dãy đơn điệu\nVí dụ\nChứng minh rằng dãy\na_n = 1/(3 + 1) + 1/(3^2 + 2) + . . . + 1/(3^n + n) hội tụ.\nGiải.\nDãy a_n là dãy đơn điệu tăng. Thật vậy, vì\na_(n+1) = a_n + 1/(3^(n+1) + n + 1)\nnên a_n_+1 > a_n.\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN CỦA DÃY SỐ\nTP. HCM — 2013.\n60 / 77",
+      "1. Giới hạn dãy số › Dãy a_n bịchặn trên. Thật vậy\nCác phương pháp tìm giới hạn của dãy số\nDùng định lý Weierstrass vềsựtồn tại giới hạn của dãy đơn điệu\nDãy a_n bịchặn trên. Thật vậy\na_n = 1/(3 + 1)+1/(3^2 + 2)+. . .+1/(3^n + n) < 1/3+1/3^2+. . .+1/3^n\n= 1/2 (1 − 1/3^n) < 1/2.\nNhư vậy, dãy a_n đã cho đơn điệu tăng và bị chặn\ntrên nên nó hội tụ.\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN CỦA DÃY SỐ\nTP. HCM — 2013.\n61 / 77\nCác phương pháp tìm giới hạn của dãy số\nDùng định lý Weierstrass vềsựtồn tại giới hạn của dãy đơn điệu\nVí dụ\nChứng minh rằng dãy a_n = 2^n/(n!) hội tụ và tìm giới\nhạn của nó.\nGiải. Dãy a_n là dãy đơn điệu giảm. Thật vậy, vì\na_(n+1)\na_n\n=\n(2^(n+1))/((n+1)!)\n2^n/(n!) = 2/(n + 1) < 1, ∀n > 1.\nnên a_n_+1 < a_n.\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN CỦA DÃY SỐ\nTP. HCM — 2013.",
+      "1. Giới hạn dãy số\n62 / 77\nCác phương pháp tìm giới hạn của dãy số\nDùng định lý Weierstrass vềsựtồn tại giới hạn của dãy đơn điệu\nDãy a_n bị chặn dưới bởi 0 vì a_n > 0. Như vậy, dãy\na_n đã cho đơn điệu giảm và bị chặn dưới nên nó\nhội tụ.\nGiả sử lim_(n→∞) a_n = a. Ta có a_(n+1) = 2/(n + 1)a_n. Lấy\ngiới hạn 2 vế của đẳng thức này khi n → ∞ ta\nđược\nlim_(n→∞) a_(n+1) = lim_(n→∞) 2/(n + 1). lim_(n→∞) a_n.\nDo đó a = 0.a ⇒ a = 0. Vậy lim_(n→∞) 2^n/(n!) = 0.\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN CỦA DÃY SỐ\nTP. HCM — 2013.\n63 / 77",
+      "1. Giới hạn dãy số\nCác phương pháp tìm giới hạn của dãy số\nDùng định lý Weierstrass vềsựtồn tại giới hạn của dãy đơn điệu\nVí dụ\nCho dãy a_1 = √2, a_(n+1) = √2a_n. Chứng minh rằng\ndãy (a_n) hội tụ và tìm giới hạn của nó.\nGiải.\nDãy a_n là dãy đơn điệu tăng vì\na_1 < a_2 < a_3 < . . . .\nTa sẽ chứng minh dãy a_n bị chặn trên bởi 2.\nThật vậy, a_1 = √2, a_2 = √2a_1 < √2.2 = 2.\nGiả sử đã chứng minh được rằng a_n ⩽ 2. Ta sẽ\nchứng minh a_(n+1) ⩽ 2.\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN CỦA DÃY SỐ\nTP. HCM — 2013.\n64 / 77",
+      "1. Giới hạn dãy số\nCác phương pháp tìm giới hạn của dãy số Dùng định lý Weierstrass về sự tồn tại giới hạn của dãy đơn điệu\nThật vậy, a_(n+1) = √2a_n ⩽ √2.2 = 2. Vậy theo\nnguyên lý qui nạp ta có a_n ⩽ 2, ∀n ∈ ℕ\nNhư vậy, dãy a_n đã cho đơn điệu tăng và bị chặn\ntrên nên nó hội tụ.\nGiả sử lim_(n→∞) a_n = a. Ta có\na_(n+1) = √2a_n ⇒ a_(n+1)^2 = 2a_n. Lấy giới hạn 2 vế\ncủa đẳng thức này khi n → ∞ ta được\nlim_(n→∞) a_(n+1)^2 = 2. lim_(n→∞) a_n.\nDo đó a^2 = 2.a ⇒ a = 0 ⋁ a = 2. Vì a_n > √2\nnên a = 2. Vậy lim_(n→∞) a_n = 2.\nTS. Lê Xuân Đại (BK TPHCM) GIỚI HẠN CỦA DÃY SỐ TP. HCM — 2013. 65 / 77",
+      "1. Giới hạn dãy số\nCác phương pháp tìm giới hạn của dãy số\nDùng định lý Weierstrass vềsựtồn tại giới hạn của dãy đơn điệu\nVí dụ\nCho dãy x_1 = √a, x_2 = √(a + √a), . . . , x_n =\n√(√(a + . . . + √a))a + , a > 0. Chứng minh\n| { }\nn dấu căn\nrằng dãy (x_n) hội tụ và tìm giới hạn của nó.\nGiải. Dãy a_n là dãy đơn điệu tăng vì\nx_1 < x_2 < x_3 < . . . . Ta sẽ chứng minh dãy x_n bị\nchặn trên bởi √a + 1.\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN CỦA DÃY SỐ\nTP. HCM — 2013.\n66 / 77",
+      "1. Giới hạn dãy số\nCác phương pháp tìm giới hạn của dãy số Dùng định lý Weierstrass về sự tồn tại giới hạn của dãy đơn điệu\nThật vậy, x_1 = √a < √a + 1, x_2 = √(a + √a) <\n√(a + √a + 1) < √(a + 2√a + 1) = √a + 1.\nGiả sử đã chứng minh được rằng x_n ⩽ √a + 1. Ta\nsẽ chứng minh x_(n+1) ⩽ √a + 1.\nThật vậy, x_(n+1) = √(a + x_n) < √(a + √a + 1) <\n√(a + 2√a + 1) = √a + 1. Vậy theo nguyên lý qui\nnạp ta có x_n ⩽ √a + 1, ∀n ∈ ℕ\nNhư vậy, dãy x_n đã cho đơn điệu tăng và bị chặn\ntrên nên nó hội tụ.\nGiả sử lim_(n→∞) x_n = x. Ta có\nx_(n+1) = √(a + x_n) ⇒ x_(n+1)^2 = a + x_n.\nTS. Lê Xuân Đại (BK TPHCM) GIỚI HẠN CỦA DÃY SỐ TP. HCM — 2013. 67 / 77",
+      "1. Giới hạn dãy số › ta được lim\nCác phương pháp tìm giới hạn của dãy số\nDùng định lý Weierstrass vềsựtồn tại giới hạn của dãy đơn điệu\nLấy giới hạn 2 vế của đẳng thức này khi n → ∞\nta được\nlim_(n→∞) x_(n+1)^2 = a + lim_(n→∞) x_n.\nDo đó x^2 = a + x ⇒ x = (1 − √(1 + 4a))/2 ⋁ x =\n(1 + √(1 + 4a))/2. Vì x_n > 0 nên x = (1 + √(1 + 4a))/2.\nVậy lim_(n→∞) x_n = (1 + √(1 + 4a))/2.\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN CỦA DÃY SỐ\nTP. HCM — 2013.\n68 / 77\nCác phương pháp tìm giới hạn của dãy số\nSửdụng giới hạn của sốe\nSửdụng giới hạn của sốe tính giới hạn dạng 1^∞\nlim_(n→∞) (1 + 1/n)^n = e\nNếu lim\n_n_→∞u_n = ∞thì\nn\nlim_(n→∞) (1 + 1/u_n)^u = e\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN CỦA DÃY SỐ\nTP. HCM — 2013.",
+      "1. Giới hạn dãy số\n69 / 77\nCác phương pháp tìm giới hạn của dãy số\nSửdụng giới hạn của sốe\nVí dụ\nTìm giới hạn lim_(n→∞) (1 + 1/(n + k))^n , k ∈ ℕ\nGiải.\nlim_(n→∞) (1 + 1/(n + k))^n =\nn+k).n/(n+k)\nlim_(n→∞) (1 + 1/(n + k))^( = e^1 = e.\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN CỦA DÃY SỐ\nTP. HCM — 2013.\n70 / 77",
+      "1. Giới hạn dãy số › Tìm giới hạn lim\nCác phương pháp tìm giới hạn của dãy số\nSửdụng giới hạn của sốe\nVí dụ\nTìm giới hạn lim_(n→∞) (n/(n + 1))^n .\nGiải.\nlim_(n→∞) (1 − 1/(n + 1))^n =\n(n+1).n/(−(n+1))\nlim_(n→∞) (1 − 1/(n + 1))^− = e^(−1).\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN CỦA DÃY SỐ\nTP. HCM — 2013.\n71 / 77\nCác phương pháp tìm giới hạn của dãy số\nSửdụng giới hạn của sốe\nVí dụ\nTìm giới hạn lim_(n→∞) (1 + 1/2n)^n .\nGiải.\nn.n/2n\nlim_(n→∞) (1 + 1/2n)^n = lim_(n→∞) (1 + 1/2n)^2 = e 1/2.\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN CỦA DÃY SỐ\nTP. HCM — 2013.\n72 / 77",
+      "1. Giới hạn dãy số › Tìm giới hạn lim\nCác phương pháp tìm giới hạn của dãy số\nSửdụng giới hạn của sốe\nVí dụ\nn\nTìm giới hạn lim_(n→∞) ((2^n + 1)/2^n)^2 .\nn\nn\nlim_(n→∞) ((2^n + 1)/2^n)^2 = lim_(n→∞) (1 + 1/2^n)^2 = e.\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN CỦA DÃY SỐ\nTP. HCM — 2013.\n73 / 77\nCác phương pháp tìm giới hạn của dãy số\nChứng minh dãy sốphân kỳ\nChứng minh dãy sốphân kỳ\nĐịnh lý\nNếu dãy (x_n) hội tụ thì tất cả giới hạn riêng của\ndãy (x_n) đều bằng nhau và bằng giới hạn của dãy\nsố (x_n).\nChú ý. Đểchứng minh dãy (x_n) phân kỳta làm\nnhư sau:\nCách 1. Chỉra 2 dãy con hội tụvề2 giới hạn\nriêng khác nhau.\nCách 2. Chỉra 1 dãy con phân kỳ.\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN CỦA DÃY SỐ\nTP. HCM — 2013.\n74 / 77",
+      "1. Giới hạn dãy số\nCác phương pháp tìm giới hạn của dãy số\nChứng minh dãy sốphân kỳ\nVí dụ\nChứng minh rằng dãy a_n = (−1)^n(2n + 3)/(3n + 1) phân kỳ.\nGiải. Xét 2 dãy con với chỉsốchẵn và lẻta có\na_(2k) = (−1)^(2k) (2.2k + 3)/(3.2k + 1) → 2/3,\na_(2k+1) = (−1)^(2k+1)(2.(2k + 1) + 3)/(3.(2k + 1) + 1) → −2/3\nkhi k →∞. Vậy tồn tại 2 dãy con có giới hạn\nkhác nhau nên dãy đã cho phân kỳ.\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN CỦA DÃY SỐ\nTP. HCM — 2013.\n75 / 77\nThực hành MatLab\nCác lệnh cơ bản\n1 Khai báo dãy số: ví dụ: syms n; xn=1/n\n2 Tính giới hạn của dãy số: limit(xn, n, inf)\n3 Biểu diễn hình học của dãy số:\nVí dụ: N = 1000; for i = 1 : N X(i) = 1/i;\nplot(X(i),’.’); end;\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN CỦA DÃY SỐ\nTP. HCM — 2013.",
+      "1. Giới hạn dãy số\n76 / 77\nThực hành MatLab\nTHANK YOU FOR ATTENTION\nTS. Lê Xuân Đại (BK TPHCM)\nGIỚI HẠN CỦA DÃY SỐ\nTP. HCM — 2013.\n77 / 77"
+    ]
+  },
+  "reference": {
+    "coverage": "complete",
+    "chunk_ids": [
+      "be983938-e6cb-4d49-901a-58fcb1335521",
+      "9094bdfd-e0ef-436a-800b-ae44e2e3e8cc",
+      "c6c872a0-97b1-4878-bc41-f054d170c886",
+      "2522bdf6-13ae-471f-aa87-014c2d6b6d6e",
+      "4dba1a01-e53e-42e3-82c1-077ecdb2fef0",
+      "241b5f9d-547a-4e1d-96c5-651e591fd5ac",
+      "a27ede74-5684-4c58-b86d-1f32a4192050",
+      "8b82f4e9-c4f8-4b10-852c-3a5e5a75100d",
+      "94813606-03f5-4488-9497-ea340f26f90b",
+      "9dc86b0a-dc9e-4933-b7c2-0f000cea1913",
+      "b2128147-2493-4cce-ad0e-5a4b9eeda808",
+      "0e0dc800-32b6-46f6-b16e-b6e837307a18",
+      "2e63820a-67c1-4fee-ba29-8cacebe891bb",
+      "a208e941-8518-40f8-b814-2ac16f3b1f3d",
+      "6f9e9675-3dd9-4339-ade1-8fe0d704f02e",
+      "acbd9829-9c74-487d-9c7c-4b25b7a2ff59",
+      "9877634f-0039-4fe9-b79a-30fdde6f5192",
+      "26462db2-3674-413c-a4fc-eec09fb92535",
+      "0e3cb153-fc9c-406f-b7e0-caae50e5e5ea",
+      "8503c200-f372-4ef0-b82f-76c4dd43d355",
+      "9cdac755-af00-4eb0-8026-e4493932c8d8",
+      "ddc3c0b0-8e76-4839-ac4d-b3d7b8c3bea5",
+      "084bfcf9-0f61-45c7-a9b6-1b1e685e3177",
+      "29d11b87-1d60-4e55-b4ad-2f6751fc2285",
+      "168cce5f-ba72-45b2-adf1-33c2565db149",
+      "39c28391-ef84-4d3e-9ed7-e71d8d684334",
+      "b1295e2e-9305-4e88-803e-67074081d1c8",
+      "c3374c48-b016-4831-a822-851761c083fe",
+      "0138e53d-1c70-4358-90eb-9c3f61d47f04",
+      "8b8f3d86-115f-4729-bcbe-00260181112e",
+      "ea1f999b-fbb6-44e6-b53c-835106a40c73",
+      "5c9562dd-422c-47a8-9873-b2fda9b85d84",
+      "883106ab-0c79-4709-9552-169a15c77147",
+      "d0a3fb07-9f12-4067-a274-d51293122fa5",
+      "eea21d6e-7670-4e6a-ac92-15a29c70e20c",
+      "7bfd30f5-9ba7-4612-98c4-f1a8cb18c10e",
+      "f71e3ea9-aaa5-4cad-a6f5-aececbd55ddd",
+      "75b93943-ede9-4710-b9d5-da7693534a2a",
+      "0d27b821-d0e8-4dcb-8e79-9ab489e8aab5",
+      "ff1b9c65-5f59-4d5f-83ef-eeffec4e4854",
+      "45b589b6-c9b6-4024-a62d-9c349ae4a7a2",
+      "6182878a-10a9-4149-ae97-356ec52882f8",
+      "887a8191-1463-45d5-9b10-2b2a89364359",
+      "3eb9fe0f-2746-4b38-af4b-d1e2b50312aa",
+      "a73430da-ad5c-4548-a2ad-952c6ee1ed45",
+      "6b723dbd-b62c-487e-8212-3a7ec6f97792",
+      "d389bf39-dfa1-4a33-9da2-37c3e2a9a20e",
+      "b9cec253-a44a-4817-ad03-717c3502a5a0",
+      "20652b0c-e1b1-433b-a1b8-1808fb9289e2",
+      "b5027c8b-edda-4673-a070-fa910d0269ab",
+      "d2fee96c-e276-4347-bda1-abe0f23f743f",
+      "b545d53c-cb2b-4fc2-a83f-1c81374adefe",
+      "400c6deb-7604-40ed-9b0a-21fb3498f73d",
+      "e5e465c8-e46e-404a-90bc-0c1fb58aa675"
+    ],
+    "total_chunks": 54
+  },
+  "claim_citations": null
+}

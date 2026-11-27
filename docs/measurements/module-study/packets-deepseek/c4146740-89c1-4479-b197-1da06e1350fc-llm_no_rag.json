@@ -1,0 +1,245 @@
+{
+  "pair_id": "c4146740-89c1-4479-b197-1da06e1350fc",
+  "group": "llm_no_rag",
+  "generator_model": "deepseek-flash",
+  "generation_models": [
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    }
+  ],
+  "packet": {
+    "anon_id": "",
+    "topic": "Giới thiệu về lập trình hướng đối tượng (Introduction to Object Oriented Programming)",
+    "bloom_level": "understand",
+    "learning_objective": "Sau khi hoàn thành module, người học có thể giải thích mô hình lập trình hướng đối tượng (OOP) cùng bốn nguyên lý cốt lõi của nó: Encapsulation, Inheritance, Polymorphism và Abstraction.",
+    "sub_objectives": [
+      "Nêu định nghĩa của lập trình hướng đối tượng (OOP) và cấu trúc của một đối tượng gồm thuộc tính (attributes) và phương thức (methods)",
+      "Giải thích lợi ích mà mỗi nguyên lý cốt lõi mang lại: Encapsulation bảo vệ tính toàn vẹn dữ liệu, Inheritance thúc đẩy tái sử dụng mã nguồn, Polymorphism giúp mã linh hoạt, Abstraction giảm độ phức tạp",
+      "Mô tả cách mỗi nguyên lý cốt lõi được minh họa bằng ví dụ trong tài liệu (Car có thuộc tính private speed và phương thức getSpeed(), Truck kế thừa Vehicle, phương thức draw() hành xử khác nhau với Circle và Rectangle, nút start của xe che giấu chi tiết động cơ)",
+      "Giải thích vì sao OOP tạo ra các hệ thống có tính module hóa, mở rộng được, tái sử dụng được và dễ hiểu hơn"
+    ],
+    "content_markdown": "## Định nghĩa lập trình hướng đối tượng (OOP) và cấu trúc của một đối tượng\n\n- **Lập trình hướng đối tượng (Object-Oriented Programming – OOP)** là mô hình lập trình tổ chức chương trình xoay quanh các **đối tượng (object)** thay vì xoay quanh các hàm và thủ tục rời rạc.\n- **Class (lớp)** là bản thiết kế/khuôn mẫu mô tả một loại đối tượng; **object** là một thể hiện (instance) cụ thể được tạo ra từ class đó.\n- Một đối tượng gói hai thành phần gắn với nhau:\n  - **Thuộc tính (attributes)** – dữ liệu/trạng thái của đối tượng, ví dụ `speed`, `color`, `model` của một chiếc xe.\n  - **Phương thức (methods)** – hành vi/thao tác mà đối tượng có thể thực hiện, ví dụ `getSpeed()`, `accelerate()`, `brake()`.\n- Đối tượng tương tác với nhau bằng cách gọi phương thức của nhau (gửi message) thông qua phần giao diện mà đối tượng công bố.\n- **Ví dụ khái quát:** class `Car` khai báo thuộc tính `speed`, `color` và phương thức `getSpeed()`, `accelerate()`; mỗi đối tượng `Car` cụ thể có giá trị `speed` riêng nhưng dùng chung tập phương thức đã định nghĩa.\n\n## Lợi ích của bốn nguyên lý cốt lõi\n\n- **Encapsulation (đóng gói) – bảo vệ tính toàn vẹn dữ liệu:** dữ liệu bên trong được che giấu và chỉ truy cập qua các phương thức do class kiểm soát, nhờ đó ngăn việc thay đổi tùy tiện từ bên ngoài và giữ dữ liệu luôn ở trạng thái hợp lệ.\n- **Inheritance (kế thừa) – thúc đẩy tái sử dụng mã nguồn:** lớp con thừa hưởng thuộc tính và phương thức của lớp cha, nên phần chung chỉ cần viết một lần và được dùng lại ở nhiều lớp.\n- **Polymorphism (đa hình) – giúp mã linh hoạt:** cùng một lời gọi phương thức có thể cho hành vi khác nhau tùy đối tượng nhận, nên mã gọi không phải rẽ nhánh theo từng loại cụ thể và có thể làm việc với nhiều loại khác nhau qua một kiểu chung.\n- **Abstraction (trừu tượng hóa) – giảm độ phức tạp:** chỉ phơi ra cái mà đối tượng *làm* (giao diện), ẩn đi cách nó *làm* (chi tiết cài đặt), giúp người dùng đối tượng chỉ cần nắm mức trừu tượng cần thiết.\n\n## Bốn nguyên lý cốt lõi qua các ví dụ minh họa\n\n- **Encapsulation – `Car` với thuộc tính `private speed` và phương thức `getSpeed()`:**\n  - `speed` được khai báo `private`, bên ngoài không đọc/ghi trực tiếp được.\n  - Muốn biết tốc độ phải gọi `getSpeed()`; mọi kiểm tra tính hợp lệ (ví dụ không cho tốc độ âm) nằm bên trong class.\n  - Nhờ vậy trạng thái của đối tượng chỉ thay đổi qua con đường đã được kiểm soát.\n- **Inheritance – `Truck` kế thừa `Vehicle`:**\n  - `Vehicle` định nghĩa phần chung (ví dụ thuộc tính và phương thức như `start()`, `stop()`).\n  - `Truck` thừa hưởng toàn bộ phần chung đó và chỉ bổ sung phần riêng của mình (ví dụ tải trọng), không phải viết lại phần đã có.\n- **Polymorphism – phương thức `draw()` hành xử khác nhau với `Circle` và `Rectangle`:**\n  - Cùng một lời gọi `draw()` nhưng `Circle` vẽ hình tròn, `Rectangle` vẽ hình chữ nhật.\n  - Mã gọi chỉ cần làm việc với kiểu chung (ví dụ `Shape`) mà không cần kiểm tra từng loại bằng câu lệnh điều kiện.\n- **Abstraction – nút `start` của xe che giấu chi tiết động cơ:**\n  - Người lái chỉ bấm nút `start`; các chi tiết bên trong động cơ (hệ thống đánh lửa, cấp nhiên liệu, hệ thống điện…) bị che giấu.\n  - Giao diện đơn giản ở bên ngoài, phần phức tạp được đóng gói bên trong.\n\n## Vì sao OOP tạo ra hệ thống có tính module hóa, mở rộng được, tái sử dụng được và dễ hiểu hơn\n\n- **Tính module hóa:** mỗi class là một đơn vị độc lập gói dữ liệu cùng hành vi của nó; thay đổi bên trong một class ít lan sang các phần khác nhờ ranh giới do encapsulation và abstraction tạo ra.\n- **Khả năng mở rộng:** có thể thêm lớp mới kế thừa lớp có sẵn và định nghĩa lại hành vi (ví dụ thêm một hình mới với `draw()` riêng) mà không phải sửa mã đang chạy — đây là đóng góp trực tiếp của inheritance và polymorphism.\n- **Khả năng tái sử dụng:** phần chung được viết một lần ở lớp cha rồi dùng lại ở nhiều lớp con; các class đã kiểm thử có thể được tái sử dụng thay vì viết lại.\n- **Dễ hiểu hơn:** chương trình mô phỏng gần với khái niệm thật của miền bài toán; tên class và phương thức phản ánh đúng ý nghĩa nghiệp vụ; chi tiết không cần thiết bị ẩn đi nên người đọc tập trung vào đúng mức trừu tượng.\n- **Liên hệ ngược lại bốn nguyên lý:** encapsulation và abstraction làm giảm phụ thuộc và độ phức tạp giữa các phần; inheritance và polymorphism tạo ra các điểm mở rộng sạch, nhờ đó hệ thống vừa dễ đọc vừa dễ phát triển tiếp.",
+    "slides": [
+      {
+        "title": "Lập trình hướng đối tượng (OOP) và bốn nguyên lý cốt lõi",
+        "bullets": [
+          "Mục tiêu: giải thích mô hình lập trình hướng đối tượng (OOP)",
+          "Bốn nguyên lý cốt lõi: Encapsulation, Inheritance, Polymorphism, Abstraction"
+        ]
+      },
+      {
+        "title": "OOP là gì?",
+        "bullets": [
+          "Là mô hình lập trình tổ chức chương trình xoay quanh các đối tượng (object)",
+          "Không xoay quanh các hàm và thủ tục rời rạc",
+          "Object-Oriented Programming – OOP"
+        ]
+      },
+      {
+        "title": "Class và object",
+        "bullets": [
+          "Class (lớp): bản thiết kế/khuôn mẫu mô tả một loại đối tượng",
+          "Object: một thể hiện (instance) cụ thể được tạo ra từ class đó"
+        ]
+      },
+      {
+        "title": "Hai thành phần của một đối tượng",
+        "bullets": [
+          "Thuộc tính (attributes): dữ liệu/trạng thái – ví dụ speed, color, model",
+          "Phương thức (methods): hành vi/thao tác – ví dụ getSpeed(), accelerate(), brake()",
+          "Hai thành phần này gắn với nhau trong một đối tượng"
+        ]
+      },
+      {
+        "title": "Đối tượng tương tác với nhau như thế nào?",
+        "bullets": [
+          "Tương tác bằng cách gọi phương thức của nhau (gửi message)",
+          "Thông qua phần giao diện mà đối tượng công bố"
+        ]
+      },
+      {
+        "title": "Ví dụ khái quát: class Car",
+        "bullets": [
+          "Class Car khai báo thuộc tính speed, color và phương thức getSpeed(), accelerate()",
+          "Mỗi đối tượng Car cụ thể có giá trị speed riêng",
+          "Mọi đối tượng Car dùng chung tập phương thức đã định nghĩa"
+        ]
+      },
+      {
+        "title": "Encapsulation – bảo vệ tính toàn vẹn dữ liệu",
+        "bullets": [
+          "Dữ liệu bên trong được che giấu",
+          "Chỉ truy cập qua các phương thức do class kiểm soát",
+          "Ngăn thay đổi tùy tiện từ bên ngoài; giữ dữ liệu luôn hợp lệ"
+        ]
+      },
+      {
+        "title": "Inheritance – thúc đẩy tái sử dụng mã nguồn",
+        "bullets": [
+          "Lớp con thừa hưởng thuộc tính và phương thức của lớp cha",
+          "Phần chung chỉ cần viết một lần, được dùng lại ở nhiều lớp"
+        ]
+      }
+    ],
+    "examples": [
+      {
+        "context": "Một giảng viên xây dựng module quản lý điểm cho lớp học phần. Ông định nghĩa class `Student` với các thuộc tính `studentId`, `fullName`, `gpa` và các phương thức `getGpa()`, `updateGpa(newGpa)`. Sau đó ông tạo hai đối tượng cụ thể: sinh viên An có `studentId = 'SV01'`, `fullName = 'Nguyễn Văn An'`, `gpa = 3.2`; sinh viên Bình có `studentId = 'SV02'`, `fullName = 'Trần Thị Bình'`, `gpa = 3.6`. Trợ giảng cần đọc điểm của An và cập nhật điểm của Bình thành 3.8.",
+        "analysis": "Bước 1: Xác định class `Student` là bản thiết kế/khuôn mẫu mô tả một loại đối tượng, đúng theo định nghĩa class trong Content.\nBước 2: Xác định `An` và `Bình` là hai object (instance) cụ thể được tạo ra từ class `Student`; mỗi object có giá trị riêng cho các thuộc tính `studentId`, `fullName`, `gpa`.\nBước 3: Phân loại `studentId`, `fullName`, `gpa` là attributes (dữ liệu/trạng thái của đối tượng), còn `getGpa()`, `updateGpa(newGpa)` là methods (hành vi mà đối tượng có thể thực hiện).\nBước 4: Trợ giảng đọc điểm của An bằng lời gọi `An.getGpa()` và cập nhật điểm của Bình bằng lời gọi `Binh.updateGpa(3.8)`; tức là tương tác với object qua các phương thức được công bố thay vì truy cập dữ liệu rời rạc.\nKết luận: Ví dụ cho thấy OOP tổ chức chương trình xoay quanh các object, mỗi object gói attributes và methods; class là khuôn mẫu còn object là thể hiện cụ thể. Một lỗi người học hay mắc là nhầm class `Student` với một object cụ thể, hoặc tách rời attributes và methods thay vì coi chúng cùng thuộc một đối tượng."
+      },
+      {
+        "context": "Một nhóm phát triển hệ thống đặt vé xe khách gặp bốn yêu cầu: (1) không cho nhân viên gán trực tiếp `price` của vé thành số âm; (2) `Bus` và `Limousine` dùng chung phần `start()`, `stop()` của `Vehicle`; (3) khi tính phí, muốn gọi `calculateFee()` cho cả `Bus` và `Limousine` mà không viết câu lệnh rẽ nhánh theo từng loại; (4) nhân viên bán vé chỉ bấm nút `Xuất vé`, không cần biết chi tiết in vé và kết nối máy in.",
+        "analysis": "Bước 1: Với yêu cầu (1), dùng Encapsulation: khai báo `price` là private, chỉ cho truy cập qua phương thức do class kiểm soát; nhờ đó ngăn thay đổi tùy tiện từ bên ngoài và giữ dữ liệu luôn ở trạng thái hợp lệ — đúng lợi ích bảo vệ tính toàn vẹn dữ liệu.\nBước 2: Với yêu cầu (2), dùng Inheritance: cho `Bus` và `Limousine` kế thừa `Vehicle`; phần chung `start()`, `stop()` chỉ viết một lần ở lớp cha và được dùng lại ở nhiều lớp con — đúng lợi ích thúc đẩy tái sử dụng mã nguồn.\nBước 3: Với yêu cầu (3), dùng Polymorphism: cùng một lời gọi `calculateFee()` có thể cho hành vi khác nhau tùy object nhận là `Bus` hay `Limousine`; mã gọi làm việc với kiểu chung `Vehicle` mà không phải rẽ nhánh theo từng loại — đúng lợi ích giúp mã linh hoạt.\nBước 4: Với yêu cầu (4), dùng Abstraction: nút `Xuất vé` chỉ phơi ra cái mà đối tượng làm (giao diện), còn cách in vé, kết nối máy in bị ẩn đi — đúng lợi ích giảm độ phức tạp.\nKết luận: Bốn nguyên lý cốt lõi giải quyết bốn lợi ích khác nhau: Encapsulation bảo vệ tính toàn vẹn dữ liệu, Inheritance thúc đẩy tái sử dụng mã nguồn, Polymorphism giúp mã linh hoạt, Abstraction giảm độ phức tạp. Một lỗi người học hay mắc là nhầm Abstraction với Encapsulation: Abstraction ẩn chi tiết cài đặt ở mức giao diện, còn Encapsulation kiểm soát truy cập dữ liệu bên trong."
+      }
+    ],
+    "quiz": [
+      {
+        "stem": "Phát biểu nào mô tả đúng cách mô hình lập trình hướng đối tượng (OOP) tổ chức chương trình và cấu trúc của một đối tượng?",
+        "choices": [
+          "Chương trình xoay quanh các hàm và thủ tục được nhóm theo chủ đề; đối tượng gói dữ liệu, còn hành vi xử lý dữ liệu do các hàm bên ngoài đảm nhận.",
+          "Chương trình xoay quanh các đối tượng thay vì các hàm rời rạc; thuộc tính là hành vi mà đối tượng thực hiện, còn phương thức là dữ liệu lưu trạng thái của nó.",
+          "Chương trình xoay quanh các đối tượng thay vì các hàm rời rạc; class là thể hiện cụ thể được tạo ra, còn object là bản thiết kế mô tả loại thể hiện đó.",
+          "Chương trình xoay quanh các đối tượng thay vì các hàm rời rạc; mỗi đối tượng là thể hiện cụ thể của một class, gói dữ liệu trạng thái và hành vi của nó."
+        ],
+        "correct_index": 3,
+        "explanation": "Phát biểu nói chương trình xoay quanh các đối tượng thay vì các hàm rời rạc, mỗi đối tượng là thể hiện cụ thể của một class và gói dữ liệu trạng thái cùng hành vi của nó là đúng: bài học định nghĩa OOP là mô hình tổ chức chương trình xoay quanh các đối tượng thay vì xoay quanh hàm và thủ tục rời rạc, object là một thể hiện cụ thể được tạo ra từ class, trong đó thuộc tính là dữ liệu/trạng thái còn phương thức là hành vi/thao tác của đối tượng. Phát biểu nói class là thể hiện cụ thể còn object là bản thiết kế sai vì đã đảo ngược vai trò: bài học nêu class là bản thiết kế/khuôn mẫu mô tả một loại đối tượng, còn object là thể hiện cụ thể của class đó. Phát biểu nói thuộc tính là hành vi và phương thức là dữ liệu lưu trạng thái sai vì đã đảo ngược hai thành phần: bài học định nghĩa thuộc tính là dữ liệu/trạng thái (ví dụ speed, color) và phương thức là hành vi/thao tác mà đối tượng có thể thực hiện (ví dụ getSpeed(), accelerate()). Phát biểu nói chương trình xoay quanh các hàm và thủ tục được nhóm theo chủ đề, đối tượng gói dữ liệu còn hành vi do các hàm bên ngoài đảm nhận sai vì trái với định nghĩa OOP trong bài: đối tượng gói cả thuộc tính lẫn phương thức gắn với nhau, và chương trình xoay quanh đối tượng thay vì xoay quanh các hàm và thủ tục rời rạc."
+      },
+      {
+        "stem": "Cách diễn giải nào sau đây nêu đúng lợi ích gắn với từng nguyên lý cốt lõi của lập trình hướng đối tượng (mỗi phương án trình bày bốn cặp nguyên lý – lợi ích)?",
+        "choices": [
+          "Encapsulation bảo vệ dữ liệu vì việc đọc/ghi đều phải qua phương thức do class kiểm soát; Inheritance cho phần chung của lớp cha được viết một lần rồi dùng lại ở nhiều lớp con; Polymorphism cho cùng một lời gọi phương thức mang hành vi khác nhau tùy đối tượng nhận; Abstraction giúp người dùng đối tượng chỉ cần nắm giao diện mà không cần biết chi tiết cài đặt.",
+          "Encapsulation giúp người dùng đối tượng chỉ cần nắm giao diện mà không cần biết chi tiết cài đặt; Abstraction bảo vệ dữ liệu vì việc đọc/ghi đều phải qua phương thức do class kiểm soát; Inheritance cho phần chung của lớp cha được viết một lần rồi dùng lại ở nhiều lớp con; Polymorphism cho cùng một lời gọi phương thức mang hành vi khác nhau tùy đối tượng nhận.",
+          "Encapsulation bảo vệ dữ liệu vì việc đọc/ghi đều phải qua phương thức do class kiểm soát; Inheritance cho phần chung của lớp cha được viết một lần rồi dùng lại ở nhiều lớp con; Abstraction cho cùng một lời gọi phương thức mang hành vi khác nhau tùy đối tượng nhận; Polymorphism giúp người dùng đối tượng chỉ cần nắm giao diện mà không cần biết chi tiết cài đặt.",
+          "Encapsulation bảo vệ dữ liệu vì việc đọc/ghi đều phải qua phương thức do class kiểm soát; Inheritance cho cùng một lời gọi phương thức mang hành vi khác nhau tùy đối tượng nhận; Polymorphism cho phần chung của lớp cha được viết một lần rồi dùng lại ở nhiều lớp con; Abstraction giúp người dùng đối tượng chỉ cần nắm giao diện mà không cần biết chi tiết cài đặt."
+        ],
+        "correct_index": 0,
+        "explanation": "Đáp án đúng ghép đúng bốn cặp nguyên lý – lợi ích: Encapsulation bảo vệ tính toàn vẹn dữ liệu vì dữ liệu được che giấu và việc đọc/ghi phải đi qua các phương thức do class kiểm soát; Inheritance thúc đẩy tái sử dụng mã nguồn vì lớp con thừa hưởng phần chung của lớp cha nên phần đó chỉ viết một lần; Polymorphism giúp mã linh hoạt vì cùng một lời gọi phương thức cho hành vi khác nhau tùy đối tượng nhận; Abstraction giảm độ phức tạp vì chỉ phơi ra giao diện và ẩn chi tiết cài đặt. Phương án nói \"Encapsulation giúp người dùng đối tượng chỉ cần nắm giao diện mà không cần biết chi tiết cài đặt\" và \"Abstraction bảo vệ dữ liệu vì việc đọc/ghi đều phải qua phương thức do class kiểm soát\" sai vì đã đổi vai trò của Encapsulation và Abstraction: việc ẩn chi tiết cài đặt sau giao diện là lợi ích của Abstraction, còn kiểm soát truy cập để dữ liệu không bị thay đổi tùy tiện là lợi ích của Encapsulation. Phương án nói \"Inheritance cho cùng một lời gọi phương thức mang hành vi khác nhau tùy đối tượng nhận\" và \"Polymorphism cho phần chung của lớp cha được viết một lần rồi dùng lại ở nhiều lớp con\" sai vì đã đổi vai trò của Inheritance và Polymorphism: hành vi khác nhau theo đối tượng nhận là đặc trưng của Polymorphism, còn thừa hưởng phần chung để dùng lại là đặc trưng của Inheritance. Phương án nói \"Abstraction cho cùng một lời gọi phương thức mang hành vi khác nhau tùy đối tượng nhận\" và \"Polymorphism giúp người dùng đối tượng chỉ cần nắm giao diện mà không cần biết chi tiết cài đặt\" sai vì đã đổi vai trò của Abstraction và Polymorphism: giảm độ phức tạp bằng cách ẩn chi tiết cài đặt là lợi ích của Abstraction, còn làm việc với nhiều loại qua một kiểu chung nhờ cùng một lời gọi cho hành vi khác nhau là lợi ích của Polymorphism."
+      },
+      {
+        "stem": "Cách diễn giải nào sau đây ghép đúng mỗi ví dụ trong bài học với nguyên lý OOP mà ví dụ đó minh họa?",
+        "choices": [
+          "`Car` với `private speed` đọc qua `getSpeed()` minh họa abstraction; `Truck` kế thừa `Vehicle` minh họa inheritance; `draw()` khác nhau ở `Circle` và `Rectangle` minh họa polymorphism; nút `start` che giấu chi tiết động cơ minh họa encapsulation.",
+          "`Car` với `private speed` đọc qua `getSpeed()` minh họa encapsulation; `Truck` kế thừa `Vehicle` minh họa polymorphism; `draw()` khác nhau ở `Circle` và `Rectangle` minh họa inheritance; nút `start` che giấu chi tiết động cơ minh họa abstraction.",
+          "`Car` với `private speed` đọc qua `getSpeed()` minh họa encapsulation; `Truck` kế thừa `Vehicle` minh họa inheritance; `draw()` khác nhau ở `Circle` và `Rectangle` minh họa abstraction; nút `start` che giấu chi tiết động cơ minh họa polymorphism.",
+          "`Car` với `private speed` đọc qua `getSpeed()` minh họa encapsulation; `Truck` kế thừa `Vehicle` minh họa inheritance; `draw()` khác nhau ở `Circle` và `Rectangle` minh họa polymorphism; nút `start` che giấu chi tiết động cơ minh họa abstraction."
+        ],
+        "correct_index": 3,
+        "explanation": "Cách ghép đúng là: `Car` với `private speed` đọc qua `getSpeed()` minh họa encapsulation, vì `speed` được khai báo `private`, bên ngoài không đọc/ghi trực tiếp được và mọi kiểm tra tính hợp lệ nằm bên trong class nên trạng thái chỉ thay đổi qua con đường đã được kiểm soát; `Truck` kế thừa `Vehicle` minh họa inheritance, vì `Vehicle` định nghĩa phần chung như `start()`, `stop()` còn `Truck` thừa hưởng phần chung đó và chỉ bổ sung phần riêng; `draw()` khác nhau ở `Circle` và `Rectangle` minh họa polymorphism, vì cùng một lời gọi nhưng hành vi khác nhau tùy đối tượng nhận và mã gọi không phải rẽ nhánh theo từng loại; nút `start` che giấu chi tiết động cơ minh họa abstraction, vì chỉ phơi ra cái đối tượng làm và ẩn đi cách nó làm. Phương án gán `private speed`/`getSpeed()` cho abstraction và nút `start` cho encapsulation sai vì đã đảo vai trò của hai nguyên lý: che giấu dữ liệu để chỉ truy cập qua phương thức do class kiểm soát là encapsulation, còn phơi giao diện đơn giản và ẩn chi tiết cài đặt bên trong là abstraction. Phương án gán `Truck` kế thừa `Vehicle` cho polymorphism và `draw()` cho inheritance sai vì đã đảo vai trò của hai nguyên lý: thừa hưởng phần chung để tái sử dụng mã nguồn là inheritance, còn cùng một lời gọi phương thức cho hành vi khác nhau tùy đối tượng nhận là polymorphism. Phương án gán `draw()` cho abstraction và nút `start` cho polymorphism sai vì `draw()` khác nhau ở `Circle` và `Rectangle` là biểu hiện của cùng một lời gọi cho hành vi khác nhau tùy đối tượng nhận, còn nút `start` là giao diện đơn giản che giấu các chi tiết động cơ bên trong chứ không phải một lời gọi cho nhiều hành vi khác nhau."
+      }
+    ],
+    "practice": {
+      "stem": "Một nhóm sinh viên mô tả bốn nguyên lý cốt lõi của OOP như sau: (i) dữ liệu bên trong đối tượng chỉ được đọc và ghi qua các phương thức do class kiểm soát; (ii) lớp con dùng lại thuộc tính và phương thức của lớp cha; (iii) cùng một lời gọi phương thức cho hành vi khác nhau tùy đối tượng nhận; (iv) người dùng đối tượng chỉ cần biết nó làm gì mà không cần biết nó làm như thế nào. Cách diễn giải nào dưới đây nêu đúng vai trò của bốn nguyên lý đó đối với tính module hóa, khả năng mở rộng, khả năng tái sử dụng và tính dễ hiểu của hệ thống?",
+      "choices": [
+        "Che giấu dữ liệu và ẩn chi tiết cài đặt giúp các phần bớt phụ thuộc và bớt phức tạp, còn việc lớp con dùng lại phần chung của lớp cha và cùng một lời gọi cho hành vi khác nhau tùy đối tượng tạo ra chỗ để thêm loại mới mà không phải sửa mã đang chạy.",
+        "Lớp con thừa hưởng thuộc tính và phương thức của lớp cha là đa hình, còn cùng một lời gọi phương thức cho hành vi khác nhau tùy đối tượng nhận là kế thừa; hai nguyên lý này giúp mã gọi không phải rẽ nhánh theo từng loại cụ thể.",
+        "Đóng gói là việc chỉ phơi ra giao diện và ẩn cách cài đặt, còn trừu tượng hóa là việc dữ liệu chỉ được truy cập qua phương thức do class kiểm soát; hai nguyên lý này đều nhằm bảo vệ tính toàn vẹn dữ liệu.",
+        "Tính module hóa và dễ hiểu đến từ kế thừa và đa hình vì phần chung được viết một lần, còn khả năng mở rộng và tái sử dụng đến từ đóng gói và trừu tượng hóa vì dữ liệu được che giấu bên trong."
+      ],
+      "correct_index": 0,
+      "explanation": "Đáp án đúng diễn giải lại đúng mối liên hệ trong bài: đóng gói và trừu tượng hóa làm giảm phụ thuộc và độ phức tạp giữa các phần, còn kế thừa và đa hình tạo ra các điểm mở rộng sạch nên hệ thống vừa dễ đọc vừa dễ phát triển tiếp. Phương án nói 'đóng gói là việc chỉ phơi ra giao diện và ẩn cách cài đặt, còn trừu tượng hóa là việc dữ liệu chỉ được truy cập qua phương thức' đã đổi vai trò hai nguyên lý: che giấu dữ liệu và buộc truy cập qua phương thức do class kiểm soát là đóng gói, còn chỉ phơi ra cái đối tượng làm và ẩn cách nó làm là trừu tượng hóa. Phương án nói 'lớp con thừa hưởng thuộc tính và phương thức của lớp cha là đa hình, còn cùng một lời gọi cho hành vi khác nhau là kế thừa' cũng đổi vai trò: thừa hưởng phần chung của lớp cha là kế thừa, còn cùng một lời gọi cho hành vi khác nhau tùy đối tượng nhận là đa hình. Phương án gán tính module hóa và dễ hiểu cho kế thừa và đa hình, còn khả năng mở rộng và tái sử dụng cho đóng gói và trừu tượng hóa đã gán sai cặp lợi ích: kế thừa và đa hình tạo điểm mở rộng và cho phép dùng lại phần chung đã kiểm thử, còn đóng gói và trừu tượng hóa giúp giảm phụ thuộc và độ phức tạp."
+    },
+    "source_chunks": [
+      "Chap1 Encapsulation\nChapter 1: Object Oriented Programming Revision - Encapsulation\nTP.HCM, 03/01/2025\nAdvanced Programming\nCO2039\nCONTENT\n01\n04\n02\n05\n03\nINTRODUCTION TO OOP\nENCAPSULATION\nHOW ENCAPSULATION WORKS?\nBEST PRACTICES\nCONCLUSION\n2\n06\nEXTENSION: CLASS DIAGRAM",
+      "Chap1 Encapsulation\nINTRODUCTION TO OBJECT ORIENTED PROGRAMMING\n01\n3\nWhat is OOP?\nObject-oriented programming (OOP) is a programming paradigm that organizes software design around objects, which can represent real-world entities or abstract concepts. Each object contains data (attributes or properties) and behavior (methods or functions).\n4",
+      "Chap1 Encapsulation\nKey principles of OOP\nEncapsulation: Bundles data (attributes) and methods (behavior) into a single unit (class) and restricts access to protect data integrity.  Example: A Car object has private attribute speed and a public method getSpeed() to access it. => Protects data integrity by restricting direct access.\n5\nKey principles of OOP\nInheritance: Allows one class to inherit attributes and methods from another, promoting code reuse and hierarchical relationships.  Example: A Truck class can inherit from a Vehicle class. => Promotes code reuse.\n6",
+      "Chap1 Encapsulation\nKey principles of OOP\nPolymorphism: Allows objects to take on many forms, e.g., a single method or class to represent different underlying data types or behaviors.  Example: A draw() method behaves differently for Circle and Rectangle objects. =>Simplifies code and makes it flexible.\n7\nKey principles of OOP\nAbstraction: Hides implementation details and exposes only essential features, simplifying complex systems for the user.  Example: A user presses a car's \"start\" button without needing to understand the engine mechanics. =>Reduce complexity\n8",
+      "Chap1 Encapsulation\nWhy OOP?\nCreate systems that are modular, scalable, reusable, and easier to understand.  Think of a car in the real world. It has:     Attributes: color, brand, speed, fuel capacity.     Behaviors: start, stop, accelerate. Modular -> divides programs into independent, self-contained classes Scalable -> allows new functionality to be added or extended Reusable -> creating generic classes or extending existing classes Easier to understand ->  models real-world entities with objects\n9\nENCAPSULATION\n02\n10",
+      "Chap1 Encapsulation\nWhat is Encapsulation?\nWhen creating new data types (classes) the details of the actual data and the way operations work is hidden from the other programmers who will use those new data types.\nHình: Encapsulation\nIN CAPSULE ation\nClass\nVariables ©@\nMethods\n11\nWhy is Encapsulation important?\nBy controlling how data and methods are accessed or modified, encapsulation ensures:\nData Integrity: Prevents unauthorized or accidental changes to data.\nSecurity: Sensitive data is hidden from unauthorized access.\nEase of Use: Users of the class do not need to understand its internal complexities.\nCode Maintenance: Internal implementation can change without impacting external usage.\n12",
+      "Chap1 Encapsulation\nCore principles of Encapsulation\nData Hiding: The internal state of an object is kept private and can only be accessed through public methods (getters and setters).\nAccess Control: Access specifiers are used to control the visibility of class members:\nprivate: Accessible only within the defining class. default: Accessible only within the same package.\nprotected: Accessible within the same package and by subclasses (even in different packages). public: Accessible from anywhere (any class, any package, and any subclass).\n13\nExample\npublic class Person { // Public: Accessible anywhere public String name;   // Protected: Accessible within the same package or by subclasses protected int age;   // Default (Package-private): Accessible only within the same package String address;   // Private: Accessible only within this class private String password;   // Constructor to initialize the object public Person(String name, int age, String address, String password) { this.name = name; this.age = age; this.address = address; this.password = password; }   // Getter for password to demonstrate controlled access public String getPassword() { return password; }\n14",
+      "Chap1 Encapsulation\nHOW ENCAPSULATION WORKS?\n03\n15\nClass vs struct\nDefining Classes and Objects \n⇒ Can I use Struct instead of Class? Java: no struct C++: class and struct\nHình: structure class\nstruct struct_name class cLass-name\n// struct data members // data\n} // functions\n35\n16\nDefault Access; Struct: Public; Class: Private\nEncapsulation; Struct: Less support; Class: Full support\nUse case; Struct: Light weight objects; Class: All",
+      "Chap1 Encapsulation\nConstructor in Encapsulation\nA constructor is a special function in a class:  \nSame name as the class.  \nNot have a return value.  \nIt is automatically called when an object is created (the programmer does not call it directly).  \nIf no constructor is declared, the program automatically provides a default empty constructor. \n⇒ What is the access modifier for the default constructor?  ⇒ Can we create a private constructor? (Singleton Pattern)\n17\nGetters and Setters\n18\nExample:\npublic class Getset {\nprivate int age;\n// Getter for 'age'\npublic int getAge() {\nreturn age;\n}\n// Setter for 'age' with validation\npublic void setAge(int age) {\nif (age >= 0) {\nthis.age = age;\n} else {\nSystem.out.println(\"Age cannot be negative.\");\n}\n}\npublic static void main(String[] args) {\n}\n}\nGetters and Setters are methods used to access and modify the private fields of a class, adhering to the principles of encapsulation",
+      "Chap1 Encapsulation\nGetters and Setters\n19\nEncapsulation: Protects the internal state of an object.\nControl: Allows you to validate or modify data before it's set.\nConsistency: Helps maintain consistent object state.\nFlexibility: Makes it easier to change the internal implementation without affecting other code.\nReadability: Improves the readability and maintainability of the code.\nAccess Control: Allows creation of read-only or write-only properties.\nDebugging: Enables easy tracking and debugging of changes to the data.\nBEST PRACTICES\n04\n20",
+      "Chap1 Encapsulation\nExercise 1 - Multiple constructor\nCreate a Car class with the following private attributes:\nbrand (string)\nmodel (string)\nyear (int)\nAdd the following:\nA default constructor that sets default values.\nA parameterized constructor to initialize all attributes.\nSetters and getters for all attributes.\nWrite a main function to:\nCreate an object using the default constructor and display its details.\nCreate another object using the parameterized constructor and display its details.\n21\nExercise 2 - Constructor chaining\nCreate a Laptop class with attributes:\nbrand (string)\nmodel (string)\nprice (double)\nAdd the following:\nA default constructor.\nA parameterized constructor to initialize all attributes.\nUse constructor chaining to call one constructor from another.\nWrite a main function to test the class.\n22",
+      "Chap1 Encapsulation\nExercise 3 (Bonus)\nCreate a Library system using encapsulation and constructors.\nCreate a Book class with attributes: title, author, ISBN, price, and stock.\nCreate a Library class with:\nAn array of Book objects.\nMethods to:\nAdd new books.\nSearch for books by title or author.\nBorrow books (reduce stock).\nWrite a main function to simulate library operations.\n23\nCONCLUSION\n05\n24",
+      "Chap1 Encapsulation\nConclusion\nEncapsulation is the foundation of OOP, focusing on bundling data and functions within a class.  \nThe main difference between a class and a struct lies in the level of data security (private/public).  \nA constructor is a special mechanism in OOP that automatically executes when an object is created and can cause errors if not properly designed.\n25\nEXTENSION: \nCLASS DIAGRAM\n06\n26",
+      "Chap1 Encapsulation\nClass diagram\n27\nHình: Circle\ntvarName:type = default-value\n~radius: double = 1.0 denotes private access\n-color:String = \"red\"\n+ denotes public access\n+Circle()\n+Circle(r:double)\n__, tmethodName (parmName : type, ) :retunType\nCan you write a program based on the above class diagram?\nGhi chú: A class called Circle is designed as shown in the following class diagram. It contains:\nTwo private instance variables: radius (of the type double) and color (of the type String), with default value of 1.0 and \"red\", respectively.\nTwo overloaded constructors - a default constructor with no argument, and a constructor which takes a double argument for radius.\nTwo public methods: getRadius() and getArea(), which return the radius and area of this instance, respectively.",
+      "Chap1 Encapsulation\nHands-on exercise\n28\nHình: Ball\n-x: float\n-radius:int\n-xDelta:float ae\n-yDelta: float\nEach move step advances x and y\n” by Ax and Ay. Ax and Ay could be\npositive or negative.\n+Ball(x:float,y: float, radius:int\nxDelta: float, yDelta: float)\n+setX(x: float): void\nt+getY():float\n+setY(y: float): void\n+getRadius():int\n+setXDelta(xDelta: float) : void\n+getYDelta(): float\n+setYDelta(yDelta: float): void\n+move() : void\n+reflectHorizonta1() :void\nt+reflectVertical():voide-\nMove one step:\n/X += Ax; y t= Ay;\n1\n-Ax\n-Ay\nA class called Ball, which models a bouncing ball, is designed as shown in the following class diagram. \nIt contains its radius, x and y position. Each move-step advances the x and y by delta-x and delta-y, respectively. delta-x and delta-y could be positive or negative. \nThe reflectHorizontal() and reflectVertical() methods could be used to bounce the ball off the walls. Write the Ball class. Study the main() on how the ball bounces.\nhttps://www.programiz.com/online-compiler/5VrKcTuK0GRr6\nGhi chú: A class called Circle is designed as shown in the following class diagram. It contains:\nTwo private instance",
+      "Chap1 Encapsulation › Hands-on exercise\nGhi chú: A class called Circle is designed as shown in the following class diagram. It contains:\nTwo private instance variables: radius (of the type double) and color (of the type String), with default value of 1.0 and \"red\", respectively.\nTwo overloaded constructors - a default constructor with no argument, and a constructor which takes a double argument for radius.\nTwo public methods: getRadius() and getArea(), which return the radius and area of this instance, respectively.",
+      "Chap1 Encapsulation\nThank you for your attention!\nhttps://www.cse.hcmut.edu.vn"
+    ]
+  },
+  "reference": {
+    "coverage": "complete",
+    "chunk_ids": [
+      "8ef62d60-d866-4984-a333-1d23e6ff0786",
+      "5a3b2e62-d788-4d50-9b1e-8d50ae8fb154",
+      "3fabcbcf-4fe4-4625-9c84-03a04fc94950",
+      "3da0b834-6ea2-4f21-9c2d-71666be0e0ba",
+      "4521431f-993f-4132-a36e-24bf3c84d3c9",
+      "021b566f-d15c-4188-af55-e9c9a101880b",
+      "18490ef7-3337-40cb-a997-40f1ba0e6753",
+      "6dcf4691-c15e-4f64-9d61-35d122620c53",
+      "321fa2d1-3e85-4fa9-be68-d16afa4ee06c",
+      "3c49d657-7a7a-4886-b6c2-36606da6f586",
+      "781420d6-f628-47b6-988d-e85839807f57",
+      "cf3830b6-990a-4e52-9bd0-81772b79bce8",
+      "065acbfc-5f83-4d11-aa72-8b45317a6beb",
+      "92444d52-03af-4588-bf7f-0ba8bb33897f",
+      "7c849f44-3390-4292-bbf9-3705db33da6d",
+      "4f13a235-aa24-4578-83d7-b413158384a3",
+      "8b340109-a065-4322-bbf2-dae70e837f07"
+    ],
+    "total_chunks": 17
+  },
+  "claim_citations": null
+}

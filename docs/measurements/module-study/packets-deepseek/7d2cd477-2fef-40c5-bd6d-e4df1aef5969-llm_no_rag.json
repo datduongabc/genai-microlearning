@@ -1,0 +1,289 @@
+{
+  "pair_id": "7d2cd477-2fef-40c5-bd6d-e4df1aef5969",
+  "group": "llm_no_rag",
+  "generator_model": "deepseek-flash",
+  "generation_models": [
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    }
+  ],
+  "packet": {
+    "anon_id": "",
+    "topic": "Hồi quy tuyến tính (linear regression)",
+    "bloom_level": "analyze",
+    "learning_objective": "Sau khi hoàn thành module, người học có thể phân tích mối liên hệ giữa cách biểu diễn giả thuyết, tiêu chí tối thiểu hóa bình phương sai số và việc lựa chọn tham số theta trong thuật toán hồi quy tuyến tính (linear regression).",
+    "sub_objectives": [
+      "Mô tả cách biểu diễn giả thuyết của hồi quy tuyến tính dưới dạng hàm tuyến tính (affine) của diện tích nhà x",
+      "Chỉ ra mối liên hệ giữa việc lựa chọn tham số theta và mục tiêu để đầu ra của giả thuyết gần với giá nhà thực tế trong tập huấn luyện",
+      "So sánh bài toán hồi quy (đầu ra y liên tục) với bài toán phân loại (đầu ra y rời rạc) trong học có giám sát",
+      "Phân tích vai trò của tập dữ liệu huấn luyện (diện tích nhà và giá nhà) trong quy trình thiết kế một thuật toán học có giám sát"
+    ],
+    "content_markdown": "# Biểu diễn giả thuyết của hồi quy tuyến tính dưới dạng hàm affine của diện tích nhà\n\n- **Giả thuyết (hypothesis)** là hàm `h` nhận đầu vào `x` (diện tích nhà) và trả về đầu ra dự đoán `ŷ` (giá nhà).\n- **Dạng affine một biến:** `h_θ(x) = θ0 + θ1 · x`\n  - `θ0` — hệ số chặn (intercept / bias): giá trị nền của đường dự đoán khi `x = 0`; thường không mang nghĩa thực tế (nhà diện tích 0), chủ yếu để **dịch chuyển** đường thẳng lên/xuống.\n  - `θ1` — hệ số góc (slope / weight): mức thay đổi của giá dự đoán khi diện tích tăng thêm 1 đơn vị.\n  - `θ = (θ0, θ1)` là **tham số** của mô hình; mỗi bộ giá trị `θ` cho ra **một** đường thẳng cụ thể.\n- **Ý nghĩa hình học:** họ giả thuyết là tập hợp *tất cả* các đường thẳng trong mặt phẳng (diện tích, giá). Việc học chính là chọn ra một đường thẳng trong họ đó.\n- **Vì sao gọi là \"affine\" chứ không phải \"tuyến tính thuần\":** nếu bỏ `θ0` (buộc đường thẳng đi qua gốc tọa độ), mô hình bị hạn chế và không biểu diễn được quan hệ thực tế. Giữ `θ0` cho phép đường thẳng dịch chuyển tự do.\n- **Dạng vector hóa:** thêm đặc trưng giả `x0 = 1`, khi đó `h_θ(x) = θᵗ · x`. Cách viết này giữ nguyên công thức khi mở rộng sang nhiều đặc trưng (diện tích, số phòng, khoảng cách tới trung tâm, …): `h_θ(x) = θ0 + θ1x1 + θ2x2 + …`\n- **Lưu ý về chữ \"tuyến tính\":** tuyến tính **theo tham số θ**, không nhất thiết tuyến tính theo `x`. Vẫn có thể thêm `x²`, `log(x)` như những đặc trưng mới mà công thức vẫn giữ dạng affine theo `θ`.\n\n# Liên hệ giữa việc lựa chọn tham số theta và mục tiêu để đầu ra của giả thuyết gần với giá nhà thực tế trong tập huấn luyện\n\n- **Mục tiêu học:** tìm `θ` sao cho `h_θ(x⁽ⁱ⁾) ≈ y⁽ⁱ⁾` với mọi mẫu huấn luyện `(x⁽ⁱ⁾, y⁽ⁱ⁾)`, tức đường thẳng đi sát các điểm dữ liệu.\n- **Cần một thước đo \"gần\":** dùng **hàm chi phí bình phương sai số**\n  `J(θ) = (1 / 2m) · Σᵢ (h_θ(x⁽ⁱ⁾) − y⁽ⁱ⁾)²`\n  - **Bình phương** để sai số âm và sai số dương không triệt tiêu nhau, đồng thời **phạt nặng** những dự đoán lệch nhiều.\n  - **Chia `m`** để chi phí không phụ thuộc vào số lượng mẫu (so sánh được giữa các tập dữ liệu khác kích thước).\n  - **Hệ số `1/2`** chỉ để đơn giản hóa biểu thức đạo hàm, không đổi vị trí cực tiểu.\n- **Chuỗi liên hệ nhân – quả:**\n  `chọn θ` → `xác định một đường thẳng` → `xác định các sai số (h_θ(x⁽ⁱ⁾) − y⁽ⁱ⁾)` → `xác định J(θ)` → `J(θ) nhỏ ⇔ dự đoán gần giá thực trên tập huấn luyện`.\n- **Bài toán trở thành bài toán tối ưu:** tìm `θ* = argmin J(θ)`.\n  - Với hồi quy tuyến tính, `J(θ0, θ1)` là hàm **lồi** (dạng lòng chảo / paraboloid) → chỉ có **một cực tiểu toàn cục**, không có cực tiểu địa phương khác.\n  - **Gradient descent:** lặp `θj ← θj − α · ∂J/∂θj` cho **mọi j đồng thời**; `α` là tốc độ học (learning rate).\n    - `α` quá nhỏ → hội tụ rất chậm; `α` quá lớn → dao động quanh cực tiểu hoặc phân kỳ.\n  - **Nghiệm dạng đóng (normal equation)** có thể dùng khi số đặc trưng nhỏ, cho kết quả trực tiếp mà không cần lặp.\n- **Đọc ngược từ θ sang chất lượng mô hình:** nếu `θ1` quá nhỏ, đường thẳng quá phẳng → dự đoán thiếu biến thiên; nếu `θ1` quá lớn, đường thẳng quá dốc → sai số tăng ở hai đầu dải dữ liệu. Việc tinh chỉnh `θ` chính là việc cân bằng hai loại sai số này.\n- **Giới hạn của tiêu chí:** `J(θ)` nhỏ chỉ nói lên chất lượng **trên tập huấn luyện**. Chi phí rất thấp vẫn có thể là dấu hiệu **overfitting**; cần đánh giá thêm trên dữ liệu không dùng để huấn luyện.\n\n# So sánh bài toán hồi quy (đầu ra y liên tục) với bài toán phân loại (đầu ra y rời rạc) trong học có giám sát\n\n- **Điểm chung:** cả hai đều là **học có giám luyện** (supervised learning) — có cặp `(x, y)` trong tập huấn luyện và mục tiêu là học ánh xạ `x → y` để dự đoán trên dữ liệu mới.\n- **Điểm khác biệt cốt lõi: bản chất của `y`**\n\n  | Tiêu chí | Hồi quy (regression) | Phân loại (classification) |\n  |---|---|---|\n  | Đầu ra `y` | Liên tục, vô hạn giá trị (giá nhà, nhiệt độ, doanh thu) | Rời rạc, hữu hạn nhãn (spam / không spam, 0 / 1, nhiều lớp) |\n  | Giá trị dự đoán | Số thực | Nhãn lớp (hoặc xác suất thuộc lớp) |\n  | Thước đo sai số | Bình phương sai số, MAE, RMSE | Độ chính xác, precision / recall, confusion matrix |\n  | Hàm mục tiêu thường dùng | Tối thiểu hóa bình phương sai số | Tối đa hóa likelihood / tối thiểu cross-entropy |\n  | Đầu ra mô hình | Trực tiếp là giá trị dự đoán | Điểm số thô → qua hàm kích hoạt (sigmoid / softmax) hoặc ngưỡng → nhãn |\n\n- **Vì sao không dùng chung một tiêu chí:** bình phương sai số không phù hợp trực tiếp với nhãn rời rạc vì không có khái niệm \"khoảng cách\" có ý nghĩa giữa các lớp (nhãn `1` và `2` không \"gần nhau\" gấp đôi nhãn `1` và `3`).\n- **Ranh giới có thể mờ (cần phân tích, không máy móc):**\n  - **Hồi quy logistic** mang tên \"hồi quy\" nhưng giải quyết bài toán **phân loại**.\n  - Có thể **rời rạc hóa** đầu ra liên tục thành lớp (ví dụ chia dải giá thành \"rẻ / trung bình / đắt\"), nhưng làm vậy **mất thông tin về thứ tự và độ lớn**.\n  - Đặc trưng `x` có thể liên tục trong **cả hai** bài toán — điều phân biệt nằm ở `y`, không nằm ở `x`.\n- **Liên hệ với mô hình tuyến tính:** cùng một dạng giả thuyết affine có thể dùng làm nền cho cả hai, nhưng **cách diễn giải đầu ra và cách chọn θ tối ưu sẽ khác nhau**.\n\n# Phân tích vai trò của tập dữ liệu huấn luyện (diện tích nhà và giá nhà) trong quy trình thiết kế một thuật toán học có giám sát\n\n- **Vai trò kép của tập huấn luyện:** vừa **định nghĩa bài toán**, vừa là **nguồn duy nhất** để ước lượng tham số `θ` và kiểm chứng chất lượng mô hình.\n- **Quy trình thiết kế (dữ liệu giữ vai trò trung tâm ở mọi bước):**\n  1. Thu thập cặp `(diện tích, giá)` từ thực tế.\n  2. Chọn và biểu diễn đặc trưng `x` (chỉ diện tích, hay thêm số phòng, vị trí, …).\n  3. Chọn dạng giả thuyết `h_θ` (affine một biến, nhiều biến, hay thêm đặc trưng phi tuyến).\n  4. Chọn hàm chi phí `J(θ)` (ví dụ bình phương sai số).\n  5. Tối ưu `θ` **trên tập huấn luyện**.\n  6. Đánh giá trên tập kiểm định / kiểm tra.\n  7. Quay lại bước 2–4 nếu kết quả chưa đạt.\n- **Dữ liệu quyết định kích thước của tham số:** một đặc trưng (diện tích) → hai tham số `(θ0, θ1)`; thêm một đặc trưng → thêm một tham số. Không có dữ liệu về một đặc trưng thì không thể học trọng số cho đặc trưng đó.\n- **Chất lượng dữ liệu ảnh hưởng trực tiếp đến `θ`:**\n  - **Nhiễu và điểm dị biệt (outlier):** do bình phương phạt rất mạnh, một vài điểm giá bất thường có thể **kéo lệch** cả đường thẳng.\n  - **Vùng dữ liệu trống:** mô hình chỉ đáng tin trong dải diện tích đã có mẫu; ngoại suy ra ngoài dải đó rất rủi ro.\n  - **Dữ liệu không đại diện:** mẫu chỉ lấy ở một khu vực hay một phân khúc giá → kết luận học được không tổng quát hóa.\n  - **Thang đo đặc trưng:** khi các đặc trưng lệch thang đo lớn (diện tích tính bằng hàng chục–hàng trăm, số phòng chỉ vài đơn vị), việc **chuẩn hóa đặc trưng (feature scaling)** giúp gradient descent hội tụ nhanh và ổn định hơn.\n- **Chia dữ liệu để tránh tự lừa mình:** tách thành tập huấn luyện / kiểm định / kiểm tra; **không** kết luận chất lượng mô hình chỉ dựa trên chính dữ liệu đã dùng để tối ưu `θ`.\n- **Dữ liệu là công cụ chẩn đoán:**\n  - Sai số lớn ở cả tập huấn luyện và tập kiểm tra → **underfitting** (mô hình quá đơn giản, ví dụ chỉ dùng đường thẳng cho quan hệ cong).\n  - Sai số nhỏ trên tập huấn luyện nhưng lớn trên tập kiểm tra → **overfitting** (mô hình bám cả nhiễu).\n- **Kết luận phân tích:** tập dữ liệu `(diện tích, giá)` không chỉ là \"nguyên liệu đầu vào\" mà còn **định hình** dạng giả thuyết khả thi, số lượng tham số `θ` cần học, tiêu chí tối ưu phù hợp và độ tin cậy của mọi kết luận rút ra từ mô hình.",
+    "slides": [
+      {
+        "title": "Slide 1 — Mục tiêu & bản đồ bài giảng",
+        "bullets": [
+          "Mục tiêu: phân tích mối liên hệ giữa **biểu diễn giả thuyết** — **tiêu chí tối thiểu hóa bình phương sai số** — **lựa chọn tham số θ** trong hồi quy tuyến tính (linear regression)",
+          "Lộ trình: dạng giả thuyết → hàm chi phí → tối ưu θ → chất lượng mô hình → đối chiếu với phân loại → vai trò của dữ liệu",
+          "Bối cảnh xuyên suốt: dự đoán **giá nhà** từ **diện tích nhà**"
+        ]
+      },
+      {
+        "title": "Slide 2 — Giả thuyết (hypothesis) là gì?",
+        "bullets": [
+          "Giả thuyết là hàm `h` nhận đầu vào `x` (diện tích nhà)",
+          "Trả về đầu ra dự đoán `ŷ` (giá nhà)",
+          "Đây là ánh xạ `x → ŷ` mà mô hình cần học"
+        ]
+      },
+      {
+        "title": "Slide 3 — Dạng affine một biến và hai tham số",
+        "bullets": [
+          "`h_θ(x) = θ0 + θ1 · x`",
+          "`θ0` — hệ số chặn (intercept / bias): giá trị nền khi `x = 0`",
+          "`θ1` — hệ số góc (slope / weight): mức thay đổi của giá dự đoán khi diện tích tăng thêm 1 đơn vị"
+        ]
+      },
+      {
+        "title": "Slide 4 — Vai trò của θ0 và θ1",
+        "bullets": [
+          "`θ0` thường không mang nghĩa thực tế (nhà diện tích 0)",
+          "`θ0` chủ yếu để **dịch chuyển** đường thẳng lên/xuống",
+          "`θ1` quyết định **độ dốc** của đường dự đoán"
+        ]
+      },
+      {
+        "title": "Slide 5 — θ là tham số của mô hình",
+        "bullets": [
+          "`θ = (θ0, θ1)` là **tham số** của mô hình",
+          "Mỗi bộ giá trị `θ` cho ra **một** đường thẳng cụ thể",
+          "Học = chọn ra một đường thẳng trong họ giả thuyết"
+        ]
+      },
+      {
+        "title": "Slide 6 — Ý nghĩa hình học của họ giả thuyết",
+        "bullets": [
+          "Họ giả thuyết = tập hợp *tất cả* các đường thẳng trong mặt phẳng (diện tích, giá)",
+          "Việc học chính là chọn ra một đường thẳng trong họ đó"
+        ]
+      },
+      {
+        "title": "Slide 7 — Vì sao gọi là \"affine\" chứ không phải \"tuyến tính thuần\"?",
+        "bullets": [
+          "Nếu bỏ `θ0` (buộc đường thẳng đi qua gốc tọa độ) → mô hình bị hạn chế",
+          "Khi đó không biểu diễn được quan hệ thực tế",
+          "Giữ `θ0` cho phép đường thẳng dịch chuyển tự do"
+        ]
+      },
+      {
+        "title": "Slide 8 — Dạng vector hóa và mở rộng nhiều đặc trưng",
+        "bullets": [
+          "Thêm đặc trưng giả `x0 = 1` → `h_θ(x) = θᵗ · x`",
+          "Cách viết này giữ nguyên công thức khi mở rộng nhiều đặc trưng: `h_θ(x) = θ0 + θ1x1 + θ2x2 + …`",
+          "Ví dụ đặc trưng: diện tích, số phòng, khoảng cách tới trung tâm"
+        ]
+      }
+    ],
+    "examples": [
+      {
+        "context": "Một công ty bất động sản nhỏ có 3 mẫu huấn luyện về diện tích nhà (m²) và giá nhà (tỷ đồng): (x⁽¹⁾ = 50, y⁽¹⁾ = 1.5), (x⁽²⁾ = 80, y⁽²⁾ = 2.3), (x⁽³⁾ = 120, y⁽³⁾ = 3.1). Họ đang cân nhắc hai bộ tham số theta: θ_A = (0.2, 0.025) và θ_B = (0.5, 0.015). Hãy dùng hàm chi phí bình phương sai số J(θ) để xác định bộ tham số nào cho dự đoán gần giá nhà thực tế hơn trên tập huấn luyện.",
+        "analysis": "Bước 1: Xác định giả thuyết affine một biến h_θ(x) = θ0 + θ1·x và hàm chi phí bình phương sai số J(θ) = (1/2m)·Σᵢ (h_θ(x⁽ⁱ⁾) − y⁽ⁱ⁾)², với m = 3.\nBước 2: Với θ_A = (0.2, 0.025), tính dự đoán: h_A(50) = 0.2 + 0.025×50 = 1.45; h_A(80) = 0.2 + 0.025×80 = 2.2; h_A(120) = 0.2 + 0.025×120 = 3.2. Sai số lần lượt là −0.05; −0.1; 0.1. Bình phương: 0.0025; 0.01; 0.01. Tổng bình phương = 0.0225. J(θ_A) = 0.0225 / (2×3) = 0.00375.\nBước 3: Với θ_B = (0.5, 0.015), tính dự đoán: h_B(50) = 0.5 + 0.015×50 = 1.25; h_B(80) = 0.5 + 0.015×80 = 1.7; h_B(120) = 0.5 + 0.015×120 = 2.3. Sai số: −0.25; −0.6; −0.8. Bình phương: 0.0625; 0.36; 0.64. Tổng = 1.0625. J(θ_B) = 1.0625 / 6 ≈ 0.1771.\nBước 4: So sánh J(θ_A) = 0.00375 < J(θ_B) ≈ 0.1771. Vì J nhỏ hơn, θ_A cho các dự đoán gần giá thực tế hơn trên tập huấn luyện.\nKết luận: Việc lựa chọn θ quyết định đường thẳng h_θ và do đó quyết định các sai số (h_θ(x⁽ⁱ⁾) − y⁽ⁱ⁾) và giá trị J(θ); J(θ) nhỏ tương ứng với dự đoán gần giá nhà thực tế. Một lỗi thường gặp là quên bình phương sai số hoặc quên chia cho 2m, khiến việc so sánh J giữa các bộ θ bị sai lệch; cũng cần nhớ J chỉ đo chất lượng trên tập huấn luyện, chưa nói lên khả năng tổng quát hóa."
+      },
+      {
+        "context": "Một nhóm sinh viên thu thập 20 mẫu dữ liệu về diện tích nhà (m²) và giá nhà (tỷ đồng) tại một khu vực. Trong đó, 19 căn hộ có diện tích từ 40 đến 100 m² với giá từ 1.2 đến 3.0 tỷ đồng, và 1 căn penthouse có diện tích 300 m² giá 25 tỷ đồng. Nhóm dùng hồi quy tuyến tính một biến với h_θ(x) = θ0 + θ1·x và tối thiểu hóa J(θ) trên toàn bộ 20 mẫu. Hãy phân tích vai trò của tập dữ liệu này trong quy trình thiết kế thuật toán học có giám sát và chỉ ra những vấn đề có thể ảnh hưởng đến tham số θ.",
+        "analysis": "Bước 1: Xác định vai trò kép của tập dữ liệu: tập 20 cặp (diện tích, giá) vừa định nghĩa bài toán dự đoán giá từ diện tích, vừa là nguồn duy nhất để ước lượng θ = (θ0, θ1) và kiểm chứng chất lượng mô hình. Vì chỉ có một đặc trưng diện tích, mô hình có đúng hai tham số cần học.\nBước 2: Phân tích ảnh hưởng của điểm dị biệt (outlier): theo công thức J(θ) = (1/2m)·Σ (h_θ(x⁽ⁱ⁾) − y⁽ⁱ⁾)², sai số của căn penthouse (ví dụ đường thẳng ban đầu dự đoán khoảng 3 tỷ, sai số 22 tỷ) khi bình phương lên tới 484, trong khi sai số của 19 căn còn lại chỉ khoảng 0.1–0.5, bình phương khoảng 0.01–0.25. Vì bình phương phạt rất nặng, tối ưu J sẽ ưu tiên kéo đường thẳng lên để giảm sai số 484, làm θ1 tăng và đường thẳng trở nên quá dốc; dự đoán cho các căn 40–100 m² vì thế bị lệch lên.\nBước 3: Phân tích nhu cầu chia dữ liệu: nếu chỉ đánh giá J(θ) trên chính 20 mẫu đã dùng để tối ưu θ, ta không thể phát hiện overfitting. Cần tách thành tập huấn luyện / kiểm định / kiểm tra; nếu J nhỏ trên tập huấn luyện nhưng lớn trên tập kiểm tra → overfitting; nếu lớn ở cả hai → underfitting (ví dụ dùng đường thẳng cho quan hệ cong).\nBước 4: Phân tích thang đo đặc trưng: nếu nhóm bổ sung đặc trưng \"số phòng\" (vài đơn vị) bên cạnh diện tích (hàng chục đến hàng trăm), hai đặc trưng lệch thang đo lớn; cần chuẩn hóa đặc trưng (feature scaling) để gradient descent hội tụ nhanh và ổn định hơn.\nKết luận: Tập dữ liệu (diện tích, giá) không chỉ là nguyên liệu đầu vào mà còn định hình dạng giả thuyết khả thi, số tham số θ, tiêu chí tối ưu và độ tin cậy của kết luận; outlier, vùng dữ liệu trống và cách chia dữ liệu đều ảnh hưởng trực tiếp đến θ. Lỗi thường gặp là kết luận mô hình tốt chỉ vì J nhỏ trên tập huấn luyện, hoặc bỏ qua outlier khiến đường thẳng bị kéo lệch và ngoại suy ra ngoài dải dữ liệu rất rủi ro."
+      }
+    ],
+    "quiz": [
+      {
+        "stem": "Một nhóm dự đoán giá nhà theo diện tích, dùng giả thuyết h_θ(x) = θ0 + θ1·x và hàm chi phí bình phương sai số J(θ0, θ1). Để đơn giản hóa, họ cố định θ0 = 0 rồi tối ưu θ1 theo đúng tiêu chí J. Phân tích nào sau đây đúng về mối quan hệ giữa dạng giả thuyết được dùng, tiêu chí tối thiểu hóa bình phương sai số và giá trị θ1 thu được?",
+        "choices": [
+          "Vì θ0 và θ1 được ước lượng độc lập với nhau, cố định θ0 = 0 chỉ bỏ đi một tham số mà giá trị θ1 tối ưu vẫn giữ nguyên như nghiệm tối ưu đồng thời cả hai.",
+          "Vì θ0 là hệ số quyết định độ dốc của đường dự đoán, cố định θ0 = 0 khiến đường thẳng trở nên nằm ngang, còn θ1 chỉ còn nhiệm vụ dịch chuyển đường đó lên hoặc xuống.",
+          "Vì θ0 chỉ là giá trị nền tại x = 0 và không mang ý nghĩa thực tế, cố định θ0 = 0 không làm thay đổi mức J nhỏ nhất mà mô hình đạt được.",
+          "Cố định θ0 nên họ giả thuyết chỉ còn các đường thẳng qua gốc tọa độ; θ1 tối ưu làm J nhỏ nhất trong họ hẹp đó, nên mô hình bị hạn chế so với khi θ0 được tự do dịch chuyển."
+        ],
+        "correct_index": 3,
+        "explanation": "Khi cố định θ0 = 0, họ giả thuyết không còn là dạng affine đầy đủ mà chỉ còn các đường thẳng đi qua gốc tọa độ, nên θ1 tối ưu là giá trị làm J nhỏ nhất trong họ hẹp đó và mô hình bị hạn chế so với khi θ0 được tự do dịch chuyển đường thẳng — đúng như tài liệu nêu: bỏ θ0 thì mô hình bị hạn chế và không biểu diễn được quan hệ thực tế, còn giữ θ0 cho phép đường thẳng dịch chuyển tự do. Phương án cho rằng θ0 chỉ là giá trị nền không mang ý nghĩa thực tế nên cố định nó không làm thay đổi mức J nhỏ nhất là sai, vì θ0 chính là thành phần dịch chuyển đường thẳng lên hoặc xuống. Phương án cho rằng θ0 quyết định độ dốc nên cố định θ0 = 0 làm đường thẳng nằm ngang và θ1 chỉ dịch chuyển đường đó là sai, vì tài liệu nêu θ1 là hệ số góc (mức thay đổi của giá dự đoán khi diện tích tăng thêm 1 đơn vị) còn θ0 là hệ số chặn. Phương án cho rằng θ0 và θ1 được ước lượng độc lập nên θ1 tối ưu giữ nguyên là sai, vì J(θ) là hàm của cả bộ tham số (θ0, θ1) và mỗi bộ giá trị θ cho ra một đường thẳng cụ thể."
+      },
+      {
+        "stem": "Một học viên huấn luyện mô hình h_θ(x) = θ0 + θ1·x trên tập huấn luyện gồm các cặp (diện tích, giá). Bạn ấy giữ nguyên θ1 ở giá trị ban đầu, chỉ điều chỉnh θ0 cho tới khi J(θ) không giảm thêm, rồi kết luận mô hình đã đạt mức dự đoán sát giá thực tốt nhất có thể. Phân tích nào sau đây chỉ ra đúng mối liên hệ giữa cách chọn θ và mục tiêu để đầu ra của giả thuyết gần với giá nhà thực tế trên tập huấn luyện?",
+        "choices": [
+          "Vì θ0 quyết định giá trị nền của dự đoán nên khi J(θ) ngừng giảm, đường thẳng đã đi sát các điểm dữ liệu, và việc giữ nguyên θ1 không ảnh hưởng tới kết luận đó.",
+          "Vì J(θ0, θ1) là hàm lồi nên cố định θ1 rồi tối ưu θ0 vẫn đưa được tới cực tiểu toàn cục, và khi đó dự đoán đã sát giá thực trên tập huấn luyện.",
+          "Vì mục tiêu là làm tổng các sai số (h − y) bằng 0 nên khi điều chỉnh θ0 để sai số dương và sai số âm bù trừ nhau thì đường thẳng đã sát giá thực.",
+          "Chỉ chỉnh θ0 chỉ san đều sai số giữa các mẫu; phần sai số do độ dốc θ1 chưa khớp xu hướng vẫn còn, nên J(θ) vẫn lớn hơn cực tiểu toàn cục của J(θ0, θ1)."
+        ],
+        "correct_index": 3,
+        "explanation": "Đáp án đúng là “Chỉ chỉnh θ0 chỉ san đều sai số giữa các mẫu; phần sai số do độ dốc θ1 chưa khớp xu hướng vẫn còn…”: theo tài liệu, θ0 làm dịch chuyển đường thẳng lên/xuống, còn θ1 là mức thay đổi của giá dự đoán khi diện tích tăng thêm 1 đơn vị, nên khi cố định θ1 thì sai số do độ dốc chưa khớp vẫn tồn tại, và vì J(θ0, θ1) là hàm lồi có một cực tiểu toàn cục nên giá trị J đạt được vẫn lớn hơn cực tiểu đó. Phương án “Vì θ0 quyết định giá trị nền của dự đoán…” sai vì θ0 chỉ dịch chuyển đường thẳng, còn độ dốc do θ1 quyết định vẫn để lại sai số ở các mẫu. Phương án “Vì J(θ0, θ1) là hàm lồi…” sai vì tính lồi chỉ cho biết J(θ0, θ1) có một cực tiểu toàn cục, không có nghĩa là tối ưu riêng θ0 với θ1 cố định đạt tới cực tiểu đó. Phương án “Vì mục tiêu là làm tổng các sai số (h − y) bằng 0…” sai vì tài liệu dùng bình phương sai số để sai số âm và sai số dương không triệt tiêu nhau và để phạt nặng những dự đoán lệch nhiều, nên tổng sai số bằng 0 không bảo đảm dự đoán sát giá thực."
+      },
+      {
+        "stem": "Trong một bài toán học có giám sát với đặc trưng x là diện tích nhà, người ta dùng chung dạng giả thuyết affine h_θ(x) = θ0 + θ1·x cho hai mô hình: (A) dự đoán giá nhà, và (B) dự đoán nhãn \"cao cấp / không cao cấp\", với nhãn của B được tạo bằng cách chia dải giá thành hai mức. Phân tích nào sau đây đúng về sự khác biệt cốt lõi giữa hai bài toán?",
+        "choices": [
+          "Khác biệt cốt lõi nằm ở đặc trưng x: bài toán hồi quy dùng đặc trưng liên tục còn bài toán phân loại dùng đặc trưng rời rạc, nên B cần thay diện tích bằng các khoảng rời rạc trước khi học θ.",
+          "Vì nhãn của B được tạo bằng cách rời rạc hóa giá nhà, vốn là một đại lượng liên tục, nên B vẫn thuộc bài toán hồi quy và việc tối ưu θ được thực hiện giống như ở A.",
+          "Khác biệt cốt lõi nằm ở bản chất của y: A có y liên tục nên tối ưu θ bằng bình phương sai số, còn B có y rời rạc nên cần tiêu chí khác vì giữa các lớp không có khoảng cách có ý nghĩa.",
+          "Vì hai bài toán dùng chung một dạng giả thuyết affine, có thể giữ nguyên bình phương sai số cho cả hai và chỉ cần thêm một ngưỡng để chuyển giá trị dự đoán thành nhãn lớp."
+        ],
+        "correct_index": 2,
+        "explanation": "Sự khác biệt giữa hai bài toán nằm ở bản chất của y: hồi quy có y liên tục, vô hạn giá trị nên tối thiểu hóa bình phương sai số là tiêu chí phù hợp; phân loại có y rời rạc, hữu hạn nhãn nên bình phương sai số không phù hợp trực tiếp vì giữa các lớp không có khái niệm khoảng cách có ý nghĩa, và cách chọn θ tối ưu cũng khác. Phương án nói khác biệt nằm ở đặc trưng x là sai: tài liệu nêu đặc trưng x có thể liên tục trong cả hai bài toán, điều phân biệt nằm ở y chứ không nằm ở x. Phương án nói có thể giữ nguyên bình phương sai số cho cả hai và chỉ thêm ngưỡng là sai vì thước đo và hàm mục tiêu của phân loại khác hồi quy, không chỉ khác ở bước chuyển đầu ra thành nhãn. Phương án nói rời rạc hóa giá nhà thì B vẫn là hồi quy là sai vì rời rạc hóa đầu ra liên tục thành lớp làm mất thông tin về thứ tự và độ lớn, khi đó y đã trở thành rời rạc nên bài toán là phân loại."
+      }
+    ],
+    "practice": {
+      "stem": "Một tập huấn luyện gồm ba mẫu (diện tích, giá) là (1, 2), (2, 3), (3, 5). Với giả thuyết h_θ(x) = θ0 + θ1·x và hàm chi phí J(θ) = (1/2m)·Σᵢ(h_θ(x⁽ⁱ⁾) − y⁽ⁱ⁾)², hai bộ tham số được xét là θ^(A) = (θ0 = 0, θ1 = 2) và θ^(B) = (θ0 = 1, θ1 = 1). Phân tích nào sau đây đúng về mối liên hệ giữa hai bộ θ này, các đường thẳng mà chúng tạo ra và giá trị J(θ)?",
+      "choices": [
+        "θ^(B) cho J nhỏ hơn vì tổng bình phương sai số của nó nhỏ hơn: θ0 = 1 dịch đường thẳng lên phía trên nên sai số ở ba mẫu đều nhỏ.",
+        "Hai bộ tham số cho cùng một giá trị J vì J đo mức khớp giữa dạng affine của giả thuyết với dữ liệu, và cả hai đều là đường thẳng.",
+        "θ^(A) cho J nhỏ hơn vì θ1 = 2 lớn hơn θ1 = 1, nên đường thẳng của nó phản ánh đúng mức tăng giá theo diện tích hơn.",
+        "θ^(A) cho J nhỏ hơn vì θ0 = 0 loại bỏ hệ số chặn không mang nghĩa thực tế, giúp đường thẳng bám sát dữ liệu hơn."
+      ],
+      "correct_index": 0,
+      "explanation": "Với θ^(A) = (0, 2), đường thẳng h(x) = 2x cho các sai số 0, +1, +1 nên J = 2/6 = 1/3. Với θ^(B) = (1, 1), đường thẳng h(x) = 1 + x cho các sai số 0, 0, −1 nên J = 1/6. Vì J là tổng bình phương sai số, bộ θ^(B) cho chi phí nhỏ hơn, tức đường thẳng của nó đi sát các điểm dữ liệu hơn; điều này khớp với chuỗi liên hệ: chọn θ xác định một đường thẳng, đường thẳng xác định các sai số, các sai số xác định J(θ).\nPhương án nói θ^(A) cho J nhỏ hơn vì θ0 = 0 loại bỏ hệ số chặn không mang nghĩa thực tế là sai: θ0 chủ yếu để dịch chuyển đường thẳng lên/xuống, và bỏ θ0 (buộc đường thẳng đi qua gốc tọa độ) làm mô hình bị hạn chế; ở đây chính θ0 = 1 giúp θ^(B) khớp dữ liệu tốt hơn.\nPhương án nói θ^(A) cho J nhỏ hơn vì θ1 = 2 lớn hơn θ1 = 1 là sai: J không nhỏ đi khi θ1 lớn; θ1 quá lớn làm đường thẳng quá dốc và sai số tăng ở hai đầu dải dữ liệu, đúng như ở đây θ1 = 2 cho J = 1/3, lớn hơn J = 1/6.\nPhương án nói hai bộ tham số cho cùng một giá trị J là sai: mỗi bộ giá trị θ cho ra một đường thẳng cụ thể và do đó một giá trị J riêng, chứ J không gắn với dạng affine nói chung."
+    },
+    "source_chunks": [
+      "Week02\nSo I think the simplest, maybe the simplest possible learning algorithm, a supervised learning regression problem is linear regression. And to motivate that, rather than using a self-driving car example, which is quite complicated. We'll build up a supervised learning algorithm using a simpler example. So let's say you want to predict or estimate the prices of houses. So the way you build a learning algorithm is start by collecting a data set of houses and their prices. So this is a data set that we collected off Craigslist a little bit back. This is data from Portland, Oregon. but so that's the size of a house in square feet",
+      "Week02\nMorning and welcome back. So what we'll see today in class is the first in-depth discussion of a learning algorithm, linear regression. And in particular, over the next, what, hour and a bit, you see a linear regression batch and stochastic gradient descent as an algorithm for fitting linear regression models. and then the normal equations as a way of, as a very efficient way to let you fit linear models. And we're going to define notation and a few concepts today that will lay the foundation for a lot of the work that we'll see the rest of this quarter. So to motivate linear regression, it's kind of, you know, maybe the simplest, one of the simplest learning algorithms.",
+      "Week02\nand that's the price of a house in thousands of dollars right and so there a house that is 2 square feet whose asking price was house with that size with that price and so on. And maybe more conventionally, if you plot this data, there's the size, there's the price, So you have some data set like that. And what we'll end up doing today is fill a straight line to this data and go through how to do that. So in supervised learning, the process of supervised learning is that you have a training set, such as the data set that I drew on the left, and you feed this to learning algorithm. And the job of the learning algorithm",
+      "Week02\nBut so in order to learn a set of parameters, what we'll want to do is choose the parameters theta so that at least for the houses whose prices you know, that the learning algorithm outputs prices that are close to what you know were the correct prices for that set of houses, were the correct asking prices for those houses. And so more formally, in the linear regression algorithm, also called ordinary least squares, with linear regression we will want to minimize I going to build out this equation one piece at a time Minimize the squared difference between what the hypothesis outputs H subscript theta of X minus Y squared So let's say we want to minimize the squared difference between the prediction,",
+      "Week02\nand even though linear regression, right, you may have seen it in a linear algebra class before and some of the class before, the way you go about structuring a machine learning algorithm is important. And design choices of what is the workflow, what is the data set, what is the hypothesis, how do we represent the hypothesis? These are the key decisions you have to make in pretty much every supervised learning, every machine learning algorithm design. So as we go through linear regression, I'll try to describe the concepts clearly as well because they'll lay the foundation for the rest of the algorithms, sometimes much more complicated algorithms you see later this quarter.",
+      "Week02\nSo when designing a learning algorithm, the first thing we'll need to ask is how do you represent the hypothesis H? And in linear regression for the purpose of this lecture we going to say that the hypothesis is going to be that That they'll input size x and output a number as a linear function of the size x. And then the mathematicians in the room will say, technically this is an affine function. It was a linear function, there's no theta 0. So technically, you know, but in machine learning, sometimes they just call this a linear function, but technically it's an affine function. It doesn't matter.",
+      "Week02\nwould be to work through an example yourself. Set j of theta equals theta squared, and set theta equals 1. So here at the quadratic function, the derivative is equal to 1, so you want to subtract a value from theta rather than add. Cool. All right. Great. So you've now seen your first learning algorithm. And, you know, gradient descent and linear regression is definitely still one of the most widely used learning algorithms in the world today. And if you implement this, if you implement this today, right, you could use this for some actually pretty decent purposes. Now, I want to give this algorithm one other name.",
+      "Week02\nYou remember the Alvin video, the autonomous driving video that I had shown in class on Monday. For the self-driving car video, that was a supervised learning problem. And the term supervised learning meant that you were given X's, which was a picture of what's in front of the car, and the algorithm had to map that to an output Y, which was the steering direction. and that was a regression problem because the output y that you want is continuous value, right? As opposed to a classification problem where y is discrete. And we'll talk about classification next Monday, but supervised learning regression."
+    ]
+  },
+  "reference": {
+    "coverage": "unknown",
+    "chunk_ids": [],
+    "total_chunks": null
+  },
+  "claim_citations": null
+}

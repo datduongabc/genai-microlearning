@@ -154,8 +154,8 @@ npm run build
 
 | Bộ test | Số test |
 | --- | ---: |
-| Backend unit / integration / e2e | 779 / 1.360 / 2 |
-| Frontend unit / integration | 104 / 340 |
+| Backend unit / integration / e2e | 1.086 / 1.201 / 2 |
+| Frontend unit / integration | 127 / 215 |
 | Plugin Moodle (PHPUnit) | 21 |
 | Terraform (`terraform test`, provider giả lập) | 8 |
 
@@ -176,16 +176,18 @@ Load test và kiểm thử lỗi nằm trong `devops/loadtest`. Kịch bản tr�
 | Chat (Ragas, 50 câu) | Faithfulness 0,990; answer relevancy 0,740 |
 | Pilot 10 cặp module | RAG: 0/120 ý không có nguồn; không RAG: 17/101 |
 | Năm môn với Jev và Gemini 3.5 Flash Lite | Upload 33,7 s/tệp, chat 2,1 s, mô-đun 28,9 s |
-| Rubric hai judge, 10 mô-đun | Trung bình 3,76/5; quiz và Bloom yếu nhất (~2,9) |
+| Rubric v3, 19 cặp RAG / không RAG, hai judge khác họ | "Thông tin bịa": RAG 3,95 so với 2,84 (Claude) và 3,37 so với 2,21 (GPT), Holm p 0,007 và 0,018 |
+| AWS, một môn (11/19) | Một task api 1 vCPU ~124 request/s, tự thêm task khi tải; chat 279 tin/phút; khôi phục RDS 16-18 phút, mất tối đa 7-8 phút dữ liệu |
+| Mở LTI từ Moodle (đo ở máy) | Lần đầu 0,026 s; ~50-60 lượt/s mỗi vCPU; 300/300 học viên sau một địa chỉ NAT |
 | Prompt injection trong chat | 22/80 → 4/80 sau khi thêm luật chống chỉ thị nhúng |
 
 ## Giới hạn hiện tại
 
 - Chất lượng quiz còn thấp: đáp án đúng thường là phương án dài nhất, câu hỏi chủ yếu ở mức nhớ.
-- Chưa có người chấm thật; điểm rubric mới đến từ model judge trên ít mô-đun.
-- Mọi số đo tải đều chạy trên một máy; bản triển khai AWS mới qua smoke test, chưa được đo tải.
-- Compose vẫn phục vụ frontend bằng Vite dev server.
-- Mỗi khóa học có một giảng viên; chưa có LTI Deep Linking và chưa trả điểm về Moodle.
+- Chưa có người chấm thật; điểm rubric mới đến từ hai model judge khác họ trên 19 cặp mô-đun.
+- Trên AWS mới đo tải một môn; sức chứa 30.000 người dùng là ước tính từ số đo, chưa phải số đo ở quy mô đó.
+- Compose vẫn phục vụ frontend bằng Vite dev server (AWS phục vụ bản build tĩnh qua S3 và CloudFront).
+- Chưa có LTI Deep Linking và chưa trả điểm về Moodle: quiz xuất sang hoạt động Quiz gốc của Moodle nên điểm đã nằm bên Moodle.
 
 Danh sách đầy đủ và kế hoạch phát triển nằm ở chương Conclusion của báo cáo.
 

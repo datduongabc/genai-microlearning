@@ -1,0 +1,642 @@
+{
+  "pair_id": "c4146740-89c1-4479-b197-1da06e1350fc",
+  "group": "rag_llm",
+  "generator_model": "deepseek-flash",
+  "generation_models": [
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    },
+    {
+      "served_model": "deepseek/deepseek-v4.1-flash",
+      "requested_alias": "deepseek-flash"
+    }
+  ],
+  "packet": {
+    "anon_id": "",
+    "topic": "Giới thiệu về lập trình hướng đối tượng (Introduction to Object Oriented Programming)",
+    "bloom_level": "understand",
+    "learning_objective": "Sau khi hoàn thành module, người học có thể giải thích mô hình lập trình hướng đối tượng (OOP) cùng bốn nguyên lý cốt lõi của nó: Encapsulation, Inheritance, Polymorphism và Abstraction.",
+    "sub_objectives": [
+      "Nêu định nghĩa của lập trình hướng đối tượng (OOP) và cấu trúc của một đối tượng gồm thuộc tính (attributes) và phương thức (methods)",
+      "Giải thích lợi ích mà mỗi nguyên lý cốt lõi mang lại: Encapsulation bảo vệ tính toàn vẹn dữ liệu, Inheritance thúc đẩy tái sử dụng mã nguồn, Polymorphism giúp mã linh hoạt, Abstraction giảm độ phức tạp",
+      "Mô tả cách mỗi nguyên lý cốt lõi được minh họa bằng ví dụ trong tài liệu (Car có thuộc tính private speed và phương thức getSpeed(), Truck kế thừa Vehicle, phương thức draw() hành xử khác nhau với Circle và Rectangle, nút start của xe che giấu chi tiết động cơ)",
+      "Giải thích vì sao OOP tạo ra các hệ thống có tính module hóa, mở rộng được, tái sử dụng được và dễ hiểu hơn"
+    ],
+    "content_markdown": "## 1. Định nghĩa lập trình hướng đối tượng (OOP) và cấu trúc của một đối tượng\n\n- **Lập trình hướng đối tượng (Object-oriented programming – OOP)** là một mô hình lập trình (programming paradigm) tổ chức thiết kế phần mềm xoay quanh các **đối tượng (objects)**, vốn có thể biểu diễn các thực thể trong thế giới thực hoặc các khái niệm trừu tượng.     \n- Mỗi đối tượng gồm hai thành phần:\n  - **Dữ liệu (data)** – còn gọi là **thuộc tính (attributes)** hay **thuộc tính/properties**.     \n  - **Hành vi (behavior)** – còn gọi là **phương thức (methods)** hay **hàm (functions)**.     \n- Cấu trúc của một đối tượng vì vậy được mô tả là gồm thuộc tính và phương thức đi kèm với nhau trong cùng một đối tượng.     \n- Ví dụ minh họa cho cấu trúc này là một chiếc xe hơi (car) trong thế giới thực, với:\n  - **Thuộc tính (Attributes):** color, brand, speed, fuel capacity.     \n  - **Hành vi (Behaviors):** start, stop, accelerate.     \n\n## 2. Lợi ích của bốn nguyên lý cốt lõi của OOP\n\n- **Encapsulation (Đóng gói)**\n  - Gộp dữ liệu (thuộc tính) và phương thức (hành vi) vào một đơn vị duy nhất (class) và hạn chế truy cập nhằm bảo vệ tính toàn vẹn dữ liệu.     \n  - Lợi ích cốt lõi: bảo vệ tính toàn vẹn dữ liệu bằng cách hạn chế truy cập trực tiếp.     \n  - Cụ thể hơn, việc kiểm soát cách truy cập và sửa đổi dữ liệu, phương thức đem lại: **Data Integrity** – ngăn chặn thay đổi dữ liệu trái phép hoặc vô ý; **Security** – dữ liệu nhạy cảm được ẩn khỏi truy cập trái phép; **Ease of Use** – người dùng class không cần hiểu những phức tạp bên trong; **Code Maintenance** – phần triển khai bên trong có thể thay đổi mà không ảnh hưởng đến cách dùng bên ngoài.     \n  - Encapsulation được xem là nền tảng của OOP, tập trung vào việc gộp dữ liệu và hàm trong một class.      \n- **Inheritance (Kế thừa)**\n  - Cho phép một class kế thừa thuộc tính và phương thức từ một class khác, qua đó thúc đẩy **tái sử dụng mã nguồn (code reuse)** và tạo ra các quan hệ phân cấp (hierarchical relationships).     \n  - Lợi ích cốt lõi: thúc đẩy tái sử dụng mã nguồn.     \n- **Polymorphism (Đa hình)**\n  - Cho phép các đối tượng mang nhiều hình thái khác nhau, ví dụ một phương thức hay một class duy nhất có thể đại diện cho nhiều kiểu dữ liệu hoặc hành vi bên dưới khác nhau.     \n  - Lợi ích cốt lõi: giúp mã đơn giản hơn và linh hoạt hơn.     \n- **Abstraction (Trừu tượng hóa)**\n  - Ẩn các chi tiết triển khai và chỉ phơi bày những tính năng thiết yếu, nhờ đó đơn giản hóa các hệ thống phức tạp cho người dùng.     \n  - Lợi ích cốt lõi: giảm độ phức tạp.     \n\n## 3. Ví dụ minh họa bốn nguyên lý cốt lõi trong tài liệu\n\n- **Encapsulation:** một đối tượng Car có thuộc tính **speed là private** và một phương thức **công khai (public) getSpeed()** để truy cập thuộc tính đó.     \n  - Qua ví dụ này, encapsulation bảo vệ tính toàn vẹn dữ liệu bằng cách hạn chế truy cập trực tiếp vào speed.     \n- **Inheritance:** một class **Truck** có thể kế thừa từ một class **Vehicle**.     \n  - Ví dụ này minh họa việc thúc đẩy tái sử dụng mã nguồn.     \n- **Polymorphism:** một phương thức **draw()** hành xử khác nhau đối với các đối tượng **Circle** và **Rectangle**.     \n  - Ví dụ này minh họa việc đơn giản hóa mã và làm cho mã linh hoạt.     \n- **Abstraction:** người dùng nhấn nút **\"start\"** của xe hơi mà không cần hiểu cơ chế động cơ (engine mechanics) bên trong.     \n  - Ví dụ này minh họa việc giảm độ phức tạp.     \n\n## 4. Vì sao OOP tạo ra hệ thống module hóa, mở rộng được, tái sử dụng được và dễ hiểu hơn\n\n- OOP giúp tạo ra các hệ thống có tính **modular, scalable, reusable và dễ hiểu hơn (easier to understand)**.     \n- **Modular (module hóa):** chia chương trình thành các **class độc lập, tự chứa (independent, self-contained classes)**.     \n- **Scalable (mở rộng được):** cho phép **thêm mới hoặc mở rộng chức năng**.     \n- **Reusable (tái sử dụng được):** thông qua việc **tạo các class tổng quát (generic classes)** hoặc **mở rộng các class đã có**.     \n- **Easier to understand (dễ hiểu hơn):** nhờ **mô hình hóa các thực thể trong thế giới thực bằng đối tượng**.     ",
+    "slides": [
+      {
+        "title": "Mục tiêu học tập",
+        "bullets": [
+          "Giải thích mô hình lập trình hướng đối tượng (OOP)",
+          "Trình bày bốn nguyên lý cốt lõi: Encapsulation, Inheritance, Polymorphism, Abstraction"
+        ]
+      },
+      {
+        "title": "OOP là gì?",
+        "bullets": [
+          "Là một mô hình lập trình (programming paradigm)",
+          "Tổ chức thiết kế phần mềm xoay quanh các đối tượng (objects)",
+          "Đối tượng biểu diễn thực thể thế giới thực hoặc khái niệm trừu tượng"
+        ]
+      },
+      {
+        "title": "Cấu trúc của một đối tượng",
+        "bullets": [
+          "Dữ liệu (data) — còn gọi là thuộc tính (attributes/properties)",
+          "Hành vi (behavior) — còn gọi là phương thức (methods/functions)",
+          "Hai thành phần đi kèm nhau trong cùng một đối tượng"
+        ]
+      },
+      {
+        "title": "Ví dụ: đối tượng xe hơi (Car)",
+        "bullets": [
+          "Thuộc tính (attributes): color, brand, speed, fuel capacity",
+          "Hành vi (behaviors): start, stop, accelerate"
+        ]
+      },
+      {
+        "title": "Bốn nguyên lý cốt lõi của OOP",
+        "bullets": [
+          "Encapsulation (Đóng gói)",
+          "Inheritance (Kế thừa)",
+          "Polymorphism (Đa hình) — Abstraction (Trừu tượng hóa)"
+        ]
+      },
+      {
+        "title": "Encapsulation (Đóng gói) — Định nghĩa",
+        "bullets": [
+          "Gộp dữ liệu (thuộc tính) và phương thức (hành vi) vào một đơn vị duy nhất: class",
+          "Hạn chế truy cập nhằm bảo vệ tính toàn vẹn dữ liệu",
+          "Được xem là nền tảng của OOP"
+        ]
+      },
+      {
+        "title": "Encapsulation — Lợi ích (1)",
+        "bullets": [
+          "Data Integrity: ngăn chặn thay đổi dữ liệu trái phép hoặc vô ý",
+          "Security: dữ liệu nhạy cảm được ẩn khỏi truy cập trái phép"
+        ]
+      },
+      {
+        "title": "Encapsulation — Lợi ích (2)",
+        "bullets": [
+          "Ease of Use: người dùng class không cần hiểu phức tạp bên trong",
+          "Code Maintenance: đổi phần triển khai bên trong mà không ảnh hưởng cách dùng bên ngoài"
+        ]
+      }
+    ],
+    "examples": [
+      {
+        "context": "Một nhóm sinh viên xây dựng phần mềm quản lý máy bán nước tự động đặt tại tòa nhà C của trường. Phiên bản đầu tiên của nhóm viết rời rạc: các biến toàn cục tenMay, luongNuocConLai, giaMoiChai nằm ở đầu file, còn các hàm khoiDong(), phaNuoc(), napNuoc() nằm rải rác phía dưới. Nhóm trưởng yêu cầu cả nhóm chuyển sang mô hình OOP bằng cách tạo một đối tượng MayBanNuoc, rồi giải thích cho thành viên mới vì sao cách tổ chức mới đúng với định nghĩa OOP.",
+        "analysis": "Bước 1: Áp dụng định nghĩa OOP trong Content — OOP là một mô hình lập trình (programming paradigm) tổ chức thiết kế phần mềm xoay quanh các đối tượng (objects), vốn có thể biểu diễn thực thể trong thế giới thực. Đối chiếu với bối cảnh: máy bán nước là một thực thể có thật trong tòa nhà, nên nó chính là ứng viên để trở thành một đối tượng tên là MayBanNuoc.\nBước 2: Tách phần dữ liệu của thực thể đó. Theo Content, dữ liệu của đối tượng được gọi là thuộc tính (attributes) hay properties. Trong bối cảnh này, các thuộc tính là: tenMay, luongNuocConLai, giaMoiChai.\nBước 3: Tách phần hành vi của thực thể đó. Theo Content, hành vi của đối tượng được gọi là phương thức (methods) hay hàm (functions). Trong bối cảnh này, các phương thức là: khoiDong(), phaNuoc(), napNuoc().\nBước 4: Gộp hai phần vừa tách vào cùng một đơn vị duy nhất: đối tượng MayBanNuoc chứa cả ba thuộc tính và ba phương thức ở bên trong nó, thay vì để biến và hàm rời rạc như phiên bản cũ.\nKết luận: Đối tượng MayBanNuoc minh họa đúng cấu trúc mà Content mô tả — thuộc tính và phương thức đi kèm với nhau trong cùng một đối tượng, và bản thân nó là một thực thể được mô hình hóa theo tinh thần của OOP. Lỗi người học hay mắc ở Bước 2 và Bước 3 là phân loại nhầm: coi khoiDong() hay phaNuoc() là thuộc tính chỉ vì chúng gắn với chiếc máy, trong khi theo Content đây là hành vi (behavior) nên phải là phương thức, còn tenMay, luongNuocConLai, giaMoiChai mới là dữ liệu (thuộc tính). Một lỗi khác là giữ nguyên các biến toàn cục bên ngoài đối tượng, tức là không thực hiện đúng yêu cầu gộp thuộc tính và phương thức vào cùng một đối tượng."
+      },
+      {
+        "context": "Công ty cho thuê xe Minh Phát đang nâng cấp phần mềm quản lý đội xe gồm hai loại: xe con (Car) và xe tải (Truck). Trong buổi họp, lập trình viên mới đặt bốn câu hỏi về bốn quyết định thiết kế: (1) vì sao chỉ số đồng hồ công-tơ-mét của xe phải đặt private và chỉ đọc qua phương thức getOdometer() thay vì cho sửa trực tiếp; (2) vì sao Truck nên kế thừa từ Vehicle thay vì khai báo lại brand và start(); (3) vì sao một phương thức calculateRentalFee() lại hành xử khác nhau khi gọi trên Car và trên Truck; (4) vì sao tài xế chỉ cần nhấn nút \"start\" mà không cần hiểu cơ chế động cơ bên trong. Quản lý yêu cầu gắn mỗi quyết định với đúng nguyên lý và đúng lợi ích cốt lõi của nó.",
+        "analysis": "Bước 1: Với câu hỏi (1), áp dụng Encapsulation — gộp dữ liệu và phương thức vào một đơn vị duy nhất (class) và hạn chế truy cập. Đặt chỉ số công-tơ-mét là private, chỉ cho đọc qua getOdometer(), tức là hạn chế truy cập trực tiếp vào dữ liệu; lợi ích cốt lõi thu được là bảo vệ tính toàn vẹn dữ liệu (data integrity), tránh thay đổi trái phép hoặc vô ý.\nBước 2: Với câu hỏi (2), áp dụng Inheritance — cho phép một class kế thừa thuộc tính và phương thức từ một class khác. Truck kế thừa brand và start() từ Vehicle nên không phải viết lại chúng; lợi ích cốt lõi thu được là thúc đẩy tái sử dụng mã nguồn (code reuse), đồng thời tạo ra quan hệ phân cấp giữa Vehicle và Truck.\nBước 3: Với câu hỏi (3), áp dụng Polymorphism — cho phép một phương thức đại diện cho nhiều hành vi bên dưới khác nhau. Cùng một lời gọi calculateRentalFee() nhưng hành xử khác nhau trên Car và trên Truck; lợi ích cốt lõi thu được là mã đơn giản hơn và linh hoạt hơn.\nBước 4: Với câu hỏi (4), áp dụng Abstraction — ẩn các chi tiết triển khai và chỉ phơi bày những tính năng thiết yếu. Tài xế chỉ thấy nút \"start\" và không cần hiểu cơ chế động cơ (engine mechanics) bên trong; lợi ích cốt lõi thu được là giảm độ phức tạp.\nKết luận: Bốn quyết định thiết kế trên khớp đúng với bốn nguyên lý cốt lõi và bốn lợi ích mà Content nêu: Encapsulation bảo vệ tính toàn vẹn dữ liệu, Inheritance thúc đẩy tái sử dụng mã nguồn, Polymorphism giúp mã linh hoạt, Abstraction giảm độ phức tạp. Lỗi người học hay mắc là gán lẫn lợi ích giữa các nguyên lý — chẳng hạn nói Inheritance giúp giảm độ phức tạp hay Polymorphism bảo vệ tính toàn vẹn dữ liệu — trong khi Content gắn mỗi nguyên lý với một lợi ích cốt lõi riêng như đã liệt kê ở trên."
+      }
+    ],
+    "quiz": [
+      {
+        "stem": "Phát biểu nào sau đây diễn giải đúng định nghĩa của lập trình hướng đối tượng (OOP) và cấu trúc của một đối tượng?",
+        "choices": [
+          "OOP là một ngôn ngữ lập trình dùng để tổ chức thiết kế phần mềm xung quanh các đối tượng, trong đó mỗi đối tượng gồm dữ liệu (attributes) và hành vi (methods).",
+          "OOP là mô hình lập trình tổ chức thiết kế phần mềm xung quanh các đối tượng, trong đó mỗi đối tượng gồm dữ liệu (attributes) và hành vi (methods).",
+          "OOP là mô hình lập trình tổ chức thiết kế phần mềm xung quanh các lớp (class), trong đó mỗi lớp gồm dữ liệu (attributes) và hành vi (methods) dùng chung cho các đối tượng.",
+          "OOP là mô hình lập trình tổ chức thiết kế phần mềm xung quanh các đối tượng, trong đó mỗi đối tượng lưu dữ liệu (attributes) còn hành vi (methods) được cung cấp bởi các hàm dùng chung bên ngoài."
+        ],
+        "correct_index": 1,
+        "explanation": "Phát biểu \"OOP là mô hình lập trình tổ chức thiết kế phần mềm xung quanh các đối tượng, trong đó mỗi đối tượng gồm dữ liệu (attributes) và hành vi (methods)\" đúng vì tài liệu định nghĩa OOP là một mô hình lập trình (programming paradigm) tổ chức thiết kế phần mềm xung quanh các đối tượng, và mỗi đối tượng chứa dữ liệu (attributes/properties) cùng hành vi (methods/functions). Phát biểu nói OOP tổ chức thiết kế xung quanh các lớp (class) và hành vi, dữ liệu dùng chung cho các đối tượng là sai vì đơn vị mà OOP xoay quanh là đối tượng; kế thừa chỉ là một nguyên lý cho phép lớp này thừa hưởng thuộc tính và phương thức từ lớp khác. Phát biểu nói mỗi đối tượng lưu dữ liệu còn hành vi được cung cấp bởi các hàm dùng chung bên ngoài là sai vì tài liệu nêu mỗi đối tượng chứa cả dữ liệu lẫn hành vi, và encapsulation gói dữ liệu cùng phương thức vào một đơn vị thống nhất. Phát biểu nói OOP là một ngôn ngữ lập trình là sai vì tài liệu định nghĩa OOP là một mô hình lập trình (paradigm), không phải một ngôn ngữ."
+      },
+      {
+        "stem": "Một nhóm học viên tóm tắt bốn nguyên lý cốt lõi của OOP kèm lợi ích của từng nguyên lý. Cách ghép nào sau đây mô tả đúng quan hệ giữa một nguyên lý và lợi ích mà nó mang lại?",
+        "choices": [
+          "Polymorphism cho phép một lớp kế thừa thuộc tính và phương thức của lớp khác, nhờ đó mã nguồn được tái sử dụng và có thêm quan hệ thứ bậc.",
+          "Inheritance cho phép lớp con dùng lại những thuộc tính và phương thức đã có ở lớp cha, nhờ đó mã nguồn được tái sử dụng.",
+          "Encapsulation cho phép một phương thức cho ra hành vi khác nhau ở những đối tượng khác nhau, nhờ đó chương trình xử lý được nhiều kiểu dữ liệu.",
+          "Abstraction gói dữ liệu và phương thức vào cùng một lớp rồi hạn chế truy cập trực tiếp, nhờ đó dữ liệu được bảo vệ khỏi thay đổi ngoài ý muốn."
+        ],
+        "correct_index": 1,
+        "explanation": "Cách ghép đúng là “Inheritance cho phép lớp con dùng lại những thuộc tính và phương thức đã có ở lớp cha, nhờ đó mã nguồn được tái sử dụng”: tài liệu mô tả Inheritance là cho phép một lớp kế thừa thuộc tính và phương thức từ lớp khác, qua đó thúc đẩy tái sử dụng mã nguồn. Phương án “Polymorphism cho phép một lớp kế thừa thuộc tính và phương thức của lớp khác, nhờ đó mã nguồn được tái sử dụng và có thêm quan hệ thứ bậc” sai vì việc kế thừa thuộc tính, phương thức từ lớp khác và quan hệ thứ bậc là mô tả của Inheritance, còn Polymorphism là việc đối tượng mang nhiều hình thái, một phương thức hay lớp chung có thể đại diện cho nhiều kiểu dữ liệu hay hành vi khác nhau. Phương án “Abstraction gói dữ liệu và phương thức vào cùng một lớp rồi hạn chế truy cập trực tiếp, nhờ đó dữ liệu được bảo vệ khỏi thay đổi ngoài ý muốn” sai vì việc gói dữ liệu và phương thức vào một đơn vị rồi hạn chế truy cập để bảo vệ tính toàn vẹn dữ liệu là mô tả của Encapsulation, còn Abstraction là che giấu chi tiết cài đặt và chỉ lộ ra những tính năng thiết yếu. Phương án “Encapsulation cho phép một phương thức cho ra hành vi khác nhau ở những đối tượng khác nhau, nhờ đó chương trình xử lý được nhiều kiểu dữ liệu” sai vì việc một phương thức cho ra hành vi khác nhau ở các đối tượng khác nhau là mô tả của Polymorphism, còn Encapsulation chỉ nói về việc gói dữ liệu và phương thức vào một lớp cùng việc hạn chế truy cập để bảo vệ tính toàn vẹn dữ liệu."
+      },
+      {
+        "stem": "Trong tài liệu, ví dụ về nút start của xe và ví dụ về thuộc tính speed để private cùng phương thức getSpeed() đều liên quan đến việc che giấu thông tin. Cách diễn giải nào sau đây phân biệt đúng nguyên lý cốt lõi mà mỗi ví dụ minh họa?",
+        "choices": [
+          "Cả hai ví dụ đều minh họa Encapsulation vì đều giấu thông tin bên trong đối tượng, chỉ khác nhau ở mức độ giấu chi tiết đối với người dùng lớp.",
+          "Nút start minh họa Polymorphism vì một hành động khởi động ứng với nhiều loại xe khác nhau, còn speed private cùng getSpeed() minh họa Inheritance vì lớp con dùng lại thuộc tính của lớp cha.",
+          "Nút start minh họa Abstraction vì chỉ lộ tính năng thiết yếu và giấu chi tiết động cơ để giảm độ phức tạp, còn speed private cùng getSpeed() minh họa Encapsulation vì dữ liệu và phương thức được gói chung và truy cập bị hạn chế.",
+          "Nút start minh họa Encapsulation vì chi tiết động cơ được gói kín trong đối tượng, còn speed private cùng getSpeed() minh họa Abstraction vì người dùng lớp chỉ cần gọi phương thức mà không cần hiểu bên trong."
+        ],
+        "correct_index": 2,
+        "explanation": "Tài liệu mô tả Abstraction là che giấu chi tiết cài đặt và chỉ lộ ra các tính năng thiết yếu nhằm giảm độ phức tạp cho người dùng, với ví dụ người dùng nhấn nút start mà không cần hiểu cơ chế động cơ; còn Encapsulation là gói dữ liệu (thuộc tính) và phương thức (hành vi) vào một đơn vị duy nhất và hạn chế truy cập để bảo vệ tính toàn vẹn dữ liệu, với ví dụ đối tượng Car có thuộc tính speed để private và phương thức công khai getSpeed(). Vì vậy phương án gán nút start cho Abstraction và cặp speed private cùng getSpeed() cho Encapsulation là đúng. Phương án gán nút start cho Encapsulation và cặp speed private cùng getSpeed() cho Abstraction đã đổi vai trò hai nguyên lý cho nhau, trong khi tài liệu gắn việc gói dữ liệu với phương thức cùng hạn chế truy cập cho Encapsulation và gắn việc giấu chi tiết động cơ cho Abstraction. Phương án nói cả hai ví dụ đều minh họa Encapsulation đã gộp mọi hình thức che giấu vào một nguyên lý, bỏ qua việc tài liệu nêu Abstraction như một nguyên lý riêng nhằm giảm độ phức tạp. Phương án gán nút start cho Polymorphism và cặp speed private cùng getSpeed() cho Inheritance không khớp với tài liệu, vì Polymorphism được minh họa bằng phương thức draw() hành xử khác nhau với Circle và Rectangle, còn Inheritance được minh họa bằng lớp Truck kế thừa lớp Vehicle."
+      }
+    ],
+    "practice": {
+      "stem": "Trong phần tổng kết chương, một nhóm sinh viên đang xây dựng hệ thống mô phỏng xe hơi với các lớp như Vehicle và Truck, và phải diễn giải lại mô hình OOP cùng bốn nguyên lý cốt lõi của nó. Cách diễn giải nào sau đây đúng với nội dung bài học?",
+      "choices": [
+        "Inheritance cho phép một phương thức hay lớp mang nhiều hình thái khác nhau, còn Polymorphism giúp lớp con dùng lại thuộc tính và phương thức của lớp cha để tái sử dụng mã.",
+        "Encapsulation gói dữ liệu cùng phương thức vào một đơn vị và hạn chế truy cập để bảo vệ dữ liệu, còn Abstraction che chi tiết cài đặt và chỉ lộ ra tính năng thiết yếu.",
+        "Encapsulation che chi tiết cài đặt và chỉ lộ ra tính năng thiết yếu cho người dùng, còn Abstraction gói dữ liệu cùng phương thức để bảo vệ tính toàn vẹn.",
+        "Đối tượng chỉ chứa dữ liệu của thực thể, còn hành vi được định nghĩa thành các hàm riêng nằm ngoài lớp nên chương trình dễ hiểu hơn."
+      ],
+      "correct_index": 1,
+      "explanation": "Cách diễn giải đúng là: Encapsulation gói dữ liệu cùng phương thức vào một đơn vị và hạn chế truy cập để bảo vệ dữ liệu, còn Abstraction che chi tiết cài đặt và chỉ lộ ra tính năng thiết yếu. Điều này khớp với tài liệu: Encapsulation bundles data (attributes) and methods (behavior) into a single unit (class) and restricts access to protect data integrity (S3), còn Abstraction hides implementation details and exposes only essential features, simplifying complex systems (S1); OOP nói chung tổ chức thiết kế phần mềm xoay quanh các đối tượng, mỗi đối tượng chứa cả dữ liệu lẫn hành vi (S2).\n\nPhương án nói Encapsulation che chi tiết cài đặt và chỉ lộ ra tính năng thiết yếu cho người dùng, còn Abstraction gói dữ liệu cùng phương thức để bảo vệ tính toàn vẹn đã đổi vai trò hai nguyên lý: theo tài liệu, việc che chi tiết cài đặt và chỉ lộ tính năng thiết yếu thuộc về Abstraction (S1), còn việc gói dữ liệu với phương thức và hạn chế truy cập để bảo vệ dữ liệu thuộc về Encapsulation (S3).\n\nPhương án nói Inheritance cho phép một phương thức hay lớp mang nhiều hình thái, còn Polymorphism giúp lớp con dùng lại thuộc tính và phương thức của lớp cha cũng đổi vai trò: tài liệu nêu Inheritance allows one class to inherit attributes and methods from another, promoting code reuse (S3), còn Polymorphism allows objects to take on many forms, ví dụ một phương thức draw() hành xử khác nhau với Circle và Rectangle (S1).\n\nPhương án nói đối tượng chỉ chứa dữ liệu của thực thể, còn hành vi được định nghĩa thành các hàm riêng nằm ngoài lớp là sai vì tài liệu nêu mỗi đối tượng chứa cả dữ liệu (thuộc tính) và hành vi (phương thức) (S2), và Encapsulation gói cả dữ liệu lẫn phương thức vào cùng một đơn vị là class (S3)."
+    },
+    "source_chunks": [
+      "Chap1 Encapsulation\nChapter 1: Object Oriented Programming Revision - Encapsulation\nTP.HCM, 03/01/2025\nAdvanced Programming\nCO2039\nCONTENT\n01\n04\n02\n05\n03\nINTRODUCTION TO OOP\nENCAPSULATION\nHOW ENCAPSULATION WORKS?\nBEST PRACTICES\nCONCLUSION\n2\n06\nEXTENSION: CLASS DIAGRAM",
+      "Chap1 Encapsulation\nINTRODUCTION TO OBJECT ORIENTED PROGRAMMING\n01\n3\nWhat is OOP?\nObject-oriented programming (OOP) is a programming paradigm that organizes software design around objects, which can represent real-world entities or abstract concepts. Each object contains data (attributes or properties) and behavior (methods or functions).\n4",
+      "Chap1 Encapsulation\nKey principles of OOP\nEncapsulation: Bundles data (attributes) and methods (behavior) into a single unit (class) and restricts access to protect data integrity.  Example: A Car object has private attribute speed and a public method getSpeed() to access it. => Protects data integrity by restricting direct access.\n5\nKey principles of OOP\nInheritance: Allows one class to inherit attributes and methods from another, promoting code reuse and hierarchical relationships.  Example: A Truck class can inherit from a Vehicle class. => Promotes code reuse.\n6",
+      "Chap1 Encapsulation\nKey principles of OOP\nPolymorphism: Allows objects to take on many forms, e.g., a single method or class to represent different underlying data types or behaviors.  Example: A draw() method behaves differently for Circle and Rectangle objects. =>Simplifies code and makes it flexible.\n7\nKey principles of OOP\nAbstraction: Hides implementation details and exposes only essential features, simplifying complex systems for the user.  Example: A user presses a car's \"start\" button without needing to understand the engine mechanics. =>Reduce complexity\n8",
+      "Chap1 Encapsulation\nWhy OOP?\nCreate systems that are modular, scalable, reusable, and easier to understand.  Think of a car in the real world. It has:     Attributes: color, brand, speed, fuel capacity.     Behaviors: start, stop, accelerate. Modular -> divides programs into independent, self-contained classes Scalable -> allows new functionality to be added or extended Reusable -> creating generic classes or extending existing classes Easier to understand ->  models real-world entities with objects\n9\nENCAPSULATION\n02\n10",
+      "Chap1 Encapsulation\nWhat is Encapsulation?\nWhen creating new data types (classes) the details of the actual data and the way operations work is hidden from the other programmers who will use those new data types.\nHình: Encapsulation\nIN CAPSULE ation\nClass\nVariables ©@\nMethods\n11\nWhy is Encapsulation important?\nBy controlling how data and methods are accessed or modified, encapsulation ensures:\nData Integrity: Prevents unauthorized or accidental changes to data.\nSecurity: Sensitive data is hidden from unauthorized access.\nEase of Use: Users of the class do not need to understand its internal complexities.\nCode Maintenance: Internal implementation can change without impacting external usage.\n12",
+      "Chap1 Encapsulation\nCore principles of Encapsulation\nData Hiding: The internal state of an object is kept private and can only be accessed through public methods (getters and setters).\nAccess Control: Access specifiers are used to control the visibility of class members:\nprivate: Accessible only within the defining class. default: Accessible only within the same package.\nprotected: Accessible within the same package and by subclasses (even in different packages). public: Accessible from anywhere (any class, any package, and any subclass).\n13\nExample\npublic class Person { // Public: Accessible anywhere public String name;   // Protected: Accessible within the same package or by subclasses protected int age;   // Default (Package-private): Accessible only within the same package String address;   // Private: Accessible only within this class private String password;   // Constructor to initialize the object public Person(String name, int age, String address, String password) { this.name = name; this.age = age; this.address = address; this.password = password; }   // Getter for password to demonstrate controlled access public String getPassword() { return password; }\n14",
+      "Chap1 Encapsulation\nHOW ENCAPSULATION WORKS?\n03\n15\nClass vs struct\nDefining Classes and Objects \n⇒ Can I use Struct instead of Class? Java: no struct C++: class and struct\nHình: structure class\nstruct struct_name class cLass-name\n// struct data members // data\n} // functions\n35\n16\nDefault Access; Struct: Public; Class: Private\nEncapsulation; Struct: Less support; Class: Full support\nUse case; Struct: Light weight objects; Class: All",
+      "Chap1 Encapsulation\nConstructor in Encapsulation\nA constructor is a special function in a class:  \nSame name as the class.  \nNot have a return value.  \nIt is automatically called when an object is created (the programmer does not call it directly).  \nIf no constructor is declared, the program automatically provides a default empty constructor. \n⇒ What is the access modifier for the default constructor?  ⇒ Can we create a private constructor? (Singleton Pattern)\n17\nGetters and Setters\n18\nExample:\npublic class Getset {\nprivate int age;\n// Getter for 'age'\npublic int getAge() {\nreturn age;\n}\n// Setter for 'age' with validation\npublic void setAge(int age) {\nif (age >= 0) {\nthis.age = age;\n} else {\nSystem.out.println(\"Age cannot be negative.\");\n}\n}\npublic static void main(String[] args) {\n}\n}\nGetters and Setters are methods used to access and modify the private fields of a class, adhering to the principles of encapsulation",
+      "Chap1 Encapsulation\nGetters and Setters\n19\nEncapsulation: Protects the internal state of an object.\nControl: Allows you to validate or modify data before it's set.\nConsistency: Helps maintain consistent object state.\nFlexibility: Makes it easier to change the internal implementation without affecting other code.\nReadability: Improves the readability and maintainability of the code.\nAccess Control: Allows creation of read-only or write-only properties.\nDebugging: Enables easy tracking and debugging of changes to the data.\nBEST PRACTICES\n04\n20",
+      "Chap1 Encapsulation\nExercise 1 - Multiple constructor\nCreate a Car class with the following private attributes:\nbrand (string)\nmodel (string)\nyear (int)\nAdd the following:\nA default constructor that sets default values.\nA parameterized constructor to initialize all attributes.\nSetters and getters for all attributes.\nWrite a main function to:\nCreate an object using the default constructor and display its details.\nCreate another object using the parameterized constructor and display its details.\n21\nExercise 2 - Constructor chaining\nCreate a Laptop class with attributes:\nbrand (string)\nmodel (string)\nprice (double)\nAdd the following:\nA default constructor.\nA parameterized constructor to initialize all attributes.\nUse constructor chaining to call one constructor from another.\nWrite a main function to test the class.\n22",
+      "Chap1 Encapsulation\nExercise 3 (Bonus)\nCreate a Library system using encapsulation and constructors.\nCreate a Book class with attributes: title, author, ISBN, price, and stock.\nCreate a Library class with:\nAn array of Book objects.\nMethods to:\nAdd new books.\nSearch for books by title or author.\nBorrow books (reduce stock).\nWrite a main function to simulate library operations.\n23\nCONCLUSION\n05\n24",
+      "Chap1 Encapsulation\nConclusion\nEncapsulation is the foundation of OOP, focusing on bundling data and functions within a class.  \nThe main difference between a class and a struct lies in the level of data security (private/public).  \nA constructor is a special mechanism in OOP that automatically executes when an object is created and can cause errors if not properly designed.\n25\nEXTENSION: \nCLASS DIAGRAM\n06\n26",
+      "Chap1 Encapsulation\nClass diagram\n27\nHình: Circle\ntvarName:type = default-value\n~radius: double = 1.0 denotes private access\n-color:String = \"red\"\n+ denotes public access\n+Circle()\n+Circle(r:double)\n__, tmethodName (parmName : type, ) :retunType\nCan you write a program based on the above class diagram?\nGhi chú: A class called Circle is designed as shown in the following class diagram. It contains:\nTwo private instance variables: radius (of the type double) and color (of the type String), with default value of 1.0 and \"red\", respectively.\nTwo overloaded constructors - a default constructor with no argument, and a constructor which takes a double argument for radius.\nTwo public methods: getRadius() and getArea(), which return the radius and area of this instance, respectively.",
+      "Chap1 Encapsulation\nHands-on exercise\n28\nHình: Ball\n-x: float\n-radius:int\n-xDelta:float ae\n-yDelta: float\nEach move step advances x and y\n” by Ax and Ay. Ax and Ay could be\npositive or negative.\n+Ball(x:float,y: float, radius:int\nxDelta: float, yDelta: float)\n+setX(x: float): void\nt+getY():float\n+setY(y: float): void\n+getRadius():int\n+setXDelta(xDelta: float) : void\n+getYDelta(): float\n+setYDelta(yDelta: float): void\n+move() : void\n+reflectHorizonta1() :void\nt+reflectVertical():voide-\nMove one step:\n/X += Ax; y t= Ay;\n1\n-Ax\n-Ay\nA class called Ball, which models a bouncing ball, is designed as shown in the following class diagram. \nIt contains its radius, x and y position. Each move-step advances the x and y by delta-x and delta-y, respectively. delta-x and delta-y could be positive or negative. \nThe reflectHorizontal() and reflectVertical() methods could be used to bounce the ball off the walls. Write the Ball class. Study the main() on how the ball bounces.\nhttps://www.programiz.com/online-compiler/5VrKcTuK0GRr6\nGhi chú: A class called Circle is designed as shown in the following class diagram. It contains:\nTwo private instance",
+      "Chap1 Encapsulation › Hands-on exercise\nGhi chú: A class called Circle is designed as shown in the following class diagram. It contains:\nTwo private instance variables: radius (of the type double) and color (of the type String), with default value of 1.0 and \"red\", respectively.\nTwo overloaded constructors - a default constructor with no argument, and a constructor which takes a double argument for radius.\nTwo public methods: getRadius() and getArea(), which return the radius and area of this instance, respectively.",
+      "Chap1 Encapsulation\nThank you for your attention!\nhttps://www.cse.hcmut.edu.vn"
+    ]
+  },
+  "reference": {
+    "coverage": "complete",
+    "chunk_ids": [
+      "8ef62d60-d866-4984-a333-1d23e6ff0786",
+      "5a3b2e62-d788-4d50-9b1e-8d50ae8fb154",
+      "3fabcbcf-4fe4-4625-9c84-03a04fc94950",
+      "3da0b834-6ea2-4f21-9c2d-71666be0e0ba",
+      "4521431f-993f-4132-a36e-24bf3c84d3c9",
+      "021b566f-d15c-4188-af55-e9c9a101880b",
+      "18490ef7-3337-40cb-a997-40f1ba0e6753",
+      "6dcf4691-c15e-4f64-9d61-35d122620c53",
+      "321fa2d1-3e85-4fa9-be68-d16afa4ee06c",
+      "3c49d657-7a7a-4886-b6c2-36606da6f586",
+      "781420d6-f628-47b6-988d-e85839807f57",
+      "cf3830b6-990a-4e52-9bd0-81772b79bce8",
+      "065acbfc-5f83-4d11-aa72-8b45317a6beb",
+      "92444d52-03af-4588-bf7f-0ba8bb33897f",
+      "7c849f44-3390-4292-bbf9-3705db33da6d",
+      "4f13a235-aa24-4578-83d7-b413158384a3",
+      "8b340109-a065-4322-bbf2-dae70e837f07"
+    ],
+    "total_chunks": 17
+  },
+  "claim_citations": [
+    {
+      "claim": "**Lập trình hướng đối tượng (Object-oriented programming – OOP)** là một mô hình lập trình (programming paradigm) tổ chức thiết kế phần mềm xoay quanh các **đối tượng (objects)**, vốn có thể biểu diễn các thực thể trong thế giới thực hoặc các khái niệm trừu tượng.",
+      "source_id": "S2",
+      "start": 82,
+      "end": 346,
+      "marker_start": 347,
+      "marker_end": 351,
+      "locator": "{\"spans\": [{\"slide_index\": 3, \"slide_title\": \"INTRODUCTION TO OBJECT ORIENTED PROGRAMMING\"}, {\"slide_index\": 4, \"slide_title\": \"What is OOP?\"}]}",
+      "chunk_id": "5a3b2e62-d788-4d50-9b1e-8d50ae8fb154",
+      "chunk_content": "Chap1 Encapsulation\nINTRODUCTION TO OBJECT ORIENTED PROGRAMMING\n01\n3\nWhat is OOP?\nObject-oriented programming (OOP) is a programming paradigm that organizes software design around objects, which can represent real-world entities or abstract concepts. Each object contains data (attributes or properties) and behavior (methods or functions).\n4",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "**Dữ liệu (data)** – còn gọi là **thuộc tính (attributes)** hay **thuộc tính/properties**.",
+      "source_id": "S2",
+      "start": 392,
+      "end": 482,
+      "marker_start": 483,
+      "marker_end": 487,
+      "locator": "{\"spans\": [{\"slide_index\": 3, \"slide_title\": \"INTRODUCTION TO OBJECT ORIENTED PROGRAMMING\"}, {\"slide_index\": 4, \"slide_title\": \"What is OOP?\"}]}",
+      "chunk_id": "5a3b2e62-d788-4d50-9b1e-8d50ae8fb154",
+      "chunk_content": "Chap1 Encapsulation\nINTRODUCTION TO OBJECT ORIENTED PROGRAMMING\n01\n3\nWhat is OOP?\nObject-oriented programming (OOP) is a programming paradigm that organizes software design around objects, which can represent real-world entities or abstract concepts. Each object contains data (attributes or properties) and behavior (methods or functions).\n4",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "**Hành vi (behavior)** – còn gọi là **phương thức (methods)** hay **hàm (functions)**.",
+      "source_id": "S2",
+      "start": 492,
+      "end": 578,
+      "marker_start": 579,
+      "marker_end": 583,
+      "locator": "{\"spans\": [{\"slide_index\": 3, \"slide_title\": \"INTRODUCTION TO OBJECT ORIENTED PROGRAMMING\"}, {\"slide_index\": 4, \"slide_title\": \"What is OOP?\"}]}",
+      "chunk_id": "5a3b2e62-d788-4d50-9b1e-8d50ae8fb154",
+      "chunk_content": "Chap1 Encapsulation\nINTRODUCTION TO OBJECT ORIENTED PROGRAMMING\n01\n3\nWhat is OOP?\nObject-oriented programming (OOP) is a programming paradigm that organizes software design around objects, which can represent real-world entities or abstract concepts. Each object contains data (attributes or properties) and behavior (methods or functions).\n4",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "Cấu trúc của một đối tượng vì vậy được mô tả là gồm thuộc tính và phương thức đi kèm với nhau trong cùng một đối tượng.",
+      "source_id": "S2",
+      "start": 586,
+      "end": 705,
+      "marker_start": 706,
+      "marker_end": 710,
+      "locator": "{\"spans\": [{\"slide_index\": 3, \"slide_title\": \"INTRODUCTION TO OBJECT ORIENTED PROGRAMMING\"}, {\"slide_index\": 4, \"slide_title\": \"What is OOP?\"}]}",
+      "chunk_id": "5a3b2e62-d788-4d50-9b1e-8d50ae8fb154",
+      "chunk_content": "Chap1 Encapsulation\nINTRODUCTION TO OBJECT ORIENTED PROGRAMMING\n01\n3\nWhat is OOP?\nObject-oriented programming (OOP) is a programming paradigm that organizes software design around objects, which can represent real-world entities or abstract concepts. Each object contains data (attributes or properties) and behavior (methods or functions).\n4",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "**Thuộc tính (Attributes):** color, brand, speed, fuel capacity.",
+      "source_id": "S5",
+      "start": 801,
+      "end": 865,
+      "marker_start": 866,
+      "marker_end": 870,
+      "locator": "{\"spans\": [{\"slide_index\": 9, \"slide_title\": \"Why OOP?\"}, {\"slide_index\": 10, \"slide_title\": \"ENCAPSULATION\"}]}",
+      "chunk_id": "4521431f-993f-4132-a36e-24bf3c84d3c9",
+      "chunk_content": "Chap1 Encapsulation\nWhy OOP?\nCreate systems that are modular, scalable, reusable, and easier to understand.  Think of a car in the real world. It has:     Attributes: color, brand, speed, fuel capacity.     Behaviors: start, stop, accelerate. Modular -> divides programs into independent, self-contained classes Scalable -> allows new functionality to be added or extended Reusable -> creating generic classes or extending existing classes Easier to understand ->  models real-world entities with objects\n9\nENCAPSULATION\n02\n10",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "**Hành vi (Behaviors):** start, stop, accelerate.",
+      "source_id": "S5",
+      "start": 875,
+      "end": 924,
+      "marker_start": 925,
+      "marker_end": 929,
+      "locator": "{\"spans\": [{\"slide_index\": 9, \"slide_title\": \"Why OOP?\"}, {\"slide_index\": 10, \"slide_title\": \"ENCAPSULATION\"}]}",
+      "chunk_id": "4521431f-993f-4132-a36e-24bf3c84d3c9",
+      "chunk_content": "Chap1 Encapsulation\nWhy OOP?\nCreate systems that are modular, scalable, reusable, and easier to understand.  Think of a car in the real world. It has:     Attributes: color, brand, speed, fuel capacity.     Behaviors: start, stop, accelerate. Modular -> divides programs into independent, self-contained classes Scalable -> allows new functionality to be added or extended Reusable -> creating generic classes or extending existing classes Easier to understand ->  models real-world entities with objects\n9\nENCAPSULATION\n02\n10",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "Gộp dữ liệu (thuộc tính) và phương thức (hành vi) vào một đơn vị duy nhất (class) và hạn chế truy cập nhằm bảo vệ tính toàn vẹn dữ liệu.",
+      "source_id": "S3",
+      "start": 1015,
+      "end": 1151,
+      "marker_start": 1152,
+      "marker_end": 1156,
+      "locator": "{\"spans\": [{\"slide_index\": 5, \"slide_title\": \"Key principles of OOP\"}, {\"slide_index\": 6, \"slide_title\": \"Key principles of OOP\"}]}",
+      "chunk_id": "3fabcbcf-4fe4-4625-9c84-03a04fc94950",
+      "chunk_content": "Chap1 Encapsulation\nKey principles of OOP\nEncapsulation: Bundles data (attributes) and methods (behavior) into a single unit (class) and restricts access to protect data integrity.  Example: A Car object has private attribute speed and a public method getSpeed() to access it. => Protects data integrity by restricting direct access.\n5\nKey principles of OOP\nInheritance: Allows one class to inherit attributes and methods from another, promoting code reuse and hierarchical relationships.  Example: A Truck class can inherit from a Vehicle class. => Promotes code reuse.\n6",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "Lợi ích cốt lõi: bảo vệ tính toàn vẹn dữ liệu bằng cách hạn chế truy cập trực tiếp.",
+      "source_id": "S3",
+      "start": 1161,
+      "end": 1244,
+      "marker_start": 1245,
+      "marker_end": 1249,
+      "locator": "{\"spans\": [{\"slide_index\": 5, \"slide_title\": \"Key principles of OOP\"}, {\"slide_index\": 6, \"slide_title\": \"Key principles of OOP\"}]}",
+      "chunk_id": "3fabcbcf-4fe4-4625-9c84-03a04fc94950",
+      "chunk_content": "Chap1 Encapsulation\nKey principles of OOP\nEncapsulation: Bundles data (attributes) and methods (behavior) into a single unit (class) and restricts access to protect data integrity.  Example: A Car object has private attribute speed and a public method getSpeed() to access it. => Protects data integrity by restricting direct access.\n5\nKey principles of OOP\nInheritance: Allows one class to inherit attributes and methods from another, promoting code reuse and hierarchical relationships.  Example: A Truck class can inherit from a Vehicle class. => Promotes code reuse.\n6",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "Cụ thể hơn, việc kiểm soát cách truy cập và sửa đổi dữ liệu, phương thức đem lại: **Data Integrity** – ngăn chặn thay đổi dữ liệu trái phép hoặc vô ý; **Security** – dữ liệu nhạy cảm được ẩn khỏi truy cập trái phép; **Ease of Use** – người dùng class không cần hiểu những phức tạp bên trong; **Code Maintenance** – phần triển khai bên trong có thể thay đổi mà không ảnh hưởng đến cách dùng bên ngoài.",
+      "source_id": "S6",
+      "start": 1254,
+      "end": 1654,
+      "marker_start": 1655,
+      "marker_end": 1659,
+      "locator": "{\"spans\": [{\"slide_index\": 11, \"slide_title\": \"What is Encapsulation?\"}, {\"slide_index\": 12, \"slide_title\": \"Why is Encapsulation important?\"}]}",
+      "chunk_id": "021b566f-d15c-4188-af55-e9c9a101880b",
+      "chunk_content": "Chap1 Encapsulation\nWhat is Encapsulation?\nWhen creating new data types (classes) the details of the actual data and the way operations work is hidden from the other programmers who will use those new data types.\nHình: Encapsulation\nIN CAPSULE ation\nClass\nVariables ©@\nMethods\n11\nWhy is Encapsulation important?\nBy controlling how data and methods are accessed or modified, encapsulation ensures:\nData Integrity: Prevents unauthorized or accidental changes to data.\nSecurity: Sensitive data is hidden from unauthorized access.\nEase of Use: Users of the class do not need to understand its internal complexities.\nCode Maintenance: Internal implementation can change without impacting external usage.\n12",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "Encapsulation được xem là nền tảng của OOP, tập trung vào việc gộp dữ liệu và hàm trong một class.",
+      "source_id": "S13",
+      "start": 1664,
+      "end": 1762,
+      "marker_start": 1763,
+      "marker_end": 1768,
+      "locator": "{\"spans\": [{\"slide_index\": 25, \"slide_title\": \"Conclusion\"}, {\"slide_index\": 26, \"slide_title\": \"EXTENSION: \\nCLASS DIAGRAM\"}]}",
+      "chunk_id": "065acbfc-5f83-4d11-aa72-8b45317a6beb",
+      "chunk_content": "Chap1 Encapsulation\nConclusion\nEncapsulation is the foundation of OOP, focusing on bundling data and functions within a class.  \nThe main difference between a class and a struct lies in the level of data security (private/public).  \nA constructor is a special mechanism in OOP that automatically executes when an object is created and can cause errors if not properly designed.\n25\nEXTENSION: \nCLASS DIAGRAM\n06\n26",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "Cho phép một class kế thừa thuộc tính và phương thức từ một class khác, qua đó thúc đẩy **tái sử dụng mã nguồn (code reuse)** và tạo ra các quan hệ phân cấp (hierarchical relationships).",
+      "source_id": "S3",
+      "start": 1801,
+      "end": 1987,
+      "marker_start": 1988,
+      "marker_end": 1992,
+      "locator": "{\"spans\": [{\"slide_index\": 5, \"slide_title\": \"Key principles of OOP\"}, {\"slide_index\": 6, \"slide_title\": \"Key principles of OOP\"}]}",
+      "chunk_id": "3fabcbcf-4fe4-4625-9c84-03a04fc94950",
+      "chunk_content": "Chap1 Encapsulation\nKey principles of OOP\nEncapsulation: Bundles data (attributes) and methods (behavior) into a single unit (class) and restricts access to protect data integrity.  Example: A Car object has private attribute speed and a public method getSpeed() to access it. => Protects data integrity by restricting direct access.\n5\nKey principles of OOP\nInheritance: Allows one class to inherit attributes and methods from another, promoting code reuse and hierarchical relationships.  Example: A Truck class can inherit from a Vehicle class. => Promotes code reuse.\n6",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "Lợi ích cốt lõi: thúc đẩy tái sử dụng mã nguồn.",
+      "source_id": "S3",
+      "start": 1997,
+      "end": 2044,
+      "marker_start": 2045,
+      "marker_end": 2049,
+      "locator": "{\"spans\": [{\"slide_index\": 5, \"slide_title\": \"Key principles of OOP\"}, {\"slide_index\": 6, \"slide_title\": \"Key principles of OOP\"}]}",
+      "chunk_id": "3fabcbcf-4fe4-4625-9c84-03a04fc94950",
+      "chunk_content": "Chap1 Encapsulation\nKey principles of OOP\nEncapsulation: Bundles data (attributes) and methods (behavior) into a single unit (class) and restricts access to protect data integrity.  Example: A Car object has private attribute speed and a public method getSpeed() to access it. => Protects data integrity by restricting direct access.\n5\nKey principles of OOP\nInheritance: Allows one class to inherit attributes and methods from another, promoting code reuse and hierarchical relationships.  Example: A Truck class can inherit from a Vehicle class. => Promotes code reuse.\n6",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "Cho phép các đối tượng mang nhiều hình thái khác nhau, ví dụ một phương thức hay một class duy nhất có thể đại diện cho nhiều kiểu dữ liệu hoặc hành vi bên dưới khác nhau.",
+      "source_id": "S4",
+      "start": 2083,
+      "end": 2254,
+      "marker_start": 2255,
+      "marker_end": 2259,
+      "locator": "{\"spans\": [{\"slide_index\": 7, \"slide_title\": \"Key principles of OOP\"}, {\"slide_index\": 8, \"slide_title\": \"Key principles of OOP\"}]}",
+      "chunk_id": "3da0b834-6ea2-4f21-9c2d-71666be0e0ba",
+      "chunk_content": "Chap1 Encapsulation\nKey principles of OOP\nPolymorphism: Allows objects to take on many forms, e.g., a single method or class to represent different underlying data types or behaviors.  Example: A draw() method behaves differently for Circle and Rectangle objects. =>Simplifies code and makes it flexible.\n7\nKey principles of OOP\nAbstraction: Hides implementation details and exposes only essential features, simplifying complex systems for the user.  Example: A user presses a car's \"start\" button without needing to understand the engine mechanics. =>Reduce complexity\n8",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "Lợi ích cốt lõi: giúp mã đơn giản hơn và linh hoạt hơn.",
+      "source_id": "S4",
+      "start": 2264,
+      "end": 2319,
+      "marker_start": 2320,
+      "marker_end": 2324,
+      "locator": "{\"spans\": [{\"slide_index\": 7, \"slide_title\": \"Key principles of OOP\"}, {\"slide_index\": 8, \"slide_title\": \"Key principles of OOP\"}]}",
+      "chunk_id": "3da0b834-6ea2-4f21-9c2d-71666be0e0ba",
+      "chunk_content": "Chap1 Encapsulation\nKey principles of OOP\nPolymorphism: Allows objects to take on many forms, e.g., a single method or class to represent different underlying data types or behaviors.  Example: A draw() method behaves differently for Circle and Rectangle objects. =>Simplifies code and makes it flexible.\n7\nKey principles of OOP\nAbstraction: Hides implementation details and exposes only essential features, simplifying complex systems for the user.  Example: A user presses a car's \"start\" button without needing to understand the engine mechanics. =>Reduce complexity\n8",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "Ẩn các chi tiết triển khai và chỉ phơi bày những tính năng thiết yếu, nhờ đó đơn giản hóa các hệ thống phức tạp cho người dùng.",
+      "source_id": "S4",
+      "start": 2364,
+      "end": 2491,
+      "marker_start": 2492,
+      "marker_end": 2496,
+      "locator": "{\"spans\": [{\"slide_index\": 7, \"slide_title\": \"Key principles of OOP\"}, {\"slide_index\": 8, \"slide_title\": \"Key principles of OOP\"}]}",
+      "chunk_id": "3da0b834-6ea2-4f21-9c2d-71666be0e0ba",
+      "chunk_content": "Chap1 Encapsulation\nKey principles of OOP\nPolymorphism: Allows objects to take on many forms, e.g., a single method or class to represent different underlying data types or behaviors.  Example: A draw() method behaves differently for Circle and Rectangle objects. =>Simplifies code and makes it flexible.\n7\nKey principles of OOP\nAbstraction: Hides implementation details and exposes only essential features, simplifying complex systems for the user.  Example: A user presses a car's \"start\" button without needing to understand the engine mechanics. =>Reduce complexity\n8",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "Lợi ích cốt lõi: giảm độ phức tạp.",
+      "source_id": "S4",
+      "start": 2501,
+      "end": 2535,
+      "marker_start": 2536,
+      "marker_end": 2540,
+      "locator": "{\"spans\": [{\"slide_index\": 7, \"slide_title\": \"Key principles of OOP\"}, {\"slide_index\": 8, \"slide_title\": \"Key principles of OOP\"}]}",
+      "chunk_id": "3da0b834-6ea2-4f21-9c2d-71666be0e0ba",
+      "chunk_content": "Chap1 Encapsulation\nKey principles of OOP\nPolymorphism: Allows objects to take on many forms, e.g., a single method or class to represent different underlying data types or behaviors.  Example: A draw() method behaves differently for Circle and Rectangle objects. =>Simplifies code and makes it flexible.\n7\nKey principles of OOP\nAbstraction: Hides implementation details and exposes only essential features, simplifying complex systems for the user.  Example: A user presses a car's \"start\" button without needing to understand the engine mechanics. =>Reduce complexity\n8",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "**Encapsulation:** một đối tượng Car có thuộc tính **speed là private** và một phương thức **công khai (public) getSpeed()** để truy cập thuộc tính đó.",
+      "source_id": "S3",
+      "start": 2603,
+      "end": 2754,
+      "marker_start": 2755,
+      "marker_end": 2759,
+      "locator": "{\"spans\": [{\"slide_index\": 5, \"slide_title\": \"Key principles of OOP\"}, {\"slide_index\": 6, \"slide_title\": \"Key principles of OOP\"}]}",
+      "chunk_id": "3fabcbcf-4fe4-4625-9c84-03a04fc94950",
+      "chunk_content": "Chap1 Encapsulation\nKey principles of OOP\nEncapsulation: Bundles data (attributes) and methods (behavior) into a single unit (class) and restricts access to protect data integrity.  Example: A Car object has private attribute speed and a public method getSpeed() to access it. => Protects data integrity by restricting direct access.\n5\nKey principles of OOP\nInheritance: Allows one class to inherit attributes and methods from another, promoting code reuse and hierarchical relationships.  Example: A Truck class can inherit from a Vehicle class. => Promotes code reuse.\n6",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "Qua ví dụ này, encapsulation bảo vệ tính toàn vẹn dữ liệu bằng cách hạn chế truy cập trực tiếp vào speed.",
+      "source_id": "S3",
+      "start": 2764,
+      "end": 2869,
+      "marker_start": 2870,
+      "marker_end": 2874,
+      "locator": "{\"spans\": [{\"slide_index\": 5, \"slide_title\": \"Key principles of OOP\"}, {\"slide_index\": 6, \"slide_title\": \"Key principles of OOP\"}]}",
+      "chunk_id": "3fabcbcf-4fe4-4625-9c84-03a04fc94950",
+      "chunk_content": "Chap1 Encapsulation\nKey principles of OOP\nEncapsulation: Bundles data (attributes) and methods (behavior) into a single unit (class) and restricts access to protect data integrity.  Example: A Car object has private attribute speed and a public method getSpeed() to access it. => Protects data integrity by restricting direct access.\n5\nKey principles of OOP\nInheritance: Allows one class to inherit attributes and methods from another, promoting code reuse and hierarchical relationships.  Example: A Truck class can inherit from a Vehicle class. => Promotes code reuse.\n6",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "**Inheritance:** một class **Truck** có thể kế thừa từ một class **Vehicle**.",
+      "source_id": "S3",
+      "start": 2877,
+      "end": 2954,
+      "marker_start": 2955,
+      "marker_end": 2959,
+      "locator": "{\"spans\": [{\"slide_index\": 5, \"slide_title\": \"Key principles of OOP\"}, {\"slide_index\": 6, \"slide_title\": \"Key principles of OOP\"}]}",
+      "chunk_id": "3fabcbcf-4fe4-4625-9c84-03a04fc94950",
+      "chunk_content": "Chap1 Encapsulation\nKey principles of OOP\nEncapsulation: Bundles data (attributes) and methods (behavior) into a single unit (class) and restricts access to protect data integrity.  Example: A Car object has private attribute speed and a public method getSpeed() to access it. => Protects data integrity by restricting direct access.\n5\nKey principles of OOP\nInheritance: Allows one class to inherit attributes and methods from another, promoting code reuse and hierarchical relationships.  Example: A Truck class can inherit from a Vehicle class. => Promotes code reuse.\n6",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "Ví dụ này minh họa việc thúc đẩy tái sử dụng mã nguồn.",
+      "source_id": "S3",
+      "start": 2964,
+      "end": 3018,
+      "marker_start": 3019,
+      "marker_end": 3023,
+      "locator": "{\"spans\": [{\"slide_index\": 5, \"slide_title\": \"Key principles of OOP\"}, {\"slide_index\": 6, \"slide_title\": \"Key principles of OOP\"}]}",
+      "chunk_id": "3fabcbcf-4fe4-4625-9c84-03a04fc94950",
+      "chunk_content": "Chap1 Encapsulation\nKey principles of OOP\nEncapsulation: Bundles data (attributes) and methods (behavior) into a single unit (class) and restricts access to protect data integrity.  Example: A Car object has private attribute speed and a public method getSpeed() to access it. => Protects data integrity by restricting direct access.\n5\nKey principles of OOP\nInheritance: Allows one class to inherit attributes and methods from another, promoting code reuse and hierarchical relationships.  Example: A Truck class can inherit from a Vehicle class. => Promotes code reuse.\n6",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "**Polymorphism:** một phương thức **draw()** hành xử khác nhau đối với các đối tượng **Circle** và **Rectangle**.",
+      "source_id": "S4",
+      "start": 3026,
+      "end": 3139,
+      "marker_start": 3140,
+      "marker_end": 3144,
+      "locator": "{\"spans\": [{\"slide_index\": 7, \"slide_title\": \"Key principles of OOP\"}, {\"slide_index\": 8, \"slide_title\": \"Key principles of OOP\"}]}",
+      "chunk_id": "3da0b834-6ea2-4f21-9c2d-71666be0e0ba",
+      "chunk_content": "Chap1 Encapsulation\nKey principles of OOP\nPolymorphism: Allows objects to take on many forms, e.g., a single method or class to represent different underlying data types or behaviors.  Example: A draw() method behaves differently for Circle and Rectangle objects. =>Simplifies code and makes it flexible.\n7\nKey principles of OOP\nAbstraction: Hides implementation details and exposes only essential features, simplifying complex systems for the user.  Example: A user presses a car's \"start\" button without needing to understand the engine mechanics. =>Reduce complexity\n8",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "Ví dụ này minh họa việc đơn giản hóa mã và làm cho mã linh hoạt.",
+      "source_id": "S4",
+      "start": 3149,
+      "end": 3213,
+      "marker_start": 3214,
+      "marker_end": 3218,
+      "locator": "{\"spans\": [{\"slide_index\": 7, \"slide_title\": \"Key principles of OOP\"}, {\"slide_index\": 8, \"slide_title\": \"Key principles of OOP\"}]}",
+      "chunk_id": "3da0b834-6ea2-4f21-9c2d-71666be0e0ba",
+      "chunk_content": "Chap1 Encapsulation\nKey principles of OOP\nPolymorphism: Allows objects to take on many forms, e.g., a single method or class to represent different underlying data types or behaviors.  Example: A draw() method behaves differently for Circle and Rectangle objects. =>Simplifies code and makes it flexible.\n7\nKey principles of OOP\nAbstraction: Hides implementation details and exposes only essential features, simplifying complex systems for the user.  Example: A user presses a car's \"start\" button without needing to understand the engine mechanics. =>Reduce complexity\n8",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "**Abstraction:** người dùng nhấn nút **\"start\"** của xe hơi mà không cần hiểu cơ chế động cơ (engine mechanics) bên trong.",
+      "source_id": "S4",
+      "start": 3221,
+      "end": 3343,
+      "marker_start": 3344,
+      "marker_end": 3348,
+      "locator": "{\"spans\": [{\"slide_index\": 7, \"slide_title\": \"Key principles of OOP\"}, {\"slide_index\": 8, \"slide_title\": \"Key principles of OOP\"}]}",
+      "chunk_id": "3da0b834-6ea2-4f21-9c2d-71666be0e0ba",
+      "chunk_content": "Chap1 Encapsulation\nKey principles of OOP\nPolymorphism: Allows objects to take on many forms, e.g., a single method or class to represent different underlying data types or behaviors.  Example: A draw() method behaves differently for Circle and Rectangle objects. =>Simplifies code and makes it flexible.\n7\nKey principles of OOP\nAbstraction: Hides implementation details and exposes only essential features, simplifying complex systems for the user.  Example: A user presses a car's \"start\" button without needing to understand the engine mechanics. =>Reduce complexity\n8",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "Ví dụ này minh họa việc giảm độ phức tạp.",
+      "source_id": "S4",
+      "start": 3353,
+      "end": 3394,
+      "marker_start": 3395,
+      "marker_end": 3399,
+      "locator": "{\"spans\": [{\"slide_index\": 7, \"slide_title\": \"Key principles of OOP\"}, {\"slide_index\": 8, \"slide_title\": \"Key principles of OOP\"}]}",
+      "chunk_id": "3da0b834-6ea2-4f21-9c2d-71666be0e0ba",
+      "chunk_content": "Chap1 Encapsulation\nKey principles of OOP\nPolymorphism: Allows objects to take on many forms, e.g., a single method or class to represent different underlying data types or behaviors.  Example: A draw() method behaves differently for Circle and Rectangle objects. =>Simplifies code and makes it flexible.\n7\nKey principles of OOP\nAbstraction: Hides implementation details and exposes only essential features, simplifying complex systems for the user.  Example: A user presses a car's \"start\" button without needing to understand the engine mechanics. =>Reduce complexity\n8",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "OOP giúp tạo ra các hệ thống có tính **modular, scalable, reusable và dễ hiểu hơn (easier to understand)**.",
+      "source_id": "S5",
+      "start": 3495,
+      "end": 3602,
+      "marker_start": 3603,
+      "marker_end": 3607,
+      "locator": "{\"spans\": [{\"slide_index\": 9, \"slide_title\": \"Why OOP?\"}, {\"slide_index\": 10, \"slide_title\": \"ENCAPSULATION\"}]}",
+      "chunk_id": "4521431f-993f-4132-a36e-24bf3c84d3c9",
+      "chunk_content": "Chap1 Encapsulation\nWhy OOP?\nCreate systems that are modular, scalable, reusable, and easier to understand.  Think of a car in the real world. It has:     Attributes: color, brand, speed, fuel capacity.     Behaviors: start, stop, accelerate. Modular -> divides programs into independent, self-contained classes Scalable -> allows new functionality to be added or extended Reusable -> creating generic classes or extending existing classes Easier to understand ->  models real-world entities with objects\n9\nENCAPSULATION\n02\n10",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "**Modular (module hóa):** chia chương trình thành các **class độc lập, tự chứa (independent, self-contained classes)**.",
+      "source_id": "S5",
+      "start": 3610,
+      "end": 3729,
+      "marker_start": 3730,
+      "marker_end": 3734,
+      "locator": "{\"spans\": [{\"slide_index\": 9, \"slide_title\": \"Why OOP?\"}, {\"slide_index\": 10, \"slide_title\": \"ENCAPSULATION\"}]}",
+      "chunk_id": "4521431f-993f-4132-a36e-24bf3c84d3c9",
+      "chunk_content": "Chap1 Encapsulation\nWhy OOP?\nCreate systems that are modular, scalable, reusable, and easier to understand.  Think of a car in the real world. It has:     Attributes: color, brand, speed, fuel capacity.     Behaviors: start, stop, accelerate. Modular -> divides programs into independent, self-contained classes Scalable -> allows new functionality to be added or extended Reusable -> creating generic classes or extending existing classes Easier to understand ->  models real-world entities with objects\n9\nENCAPSULATION\n02\n10",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "**Scalable (mở rộng được):** cho phép **thêm mới hoặc mở rộng chức năng**.",
+      "source_id": "S5",
+      "start": 3737,
+      "end": 3811,
+      "marker_start": 3812,
+      "marker_end": 3816,
+      "locator": "{\"spans\": [{\"slide_index\": 9, \"slide_title\": \"Why OOP?\"}, {\"slide_index\": 10, \"slide_title\": \"ENCAPSULATION\"}]}",
+      "chunk_id": "4521431f-993f-4132-a36e-24bf3c84d3c9",
+      "chunk_content": "Chap1 Encapsulation\nWhy OOP?\nCreate systems that are modular, scalable, reusable, and easier to understand.  Think of a car in the real world. It has:     Attributes: color, brand, speed, fuel capacity.     Behaviors: start, stop, accelerate. Modular -> divides programs into independent, self-contained classes Scalable -> allows new functionality to be added or extended Reusable -> creating generic classes or extending existing classes Easier to understand ->  models real-world entities with objects\n9\nENCAPSULATION\n02\n10",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "**Reusable (tái sử dụng được):** thông qua việc **tạo các class tổng quát (generic classes)** hoặc **mở rộng các class đã có**.",
+      "source_id": "S5",
+      "start": 3819,
+      "end": 3946,
+      "marker_start": 3947,
+      "marker_end": 3951,
+      "locator": "{\"spans\": [{\"slide_index\": 9, \"slide_title\": \"Why OOP?\"}, {\"slide_index\": 10, \"slide_title\": \"ENCAPSULATION\"}]}",
+      "chunk_id": "4521431f-993f-4132-a36e-24bf3c84d3c9",
+      "chunk_content": "Chap1 Encapsulation\nWhy OOP?\nCreate systems that are modular, scalable, reusable, and easier to understand.  Think of a car in the real world. It has:     Attributes: color, brand, speed, fuel capacity.     Behaviors: start, stop, accelerate. Modular -> divides programs into independent, self-contained classes Scalable -> allows new functionality to be added or extended Reusable -> creating generic classes or extending existing classes Easier to understand ->  models real-world entities with objects\n9\nENCAPSULATION\n02\n10",
+      "resolution": "resolved"
+    },
+    {
+      "claim": "**Easier to understand (dễ hiểu hơn):** nhờ **mô hình hóa các thực thể trong thế giới thực bằng đối tượng**.",
+      "source_id": "S5",
+      "start": 3954,
+      "end": 4062,
+      "marker_start": 4063,
+      "marker_end": 4067,
+      "locator": "{\"spans\": [{\"slide_index\": 9, \"slide_title\": \"Why OOP?\"}, {\"slide_index\": 10, \"slide_title\": \"ENCAPSULATION\"}]}",
+      "chunk_id": "4521431f-993f-4132-a36e-24bf3c84d3c9",
+      "chunk_content": "Chap1 Encapsulation\nWhy OOP?\nCreate systems that are modular, scalable, reusable, and easier to understand.  Think of a car in the real world. It has:     Attributes: color, brand, speed, fuel capacity.     Behaviors: start, stop, accelerate. Modular -> divides programs into independent, self-contained classes Scalable -> allows new functionality to be added or extended Reusable -> creating generic classes or extending existing classes Easier to understand ->  models real-world entities with objects\n9\nENCAPSULATION\n02\n10",
+      "resolution": "resolved"
+    }
+  ]
+}
