@@ -141,10 +141,13 @@ def test_reranked_and_rerank_for_chat_and_scoped_filter(monkeypatch):
     # Adaptive-k (top_k=None): default buffer=5 clamps 2 + 5 against n=6 -> 6.
     assert search._reranked("q", chunks, top_k=None, min_k=2) == chunks
     assert search.rerank_for_chat("q", chunks, top_k=3) == chunks[:3]
+    assert search.rerank_scored_for_chat("q", chunks, top_k=2) == (chunks[:2], [0.95, 0.92])
 
     # When rerank_scored fails with HTTP/ValueError, rerank_for_chat falls back to hybrid order.
     monkeypatch.setattr(search, "rerank_scored", lambda *a, **kw: (_ for _ in ()).throw(httpx.TimeoutException("slow")))
     assert search.rerank_for_chat("q", chunks, top_k=4) == chunks[:4]
+    # Without scores, the chat applies no relevance threshold.
+    assert search.rerank_scored_for_chat("q", chunks, top_k=4) == (chunks[:4], None)
 
     # _scoped leaves query untouched when scope is None, and adds filter when provided.
     sentinel = object()

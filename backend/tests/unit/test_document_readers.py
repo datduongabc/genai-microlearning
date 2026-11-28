@@ -308,3 +308,45 @@ def test_media_upload_rejects_above_its_limit(filename, limit_mb, message):
     assert error.value.detail == message
     db.add.assert_not_called()
     db.commit.assert_not_called()
+
+
+def test_an_html_page_keeps_its_tables_lists_code_and_low_headings(tmp_path):
+    path = tmp_path / "lab.html"
+    path.write_text("""<html><body>
+    <h2>Lập lịch</h2>
+    <ul><li>FCFS<ul><li>không ưu tiên</li></ul></li><li><p>Round Robin</p></li></ul>
+    <table><tr><th>Thuật toán</th><th>Thời gian chờ</th></tr><tr><td>SJF</td><td>4 ms</td></tr></table>
+    <pre><code>for (i = 0; i &lt; n; i++)
+    run(p[i]);</code></pre>
+    <h4>Ghi chú</h4><p>Hết.</p>
+    </body></html>""", encoding="utf-8")
+
+    units = read_html(str(path))
+
+    assert [u.locator["heading"] for u in units] == ["Lập lịch", "Ghi chú"]
+    text = units[0].text
+    assert "- FCFS\n- không ưu tiên\n- Round Robin" in text
+    assert "Thuật toán: SJF; Thời gian chờ: 4 ms" in text
+    assert "for (i = 0; i < n; i++)\n    run(p[i]);" in text
+    assert text.count("Round Robin") == 1
+
+
+def test_a_docx_table_stays_where_it_stands_under_its_heading_and_keeps_its_place(tmp_path):
+    doc = DocxDocument()
+    doc.add_heading("Chương 1", level=1)
+    doc.add_paragraph("Trước bảng.")
+    table = doc.add_table(rows=2, cols=2)
+    table.rows[0].cells[0].text, table.rows[0].cells[1].text = "Thuật toán", "Độ phức tạp"
+    table.rows[1].cells[0].text, table.rows[1].cells[1].text = "Heap sort", "O(n log n)"
+    doc.add_heading("Chương 2", level=1)
+    doc.add_paragraph("Sau bảng.")
+    path = tmp_path / "giaotrinh.docx"
+    doc.save(str(path))
+
+    units = read_docx(str(path))
+
+    assert [u.text.splitlines()[-1] for u in units] == ["Trước bảng.", "Độ phức tạp: O(n log n)", "Sau bảng."]
+    assert units[1].locator == {"heading": "Chương 1", "table_index": 0, "row_index": 1}
+    # A chunk that starts in that row says so, for its citation.
+    [chunk] = chunk_units(units[1:2])
+    assert (chunk.locator["table_index"], chunk.locator["row_index"]) == (0, 1)

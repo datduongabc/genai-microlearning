@@ -54,7 +54,7 @@ def world():
 
 
 def _scripted_model(monkeypatch, *pieces, prompts=None):
-    async def model(prompt, system_instruction=None):
+    async def model(prompt, system_instruction=None, **_):
         if prompts is not None:
             prompts.append(prompt)
         for piece in pieces:
@@ -118,7 +118,7 @@ def test_the_answer_is_given_the_rewritten_follow_up(world, monkeypatch, passthr
     session_id = _events(client.post(f"/courses/{course_id}/chat/stream", json={"message": "Heap?"}, headers=headers))[0][1]["session_id"]
     answers = []
 
-    async def model(prompt, system_instruction=None):
+    async def model(prompt, system_instruction=None, **_):
         if system_instruction == service.CONDENSE_SYSTEM_INSTRUCTION:
             yield "Heap có mấy tính chất?"
         else:
@@ -191,7 +191,7 @@ def test_generation_still_fails_without_the_embedder(world, monkeypatch):
 def test_a_model_that_fails_midway_ends_with_an_error_and_the_question_stays(world, monkeypatch, passthrough_rerank):
     client, headers, course_id, _ = world
 
-    async def failing(prompt, system_instruction=None):
+    async def failing(prompt, system_instruction=None, **_):
         yield "Heap "
         raise RuntimeError("secret provider detail")
 
@@ -210,7 +210,7 @@ def test_no_connection_is_held_while_the_model_answers(world, monkeypatch, passt
     client, headers, course_id, _ = world
     held = []
 
-    async def model(prompt, system_instruction=None):
+    async def model(prompt, system_instruction=None, **_):
         held.append(request_engine.pool.checkedout())
         yield "Trả lời."
 

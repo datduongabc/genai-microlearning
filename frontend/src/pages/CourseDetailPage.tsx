@@ -10,6 +10,7 @@ import { Link, useParams } from "react-router-dom";
 import {
   apiErrorMessage,
   deleteDocument,
+  setLearnerAccess,
   deleteFlashcardSet,
   deleteModule,
   deleteVideo,
@@ -38,6 +39,7 @@ import {
 } from "../api";
 import { AppShell } from "../components/AppShell";
 import { CourseChat } from "../components/CourseChat";
+import { ChatFeedbackList } from "../components/ChatFeedbackList";
 import type { MoodleAccountState } from "../components/MoodleAccountSection";
 import { GenerateDialog, type GenerateKind, type GenerateChoice } from "../components/GenerateDialog";
 import { focusReturnTarget } from "../lib/focusReturn";
@@ -107,14 +109,27 @@ const WARNING_ADVICE: Record<string, string> = {
   formula_unverified: "Hãy soát lại công thức của các trang này trước khi dùng nội dung sinh ra.",
 };
 
+// Notes about the whole document carry page 0: they are said once, without pages.
+const DOCUMENT_NOTE: Record<string, (count: number) => string> = {
+  redacted: (count) => `Đã che ${count} thông tin nhạy cảm (khoá, mật khẩu, email, số điện thoại) trước khi lưu, `
+    + "nên chat và nội dung sinh ra không lặp lại chúng.",
+  same_name: () => "Môn học đã có tài liệu cùng tên. Nếu đây là bản mới, hãy xóa bản cũ để chat và nội dung mới không lấy từ bản cũ.",
+};
+
 function extractionWarningLines(warnings: DocumentInfo["extraction_warnings"]) {
   const pagesByCode = new Map<string, number[]>();
-  for (const w of warnings) pagesByCode.set(w.code, [...(pagesByCode.get(w.code) ?? []), w.page]);
-  return [...pagesByCode].map(([code, pages]) => ({
+  const notes = [];
+  for (const w of warnings) {
+    // Redaction is done, not a problem: said as information. A second file of the same name may need action.
+    if (w.page === 0) notes.push({ code: w.code, info: w.code === "redacted", text: DOCUMENT_NOTE[w.code]?.(w.count ?? 0) ?? w.code });
+    else pagesByCode.set(w.code, [...(pagesByCode.get(w.code) ?? []), w.page]);
+  }
+  return [...[...pagesByCode].map(([code, pages]) => ({
     code,
+    info: false,
     text: `${WARNING_LABEL[code] ?? code} ${pages.length > 1 ? "các trang" : "trang"} ${pages.sort((a, b) => a - b).join(", ")}. `
       + (WARNING_ADVICE[code] ?? DEFAULT_WARNING_ADVICE),
-  }));
+  })), ...notes];
 }
 
 // A row says only what is not settled: a job running or failed. A ready item, of any kind, is just its name.
@@ -269,6 +284,7 @@ export function CourseDetailPage() {
   const [loading, setLoading] = useState(true);
   const [loadFailed, setLoadFailed] = useState(false);
   const [attempt, setAttempt] = useState(0);
+  const [changingAccessIds, setChangingAccessIds] = useState<Set<string>>(new Set());
   const [deletingDocId, setDeletingDocId] = useState<string | null>(null);
   const [deletingModuleId, setDeletingModuleId] = useState<string | null>(null);
   // What went right but is worth saying (a delete that succeeded although the list could not
@@ -363,6 +379,20 @@ export function CourseDetailPage() {
   const videosRunning = videos.some((video) => VIDEO_JOB_TEXT[video.status] !== undefined);
   usePolling(videosRunning && !!courseId, () => listVideos(courseId!), setVideos, DOCUMENT_POLL_INTERVAL_MS);
 
+  // A set or video whose job fails puts its reason and retry button on the document, which the
+  // polling above does not reload: without this the lecturer saw only "Tạo thất bại" until a reload.
+  const runningMediaIds = useRef(new Set<string>());
+  useEffect(() => {
+    const media = [...flashcardSets, ...videos];
+    if (courseId && media.some((m) => runningMediaIds.current.has(m.id) && m.status === "failed")) {
+      listDocuments(courseId).then(setDocuments).catch(() => {});
+    }
+    runningMediaIds.current = new Set([
+      ...flashcardSets.filter((set) => set.status === "generating").map((set) => set.id),
+      ...videos.filter((video) => VIDEO_JOB_TEXT[video.status] !== undefined).map((video) => video.id),
+    ]);
+  }, [flashcardSets, videos, courseId]);
+
   async function handleUpload({ file }: UploadDocumentFormValues) {
     if (!courseId) return;
     try {
@@ -453,6 +483,23 @@ export function CourseDetailPage() {
       async () => setVideos(await listVideos(courseId ?? "")),
       "Tạo video thất bại", "Đã bắt đầu tạo video",
     ));
+  }
+
+  // Optimistic: the box follows the click, and goes back if the server refuses.
+  async function handleLearnerAccess(doc: DocumentInfo, open: boolean) {
+    const set = (value: boolean) =>
+      setDocuments((docs) => docs.map((d) => (d.id === doc.id ? { ...d, learner_access: value } : d)));
+    set(open);
+    setChangingAccessIds((ids) => new Set(ids).add(doc.id));
+    try {
+      await setLearnerAccess(doc.id, open);
+      notifyDone(open ? `Sinh viên đã hỏi được về "${doc.filename}".` : `Sinh viên không còn hỏi được về "${doc.filename}".`);
+    } catch (err) {
+      set(!open);
+      notifyFailed(apiErrorMessage(err, "Không đổi được quyền hỏi của sinh viên"));
+    } finally {
+      setChangingAccessIds((ids) => { const next = new Set(ids); next.delete(doc.id); return next; });
+    }
   }
 
   async function handleDeleteDocument(doc: DocumentInfo) {
@@ -684,8 +731,13 @@ export function CourseDetailPage() {
                   </DropdownMenu>
                 </div>
               </div>
+              <label className="doc-access">
+                <input type="checkbox" checked={d.learner_access} disabled={changingAccessIds.has(d.id)}
+                  onChange={(e) => handleLearnerAccess(d, e.target.checked)} />
+                Sinh viên được hỏi chat về tài liệu này
+              </label>
               {extractionWarningLines(d.extraction_warnings).map((warning) => (
-                <p key={warning.code} className="doc-warning">
+                <p key={warning.code} className={warning.info ? "doc-note" : "doc-warning"}>
                   {warning.text}
                 </p>
               ))}
@@ -764,6 +816,7 @@ export function CourseDetailPage() {
           )}
         </ul>
       )}
+      {courseId && !loading && <ChatFeedbackList key={courseId} courseId={courseId} />}
       </section>
       <div className="course-chat">
         {courseId && documents.some((d) => d.status === "embedded")

@@ -171,10 +171,11 @@ def _chunk_recursive(units: list[DocumentUnit], chunks: list[Chunk], first_unit_
             unit_index = kept[bisect.bisect_right(unit_starts, found) - 1][0]
         # Tiêu đề của mục chứa đoạn này, không phải của mục đầu tài liệu: trước đây mọi chunk của
         # một giáo trình DOCX đều mang tiêu đề chương 1.
-        heading = by_position[unit_index].locator.get("heading")
-        _make_chunk(
-            chunks, piece, {"heading": heading, "unit_index": unit_index}, course_id, "text_layer", "recursive"
-        )
+        unit_locator = by_position[unit_index].locator
+        locator = {"heading": unit_locator.get("heading"), "unit_index": unit_index}
+        # A piece that starts in a table row says which: the citation then reads "bảng 2, hàng 3".
+        locator.update({k: unit_locator[k] for k in ("table_index", "row_index") if k in unit_locator})
+        _make_chunk(chunks, piece, locator, course_id, "text_layer", "recursive")
 
 
 def _split_long_text(text: str, max_tokens: int, overlap_tokens: int) -> list[str]:

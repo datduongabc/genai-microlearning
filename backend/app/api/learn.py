@@ -2,16 +2,15 @@
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import select
+from sqlalchemy import select, text
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user, require_course_reader
-from app.api.flashcards import card_sources
 from app.api.stored_files import send_stored
 from app.api.videos import rendered_filename, rendered_link
 from app.citations import citation_label
 from app.db import get_db
-from app.models import Chunk, Course, Document, FlashcardSet, User
+from app.models import Course, Document, FlashcardSet, User
 from app.models.media import Video
 from app.storage import media_store
 from app.video.render import rendered_captions
@@ -61,10 +60,14 @@ def get_set(set_id: uuid.UUID, db: Session = Depends(get_db), current_user: User
         require_course_reader(db, db.get(Course, card_set.course_id), current_user)
     except HTTPException:
         raise HTTPException(status_code=404, detail="Flashcard set not found") from None
-    # Only the label of a source, once even if several cited passages share it: the passage text and the lecturer's review flags are not the learner's.
+    # Only the label of a source, once even if several cited passages share it: the passage text and the lecturer's
+    # review flags are not the learner's. Labelled as the lecturer's editor labels them, with the file name.
+    filename = db.scalar(select(Document.filename).where(Document.id == card_set.document_id)) or ""
+    places = _chunk_places(db, card_set.document_id, {c for card in card_set.cards for c in card["citations"]}, filename)
     cards = [
-        {"front": card["front"], "back": card["back"], "sources": list(dict.fromkeys(s["locator"] for s in sources))}
-        for card, sources in zip(card_set.cards, card_sources(db, card_set), strict=True)
+        {"front": card["front"], "back": card["back"],
+         "sources": list(dict.fromkeys(places[c] for c in card["citations"] if places.get(c)))}
+        for card in card_set.cards
     ]
     return {"id": card_set.id, "course_id": card_set.course_id, "focus": card_set.focus, "cards": cards}
 
@@ -83,9 +86,10 @@ def _watchable_video(db: Session, video_id: uuid.UUID, user: User) -> Video:
     return video
 
 
-def _chunk_places(db: Session, document_id: uuid.UUID, chunk_ids: set[str]) -> dict[str, str]:
-    """{chunk id: where it is in the document ("trang 9 · FCFS")}, for the cited chunks that still exist.
-    Without the file name: every source of a video is in its one document, named once beside the list."""
+def _chunk_places(db: Session, document_id: uuid.UUID, chunk_ids: set[str], filename: str = "") -> dict[str, str]:
+    """{chunk id: where it is in the document ("trang 9 · FCFS")}, for the cited chunks that still exist. Read
+    through learner_chunk_places (migration 0059): a published set or video keeps its labels when its document
+    is closed to the chat, whose chunks this reader cannot otherwise see."""
     wanted = set()
     for chunk_id in chunk_ids:
         try:
@@ -94,8 +98,9 @@ def _chunk_places(db: Session, document_id: uuid.UUID, chunk_ids: set[str]) -> d
             continue
     if not wanted:
         return {}
-    rows = db.execute(select(Chunk.id, Chunk.source_ref).where(Chunk.document_id == document_id, Chunk.id.in_(wanted)))
-    return {str(chunk_id): citation_label("", source_ref or "") for chunk_id, source_ref in rows}
+    rows = db.execute(text("SELECT id, source_ref FROM learner_chunk_places(:document, :ids)"),
+                      {"document": document_id, "ids": list(wanted)})
+    return {str(chunk_id): citation_label(filename, source_ref or "") for chunk_id, source_ref in rows}
 
 
 @router.get("/videos/{video_id}")

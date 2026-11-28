@@ -277,9 +277,26 @@ def list_documents(
             "generating": d.id in generating_ids,
             "failures": failures.get(d.id, []),
             "extraction_warnings": d.extraction_warnings,
+            "learner_access": d.learner_access,
         }
         for d in docs
     ]
+
+
+class DocumentAccess(BaseModel):
+    learner_access: bool
+
+
+@router.patch("/{document_id}")
+def set_learner_access(
+    document_id: uuid.UUID, payload: DocumentAccess, db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Opens a document to the course's learners, so the course chat may answer them from it, or closes it."""
+    doc = _owned_document(db, document_id, current_user)
+    doc.learner_access = payload.learner_access
+    db.commit()
+    return {"id": doc.id, "learner_access": doc.learner_access}
 
 
 @router.delete("/{document_id}")

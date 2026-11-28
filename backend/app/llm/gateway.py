@@ -199,25 +199,40 @@ def _completion(**kwargs):
     return response
 
 
-async def stream_text(prompt: str, system_instruction: str | None = None) -> AsyncIterator[str]:
+async def stream_text(prompt: str, system_instruction: str | None = None, *, alias: str | None = None,
+                      usage: dict | None = None) -> AsyncIterator[str]:
     """The reply piece by piece, without holding a thread while it waits. Retries stay with the gateway: once a
-    word has reached the reader, the reply cannot start over."""
-    alias = active_model()
+    word has reached the reader, the reply cannot start over. `alias` overrides the chosen model for one call;
+    `usage`, when given, receives the served model, the token counts and the seconds to the first piece."""
+    alias = alias or active_model()
     extra_body = {"disable_fallbacks": True} if pinned() else {}
     messages = [{"role": "system", "content": system_instruction}] if system_instruction else []
     messages.append({"role": "user", "content": prompt})
+    start = time.perf_counter()
     # Someone is reading: on a stream the timeout bounds each wait for the next piece, not the whole reply,
     # so a long answer still finishes, while a chain whose routes all fail no longer holds the reader for
     # the job path's 13 minutes (seen on 2026-11-25 with OpenRouter refusing and Google overloaded).
     stream = await litellm.acompletion(
         model=f"openai/{alias}", api_base=settings.llm_gateway_url, api_key=settings.llm_gateway_key,
-        extra_body=extra_body, messages=messages, stream=True,
+        extra_body=extra_body, messages=messages, stream=True, stream_options={"include_usage": True},
         max_retries=0, timeout=REQUEST_TIMEOUT_SECONDS,
     )
+    if usage is not None:
+        usage["requested_alias"] = alias
     async for chunk in stream:
+        if usage is not None:
+            if served := getattr(chunk, "model", None):
+                usage["served_model"] = served
+            if counted := getattr(chunk, "usage", None):
+                usage["prompt_tokens"] = getattr(counted, "prompt_tokens", None)
+                usage["completion_tokens"] = getattr(counted, "completion_tokens", None)
         text = chunk.choices[0].delta.content if chunk.choices else None
         if text:
+            if usage is not None and "first_token_seconds" not in usage:
+                usage["first_token_seconds"] = round(time.perf_counter() - start, 3)
             yield text
+    if usage is not None:
+        usage["seconds"] = round(time.perf_counter() - start, 3)
 
 
 def complete(prompt: str, system_instruction: str | None = None, **kwargs) -> str:

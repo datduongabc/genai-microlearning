@@ -10,6 +10,7 @@ from sqlalchemy import (
     ForeignKey,
     ForeignKeyConstraint,
     Index,
+    String,
     Text,
     UniqueConstraint,
     false,
@@ -142,7 +143,8 @@ class Document(Base):
     __tablename__ = "documents"
     # Target of the composite FKs on chunks/modules, which is what lets the DB
     # guarantee their denormalised course_id matches this document's course.
-    __table_args__ = (UniqueConstraint("id", "course_id", name="uq_documents_id_course_id"),)
+    __table_args__ = (UniqueConstraint("id", "course_id", name="uq_documents_id_course_id"),
+                      Index("ix_documents_course_id_content_sha256", "course_id", "content_sha256"))
 
     id: Mapped[uuid.UUID] = uuid_pk()
     course_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("courses.id", ondelete="CASCADE"), index=True)
@@ -152,6 +154,11 @@ class Document(Base):
     )
     raw_text: Mapped[str | None] = mapped_column(Text, nullable=True)
     extraction_warnings: Mapped[list] = mapped_column(JSONB, default=list, server_default="[]")
+    # Whether the course's learners may ask about it: the database hides a closed document from them
+    # (migration 0057). New documents start closed, so an answer key is never open by oversight.
+    learner_access: Mapped[bool] = mapped_column(default=False, server_default="false")
+    # The uploaded file's SHA-256, for refusing a second copy of a file already in the course.
+    content_sha256: Mapped[str | None] = mapped_column(String(64), nullable=True)
     # Cache cua run_planner() -- kien truc da ghi ro "1 lenh goi/tai lieu"
     # nhung implementation truoc day goi lai MOI LAN /modules/generate duoc
     # goi cho cung document, du khong can thiet. Ngoai ton lenh goi LLM thua,
@@ -360,6 +367,7 @@ class ChatSession(Base):
 
 class ChatMessage(Base):
     __tablename__ = "chat_messages"
+    __table_args__ = (Index("ix_chat_messages_feedback", "feedback", postgresql_where=text("feedback IS NOT NULL")),)
 
     id: Mapped[uuid.UUID] = uuid_pk()
     session_id: Mapped[uuid.UUID] = mapped_column(
@@ -372,6 +380,15 @@ class ChatMessage(Base):
     # citation model tự echo ra, tránh hallucinate chunk_id không tồn tại).
     citations: Mapped[list] = mapped_column(JSONB, default=list)
     applied_edit: Mapped[bool] = mapped_column(default=False, server_default="false")
+    # How an answer was made: route, rewritten question, passages and scores, seconds and tokens (migration 0058).
+    trace: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    # The reader's verdict: helpful, not_right or wrong_citation, with the citation numbers they flagged.
+    feedback: Mapped[str | None] = mapped_column(nullable=True)
+    feedback_note: Mapped[str | None] = mapped_column(Text, nullable=True)
+    feedback_citations: Mapped[list] = mapped_column(JSONB, default=list, server_default="[]")
+    feedback_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    # Citations the reader opened: what they checked, without saying anything.
+    opened_citations: Mapped[list] = mapped_column(JSONB, default=list, server_default="[]")
     created_at: Mapped[datetime] = created_at_column()
 
     session: Mapped["ChatSession"] = relationship(back_populates="messages")

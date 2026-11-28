@@ -155,6 +155,7 @@ def test_extract_releases_database_reads_before_transcription(seed_document, mon
 
     monkeypatch.setattr(document_pipeline, "read_document", transcribe)
     monkeypatch.setattr(settings, "upload_storage_dir", str(tmp_path))
+    (tmp_path / "lecture.mp3").write_bytes(b"audio")
     with SessionLocal() as db:
         doc = seed_document(db)
         job = enqueue_job(db, job_type=JobType.document_pipeline, step="extract", document_id=doc.id,

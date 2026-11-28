@@ -3,17 +3,30 @@ import type { Components } from 'react-markdown'
 import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import Markdown from 'react-markdown'
-import { getLatestCourseChat, startNewCourseChat, streamCourseChat, type ChatCitation, type ChatReply } from '../api'
+import {
+  getLatestCourseChat, markCitationOpened, startNewCourseChat, streamCourseChat,
+  type ChatCitation, type ChatFeedback as Verdict, type ChatReply,
+} from '../api'
 import { courseChatSchema, type CourseChatFormValues } from '../lib/formSchemas'
 import { sourceLabel } from '../lib/sourceLabel'
 import { modelMarkdownProps } from '../lib/markdownMath'
 import { CitationMarkers } from './CitationMarkers'
+import { ChatFeedback } from './ChatFeedback'
 
 interface Turn {
   question: string
   answer: string
   citations: ChatCitation[]
   error?: string
+  // The saved answer, once it is saved: feedback is given on it.
+  id?: string
+  feedback?: Verdict | null
+  feedbackCitations?: number[]
+}
+
+function answered(message: ChatReply): Pick<Turn, 'answer' | 'citations' | 'id' | 'feedback' | 'feedbackCitations'> {
+  return { answer: message.content, citations: message.citations, id: message.id, feedback: message.feedback ?? null,
+    feedbackCitations: message.feedback_citations ?? [] }
 }
 
 // Saved messages back into turns: a question, then the answer to it. A question whose answer
@@ -23,15 +36,15 @@ function turnsFrom(messages: ChatReply[]): Turn[] {
   for (const message of messages) {
     if (message.role === 'user') turns.push({ question: message.content, answer: '', citations: [] })
     else if (turns.length && !turns[turns.length - 1].answer) {
-      turns[turns.length - 1] = { ...turns[turns.length - 1], answer: message.content, citations: message.citations }
-    } else turns.push({ question: '', answer: message.content, citations: message.citations })
+      turns[turns.length - 1] = { ...turns[turns.length - 1], ...answered(message) }
+    } else turns.push({ question: '', ...answered(message) })
   }
   return turns
 }
 
 // An answer with its sources as numbered markers where they are cited, as in the module preview: [Sn] in the text
 // is citation n. An answer saved before the numbers were kept in the text shows them in a row under it.
-function AnswerText({ turn }: { turn: Turn }) {
+function AnswerText({ turn, courseId }: { turn: Turn; courseId: string }) {
   const [open, setOpen] = useState<number | null>(null)
   const inline = /\[S[0-9]+\]/.test(turn.answer)
   const text = turn.answer.replace(/\[S([0-9]+)\]/g, (_, n: string) => turn.citations[Number(n) - 1] ? `[${n}](#source-${n})` : '')
@@ -40,7 +53,10 @@ function AnswerText({ turn }: { turn: Turn }) {
       const number = Number((href ?? '').replace(/^#source-/, ''))
       return href?.startsWith('#source-') && turn.citations[number - 1] ? (
         <button type="button" className="citation-marker" aria-label={`Nguồn ${number}`} aria-pressed={open === number}
-          onClick={() => setOpen(open === number ? null : number)}>[{number}]</button>
+          onClick={() => {
+            if (open !== number && turn.id) markCitationOpened(courseId, turn.id, number)
+            setOpen(open === number ? null : number)
+          }}>[{number}]</button>
       ) : <a href={href}>{children}</a>
     },
   }
@@ -115,7 +131,7 @@ export function CourseChat({ courseId }: { courseId: string }) {
         session: (id) => { sessionId.current = id },
         delta: (text) => updateLast((turn) => ({ ...turn, answer: turn.answer + text })),
       }, controller.signal)
-      updateLast((turn) => ({ ...turn, answer: reply.content, citations: reply.citations }))
+      updateLast((turn) => ({ ...turn, ...answered(reply) }))
     } catch (err) {
       if (controller.signal.aborted) return
       const detail = err instanceof Error && !(err instanceof TypeError)
@@ -147,7 +163,10 @@ export function CourseChat({ courseId }: { courseId: string }) {
         const writing = sending && index === turns.length - 1
         return <div key={index} className="chat-turn" aria-busy={writing}>
           {turn.question && <p className="chat-question">{turn.question}</p>}
-          {turn.answer && <AnswerText turn={turn} />}
+          {turn.answer && <AnswerText turn={turn} courseId={courseId} />}
+          {turn.id && !writing && <ChatFeedback courseId={courseId} messageId={turn.id}
+            citationCount={turn.citations.length} given={turn.feedback ?? null} givenCitations={turn.feedbackCitations ?? []}
+            onSaved={(reply) => setTurns((previous) => previous.map((t) => (t.id === reply.id ? { ...t, ...answered(reply) } : t)))} />}
           {writing && !turn.answer && <p className="chat-note">Đang tìm trong tài liệu…</p>}
           {turn.error && <p role="alert" className="danger-text">{turn.error}</p>}
         </div>

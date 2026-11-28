@@ -7,11 +7,16 @@ export interface ChatCitation {
   content?: string
 }
 
+export type ChatFeedback = 'helpful' | 'not_right' | 'wrong_citation'
+
 export interface ChatReply {
   id: string
   role: string
   content: string
   citations: ChatCitation[]
+  // The reader's own verdict, and the numbers of the citations they flagged as wrong.
+  feedback?: ChatFeedback | null
+  feedback_citations?: number[]
 }
 
 type ChatEvent =
@@ -101,5 +106,48 @@ export async function startNewCourseChat(courseId: string): Promise<string> {
 export async function getLatestCourseChat(courseId: string, signal?: AbortSignal): Promise<LatestCourseChat> {
   const response = await fetchWithAuth(`/courses/${courseId}/chat/latest`, { signal })
   if (!response.ok) throw new Error('Không tải được cuộc trò chuyện trước.')
+  return response.json()
+}
+
+// The reader's verdict on an answer; null takes it back. The lecturers of the course see it with the question,
+// without the reader's name.
+export async function giveChatFeedback(
+  courseId: string, messageId: string,
+  body: { feedback: ChatFeedback | null; note?: string; citations?: number[] },
+): Promise<ChatReply> {
+  const response = await fetchWithAuth(`/courses/${courseId}/chat/messages/${messageId}/feedback`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  })
+  if (!response.ok) throw new Error(await refusalMessage(response))
+  return response.json()
+}
+
+// That the reader opened a citation: a quiet signal about the answer. Best effort, never shown.
+export function markCitationOpened(courseId: string, messageId: string, citation: number): void {
+  fetchWithAuth(`/courses/${courseId}/chat/messages/${messageId}/opened`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ citation }),
+  }).catch(() => {})
+}
+
+export interface ChatFeedbackItem {
+  message_id: string
+  answered_at: string
+  question: string | null
+  answer: string
+  citations: { chunk_id: string; source_ref: string }[]
+  feedback: ChatFeedback
+  note: string | null
+  flagged_citations: number[]
+  feedback_at: string
+}
+
+// The answers of this course that readers gave feedback on, newest first, for its lecturers.
+export async function listChatFeedback(courseId: string): Promise<ChatFeedbackItem[]> {
+  const response = await fetchWithAuth(`/courses/${courseId}/chat/feedback`, {})
+  if (!response.ok) throw new Error('Không tải được phản hồi về chat.')
   return response.json()
 }

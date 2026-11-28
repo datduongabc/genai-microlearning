@@ -51,6 +51,47 @@ describe('CourseChat', () => {
     localStorage.clear()
   })
 
+  it('sends "helpful" at once, takes it back on a second press, and names the wrong citation with a reason', async () => {
+    fetchMock.mockResolvedValueOnce(stream(event('done', saved('Heap là cây [S1].'))))
+    render(<CourseChat courseId="course-1" />)
+    await ask('Heap là gì?')
+    const helpful = await screen.findByRole('button', { name: 'Hữu ích' })
+
+    fetchMock.mockResolvedValueOnce(Response.json({ ...saved('Heap là cây [S1].'), feedback: 'helpful' }))
+    await userEvent.click(helpful)
+    await waitFor(() => expect(helpful).toHaveAttribute('aria-pressed', 'true'))
+    const [url, init] = fetchMock.mock.calls.at(-1)!
+    expect(url).toBe('/api/courses/course-1/chat/messages/m1/feedback')
+    expect(JSON.parse(init.body)).toEqual({ feedback: 'helpful' })
+
+    fetchMock.mockResolvedValueOnce(Response.json({ ...saved('Heap là cây [S1].'), feedback: null }))
+    await userEvent.click(helpful)
+    await waitFor(() => expect(helpful).toHaveAttribute('aria-pressed', 'false'))
+    expect(JSON.parse(fetchMock.mock.calls.at(-1)![1].body)).toEqual({ feedback: null })
+
+    await userEvent.click(screen.getByRole('button', { name: 'Sai trích dẫn' }))
+    expect(screen.getByText(/gửi cho giảng viên, không kèm tên bạn/i)).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('checkbox', { name: 'Nguồn 1' }))
+    await userEvent.type(screen.getByLabelText(/điều gì chưa đúng/i), 'Nguồn nói về stack')
+    fetchMock.mockResolvedValueOnce(Response.json({ ...saved('Heap là cây [S1].'), feedback: 'wrong_citation', feedback_citations: [1] }))
+    await userEvent.click(screen.getByRole('button', { name: 'Gửi phản hồi' }))
+    expect(await screen.findByRole('status')).toHaveTextContent('Cảm ơn, đã gửi phản hồi.')
+    expect(JSON.parse(fetchMock.mock.calls.at(-1)![1].body)).toEqual(
+      { feedback: 'wrong_citation', note: 'Nguồn nói về stack', citations: [1] })
+    expect(screen.getByRole('button', { name: 'Sai trích dẫn' })).toHaveAttribute('aria-pressed', 'true')
+  })
+
+  it('tells the server which citation the reader opened', async () => {
+    fetchMock.mockResolvedValueOnce(stream(event('done', saved('Heap là cây [S1].'))))
+    render(<CourseChat courseId="course-1" />)
+    await ask('Heap là gì?')
+    fetchMock.mockResolvedValueOnce(new Response(null, { status: 204 }))
+    await userEvent.click(await screen.findByRole('button', { name: 'Nguồn 1' }))
+    const [url, init] = fetchMock.mock.calls.at(-1)!
+    expect(url).toBe('/api/courses/course-1/chat/messages/m1/opened')
+    expect(JSON.parse(init.body)).toEqual({ citation: 1 })
+  })
+
   it('typesets the LaTeX of an answer instead of showing its source', async () => {
     // The answer of 2026-11-11 on AWS: "$\\alpha \\beta$" and the tuple of a DFA came out as raw LaTeX.
     const answer = 'Phép nối $\\alpha \\beta$ và DFA $M = (K, \\Sigma, \\delta, s, F)$.'

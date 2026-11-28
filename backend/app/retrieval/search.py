@@ -252,21 +252,29 @@ def search_for_chat(db: Session, course_id: UUID, query: str, candidate_k: int =
         return reciprocal_rank_fusion([dense, sparse])[:candidate_k]
 
 
-def rerank_for_chat(query: str, candidates: list[Chunk], top_k: int = 8) -> list[Chunk]:
-    """A reranker that fails or stays busy costs the answer some ordering, not the answer: someone is waiting
-    for the first word, so it gets one retry."""
+def rerank_scored_for_chat(query: str, candidates: list[Chunk], top_k: int = 8) -> tuple[list[Chunk], list[float] | None]:
+    """The best `top_k` with the reranker's scores, or the hybrid order and None when the reranker failed. A
+    reranker that fails or stays busy costs the answer some ordering, not the answer: someone is waiting for the
+    first word, so it gets one retry."""
     try:
-        return [c for c, _ in rerank_scored(query, candidates, attempts=CHAT_RERANK_ATTEMPTS)[:top_k]]
+        scored = rerank_scored(query, candidates, attempts=CHAT_RERANK_ATTEMPTS)[:top_k]
     except (httpx.HTTPError, ValueError) as error:
         logger.warning("rerank failed, chat keeps the hybrid order: %s", error)
-        return candidates[:top_k]
+        return candidates[:top_k], None
+    return [c for c, _ in scored], [score for _, score in scored]
 
 
-def retrieve_for_chat(reads: Session, course_id: UUID, query: str, top_k: int = 8, candidate_k: int = 30) -> list[Chunk]:
-    """Closes `reads` before reranking, so a slow reranker holds no connection."""
+def rerank_for_chat(query: str, candidates: list[Chunk], top_k: int = 8) -> list[Chunk]:
+    return rerank_scored_for_chat(query, candidates, top_k)[0]
+
+
+def retrieve_for_chat(reads: Session, course_id: UUID, query: str, top_k: int = 8,
+                      candidate_k: int = 30) -> tuple[list[Chunk], list[float] | None]:
+    """The passages for a chat answer and their reranker scores (None without them). Closes `reads` before
+    reranking, so a slow reranker holds no connection."""
     with reads:
         candidates = search_for_chat(reads, course_id, query, candidate_k)
-    return rerank_for_chat(query, candidates, top_k)
+    return rerank_scored_for_chat(query, candidates, top_k)
 
 
 def _reranked(query: str, candidates: list[Chunk], top_k: int | None, min_k: int) -> list[Chunk]:

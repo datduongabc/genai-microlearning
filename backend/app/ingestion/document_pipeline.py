@@ -4,16 +4,18 @@ audio/video (transcribe qua Whisper) không giữ request
 HTTP treo cả phiên, và để retry tự động khi gặp lỗi tạm thời (RateLimitError)
 thay vì người dùng phải tải lại file."""
 
+import hashlib
 import json
 from dataclasses import asdict
 
-from sqlalchemy import func
+from sqlalchemy import func, select
 
 from app.db import WorkerSessionLocal
 from app.ingestion.chunker import Chunk as ChunkerChunk
 from app.ingestion.chunker import chunk_units, document_title
 from app.ingestion.document_readers import DocumentUnit, InputLimitError, preflight_limits, read_document
 from app.ingestion.embeddings import embed_texts
+from app.ingestion.redaction import redact
 from app.jobs.queue import hold
 from app.models import Chunk as ChunkModel
 from app.models import Document, DocumentStatus, Job, JobStatus
@@ -56,10 +58,21 @@ def _run_extract(job) -> None:
                 # Terminal, and retrying cannot fix the input: the file has no further use.
                 store.delete(storage_key)
                 raise
+            digest = _sha256(path)
             units = read_document(path, course_id=course_id, source_id=filename)
+        copy_of = db.scalar(select(Document.filename).where(
+            Document.course_id == doc.course_id, Document.content_sha256 == digest, Document.id != doc.id,
+            Document.status != DocumentStatus.failed))
+        if copy_of is not None:
+            raise ValueError(f'Tệp này giống hệt tài liệu "{copy_of}" đã có trong môn học. Hãy xoá một trong hai bản.')
+        doc.content_sha256 = digest
+        redacted = 0
+        for unit in units:
+            unit.text, count = redact(unit.text)
+            redacted += count
         doc.raw_text = "\n\n".join(u.text for u in units if u.text)
         # Persist before rejecting an unreadable document, and keep them after job cleanup.
-        doc.extraction_warnings = [w for u in units for w in u.warnings]
+        doc.extraction_warnings = [w for u in units for w in u.warnings] + _document_notes(db, doc, redacted)
         if not doc.raw_text.strip():
             db.commit()
             raise ValueError("Không đọc được nội dung tài liệu; hãy tải lại bản có lớp chữ.")
@@ -76,6 +89,25 @@ def _run_extract(job) -> None:
         db.commit()
     finally:
         db.close()
+
+
+def _sha256(path) -> str:
+    digest = hashlib.sha256()
+    with open(path, "rb") as file:
+        for block in iter(lambda: file.read(1 << 20), b""):
+            digest.update(block)
+    return digest.hexdigest()
+
+
+def _document_notes(db, doc: Document, redacted: int) -> list[dict]:
+    """Notes about the whole document, beside the per-page warnings: `page` 0 is none."""
+    notes = [{"code": "redacted", "page": 0, "count": redacted}] if redacted else []
+    # Most often a new version of a handout: the old one would keep answering until it is deleted.
+    if db.scalar(select(Document.id).where(Document.course_id == doc.course_id, Document.filename == doc.filename,
+                                           Document.id != doc.id,
+                                           Document.status != DocumentStatus.awaiting_upload).limit(1)) is not None:
+        notes.append({"code": "same_name", "page": 0})
+    return notes
 
 
 def _run_chunk(job) -> None:

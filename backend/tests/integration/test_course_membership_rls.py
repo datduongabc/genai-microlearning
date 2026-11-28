@@ -47,10 +47,13 @@ def world():
         db.add(platform)
         db.flush()
         db.add(LtiContext(platform_id=platform.id, deployment_id="d", context_id="ctx", course_id=course.id))
-        document = Document(course_id=course.id, filename="notes.pdf", status=DocumentStatus.embedded)
-        db.add(document)
+        document = Document(course_id=course.id, filename="notes.pdf", status=DocumentStatus.embedded,
+                            learner_access=True)
+        closed = Document(course_id=course.id, filename="answer key.pdf", status=DocumentStatus.embedded)
+        db.add_all([document, closed])
         db.flush()
         db.add(Chunk(document_id=document.id, course_id=course.id, chunk_index=0, content="material"))
+        db.add(Chunk(document_id=closed.id, course_id=course.id, chunk_index=0, content="the answers"))
         module = Module(document_id=document.id, course_id=course.id, title="Draft")
         db.add(module)
         db.flush()
@@ -66,7 +69,7 @@ def world():
         db.add(CourseMember(course_id=course.id, user_id=people["member"].id))
         db.commit()
         ids = {**{k: u.id for k, u in people.items()}, "course": course.id, "unlinked": unlinked.id,
-               "document": document.id, "module": module.id, "owner_chat": owner_chat.id,
+               "document": document.id, "closed": closed.id, "module": module.id, "owner_chat": owner_chat.id,
                "member_chat": member_chat.id, "platform": platform.id}
     yield ids
     with SessionLocal() as db:
@@ -89,6 +92,8 @@ READS = {
     "courses": ("select count(*) from courses where id = :course", 1),
     "documents": ("select count(*) from documents where course_id = :course", 1),
     "chunks": ("select count(*) from chunks where course_id = :course", 1),
+    "a document closed to learners": ("select count(*) from documents where id = :closed", 0),
+    "the chunks of a closed document": ("select count(*) from chunks where document_id = :closed", 0),
     "modules": ("select count(*) from modules where course_id = :course", 0),
     "module_components": ("select count(*) from module_components where module_id = :module", 0),
     "evaluations": ("select count(*) from evaluations where module_id = :module", 0),
@@ -109,6 +114,8 @@ def test_a_member_reads_the_material_and_their_chat_only(world, what):
 def test_the_owner_still_sees_all_of_their_course_but_not_the_members_chat(world):
     owner = world["owner"]
     for sql in ("select count(*) from modules where course_id = :course",
+                "select count(*) from documents where id = :closed",
+                "select count(*) from chunks where document_id = :closed",
                 "select count(*) from jobs where document_id = :document",
                 "select count(*) from chat_sessions where id = :owner_chat"):
         assert _count(owner, sql, world) == 1
@@ -120,6 +127,7 @@ def test_the_owner_still_sees_all_of_their_course_but_not_the_members_chat(world
     "update courses set owner_id = :member where id = :course",
     "delete from courses where id = :course",
     "update documents set filename = 'pwned' where course_id = :course",
+    "update documents set learner_access = true where id = :closed",
     "delete from documents where course_id = :course",
     "update chunks set content = 'pwned' where course_id = :course",
     "delete from chunks where course_id = :course",
@@ -206,7 +214,9 @@ def test_a_teacher_member_authors_the_course_and_a_learner_does_not(world):
     try:
         for what, sql in {"modules": "select count(*) from modules where course_id = :course",
                           "module_components": "select count(*) from module_components where module_id = :module",
-                          "jobs": "select count(*) from jobs where document_id = :document"}.items():
+                          "jobs": "select count(*) from jobs where document_id = :document",
+                          "a document closed to learners": "select count(*) from documents where id = :closed",
+                          "its chunks": "select count(*) from chunks where document_id = :closed"}.items():
             assert _count(teacher_id, sql, world) == 1, what
         assert _count(teacher_id, "select count(*) from chat_sessions where course_id = :course", world) == 0
 

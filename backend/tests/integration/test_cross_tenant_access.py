@@ -95,6 +95,9 @@ def world():
         db.add(session)
         db.flush()
         db.add(ChatMessage(session_id=session.id, role=ChatRole.user, content="secret chat of A", citations=[]))
+        answer = ChatMessage(session_id=session.id, role=ChatRole.assistant, content="secret answer of A",
+                             citations=[{"chunk_id": "c", "source_ref": "p1"}])
+        db.add(answer)
         pipeline_job = Job(job_type=JobType.document_pipeline, document_id=document.id, step="extract", status=JobStatus.done)
         failed_job = Job(
             job_type=JobType.module_generation, document_id=document.id, step="generate",
@@ -118,7 +121,7 @@ def world():
             "owner": owner.id, "stranger": stranger.id, "course": course.id, "stranger_course": stranger_course.id,
             "document": document.id, "module": module.id, "component": component.id, "session": session.id,
             "pipeline_job": pipeline_job.id, "failed_job": failed_job.id, "question": question.id,
-            "user": owner.id, "flashcard_set": flashcards.id, "video": video.id,
+            "user": owner.id, "flashcard_set": flashcards.id, "video": video.id, "answer": answer.id,
             "study": study.id, "study_item": study_item.id, "study_file": study_file.id,
         }
     finally:
@@ -270,10 +273,15 @@ ATTACKS = [
     ("GET", "/courses/{course}/chat/{session}/history", None, {}),
     ("GET", "/courses/{course}/chat/latest", None, {}),
     ("POST", "/courses/{course}/chat/sessions", None, {}),
+    ("GET", "/courses/{course}/chat/feedback", None, {}),
+    ("PUT", "/courses/{course}/chat/messages/{answer}/feedback", None, {"json": {"feedback": "not_right"}}),
+    ("POST", "/courses/{course}/chat/messages/{answer}/opened", None, {"json": {"citation": 1}}),
+    ("PATCH", "/documents/{document}", None, {"json": {"learner_access": True}}),
     ("PATCH", "/courses/{course}", None, {"json": {"name": "Đổi"}}),
     # A chat session of another course smuggled into one's own course.
     ("POST", "/courses/{stranger_course}/chat/stream", None, {"json": {"message": "hello", "session_id": "{session}"}}),
     ("GET", "/courses/{stranger_course}/chat/{session}/history", None, {}),
+    ("PUT", "/courses/{stranger_course}/chat/messages/{answer}/feedback", None, {"json": {"feedback": "not_right"}}),
 ]
 
 
@@ -294,7 +302,7 @@ def _send(spec, ids, headers):
 
 OWNER_RESOURCES = (
     "course", "document", "module", "component", "session", "pipeline_job", "failed_job", "question", "user", "study",
-    "study_item", "study_file", "flashcard_set", "video",
+    "study_item", "study_file", "flashcard_set", "video", "answer",
 )
 
 
@@ -329,7 +337,7 @@ def test_nothing_of_the_owner_was_changed_by_the_attacks(world, layers):
     assert client.get("/courses", headers=world["owner_headers"]).status_code == 200  # still active
     assert module.json()["title"] == "Module of A"
     assert "secret A" in module.text
-    assert [d["filename"] for d in documents.json()] == ["a.txt"]
+    assert [(d["filename"], d["learner_access"]) for d in documents.json()] == [("a.txt", False)]
     video = client.get(f"/videos/{world['video']}", headers=world["owner_headers"]).json()
     assert (video["scenes"][0]["title"], video["draft_version"]) == ("secret scene of A", 1)
     assert video["published_at"] is not None and video["rendered_version"] == 1

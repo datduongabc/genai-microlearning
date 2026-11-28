@@ -20,12 +20,19 @@ export interface DocumentInfo {
   generating: boolean
   // Open failures stay here after a reload: a failed generation makes no module to show them on.
   failures: DocumentFailure[]
-  extraction_warnings: { code: string; page: number }[]
+  // page 0: a note about the whole document (`redacted` with its count, `same_name`).
+  extraction_warnings: { code: string; page: number; count?: number }[]
+  // The course's learners may ask the chat about it. A new document starts closed.
+  learner_access: boolean
 }
 
 export async function listDocuments(courseId: string) {
   const { data } = await api.get<DocumentInfo[]>('/documents', { params: { course_id: courseId } })
   return data
+}
+
+export async function setLearnerAccess(documentId: string, learnerAccess: boolean) {
+  await api.patch(`/documents/${documentId}`, { learner_access: learnerAccess })
 }
 
 export async function deleteDocument(documentId: string) {

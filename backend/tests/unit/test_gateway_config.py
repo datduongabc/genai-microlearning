@@ -324,7 +324,7 @@ def test_every_paid_model_goes_through_openrouter_with_its_one_key(gateway):
     are no longer read anywhere."""
     paid = {d["model_name"] for d in _openrouter_deployments(gateway)}
 
-    assert PAID_ALIASES | {"gemini-flash", "embed-default"} == paid
+    assert PAID_ALIASES | {"gemini-flash", "embed-default", "condense-fast"} == paid
     assert {d["litellm_params"]["api_key"] for d in _openrouter_deployments(gateway)} == {
         "os.environ/OPENROUTER_API_KEY"}
 

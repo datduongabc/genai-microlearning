@@ -109,6 +109,10 @@ def generate_flashcards(
                 continue
             cards.append((front, back, used))
         cards = cards[:MAX_CARDS]
+        # An empty set saved as a draft looked like a success with nothing in it; failing shows the
+        # lecturer why under the document, with its retry button. ValueError: retrying alone won't help.
+        if not cards:
+            raise ValueError("Không viết được thẻ nào dựa trên tài liệu. Hãy đổi nội dung cần tập trung rồi thử lại.")
 
         flags = fact_check.check_against_sources(
             [(f"{front}\n{back}", [c.content for c in used]) for front, back, used in cards],

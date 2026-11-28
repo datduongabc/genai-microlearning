@@ -444,14 +444,20 @@ def _verify_question(
             prompt, AnswerabilityCheck, system_instruction=NO_SOURCE_QUESTION_CHECK_SYSTEM_INSTRUCTION
         )
     result.answerability_pass, result.answerability_reason = check.answerability_pass, check.answerability_reason
-    correct = [i for i, option in enumerate(review.option_checks) if option.is_correct]
+    # Options are named by their text, not their position: shuffled_choices reorders them after this
+    # check, and the lecturer reads these reasons next to the shuffled A-D.
+    def option(i: int) -> str:
+        return f"«{q.choices[i]}»" if i < len(q.choices) else f"phương án thừa {i + 1}"
+
+    correct = [i for i, check in enumerate(review.option_checks) if check.is_correct]
     if correct != [q.correct_index]:
         result.answerability_pass = False
         result.answerability_reason = (
-            f"Key={q.correct_index}; các phương án có thể đúng={correct}. "
-            + "; ".join(f"{i}: {o.reason}" for i, o in enumerate(review.option_checks))
+            f"Đáp án đã chọn: {option(q.correct_index)}; có thể đúng: "
+            + (", ".join(option(i) for i in correct) or "không phương án nào") + ". "
+            + "; ".join(f"{option(i)}: {o.reason}" for i, o in enumerate(review.option_checks))
         )
-    bad_options = [f"{i}: {o.reason}" for i, o in enumerate(review.option_checks)
+    bad_options = [f"{option(i)}: {o.reason}" for i, o in enumerate(review.option_checks)
                    if not o.distinct_pass or (i != q.correct_index and not o.plausible_pass)]
     result.distractors_pass = not bad_options
     result.distractors_reason = "; ".join(bad_options)

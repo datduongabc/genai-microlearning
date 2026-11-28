@@ -1,0 +1,2902 @@
+[
+ {
+  "kind": "course",
+  "subject": "advanced-programming",
+  "question": "Trong sơ đồ lớp của Ball, phương thức nào được dùng để phản chiếu bóng theo chiều ngang và nó trả về kiểu dữ liệu gì?",
+  "top_score": 0.94
+ },
+ {
+  "kind": "course",
+  "subject": "advanced-programming",
+  "question": "What is the term used to describe the technique where the static creation method creates the singleton object only on its first call and stores it in a private static field?",
+  "top_score": 0.95
+ },
+ {
+  "kind": "course",
+  "subject": "advanced-programming",
+  "question": "What value is printed by the program after executing `a.f2()` when `a` is assigned `b` and `a.n` is set to 1?",
+  "top_score": 0.81
+ },
+ {
+  "kind": "course",
+  "subject": "advanced-programming",
+  "question": "What design pattern ensures a class has only one instance and provides global access?",
+  "top_score": 0.99
+ },
+ {
+  "kind": "course",
+  "subject": "advanced-programming",
+  "question": "What mechanism in inheritance allows a subclass to provide its own implementation of a method, thereby supporting polymorphism?",
+  "top_score": 0.97
+ },
+ {
+  "kind": "course",
+  "subject": "advanced-programming",
+  "question": "What is the role of the “Adapter” class in the Object Adapter pattern, and how does it interact with both the Client Interface and the Service?",
+  "top_score": 0.98
+ },
+ {
+  "kind": "course",
+  "subject": "advanced-programming",
+  "question": "Design pattern là gì và nó được mô tả như thế nào trong tài liệu?",
+  "top_score": 0.94
+ },
+ {
+  "kind": "course",
+  "subject": "advanced-programming",
+  "question": "What term is used to describe the class that is created from an existing class in order to reuse and extend its functionality?",
+  "top_score": 0.98
+ },
+ {
+  "kind": "course",
+  "subject": "advanced-programming",
+  "question": "What modifier can be omitted when declaring an interface according to the syntax shown?",
+  "top_score": 0.94
+ },
+ {
+  "kind": "course",
+  "subject": "advanced-programming",
+  "question": "What is the access modifier of the default constructor that the program automatically provides when no constructor is declared?",
+  "top_score": 0.41
+ },
+ {
+  "kind": "course",
+  "subject": "advanced-programming",
+  "question": "What two problems related to the Single Responsibility Principle does the Singleton pattern aim to solve?",
+  "top_score": 0.93
+ },
+ {
+  "kind": "course",
+  "subject": "advanced-programming",
+  "question": "What is the purpose of multiplying `current_reading()` by 10 when summing temperatures from a `SuperTempReader` instance in the code that does not use the Adapter pattern?",
+  "top_score": 0.97
+ },
+ {
+  "kind": "course",
+  "subject": "advanced-programming",
+  "question": "Trong lớp Book, phương thức nào trả về một chuỗi chứa tên của tất cả các tác giả và được khai báo với kiểu trả về String?",
+  "top_score": 0.88
+ },
+ {
+  "kind": "course",
+  "subject": "advanced-programming",
+  "question": "Trong lớp EBook, thuộc tính nào được thêm vào so với lớp Book và được bao gồm trong việc ghi đè phương thức displayDetails()?",
+  "top_score": 0.98
+ },
+ {
+  "kind": "course",
+  "subject": "advanced-programming",
+  "question": "What mechanism automatically executes when an object is created and can cause errors if not properly designed?",
+  "top_score": 0.98
+ },
+ {
+  "kind": "course",
+  "subject": "advanced-programming",
+  "question": "What is the difference between the two `foo` method signatures `foo(int i, double d)` and `foo(double d, int i)` as described in the polymorphism overview?",
+  "top_score": 0.85
+ },
+ {
+  "kind": "course",
+  "subject": "advanced-programming",
+  "question": "What keyword must be used in C++ to enable dynamic binding?",
+  "top_score": 0.98
+ },
+ {
+  "kind": "course",
+  "subject": "advanced-programming",
+  "question": "What is the name of the method defined in the Subscriber interface that the Publisher calls for each object in its subscribers list when an event occurs?",
+  "top_score": 0.98
+ },
+ {
+  "kind": "course",
+  "subject": "advanced-programming",
+  "question": "Trong lớp Circle được mô tả, giá trị mặc định của biến instance radius là bao nhiêu?",
+  "top_score": 0.99
+ },
+ {
+  "kind": "course",
+  "subject": "advanced-programming",
+  "question": "What values are printed for `a.n` and `b.n` after executing `a.f2(); b.f2();` in the C++ code?",
+  "top_score": 0.93
+ },
+ {
+  "kind": "course",
+  "subject": "advanced-programming",
+  "question": "What is the purpose of making the Singleton class’s default constructor private and how does the static getInstance() method ensure that only one instance of the class is ever created?",
+  "top_score": 0.97
+ },
+ {
+  "kind": "course",
+  "subject": "advanced-programming",
+  "question": "What line of output is produced when the `shape` reference is reassigned to a `new Square()` and `shape.draw()` is invoked?",
+  "top_score": 0.98
+ },
+ {
+  "kind": "course",
+  "subject": "advanced-programming",
+  "question": "What is the name of the public method that provides access to the Car object's private attribute `speed`?",
+  "top_score": 0.98
+ },
+ {
+  "kind": "course",
+  "subject": "advanced-programming",
+  "question": "What output does the call `a->f2();` produce in the given C++ code, and why does this result illustrate the difference between static binding of `f()` and the lack of dynamic binding for `f2()`?",
+  "top_score": 0.94
+ },
+ {
+  "kind": "course",
+  "subject": "advanced-programming",
+  "question": "What output is produced by the call `sup.display();` in the first code example where `Superclass sup = sub;` performs object slicing?",
+  "top_score": 0.81
+ },
+ {
+  "kind": "course",
+  "subject": "advanced-programming",
+  "question": "In the Person class example, which access modifier is applied to the age field?",
+  "top_score": 0.98
+ },
+ {
+  "kind": "course",
+  "subject": "advanced-programming",
+  "question": "What term does the text use to describe the requirement that the Class Adapter pattern can only be implemented in languages supporting multiple inheritance, such as C++?",
+  "top_score": 0.82
+ },
+ {
+  "kind": "course",
+  "subject": "advanced-programming",
+  "question": "What method must a class implement to conform to the Subscriber Interface?",
+  "top_score": 0.98
+ },
+ {
+  "kind": "course",
+  "subject": "advanced-programming",
+  "question": "What specific problem does the Observer pattern aim to solve in the scenario involving a Customer checking product availability at a Store?",
+  "top_score": 0.95
+ },
+ {
+  "kind": "course",
+  "subject": "advanced-programming",
+  "question": "What default values are assigned to the `brand` and `year` attributes in the `Vehicle` class?",
+  "top_score": 0.98
+ },
+ {
+  "kind": "course",
+  "subject": "advanced-programming",
+  "question": "What is the term used to describe the issue where methods require compile‑time presence for signature checks, leading to rigid inheritance hierarchies?",
+  "top_score": 0.95
+ },
+ {
+  "kind": "course",
+  "subject": "advanced-programming",
+  "question": "Which OOP principle is defined as dividing programs into independent, self‑contained classes?",
+  "top_score": 0.87
+ },
+ {
+  "kind": "course",
+  "subject": "advanced-programming",
+  "question": "What must a subclass do with all abstract methods if the subclass itself is not declared abstract?",
+  "top_score": 0.98
+ },
+ {
+  "kind": "course",
+  "subject": "advanced-programming",
+  "question": "What attributes are required for the Book class in the encapsulation exercise for creating a library system?",
+  "top_score": 0.98
+ },
+ {
+  "kind": "course",
+  "subject": "advanced-programming",
+  "question": "What term is used to describe the process where the actual method to be executed is determined at runtime rather than at compile time?",
+  "top_score": 0.98
+ },
+ {
+  "kind": "course",
+  "subject": "advanced-programming",
+  "question": "What is the default access level for members of a struct compared to a class?",
+  "top_score": 0.99
+ },
+ {
+  "kind": "course",
+  "subject": "advanced-programming",
+  "question": "Trong UML diagram trên, nếu một lớp triển khai interface `Shape` mà lại kế thừa interface `Comparable`, lớp đó phải cài đặt phương thức nào của `Comparable`?",
+  "top_score": 0.92
+ },
+ {
+  "kind": "course",
+  "subject": "advanced-programming",
+  "question": "Trong sơ đồ lớp trên, biến nào được khai báo với quyền truy cập private và có giá trị mặc định là 1.0?",
+  "top_score": 0.96
+ },
+ {
+  "kind": "course",
+  "subject": "advanced-programming",
+  "question": "What are the exact signatures and implementations required for the default constructor, the parameterized constructor, and the constructor chaining method in the Laptop class described in the exercise?",
+  "top_score": 0.28
+ },
+ {
+  "kind": "course",
+  "subject": "advanced-programming",
+  "question": "In class C, which interface's default show() method is explicitly invoked to resolve the diamond problem?",
+  "top_score": 0.98
+ },
+ {
+  "kind": "course",
+  "subject": "advanced-programming",
+  "question": "What structural design pattern is defined as a way to convert one interface into another expected by the client, effectively bridging incompatible interfaces?",
+  "top_score": 0.99
+ },
+ {
+  "kind": "course",
+  "subject": "advanced-programming",
+  "question": "Trong lớp Author, phương thức toString() phải trả về chuỗi có định dạng nào, bao gồm các trường nào và ký tự phân cách nào?",
+  "top_score": 0.98
+ },
+ {
+  "kind": "course",
+  "subject": "advanced-programming",
+  "question": "What benefit of encapsulation is described as “Allows creation of read‑only or write‑only properties”?",
+  "top_score": 0.98
+ },
+ {
+  "kind": "course",
+  "subject": "advanced-programming",
+  "question": "What term describes a class that cannot be instantiated but can contain both abstract methods (without implementation) and concrete methods (with implementation)?",
+  "top_score": 0.98
+ },
+ {
+  "kind": "course",
+  "subject": "advanced-programming",
+  "question": "When a `Superclass` reference is assigned `new Subclass()` and its `display()` method is invoked, what text is printed to the console?",
+  "top_score": 0.96
+ },
+ {
+  "kind": "course",
+  "subject": "advanced-programming",
+  "question": "Which method is cited as an example of polymorphism, demonstrating different behavior for Circle and Rectangle objects?",
+  "top_score": 0.97
+ },
+ {
+  "kind": "course",
+  "subject": "advanced-programming",
+  "question": "What exact string format should the Book class’s `toString()` method return, including how it incorporates the Author class’s `toString()` output?",
+  "top_score": 0.94
+ },
+ {
+  "kind": "course",
+  "subject": "advanced-programming",
+  "question": "What exact string format must the Book class’s toString() method produce, including the placeholders for name, authors, price, and quantity?",
+  "top_score": 0.96
+ },
+ {
+  "kind": "course",
+  "subject": "advanced-programming",
+  "question": "Trong Java, các phương thức trong một interface có mức truy cập mặc định là gì?",
+  "top_score": 0.97
+ },
+ {
+  "kind": "course",
+  "subject": "advanced-programming",
+  "question": "What is the difference between method overloading and method overriding as defined in the introduction to polymorphism?",
+  "top_score": 0.96
+ },
+ {
+  "kind": "course",
+  "subject": "calculus 1",
+  "question": "Trong chứng minh dãy \\(a_n = \\frac{2^n}{n!}\\) hội tụ, tại sao tỉ số \\(\\frac{a_{n+1}}{a_n} = \\frac{2}{n+1}\\) luôn nhỏ hơn 1 đối với mọi \\(n > 1\\)?",
+  "top_score": 0.89
+ },
+ {
+  "kind": "course",
+  "subject": "calculus 1",
+  "question": "Trong quá trình tính tích phân xác định trên, khi đặt \\(u = x\\) và \\(dv = \\frac{\\sin x\\,dx}{\\cos^2 x}\\), giá trị của \\(v\\) được tìm ra là gì?",
+  "top_score": 0.98
+ },
+ {
+  "kind": "course",
+  "subject": "calculus 1",
+  "question": "Trong phép biến đổi t = tan (x/2) để tính ∫dx/(4 sin x + 3 cos x + 5), mẫu số cuối cùng được đưa về dạng (t + 2)²; kết quả nguyên hàm là gì?",
+  "top_score": 0.98
+ },
+ {
+  "kind": "course",
+  "subject": "calculus 1",
+  "question": "Trong khai triển Maclaurin của \\(f(x)=\\frac{x^{2}}{1+\\sin x}\\) tới bậc 6, hệ số của \\(x^{5}\\) là bao nhiêu?",
+  "top_score": 0.98
+ },
+ {
+  "kind": "course",
+  "subject": "calculus 1",
+  "question": "Trong ví dụ tính giới hạn \\(I = \\lim_{x\\to 0}\\frac{x-\\sin x}{\\tan x - x}\\), tại bước biến đổi cuối cùng, tử số được viết dưới dạng \\((1-\\cos x)(1+\\cos x)\\). Theo quy tắc L’Hôpital, mẫu số được biểu diễn bằng \\(\\cos^2 x(1-\\cos x)\\). Khi rút gọn, kết quả giới hạn là bao nhiêu?",
+  "top_score": 0.96
+ },
+ {
+  "kind": "course",
+  "subject": "calculus 1",
+  "question": "Trong quá trình khảo sát hàm số, công thức tính hệ số a và b của tiệm cận xiên được đưa ra như thế nào?",
+  "top_score": 0.98
+ },
+ {
+  "kind": "course",
+  "subject": "calculus 1",
+  "question": "Trong công thức suy diễn đạo hàm cấp \\(n\\) ở vị trí \\(x=0\\), hệ số nhân \\(f^{(n-2)}(0)\\) là \\(-\\,(n-1)(n-2)\\). Bạn có nhớ công thức này không?",
+  "top_score": 0.97
+ },
+ {
+  "kind": "course",
+  "subject": "calculus 1",
+  "question": "Giới hạn của \\(\\dfrac{\\arcsin x}{x}\\) khi \\(x\\to 0\\) bằng bao nhiêu?",
+  "top_score": 0.96
+ },
+ {
+  "kind": "course",
+  "subject": "calculus 1",
+  "question": "Trong định nghĩa dãy số, ánh xạ f được ký hiệu từ tập nào sang tập nào, và ký hiệu chung của dãy số là gì?",
+  "top_score": 0.98
+ },
+ {
+  "kind": "course",
+  "subject": "calculus 1",
+  "question": "Trong định nghĩa về hàm số vô cùng bé, ký hiệu “α(x) ∼ β(x) khi x → a” có nghĩa là giới hạn nào của tỉ số α(x)/β(x) bằng 1?",
+  "top_score": 0.98
+ },
+ {
+  "kind": "course",
+  "subject": "calculus 1",
+  "question": "Trong ví dụ tính giới hạn \\(I=\\displaystyle\\lim_{x\\to0}x^{\\mu}\\ln x\\) với \\(\\mu>0\\), tại bước chuyển đổi thành \\(\\displaystyle\\lim_{x\\to0}\\frac{\\ln x}{x^{-\\mu}}\\), đạo hàm của mẫu số được viết là \\(-\\mu\\,x^{-\\mu-1}\\); vậy đạo hàm của mẫu số ở bước áp dụng quy tắc L’Hôpital là gì?",
+  "top_score": 0.97
+ },
+ {
+  "kind": "course",
+  "subject": "calculus 1",
+  "question": "Trong ví dụ về hàm \\(f(x)=\\frac{x^{3}}{e^{x}}\\), tiệm cận ngang phía bên phải được xác định bằng giới hạn nào và giá trị của nó là bao nhiêu?",
+  "top_score": 0.98
+ },
+ {
+  "kind": "course",
+  "subject": "calculus 1",
+  "question": "Trong định lý L’Hôpital cho dạng \\(\\frac{\\infty}{\\infty}\\), điều kiện nào quy định rằng \\(g'(x)\\neq 0\\) trên nửa khoảng \\((a,b]\\)?",
+  "top_score": 0.93
+ },
+ {
+  "kind": "course",
+  "subject": "calculus 1",
+  "question": "Trong định lý tích phân suy rộng loại 2, điều kiện nào được đưa ra cho hàm \\(f(x)\\) so với hàm \\(g(x)\\) trên đoạn \\([a,b)\\) để suy ra tính hội tụ hoặc phân kỳ của \\(\\int_a^b f(x)\\,dx\\) dựa trên \\(\\int_a^b g(x)\\,dx\\)?",
+  "top_score": 0.98
+ },
+ {
+  "kind": "course",
+  "subject": "calculus 1",
+  "question": "Trong định lý L'Hôpital cho giới hạn dạng \\(\\frac{\\infty}{\\infty}\\) tại \\(+\\infty\\), điều kiện nào yêu cầu \\(\\displaystyle \\lim_{x\\to +\\infty}\\frac{f'(x)}{g'(x)}\\) tồn tại và có giá trị hữu hạn hoặc vô cùng?",
+  "top_score": 0.98
+ },
+ {
+  "kind": "course",
+  "subject": "calculus 1",
+  "question": "Trong tính chất cơ bản của tích phân suy rộng loại 1, nếu \\(f(x)\\) khả tích trên \\([a,b]\\subset [a,+\\infty)\\) và \\(c>a\\), làm sao để biểu diễn \\(\\int_a^{+\\infty} f(x)\\,dx\\) dưới dạng tổng của hai tích phân hữu hạn?",
+  "top_score": 0.97
+ },
+ {
+  "kind": "course",
+  "subject": "calculus 1",
+  "question": "Trong ví dụ tính tích phân I = ∫_(π/6)^(π/4) dx/(cos²x), giá trị cuối cùng của I được tính bằng công thức nào và kết quả cụ thể là bao nhiêu?",
+  "top_score": 0.98
+ },
+ {
+  "kind": "course",
+  "subject": "calculus 1",
+  "question": "Trong bất kỳ dãy hội tụ nào \\((x_n)\\subset\\mathbb{R}\\), tính chất nào khẳng định rằng dãy đó luôn bị chặn?",
+  "top_score": 0.97
+ },
+ {
+  "kind": "course",
+  "subject": "calculus 1",
+  "question": "Trong công thức cho đạo hàm bậc \\(n\\) của hàm \\(\\displaystyle \\left(\\frac{1}{x \\pm 2}\\right)^{(n)}\\), tử số chứa \\((-1)^n n!\\). Theo đó, đạo hàm bậc \\(n\\) của hàm \\(f(x)=\\frac{1}{4}\\left(\\frac{1}{x-2}-\\frac{1}{x+2}\\right)\\) được cho bởi biểu thức nào?",
+  "top_score": 0.98
+ },
+ {
+  "kind": "course",
+  "subject": "calculus 1",
+  "question": "Trong bảng công thức tích phân bất định cơ bản, công thức cho \\(\\displaystyle \\int x^{\\mu}\\,dx\\) là \\(\\displaystyle \\frac{x^{\\mu+1}}{\\mu+1}+C\\); \\(\\mu\\) phải thỏa mãn điều kiện gì?",
+  "top_score": 0.99
+ },
+ {
+  "kind": "course",
+  "subject": "calculus 1",
+  "question": "Trong bảng công thức tích phân bất định, tích phân ∫ sinh x dx cho kết quả là gì?",
+  "top_score": 0.98
+ },
+ {
+  "kind": "course",
+  "subject": "calculus 1",
+  "question": "Trong ví dụ tính \\(\\displaystyle \\lim_{n\\to\\infty}\\frac{(-1)+\\frac1n}{\\frac1{n^{2}}-(-1)^{n}}\\), tại sao lại chia tử số và mẫu số cho \\((-1)^{n}\\) để đưa dãy về dạng \\(a_n=\\frac{1+\\frac{(-1)^{n}}{n}}{\\frac{(-1)^{n}}{n^{2}}-1}\\)?",
+  "top_score": 0.71
+ },
+ {
+  "kind": "course",
+  "subject": "calculus 1",
+  "question": "Trong quá trình tính tích phân \\(I=\\displaystyle\\int\\frac{2\\sin x+3\\cos x}{\\sin x+3\\cos x}\\,dx\\), hệ số \\(A\\) được xác định bằng cách giải phương trình nào?",
+  "top_score": 0.94
+ },
+ {
+  "kind": "course",
+  "subject": "calculus 1",
+  "question": "Để tính tích phân dạng $\\int \\frac{dx}{(x - \\alpha)\\sqrt{ax^2 + bx + c}}$ thuộc dạng tích phân của hàm vô tỉ, ta cần sử dụng phép đặt ẩn phụ nào cho biểu thức $x - \\alpha$?",
+  "top_score": 0.98
+ },
+ {
+  "kind": "course",
+  "subject": "calculus 1",
+  "question": "Trong các lỗi thường gặp khi xét tính tương đương của các hàm số, tại sao việc thêm một hằng số C≠0 vào cả f(x) và g(x) (tức là f(x)+C và g(x)+C) lại không giữ được tính tương đương khi x→a?",
+  "top_score": 0.91
+ },
+ {
+  "kind": "course",
+  "subject": "calculus 1",
+  "question": "Trong tính chất cơ bản của tích phân xác định, công thức nào cho biết giá trị của ∫_a^a f(x)dx?",
+  "top_score": 0.99
+ },
+ {
+  "kind": "course",
+  "subject": "calculus 1",
+  "question": "Trong phần chứng minh giới hạn của dãy \\(\\sqrt{n^n-1}\\), tác giả sử dụng bất đẳng thức nào để suy ra \\(0<\\sqrt{n^n-1}<\\sqrt{\\frac{2}{\\,n-1\\,}}\\) cho mọi \\(n>1\\)?",
+  "top_score": 0.87
+ },
+ {
+  "kind": "course",
+  "subject": "calculus 1",
+  "question": "Trong phép tính giới hạn đã cho, tử số được khai triển tới bậc 2 bằng cách sử dụng khai triển Maclaurin của \\(e^{\\cos x}\\) và \\(\\sqrt{(1-4x^{2})^{3}}\\); kết quả cuối cùng của giới hạn là bao nhiêu?",
+  "top_score": 0.96
+ },
+ {
+  "kind": "course",
+  "subject": "calculus 1",
+  "question": "Trong ví dụ về dãy \\(x_n = (-1)^n\\), dãy con nào có giới hạn riêng bằng \\(-1\\) và chỉ ra công thức chỉ số của các phần tử trong dãy con đó?",
+  "top_score": 0.98
+ },
+ {
+  "kind": "course",
+  "subject": "calculus 1",
+  "question": "Công thức đạo hàm bậc \\(n\\) của hàm \\((ax + b)^{\\alpha}\\) được viết như thế nào?",
+  "top_score": 0.97
+ },
+ {
+  "kind": "course",
+  "subject": "calculus 1",
+  "question": "Trong việc tính giới hạn \\(\\displaystyle \\lim_{n\\to\\infty}\\frac{5\\cdot2^{n}-3\\cdot5^{\\,n+1}}{100\\cdot2^{n}+2\\cdot5^{\\,n}}\\), tại bước nào và vì lý do gì ta chia tử số và mẫu số cho \\(5^{n}\\) để đưa dãy về dạng \\(\\displaystyle a_n=\\frac{5\\cdot2^{n}/5^{n}-3\\cdot5}{100\\cdot2^{n}/5^{n}+2}\\)?",
+  "top_score": 0.75
+ },
+ {
+  "kind": "course",
+  "subject": "calculus 1",
+  "question": "Trong công thức Newton‑Leibnitz cho tích phân suy rộng loại 2, điều kiện hội tụ yêu cầu giới hạn $\\displaystyle\\lim_{\\eta\\to b^-}F(\\eta)$ phải tồn tại và bằng bao nhiêu?",
+  "top_score": 0.95
+ },
+ {
+  "kind": "course",
+  "subject": "calculus 1",
+  "question": "Trong việc xác định hội tụ của tích phân suy rộng loại 1, tại sao ta không thể xét trực tiếp ∫₀^{∞} dx⁄x² và phải chia tích phân I thành hai phần ∫₀¹ và ∫₁^{+∞}?",
+  "top_score": 0.96
+ },
+ {
+  "kind": "course",
+  "subject": "calculus 1",
+  "question": "Trong định nghĩa về hàm vô cùng bé (VCB), nếu \\(\\alpha(x)\\) và \\(\\beta(x)\\) đều là các hàm VCB khi \\(x \\to a\\), thì \\(\\alpha(x) \\pm \\beta(x)\\) có tính chất gì?",
+  "top_score": 0.98
+ },
+ {
+  "kind": "course",
+  "subject": "calculus 1",
+  "question": "Trong định nghĩa của tích phân suy rộng loại 1, giới hạn $I = \\lim_{b\\to +\\infty} \\int_{a}^{b} f(x)\\,dx$ phải thỏa mãn như thế nào để tích phân được gọi là hội tụ?",
+  "top_score": 0.99
+ },
+ {
+  "kind": "course",
+  "subject": "calculus 1",
+  "question": "Trong ví dụ tính tích phân I = ∫_{−1}^{1} \\frac{x^{2}\\arctan x}{\\sqrt{1+x^{2}}}\\,dx, tại sao hàm f(x) = \\frac{x^{2}\\arctan x}{\\sqrt{1+x^{2}}} được xác định là hàm lẻ và kết quả của tích phân bằng 0?",
+  "top_score": 0.57
+ },
+ {
+  "kind": "course",
+  "subject": "calculus 1",
+  "question": "Trong công thức đổi biến \\(\\displaystyle \\int_a^b f(x)\\,dx = \\int_{\\alpha}^{\\beta} f[\\varphi(t)]\\,\\varphi'(t)\\,dt\\), làm sao xác định các giới hạn mới \\(\\alpha\\) và \\(\\beta\\) khi cho \\(x=\\varphi(t)\\) và các giá trị \\(a=\\varphi(\\alpha),\\; b=\\varphi(\\beta)\\)?",
+  "top_score": 0.8
+ },
+ {
+  "kind": "course",
+  "subject": "calculus 1",
+  "question": "Trong ví dụ tính giới hạn \\(I = \\lim_{x\\to+\\infty} \\frac{x^n}{a^x}\\) với \\(n\\in\\mathbb{N}\\) và \\(a\\ge 1\\), sau khi áp dụng quy tắc L'Hôpital bao nhiêu lần thì tử số trở thành hằng số \\(n!\\) và mẫu số có dạng \\(a^x(\\ln a)^n\\)?",
+  "top_score": 0.89
+ },
+ {
+  "kind": "course",
+  "subject": "calculus 1",
+  "question": "Trong công thức truy hồi của tích phân bất định, khi đặt \\(u=\\frac{1}{(x^{2}+a^{2})^{n}}\\) và \\(dv=dx\\), biểu thức của \\(du\\) là \\(\\displaystyle du=\\frac{-2n\\,x\\,dx}{(x^{2}+a^{2})^{\\,n+1}}\\)?",
+  "top_score": 0.99
+ },
+ {
+  "kind": "course",
+  "subject": "calculus 1",
+  "question": "Trong việc áp dụng định lý Weierstrass để xác định giới hạn của dãy \\(x_n\\), tại sao ta chọn nghiệm dương \\(x = \\frac{1+\\sqrt{1+4a}}{2}\\) thay vì nghiệm âm \\(\\frac{1-\\sqrt{1+4a}}{2}\\)?",
+  "top_score": 0.96
+ },
+ {
+  "kind": "course",
+  "subject": "calculus 1",
+  "question": "Giá trị của \\(y^{(100)}(1)\\) khi \\(y(x)=\\ln x\\) là bao nhiêu?",
+  "top_score": 0.98
+ },
+ {
+  "kind": "course",
+  "subject": "calculus 1",
+  "question": "Nếu \\(\\alpha = 1\\) và đặt \\(t = \\ln x\\), tích phân mở rộng \\(\\displaystyle I = \\int_{0}^{+\\infty}\\frac{dt}{t^{\\beta}}\\) sẽ hội tụ khi và chỉ khi \\(\\beta\\) thỏa mãn điều kiện nào?",
+  "top_score": 0.98
+ },
+ {
+  "kind": "course",
+  "subject": "calculus 1",
+  "question": "Trong quá trình tính tích phân \\(\\int \\sqrt{a^{2}-x^{2}}\\,dx\\) bằng phương pháp đổi biến, nếu đặt \\(x = a\\sin t\\) thì \\(dx\\) bằng bao nhiêu?",
+  "top_score": 0.99
+ },
+ {
+  "kind": "course",
+  "subject": "calculus 1",
+  "question": "Trong việc áp dụng định lý kẹp để tính giới hạn của dãy \\(a_n=\\frac{1+2^2+\\dots +n^n}{n^n}\\), tại sao bất đẳng thức \\(1=\\frac{n^n}{n^n}\\le a_n\\le\\frac{n^{n+1}-n}{(n-1)n^n}\\) được rút gọn thành \\(a_n<\\frac{n}{n-1}\\)?",
+  "top_score": 0.93
+ },
+ {
+  "kind": "course",
+  "subject": "calculus 1",
+  "question": "Trong định lý Weierstrass, nếu một dãy số thực đơn điệu tăng và bị chặn trên, giới hạn của dãy đó có tính chất gì?",
+  "top_score": 0.97
+ },
+ {
+  "kind": "course",
+  "subject": "calculus 1",
+  "question": "Trong ví dụ tính giới hạn \\(I = \\lim_{x\\to0}\\frac{\\tan x-\\ln\\left(x+\\sqrt{1+x^{2}}\\right)}{\\sin x-x\\cos x}\\), mẫu số được khai triển Maclaurin thành \\(\\frac{1}{3}x^{3}+o(x^{3})\\); vậy bậc vô cùng nhỏ (VCB) của mẫu số là bao nhiêu?",
+  "top_score": 0.96
+ },
+ {
+  "kind": "course",
+  "subject": "calculus 1",
+  "question": "Trong ví dụ về tích phân suy rộng loại 2, tại sao ta kết luận rằng \\(\\alpha = \\frac{2}{3} < 1\\) và do đó tích phân \\(I = \\int_{0}^{1} \\frac{\\ln(1+\\sqrt[3]{x})}{e^{\\sin x}-1}\\,dx\\) hội tụ?",
+  "top_score": 0.94
+ },
+ {
+  "kind": "course",
+  "subject": "calculus 1",
+  "question": "Trong chứng minh dãy \\(a_n = \\frac{1}{5+1}+\\frac{1}{5^2+1}+ \\dots +\\frac{1}{5^n+1}\\) hội tụ, tại sao ta so sánh \\(a_n\\) với tổng hình học \\( \\frac{1}{5}+\\frac{1}{5^2}+ \\dots +\\frac{1}{5^n}\\) để khẳng định dãy này bị chặn trên?",
+  "top_score": 0.94
+ },
+ {
+  "kind": "course",
+  "subject": "calculus 1",
+  "question": "Làm thế nào để chứng minh $x_n > x_{n+1}$ trong phần giới hạn dãy số của TS. Lê Xuân Đại?",
+  "top_score": 0.89
+ },
+ {
+  "kind": "course",
+  "subject": "calculus 1",
+  "question": "Trong ví dụ tính tích phân \\(I = \\int_{0}^{1} \\frac{dx}{x}\\), tại sao \\(x = 0\\) được gọi là “điểm kỳ dị” và kết quả cuối cùng của tích phân này là gì?",
+  "top_score": 0.98
+ },
+ {
+  "kind": "course",
+  "subject": "machine-learning",
+  "question": "What is used to find a straight line approximation to the function $f$ during an iteration of Newton's method?",
+  "top_score": 0.94
+ },
+ {
+  "kind": "course",
+  "subject": "machine-learning",
+  "question": "What is the role of the parameter θ when maximizing the log‑likelihood in a tumor malignancy prediction model?",
+  "top_score": 0.92
+ },
+ {
+  "kind": "course",
+  "subject": "machine-learning",
+  "question": "What is the term used for the function that maps the natural parameter η back to the mean μ of the distribution, and how is it related to the gradient of the log partition function?",
+  "top_score": 0.82
+ },
+ {
+  "kind": "course",
+  "subject": "machine-learning",
+  "question": "What is the shape of the Hessian matrix when the parameter vector θ is an ℝⁿ⁺¹ vector, and how does this relate to the vector of derivatives of the log‑likelihood with respect to θ?",
+  "top_score": 0.96
+ },
+ {
+  "kind": "course",
+  "subject": "machine-learning",
+  "question": "What is the role of the elements \\(A_{11}\\) and \\(A_{12}\\) when applying the definition of a matrix derivative as described in the passage?",
+  "top_score": 0.62
+ },
+ {
+  "kind": "course",
+  "subject": "machine-learning",
+  "question": "What term in the passage describes the function that becomes convex when you minimize it, and how is it related to the sign flip of the likelihood?",
+  "top_score": 0.92
+ },
+ {
+  "kind": "course",
+  "subject": "machine-learning",
+  "question": "What does the linear regression algorithm aim to minimize, specifically involving the hypothesis \\(h_{\\theta}(x)\\) and the observed values \\(y\\)?",
+  "top_score": 0.97
+ },
+ {
+  "kind": "course",
+  "subject": "machine-learning",
+  "question": "What term does the excerpt use to describe the label \\(P(Y)\\) when it is represented as a probability distribution that assigns 1 to the correct class and 0 to all others?",
+  "top_score": 0.96
+ },
+ {
+  "kind": "course",
+  "subject": "machine-learning",
+  "question": "What algorithm does the speaker recommend using when the dataset has only a few features (e.g., two or three) but a large number of observations?",
+  "top_score": 0.98
+ },
+ {
+  "kind": "course",
+  "subject": "machine-learning",
+  "question": "What notation is used to denote the distribution of εᵢ, and what are the specified mean and variance parameters of that distribution?",
+  "top_score": 0.98
+ },
+ {
+  "kind": "course",
+  "subject": "machine-learning",
+  "question": "What is the probability density function called that is repeatedly used when implementing machine learning algorithms, as described in the lecture notes?",
+  "top_score": 0.94
+ },
+ {
+  "kind": "course",
+  "subject": "machine-learning",
+  "question": "What distribution is stated to generate \\(x\\) when \\(y = 0\\) in the discussion?",
+  "top_score": 0.83
+ },
+ {
+  "kind": "course",
+  "subject": "machine-learning",
+  "question": "What does gradient descent aim to minimize when we initialize θ₀ and θ₁ and start “standing on this little hill” in the context described?",
+  "top_score": 0.97
+ },
+ {
+  "kind": "course",
+  "subject": "machine-learning",
+  "question": "What is the name of the method that allows you to compute the optimal parameters θ for exactly linear regression in a single step, without using gradient descent?",
+  "top_score": 0.98
+ },
+ {
+  "kind": "course",
+  "subject": "machine-learning",
+  "question": "What is the key distinction between the conditional likelihood used in logistic regression (maximizing P(Y | X)) and the likelihood objective for generative learning algorithms (maximizing P(X, Y))?",
+  "top_score": 0.97
+ },
+ {
+  "kind": "course",
+  "subject": "machine-learning",
+  "question": "What is the value of m (the number of training examples) in the dataset described, and which specific exponential learning‑rate values are suggested for testing (e.g., 0.01, 0.02, 0.04, 0.08)?",
+  "top_score": 0.97
+ },
+ {
+  "kind": "course",
+  "subject": "machine-learning",
+  "question": "What is the notation used for the horizontal distance in the derivation from θ₀ to θ₁, and how does the excerpt distinguish between its uppercase and lowercase Greek forms?",
+  "top_score": 0.82
+ },
+ {
+  "kind": "course",
+  "subject": "machine-learning",
+  "question": "What role does the parameter θ play in training the model, and why are we not learning any of the parameters of the exponential family distribution?",
+  "top_score": 0.94
+ },
+ {
+  "kind": "course",
+  "subject": "machine-learning",
+  "question": "What notation does the speaker introduce when describing “the max over y of p of x given y, p of y, divided by p of x,” and how does he relate it to the familiar “argmax” concept?",
+  "top_score": 0.66
+ },
+ {
+  "kind": "course",
+  "subject": "machine-learning",
+  "question": "What is the expression for the likelihood function that involves the product notation “∏_{i=1}^{m} h(x_i)” when applying maximum likelihood estimation in this context?",
+  "top_score": 0.5
+ },
+ {
+  "kind": "course",
+  "subject": "machine-learning",
+  "question": "What happens to the Gaussian density when you change its covariance from the identity matrix to twice the identity, and then increase the off‑diagonal entries from 0 to 0.5?",
+  "top_score": 0.41
+ },
+ {
+  "kind": "course",
+  "subject": "machine-learning",
+  "question": "What is the name of the model mentioned that maps an email to a feature vector x, and which specific resource does it initially use to create that vector?",
+  "top_score": 0.91
+ },
+ {
+  "kind": "course",
+  "subject": "machine-learning",
+  "question": "What reasoning does the speaker give for using a single covariance matrix when fitting a Gaussian to both classes, and how does this differ from the intuitive argument based on estimating the mean of a coin toss (μ₀ and μ₁)?",
+  "top_score": 0.42
+ },
+ {
+  "kind": "course",
+  "subject": "machine-learning",
+  "question": "What is the term used for the natural parameter \\( \\eta \\) that links to the mean of the distribution via the canonical response function in GLM update rules?",
+  "top_score": 0.8
+ },
+ {
+  "kind": "course",
+  "subject": "machine-learning",
+  "question": "What does the passage say about how the choice of initial parameters can affect the point that gradient descent ultimately reaches?",
+  "top_score": 0.97
+ },
+ {
+  "kind": "course",
+  "subject": "machine-learning",
+  "question": "What does the term “text classification” refer to when distinguishing between spam and non‑spam emails or categorizing product descriptions like a Roomba listing on eBay?",
+  "top_score": 0.96
+ },
+ {
+  "kind": "course",
+  "subject": "machine-learning",
+  "question": "What shape does the excerpt say the contours (level curves) of the quadratic function form?",
+  "top_score": 0.97
+ },
+ {
+  "kind": "course",
+  "subject": "machine-learning",
+  "question": "In the described multi‑class classification example, which two input dimensions are labeled as X₁ and X₂ that help visualize the input space for the three classes (circles, squares, and triangles)?",
+  "top_score": 0.55
+ },
+ {
+  "kind": "course",
+  "subject": "machine-learning",
+  "question": "What is the shape of the matrix that represents the derivative of \\(F(A)\\) with respect to \\(A\\) when \\(A\\) is a \\(2 \\times 2\\) matrix, and how are its entries obtained according to the explanation?",
+  "top_score": 0.91
+ },
+ {
+  "kind": "course",
+  "subject": "machine-learning",
+  "question": "What are the three components of the feature vector \\(x\\) described, and which one is always set to 1?",
+  "top_score": 0.98
+ },
+ {
+  "kind": "course",
+  "subject": "machine-learning",
+  "question": "What factor determines the size of the neighborhood used to fit the local straight line, and how is this factor described in terms of the Gaussian density’s width?",
+  "top_score": 0.93
+ },
+ {
+  "kind": "course",
+  "subject": "machine-learning",
+  "question": "What role does the central limit theorem play in justifying the Gaussian distribution as the default noise model, and how does this change when applying generalized linear models to non‑Gaussian distributions such as the Poisson?",
+  "top_score": 0.67
+ },
+ {
+  "kind": "course",
+  "subject": "machine-learning",
+  "question": "What does the term “\\( \\hat{P}(Y \\mid X) \\)” represent in the described normalization process, and how is it computed using the expression “\\( \\frac{e^{\\theta^{\\top}x}}{\\sum_{i\\in\\triangle\\square\\circ} e^{\\theta_i^{\\top}x}} \\)”?",
+  "top_score": 0.96
+ },
+ {
+  "kind": "course",
+  "subject": "machine-learning",
+  "question": "What is the name of the function g(z) described as having an S‑shaped curve that maps any input z to an output between 0 and 1?",
+  "top_score": 0.98
+ },
+ {
+  "kind": "course",
+  "subject": "machine-learning",
+  "question": "What reason does the speaker give for Newton's method potentially being much faster than gradient descent when the number of parameters is not too large?",
+  "top_score": 0.95
+ },
+ {
+  "kind": "course",
+  "subject": "machine-learning",
+  "question": "What generative learning algorithm is introduced as a motivating example for email spam classification in the discussion of continuous valued features X?",
+  "top_score": 0.92
+ },
+ {
+  "kind": "course",
+  "subject": "machine-learning",
+  "question": "What property of Newton's method is described as causing the error to shrink from 0.01 to 0.0001 in a single iteration?",
+  "top_score": 0.98
+ },
+ {
+  "kind": "course",
+  "subject": "machine-learning",
+  "question": "What are the dimensions of the mean vector μ and the covariance matrix Σ when the random vector Z is two‑dimensional in ℝⁿ?",
+  "top_score": 0.96
+ },
+ {
+  "kind": "course",
+  "subject": "machine-learning",
+  "question": "What class of algorithms is described as having no local optimal problems when derived, and includes both linear regression and logistic regression?",
+  "top_score": 0.97
+ },
+ {
+  "kind": "course",
+  "subject": "machine-learning",
+  "question": "What is the name of the equation derived by taking the derivative of \\(J(\\theta)\\) with respect to \\(\\theta\\), setting it equal to zero, and solving for \\(\\theta\\) to directly reach the global minimum of the cost function?",
+  "top_score": 0.97
+ },
+ {
+  "kind": "course",
+  "subject": "machine-learning",
+  "question": "What are the two axes labeled in the gradient descent visualization, and why does the speaker mention that the actual parameter vector includes a third component even though only two axes are shown?",
+  "top_score": 0.97
+ },
+ {
+  "kind": "course",
+  "subject": "machine-learning",
+  "question": "What is the role of the “zero‑unsolving” step when taking the derivative of the log‑likelihood and setting it equal to zero in order to find the parameter values that maximize the likelihood?",
+  "top_score": 0.83
+ },
+ {
+  "kind": "course",
+  "subject": "machine-learning",
+  "question": "What term does the lecture notes use to describe softmax regression as a member of the GLM family?",
+  "top_score": 0.52
+ },
+ {
+  "kind": "course",
+  "subject": "machine-learning",
+  "question": "What expression does the speaker refer to when they say “power of yᵢ times 1 − h(xᵢ) to the power of 1 − yᵢ” in the context of deriving the log‑likelihood for maximum likelihood estimation?",
+  "top_score": 0.85
+ },
+ {
+  "kind": "course",
+  "subject": "machine-learning",
+  "question": "What does the expression “x₁ᵀ θ, x₂ᵀ θ, …, x_mᵀ θ” represent in the context of matrix‑vector multiplication described?",
+  "top_score": 0.98
+ },
+ {
+  "kind": "course",
+  "subject": "machine-learning",
+  "question": "What specific term does the passage use to describe the curve that results from evaluating the probability formula across a dense grid on the x‑axis and connecting the resulting points?",
+  "top_score": 0.97
+ },
+ {
+  "kind": "course",
+  "subject": "machine-learning",
+  "question": "What is the name of the algorithm introduced for finding the value of θ that minimizes the cost function J(θ) in the context of linear regression?",
+  "top_score": 0.98
+ },
+ {
+  "kind": "course",
+  "subject": "machine-learning",
+  "question": "What does the speaker identify as the biggest problem with the algorithm, and which technique (mentioned for Wednesday) is suggested to address it?",
+  "top_score": 0.96
+ },
+ {
+  "kind": "course",
+  "subject": "machine-learning",
+  "question": "What reason does the passage give for why stochastic gradient descent never truly converges, even though it moves toward the global minimum?",
+  "top_score": 0.97
+ },
+ {
+  "kind": "course",
+  "subject": "machine-learning",
+  "question": "What does the passage say about the sign of the expression when a point lies to the left of the line defined by “θ triangle transpose X = 0”?",
+  "top_score": 0.96
+ },
+ {
+  "kind": "course",
+  "subject": "operating-system",
+  "question": "What are the possible values returned by `pthread_attr_getscope` and how does the program differentiate between `PTHREAD_SCOPE_PROCESS` and `PTHREAD_SCOPE_SYSTEM`?",
+  "top_score": 0.88
+ },
+ {
+  "kind": "course",
+  "subject": "operating-system",
+  "question": "What special IP address is used as the loopback address to refer to the system on which a process is running?",
+  "top_score": 0.99
+ },
+ {
+  "kind": "course",
+  "subject": "operating-system",
+  "question": "What initial value is assigned to the shared variable `turn` in Proposal solution 1?",
+  "top_score": 0.95
+ },
+ {
+  "kind": "course",
+  "subject": "operating-system",
+  "question": "What output will be printed by Thread 1 if Thread 2 executes the assignments in the order `flag = true; x = 100;` instead of `x = 100; flag = true;`?",
+  "top_score": 0.98
+ },
+ {
+  "kind": "course",
+  "subject": "operating-system",
+  "question": "What is the average waiting time for the five processes (P₁–P₅) when scheduled with Round‑Robin using a quantum of 5 time units, given their burst times (10, 29, 3, 7, 12) and arrival times (0, 2, 5, 3, 6)?",
+  "top_score": 0.9
+ },
+ {
+  "kind": "course",
+  "subject": "operating-system",
+  "question": "What numeric ranges does the Linux 2.5 scheduler use for real‑time priorities and for nice values?",
+  "top_score": 0.97
+ },
+ {
+  "kind": "course",
+  "subject": "operating-system",
+  "question": "What is the maximum time a process can wait in a Round‑Robin scheduler before it gets CPU access again, expressed in terms of the number of processes \\(n\\) and the time quantum \\(q\\)?",
+  "top_score": 0.98
+ },
+ {
+  "kind": "course",
+  "subject": "operating-system",
+  "question": "What is the value of α used in the exponential averaging formula for predicting the next CPU burst length, and what initial burst time τ₀ is specified?",
+  "top_score": 0.98
+ },
+ {
+  "kind": "course",
+  "subject": "operating-system",
+  "question": "What are the specific sections listed in the outline of Chapter 5 on CPU Scheduling?",
+  "top_score": 0.98
+ },
+ {
+  "kind": "course",
+  "subject": "operating-system",
+  "question": "What term describes the abstract data type that uses condition variables to allow processes to wait for and signal changes in conditions, and is highlighted as a high‑level form of process synchronization?",
+  "top_score": 0.98
+ },
+ {
+  "kind": "course",
+  "subject": "operating-system",
+  "question": "What are the two atomic operations defined for a semaphore, and how does the `wait` operation modify the semaphore's value and process list when the resulting value becomes negative?",
+  "top_score": 0.98
+ },
+ {
+  "kind": "course",
+  "subject": "operating-system",
+  "question": "What are the two possible cancellation modes for a thread mentioned in the threading issues section?",
+  "top_score": 0.98
+ },
+ {
+  "kind": "course",
+  "subject": "operating-system",
+  "question": "What is the difference between a counting semaphore and a binary semaphore, and how can a counting semaphore be implemented using a binary semaphore in the context of the wait() and signal() operations?",
+  "top_score": 0.65
+ },
+ {
+  "kind": "course",
+  "subject": "operating-system",
+  "question": "What is the term used to describe the time it takes for the dispatcher to stop one process and start another running?",
+  "top_score": 0.99
+ },
+ {
+  "kind": "course",
+  "subject": "operating-system",
+  "question": "What is the name of the function used to wait for the created thread to finish execution in the pthread example?",
+  "top_score": 0.98
+ },
+ {
+  "kind": "course",
+  "subject": "operating-system",
+  "question": "What is the maximum number of usable elements in the bounded buffer implementation that defines `BUFFER_SIZE` as 10?",
+  "top_score": 0.97
+ },
+ {
+  "kind": "course",
+  "subject": "operating-system",
+  "question": "What is the average waiting time calculated for the FCFS scheduling example where the processes have burst times 24 ms, 3 ms, and 3 ms and all arrive at time 0?",
+  "top_score": 0.99
+ },
+ {
+  "kind": "course",
+  "subject": "operating-system",
+  "question": "What is the average waiting time for the non‑preemptive Shortest‑Job‑First schedule of the four processes (P1, P2, P3, P4) given their arrival times 0, 1, 2, 3 and burst times 8 ms, 4 ms, 9 ms, 5 ms respectively?",
+  "top_score": 0.58
+ },
+ {
+  "kind": "course",
+  "subject": "operating-system",
+  "question": "What is the term used to describe the alternating pattern of CPU execution followed by I/O wait that is highlighted as a key concern in CPU scheduling?",
+  "top_score": 0.96
+ },
+ {
+  "kind": "course",
+  "subject": "operating-system",
+  "question": "What are the three most common APIs listed for accessing system calls?",
+  "top_score": 0.99
+ },
+ {
+  "kind": "course",
+  "subject": "operating-system",
+  "question": "In the producer code, which condition is used to detect that the circular buffer is full before inserting a new item?",
+  "top_score": 0.98
+ },
+ {
+  "kind": "course",
+  "subject": "operating-system",
+  "question": "In the monitor implementation of the bounded buffer, which condition variable is signaled immediately after a producer inserts a resource into the “resources” array?",
+  "top_score": 0.98
+ },
+ {
+  "kind": "course",
+  "subject": "operating-system",
+  "question": "In the deadlock scenario described, which process executes `wait(Q)` after `P_0` has already executed `wait(S)`?",
+  "top_score": 0.94
+ },
+ {
+  "kind": "course",
+  "subject": "operating-system",
+  "question": "What is the purpose of the expression `(out + 1) % BUFFER_SIZE` in the consumer loop, and how does it relate to the variable `out`?",
+  "top_score": 0.89
+ },
+ {
+  "kind": "course",
+  "subject": "operating-system",
+  "question": "In direct communication, which primitive is used to send a message to a specific process, and what are its two arguments?",
+  "top_score": 0.98
+ },
+ {
+  "kind": "course",
+  "subject": "operating-system",
+  "question": "In the example program that calls `fork();` twice in succession, how many processes are created in total?",
+  "top_score": 0.81
+ },
+ {
+  "kind": "course",
+  "subject": "operating-system",
+  "question": "What members are defined inside the `struct char_print_parms` that is used to pass arguments to the thread function?",
+  "top_score": 0.97
+ },
+ {
+  "kind": "course",
+  "subject": "operating-system",
+  "question": "What inequality must be satisfied among a periodic task’s processing time t, its deadline d, and its period p?",
+  "top_score": 0.98
+ },
+ {
+  "kind": "course",
+  "subject": "operating-system",
+  "question": "What are the average turnaround times for processes P₁–P₅ when scheduled using FCFS, SJF, and Round‑Robin with a quantum of 10, given the burst times 10, 29, 3, 7, and 12?",
+  "top_score": 0.54
+ },
+ {
+  "kind": "course",
+  "subject": "operating-system",
+  "question": "What component of the operating system stores a process’s context during a context switch?",
+  "top_score": 0.97
+ },
+ {
+  "kind": "course",
+  "subject": "operating-system",
+  "question": "Trong ví dụ về Thư viện C chuẩn, hàm printf() cuối cùng sẽ gọi hệ thống gọi nào để thực hiện việc ghi ra?",
+  "top_score": 0.98
+ },
+ {
+  "kind": "course",
+  "subject": "operating-system",
+  "question": "What scheduling rule does a multilevel queue employ to choose a process when it maintains separate queues for each priority level?",
+  "top_score": 0.96
+ },
+ {
+  "kind": "course",
+  "subject": "operating-system",
+  "question": "What port number is specified when creating the `ServerSocket` in the Java `DateServer` example?",
+  "top_score": 0.98
+ },
+ {
+  "kind": "course",
+  "subject": "operating-system",
+  "question": "What mechanism do scheduler activations use to inform the thread library about changes in the number of kernel threads, and what intermediate data structure typically represents a virtual processor for scheduling user threads?",
+  "top_score": 0.96
+ },
+ {
+  "kind": "course",
+  "subject": "operating-system",
+  "question": "What are the three primary user‑level thread libraries listed in the text?",
+  "top_score": 0.99
+ },
+ {
+  "kind": "course",
+  "subject": "operating-system",
+  "question": "Which implicit threading approach listed together with thread pools and fork‑join is named Grand Central Dispatch?",
+  "top_score": 0.96
+ },
+ {
+  "kind": "course",
+  "subject": "operating-system",
+  "question": "What is the initial value assigned to the `counter` variable that tracks the number of full buffers in the producer‑consumer solution?",
+  "top_score": 0.99
+ },
+ {
+  "kind": "course",
+  "subject": "operating-system",
+  "question": "Trong mô tả trạng thái của một tiến trình, trạng thái nào biểu thị tiến trình đang chờ một sự kiện xảy ra?",
+  "top_score": 0.98
+ },
+ {
+  "kind": "course",
+  "subject": "operating-system",
+  "question": "What are the two distinct levels of scheduling described for a multithreaded multicore system?",
+  "top_score": 0.98
+ },
+ {
+  "kind": "course",
+  "subject": "operating-system",
+  "question": "Trong mô hình biểu diễn lập lịch tiến trình được mô tả, khi nào một “context switch” xảy ra và quá trình nào được lưu trạng thái vào PCB?",
+  "top_score": 0.93
+ },
+ {
+  "kind": "course",
+  "subject": "operating-system",
+  "question": "What is the name of the specific algorithm introduced in Chapter 6 to solve the critical‑section problem?",
+  "top_score": 0.97
+ },
+ {
+  "kind": "course",
+  "subject": "operating-system",
+  "question": "Does fork() duplicate only the calling thread or all threads?",
+  "top_score": 0.44
+ },
+ {
+  "kind": "course",
+  "subject": "operating-system",
+  "question": "What benefit of threads is defined as allowing continued execution when part of a process is blocked, especially important for user interfaces?",
+  "top_score": 0.99
+ },
+ {
+  "kind": "course",
+  "subject": "operating-system",
+  "question": "What operating system is described as having an “Aqua” GUI interface built on top of a UNIX kernel, while also providing shells for command‑line access?",
+  "top_score": 0.99
+ },
+ {
+  "kind": "course",
+  "subject": "operating-system",
+  "question": "What happens to all peer user‑level threads when any one of them becomes blocked?",
+  "top_score": 0.99
+ },
+ {
+  "kind": "course",
+  "subject": "operating-system",
+  "question": "What priority does the current owner of resource R receive under the priority inheritance protocol when the highest‑priority thread (P₁) is waiting to acquire it?",
+  "top_score": 0.98
+ },
+ {
+  "kind": "course",
+  "subject": "operating-system",
+  "question": "What placement of `memory_barrier()` in the two threads guarantees that Thread 1 will print the value 100?",
+  "top_score": 0.96
+ },
+ {
+  "kind": "course",
+  "subject": "operating-system",
+  "question": "What term is used to describe the loadable components that allow each core part of a modern operating system to be added to the kernel on demand, as mentioned in the discussion of microkernel system structure?",
+  "top_score": 0.97
+ },
+ {
+  "kind": "course",
+  "subject": "operating-system",
+  "question": "What are the advantages of using thread pools in operating systems according to the given text?",
+  "top_score": 0.98
+ },
+ {
+  "kind": "course",
+  "subject": "operating-system",
+  "question": "Linux System Structure có điểm khác biệt cốt lõi nào về mặt thiết kế kiến trúc so với kiến trúc của hệ thống Traditional UNIX?",
+  "top_score": 0.79
+ },
+ {
+  "kind": "course",
+  "subject": "scientific-socialism",
+  "question": "Tập I bộ Tư bản của C.Mác được xuất bản vào năm nào?",
+  "top_score": 0.99
+ },
+ {
+  "kind": "course",
+  "subject": "scientific-socialism",
+  "question": "Giai cấp công nhân giữ vai trò quyết định sự phát triển của xã hội hiện đại nhờ những yếu tố nào?",
+  "top_score": 0.8
+ },
+ {
+  "kind": "course",
+  "subject": "scientific-socialism",
+  "question": "Theo nghĩa hẹp, Chủ nghĩa xã hội khoa học là một trong ba bộ phận của chủ nghĩa nào?",
+  "top_score": 0.97
+ },
+ {
+  "kind": "course",
+  "subject": "scientific-socialism",
+  "question": "Giai cấp công nhân muốn tiến hành xóa bỏ chế độ tư hữu tư nhân về tài liệu sản xuất, thay thế bằng chế độ gì?",
+  "top_score": 0.98
+ },
+ {
+  "kind": "course",
+  "subject": "scientific-socialism",
+  "question": "Nội dung của câu hỏi ôn tập thứ ba trong phần củng cố bài học về ý nghĩa của việc nghiên cứu Chủ nghĩa xã hội khoa học là gì?",
+  "top_score": 0.97
+ },
+ {
+  "kind": "course",
+  "subject": "scientific-socialism",
+  "question": "Trong các mục được liệt kê, mục nào nêu ra “xây dựng Đảng trong sạch, vững mạnh”?",
+  "top_score": 0.97
+ },
+ {
+  "kind": "course",
+  "subject": "scientific-socialism",
+  "question": "Nội dung của quan điểm \"Sáu là\" trong tài liệu bao gồm những nhiệm vụ trọng tâm nào?",
+  "top_score": 0.93
+ },
+ {
+  "kind": "course",
+  "subject": "scientific-socialism",
+  "question": "Phương hướng nào được nêu là thứ hai trong việc xây dựng chủ nghĩa xã hội ở Việt Nam hiện nay?",
+  "top_score": 0.98
+ },
+ {
+  "kind": "course",
+  "subject": "scientific-socialism",
+  "question": "Trong đoạn trích, Hồ Chí Minh định nghĩa “văn hoá” là “sự tổng hợp của mọi phương thức sinh hoạt cùng với biểu hiện của nó mà loài người đã sản sinh ra nhằm thích ứng những nhu cầu đời sống và yêu cầu của sự sinh tồn” như thế nào?",
+  "top_score": 0.92
+ },
+ {
+  "kind": "course",
+  "subject": "scientific-socialism",
+  "question": "Trong chiến lược của GCCN Việt Nam, mục tiêu “đào tạo bồi dưỡng nâng cao trình độ mọi mặt cho công nhân” được liệt kê ở mục số bao nhiêu?",
+  "top_score": 0.93
+ },
+ {
+  "kind": "course",
+  "subject": "scientific-socialism",
+  "question": "Điều kiện kinh tế dẫn đến sự ra đời của chủ nghĩa xã hội là gì?",
+  "top_score": 0.97
+ },
+ {
+  "kind": "course",
+  "subject": "scientific-socialism",
+  "question": "Trong trích dẫn, Marx và Engels mô tả cảm giác của giai cấp hữu sản về sự tự tha hóa như thế nào?",
+  "top_score": 0.98
+ },
+ {
+  "kind": "course",
+  "subject": "scientific-socialism",
+  "question": "Trong mô hình thực nghiệm CSCN của công xưởng Nuilanac, nguyên tắc “làm theo năng lực, hưởng theo nhu cầu” được áp dụng như thế nào?",
+  "top_score": 0.19
+ },
+ {
+  "kind": "course",
+  "subject": "scientific-socialism",
+  "question": "Vì sao giai cấp công nhân có thể tập hợp, đoàn kết và lãnh đạo đông đảo quần chúng nhân dân lao động?",
+  "top_score": 0.94
+ },
+ {
+  "kind": "course",
+  "subject": "scientific-socialism",
+  "question": "Trong quan điểm của Marx và Engels, tại sao giai cấp vô sản được coi là “giai cấp thực sự cách mạng” trong khi các giai cấp khác chỉ là “tầng lớp trung đẳng”?",
+  "top_score": 0.95
+ },
+ {
+  "kind": "course",
+  "subject": "scientific-socialism",
+  "question": "Nội dung kinh tế trong tài liệu bao gồm những nhiệm vụ trọng tâm nào?",
+  "top_score": 0.97
+ },
+ {
+  "kind": "course",
+  "subject": "scientific-socialism",
+  "question": "Theo V.I. Lenin, yếu tố chủ quan nào được coi là quan trọng nhất để giai cấp công nhân thực hiện sứ mệnh lịch sử?",
+  "top_score": 0.96
+ },
+ {
+  "kind": "course",
+  "subject": "scientific-socialism",
+  "question": "Ai là người được ghi là sáng lập Chủ nghĩa xã hội khoa học và đồng thời là lãnh tụ của Phong trào Cách mạng Quốc tế?",
+  "top_score": 0.89
+ },
+ {
+  "kind": "course",
+  "subject": "scientific-socialism",
+  "question": "Theo định nghĩa nào, chủ nghĩa xã hội được mô tả là “một xã hội được thiết lập sau thắng lợi của cuộc cách mạng xã hội chủ nghĩa của giai cấp công nhân dưới sự lãnh đạo của Đảng cộng sản”?",
+  "top_score": 0.89
+ },
+ {
+  "kind": "course",
+  "subject": "scientific-socialism",
+  "question": "Trong bối cảnh lịch sử nào, cách mạng công nghiệp đã hoàn thành ở Anh vào đầu thế kỷ 19?",
+  "top_score": 0.81
+ },
+ {
+  "kind": "course",
+  "subject": "scientific-socialism",
+  "question": "Theo C.Mác và Ph.Ăngghen, ba phát kiến vĩ đại được liệt kê trong chương này là gì?",
+  "top_score": 0.95
+ },
+ {
+  "kind": "course",
+  "subject": "scientific-socialism",
+  "question": "Phương pháp kết hợp lịch sử - lôgíc là gì trong các phương pháp nghiên cứu của CNXHKH?",
+  "top_score": 0.12
+ },
+ {
+  "kind": "course",
+  "subject": "scientific-socialism",
+  "question": "Trong quan điểm của Mác‑Lênin, giai cấp công nhân hiện đại được mô tả như thế nào so với “giai cấp vô sản hiện đại” và “giai cấp công nhân cơ khí”?",
+  "top_score": 0.27
+ },
+ {
+  "kind": "course",
+  "subject": "scientific-socialism",
+  "question": "Trong giai đoạn “Thời kỳ sau Công xã Pari đến 1895”, Lenin đã vận dụng và phát triển CNXHKH qua các tác phẩm nào, trong đó có “Nguồn gốc của gia đình, của chế độ tư hữu và của NN”?",
+  "top_score": 0.54
+ },
+ {
+  "kind": "course",
+  "subject": "scientific-socialism",
+  "question": "Trong tiêu chí “Về phương diện CT - XH” của GCCN, người lao động được mô tả là những ai có đặc điểm gì liên quan đến việc không có hoặc hầu như không có tài liệu sản xuất?",
+  "top_score": 0.94
+ },
+ {
+  "kind": "course",
+  "subject": "scientific-socialism",
+  "question": "Trong 5 bài học, khái niệm nào được dùng để mô tả việc “đóng vai Marx chống lại Marx” và ai là người đưa ra ý tưởng này?",
+  "top_score": 0.97
+ },
+ {
+  "kind": "course",
+  "subject": "scientific-socialism",
+  "question": "Trong giai đoạn từ năm 1844 đến 1848, C.Mác và Ph.Ăngghen đã có sự chuyển biến như thế nào về thế giới quan và lập trường chính trị?",
+  "top_score": 0.98
+ },
+ {
+  "kind": "course",
+  "subject": "scientific-socialism",
+  "question": "Trong chương 3, nguyên tắc “Nhân dân lao động làm chủ” được mô tả như thế nào và nó liên quan đến việc bảo đảm gì cho các dân tộc?",
+  "top_score": 0.92
+ },
+ {
+  "kind": "course",
+  "subject": "scientific-socialism",
+  "question": "Trong lý thuyết xã hội chủ nghĩa, câu nào nêu rằng “sự phát triển tự do của mỗi người là điều kiện phát triển tự do của tất cả mọi người”?",
+  "top_score": 0.96
+ },
+ {
+  "kind": "course",
+  "subject": "scientific-socialism",
+  "question": "Trong tác phẩm “Bản thảo kinh tế - triết học năm 1844”, Mác đã nhấn mạnh vai trò lịch sử của giai cấp vô sản trong việc gì?",
+  "top_score": 0.93
+ },
+ {
+  "kind": "course",
+  "subject": "scientific-socialism",
+  "question": "Trong tác phẩm *Utopia* của Thomas More, ngày làm việc được quy định là bao nhiêu giờ?",
+  "top_score": 0.98
+ },
+ {
+  "kind": "course",
+  "subject": "scientific-socialism",
+  "question": "Trong quá độ 1954, tài liệu nêu ra loại sổ nào được sử dụng để quản lý lương thực?",
+  "top_score": 0.78
+ },
+ {
+  "kind": "course",
+  "subject": "scientific-socialism",
+  "question": "Ai là nhà lãnh đạo Trung Quốc được nhắc đến trong đoạn trích là người khởi xướng cải cách năm 1978?",
+  "top_score": 0.84
+ },
+ {
+  "kind": "course",
+  "subject": "scientific-socialism",
+  "question": "Trong quan điểm của Claude Henri Saint‑Simon, tiêu chí nào được dùng để đo mức độ giải phóng của xã hội?",
+  "top_score": 0.96
+ },
+ {
+  "kind": "course",
+  "subject": "scientific-socialism",
+  "question": "Tại Hội nghị lần thứ sáu, Ban chấp hành Trung ương khóa X, Đảng CSVN đã xác định giai cấp công nhân Việt Nam bao gồm những thành phần nào?",
+  "top_score": 0.97
+ },
+ {
+  "kind": "course",
+  "subject": "scientific-socialism",
+  "question": "Theo Hồ Chí Minh, con đường duy nhất để cứu nước và giải phóng dân tộc là gì?",
+  "top_score": 0.98
+ },
+ {
+  "kind": "course",
+  "subject": "scientific-socialism",
+  "question": "Theo Marx, tại sao giáo viên hay bác sĩ làm việc trong doanh nghiệp tư nhân lại được xem là thuộc “giai cấp công nhân” trong khi họ không tham gia sản xuất vật chất?",
+  "top_score": 0.96
+ },
+ {
+  "kind": "course",
+  "subject": "scientific-socialism",
+  "question": "Trong “Tuyên ngôn của Đảng Cộng sản”, cụm từ nào được dùng để kêu gọi toàn bộ giai cấp vô sản “đoàn kết lại”?",
+  "top_score": 0.97
+ },
+ {
+  "kind": "course",
+  "subject": "scientific-socialism",
+  "question": "Trong đặc điểm của thời kỳ quá độ lên chủ nghĩa xã hội, quan hệ nào được mô tả là tồn tại đan xen lẫn nhau và vừa thống nhất vừa đấu tranh?",
+  "top_score": 0.69
+ },
+ {
+  "kind": "course",
+  "subject": "scientific-socialism",
+  "question": "Đại hội XIX của Đảng Cộng sản Trung Quốc đã đặt ra mục tiêu xây dựng Trung Quốc thành cường quốc hiện đại hóa xã hội chủ nghĩa với những đặc điểm gì vào năm 2050?",
+  "top_score": 0.97
+ },
+ {
+  "kind": "course",
+  "subject": "scientific-socialism",
+  "question": "Trong các giải pháp xây dựng giai cấp công nhân Việt Nam hiện nay, liên minh giai cấp công nhân được đề xuất gắn kết với hai nhóm xã hội nào?",
+  "top_score": 0.87
+ },
+ {
+  "kind": "course",
+  "subject": "scientific-socialism",
+  "question": "Đặc trưng bản chất thứ ba của chủ nghĩa xã hội ở Việt Nam có nền kinh tế phát triển cao dựa trên những yếu tố nào?",
+  "top_score": 0.97
+ },
+ {
+  "kind": "course",
+  "subject": "scientific-socialism",
+  "question": "Trong đoạn văn, “GCCN” được mô tả là nhân tố nào?",
+  "top_score": 0.98
+ },
+ {
+  "kind": "course",
+  "subject": "scientific-socialism",
+  "question": "Trong đoạn trích, khái niệm “chế độ toàn trị” được đề cập như thế nào và nó liên quan gì đến “cực quyền” của Đảng?",
+  "top_score": 0.16
+ },
+ {
+  "kind": "course",
+  "subject": "scientific-socialism",
+  "question": "Trong đoạn trích, các quốc gia nào được liệt kê trong nhóm “GROUP OF EIGHT”?",
+  "top_score": 0.93
+ },
+ {
+  "kind": "course",
+  "subject": "scientific-socialism",
+  "question": "Trong triết học Hegel, khái niệm nào luôn sinh ra đối lập và cùng với nó tạo nên một khái niệm mới được gọi là gì?",
+  "top_score": 0.95
+ },
+ {
+  "kind": "course",
+  "subject": "scientific-socialism",
+  "question": "Trong chính sách Kinh tế Mới (NEP) của Liên Xô, việc chấm dứt chính sách trưng thu lương thực ở nông thôn và cho phép các hình thức sở hữu nào được thực hiện?",
+  "top_score": 0.63
+ },
+ {
+  "kind": "course",
+  "subject": "scientific-socialism",
+  "question": "V.I.Lênin đặc biệt quan tâm đến vấn đề nào liên quan đến “cải cách hành chính bộ máy NN”?",
+  "top_score": 0.6
+ },
+ {
+  "kind": "course",
+  "subject": "scientific-socialism",
+  "question": "Trong chính sách kinh tế mới, năm nào được ghi nhận là ngày chấm dứt chính thức của NEP khi nghị quyết về việc xóa bỏ hoàn toàn thương nghiệp tư nhân tại Liên Xô được thông qua?",
+  "top_score": 0.97
+ },
+ {
+  "kind": "course",
+  "subject": "scientific-socialism",
+  "question": "Theo quan điểm cơ bản của chủ nghĩa Mác‑Lênin, sứ mệnh lịch sử thế giới của giai cấp công nhân được mô tả như thế nào?",
+  "top_score": 0.97
+ },
+ {
+  "kind": "off_topic",
+  "group": "general",
+  "subject": "advanced-programming",
+  "question": "Giá vàng hôm nay bao nhiêu?",
+  "top_score": 0.01
+ },
+ {
+  "kind": "off_topic",
+  "group": "general",
+  "subject": "calculus 1",
+  "question": "Giá vàng hôm nay bao nhiêu?",
+  "top_score": 0.01
+ },
+ {
+  "kind": "off_topic",
+  "group": "general",
+  "subject": "machine-learning",
+  "question": "Giá vàng hôm nay bao nhiêu?",
+  "top_score": 0.01
+ },
+ {
+  "kind": "off_topic",
+  "group": "general",
+  "subject": "operating-system",
+  "question": "Giá vàng hôm nay bao nhiêu?",
+  "top_score": 0.01
+ },
+ {
+  "kind": "off_topic",
+  "group": "general",
+  "subject": "scientific-socialism",
+  "question": "Giá vàng hôm nay bao nhiêu?",
+  "top_score": 0.02
+ },
+ {
+  "kind": "off_topic",
+  "group": "general",
+  "subject": "advanced-programming",
+  "question": "Thời tiết Hà Nội ngày mai thế nào?",
+  "top_score": 0.01
+ },
+ {
+  "kind": "off_topic",
+  "group": "general",
+  "subject": "calculus 1",
+  "question": "Thời tiết Hà Nội ngày mai thế nào?",
+  "top_score": 0.01
+ },
+ {
+  "kind": "off_topic",
+  "group": "general",
+  "subject": "machine-learning",
+  "question": "Thời tiết Hà Nội ngày mai thế nào?",
+  "top_score": 0.01
+ },
+ {
+  "kind": "off_topic",
+  "group": "general",
+  "subject": "operating-system",
+  "question": "Thời tiết Hà Nội ngày mai thế nào?",
+  "top_score": 0.01
+ },
+ {
+  "kind": "off_topic",
+  "group": "general",
+  "subject": "scientific-socialism",
+  "question": "Thời tiết Hà Nội ngày mai thế nào?",
+  "top_score": 0.01
+ },
+ {
+  "kind": "off_topic",
+  "group": "general",
+  "subject": "advanced-programming",
+  "question": "Cách nấu phở bò ngon?",
+  "top_score": 0.01
+ },
+ {
+  "kind": "off_topic",
+  "group": "general",
+  "subject": "calculus 1",
+  "question": "Cách nấu phở bò ngon?",
+  "top_score": 0.01
+ },
+ {
+  "kind": "off_topic",
+  "group": "general",
+  "subject": "machine-learning",
+  "question": "Cách nấu phở bò ngon?",
+  "top_score": 0.03
+ },
+ {
+  "kind": "off_topic",
+  "group": "general",
+  "subject": "operating-system",
+  "question": "Cách nấu phở bò ngon?",
+  "top_score": 0.01
+ },
+ {
+  "kind": "off_topic",
+  "group": "general",
+  "subject": "scientific-socialism",
+  "question": "Cách nấu phở bò ngon?",
+  "top_score": 0.01
+ },
+ {
+  "kind": "off_topic",
+  "group": "general",
+  "subject": "advanced-programming",
+  "question": "Ai vô địch World Cup 2022?",
+  "top_score": 0.02
+ },
+ {
+  "kind": "off_topic",
+  "group": "general",
+  "subject": "calculus 1",
+  "question": "Ai vô địch World Cup 2022?",
+  "top_score": 0.01
+ },
+ {
+  "kind": "off_topic",
+  "group": "general",
+  "subject": "machine-learning",
+  "question": "Ai vô địch World Cup 2022?",
+  "top_score": 0.01
+ },
+ {
+  "kind": "off_topic",
+  "group": "general",
+  "subject": "operating-system",
+  "question": "Ai vô địch World Cup 2022?",
+  "top_score": 0.01
+ },
+ {
+  "kind": "off_topic",
+  "group": "general",
+  "subject": "scientific-socialism",
+  "question": "Ai vô địch World Cup 2022?",
+  "top_score": 0.02
+ },
+ {
+  "kind": "off_topic",
+  "group": "general",
+  "subject": "advanced-programming",
+  "question": "Viết cho tôi một bài thơ về mùa thu.",
+  "top_score": 0.04
+ },
+ {
+  "kind": "off_topic",
+  "group": "general",
+  "subject": "calculus 1",
+  "question": "Viết cho tôi một bài thơ về mùa thu.",
+  "top_score": 0.03
+ },
+ {
+  "kind": "off_topic",
+  "group": "general",
+  "subject": "machine-learning",
+  "question": "Viết cho tôi một bài thơ về mùa thu.",
+  "top_score": 0.04
+ },
+ {
+  "kind": "off_topic",
+  "group": "general",
+  "subject": "operating-system",
+  "question": "Viết cho tôi một bài thơ về mùa thu.",
+  "top_score": 0.03
+ },
+ {
+  "kind": "off_topic",
+  "group": "general",
+  "subject": "scientific-socialism",
+  "question": "Viết cho tôi một bài thơ về mùa thu.",
+  "top_score": 0.04
+ },
+ {
+  "kind": "off_topic",
+  "group": "general",
+  "subject": "advanced-programming",
+  "question": "Gợi ý quán cà phê yên tĩnh ở quận 1.",
+  "top_score": 0.01
+ },
+ {
+  "kind": "off_topic",
+  "group": "general",
+  "subject": "calculus 1",
+  "question": "Gợi ý quán cà phê yên tĩnh ở quận 1.",
+  "top_score": 0.01
+ },
+ {
+  "kind": "off_topic",
+  "group": "general",
+  "subject": "machine-learning",
+  "question": "Gợi ý quán cà phê yên tĩnh ở quận 1.",
+  "top_score": 0.02
+ },
+ {
+  "kind": "off_topic",
+  "group": "general",
+  "subject": "operating-system",
+  "question": "Gợi ý quán cà phê yên tĩnh ở quận 1.",
+  "top_score": 0.01
+ },
+ {
+  "kind": "off_topic",
+  "group": "general",
+  "subject": "scientific-socialism",
+  "question": "Gợi ý quán cà phê yên tĩnh ở quận 1.",
+  "top_score": 0.02
+ },
+ {
+  "kind": "off_topic",
+  "group": "general",
+  "subject": "advanced-programming",
+  "question": "Làm sao để giảm cân nhanh?",
+  "top_score": 0.01
+ },
+ {
+  "kind": "off_topic",
+  "group": "general",
+  "subject": "calculus 1",
+  "question": "Làm sao để giảm cân nhanh?",
+  "top_score": 0.01
+ },
+ {
+  "kind": "off_topic",
+  "group": "general",
+  "subject": "machine-learning",
+  "question": "Làm sao để giảm cân nhanh?",
+  "top_score": 0.03
+ },
+ {
+  "kind": "off_topic",
+  "group": "general",
+  "subject": "operating-system",
+  "question": "Làm sao để giảm cân nhanh?",
+  "top_score": 0.01
+ },
+ {
+  "kind": "off_topic",
+  "group": "general",
+  "subject": "scientific-socialism",
+  "question": "Làm sao để giảm cân nhanh?",
+  "top_score": 0.03
+ },
+ {
+  "kind": "off_topic",
+  "group": "general",
+  "subject": "advanced-programming",
+  "question": "Phim nào đang chiếu rạp tuần này?",
+  "top_score": 0.02
+ },
+ {
+  "kind": "off_topic",
+  "group": "general",
+  "subject": "calculus 1",
+  "question": "Phim nào đang chiếu rạp tuần này?",
+  "top_score": 0.02
+ },
+ {
+  "kind": "off_topic",
+  "group": "general",
+  "subject": "machine-learning",
+  "question": "Phim nào đang chiếu rạp tuần này?",
+  "top_score": 0.02
+ },
+ {
+  "kind": "off_topic",
+  "group": "general",
+  "subject": "operating-system",
+  "question": "Phim nào đang chiếu rạp tuần này?",
+  "top_score": 0.01
+ },
+ {
+  "kind": "off_topic",
+  "group": "general",
+  "subject": "scientific-socialism",
+  "question": "Phim nào đang chiếu rạp tuần này?",
+  "top_score": 0.02
+ },
+ {
+  "kind": "off_topic",
+  "group": "general",
+  "subject": "advanced-programming",
+  "question": "Tỷ giá đô la Mỹ hôm nay là bao nhiêu?",
+  "top_score": 0.01
+ },
+ {
+  "kind": "off_topic",
+  "group": "general",
+  "subject": "calculus 1",
+  "question": "Tỷ giá đô la Mỹ hôm nay là bao nhiêu?",
+  "top_score": 0.01
+ },
+ {
+  "kind": "off_topic",
+  "group": "general",
+  "subject": "machine-learning",
+  "question": "Tỷ giá đô la Mỹ hôm nay là bao nhiêu?",
+  "top_score": 0.01
+ },
+ {
+  "kind": "off_topic",
+  "group": "general",
+  "subject": "operating-system",
+  "question": "Tỷ giá đô la Mỹ hôm nay là bao nhiêu?",
+  "top_score": 0.01
+ },
+ {
+  "kind": "off_topic",
+  "group": "general",
+  "subject": "scientific-socialism",
+  "question": "Tỷ giá đô la Mỹ hôm nay là bao nhiêu?",
+  "top_score": 0.02
+ },
+ {
+  "kind": "off_topic",
+  "group": "general",
+  "subject": "advanced-programming",
+  "question": "Cách chăm sóc cây xương rồng?",
+  "top_score": 0.01
+ },
+ {
+  "kind": "off_topic",
+  "group": "general",
+  "subject": "calculus 1",
+  "question": "Cách chăm sóc cây xương rồng?",
+  "top_score": 0.01
+ },
+ {
+  "kind": "off_topic",
+  "group": "general",
+  "subject": "machine-learning",
+  "question": "Cách chăm sóc cây xương rồng?",
+  "top_score": 0.02
+ },
+ {
+  "kind": "off_topic",
+  "group": "general",
+  "subject": "operating-system",
+  "question": "Cách chăm sóc cây xương rồng?",
+  "top_score": 0.01
+ },
+ {
+  "kind": "off_topic",
+  "group": "general",
+  "subject": "scientific-socialism",
+  "question": "Cách chăm sóc cây xương rồng?",
+  "top_score": 0.01
+ },
+ {
+  "kind": "off_topic",
+  "group": "general",
+  "subject": "advanced-programming",
+  "question": "What is the capital of Australia?",
+  "top_score": 0.01
+ },
+ {
+  "kind": "off_topic",
+  "group": "general",
+  "subject": "calculus 1",
+  "question": "What is the capital of Australia?",
+  "top_score": 0.01
+ },
+ {
+  "kind": "off_topic",
+  "group": "general",
+  "subject": "machine-learning",
+  "question": "What is the capital of Australia?",
+  "top_score": 0.02
+ },
+ {
+  "kind": "off_topic",
+  "group": "general",
+  "subject": "operating-system",
+  "question": "What is the capital of Australia?",
+  "top_score": 0.01
+ },
+ {
+  "kind": "off_topic",
+  "group": "general",
+  "subject": "scientific-socialism",
+  "question": "What is the capital of Australia?",
+  "top_score": 0.02
+ },
+ {
+  "kind": "off_topic",
+  "group": "general",
+  "subject": "advanced-programming",
+  "question": "Recommend a good fantasy novel.",
+  "top_score": 0.02
+ },
+ {
+  "kind": "off_topic",
+  "group": "general",
+  "subject": "calculus 1",
+  "question": "Recommend a good fantasy novel.",
+  "top_score": 0.01
+ },
+ {
+  "kind": "off_topic",
+  "group": "general",
+  "subject": "machine-learning",
+  "question": "Recommend a good fantasy novel.",
+  "top_score": 0.02
+ },
+ {
+  "kind": "off_topic",
+  "group": "general",
+  "subject": "operating-system",
+  "question": "Recommend a good fantasy novel.",
+  "top_score": 0.01
+ },
+ {
+  "kind": "off_topic",
+  "group": "general",
+  "subject": "scientific-socialism",
+  "question": "Recommend a good fantasy novel.",
+  "top_score": 0.02
+ },
+ {
+  "kind": "off_topic",
+  "group": "general",
+  "subject": "advanced-programming",
+  "question": "How do I change a flat tire?",
+  "top_score": 0.01
+ },
+ {
+  "kind": "off_topic",
+  "group": "general",
+  "subject": "calculus 1",
+  "question": "How do I change a flat tire?",
+  "top_score": 0.01
+ },
+ {
+  "kind": "off_topic",
+  "group": "general",
+  "subject": "machine-learning",
+  "question": "How do I change a flat tire?",
+  "top_score": 0.01
+ },
+ {
+  "kind": "off_topic",
+  "group": "general",
+  "subject": "operating-system",
+  "question": "How do I change a flat tire?",
+  "top_score": 0.01
+ },
+ {
+  "kind": "off_topic",
+  "group": "general",
+  "subject": "scientific-socialism",
+  "question": "How do I change a flat tire?",
+  "top_score": 0.01
+ },
+ {
+  "kind": "off_topic",
+  "group": "general",
+  "subject": "advanced-programming",
+  "question": "Who painted the Mona Lisa?",
+  "top_score": 0.01
+ },
+ {
+  "kind": "off_topic",
+  "group": "general",
+  "subject": "calculus 1",
+  "question": "Who painted the Mona Lisa?",
+  "top_score": 0.01
+ },
+ {
+  "kind": "off_topic",
+  "group": "general",
+  "subject": "machine-learning",
+  "question": "Who painted the Mona Lisa?",
+  "top_score": 0.01
+ },
+ {
+  "kind": "off_topic",
+  "group": "general",
+  "subject": "operating-system",
+  "question": "Who painted the Mona Lisa?",
+  "top_score": 0.01
+ },
+ {
+  "kind": "off_topic",
+  "group": "general",
+  "subject": "scientific-socialism",
+  "question": "Who painted the Mona Lisa?",
+  "top_score": 0.01
+ },
+ {
+  "kind": "off_topic",
+  "group": "general",
+  "subject": "advanced-programming",
+  "question": "Dịch câu 'I love you' sang tiếng Nhật.",
+  "top_score": 0.02
+ },
+ {
+  "kind": "off_topic",
+  "group": "general",
+  "subject": "calculus 1",
+  "question": "Dịch câu 'I love you' sang tiếng Nhật.",
+  "top_score": 0.02
+ },
+ {
+  "kind": "off_topic",
+  "group": "general",
+  "subject": "machine-learning",
+  "question": "Dịch câu 'I love you' sang tiếng Nhật.",
+  "top_score": 0.03
+ },
+ {
+  "kind": "off_topic",
+  "group": "general",
+  "subject": "operating-system",
+  "question": "Dịch câu 'I love you' sang tiếng Nhật.",
+  "top_score": 0.02
+ },
+ {
+  "kind": "off_topic",
+  "group": "general",
+  "subject": "scientific-socialism",
+  "question": "Dịch câu 'I love you' sang tiếng Nhật.",
+  "top_score": 0.02
+ },
+ {
+  "kind": "off_topic",
+  "group": "general",
+  "subject": "advanced-programming",
+  "question": "Lịch thi đấu Ngoại hạng Anh cuối tuần này?",
+  "top_score": 0.01
+ },
+ {
+  "kind": "off_topic",
+  "group": "general",
+  "subject": "calculus 1",
+  "question": "Lịch thi đấu Ngoại hạng Anh cuối tuần này?",
+  "top_score": 0.01
+ },
+ {
+  "kind": "off_topic",
+  "group": "general",
+  "subject": "machine-learning",
+  "question": "Lịch thi đấu Ngoại hạng Anh cuối tuần này?",
+  "top_score": 0.02
+ },
+ {
+  "kind": "off_topic",
+  "group": "general",
+  "subject": "operating-system",
+  "question": "Lịch thi đấu Ngoại hạng Anh cuối tuần này?",
+  "top_score": 0.01
+ },
+ {
+  "kind": "off_topic",
+  "group": "general",
+  "subject": "scientific-socialism",
+  "question": "Lịch thi đấu Ngoại hạng Anh cuối tuần này?",
+  "top_score": 0.01
+ },
+ {
+  "kind": "off_topic",
+  "group": "general",
+  "subject": "advanced-programming",
+  "question": "Cách làm bánh flan tại nhà?",
+  "top_score": 0.01
+ },
+ {
+  "kind": "off_topic",
+  "group": "general",
+  "subject": "calculus 1",
+  "question": "Cách làm bánh flan tại nhà?",
+  "top_score": 0.01
+ },
+ {
+  "kind": "off_topic",
+  "group": "general",
+  "subject": "machine-learning",
+  "question": "Cách làm bánh flan tại nhà?",
+  "top_score": 0.01
+ },
+ {
+  "kind": "off_topic",
+  "group": "general",
+  "subject": "operating-system",
+  "question": "Cách làm bánh flan tại nhà?",
+  "top_score": 0.01
+ },
+ {
+  "kind": "off_topic",
+  "group": "general",
+  "subject": "scientific-socialism",
+  "question": "Cách làm bánh flan tại nhà?",
+  "top_score": 0.01
+ },
+ {
+  "kind": "off_topic",
+  "group": "general",
+  "subject": "advanced-programming",
+  "question": "Mua vé máy bay đi Đà Nẵng ở đâu rẻ?",
+  "top_score": 0.02
+ },
+ {
+  "kind": "off_topic",
+  "group": "general",
+  "subject": "calculus 1",
+  "question": "Mua vé máy bay đi Đà Nẵng ở đâu rẻ?",
+  "top_score": 0.01
+ },
+ {
+  "kind": "off_topic",
+  "group": "general",
+  "subject": "machine-learning",
+  "question": "Mua vé máy bay đi Đà Nẵng ở đâu rẻ?",
+  "top_score": 0.02
+ },
+ {
+  "kind": "off_topic",
+  "group": "general",
+  "subject": "operating-system",
+  "question": "Mua vé máy bay đi Đà Nẵng ở đâu rẻ?",
+  "top_score": 0.01
+ },
+ {
+  "kind": "off_topic",
+  "group": "general",
+  "subject": "scientific-socialism",
+  "question": "Mua vé máy bay đi Đà Nẵng ở đâu rẻ?",
+  "top_score": 0.02
+ },
+ {
+  "kind": "off_topic",
+  "group": "general",
+  "subject": "advanced-programming",
+  "question": "Kể cho tôi một câu chuyện cười.",
+  "top_score": 0.09
+ },
+ {
+  "kind": "off_topic",
+  "group": "general",
+  "subject": "calculus 1",
+  "question": "Kể cho tôi một câu chuyện cười.",
+  "top_score": 0.03
+ },
+ {
+  "kind": "off_topic",
+  "group": "general",
+  "subject": "machine-learning",
+  "question": "Kể cho tôi một câu chuyện cười.",
+  "top_score": 0.06
+ },
+ {
+  "kind": "off_topic",
+  "group": "general",
+  "subject": "operating-system",
+  "question": "Kể cho tôi một câu chuyện cười.",
+  "top_score": 0.02
+ },
+ {
+  "kind": "off_topic",
+  "group": "general",
+  "subject": "scientific-socialism",
+  "question": "Kể cho tôi một câu chuyện cười.",
+  "top_score": 0.03
+ },
+ {
+  "kind": "off_topic",
+  "group": "general",
+  "subject": "advanced-programming",
+  "question": "Tết Nguyên đán năm sau rơi vào ngày nào?",
+  "top_score": 0.02
+ },
+ {
+  "kind": "off_topic",
+  "group": "general",
+  "subject": "calculus 1",
+  "question": "Tết Nguyên đán năm sau rơi vào ngày nào?",
+  "top_score": 0.01
+ },
+ {
+  "kind": "off_topic",
+  "group": "general",
+  "subject": "machine-learning",
+  "question": "Tết Nguyên đán năm sau rơi vào ngày nào?",
+  "top_score": 0.01
+ },
+ {
+  "kind": "off_topic",
+  "group": "general",
+  "subject": "operating-system",
+  "question": "Tết Nguyên đán năm sau rơi vào ngày nào?",
+  "top_score": 0.01
+ },
+ {
+  "kind": "off_topic",
+  "group": "general",
+  "subject": "scientific-socialism",
+  "question": "Tết Nguyên đán năm sau rơi vào ngày nào?",
+  "top_score": 0.03
+ },
+ {
+  "kind": "off_topic",
+  "group": "near",
+  "subject": "advanced-programming",
+  "question": "Định luật Ohm phát biểu thế nào?",
+  "top_score": 0.01
+ },
+ {
+  "kind": "off_topic",
+  "group": "near",
+  "subject": "calculus 1",
+  "question": "Định luật Ohm phát biểu thế nào?",
+  "top_score": 0.02
+ },
+ {
+  "kind": "off_topic",
+  "group": "near",
+  "subject": "machine-learning",
+  "question": "Định luật Ohm phát biểu thế nào?",
+  "top_score": 0.02
+ },
+ {
+  "kind": "off_topic",
+  "group": "near",
+  "subject": "operating-system",
+  "question": "Định luật Ohm phát biểu thế nào?",
+  "top_score": 0.01
+ },
+ {
+  "kind": "off_topic",
+  "group": "near",
+  "subject": "scientific-socialism",
+  "question": "Định luật Ohm phát biểu thế nào?",
+  "top_score": 0.02
+ },
+ {
+  "kind": "off_topic",
+  "group": "near",
+  "subject": "advanced-programming",
+  "question": "Phản ứng oxi hoá khử là gì?",
+  "top_score": 0.01
+ },
+ {
+  "kind": "off_topic",
+  "group": "near",
+  "subject": "calculus 1",
+  "question": "Phản ứng oxi hoá khử là gì?",
+  "top_score": 0.02
+ },
+ {
+  "kind": "off_topic",
+  "group": "near",
+  "subject": "machine-learning",
+  "question": "Phản ứng oxi hoá khử là gì?",
+  "top_score": 0.02
+ },
+ {
+  "kind": "off_topic",
+  "group": "near",
+  "subject": "operating-system",
+  "question": "Phản ứng oxi hoá khử là gì?",
+  "top_score": 0.01
+ },
+ {
+  "kind": "off_topic",
+  "group": "near",
+  "subject": "scientific-socialism",
+  "question": "Phản ứng oxi hoá khử là gì?",
+  "top_score": 0.02
+ },
+ {
+  "kind": "off_topic",
+  "group": "near",
+  "subject": "advanced-programming",
+  "question": "Kubernetes pod là gì?",
+  "top_score": 0.02
+ },
+ {
+  "kind": "off_topic",
+  "group": "near",
+  "subject": "calculus 1",
+  "question": "Kubernetes pod là gì?",
+  "top_score": 0.01
+ },
+ {
+  "kind": "off_topic",
+  "group": "near",
+  "subject": "machine-learning",
+  "question": "Kubernetes pod là gì?",
+  "top_score": 0.02
+ },
+ {
+  "kind": "off_topic",
+  "group": "near",
+  "subject": "operating-system",
+  "question": "Kubernetes pod là gì?",
+  "top_score": 0.02
+ },
+ {
+  "kind": "off_topic",
+  "group": "near",
+  "subject": "scientific-socialism",
+  "question": "Kubernetes pod là gì?",
+  "top_score": 0.01
+ },
+ {
+  "kind": "off_topic",
+  "group": "near",
+  "subject": "advanced-programming",
+  "question": "Cách cấu hình router Wi-Fi ở nhà?",
+  "top_score": 0.02
+ },
+ {
+  "kind": "off_topic",
+  "group": "near",
+  "subject": "calculus 1",
+  "question": "Cách cấu hình router Wi-Fi ở nhà?",
+  "top_score": 0.01
+ },
+ {
+  "kind": "off_topic",
+  "group": "near",
+  "subject": "machine-learning",
+  "question": "Cách cấu hình router Wi-Fi ở nhà?",
+  "top_score": 0.02
+ },
+ {
+  "kind": "off_topic",
+  "group": "near",
+  "subject": "operating-system",
+  "question": "Cách cấu hình router Wi-Fi ở nhà?",
+  "top_score": 0.02
+ },
+ {
+  "kind": "off_topic",
+  "group": "near",
+  "subject": "scientific-socialism",
+  "question": "Cách cấu hình router Wi-Fi ở nhà?",
+  "top_score": 0.01
+ },
+ {
+  "kind": "off_topic",
+  "group": "near",
+  "subject": "advanced-programming",
+  "question": "Nhà Trần đánh thắng quân Nguyên mấy lần?",
+  "top_score": 0.02
+ },
+ {
+  "kind": "off_topic",
+  "group": "near",
+  "subject": "calculus 1",
+  "question": "Nhà Trần đánh thắng quân Nguyên mấy lần?",
+  "top_score": 0.01
+ },
+ {
+  "kind": "off_topic",
+  "group": "near",
+  "subject": "machine-learning",
+  "question": "Nhà Trần đánh thắng quân Nguyên mấy lần?",
+  "top_score": 0.01
+ },
+ {
+  "kind": "off_topic",
+  "group": "near",
+  "subject": "operating-system",
+  "question": "Nhà Trần đánh thắng quân Nguyên mấy lần?",
+  "top_score": 0.01
+ },
+ {
+  "kind": "off_topic",
+  "group": "near",
+  "subject": "scientific-socialism",
+  "question": "Nhà Trần đánh thắng quân Nguyên mấy lần?",
+  "top_score": 0.03
+ },
+ {
+  "kind": "off_topic",
+  "group": "near",
+  "subject": "advanced-programming",
+  "question": "Chiến dịch Điện Biên Phủ diễn ra năm nào?",
+  "top_score": 0.01
+ },
+ {
+  "kind": "off_topic",
+  "group": "near",
+  "subject": "calculus 1",
+  "question": "Chiến dịch Điện Biên Phủ diễn ra năm nào?",
+  "top_score": 0.02
+ },
+ {
+  "kind": "off_topic",
+  "group": "near",
+  "subject": "machine-learning",
+  "question": "Chiến dịch Điện Biên Phủ diễn ra năm nào?",
+  "top_score": 0.01
+ },
+ {
+  "kind": "off_topic",
+  "group": "near",
+  "subject": "operating-system",
+  "question": "Chiến dịch Điện Biên Phủ diễn ra năm nào?",
+  "top_score": 0.01
+ },
+ {
+  "kind": "off_topic",
+  "group": "near",
+  "subject": "scientific-socialism",
+  "question": "Chiến dịch Điện Biên Phủ diễn ra năm nào?",
+  "top_score": 0.17
+ },
+ {
+  "kind": "off_topic",
+  "group": "near",
+  "subject": "advanced-programming",
+  "question": "Cách viết CV xin thực tập?",
+  "top_score": 0.02
+ },
+ {
+  "kind": "off_topic",
+  "group": "near",
+  "subject": "calculus 1",
+  "question": "Cách viết CV xin thực tập?",
+  "top_score": 0.01
+ },
+ {
+  "kind": "off_topic",
+  "group": "near",
+  "subject": "machine-learning",
+  "question": "Cách viết CV xin thực tập?",
+  "top_score": 0.02
+ },
+ {
+  "kind": "off_topic",
+  "group": "near",
+  "subject": "operating-system",
+  "question": "Cách viết CV xin thực tập?",
+  "top_score": 0.01
+ },
+ {
+  "kind": "off_topic",
+  "group": "near",
+  "subject": "scientific-socialism",
+  "question": "Cách viết CV xin thực tập?",
+  "top_score": 0.02
+ },
+ {
+  "kind": "off_topic",
+  "group": "near",
+  "subject": "advanced-programming",
+  "question": "Quang hợp ở thực vật diễn ra thế nào?",
+  "top_score": 0.01
+ },
+ {
+  "kind": "off_topic",
+  "group": "near",
+  "subject": "calculus 1",
+  "question": "Quang hợp ở thực vật diễn ra thế nào?",
+  "top_score": 0.01
+ },
+ {
+  "kind": "off_topic",
+  "group": "near",
+  "subject": "machine-learning",
+  "question": "Quang hợp ở thực vật diễn ra thế nào?",
+  "top_score": 0.01
+ },
+ {
+  "kind": "off_topic",
+  "group": "near",
+  "subject": "operating-system",
+  "question": "Quang hợp ở thực vật diễn ra thế nào?",
+  "top_score": 0.01
+ },
+ {
+  "kind": "off_topic",
+  "group": "near",
+  "subject": "scientific-socialism",
+  "question": "Quang hợp ở thực vật diễn ra thế nào?",
+  "top_score": 0.02
+ },
+ {
+  "kind": "off_topic",
+  "group": "near",
+  "subject": "advanced-programming",
+  "question": "How does a blockchain reach consensus?",
+  "top_score": 0.02
+ },
+ {
+  "kind": "off_topic",
+  "group": "near",
+  "subject": "calculus 1",
+  "question": "How does a blockchain reach consensus?",
+  "top_score": 0.01
+ },
+ {
+  "kind": "off_topic",
+  "group": "near",
+  "subject": "machine-learning",
+  "question": "How does a blockchain reach consensus?",
+  "top_score": 0.03
+ },
+ {
+  "kind": "off_topic",
+  "group": "near",
+  "subject": "operating-system",
+  "question": "How does a blockchain reach consensus?",
+  "top_score": 0.02
+ },
+ {
+  "kind": "off_topic",
+  "group": "near",
+  "subject": "scientific-socialism",
+  "question": "How does a blockchain reach consensus?",
+  "top_score": 0.02
+ },
+ {
+  "kind": "off_topic",
+  "group": "near",
+  "subject": "advanced-programming",
+  "question": "Thủ tục làm hộ chiếu gồm những bước nào?",
+  "top_score": 0.01
+ },
+ {
+  "kind": "off_topic",
+  "group": "near",
+  "subject": "calculus 1",
+  "question": "Thủ tục làm hộ chiếu gồm những bước nào?",
+  "top_score": 0.01
+ },
+ {
+  "kind": "off_topic",
+  "group": "near",
+  "subject": "machine-learning",
+  "question": "Thủ tục làm hộ chiếu gồm những bước nào?",
+  "top_score": 0.01
+ },
+ {
+  "kind": "off_topic",
+  "group": "near",
+  "subject": "operating-system",
+  "question": "Thủ tục làm hộ chiếu gồm những bước nào?",
+  "top_score": 0.01
+ },
+ {
+  "kind": "off_topic",
+  "group": "near",
+  "subject": "scientific-socialism",
+  "question": "Thủ tục làm hộ chiếu gồm những bước nào?",
+  "top_score": 0.01
+ },
+ {
+  "kind": "off_topic",
+  "group": "near",
+  "subject": "advanced-programming",
+  "question": "What does the React useEffect hook do?",
+  "top_score": 0.02
+ },
+ {
+  "kind": "off_topic",
+  "group": "near",
+  "subject": "calculus 1",
+  "question": "What does the React useEffect hook do?",
+  "top_score": 0.01
+ },
+ {
+  "kind": "off_topic",
+  "group": "near",
+  "subject": "machine-learning",
+  "question": "What does the React useEffect hook do?",
+  "top_score": 0.02
+ },
+ {
+  "kind": "off_topic",
+  "group": "near",
+  "subject": "operating-system",
+  "question": "What does the React useEffect hook do?",
+  "top_score": 0.01
+ },
+ {
+  "kind": "off_topic",
+  "group": "near",
+  "subject": "scientific-socialism",
+  "question": "What does the React useEffect hook do?",
+  "top_score": 0.01
+ },
+ {
+  "kind": "off_topic",
+  "group": "near",
+  "subject": "advanced-programming",
+  "question": "Ngân hàng nào có lãi suất tiết kiệm cao nhất?",
+  "top_score": 0.01
+ },
+ {
+  "kind": "off_topic",
+  "group": "near",
+  "subject": "calculus 1",
+  "question": "Ngân hàng nào có lãi suất tiết kiệm cao nhất?",
+  "top_score": 0.01
+ },
+ {
+  "kind": "off_topic",
+  "group": "near",
+  "subject": "machine-learning",
+  "question": "Ngân hàng nào có lãi suất tiết kiệm cao nhất?",
+  "top_score": 0.01
+ },
+ {
+  "kind": "off_topic",
+  "group": "near",
+  "subject": "operating-system",
+  "question": "Ngân hàng nào có lãi suất tiết kiệm cao nhất?",
+  "top_score": 0.01
+ },
+ {
+  "kind": "off_topic",
+  "group": "near",
+  "subject": "scientific-socialism",
+  "question": "Ngân hàng nào có lãi suất tiết kiệm cao nhất?",
+  "top_score": 0.02
+ },
+ {
+  "kind": "off_topic",
+  "group": "near",
+  "subject": "advanced-programming",
+  "question": "Cách chơi cờ vua cho người mới?",
+  "top_score": 0.02
+ },
+ {
+  "kind": "off_topic",
+  "group": "near",
+  "subject": "calculus 1",
+  "question": "Cách chơi cờ vua cho người mới?",
+  "top_score": 0.01
+ },
+ {
+  "kind": "off_topic",
+  "group": "near",
+  "subject": "machine-learning",
+  "question": "Cách chơi cờ vua cho người mới?",
+  "top_score": 0.02
+ },
+ {
+  "kind": "off_topic",
+  "group": "near",
+  "subject": "operating-system",
+  "question": "Cách chơi cờ vua cho người mới?",
+  "top_score": 0.01
+ },
+ {
+  "kind": "off_topic",
+  "group": "near",
+  "subject": "scientific-socialism",
+  "question": "Cách chơi cờ vua cho người mới?",
+  "top_score": 0.01
+ },
+ {
+  "kind": "off_topic",
+  "group": "near",
+  "subject": "advanced-programming",
+  "question": "DNA được cấu tạo từ những gì?",
+  "top_score": 0.03
+ },
+ {
+  "kind": "off_topic",
+  "group": "near",
+  "subject": "calculus 1",
+  "question": "DNA được cấu tạo từ những gì?",
+  "top_score": 0.01
+ },
+ {
+  "kind": "off_topic",
+  "group": "near",
+  "subject": "machine-learning",
+  "question": "DNA được cấu tạo từ những gì?",
+  "top_score": 0.02
+ },
+ {
+  "kind": "off_topic",
+  "group": "near",
+  "subject": "operating-system",
+  "question": "DNA được cấu tạo từ những gì?",
+  "top_score": 0.01
+ },
+ {
+  "kind": "off_topic",
+  "group": "near",
+  "subject": "scientific-socialism",
+  "question": "DNA được cấu tạo từ những gì?",
+  "top_score": 0.02
+ },
+ {
+  "kind": "off_topic",
+  "group": "near",
+  "subject": "advanced-programming",
+  "question": "Thuế thu nhập cá nhân được tính thế nào?",
+  "top_score": 0.01
+ },
+ {
+  "kind": "off_topic",
+  "group": "near",
+  "subject": "calculus 1",
+  "question": "Thuế thu nhập cá nhân được tính thế nào?",
+  "top_score": 0.01
+ },
+ {
+  "kind": "off_topic",
+  "group": "near",
+  "subject": "machine-learning",
+  "question": "Thuế thu nhập cá nhân được tính thế nào?",
+  "top_score": 0.02
+ },
+ {
+  "kind": "off_topic",
+  "group": "near",
+  "subject": "operating-system",
+  "question": "Thuế thu nhập cá nhân được tính thế nào?",
+  "top_score": 0.01
+ },
+ {
+  "kind": "off_topic",
+  "group": "near",
+  "subject": "scientific-socialism",
+  "question": "Thuế thu nhập cá nhân được tính thế nào?",
+  "top_score": 0.03
+ },
+ {
+  "kind": "off_topic",
+  "group": "near",
+  "subject": "advanced-programming",
+  "question": "How do vaccines train the immune system?",
+  "top_score": 0.01
+ },
+ {
+  "kind": "off_topic",
+  "group": "near",
+  "subject": "calculus 1",
+  "question": "How do vaccines train the immune system?",
+  "top_score": 0.01
+ },
+ {
+  "kind": "off_topic",
+  "group": "near",
+  "subject": "machine-learning",
+  "question": "How do vaccines train the immune system?",
+  "top_score": 0.02
+ },
+ {
+  "kind": "off_topic",
+  "group": "near",
+  "subject": "operating-system",
+  "question": "How do vaccines train the immune system?",
+  "top_score": 0.01
+ },
+ {
+  "kind": "off_topic",
+  "group": "near",
+  "subject": "scientific-socialism",
+  "question": "How do vaccines train the immune system?",
+  "top_score": 0.02
+ },
+ {
+  "kind": "off_topic",
+  "group": "near",
+  "subject": "advanced-programming",
+  "question": "Thì hiện tại hoàn thành trong tiếng Anh dùng khi nào?",
+  "top_score": 0.02
+ },
+ {
+  "kind": "off_topic",
+  "group": "near",
+  "subject": "calculus 1",
+  "question": "Thì hiện tại hoàn thành trong tiếng Anh dùng khi nào?",
+  "top_score": 0.01
+ },
+ {
+  "kind": "off_topic",
+  "group": "near",
+  "subject": "machine-learning",
+  "question": "Thì hiện tại hoàn thành trong tiếng Anh dùng khi nào?",
+  "top_score": 0.02
+ },
+ {
+  "kind": "off_topic",
+  "group": "near",
+  "subject": "operating-system",
+  "question": "Thì hiện tại hoàn thành trong tiếng Anh dùng khi nào?",
+  "top_score": 0.01
+ },
+ {
+  "kind": "off_topic",
+  "group": "near",
+  "subject": "scientific-socialism",
+  "question": "Thì hiện tại hoàn thành trong tiếng Anh dùng khi nào?",
+  "top_score": 0.02
+ },
+ {
+  "kind": "off_topic",
+  "group": "near",
+  "subject": "advanced-programming",
+  "question": "Cách đăng ký học phần trên cổng thông tin sinh viên?",
+  "top_score": 0.02
+ },
+ {
+  "kind": "off_topic",
+  "group": "near",
+  "subject": "calculus 1",
+  "question": "Cách đăng ký học phần trên cổng thông tin sinh viên?",
+  "top_score": 0.01
+ },
+ {
+  "kind": "off_topic",
+  "group": "near",
+  "subject": "machine-learning",
+  "question": "Cách đăng ký học phần trên cổng thông tin sinh viên?",
+  "top_score": 0.02
+ },
+ {
+  "kind": "off_topic",
+  "group": "near",
+  "subject": "operating-system",
+  "question": "Cách đăng ký học phần trên cổng thông tin sinh viên?",
+  "top_score": 0.01
+ },
+ {
+  "kind": "off_topic",
+  "group": "near",
+  "subject": "scientific-socialism",
+  "question": "Cách đăng ký học phần trên cổng thông tin sinh viên?",
+  "top_score": 0.01
+ },
+ {
+  "kind": "off_topic",
+  "group": "near",
+  "subject": "advanced-programming",
+  "question": "Photoshop dùng layer mask để làm gì?",
+  "top_score": 0.01
+ },
+ {
+  "kind": "off_topic",
+  "group": "near",
+  "subject": "calculus 1",
+  "question": "Photoshop dùng layer mask để làm gì?",
+  "top_score": 0.01
+ },
+ {
+  "kind": "off_topic",
+  "group": "near",
+  "subject": "machine-learning",
+  "question": "Photoshop dùng layer mask để làm gì?",
+  "top_score": 0.02
+ },
+ {
+  "kind": "off_topic",
+  "group": "near",
+  "subject": "operating-system",
+  "question": "Photoshop dùng layer mask để làm gì?",
+  "top_score": 0.01
+ },
+ {
+  "kind": "off_topic",
+  "group": "near",
+  "subject": "scientific-socialism",
+  "question": "Photoshop dùng layer mask để làm gì?",
+  "top_score": 0.01
+ },
+ {
+  "kind": "off_topic",
+  "group": "near",
+  "subject": "advanced-programming",
+  "question": "Động cơ đốt trong bốn kỳ hoạt động ra sao?",
+  "top_score": 0.01
+ },
+ {
+  "kind": "off_topic",
+  "group": "near",
+  "subject": "calculus 1",
+  "question": "Động cơ đốt trong bốn kỳ hoạt động ra sao?",
+  "top_score": 0.01
+ },
+ {
+  "kind": "off_topic",
+  "group": "near",
+  "subject": "machine-learning",
+  "question": "Động cơ đốt trong bốn kỳ hoạt động ra sao?",
+  "top_score": 0.02
+ },
+ {
+  "kind": "off_topic",
+  "group": "near",
+  "subject": "operating-system",
+  "question": "Động cơ đốt trong bốn kỳ hoạt động ra sao?",
+  "top_score": 0.01
+ },
+ {
+  "kind": "off_topic",
+  "group": "near",
+  "subject": "scientific-socialism",
+  "question": "Động cơ đốt trong bốn kỳ hoạt động ra sao?",
+  "top_score": 0.02
+ }
+]

@@ -118,9 +118,10 @@ export function CoursesPage() {
   return (
     <AppShell title="Môn học">
       <form onSubmit={handleSubmit(handleCreate)} noValidate className="course-create">
+        <label htmlFor="new-course-name" className="basis-full text-sm font-semibold">Tên môn học mới</label>
         <input
           {...register("name")}
-          aria-label="Tên môn học mới"
+          id="new-course-name"
           className="ui-input min-w-0 flex-1"
         />
         <button disabled={creating} className="ui-button primary">

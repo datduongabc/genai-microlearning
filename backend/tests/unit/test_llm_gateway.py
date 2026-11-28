@@ -328,6 +328,33 @@ def test_the_backend_does_not_retry_on_top_of_the_gateway_and_gives_up_after_its
     assert streamed["timeout"] == llm.REQUEST_TIMEOUT_SECONDS
 
 
+def test_a_stream_reports_its_model_tokens_and_first_piece_when_asked(monkeypatch):
+    streamed: dict = {}
+
+    async def fake_acompletion(**kwargs):
+        streamed.update(kwargs)
+
+        async def chunks():
+            yield SimpleNamespace(model="gemini-3.5-flash-lite", usage=None,
+                                  choices=[SimpleNamespace(delta=SimpleNamespace(content="hi"))])
+            yield SimpleNamespace(model="gemini-3.5-flash-lite", choices=[],
+                                  usage=SimpleNamespace(prompt_tokens=12, completion_tokens=3))
+        return chunks()
+
+    monkeypatch.setattr(litellm, "acompletion", fake_acompletion)
+    usage: dict = {}
+
+    async def read():
+        return [text async for text in llm.stream_text("hello", alias="condense-fast", usage=usage)]
+
+    assert asyncio.run(read()) == ["hi"]
+    assert streamed["model"] == "openai/condense-fast"
+    assert streamed["stream_options"] == {"include_usage": True}
+    assert usage["served_model"] == "gemini-3.5-flash-lite"
+    assert (usage["prompt_tokens"], usage["completion_tokens"]) == (12, 3)
+    assert 0 <= usage["first_token_seconds"] <= usage["seconds"]
+
+
 def test_a_reply_with_no_answer_says_the_output_limit_ran_out(monkeypatch):
     """Seen with every study judge at a 2048-token cap: all of it went to thinking, and the content was
     null. json.loads(None) said only "must be str, bytes or bytearray", and was asked again for nothing."""

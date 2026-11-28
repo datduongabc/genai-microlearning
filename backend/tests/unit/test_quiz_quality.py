@@ -126,6 +126,24 @@ def test_semantic_failures_override_an_overall_pass(monkeypatch, defect):
     assert quiz.failed_criteria(result, quiz.QUESTION_CRITERIA)
 
 
+def test_option_reasons_name_options_by_text_so_shuffling_keeps_them_right(monkeypatch):
+    """The lecturer reads these reasons beside the shuffled A-D; positions from before the shuffle misled."""
+    data = review()
+    data["option_checks"][3]["is_correct"] = True
+    data["option_checks"][2]["plausible_pass"] = False
+    monkeypatch.setattr(quiz, "complete_structured", lambda prompt, schema, **kw: answer(schema, data))
+    q = question()
+    result = quiz._verify_question(q, LO, "S1", "quiz", True)
+    shuffled = quiz.shuffled_choices(q)
+
+    assert result.answerability_reason.startswith(
+        "Đáp án đã chọn: «Hide implementation details»; có thể đúng: "
+        "«Hide implementation details», «Dispatch by runtime object type».")
+    assert result.distractors_reason.startswith("«Bundle state with operations»: ")
+    assert "Key=" not in result.answerability_reason
+    assert shuffled.choices[shuffled.correct_index] == "Hide implementation details"
+
+
 @pytest.mark.parametrize("repair", [True, False])
 def test_only_the_failed_question_is_regenerated_once(monkeypatch, repair):
     fixture = json.loads((Path(__file__).parent / "fixtures" / "two_correct_abstraction.json").read_text())

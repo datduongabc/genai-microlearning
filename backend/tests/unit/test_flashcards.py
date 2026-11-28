@@ -66,6 +66,13 @@ def test_a_card_without_a_resolvable_citation_is_dropped(monkeypatch):
     assert [c["front"] for c in card_set.cards] == ["kept"]
 
 
+def test_a_set_where_no_card_has_a_source_fails_instead_of_saving_empty(monkeypatch):
+    db, card_set, _ = _setup(monkeypatch, _chunks(2), [_draft("uncited", []), _draft("unknown", ["S9"])])
+    with pytest.raises(ValueError, match="Không viết được thẻ nào"):
+        flashcards.generate_flashcards(db, card_set.id)
+    assert card_set.cards == [] and card_set.status == MediaStatus.generating
+
+
 def test_cards_keep_chunk_ids_not_prompt_numbers(monkeypatch):
     chunks = _chunks(3)
     db, card_set, _ = _setup(monkeypatch, chunks, [_draft("q", ["S3", "[S1]", "S3"])])

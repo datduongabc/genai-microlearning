@@ -1,0 +1,64 @@
+{
+ "course_questions": 250,
+ "off_topic_queries": 200,
+ "lowest_course_scores": [
+  0.12,
+  0.16,
+  0.19,
+  0.27,
+  0.28,
+  0.41,
+  0.41,
+  0.42,
+  0.44,
+  0.5
+ ],
+ "jev_model": "jev-1.14.0",
+ "table": [
+  {
+   "threshold": 0.01,
+   "course_questions_kept": 1.0,
+   "off_topic_refused": 0.0
+  },
+  {
+   "threshold": 0.02,
+   "course_questions_kept": 1.0,
+   "off_topic_refused": 0.58
+  },
+  {
+   "threshold": 0.03,
+   "course_questions_kept": 1.0,
+   "off_topic_refused": 0.905
+  },
+  {
+   "threshold": 0.05,
+   "course_questions_kept": 1.0,
+   "off_topic_refused": 0.985
+  },
+  {
+   "threshold": 0.08,
+   "course_questions_kept": 1.0,
+   "off_topic_refused": 0.99
+  },
+  {
+   "threshold": 0.1,
+   "course_questions_kept": 1.0,
+   "off_topic_refused": 0.995
+  },
+  {
+   "threshold": 0.15,
+   "course_questions_kept": 0.996,
+   "off_topic_refused": 0.995
+  },
+  {
+   "threshold": 0.2,
+   "course_questions_kept": 0.988,
+   "off_topic_refused": 1.0
+  },
+  {
+   "threshold": 0.3,
+   "course_questions_kept": 0.98,
+   "off_topic_refused": 1.0
+  }
+ ]
+}
