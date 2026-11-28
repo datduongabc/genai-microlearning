@@ -27,13 +27,16 @@ run seed --users 16 | tail -1
 # label, seconds until the fault, the fault, seconds until it is undone, how to undo it (empty: never)
 generation() { local label=$1 at=$2 fault=$3 after=$4 recover=$5
   wanted "$label" || return 0
-  stack; sleep 20; local since; since=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+  stack
+  # Fresh workers: each caches query embeddings, and every scenario asks the same questions, so a warm worker
+  # would never call the embedder during its outage.
+  docker compose restart worker >/dev/null 2>&1; sleep 20; local since; since=$(date -u +%Y-%m-%dT%H:%M:%SZ)
   sql "DELETE FROM jobs WHERE status IN ('queued','running')" >/dev/null
   run generate --modules 8 --label "$label" --out $OUT > "results/failure-$label.log" 2>&1 & local G=$!
   sleep "$at"; echo "$(date +%T) $label: $fault"; eval "$fault"
   if [ -n "$recover" ]; then sleep "$after"; echo "$(date +%T) $label: $recover"; eval "$recover"; fi
   wait $G
-  docker compose logs --no-color --since "$since" worker 2>&1 | grep -E 'job_queue|ERROR|Traceback' > "results/failure-$label.worker.log"
+  docker compose logs --no-color --since "$since" worker 2>&1 | grep -E 'job_queue|ERROR|Traceback|fallback|embedding' > "results/failure-$label.worker.log"
   python3 - "$label" <<'PY'
 import json, sys
 row = [r for r in json.load(open("results/failures.json")) if r["label"] == sys.argv[1]][-1]
@@ -50,17 +53,22 @@ generation worker-sigterm 60 "docker stop -t 120 $W1 >/dev/null" 5 "docker start
 # A crash: nothing puts the jobs back, the sweeper does once their heartbeat is 15 minutes old.
 generation worker-sigkill 60 "docker kill -s KILL $W1 >/dev/null" 5 "docker start $W1 >/dev/null"
 generation gateway-60s 60 "docker compose stop gateway >/dev/null 2>&1" 60 "docker compose start gateway >/dev/null 2>&1"
-generation embedder-60s 60 "docker compose stop embedder >/dev/null 2>&1" 60 "docker compose start embedder >/dev/null 2>&1"
+# Jev and the embedding provider are outside services: a stopped stand-in is the provider being down.
+generation jev-60s 60 "docker compose stop jev >/dev/null 2>&1" 60 "docker compose start jev >/dev/null 2>&1"
+# From 5 s: the 8 modules share one lecture, so its queries are embedded in the first seconds and then cached.
+generation embedder-60s 5 "docker compose stop embedder >/dev/null 2>&1" 60 "docker compose start embedder >/dev/null 2>&1"
 generation database-restart 60 "docker compose restart db >/dev/null 2>&1" 0 ""
 generation api-sigkill 60 "docker kill -s KILL do-an-load-backend-1 >/dev/null" 5 "docker start do-an-load-backend-1 >/dev/null"
 
 # Chat while a dependency is down: Redis should not matter (rate limits fall back to each process), a missing
-# embedder cannot be worked around. A failing Jev keeps the hybrid order (tests/unit/test_jev_reranker.py).
+# embedder leaves keyword search, a failing Jev keeps the hybrid order.
 chat_down() { local label=$1 service=$2
   wanted "$label" || return 0
   stack; sleep 20
   # A fresh api: it caches query embeddings, and the questions repeat between scenarios.
   docker compose restart backend >/dev/null 2>&1; sleep 15
+  # Saved answers live in Redis and would answer the repeated questions without a search.
+  docker compose exec -T redis redis-cli FLUSHALL >/dev/null
   docker compose stop "$service" >/dev/null 2>&1
   run chat --concurrency 2 --messages 6 --label "$label" --out failures-chat.json | tail -1
   docker compose start "$service" >/dev/null 2>&1
@@ -72,4 +80,5 @@ PY
 }
 chat_down chat-redis-down redis
 chat_down chat-embedder-down embedder
+chat_down chat-jev-down jev
 echo finished
