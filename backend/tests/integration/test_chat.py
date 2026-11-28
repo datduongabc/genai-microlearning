@@ -1,4 +1,5 @@
 import asyncio
+import re
 
 import pytest
 
@@ -8,7 +9,7 @@ from app.chat.service import answer_question, condense_query_streamed
 def _streams(monkeypatch, reply, asked=None):
     from app.chat import service
 
-    async def model(prompt, system_instruction=None):
+    async def model(prompt, system_instruction=None, **_):
         if asked is not None:
             asked.append(prompt)
         yield reply
@@ -117,11 +118,13 @@ def test_chat_keeps_eighth_source_and_persists_its_citation(monkeypatch, questio
         db.commit()
         evidence_id = str(chunks[-1].id)
 
-    async def model(prompt, system_instruction=None):
+    async def model(prompt, system_instruction=None, **_):
         assert f"CÂU HỎI: {question}" in prompt
-        yield "The root moves down [S8]." if evidence in prompt else "Tài liệu môn học không đề cập nội dung này"
+        # The weakest passage sits in the middle of the prompt now (edges_first): cite it by its number there.
+        cited = re.search(r"SOURCE CHUNK \[(S\d+)\]:\n[^\n]*\n" + re.escape(evidence), prompt)
+        yield f"The root moves down [{cited.group(1)}]." if cited else "Tài liệu môn học không đề cập nội dung này"
 
-    def scored(query, candidates, attempts=None):
+    def scored(query, candidates, attempts=None, span=None):
         assert query == question
         assert len(candidates) == 8
         return sorted(((c, 0.1 if c.content == evidence else 0.2) for c in candidates),

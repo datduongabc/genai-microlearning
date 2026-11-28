@@ -383,7 +383,10 @@ h1[tabindex="-1"]:focus-visible { outline:none; }
 .status-pill[data-status=embedded]::before { background:var(--status-success); }
 .status-pill[data-status=failed] { color:var(--status-danger); }
 .status-pill[data-status=failed]::before { background:var(--status-danger); }
+.doc-access { margin-top:8px; display:inline-flex; align-items:center; gap:8px; font-size:14px; line-height:20px; color:var(--text-secondary); cursor:pointer; }
+.doc-access input { width:16px; height:16px; accent-color:var(--accent-default); }
 .doc-warning { margin-top:10px; padding:8px 12px; border-radius:var(--radius-sm); background:var(--bg-warning-soft); color:var(--status-warning); font-size:14px; line-height:20px; }
+.doc-note { margin-top:10px; padding:8px 12px; border-radius:var(--radius-sm); background:var(--bg-info-soft); color:var(--status-info); font-size:14px; line-height:20px; }
 .doc-failure { display:flex; flex-wrap:wrap; align-items:start; justify-content:space-between; gap:12px; padding:10px 12px; border-radius:var(--radius-sm); background:var(--bg-danger-soft); color:var(--status-danger); font-size:14px; line-height:20px; }
 /* The modules made from a document hang under it, as its children. */
 .doc-modules { margin:14px 0 0 2px; padding-left:16px; border-left:2px solid var(--border-default); display:flex; flex-direction:column; gap:8px; }
@@ -798,3 +801,32 @@ a.learn-link:hover { background:var(--bg-subtle); color:var(--accent-default); }
   .shell-content, .shell-content:has(.module-layout) { max-width:none; }
   body { background:#fff; }
 }
+/* Under an answer: three small verdicts, and a short form for the two that need a reason. */
+.chat-feedback { margin-top:8px; }
+.chat-feedback-row { display:flex; flex-wrap:wrap; gap:8px; }
+.chat-feedback-button { display:inline-flex; align-items:center; gap:6px; min-height:32px; padding:4px 10px; border:1px solid var(--border-default); border-radius:var(--radius-sm); background:var(--bg-surface); color:var(--text-secondary); font-size:14px; line-height:20px; cursor:pointer; }
+.chat-feedback-button svg { width:16px; height:16px; }
+.chat-feedback-button:hover:not(:disabled) { border-color:var(--accent-default); color:var(--text-primary); }
+.chat-feedback-button[aria-expanded="true"] { border-color:var(--accent-default); color:var(--text-primary); }
+.chat-feedback-button[aria-pressed="true"] { border-color:var(--accent-default); color:var(--accent-default); font-weight:600; }
+.chat-feedback-button:disabled { opacity:.6; cursor:default; }
+.chat-feedback-form { margin-top:10px; padding:12px; border:1px solid var(--border-default); border-radius:var(--radius-sm); display:flex; flex-direction:column; gap:8px; }
+.chat-feedback-form fieldset { display:flex; flex-wrap:wrap; gap:6px 16px; }
+.chat-feedback-form legend { font-size:14px; line-height:20px; font-weight:600; margin-bottom:4px; }
+.chat-feedback-check { display:inline-flex; align-items:center; gap:6px; font-size:14px; line-height:20px; }
+.chat-feedback-actions { display:flex; align-items:center; gap:16px; }
+.chat-feedback .chat-note { margin-top:0; }
+/* What learners said about chat answers, for the course's lecturers. */
+.feedback-list { margin-top:24px; padding:16px 20px; border:1px solid var(--border-default); border-radius:var(--radius-sm); background:var(--bg-surface); }
+.feedback-list summary { cursor:pointer; font-weight:600; font-size:16px; line-height:24px; }
+.feedback-list .course-hint { margin-top:8px; }
+.feedback-list ul { margin-top:12px; display:flex; flex-direction:column; gap:16px; }
+.feedback-item { padding-top:12px; border-top:1px solid var(--border-default); font-size:14px; line-height:20px; display:flex; flex-direction:column; gap:6px; }
+.feedback-verdict { display:flex; align-items:center; gap:6px; font-weight:600; }
+.feedback-verdict svg { width:16px; height:16px; }
+.feedback-verdict[data-feedback="not_right"], .feedback-verdict[data-feedback="wrong_citation"] { color:var(--status-danger); }
+.feedback-verdict[data-feedback="helpful"] { color:var(--status-success); }
+.feedback-date { margin-left:auto; font-weight:400; color:var(--text-muted); }
+.feedback-question { font-weight:600; padding-left:10px; border-left:2px solid var(--accent-default); overflow-wrap:anywhere; }
+.feedback-answer { color:var(--text-secondary); white-space:pre-wrap; overflow-wrap:anywhere; display:-webkit-box; -webkit-line-clamp:6; -webkit-box-orient:vertical; overflow:hidden; }
+.feedback-flagged, .feedback-note { overflow-wrap:anywhere; }

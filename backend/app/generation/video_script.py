@@ -824,7 +824,7 @@ def generate_video_script(db: Session, video_id: uuid.UUID, before_save: Callabl
             scenes, dropped, uncited = _kept_scenes(draft.scenes, chunks)
             if not scenes:
                 raise ValueError("Không viết được cảnh nào có trích nguồn từ tài liệu. Hãy thử lại "
-                                 "hoặc đổi trọng tâm")
+                                 "hoặc đổi trọng tâm.")
             _settle_kinds(scenes)
             draft_chars = _total_chars(scenes)
             topped = _TopUpResult()

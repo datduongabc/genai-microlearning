@@ -42,7 +42,7 @@ from app.models import Chunk, Course, Document, DocumentStatus, Job, JobStatus, 
 # The defaults are the load stack; a deployment is driven from a laptop by setting the three.
 RESULTS = Path(os.environ.get("RESULTS", "/results"))
 USERS_FILE = RESULTS / "users.json"
-LECTURE = os.environ.get("LECTURE", "/documents/operating-system/Chapter 3_Processes.pdf")
+LECTURE = os.environ.get("LECTURE", "/documents/operating-system/Chapter 4_Threads & Concurency.pdf")
 BASE = os.environ.get("BASE", "http://proxy/api")
 QUESTIONS = ["Tiến trình là gì?", "Các trạng thái của tiến trình gồm những gì?", "Process Control Block lưu thông tin gì?",
              "Context switch diễn ra thế nào?", "Tiến trình cha và con giao tiếp ra sao?", "Sự khác nhau giữa shared memory và message passing?"]

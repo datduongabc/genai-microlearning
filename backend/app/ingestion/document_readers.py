@@ -21,6 +21,7 @@ import pytesseract
 from bs4 import BeautifulSoup
 from docx import Document as DocxDocument
 from docx.opc.exceptions import PackageNotFoundError as DocxPackageNotFoundError
+from docx.table import Table as DocxTable
 from litellm.exceptions import (
     APIConnectionError,
     BadGatewayError,
@@ -387,14 +388,42 @@ def read_pptx(path: str) -> list[DocumentUnit]:
     return units
 
 
-HEADING_TAGS = {"h1", "h2", "h3"}
+HEADING_TAGS = {"h1", "h2", "h3", "h4", "h5", "h6"}
 PILCROW_RE = re.compile(r"\s*¶\s*$")
+# The blocks of an HTML page that hold its text, read in page order. A list item stands for its own text, not
+# for a list nested in it, which is read item by item.
+_HTML_BLOCKS = [*HEADING_TAGS, "p", "li", "pre", "table", "dt", "dd", "figcaption", "caption"]
 
 
 def _clean_html_text(el) -> str:
     text = el.get_text(" ", strip=True)
     text = PILCROW_RE.sub("", text)
     return re.sub(r"\s+", " ", text)
+
+
+def _table_rows(rows: list[list[str]]) -> list[tuple[int, str]]:
+    """(row index, "header: value" lines) for each data row of a table, under the first row that is not a
+    merged banner: a row read without its header ("Heap sort | O(n log n)") says nothing a search can match."""
+    def banner(cells):
+        non_empty = [c for c in cells if c]
+        if not non_empty:
+            return True
+        most_common_count = max(non_empty.count(v) for v in set(non_empty))
+        return most_common_count / len(non_empty) > 0.5
+
+    if len(rows) < 2:
+        return []
+    # The header must leave at least one row after it to serve as data.
+    header_index = 0
+    while header_index < len(rows) - 2 and banner(rows[header_index]):
+        header_index += 1
+    header = rows[header_index]
+    out = []
+    for row_index, cells in enumerate(rows[header_index + 1:], start=header_index + 1):
+        parts = [f"{h}: {v}" if h else v for h, v in zip(header, cells, strict=False) if v]
+        if parts:
+            out.append((row_index, "\n".join(parts)))
+    return out
 
 
 def read_html(path: str) -> list[DocumentUnit]:
@@ -415,72 +444,64 @@ def read_html(path: str) -> list[DocumentUnit]:
             units.append(DocumentUnit(text="\n".join(current_lines).strip(), locator=locator))
 
     body = soup.body or soup
-    for el in body.find_all([*HEADING_TAGS, "p"]):
+    for el in body.find_all(_HTML_BLOCKS):
+        inside = {parent.name for parent in el.parents}
+        # A table or a code block is read whole; a paragraph in a list item is part of the item's text.
+        if inside & {"table", "pre"} or (el.name in ("p", "dt", "dd") and "li" in inside):
+            continue
         if el.name in HEADING_TAGS:
             flush()
             current_heading = _clean_html_text(el)
             current_lines = [current_heading]
-        else:
-            text = _clean_html_text(el)
-            if text:
-                current_lines.append(text)
+        elif el.name == "pre":
+            # Code keeps its lines and indentation: they are its meaning.
+            if code := el.get_text().strip("\n"):
+                current_lines.append(code)
+        elif el.name == "table":
+            rows = [[_clean_html_text(cell) for cell in tr.find_all(["th", "td"])] for tr in el.find_all("tr")]
+            current_lines.extend(text.replace("\n", "; ") for _, text in _table_rows(rows))
+        elif el.name == "li":
+            own = " ".join(_clean_html_text(child) if hasattr(child, "get_text") else str(child).strip()
+                           for child in el.children if getattr(child, "name", None) not in ("ul", "ol"))
+            if own := re.sub(r"\s+", " ", own).strip():
+                current_lines.append(f"- {own}")
+        elif text := _clean_html_text(el):
+            current_lines.append(text)
     flush()
     return units
 
 
 def read_docx(path: str) -> list[DocumentUnit]:
+    """Paragraphs grouped under their heading, and each table row where the table stands, under the same
+    heading: a table read at the end of the document lost the section that explained it."""
     doc = DocxDocument(path)
     units: list[DocumentUnit] = []
-
     current_lines, current_heading = [], None
+    table_index = 0
 
     def flush_para():
         if current_lines and "\n".join(current_lines).strip():
-            locator = {"heading": current_heading}
-            units.append(DocumentUnit(text="\n".join(current_lines).strip(), locator=locator))
+            units.append(DocumentUnit(text="\n".join(current_lines).strip(), locator={"heading": current_heading}))
 
-    for para in doc.paragraphs:
-        text = para.text.strip()
+    for block in doc.iter_inner_content():
+        if isinstance(block, DocxTable):
+            flush_para()
+            current_lines = []
+            rows = [[c.text.strip() for c in row.cells] for row in block.rows]
+            for row_index, text in _table_rows(rows):
+                units.append(DocumentUnit(text=text, locator={
+                    "heading": current_heading, "table_index": table_index, "row_index": row_index}))
+            table_index += 1
+            continue
+        text = block.text.strip()
         if not text:
             continue
-        if para.style.name.startswith("Heading"):
+        if block.style is not None and block.style.name.startswith("Heading"):
             flush_para()
             current_lines, current_heading = [text], text
         else:
             current_lines.append(text)
     flush_para()
-
-    def _is_merged_banner_row(cells):
-        non_empty = [c for c in cells if c]
-        if not non_empty:
-            return True
-        most_common_count = max(non_empty.count(v) for v in set(non_empty))
-        return most_common_count / len(non_empty) > 0.5
-
-    for table_index, table in enumerate(doc.tables):
-        if len(table.rows) < 2:
-            continue
-        # header_row_idx must leave at least one row after it to serve as
-        # data — bounding at len(rows) - 2, not - 1.
-        header_row_idx = 0
-        while header_row_idx < len(table.rows) - 2 and _is_merged_banner_row(
-            [c.text.strip() for c in table.rows[header_row_idx].cells]
-        ):
-            header_row_idx += 1
-        header_cells = [c.text.strip() for c in table.rows[header_row_idx].cells]
-
-        for row_index, row in enumerate(table.rows[header_row_idx + 1:], start=header_row_idx + 1):
-            cells = [c.text.strip() for c in row.cells]
-            if not any(cells):
-                continue
-            parts = [f"{h}: {v}" for h, v in zip(header_cells, cells, strict=False) if v]
-            text = "\n".join(parts)
-            if text.strip():
-                units.append(DocumentUnit(
-                    text=text,
-                    locator={"table_index": table_index, "row_index": row_index},
-                ))
-
     return units
 
 

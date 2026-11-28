@@ -103,6 +103,8 @@ class Settings(BaseSettings):
     # much of the model balance.
     formula_vision_max_pages: int = Field(default=40, ge=0)
     typesafe_api_key: str = ""
+    # Changed only by the load and failure tests, which put a stand-in Jev here.
+    jev_url: str = "https://api.typesafe.ai/v1/systemone"
     # Pinned: the `jev-latest` alias moves with each release, so its scores could change with no change here.
     jev_model: str = "jev-1.14.0"
     # Jev calls one process has in flight. One rerank makes a call per candidate. 64 held steady in
@@ -160,6 +162,16 @@ class Settings(BaseSettings):
     chat_max_streams: int = Field(default=100, ge=1)
     # Streams searching the database at once, below the connection pool so that other requests still get one.
     chat_retrieval_concurrency: int = Field(default=8, ge=1)
+    # The model that rewrites a follow-up question before the search (devops/gateway/config.yaml).
+    chat_condense_model: str = "condense-fast"
+    # Below this reranker probability for the best passage, the course chat says the documents do not cover
+    # the question, without calling a model: the passages it would get are about something else.
+    # Measured 2026-11-28 (docs/measurements/2026-11-28-chat-guardrails.md): every one of the 250 benchmark
+    # questions scores at least 0.12, the median 0.97; 197 of 200 off-topic queries score below 0.05. 0.05 keeps
+    # all of the first with room for real questions, which are vaguer than benchmark ones.
+    chat_min_rerank_score: float = Field(default=0.05, ge=0.0, le=1.0)
+    # How long an answer to a first question is reused for the same question on the same documents. 0 turns it off.
+    chat_cache_seconds: int = Field(default=86400, ge=0)
     api_queue_timeout_seconds: float = Field(default=30, gt=0)
     # memory:// is exact only for one process; several API processes must share a store.
     rate_limit_storage_uri: str = Field(default="memory://", repr=False)

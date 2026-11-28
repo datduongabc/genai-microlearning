@@ -128,6 +128,9 @@ Dựng lại image để script tự sửa: `./devops/scripts/compose.sh up -d -
 | `QUESTION_CONCURRENCY` | `5` | Số câu hỏi sinh song song trong một mô-đun. |
 | `NON_TEACHER_DAILY_GENERATION_LIMIT` | `3` | Số mô-đun mỗi ngày của tài khoản chưa liên kết Moodle. |
 | `LEARNER_DAILY_CHAT_LIMIT` | `30` | Số tin chat mỗi ngày của sinh viên. |
+| `CHAT_CONDENSE_MODEL` | `condense-fast` | Model viết lại câu hỏi nối tiếp trước khi tìm (Gemini 3.5 Flash Lite, suy nghĩ ở mức tối thiểu). |
+| `CHAT_MIN_RERANK_SCORE` | `0.05` | Điểm Jev tối thiểu của đoạn tốt nhất; thấp hơn thì chat trả lời "tài liệu không đề cập" mà không gọi model. |
+| `CHAT_CACHE_SECONDS` | `86400` | Thời gian dùng lại câu trả lời cho cùng câu hỏi đầu tiên trên cùng bộ tài liệu; `0` để tắt. |
 | `UPLOAD_STORE` | `local` | `local` (gửi qua API) hoặc `s3` (presigned POST). |
 
 Danh sách đầy đủ có trong `devops/.env.example` và `backend/app/config.py`.
@@ -167,17 +170,18 @@ Load test và kiểm thử lỗi nằm trong `devops/loadtest`. Kịch bản tr�
 
 ## Kết quả đo chính
 
-Đo trên năm môn: Lập trình nâng cao, Giải tích 1, Học máy, Hệ điều hành, Chủ nghĩa xã hội khoa học (23 tệp, 937 đoạn). Chi tiết ở chương Results của báo cáo và trong `docs/measurements/`.
+Đo trên năm môn: Lập trình nâng cao, Giải tích 1, Học máy, Hệ điều hành, Chủ nghĩa xã hội khoa học (23 tệp, 920 đoạn theo cách cắt hiện tại). Chi tiết ở chương Results của báo cáo và trong `docs/measurements/`.
 
 | Chỉ số | Kết quả |
 | --- | --- |
-| Truy xuất (hybrid + Jina, 250 câu) | Hit Rate@1 0,856; MRR@10 0,918; nDCG@10 0,938 |
+| Truy xuất (hybrid + Jev, Gemini Embedding, 250 câu) | Hit Rate@1 0,884; MRR@10 0,931; nDCG@10 0,947; ngang Qwen3 tự host (0,884; 0,932; 0,947) |
 | Jev so với Jina (200 câu giữ lại) | MRR@10 0,952 so với 0,909; p95 rerank thấp hơn 2,4–6,3 lần |
-| Chat (Ragas, 50 câu) | Faithfulness 0,990; answer relevancy 0,740 |
+| Chat, bốn model hiện có (Ragas, 50 câu) | GPT-6 Luna (mặc định): faithfulness 0,917, answer relevancy 0,776; bốn model 0,872–0,939 faithfulness |
 | Pilot 10 cặp module | RAG: 0/120 ý không có nguồn; không RAG: 17/101 |
 | Năm môn với Jev và Gemini 3.5 Flash Lite | Upload 33,7 s/tệp, chat 2,1 s, mô-đun 28,9 s |
 | Rubric v3, 19 cặp RAG / không RAG, hai judge khác họ | "Thông tin bịa": RAG 3,95 so với 2,84 (Claude) và 3,37 so với 2,21 (GPT), Holm p 0,007 và 0,018 |
 | AWS, một môn (11/19) | Một task api 1 vCPU ~124 request/s, tự thêm task khi tải; chat 279 tin/phút; khôi phục RDS 16-18 phút, mất tối đa 7-8 phút dữ liệu |
+| AWS, sinh đồng thời và đọc có nghỉ (11/22) | 10 giảng viên cùng sinh mô-đun, flashcard, video: mọi job xong, chờ do autoscale; một task api giữ p95 dưới 1 s tới 86 request/s, bão hoà ~127 |
 | Mở LTI từ Moodle (đo ở máy) | Lần đầu 0,026 s; ~50-60 lượt/s mỗi vCPU; 300/300 học viên sau một địa chỉ NAT |
 | Prompt injection trong chat | 22/80 → 4/80 sau khi thêm luật chống chỉ thị nhúng |
 

@@ -105,3 +105,15 @@ async def embeddings(request: Request):
     headers = {"Content-Type": "application/json"} | ({"Authorization": f"Bearer {EMBEDDER_KEY}"} if EMBEDDER_KEY else {})
     response = await _client.post(f"{EMBEDDER_URL}/v1/embeddings", content=await request.body(), headers=headers)
     return response.json()
+
+
+JEV_SECONDS = float(os.environ.get("MOCK_JEV_SECONDS", "0.3"))
+
+
+@app.post("/v1/systemone")
+async def jev(request: Request):
+    """Stands in for TypeSafe's Jev when run as its own service (the `jev` service), so that it can be stopped
+    alone. Scores sit above the chat's threshold: a run measures the system, not ranking quality."""
+    await request.body()
+    await asyncio.sleep(JEV_SECONDS)
+    return {"answers": {"relevant": {"noul": round(random.uniform(0.3, 1.0), 3)}}}

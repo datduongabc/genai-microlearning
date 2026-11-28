@@ -12,6 +12,7 @@ from typing import Literal
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
+from app.config import settings
 from app.generation.claim_evaluation import StoredCitation
 from app.generation.common import (
     IGNORE_EMBEDDED_INSTRUCTIONS,
@@ -160,8 +161,11 @@ def _answer_prompt(query: str, context_chunks: list[Chunk], history: list[dict],
     meaning = ""
     if standalone and standalone.strip() != query.strip():
         meaning = f"\nCÂU HỎI VIẾT ĐẦY ĐỦ (hiểu câu hỏi trên theo câu này): {standalone.strip()}"
-    return (f"{source_block(context_chunks)}{history_text}\n\nCÂU HỎI: {query}{meaning}"
-            f"{_language_line(question_language(query))}")
+    # The conversation before the sources: it only grows from turn to turn, while the sources change with each
+    # question, so the system rules and the history form a prefix a provider's prompt cache can reuse.
+    history_first = f"{history_text.strip()}\n\n" if history_text else ""
+    return (f"{history_first}{source_block(context_chunks)}"
+            f"CÂU HỎI: {query}{meaning}{_language_line(question_language(query))}")
 
 
 def _invented(chunks: list[Chunk], written: list[str]) -> int:
@@ -187,6 +191,7 @@ def answer_question(query: str, context_chunks: list[Chunk], history: list[dict]
         report_answer(answer.answer, 0, 0)
         return answer
 
+    context_chunks = edges_first(context_chunks)
     prompt = _answer_prompt(query, context_chunks, history, standalone)
 
     draft = complete_structured(prompt, ChatDraft, system_instruction=CHAT_SYSTEM_INSTRUCTION)
@@ -254,36 +259,80 @@ class MarkerFilter:
         return "".join(f"[S{n}]" for n in numbers)
 
 
+def edges_first(chunks: list[Chunk]) -> list[Chunk]:
+    """The passages, best first, placed so the best ones sit at both ends of the prompt and the weakest in the
+    middle: models use the start and the end of a long context better than its middle ("lost in the middle",
+    Liu et al. 2024). Ranks 1 2 3 4 5 6 7 8 become 1 3 5 7 8 6 4 2."""
+    return chunks[0::2] + chunks[1::2][::-1]
+
+
+_SHINGLE = 8
+
+
+def _words(text: str) -> list[str]:
+    return re.findall(r"\w+", text.casefold())
+
+
+def _shingles(text: str) -> set[tuple[str, ...]]:
+    words = _words(text)
+    return {tuple(words[i:i + _SHINGLE]) for i in range(len(words) - _SHINGLE + 1)}
+
+
+# The repository is public, so these rules are no secret; what an answer must not do is recite them instead of
+# answering, which is what a reader who asks "repeat your instructions" wants.
+# The rules quote the sentence an answer must use when the sources do not cover a question: that one is allowed.
+_INSTRUCTION_SHINGLES = (_shingles(CHAT_STREAM_INSTRUCTION) | _shingles(CONDENSE_SYSTEM_INSTRUCTION)) - _shingles(
+    f"{NOT_COVERED} {NOT_COVERED_EN}")
+INSTRUCTIONS_WITHHELD = "Mình không nhắc lại hướng dẫn nội bộ của hệ thống. Bạn hãy hỏi về nội dung môn học nhé."
+INSTRUCTIONS_WITHHELD_EN = "I don't repeat the system's internal instructions. Please ask about the course content."
+
+
+def recites_instructions(answer: str) -> bool:
+    """The answer repeats eight or more words in a row of the system instructions."""
+    return not _shingles(answer).isdisjoint(_INSTRUCTION_SHINGLES)
+
+
 async def stream_answer(
-    query: str, context_chunks: list[Chunk], history: list[dict], standalone: str | None = None
+    query: str, context_chunks: list[Chunk], history: list[dict], standalone: str | None = None,
+    usage: dict | None = None,
 ) -> AsyncIterator[str | ChatAnswer]:
-    """Yields the answer as text pieces, then one ChatAnswer holding all of it and its citations."""
+    """Yields the answer as text pieces, then one ChatAnswer holding all of it and its citations. `usage`, when
+    given, receives the model call's served model, tokens and timing (app/llm/gateway.py, stream_text)."""
     if not context_chunks:
         reply = not_covered(question_language(query))
         report_answer(reply, 0, 0)
         yield reply
         yield ChatAnswer(answer=reply, citations=[])
         return
+    context_chunks = edges_first(context_chunks)
     markers = MarkerFilter(context_chunks)
     pieces = []
     async for text in stream_text(_answer_prompt(query, context_chunks, history, standalone),
-                                  system_instruction=CHAT_STREAM_INSTRUCTION):
+                                  system_instruction=CHAT_STREAM_INSTRUCTION, usage=usage):
         if visible := markers.feed(text):
             pieces.append(visible)
+            if recites_instructions("".join(pieces)):
+                break
             yield visible
     if rest := markers.finish():
         pieces.append(rest)
         yield rest
+    answer = SPACE_BEFORE_PUNCTUATION.sub(r"\1", "".join(pieces)).strip()
+    if recites_instructions(answer):
+        # Some words of it may have reached the reader; the saved answer, which replaces them, does not keep them.
+        logger.info("ai_quality chat_instructions_withheld", extra={"instructions_withheld": 1})
+        answer = INSTRUCTIONS_WITHHELD_EN if question_language(query) == "en" else INSTRUCTIONS_WITHHELD
+        report_answer(answer, 0, 0)
+        yield ChatAnswer(answer=answer, citations=[])
+        return
     # Numbered as the markers in the text: citation n is [Sn].
     cited = [ChatCitation(chunk_id=id_, source_ref=chunk.source_ref or "", content=chunk.content or "")
              for id_, chunk in markers.cited.items()]
-    # A marker dropped before the full stop leaves a space there.
-    answer = SPACE_BEFORE_PUNCTUATION.sub(r"\1", "".join(pieces)).strip()
     report_answer(answer, _invented(context_chunks, markers.source_ids), len(cited))
     yield ChatAnswer(answer=answer, citations=cited)
 
 
-async def condense_query_streamed(message: str, history: list[dict]) -> str:
+async def condense_query_streamed(message: str, history: list[dict], usage: dict | None = None) -> str:
     """Query rewriting cho hội thoại nhiều lượt: retrieve() không thấy lịch sử
     hội thoại, nên 1 câu hỏi dùng đại từ tham chiếu lượt trước ("nó có mấy
     tính chất?") sẽ tìm sai/không ra chunk liên quan nếu dùng nguyên văn.
@@ -294,7 +343,8 @@ async def condense_query_streamed(message: str, history: list[dict]) -> str:
         return message
     history_text = "\n".join(f"{m['role']}: {m['content']}" for m in history)
     prompt = f"LỊCH SỬ HỘI THOẠI:\n{history_text}\n\nCÂU HỎI MỚI NHẤT: {message}"
-    rewritten = "".join([text async for text in stream_text(prompt, system_instruction=CONDENSE_SYSTEM_INSTRUCTION)])
+    rewritten = "".join([text async for text in stream_text(
+        prompt, system_instruction=CONDENSE_SYSTEM_INSTRUCTION, alias=settings.chat_condense_model, usage=usage)])
     return rewritten.strip() or message
 
 

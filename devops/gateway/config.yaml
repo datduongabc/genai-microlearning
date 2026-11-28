@@ -120,6 +120,23 @@ model_list:
       display_name: DeepSeek V4.1 Flash
       note: rẻ, bám nguồn tốt; chậm khi viết lời thoại video
 
+  # Rewrites a follow-up question into one that stands alone, before the search. It is a short, easy step
+  # that someone waits on before the first word of the answer, so a small model with minimal reasoning does
+  # it; the answer itself still comes from the chosen model. Measured 2026-11-28 from Vietnam: 6-11 output
+  # tokens instead of 189-275 with reasoning left on, first word after about 3.2 s, the same as GPT-6 Luna:
+  # the wait there is the network and the provider, not the model (docs/measurements/2026-11-28-chat-guardrails.md).
+  - model_name: condense-fast
+    litellm_params:
+      model: openrouter/google/gemini-3.5-flash-lite
+      extra_body:
+        provider: {order: [google-ai-studio], allow_fallbacks: false, data_collection: deny}
+        reasoning: {effort: minimal}
+      api_key: os.environ/OPENROUTER_API_KEY
+    model_info:
+      mode: chat
+      hidden: true
+      display_name: Gemini 3.5 Flash Lite (viết lại câu hỏi chat)
+
 # LiteLLM owns retries and failover.
 # Generation never falls back to OpenAI, Claude or DeepSeek; Gemini 3.8 Flash is the only fallback model,
 # first through OpenRouter, then straight from Google. LiteLLM does not follow a fallback's own fallbacks,
@@ -139,6 +156,7 @@ router_settings:
     - claude-fast: [gemini-flash, gemini-flash-direct]
     - deepseek-flash: [gemini-flash, gemini-flash-direct]
     - gemini-flash: [gemini-flash-direct]
+    - condense-fast: [gemini-flash, gemini-flash-direct]
     - embed-default: [embed-default-direct]
   # The direct route has the same context window as gemini-flash, so it is no help here.
   context_window_fallbacks:

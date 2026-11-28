@@ -55,3 +55,4 @@ Thumbs.db
 # Ghi chu va cong cu cua tac tu AI
 .superpowers/
 .claude/
+.playwright-mcp/

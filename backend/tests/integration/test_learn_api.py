@@ -226,3 +226,23 @@ class _S3(S3UploadStore):
 
     def presigned_get(self, key, filename):
         return f"https://s3.example/{key}?sig=1"
+
+
+def test_published_items_of_a_document_closed_to_the_chat_keep_their_labels_but_not_its_passages(world):
+    """The document is closed to learners (the default since migration 0057): its published set still shows
+    where each card comes from, while the learner can read none of its chunks, so the chat finds none."""
+    from sqlalchemy import text
+
+    from app.db import RequestSessionLocal
+
+    card_set = client.get(f"/learn/flashcard-sets/{world['published']}", headers=headers(world["member"])).json()
+    assert card_set["cards"][0]["sources"] == ["bai-giang.pdf · trang 2"]
+    db = RequestSessionLocal()
+    db.info["rls_user_id"] = world["member"]
+    try:
+        assert db.execute(text("SELECT count(*) FROM chunks WHERE document_id = :d"), {"d": world["doc"]}).scalar() == 0
+        # The labels function gives places, never text, and none of a document with nothing published.
+        assert db.execute(text("SELECT count(*) FROM learner_chunk_places(:d, ARRAY[]::uuid[])"),
+                          {"d": world["doc"]}).scalar() == 0
+    finally:
+        db.close()

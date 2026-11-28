@@ -58,6 +58,7 @@ const sampleDocument: DocumentInfo = {
   generating: false,
   failures: [],
   extraction_warnings: [],
+  learner_access: false,
 }
 
 function renderPage() {
@@ -90,6 +91,7 @@ beforeEach(() => {
   vi.mocked(api.listModuleConcepts).mockResolvedValue([{ name: 'Tìm kiếm', summary: 'Tìm trong không gian trạng thái.' }])
   // The course chat loads its last conversation on open.
   vi.mocked(api.getLatestCourseChat).mockResolvedValue({ session_id: null, messages: [] })
+  vi.mocked(api.listChatFeedback).mockResolvedValue([])
   // The Moodle account line asks too; without an answer it threw after the test ended.
   vi.mocked(api.getMoodleAccount).mockResolvedValue({ email: '', status: 'not_linked' })
 })
@@ -251,6 +253,55 @@ describe('CourseDetailPage - delete document', () => {
     await waitFor(() => {
       expect(screen.queryByText('syllabus.pdf')).not.toBeInTheDocument()
     })
+  })
+
+  it('says once, without pages, how much was redacted and that an older file has the same name', async () => {
+    vi.mocked(api.listCourses).mockResolvedValue([unlinkedCourse])
+    vi.mocked(api.listDocuments).mockResolvedValue([{ ...sampleDocument, extraction_warnings: [
+      { code: 'ocr_failed', page: 3 }, { code: 'redacted', page: 0, count: 2 }, { code: 'same_name', page: 0 },
+    ] }])
+    renderPage()
+
+    expect(await screen.findByText(/đã che 2 thông tin nhạy cảm/i)).toHaveClass('doc-note')
+    expect(screen.getByText(/đã có tài liệu cùng tên/i)).toHaveClass('doc-warning')
+    expect(screen.getByText(/không nhận dạng được chữ ở trang 3\./i)).toBeInTheDocument()
+  })
+
+  it('shows learners\' chat feedback to the lecturer, problems first and without names', async () => {
+    vi.mocked(api.listCourses).mockResolvedValue([unlinkedCourse])
+    vi.mocked(api.listDocuments).mockResolvedValue([sampleDocument])
+    const item = { answered_at: '2026-11-28T01:00:00Z', feedback_at: '2026-11-28T01:05:00Z', note: null,
+      citations: [{ chunk_id: 'c1', source_ref: '{"page": 4}' }], flagged_citations: [] as number[] }
+    vi.mocked(api.listChatFeedback).mockResolvedValue([
+      { ...item, message_id: 'm1', question: 'Heap là gì?', answer: 'Một cây.', feedback: 'helpful' },
+      { ...item, message_id: 'm2', question: 'Stack là gì?', answer: 'Một hàng đợi.', feedback: 'wrong_citation',
+        flagged_citations: [1], note: 'Nguồn nói về heap' },
+    ])
+    renderPage()
+
+    expect(await screen.findByText(/phản hồi của sinh viên về chat: 1 chưa đúng, 1 hữu ích/i)).toBeInTheDocument()
+    const questions = screen.getAllByText(/là gì\?$/).map((el) => el.textContent)
+    expect(questions).toEqual(['Stack là gì?', 'Heap là gì?'])
+    expect(screen.getByText(/trích dẫn bị báo sai: \[1\] trang 4/i)).toBeInTheDocument()
+    expect(screen.getByText('Ghi chú: Nguồn nói về heap')).toBeInTheDocument()
+  })
+
+  it('opens a document to learners from its row, and puts the box back when the server refuses', async () => {
+    vi.mocked(api.listCourses).mockResolvedValue([unlinkedCourse])
+    vi.mocked(api.listDocuments).mockResolvedValue([sampleDocument])
+    vi.mocked(api.setLearnerAccess).mockResolvedValueOnce(undefined).mockRejectedValueOnce(new Error('boom'))
+    renderPage()
+
+    const box = await screen.findByRole('checkbox', { name: /sinh viên được hỏi chat về tài liệu này/i })
+    expect(box).not.toBeChecked()
+    await userEvent.click(box)
+    expect(api.setLearnerAccess).toHaveBeenCalledWith('doc-1', true)
+    await waitFor(() => expect(box).toBeChecked())
+
+    await userEvent.click(box)
+    expect(api.setLearnerAccess).toHaveBeenLastCalledWith('doc-1', false)
+    expect(await screen.findByText(/không đổi được quyền hỏi/i)).toBeInTheDocument()
+    await waitFor(() => expect(box).toBeChecked())
   })
 
   it('says the document is deleted, and only the reload failed, when the list cannot be reloaded afterwards', async () => {
@@ -591,6 +642,26 @@ describe('CourseDetailPage - flashcard sets', () => {
 
     await waitFor(() => expect(screen.queryByText('Đang tạo…')).not.toBeInTheDocument())
     expect(screen.getByRole('link', { name: 'Mảng' })).toBeInTheDocument()
+  })
+
+  it('shows why a generating set failed, with its retry, without a reload', async () => {
+    vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] })
+    vi.mocked(api.listFlashcardSets)
+      .mockResolvedValueOnce([{ ...flashcardSet, status: 'generating', card_count: 0 }])
+      .mockResolvedValue([{ ...flashcardSet, status: 'failed', card_count: 0 }])
+    vi.mocked(api.listDocuments).mockResolvedValueOnce([sampleDocument]).mockResolvedValue([{
+      ...sampleDocument,
+      failures: [{ job_id: 'job-f', job_type: 'flashcard_generation', error: 'Không viết được thẻ nào dựa trên tài liệu.' }],
+    }])
+
+    renderPage()
+    expect(await screen.findByText('Đang tạo…')).toBeInTheDocument()
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(10_000)
+    })
+
+    expect(await screen.findByText('Không viết được thẻ nào dựa trên tài liệu.')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /^Thử lại: .*syllabus\.pdf/ })).toBeInTheDocument()
   })
 })
 
