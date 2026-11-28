@@ -1,0 +1,2057 @@
+[
+  {
+    "course": "advanced-programming",
+    "file": "Chap5_Design_Patterns.pptx",
+    "cau_hoi": "Kỹ thuật mà phương thức tạo tĩnh chỉ tạo đối tượng singleton ở lần gọi đầu tiên rồi lưu vào một trường static private được gọi là gì?",
+    "chunk_moi": {
+      "chunk_index": 5,
+      "content_sha": "67397815810c9baab055d708d18428da9bc800e1460e21a85ae0ec9aeaefaa82"
+    },
+    "chunk_cu": {
+      "chunk_index": 5,
+      "content_sha": "67397815810c9baab055d708d18428da9bc800e1460e21a85ae0ec9aeaefaa82",
+      "trung_tu": 1.0
+    },
+    "cau_hoi_goc": "What is the term used to describe the technique where the static creation method creates the singleton object only on its first call and stores it in a private static field?"
+  },
+  {
+    "course": "advanced-programming",
+    "file": "Chap3_Polymorphism.pptx",
+    "cau_hoi": "Chương trình in ra giá trị nào sau khi chạy `a.f2()`, khi `a` được gán bằng `b` và `a.n` được đặt thành 1?",
+    "chunk_moi": {
+      "chunk_index": 4,
+      "content_sha": "1d559be56c857ab06710b2b2da69814ba0ed6e49d1ff2caa5fd40f9e3daa2885"
+    },
+    "chunk_cu": {
+      "chunk_index": 4,
+      "content_sha": "1d559be56c857ab06710b2b2da69814ba0ed6e49d1ff2caa5fd40f9e3daa2885",
+      "trung_tu": 1.0
+    },
+    "cau_hoi_goc": "What value is printed by the program after executing `a.f2()` when `a` is assigned `b` and `a.n` is set to 1?"
+  },
+  {
+    "course": "advanced-programming",
+    "file": "Chap5_Design_Patterns.pptx",
+    "cau_hoi": "Thầy/cô cho em hỏi, mẫu thiết kế nào đảm bảo một lớp chỉ có duy nhất một đối tượng và cung cấp quyền truy cập toàn cục ạ?",
+    "chunk_moi": {
+      "chunk_index": 16,
+      "content_sha": "6fb47df517a23e06e836a585d26d9ce3adb8c2d98555a90c71f7609c3b2bd3c6"
+    },
+    "chunk_cu": {
+      "chunk_index": 16,
+      "content_sha": "6fb47df517a23e06e836a585d26d9ce3adb8c2d98555a90c71f7609c3b2bd3c6",
+      "trung_tu": 1.0
+    },
+    "cau_hoi_goc": "What design pattern ensures a class has only one instance and provides global access?"
+  },
+  {
+    "course": "advanced-programming",
+    "file": "Chap2_Inheritance.pptx",
+    "cau_hoi": "Cơ chế nào trong kế thừa cho phép lớp con tự triển khai một phương thức, qua đó hỗ trợ tính đa hình?",
+    "chunk_moi": {
+      "chunk_index": 12,
+      "content_sha": "c8950fb2ed2b96bd57789a3304fa67f2996ab53d8566a6a5b3843b689c5ab7eb"
+    },
+    "chunk_cu": {
+      "chunk_index": 12,
+      "content_sha": "c8950fb2ed2b96bd57789a3304fa67f2996ab53d8566a6a5b3843b689c5ab7eb",
+      "trung_tu": 1.0
+    },
+    "cau_hoi_goc": "What mechanism in inheritance allows a subclass to provide its own implementation of a method, thereby supporting polymorphism?"
+  },
+  {
+    "course": "advanced-programming",
+    "file": "Chap5_Design_Patterns.pptx",
+    "cau_hoi": "Lớp “Adapter” trong mẫu Object Adapter có vai trò gì, và nó tương tác với cả Client Interface lẫn Service như thế nào?",
+    "chunk_moi": {
+      "chunk_index": 7,
+      "content_sha": "cd9c88ccab147f659c533d3f9050a59ff7c8adcf195937250d96fa1cdc2954ee"
+    },
+    "chunk_cu": {
+      "chunk_index": 7,
+      "content_sha": "cd9c88ccab147f659c533d3f9050a59ff7c8adcf195937250d96fa1cdc2954ee",
+      "trung_tu": 1.0
+    },
+    "cau_hoi_goc": "What is the role of the “Adapter” class in the Object Adapter pattern, and how does it interact with both the Client Interface and the Service?"
+  },
+  {
+    "course": "advanced-programming",
+    "file": "Chap2_Inheritance.pptx",
+    "cau_hoi": "Lớp được tạo từ một lớp có sẵn để tái sử dụng và mở rộng chức năng của lớp đó được gọi là gì ạ?",
+    "chunk_moi": {
+      "chunk_index": 2,
+      "content_sha": "59e5594da8517747a2e645facb80dc3556eb3226e681f5d79b56bd8f0364a6c9"
+    },
+    "chunk_cu": {
+      "chunk_index": 2,
+      "content_sha": "59e5594da8517747a2e645facb80dc3556eb3226e681f5d79b56bd8f0364a6c9",
+      "trung_tu": 1.0
+    },
+    "cau_hoi_goc": "What term is used to describe the class that is created from an existing class in order to reuse and extend its functionality?"
+  },
+  {
+    "course": "advanced-programming",
+    "file": "Chap4_Abstract_Interface.pptx",
+    "cau_hoi": "Theo cú pháp được trình bày, khi khai báo interface thì có thể bỏ modifier nào?",
+    "chunk_moi": {
+      "chunk_index": 3,
+      "content_sha": "6ca80b479949b653510a44ce0e6a67253c62c71488c28cf3b647a4f46830098e"
+    },
+    "chunk_cu": {
+      "chunk_index": 3,
+      "content_sha": "6ca80b479949b653510a44ce0e6a67253c62c71488c28cf3b647a4f46830098e",
+      "trung_tu": 1.0
+    },
+    "cau_hoi_goc": "What modifier can be omitted when declaring an interface according to the syntax shown?"
+  },
+  {
+    "course": "advanced-programming",
+    "file": "Chap1_Encapsulation.pptx",
+    "cau_hoi": "Khi không khai báo constructor nào, constructor mặc định mà chương trình tự động cung cấp có phạm vi truy cập là gì?",
+    "chunk_moi": {
+      "chunk_index": 8,
+      "content_sha": "0d28f1c6ac8b05ac701f890a22ae990105c6bffe5546ae50a01a16d247535d1e"
+    },
+    "chunk_cu": {
+      "chunk_index": 8,
+      "content_sha": "0d28f1c6ac8b05ac701f890a22ae990105c6bffe5546ae50a01a16d247535d1e",
+      "trung_tu": 1.0
+    },
+    "cau_hoi_goc": "What is the access modifier of the default constructor that the program automatically provides when no constructor is declared?"
+  },
+  {
+    "course": "advanced-programming",
+    "file": "Chap5_Design_Patterns.pptx",
+    "cau_hoi": "Mẫu Singleton nhằm giải quyết hai vấn đề nào liên quan đến Nguyên tắc Đơn nhiệm?",
+    "chunk_moi": {
+      "chunk_index": 3,
+      "content_sha": "6af604e58d5e8c7a4e38318771dc2d4008f89a7a4258525ea6a684cfcffb4248"
+    },
+    "chunk_cu": {
+      "chunk_index": 3,
+      "content_sha": "6af604e58d5e8c7a4e38318771dc2d4008f89a7a4258525ea6a684cfcffb4248",
+      "trung_tu": 1.0
+    },
+    "cau_hoi_goc": "What two problems related to the Single Responsibility Principle does the Singleton pattern aim to solve?"
+  },
+  {
+    "course": "advanced-programming",
+    "file": "Chap5_Design_Patterns.pptx",
+    "cau_hoi": "Mục đích của việc nhân `current_reading()` với 10 khi tính tổng nhiệt độ từ một đối tượng `SuperTempReader` trong đoạn mã không sử dụng mẫu Adapter là gì?",
+    "chunk_moi": {
+      "chunk_index": 9,
+      "content_sha": "509ab897d044b4640c3148f7f91b0bc444da71501118caa0f4c49194b88b25e6"
+    },
+    "chunk_cu": {
+      "chunk_index": 9,
+      "content_sha": "509ab897d044b4640c3148f7f91b0bc444da71501118caa0f4c49194b88b25e6",
+      "trung_tu": 1.0
+    },
+    "cau_hoi_goc": "What is the purpose of multiplying `current_reading()` by 10 when summing temperatures from a `SuperTempReader` instance in the code that does not use the Adapter pattern?"
+  },
+  {
+    "course": "advanced-programming",
+    "file": "Chap1_Encapsulation.pptx",
+    "cau_hoi": "Cơ chế nào tự động chạy khi một đối tượng được tạo ra và có thể gây lỗi nếu không được thiết kế đúng cách?",
+    "chunk_moi": {
+      "chunk_index": 12,
+      "content_sha": "f36266979303a7033d2d743077395d6a1ed3c957801d3ce9ca03d89e963bf551"
+    },
+    "chunk_cu": {
+      "chunk_index": 12,
+      "content_sha": "f36266979303a7033d2d743077395d6a1ed3c957801d3ce9ca03d89e963bf551",
+      "trung_tu": 1.0
+    },
+    "cau_hoi_goc": "What mechanism automatically executes when an object is created and can cause errors if not properly designed?"
+  },
+  {
+    "course": "advanced-programming",
+    "file": "Chap3_Polymorphism.pptx",
+    "cau_hoi": "Sự khác nhau giữa hai chữ ký phương thức `foo` là `foo(int i, double d)` và `foo(double d, int i)` như được mô tả trong phần tổng quan về tính đa hình là gì?",
+    "chunk_moi": {
+      "chunk_index": 2,
+      "content_sha": "b1771131ad29f87ed7a8433fd41fc1f7f9f8f05f6785ad9f24fd75501884dc42"
+    },
+    "chunk_cu": {
+      "chunk_index": 2,
+      "content_sha": "b1771131ad29f87ed7a8433fd41fc1f7f9f8f05f6785ad9f24fd75501884dc42",
+      "trung_tu": 1.0
+    },
+    "cau_hoi_goc": "What is the difference between the two `foo` method signatures `foo(int i, double d)` and `foo(double d, int i)` as described in the polymorphism overview?"
+  },
+  {
+    "course": "advanced-programming",
+    "file": "Chap3_Polymorphism.pptx",
+    "cau_hoi": "Trong C++, cần dùng từ khóa nào để bật liên kết động?",
+    "chunk_moi": {
+      "chunk_index": 7,
+      "content_sha": "795246646acd12aec4a65daf2180274b98711b961ec792ad61a3a53c38d581f9"
+    },
+    "chunk_cu": {
+      "chunk_index": 7,
+      "content_sha": "795246646acd12aec4a65daf2180274b98711b961ec792ad61a3a53c38d581f9",
+      "trung_tu": 1.0
+    },
+    "cau_hoi_goc": "What keyword must be used in C++ to enable dynamic binding?"
+  },
+  {
+    "course": "advanced-programming",
+    "file": "Chap5_Design_Patterns.pptx",
+    "cau_hoi": "Khi một sự kiện xảy ra, Publisher gọi phương thức nào được định nghĩa trong interface Subscriber cho từng đối tượng trong danh sách subscribers?",
+    "chunk_moi": {
+      "chunk_index": 13,
+      "content_sha": "19069c826f8307f5239aade8113a29f2c72266a9cd7bac32df236fa8059a61dd"
+    },
+    "chunk_cu": {
+      "chunk_index": 13,
+      "content_sha": "19069c826f8307f5239aade8113a29f2c72266a9cd7bac32df236fa8059a61dd",
+      "trung_tu": 1.0
+    },
+    "cau_hoi_goc": "What is the name of the method defined in the Subscriber interface that the Publisher calls for each object in its subscribers list when an event occurs?"
+  },
+  {
+    "course": "advanced-programming",
+    "file": "Chap3_Polymorphism.pptx",
+    "cau_hoi": "Trong đoạn code C++, sau khi chạy `a.f2(); b.f2();`, các giá trị nào được in ra cho `a.n` và `b.n`?",
+    "chunk_moi": {
+      "chunk_index": 3,
+      "content_sha": "b3fbb4dcfbd671b43225f0c5f10f40768da52e2f4edac185c4237fc6f4eee5fb"
+    },
+    "chunk_cu": {
+      "chunk_index": 3,
+      "content_sha": "b3fbb4dcfbd671b43225f0c5f10f40768da52e2f4edac185c4237fc6f4eee5fb",
+      "trung_tu": 1.0
+    },
+    "cau_hoi_goc": "What values are printed for `a.n` and `b.n` after executing `a.f2(); b.f2();` in the C++ code?"
+  },
+  {
+    "course": "advanced-programming",
+    "file": "Chap5_Design_Patterns.pptx",
+    "cau_hoi": "Mục đích của việc đặt hàm khởi tạo mặc định của lớp Singleton ở chế độ private là gì, và phương thức static getInstance() đảm bảo chỉ có một đối tượng của lớp được tạo ra như thế nào?",
+    "chunk_moi": {
+      "chunk_index": 4,
+      "content_sha": "5bcc2acb5655807edaec5fbd6ece98a8c3bfab03c555e8f14080186f0425c4fc"
+    },
+    "chunk_cu": {
+      "chunk_index": 4,
+      "content_sha": "5bcc2acb5655807edaec5fbd6ece98a8c3bfab03c555e8f14080186f0425c4fc",
+      "trung_tu": 1.0
+    },
+    "cau_hoi_goc": "What is the purpose of making the Singleton class’s default constructor private and how does the static getInstance() method ensure that only one instance of the class is ever created?"
+  },
+  {
+    "course": "advanced-programming",
+    "file": "Chap4_Abstract_Interface.pptx",
+    "cau_hoi": "Khi gán lại tham chiếu `shape` thành `new Square()` rồi gọi `shape.draw()`, chương trình sẽ in ra dòng nào?",
+    "chunk_moi": {
+      "chunk_index": 6,
+      "content_sha": "cac1576939940243db0cb0eb02bfc5c0c9778eaf16db1be3abba73d696068a30"
+    },
+    "chunk_cu": {
+      "chunk_index": 6,
+      "content_sha": "cac1576939940243db0cb0eb02bfc5c0c9778eaf16db1be3abba73d696068a30",
+      "trung_tu": 1.0
+    },
+    "cau_hoi_goc": "What line of output is produced when the `shape` reference is reassigned to a `new Square()` and `shape.draw()` is invoked?"
+  },
+  {
+    "course": "advanced-programming",
+    "file": "Chap1_Encapsulation.pptx",
+    "cau_hoi": "Phương thức public nào cho phép truy cập vào thuộc tính private `speed` của đối tượng Car?",
+    "chunk_moi": {
+      "chunk_index": 2,
+      "content_sha": "07a0a367b07fbafb1875975910afe88289d7f07eca925c3e7f069afbf91cd038"
+    },
+    "chunk_cu": {
+      "chunk_index": 2,
+      "content_sha": "07a0a367b07fbafb1875975910afe88289d7f07eca925c3e7f069afbf91cd038",
+      "trung_tu": 1.0
+    },
+    "cau_hoi_goc": "What is the name of the public method that provides access to the Car object's private attribute `speed`?"
+  },
+  {
+    "course": "advanced-programming",
+    "file": "Chap3_Polymorphism.pptx",
+    "cau_hoi": "Lệnh gọi `a->f2();` cho ra kết quả gì trong đoạn mã C++ đã cho, và vì sao kết quả này minh họa sự khác biệt giữa liên kết tĩnh của `f()` và việc `f2()` không được liên kết động?",
+    "chunk_moi": {
+      "chunk_index": 6,
+      "content_sha": "5d5e163f66e744fb9d2c350a2c8d08a53a6fbb171dba4d14f33b6e76100fa066"
+    },
+    "chunk_cu": {
+      "chunk_index": 6,
+      "content_sha": "5d5e163f66e744fb9d2c350a2c8d08a53a6fbb171dba4d14f33b6e76100fa066",
+      "trung_tu": 1.0
+    },
+    "cau_hoi_goc": "What output does the call `a->f2();` produce in the given C++ code, and why does this result illustrate the difference between static binding of `f()` and the lack of dynamic binding for `f2()`?"
+  },
+  {
+    "course": "advanced-programming",
+    "file": "Chap2_Inheritance.pptx",
+    "cau_hoi": "Trong ví dụ code đầu tiên, khi `Superclass sup = sub;` thực hiện object slicing, lệnh gọi `sup.display();` sẽ cho ra kết quả gì?",
+    "chunk_moi": {
+      "chunk_index": 7,
+      "content_sha": "a5e61234e577c4e3d27ba990c8cf9e3b8aca26785cc6428a3bc108a3c8eeec84"
+    },
+    "chunk_cu": {
+      "chunk_index": 7,
+      "content_sha": "a5e61234e577c4e3d27ba990c8cf9e3b8aca26785cc6428a3bc108a3c8eeec84",
+      "trung_tu": 1.0
+    },
+    "cau_hoi_goc": "What output is produced by the call `sup.display();` in the first code example where `Superclass sup = sub;` performs object slicing?"
+  },
+  {
+    "course": "advanced-programming",
+    "file": "Chap1_Encapsulation.pptx",
+    "cau_hoi": "Trong ví dụ về lớp Person, trường age được khai báo với từ khóa phạm vi truy cập nào?",
+    "chunk_moi": {
+      "chunk_index": 6,
+      "content_sha": "9b6607ba805183d365c8f98b77477c1187fdcbd27ac49f8fcfb0c0f64e0f57c0"
+    },
+    "chunk_cu": {
+      "chunk_index": 6,
+      "content_sha": "9b6607ba805183d365c8f98b77477c1187fdcbd27ac49f8fcfb0c0f64e0f57c0",
+      "trung_tu": 1.0
+    },
+    "cau_hoi_goc": "In the Person class example, which access modifier is applied to the age field?"
+  },
+  {
+    "course": "advanced-programming",
+    "file": "Chap5_Design_Patterns.pptx",
+    "cau_hoi": "Bài giảng dùng thuật ngữ nào để mô tả yêu cầu rằng mẫu Class Adapter chỉ có thể được triển khai bằng các ngôn ngữ hỗ trợ đa kế thừa, chẳng hạn như C++?",
+    "chunk_moi": {
+      "chunk_index": 8,
+      "content_sha": "15655424a25d147b00976f106f3218416e18d3dac21d7fe2fdb97707c5be50e8"
+    },
+    "chunk_cu": {
+      "chunk_index": 8,
+      "content_sha": "15655424a25d147b00976f106f3218416e18d3dac21d7fe2fdb97707c5be50e8",
+      "trung_tu": 1.0
+    },
+    "cau_hoi_goc": "What term does the text use to describe the requirement that the Class Adapter pattern can only be implemented in languages supporting multiple inheritance, such as C++?"
+  },
+  {
+    "course": "advanced-programming",
+    "file": "Chap5_Design_Patterns.pptx",
+    "cau_hoi": "Để tuân thủ Subscriber Interface, một lớp cần triển khai phương thức nào?",
+    "chunk_moi": {
+      "chunk_index": 15,
+      "content_sha": "3bf5c3c8fe9b6396fb01980f3ce95faadefc19f729010c1ab4ece1d634768494"
+    },
+    "chunk_cu": {
+      "chunk_index": 15,
+      "content_sha": "3bf5c3c8fe9b6396fb01980f3ce95faadefc19f729010c1ab4ece1d634768494",
+      "trung_tu": 1.0
+    },
+    "cau_hoi_goc": "What method must a class implement to conform to the Subscriber Interface?"
+  },
+  {
+    "course": "advanced-programming",
+    "file": "Chap5_Design_Patterns.pptx",
+    "cau_hoi": "Trong tình huống khách hàng kiểm tra sản phẩm còn hàng tại cửa hàng, Observer pattern nhằm giải quyết cụ thể vấn đề gì?",
+    "chunk_moi": {
+      "chunk_index": 11,
+      "content_sha": "5c4e66c9d3e6a4585035b020cb6bcaea447ae6c9f65c9147689e5e7d40622bbd"
+    },
+    "chunk_cu": {
+      "chunk_index": 11,
+      "content_sha": "5c4e66c9d3e6a4585035b020cb6bcaea447ae6c9f65c9147689e5e7d40622bbd",
+      "trung_tu": 1.0
+    },
+    "cau_hoi_goc": "What specific problem does the Observer pattern aim to solve in the scenario involving a Customer checking product availability at a Store?"
+  },
+  {
+    "course": "advanced-programming",
+    "file": "Chap2_Inheritance.pptx",
+    "cau_hoi": "Trong lớp `Vehicle`, các giá trị mặc định được gán cho thuộc tính `brand` và `year` là gì ạ?",
+    "chunk_moi": {
+      "chunk_index": 9,
+      "content_sha": "2143398493f04e90063ef21bc28a32eaef66e252992321d79ab821d0c0f311df"
+    },
+    "chunk_cu": {
+      "chunk_index": 9,
+      "content_sha": "2143398493f04e90063ef21bc28a32eaef66e252992321d79ab821d0c0f311df",
+      "trung_tu": 1.0
+    },
+    "cau_hoi_goc": "What default values are assigned to the `brand` and `year` attributes in the `Vehicle` class?"
+  },
+  {
+    "course": "advanced-programming",
+    "file": "Chap4_Abstract_Interface.pptx",
+    "cau_hoi": "Vấn đề các phương thức phải tồn tại ngay từ thời điểm biên dịch để kiểm tra chữ ký, dẫn đến hệ phân cấp kế thừa cứng nhắc, được gọi là gì?",
+    "chunk_moi": {
+      "chunk_index": 4,
+      "content_sha": "79e9615153114e6615b84ae6b3a45192ce7969a4454e058b8ce8f9e1132f13ed"
+    },
+    "chunk_cu": {
+      "chunk_index": 4,
+      "content_sha": "79e9615153114e6615b84ae6b3a45192ce7969a4454e058b8ce8f9e1132f13ed",
+      "trung_tu": 1.0
+    },
+    "cau_hoi_goc": "What is the term used to describe the issue where methods require compile‑time presence for signature checks, leading to rigid inheritance hierarchies?"
+  },
+  {
+    "course": "advanced-programming",
+    "file": "Chap1_Encapsulation.pptx",
+    "cau_hoi": "Nguyên lý lập trình hướng đối tượng nào được định nghĩa là chia chương trình thành các lớp độc lập, tự chứa?",
+    "chunk_moi": {
+      "chunk_index": 4,
+      "content_sha": "5dbc184254566b2397a11fca3fe48eeb031796e2d210f06f7a684fc2e9a48789"
+    },
+    "chunk_cu": {
+      "chunk_index": 4,
+      "content_sha": "5dbc184254566b2397a11fca3fe48eeb031796e2d210f06f7a684fc2e9a48789",
+      "trung_tu": 1.0
+    },
+    "cau_hoi_goc": "Which OOP principle is defined as dividing programs into independent, self‑contained classes?"
+  },
+  {
+    "course": "advanced-programming",
+    "file": "Chap4_Abstract_Interface.pptx",
+    "cau_hoi": "Một lớp con phải làm gì với tất cả các phương thức abstract nếu bản thân lớp con không được khai báo là abstract?",
+    "chunk_moi": {
+      "chunk_index": 2,
+      "content_sha": "d49f5659357f49a0a48f1d607138bb634e36a799c02a2c7ff8051f3b13988cdd"
+    },
+    "chunk_cu": {
+      "chunk_index": 2,
+      "content_sha": "d49f5659357f49a0a48f1d607138bb634e36a799c02a2c7ff8051f3b13988cdd",
+      "trung_tu": 1.0
+    },
+    "cau_hoi_goc": "What must a subclass do with all abstract methods if the subclass itself is not declared abstract?"
+  },
+  {
+    "course": "advanced-programming",
+    "file": "Chap1_Encapsulation.pptx",
+    "cau_hoi": "Trong bài tập về tính đóng gói để xây dựng hệ thống thư viện, lớp Book cần có những thuộc tính nào?",
+    "chunk_moi": {
+      "chunk_index": 11,
+      "content_sha": "5befcfba7be94123fe02b3fe5319053663e4d3f83194cac803595f6398cc0606"
+    },
+    "chunk_cu": {
+      "chunk_index": 11,
+      "content_sha": "5befcfba7be94123fe02b3fe5319053663e4d3f83194cac803595f6398cc0606",
+      "trung_tu": 1.0
+    },
+    "cau_hoi_goc": "What attributes are required for the Book class in the encapsulation exercise for creating a library system?"
+  },
+  {
+    "course": "advanced-programming",
+    "file": "Chap4_Abstract_Interface.pptx",
+    "cau_hoi": "Quá trình xác định phương thức thực sự sẽ được thực thi vào thời gian chạy thay vì lúc biên dịch được gọi là gì?",
+    "chunk_moi": {
+      "chunk_index": 5,
+      "content_sha": "6708dea3473e6066d3e68fc11ecfed12349371d5dd29c7a1633aae82e1cdaa70"
+    },
+    "chunk_cu": {
+      "chunk_index": 5,
+      "content_sha": "6708dea3473e6066d3e68fc11ecfed12349371d5dd29c7a1633aae82e1cdaa70",
+      "trung_tu": 1.0
+    },
+    "cau_hoi_goc": "What term is used to describe the process where the actual method to be executed is determined at runtime rather than at compile time?"
+  },
+  {
+    "course": "advanced-programming",
+    "file": "Chap1_Encapsulation.pptx",
+    "cau_hoi": "So với class thì mức truy cập mặc định của các thành viên trong struct là gì ạ?",
+    "chunk_moi": {
+      "chunk_index": 7,
+      "content_sha": "84d8652536db7bbaff334c50d72b8f63c0ade0a6fd0b9ed2e9adf8bbb1489de9"
+    },
+    "chunk_cu": {
+      "chunk_index": 7,
+      "content_sha": "84d8652536db7bbaff334c50d72b8f63c0ade0a6fd0b9ed2e9adf8bbb1489de9",
+      "trung_tu": 1.0
+    },
+    "cau_hoi_goc": "What is the default access level for members of a struct compared to a class?"
+  },
+  {
+    "course": "advanced-programming",
+    "file": "Chap1_Encapsulation.pptx",
+    "cau_hoi": "Trong bài tập, lớp Laptop cần có chữ ký và phần cài đặt cụ thể như thế nào cho hàm khởi tạo mặc định, hàm khởi tạo có tham số và phương thức gọi nối tiếp hàm khởi tạo?",
+    "chunk_moi": {
+      "chunk_index": 10,
+      "content_sha": "b6b71b74a7dc6cc66ca660c762e6a3f78e5fc3b51d777314d86ab03616f7d93e"
+    },
+    "chunk_cu": {
+      "chunk_index": 10,
+      "content_sha": "b6b71b74a7dc6cc66ca660c762e6a3f78e5fc3b51d777314d86ab03616f7d93e",
+      "trung_tu": 1.0
+    },
+    "cau_hoi_goc": "What are the exact signatures and implementations required for the default constructor, the parameterized constructor, and the constructor chaining method in the Laptop class described in the exercise?"
+  },
+  {
+    "course": "advanced-programming",
+    "file": "Chap4_Abstract_Interface.pptx",
+    "cau_hoi": "Trong lớp C, phương thức `show()` mặc định của interface nào được gọi tường minh để giải quyết vấn đề kim cương?",
+    "chunk_moi": {
+      "chunk_index": 7,
+      "content_sha": "e376815b63c7f6250ca7715b1f96a50d5f6fa619a36fb8580ca256402868d965"
+    },
+    "chunk_cu": {
+      "chunk_index": 7,
+      "content_sha": "e376815b63c7f6250ca7715b1f96a50d5f6fa619a36fb8580ca256402868d965",
+      "trung_tu": 1.0
+    },
+    "cau_hoi_goc": "In class C, which interface's default show() method is explicitly invoked to resolve the diamond problem?"
+  },
+  {
+    "course": "advanced-programming",
+    "file": "Chap5_Design_Patterns.pptx",
+    "cau_hoi": "Mẫu thiết kế cấu trúc nào được định nghĩa là cách chuyển đổi một giao diện sang giao diện khác mà client mong đợi, qua đó kết nối các giao diện không tương thích vậy ạ?",
+    "chunk_moi": {
+      "chunk_index": 6,
+      "content_sha": "732f39727a668b0d37e4b865ca37b7bc34f7bbc466f99a3be0f332c1be5404e1"
+    },
+    "chunk_cu": {
+      "chunk_index": 6,
+      "content_sha": "732f39727a668b0d37e4b865ca37b7bc34f7bbc466f99a3be0f332c1be5404e1",
+      "trung_tu": 1.0
+    },
+    "cau_hoi_goc": "What structural design pattern is defined as a way to convert one interface into another expected by the client, effectively bridging incompatible interfaces?"
+  },
+  {
+    "course": "advanced-programming",
+    "file": "Chap1_Encapsulation.pptx",
+    "cau_hoi": "Lợi ích nào của tính đóng gói được mô tả là “cho phép tạo các thuộc tính chỉ đọc hoặc chỉ ghi”?",
+    "chunk_moi": {
+      "chunk_index": 9,
+      "content_sha": "563e748438bd028d82b9c07e79057d0f13bc474b4a20293650fdb2421d8d2719"
+    },
+    "chunk_cu": {
+      "chunk_index": 9,
+      "content_sha": "563e748438bd028d82b9c07e79057d0f13bc474b4a20293650fdb2421d8d2719",
+      "trung_tu": 1.0
+    },
+    "cau_hoi_goc": "What benefit of encapsulation is described as “Allows creation of read‑only or write‑only properties”?"
+  },
+  {
+    "course": "advanced-programming",
+    "file": "Chap4_Abstract_Interface.pptx",
+    "cau_hoi": "Thuật ngữ nào dùng để chỉ một lớp không thể tạo đối tượng nhưng có thể chứa cả phương thức trừu tượng (không có phần cài đặt) lẫn phương thức cụ thể (có phần cài đặt)?",
+    "chunk_moi": {
+      "chunk_index": 1,
+      "content_sha": "83dce82809d65157450942bcc9dd02b694e86c427ff0a1ad9cfbd0298d8327a8"
+    },
+    "chunk_cu": {
+      "chunk_index": 1,
+      "content_sha": "83dce82809d65157450942bcc9dd02b694e86c427ff0a1ad9cfbd0298d8327a8",
+      "trung_tu": 1.0
+    },
+    "cau_hoi_goc": "What term describes a class that cannot be instantiated but can contain both abstract methods (without implementation) and concrete methods (with implementation)?"
+  },
+  {
+    "course": "advanced-programming",
+    "file": "Chap2_Inheritance.pptx",
+    "cau_hoi": "Khi một biến tham chiếu kiểu `Superclass` được gán `new Subclass()` rồi gọi phương thức `display()`, nội dung nào sẽ được in ra console?",
+    "chunk_moi": {
+      "chunk_index": 8,
+      "content_sha": "1883292766f75c836d8a8de4235020083b01a970ef319d240e43975997b9f1c9"
+    },
+    "chunk_cu": {
+      "chunk_index": 8,
+      "content_sha": "1883292766f75c836d8a8de4235020083b01a970ef319d240e43975997b9f1c9",
+      "trung_tu": 1.0
+    },
+    "cau_hoi_goc": "When a `Superclass` reference is assigned `new Subclass()` and its `display()` method is invoked, what text is printed to the console?"
+  },
+  {
+    "course": "advanced-programming",
+    "file": "Chap1_Encapsulation.pptx",
+    "cau_hoi": "Phương thức nào được nhắc đến làm ví dụ về tính đa hình, thể hiện hành vi khác nhau với các đối tượng Circle và Rectangle?",
+    "chunk_moi": {
+      "chunk_index": 3,
+      "content_sha": "703dea807e690203c12f76f5035d11846d6d7f339ce917734b78b58ae6ad2ff3"
+    },
+    "chunk_cu": {
+      "chunk_index": 3,
+      "content_sha": "703dea807e690203c12f76f5035d11846d6d7f339ce917734b78b58ae6ad2ff3",
+      "trung_tu": 1.0
+    },
+    "cau_hoi_goc": "Which method is cited as an example of polymorphism, demonstrating different behavior for Circle and Rectangle objects?"
+  },
+  {
+    "course": "advanced-programming",
+    "file": "Chap2_Inheritance.pptx",
+    "cau_hoi": "Phương thức `toString()` của lớp Book cần trả về chuỗi có định dạng chính xác như thế nào, bao gồm cả cách nó kết hợp kết quả `toString()` của lớp Author?",
+    "chunk_moi": {
+      "chunk_index": 14,
+      "content_sha": "dbf339be6aec0ac83a96665b718a4cc82ddd85fce8f82b43affb19cdc4d5d0f1"
+    },
+    "chunk_cu": {
+      "chunk_index": 14,
+      "content_sha": "dbf339be6aec0ac83a96665b718a4cc82ddd85fce8f82b43affb19cdc4d5d0f1",
+      "trung_tu": 1.0
+    },
+    "cau_hoi_goc": "What exact string format should the Book class’s `toString()` method return, including how it incorporates the Author class’s `toString()` output?"
+  },
+  {
+    "course": "advanced-programming",
+    "file": "Chap2_Inheritance.pptx",
+    "cau_hoi": "Phương thức `toString()` của lớp `Book` phải tạo ra chuỗi chính xác theo định dạng nào, bao gồm các placeholder cho `name`, `authors`, `price` và `quantity`?",
+    "chunk_moi": {
+      "chunk_index": 16,
+      "content_sha": "0263e8c9972b6af6a10881fe151cdcd13295b2dd3c7a0a1f6827ab4f1b217864"
+    },
+    "chunk_cu": {
+      "chunk_index": 16,
+      "content_sha": "0263e8c9972b6af6a10881fe151cdcd13295b2dd3c7a0a1f6827ab4f1b217864",
+      "trung_tu": 1.0
+    },
+    "cau_hoi_goc": "What exact string format must the Book class’s toString() method produce, including the placeholders for name, authors, price, and quantity?"
+  },
+  {
+    "course": "advanced-programming",
+    "file": "Chap3_Polymorphism.pptx",
+    "cau_hoi": "Sự khác nhau giữa nạp chồng phương thức và ghi đè phương thức như được trình bày trong phần giới thiệu về tính đa hình là gì ạ?",
+    "chunk_moi": {
+      "chunk_index": 1,
+      "content_sha": "206cc19b326b03f163b30ffa1a41f9eb465c359339e99c5be01ba17c77b542b8"
+    },
+    "chunk_cu": {
+      "chunk_index": 1,
+      "content_sha": "206cc19b326b03f163b30ffa1a41f9eb465c359339e99c5be01ba17c77b542b8",
+      "trung_tu": 1.0
+    },
+    "cau_hoi_goc": "What is the difference between method overloading and method overriding as defined in the introduction to polymorphism?"
+  },
+  {
+    "course": "machine-learning",
+    "file": "Week03.mp4",
+    "cau_hoi": "Trong mỗi lần lặp của phương pháp Newton, người ta dùng gì để tìm đường thẳng xấp xỉ cho hàm $f$?",
+    "chunk_moi": {
+      "chunk_index": 83,
+      "content_sha": "0d556f4f19563d6b3f3160af266c76a859eeeeae39fdcc4256d82960dea42ba0"
+    },
+    "chunk_cu": {
+      "chunk_index": 83,
+      "content_sha": "0d556f4f19563d6b3f3160af266c76a859eeeeae39fdcc4256d82960dea42ba0",
+      "trung_tu": 1.0
+    },
+    "cau_hoi_goc": "What is used to find a straight line approximation to the function $f$ during an iteration of Newton's method?"
+  },
+  {
+    "course": "machine-learning",
+    "file": "Week03.mp4",
+    "cau_hoi": "Tham số θ có vai trò gì khi tối đa hóa hàm log-likelihood trong mô hình dự đoán độ ác tính của khối u?",
+    "chunk_moi": {
+      "chunk_index": 68,
+      "content_sha": "14804addfc00ca5388c24538bd049a0c70afc7ca508f483fd2598bc68799e590"
+    },
+    "chunk_cu": {
+      "chunk_index": 68,
+      "content_sha": "14804addfc00ca5388c24538bd049a0c70afc7ca508f483fd2598bc68799e590",
+      "trung_tu": 1.0
+    },
+    "cau_hoi_goc": "What is the role of the parameter θ when maximizing the log‑likelihood in a tumor malignancy prediction model?"
+  },
+  {
+    "course": "machine-learning",
+    "file": "Week04.mp3",
+    "cau_hoi": "Hàm ánh xạ tham số tự nhiên η về giá trị trung bình μ của phân phối được gọi là gì, và nó liên hệ như thế nào với gradient của hàm log-partition?",
+    "chunk_moi": {
+      "chunk_index": 47,
+      "content_sha": "320a00bc516c485db8d9b5d831a2fa62cb5cfd0268aba3cc54b5c140fcc282af"
+    },
+    "chunk_cu": {
+      "chunk_index": 47,
+      "content_sha": "320a00bc516c485db8d9b5d831a2fa62cb5cfd0268aba3cc54b5c140fcc282af",
+      "trung_tu": 1.0
+    },
+    "cau_hoi_goc": "What is the term used for the function that maps the natural parameter η back to the mean μ of the distribution, and how is it related to the gradient of the log partition function?"
+  },
+  {
+    "course": "machine-learning",
+    "file": "Week03.mp4",
+    "cau_hoi": "Ma trận Hessian có dạng như thế nào khi vector tham số θ là một vector thuộc ℝⁿ⁺¹, và nó liên hệ thế nào với vector các đạo hàm của log-likelihood theo θ?",
+    "chunk_moi": {
+      "chunk_index": 90,
+      "content_sha": "e48dfcd9051c2b0b3523d3b6ac407f3ff1b88c0e90691511516f7af42b376a55"
+    },
+    "chunk_cu": {
+      "chunk_index": 90,
+      "content_sha": "e48dfcd9051c2b0b3523d3b6ac407f3ff1b88c0e90691511516f7af42b376a55",
+      "trung_tu": 1.0
+    },
+    "cau_hoi_goc": "What is the shape of the Hessian matrix when the parameter vector θ is an ℝⁿ⁺¹ vector, and how does this relate to the vector of derivatives of the log‑likelihood with respect to θ?"
+  },
+  {
+    "course": "machine-learning",
+    "file": "Week02.mp4",
+    "cau_hoi": "Vai trò của các phần tử \\(A_{11}\\) và \\(A_{12}\\) là gì khi áp dụng định nghĩa đạo hàm ma trận như trong đoạn văn?",
+    "chunk_moi": {
+      "chunk_index": 73,
+      "content_sha": "fe71bf700cc043d405c544ec1ed4a106d9cdf03f4d07d066f6db074ddd1abca5"
+    },
+    "chunk_cu": {
+      "chunk_index": 73,
+      "content_sha": "fe71bf700cc043d405c544ec1ed4a106d9cdf03f4d07d066f6db074ddd1abca5",
+      "trung_tu": 1.0
+    },
+    "cau_hoi_goc": "What is the role of the elements \\(A_{11}\\) and \\(A_{12}\\) when applying the definition of a matrix derivative as described in the passage?"
+  },
+  {
+    "course": "machine-learning",
+    "file": "Week04.mp3",
+    "cau_hoi": "Trong đoạn này, thuật ngữ nào dùng để chỉ hàm trở nên lồi khi được tối thiểu hóa, và nó liên quan thế nào đến việc đổi dấu của likelihood?",
+    "chunk_moi": {
+      "chunk_index": 31,
+      "content_sha": "be0db9a9d1aeb7a19952bb8491251c718286ee41774b19da7b1a68e9c023a736"
+    },
+    "chunk_cu": {
+      "chunk_index": 31,
+      "content_sha": "be0db9a9d1aeb7a19952bb8491251c718286ee41774b19da7b1a68e9c023a736",
+      "trung_tu": 1.0
+    },
+    "cau_hoi_goc": "What term in the passage describes the function that becomes convex when you minimize it, and how is it related to the sign flip of the likelihood?"
+  },
+  {
+    "course": "machine-learning",
+    "file": "Week02.mp4",
+    "cau_hoi": "Thuật toán hồi quy tuyến tính nhằm tối thiểu hóa đại lượng nào giữa giả thuyết \\(h_{\\theta}(x)\\) và các giá trị quan sát được \\(y\\)?",
+    "chunk_moi": {
+      "chunk_index": 16,
+      "content_sha": "cfb70d2ab62f8840f12871054a47a84e5a6f51b4bd44f76ea0484f20fd053757"
+    },
+    "chunk_cu": {
+      "chunk_index": 16,
+      "content_sha": "cfb70d2ab62f8840f12871054a47a84e5a6f51b4bd44f76ea0484f20fd053757",
+      "trung_tu": 1.0
+    },
+    "cau_hoi_goc": "What does the linear regression algorithm aim to minimize, specifically involving the hypothesis \\(h_{\\theta}(x)\\) and the observed values \\(y\\)?"
+  },
+  {
+    "course": "machine-learning",
+    "file": "Week04.mp3",
+    "cau_hoi": "Đoạn trích dùng thuật ngữ nào để gọi nhãn \\(P(Y)\\) khi nhãn này được biểu diễn dưới dạng phân phối xác suất, gán giá trị 1 cho lớp đúng và 0 cho tất cả các lớp còn lại?",
+    "chunk_moi": {
+      "chunk_index": 69,
+      "content_sha": "138cac25aa9f9eb43b4a252b2bf96e051e5b811e7d87b0d3306c35737497c21f"
+    },
+    "chunk_cu": {
+      "chunk_index": 69,
+      "content_sha": "138cac25aa9f9eb43b4a252b2bf96e051e5b811e7d87b0d3306c35737497c21f",
+      "trung_tu": 1.0
+    },
+    "cau_hoi_goc": "What term does the excerpt use to describe the label \\(P(Y)\\) when it is represented as a probability distribution that assigns 1 to the correct class and 0 to all others?"
+  },
+  {
+    "course": "machine-learning",
+    "file": "Week03.mp4",
+    "cau_hoi": "Trong bài giảng, giảng viên khuyến nghị dùng thuật toán nào khi bộ dữ liệu chỉ có một vài đặc trưng (ví dụ như hai hoặc ba) nhưng lại có rất nhiều quan sát?",
+    "chunk_moi": {
+      "chunk_index": 24,
+      "content_sha": "83765afa33eb4bf26bb47b4bec9bb512a661ff453dbc4f97bfce65cf616b9bcc"
+    },
+    "chunk_cu": {
+      "chunk_index": 24,
+      "content_sha": "83765afa33eb4bf26bb47b4bec9bb512a661ff453dbc4f97bfce65cf616b9bcc",
+      "trung_tu": 1.0
+    },
+    "cau_hoi_goc": "What algorithm does the speaker recommend using when the dataset has only a few features (e.g., two or three) but a large number of observations?"
+  },
+  {
+    "course": "machine-learning",
+    "file": "Week03.mp4",
+    "cau_hoi": "Trong bài giảng, phân phối của εᵢ được ký hiệu như thế nào, và các tham số trung bình và phương sai của phân phối đó là bao nhiêu?",
+    "chunk_moi": {
+      "chunk_index": 29,
+      "content_sha": "849525219560eecdd98724b4c14fbd3f7e1a0f37ec55d1a020dcb24ced9d8e4d"
+    },
+    "chunk_cu": {
+      "chunk_index": 29,
+      "content_sha": "849525219560eecdd98724b4c14fbd3f7e1a0f37ec55d1a020dcb24ced9d8e4d",
+      "trung_tu": 1.0
+    },
+    "cau_hoi_goc": "What notation is used to denote the distribution of εᵢ, and what are the specified mean and variance parameters of that distribution?"
+  },
+  {
+    "course": "machine-learning",
+    "file": "Week05.mp3",
+    "cau_hoi": "Theo ghi chú bài giảng, hàm mật độ xác suất nào thường được sử dụng khi triển khai các thuật toán học máy?",
+    "chunk_moi": {
+      "chunk_index": 13,
+      "content_sha": "7e122cc4ef434830f738757fe01637e1a8d40f655d53c34804704ae77cf0769c"
+    },
+    "chunk_cu": {
+      "chunk_index": 13,
+      "content_sha": "7e122cc4ef434830f738757fe01637e1a8d40f655d53c34804704ae77cf0769c",
+      "trung_tu": 1.0
+    },
+    "cau_hoi_goc": "What is the probability density function called that is repeatedly used when implementing machine learning algorithms, as described in the lecture notes?"
+  },
+  {
+    "course": "machine-learning",
+    "file": "Week05.mp3",
+    "cau_hoi": "Trong phần thảo luận, phân phối nào được nêu là tạo ra \\(x\\) khi \\(y = 0\\)?",
+    "chunk_moi": {
+      "chunk_index": 72,
+      "content_sha": "827d972fa02451b1bfcf63915c66ee17f77a06f45cb4e2d04eafe580c6088562"
+    },
+    "chunk_cu": {
+      "chunk_index": 72,
+      "content_sha": "827d972fa02451b1bfcf63915c66ee17f77a06f45cb4e2d04eafe580c6088562",
+      "trung_tu": 1.0
+    },
+    "cau_hoi_goc": "What distribution is stated to generate \\(x\\) when \\(y = 0\\) in the discussion?"
+  },
+  {
+    "course": "machine-learning",
+    "file": "Week02.mp4",
+    "cau_hoi": "Khi khởi tạo θ₀ và θ₁ rồi bắt đầu “đứng trên ngọn đồi nhỏ này” như trong bài giảng, gradient descent hướng tới việc tối thiểu hóa đại lượng nào ạ?",
+    "chunk_moi": {
+      "chunk_index": 22,
+      "content_sha": "f4c9159f293cc0380dd6e042615edfaf5c54c488cb23db0f6b490a53167713e1"
+    },
+    "chunk_cu": {
+      "chunk_index": 22,
+      "content_sha": "f4c9159f293cc0380dd6e042615edfaf5c54c488cb23db0f6b490a53167713e1",
+      "trung_tu": 1.0
+    },
+    "cau_hoi_goc": "What does gradient descent aim to minimize when we initialize θ₀ and θ₁ and start “standing on this little hill” in the context described?"
+  },
+  {
+    "course": "machine-learning",
+    "file": "Week02.mp4",
+    "cau_hoi": "Phương pháp nào cho phép bạn tính các tham số tối ưu θ của mô hình hồi quy tuyến tính chính xác chỉ trong một bước mà không cần dùng gradient descent?",
+    "chunk_moi": {
+      "chunk_index": 65,
+      "content_sha": "8557bc35c444813b997f531c1c940b3acf2304a40693a41da2aab3dd49fd6cfe"
+    },
+    "chunk_cu": {
+      "chunk_index": 65,
+      "content_sha": "8557bc35c444813b997f531c1c940b3acf2304a40693a41da2aab3dd49fd6cfe",
+      "trung_tu": 1.0
+    },
+    "cau_hoi_goc": "What is the name of the method that allows you to compute the optimal parameters θ for exactly linear regression in a single step, without using gradient descent?"
+  },
+  {
+    "course": "machine-learning",
+    "file": "Week05.mp3",
+    "cau_hoi": "Điểm khác biệt cốt lõi giữa hàm hợp lý có điều kiện dùng trong hồi quy logistic (tối đa hóa P(Y | X)) và mục tiêu hàm hợp lý của các thuật toán học sinh (tối đa hóa P(X, Y)) là gì ạ?",
+    "chunk_moi": {
+      "chunk_index": 28,
+      "content_sha": "a98f55fdd82755a69ff42769ae8496067391642413de76269d0c4902c82c1d7f"
+    },
+    "chunk_cu": {
+      "chunk_index": 28,
+      "content_sha": "a98f55fdd82755a69ff42769ae8496067391642413de76269d0c4902c82c1d7f",
+      "trung_tu": 1.0
+    },
+    "cau_hoi_goc": "What is the key distinction between the conditional likelihood used in logistic regression (maximizing P(Y | X)) and the likelihood objective for generative learning algorithms (maximizing P(X, Y))?"
+  },
+  {
+    "course": "machine-learning",
+    "file": "Week02.mp4",
+    "cau_hoi": "Giá trị của m (số lượng mẫu huấn luyện) trong bộ dữ liệu được mô tả là bao nhiêu, và những giá trị learning rate theo cấp số nhân cụ thể nào được gợi ý để thử nghiệm (ví dụ: 0.01, 0.02, 0.04, 0.08)?",
+    "chunk_moi": {
+      "chunk_index": 43,
+      "content_sha": "53197c52584a05eb48e01c695170f919e7a63f41327d25c9e7b6691801622200"
+    },
+    "chunk_cu": {
+      "chunk_index": 43,
+      "content_sha": "53197c52584a05eb48e01c695170f919e7a63f41327d25c9e7b6691801622200",
+      "trung_tu": 1.0
+    },
+    "cau_hoi_goc": "What is the value of m (the number of training examples) in the dataset described, and which specific exponential learning‑rate values are suggested for testing (e.g., 0.01, 0.02, 0.04, 0.08)?"
+  },
+  {
+    "course": "machine-learning",
+    "file": "Week03.mp4",
+    "cau_hoi": "Trong phần suy dẫn từ θ₀ đến θ₁, khoảng cách theo phương ngang được ký hiệu như thế nào, và đoạn trích phân biệt dạng chữ hoa với chữ thường của ký tự Hy Lạp đó ra sao?",
+    "chunk_moi": {
+      "chunk_index": 85,
+      "content_sha": "f4b54d080f7a6019ade280737ec18ad6ebea5cbc44ed46a4df29b706b988b530"
+    },
+    "chunk_cu": {
+      "chunk_index": 85,
+      "content_sha": "f4b54d080f7a6019ade280737ec18ad6ebea5cbc44ed46a4df29b706b988b530",
+      "trung_tu": 1.0
+    },
+    "cau_hoi_goc": "What is the notation used for the horizontal distance in the derivation from θ₀ to θ₁, and how does the excerpt distinguish between its uppercase and lowercase Greek forms?"
+  },
+  {
+    "course": "machine-learning",
+    "file": "Week04.mp3",
+    "cau_hoi": "Tham số θ đóng vai trò gì trong quá trình huấn luyện mô hình, và tại sao chúng ta không học các tham số của phân phối thuộc họ mũ?",
+    "chunk_moi": {
+      "chunk_index": 41,
+      "content_sha": "ff697a97bbc12caa293091f3cc45c472b999e905805ea0427c1011e79d3c327b"
+    },
+    "chunk_cu": {
+      "chunk_index": 41,
+      "content_sha": "ff697a97bbc12caa293091f3cc45c472b999e905805ea0427c1011e79d3c327b",
+      "trung_tu": 1.0
+    },
+    "cau_hoi_goc": "What role does the parameter θ play in training the model, and why are we not learning any of the parameters of the exponential family distribution?"
+  },
+  {
+    "course": "machine-learning",
+    "file": "Week05.mp3",
+    "cau_hoi": "Khi mô tả “max theo y của p(x|y) nhân p(y), chia cho p(x)”, diễn giả đưa ra ký hiệu nào, và ông liên hệ nó với khái niệm “argmax” quen thuộc như thế nào?",
+    "chunk_moi": {
+      "chunk_index": 37,
+      "content_sha": "baca3ed3253ed9e021aaf1501b991e18d5cc72e263b8b0a357ce1ce234176ce2"
+    },
+    "chunk_cu": {
+      "chunk_index": 37,
+      "content_sha": "baca3ed3253ed9e021aaf1501b991e18d5cc72e263b8b0a357ce1ce234176ce2",
+      "trung_tu": 1.0
+    },
+    "cau_hoi_goc": "What notation does the speaker introduce when describing “the max over y of p of x given y, p of y, divided by p of x,” and how does he relate it to the familiar “argmax” concept?"
+  },
+  {
+    "course": "machine-learning",
+    "file": "Week03.mp4",
+    "cau_hoi": "Trong trường hợp này, khi áp dụng phương pháp ước lượng hợp lý cực đại, hàm hợp lý có biểu thức như thế nào với ký hiệu tích “∏_{i=1}^{m} h(x_i)”?",
+    "chunk_moi": {
+      "chunk_index": 66,
+      "content_sha": "7981ae512d1d3ec714d75595fc0ff8c0075233d8360697ba57a7ea0a19b1888d"
+    },
+    "chunk_cu": {
+      "chunk_index": 66,
+      "content_sha": "7981ae512d1d3ec714d75595fc0ff8c0075233d8360697ba57a7ea0a19b1888d",
+      "trung_tu": 1.0
+    },
+    "cau_hoi_goc": "What is the expression for the likelihood function that involves the product notation “∏_{i=1}^{m} h(x_i)” when applying maximum likelihood estimation in this context?"
+  },
+  {
+    "course": "machine-learning",
+    "file": "Week05.mp3",
+    "cau_hoi": "Mật độ Gaussian thay đổi như thế nào khi ta đổi ma trận hiệp phương sai từ ma trận đơn vị sang gấp đôi ma trận đơn vị, rồi tăng các phần tử ngoài đường chéo từ 0 lên 0.5?",
+    "chunk_moi": {
+      "chunk_index": 16,
+      "content_sha": "47494c53ed36d05ba2baa17827f930363203dc0508b6ba285db50314159b1275"
+    },
+    "chunk_cu": {
+      "chunk_index": 16,
+      "content_sha": "47494c53ed36d05ba2baa17827f930363203dc0508b6ba285db50314159b1275",
+      "trung_tu": 1.0
+    },
+    "cau_hoi_goc": "What happens to the Gaussian density when you change its covariance from the identity matrix to twice the identity, and then increase the off‑diagonal entries from 0 to 0.5?"
+  },
+  {
+    "course": "machine-learning",
+    "file": "Week05.mp3",
+    "cau_hoi": "Mô hình nào được nhắc đến là ánh xạ một email thành vector đặc trưng x, và ban đầu nó sử dụng tài nguyên cụ thể nào để tạo vector đó?",
+    "chunk_moi": {
+      "chunk_index": 76,
+      "content_sha": "a24059fbcc6dc3bdc7a49b7b06a214aace4e5558eb9b347d83cd46bc8ba39152"
+    },
+    "chunk_cu": {
+      "chunk_index": 76,
+      "content_sha": "a24059fbcc6dc3bdc7a49b7b06a214aace4e5558eb9b347d83cd46bc8ba39152",
+      "trung_tu": 1.0
+    },
+    "cau_hoi_goc": "What is the name of the model mentioned that maps an email to a feature vector x, and which specific resource does it initially use to create that vector?"
+  },
+  {
+    "course": "machine-learning",
+    "file": "Week05.mp3",
+    "cau_hoi": "Người nói đưa ra lý do gì để dùng chung một ma trận hiệp phương sai khi khớp phân phối Gaussian cho cả hai lớp, và điều này khác gì với lập luận trực quan dựa trên việc ước lượng giá trị trung bình của hai lần tung đồng xu (μ₀ và μ₁)?",
+    "chunk_moi": {
+      "chunk_index": 35,
+      "content_sha": "fbf5b74373243b3ff33b3fa4c97d15e965d26264002c4644d9662849b6ae0c86"
+    },
+    "chunk_cu": {
+      "chunk_index": 35,
+      "content_sha": "fbf5b74373243b3ff33b3fa4c97d15e965d26264002c4644d9662849b6ae0c86",
+      "trung_tu": 1.0
+    },
+    "cau_hoi_goc": "What reasoning does the speaker give for using a single covariance matrix when fitting a Gaussian to both classes, and how does this differ from the intuitive argument based on estimating the mean of a coin toss (μ₀ and μ₁)?"
+  },
+  {
+    "course": "machine-learning",
+    "file": "Week04.mp3",
+    "cau_hoi": "Trong các quy tắc cập nhật GLM, tham số tự nhiên \\( \\eta \\) liên hệ với giá trị trung bình của phân phối thông qua hàm đáp ứng chính tắc được gọi là gì?",
+    "chunk_moi": {
+      "chunk_index": 46,
+      "content_sha": "dae3b87b38ad3d61982cf94b3dd0de37c470d043d57fa48aa364b22fcfcfa94f"
+    },
+    "chunk_cu": {
+      "chunk_index": 46,
+      "content_sha": "dae3b87b38ad3d61982cf94b3dd0de37c470d043d57fa48aa364b22fcfcfa94f",
+      "trung_tu": 1.0
+    },
+    "cau_hoi_goc": "What is the term used for the natural parameter \\( \\eta \\) that links to the mean of the distribution via the canonical response function in GLM update rules?"
+  },
+  {
+    "course": "machine-learning",
+    "file": "Week02.mp4",
+    "cau_hoi": "Đoạn này nói gì về việc lựa chọn tham số khởi tạo ảnh hưởng như thế nào đến điểm cuối cùng mà gradient descent đạt được?",
+    "chunk_moi": {
+      "chunk_index": 24,
+      "content_sha": "147caf2ce5e644d796a3cae53aba1c07b4924ac693109d73b146c8e2f9b7be6a"
+    },
+    "chunk_cu": {
+      "chunk_index": 24,
+      "content_sha": "147caf2ce5e644d796a3cae53aba1c07b4924ac693109d73b146c8e2f9b7be6a",
+      "trung_tu": 1.0
+    },
+    "cau_hoi_goc": "What does the passage say about how the choice of initial parameters can affect the point that gradient descent ultimately reaches?"
+  },
+  {
+    "course": "machine-learning",
+    "file": "Week05.mp3",
+    "cau_hoi": "Thuật ngữ “phân loại văn bản” dùng để chỉ điều gì khi phân biệt email spam với email không phải spam, hoặc phân loại các mô tả sản phẩm như tin đăng bán Roomba trên eBay?",
+    "chunk_moi": {
+      "chunk_index": 75,
+      "content_sha": "5280ed6dd5350c1e0bf50bad608a7a3b95e4f5dfee39f1bb7e97c456dd5f325a"
+    },
+    "chunk_cu": {
+      "chunk_index": 75,
+      "content_sha": "5280ed6dd5350c1e0bf50bad608a7a3b95e4f5dfee39f1bb7e97c456dd5f325a",
+      "trung_tu": 1.0
+    },
+    "cau_hoi_goc": "What does the term “text classification” refer to when distinguishing between spam and non‑spam emails or categorizing product descriptions like a Roomba listing on eBay?"
+  },
+  {
+    "course": "machine-learning",
+    "file": "Week02.mp4",
+    "cau_hoi": "Đoạn trích nói các đường đồng mức của hàm bậc hai tạo thành hình gì?",
+    "chunk_moi": {
+      "chunk_index": 40,
+      "content_sha": "0abd3e2ac1c20b2b869bde9a58fd32aa67c0367ca5a97b19ddf97485896417a3"
+    },
+    "chunk_cu": {
+      "chunk_index": 40,
+      "content_sha": "0abd3e2ac1c20b2b869bde9a58fd32aa67c0367ca5a97b19ddf97485896417a3",
+      "trung_tu": 1.0
+    },
+    "cau_hoi_goc": "What shape does the excerpt say the contours (level curves) of the quadratic function form?"
+  },
+  {
+    "course": "machine-learning",
+    "file": "Week04.mp3",
+    "cau_hoi": "Trong ví dụ phân loại đa lớp được mô tả, hai chiều đầu vào nào được ký hiệu là X₁ và X₂ để trực quan hóa không gian đầu vào của ba lớp (hình tròn, hình vuông và hình tam giác)?",
+    "chunk_moi": {
+      "chunk_index": 62,
+      "content_sha": "65ca9dac8d8f56d069fbc7598847a03ec7363f75821ff0dfeaedb9ad89b9c2a4"
+    },
+    "chunk_cu": {
+      "chunk_index": 62,
+      "content_sha": "65ca9dac8d8f56d069fbc7598847a03ec7363f75821ff0dfeaedb9ad89b9c2a4",
+      "trung_tu": 1.0
+    },
+    "cau_hoi_goc": "In the described multi‑class classification example, which two input dimensions are labeled as X₁ and X₂ that help visualize the input space for the three classes (circles, squares, and triangles)?"
+  },
+  {
+    "course": "machine-learning",
+    "file": "Week02.mp4",
+    "cau_hoi": "Ma trận biểu diễn đạo hàm của \\(F(A)\\) theo \\(A\\) có kích thước như thế nào khi \\(A\\) là ma trận \\(2 \\times 2\\), và theo phần giải thích thì các phần tử của ma trận đó được tính ra sao?",
+    "chunk_moi": {
+      "chunk_index": 72,
+      "content_sha": "0cebc26ebdf912d6526e8cfb401428654fdd8fb088609b4f56f48263596567d9"
+    },
+    "chunk_cu": {
+      "chunk_index": 72,
+      "content_sha": "0cebc26ebdf912d6526e8cfb401428654fdd8fb088609b4f56f48263596567d9",
+      "trung_tu": 1.0
+    },
+    "cau_hoi_goc": "What is the shape of the matrix that represents the derivative of \\(F(A)\\) with respect to \\(A\\) when \\(A\\) is a \\(2 \\times 2\\) matrix, and how are its entries obtained according to the explanation?"
+  },
+  {
+    "course": "machine-learning",
+    "file": "Week02.mp4",
+    "cau_hoi": "Vector đặc trưng \\(x\\) được mô tả gồm ba thành phần nào, và thành phần nào luôn được đặt bằng 1?",
+    "chunk_moi": {
+      "chunk_index": 9,
+      "content_sha": "36f53aeca14228421a9f5ed83568ad4ce30518e0390159ee20c6f4579e8636af"
+    },
+    "chunk_cu": {
+      "chunk_index": 9,
+      "content_sha": "36f53aeca14228421a9f5ed83568ad4ce30518e0390159ee20c6f4579e8636af",
+      "trung_tu": 1.0
+    },
+    "cau_hoi_goc": "What are the three components of the feature vector \\(x\\) described, and which one is always set to 1?"
+  },
+  {
+    "course": "machine-learning",
+    "file": "Week03.mp4",
+    "cau_hoi": "Yếu tố nào quyết định kích thước vùng lân cận dùng để khớp đường thẳng cục bộ, và nó được mô tả như thế nào dựa trên độ rộng của mật độ Gaussian?",
+    "chunk_moi": {
+      "chunk_index": 19,
+      "content_sha": "bf3e4bdee40e49509cb37207a1b9b571c9b429ed031845e574bf19afc0057e01"
+    },
+    "chunk_cu": {
+      "chunk_index": 19,
+      "content_sha": "bf3e4bdee40e49509cb37207a1b9b571c9b429ed031845e574bf19afc0057e01",
+      "trung_tu": 1.0
+    },
+    "cau_hoi_goc": "What factor determines the size of the neighborhood used to fit the local straight line, and how is this factor described in terms of the Gaussian density’s width?"
+  },
+  {
+    "course": "machine-learning",
+    "file": "Week03.mp4",
+    "cau_hoi": "Định lý giới hạn trung tâm đóng vai trò gì trong việc biện minh cho việc dùng phân phối Gaussian làm mô hình nhiễu mặc định, và điều này thay đổi như thế nào khi áp dụng mô hình tuyến tính tổng quát cho các phân phối không Gaussian như Poisson?",
+    "chunk_moi": {
+      "chunk_index": 44,
+      "content_sha": "68640edadd4cc4d5d2266f90eb7fdbc6d761b622ebf0a8ffff849924ba1e5f25"
+    },
+    "chunk_cu": {
+      "chunk_index": 44,
+      "content_sha": "68640edadd4cc4d5d2266f90eb7fdbc6d761b622ebf0a8ffff849924ba1e5f25",
+      "trung_tu": 1.0
+    },
+    "cau_hoi_goc": "What role does the central limit theorem play in justifying the Gaussian distribution as the default noise model, and how does this change when applying generalized linear models to non‑Gaussian distributions such as the Poisson?"
+  },
+  {
+    "course": "machine-learning",
+    "file": "Week04.mp3",
+    "cau_hoi": "Trong quy trình chuẩn hóa được mô tả, “\\( \\hat{P}(Y \\mid X) \\)” biểu thị điều gì, và nó được tính như thế nào bằng biểu thức “\\( \\frac{e^{\\theta^{\\top}x}}{\\sum_{i\\in\\triangle\\square\\circ} e^{\\theta_i^{\\top}x}} \\)”?",
+    "chunk_moi": {
+      "chunk_index": 68,
+      "content_sha": "193f4ea09242d3947577202759b67639e1c53a6f8b93d1e0ea1ed4534e2a942b"
+    },
+    "chunk_cu": {
+      "chunk_index": 68,
+      "content_sha": "193f4ea09242d3947577202759b67639e1c53a6f8b93d1e0ea1ed4534e2a942b",
+      "trung_tu": 1.0
+    },
+    "cau_hoi_goc": "What does the term “\\( \\hat{P}(Y \\mid X) \\)” represent in the described normalization process, and how is it computed using the expression “\\( \\frac{e^{\\theta^{\\top}x}}{\\sum_{i\\in\\triangle\\square\\circ} e^{\\theta_i^{\\top}x}} \\)”?"
+  },
+  {
+    "course": "machine-learning",
+    "file": "Week03.mp4",
+    "cau_hoi": "Hàm g(z) có đường cong hình chữ S, biến mọi đầu vào z thành đầu ra trong khoảng từ 0 đến 1, được gọi là gì?",
+    "chunk_moi": {
+      "chunk_index": 57,
+      "content_sha": "8cab2eb25b44a27cde29464fb0f10fccb52d27646199c24fb110885f65a63ac2"
+    },
+    "chunk_cu": {
+      "chunk_index": 57,
+      "content_sha": "8cab2eb25b44a27cde29464fb0f10fccb52d27646199c24fb110885f65a63ac2",
+      "trung_tu": 1.0
+    },
+    "cau_hoi_goc": "What is the name of the function g(z) described as having an S‑shaped curve that maps any input z to an output between 0 and 1?"
+  },
+  {
+    "course": "machine-learning",
+    "file": "Week03.mp4",
+    "cau_hoi": "Theo diễn giả, vì sao phương pháp Newton có thể nhanh hơn gradient descent rất nhiều khi số lượng tham số không quá lớn?",
+    "chunk_moi": {
+      "chunk_index": 93,
+      "content_sha": "7158ff95a6fdf764e1517ac270ce9830d4d633a55bd727ecbbe6cc5ccfbeb30f"
+    },
+    "chunk_cu": {
+      "chunk_index": 93,
+      "content_sha": "7158ff95a6fdf764e1517ac270ce9830d4d633a55bd727ecbbe6cc5ccfbeb30f",
+      "trung_tu": 1.0
+    },
+    "cau_hoi_goc": "What reason does the speaker give for Newton's method potentially being much faster than gradient descent when the number of parameters is not too large?"
+  },
+  {
+    "course": "machine-learning",
+    "file": "Week05.mp3",
+    "cau_hoi": "Trong phần thảo luận về các đặc trưng X có giá trị liên tục, thuật toán học tạo sinh nào được đưa ra làm ví dụ minh họa cho bài toán phân loại email spam?",
+    "chunk_moi": {
+      "chunk_index": 74,
+      "content_sha": "46cbd5cacfde4579686f0f484bfd19d31260446e642c182332e3f7116fc5750b"
+    },
+    "chunk_cu": {
+      "chunk_index": 74,
+      "content_sha": "46cbd5cacfde4579686f0f484bfd19d31260446e642c182332e3f7116fc5750b",
+      "trung_tu": 1.0
+    },
+    "cau_hoi_goc": "What generative learning algorithm is introduced as a motivating example for email spam classification in the discussion of continuous valued features X?"
+  },
+  {
+    "course": "machine-learning",
+    "file": "Week03.mp4",
+    "cau_hoi": "Tính chất nào của phương pháp Newton được cho là khiến sai số giảm từ 0.01 xuống 0.0001 chỉ sau một lần lặp?",
+    "chunk_moi": {
+      "chunk_index": 88,
+      "content_sha": "1bb902a27ec93d4ecfca3788a3ed194b167a5ddc29c8adee73aa6a9cbcbf3305"
+    },
+    "chunk_cu": {
+      "chunk_index": 88,
+      "content_sha": "1bb902a27ec93d4ecfca3788a3ed194b167a5ddc29c8adee73aa6a9cbcbf3305",
+      "trung_tu": 1.0
+    },
+    "cau_hoi_goc": "What property of Newton's method is described as causing the error to shrink from 0.01 to 0.0001 in a single iteration?"
+  },
+  {
+    "course": "machine-learning",
+    "file": "Week05.mp3",
+    "cau_hoi": "Nếu vector ngẫu nhiên Z có hai chiều trong ℝⁿ thì vector trung bình μ và ma trận hiệp phương sai Σ có kích thước như thế nào?",
+    "chunk_moi": {
+      "chunk_index": 12,
+      "content_sha": "f1519e2d359d83273c961c7113c9dd034cc3046c3afb66b715513d646b27f397"
+    },
+    "chunk_cu": {
+      "chunk_index": 12,
+      "content_sha": "f1519e2d359d83273c961c7113c9dd034cc3046c3afb66b715513d646b27f397",
+      "trung_tu": 1.0
+    },
+    "cau_hoi_goc": "What are the dimensions of the mean vector μ and the covariance matrix Σ when the random vector Z is two‑dimensional in ℝⁿ?"
+  },
+  {
+    "course": "machine-learning",
+    "file": "Week03.mp4",
+    "cau_hoi": "Nhóm thuật toán nào được mô tả là không gặp vấn đề tối ưu cục bộ khi được xây dựng, và bao gồm cả hồi quy tuyến tính lẫn hồi quy logistic?",
+    "chunk_moi": {
+      "chunk_index": 74,
+      "content_sha": "9f7c4e54a704fbbb56f59448ffac5d1cdb14c1f4e2735490cd7f38a17153151c"
+    },
+    "chunk_cu": {
+      "chunk_index": 74,
+      "content_sha": "9f7c4e54a704fbbb56f59448ffac5d1cdb14c1f4e2735490cd7f38a17153151c",
+      "trung_tu": 1.0
+    },
+    "cau_hoi_goc": "What class of algorithms is described as having no local optimal problems when derived, and includes both linear regression and logistic regression?"
+  },
+  {
+    "course": "machine-learning",
+    "file": "Week02.mp4",
+    "cau_hoi": "Phương trình thu được bằng cách lấy đạo hàm \\(J(\\theta)\\) theo \\(\\theta\\), cho đạo hàm bằng 0 rồi giải theo \\(\\theta\\) để tìm trực tiếp điểm cực tiểu toàn cục của hàm mất mát được gọi là gì?",
+    "chunk_moi": {
+      "chunk_index": 75,
+      "content_sha": "1c75c4a7fddde4b342e62c93b7038398da21b18f541d2cf7027e7bed9cd972f9"
+    },
+    "chunk_cu": {
+      "chunk_index": 75,
+      "content_sha": "1c75c4a7fddde4b342e62c93b7038398da21b18f541d2cf7027e7bed9cd972f9",
+      "trung_tu": 1.0
+    },
+    "cau_hoi_goc": "What is the name of the equation derived by taking the derivative of \\(J(\\theta)\\) with respect to \\(\\theta\\), setting it equal to zero, and solving for \\(\\theta\\) to directly reach the global minimum of the cost function?"
+  },
+  {
+    "course": "machine-learning",
+    "file": "Week02.mp4",
+    "cau_hoi": "Hai trục trong hình minh họa gradient descent được ghi nhãn là gì, và tại sao người nói lại nhắc rằng vector tham số thực tế có thêm thành phần thứ ba dù hình chỉ hiển thị hai trục?",
+    "chunk_moi": {
+      "chunk_index": 21,
+      "content_sha": "93171a8ec1913d8fafc4d10b77ee18af8d5cef85d205cbfd07e85aad42bd8d6d"
+    },
+    "chunk_cu": {
+      "chunk_index": 21,
+      "content_sha": "93171a8ec1913d8fafc4d10b77ee18af8d5cef85d205cbfd07e85aad42bd8d6d",
+      "trung_tu": 1.0
+    },
+    "cau_hoi_goc": "What are the two axes labeled in the gradient descent visualization, and why does the speaker mention that the actual parameter vector includes a third component even though only two axes are shown?"
+  },
+  {
+    "course": "machine-learning",
+    "file": "Week05.mp3",
+    "cau_hoi": "Bước “giải phương trình bằng cách cho đạo hàm bằng 0” có vai trò gì khi lấy đạo hàm của log-likelihood rồi đặt nó bằng 0 để tìm các giá trị tham số tối đa hóa likelihood?",
+    "chunk_moi": {
+      "chunk_index": 36,
+      "content_sha": "5f2d9cc19840c72f1965b0e0e890af3f1e7f0c24d6322505f6392f8a889a2af7"
+    },
+    "chunk_cu": {
+      "chunk_index": 36,
+      "content_sha": "5f2d9cc19840c72f1965b0e0e890af3f1e7f0c24d6322505f6392f8a889a2af7",
+      "trung_tu": 1.0
+    },
+    "cau_hoi_goc": "What is the role of the “zero‑unsolving” step when taking the derivative of the log‑likelihood and setting it equal to zero in order to find the parameter values that maximize the likelihood?"
+  },
+  {
+    "course": "machine-learning",
+    "file": "Week04.mp3",
+    "cau_hoi": "Trong tài liệu bài giảng, thuật ngữ nào được dùng để mô tả hồi quy softmax như một thành viên của họ GLM?",
+    "chunk_moi": {
+      "chunk_index": 60,
+      "content_sha": "f8a14e4beb8ea8d64b2129d7c7fb562ec6b9291f25dfc95c69852b099b41e5f4"
+    },
+    "chunk_cu": {
+      "chunk_index": 60,
+      "content_sha": "f8a14e4beb8ea8d64b2129d7c7fb562ec6b9291f25dfc95c69852b099b41e5f4",
+      "trung_tu": 1.0
+    },
+    "cau_hoi_goc": "What term does the lecture notes use to describe softmax regression as a member of the GLM family?"
+  },
+  {
+    "course": "machine-learning",
+    "file": "Week03.mp4",
+    "cau_hoi": "Trong bối cảnh suy ra log-likelihood cho phương pháp ước lượng hợp lý cực đại, người nói đang nhắc đến biểu thức nào khi nói “lũy thừa yᵢ nhân với 1 − h(xᵢ) mũ 1 − yᵢ”?",
+    "chunk_moi": {
+      "chunk_index": 67,
+      "content_sha": "0b3ca67c9eb809f0f802142f9bd321a72e6b502f53c6251307ace6e1f6f50377"
+    },
+    "chunk_cu": {
+      "chunk_index": 67,
+      "content_sha": "0b3ca67c9eb809f0f802142f9bd321a72e6b502f53c6251307ace6e1f6f50377",
+      "trung_tu": 1.0
+    },
+    "cau_hoi_goc": "What expression does the speaker refer to when they say “power of yᵢ times 1 − h(xᵢ) to the power of 1 − yᵢ” in the context of deriving the log‑likelihood for maximum likelihood estimation?"
+  },
+  {
+    "course": "machine-learning",
+    "file": "Week02.mp4",
+    "cau_hoi": "Trong ngữ cảnh phép nhân ma trận-vectơ được mô tả, biểu thức “x₁ᵀ θ, x₂ᵀ θ, …, x_mᵀ θ” biểu thị điều gì ạ?",
+    "chunk_moi": {
+      "chunk_index": 82,
+      "content_sha": "c3c1e0dcb14e6d9c19ba5a21f293019b3654bf026b96dbacc3277b53d2f35b3f"
+    },
+    "chunk_cu": {
+      "chunk_index": 82,
+      "content_sha": "c3c1e0dcb14e6d9c19ba5a21f293019b3654bf026b96dbacc3277b53d2f35b3f",
+      "trung_tu": 1.0
+    },
+    "cau_hoi_goc": "What does the expression “x₁ᵀ θ, x₂ᵀ θ, …, x_mᵀ θ” represent in the context of matrix‑vector multiplication described?"
+  },
+  {
+    "course": "machine-learning",
+    "file": "Week05.mp3",
+    "cau_hoi": "Đoạn văn dùng thuật ngữ cụ thể nào để gọi đường cong thu được khi tính công thức xác suất trên một lưới giá trị dày đặc dọc theo trục x rồi nối các điểm lại?",
+    "chunk_moi": {
+      "chunk_index": 51,
+      "content_sha": "83a6cc81457f7ec0a842858c096570f663347a8daecaad756bd002eafb85e87f"
+    },
+    "chunk_cu": {
+      "chunk_index": 51,
+      "content_sha": "83a6cc81457f7ec0a842858c096570f663347a8daecaad756bd002eafb85e87f",
+      "trung_tu": 1.0
+    },
+    "cau_hoi_goc": "What specific term does the passage use to describe the curve that results from evaluating the probability formula across a dense grid on the x‑axis and connecting the resulting points?"
+  },
+  {
+    "course": "machine-learning",
+    "file": "Week02.mp4",
+    "cau_hoi": "Trong bài hồi quy tuyến tính, thuật toán nào được giới thiệu để tìm giá trị θ giúp hàm chi phí J(θ) đạt giá trị nhỏ nhất?",
+    "chunk_moi": {
+      "chunk_index": 19,
+      "content_sha": "ebab0bf3ddab448dc137177223b30dfd22a4059db4268b79811eba8cde0ea4c6"
+    },
+    "chunk_cu": {
+      "chunk_index": 19,
+      "content_sha": "ebab0bf3ddab448dc137177223b30dfd22a4059db4268b79811eba8cde0ea4c6",
+      "trung_tu": 1.0
+    },
+    "cau_hoi_goc": "What is the name of the algorithm introduced for finding the value of θ that minimizes the cost function J(θ) in the context of linear regression?"
+  },
+  {
+    "course": "machine-learning",
+    "file": "Week05.mp3",
+    "cau_hoi": "Theo giảng viên, vấn đề lớn nhất của thuật toán là gì, và kỹ thuật nào được nhắc đến trong buổi học hôm thứ Tư để giải quyết vấn đề đó?",
+    "chunk_moi": {
+      "chunk_index": 89,
+      "content_sha": "a3484f31cec04e7b34f67397d0de2485e5352d3cd7520cea1e1220dfcdf28636"
+    },
+    "chunk_cu": {
+      "chunk_index": 89,
+      "content_sha": "a3484f31cec04e7b34f67397d0de2485e5352d3cd7520cea1e1220dfcdf28636",
+      "trung_tu": 1.0
+    },
+    "cau_hoi_goc": "What does the speaker identify as the biggest problem with the algorithm, and which technique (mentioned for Wednesday) is suggested to address it?"
+  },
+  {
+    "course": "machine-learning",
+    "file": "Week02.mp4",
+    "cau_hoi": "Đoạn văn giải thích thế nào về việc tại sao thuật toán hạ gradient ngẫu nhiên không bao giờ thực sự hội tụ, dù nó vẫn tiến về điểm cực tiểu toàn cục?",
+    "chunk_moi": {
+      "chunk_index": 56,
+      "content_sha": "94b4b2c636a1d1ba6cd91d95167a18f96677534507faf2ef6aa0ad637cb01fdc"
+    },
+    "chunk_cu": {
+      "chunk_index": 56,
+      "content_sha": "94b4b2c636a1d1ba6cd91d95167a18f96677534507faf2ef6aa0ad637cb01fdc",
+      "trung_tu": 1.0
+    },
+    "cau_hoi_goc": "What reason does the passage give for why stochastic gradient descent never truly converges, even though it moves toward the global minimum?"
+  },
+  {
+    "course": "machine-learning",
+    "file": "Week04.mp3",
+    "cau_hoi": "Đoạn văn nói gì về dấu của biểu thức khi một điểm nằm bên trái đường thẳng được xác định bởi “θ triangle transpose X = 0”?",
+    "chunk_moi": {
+      "chunk_index": 65,
+      "content_sha": "f300989c791596b5510c0ed381ce286aa8b061d33a85b86c545266c63d651119"
+    },
+    "chunk_cu": {
+      "chunk_index": 65,
+      "content_sha": "f300989c791596b5510c0ed381ce286aa8b061d33a85b86c545266c63d651119",
+      "trung_tu": 1.0
+    },
+    "cau_hoi_goc": "What does the passage say about the sign of the expression when a point lies to the left of the line defined by “θ triangle transpose X = 0”?"
+  },
+  {
+    "course": "operating-system",
+    "file": "Chapter 5_CPU Scheduling.pdf",
+    "cau_hoi": "`pthread_attr_getscope` có thể trả về những giá trị nào, và chương trình phân biệt `PTHREAD_SCOPE_PROCESS` với `PTHREAD_SCOPE_SYSTEM` như thế nào?",
+    "chunk_moi": {
+      "chunk_index": 16,
+      "content_sha": "5df90012d35d471c966a0cf0073d8ea8feed268fbb1c2653fb3a57653b893387"
+    },
+    "chunk_cu": {
+      "chunk_index": 16,
+      "content_sha": "5df90012d35d471c966a0cf0073d8ea8feed268fbb1c2653fb3a57653b893387",
+      "trung_tu": 1.0
+    },
+    "cau_hoi_goc": "What are the possible values returned by `pthread_attr_getscope` and how does the program differentiate between `PTHREAD_SCOPE_PROCESS` and `PTHREAD_SCOPE_SYSTEM`?"
+  },
+  {
+    "course": "operating-system",
+    "file": "Chapter 3_Processes.pdf",
+    "cau_hoi": "Địa chỉ IP đặc biệt nào được dùng làm địa chỉ loopback để trỏ đến chính hệ thống đang chạy tiến trình đó?",
+    "chunk_moi": {
+      "chunk_index": 29,
+      "content_sha": "6a584b68f7f9387ea09b5570a35af41ac5da36e3f643892074f91150881ff9dc"
+    },
+    "chunk_cu": {
+      "chunk_index": 29,
+      "content_sha": "6a584b68f7f9387ea09b5570a35af41ac5da36e3f643892074f91150881ff9dc",
+      "trung_tu": 1.0
+    },
+    "cau_hoi_goc": "What special IP address is used as the loopback address to refer to the system on which a process is running?"
+  },
+  {
+    "course": "operating-system",
+    "file": "Chapter 6_Synchronization Tools.pdf",
+    "cau_hoi": "Trong lời giải Proposal 1, biến dùng chung `turn` được khởi tạo với giá trị nào?",
+    "chunk_moi": {
+      "chunk_index": 7,
+      "content_sha": "70e196845809de8d5c9a49e876f5b12148b7968fdae0505c97443ff0b867d62d"
+    },
+    "chunk_cu": {
+      "chunk_index": 7,
+      "content_sha": "70e196845809de8d5c9a49e876f5b12148b7968fdae0505c97443ff0b867d62d",
+      "trung_tu": 1.0
+    },
+    "cau_hoi_goc": "What initial value is assigned to the shared variable `turn` in Proposal solution 1?"
+  },
+  {
+    "course": "operating-system",
+    "file": "Chapter 6_Synchronization Tools.pdf",
+    "cau_hoi": "Thread 1 sẽ in ra kết quả gì nếu Thread 2 thực hiện các phép gán theo thứ tự `flag = true; x = 100;` thay vì `x = 100; flag = true;`?",
+    "chunk_moi": {
+      "chunk_index": 11,
+      "content_sha": "e3bd18fb7856377db129a13fe006414a18bce0c5f5b87e21b506a4c8f82ebdb3"
+    },
+    "chunk_cu": {
+      "chunk_index": 11,
+      "content_sha": "e3bd18fb7856377db129a13fe006414a18bce0c5f5b87e21b506a4c8f82ebdb3",
+      "trung_tu": 1.0
+    },
+    "cau_hoi_goc": "What output will be printed by Thread 1 if Thread 2 executes the assignments in the order `flag = true; x = 100;` instead of `x = 100; flag = true;`?"
+  },
+  {
+    "course": "operating-system",
+    "file": "Chapter 5_CPU Scheduling.pdf",
+    "cau_hoi": "Thời gian chờ trung bình của năm tiến trình (P₁–P₅) là bao nhiêu khi được lập lịch theo Round-Robin với quantum 5 đơn vị thời gian, biết thời gian CPU burst lần lượt là (10, 29, 3, 7, 12) và thời điểm đến lần lượt là (0, 2, 5, 3, 6)?",
+    "chunk_moi": {
+      "chunk_index": 29,
+      "content_sha": "2ec939e06591c813b7fb73bc048b6556f3d4fc77b3584c57634f0ab097e87135"
+    },
+    "chunk_cu": {
+      "chunk_index": 29,
+      "content_sha": "2ec939e06591c813b7fb73bc048b6556f3d4fc77b3584c57634f0ab097e87135",
+      "trung_tu": 1.0
+    },
+    "cau_hoi_goc": "What is the average waiting time for the five processes (P₁–P₅) when scheduled with Round‑Robin using a quantum of 5 time units, given their burst times (10, 29, 3, 7, 12) and arrival times (0, 2, 5, 3, 6)?"
+  },
+  {
+    "course": "operating-system",
+    "file": "Chapter 5_CPU Scheduling.pdf",
+    "cau_hoi": "Bộ lập lịch Linux 2.5 dùng các khoảng giá trị số nào cho độ ưu tiên thời gian thực và giá trị nice vậy ạ?",
+    "chunk_moi": {
+      "chunk_index": 31,
+      "content_sha": "aab34af1dd68a28e6b4b4d47d7eed1770eac69e84150ec268acea438fe82c8fb"
+    },
+    "chunk_cu": {
+      "chunk_index": 31,
+      "content_sha": "aab34af1dd68a28e6b4b4d47d7eed1770eac69e84150ec268acea438fe82c8fb",
+      "trung_tu": 1.0
+    },
+    "cau_hoi_goc": "What numeric ranges does the Linux 2.5 scheduler use for real‑time priorities and for nice values?"
+  },
+  {
+    "course": "operating-system",
+    "file": "Chapter 5_CPU Scheduling.pdf",
+    "cau_hoi": "Trong bộ lập lịch Round-Robin, một tiến trình có thể phải chờ tối đa bao lâu để được dùng CPU trở lại, tính theo số tiến trình \\(n\\) và lượng tử thời gian \\(q\\)?",
+    "chunk_moi": {
+      "chunk_index": 9,
+      "content_sha": "3a8693ce2a7e73e583f578a92eb9e7a165e227c6729fa1d1114d68e5e0f97249"
+    },
+    "chunk_cu": {
+      "chunk_index": 9,
+      "content_sha": "3a8693ce2a7e73e583f578a92eb9e7a165e227c6729fa1d1114d68e5e0f97249",
+      "trung_tu": 1.0
+    },
+    "cau_hoi_goc": "What is the maximum time a process can wait in a Round‑Robin scheduler before it gets CPU access again, expressed in terms of the number of processes \\(n\\) and the time quantum \\(q\\)?"
+  },
+  {
+    "course": "operating-system",
+    "file": "Chapter 5_CPU Scheduling.pdf",
+    "cau_hoi": "Giá trị α được dùng trong công thức tính trung bình lũy thừa để dự đoán độ dài CPU burst tiếp theo là bao nhiêu, và thời gian burst ban đầu τ₀ được cho là bao nhiêu?",
+    "chunk_moi": {
+      "chunk_index": 7,
+      "content_sha": "74da7153064b6a2df3d4127542f4b0d5bec251fde141b2613739e001c336a25a"
+    },
+    "chunk_cu": {
+      "chunk_index": 7,
+      "content_sha": "74da7153064b6a2df3d4127542f4b0d5bec251fde141b2613739e001c336a25a",
+      "trung_tu": 1.0
+    },
+    "cau_hoi_goc": "What is the value of α used in the exponential averaging formula for predicting the next CPU burst length, and what initial burst time τ₀ is specified?"
+  },
+  {
+    "course": "operating-system",
+    "file": "Chapter 5_CPU Scheduling.pdf",
+    "cau_hoi": "Trong đề cương Chương 5 về lập lịch CPU có những phần cụ thể nào?",
+    "chunk_moi": {
+      "chunk_index": 0,
+      "content_sha": "8ebb1467db30faed5ed65aa2ed6b538029bc879aca51de2082192a2381ef8c67"
+    },
+    "chunk_cu": {
+      "chunk_index": 0,
+      "content_sha": "8ebb1467db30faed5ed65aa2ed6b538029bc879aca51de2082192a2381ef8c67",
+      "trung_tu": 1.0
+    },
+    "cau_hoi_goc": "What are the specific sections listed in the outline of Chapter 5 on CPU Scheduling?"
+  },
+  {
+    "course": "operating-system",
+    "file": "Chapter 6_Synchronization Tools.pdf",
+    "cau_hoi": "Thuật ngữ nào chỉ kiểu dữ liệu trừu tượng sử dụng các biến điều kiện để cho phép các tiến trình chờ và báo hiệu khi điều kiện thay đổi, đồng thời được xem là một hình thức đồng bộ hóa tiến trình ở mức cao?",
+    "chunk_moi": {
+      "chunk_index": 32,
+      "content_sha": "74a938ee1a0adef567b83432c705c66fe426f22446017047a977964e20f21637"
+    },
+    "chunk_cu": {
+      "chunk_index": 32,
+      "content_sha": "74a938ee1a0adef567b83432c705c66fe426f22446017047a977964e20f21637",
+      "trung_tu": 1.0
+    },
+    "cau_hoi_goc": "What term describes the abstract data type that uses condition variables to allow processes to wait for and signal changes in conditions, and is highlighted as a high‑level form of process synchronization?"
+  },
+  {
+    "course": "operating-system",
+    "file": "Chapter 6_Synchronization Tools.pdf",
+    "cau_hoi": "Hai thao tác nguyên tử được định nghĩa cho semaphore là gì, và thao tác `wait` thay đổi giá trị của semaphore cùng danh sách tiến trình như thế nào khi giá trị sau khi thay đổi trở thành số âm?",
+    "chunk_moi": {
+      "chunk_index": 19,
+      "content_sha": "83392e5068be2b9191dec52545816071394c6c83820981b90663e5b55dea46cb"
+    },
+    "chunk_cu": {
+      "chunk_index": 19,
+      "content_sha": "83392e5068be2b9191dec52545816071394c6c83820981b90663e5b55dea46cb",
+      "trung_tu": 1.0
+    },
+    "cau_hoi_goc": "What are the two atomic operations defined for a semaphore, and how does the `wait` operation modify the semaphore's value and process list when the resulting value becomes negative?"
+  },
+  {
+    "course": "operating-system",
+    "file": "Chapter 4_Threads & Concurency.pdf",
+    "cau_hoi": "Trong phần các vấn đề về đa luồng, có nhắc đến hai chế độ hủy luồng nào?",
+    "chunk_moi": {
+      "chunk_index": 17,
+      "content_sha": "24338b86e69e283c690de4a3a42041ddcc7007bc7ffe8ae785563b3fe463bd21"
+    },
+    "chunk_cu": {
+      "chunk_index": 17,
+      "content_sha": "24338b86e69e283c690de4a3a42041ddcc7007bc7ffe8ae785563b3fe463bd21",
+      "trung_tu": 1.0
+    },
+    "cau_hoi_goc": "What are the two possible cancellation modes for a thread mentioned in the threading issues section?"
+  },
+  {
+    "course": "operating-system",
+    "file": "Chapter 6_Synchronization Tools.pdf",
+    "cau_hoi": "Semaphore đếm và semaphore nhị phân khác nhau như thế nào, và có thể triển khai semaphore đếm bằng semaphore nhị phân thông qua các thao tác wait() và signal() ra sao?",
+    "chunk_moi": {
+      "chunk_index": 20,
+      "content_sha": "a14d629b3decd0b5d818db0434f431a4ab962fd38ca5ab31961c2f8426eec953"
+    },
+    "chunk_cu": {
+      "chunk_index": 20,
+      "content_sha": "a14d629b3decd0b5d818db0434f431a4ab962fd38ca5ab31961c2f8426eec953",
+      "trung_tu": 1.0
+    },
+    "cau_hoi_goc": "What is the difference between a counting semaphore and a binary semaphore, and how can a counting semaphore be implemented using a binary semaphore in the context of the wait() and signal() operations?"
+  },
+  {
+    "course": "operating-system",
+    "file": "Chapter 5_CPU Scheduling.pdf",
+    "cau_hoi": "Thời gian bộ điều phối cần để dừng một tiến trình và bắt đầu chạy tiến trình khác được gọi là gì?",
+    "chunk_moi": {
+      "chunk_index": 3,
+      "content_sha": "24134a453ef014f83d50537ffdc9e7d1fabb3401c70c32d431f3e89282f74c54"
+    },
+    "chunk_cu": {
+      "chunk_index": 3,
+      "content_sha": "24134a453ef014f83d50537ffdc9e7d1fabb3401c70c32d431f3e89282f74c54",
+      "trung_tu": 1.0
+    },
+    "cau_hoi_goc": "What is the term used to describe the time it takes for the dispatcher to stop one process and start another running?"
+  },
+  {
+    "course": "operating-system",
+    "file": "Chapter 4_Threads & Concurency.pdf",
+    "cau_hoi": "Trong ví dụ về pthread, hàm nào được dùng để chờ thread đã tạo chạy xong vậy?",
+    "chunk_moi": {
+      "chunk_index": 13,
+      "content_sha": "7d13610665a74587b45a6296c74890adcd099f69da42a17ce5906d0b4fa1f689"
+    },
+    "chunk_cu": {
+      "chunk_index": 13,
+      "content_sha": "7d13610665a74587b45a6296c74890adcd099f69da42a17ce5906d0b4fa1f689",
+      "trung_tu": 1.0
+    },
+    "cau_hoi_goc": "What is the name of the function used to wait for the created thread to finish execution in the pthread example?"
+  },
+  {
+    "course": "operating-system",
+    "file": "Chapter 3_Processes.pdf",
+    "cau_hoi": "Trong cách triển khai bộ đệm giới hạn có `BUFFER_SIZE` được định nghĩa là 10, số lượng phần tử tối đa có thể sử dụng là bao nhiêu ạ?",
+    "chunk_moi": {
+      "chunk_index": 20,
+      "content_sha": "da618a52a617889491716fbeb88d03c5e3abc11dd731a4be5e9be8e40839c554"
+    },
+    "chunk_cu": {
+      "chunk_index": 20,
+      "content_sha": "da618a52a617889491716fbeb88d03c5e3abc11dd731a4be5e9be8e40839c554",
+      "trung_tu": 1.0
+    },
+    "cau_hoi_goc": "What is the maximum number of usable elements in the bounded buffer implementation that defines `BUFFER_SIZE` as 10?"
+  },
+  {
+    "course": "operating-system",
+    "file": "Chapter 5_CPU Scheduling.pdf",
+    "cau_hoi": "Thời gian chờ trung bình trong ví dụ lập lịch FCFS với các tiến trình có thời gian chạy lần lượt là 24 ms, 3 ms và 3 ms, và đều đến tại thời điểm 0, được tính là bao nhiêu?",
+    "chunk_moi": {
+      "chunk_index": 4,
+      "content_sha": "97e18d8aac03a720626a838ec95f9d73093b178b30bfe7466125c438be438665"
+    },
+    "chunk_cu": {
+      "chunk_index": 4,
+      "content_sha": "97e18d8aac03a720626a838ec95f9d73093b178b30bfe7466125c438be438665",
+      "trung_tu": 1.0
+    },
+    "cau_hoi_goc": "What is the average waiting time calculated for the FCFS scheduling example where the processes have burst times 24 ms, 3 ms, and 3 ms and all arrive at time 0?"
+  },
+  {
+    "course": "operating-system",
+    "file": "Chapter 5_CPU Scheduling.pdf",
+    "cau_hoi": "Thời gian chờ trung bình của lịch Shortest-Job-First không ưu tiên ngắt cho bốn tiến trình (P1, P2, P3, P4) là bao nhiêu, nếu thời gian đến lần lượt là 0, 1, 2, 3 và thời gian xử lý lần lượt là 8 ms, 4 ms, 9 ms, 5 ms?",
+    "chunk_moi": {
+      "chunk_index": 8,
+      "content_sha": "6354dfb786f1ffe0ed9157b638d4d21a232c6dc9b3876108207575f0a7dc03f1"
+    },
+    "chunk_cu": {
+      "chunk_index": 8,
+      "content_sha": "6354dfb786f1ffe0ed9157b638d4d21a232c6dc9b3876108207575f0a7dc03f1",
+      "trung_tu": 1.0
+    },
+    "cau_hoi_goc": "What is the average waiting time for the non‑preemptive Shortest‑Job‑First schedule of the four processes (P1, P2, P3, P4) given their arrival times 0, 1, 2, 3 and burst times 8 ms, 4 ms, 9 ms, 5 ms respectively?"
+  },
+  {
+    "course": "operating-system",
+    "file": "Chapter 5_CPU Scheduling.pdf",
+    "cau_hoi": "Thuật ngữ nào dùng để chỉ chu kỳ luân phiên giữa CPU thực thi và chờ I/O, được xem là một vấn đề quan trọng trong lập lịch CPU?",
+    "chunk_moi": {
+      "chunk_index": 1,
+      "content_sha": "8c29f441648471d40866e8cf43335875f94b1db3c9f8e341a1e83d05d6aa29d2"
+    },
+    "chunk_cu": {
+      "chunk_index": 1,
+      "content_sha": "8c29f441648471d40866e8cf43335875f94b1db3c9f8e341a1e83d05d6aa29d2",
+      "trung_tu": 1.0
+    },
+    "cau_hoi_goc": "What is the term used to describe the alternating pattern of CPU execution followed by I/O wait that is highlighted as a key concern in CPU scheduling?"
+  },
+  {
+    "course": "operating-system",
+    "file": "Chapter 2_Operating System Structures.pdf",
+    "cau_hoi": "Ba API phổ biến nhất được liệt kê để truy cập các lời gọi hệ thống là gì?",
+    "chunk_moi": {
+      "chunk_index": 7,
+      "content_sha": "8b340109db27168b0fa1708ff5e331394a1879a51e3ecae326601b6a9d064afe"
+    },
+    "chunk_cu": {
+      "chunk_index": 7,
+      "content_sha": "8b340109db27168b0fa1708ff5e331394a1879a51e3ecae326601b6a9d064afe",
+      "trung_tu": 1.0
+    },
+    "cau_hoi_goc": "What are the three most common APIs listed for accessing system calls?"
+  },
+  {
+    "course": "operating-system",
+    "file": "Chapter 3_Processes.pdf",
+    "cau_hoi": "Trong code của producer, điều kiện nào được dùng để kiểm tra bộ đệm vòng đã đầy trước khi thêm một phần tử mới?",
+    "chunk_moi": {
+      "chunk_index": 21,
+      "content_sha": "c7d5e3ca47a79308acf547d41a105f052a05d5b5daf49b33927451b14b2278da"
+    },
+    "chunk_cu": {
+      "chunk_index": 21,
+      "content_sha": "c7d5e3ca47a79308acf547d41a105f052a05d5b5daf49b33927451b14b2278da",
+      "trung_tu": 1.0
+    },
+    "cau_hoi_goc": "In the producer code, which condition is used to detect that the circular buffer is full before inserting a new item?"
+  },
+  {
+    "course": "operating-system",
+    "file": "Chapter 6_Synchronization Tools.pdf",
+    "cau_hoi": "Trong phần cài đặt monitor của bộ đệm giới hạn, biến điều kiện nào được báo hiệu ngay sau khi producer chèn một tài nguyên vào mảng “resources”?",
+    "chunk_moi": {
+      "chunk_index": 25,
+      "content_sha": "9c5cbf141068a7072bc0ffc6c2535fa4e069ad59af96645fd8806edbae7d3441"
+    },
+    "chunk_cu": {
+      "chunk_index": 25,
+      "content_sha": "9c5cbf141068a7072bc0ffc6c2535fa4e069ad59af96645fd8806edbae7d3441",
+      "trung_tu": 1.0
+    },
+    "cau_hoi_goc": "In the monitor implementation of the bounded buffer, which condition variable is signaled immediately after a producer inserts a resource into the “resources” array?"
+  },
+  {
+    "course": "operating-system",
+    "file": "Chapter 6_Synchronization Tools.pdf",
+    "cau_hoi": "Trong tình huống deadlock đã mô tả, tiến trình nào thực hiện `wait(Q)` sau khi `P_0` đã thực hiện `wait(S)`?",
+    "chunk_moi": {
+      "chunk_index": 28,
+      "content_sha": "b6f462f76daa103a6bed1163da5a4ce7f2a5a5f18b7b9e0f23c5ac01f92118ed"
+    },
+    "chunk_cu": {
+      "chunk_index": 28,
+      "content_sha": "b6f462f76daa103a6bed1163da5a4ce7f2a5a5f18b7b9e0f23c5ac01f92118ed",
+      "trung_tu": 1.0
+    },
+    "cau_hoi_goc": "In the deadlock scenario described, which process executes `wait(Q)` after `P_0` has already executed `wait(S)`?"
+  },
+  {
+    "course": "operating-system",
+    "file": "Chapter 6_Synchronization Tools.pdf",
+    "cau_hoi": "Biểu thức `(out + 1) % BUFFER_SIZE` trong vòng lặp consumer có tác dụng gì, và nó liên quan như thế nào đến biến `out`?",
+    "chunk_moi": {
+      "chunk_index": 3,
+      "content_sha": "31dbc76feff4bd3416882a3c3f40dfb452c9550d8e1df207a4815c465f573b4e"
+    },
+    "chunk_cu": {
+      "chunk_index": 3,
+      "content_sha": "31dbc76feff4bd3416882a3c3f40dfb452c9550d8e1df207a4815c465f573b4e",
+      "trung_tu": 1.0
+    },
+    "cau_hoi_goc": "What is the purpose of the expression `(out + 1) % BUFFER_SIZE` in the consumer loop, and how does it relate to the variable `out`?"
+  },
+  {
+    "course": "operating-system",
+    "file": "Chapter 3_Processes.pdf",
+    "cau_hoi": "Trong giao tiếp trực tiếp, dùng thao tác nguyên thủy nào để gửi thông điệp đến một tiến trình cụ thể, và thao tác đó có hai đối số nào?",
+    "chunk_moi": {
+      "chunk_index": 23,
+      "content_sha": "871555886e8290d195c82cb10f29f8645a0142935d1b4f805a4333a23451031c"
+    },
+    "chunk_cu": {
+      "chunk_index": 23,
+      "content_sha": "871555886e8290d195c82cb10f29f8645a0142935d1b4f805a4333a23451031c",
+      "trung_tu": 1.0
+    },
+    "cau_hoi_goc": "In direct communication, which primitive is used to send a message to a specific process, and what are its two arguments?"
+  },
+  {
+    "course": "operating-system",
+    "file": "Chapter 3_Processes.pdf",
+    "cau_hoi": "Trong chương trình ví dụ gọi `fork();` hai lần liên tiếp, tổng cộng có bao nhiêu tiến trình được tạo ra?",
+    "chunk_moi": {
+      "chunk_index": 12,
+      "content_sha": "d9a85c43136906816ca075ed139ef1e5de874fafa897210f7f8d04fddc7899c4"
+    },
+    "chunk_cu": {
+      "chunk_index": 12,
+      "content_sha": "d9a85c43136906816ca075ed139ef1e5de874fafa897210f7f8d04fddc7899c4",
+      "trung_tu": 1.0
+    },
+    "cau_hoi_goc": "In the example program that calls `fork();` twice in succession, how many processes are created in total?"
+  },
+  {
+    "course": "operating-system",
+    "file": "Chapter 4_Threads & Concurency.pdf",
+    "cau_hoi": "Trong `struct char_print_parms` được dùng để truyền các tham số cho hàm luồng có những thành viên nào?",
+    "chunk_moi": {
+      "chunk_index": 15,
+      "content_sha": "ac0eb8072e7eb5ff5f1ac850ea0cc96a94cba1e90241e4d30869a5de8697652e"
+    },
+    "chunk_cu": {
+      "chunk_index": 15,
+      "content_sha": "ac0eb8072e7eb5ff5f1ac850ea0cc96a94cba1e90241e4d30869a5de8697652e",
+      "trung_tu": 1.0
+    },
+    "cau_hoi_goc": "What members are defined inside the `struct char_print_parms` that is used to pass arguments to the thread function?"
+  },
+  {
+    "course": "operating-system",
+    "file": "Chapter 5_CPU Scheduling.pdf",
+    "cau_hoi": "Trong một tác vụ tuần hoàn, thời gian xử lý t, thời hạn d và chu kỳ p phải thỏa mãn bất đẳng thức nào?",
+    "chunk_moi": {
+      "chunk_index": 22,
+      "content_sha": "bbe0d72dd3df9d35ba4e10824a19e4b65722c3529d66b37d2e70780c3d6acd94"
+    },
+    "chunk_cu": {
+      "chunk_index": 22,
+      "content_sha": "bbe0d72dd3df9d35ba4e10824a19e4b65722c3529d66b37d2e70780c3d6acd94",
+      "trung_tu": 1.0
+    },
+    "cau_hoi_goc": "What inequality must be satisfied among a periodic task’s processing time t, its deadline d, and its period p?"
+  },
+  {
+    "course": "operating-system",
+    "file": "Chapter 5_CPU Scheduling.pdf",
+    "cau_hoi": "Thời gian quay vòng trung bình của các tiến trình P₁–P₅ là bao nhiêu khi được lập lịch theo FCFS, SJF và Round-Robin với quantum bằng 10, biết thời gian burst lần lượt là 10, 29, 3, 7 và 12?",
+    "chunk_moi": {
+      "chunk_index": 28,
+      "content_sha": "ff13b41459c900e46a3d417f8c16779e0d16e400327e2d3beb21ed553087d47f"
+    },
+    "chunk_cu": {
+      "chunk_index": 28,
+      "content_sha": "ff13b41459c900e46a3d417f8c16779e0d16e400327e2d3beb21ed553087d47f",
+      "trung_tu": 1.0
+    },
+    "cau_hoi_goc": "What are the average turnaround times for processes P₁–P₅ when scheduled using FCFS, SJF, and Round‑Robin with a quantum of 10, given the burst times 10, 29, 3, 7, and 12?"
+  },
+  {
+    "course": "operating-system",
+    "file": "Chapter 3_Processes.pdf",
+    "cau_hoi": "Trong quá trình chuyển đổi ngữ cảnh, thành phần nào của hệ điều hành lưu lại ngữ cảnh của một tiến trình?",
+    "chunk_moi": {
+      "chunk_index": 8,
+      "content_sha": "fbc8af7a833d6fecfbb9c3129ed21c345950ff2f76a430b3ab3ac3a9c53fe3d6"
+    },
+    "chunk_cu": {
+      "chunk_index": 8,
+      "content_sha": "fbc8af7a833d6fecfbb9c3129ed21c345950ff2f76a430b3ab3ac3a9c53fe3d6",
+      "trung_tu": 1.0
+    },
+    "cau_hoi_goc": "What component of the operating system stores a process’s context during a context switch?"
+  },
+  {
+    "course": "operating-system",
+    "file": "Chapter 5_CPU Scheduling.pdf",
+    "cau_hoi": "Khi duy trì các hàng đợi riêng cho từng mức độ ưu tiên, hàng đợi đa cấp sử dụng quy tắc lập lịch nào để chọn tiến trình?",
+    "chunk_moi": {
+      "chunk_index": 13,
+      "content_sha": "5987f8b6a0a137a0ec7176ea26eeed957920032b7652bc017bd70f879d4ac05d"
+    },
+    "chunk_cu": {
+      "chunk_index": 13,
+      "content_sha": "5987f8b6a0a137a0ec7176ea26eeed957920032b7652bc017bd70f879d4ac05d",
+      "trung_tu": 1.0
+    },
+    "cau_hoi_goc": "What scheduling rule does a multilevel queue employ to choose a process when it maintains separate queues for each priority level?"
+  },
+  {
+    "course": "operating-system",
+    "file": "Chapter 3_Processes.pdf",
+    "cau_hoi": "Trong ví dụ `DateServer` của Java, số cổng nào được chỉ định khi tạo `ServerSocket`?",
+    "chunk_moi": {
+      "chunk_index": 30,
+      "content_sha": "66dad7c5ace9b54a6fbfbfda687af0374555259ff0a91ece2255134f4bf4a38d"
+    },
+    "chunk_cu": {
+      "chunk_index": 30,
+      "content_sha": "66dad7c5ace9b54a6fbfbfda687af0374555259ff0a91ece2255134f4bf4a38d",
+      "trung_tu": 1.0
+    },
+    "cau_hoi_goc": "What port number is specified when creating the `ServerSocket` in the Java `DateServer` example?"
+  },
+  {
+    "course": "operating-system",
+    "file": "Chapter 4_Threads & Concurency.pdf",
+    "cau_hoi": "Scheduler activations sử dụng cơ chế nào để thông báo cho thư viện luồng về những thay đổi trong số lượng luồng nhân, và cấu trúc dữ liệu trung gian nào thường được dùng để biểu diễn một bộ xử lý ảo nhằm lập lịch cho các luồng người dùng?",
+    "chunk_moi": {
+      "chunk_index": 21,
+      "content_sha": "fa54d5d0ea8c88ee6bc25fdaa4b397f25c60d87c36458c0c35e6c4f0fde80704"
+    },
+    "chunk_cu": {
+      "chunk_index": 21,
+      "content_sha": "fa54d5d0ea8c88ee6bc25fdaa4b397f25c60d87c36458c0c35e6c4f0fde80704",
+      "trung_tu": 1.0
+    },
+    "cau_hoi_goc": "What mechanism do scheduler activations use to inform the thread library about changes in the number of kernel threads, and what intermediate data structure typically represents a virtual processor for scheduling user threads?"
+  },
+  {
+    "course": "operating-system",
+    "file": "Chapter 4_Threads & Concurency.pdf",
+    "cau_hoi": "Trong tài liệu có liệt kê ba thư viện luồng ở cấp người dùng chính nào?",
+    "chunk_moi": {
+      "chunk_index": 6,
+      "content_sha": "f1695fe1f2e2cd7a9d6bda93dd53d9ba1d36039fa5d4137f1707234f9f5c3701"
+    },
+    "chunk_cu": {
+      "chunk_index": 6,
+      "content_sha": "f1695fe1f2e2cd7a9d6bda93dd53d9ba1d36039fa5d4137f1707234f9f5c3701",
+      "trung_tu": 1.0
+    },
+    "cau_hoi_goc": "What are the three primary user‑level thread libraries listed in the text?"
+  },
+  {
+    "course": "operating-system",
+    "file": "Chapter 4_Threads & Concurency.pdf",
+    "cau_hoi": "Trong các phương pháp phân luồng ngầm được liệt kê cùng với thread pools và fork-join, phương pháp nào có tên là Grand Central Dispatch?",
+    "chunk_moi": {
+      "chunk_index": 1,
+      "content_sha": "a1c3cd50a0a09a0ce84f7a3f38004cfcb9478bf537898187067819ece66d4721"
+    },
+    "chunk_cu": {
+      "chunk_index": 1,
+      "content_sha": "a1c3cd50a0a09a0ce84f7a3f38004cfcb9478bf537898187067819ece66d4721",
+      "trung_tu": 1.0
+    },
+    "cau_hoi_goc": "Which implicit threading approach listed together with thread pools and fork‑join is named Grand Central Dispatch?"
+  },
+  {
+    "course": "operating-system",
+    "file": "Chapter 6_Synchronization Tools.pdf",
+    "cau_hoi": "Trong lời giải bài toán producer-consumer, biến `counter` dùng để đếm số buffer đã đầy được khởi tạo với giá trị bao nhiêu?",
+    "chunk_moi": {
+      "chunk_index": 2,
+      "content_sha": "c3ad81a33dc44e6e95332444e7215441894f1c7e2162ad69bf1461813a24e0f2"
+    },
+    "chunk_cu": {
+      "chunk_index": 2,
+      "content_sha": "c3ad81a33dc44e6e95332444e7215441894f1c7e2162ad69bf1461813a24e0f2",
+      "trung_tu": 1.0
+    },
+    "cau_hoi_goc": "What is the initial value assigned to the `counter` variable that tracks the number of full buffers in the producer‑consumer solution?"
+  },
+  {
+    "course": "operating-system",
+    "file": "Chapter 5_CPU Scheduling.pdf",
+    "cau_hoi": "Trong hệ thống đa luồng đa lõi, bài giảng mô tả hai cấp độ lập lịch riêng biệt nào?",
+    "chunk_moi": {
+      "chunk_index": 20,
+      "content_sha": "1d9a0c15171a1e90401ea95e275454e80ed797577811f92b2ee2db61086d59ec"
+    },
+    "chunk_cu": {
+      "chunk_index": 20,
+      "content_sha": "1d9a0c15171a1e90401ea95e275454e80ed797577811f92b2ee2db61086d59ec",
+      "trung_tu": 1.0
+    },
+    "cau_hoi_goc": "What are the two distinct levels of scheduling described for a multithreaded multicore system?"
+  },
+  {
+    "course": "operating-system",
+    "file": "Chapter 6_Synchronization Tools.pdf",
+    "cau_hoi": "Thuật toán cụ thể được giới thiệu trong Chương 6 để giải quyết bài toán vùng găng có tên là gì?",
+    "chunk_moi": {
+      "chunk_index": 0,
+      "content_sha": "cafc72ceb9f5effc4ae89577d4699aed610f846b360309a15f508ff05f840df8"
+    },
+    "chunk_cu": {
+      "chunk_index": 0,
+      "content_sha": "cafc72ceb9f5effc4ae89577d4699aed610f846b360309a15f508ff05f840df8",
+      "trung_tu": 1.0
+    },
+    "cau_hoi_goc": "What is the name of the specific algorithm introduced in Chapter 6 to solve the critical‑section problem?"
+  },
+  {
+    "course": "operating-system",
+    "file": "Chapter 4_Threads & Concurency.pdf",
+    "cau_hoi": "fork() chỉ nhân bản luồng đang gọi nó hay tất cả các luồng?",
+    "chunk_moi": {
+      "chunk_index": 18,
+      "content_sha": "98340b231f5769705bebf8d8874537acde688bb322e3387fe3abf91e8f81a32b"
+    },
+    "chunk_cu": {
+      "chunk_index": 18,
+      "content_sha": "98340b231f5769705bebf8d8874537acde688bb322e3387fe3abf91e8f81a32b",
+      "trung_tu": 1.0
+    },
+    "cau_hoi_goc": "Does fork() duplicate only the calling thread or all threads?"
+  },
+  {
+    "course": "operating-system",
+    "file": "Chapter 4_Threads & Concurency.pdf",
+    "cau_hoi": "Lợi ích nào của các luồng cho phép chương trình tiếp tục chạy khi một phần của tiến trình bị chặn, đặc biệt quan trọng đối với giao diện người dùng?",
+    "chunk_moi": {
+      "chunk_index": 3,
+      "content_sha": "dd2ba0120bd5055bfb665a6850231f7410daeefbe5824bed9c09e4ec2ad50450"
+    },
+    "chunk_cu": {
+      "chunk_index": 3,
+      "content_sha": "dd2ba0120bd5055bfb665a6850231f7410daeefbe5824bed9c09e4ec2ad50450",
+      "trung_tu": 1.0
+    },
+    "cau_hoi_goc": "What benefit of threads is defined as allowing continued execution when part of a process is blocked, especially important for user interfaces?"
+  },
+  {
+    "course": "operating-system",
+    "file": "Chapter 2_Operating System Structures.pdf",
+    "cau_hoi": "Hệ điều hành nào được mô tả là có giao diện GUI “Aqua” được xây dựng trên nhân UNIX, đồng thời cung cấp các shell để truy cập dòng lệnh?",
+    "chunk_moi": {
+      "chunk_index": 6,
+      "content_sha": "a80bc40ddda80762d47eaa8774995a6fc5dbe237e99c6c94b566325cf724bb4b"
+    },
+    "chunk_cu": {
+      "chunk_index": 6,
+      "content_sha": "a80bc40ddda80762d47eaa8774995a6fc5dbe237e99c6c94b566325cf724bb4b",
+      "trung_tu": 1.0
+    },
+    "cau_hoi_goc": "What operating system is described as having an “Aqua” GUI interface built on top of a UNIX kernel, while also providing shells for command‑line access?"
+  },
+  {
+    "course": "operating-system",
+    "file": "Chapter 4_Threads & Concurency.pdf",
+    "cau_hoi": "Khi một luồng ở mức người dùng bị chặn, điều gì sẽ xảy ra với tất cả các luồng ngang hàng còn lại?",
+    "chunk_moi": {
+      "chunk_index": 8,
+      "content_sha": "d9a996a72b3b3a8db9c3f8688a686f39abe421c9d15252d8f77805f7dff47141"
+    },
+    "chunk_cu": {
+      "chunk_index": 8,
+      "content_sha": "d9a996a72b3b3a8db9c3f8688a686f39abe421c9d15252d8f77805f7dff47141",
+      "trung_tu": 1.0
+    },
+    "cau_hoi_goc": "What happens to all peer user‑level threads when any one of them becomes blocked?"
+  },
+  {
+    "course": "operating-system",
+    "file": "Chapter 6_Synchronization Tools.pdf",
+    "cau_hoi": "Khi luồng có độ ưu tiên cao nhất (P₁) đang chờ giành quyền sử dụng tài nguyên R, chủ sở hữu hiện tại của R sẽ được nâng lên mức ưu tiên nào theo giao thức kế thừa ưu tiên?",
+    "chunk_moi": {
+      "chunk_index": 29,
+      "content_sha": "2b494997684e24d6a05ba96e5322638de1088ce919e94194781a75ee43143114"
+    },
+    "chunk_cu": {
+      "chunk_index": 29,
+      "content_sha": "2b494997684e24d6a05ba96e5322638de1088ce919e94194781a75ee43143114",
+      "trung_tu": 1.0
+    },
+    "cau_hoi_goc": "What priority does the current owner of resource R receive under the priority inheritance protocol when the highest‑priority thread (P₁) is waiting to acquire it?"
+  },
+  {
+    "course": "operating-system",
+    "file": "Chapter 6_Synchronization Tools.pdf",
+    "cau_hoi": "Cần đặt `memory_barrier()` ở vị trí nào trong hai luồng để đảm bảo Thread 1 sẽ in ra giá trị 100?",
+    "chunk_moi": {
+      "chunk_index": 13,
+      "content_sha": "51fa51f24895c23435acad78a848b4c1ee900ac10481dbeeaedcdd1a486a1447"
+    },
+    "chunk_cu": {
+      "chunk_index": 13,
+      "content_sha": "51fa51f24895c23435acad78a848b4c1ee900ac10481dbeeaedcdd1a486a1447",
+      "trung_tu": 1.0
+    },
+    "cau_hoi_goc": "What placement of `memory_barrier()` in the two threads guarantees that Thread 1 will print the value 100?"
+  },
+  {
+    "course": "operating-system",
+    "file": "Chapter 2_Operating System Structures.pdf",
+    "cau_hoi": "Trong phần thảo luận về cấu trúc hệ thống vi nhân, các thành phần có thể nạp để thêm từng phần cốt lõi của hệ điều hành hiện đại vào kernel khi cần được gọi là gì?",
+    "chunk_moi": {
+      "chunk_index": 18,
+      "content_sha": "65d2ea459d0ce32930b5fd41c0e9b5d09d965676e79627754eb5adeebfa9874a"
+    },
+    "chunk_cu": {
+      "chunk_index": 18,
+      "content_sha": "65d2ea459d0ce32930b5fd41c0e9b5d09d965676e79627754eb5adeebfa9874a",
+      "trung_tu": 1.0
+    },
+    "cau_hoi_goc": "What term is used to describe the loadable components that allow each core part of a modern operating system to be added to the kernel on demand, as mentioned in the discussion of microkernel system structure?"
+  },
+  {
+    "course": "operating-system",
+    "file": "Chapter 4_Threads & Concurency.pdf",
+    "cau_hoi": "Theo nội dung bài giảng, sử dụng thread pool trong hệ điều hành có những ưu điểm gì?",
+    "chunk_moi": {
+      "chunk_index": 16,
+      "content_sha": "af3239ba1f2734580f287c67a36c7946700df87e8e6a3799c1f2a93694a2ec77"
+    },
+    "chunk_cu": {
+      "chunk_index": 16,
+      "content_sha": "af3239ba1f2734580f287c67a36c7946700df87e8e6a3799c1f2a93694a2ec77",
+      "trung_tu": 1.0
+    },
+    "cau_hoi_goc": "What are the advantages of using thread pools in operating systems according to the given text?"
+  }
+]
