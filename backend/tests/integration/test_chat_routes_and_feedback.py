@@ -49,7 +49,7 @@ def world(monkeypatch):
         yield "Heap là cây nhị phân [S1]."
 
     monkeypatch.setattr(service, "stream_text", model)
-    monkeypatch.setattr(search, "rerank_scored", lambda query, chunks, attempts: [(c, 0.9) for c in chunks])
+    monkeypatch.setattr(search, "rerank_scored", lambda query, chunks, attempts, span=None: [(c, 0.9) for c in chunks])
     yield ids, calls
     chat_cache.clear_local()
     with SessionLocal() as db:
@@ -99,6 +99,19 @@ def test_a_first_question_asked_again_is_answered_from_the_saved_answer(world):
     assert len(again["citations"]) == 1
     assert len(world[1]) == 1
     assert _trace(again["id"])["route"] == "cached"
+
+
+def test_while_jev_is_down_the_answer_comes_from_the_search_order_and_is_not_saved(world, monkeypatch):
+    def fell_back(query, chunks, attempts, span=None):
+        span["fallback"] = True
+        return [(c, 1 / (60 + i)) for i, c in enumerate(chunks)]
+    monkeypatch.setattr(search, "rerank_scored", fell_back)
+    _, done = _ask(world, "Heap là gì?")
+    assert done["content"] == "Heap là cây nhị phân [S1]."
+    assert _trace(done["id"])["route"] == "answered"
+    _, again = _ask(world, "Heap là gì?")
+    assert _trace(again["id"])["route"] == "answered"
+    assert len(world[1]) == 2
 
 
 def test_opening_a_document_to_learners_changes_which_saved_answers_they_get(world):

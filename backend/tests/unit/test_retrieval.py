@@ -127,7 +127,7 @@ def test_reranked_and_rerank_for_chat_and_scoped_filter(monkeypatch):
     monkeypatch.setattr(
         search,
         "rerank_scored",
-        lambda query, cands, attempts=None: [
+        lambda query, cands, attempts=None, span=None: [
             (cands[0], 0.95),
             (cands[1], 0.92),
             (cands[2], 0.10),
@@ -142,6 +142,13 @@ def test_reranked_and_rerank_for_chat_and_scoped_filter(monkeypatch):
     assert search._reranked("q", chunks, top_k=None, min_k=2) == chunks
     assert search.rerank_for_chat("q", chunks, top_k=3) == chunks[:3]
     assert search.rerank_scored_for_chat("q", chunks, top_k=2) == (chunks[:2], [0.95, 0.92])
+
+    # Jev did not answer and the search order stood in: its numbers are not scores to hold to the threshold.
+    def fell_back(query, cands, attempts=None, span=None):
+        span["fallback"] = True
+        return [(c, 1 / (60 + i)) for i, c in enumerate(cands)]
+    monkeypatch.setattr(search, "rerank_scored", fell_back)
+    assert search.rerank_scored_for_chat("q", chunks, top_k=3) == (chunks[:3], None)
 
     # When rerank_scored fails with HTTP/ValueError, rerank_for_chat falls back to hybrid order.
     monkeypatch.setattr(search, "rerank_scored", lambda *a, **kw: (_ for _ in ()).throw(httpx.TimeoutException("slow")))

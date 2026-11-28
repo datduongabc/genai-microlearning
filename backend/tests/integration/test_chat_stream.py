@@ -65,7 +65,7 @@ def _scripted_model(monkeypatch, *pieces, prompts=None):
 
 @pytest.fixture
 def passthrough_rerank(monkeypatch):
-    monkeypatch.setattr(search, "rerank_scored", lambda query, chunks, attempts: [(c, 1.0) for c in chunks])
+    monkeypatch.setattr(search, "rerank_scored", lambda query, chunks, attempts, span=None: [(c, 1.0) for c in chunks])
 
 
 def test_the_answer_arrives_in_pieces_and_is_saved_with_its_citations(world, monkeypatch, passthrough_rerank):
@@ -139,7 +139,7 @@ def test_a_failed_reranker_costs_the_order_not_the_answer(world, monkeypatch):
     client, headers, course_id, _ = world
     _scripted_model(monkeypatch, "Trả lời.")
 
-    def fail(query, chunks, attempts):
+    def fail(query, chunks, attempts, span=None):
         assert attempts == search.CHAT_RERANK_ATTEMPTS
         raise search.httpx.ConnectError("reranker down")
 

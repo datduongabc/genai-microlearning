@@ -124,7 +124,7 @@ def test_chat_keeps_eighth_source_and_persists_its_citation(monkeypatch, questio
         cited = re.search(r"SOURCE CHUNK \[(S\d+)\]:\n[^\n]*\n" + re.escape(evidence), prompt)
         yield f"The root moves down [{cited.group(1)}]." if cited else "Tài liệu môn học không đề cập nội dung này"
 
-    def scored(query, candidates, attempts=None):
+    def scored(query, candidates, attempts=None, span=None):
         assert query == question
         assert len(candidates) == 8
         return sorted(((c, 0.1 if c.content == evidence else 0.2) for c in candidates),

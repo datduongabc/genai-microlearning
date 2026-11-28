@@ -23,7 +23,6 @@ MAX_ATTEMPTS = 5
 BASE_BACKOFF_SECONDS = 2.0
 
 # One call per candidate ranked better than one call for all (docs/measurements/jev-rerank/).
-JEV_URL = "https://api.typesafe.ai/v1/systemone"
 JEV_QUESTION = "Does the passage contain the information needed to answer the query?"
 _JEV_RETRY_STATUSES = {429, 500, 502, 503, 504, 529}
 # A longer wait would hold one of the shared rerank threads; past the retries the search order
@@ -53,7 +52,7 @@ def _ask_jev(query: str, text: str, attempts: int = MAX_ATTEMPTS) -> tuple[float
     """The probability that this passage answers the query, and the retries it took."""
     for attempt in range(1, attempts + 1):
         response = _jev_client.post(
-            JEV_URL,
+            settings.jev_url,
             headers={"Authorization": f"Bearer {settings.typesafe_api_key}"},
             json={"model": settings.jev_model, "state": {"query": query, "passage": text},
                   "questions": {"relevant": {"type": "noul", "instructions": JEV_QUESTION}}},
@@ -97,14 +96,18 @@ def _jev_scores(query: str, chunks: list[Chunk], span: dict, attempts: int = MAX
     return [score for score, _ in answers]
 
 
-def rerank_scored(query: str, chunks: list[Chunk], attempts: int = MAX_ATTEMPTS) -> list[tuple[Chunk, float]]:
+def rerank_scored(query: str, chunks: list[Chunk], attempts: int = MAX_ATTEMPTS,
+                  span: dict | None = None) -> list[tuple[Chunk, float]]:
     """Every chunk with its score, best first. Not cut to top_k here: Adaptive-k needs the whole
-    score distribution to find its own cut (see search.py)."""
+    score distribution to find its own cut (see search.py). `span`, when given, receives what the
+    rerank recorded, such as `fallback` when the scores are only the search order."""
     if not chunks:
         return []
     # Includes any wait for a slot or a retry: that is what the generation experiences under load.
-    with timing.timed("rerank", candidates=len(chunks)) as span:
-        scores = _jev_scores(query, chunks, span, attempts)
+    with timing.timed("rerank", candidates=len(chunks)) as fields:
+        scores = _jev_scores(query, chunks, fields, attempts)
+    if span is not None:
+        span.update(fields)
     # A stable sort keeps the search order among equal scores, which matters for Jev's two-decimal probabilities.
     return sorted(zip(chunks, scores, strict=True), key=lambda pair: pair[1], reverse=True)
 

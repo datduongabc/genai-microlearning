@@ -256,12 +256,15 @@ def rerank_scored_for_chat(query: str, candidates: list[Chunk], top_k: int = 8) 
     """The best `top_k` with the reranker's scores, or the hybrid order and None when the reranker failed. A
     reranker that fails or stays busy costs the answer some ordering, not the answer: someone is waiting for the
     first word, so it gets one retry."""
+    span: dict = {}
     try:
-        scored = rerank_scored(query, candidates, attempts=CHAT_RERANK_ATTEMPTS)[:top_k]
+        scored = rerank_scored(query, candidates, attempts=CHAT_RERANK_ATTEMPTS, span=span)[:top_k]
     except (httpx.HTTPError, ValueError) as error:
         logger.warning("rerank failed, chat keeps the hybrid order: %s", error)
         return candidates[:top_k], None
-    return [c for c, _ in scored], [score for _, score in scored]
+    # Jev did not answer: these "scores" only encode the search order and must not meet the chat's threshold.
+    scores = None if span.get("fallback") else [score for _, score in scored]
+    return [c for c, _ in scored], scores
 
 
 def rerank_for_chat(query: str, candidates: list[Chunk], top_k: int = 8) -> list[Chunk]:

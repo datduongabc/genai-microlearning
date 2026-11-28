@@ -247,7 +247,8 @@ async def _answer_events(turn: _Turn) -> AsyncIterator[str]:
                 route = "no_passages"
             elif route == "answered" and part.answer in (INSTRUCTIONS_WITHHELD, INSTRUCTIONS_WITHHELD_EN):
                 route = "instructions_withheld"
-            elif route == "answered" and turn.cache_key:
+            elif route == "answered" and turn.cache_key and scores is not None:
+                # Not an answer drawn from unranked passages while Jev was down: it would outlive the outage.
                 await asyncio.to_thread(chat_cache.put, turn.cache_key, part.model_dump())
             yield await finish(part, route)
     except Exception:

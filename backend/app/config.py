@@ -103,6 +103,8 @@ class Settings(BaseSettings):
     # much of the model balance.
     formula_vision_max_pages: int = Field(default=40, ge=0)
     typesafe_api_key: str = ""
+    # Changed only by the load and failure tests, which put a stand-in Jev here.
+    jev_url: str = "https://api.typesafe.ai/v1/systemone"
     # Pinned: the `jev-latest` alias moves with each release, so its scores could change with no change here.
     jev_model: str = "jev-1.14.0"
     # Jev calls one process has in flight. One rerank makes a call per candidate. 64 held steady in
